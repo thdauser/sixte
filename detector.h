@@ -156,14 +156,18 @@ int htrs_get_line(struct Point2d point, double m, double dt, struct Detector det
 void htrs_get_lines(struct Point2d, struct Detector, int* l0, int* l1, int* l2);
 
 
-// This function determines the pixel index for a given 2D floating point.
+// This function determines the integer pixel coordinates for a given 2D floating point.
 // The point lies within the hexagonal HTRS pixel.
-int htrs_get_pixel(struct Detector, struct Point2d, int*** pixel_relations);
+int htrs_get_pixel(struct Detector, struct Point2d, int* x, int* y, double* fraction);
 
 
 // This routine performs the initialization of the HTRS detector.
 // The return value is the error status.
 int htrs_get_detector(struct Detector*);
+
+
+// Release all dynamically allocated memory in the HTRS detector structure.
+void htrs_free_detector(struct Detector* detector);
 
 
 // Determines the pixel coordinates for a given point on a 2D array of square pixels.

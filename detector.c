@@ -882,16 +882,25 @@ void htrs_get_lines(
 int htrs_get_pixel(
 		   struct Detector detector, 
 		   struct Point2d point,
-		   int*** pixel_relations
+		   int* x, int* y,
+		   double* fraction
 		   )
 {
   int l0, l1, l2;
   htrs_get_lines(point, detector, &l0, &l1, &l2);
 
   if ((l0==INVALID_PIXEL)||(l1==INVALID_PIXEL)||(l2==INVALID_PIXEL)) {
-    return(INVALID_PIXEL);
+    x[0] = INVALID_PIXEL;
+    y[0] = INVALID_PIXEL;
+    
+    return(0);
   } else {
-    return(pixel_relations[l0][l1][l2]);
+    int pixel = detector.htrs_lines2pixel[l0][l1][l2];
+    x[0] = detector.htrs_pixel2icoordinates[pixel].x;
+    y[0] = detector.htrs_pixel2icoordinates[pixel].y;
+    fraction[0] = 1.;
+
+    return(1);
   }
 }
 
@@ -912,6 +921,9 @@ int htrs_get_detector(struct Detector* detector)
   detector->h = 0.5 * sqrt(3.) * detector->a;
 
   do { // Error handling loop 
+    
+    // Allocate memory for the detector pixel array:
+    if ((status=get_detector(detector))!=EXIT_SUCCESS) break;
 
     // Allocate memory and set the relation between the two different 
     // numbering arrays of the pixels in the hexagonal structure.
@@ -1043,6 +1055,9 @@ int htrs_get_detector(struct Detector* detector)
 
   } while (0);  // END of error handling loop
 
+
+  free(centers);
+
   return(status);
 }
 
@@ -1151,6 +1166,36 @@ int get_pixel_square(struct Detector detector,
   // Return the number of affected pixel, and 0, if the position lies outside
   // the detector array.
   return(npixels);
+}
+
+
+
+void htrs_free_detector(struct Detector* detector)
+{
+  free(detector->htrs_pixel2icoordinates);
+
+  int count;
+  for(count=0; count<detector->width; count++) {
+    free(detector->htrs_icoordinates2pixel[count]);
+  }
+  free(detector->htrs_icoordinates2pixel);
+
+  int count2;
+  for(count=0; count<detector->width; count++) {
+    for(count2=0; count2<detector->width; count2++) {
+      free(detector->htrs_lines2pixel[count][count2]);
+    }
+    free(detector->htrs_lines2pixel[count]);
+  }
+  free(detector->htrs_lines2pixel);
+
+
+  // release memory of detector Redistribution Matrix
+  free_rmf(detector->rmf);
+
+  // release memory of detector EBOUNDS
+  free_ebounds(detector->ebounds);
+
 }
 
 

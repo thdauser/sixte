@@ -557,21 +557,25 @@ int measurement_main() {
   // release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
 
-  // release memory of detector array
-  if (detector.pixel) {
-    for (counter = 0; counter < detector.width; counter++) {
-      if (detector.pixel[counter]) {
-	free(detector.pixel[counter]);
+  // Release memory of detector:
+  if (detector.type == HTRS) {
+    htrs_free_detector(&detector);
+  } else {
+    if (detector.pixel) {
+      for (counter = 0; counter < detector.width; counter++) {
+	if (detector.pixel[counter]) {
+	  free(detector.pixel[counter]);
+	}
       }
+      free(detector.pixel);
     }
-    free(detector.pixel);
+
+    // release memory of detector Redistribution Matrix
+    free_rmf(detector.rmf);
+
+    // release memory of detector EBOUNDS
+    free_ebounds(detector.ebounds);
   }
-
-  // release memory of detector Redistribution Matrix
-  free_rmf(detector.rmf);
-
-  // release memory of detector EBOUNDS
-  free_ebounds(detector.ebounds);
 
   // release memory of PSF:
   free_psf_store(psf_store);
@@ -797,7 +801,7 @@ int measure(
 	    struct Event_List_File* event_list_file
 	    ) 
 {
-#ifndef EXTERN_PHOTON_LIST
+//#ifndef EXTERN_PHOTON_LIST
   struct Point2d position;  // Photon impact position on the detector in [m]
   
   int status=EXIT_SUCCESS;
@@ -816,19 +820,22 @@ int measure(
       // Increase the counter of measured photons:
       photon_counter++;
 
+      // Determine a detector channel (PHA channel) according to RMF.
+      long channel = detector_rmf(photon.energy, detector.rmf);
+      // Get the corresponding created charge.
+      float charge = get_charge(channel, detector.ebounds);
+      
+      if (channel <= 0) printf("ERROR CHANNEL <= 0!\n");  // TODO
+      if (channel > 4096) printf("ERROR CHANNEL too large!\n");
+
       int x[4], y[4];
       double fraction[4];
-      int npixels = get_pixel_square(detector, position, x, y, fraction);
       
       if ((detector.type == FRAMESTORE) || (detector.type == DEPFET)) {
-	// Determine a detector channel (PHA channel) according to RMF.
-	long channel = detector_rmf(photon.energy, detector.rmf);
-	// Get the corresponding created charge.
-	float charge = get_charge(channel, detector.ebounds);
+	// Determine the affected detector pixels.
+	int npixels = get_pixel_square(detector, position, x, y, fraction);
 
-	if (channel <= 0) printf("ERROR CHANNEL <= 0!\n");  // TODO
-	if (channel > 4096) printf("ERROR CHANNEL too large!\n");
-
+	// Add the charge created by the photon to the affected detector pixels.
 	int count;
 	for (count=0; count<npixels; count++) {
 	  if (x[count] != INVALID_PIXEL) {
@@ -841,21 +848,32 @@ int measure(
 	  }
 	}
 
+      } else if (detector.type == HTRS) {
+	int npixels = htrs_get_pixel(detector, position, x, y, fraction);
+      
+	if (x[0] != INVALID_PIXEL) {
+	  detector.pixel[x[0]][y[0]].charge += charge * fraction[0];
+	}
+	
       } else if (detector.type == TES) {
-	struct Event event;
+	int npixels = get_pixel_square(detector, position, x, y, fraction);
 
-	// Store the photon charge and the new arrival time:
-	event.pha = get_pha(photon.energy, detector);  // TODO: RMF
-	event.time = photon.time;
-	event.xi = x[0];
-	event.yi = y[0];
-	event.grade = 0;
-	event.frame = detector.frame;
+	if (x[0] != INVALID_PIXEL) {
+	  struct Event event;
+	  
+	  // Store the photon charge and the new arrival time:
+	  event.pha = get_pha(photon.energy, detector);  // TODO: RMF
+	  event.time = photon.time;
+	  event.xi = x[0];
+	  event.yi = y[0];
+	  event.grade = 0;
+	  event.frame = detector.frame;
 
-	// Add the event to the FITS event list.
-	if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
-	  // There is an event in this pixel, so insert it into eventlist:
-	  add_eventtbl_row(event_list_file, event, &status);
+	  // Add the event to the FITS event list.
+	  if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
+	    // There is an event in this pixel, so insert it into eventlist:
+	    add_eventtbl_row(event_list_file, event, &status);
+	  }
 	}
 
       } // END of detector type TES
@@ -865,6 +883,7 @@ int measure(
 
   return(status);
 
+  /*
 #else
   double det_x, det_y;   // Photon impact position on the detector in [m]
   
@@ -905,6 +924,7 @@ int measure(
   }
   
 #endif
+  */
 }
 
 

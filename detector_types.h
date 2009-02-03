@@ -125,7 +125,6 @@ struct Detector {
   // Data structure to obtain a pixel from given coordinates
   int*** htrs_lines2pixel; 
 
-
 };
 
 
