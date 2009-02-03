@@ -557,25 +557,27 @@ int measurement_main() {
   // release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
 
+
   // Release memory of detector:
+  if (detector.pixel) {
+    for (counter = 0; counter < detector.width; counter++) {
+      if (detector.pixel[counter]) {
+	free(detector.pixel[counter]);
+      }
+    }
+    free(detector.pixel);
+  }
+
   if (detector.type == HTRS) {
     htrs_free_detector(&detector);
   } else {
-    if (detector.pixel) {
-      for (counter = 0; counter < detector.width; counter++) {
-	if (detector.pixel[counter]) {
-	  free(detector.pixel[counter]);
-	}
-      }
-      free(detector.pixel);
-    }
-
     // release memory of detector Redistribution Matrix
     free_rmf(detector.rmf);
 
     // release memory of detector EBOUNDS
     free_ebounds(detector.ebounds);
   }
+
 
   // release memory of PSF:
   free_psf_store(psf_store);
@@ -608,7 +610,7 @@ int measurement_getpar(
 		       double *timespan,        // time span for the simulation
 		       struct Telescope *telescope,
 		       struct Detector *detector,
-		   // width of the band around the sky for source preselection [rad]:
+		       // width of the band around the sky for source preselection [rad]:
 		       double *bandwidth,       
 		       float *background_countrate
 		       )
@@ -691,10 +693,20 @@ int measurement_getpar(
 
     case 3: 
       detector->type = TES;        
-      
+      break;
+
+    case 4:
+      detector->type = HTRS;
+
+      if ((status = PILGetReal("integration_time", &detector->integration_time))) {
+	sprintf(msg, "Error reading the integration time!\n");
+	HD_ERROR_THROW(msg,status);
+      }
+
       break;
 
     default:     
+      detector->type = 0;
       sprintf(msg, "Error: incorrect detector type!\n");
       HD_ERROR_THROW(msg,status);
     }

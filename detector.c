@@ -113,7 +113,23 @@ void htrs_detector_action(
 			  int *fitsstatus
 			  ) 
 {
-  // Do nothing.
+  // Check, if the detector integration time was exceeded. 
+  // In that case, read out the detector.
+  while (time > detector->readout_time) {
+    // Add background photons to the detector pixels.
+    //insert_background_photons(*detector, background, detector->integration_time);
+
+    // Readout the detector and create eventlist entries for the actual time:
+    readout(*detector, event_list_file, fitsstatus);
+
+    // Clear the detector array.
+    clear_detector(*detector);
+
+    // Update the detector frame time to the next frame.
+    detector->readout_time += detector->integration_time;
+    detector->frame++;
+  }
+
 }
 
 
