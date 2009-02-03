@@ -321,12 +321,12 @@ int get_detector(
 ////////////////////////////////////////////////////////////////////////////////
 // Searches for the minimum distance in an array with 4 entries and returns the 
 // corresponding index.
-int min_dist(double array[]) 
+int min_dist(double array[], int directions) 
 {
   int count, index=0;
   double minimum=array[0];
 
-  for (count=1; count<4; count++) {
+  for (count=1; count<directions; count++) {
     if (array[count]<=minimum) {
       minimum = array[count];
       index = count;
@@ -370,7 +370,7 @@ void split_events(
 {
   // The following array entries are used to transform between 
   // different array indices.
-  int xe[4] = {2,1,0,1};   
+  int xe[4] = {2,1,0,1};
   int ye[4] = {1,2,1,0};
   int xd[4][4], yd[4][4];
 
@@ -421,14 +421,14 @@ void split_events(
   // If charge cloud size is 0, i.e. no splits are created, leave function here.
   if (detector.ccsize < 1.e-12) return;
 
-  int mindist = min_dist(distances);
+  int mindist = min_dist(distances, 4);
 
   if (distances[mindist] < detector.ccsize) {
     // not a single event
     double minimum = distances[mindist];
     // search for the next to minimum distance to an edge
     distances[mindist] = 1000000.;
-    int secmindist = min_dist(distances);
+    int secmindist = min_dist(distances, 4);
     distances[mindist] = minimum;
     
     // check the different orientations according to the corner
@@ -880,6 +880,17 @@ int htrs_get_line(
 
 
 ///////////////////////////////////////////
+double htrs_distance2line(
+			  struct Point2d point,
+			  double m, double t
+			  )
+{
+  return(sqrt( pow(t-point.y+m*point.x, 2.) / (1+pow(m,2.)) ));
+}
+
+
+
+///////////////////////////////////////////
 void htrs_get_lines(
 		    struct Point2d point, 
 		    struct Detector detector, 
@@ -914,6 +925,23 @@ int htrs_get_pixel(
     int pixel = detector.htrs_lines2pixel[l0][l1][l2];
     x[0] = detector.htrs_pixel2icoordinates[pixel].x;
     y[0] = detector.htrs_pixel2icoordinates[pixel].y;
+
+
+    double distances[6] = {
+      // upper
+      htrs_distance2line(point,        0.,   (l0-detector.width)*   detector.h),
+      // upper right
+      htrs_distance2line(point, -sqrt(3.), (l1+1-detector.width)*2.*detector.h),
+      // lower right
+      htrs_distance2line(point,  sqrt(3.),   (l2-detector.width)*2.*detector.h),
+      // lower
+      htrs_distance2line(point,        0., (l0+1-detector.width)*   detector.h),
+      // lower left
+      htrs_distance2line(point, -sqrt(3.),   (l1-detector.width)*2.*detector.h),
+      // upper left
+      htrs_distance2line(point,  sqrt(3.), (l2+1-detector.width)*2.*detector.h),
+    };
+
     fraction[0] = 1.;
 
     return(1);
@@ -1119,7 +1147,7 @@ int get_pixel_square(struct Detector detector,
       position.y - (y[0]-detector.offset)*detector.pixelwidth
     };
 
-    int mindist = min_dist(distances);
+    int mindist = min_dist(distances, 4);
     if (distances[mindist] < detector.ccsize) {
       // Not a single event!
       x[1] = x[0] + xe[mindist];
@@ -1130,7 +1158,7 @@ int get_pixel_square(struct Detector detector,
       double minimum = distances[mindist];
       // search for the next to minimum distance to an edge
       distances[mindist] = 1.e100;
-      int secmindist = min_dist(distances);
+      int secmindist = min_dist(distances, 4);
       distances[mindist] = minimum;
 
       if (distances[secmindist] < detector.ccsize) {

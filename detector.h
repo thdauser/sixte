@@ -74,6 +74,10 @@ void readout_line(struct Detector, int line, struct Event_List_File*,
 		  int *fitsstatus);
 
 
+// Determines the index of the minimum value in an array of distances to pixel borders.
+int min_dist(double array[], int directions);
+
+
 // Returns a detector PHA channel for the given photon energy according to the RMF.
 // Caution: This PHA channel doesn't have to be equivalent to the photon energy. 
 // Depending on the detector redistribution matrix the energy can result in one 
