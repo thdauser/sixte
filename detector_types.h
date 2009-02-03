@@ -72,7 +72,7 @@ struct Detector {
   int offset;              // offset of the detector array [integer pixels], 
                            // the physical origin of the detector (at the center) 
                            // has the array-index 'offset'
-  double pixelwidth;       // width of a single pixel in the detector array [mu m]
+  double pixelwidth;       // width of a single pixel in the detector array [m]
 
   double integration_time; // Integration time of the entire framestore(!) CCD 
                            // detector array
@@ -80,8 +80,8 @@ struct Detector {
   long frame;              // Number of the current frame.
 
   double ccsigma;          // charge cloud sigma (needed to calculate size of 
-                           // the charge cloud)
-  double ccsize;           // size of the charge cloud [real pixels]
+                           // the charge cloud) [m]
+  double ccsize;           // size of the charge cloud [m]
   long low_threshold;      // lower detector threshold (in PHA)
   
   int Nchannels;           // Number of detector PHA channels
