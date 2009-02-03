@@ -144,7 +144,7 @@ int measurement_main() {
     detector.pixelwidth = detector.pixelwidth*1.e-6; // [mu m] -> [m]
     detector.ccsigma = detector.ccsigma*1.e-6;       // [mu m] -> [m]
     // size of the charge cloud [real pixel]
-    detector.ccsize = 3.*detector.ccsigma/detector.pixelwidth;       
+    detector.ccsize = 3.*detector.ccsigma; ///detector.pixelwidth;       
     // angle from [arc min] to [rad]
     telescope.fov_diameter = telescope.fov_diameter*M_PI/(60.*180.); 
     // convert angle from [arc min] to [rad]
@@ -263,7 +263,7 @@ int measurement_main() {
     // Print some debug information:
     headas_chat(5, "source spectrum from '%s'\n", spectrum_filename[0]);
     headas_chat(5, "detector pixel width: %lf m\n", detector.pixelwidth);
-    headas_chat(5, "charge cloud size: %lf pixel\n", detector.ccsize);
+    headas_chat(5, "charge cloud size: %lf m\n", detector.ccsize);
     headas_chat(5, "number of PHA channels: %d\n", detector.Nchannels);
     headas_chat(5, "lower PHA threshold: %ld\n\n", detector.low_threshold);
 

@@ -894,12 +894,12 @@ double htrs_distance2line(
 void htrs_get_lines(
 		    struct Point2d point, 
 		    struct Detector detector, 
-		    int* l0, int* l1, int* l2
+		    int* l
 		    )
 {
-  *l0 = htrs_get_line(point,        0.,    detector.h, detector);
-  *l1 = htrs_get_line(point, -sqrt(3.), 2* detector.h, detector);
-  *l2 = htrs_get_line(point,  sqrt(3.), 2* detector.h, detector);
+  l[0] = htrs_get_line(point,        0.,    detector.h, detector);
+  l[1] = htrs_get_line(point, -sqrt(3.), 2* detector.h, detector);
+  l[2] = htrs_get_line(point,  sqrt(3.), 2* detector.h, detector);
 }
 
 
@@ -913,33 +913,33 @@ int htrs_get_pixel(
 		   double* fraction
 		   )
 {
-  int l0, l1, l2;
-  htrs_get_lines(point, detector, &l0, &l1, &l2);
+  int l[3];
+  htrs_get_lines(point, detector, l);
 
-  if ((l0==INVALID_PIXEL)||(l1==INVALID_PIXEL)||(l2==INVALID_PIXEL)) {
+  if ((l[0]==INVALID_PIXEL)||(l[1]==INVALID_PIXEL)||(l[2]==INVALID_PIXEL)) {
     x[0] = INVALID_PIXEL;
     y[0] = INVALID_PIXEL;
     
     return(0);
   } else {
-    int pixel = detector.htrs_lines2pixel[l0][l1][l2];
+    int pixel = detector.htrs_lines2pixel[l[0]][l[1]][l[2]];
     x[0] = detector.htrs_pixel2icoordinates[pixel].x;
     y[0] = detector.htrs_pixel2icoordinates[pixel].y;
 
 
     double distances[6] = {
       // upper
-      htrs_distance2line(point,        0.,   (l0-detector.width)*   detector.h),
+      htrs_distance2line(point,        0., (l[0]  -detector.width)*   detector.h),
       // upper right
-      htrs_distance2line(point, -sqrt(3.), (l1+1-detector.width)*2.*detector.h),
+      htrs_distance2line(point, -sqrt(3.), (l[1]+1-detector.width)*2.*detector.h),
       // lower right
-      htrs_distance2line(point,  sqrt(3.),   (l2-detector.width)*2.*detector.h),
+      htrs_distance2line(point,  sqrt(3.), (l[2]  -detector.width)*2.*detector.h),
       // lower
-      htrs_distance2line(point,        0., (l0+1-detector.width)*   detector.h),
+      htrs_distance2line(point,        0., (l[0]+1-detector.width)*   detector.h),
       // lower left
-      htrs_distance2line(point, -sqrt(3.),   (l1-detector.width)*2.*detector.h),
+      htrs_distance2line(point, -sqrt(3.), (l[1]  -detector.width)*2.*detector.h),
       // upper left
-      htrs_distance2line(point,  sqrt(3.), (l2+1-detector.width)*2.*detector.h),
+      htrs_distance2line(point,  sqrt(3.), (l[2]+1-detector.width)*2.*detector.h),
     };
 
     fraction[0] = 1.;
@@ -1038,19 +1038,19 @@ int htrs_get_detector(struct Detector* detector)
     }
 
 
-    int l0, l1, l2;
+    int l[3];
     // Get memory and clear the array which is used to find the pixel
     // for given coordinates on the detector.
     detector->htrs_lines2pixel = 
       (int***) malloc(2*detector->width * sizeof(int**));
-    for (l0=0; l0<2*detector->width; l0++) {
-      detector->htrs_lines2pixel[l0] = 
+    for (l[0]=0; l[0]<2*detector->width; l[0]++) {
+      detector->htrs_lines2pixel[l[0]] = 
 	(int**) malloc(2*detector->width * sizeof(int*));
-      for (l1=0; l1<2*detector->width; l1++) {
-	detector->htrs_lines2pixel[l0][l1] = 
+      for (l[1]=0; l[1]<2*detector->width; l[1]++) {
+	detector->htrs_lines2pixel[l[0]][l[1]] = 
 	  (int*) malloc(2*detector->width * sizeof(int));
-	for (l2=0; l2<2*detector->width; l2++) {
-	  detector->htrs_lines2pixel[l0][l1][l2] = INVALID_PIXEL;
+	for (l[2]=0; l[2]<2*detector->width; l[2]++) {
+	  detector->htrs_lines2pixel[l[0]][l[1]][l[2]] = INVALID_PIXEL;
 	}
       }
     }
@@ -1092,8 +1092,8 @@ int htrs_get_detector(struct Detector* detector)
 	  break;
 	}
 
-	htrs_get_lines(point, *detector, &l0, &l1, &l2);
-	detector->htrs_lines2pixel[l0][l1][l2] = pixel;
+	htrs_get_lines(point, *detector, l);
+	detector->htrs_lines2pixel[l[0]][l[1]][l[2]] = pixel;
       }
     }
 

@@ -157,7 +157,7 @@ int htrs_get_line(struct Point2d point, double m, double dt, struct Detector det
 
 // Get the line indices of the lines from each of the 3 groups of lines that define
 // the hexagonal pixel shape.
-void htrs_get_lines(struct Point2d, struct Detector, int* l0, int* l1, int* l2);
+void htrs_get_lines(struct Point2d, struct Detector, int* l);
 
 
 // This function determines the integer pixel coordinates for a given 2D floating point.
