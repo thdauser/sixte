@@ -289,9 +289,8 @@ int measurement_main() {
     //////////////////////
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    double time;                   // actual time
-    //    double t_last_readout=t0;// time of the last detector readout
-    double t_last=t0;              // last time of source preselection
+    double time;                   // current time
+    //double t_last=t0;              // last time
     long sat_counter=0;            // counter for orbit readout loop
     long last_sat_counter=0;       // stores sat_counter of former repetition, 
                                    // so the searching loop
@@ -306,7 +305,7 @@ int measurement_main() {
     // Time loop:
     // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
     // takes to slew over the entire FOV.
-    for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); ) {
+    for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
 
       // Print the current time step to STDOUT.
       //      headas_chat(5, "time: %lf\n", time);
@@ -326,7 +325,7 @@ int measurement_main() {
 	HD_ERROR_THROW(msg,status);
 	break;
       }
-      t_last= time;  // set the time of the last source preselection
+//      loop_time = time;
 
 
 
@@ -402,33 +401,39 @@ int measurement_main() {
 
 
       // CREATE PHOTONS for all sources close to the FOV
+/*
       for ( ; ((time<t_last+dt)&&(time<t0+timespan))&&(status==EXIT_SUCCESS); 
-	    time+=dt /*detector.integration_time*/) {
-	for (source_counter=0; source_counter<nsources_pre; source_counter++) {
-	  // Check whether the source is inside the FOV:
-	  // First determine telescope pointing direction at the actual time.
-	  telescope.nz =
-	    normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
-					     sat_catalog[sat_counter].time, 
-					     sat_catalog[sat_counter+1].nz,
-					     sat_catalog[sat_counter+1].time,time));
-
-	  // Compare the source direction to the unit vector specifiing the 
-	  // direction of the telescope:
-	  if(check_fov(selected_catalog[source_counter].r, telescope.nz, 
-		       close_fov_min_align) == 0) {
-	    // The source is inside the FOV  => create photons:
+           time+=dt) { */
+      for (source_counter=0; source_counter<nsources_pre; source_counter++) {
+	// Check whether the source is inside the FOV:
+	
+	// First determine telescope pointing direction at the actual time.
+	// TODO: combine this calculation with previous orbit interpolation.
+	telescope.nz =
+	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
+					   sat_catalog[sat_counter].time, 
+					   sat_catalog[sat_counter+1].nz,
+					   sat_catalog[sat_counter+1].time,time));
+	
+	
+	// Compare the source direction to the unit vector specifiing the 
+	// direction of the telescope:
+	if(check_fov(selected_catalog[source_counter].r, telescope.nz, 
+		     close_fov_min_align) == 0) {
+	  // The source is inside the FOV  => create photons:
 #ifndef EXTERN_PHOTON_LIST
-	    if ((status=create_photons(&selected_catalog[source_counter], 
-				       time, dt /*detector.integration_time*/, 
-				       &photon_list, detector, gsl_random_g))
-				       !=EXIT_SUCCESS) break; 
+	  if ((status=create_photons(&selected_catalog[source_counter], 
+				     time, dt /*detector.integration_time*/, 
+				     &photon_list, detector, gsl_random_g))
+	      !=EXIT_SUCCESS) break; 
 #else
-	    if (photon_list == NULL) read_photon_list(&photon_list, detector);
+	  if (photon_list == NULL) read_photon_list(&photon_list, detector);
 #endif
-	  }
 	}
-      } // End of fast inner time loop (photon creation and scanning of photon list).
+      }
+/*
+      } // End of fast inner time loop (photon creation).
+*/
 
 
 
@@ -445,7 +450,8 @@ int measurement_main() {
 	if (status != EXIT_SUCCESS) break;
 
 	// If all photons up to the actual time have been treated, break the loop.
-	if (photon_list->photon.time > time) {
+	if ((photon_list->photon.time > time + dt)||
+	    (photon_list->photon.time > t0+timespan)) {
 	  break;
 	}
 
@@ -504,7 +510,7 @@ int measurement_main() {
 	  // Measure the photon in a detector pixel, i.e., create the 
 	  // corresponding charge there.
 	  status =
-	    measure(photon_list->photon, detector, telescope, psf_store, &event_list_file);
+	    measure(photon_list->photon,detector,telescope,psf_store,&event_list_file);
 #ifndef EXTERN_PHOTON_LIST
 	}
 #endif
@@ -862,9 +868,12 @@ int measure(
 
       } else if (detector.type == HTRS) {
 	int npixels = htrs_get_pixel(detector, position, x, y, fraction);
-      
-	if (x[0] != INVALID_PIXEL) {
-	  detector.pixel[x[0]][y[0]].charge += charge * fraction[0];
+
+	int count;
+	for (count=0; count<npixels; count++) {
+	  if (x[count] != INVALID_PIXEL) {
+	    detector.pixel[x[count]][y[count]].charge += charge * fraction[count];
+	  }
 	}
 	
       } else if (detector.type == TES) {

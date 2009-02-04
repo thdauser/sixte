@@ -327,7 +327,7 @@ int min_dist(double array[], int directions)
   double minimum=array[0];
 
   for (count=1; count<directions; count++) {
-    if (array[count]<=minimum) {
+    if ((array[count]<=minimum)&&(array[count]>=0.)) {
       minimum = array[count];
       index = count;
     }
@@ -427,7 +427,7 @@ void split_events(
     // not a single event
     double minimum = distances[mindist];
     // search for the next to minimum distance to an edge
-    distances[mindist] = 1000000.;
+    distances[mindist] = -1.;
     int secmindist = min_dist(distances, 4);
     distances[mindist] = minimum;
     
@@ -913,38 +913,73 @@ int htrs_get_pixel(
 		   double* fraction
 		   )
 {
+  int npixels = 0;
   int l[3];
   htrs_get_lines(point, detector, l);
 
   if ((l[0]==INVALID_PIXEL)||(l[1]==INVALID_PIXEL)||(l[2]==INVALID_PIXEL)) {
+    // Not a valid pixel!
+    npixels = 0;
     x[0] = INVALID_PIXEL;
     y[0] = INVALID_PIXEL;
     
-    return(0);
+    return(npixels);
   } else {
     int pixel = detector.htrs_lines2pixel[l[0]][l[1]][l[2]];
     x[0] = detector.htrs_pixel2icoordinates[pixel].x;
     y[0] = detector.htrs_pixel2icoordinates[pixel].y;
 
 
+    int dl[3][6] =  {
+      {1, 0, 0, -1, 0, 0},
+      {0, 1, 0, 0, -1, 0},
+      {0, 0, -1, 0, 0, 1}
+    };
+
     double distances[6] = {
       // upper
-      htrs_distance2line(point,        0., (l[0]  -detector.width)*   detector.h),
+      htrs_distance2line(point,        0., (l[0]+1 -detector.width)*   detector.h),
       // upper right
       htrs_distance2line(point, -sqrt(3.), (l[1]+1-detector.width)*2.*detector.h),
       // lower right
       htrs_distance2line(point,  sqrt(3.), (l[2]  -detector.width)*2.*detector.h),
       // lower
-      htrs_distance2line(point,        0., (l[0]+1-detector.width)*   detector.h),
+      htrs_distance2line(point,        0., (l[0]  -detector.width)*   detector.h),
       // lower left
       htrs_distance2line(point, -sqrt(3.), (l[1]  -detector.width)*2.*detector.h),
       // upper left
       htrs_distance2line(point,  sqrt(3.), (l[2]+1-detector.width)*2.*detector.h),
     };
 
-    fraction[0] = 1.;
+    int mindist, secpixel;
+    double minimum;
+    do {
+      mindist = min_dist(distances, 6);
+      minimum = distances[mindist];
+      distances[mindist] = -1.;
 
-    return(1);
+      secpixel = detector.htrs_lines2pixel[l[0]+dl[0][mindist]]
+	[l[1]+dl[1][mindist]][l[2]+dl[2][mindist]];
+    } while ((secpixel == pixel)&&(minimum<detector.ccsize));
+
+    if (minimum > detector.ccsize) {
+      // Single event!
+      npixels = 1;
+      fraction[0] = 1.;
+    } else {
+      // Double event!
+      npixels = 2;
+      x[1] = detector.htrs_pixel2icoordinates[secpixel].x;
+      y[1] = detector.htrs_pixel2icoordinates[secpixel].y;
+      
+      double mindistgauss = gaussint(distances[mindist]/detector.ccsigma);
+
+      fraction[0] = 1. - mindistgauss;
+      fraction[1] =      mindistgauss;
+    }
+
+
+    return(npixels);
   }
 }
 
@@ -1157,7 +1192,7 @@ int get_pixel_square(struct Detector detector,
 
       double minimum = distances[mindist];
       // search for the next to minimum distance to an edge
-      distances[mindist] = 1.e100;
+      distances[mindist] = -1.;
       int secmindist = min_dist(distances, 4);
       distances[mindist] = minimum;
 
