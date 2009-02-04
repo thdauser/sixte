@@ -856,12 +856,14 @@ double linear_function(double x, double m, double t)
 
 
 
-///////////////////////////////////////////
-int htrs_get_line(
-		  struct Point2d point, 
-		  double m, double dt, 
-		  struct Detector detector
-		  )
+
+/*
+/////////////////////////////////////////////
+int htrs_get_line_old(
+		      struct Point2d point, 
+		      double m, double dt, 
+		      struct Detector detector
+		      )
 {
   if (point.y < linear_function(point.x, m, -detector.width*dt)) {
     return(INVALID_PIXEL);
@@ -875,6 +877,27 @@ int htrs_get_line(
     }
     return(counter);
   }
+}
+*/
+
+
+
+
+///////////////////////////////////////////
+int htrs_get_line(
+		  struct Point2d point, 
+		  double m, double dt, 
+		  struct Detector detector
+		  )
+{
+  double dy = point.y - m * point.x;
+  int line = (int)(dy/dt + detector.width + 1.) -1;
+  //  x[0] = (int)(position.x/detector.pixelwidth + (double)(detector.width/2) +1.)-1;
+
+  // Check whether the point lies below the lowest or above the highest allowed line:
+  if ((line < 0) || (line>= 2*detector.width)) line = INVALID_PIXEL;
+
+  return(line);
 }
 
 
@@ -915,74 +938,107 @@ int htrs_get_pixel(
 {
   int npixels = 0;
   int l[3];
+
   htrs_get_lines(point, detector, l);
 
-  if ((l[0]==INVALID_PIXEL)||(l[1]==INVALID_PIXEL)||(l[2]==INVALID_PIXEL)) {
-    // Not a valid pixel!
-    npixels = 0;
-    x[0] = INVALID_PIXEL;
-    y[0] = INVALID_PIXEL;
+  // Store the pixel coordinates:
+  int pixel = htrs_get_lines2pixel(l, detector);
+  struct Point2i pixel_coordinates = htrs_get_pixel2icoordinates(pixel, detector);
+  x[0] = pixel_coordinates.x;
+  y[0] = pixel_coordinates.y;
+
+  
+  // Check for split events:
+  int dl[3][6] =  {
+    {1, 0, 0, -1, 0, 0},
+    {0, 1, 0, 0, -1, 0},
+    {0, 0, -1, 0, 0, 1}
+  };
+
+  // Distances to neighbouring pixel segments (equilateral triangles, CAN possibly
+  // belong to the same pixel).
+  double distances[6] = {
+    // upper
+    htrs_distance2line(point,        0., (l[0]+1 -detector.width)*   detector.h),
+    // upper right
+    htrs_distance2line(point, -sqrt(3.), (l[1]+1-detector.width)*2.*detector.h),
+    // lower right
+    htrs_distance2line(point,  sqrt(3.), (l[2]  -detector.width)*2.*detector.h),
+    // lower
+    htrs_distance2line(point,        0., (l[0]  -detector.width)*   detector.h),
+    // lower left
+    htrs_distance2line(point, -sqrt(3.), (l[1]  -detector.width)*2.*detector.h),
+    // upper left
+    htrs_distance2line(point,  sqrt(3.), (l[2]+1-detector.width)*2.*detector.h),
+  };
+
+
+  // Find the closest distance to the nearest neighbouring pixel.
+  int count, mindist, secpixel;
+  double minimum;
+  for(count=0; count<3; count++) {
+    mindist = min_dist(distances, 6);
+    minimum = distances[mindist];
+    distances[mindist] = -1.;
+
+    int k[3] = {l[0]+dl[0][mindist], l[1]+dl[1][mindist], l[2]+dl[2][mindist]};
+    secpixel = htrs_get_lines2pixel(k, detector);
     
-    return(npixels);
+    if (secpixel != pixel) break;
+  }
+
+  if ((minimum > detector.ccsize) || (secpixel == pixel)) {
+    // Single event!
+    npixels=1;
+    fraction[0] = 1.;
+
   } else {
-    int pixel = detector.htrs_lines2pixel[l[0]][l[1]][l[2]];
-    x[0] = detector.htrs_pixel2icoordinates[pixel].x;
-    y[0] = detector.htrs_pixel2icoordinates[pixel].y;
+    // Double event!
+    npixels=2;
 
-
-    int dl[3][6] =  {
-      {1, 0, 0, -1, 0, 0},
-      {0, 1, 0, 0, -1, 0},
-      {0, 0, -1, 0, 0, 1}
-    };
-
-    double distances[6] = {
-      // upper
-      htrs_distance2line(point,        0., (l[0]+1 -detector.width)*   detector.h),
-      // upper right
-      htrs_distance2line(point, -sqrt(3.), (l[1]+1-detector.width)*2.*detector.h),
-      // lower right
-      htrs_distance2line(point,  sqrt(3.), (l[2]  -detector.width)*2.*detector.h),
-      // lower
-      htrs_distance2line(point,        0., (l[0]  -detector.width)*   detector.h),
-      // lower left
-      htrs_distance2line(point, -sqrt(3.), (l[1]  -detector.width)*2.*detector.h),
-      // upper left
-      htrs_distance2line(point,  sqrt(3.), (l[2]+1-detector.width)*2.*detector.h),
-    };
-
-    int mindist, secpixel;
-    double minimum;
-    do {
-      mindist = min_dist(distances, 6);
-      minimum = distances[mindist];
-      distances[mindist] = -1.;
-
-      secpixel = detector.htrs_lines2pixel[l[0]+dl[0][mindist]]
-	[l[1]+dl[1][mindist]][l[2]+dl[2][mindist]];
-    } while ((secpixel == pixel)&&(minimum<detector.ccsize));
-
-    if (minimum > detector.ccsize) {
-      // Single event!
-      npixels = 1;
-      fraction[0] = 1.;
-    } else {
-      // Double event!
-      npixels = 2;
-      x[1] = detector.htrs_pixel2icoordinates[secpixel].x;
-      y[1] = detector.htrs_pixel2icoordinates[secpixel].y;
+    pixel_coordinates = htrs_get_pixel2icoordinates(secpixel, detector);
+    x[1] = pixel_coordinates.x;
+    y[1] = pixel_coordinates.y;
       
-      double mindistgauss = gaussint(distances[mindist]/detector.ccsigma);
+    double mindistgauss = gaussint(distances[mindist]/detector.ccsigma);
 
-      fraction[0] = 1. - mindistgauss;
-      fraction[1] =      mindistgauss;
-    }
+    fraction[0] = 1. - mindistgauss;
+    fraction[1] =      mindistgauss;
+  }
+
+  return(npixels);
+}
 
 
-    return(npixels);
+
+
+
+///////////////////////////////////////////
+int htrs_get_lines2pixel(int* l, struct Detector detector)
+{
+  if ((l[0]<0)||(l[0]>=2*detector.width)||
+      (l[1]<0)||(l[1]>=2*detector.width)||
+      (l[2]<0)||(l[2]>=2*detector.width)) {
+    return(INVALID_PIXEL);
+  } else {
+    return(detector.htrs_lines2pixel[l[0]][l[1]][l[2]]);
   }
 }
 
+
+
+
+
+///////////////////////////////////////////
+struct Point2i htrs_get_pixel2icoordinates(int pixel, struct Detector detector)
+{
+  if (pixel != INVALID_PIXEL) {
+    return(detector.htrs_pixel2icoordinates[pixel]);
+  } else {
+    struct Point2i point2i = {-1, -1};
+    return(point2i);
+  }
+}
 
 
 
@@ -1159,8 +1215,8 @@ int get_pixel_square(struct Detector detector,
 
 
   // Calculate pixel indices (integer) of central affected pixel:
-  x[0] = (int)(position.x/detector.pixelwidth + (double)(detector.width/2));
-  y[0] = (int)(position.y/detector.pixelwidth + (double)(detector.width/2));
+  x[0] = (int)(position.x/detector.pixelwidth + (double)(detector.width/2) +1.)-1;
+  y[0] = (int)(position.y/detector.pixelwidth + (double)(detector.width/2) +1.)-1;
   
   // If charge cloud size is 0, i.e. no splits are created.
   if (detector.ccsize < 1.e-20) {
@@ -1267,13 +1323,6 @@ void htrs_free_detector(struct Detector* detector)
     free(detector->htrs_lines2pixel[count]);
   }
   free(detector->htrs_lines2pixel);
-
-
-  // release memory of detector Redistribution Matrix
-  free_rmf(detector->rmf);
-
-  // release memory of detector EBOUNDS
-  free_ebounds(detector->ebounds);
 
 }
 

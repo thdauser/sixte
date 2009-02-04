@@ -576,14 +576,14 @@ int measurement_main() {
 
   if (detector.type == HTRS) {
     htrs_free_detector(&detector);
-  } else {
-    // release memory of detector Redistribution Matrix
-    free_rmf(detector.rmf);
-
-    // release memory of detector EBOUNDS
-    free_ebounds(detector.ebounds);
   }
 
+
+  // release memory of detector Redistribution Matrix
+  free_rmf(detector.rmf);
+  
+  // release memory of detector EBOUNDS
+  free_ebounds(detector.ebounds);
 
   // release memory of PSF:
   free_psf_store(psf_store);

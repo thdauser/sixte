@@ -1,11 +1,11 @@
 ##/////////////////////////////////////////////////////////////////////////////
-## general information:
+## General Information:
 ## file:             Makefile
 ## project:          eROSITA - NRTA - simulation
 ## author:           Christian Schmid
 ## date:             12/2007
 ##/////////////////////////////////////////////////////////////////////////////
-## description:
+## Description:
 ## This is the Makefile of the NRTA-simulation for the eROSITA mission.
 ## It builds several runnables (some actual software and some testing software)
 ## and librarys with commonly used functions/routines/structures/constants.

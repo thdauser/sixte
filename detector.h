@@ -165,6 +165,16 @@ void htrs_get_lines(struct Point2d, struct Detector, int* l);
 int htrs_get_pixel(struct Detector, struct Point2d, int* x, int* y, double* fraction);
 
 
+// Returns the pixel index that corresponds to the pixel segment which is
+// defined by the 3 given line indices.
+int htrs_get_lines2pixel(int* l, struct Detector detector);
+
+
+// Returns the (integer) pixel coordinates of the pixel which is specified 
+// by its number.
+struct Point2i htrs_get_pixel2icoordinates(int pixel, struct Detector detector);
+
+
 // This routine performs the initialization of the HTRS detector.
 // The return value is the error status.
 int htrs_get_detector(struct Detector*);
