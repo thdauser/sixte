@@ -108,7 +108,7 @@ int get_psf_pos(
     x1 = high;
   }
     
-  // now search for the y coordinate
+  // Search for the y coordinate:
   high = store.width-1;
   low = 0;
   while (high-low > 1) {
@@ -123,7 +123,7 @@ int get_psf_pos(
   } else {
     y1 = low;
   }
-  // now x1 and y1 have pixel positions [integer pixel]
+  // Now x1 and y1 have pixel positions [integer pixel].
  
 
   // Randomize the [pixel] position (x1,y1), add the shift resulting 

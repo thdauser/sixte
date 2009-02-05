@@ -21,11 +21,11 @@
 CC=gcc
 
 # "-O3" means best optimization of the code
-OPT=-O3
+#OPT=-O3
 
 # "-g" creates debug information
 # "-Wall" creates warnings, e.g. for unused variables
-#DEBUG=-g -W -Wall -O0
+DEBUG=-g -W -Wall -O0
 # -Wstrict-prototypes -Wmissing-prototypes -pedantic
 
 
@@ -39,7 +39,7 @@ OWN_HEATOOLS= 	conv_rosat2fits conv_psf2fits create_rnd_sctlg create_orbit \
 		scan_tes_events
 ALL_PROGS= 	$(OWN_HEATOOLS) \
 		sources_in_fov orbitparams_from_pos compare_orbits \
-		calcJ2perturbations htrs_pixel \
+		calcJ2perturbations create_htrs_psf htrs_pixel \
 		test_tle_output test_fov test_distrndsources test_simulation \
 		test_lightcurve test_fabs
 
@@ -87,6 +87,10 @@ conv_rosat2fits: conv_rosat2fits.o strftcpy.o
 conv_psf2fits: conv_psf2fits.o psf.o vector.o random.o photon.o detector.o strftcpy.o \
 	event_list.o fits_pha.o
 	$(CC) $(LFLAGS) -o conv_psf2fits $^ $(LIBHEATOOLS) $(LIBGSL)
+
+create_htrs_psf: create_htrs_psf.o psf.o detector.o event_list.o fits_pha.o photon.o \
+	random.o vector.o
+	$(CC) $(LFLAGS) -o create_htrs_psf $^ $(LIBHEATOOLS) $(LIBGSL)
 
 create_psf: create_psf.o psf.o random.o vector.o
 	$(CC) $(LFLAGS) -o create_psf $^ $(LIBGSL) $(LIBHEATOOLS)
@@ -192,7 +196,7 @@ SRC = conv_rosat2fits.c conv_psf2fits.c create_psf.c event_list.c \
 	calcJ2perturbations.c measurement.c psf.c detector.c sources.c photon.c \
 	orbatt.c spectrum.c split.c random.c strftcpy.c plot_eventlist.c \
 	plot_det_images.c measurement_array.c scan_tes_events.c htrs_pixel.c \
-	imglib.c plot_psf.c test_tle_output.c test_simulation.c \
+	imglib.c plot_psf.c test_tle_output.c test_simulation.c create_htrs_psf.c \
 	test_distrndsources.c test_fov.c test_lightcurve.c test_fabs.c
 
 dep: $(SRC)

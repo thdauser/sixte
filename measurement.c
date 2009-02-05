@@ -163,7 +163,7 @@ int measurement_main() {
       
       detector.detector_action = framestore_detector_action;
 
-      get_detector(&detector);
+      status = get_detector(&detector);
       
     } else if (detector.type == DEPFET) {
       headas_chat(5, "--> DEPFET <--\n");
@@ -182,21 +182,21 @@ int measurement_main() {
       headas_chat(5, "clear time: %lf\n", detector.clear_time);
       headas_chat(5, "readout time: %lf\n", detector.readout_time);
 
-      get_detector(&detector);
+      status = get_detector(&detector);
       
     } else if (detector.type == TES) {
       headas_chat(5, "--> TES Microcalorimeter Array <--\n");
     
       detector.detector_action = tes_detector_action;
 
-      get_detector(&detector);
+      status = get_detector(&detector);
 
     } else if (detector.type == HTRS) {
       headas_chat(5, "--> HTRS <--\n");
 
       detector.detector_action = htrs_detector_action;
 
-      htrs_get_detector(&detector);
+      status = htrs_get_detector(&detector);
 
     } else {
 
@@ -215,6 +215,7 @@ int measurement_main() {
       break;
     }
 
+    if (status != EXIT_SUCCESS) break;
     // END of DETECTOR CONFIGURATION SETUP
 
 
@@ -771,14 +772,22 @@ int measurement_getpar(
     HD_ERROR_THROW(msg,status);
   }
 
+
   // [pixel]
-  else if ((status = PILGetInt("det_width", &detector->width))) {
-    sprintf(msg, "Error reading the width of the detector!\n");
-    HD_ERROR_THROW(msg,status);
+  if (status) return(status);
+  if (detector->type == HTRS) {
+    detector->width = 7;
+  } else {
+    if ((status = PILGetInt("det_width", &detector->width))) {
+      sprintf(msg, "Error reading the width of the detector!\n");
+      HD_ERROR_THROW(msg,status);
+    }
   }
+  if (status) return(status);
+
 
   // [mu m]
-  else if ((status = PILGetReal("det_pixelwidth", &detector->pixelwidth))) {
+  if ((status = PILGetReal("det_pixelwidth", &detector->pixelwidth))) {
     sprintf(msg, "Error reading the width of the detector pixels!\n");
     HD_ERROR_THROW(msg,status);
   }
