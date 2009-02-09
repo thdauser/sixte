@@ -1064,7 +1064,7 @@ int htrs_get_detector(struct Detector* detector)
     // numbering arrays of the pixels in the hexagonal structure.
     // (linear numbering starting at the left bottom and 2D numbering)
     detector->htrs_pixel2icoordinates = 
-      (struct Point2i*)malloc((HTRS_N_PIXELS+1) * sizeof(struct Point2i));
+      (struct Point2i*)malloc(HTRS_N_PIXELS * sizeof(struct Point2i));
     if (detector->htrs_pixel2icoordinates == NULL) {
       status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
@@ -1159,13 +1159,16 @@ int htrs_get_detector(struct Detector* detector)
     detector->htrs_icoordinates2pixel[6][3] = 30;
     detector->htrs_icoordinates2pixel[6][4] = 31;
 
-    detector->htrs_pixel2icoordinates[0].x = INVALID_PIXEL;
-    detector->htrs_pixel2icoordinates[0].y = INVALID_PIXEL;
     for(xi=0 ; xi<detector->width; xi++) {
       for(yi=0 ; yi<detector->width; yi++) {
 	if (detector->htrs_icoordinates2pixel[xi][yi] > 0) {
-	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].x=xi;
-	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].y=yi;
+	  // In the program the pixel index starts at 0, not at 1 !!
+	  // So shift all given pixel indices!
+	  detector->htrs_icoordinates2pixel[xi][yi]--;
+	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].x
+	    = xi;   
+	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].y
+	    = yi;
 	}
       }
     }
@@ -1175,7 +1178,7 @@ int htrs_get_detector(struct Detector* detector)
 
 
     // Calculate the centers of the hexagonal HTRS pixels.
-    centers = (struct Point2d*)malloc((HTRS_N_PIXELS+1) * sizeof(struct Point2d));
+    centers = (struct Point2d*)malloc(HTRS_N_PIXELS * sizeof(struct Point2d));
     if (centers == NULL) {
       status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
@@ -1216,7 +1219,7 @@ int htrs_get_detector(struct Detector* detector)
     const double sin30 = sin(M_PI/6.);
     const double cos30 = cos(M_PI/6.);
 
-    for(pixel=1; pixel<HTRS_N_PIXELS+1; pixel++) {
+    for(pixel=0; pixel<HTRS_N_PIXELS; pixel++) {
       // For each pixel choose 6 points located around the center and
       // determine the line indices which define this pixel section.
     
