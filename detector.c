@@ -1064,7 +1064,7 @@ int htrs_get_detector(struct Detector* detector)
     // numbering arrays of the pixels in the hexagonal structure.
     // (linear numbering starting at the left bottom and 2D numbering)
     detector->htrs_pixel2icoordinates = 
-    (struct Point2i*)malloc(HTRS_N_PIXELS * sizeof(struct Point2i));
+      (struct Point2i*)malloc((HTRS_N_PIXELS+1) * sizeof(struct Point2i));
     if (detector->htrs_pixel2icoordinates == NULL) {
       status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
@@ -1090,7 +1090,12 @@ int htrs_get_detector(struct Detector* detector)
 	HD_ERROR_THROW(msg,status);
 	break;
       }
-    
+
+      for(yi=0 ; yi<detector->width; yi++) {
+	detector->htrs_icoordinates2pixel[xi][yi] = INVALID_PIXEL;
+      }
+
+      /*    
       for(yi=0 ; yi<detector->width; yi++) {
 	if (((xi==0)||(xi==6)) && ((yi==0)||(yi>=5))) {
 	  detector->htrs_icoordinates2pixel[xi][yi] = INVALID_PIXEL;
@@ -1099,18 +1104,78 @@ int htrs_get_detector(struct Detector* detector)
 	} else if (((xi==2)||(xi==4)) && (yi==6)) {
 	  detector->htrs_icoordinates2pixel[xi][yi] = INVALID_PIXEL;
 	} else {
-	  detector->htrs_icoordinates2pixel[xi][yi] = pixel;
-	  detector->htrs_pixel2icoordinates[pixel].x = xi;
+	  detector->htrs_icoordinates2pixel[xi][yi] = pixel;   // TODO 
+	  detector->htrs_pixel2icoordinates[pixel].x = xi; // change numbering!!
 	  detector->htrs_pixel2icoordinates[pixel].y = yi;
 	  pixel++;
 	}
       }
+      */
     }
+
+    
+    // Fill the 2 different arrays for conversion   pixel index <-> coordinates.
+    detector->htrs_icoordinates2pixel[0][1] = 22;
+    detector->htrs_icoordinates2pixel[0][2] = 21;
+    detector->htrs_icoordinates2pixel[0][3] = 20;
+    detector->htrs_icoordinates2pixel[0][4] = 37;
+    
+    detector->htrs_icoordinates2pixel[1][1] = 23;
+    detector->htrs_icoordinates2pixel[1][2] = 9;
+    detector->htrs_icoordinates2pixel[1][3] = 8;
+    detector->htrs_icoordinates2pixel[1][4] = 19;
+    detector->htrs_icoordinates2pixel[1][5] = 36;
+
+    detector->htrs_icoordinates2pixel[2][0] = 24;
+    detector->htrs_icoordinates2pixel[2][1] = 10;
+    detector->htrs_icoordinates2pixel[2][2] = 2;
+    detector->htrs_icoordinates2pixel[2][3] = 7;
+    detector->htrs_icoordinates2pixel[2][4] = 18;
+    detector->htrs_icoordinates2pixel[2][5] = 35;
+
+    detector->htrs_icoordinates2pixel[3][0] = 25;
+    detector->htrs_icoordinates2pixel[3][1] = 11;
+    detector->htrs_icoordinates2pixel[3][2] = 3;
+    detector->htrs_icoordinates2pixel[3][3] = 1;
+    detector->htrs_icoordinates2pixel[3][4] = 6;
+    detector->htrs_icoordinates2pixel[3][5] = 17;
+    detector->htrs_icoordinates2pixel[3][6] = 24;
+
+    detector->htrs_icoordinates2pixel[4][0] = 26;
+    detector->htrs_icoordinates2pixel[4][1] = 12;
+    detector->htrs_icoordinates2pixel[4][2] = 4;
+    detector->htrs_icoordinates2pixel[4][3] = 5;
+    detector->htrs_icoordinates2pixel[4][4] = 16;
+    detector->htrs_icoordinates2pixel[4][5] = 33;
+
+    detector->htrs_icoordinates2pixel[5][1] = 27;
+    detector->htrs_icoordinates2pixel[5][2] = 13;
+    detector->htrs_icoordinates2pixel[5][3] = 14;
+    detector->htrs_icoordinates2pixel[5][4] = 15;
+    detector->htrs_icoordinates2pixel[5][5] = 32;
+
+    detector->htrs_icoordinates2pixel[6][1] = 28;
+    detector->htrs_icoordinates2pixel[6][2] = 29;
+    detector->htrs_icoordinates2pixel[6][3] = 30;
+    detector->htrs_icoordinates2pixel[6][4] = 31;
+
+    detector->htrs_pixel2icoordinates[0].x = INVALID_PIXEL;
+    detector->htrs_pixel2icoordinates[0].y = INVALID_PIXEL;
+    for(xi=0 ; xi<detector->width; xi++) {
+      for(yi=0 ; yi<detector->width; yi++) {
+	if (detector->htrs_icoordinates2pixel[xi][yi] > 0) {
+	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].x=xi;
+	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].y=yi;
+	}
+      }
+    }
+
     // Now the 2 different numbering schemes can be easily converted among each other.
     
 
+
     // Calculate the centers of the hexagonal HTRS pixels.
-    centers = (struct Point2d*)malloc(HTRS_N_PIXELS * sizeof(struct Point2d));
+    centers = (struct Point2d*)malloc((HTRS_N_PIXELS+1) * sizeof(struct Point2d));
     if (centers == NULL) {
       status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
@@ -1151,7 +1216,7 @@ int htrs_get_detector(struct Detector* detector)
     const double sin30 = sin(M_PI/6.);
     const double cos30 = cos(M_PI/6.);
 
-    for(pixel=0; pixel<HTRS_N_PIXELS; pixel++) {
+    for(pixel=1; pixel<HTRS_N_PIXELS+1; pixel++) {
       // For each pixel choose 6 points located around the center and
       // determine the line indices which define this pixel section.
     
