@@ -30,9 +30,8 @@
 #include "headas_main.c"
 
 #include "psf.h"
+#include "global_constants.h"
 
-#define FILENAME_LENGTH 128 // maximum length of filenames
-#define MAXMSG 256          // maximum length of an output/error message
 //#define SIMPLE_GAUSS_PSF 1  // produce a simple on-axis Gauss PSF
 
 

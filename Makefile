@@ -36,7 +36,7 @@ DEBUG=-g -W -Wall -O0
 OWN_HEATOOLS= 	conv_rosat2fits conv_psf2fits create_rnd_sctlg create_orbit \
 		create_attitude create_rmf create_spectrum measurement plot_psf \
 		plot_det_images plot_eventlist create_psf \
-		scan_tes_events
+		scan_tes_events htrs_byte_stream
 ALL_PROGS= 	$(OWN_HEATOOLS) \
 		sources_in_fov orbitparams_from_pos compare_orbits \
 		calcJ2perturbations create_htrs_psf htrs_pixel \
@@ -119,6 +119,9 @@ compare_orbits: compare_orbits.o vector.o fits_ctlg.o
 calcJ2perturbations: calcJ2perturbations.o
 	$(CC) $(LFLAGS) -o calcJ2perturbations $^ -lm
 
+htrs_byte_stream: htrs_byte_stream.o
+	$(CC) $(LFLAGS) -o htrs_byte_stream $^ $(LIBHEATOOLS)
+
 htrs_pixel: htrs_pixel.o
 	$(CC) $(LFLAGS) -o htrs_pixel $^ -lm
 
@@ -195,6 +198,7 @@ SRC = conv_rosat2fits.c conv_psf2fits.c create_psf.c event_list.c \
 	create_orbit.c create_attitude.c orbitparams_from_pos.c compare_orbits.c \
 	calcJ2perturbations.c measurement.c psf.c detector.c sources.c photon.c \
 	orbatt.c spectrum.c split.c random.c strftcpy.c plot_eventlist.c \
+	htrs_byte_stream.c \
 	plot_det_images.c measurement_array.c scan_tes_events.c htrs_pixel.c \
 	imglib.c plot_psf.c test_tle_output.c test_simulation.c create_htrs_psf.c \
 	test_distrndsources.c test_fov.c test_lightcurve.c test_fabs.c
