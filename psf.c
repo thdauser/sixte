@@ -6,13 +6,11 @@
 
 
 
-/** 
- * This function determines from the sky position of the source and the photon
- * energy, which PSF data should be used to calculate the photon-detector hitting 
- * point. It returns the corresponding PSF data structure.
- * IMPORTANT: The function assumes that the individual PSF data sets lie on a regular
- * pattern: energy_{i,j} = energy_{i,k} and angle_{i,j} = angle_{k,j} !
- */
+// This function determines from the sky position of the source and the photon
+// energy, which PSF data should be used to calculate the photon-detector hitting 
+// point. It returns the corresponding PSF data structure.
+// IMPORTANT: The function assumes that the individual PSF data sets lie on a 
+// regular pattern: energy_{i,j} = energy_{i,k} and angle_{i,j} = angle_{k,j} !
 struct PSF get_best_psf(
 			double offaxis_angle,   // photon off-axis angle [rad]
 			double energy,          // photon energy
@@ -27,8 +25,8 @@ struct PSF get_best_psf(
   for (count=1; count<store.N_elements; count++) {
     if (offaxis_angle < 0.) { printf("Error: kleiner Null!\n"); } // TODO
 
-    // Check whether the current PSF parameters (off-axis angle and energy) are better
-    // than the best values found so far.
+    // Check whether the current PSF parameters (off-axis angle and energy)
+    // are better than the best values found so far.
     if ((fabs(store.psf[count].angle-offaxis_angle) - fabs(best_angle-offaxis_angle) 
 	 < -0.000001) ||
 	(fabs(store.psf[count].energy-energy) - fabs(best_energy-energy) 
@@ -42,7 +40,6 @@ struct PSF get_best_psf(
 
   return(store.psf[index]);
 }
-
 
 
 

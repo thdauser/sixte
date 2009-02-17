@@ -506,12 +506,12 @@ int measurement_main() {
 	  telescope.nx = normalize_vector(telescope.nx);
 
 	  // ny is perpendicular to telescope axis and nx:
-	  telescope.ny = normalize_vector(vector_product(telescope.nz, telescope.nx));
+	  telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
 	  
 	  // Measure the photon in a detector pixel, i.e., create the 
 	  // corresponding charge there.
-	  status =
-	    measure(photon_list->photon,detector,telescope,psf_store,&event_list_file);
+	  status = measure(photon_list->photon, detector,
+			   telescope, psf_store, &event_list_file);
 #ifndef EXTERN_PHOTON_LIST
 	}
 #endif
@@ -617,7 +617,8 @@ int measurement_getpar(
 		       double *timespan,        // time span for the simulation
 		       struct Telescope *telescope,
 		       struct Detector *detector,
-		       // width of the band around the sky for source preselection [rad]:
+		       // Width of the band around the sky for source 
+		       // preselection [rad]:
 		       double *bandwidth,       
 		       float *background_countrate
 		       )
@@ -828,12 +829,14 @@ int measure(
 	    struct Event_List_File* event_list_file
 	    ) 
 {
-//#ifndef EXTERN_PHOTON_LIST
   struct Point2d position;  // Photon impact position on the detector in [m]
-  
+
   int status=EXIT_SUCCESS;
 
 
+
+#ifndef EXTERN_PHOTON_LIST
+ 
   // Convolution with PSF: get the position [m], where the photon hits the detector.
   // Function returns 0, if the photon does not fall on the detector. 
   // If it hits a detector pixel, the return value is 1.
@@ -911,50 +914,49 @@ int measure(
     } // END of Check whether hitting point is inside the FOV
   } // END of 'get_psf_pos(...)'
 
-  return(status);
 
-  /*
 #else
-  double det_x, det_y;   // Photon impact position on the detector in [m]
   
-  det_x = photon.direction.x - 8*75.e-6;
-  det_y = photon.direction.y - 8*75.e-6;
-  float charge = photon.energy;
+  position.x = photon.direction.x - 8*75.e-6;
+  position.y = photon.direction.y - 8*75.e-6;
 
   // Increase the counter of measured photons:
   photon_counter++;
 
+  float charge = photon.energy;
+
   // Calculate integer detector pixels: 
-  // It is important to perform the (int) operation after adding the offset!
-  // Otherwise there may be errors for negativ 'det_x' or 'det_y' values.
-  int det_xi = (int)(det_x/detector.pixelwidth + (double)(detector.width/2));
-  int det_yi = (int)(det_y/detector.pixelwidth + (double)(detector.width/2));
+  int x[4], y[4];
+  double fraction[4];
 
-  // Calculate split events due to the spread of the charge cloud:
-  double partition[3][3];
-  split_events(det_x, det_y, det_xi, det_yi, detector, partition); 
+  if ((detector.type == FRAMESTORE) || (detector.type == DEPFET)) {
+    // Determine the affected detector pixels.
+    int npixels = get_pixel_square(detector, position, x, y, fraction);
 
-  // Add the charge which is created by the photon to the 
-  // detector pixels considering split events.
-  int countx, county;
-  const int countx_max=MAX(3,4+det_xi-detector.width);
-  const int county_max=MAX(3,4+det_yi-detector.width);
-
-  for (countx=MAX(0,1-det_xi); countx<countx_max; countx++) {
-    for (county=MAX(0,1-det_yi); county<county_max; county++) {
-      if(((det_xi+countx-1)<detector.width)&&((det_yi+county-1)<detector.width)) {
-	detector.pixel[det_xi+countx-1][det_yi+county-1].charge += 
-	  charge * partition[countx][county] * 
+    // Add the charge created by the photon to the affected detector pixels.
+    int count;
+    for (count=0; count<npixels; count++) {
+      if (x[count] != INVALID_PIXEL) {
+	detector.pixel[x[count]][y[count]].charge += 
+	  charge * fraction[count] * 
 	  // |        |-> charge fraction due to split events
 	  // |-> charge created by incident photon
-	  detector_active(det_xi+countx-1, det_yi+county-1, detector, photon.time);
+	  detector_active(x[count], y[count], detector, photon.time);
 	// |-> "1" if pixel can measure charge, "0" else
       }
     }
+    
+  } else {
+    char msg[MAXMSG];
+    status = EXIT_FAILURE;
+    sprintf(msg, "Error: detector must be FRAMESTORE or DEPFET!\n");
+    HD_ERROR_THROW(msg,status);
   }
   
 #endif
-  */
+
+
+  return(status);
 }
 
 
@@ -964,7 +966,7 @@ void read_photon_list(struct Photon_Entry** pl, struct Detector detector)
 {
   fitsfile *fptr;
   long nrows, row;
-  char filename[] = "Createdphotonlist_window_comp_relInt_00000000.010000.fits";
+  char filename[] = "Createdphotonlist_window_comp_2_relInt_00000000.010000.fits";
 
   int status = EXIT_SUCCESS;
   

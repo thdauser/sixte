@@ -41,9 +41,12 @@ struct PSF {
 
 // Storage for the several PSF data units that belong to one mirror system.
 struct PSF_Store {
-  int N_elements;// number of PSF arrays in this store (#(offaxis-angles)*#(energies))
-  int width;     // width of the PSF in pixels
-  double pixelwidth; // width of a single PSF pixel in [m]
+  // Number of PSF arrays in this store (#(offaxis-angles)*#(energies)):
+  int N_elements;
+  // Width of the PSF in pixels:
+  int width;     
+  // Width of a single PSF pixel in [m]:
+  double pixelwidth; 
 
   // PSF data for the individual off-axis angles and energies
   struct PSF *psf;

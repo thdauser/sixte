@@ -308,7 +308,8 @@ int get_detector(
 
   // Check if an error has occurred during memory allocation:
   if (status==EXIT_FAILURE) {
-    sprintf(msg, "Error: not enough memory available to store the detector array!\n");
+    sprintf(msg, "Error: not enough memory available to store "
+	    "the detector array!\n");
     HD_ERROR_THROW(msg,status);
   }
 
@@ -327,7 +328,8 @@ int min_dist(double array[], int directions)
   double minimum=array[0];
 
   for (count=1; count<directions; count++) {
-    if ((array[count]<=minimum)&&(array[count]>=0.)) {
+    if ( (minimum < 0.) ||
+	 ((array[count]<=minimum)&&(array[count]>=0.)) ) {
       minimum = array[count];
       index = count;
     }
@@ -349,100 +351,6 @@ double gaussint(double x)
 }
 
 
-
-
-/*
-//////////////////////////////////////////////////////////////////////////////
-// Creates split events according to the size of the charge cloud.
-// Input values are the detector coordinates given in [m] with the origin
-// in the middle of the detector array (det_xa, det_ya),
-// and the pixel coordinates with the origin at the edge of the detector.
-// Assumption: +/- 3*ccsigma contain nearly the entire charge, so outside this
-// region, the remaining charge is neglected.
-void split_events(
-		  double det_xa, double det_ya, // coordinates of event [m]
-		  // pixel coordinates of surrounding pixel
-		  int det_xi, int det_yi,       
-		  struct Detector detector,     // detector data
-		  // energy fractions falling on neighboring pixels (return value)
-		  double partition[3][3] 
-		  ) 
-{
-  // The following array entries are used to transform between 
-  // different array indices.
-  int xe[4] = {2,1,0,1};
-  int ye[4] = {1,2,1,0};
-  int xd[4][4], yd[4][4];
-
-  xd[0][1] = 2;
-  yd[0][1] = 2;
-  xd[1][0] = 2;
-  yd[1][0] = 2;
-
-  xd[1][2] = 0;
-  yd[1][2] = 2;
-  xd[2][1] = 0;
-  yd[2][1] = 2;
-
-  xd[2][3] = 0;
-  yd[2][3] = 0;
-  xd[3][2] = 0;
-  yd[3][2] = 0;
-
-  xd[3][0] = 2;
-  yd[3][0] = 0;
-  xd[0][3] = 2;
-  yd[0][3] = 0;
-
-  // Calculate the distances from the event to the borders of the surrounding pixel 
-  // (in [m]):
-  double distances[4] = { 
-    // distance to right hand pixel edge
-    (det_xi-detector.offset+1)*detector.pixelwidth - det_xa,
-    // distance to upper edge
-    (det_yi-detector.offset+1)*detector.pixelwidth - det_ya,
-    // distance to left hand pixel edge
-    det_xa - (det_xi-detector.offset)*detector.pixelwidth,
-    // distance to lower edge
-    det_ya - (det_yi-detector.offset)*detector.pixelwidth
-  };
-
-  // Set the split fractions to their initial values 
-  // (with all energy in central pixel):
-  int countx, county;
-  for (countx=0; countx<3; countx++) {
-    for (county=0; county<3; county++) {
-      partition[countx][county] = 0.;
-    }
-  }
-  partition[1][1] = 1.;
-
-
-  // If charge cloud size is 0, i.e. no splits are created, leave function here.
-  if (detector.ccsize < 1.e-12) return;
-
-  int mindist = min_dist(distances, 4);
-
-  if (distances[mindist] < detector.ccsize) {
-    // not a single event
-    double minimum = distances[mindist];
-    // search for the next to minimum distance to an edge
-    distances[mindist] = -1.;
-    int secmindist = min_dist(distances, 4);
-    distances[mindist] = minimum;
-    
-    // check the different orientations according to the corner
-    double mindistgauss = gaussint(distances[mindist]/detector.ccsigma);
-    double secmindistgauss = gaussint(distances[secmindist]/detector.ccsigma);
-    partition[1][1] = (1.-mindistgauss)*(1.-secmindistgauss);
-    partition[xe[mindist]][ye[mindist]] = mindistgauss*(1.-secmindistgauss);
-    partition[xe[secmindist]][ye[secmindist]] = (1.-mindistgauss)*secmindistgauss;
-    partition[xd[mindist][secmindist]][yd[mindist][secmindist]] = 
-      mindistgauss*secmindistgauss;
-  }  // END of check for single event
-
-}
-*/
 
 
 
@@ -493,7 +401,8 @@ int get_ebounds(struct Ebounds *ebounds, int *Nchannels, const char filename[])
 
     if (nrows != *Nchannels) {
       status=EXIT_FAILURE;
-      sprintf(msg, "Error: Wrong number of data lines in FITS file '%s'!\n", filename);
+      sprintf(msg, "Error: Wrong number of data lines in FITS file '%s'!\n", 
+	      filename);
       HD_ERROR_THROW(msg,status);
       break;
     }
@@ -582,7 +491,8 @@ int get_rmf(
       break;
     }
 
-    // Read the lower detector threshold [PHA] from the corresponding header keyword.
+    // Read the lower detector threshold [PHA] from the 
+    // corresponding header keyword.
     char comment[MAXMSG];
     if (fits_read_key(fptr, TLONG, "LO_THRES", &(detector->low_threshold), 
 		      comment, &status)) {
@@ -593,7 +503,8 @@ int get_rmf(
     }
 
 
-    // Determine the number of rows in the FITS file (number of given points of time).
+    // Determine the number of rows in the FITS file (number of 
+    // given points of time).
     long Nrows;
     fits_get_num_rows(fptr, &Nrows, &status);
     detector->rmf.Nrows = (int)Nrows;
@@ -610,7 +521,8 @@ int get_rmf(
       for (count2=0; count2<1024; count2++) {
 	Nchan[count2] = 0;
       }
-      if (fits_read_col(fptr, TINT, 5, count, 1, ngrp, Nchan, Nchan, &anynul, &status))
+      if (fits_read_col(fptr, TINT, 5, count, 1, ngrp, Nchan, Nchan, 
+			&anynul, &status))
 	break;
       for (count2=0, buff_cols=0; count2<ngrp; count2++) {
 	buff_cols += Nchan[count2];
@@ -641,7 +553,8 @@ int get_rmf(
       }
     } else {
       status = EXIT_FAILURE;
-      sprintf(msg, "Error: Not enough memory available to store the detector RMF!\n");
+      sprintf(msg, "Error: Not enough memory available to store "
+	      "the detector RMF!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
@@ -857,32 +770,6 @@ double linear_function(double x, double m, double t)
 
 
 
-/*
-/////////////////////////////////////////////
-int htrs_get_line_old(
-		      struct Point2d point, 
-		      double m, double dt, 
-		      struct Detector detector
-		      )
-{
-  if (point.y < linear_function(point.x, m, -detector.width*dt)) {
-    return(INVALID_PIXEL);
-  } else if (point.y > linear_function(point.x, m, detector.width*dt)) {
-    return(INVALID_PIXEL);
-  } else {
-    int counter;
-    for (counter=0; counter<2*detector.width; counter++) {
-      if (point.y < linear_function(point.x, m, (counter+1-detector.width)*dt))
-	break;
-    }
-    return(counter);
-  }
-}
-*/
-
-
-
-
 ///////////////////////////////////////////
 int htrs_get_line(
 		  struct Point2d point, 
@@ -892,7 +779,7 @@ int htrs_get_line(
 {
   double dy = point.y - m * point.x;
   int line = (int)(dy/dt + detector.width + 1.) -1;
-  //  x[0] = (int)(position.x/detector.pixelwidth + (double)(detector.width/2) +1.)-1;
+  //  x[0] = (int)(position.x/detector.pixelwidth+(double)(detector.width/2) +1.)-1;
 
   // Check whether the point lies below the lowest or above the highest allowed line:
   if ((line < 0) || (line>= 2*detector.width)) line = INVALID_PIXEL;
@@ -1051,9 +938,9 @@ int htrs_get_detector(struct Detector* detector)
   char msg[MAXMSG];        // buffer for error output messages
   int status = EXIT_SUCCESS;
 
-  // TODO: how is pixelwidth defined for hexagonal pixels??
-  detector->a = detector->pixelwidth/2.;      
-  detector->h = 0.5 * sqrt(3.) * detector->a;
+  // Determine hexagonal pixel dimensions:
+  detector->h = detector->pixelwidth/2.;      
+  detector->a = 2. * detector->h / sqrt(3.);
 
   do { // Error handling loop 
     
@@ -1072,7 +959,8 @@ int htrs_get_detector(struct Detector* detector)
       break;
     }
 
-    detector->htrs_icoordinates2pixel = (int**)malloc(detector->width * sizeof(int*));
+    detector->htrs_icoordinates2pixel = 
+      (int**)malloc(detector->width * sizeof(int*));
     if (detector->htrs_icoordinates2pixel == NULL) {
       status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
@@ -1086,7 +974,8 @@ int htrs_get_detector(struct Detector* detector)
 	(int*)malloc(detector->width * sizeof(int));
       if (detector->htrs_icoordinates2pixel[xi] == NULL) {
 	status = EXIT_FAILURE;
-	sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
+	sprintf(msg, "Error: Not enough memory available for HTRS "
+		"initialization!\n");
 	HD_ERROR_THROW(msg,status);
 	break;
       }
@@ -1139,7 +1028,7 @@ int htrs_get_detector(struct Detector* detector)
     detector->htrs_icoordinates2pixel[3][3] = 1;
     detector->htrs_icoordinates2pixel[3][4] = 6;
     detector->htrs_icoordinates2pixel[3][5] = 17;
-    detector->htrs_icoordinates2pixel[3][6] = 24;
+    detector->htrs_icoordinates2pixel[3][6] = 34;
 
     detector->htrs_icoordinates2pixel[4][0] = 26;
     detector->htrs_icoordinates2pixel[4][1] = 12;
@@ -1165,15 +1054,16 @@ int htrs_get_detector(struct Detector* detector)
 	  // In the program the pixel index starts at 0, not at 1 !!
 	  // So shift all given pixel indices!
 	  detector->htrs_icoordinates2pixel[xi][yi]--;
-	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].x
-	    = xi;   
-	  detector->htrs_pixel2icoordinates[detector->htrs_icoordinates2pixel[xi][yi]].y
-	    = yi;
+	  detector->htrs_pixel2icoordinates
+	    [detector->htrs_icoordinates2pixel[xi][yi]].x = xi;   
+	  detector->htrs_pixel2icoordinates
+	    [detector->htrs_icoordinates2pixel[xi][yi]].y = yi;		 
 	}
       }
     }
 
-    // Now the 2 different numbering schemes can be easily converted among each other.
+    // Now the 2 different numbering schemes can be easily converted 
+    // among each other.
     
 
 
@@ -1293,8 +1183,8 @@ int get_pixel_square(struct Detector detector,
     fraction[0] = 1.;
 
   } else {
-    // Calculate the distances from the event to the borders of the surrounding pixel 
-    // (in [m]):
+    // Calculate the distances from the event to the borders of the 
+    // surrounding pixel (in [m]):
     double distances[4] = { 
       // distance to right pixel edge
       (x[0]-detector.offset+1)*detector.pixelwidth - position.x,
@@ -1393,6 +1283,104 @@ void htrs_free_detector(struct Detector* detector)
   free(detector->htrs_lines2pixel);
 
 }
+
+
+
+
+
+
+/*
+//////////////////////////////////////////////////////////////////////////////
+// Creates split events according to the size of the charge cloud.
+// Input values are the detector coordinates given in [m] with the origin
+// in the middle of the detector array (det_xa, det_ya),
+// and the pixel coordinates with the origin at the edge of the detector.
+// Assumption: +/- 3*ccsigma contain nearly the entire charge, so outside this
+// region, the remaining charge is neglected.
+void split_events(
+		  double det_xa, double det_ya, // coordinates of event [m]
+		  // pixel coordinates of surrounding pixel
+		  int det_xi, int det_yi,       
+		  struct Detector detector,     // detector data
+		  // energy fractions falling on neighboring pixels (return value)
+		  double partition[3][3] 
+		  ) 
+{
+  // The following array entries are used to transform between 
+  // different array indices.
+  int xe[4] = {2,1,0,1};
+  int ye[4] = {1,2,1,0};
+  int xd[4][4], yd[4][4];
+
+  xd[0][1] = 2;
+  yd[0][1] = 2;
+  xd[1][0] = 2;
+  yd[1][0] = 2;
+
+  xd[1][2] = 0;
+  yd[1][2] = 2;
+  xd[2][1] = 0;
+  yd[2][1] = 2;
+
+  xd[2][3] = 0;
+  yd[2][3] = 0;
+  xd[3][2] = 0;
+  yd[3][2] = 0;
+
+  xd[3][0] = 2;
+  yd[3][0] = 0;
+  xd[0][3] = 2;
+  yd[0][3] = 0;
+
+  // Calculate the distances from the event to the borders of the surrounding pixel 
+  // (in [m]):
+  double distances[4] = { 
+    // distance to right hand pixel edge
+    (det_xi-detector.offset+1)*detector.pixelwidth - det_xa,
+    // distance to upper edge
+    (det_yi-detector.offset+1)*detector.pixelwidth - det_ya,
+    // distance to left hand pixel edge
+    det_xa - (det_xi-detector.offset)*detector.pixelwidth,
+    // distance to lower edge
+    det_ya - (det_yi-detector.offset)*detector.pixelwidth
+  };
+
+  // Set the split fractions to their initial values 
+  // (with all energy in central pixel):
+  int countx, county;
+  for (countx=0; countx<3; countx++) {
+    for (county=0; county<3; county++) {
+      partition[countx][county] = 0.;
+    }
+  }
+  partition[1][1] = 1.;
+
+
+  // If charge cloud size is 0, i.e. no splits are created, leave function here.
+  if (detector.ccsize < 1.e-12) return;
+
+  int mindist = min_dist(distances, 4);
+
+  if (distances[mindist] < detector.ccsize) {
+    // not a single event
+    double minimum = distances[mindist];
+    // search for the next to minimum distance to an edge
+    distances[mindist] = -1.;
+    int secmindist = min_dist(distances, 4);
+    distances[mindist] = minimum;
+    
+    // check the different orientations according to the corner
+    double mindistgauss = gaussint(distances[mindist]/detector.ccsigma);
+    double secmindistgauss = gaussint(distances[secmindist]/detector.ccsigma);
+    partition[1][1] = (1.-mindistgauss)*(1.-secmindistgauss);
+    partition[xe[mindist]][ye[mindist]] = mindistgauss*(1.-secmindistgauss);
+    partition[xe[secmindist]][ye[secmindist]] = (1.-mindistgauss)*secmindistgauss;
+    partition[xd[mindist][secmindist]][yd[mindist][secmindist]] = 
+      mindistgauss*secmindistgauss;
+  }  // END of check for single event
+
+}
+*/
 
 
 

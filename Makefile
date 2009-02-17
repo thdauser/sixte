@@ -37,7 +37,8 @@ OWN_HEATOOLS= 	conv_rosat2fits conv_psf2fits create_rnd_sctlg create_orbit \
 		create_attitude create_rmf create_spectrum measurement plot_psf \
 		plot_det_images plot_eventlist create_psf \
 		scan_tes_events byte_stream
-ALL_PROGS= 	$(OWN_HEATOOLS) \
+OWN_LIBRARIES= 	libfitsformats.a
+ALL= 		$(OWN_HEATOOLS) $(OWN_LIBRARIES) \
 		sources_in_fov orbitparams_from_pos compare_orbits \
 		calcJ2perturbations create_htrs_psf htrs_pixel \
 		test_tle_output test_fov test_distrndsources test_simulation \
@@ -77,19 +78,19 @@ LFLAGS=$(DEBUG) $(OPT) $(LHPATH)
 ##  generating runables
 ##============================================================================
 
-all: $(ALL_PROGS)
+all: $(ALL)
 
 sim_headas: $(OWN_HEATOOLS) 
 
 conv_rosat2fits: conv_rosat2fits.o strftcpy.o
 	$(CC) $(LFLAGS) -o conv_rosat2fits $^ $(LIBHEATOOLS)
 
-conv_psf2fits: conv_psf2fits.o psf.o vector.o random.o photon.o detector.o strftcpy.o \
-	event_list.o fits_pha.o
+conv_psf2fits: conv_psf2fits.o psf.o vector.o random.o photon.o detector.o \
+	strftcpy.o event_list.o fits_pha.o
 	$(CC) $(LFLAGS) -o conv_psf2fits $^ $(LIBHEATOOLS) $(LIBGSL)
 
-create_htrs_psf: create_htrs_psf.o psf.o detector.o event_list.o fits_pha.o photon.o \
-	random.o vector.o
+create_htrs_psf: create_htrs_psf.o psf.o detector.o event_list.o fits_pha.o \
+	photon.o random.o vector.o
 	$(CC) $(LFLAGS) -o create_htrs_psf $^ $(LIBHEATOOLS) $(LIBGSL)
 
 create_psf: create_psf.o psf.o random.o vector.o
@@ -119,7 +120,7 @@ compare_orbits: compare_orbits.o vector.o fits_ctlg.o
 calcJ2perturbations: calcJ2perturbations.o
 	$(CC) $(LFLAGS) -o calcJ2perturbations $^ -lm
 
-byte_stream: byte_stream.o
+byte_stream: byte_stream.o libfitsformats.a
 	$(CC) $(LFLAGS) -o byte_stream $^ $(LIBHEATOOLS)
 
 htrs_pixel: htrs_pixel.o
@@ -181,8 +182,8 @@ test_fabs: test_fabs.o
 ##============================================================================
 
 
-#liborbit.a: orbit.o tle.o strftcpy.o vector.o
-#	ar -r liborbit.a orbit.o tle.o strftcpy.o vector.o
+libfitsformats.a: event_list.o
+	ar -r libfitsformats.a $^
 
 
 
@@ -216,6 +217,6 @@ dep: $(SRC)
 .PHONY: clean
 
 clean:
-	rm -f $(ALL_PROGS) $(DEPENDFILE) *.o *.a *~
+	rm -f $(ALL) $(DEPENDFILE) *.o *.a *~
 
 

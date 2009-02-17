@@ -23,7 +23,7 @@ int main()
     // Detector Setup:
     detector.type = HTRS;
     detector.width = 7;
-    detector.pixelwidth = 3.0e-3;    // in [m]
+    detector.pixelwidth = 4.0e-3;    // in [m]
 
     status = htrs_get_detector(&detector);
 
@@ -38,6 +38,8 @@ int main()
     store.psf = (struct PSF *) malloc(store.N_elements * sizeof(struct PSF));
     if (store.psf) {   // memory was allocated successfully
       for (count=0; count<store.N_elements; count++) {
+	store.psf[count].energy = 1.0;  // Default values.
+	store.psf[count].angle = 0.0;
 	store.psf[count].data = (double **) malloc(store.width * sizeof(double *));
 	if (store.psf[count].data) {
 	  for (count2=0; count2<store.width; count2++) {
@@ -139,7 +141,7 @@ int main()
 	htrs_get_pixel(detector, position, x, y, fraction);
 	
 	if (x[0] != INVALID_PIXEL) {
-	  store.psf[0].data[count][count2] = psf_parts[x[0]][y[0]]/normalization;//6468.;
+	  store.psf[0].data[count][count2] = psf_parts[x[0]][y[0]]/normalization;
 	  // Normalization (number of PSF pixels                   <-|
 	  // per HTRS pixel)
 	}

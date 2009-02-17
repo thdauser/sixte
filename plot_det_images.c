@@ -35,7 +35,8 @@
 int plot_det_images_getpar(char eventlist_filename[], int *plotpixelwidth, 
 			   double *integration_time, double *timespan);
 
-// does the actual work: open FITS file, read eventlist and create detector frame plots
+// does the actual work: open FITS file, read eventlist,
+// and create detector frame plots
 int plot_det_images_work(const char eventlist_filename[], const int plotpixelwidth, 
 			 double integration_time, double timespan);
 
@@ -67,7 +68,8 @@ int plot_det_images_main() {
 				  &integration_time, &timespan);
 
   if (!status) {
-    // Call the routine which performs the actual work: load eventlist from FITS file,
+    // Call the routine which performs the actual work: 
+    // load event list from FITS file,
     // create detector frames and plot them.
     status = plot_det_images_work(eventlist_filename, plotpixelwidth, 
 				  integration_time, timespan);
@@ -172,8 +174,7 @@ int plot_det_images_work(
     // from the header keyword information.
     char comment[MAXMSG];   // input buffer for header comment
     if (fits_read_key(event_list_file.fptr, TINT, "DETWIDTH", &det_width, 
-		      comment, &status))
-      break;
+		      comment, &status)) break;
 
     // get memory for the detector array
     det = (double **)malloc(det_width*sizeof(double*));
@@ -204,11 +205,12 @@ int plot_det_images_work(
     event.frame = 0;
     event.time = 0.; t0 = 0.;
 
-    // loop over all events in the list
+    // Loop over all events in the list:
     headas_chat(5, "processing events ...\n");
     for (event_list_file.row=0; 
 	 (event_list_file.row<event_list_file.nrows)&&(event.time-t0<timespan); 
 	 event_list_file.row++) {
+
       if(get_eventtbl_row(event_list_file, &event, &status)) break;
 
       if (event.frame == 0) {
