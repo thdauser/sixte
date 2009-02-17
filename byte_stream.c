@@ -88,19 +88,36 @@ int byte_stream_main()
       
       // Check whether binning time was exceeded:
       if (event.time > time) {
-	// Store binned spectrum:
-
-	// Clear spectrum buffer and start new binning cycle:
+	// Store binned spectrum clear spectrum buffer and start 
+	// new binning cycle:
 	for (channel=0; channel<Nchannels; channel++) {
-	  spectrum[channel] = 0;
+	  if (channel%119 == 0) { // new byte frame (128 byte)
+	    fprintf(stdout, "\n");
+
+	    // Syncword 1 and 2:
+	    fprintf(stdout, "%c%c", 'K', 'R');
+	    
+	    // Spectrum Time:
+	    fprintf(stdout, "%c%c%c%", 0, 0, 0, 0);
+
+	    // Spectrum Sequence counter:
+	    fprintf(stdout, "%c", channel/119);
+
+	    // Data type ID:
+	    fprintf(stdout, "%c", 'S');
+
+	
+	  }
+	  
+	  spectrum[channel] = 0;  // clear buffer
 	}
-	time += binning_time;
+	time += binning_time;  // next binning cycle
       }
 
-      if ((event.pha<0)||(event.pha>=Nchannels)) printf("Error!!\n");
+      if ((event.pha<=0)||(event.pha>Nchannels)) printf("Error!!\n");
 
       // Add event to the spectrum.
-      spectrum[event.pha]++;
+      spectrum[event.pha-1]++;
 
     } // END of loop over all events in the FITS file
 

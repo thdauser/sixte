@@ -172,11 +172,15 @@ int read_rmf_fitsrow(
 
   do {  // beginning of error handling loop (is only run once)
     int anynul;
-    if (fits_read_col(fptr, TFLOAT, 1, row, 1, 1, Emin, Emin, &anynul, &status)) break;
-    if (fits_read_col(fptr, TFLOAT, 2, row, 1, 1, Emax, Emax, &anynul, &status)) break;
+    if (fits_read_col(fptr, TFLOAT, 1, row, 1, 1, Emin, Emin, &anynul, &status)) 
+      break;
+    if (fits_read_col(fptr, TFLOAT, 2, row, 1, 1, Emax, Emax, &anynul, &status)) 
+      break;
     if (fits_read_col(fptr, TINT, 3, row, 1, 1, Ngrp, Ngrp, &anynul, &status)) break;
-    if (fits_read_col(fptr, TINT, 4, row, 1, *Ngrp, Fchan, Fchan, &anynul, &status)) break;
-    if (fits_read_col(fptr, TINT, 5, row, 1, *Ngrp, Nchan, Nchan, &anynul, &status)) break;
+    if (fits_read_col(fptr, TINT, 4, row, 1, *Ngrp, Fchan, Fchan, &anynul, &status)) 
+      break;
+    if (fits_read_col(fptr, TINT, 5, row, 1, *Ngrp, Nchan, Nchan, &anynul, &status)) 
+      break;
 
     // determine number of columns in matrix for current row
     int ncols=0;
@@ -184,7 +188,8 @@ int read_rmf_fitsrow(
       ncols += Nchan[count];
     }
 
-    if (fits_read_col(fptr, TFLOAT, 6, row, 1, ncols, matrix, matrix, &anynul, &status)) break;
+    if (fits_read_col(fptr, TFLOAT, 6, row, 1, ncols, matrix, matrix, &anynul, 
+		      &status)) break;
   } while(0);  // end of error handling loop
 
   return(status);

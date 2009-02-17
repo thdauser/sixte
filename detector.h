@@ -74,7 +74,8 @@ void readout_line(struct Detector, int line, struct Event_List_File*,
 		  int *fitsstatus);
 
 
-// Determines the index of the minimum value in an array of distances to pixel borders.
+// Determines the index of the minimum value in an array of distances to 
+// the pixel borders.
 int min_dist(double array[], int directions);
 
 
@@ -152,7 +153,7 @@ double linear_function(double x, double m, double t);
 
 // Returns the lower line index of one particular line group with specified m
 // and variable t for a given point in the 2D plane.
-int htrs_get_line(struct Point2d point, double m, double dt, struct Detector detector);
+int htrs_get_line(struct Point2d point, double m, double dt, struct Detector);
 
 
 // Get the line indices of the lines from each of the 3 groups of lines that define
@@ -160,9 +161,10 @@ int htrs_get_line(struct Point2d point, double m, double dt, struct Detector det
 void htrs_get_lines(struct Point2d, struct Detector, int* l);
 
 
-// This function determines the integer pixel coordinates for a given 2D floating point.
-// The point lies within the hexagonal HTRS pixel.
-int htrs_get_pixel(struct Detector, struct Point2d, int* x, int* y, double* fraction);
+// This function determines the integer pixel coordinates for a given 
+// 2D floating point. The point lies within the hexagonal HTRS pixel.
+int htrs_get_pixel(struct Detector, struct Point2d, 
+		   int* x, int* y, double* fraction);
 
 
 // Returns the pixel index that corresponds to the pixel segment which is
@@ -184,10 +186,11 @@ int htrs_get_detector(struct Detector*);
 void htrs_free_detector(struct Detector* detector);
 
 
-// Determines the pixel coordinates for a given point on a 2D array of square pixels.
-// The function returns all pixels that are affected due to a splitting of the charge
-// cloud. The coordinates of the affected pixels are stored in the x[], and y[] arrays,
-// the charge fraction in each pixel in fraction[]. The number of totally affected 
+// Determines the pixel coordinates for a given point on a 2D array of 
+// square pixels. The function returns all pixels that are affected due 
+// to a splitting of the charge cloud. The coordinates of the affected 
+// pixels are stored in the x[] and y[] arrays, the charge fraction in 
+// each pixel in fraction[]. The number of totally affected 
 // pixels is given by the function's return value. 
 int get_pixel_square(struct Detector, struct Point2d, 
 		     int* x, int* y, double* fraction);

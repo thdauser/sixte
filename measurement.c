@@ -855,7 +855,7 @@ int measure(
       // Get the corresponding created charge.
       float charge = get_charge(channel, detector.ebounds);
       
-      if (channel <= 0) printf("ERROR CHANNEL <= 0!\n");  // TODO
+      if (channel < 0)    printf("ERROR CHANNEL <= 0!\n");     // TODO
       if (channel > 4096) printf("ERROR CHANNEL too large!\n");
 
       int x[4], y[4];
@@ -881,12 +881,26 @@ int measure(
       } else if (detector.type == HTRS) {
 	int npixels = htrs_get_pixel(detector, position, x, y, fraction);
 
+	struct Event event;
 	int count;
+
 	for (count=0; count<npixels; count++) {
 	  if (x[count] != INVALID_PIXEL) {
-	    detector.pixel[x[count]][y[count]].charge += charge * fraction[count];
+	    // Store the photon charge and the new arrival time:
+	    event.pha = get_pha(charge*fraction[count], detector);
+	    event.time = photon.time;                // TODO: drift time
+	    event.xi = detector.htrs_icoordinates2pixel[x[count]][y[count]] + 1;
+	    event.yi = 0;     //   human readable pixel numbers start at 1 <--|
+	    event.grade = 0;
+	    event.frame = 0;
+
+	    // Add the event to the FITS event list.
+	    if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
+	      // There is an event in this pixel, so insert it into eventlist:
+	      add_eventtbl_row(event_list_file, event, &status);
+	    }
 	  }
-	}
+	} // END of loop over all split partners.
 	
       } else if (detector.type == TES) {
 	int npixels = get_pixel_square(detector, position, x, y, fraction);

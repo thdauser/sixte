@@ -113,6 +113,9 @@ void htrs_detector_action(
 			  int *fitsstatus
 			  ) 
 {
+  // Do nothing.
+
+  /*
   // Check, if the detector integration time was exceeded. 
   // In that case, read out the detector.
   while (time > detector->readout_time) {
@@ -129,7 +132,7 @@ void htrs_detector_action(
     detector->readout_time += detector->integration_time;
     detector->frame++;
   }
-
+  */
 }
 
 
@@ -183,7 +186,7 @@ long detector_rmf(
       max = row;
     }
   }
-  // now final decision, wheter max or min is right
+  // now final decision, whether max or min is right
   if (rmf.row[max].E_low < energy) {
     row = max;
   } else {
@@ -196,6 +199,8 @@ long detector_rmf(
 
   // For each photon energy there is a particular number of PHA channels with 
   // a finite probability of getting the photon event.
+  if (rmf.row[row].F_chan[0] == 0) return(0);
+
   double p = get_random_number();
   long col;
   min = 0;
@@ -464,8 +469,8 @@ int get_rmf(
 
 
   do {  // error handling loop (is only run once)
-    headas_chat(5, "load detector redistribution matrix (RMF) from file '%s' ...\n", 
-		rmf_name);
+    headas_chat(5, "load detector redistribution matrix (RMF) "
+		"from file '%s' ...\n", rmf_name);
 
     // First open the RMF file:
     if (fits_open_file(&fptr, rmf_name, READONLY, &status)) break;
@@ -493,13 +498,18 @@ int get_rmf(
 
     // Read the lower detector threshold [PHA] from the 
     // corresponding header keyword.
+    int buffer = EXIT_SUCCESS;
     char comment[MAXMSG];
     if (fits_read_key(fptr, TLONG, "LO_THRES", &(detector->low_threshold), 
-		      comment, &status)) {
+		      comment, &buffer)) {
+      // The FITS file header does not contain a lower threshold:
+      detector->low_threshold = 0;
+      /*
       sprintf(msg, "Error: FITS file '%s' contains no lower threshold "
 	      "(header key 'LO_THRES')!\n", rmf_name);
       HD_ERROR_THROW(msg,status);
       break;
+      */
     }
 
 
@@ -748,8 +758,12 @@ float get_charge(
 		 struct Ebounds ebounds
 		 )
 {
-  if ((channel < 1) || (channel > 4096))
+  if (channel == 0) {
+    return(0.0);
+  }
+  else if ((channel < 0) || (channel > 4096)) {
     printf("Error: Invalid Ebounds channel!\n");
+  }
 
   // Return the median of the charge that corresponds to the specified PHA channel
   // using the EBOUNDS table.
@@ -926,6 +940,10 @@ struct Point2i htrs_get_pixel2icoordinates(int pixel, struct Detector detector)
     return(point2i);
   }
 }
+
+
+
+
 
 
 

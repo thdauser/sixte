@@ -9,8 +9,10 @@ int get_spectra(
 		long Nchannels,                       // number of PHA channels
 		char filenames[N_SPECTRA_FILES][FILENAME_LENGTH],
 		int Nfiles,                           // number of spectra
-		struct PSF_Store psf_store   // PSF is needed for rescaling the source spectra properly according to the
-		                             // PSF normalization (on-axis PSFs are normalized to 1)
+		// PSF is needed for rescaling the source spectra properly 
+		// according to the PSF normalization (on-axis PSFs are 
+		// normalized to 1)
+		struct PSF_Store psf_store   
 		)
 {
   int status=EXIT_SUCCESS;  // error handling variable
@@ -18,7 +20,8 @@ int get_spectra(
   
   do {  // beginning of error handling loop
     // get memory
-    spectrum_store->spectrum = (struct Spectrum *) malloc(Nfiles * sizeof(struct Spectrum));
+    spectrum_store->spectrum = (struct Spectrum *) 
+      malloc(Nfiles * sizeof(struct Spectrum));
     if (!spectrum_store->spectrum) {
       status = EXIT_FAILURE;
       sprintf(msg, "Not enough memory available to store the source spectra!\n");
@@ -28,7 +31,8 @@ int get_spectra(
     
     int count;
     for (count=0; count < Nfiles; count++) {
-      if ((status=get_spectrum(&(spectrum_store->spectrum[count]), Nchannels, filenames[count], 
+      if ((status=get_spectrum(&(spectrum_store->spectrum[count]), 
+			       Nchannels, filenames[count], 
 			       psf_store)) != EXIT_SUCCESS) break;
     }
   } while (0);  // end of error handling loop
@@ -43,8 +47,10 @@ int get_spectrum(
 		 struct Spectrum *spectrum,
 		 long Nchannels,
 		 char filename[FILENAME_LENGTH],
-		 struct PSF_Store psf_store  // PSF is needed for rescaling the source spectrum properly according to the
-		                             // PSF normalization (on-axis PSFs are normalized to 1)
+		 // PSF is needed for rescaling the source spectrum properly 
+		 // according to the PSF normalization (on-axis PSFs are 
+		 // normalized to 1)
+		 struct PSF_Store psf_store  
 		 )
 {
   fitsfile *pha_fptr=NULL;
@@ -63,7 +69,8 @@ int get_spectrum(
     int hdunum, hdutype;
     // after opening the FITS file, get the number of the current HDU
     if (fits_get_hdu_num(pha_fptr, &hdunum) == 1) {
-      // this is the primary array, so try to move to the first extension and see if it is a table
+      // This is the primary array, so try to move to the first extension 
+      // and see if it is a table.
       if (fits_movabs_hdu(pha_fptr, 2, &hdutype, &status)) break;
     } else {
       // get the HDU type
@@ -73,7 +80,8 @@ int get_spectrum(
     // image HDU results in an error message
     if (hdutype==IMAGE_HDU) {
       status=EXIT_FAILURE;
-      sprintf(msg, "Error: FITS extension in file '%s' is not a table but an image (HDU number: %d)\n", filename, hdunum);
+      sprintf(msg, "Error: FITS extension in file '%s' is not a table "
+	      "but an image (HDU number: %d)\n", filename, hdunum);
       HD_ERROR_THROW(msg,status);
       break;
     }
@@ -104,25 +112,30 @@ int get_spectrum(
     long channel=0;
     float probability=0., sum=0., normalization=0.;
     for (row=1, sum=0.; (row <= nrows)&&(status==EXIT_SUCCESS); row++) {
-      if ((status=read_spec_fitsrow(&channel, &probability, pha_fptr, row))!=EXIT_SUCCESS) break;
+      if ((status=read_spec_fitsrow(&channel, &probability, pha_fptr, row))
+	  !=EXIT_SUCCESS) break;
 
-      // check if the channel number is valid
-      if ((channel < 0) || (channel >= Nchannels)) {
+      // Check if the channel number is valid.
+      // (PHA channel start at 1 !!)
+      if ((channel <= 0) || (channel > Nchannels)) {
 	status=EXIT_FAILURE;
-	sprintf(msg, "Invalid channel number (%ld) in file '%s'!\n", channel, filename);
+	sprintf(msg, "Invalid channel number (%ld) in file '%s'!\n", channel, 
+		filename);
 	HD_ERROR_THROW(msg,status);
 	break;
       }
       
       // store the probability distribution for the individual PHA channels
       normalization += probability;
-      spectrum->data[channel] = probability;
+      spectrum->data[channel-1] = probability;
     }
 
-    // Normalize and rescale the spectrum (probability distribution) to include the PSF effects.
-    // Without rescaling, the normalized spectrum would be 1, but with rescaling it is less.
+    // Normalize and rescale the spectrum (probability distribution) to 
+    // include the PSF effects. Without rescaling, the normalized spectrum 
+    // would be 1, but with rescaling it is less.
     for (row=0; row<nrows; row++) {
-      sum += spectrum->data[row] * psf_store.psf[0].scaling_factor / normalization;   // TODO: scaling to be implemented
+      // TODO: scaling to be implemented
+      sum += spectrum->data[row] * psf_store.psf[0].scaling_factor / normalization;
       spectrum->data[row] = sum; 
     }
     
