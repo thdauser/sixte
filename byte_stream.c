@@ -28,7 +28,11 @@ int byte_stream_main()
 {
   struct Event_List_File event_list_file;   // FITS file
   char output_filename[FILENAME_LENGTH];
+  FILE* output_file = NULL;
+  unsigned char output_buffer[128];
+
   const long Nchannels = 1024;
+
   int spectrum[Nchannels];  // Buffer for binning the spectrum.
   double time = 0.0;   // Time of the current spectrum (end of spectrum)
   double binning_time; // Delta t (time step, length of each spectrum)
@@ -69,15 +73,41 @@ int byte_stream_main()
       break;
 
 
+    // Open binary file for output:
+    output_file = fopen(output_filename, "w+");
+    if (output_file == NULL) {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: output file '%s' could not be opened!\n", 
+	      output_filename);
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+
+
 
     // Loop over all events in the FITS file:
     headas_chat(5, "processing events ...\n");
     struct Event event;
+    event.pha = 0;
+    event.xi = 0;
+    event.yi = 0;
+    event.grade = 0;
+    event.patid = 0;
+    event.patnum = 0;
+    event.frame = 0;
+    event.pileup = 0;
+    
     long channel;      // channel counter
 
     time = binning_time;
     for (channel=0; channel<Nchannels; channel++) {
       spectrum[channel] = 0;
+
+      // TODO remove this section
+      if (channel<=119) {
+	output_buffer[8+channel] = 0;
+      }
     }
 
     for (event_list_file.row=0; event_list_file.row<event_list_file.nrows;
@@ -88,28 +118,40 @@ int byte_stream_main()
       
       // Check whether binning time was exceeded:
       if (event.time > time) {
-	// Store binned spectrum clear spectrum buffer and start 
+	// Store binned spectrum, clear spectrum buffer and start
 	// new binning cycle:
-	for (channel=0; channel<Nchannels; channel++) {
-	  if (channel%119 == 0) { // new byte frame (128 byte)
-	    fprintf(stdout, "\n");
+	for (channel=0; channel<Nchannels; channel++) {	  
+	  spectrum[channel] = 0;  // clear buffer
+
+	  if ((channel+1)%119 == 0) { // byte frame (128 byte) is complete
 
 	    // Syncword 1 and 2:
-	    fprintf(stdout, "%c%c", 'K', 'R');
+	    output_buffer[0] = 'K';
+	    output_buffer[1] = 'R';
 	    
 	    // Spectrum Time:
-	    fprintf(stdout, "%c%c%c%", 0, 0, 0, 0);
+	    output_buffer[2] = 0;
+	    output_buffer[3] = 0;
+	    output_buffer[4] = 0;
+	    output_buffer[5] = 0;
 
 	    // Spectrum Sequence counter:
-	    fprintf(stdout, "%c", channel/119);
+	    output_buffer[6] = (char)(channel/119);
 
 	    // Data type ID:
-	    fprintf(stdout, "%c", 'S');
+	    output_buffer[7] = 'S';
+	    
+	    // Write bytes to file
+	    if (fwrite (output_buffer, 1, 128, output_file) < 128) {
+	      status=EXIT_FAILURE;
+	      sprintf(msg, "Error: writing data to output file '%s' failed!\n", 
+		      output_filename);
+	      HD_ERROR_THROW(msg,status);
+	    }
+	    
+	    return(0);
+	  } // END of starting new byte frame
 
-	
-	  }
-	  
-	  spectrum[channel] = 0;  // clear buffer
 	}
 	time += binning_time;  // next binning cycle
       }
@@ -123,6 +165,10 @@ int byte_stream_main()
 
   } while (0); // END of ERROR handling loop
 
+
+
+  // Close file
+  if (output_file) fclose(output_file);
 
   return(status);
 }

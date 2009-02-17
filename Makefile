@@ -21,11 +21,11 @@
 CC=gcc
 
 # "-O3" means best optimization of the code
-OPT=-O3
+#OPT=-O3
 
 # "-g" creates debug information
 # "-Wall" creates warnings, e.g. for unused variables
-#DEBUG=-g -W -Wall -O0
+DEBUG=-g -W -Wall -O0
 # -Wstrict-prototypes -Wmissing-prototypes -pedantic
 
 

@@ -130,8 +130,8 @@ int create_event_list_file(
 
 
     // create the event list table
-    if (fits_create_tbl(event_list_file->fptr, BINARY_TBL, 0, N_EVENT_FIELDS, ftype, fform, 
-			funit, "EVENTLIST", status)) break;
+    if (fits_create_tbl(event_list_file->fptr, BINARY_TBL, 0, N_EVENT_FIELDS, 
+			ftype, fform, funit, "EVENTLIST", status)) break;
     
 
     // write descriptory data into the header of the FITS file
@@ -152,7 +152,8 @@ int create_event_list_file(
     if (fits_get_system_time(creation_date, &timeref, status)) break;
     if (fits_write_key(event_list_file->fptr, TSTRING, "DATE", "2008-03-10",
 		       "FITS file creation date (yyyy-mm-dd)", status)) break;
-    if (fits_write_key(event_list_file->fptr, TSTRING, "DATE-OBS", "2008-03-10T10:00:00",
+    if (fits_write_key(event_list_file->fptr, TSTRING, "DATE-OBS", 
+		       "2008-03-10T10:00:00",
 		       "start time for the orbit", status)) break;
     if (fits_write_key(event_list_file->fptr, TSTRING, "DATE-END", "",
 		       "end time of the orbit", status)) break;
@@ -174,7 +175,8 @@ int create_event_list_file(
 		       "fractional part of reference time", status)) break;
     if (fits_write_key(event_list_file->fptr, TDOUBLE, "TSTART", &tstart,
 		       "start time of the orbit", status)) break;
-    if (fits_write_key(event_list_file->fptr, TDOUBLE, "TEND", &tend,"start time of the orbit", 
+    if (fits_write_key(event_list_file->fptr, TDOUBLE, "TEND", &tend,
+		       "start time of the orbit", 
 		       status)) break;
 
     // Obligatory detector data
@@ -197,7 +199,8 @@ int create_event_list_file(
     if (fits_write_key (event_list_file->fptr, TSTRING, "DATAMODE", data_mode, "", 
 			status)) break;
 
-    if (fits_write_key(event_list_file->fptr, TSTRING, "FILTER", "none", "", status)) break;
+    if (fits_write_key(event_list_file->fptr, TSTRING, "FILTER", "none", "", status))
+break;
     if (fits_write_key(event_list_file->fptr, TINT, "DETWIDTH", &detector.width, 
 		       "width (number of pixels) of the detector", status)) 
       break;
@@ -205,12 +208,12 @@ int create_event_list_file(
 		       "number of detector channels", status)) break;
 
     // instrument data
-    if (fits_write_key (event_list_file->fptr, TSTRING, "CREATOR", "simulation", "", status)) 
-      break;
+    if (fits_write_key (event_list_file->fptr, TSTRING, "CREATOR", "simulation", 
+			"", status)) break;
 
     // observation data
-    if (fits_write_key (event_list_file->fptr, TSTRING, "OBS_MODE", "all-sky survey", "", 
-			status)) break;
+    if (fits_write_key (event_list_file->fptr, TSTRING, "OBS_MODE", 
+			"all-sky survey", "", status)) break;
 
     // Additional detector information:
     if (fits_write_key (event_list_file->fptr, TSTRING, "COLUMN", ftype[3], 
