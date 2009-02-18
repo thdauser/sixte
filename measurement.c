@@ -651,13 +651,25 @@ int measurement_getpar(
   // Get the filenames of the individual source catalogs.
   else {
     int input_counter;
-    for(input_counter=0; input_counter<*n_sourcefiles; input_counter++) {
+    for(input_counter=0; input_counter<MAX_NSOURCEFILES; input_counter++) {
+
       sprintf(cbuffer,"sourcefile%d",input_counter+1);
-      if ((status = PILGetFname(cbuffer, source_filename[input_counter]))) {
-	sprintf(msg, "Error reading the name of the sourcefile No %d!\n", 
-		input_counter);
-	HD_ERROR_THROW(msg,status);
+
+      if (input_counter<*n_sourcefiles) {
+	// Read the source file from using PIL.
+	if ((status = PILGetFname(cbuffer, source_filename[input_counter]))) {
+	  sprintf(msg, "Error reading the name of the sourcefile No %d!\n", 
+		  input_counter);
+	  HD_ERROR_THROW(msg,status);
+	}
+
+      } else {
+	// Fill redundant input slots for source files with NULL value,
+	// in order to avoid errors with the HD_PARSTAMP routine.
+	PILPutFname(cbuffer, "");
+
       }
+	
     }
     if (status) return(status);
   }
@@ -832,7 +844,8 @@ int measure(
 
 #ifndef EXTERN_PHOTON_LIST
  
-  // Convolution with PSF: get the position [m], where the photon hits the detector.
+  // Convolution with PSF: get the position [m], where the photon hits 
+  // the detector.
   // Function returns 0, if the photon does not fall on the detector. 
   // If it hits a detector pixel, the return value is 1.
   if (get_psf_pos(&position, photon, telescope, psf_store)) {
