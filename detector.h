@@ -17,6 +17,7 @@
 #include <gsl/gsl_sf_erf.h>
 
 // HEAdas header files
+#include "pil.h"
 #include "headas.h"
 #include "headas_error.h"
 #include "fitsio.h"
@@ -45,7 +46,8 @@ void framestore_detector_action(struct Detector*, double time,
 
 
 // This routine is implemented for the DEPFET detector on (WFI on IXO) with 
-// the same purpose as the corresponding routine for the eROSITA framestore detector.
+// the same purpose as the corresponding routine for the eROSITA framestore 
+// detector.
 void depfet_detector_action(struct Detector*, double time, 
 			    struct source_cat_entry background,
 			    struct Event_List_File*, int *status); 

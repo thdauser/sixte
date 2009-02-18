@@ -156,7 +156,7 @@ int byte_stream_main()
 	    //	output_buffer[3], output_buffer[4], output_buffer[5]);
 
 	    // Spectrum Sequence counter:
-	    output_buffer[6] = (channel/119);
+	    output_buffer[6] = (channel/238);
 
 	    // Data type ID:
 	    output_buffer[7] = 0x83;  // 'S'

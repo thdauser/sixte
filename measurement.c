@@ -28,8 +28,8 @@ int measurement_main() {
                                           // individual source files
   fitsfile *source_catalog_files[MAX_NSOURCEFILES]; // file pointers to the 
                                           // individual source catalog files (FITS)
-  int source_data_columns[5][3];          // column numbers of r.a., declination and
-                                          // count rate in the individual files
+  int source_data_columns[5][3];       // column numbers of r.a., declination and
+                                       // count rate in the individual files
   long nsources_pre;                      // number of totally available sources 
                                           // (ROSAT + RND + ...) 
                                           // in entire catalog and
@@ -50,11 +50,11 @@ int measurement_main() {
   char rmf_name[FILENAME_LENGTH]; // FITS file containing the 
                                   //detector redistribution matrix (RMF)
 
-  struct Telescope telescope;   // Telescope data (like FOV diameter or focal length)
-  struct Detector detector;     // Detector data structure (containing the 
-                                // pixel array, its width, ...)
-  struct PSF_Store psf_store;   // Storage for the PSF (Point Spread Function) data 
-                                // (for different off-axis angles and energies)
+  struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
+  struct Detector detector;   // Detector data structure (containing the 
+                              // pixel array, its width, ...)
+  struct PSF_Store psf_store; // Storage for the PSF (Point Spread Function) data 
+                              // (for different off-axis angles and energies)
   char psf_filename[FILENAME_LENGTH]; // PSF input file
 
   struct Event_List_File event_list_file;
@@ -74,7 +74,8 @@ int measurement_main() {
   // read parameters using PIL library
   status=measurement_getpar(orbit_filename, attitude_filename, &n_sourcefiles, 
 			    source_filename, psf_filename, 
-			    rmf_name, spectrum_filename[0], event_list_file.filename, 
+			    rmf_name, spectrum_filename[0], 
+			    event_list_file.filename, 
 			    &t0, &timespan, &telescope,
 			    &detector, &bandwidth, &background.rate);
 
@@ -600,7 +601,7 @@ int measurement_main() {
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
 int measurement_getpar(
-		       char orbit_filename[],   // filename of the orbit file (FITS)
+		       char orbit_filename[], // filename of the orbit file (FITS)
 		       // filename of the attitude file (FITS)
 		       char attitude_filename[],
 		       int *n_sourcefiles,      // number of input source files
@@ -705,12 +706,6 @@ int measurement_getpar(
 
     case 4:
       detector->type = HTRS;
-
-      if ((status = PILGetReal("integration_time", &detector->integration_time))) {
-	sprintf(msg, "Error reading the integration time!\n");
-	HD_ERROR_THROW(msg,status);
-      }
-
       break;
 
     default:     

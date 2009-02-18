@@ -45,12 +45,12 @@ void depfet_detector_action(
 			    int *fitsstatus
 			    ) 
 {
-  // The DEPFET detector is read out line by line, with two readout lines starting
-  // in the middle of the detector array. The readout of one individual line requires
-  // the deadtime. The readout is performed at the beginning of this interval.
-  // Then the charges in the line are cleared. During the cleartime the pixels in the
-  // detector line are inactive, i.e., they cannot receive new charge from incident 
-  // photons during that time.
+  // The DEPFET detector is read out line by line, with two readout lines 
+  // starting in the middle of the detector array. The readout of one 
+  // individual line requires the deadtime. The readout is performed at 
+  // the beginning of this interval. Then the charges in the line are cleared. 
+  // During the cleartime the pixels in the detector line are inactive, i.e., 
+  // they cannot receive new charge from incident photons during that time.
   // Photons that hit the pixel during the deadtime but after the cleartime are 
   // accepted and the created charge is stored in the pixel until the next readout
   // process.
@@ -489,9 +489,8 @@ int get_rmf(
     // If it is an image HDU, the program gives an error message.
     if (hdutype==IMAGE_HDU) {
       status=EXIT_FAILURE;
-      sprintf(msg, "Error: FITS extension in file '%s' is not a table but an image "
-	      "(HDU number: %d)\n", 
-	      rmf_name, hdunum);
+      sprintf(msg, "Error: FITS extension in file '%s' is not a table but "
+	      "an image (HDU number: %d)\n", rmf_name, hdunum);
       HD_ERROR_THROW(msg,status);
       break;
     }
@@ -502,8 +501,18 @@ int get_rmf(
     char comment[MAXMSG];
     if (fits_read_key(fptr, TLONG, "LO_THRES", &(detector->low_threshold), 
 		      comment, &buffer)) {
-      // The FITS file header does not contain a lower threshold:
-      detector->low_threshold = 0;
+      // The FITS file header does not contain a lower threshold,
+      // so try to read it from the PIL:
+      int int_buffer;
+      if ((buffer = PILGetInt("lo_thres", &int_buffer))) {
+	status += buffer;
+	sprintf(msg, "Error: lower detector threshold not specified!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      } else {
+	detector->low_threshold = int_buffer;
+      }
+
       /*
       sprintf(msg, "Error: FITS file '%s' contains no lower threshold "
 	      "(header key 'LO_THRES')!\n", rmf_name);
@@ -524,9 +533,9 @@ int get_rmf(
     detector->rmf.Ncols=0;
     int buff_cols, Nchan[1024], ngrp=0;
     int anynul=0;
-    for (count=1; ((count<=detector->rmf.Nrows)&&(status==EXIT_SUCCESS)); count++) {
-      if (fits_read_col(fptr, TINT, 3, count, 1, 1, &ngrp, &ngrp, &anynul, &status)) 
-	break;
+    for (count=1;((count<=detector->rmf.Nrows)&&(status==EXIT_SUCCESS));count++) {
+      if (fits_read_col(fptr, TINT, 3, count, 1, 1, &ngrp, &ngrp, 
+			&anynul, &status)) break;
 
       for (count2=0; count2<1024; count2++) {
 	Nchan[count2] = 0;
