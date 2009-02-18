@@ -29,13 +29,10 @@ int byte_stream_main()
   struct Event_List_File event_list_file;   // FITS file
   char output_filename[FILENAME_LENGTH];
   FILE* output_file = NULL;
-  unsigned char output_buffer[128];
+  double binning_time; // Delta t (time step, length of each spectrum)
 
   const long Nchannels = 1024;
-
-  int spectrum[Nchannels];  // Buffer for binning the spectrum.
-  double time = 0.0;   // Time of the current spectrum (end of spectrum)
-  double binning_time; // Delta t (time step, length of each spectrum)
+  unsigned int max = 0;
 
   char msg[MAXMSG];    // error message buffer
   int status=EXIT_SUCCESS;
@@ -53,6 +50,7 @@ int byte_stream_main()
 
   do { // Beginning of ERROR handling loop
     int hdutype;
+    event_list_file.fptr=NULL;
     if (fits_open_table(&event_list_file.fptr, event_list_file.filename, 
 			READONLY, &status)) break;
 
@@ -88,6 +86,9 @@ int byte_stream_main()
 
     // Loop over all events in the FITS file:
     headas_chat(5, "processing events ...\n");
+
+    double time = 0.0;   // Time of the current spectrum (end of spectrum)
+
     struct Event event;
     event.pha = 0;
     event.xi = 0;
@@ -97,22 +98,27 @@ int byte_stream_main()
     event.patnum = 0;
     event.frame = 0;
     event.pileup = 0;
-    
-    long channel;      // channel counter
 
+    long channel;    // Channel counter
+    int count;       // Counter for access to output buffer
+    unsigned int spectrum[Nchannels];  // Buffer for binning the spectrum.
+    unsigned char output_buffer[128];
+
+    // Clear the output buffer:
+    for (count = 0; count < 128; count++) {
+      output_buffer[count] = 0;
+    }
+
+    // Clear the spectrum:
     time = binning_time;
     for (channel=0; channel<Nchannels; channel++) {
       spectrum[channel] = 0;
-
-      // TODO remove this section
-      if (channel<=119) {
-	output_buffer[8+channel] = 0;
-      }
     }
 
     for (event_list_file.row=0; event_list_file.row<event_list_file.nrows;
 	 event_list_file.row++) {
       
+      // Read the event from the FITS file.
       if (get_eventtbl_row(event_list_file, &event, &status)) break;
 
       
@@ -120,40 +126,69 @@ int byte_stream_main()
       if (event.time > time) {
 	// Store binned spectrum, clear spectrum buffer and start
 	// new binning cycle:
-	for (channel=0; channel<Nchannels; channel++) {	  
-	  spectrum[channel] = 0;  // clear buffer
+	for (channel=0; channel<Nchannels; channel+=2) {	  
 
-	  if ((channel+1)%119 == 0) { // byte frame (128 byte) is complete
+	  if (spectrum[channel]   > max) max = spectrum[channel];
+	  if (spectrum[channel+1] > max) max = spectrum[channel+1];
+	  
+	  output_buffer[9 + (channel/2)%119] = (unsigned char)
+	    ((spectrum[channel] << 4) + (spectrum[channel+1] & 0x0F));
+
+	  // Clear binned spectrum:
+	  spectrum[channel]   = 0;  
+	  spectrum[channel+1] = 0;
+
+	  if ((channel+2)%238 == 0) { // Byte frame (128 byte) is complete!
 
 	    // Syncword 1 and 2:
-	    output_buffer[0] = 'K';
-	    output_buffer[1] = 'R';
+	    // output_buffer[0] = (char)'K';
+	    // output_buffer[1] = (char)'R';
+	    output_buffer[0] = 0x4B;  // 'K'
+	    output_buffer[1] = 0x82;  // 'R'
 	    
 	    // Spectrum Time:
-	    output_buffer[2] = 0;
-	    output_buffer[3] = 0;
-	    output_buffer[4] = 0;
-	    output_buffer[5] = 0;
+	    long ltime = (long)(time/binning_time);
+	    output_buffer[2] = (unsigned char)(ltime>>24);
+	    output_buffer[3] = (unsigned char)(ltime>>16);
+	    output_buffer[4] = (unsigned char)(ltime>>8);
+	    output_buffer[5] = (unsigned char)ltime;
+	    //headas_chat(5, "%ld: %u %u %u %u\n", ltime, output_buffer[2], 
+	    //	output_buffer[3], output_buffer[4], output_buffer[5]);
 
 	    // Spectrum Sequence counter:
-	    output_buffer[6] = (char)(channel/119);
+	    output_buffer[6] = (channel/119);
 
 	    // Data type ID:
-	    output_buffer[7] = 'S';
+	    output_buffer[7] = 0x83;  // 'S'
+	    // 0x..   -> hexadecimal
+	    // 0...   -> octal
+
+	    // Number of used bytes:
+	    if (channel/119 == 4) {
+	      output_buffer[8] = 0x24; // 36
+	    } else {
+	      output_buffer[8] = 0x77; // 119
+	    }
 	    
 	    // Write bytes to file
-	    if (fwrite (output_buffer, 1, 128, output_file) < 128) {
+	    int nbytes = fwrite (output_buffer, 1, 128, output_file);
+	    if (nbytes < 128) {
 	      status=EXIT_FAILURE;
 	      sprintf(msg, "Error: writing data to output file '%s' failed!\n", 
 		      output_filename);
 	      HD_ERROR_THROW(msg,status);
 	    }
+
+	    // Clear the output buffer:
+	    for (count = 0; count < 128; count++) {
+	      output_buffer[count] = 0;
+	    }
 	    
-	    return(0);
 	  } // END of starting new byte frame
 
-	}
+	} // END of loop over binned spectrum
 	time += binning_time;  // next binning cycle
+
       }
 
       if ((event.pha<=0)||(event.pha>Nchannels)) printf("Error!!\n");
@@ -166,9 +201,12 @@ int byte_stream_main()
   } while (0); // END of ERROR handling loop
 
 
+  headas_chat(5, "maximum spectral bin: %u\n", max);
 
-  // Close file
+
+  // Close files
   if (output_file) fclose(output_file);
+  if (event_list_file.fptr) fits_close_file(event_list_file.fptr, &status);
 
   return(status);
 }
