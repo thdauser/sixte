@@ -128,14 +128,6 @@ void clear_detector(struct Detector detector);
 void clear_detector_line(struct Detector detector, int line);
 
 
-/*
-// Creates split events according to the size of the charge cloud.
-// Assumption: +/- 3*ccsigma contain 99% of the charge cloud.
-void split_events(double det_xa, double det_ya, int det_xi, int det_yi, 
-		  struct Detector, double pha[3][3]);
-*/
-
-
 // Add background photons to the detector pixels  according to a given 
 // background spectrum and count-rate.
 void insert_background_photons(struct Detector detector, 
@@ -147,6 +139,7 @@ void insert_background_photons(struct Detector detector,
 // the time 'time'. If the pixel is, e.g., cleared at this time it cannot 
 // receive a charge. In that case the function returns '0'.
 int detector_active(int x, int y, struct Detector detector, double time);
+int htrs_detector_active(int x, int y, struct Detector detector, double time);
 
 
 // This function calculates the value of the linear function f(x) = m*x + t

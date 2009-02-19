@@ -74,9 +74,11 @@ struct Detector {
                            // has the array-index 'offset'
   double pixelwidth;       // width of a single pixel in the detector array [m]
 
-  double integration_time; // Integration time of the entire framestore(!) CCD 
+  double integration_time; // Integration time of the entire pnCCD (!) 
                            // detector array
                            // (= span of time between 2 subsequent readouts).
+  double dead_time;        // Necessary time to read out one line of the DEPFET 
+                           // or one pixel of the HTRS (!) detectors.
   long frame;              // Number of the current frame.
 
   double ccsigma;          // charge cloud sigma (needed to calculate size of 
@@ -102,8 +104,6 @@ struct Detector {
 
   double readout_time;     // Current readout time (i.e., the end of the 
                            // integration time/beginning of dead time).
-  double dead_time;        // Necessary time to read out one line of the DEPFET (!) 
-                           // detector.
   double clear_time;       // Time required to clear a row of pixels on the detector.
   int readout_line;        // Current readout line of the DEPFET detector 
                            // (not used for framestore).

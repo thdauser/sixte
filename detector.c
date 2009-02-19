@@ -316,6 +316,10 @@ int get_detector(
     sprintf(msg, "Error: not enough memory available to store "
 	    "the detector array!\n");
     HD_ERROR_THROW(msg,status);
+
+  } else {
+    // Clear the detector array (at the beginning there are no charges).
+    clear_detector(*detector);      
   }
 
   return(status);
@@ -684,7 +688,8 @@ void clear_detector_line(struct Detector detector, int line) {
   int x;
 
   for (x=0; x<detector.width; x++) {
-    detector.pixel[x][line].charge = 0.;
+    detector.pixel[x][line].charge  = 0.;
+    detector.pixel[x][line].arrival = -detector.dead_time;
   }
 }
 
@@ -716,6 +721,24 @@ int detector_active(
     return(1);
   }
 }
+
+
+
+
+////////////////////////////////////////////////////////////////
+int htrs_detector_active(
+		    int x, int y,
+		    struct Detector detector,
+		    double time
+		    )
+{
+  if (time - detector.pixel[x][y].arrival < detector.dead_time) {
+    return(0);  // Pixel is INactive!
+  } else {
+    return(1);  // Pixel is active!
+  }
+}
+
 
 
 
@@ -1010,27 +1033,11 @@ int htrs_get_detector(struct Detector* detector)
       for(yi=0 ; yi<detector->width; yi++) {
 	detector->htrs_icoordinates2pixel[xi][yi] = INVALID_PIXEL;
       }
-
-      /*    
-      for(yi=0 ; yi<detector->width; yi++) {
-	if (((xi==0)||(xi==6)) && ((yi==0)||(yi>=5))) {
-	  detector->htrs_icoordinates2pixel[xi][yi] = INVALID_PIXEL;
-	} else if (((xi==1)||(xi==5)) && ((yi==0)||(yi==6))) {
-	  detector->htrs_icoordinates2pixel[xi][yi] = INVALID_PIXEL;
-	} else if (((xi==2)||(xi==4)) && (yi==6)) {
-	  detector->htrs_icoordinates2pixel[xi][yi] = INVALID_PIXEL;
-	} else {
-	  detector->htrs_icoordinates2pixel[xi][yi] = pixel;   // TODO 
-	  detector->htrs_pixel2icoordinates[pixel].x = xi; // change numbering!!
-	  detector->htrs_pixel2icoordinates[pixel].y = yi;
-	  pixel++;
-	}
-      }
-      */
     }
 
     
-    // Fill the 2 different arrays for conversion   pixel index <-> coordinates.
+    // Fill the 2 different arrays for the conversion
+    //     pixel index <-> coordinates.
     detector->htrs_icoordinates2pixel[0][1] = 22;
     detector->htrs_icoordinates2pixel[0][2] = 21;
     detector->htrs_icoordinates2pixel[0][3] = 20;
@@ -1290,6 +1297,8 @@ int get_pixel_square(struct Detector detector,
 
 
 
+
+///////////////////////////////////////////////////////
 void htrs_free_detector(struct Detector* detector)
 {
   free(detector->htrs_pixel2icoordinates);

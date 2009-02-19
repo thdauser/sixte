@@ -297,8 +297,6 @@ int measurement_main() {
     long last_sat_counter=0;       // stores sat_counter of former repetition, 
                                    // so the searching loop
                                    // doesn't have to start at 0 every time.
-    clear_detector(detector);      // clear the detector array (at the beginning 
-                                   // there are no charges)
 
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start measurement simulation ...\n");
@@ -624,7 +622,7 @@ int measurement_getpar(
 		       float *background_countrate
 		       )
 {
-  char cbuffer[FILENAME_LENGTH];// buffer to access the different source filenames
+  char cbuffer[FILENAME_LENGTH];// filename-buffer to access the different source files
 
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
@@ -718,6 +716,13 @@ int measurement_getpar(
 
     case 4:
       detector->type = HTRS;
+
+      // Get the dead time for the HTRS (readout time of the charge cloud in a pixel).
+      if ((status = PILGetReal("dead_time", &detector->dead_time))) {
+	sprintf(msg, "Error reading the dead time!\n");
+	HD_ERROR_THROW(msg,status);
+      } 
+
       break;
 
     default:     
@@ -894,18 +899,25 @@ int measure(
 
 	for (count=0; count<npixels; count++) {
 	  if (x[count] != INVALID_PIXEL) {
-	    // Store the photon charge and the new arrival time:
-	    event.pha = get_pha(charge*fraction[count], detector);
-	    event.time = photon.time;                // TODO: drift time
-	    event.xi = detector.htrs_icoordinates2pixel[x[count]][y[count]] + 1;
-	    event.yi = 0;     //   human readable pixel numbers start at 1 <--|
-	    event.grade = 0;
-	    event.frame = 0;
+	    // Check if the affected detector pixel is active:
+	    if (htrs_detector_active(x[count], y[count], detector, photon.time)) {
 
-	    // Add the event to the FITS event list.
-	    if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
-	      // There is an event in this pixel, so insert it into eventlist:
-	      add_eventtbl_row(event_list_file, event, &status);
+	      // Save the time of the photon arrival in this pixel
+	      detector.pixel[x[count]][y[count]].arrival = photon.time;
+
+	      // Store the photon charge and the new arrival time:
+	      event.pha = get_pha(charge*fraction[count], detector);
+	      event.time = photon.time;                // TODO: drift time
+	      event.xi = detector.htrs_icoordinates2pixel[x[count]][y[count]] + 1;
+	      event.yi = 0;     //   human readable pixel numbers start at 1 <--|
+	      event.grade = 0;
+	      event.frame = 0;
+
+	      // Add the event to the FITS event list.
+	      if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
+		// There is an event in this pixel, so insert it into eventlist:
+		add_eventtbl_row(event_list_file, event, &status);
+	      }
 	    }
 	  }
 	} // END of loop over all split partners.
