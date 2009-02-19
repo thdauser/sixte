@@ -141,9 +141,6 @@ int measurement_main() {
     // Calculate initial parameter values from the PIL parameters:
     detector.offset = detector.width/2;
     
-    // Rescaling:
-    detector.pixelwidth = detector.pixelwidth*1.e-6; // [mu m] -> [m]
-    detector.ccsigma = detector.ccsigma*1.e-6;       // [mu m] -> [m]
     // size of the charge cloud [real pixel]
     detector.ccsize = 3.*detector.ccsigma; ///detector.pixelwidth;       
     // angle from [arc min] to [rad]
@@ -224,10 +221,6 @@ int measurement_main() {
     // get the energy bins of the PHA channels
     if ((status=get_ebounds(&detector.ebounds, &detector.Nchannels, rmf_name))
 	!=EXIT_SUCCESS) break;
-
-    // get memory for the detector array
-    //    if ((status=get_detector(&detector))!=EXIT_SUCCESS) break;
-
 
     // get the PSF
     if ((status=get_psf(&psf_store, psf_filename, &status))!=EXIT_SUCCESS) break;
@@ -799,25 +792,25 @@ int measurement_getpar(
   if (status) return(status);
 
 
-  // [mu m]
+  // [m]
   if ((status = PILGetReal("det_pixelwidth", &detector->pixelwidth))) {
     sprintf(msg, "Error reading the width of the detector pixels!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // [mu m]
+  // [m]
   else if ((status = PILGetReal("ccsigma", &detector->ccsigma))) {
     sprintf(msg, "Error reading the charge cloud sigma!\n");
     HD_ERROR_THROW(msg,status);
   }
     
-  // read charge cloud sigma
+  // read background count rate [count per s per ?(area)]
   else if ((status = PILGetReal4("background_countrate", background_countrate))) {
     sprintf(msg, "Error reading the background countrate!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // read the (half) width of the preselection band (in arcmin)
+  // read the (half) width of the preselection band [arcmin]
   else if ((status = PILGetReal("bandwidth", bandwidth))) {
     sprintf(msg, "Error reading the 'bandwidth' parameter!\n");
     HD_ERROR_THROW(msg,status);
@@ -923,7 +916,7 @@ int measure(
 	} // END of loop over all split partners.
 	
       } else if (detector.type == TES) {
-	int npixels = get_pixel_square(detector, position, x, y, fraction);
+	get_pixel_square(detector, position, x, y, fraction);
 
 	if (x[0] != INVALID_PIXEL) {
 	  struct Event event;
