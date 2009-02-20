@@ -37,7 +37,6 @@
 #include "headas_main.c"
 
 #define LINELENGTH 1024        // maximum linelength in the ASCII file
-#define MAXMSG 256             // maximum length of an output/error message
 
 #define MAX(x,y) ( (x)<=(y) ?(y) :(x) )
 #define MIN(x,y) ( (x)<=(y) ?(x) :(y) )
