@@ -36,7 +36,7 @@ OPT=-O3
 OWN_HEATOOLS= 	conv_rosat2fits conv_psf2fits create_rnd_sctlg create_orbit \
 		create_attitude create_rmf create_spectrum measurement plot_psf \
 		plot_det_images plot_eventlist create_psf \
-		scan_tes_events byte_stream
+		scan_tes_events byte_stream generate_photons
 OWN_LIBRARIES= 	libfitsformats.a
 ALL= 		$(OWN_HEATOOLS) $(OWN_LIBRARIES) \
 		sources_in_fov orbitparams_from_pos compare_orbits \
@@ -125,6 +125,9 @@ byte_stream: byte_stream.o libfitsformats.a
 
 htrs_pixel: htrs_pixel.o
 	$(CC) $(LFLAGS) -o htrs_pixel $^ -lm
+
+generate_photons: generate_photons.o
+	$(CC) $(LFLAGS) -o generate_photons $^ $(LIBHEATOOLS)
 
 measurement: measurement.o vector.o psf.o detector.o sources.o photon.o orbatt.o \
 	random.o spectrum.o check_fov.o fits_ctlg.o imglib.o strftcpy.o \

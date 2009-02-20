@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <malloc.h>
-#include <limits.h>
-#include <gsl/gsl_randist.h>
+//#include <limits.h>
+//#include <gsl/gsl_randist.h>
 
 #include "fitsio.h"
 #include "pil.h"
