@@ -9,6 +9,11 @@ void read_photon_list(struct Photon_Entry** pl, struct Detector);
 ////////////////////////////////////
 // Main procedure.
 int measurement_main() {
+  n_events = 0;
+  n_dead = 0;
+  n_interframe = 0;
+  n_outside = 0;
+
   double t0;        // starting time of the simulation
   double timespan;  // time span of the simulation
   double bandwidth; // (half) width of the preselection band 
@@ -526,6 +531,12 @@ int measurement_main() {
   // --- cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
+  printf("inter-frame: %d (%lf)\n", n_interframe, 
+	 (double)n_interframe/photon_counter);
+  printf("dead       : %d (%lf)\n", n_dead,    (double)n_dead/photon_counter);
+  printf("outside    : %d (%lf)\n", n_outside, (double)n_outside/photon_counter);
+
+
   // release HEADAS random number generator
   HDmtFree();
   gsl_rng_free(gsl_random_g);
@@ -615,7 +626,8 @@ int measurement_getpar(
 		       float *background_countrate
 		       )
 {
-  char cbuffer[FILENAME_LENGTH];// filename-buffer to access the different source files
+  // filename-buffer to access the different source files
+  char cbuffer[FILENAME_LENGTH];
 
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
@@ -710,7 +722,8 @@ int measurement_getpar(
     case 4:
       detector->type = HTRS;
 
-      // Get the dead time for the HTRS (readout time of the charge cloud in a pixel).
+      // Get the dead time for the HTRS (readout time of the charge 
+      // cloud in a pixel).
       if ((status = PILGetReal("dead_time", &detector->dead_time))) {
 	sprintf(msg, "Error reading the dead time!\n");
 	HD_ERROR_THROW(msg,status);
@@ -861,7 +874,7 @@ int measure(
       // Get the corresponding created charge.
       float charge = get_charge(channel, detector.ebounds);
       
-      if (channel < 0)    printf("ERROR CHANNEL <= 0!\n");     // TODO
+      if (channel < 0)    printf("ERROR CHANNEL <= 0!\n");     // REMOVE
       if (channel > 4096) printf("ERROR CHANNEL too large!\n");
 
       int x[4], y[4];
@@ -871,18 +884,44 @@ int measure(
 	// Determine the affected detector pixels.
 	int npixels = get_pixel_square(detector, position, x, y, fraction);
 
+	n_events += npixels;
+
 	// Add the charge created by the photon to the affected detector pixels.
 	int count;
+	int on_line=0, off_line=0, outside=0, dead=0;
 	for (count=0; count<npixels; count++) {
 	  if (x[count] != INVALID_PIXEL) {
+
+	    if ((x[count]==0)||(x[count]==detector.width-1)||
+		(y[count]==0)||(y[count]==detector.width-1)) {
+	      //  n_outside++;
+	    } else {
+	      if(detector_active(x[count],y[count],detector, photon.time)==0)
+		dead++;
+
+	      if ((y[count]==detector.readout_line) ||
+		  (y[count]==detector.width-detector.readout_line-1)) {
+		on_line=1;
+	      } else if (((y[count]<detector.readout_line)&&(y[count]>0)) ||
+			 ((y[count]>detector.width-detector.readout_line-1)&&
+			  (y[count]<detector.width-1))) {
+		off_line=1;
+	      }
+	    }
+
 	    detector.pixel[x[count]][y[count]].charge += 
 	      charge * fraction[count] * 
 	      // |        |-> charge fraction due to split events
 	      // |-> charge created by incident photon
 	      detector_active(x[count], y[count], detector, photon.time);
 	    // |-> "1" if pixel can measure charge, "0" else
-	  }
+	  } else outside++;
 	}
+	if((on_line) && (off_line)) n_interframe++;
+	if(outside==npixels) n_outside++;
+	if((dead>0)&&(on_line)&&(off_line)) n_dead++;
+	if((dead)&&(npixels==2)&&(y[0]==y[1])) n_dead++;
+	if((dead)&&(npixels==1)) n_dead++;
 
       } else if (detector.type == HTRS) {
 	int npixels = htrs_get_pixel(detector, position, x, y, fraction);
@@ -907,7 +946,8 @@ int measure(
 	      event.frame = 0;
 
 	      // Add the event to the FITS event list.
-	      if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
+	      // Check lower PHA threshold:
+	      if (event.pha >= detector.low_threshold) { 
 		// There is an event in this pixel, so insert it into eventlist:
 		add_eventtbl_row(event_list_file, event, &status);
 	      }

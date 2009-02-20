@@ -84,7 +84,8 @@ int get_psf_pos(
   // get a random number to determine a random hitting position
   double rnd = get_random_number();
   if (rnd > psf.data[store.width-1][store.width-1]) {
-    // the photon does not hit the detector at all (e.g. it is absorbed)
+    // The photon does not hit the detector at all (e.g. it is absorbed).
+    n_outside++;
     return(0);
   }
   // Otherwise the photon hits the detector.

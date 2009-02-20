@@ -33,6 +33,8 @@
 #include "sources_types.h"
 
 
+int n_events, n_dead, n_interframe, n_outside;
+
 
 // This routine is called after each photon event. It takes care of the detector 
 // action. I.e. if the integration time is over, it reads out the detector array 

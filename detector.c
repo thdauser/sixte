@@ -708,7 +708,8 @@ int detector_active(
       // If we are at the beginning of the readout interval of the regarded line
       // within the clear time, the photon is not measured.
       if (time - detector.readout_time < detector.clear_time) {
-	// The current line is cleared at the moment, so no photon can be measured.
+	// The specified line is cleared at the moment, so no photon can 
+	// be detected.
 	return(0);
       }
     }
@@ -716,7 +717,7 @@ int detector_active(
     // The specified detector pixel is active at the moment.
     return(1);
 
-  } else {  // Default: detector unknown
+  } else {  // Default: detector unknown.
     // The specified detector pixel is active at the moment.
     return(1);
   }
