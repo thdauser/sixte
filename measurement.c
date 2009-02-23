@@ -740,10 +740,15 @@ int measurement_getpar(
   if (status) return(status);
   // END of handling different detector types.
 
-
+  
+  // Read the lower detector threshold (integer value):
+  if ((status = PILGetInt("lo_thres", &detector->low_threshold))) {
+    sprintf(msg, "Error: could not determine lower detector threshold!\n");
+    HD_ERROR_THROW(msg,status);
+  }
 
   // get the filename of the PSF data file (FITS file)
-  if ((status = PILGetFname("psffile", psf_filename))) {
+  else if ((status = PILGetFname("psffile", psf_filename))) {
     sprintf(msg, "Error reading the filename of the PSF file!\n");
     HD_ERROR_THROW(msg,status);
   }

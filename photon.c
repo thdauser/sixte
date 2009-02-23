@@ -79,7 +79,7 @@ int create_lightcurve(
 
     // desired properties of the light curve
     const float mean_rate = src->rate;
-    const float sigma = (mean_rate-10.)/3.;
+    const float sigma = mean_rate/3.; // (mean_rate-10.)/3.;
 
     // normalize and copy FFT array to light curve array
     if (status != EXIT_FAILURE) {

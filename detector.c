@@ -499,6 +499,7 @@ int get_rmf(
       break;
     }
 
+    /*
     // Read the lower detector threshold [PHA] from the 
     // corresponding header keyword.
     int buffer = EXIT_SUCCESS;
@@ -517,13 +518,12 @@ int get_rmf(
 	detector->low_threshold = int_buffer;
       }
 
-      /*
-      sprintf(msg, "Error: FITS file '%s' contains no lower threshold "
-	      "(header key 'LO_THRES')!\n", rmf_name);
-      HD_ERROR_THROW(msg,status);
-      break;
-      */
-    }
+      
+      //sprintf(msg, "Error: FITS file '%s' contains no lower threshold "
+	//      "(header key 'LO_THRES')!\n", rmf_name);
+      //HD_ERROR_THROW(msg,status);
+      //break; 
+    }*/
 
 
     // Determine the number of rows in the FITS file (number of 
@@ -984,7 +984,7 @@ struct Point2i htrs_get_pixel2icoordinates(int pixel, struct Detector detector)
 ///////////////////////////////////////////
 int htrs_get_detector(struct Detector* detector)
 {
-  struct Point2d* centers;
+  struct Point2d* centers = NULL;
 
   char msg[MAXMSG];        // buffer for error output messages
   int status = EXIT_SUCCESS;
