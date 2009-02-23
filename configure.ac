@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 AC_INIT([sixt], [0.01], [christian.schmid@sternwarte.uni-erlangen.de])
-AC_CONFIG_SRCDIR([binary_stream/binary_stream.c])
+AC_CONFIG_SRCDIR([sixttools/binary_stream/binary_stream.c])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
@@ -11,7 +11,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 # Checks for programs.
 AC_PROG_CC
-
+AC_PROG_LIBTOOL
+#AC_DISABLE_SHARED
+#AC_DISABLE_STATIC
 
 
 # Checks for libraries.
@@ -89,5 +91,6 @@ AC_C_CONST
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
-		binary_stream/Makefile])
+		sixttools/Makefile
+		sixttools/binary_stream/Makefile])
 AC_OUTPUT
