@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 AC_INIT([sixt], [0.01], [christian.schmid@sternwarte.uni-erlangen.de])
-AC_CONFIG_SRCDIR([binary_stream.c])
+AC_CONFIG_SRCDIR([binary_stream/binary_stream.c])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
@@ -17,6 +17,10 @@ AC_PROG_CC
 # Checks for libraries.
 CFLAGS="$CFLAGS -I$HEADAS/include"
 LDFLAGS="$LDFLAGS -L$HEADAS/lib"
+
+
+AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
+
 
 libcfitsio="no"
 AC_CHECK_LIB(cfitsio, ffopen, [libcfitsio="-lcfitsio"], [], [-lm])
@@ -84,5 +88,6 @@ AC_C_CONST
 
 # Checks for library functions.
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile
+		binary_stream/Makefile])
 AC_OUTPUT
