@@ -92,7 +92,7 @@ AC_C_CONST
 
 AC_CONFIG_FILES([Makefile
 		tools/Makefile
-		tools/binary_stream/Makefile]
-		libraries
-		libraries/libdetectors)
+		tools/binary_stream/Makefile
+		libraries/Makefile])
+#		libraries/libdetectors/Makefile])
 AC_OUTPUT

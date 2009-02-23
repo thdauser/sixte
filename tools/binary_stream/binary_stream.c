@@ -10,28 +10,27 @@
 #include <string.h>
 #include <malloc.h>
 
-
 #include "fitsio.h"
 #include "pil.h"
 #include "headas.h"
 #include "headas_error.h"
 
-#define TOOLSUB byte_stream_main
+#define TOOLSUB binary_stream_main
 #include "headas_main.c"
 
-#include "global_constants.h"
-#include "event_list.h"
+#include "sixt.h"
+#include "detectors.h"
 
 
 
 // This routine reads the program parameters using PIL.
-int byte_stream_getpar(char input_filename[], char output_filename[],
+int binary_stream_getpar(char input_filename[], char output_filename[],
 		       double* binning_time);
 
 
 
 //////////////////////////////////
-int byte_stream_main()
+int binary_stream_main()
 {
   struct Event_List_File event_list_file;   // FITS file
   char output_filename[FILENAME_LENGTH];
@@ -46,12 +45,12 @@ int byte_stream_main()
 
 
   // HEATOOLs: register program
-  set_toolname("byte_stream");
+  set_toolname("binary_stream");
   set_toolversion("0.01");
 
 
   // Get the parameters:
-  status = byte_stream_getpar(event_list_file.filename, output_filename, 
+  status = binary_stream_getpar(event_list_file.filename, output_filename, 
 			      &binning_time);
   if (status != EXIT_SUCCESS) return (status);
 
@@ -223,11 +222,11 @@ int byte_stream_main()
 
 
 //////////////////////////////////////////////////////
-int byte_stream_getpar(
-		       char input_filename[],  // FITS event list
-		       char output_filename[], // binary output file
-		       double* binning_time    // time span for spectral binning
-		       )
+int binary_stream_getpar(
+			 char input_filename[],  // FITS event list
+			 char output_filename[], // binary output file
+			 double* binning_time    // time span for spectral binning
+			 )
 {
   int status=0;        // error status
   char msg[MAXMSG];    // error message buffer
