@@ -5,7 +5,6 @@
 #include <stdlib.h>
 
 #include "fitsio.h"
-//#include "global_constants.h"
 
 
 #define PHA_NFIELDS 3

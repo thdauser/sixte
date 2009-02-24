@@ -150,8 +150,6 @@ int measurement_main() {
     detector.ccsize = 3.*detector.ccsigma; ///detector.pixelwidth;       
     // angle from [arc min] to [rad]
     telescope.fov_diameter = telescope.fov_diameter*M_PI/(60.*180.); 
-    // convert angle from [arc min] to [rad]
-    bandwidth = bandwidth*M_PI/(60.*180.);
 
     // Set the current detector frame to its initial value:
     detector.frame = -1;
@@ -233,10 +231,9 @@ int measurement_main() {
     // TODO can be removed
     //    plot_array(psf_store.psf[0].data, psf_store.width, 1.0, "psf_image.png");
 
-    // get the source spectra ( has to be called after get_psf() )
-    if ((status=get_spectra(&spectrum_store, detector.Nchannels, 
-			    spectrum_filename, N_SPECTRA_FILES, psf_store)) 
-	!= EXIT_SUCCESS) break;
+    // Get the source spectra:
+    if ((status=get_spectra(&spectrum_store, detector.Nchannels, spectrum_filename,
+			    N_SPECTRA_FILES))!=EXIT_SUCCESS) break;
 
     // get the detector redistribution matrix (RMF)
     if ((status=get_rmf(&detector, rmf_name)) != EXIT_SUCCESS) break;
@@ -562,7 +559,8 @@ int measurement_main() {
   }
   
   // release source catalogs
-  free_source_catalogs(source_catalog_files,n_sourcefiles,&selected_catalog,&status);
+  free_source_catalogs(source_catalog_files,n_sourcefiles,
+		       &selected_catalog,&status);
   
   // release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
@@ -833,6 +831,9 @@ int measurement_getpar(
     sprintf(msg, "Error reading the 'bandwidth' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
+
+  // convert angle from [arc min] to [rad]
+  *bandwidth = *bandwidth*M_PI/(60.*180.);
 
   return(status);
 }

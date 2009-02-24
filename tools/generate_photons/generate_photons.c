@@ -67,18 +67,35 @@ int generate_photons_main()
   // Names of several input and output files:
   char orbit_filename[FILENAME_LENGTH];      // input: orbit
   char attitude_filename[FILENAME_LENGTH];   // input: attitude
+  char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];// input: source spectra
   char photonlist_filename[FILENAME_LENGTH]; // output: photon list
+  
+  // Several input source catalog files:
+  int n_sourcefiles;   // number of input source files
+  // Filenames of the individual source catalog files (FITS)
+  char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH]; 
+  // Column numbers of r.a., declination and count rate in the individual files
+  int source_data_columns[5][3];       
+
 
   double t0;        // start time of the photon generation
   double timespan;  //  time span of the photon generation
   double bandwidth; // (half) width of the preselection band 
                     // along the path of the telescope axis [rad]
 
-
+  // Detector data structure (containing the pixel array, its width, ...)
+  struct Detector detector;   
   // Catalog with orbit and attitude data over a particular timespan
   struct Telescope *sat_catalog=NULL;     
   // Number of entries in the orbit list ( <= orbit_nrows)
   long sat_nentries;                      
+  // Source catalogs (FITS files)
+  fitsfile *source_catalog_files[MAX_NSOURCEFILES]; 
+  // Catalog of preselected sources along the path of the telescope axis
+  struct source_cat_entry *selected_catalog=NULL;
+  // Storage for different source spectra (including background spectrum).
+  struct Spectrum_Store spectrum_store; 
+
 
   gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
 
@@ -93,11 +110,11 @@ int generate_photons_main()
 
   do {  // Beginning of ERROR HANDLING Loop.
 
-    if ((status = generate_photons_getpar(orbit_filename, 
-					  attitude_filename,
+    // ---- Initialization ----
+
+    if ((status = generate_photons_getpar(orbit_filename, attitude_filename,
 					  photonlist_filename, 
-					  &t0, &timespan, &bandwidth))) 
-      break;
+					  &t0, &timespan, &bandwidth))) break;
 
 
     // Initialize HEADAS random number generator and GSL generator for 
@@ -108,11 +125,20 @@ int generate_photons_main()
 
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
-    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, timespan, 
-				      orbit_filename, attitude_filename))
-	!=EXIT_SUCCESS) break;
+    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, 
+				      timespan, orbit_filename, 
+				      attitude_filename)) !=EXIT_SUCCESS) break;
 
+    // Get the source spectra:
+    if ((status=get_spectra(&spectrum_store, detector.Nchannels, spectrum_filename,
+			    N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
+        
+    // Get the source catalogs:
+    if ((status=get_source_catalogs(&selected_catalog, n_sourcefiles, 
+				    source_catalog_files, source_data_columns, 
+				    source_filename))!=EXIT_SUCCESS) break;
 
+    // ---- End of Initialization ----
 
   } while(0); // END of ERROR HANDLING Loop.
 

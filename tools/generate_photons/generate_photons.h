@@ -16,9 +16,9 @@
 
 #include "sixt.h"
 //#include "vector.h"
-//#include "spectrum.h"
+#include "spectrum.h"
 //#include "photon.h"
-//#include "sources.h"
+#include "astrosources.h"
 #include "telescope.h"
 #include "orbatt.h"
 
