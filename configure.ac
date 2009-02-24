@@ -91,8 +91,5 @@ AC_C_CONST
 
 AC_CONFIG_FILES([Makefile
 		libraries/Makefile
-		libraries/libdetectors/Makefile
-		libraries/libsatellites/Makefile
-		tools/Makefile
-		])
+		tools/Makefile])
 AC_OUTPUT
