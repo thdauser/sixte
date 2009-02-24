@@ -21,6 +21,7 @@
 #include "astrosources.h"
 #include "telescope.h"
 #include "orbatt.h"
+#include "detectors.h"
 
 #define TOOLSUB generate_photons_main
 #include "headas_main.c"

@@ -269,10 +269,10 @@ int measurement_main() {
     // Create event list FITS file:
     headas_chat(5, "create FITS file '%s' for output of event list ...\n", 
 		event_list_file.filename);
-    // delete old event list
+    // Delete old event list:
     remove(event_list_file.filename);
 
-    // Create a new FITS file and a table for the event list.
+    // Create a new FITS file and a table for the event list:
     if (fits_create_file(&event_list_file.fptr, event_list_file.filename, &status)) 
       break;
     if (create_event_list_file(&event_list_file, detector, t0, t0+timespan, 
@@ -740,18 +740,22 @@ int measurement_getpar(
 
   
   // Read the lower detector threshold (integer value):
-  if ((status = PILGetInt("lo_thres", &detector->low_threshold))) {
+  int threshold;
+  if ((status = PILGetInt("lo_thres", &threshold))) {
     sprintf(msg, "Error: could not determine lower detector threshold!\n");
     HD_ERROR_THROW(msg,status);
+    return(status);
+  } else {
+    detector->low_threshold = (long)threshold;
   }
 
-  // get the filename of the PSF data file (FITS file)
-  else if ((status = PILGetFname("psffile", psf_filename))) {
+  // Get the filename of the PSF data file (FITS file)
+  if ((status = PILGetFname("psffile", psf_filename))) {
     sprintf(msg, "Error reading the filename of the PSF file!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // filename of the detector redistribution file (FITS file)
+  // Get the filename of the detector redistribution file (FITS file)
   else if ((status = PILGetFname("rmf", rmf_name))) {
     sprintf(msg, "Error reading the filename of the detector" 
 	    "redistribution matrix file (RMF)!\n");

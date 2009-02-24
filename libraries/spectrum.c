@@ -55,7 +55,7 @@ int get_spectrum(
     headas_chat(5, "load spectrum from file '%s' ...\n", filename);
 
     // first open PHA FITS file
-    if (fits_open_file(&pha_fptr, filename, READONLY, &status)) break;
+    if (fits_open_table(&pha_fptr, filename, READONLY, &status)) break;
   
     int hdunum, hdutype;
     // after opening the FITS file, get the number of the current HDU
@@ -81,16 +81,14 @@ int get_spectrum(
     long nrows;
     fits_get_num_rows(pha_fptr, &nrows, &status);
 
-    if (nrows < Nchannels) {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Not enough data available in FITS file!\n");
-      HD_ERROR_THROW(msg,status);
-      break;
+    if (nrows != Nchannels) {
+      headas_chat(0, "Warning: number of PHA channels in spectrum file '%s' is not "
+		  "equivalent to number of detector channels!\n", filename);
     }
   
 
     // get memory for the spectrum
-    spectrum->data = (float *) malloc(Nchannels * sizeof(float));
+    spectrum->data = (float *) malloc(nrows * sizeof(float));
     if (!(spectrum->data)) {
       status = EXIT_FAILURE;
       sprintf(msg, "Not enough memory available to store the source spectra!\n");
@@ -110,7 +108,7 @@ int get_spectrum(
       // (PHA channel start at 1 !!)
       if ((channel <= 0) || (channel > Nchannels)) {
 	status=EXIT_FAILURE;
-	sprintf(msg, "Invalid channel number (%ld) in file '%s'!\n", channel, 
+	sprintf(msg, "Error: Invalid channel number (%ld) in file '%s'!\n", channel, 
 		filename);
 	HD_ERROR_THROW(msg,status);
 	break;
