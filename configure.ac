@@ -8,7 +8,6 @@ AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 
-
 # Checks for programs.
 AC_PROG_CC
 AC_DISABLE_SHARED
@@ -95,5 +94,6 @@ AC_CONFIG_FILES([Makefile
 		libraries/libdetectors/Makefile
 		tools/Makefile
 		tools/binary_stream/Makefile
+		tools/generate_photons/Makefile
 		])
 AC_OUTPUT
