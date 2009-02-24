@@ -4,12 +4,16 @@
 AC_PREREQ(2.61)
 AC_INIT([sixt], [0.01], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_SRCDIR([tools/binary_stream.c])
+# The following line tells 'configure' to create a header file 'config.h'
+# that is filled with definitions from this script.
+# The 'config.h' contains for example the name of the package and can be
+# included in the programm sources.
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC     # Search for a C-Compiler and store it in the Variable 'CC'.
 AC_DISABLE_SHARED
 #AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
@@ -89,6 +93,10 @@ AC_C_CONST
 
 # Checks for library functions.
 
+
+
+# Create the following Makefiles (including subdirectories).
+# A Makefile that is not listed here will not be created by 'automake'!
 AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		tools/Makefile])

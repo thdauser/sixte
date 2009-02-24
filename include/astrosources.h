@@ -58,4 +58,3 @@ int get_preselected_catalog(struct source_cat_entry *selected_catalog,
 
 #endif /* ASTROSOURCES_H */
 
-
