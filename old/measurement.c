@@ -608,7 +608,7 @@ int measurement_getpar(
 		       // array containing the filename of each source file
 		       char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH], 
 		       char psf_filename[],     // PSF FITS file
-		       // FITS file containing the detector EBOUNDS
+		       // FITS file containing the detector RMF
 		       char rmf_name[],       
 		       // PHA file containing the default source spectrum:
 		       char spectrum_filename[],

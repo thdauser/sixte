@@ -6,12 +6,21 @@
 int generate_photons_getpar(
 			    char orbit_filename[],
 			    char attitude_filename[],
+			    // number of input source catalog files
+			    int *n_sourcefiles,  
+			    // array containing the filename of each source file
+			    char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH],
+			    // PHA file containing the default source spectrum
+			    char spectrum_filename[],
 			    char photonlist_filename[],
 			    double *t0,
 			    double *timespan,
 			    double *bandwidth
 			    )
 {
+  // filename-buffer to access the different source files
+  char cbuffer[FILENAME_LENGTH];
+
   char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
 
@@ -24,6 +33,44 @@ int generate_photons_getpar(
   // Get the filename of the Attitude file (FITS file):
   else if ((status = PILGetFname("attitude_filename", attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
+    HD_ERROR_THROW(msg,status);
+  }
+
+  // Get the number of source input-files
+  else if ((status = PILGetInt("n_sourcefiles", n_sourcefiles))) {
+    sprintf(msg, "Error reading the number of source catalog files!\n");
+    HD_ERROR_THROW(msg,status);
+  }
+
+  // Get the filenames of the individual source catalogs.
+  else {
+    int input_counter;
+    for(input_counter=0; input_counter<MAX_NSOURCEFILES; input_counter++) {
+
+      sprintf(cbuffer,"sourcefile%d",input_counter+1);
+
+      if (input_counter<*n_sourcefiles) {
+	// Read the source file from using PIL.
+	if ((status = PILGetFname(cbuffer, source_filename[input_counter]))) {
+	  sprintf(msg, "Error reading the name of the sourcefile No %d!\n", 
+		  input_counter);
+	  HD_ERROR_THROW(msg,status);
+	}
+
+      } else {
+	// Fill redundant input slots for source files with NULL value,
+	// in order to avoid errors with the HD_PARSTAMP routine.
+	PILPutFname(cbuffer, "");
+
+      }
+	
+    }
+    if (status) return(status);
+  }
+
+  // filename of the default source spectrum (PHA FITS file)
+  if ((status = PILGetFname("spectrum", spectrum_filename))) {
+    sprintf(msg, "Error reading the filename of the default spectrum (PHA)!\n");
     HD_ERROR_THROW(msg,status);
   }
 
@@ -83,8 +130,6 @@ int generate_photons_main()
   double bandwidth; // (half) width of the preselection band 
                     // along the path of the telescope axis [rad]
 
-  // Detector data structure (containing the pixel array, its width, ...)
-  struct Detector detector;   
   // Catalog with orbit and attitude data over a particular timespan
   struct Telescope *sat_catalog=NULL;     
   // Number of entries in the orbit list ( <= orbit_nrows)
@@ -113,7 +158,8 @@ int generate_photons_main()
     // ---- Initialization ----
 
     if ((status = generate_photons_getpar(orbit_filename, attitude_filename,
-					  photonlist_filename, 
+					  &n_sourcefiles, source_filename,
+					  spectrum_filename, photonlist_filename,
 					  &t0, &timespan, &bandwidth))) break;
 
 
@@ -130,7 +176,7 @@ int generate_photons_main()
 				      attitude_filename)) !=EXIT_SUCCESS) break;
 
     // Get the source spectra:
-    if ((status=get_spectra(&spectrum_store, detector.Nchannels, spectrum_filename,
+    if ((status=get_spectra(&spectrum_store, 0, spectrum_filename,
 			    N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
         
     // Get the source catalogs:
