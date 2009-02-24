@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -I${HEADAS}/include -I@top_srcdir@/include
-#AM_CFLAGS   = -Wall
-AM_CFLAGS   = -Wall -Werror
+AM_CFLAGS   = -Wall
+#AM_CFLAGS   = -Wall -Werror
 
 bin_PROGRAMS = binary_stream
 
