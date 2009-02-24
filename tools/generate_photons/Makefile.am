@@ -8,4 +8,5 @@ generate_photons_SOURCES  = generate_photons.c generate_photons.h
 generate_photons_LDFLAGS  = @libcfitsio@ -lnsl
 generate_photons_LDFLAGS += @libape@ -lreadline
 generate_photons_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-generate_photons_LDADD    = -lm
+generate_photons_LDADD    = @top_srcdir@/libraries/libsatellites/libsatellites.a
+generate_photons_LDADD   += -lgsl -lgslcblas -lm

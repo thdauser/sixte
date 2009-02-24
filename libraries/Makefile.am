@@ -1,1 +1,1 @@
-SUBDIRS = libdetectors
+SUBDIRS = libdetectors libsatellites

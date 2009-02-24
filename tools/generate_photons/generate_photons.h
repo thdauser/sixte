@@ -6,20 +6,21 @@
 #include <math.h>
 #include <malloc.h>
 //#include <limits.h>
-//#include <gsl/gsl_randist.h>
+#include <gsl/gsl_randist.h>
 
 #include "fitsio.h"
 #include "pil.h"
 #include "headas.h"
 #include "headas_error.h"
+#include "headas_rand.h"
 
 #include "sixt.h"
 //#include "vector.h"
 //#include "spectrum.h"
 //#include "photon.h"
 //#include "sources.h"
-//#include "telescope.h"
-//#include "orbatt.h"
+#include "telescope.h"
+#include "orbatt.h"
 
 #define TOOLSUB generate_photons_main
 #include "headas_main.c"
