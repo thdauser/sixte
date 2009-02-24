@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 AC_INIT([sixt], [0.01], [christian.schmid@sternwarte.uni-erlangen.de])
-AC_CONFIG_SRCDIR([tools/binary_stream/binary_stream.c])
+AC_CONFIG_SRCDIR([tools/binary_stream.c])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
@@ -94,7 +94,5 @@ AC_CONFIG_FILES([Makefile
 		libraries/libdetectors/Makefile
 		libraries/libsatellites/Makefile
 		tools/Makefile
-		tools/binary_stream/Makefile
-		tools/generate_photons/Makefile
 		])
 AC_OUTPUT
