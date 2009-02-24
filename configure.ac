@@ -11,9 +11,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_LIBTOOL
-#AC_DISABLE_SHARED
+AC_DISABLE_SHARED
 #AC_DISABLE_STATIC
+AC_PROG_LIBTOOL
 
 
 # Checks for libraries.
@@ -91,8 +91,9 @@ AC_C_CONST
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
+		libraries/Makefile
+		libraries/libdetectors/Makefile
 		tools/Makefile
 		tools/binary_stream/Makefile
-		libraries/Makefile])
-#		libraries/libdetectors/Makefile])
+		])
 AC_OUTPUT

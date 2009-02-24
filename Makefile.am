@@ -1,1 +1,1 @@
-SUBDIRS = tools libraries
+SUBDIRS = libraries tools
