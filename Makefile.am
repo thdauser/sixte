@@ -1,1 +1,1 @@
-SUBDIRS = libraries src
+SUBDIRS = src
