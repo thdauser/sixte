@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I${HEADAS}/include -I@top_srcdir@/include
 AM_CFLAGS   = -Wall
 #AM_CFLAGS   = -Wall -Werror
-#CFLAGS = 
+CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
 
 
 # The following line lists the programs that should be created and stored
@@ -14,7 +14,7 @@ lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
 # Sources:
 libastrosources_a_SOURCES = spectrum.c sources.c photon.c fits_pha.c random.c check_fov.c
 
-libdetectors_a_SOURCES = detector.c eventlist.c random.c
+libdetectors_a_SOURCES = detector.c eventlist.c psf.c random.c
 #libdetectors_a_LDFLAGS  = @libcfitsio@ -lnsl
 #libdetectors_a_LDFLAGS += @libape@ -lreadline
 #libdetectors_a_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@

@@ -271,13 +271,10 @@ int get_eventlist_row(struct Eventlist_File eventlist_file,
 		     struct Event* event,
 		     int *status) {
   int anynul = 0;
-  double dbuffer;
 
   // time (1st column)
-  dbuffer = 0.;
   fits_read_col(eventlist_file.fptr, TDOUBLE, 1, eventlist_file.row+1, 1, 1, 
-		&dbuffer, &dbuffer, &anynul, status);
-  event->time = dbuffer;
+		&event->time, &event->time, &anynul, status);
 
   // PHA channel (2nd column)
   fits_read_col(eventlist_file.fptr, TLONG, 2, eventlist_file.row+1, 1, 1, 
