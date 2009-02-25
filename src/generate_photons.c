@@ -29,19 +29,19 @@ int generate_photons_getpar(
   // Get the filename of the Orbit file (FITS file):
   if ((status = PILGetFname("orbit_filename", orbit_filename))) {
     sprintf(msg, "Error reading the filename of the orbit file!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW(msg, status);
   }
 
   // Get the filename of the Attitude file (FITS file):
   else if ((status = PILGetFname("attitude_filename", attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW(msg, status);
   }
 
   // Get the number of source input-files
   else if ((status = PILGetInt("n_sourcefiles", n_sourcefiles))) {
     sprintf(msg, "Error reading the number of source catalog files!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW(msg, status);
   }
 
   // Get the filenames of the individual source catalogs.
@@ -171,6 +171,9 @@ int generate_photons_main()
   // Photon list containing all created photons in the sky
   struct Photon_Entry *photon_list=NULL;  
 
+  // Pointer to the FITS file for the output for the photon list.
+  fitsfile *photonlist_fptr = NULL;
+
   gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
 
   char msg[MAXMSG];           // error message buffer
@@ -248,6 +251,12 @@ int generate_photons_main()
 				    source_filename))!=EXIT_SUCCESS) break;
 
 
+    // Delete old photon list FITS file:
+    remove(photonlist_filename);
+    // Create a new FITS file for the output of the photon list:
+    if ((create_photonlist_file(&photonlist_fptr, photonlist_filename, &status))) break;
+
+
     // --- End of Initialization ---
 
 
@@ -255,12 +264,13 @@ int generate_photons_main()
     // --- Beginning of Photon generation process ---
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    double time;                   // current time
+    double time;             // current time
 
-    long sat_counter=0;            // counter for orbit readout loop
-    long last_sat_counter=0;       // stores sat_counter of former repetition, 
-                                   // so the searching loop
-                                   // doesn't have to start at 0 every time.
+    long sat_counter=0;      // counter for orbit readout loop
+    long last_sat_counter=0; // stores sat_counter of former repetition, 
+                             // so the searching loop
+                             // doesn't have to start at 0 every time.
+    long photon_row=0;       // current row in photon list FITS file;
 
     struct vector n;   // normalized vector perpendicular to the orbital plane
 
@@ -277,7 +287,7 @@ int generate_photons_main()
     for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
 
       // Print the current time step to STDOUT.
-      headas_chat(5, "time: %lf\n", time);
+      // headas_chat(5, "time: %lf\n", time);
 
       // Get the last orbit entry before the time 'time':
       // (in order to interpolate the actual position and velocity between 
@@ -386,34 +396,17 @@ int generate_photons_main()
 	// direction of the telescope axis:
 	if(check_fov(photon_list->photon.direction,telescope.nz,fov_min_align)==0) {
 	  // Photon is inside the FOV!
-	  
-	  /*
-	  // Determine telescope data like direction etc. (attitude):
-	  // Calculate nx: perpendicular to telescope axis and in the direction of
-	  // the satellite motion:
-	  telescope.nx = 
-	    normalize_vector(interpolate_vec(sat_catalog[sat_counter].nx, 
-					     sat_catalog[sat_counter].time, 
-					     sat_catalog[sat_counter+1].nx, 
-					     sat_catalog[sat_counter+1].time, 
-					     photon_list->photon.time));
-	  // Remove the component along the vertical direction nz 
-	  // (nx must be perpendicular to nz!):
-	  double scp = scalar_product(telescope.nz,telescope.nx);
-	  telescope.nx.x -= scp*telescope.nz.x;
-	  telescope.nx.y -= scp*telescope.nz.y;
-	  telescope.nx.z -= scp*telescope.nz.z;
-	  telescope.nx = normalize_vector(telescope.nx);
 
-	  // ny is perpendicular to telescope axis and nx:
-	  telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
-	  */
-
-	  // Measure the photon in a detector pixel, i.e., create the 
-	  // corresponding charge there.
-
-	  // ************ !!!!!!!!!!!!!!!!!!!! *********
-
+	  // Add the photon to the photon list file:
+	  fits_insert_rows(photonlist_fptr, photon_row++, 1, &status);
+	  fits_write_col(photonlist_fptr, TDOUBLE, 1, photon_row, 1, 1, 
+			 &photon_list->photon.time, &status);
+	  fits_write_col(photonlist_fptr, TFLOAT, 2, photon_row, 1, 1, 
+			 &photon_list->photon.energy, &status);
+	  fits_write_col(photonlist_fptr, TDOUBLE, 3, photon_row, 1, 1, 
+			 &photon_list->photon.ra, &status);
+	  fits_write_col(photonlist_fptr, TDOUBLE, 4, photon_row, 1, 1, 
+			 &photon_list->photon.dec, &status);
 	}
 
 	// Move to the next entry in the photon list and clear the current entry.
@@ -434,10 +427,12 @@ int generate_photons_main()
 
   // --- Clean up ---
 
+  // Close FITS file
+  if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
+
   // Release HEADAS random number generator:
   HDmtFree();
   gsl_rng_free(gsl_random_g);
-
 
   // clear photon list
   clear_photon_list(&photon_list);

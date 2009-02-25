@@ -200,7 +200,9 @@ int create_photons(
   // create photons and insert them in the given time ordered list
   while (src->t_last_photon < time+dt) {
     struct Photon new_photon;        // buffer for new photon
-    new_photon.direction = src->r;
+    new_photon.ra = src->ra;
+    new_photon.dec = src->dec; 
+    new_photon.direction = src->r;   // REMOVE
 
     // Create the energy of the new photon
     new_photon.energy = photon_energy(*src, detector);
@@ -295,3 +297,91 @@ int insert_photon(struct Photon_Entry **pe, struct Photon ph) {
 
 
 
+
+///////////////////////////////////////////////////////////////////
+int create_photonlist_file(
+			   fitsfile **fptr,
+			   char photonlist_filename[],
+			   int *status
+			   )
+{
+  char *ftype[N_PHOTON_FIELDS];
+  char *fform[N_PHOTON_FIELDS];
+  char *funit[N_PHOTON_FIELDS];
+  int counter;
+
+  char msg[MAXMSG];  // error output buffer
+
+  do { // Beginning of ERROR handling loop
+
+    // Create a new FITS file:
+    if (fits_create_file(fptr, photonlist_filename, status)) break;
+
+    // To create a FITS table, the format of the individual columns has to 
+    // be specified.
+    for(counter=0; counter<N_PHOTON_FIELDS; counter++) {
+      // Allocate memory
+      ftype[counter] = (char *) malloc(8 * sizeof(char));
+      fform[counter] = (char *) malloc(4 * sizeof(char));
+      funit[counter] = (char *) malloc(20 * sizeof(char));
+
+      // Check if all memory was allocated successfully:
+      if ((!ftype[counter]) || (!fform[counter]) || (!funit[counter])) {
+	*status = EXIT_FAILURE;
+	sprintf(msg, "Error: no memory allocation for FITS table parameters "
+		"failed (photon list)!\n");
+	HD_ERROR_THROW(msg, *status);
+      }
+    }
+
+    // If an error has occurred during memory allocation, 
+    // skip the following part.
+    if (*status != EXIT_SUCCESS) break;
+
+    // Set the field types of the table in the FITS file.
+    // 1. time
+    strcpy(ftype[0], "TIME");
+    strcpy(fform[0], "D");
+    strcpy(funit[0], "s");
+
+    // 2. energy
+    strcpy(ftype[1], "ENERGY");
+    strcpy(fform[1], "E");
+    strcpy(funit[1], "keV");
+
+    // 3. right ascension
+    strcpy(ftype[2], "RA");
+    strcpy(fform[2], "D");
+    strcpy(funit[2], "decimal degrees");
+
+    // 4. declination
+    strcpy(ftype[3], "DEC");
+    strcpy(fform[3], "D");
+    strcpy(funit[3], "decimal degrees");
+
+    // create the table
+    if (fits_create_tbl(*fptr, BINARY_TBL, 0, N_PHOTON_FIELDS, 
+			ftype, fform, funit, "PHOTONLIST", status)) break;
+    
+
+    // write descriptory data into the header of the FITS file
+    if (fits_write_key(*fptr, TSTRING, "COMMENT", "PHOTONLIST",
+		       "", status)) break;
+
+    // If desired by the user, print all program parameters to HISTORY of 
+    // FITS file (HDU number 1).
+    HDpar_stamp(*fptr, 2, status);
+    
+  } while (0);  // END of ERROR handling loop
+
+
+  //----------------
+  // clean up
+  for (counter=0; counter<N_PHOTON_FIELDS; counter++) {
+    if (ftype[counter]) free(ftype[counter]);
+    if (fform[counter]) free(fform[counter]);
+    if (funit[counter]) free(funit[counter]);
+  }
+
+  return(*status);
+}

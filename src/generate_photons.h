@@ -3,9 +3,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <malloc.h>
-//#include <limits.h>
+#include <limits.h>
+#include <math.h>
 #include <gsl/gsl_randist.h>
 
 #include "fitsio.h"
@@ -15,9 +15,9 @@
 #include "headas_rand.h"
 
 #include "sixt.h"
-//#include "vector.h"
+#include "vector.h"
 #include "spectrum.h"
-//#include "photon.h"
+#include "photon.h"
 #include "astrosources.h"
 #include "telescope.h"
 #include "orbatt.h"

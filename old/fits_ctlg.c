@@ -6,8 +6,10 @@
 /////////////////////////
 // SOURCEFILES:
 
-void create_srctbl_parameters(char *ftype[N_SOURCE_FIELDS], char *fform[N_SOURCE_FIELDS], 
-			      char *funit[N_SOURCE_FIELDS]) {
+void create_srctbl_parameters(char *ftype[N_SOURCE_FIELDS], 
+			      char *fform[N_SOURCE_FIELDS],
+			      char *funit[N_SOURCE_FIELDS]) 
+{
   int counter;
 
   /* determine field types of the table in the FITS file */

@@ -6,7 +6,9 @@
 
 // Define a structure which contains the necessary data for each source
 struct source_cat_entry {
-  struct vector r;                       // position of the source
+  double ra, dec;   // right ascension and declination of the source position
+  struct vector r;  // REMOVE            // position of the source
+  
   float rate;                            // photon rate
   struct lightcurve_entry* lightcurve;   // pointer to light curve
   struct Spectrum *spectrum;             // pointer to source spectrum

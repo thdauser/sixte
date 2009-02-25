@@ -1,3 +1,5 @@
+#CFLAGS = 
+
 AM_CPPFLAGS = -I${HEADAS}/include -I@top_srcdir@/include
 AM_CFLAGS  = -Wall -Werror
 

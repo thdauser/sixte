@@ -110,7 +110,7 @@ void free_source_catalogs(
 
   // close the FITS files to the source catalogs
   for (counter = 0; counter < n_sourcefiles; counter++) {
-    fits_close_file(sourcefiles[counter], status);
+    if(sourcefiles[counter]) fits_close_file(sourcefiles[counter], status);
   }
 
 }

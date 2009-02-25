@@ -110,7 +110,7 @@ void free_source_catalogs(
 
   // close the FITS files to the source catalogs
   for (counter = 0; counter < n_sourcefiles; counter++) {
-    fits_close_file(sourcefiles[counter], status);
+    if(sourcefiles[counter]) fits_close_file(sourcefiles[counter], status);
   }
 
 }
@@ -170,9 +170,11 @@ int get_preselected_catalog(
 
     for(file_counter=0; (file_counter<n_sourcefiles)&&(status==EXIT_SUCCESS); 
 	file_counter++) {
-      do {   // beginning of inner error handling loop
 
-	// determine number of rows in the source catalogue (i.e. number of listed sources)
+      do {  // beginning of inner ERROR handling loop
+
+	// Determine the number of rows in the source catalogue 
+	// (i.e. number of listed sources):
 	fits_get_num_rows(sourcefiles[file_counter], &nrows, &status);
 
 	// read-in all sources from the individual table rows, one after another
@@ -187,7 +189,7 @@ int get_preselected_catalog(
 	  source_direction = unit_vector(rasc*M_PI/180., dec*M_PI/180.);
 	  
 	  // check, whether the source should be added to the preselected catalog:
-	  if (fabs(scalar_product(source_direction, telescope_direction))<pre_max_align) {
+	  if(fabs(scalar_product(source_direction, telescope_direction))<pre_max_align) {
 	    if(*nsources > MAX_NSOURCES_PRE) {
 	      // too many sources
 	      status=EXIT_FAILURE;
@@ -200,7 +202,9 @@ int get_preselected_catalog(
 	    selected_catalog[*nsources].rate = countrate;
 
 	    // save the source direction in the source catalog-array:
-	    selected_catalog[*nsources].r = source_direction;
+	    selected_catalog[*nsources].r = source_direction;  // REMOVE
+	    selected_catalog[*nsources].ra = rasc;
+	    selected_catalog[*nsources].dec = dec;
 	    // set lightcurve pointer to NULL
 	    selected_catalog[*nsources].lightcurve = NULL;
 	    // so far there was no photon created for this source

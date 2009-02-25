@@ -1,6 +1,6 @@
 /** 
  * Contains all FUNCTION declarations needed to handle source catalogs.
- * The variable and TYPE definitions can be found in 'sources_types.h'.
+ * The variable and TYPE definitions can be found in 'astrosources.types.h'.
  */
 
 #ifndef ASTROSOURCES_H
@@ -11,9 +11,9 @@
 #include <malloc.h>
 #include <math.h>
 
+#include "fitsio.h"
 #include "headas.h"
 #include "headas_error.h"
-#include "fitsio.h"
 
 #include "fits_pha.h"
 #include "fits_ctlg.h"

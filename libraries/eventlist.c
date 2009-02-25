@@ -51,41 +51,45 @@ void add_eventlist_row(
 
 ///////////////////////////////////////////////////////////////////
 int create_eventlist_file(
-			   struct Eventlist_File* eventlist_file,
-			   struct Detector detector,
-			   double tstart,
-			   double tend,
-			   char *telescope_name,
-			   char *ccd_name,
-			   char *instrument_name,
-			   int *status
-			   )
+			  struct Eventlist_File* eventlist_file,
+			  struct Detector detector,
+			  double tstart,
+			  double tend,
+			  char *telescope_name,
+			  char *ccd_name,
+			  char *instrument_name,
+			  int *status
+			  )
 {
-  char msg[MAXMSG];  // error output buffer
-
-  // To create a FITS table, the format of the individual columns has to 
-  // be specified.
   char *ftype[N_EVENT_FIELDS];
   char *fform[N_EVENT_FIELDS];
   char *funit[N_EVENT_FIELDS];
   int counter;
-  for(counter=0; counter<N_EVENT_FIELDS; counter++) {
-    // Allocate memory
-    ftype[counter] = (char *) malloc(8 * sizeof(char));
-    fform[counter] = (char *) malloc(4 * sizeof(char));
-    funit[counter] = (char *) malloc(10 * sizeof(char));
 
-    // Check if all memory was allocated successfully:
-    if ((!ftype[counter]) || (!fform[counter]) || (!funit[counter])) {
-      *status = EXIT_FAILURE;
-      sprintf(msg, "Error: no memory allocation for FITS table parameters "
-	      "failed (event list)!\n");
-      HD_ERROR_THROW(msg, *status);
+  char msg[MAXMSG];  // error output buffer
+
+  do {   // Beginning of ERROR handling loop
+
+    // Create a new FITS file:
+    if (fits_create_file(&eventlist_file->fptr, eventlist_file->filename, status)) break;
+
+    // To create a FITS table, the format of the individual columns has to 
+    // be specified.
+    for(counter=0; counter<N_EVENT_FIELDS; counter++) {
+      // Allocate memory
+      ftype[counter] = (char *) malloc(8 * sizeof(char));
+      fform[counter] = (char *) malloc(4 * sizeof(char));
+      funit[counter] = (char *) malloc(10 * sizeof(char));
+      
+      // Check if all memory was allocated successfully:
+      if ((!ftype[counter]) || (!fform[counter]) || (!funit[counter])) {
+	*status = EXIT_FAILURE;
+	sprintf(msg, "Error: no memory allocation for FITS table parameters "
+		"failed (event list)!\n");
+	HD_ERROR_THROW(msg, *status);
+      }
     }
-  }
 
-
-  do {   // beginning of error handling loop
     // If an error has occurred during memory allocation, 
     // skip the following part.
     if (*status != EXIT_SUCCESS) break;
@@ -255,11 +259,7 @@ int create_eventlist_file(
     if (funit[counter]) free(funit[counter]);
   }
 
-  if (*status == EXIT_SUCCESS) {
-    return(0);
-  } else {
-    return(-1);
-  }
+  return (*status);
 }
 
 

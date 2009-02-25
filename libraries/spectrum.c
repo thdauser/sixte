@@ -106,7 +106,7 @@ int get_spectrum(
 
       // Check if the channel number is valid.
       // (PHA channel start at 1 !!)
-      if ((channel <= 0) || (channel > Nchannels)) {
+      if ((channel < 0) || (channel > Nchannels)) {
 	status=EXIT_FAILURE;
 	sprintf(msg, "Error: Invalid channel number (%ld) in file '%s'!\n", channel, 
 		filename);
@@ -116,8 +116,10 @@ int get_spectrum(
       
       // store the probability distribution for the individual PHA channels
       normalization += probability;
-      spectrum->data[channel-1] = probability;
+      spectrum->data[row-1] = probability;
     }
+
+    if (status != EXIT_SUCCESS) break;
 
     // Normalize spectrum to 1;
     for (row=0; row<nrows; row++) {

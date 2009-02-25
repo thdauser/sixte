@@ -16,7 +16,7 @@
 #include <gsl/gsl_fft_halfcomplex.h>
 #include <gsl/gsl_randist.h>
 
-
+#include "fitsio.h"
 #include "headas.h"
 #include "headas_error.h"
 
@@ -28,8 +28,10 @@
 long photon_counter;
 
 // Constants defining the light curve arrays
-#define N_LIGHTCURVE_BINS 2048
-#define LIGHTCURVE_BINWIDTH 0.0005
+#define N_LIGHTCURVE_BINS     (2048)
+#define LIGHTCURVE_BINWIDTH   (0.0005)
+#define N_PHOTON_FIELDS       (4)     // TIME, ENERGY, RA, DEC
+
 
 // The light curve is constant, without red noise 
 // (so the photons have simply Poisson distribution).
@@ -44,10 +46,14 @@ long photon_counter;
 
 // Structure containing all information about a single photon in the sky
 struct Photon {
+  double time;             // real time, when the photon is falling on the detector
+  float energy;            // photon energy in [keV]
+
+  double ra, dec;          // right ascension and declination of photon position
+
+  // REMOVE
   struct vector direction; // direction from which the photon originates 
                            // (source direction)
-  float energy;            // photon energy in [keV]
-  double time;             // real time, when the photon is falling on the detector
 };
 
 
@@ -100,20 +106,12 @@ float photon_energy(struct source_cat_entry src, struct Detector);
 int create_lightcurve(struct source_cat_entry *src, double time, gsl_rng *gsl_random_g);
 
 
-// This function creates a new event list table in the specified FITS file.
-// It also inserts  header information.
-// The function returns '0', if it is run successfully.
-// Otherwise the return value is '1'.
-int create_photonlist_file(struct Eventlist_File*, struct Detector detector,
-			   double tstart, double tend, char *telescope_name,
-			   char *ccd_name, char *instrument_name,
-			   int *status);
+// This routine creates a new FITS file with a binary table to store a photon list
+// of photons from astronomical x-ray sources. The photon list can be read by a 
+// telescope simulation for further processing and calculating the impact positions
+// of the photons on the detector.
+int create_photonlist_file(fitsfile **, char photonlist_filename[], int *status);
 
 
-// Open an existing FITS file and try to get the first extension that contains
-// a binary table.
-int open_photonlist_file(struct Eventlist_File*, int* status);
-
-
-#endif
+#endif  /* PHOTON_H */
 
