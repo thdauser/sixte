@@ -25,9 +25,10 @@ int photon_imaging_main() {
   fitsfile *photonlist_fptr=NULL;            // FITS file pointer
   long photonlist_nrows;                     // number of entries in the photon list
 
+  char impactlist_filename[FILENAME_LENGTH]; // output: impact list
+  fitsfile *impactlist_fptr=NULL;           
+
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-  struct Detector detector;   // Detector data structure (containing the 
-                              // pixel array, its width, ...)
   struct PSF_Store psf_store; // Storage for the PSF (Point Spread Function) data 
                               // (for different off-axis angles and energies)
   char psf_filename[FILENAME_LENGTH]; // PSF input file
@@ -47,8 +48,8 @@ int photon_imaging_main() {
 
     // read parameters using PIL library
     if ((status=photon_imaging_getpar(photonlist_filename, orbit_filename, 
-				      attitude_filename, psf_filename, 
-				      &t0, &timespan, &telescope, &detector))) break;
+				      attitude_filename, psf_filename, impactlist_filename,
+				      &t0, &timespan, &telescope))) break;
 
 
     // Calculate the minimum cos-value for sources inside the FOV: 
@@ -82,26 +83,33 @@ int photon_imaging_main() {
     // --- Beginning of Imaging Process ---
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    long row=0;         // current row in the input list
-    long sat_counter=0; // counter for orbit readout loop
+    long photonlist_row=0;    // current row in the input list
+    long impactlist_row=0;    //      -"-           output list
+    long sat_counter=0;       // counter for orbit readout loop
+
 
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start imaging process ...\n");
 
 
     // SCAN PHOTON LIST    
-    for(row=0; (row<photonlist_nrows)&&(status==EXIT_SUCCESS); row++) {
+    for(photonlist_row=0; (photonlist_row<photonlist_nrows)&&(status==EXIT_SUCCESS); 
+	photonlist_row++) {
       
       // Read an entry from the photon list:
       int anynul = 0;
-      struct Photon photon = {0., 0., 0., 0.};
-      fits_read_col(photonlist_fptr, TDOUBLE, 1, row+1, 1, 1, &photon.time,
+      struct Photon photon;
+      photon.time = 0.;
+      photon.energy = 0.;
+      photon.ra = 0.;
+      photon.dec = 0.;
+      fits_read_col(photonlist_fptr, TDOUBLE, 1, photonlist_row+1, 1, 1, &photon.time,
 		    &photon.time, &anynul, &status);
-      fits_read_col(photonlist_fptr, TFLOAT, 2, row+1, 1, 1, &photon.energy,
+      fits_read_col(photonlist_fptr, TFLOAT, 2, photonlist_row+1, 1, 1, &photon.energy,
 		    &photon.energy, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 3, row+1, 1, 1, &photon.ra,
+      fits_read_col(photonlist_fptr, TDOUBLE, 3, photonlist_row+1, 1, 1, &photon.ra,
 		    &photon.ra, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 4, row+1, 1, 1, &photon.dec,
+      fits_read_col(photonlist_fptr, TDOUBLE, 4, photonlist_row+1, 1, 1, &photon.dec,
 		    &photon.dec, &anynul, &status);
       
       if (status!=EXIT_SUCCESS) break;
@@ -163,14 +171,16 @@ int photon_imaging_main() {
 
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
-	// If it hits a detector pixel, the return value is 1.
+	// If it hits the detector, the return value is 1.
 	if (get_psf_pos(&position, photon, telescope, psf_store)) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)
 	  if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
 	      tan(telescope.fov_diameter)*telescope.focal_length) {
-	    printf("%lf %lf\n", position.x, position.y);
+
+	    // Create impact list !!!
+
 	  }
 	} // END get_psf_pos(...)
 
@@ -215,10 +225,10 @@ int photon_imaging_getpar(
 			  // input: attitude file (FITS)
 			  char attitude_filename[],
 			  char psf_filename[],     // PSF FITS file
+			  char impactlist_filename[], // for output
 			  double *t0,              // start time for the simulation
 			  double *timespan,        // time span for the simulation
-			  struct Telescope *telescope,
-			  struct Detector *detector
+			  struct Telescope *telescope
 			  )
 {
   char msg[MAXMSG];             // error output buffer
@@ -246,6 +256,12 @@ int photon_imaging_getpar(
   // get the filename of the PSF data file (FITS file)
   else if ((status = PILGetFname("psf_filename", psf_filename))) {
     sprintf(msg, "Error reading the filename of the PSF file!\n");
+    HD_ERROR_THROW(msg,status);
+  }
+
+  // get the filename of the PSF data file (FITS file)
+  else if ((status = PILGetFname("impactlist_filename", impactlist_filename))) {
+    sprintf(msg, "Error reading the filename of the impact list output file!\n");
     HD_ERROR_THROW(msg,status);
   }
 

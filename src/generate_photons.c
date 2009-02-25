@@ -286,9 +286,6 @@ int generate_photons_main()
     // takes to slew over the entire FOV.
     for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
 
-      // Print the current time step to STDOUT.
-      // headas_chat(5, "time: %lf\n", time);
-
       // Get the last orbit entry before the time 'time':
       // (in order to interpolate the actual position and velocity between 
       // the neighboring calculated orbit positions)

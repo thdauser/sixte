@@ -40,9 +40,9 @@
 
 // Reads the program parameters using PIL
 int photon_imaging_getpar(char photonlist_filename[], char orbit_filename[], 
-			  char attitude_filename[], 
-			  char psf_filename[], double *t0, double *timespan, 
-			  struct Telescope *, struct Detector *);
+			  char attitude_filename[], char psf_filename[], 
+			  char impactlist_filename[], double *t0, double *timespan, 
+			  struct Telescope *);
 
 
 #endif
