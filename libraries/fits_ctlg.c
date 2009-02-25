@@ -6,7 +6,8 @@
 /////////////////////////
 // SOURCEFILES:
 
-void create_srctbl_parameters(char *ftype[N_SOURCE_FIELDS], char *fform[N_SOURCE_FIELDS], 
+void create_srctbl_parameters(char *ftype[N_SOURCE_FIELDS], 
+			      char *fform[N_SOURCE_FIELDS],
 			      char *funit[N_SOURCE_FIELDS]) {
   int counter;
 
@@ -53,7 +54,8 @@ void create_srctbl_parameters(char *ftype[N_SOURCE_FIELDS], char *fform[N_SOURCE
 
 
 // writes a row of data into the FITS file
-void add_srctbl_row(fitsfile *fptr, long row, const double rasc, const double dec, const float countrate, int *status) 
+void add_srctbl_row(fitsfile *fptr, long row, const double rasc, const double dec, 
+		    const float countrate, int *status) 
 {
   double dbuffer[1];
   float fbuffer[1];
@@ -78,7 +80,8 @@ void add_srctbl_row(fitsfile *fptr, long row, const double rasc, const double de
 
 
 // reads a row of data from the FITS file
-int get_srctbl_row(fitsfile *fptr, long row, const int columns[], double *rasc, double *dec, float *countrate,int *status) 
+int get_srctbl_row(fitsfile *fptr, long row, const int columns[], double *rasc, 
+		   double *dec, float *countrate,int *status) 
 {
   double dbuffer[1];
   float fbuffer[1];
@@ -86,7 +89,8 @@ int get_srctbl_row(fitsfile *fptr, long row, const int columns[], double *rasc, 
 
   // right ascension
   dbuffer[0] = 0.0;
-  fits_read_col(fptr, TDOUBLE, columns[0], row+1, 1, 1, dbuffer, dbuffer, &anynul, status);
+  fits_read_col(fptr, TDOUBLE, columns[0], row+1, 1, 1, dbuffer, dbuffer, 
+		&anynul, status);
   // int fits_read_col / ffgcv
   //    (fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow, LONGLONG firstelem,
   //     LONGLONG nelements, DTYPE *nulval, DTYPE *array, int *anynul, int *status) 
@@ -94,12 +98,14 @@ int get_srctbl_row(fitsfile *fptr, long row, const int columns[], double *rasc, 
 
   // declination
   dbuffer[0] = 0.0;
-  fits_read_col(fptr, TDOUBLE, columns[1], row+1, 1, 1, dbuffer, dbuffer, &anynul, status);
+  fits_read_col(fptr, TDOUBLE, columns[1], row+1, 1, 1, dbuffer, dbuffer, 
+		&anynul, status);
   *dec = dbuffer[0];
 
   // countrate
   fbuffer[0] = 0.0;
-  fits_read_col(fptr, TFLOAT, columns[2], row+1, 1, 1, fbuffer, fbuffer, &anynul, status);
+  fits_read_col(fptr, TFLOAT, columns[2], row+1, 1, 1, fbuffer, fbuffer, 
+		&anynul, status);
   *countrate = fbuffer[0];
 
   return(anynul);

@@ -11,10 +11,12 @@
 // (containing orbit and attitude information), reads this data 
 // from the corresponding FITS files and stores it in the catalog.
 int get_satellite_catalog(
-			  struct Telescope **sat_catalog,  // pointer to the array of orbit-/attitude-entries
-			  long *nentries,      // number of entries in the satellite catalog (return value)
-			  double t0,           // requested start time for the catalog array
-			  double timespan,     // requested end time for the catalog array
+			  // pointer to the array of orbit-/attitude-entries
+			  struct Telescope **sat_catalog, 
+			  // number of entries in the satellite catalog (return value)
+			  long *nentries,      
+			  double t0,       // requested start time for the catalog array
+			  double timespan, // requested end time for the catalog array
 			  const char orbit_filename[], 
 			  const char attitude_filename[]
 			  )
@@ -29,7 +31,7 @@ int get_satellite_catalog(
   char msg[MAXMSG];
   int status=0;                 // error handling variable
 
-  do {    // beginning of error handling loop
+  do {  // beginning of ERROR handling loop
 
     // get memory for the satellite catalog:
     *sat_catalog = (struct Telescope *) 
@@ -69,8 +71,7 @@ int get_satellite_catalog(
     // get the number of rows in the orbit file (number of given points of time)
     fits_get_num_rows(orbit_fptr, &nrows, &status);
 
-
-    
+   
     long counter;
     double time;                // buffer for the time
     struct vector sat_r, sat_v; // buffer for position and velocity of the satellite
@@ -100,7 +101,7 @@ int get_satellite_catalog(
       if (time>t0+timespan) {
 	break;
       }
-    }  // end of the orbit readout loop
+    }  // END of the orbit readout loop
    
 
     // Then open attitude file:
@@ -130,11 +131,14 @@ int get_satellite_catalog(
 
 
     char valtime[19];
-    double view_ra, view_dec, rollangle;  // angles specifying the direction of the telescope (attitude data)  
-    struct vector nx, ny;                 // unit vectors spanning the satellite's intrinsic coordinate system
+    // angles specifying the direction of the telescope (attitude data)  
+    double view_ra, view_dec, rollangle;  
+    // unit vectors spanning the satellite's intrinsic coordinate system
+    struct vector nx, ny;                 
     // read lines from attitude file subsequently
     for (counter=0, entry=0; (counter<nrows)&&(!status) ; counter++) {
-      if (get_atttbl_row(att_fptr, counter, valtime, &time, &view_ra, &view_dec, &rollangle, &status)) break;
+      if (get_atttbl_row(att_fptr, counter, valtime, &time, &view_ra, 
+			 &view_dec, &rollangle, &status)) break;
 
       if (time >= t0) {
 	// check, if we are already at the end of the attitude file:
@@ -155,14 +159,12 @@ int get_satellite_catalog(
 	  break;
 	}
 	  
-	// calculate and store attitude data:
-	// rescale from degrees to radians:
-	view_ra = view_ra*M_PI/180.;
-	view_dec = view_dec*M_PI/180.;
+	// Calculate and store attitude data:
+	// Rescale from degrees to radians:
 	rollangle = rollangle*M_PI/180.;
 
 	// telescope direction nz:
-	(*sat_catalog)[entry].nz = unit_vector(view_ra, view_dec);
+	(*sat_catalog)[entry].nz = unit_vector(view_ra*M_PI/180., view_dec*M_PI/180.);
 
 	// nx:
 	nx = normalize_vector((*sat_catalog)[entry].v);

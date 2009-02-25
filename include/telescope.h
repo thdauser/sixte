@@ -10,10 +10,13 @@ struct Telescope {
   double time;
   struct vector r;              // position vector of the satellite
   struct vector v;              // velocity vector of the satellite
-  struct vector nz, nx, ny;     // nz is the irection of the telescope axis (in simplest case same direction as r),
-                                // nx usually points in the direction of motion, but is perpendicular to nz, and
-                                // ny is perpendicular to nx and nz
+
+  // Unit vectors defining the telescope attitude:
+  // nz is the irection of the telescope axis (in simplest case same direction as r),
+  // nx usually points in the direction of motion, but is perpendicular to nz, and
+  // ny is perpendicular to nx and nz
+  struct vector nz, nx, ny;     
 };
 
-#endif
+#endif /* TELESCOPE_H */
 

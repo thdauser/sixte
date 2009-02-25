@@ -2,7 +2,9 @@
 
 
 // creates the necessary parameters to generate the attitude table in the FITS file
-void create_attitudetbl_parameter(char *ftype[N_ATTITUDE_FIELDS], char *fform[N_ATTITUDE_FIELDS], char *funit[N_ATTITUDE_FIELDS]) 
+void create_attitudetbl_parameter(char *ftype[N_ATTITUDE_FIELDS], 
+				  char *fform[N_ATTITUDE_FIELDS], 
+				  char *funit[N_ATTITUDE_FIELDS]) 
 {
   int counter;
 
@@ -66,8 +68,8 @@ int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], double time, d
 
 
 // reads a row of attitude data from the FITS file
-int get_atttbl_row(fitsfile *fptr, long row, char valtime[], double *time, double *view_ra, 
-		   double *view_dec, double *rollangle, int *status)
+int get_atttbl_row(fitsfile *fptr, long row, char valtime[], double *time, 
+		   double *view_ra, double *view_dec, double *rollangle, int *status)
 {
   int anynul = 0;
   double dbuffer[1];
