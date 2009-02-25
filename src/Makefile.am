@@ -6,7 +6,7 @@ AM_CFLAGS   = -Wall
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = binary_stream generate_photons imaging
+bin_PROGRAMS = binary_stream generate_photons photon_imaging
 
 # Libraries that are installed in the 'lib' directory.
 lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
@@ -38,13 +38,13 @@ generate_photons_LDADD    = libdetectors.a
 generate_photons_LDADD   += libastrosources.a
 generate_photons_LDADD   += libsatellites.a
 
-imaging_SOURCES  = imaging.c
-imaging_LDFLAGS  = @libcfitsio@ -lnsl
-imaging_LDFLAGS += @libape@ -lreadline
-imaging_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-imaging_LDFLAGS += -lgsl -lgslcblas -lm
-imaging_LDADD    = libdetectors.a
-imaging_LDADD   += libastrosources.a
-imaging_LDADD   += libsatellites.a
+photon_imaging_SOURCES  = photon_imaging.c
+photon_imaging_LDFLAGS  = @libcfitsio@ -lnsl
+photon_imaging_LDFLAGS += @libape@ -lreadline
+photon_imaging_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
+photon_imaging_LDFLAGS += -lgsl -lgslcblas -lm
+photon_imaging_LDADD    = libdetectors.a
+photon_imaging_LDADD   += libastrosources.a
+photon_imaging_LDADD   += libsatellites.a
 
 
