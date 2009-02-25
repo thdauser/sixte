@@ -20,15 +20,15 @@
 // It also inserts  header information.
 // The function returns '0', if it is run successfully.
 // Otherwise the return value is '1'.
-int create_event_list_file(struct Event_List_File*, struct Detector detector,
-			   double tstart, double tend, char *telescope_name,
-			   char *ccd_name, char *instrument_name,
-			   int *status);
+int create_eventlist_file(struct Eventlist_File*, struct Detector detector,
+			  double tstart, double tend, char *telescope_name,
+			  char *ccd_name, char *instrument_name,
+			  int *status);
 
 
 // Open an existing FITS file and try to get the first extension that contains
 // a binary table.
-int open_event_list_file(struct Event_List_File*, int* status);
+int open_eventlist_file(struct Eventlist_File*, int* status);
 
 
 // This routine inserts one new line in the event list FITS table and writes
@@ -38,11 +38,11 @@ int open_event_list_file(struct Event_List_File*, int* status);
 // * the row, after which the new line is inserted (starting at 0),
 // * the event data like time, PHA value, grade and detector coordinates,
 // * and the fits status variable for error handling.
-void add_eventtbl_row(struct Event_List_File*, struct Event, int *status);
+void add_eventlist_row(struct Eventlist_File*, struct Event, int *status);
 
 
 // This function reads a row of data from the event list FITS file.
-int get_eventtbl_row(struct Event_List_File, struct Event*, int *status);
+int get_eventlist_row(struct Eventlist_File, struct Event*, int *status);
 
 
 

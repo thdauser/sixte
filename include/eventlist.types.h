@@ -14,7 +14,7 @@
 
 // Structure that contains all information, which is necessary to access
 // an event list FITS file.
-struct Event_List_File {
+struct Eventlist_File {
   char filename[FILENAME_LENGTH];
   fitsfile *fptr;
 

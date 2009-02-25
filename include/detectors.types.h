@@ -96,7 +96,7 @@ struct Detector {
   // if it necessary.
   void (*detector_action) (struct Detector*, double, 
 			   struct source_cat_entry,
-			   struct Event_List_File*, int *);
+			   struct Eventlist_File*, int *);
 
 
   // DEPFET specific parameters:

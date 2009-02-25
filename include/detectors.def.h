@@ -25,7 +25,7 @@
 // nothing.
 void framestore_detector_action(struct Detector*, double time, 
 				struct source_cat_entry background,
-				struct Event_List_File*, int *status);
+				struct Eventlist_File*, int *status);
 
 
 // This routine is implemented for the DEPFET detector on (WFI on IXO) with 
@@ -33,29 +33,29 @@ void framestore_detector_action(struct Detector*, double time,
 // detector.
 void depfet_detector_action(struct Detector*, double time, 
 			    struct source_cat_entry background,
-			    struct Event_List_File*, int *status); 
+			    struct Eventlist_File*, int *status); 
 
 
 // This routine is implemented for the TES microcalorimeter (on IXO).
 void tes_detector_action(struct Detector*, double time, 
 			 struct source_cat_entry background,
-			 struct Event_List_File*, int *status); 
+			 struct Eventlist_File*, int *status); 
 
 
 // This routine is implemented for the HTRS (on IXO).
 void htrs_detector_action(struct Detector*, double time, 
 			  struct source_cat_entry background,
-			  struct Event_List_File*, int *status); 
+			  struct Eventlist_File*, int *status); 
 
 
 // Reads out the entire detector and creates event list entries for the 
 // measured photons.
-void readout(struct Detector, struct Event_List_File*, int *status);
+void readout(struct Detector, struct Eventlist_File*, int *status);
 
 
 // Reads out a particular detector line and creates event list entries 
 // for the measured photons.
-void readout_line(struct Detector, int line, struct Event_List_File*, 
+void readout_line(struct Detector, int line, struct Eventlist_File*, 
 		  int *fitsstatus);
 
 

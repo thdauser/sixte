@@ -25,8 +25,6 @@ int measurement_main() {
                                           // ( <= orbit_nrows)
   struct Telescope *sat_catalog=NULL;     // catalog with orbit and attitude data 
                                           // over a certain timespan
-  struct vector n;                        // normalized vector perpendicular to 
-                                          // the orbit plane
 
   int n_sourcefiles;                      // number of source input-files
   char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH]; // filenames of the 
@@ -44,10 +42,6 @@ int measurement_main() {
   struct source_cat_entry *selected_catalog=NULL; // catalog of preselected sources
   struct source_cat_entry background;     // background properties: spectrum
 
-  struct Photon_Entry *photon_list=NULL;  // photon list containing all actually 
-                                          // created photons in the sky
-  struct Photon_Entry *pl_entry=NULL;     // "counter" variable for the photon list
-
   struct Spectrum_Store spectrum_store;   // storage for different source spectra 
                                           // (including background spectrum)
 
@@ -61,6 +55,9 @@ int measurement_main() {
   struct PSF_Store psf_store; // Storage for the PSF (Point Spread Function) data 
                               // (for different off-axis angles and energies)
   char psf_filename[FILENAME_LENGTH]; // PSF input file
+
+  struct Photon_Entry *photon_list=NULL;  // photon list containing all
+                                          // created photons in the sky
 
   struct Event_List_File event_list_file;
 
@@ -287,11 +284,17 @@ int measurement_main() {
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
     double time;                   // current time
-    //double t_last=t0;              // last time
+
     long sat_counter=0;            // counter for orbit readout loop
     long last_sat_counter=0;       // stores sat_counter of former repetition, 
                                    // so the searching loop
                                    // doesn't have to start at 0 every time.
+
+    struct vector n;   // normalized vector perpendicular to the orbital plane
+   
+    struct Photon_Entry *pl_entry=NULL;     // "counter" variable for the photon list
+
+
 
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start measurement simulation ...\n");
@@ -320,7 +323,6 @@ int measurement_main() {
 	HD_ERROR_THROW(msg,status);
 	break;
       }
-//      loop_time = time;
 
 
 

@@ -100,6 +100,20 @@ float photon_energy(struct source_cat_entry src, struct Detector);
 int create_lightcurve(struct source_cat_entry *src, double time, gsl_rng *gsl_random_g);
 
 
+// This function creates a new event list table in the specified FITS file.
+// It also inserts  header information.
+// The function returns '0', if it is run successfully.
+// Otherwise the return value is '1'.
+int create_photonlist_file(struct Eventlist_File*, struct Detector detector,
+			   double tstart, double tend, char *telescope_name,
+			   char *ccd_name, char *instrument_name,
+			   int *status);
+
+
+// Open an existing FITS file and try to get the first extension that contains
+// a binary table.
+int open_photonlist_file(struct Eventlist_File*, int* status);
+
 
 #endif
 

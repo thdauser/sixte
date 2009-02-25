@@ -32,7 +32,7 @@ int binary_stream_getpar(char input_filename[], char output_filename[],
 //////////////////////////////////
 int binary_stream_main()
 {
-  struct Event_List_File event_list_file;   // FITS file
+  struct Eventlist_File eventlist_file;   // FITS file
   char output_filename[FILENAME_LENGTH];
   FILE* output_file = NULL;
   double binning_time; // Delta t (time step, length of each spectrum)
@@ -50,30 +50,30 @@ int binary_stream_main()
 
 
   // Get the parameters:
-  status = binary_stream_getpar(event_list_file.filename, output_filename, 
+  status = binary_stream_getpar(eventlist_file.filename, output_filename, 
 			      &binning_time);
   if (status != EXIT_SUCCESS) return (status);
 
   do { // Beginning of ERROR handling loop
     int hdutype;
-    event_list_file.fptr=NULL;
-    if (fits_open_table(&event_list_file.fptr, event_list_file.filename, 
+    eventlist_file.fptr=NULL;
+    if (fits_open_table(&eventlist_file.fptr, eventlist_file.filename, 
 			READONLY, &status)) break;
 
     // Get the HDU type.
-    if (fits_get_hdu_type(event_list_file.fptr, &hdutype, &status)) break;
+    if (fits_get_hdu_type(eventlist_file.fptr, &hdutype, &status)) break;
     
     // If the open HDU is an image extension, throw an error.
     if (hdutype==IMAGE_HDU) {
       status=EXIT_FAILURE;
       sprintf(msg, "Error: input file '%s' contains no binary table!\n",
-	      event_list_file.filename);
+	      eventlist_file.filename);
       HD_ERROR_THROW(msg,status);
       break;
     }
 
     // Determine the number of rows in the event list.
-    if (fits_get_num_rows(event_list_file.fptr, &event_list_file.nrows, &status)) 
+    if (fits_get_num_rows(eventlist_file.fptr, &eventlist_file.nrows, &status)) 
       break;
 
 
@@ -121,11 +121,11 @@ int binary_stream_main()
       spectrum[channel] = 0;
     }
 
-    for (event_list_file.row=0; event_list_file.row<event_list_file.nrows;
-	 event_list_file.row++) {
+    for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
+	 eventlist_file.row++) {
       
       // Read the event from the FITS file.
-      if (get_eventtbl_row(event_list_file, &event, &status)) break;
+      if (get_eventlist_row(eventlist_file, &event, &status)) break;
 
       
       // Check whether binning time was exceeded:
@@ -212,7 +212,7 @@ int binary_stream_main()
 
   // Close files
   if (output_file) fclose(output_file);
-  if (event_list_file.fptr) fits_close_file(event_list_file.fptr, &status);
+  if (eventlist_file.fptr) fits_close_file(eventlist_file.fptr, &status);
 
   return(status);
 }

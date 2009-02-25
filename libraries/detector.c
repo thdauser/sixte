@@ -10,7 +10,7 @@ void framestore_detector_action(
 				struct Detector* detector,
 				double time, 
 				struct source_cat_entry background,
-				struct Event_List_File* event_list_file,
+				struct Eventlist_File* eventlist_file,
 				int *fitsstatus
 				) 
 {
@@ -21,7 +21,7 @@ void framestore_detector_action(
     insert_background_photons(*detector, background, detector->integration_time);
 
     // Readout the detector and create eventlist entries for the actual time:
-    readout(*detector, event_list_file, fitsstatus);
+    readout(*detector, eventlist_file, fitsstatus);
 
     // Clear the detector array.
     clear_detector(*detector);
@@ -41,7 +41,7 @@ void depfet_detector_action(
 			    struct Detector* detector,
 			    double time, 
 			    struct source_cat_entry background,
-			    struct Event_List_File* event_list_file,
+			    struct Eventlist_File* eventlist_file,
 			    int *fitsstatus
 			    ) 
 {
@@ -75,9 +75,9 @@ void depfet_detector_action(
     // Perform the readout on the 2 (!) current lines 
     // (i.e., the two new lines, chosen in the
     // step before) and write the data to the FITS file.
-    readout_line(*detector, detector->readout_line, event_list_file, fitsstatus);
+    readout_line(*detector, detector->readout_line, eventlist_file, fitsstatus);
     readout_line(*detector, detector->width -detector->readout_line -1, 
-		 event_list_file, fitsstatus);
+		 eventlist_file, fitsstatus);
 
     // Clear the 2 readout detector lines.
     clear_detector_line(*detector, detector->readout_line);
@@ -94,7 +94,7 @@ void tes_detector_action(
 			 struct Detector* detector,
 			 double time, 
 			 struct source_cat_entry background,
-			 struct Event_List_File* event_list_file,
+			 struct Eventlist_File* eventlist_file,
 			 int *fitsstatus
 			 ) 
 {
@@ -109,7 +109,7 @@ void htrs_detector_action(
 			  struct Detector* detector,
 			  double time, 
 			  struct source_cat_entry background,
-			  struct Event_List_File* event_list_file,
+			  struct Eventlist_File* eventlist_file,
 			  int *fitsstatus
 			  ) 
 {
@@ -123,7 +123,7 @@ void htrs_detector_action(
     //insert_background_photons(*detector, background, detector->integration_time);
 
     // Readout the detector and create eventlist entries for the actual time:
-    readout(*detector, event_list_file, fitsstatus);
+    readout(*detector, eventlist_file, fitsstatus);
 
     // Clear the detector array.
     clear_detector(*detector);
@@ -237,7 +237,7 @@ long detector_rmf(
 /////////////////////////////////////////
 void readout(
 	     struct Detector detector,
-	     struct Event_List_File* event_list_file,
+	     struct Eventlist_File* eventlist_file,
 	     int *fitsstatus
 	     ) 
 {
@@ -245,7 +245,7 @@ void readout(
 
   // read out the entire detector array
   for (line=0; line<detector.width; line++) {
-    readout_line(detector, line, event_list_file, fitsstatus);
+    readout_line(detector, line, eventlist_file, fitsstatus);
   }
 }
 
@@ -257,7 +257,7 @@ void readout(
 void readout_line(
 		  struct Detector detector,
 		  int line,
-		  struct Event_List_File* event_list_file,
+		  struct Eventlist_File* eventlist_file,
 		  int *status
 		  ) 
 {
@@ -277,7 +277,7 @@ void readout_line(
 	event.xi = xi;
 	event.yi = line;
 	event.frame = detector.frame;
-	add_eventtbl_row(event_list_file, event, status);
+	add_eventlist_row(eventlist_file, event, status);
       }
     }
   }

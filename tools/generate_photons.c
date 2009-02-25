@@ -168,6 +168,9 @@ int generate_photons_main()
   // RMF, EBOUNDS ...)
   struct Detector detector;   
 
+  // Photon list containing all created photons in the sky
+  struct Photon_Entry *photon_list=NULL;  
+
   gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
 
   char msg[MAXMSG];           // error message buffer
@@ -253,10 +256,16 @@ int generate_photons_main()
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
     double time;                   // current time
+
     long sat_counter=0;            // counter for orbit readout loop
     long last_sat_counter=0;       // stores sat_counter of former repetition, 
                                    // so the searching loop
                                    // doesn't have to start at 0 every time.
+
+    struct vector n;   // normalized vector perpendicular to the orbital plane
+
+    struct Photon_Entry *pl_entry=NULL;     // "counter" variable for the photon list
+
 
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start photon generation process ...\n");
@@ -289,7 +298,7 @@ int generate_photons_main()
 
 
       // PRESELECTION
-      // Preselection of sources from the entire catalog to 
+      // Preselection of sources from the comprehensive catalog to 
       // improve the performance of the simulation:
       if (sat_catalog[sat_counter].time-last_update > ORBIT_UPDATE_TIME) {
 	// Preselect sources from the entire source catalog according to the 
@@ -310,61 +319,13 @@ int generate_photons_main()
       // END of preselection
 
 
-/*
-      // LIGHTCURVES
-      // Create lightcurves for new sources close to / within the FOV:
 
-      // Determine telescope data (attitude):
-      // Therefore we have to interpolate between the nearest data points known 
-      // from the attitude file.
-      telescope.nz = 
-	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
-					 sat_catalog[sat_counter].time, 
-					 sat_catalog[sat_counter+1].nz, 
-					 sat_catalog[sat_counter+1].time, time));
-
-      // Scan the preselected source catalog array for sources close to/within the FOV.
-      for (source_counter=0; source_counter<nsources_pre; source_counter++) {
-	// Compare each source to the unit vector specifiing the direction of 
-	// the telescope:
-	if (check_fov(selected_catalog[source_counter].r, telescope.nz, 
-		      close_fov_min_align) == 0) {
-	  // Source is close to the FOV, i.e. may be visible during the 
-*/	  // integration timespan.
-       /* // So check, whether a lightcurve was created recently for this source. 
-          // If not, do this.
-	  if (selected_catalog[source_counter]->lightcurve == NULL) {
-	    // create lightcurve
-	    if ((status=create_lightcurve(selected_catalog[source_counter], time, gsl_random_g)) != EXIT_SUCCESS) break;
-	  } else if (selected_catalog[source_counter]->lightcurve[N_LIGHTCURVE_BINS].t < time) {
-	    // create lightcurve
-	    if ((status=create_lightcurve(selected_catalog[source_counter], time, gsl_random_g)) != EXIT_SUCCESS) break;
-	  } */
-/*	} else { // This part of code can be activated to save more memory 
-	         // (The lightcurve free-memory is actually already implemented 
-	         // in the preselection, 
-	         // but here it can further reduce the amount of current used memory.)
-	  // The source is not close to the FOV, so delete its lightcurve to save 
-	  // memory (if one is available).
-	  if (selected_catalog[source_counter].lightcurve != NULL) {
-	    free(selected_catalog[source_counter].lightcurve);
-	    selected_catalog[source_counter].lightcurve = NULL;
-	    selected_catalog[source_counter].t_last_photon = -1.;
-	  }
-	}
-      }  // END of loop over all sources in the close neighborhood of the 
-         // telescope pointing direction.
-      if (status != EXIT_SUCCESS) { break; }
-      // END of lightcurve creation.
-*/ // light curve creation is actually done in photon creation
-
-
-      // CREATE PHOTONS for all sources close to the FOV
+      // CREATE PHOTONS for all sources  CLOSE TO  the FOV
       for (source_counter=0; source_counter<nsources_pre; source_counter++) {
 	// Check whether the source is inside the FOV:
 	
 	// First determine telescope pointing direction at the actual time.
-	// TODO: combine this calculation with previous orbit interpolation.
+	// TODO: replace this calculation by orbit interpolation.
 	telescope.nz =
 	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
 					   sat_catalog[sat_counter].time, 
@@ -413,7 +374,7 @@ int generate_photons_main()
 	}
 
 	// Check whether the photon is inside the FOV:
-	// First determine telescope pointing direction at the actual time.
+	// First determine telescope pointing direction at the current time.
 	telescope.nz = 
 	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
 					   sat_catalog[sat_counter].time, 
@@ -426,6 +387,7 @@ int generate_photons_main()
 	if(check_fov(photon_list->photon.direction,telescope.nz,fov_min_align)==0) {
 	  // Photon is inside the FOV!
 	  
+	  /*
 	  // Determine telescope data like direction etc. (attitude):
 	  // Calculate nx: perpendicular to telescope axis and in the direction of
 	  // the satellite motion:
@@ -445,7 +407,8 @@ int generate_photons_main()
 
 	  // ny is perpendicular to telescope axis and nx:
 	  telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
-	  
+	  */
+
 	  // Measure the photon in a detector pixel, i.e., create the 
 	  // corresponding charge there.
 
@@ -476,6 +439,9 @@ int generate_photons_main()
   gsl_rng_free(gsl_random_g);
 
 
+  // clear photon list
+  clear_photon_list(&photon_list);
+
   // Release memory of orbit/attitude catalog
   if (sat_catalog) free(sat_catalog);
 
@@ -494,6 +460,10 @@ int generate_photons_main()
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
+
+  // release memory of detector EBOUNDS
+  free_ebounds(detector.ebounds);
+
 
   return(status);
 }

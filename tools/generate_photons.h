@@ -22,6 +22,8 @@
 #include "telescope.h"
 #include "orbatt.h"
 #include "detectors.h"
+#include "check_fov.h"
+
 
 #define TOOLSUB generate_photons_main
 #include "headas_main.c"
