@@ -204,7 +204,8 @@ int generate_photons_main()
     // Calculate the minimum cos-value for sources inside the FOV and 
     // in the preselection band respectively:
     
-    // minimum cos-value for sources inside the FOV angle(x0,source) <= 1/2 * diameter
+    // minimum cos-value for sources inside the FOV 
+    // angle(x0,source) <= 1/2 * diameter
     const double fov_min_align = cos(telescope.fov_diameter/2.); 
     
     // minimum cos-value for sources close to the FOV (in the direct neighborhood) 
@@ -244,7 +245,225 @@ int generate_photons_main()
 				    source_filename))!=EXIT_SUCCESS) break;
 
 
-    // ---- End of Initialization ----
+    // --- End of Initialization ---
+
+
+
+    // --- Beginning of Photon generation process ---
+
+    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
+    double time;                   // current time
+    long sat_counter=0;            // counter for orbit readout loop
+    long last_sat_counter=0;       // stores sat_counter of former repetition, 
+                                   // so the searching loop
+                                   // doesn't have to start at 0 every time.
+
+    // Beginning of actual simulation (after loading required data):
+    headas_chat(5, "start photon generation process ...\n");
+
+
+    // Time loop:
+    // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
+    // takes to slew over the entire FOV.
+    for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
+
+      // Print the current time step to STDOUT.
+      headas_chat(5, "time: %lf\n", time);
+
+      // Get the last orbit entry before the time 'time':
+      // (in order to interpolate the actual position and velocity between 
+      // the neighboring calculated orbit positions)
+      for(; sat_counter<sat_nentries; sat_counter++) {
+	if(sat_catalog[sat_counter].time>time) {
+	  break;
+	}
+      }
+      if(fabs(sat_catalog[--sat_counter].time-time)>600.) { 
+	// no entry within 10 minutes !!
+	status = EXIT_FAILURE;
+	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+
+
+
+      // PRESELECTION
+      // Preselection of sources from the entire catalog to 
+      // improve the performance of the simulation:
+      if (sat_catalog[sat_counter].time-last_update > ORBIT_UPDATE_TIME) {
+	// Preselect sources from the entire source catalog according to the 
+	// satellite's direction of movement.
+	// Calculate normalized vector perpendicular to the orbit plane:
+	n = 
+	  normalize_vector(vector_product(normalize_vector(sat_catalog[sat_counter].r),
+					  normalize_vector(sat_catalog[sat_counter].v)));
+	if ((status=get_preselected_catalog(selected_catalog, &nsources_pre, 
+					    n_sourcefiles, source_catalog_files, 
+					    source_data_columns, n, pre_max_align, 
+					    spectrum_store, N_SPECTRA_FILES))
+	    !=EXIT_SUCCESS) break;
+
+	// update the catalog-update-counter
+	last_update = sat_catalog[sat_counter].time;
+      }
+      // END of preselection
+
+
+/*
+      // LIGHTCURVES
+      // Create lightcurves for new sources close to / within the FOV:
+
+      // Determine telescope data (attitude):
+      // Therefore we have to interpolate between the nearest data points known 
+      // from the attitude file.
+      telescope.nz = 
+	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
+					 sat_catalog[sat_counter].time, 
+					 sat_catalog[sat_counter+1].nz, 
+					 sat_catalog[sat_counter+1].time, time));
+
+      // Scan the preselected source catalog array for sources close to/within the FOV.
+      for (source_counter=0; source_counter<nsources_pre; source_counter++) {
+	// Compare each source to the unit vector specifiing the direction of 
+	// the telescope:
+	if (check_fov(selected_catalog[source_counter].r, telescope.nz, 
+		      close_fov_min_align) == 0) {
+	  // Source is close to the FOV, i.e. may be visible during the 
+*/	  // integration timespan.
+       /* // So check, whether a lightcurve was created recently for this source. 
+          // If not, do this.
+	  if (selected_catalog[source_counter]->lightcurve == NULL) {
+	    // create lightcurve
+	    if ((status=create_lightcurve(selected_catalog[source_counter], time, gsl_random_g)) != EXIT_SUCCESS) break;
+	  } else if (selected_catalog[source_counter]->lightcurve[N_LIGHTCURVE_BINS].t < time) {
+	    // create lightcurve
+	    if ((status=create_lightcurve(selected_catalog[source_counter], time, gsl_random_g)) != EXIT_SUCCESS) break;
+	  } */
+/*	} else { // This part of code can be activated to save more memory 
+	         // (The lightcurve free-memory is actually already implemented 
+	         // in the preselection, 
+	         // but here it can further reduce the amount of current used memory.)
+	  // The source is not close to the FOV, so delete its lightcurve to save 
+	  // memory (if one is available).
+	  if (selected_catalog[source_counter].lightcurve != NULL) {
+	    free(selected_catalog[source_counter].lightcurve);
+	    selected_catalog[source_counter].lightcurve = NULL;
+	    selected_catalog[source_counter].t_last_photon = -1.;
+	  }
+	}
+      }  // END of loop over all sources in the close neighborhood of the 
+         // telescope pointing direction.
+      if (status != EXIT_SUCCESS) { break; }
+      // END of lightcurve creation.
+*/ // light curve creation is actually done in photon creation
+
+
+      // CREATE PHOTONS for all sources close to the FOV
+      for (source_counter=0; source_counter<nsources_pre; source_counter++) {
+	// Check whether the source is inside the FOV:
+	
+	// First determine telescope pointing direction at the actual time.
+	// TODO: combine this calculation with previous orbit interpolation.
+	telescope.nz =
+	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
+					   sat_catalog[sat_counter].time, 
+					   sat_catalog[sat_counter+1].nz,
+					   sat_catalog[sat_counter+1].time,time));
+	
+	
+	// Compare the source direction to the unit vector specifiing the 
+	// direction of the telescope:
+	if(check_fov(selected_catalog[source_counter].r, telescope.nz, 
+		     close_fov_min_align) == 0) {
+	  // The source is inside the FOV  => create photons:
+	  if ((status=create_photons(&selected_catalog[source_counter], time, dt, 
+				     &photon_list, detector, gsl_random_g))
+	      !=EXIT_SUCCESS) break; 
+	}
+      }
+
+
+
+      // SCAN PHOTON LIST
+      // Perform the actual measurement (i.e., scan the photon list).
+      sat_counter = last_sat_counter; 
+      // Because we are now searching for events in the time interval [time-dt,time].
+      while ((photon_list != NULL) && (status == EXIT_SUCCESS)) {
+	// If all photons up to the actual time have been treated, break the loop.
+	if ((photon_list->photon.time > time + dt)||
+	    (photon_list->photon.time > t0+timespan)) {
+	  break;
+	}
+
+	// Get the last orbit entry before the time 'photon_list->photon.time'
+	// (in order to interpolate the position and velocity at this time  between 
+	// the neighboring calculated orbit positions):
+	for( ; sat_counter<sat_nentries; sat_counter++) {
+	  if(sat_catalog[sat_counter].time>photon_list->photon.time) {
+	    break;
+	  }
+	}
+	if(fabs(sat_catalog[--sat_counter].time-time)>600.) { 
+	  // no entry within 10 minutes !!
+	  status = EXIT_FAILURE;
+	  sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
+	  HD_ERROR_THROW(msg,status);
+	  break;
+	}
+
+	// Check whether the photon is inside the FOV:
+	// First determine telescope pointing direction at the actual time.
+	telescope.nz = 
+	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
+					   sat_catalog[sat_counter].time, 
+					   sat_catalog[sat_counter+1].nz, 
+					   sat_catalog[sat_counter+1].time, 
+					   photon_list->photon.time));
+
+	// Compare the photon direction to the unit vector specifiing the 
+	// direction of the telescope axis:
+	if(check_fov(photon_list->photon.direction,telescope.nz,fov_min_align)==0) {
+	  // Photon is inside the FOV!
+	  
+	  // Determine telescope data like direction etc. (attitude):
+	  // Calculate nx: perpendicular to telescope axis and in the direction of
+	  // the satellite motion:
+	  telescope.nx = 
+	    normalize_vector(interpolate_vec(sat_catalog[sat_counter].nx, 
+					     sat_catalog[sat_counter].time, 
+					     sat_catalog[sat_counter+1].nx, 
+					     sat_catalog[sat_counter+1].time, 
+					     photon_list->photon.time));
+	  // Remove the component along the vertical direction nz 
+	  // (nx must be perpendicular to nz!):
+	  double scp = scalar_product(telescope.nz,telescope.nx);
+	  telescope.nx.x -= scp*telescope.nz.x;
+	  telescope.nx.y -= scp*telescope.nz.y;
+	  telescope.nx.z -= scp*telescope.nz.z;
+	  telescope.nx = normalize_vector(telescope.nx);
+
+	  // ny is perpendicular to telescope axis and nx:
+	  telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
+	  
+	  // Measure the photon in a detector pixel, i.e., create the 
+	  // corresponding charge there.
+
+	  // ************ !!!!!!!!!!!!!!!!!!!! *********
+
+	}
+
+	// Move to the next entry in the photon list and clear the current entry.
+	pl_entry = photon_list->next_entry;
+	free(photon_list);
+	photon_list = pl_entry;
+
+      }  // END of scanning the photon list.
+
+      last_sat_counter = sat_counter;
+    }   // END of outer time loop.
+
+    // --- End of photon creation process ---
 
   } while(0); // END of ERROR HANDLING Loop.
 
