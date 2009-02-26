@@ -254,7 +254,8 @@ int generate_photons_main()
     // Delete old photon list FITS file:
     remove(photonlist_filename);
     // Create a new FITS file for the output of the photon list:
-    if ((create_photonlist_file(&photonlist_fptr, photonlist_filename, &status))) break;
+    if ((create_photonlist_file(&photonlist_fptr, photonlist_filename, &status))) 
+      break;
 
 
     // --- End of Initialization ---

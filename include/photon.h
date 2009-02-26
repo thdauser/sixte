@@ -31,6 +31,7 @@ long photon_counter;
 #define N_LIGHTCURVE_BINS     (2048)
 #define LIGHTCURVE_BINWIDTH   (0.0005)
 #define N_PHOTON_FIELDS       (4)     // TIME, ENERGY, RA, DEC
+#define N_IMPACT_FIELDS       (4)     // TIME, ENERGY, X, Y
 
 
 // The light curve is constant, without red noise 
@@ -85,8 +86,8 @@ struct lightcurve_entry {
 //////////////////////////////////////////////////////////////////////////
 
 
-// Creates photons according to a particular rate specified by the given light curve
-// and adds them to the time ordered photon list.
+// Creates photons according to a particular rate specified by the given 
+// light curve and adds them to the time ordered photon list.
 // The return value is the value of the error status variable.
 int create_photons(struct source_cat_entry* src, double time, double dt,
 		   struct Photon_Entry** pl, struct Detector detector, 
@@ -103,14 +104,21 @@ int insert_photon(struct Photon_Entry **, struct Photon);
 float photon_energy(struct source_cat_entry src, struct Detector);
 
 // Function produces a light curve for a given source.
-int create_lightcurve(struct source_cat_entry *src, double time, gsl_rng *gsl_random_g);
+int create_lightcurve(struct source_cat_entry *src, double time, 
+		      gsl_rng *gsl_random_g);
 
 
 // This routine creates a new FITS file with a binary table to store a photon list
 // of photons from astronomical x-ray sources. The photon list can be read by a 
 // telescope simulation for further processing and calculating the impact positions
 // of the photons on the detector.
-int create_photonlist_file(fitsfile **, char photonlist_filename[], int *status);
+int create_photonlist_file(fitsfile **, char filename[], int *status);
+
+
+// This routine creates a new FITS file with a binary table to store an impact list
+// of photons on the detector. The list can be further processed by a detector
+// simulation to create an event list.
+int create_impactlist_file(fitsfile **, char filename[], int *status);
 
 
 #endif  /* PHOTON_H */

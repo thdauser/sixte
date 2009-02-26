@@ -48,7 +48,8 @@ int photon_imaging_main() {
 
     // read parameters using PIL library
     if ((status=photon_imaging_getpar(photonlist_filename, orbit_filename, 
-				      attitude_filename, psf_filename, impactlist_filename,
+				      attitude_filename, psf_filename, 
+				      impactlist_filename,
 				      &t0, &timespan, &telescope))) break;
 
 
@@ -74,9 +75,15 @@ int photon_imaging_main() {
 	!=EXIT_SUCCESS) break;
 
 
-    // get the PSF
+    // Get the PSF:
     if ((status=get_psf(&psf_store, psf_filename, &status))!=EXIT_SUCCESS) break;
 
+    // Create a new FITS file for the output of the impact list:
+    remove(impactlist_filename);
+    if ((create_impactlist_file(&impactlist_fptr, impactlist_filename, &status))) 
+      break;
+
+    
     // --- END of Initialization ---
 
 
@@ -103,14 +110,14 @@ int photon_imaging_main() {
       photon.energy = 0.;
       photon.ra = 0.;
       photon.dec = 0.;
-      fits_read_col(photonlist_fptr, TDOUBLE, 1, photonlist_row+1, 1, 1, &photon.time,
-		    &photon.time, &anynul, &status);
-      fits_read_col(photonlist_fptr, TFLOAT, 2, photonlist_row+1, 1, 1, &photon.energy,
-		    &photon.energy, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 3, photonlist_row+1, 1, 1, &photon.ra,
-		    &photon.ra, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 4, photonlist_row+1, 1, 1, &photon.dec,
-		    &photon.dec, &anynul, &status);
+      fits_read_col(photonlist_fptr, TDOUBLE, 1, photonlist_row+1, 1, 1, 
+		    &photon.time, &photon.time, &anynul, &status);
+      fits_read_col(photonlist_fptr, TFLOAT, 2, photonlist_row+1, 1, 1, 
+		    &photon.energy, &photon.energy, &anynul, &status);
+      fits_read_col(photonlist_fptr, TDOUBLE, 3, photonlist_row+1, 1, 1, 
+		    &photon.ra, &photon.ra, &anynul, &status);
+      fits_read_col(photonlist_fptr, TDOUBLE, 4, photonlist_row+1, 1, 1, 
+		    &photon.dec, &photon.dec, &anynul, &status);
       
       if (status!=EXIT_SUCCESS) break;
       photon.direction = unit_vector(photon.ra, photon.dec);
@@ -178,8 +185,17 @@ int photon_imaging_main() {
 	  // the edge of the FOV, although the source is inside the FOV.)
 	  if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
 	      tan(telescope.fov_diameter)*telescope.focal_length) {
-
-	    // Create impact list !!!
+	    
+	    // Insert the impact position with the photon data into the impact list:
+	    fits_insert_rows(impactlist_fptr, impactlist_row++, 1, &status);
+	    fits_write_col(impactlist_fptr, TDOUBLE, 1, impactlist_row, 1, 1, 
+			   &photon.time, &status);
+	    fits_write_col(impactlist_fptr, TFLOAT, 2, impactlist_row, 1, 1, 
+			   &photon.energy, &status);
+	    fits_write_col(impactlist_fptr, TDOUBLE, 3, impactlist_row, 1, 1, 
+			   &position.x, &status);
+	    fits_write_col(impactlist_fptr, TDOUBLE, 4, impactlist_row, 1, 1, 
+			   &position.y, &status);
 
 	  }
 	} // END get_psf_pos(...)
@@ -198,13 +214,14 @@ int photon_imaging_main() {
   // release HEADAS random number generator
   HDmtFree();
 
-  // Close the event list FITS file.
+  // Close the FITS files.
+  if (impactlist_fptr) fits_close_file(impactlist_fptr, &status);
   if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
 
-  // release memory of orbit catalog
+  // Release memory of orbit catalog
   if (sat_catalog) free(sat_catalog);
 
-  // release memory of PSF:
+  // Release memory of PSF:
   free_psf_store(psf_store);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished\n\n");
