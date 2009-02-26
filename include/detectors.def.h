@@ -24,7 +24,6 @@
 // framestore for eROSITA). If the exposure time is not exceeded it simply does 
 // nothing.
 void framestore_detector_action(struct Detector*, double time, 
-				struct source_cat_entry background,
 				struct Eventlist_File*, int *status);
 
 
@@ -32,19 +31,16 @@ void framestore_detector_action(struct Detector*, double time,
 // the same purpose as the corresponding routine for the eROSITA framestore 
 // detector.
 void depfet_detector_action(struct Detector*, double time, 
-			    struct source_cat_entry background,
 			    struct Eventlist_File*, int *status); 
 
 
 // This routine is implemented for the TES microcalorimeter (on IXO).
 void tes_detector_action(struct Detector*, double time, 
-			 struct source_cat_entry background,
 			 struct Eventlist_File*, int *status); 
 
 
 // This routine is implemented for the HTRS (on IXO).
 void htrs_detector_action(struct Detector*, double time, 
-			  struct source_cat_entry background,
 			  struct Eventlist_File*, int *status); 
 
 

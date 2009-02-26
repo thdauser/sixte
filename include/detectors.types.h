@@ -95,7 +95,6 @@ struct Detector {
   // Its task is to manage the detector action, i.e., perform the readout process
   // if it necessary.
   void (*detector_action) (struct Detector*, double, 
-			   struct source_cat_entry,
 			   struct Eventlist_File*, int *);
 
 

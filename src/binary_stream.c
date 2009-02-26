@@ -25,7 +25,7 @@
 
 // This routine reads the program parameters using PIL.
 int binary_stream_getpar(char input_filename[], char output_filename[],
-		       double* binning_time);
+			 double* binning_time);
 
 
 
@@ -49,12 +49,12 @@ int binary_stream_main()
   set_toolversion("0.01");
 
 
-  // Get the parameters:
-  status = binary_stream_getpar(eventlist_file.filename, output_filename, 
-			      &binning_time);
-  if (status != EXIT_SUCCESS) return (status);
-
   do { // Beginning of ERROR handling loop
+
+    // Get the parameters:
+    if ((status = binary_stream_getpar(eventlist_file.filename, output_filename, 
+				       &binning_time))) break;
+
     int hdutype;
     eventlist_file.fptr=NULL;
     if (fits_open_table(&eventlist_file.fptr, eventlist_file.filename, 

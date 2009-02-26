@@ -1,12 +1,12 @@
 AM_CPPFLAGS = -I${HEADAS}/include -I@top_srcdir@/include
 AM_CFLAGS   = -Wall
 #AM_CFLAGS   = -Wall -Werror
-CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
+#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
 
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = binary_stream generate_photons photon_imaging
+bin_PROGRAMS = binary_stream generate_photons photon_imaging photon_detection
 
 # Libraries that are installed in the 'lib' directory.
 lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
@@ -47,4 +47,12 @@ photon_imaging_LDADD    = libdetectors.a
 photon_imaging_LDADD   += libastrosources.a
 photon_imaging_LDADD   += libsatellites.a
 
+photon_detection_SOURCES  = photon_detection.c
+photon_detection_LDFLAGS  = @libcfitsio@ -lnsl
+photon_detection_LDFLAGS += @libape@ -lreadline
+photon_detection_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
+photon_detection_LDFLAGS += -lgsl -lgslcblas -lm
+photon_detection_LDADD    = libdetectors.a
+photon_detection_LDADD   += libastrosources.a
+photon_detection_LDADD   += libsatellites.a
 

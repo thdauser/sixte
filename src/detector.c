@@ -9,7 +9,6 @@
 void framestore_detector_action(
 				struct Detector* detector,
 				double time, 
-				struct source_cat_entry background,
 				struct Eventlist_File* eventlist_file,
 				int *fitsstatus
 				) 
@@ -18,7 +17,7 @@ void framestore_detector_action(
   // In that case, read out the detector.
   while (time > detector->readout_time) {
     // Add background photons to the detector pixels.
-    insert_background_photons(*detector, background, detector->integration_time);
+    //insert_background_photons(*detector, background, detector->integration_time);
 
     // Readout the detector and create eventlist entries for the actual time:
     readout(*detector, eventlist_file, fitsstatus);
@@ -40,7 +39,6 @@ void framestore_detector_action(
 void depfet_detector_action(
 			    struct Detector* detector,
 			    double time, 
-			    struct source_cat_entry background,
 			    struct Eventlist_File* eventlist_file,
 			    int *fitsstatus
 			    ) 
@@ -93,7 +91,6 @@ void depfet_detector_action(
 void tes_detector_action(
 			 struct Detector* detector,
 			 double time, 
-			 struct source_cat_entry background,
 			 struct Eventlist_File* eventlist_file,
 			 int *fitsstatus
 			 ) 
@@ -108,7 +105,6 @@ void tes_detector_action(
 void htrs_detector_action(
 			  struct Detector* detector,
 			  double time, 
-			  struct source_cat_entry background,
 			  struct Eventlist_File* eventlist_file,
 			  int *fitsstatus
 			  ) 

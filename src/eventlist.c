@@ -12,9 +12,9 @@
 
 //////////////////////////////////////////////////////////////////
 void add_eventlist_row(
-		      struct Eventlist_File* eventlist_file, 
-		      struct Event event, int *status
-		      ) 
+		       struct Eventlist_File* eventlist_file, 
+		       struct Event event, int *status
+		       ) 
 {
   fits_insert_rows(eventlist_file->fptr, eventlist_file->row++, 1, status);
   fits_write_col(eventlist_file->fptr, TDOUBLE, 1, eventlist_file->row, 
