@@ -229,6 +229,17 @@ int binary_stream_main()
       } // END of loop over all entries in the event list.
 
       if (status == EXIT_SUCCESS) {
+	// Write the events to the binary output.
+	int count;
+	for (count=0; count<n_buffered_events; count++) {
+	  if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
+	    status=EXIT_FAILURE;
+	    sprintf(msg, "Error: generation of binary format failed!\n");
+	    HD_ERROR_THROW(msg,status);
+	    break;
+	  }
+	}
+
 	if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
 	  status=EXIT_FAILURE;
 	  sprintf(msg, "Error: generation of binary format failed!\n");
