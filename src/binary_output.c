@@ -82,7 +82,7 @@ int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
     binary_output->bytes[0] = 0xEB;
     binary_output->bytes[1] = 0x90;
     // frametime MSB
-    binary_output->bytes[2] = 0x00;
+    binary_output->bytes[2] = 0x00;  // TODO
     binary_output->bytes[3] = 0x00;
     binary_output->bytes[4] = 0x00;
     binary_output->bytes[5] = 0x00;
@@ -94,7 +94,7 @@ int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
     binary_output->bytes[8] = 0x20;
     // # of 16bit elements
     binary_output->bytes[9] = (unsigned char)((binary_output->n_bytes-12)/2);
-    // # of total frame   ???????????
+    // # of total frame   ???????????  // TODO
     binary_output->bytes[10] = 0x00;
     // actual frame #
     binary_output->bytes[11] = binary_output->framenumber;
