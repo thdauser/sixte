@@ -6,7 +6,7 @@ CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = binary_stream generate_photons photon_imaging photon_detection
+bin_PROGRAMS = binary_stream generate_photons photon_detection photon_imaging psfgen
 
 # Libraries that are installed in the 'lib' directory.
 lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
@@ -38,6 +38,15 @@ generate_photons_LDADD    = libdetectors.a
 generate_photons_LDADD   += libastrosources.a
 generate_photons_LDADD   += libsatellites.a
 
+photon_detection_SOURCES  = photon_detection.c
+photon_detection_LDFLAGS  = @libcfitsio@ -lnsl
+photon_detection_LDFLAGS += @libape@ -lreadline
+photon_detection_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
+photon_detection_LDFLAGS += -lgsl -lgslcblas -lm
+photon_detection_LDADD    = libdetectors.a
+photon_detection_LDADD   += libastrosources.a
+photon_detection_LDADD   += libsatellites.a
+
 photon_imaging_SOURCES  = photon_imaging.c
 photon_imaging_LDFLAGS  = @libcfitsio@ -lnsl
 photon_imaging_LDFLAGS += @libape@ -lreadline
@@ -47,12 +56,12 @@ photon_imaging_LDADD    = libdetectors.a
 photon_imaging_LDADD   += libastrosources.a
 photon_imaging_LDADD   += libsatellites.a
 
-photon_detection_SOURCES  = photon_detection.c
-photon_detection_LDFLAGS  = @libcfitsio@ -lnsl
-photon_detection_LDFLAGS += @libape@ -lreadline
-photon_detection_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-photon_detection_LDFLAGS += -lgsl -lgslcblas -lm
-photon_detection_LDADD    = libdetectors.a
-photon_detection_LDADD   += libastrosources.a
-photon_detection_LDADD   += libsatellites.a
+psfgen_SOURCES  = psfgen.c
+psfgen_LDFLAGS  = @libcfitsio@ -lnsl
+psfgen_LDFLAGS += @libape@ -lreadline
+psfgen_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
+psfgen_LDFLAGS += -lgsl -lgslcblas -lm
+psfgen_LDADD    = libdetectors.a
+psfgen_LDADD   += libastrosources.a
+psfgen_LDADD   += libsatellites.a
 

@@ -355,10 +355,13 @@ int binary_stream_main()
   } while (0); // END of ERROR handling loop
 
 
+  // --- Clean up ---
 
   // Close files
   if (output_file) fclose(output_file);
   if (eventlist_file.fptr) fits_close_file(eventlist_file.fptr, &status);
+
+  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
 
   return(status);
 }

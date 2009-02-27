@@ -312,7 +312,7 @@ int photon_detection_main() {
   // Release memory of detector EBOUNDS
   free_ebounds(detector.ebounds);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished\n\n");
+  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
 
   return(status);
 }
