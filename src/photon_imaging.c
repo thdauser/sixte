@@ -224,7 +224,7 @@ int photon_imaging_main() {
   // Release memory of PSF:
   free_psf_store(psf_store);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished\n\n");
+  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
 
   return(status);
 }

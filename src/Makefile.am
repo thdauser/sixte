@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I${HEADAS}/include -I@top_srcdir@/include
 AM_CFLAGS   = -Wall
 #AM_CFLAGS   = -Wall -Werror
-#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
+CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
 
 
 # The following line lists the programs that should be created and stored

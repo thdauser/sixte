@@ -424,6 +424,8 @@ int generate_photons_main()
 
 
   // --- Clean up ---
+  
+  headas_chat(5, "cleaning up ...\n");
 
   // Close FITS file
   if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
@@ -457,6 +459,7 @@ int generate_photons_main()
   // release memory of detector EBOUNDS
   free_ebounds(detector.ebounds);
 
+  if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
 
   return(status);
 }

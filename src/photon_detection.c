@@ -59,7 +59,7 @@ int photon_detection_main() {
 
       // Set the first readout time such that the first readout is performed 
       // immediately at the beginning of the simulation (FRAMESTORE).
-      detector.readout_time = t0 + detector.integration_time;
+      detector.readout_time = t0;
       
       detector.detector_action = framestore_detector_action;
 
@@ -195,7 +195,7 @@ int photon_detection_main() {
 	// Get the corresponding created charge.
 	float charge = get_charge(channel, detector.ebounds);
       
-	if (channel < 0)    printf("ERROR CHANNEL <= 0!\n");     // REMOVE
+	if (channel < 0)    printf("ERROR CHANNEL < 0!\n");     // REMOVE
 	if (channel > 4096) printf("ERROR CHANNEL too large!\n");
 
 	int x[4], y[4];

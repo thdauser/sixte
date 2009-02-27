@@ -32,7 +32,8 @@
 #include "psf.h"
 #include "global_constants.h"
 
-//#define SIMPLE_GAUSS_PSF 1  // produce a simple on-axis Gauss PSF
+
+#define SIMPLE_GAUSS_PSF 1  // produce a simple on-axis Gauss PSF
 
 
 // reads all parameters of 'create_psf' using PIL
@@ -337,8 +338,8 @@ int create_psf_work(
     //save_psf_to_fits(store, outputfile, &status);
 
     // Test: output to FITS image:
-    remove("test.psf.image.fits");
-    save_psf_image(store, "test.psf.image.fits", &status);
+    remove(outputfile);
+    save_psf_image(store, outputfile, &status);
 
 
   } while(0);  // END of error loop

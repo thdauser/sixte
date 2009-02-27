@@ -190,7 +190,7 @@ long detector_rmf(
   }
   // check if the energy is higher than the highest value in the RMF
   if (rmf.row[row].E_high < energy) {
-    return(-1);
+    return(0);  // TODO
   }
 
   // For each photon energy there is a particular number of PHA channels with 
@@ -791,7 +791,7 @@ float get_charge(
     return(0.0);
   }
   else if ((channel < 0) || (channel > 4096)) {
-    printf("Error: Invalid Ebounds channel!\n");
+    printf("Error: Invalid Ebounds channel (%ld)!\n", channel);
   }
 
   // Return the median of the charge that corresponds to the specified PHA channel

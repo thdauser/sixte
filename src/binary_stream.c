@@ -27,7 +27,7 @@
 #define N_HTRS_BYTES    (128)
 #define N_EROSITA_BYTES (128)
 
-#include "byte_output.c"
+#include "binary_output.c"
 
 
 ///////////////////////////////////////////////////
@@ -37,6 +37,7 @@ void strtoupper(char string[]) {
   int count=0;
   while (string[count] != '\0') {
     string[count] = toupper(string[count]);
+    count++;
   };
 }
 
@@ -75,7 +76,8 @@ int binary_stream_main()
   do { // Beginning of ERROR handling loop
 
     // --- Initialization ---
-
+    eventlist_file.fptr=NULL;
+ 
     if ((status = PILGetFname("eventlist_filename", eventlist_file.filename))) {
       sprintf(msg, "Error reading the name of the input event list file (FITS)!\n");
       HD_ERROR_THROW(msg,status);
@@ -83,7 +85,6 @@ int binary_stream_main()
     }
 
     int hdutype;
-    eventlist_file.fptr=NULL;
     if (fits_open_table(&eventlist_file.fptr, eventlist_file.filename, 
 			READONLY, &status)) break;
 
@@ -111,7 +112,7 @@ int binary_stream_main()
     strtoupper(telescop); 
     strtoupper(instrume); 
 
-    headas_chat(5, "TELESCOP: %s\n INSTRUME: %s\n", telescop, instrume);
+    headas_chat(5, "TELESCOP: %s\nINSTRUME: %s\n", telescop, instrume);
     if (strcmp(telescop, "EROSITA") == 0) {
       headas_chat(5, "MODE: events\n");
       mode = MODE_EVENTS;
@@ -166,17 +167,31 @@ int binary_stream_main()
       // EVENT mode, i.e., the events are transferred to a particular binary
       // data format without spectral binning or other modifications.
       
-      struct Byte_Output *byte_output = get_Byte_Output(N_EROSITA_BYTES, output_file);
-      struct Event *eventlist = (struct Event *)malloc(384*348*sizeof(struct Event));
-      if ((byte_output == NULL)||(eventlist==NULL)) {
+      struct Binary_Output *binary_output = get_Binary_Output(N_EROSITA_BYTES, output_file);
+      struct Event *eventlist = (struct Event *)malloc(10000*sizeof(struct Event));
+      if ((binary_output == NULL)||(eventlist==NULL)) {
 	status=EXIT_FAILURE;
 	sprintf(msg, "Error: memory allocation failed!\n");
 	HD_ERROR_THROW(msg,status);
 	break;
       }
-      int n_buffered_events=0;
+      // Clear the event buffer:
+      int count;
+      for (count=0; count<10000; count++) {
+	eventlist[count].time=0.;
+	eventlist[count].pha=0;
+	eventlist[count].grade=0;
+	eventlist[count].xi=0;
+	eventlist[count].yi=0;
+	eventlist[count].frame=0;
+	eventlist[count].patnum=0;
+	eventlist[count].patid=0;
+	eventlist[count].pileup=0;
+      }
+
 
       // Loop over all entries in the event list:
+      int n_buffered_events=0;
       for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
 	   eventlist_file.row++) {
       
@@ -188,7 +203,7 @@ int binary_stream_main()
 	  // Write the events to the binary output.
 	  int count;
 	  for (count=0; count<n_buffered_events; count++) {
-	    if (byte_output_erosita_insert_event(byte_output, &(eventlist[count]))) {
+	    if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
 	      status=EXIT_FAILURE;
 	      sprintf(msg, "Error: generation of binary format failed!\n");
 	      HD_ERROR_THROW(msg,status);
@@ -196,7 +211,7 @@ int binary_stream_main()
 	    }
 	  }
 
-	  if (byte_output_erosita_finish_frame(byte_output, eventlist[0].time)) {
+	  if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
 	    status=EXIT_FAILURE;
 	    sprintf(msg, "Error: generation of binary format failed!\n");
 	    HD_ERROR_THROW(msg,status);
@@ -214,7 +229,7 @@ int binary_stream_main()
       } // END of loop over all entries in the event list.
 
       if (status == EXIT_SUCCESS) {
-	if (byte_output_erosita_finish_frame(byte_output, eventlist[0].time)) {
+	if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
 	  status=EXIT_FAILURE;
 	  sprintf(msg, "Error: generation of binary format failed!\n");
 	  HD_ERROR_THROW(msg,status);
@@ -223,7 +238,7 @@ int binary_stream_main()
       }
 
       if (status != EXIT_SUCCESS) {
-	free_Byte_Output(byte_output);
+	free_Binary_Output(binary_output);
 	if (eventlist) free (eventlist);
 	break;
       }
@@ -248,9 +263,9 @@ int binary_stream_main()
       unsigned char output_buffer[N_HTRS_BYTES];
 
       // Clear the output buffer:
-      byte_output_clear_bytes(output_buffer, N_HTRS_BYTES);
+      binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
       // Clear the spectrum:
-      byte_output_clear_bytes(spectrum, Nchannels);
+      binary_output_clear_bytes(spectrum, Nchannels);
 
       for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
 	   eventlist_file.row++) {
@@ -317,7 +332,7 @@ int binary_stream_main()
 	      }
 
 	      // Clear the output buffer:
-	      byte_output_clear_bytes(output_buffer, N_HTRS_BYTES);
+	      binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
 	    
 	    } // END of starting new byte frame
 
