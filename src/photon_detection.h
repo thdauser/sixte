@@ -1,7 +1,6 @@
 #ifndef PHOTON_DETECTION_H
 #define PHOTON_DETECTION_H 1
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
