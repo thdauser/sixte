@@ -60,6 +60,7 @@ int photon_detection_main() {
       // Set the first readout time such that the first readout is performed 
       // immediately at the beginning of the simulation (FRAMESTORE).
       detector.readout_time = t0;
+      detector.frame = 0;
       
       detector.detector_action = framestore_detector_action;
 

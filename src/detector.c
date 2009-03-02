@@ -27,7 +27,7 @@ void framestore_detector_action(
 
     // Update the detector frame time to the next frame.
     detector->readout_time += detector->integration_time;
-    detector->frame++;
+    detector->frame+=2;
   }
 
 }

@@ -30,6 +30,7 @@
 #include "binary_output.c"
 
 
+
 ///////////////////////////////////////////////////
 // Convert a squence of chars into captial letters. 
 // The squence has to be terminated by a '\0' mark.
@@ -210,7 +211,7 @@ int binary_stream_main()
 	      break;
 	    }
 	  }
-
+	  // Finish the TLM record, even if it is not full yet.
 	  if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
 	    status=EXIT_FAILURE;
 	    sprintf(msg, "Error: generation of binary format failed!\n");
