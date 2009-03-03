@@ -173,7 +173,7 @@ void free_psf(
 
 
 
-////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 // Routine reads PSF data from a file with FITS images.
 PSF* get_psf(
 	     const char* filename,
@@ -479,10 +479,6 @@ int save_psf_image(
 
   return(*status);
 }
-
-
-
-
 
 
 

@@ -21,7 +21,7 @@
 
 
 
-///////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 
 // This structure is used to store the PSF data for one particular 
@@ -33,7 +33,7 @@ typedef struct {
   double energy;            // energy of this particular PSF
 
   // For each energy the PSFs are rescaled in such a way that the on-axis PSF 
-  // is normalized to 1.  The scaling factor is stored here, and has to be used 
+  // is normalized to 1.  The scaling factor is stored here and has to be used 
   // for rescaling the source spectra appropriately.
   double scaling_factor;
 } PSF_Item;
