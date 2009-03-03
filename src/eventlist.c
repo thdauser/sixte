@@ -52,7 +52,7 @@ void add_eventlist_row(
 ///////////////////////////////////////////////////////////////////
 int create_eventlist_file(
 			  struct Eventlist_File* eventlist_file,
-			  struct Detector detector,
+			  Detector* detector,
 			  double tstart,
 			  double tend,
 			  char *telescope_name,
@@ -71,7 +71,8 @@ int create_eventlist_file(
   do {   // Beginning of ERROR handling loop
 
     // Create a new FITS file:
-    if (fits_create_file(&eventlist_file->fptr, eventlist_file->filename, status)) break;
+    if (fits_create_file(&eventlist_file->fptr, eventlist_file->filename, status)) 
+      break;
 
     // To create a FITS table, the format of the individual columns has to 
     // be specified.
@@ -201,11 +202,11 @@ int create_eventlist_file(
 
     // Determine the CCD mode (FRAMESTORE, DEPFET, ...)
     char data_mode[20];
-    if (detector.type == FRAMESTORE) {
+    if (detector->type == FRAMESTORE) {
       strcpy(data_mode, "FRAMESTORE");
-    } else if (detector.type == DEPFET) {
+    } else if (detector->type == DEPFET) {
       strcpy(data_mode, "DEPFET");
-    } else if (detector.type == TES) {
+    } else if (detector->type == TES) {
       strcpy(data_mode, "TES MCal");
     } else {strcpy(data_mode, "unknown");}
     if (fits_write_key (eventlist_file->fptr, TSTRING, "DATAMODE", data_mode, "", 
@@ -213,10 +214,10 @@ int create_eventlist_file(
 
     if (fits_write_key(eventlist_file->fptr, TSTRING, "FILTER", "none", "", status))
       break;
-    if (fits_write_key(eventlist_file->fptr, TINT, "DETWIDTH", &detector.width, 
+    if (fits_write_key(eventlist_file->fptr, TINT, "DETWIDTH", &detector->width, 
 		       "width (number of pixels) of the detector", status)) 
       break;
-    if (fits_write_key(eventlist_file->fptr, TINT, "DETCHANS", &detector.Nchannels, 
+    if (fits_write_key(eventlist_file->fptr, TINT, "DETCHANS", &detector->Nchannels, 
 		       "number of detector channels", status)) break;
 
     // instrument data
@@ -232,9 +233,9 @@ int create_eventlist_file(
 			"column of event", status)) break;
     if (fits_write_key (eventlist_file->fptr, TSTRING, "ROW", ftype[4], 
 			"row of event", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TINT, "COLUMNS", &detector.width, 
+    if (fits_write_key (eventlist_file->fptr, TINT, "COLUMNS", &detector->width, 
 			"Number of columns", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TINT, "ROWS", &detector.width, 
+    if (fits_write_key (eventlist_file->fptr, TINT, "ROWS", &detector->width, 
 			"Number of rows", status)) break;
     
 

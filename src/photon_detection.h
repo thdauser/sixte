@@ -6,6 +6,7 @@
 #include <math.h>
 #include <malloc.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "fitsio.h"
 #include "pil.h"
@@ -36,7 +37,7 @@
 // Reads the program parameters using PIL
 int photon_detection_getpar(char impactlist_filename[], char rmf_filename[], 
 			    char eventlist_filename[], 
-			    double *t0, double *timespan, struct Detector *);
+			    double *t0, double *timespan, Detector *);
 
 
 #endif /* PHOTON_DETECTION_H */

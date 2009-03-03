@@ -173,7 +173,7 @@ int generate_photons_main()
   struct Telescope telescope; 
   // Detector data structure (containing the pixel array, its width, 
   // RMF, EBOUNDS ...)
-  struct Detector detector;   
+  Detector* detector=NULL;
 
   // Photon list containing all created photons in the sky
   struct Photon_Entry *photon_list=NULL;  
@@ -195,7 +195,9 @@ int generate_photons_main()
   do {  // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-
+    detector = get_Detector(&status);
+    if(status!=EXIT_SUCCESS) break;
+    
     if ((status = generate_photons_getpar(orbit_filename, attitude_filename,
 					  &n_sourcefiles, source_filename,
 					  spectrum_filename[0], rmf_filename, 
@@ -245,11 +247,11 @@ int generate_photons_main()
 				      attitude_filename)) !=EXIT_SUCCESS) break;
 
     // Get the energy bins of the PHA channels:
-    if ((status=get_ebounds(&detector.ebounds, &detector.Nchannels, rmf_filename))
+    if ((status=get_ebounds(&detector->ebounds, &detector->Nchannels, rmf_filename))
 	!=EXIT_SUCCESS) break;
 
     // Get the source spectra:
-    if ((status=get_spectra(&spectrum_store, detector.Nchannels, spectrum_filename,
+    if ((status=get_spectra(&spectrum_store, detector->Nchannels, spectrum_filename,
 			    N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
         
     // Get the source catalogs:
@@ -464,7 +466,7 @@ int generate_photons_main()
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
 
   // release memory of detector EBOUNDS
-  free_ebounds(detector.ebounds);
+  free_ebounds(&detector->ebounds);
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
 

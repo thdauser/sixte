@@ -20,7 +20,7 @@
 // It also inserts  header information.
 // The function returns '0', if it is run successfully.
 // Otherwise the return value is '1'.
-int create_eventlist_file(struct Eventlist_File*, struct Detector detector,
+int create_eventlist_file(struct Eventlist_File*, Detector*,
 			  double tstart, double tend, char *telescope_name,
 			  char *ccd_name, char *instrument_name,
 			  int *status);

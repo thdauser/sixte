@@ -90,7 +90,7 @@ struct lightcurve_entry {
 // light curve and adds them to the time ordered photon list.
 // The return value is the value of the error status variable.
 int create_photons(struct source_cat_entry* src, double time, double dt,
-		   struct Photon_Entry** pl, struct Detector detector, 
+		   struct Photon_Entry** pl, Detector*,
 		   gsl_rng *gsl_random_g);
 
 // Clears the photon list.
@@ -101,7 +101,7 @@ int insert_photon(struct Photon_Entry **, struct Photon);
 
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
-float photon_energy(struct source_cat_entry src, struct Detector);
+float photon_energy(struct source_cat_entry src, Detector*);
 
 // Function produces a light curve for a given source.
 int create_lightcurve(struct source_cat_entry *src, double time, 

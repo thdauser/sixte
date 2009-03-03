@@ -23,41 +23,16 @@
 // lines, depending on the detector model (e.g. DEPFET for WFI in contrast to 
 // framestore for eROSITA). If the exposure time is not exceeded it simply does 
 // nothing.
-void framestore_detector_action(struct Detector*, double time, 
-				struct Eventlist_File*, int *status);
+void detector_action(Detector*, double time, struct Eventlist_File*, int* status);
 
-
-// This routine is implemented for the DEPFET detector on (WFI on IXO) with 
-// the same purpose as the corresponding routine for the eROSITA framestore 
-// detector.
-void depfet_detector_action(struct Detector*, double time, 
-			    struct Eventlist_File*, int *status); 
-
-
-// This routine is implemented for the TES microcalorimeter (on IXO).
-void tes_detector_action(struct Detector*, double time, 
-			 struct Eventlist_File*, int *status); 
-
-
-// This routine is implemented for the HTRS (on IXO).
-void htrs_detector_action(struct Detector*, double time, 
-			  struct Eventlist_File*, int *status); 
-
-
-// Reads out the entire detector and creates event list entries for the 
-// measured photons.
-void readout(struct Detector, struct Eventlist_File*, int *status);
-
-
-// Reads out a particular detector line and creates event list entries 
-// for the measured photons.
-void readout_line(struct Detector, int line, struct Eventlist_File*, 
-		  int *fitsstatus);
-
-
-// Determines the index of the minimum value in an array of distances to 
-// the pixel borders.
-int min_dist(double array[], int directions);
+inline void framestore_detector_action(void*, double time, 
+					      struct Eventlist_File*, int *status);
+inline void depfet_detector_action(void*, double time, 
+					  struct Eventlist_File*, int *status); 
+inline void tes_detector_action(void*, double time, struct Eventlist_File*, 
+				       int *status); 
+inline void htrs_detector_action(void*, double time, 
+					struct Eventlist_File*, int *status);
 
 
 // Returns a detector PHA channel for the given photon energy according to the RMF.
@@ -66,98 +41,57 @@ int min_dist(double array[], int directions);
 // of several possible PHA channels with certain probability.
 // If the energy is above the highest available energy bin in the RMF, the 
 // return value is "-1".
-long detector_rmf(float energy, struct RMF rmf);
+long detector_rmf(float energy, RMF*);
 
 
 // Get the PHA channel that corresponds to a particular charge.
-long get_pha(float, struct Detector detector);
+long get_pha(float, Detector*);
 
 // Get the charge that corresponds to a particular PHA channel according to 
 // the ebounds table.
-float get_charge(long, struct Ebounds);
+float get_charge(long, Ebounds*);
 
 
 // Function allocates memory for the detector array.
-int get_detector(struct Detector *detector);
+Detector* get_Detector(int*);
 
 
 // Get memory for detector EBOUNDS matrix and fill it with data from FITS file.
-int get_ebounds(struct Ebounds *ebounds, int *Nchannels, const char filename[]);
+int get_ebounds(Ebounds*, int *Nchannels, const char filename[]);
 
 
 // Release memory of detector EBOUNDS.
-void free_ebounds(struct Ebounds ebounds);
+void free_ebounds(Ebounds *);
 
 
 // Load the detector response matrix from the given RMF file.
-int get_rmf(struct Detector *detector, char *rmf_name);
+int get_rmf(Detector *, char* rmf_name);
 
 
 // Release memory of detector response matrix.
-void free_rmf(struct RMF);
-
-
-// This routine clears the entire detector pixel array 
-// (i.e., all created charges are removed, e.g., after read out).
-void clear_detector(struct Detector detector);
-
-
-// This routine clears a particular line of the detector pixel array 
-// (i.e., all created charges are removed, e.g., after read out).
-void clear_detector_line(struct Detector detector, int line);
-
-
-// Add background photons to the detector pixels  according to a given 
-// background spectrum and count-rate.
-void insert_background_photons(struct Detector detector, 
-			       struct source_cat_entry background, 
-			       double integration_time);
+void free_rmf(RMF *);
 
 
 // This function returns '1', if the specified detector pixel is active at 
 // the time 'time'. If the pixel is, e.g., cleared at this time it cannot 
 // receive a charge. In that case the function returns '0'.
-int detector_active(int x, int y, struct Detector detector, double time);
-int htrs_detector_active(int x, int y, struct Detector detector, double time);
-
-
-// This function calculates the value of the linear function f(x) = m*x + t
-double linear_function(double x, double m, double t);
-
-
-// Returns the lower line index of one particular line group with specified m
-// and variable t for a given point in the 2D plane.
-int htrs_get_line(struct Point2d point, double m, double dt, struct Detector);
-
-
-// Get the line indices of the lines from each of the 3 groups of lines that define
-// the hexagonal pixel shape.
-void htrs_get_lines(struct Point2d, struct Detector, int* l);
+int detector_active(int x, int y, Detector*, double time);
+int htrs_detector_active(int x, int y, Detector*, double time);
 
 
 // This function determines the integer pixel coordinates for a given 
 // 2D floating point. The point lies within the hexagonal HTRS pixel.
-int htrs_get_pixel(struct Detector, struct Point2d, 
+int htrs_get_pixel(Detector*, struct Point2d, 
 		   int* x, int* y, double* fraction);
-
-
-// Returns the pixel index that corresponds to the pixel segment which is
-// defined by the 3 given line indices.
-int htrs_get_lines2pixel(int* l, struct Detector detector);
-
-
-// Returns the (integer) pixel coordinates of the pixel which is specified 
-// by its number.
-struct Point2i htrs_get_pixel2icoordinates(int pixel, struct Detector detector);
 
 
 // This routine performs the initialization of the HTRS detector.
 // The return value is the error status.
-int htrs_get_detector(struct Detector*);
+Detector* htrs_get_Detector(int *);
 
 
 // Release all dynamically allocated memory in the HTRS detector structure.
-void htrs_free_detector(struct Detector* detector);
+void htrs_free_detector(Detector*);
 
 
 // Determines the pixel coordinates for a given point on a 2D array of 
@@ -166,7 +100,7 @@ void htrs_free_detector(struct Detector* detector);
 // pixels are stored in the x[] and y[] arrays, the charge fraction in 
 // each pixel in fraction[]. The number of totally affected 
 // pixels is given by the function's return value. 
-int get_pixel_square(struct Detector, struct Point2d, 
+int get_pixel_square(Detector*, struct Point2d, 
 		     int* x, int* y, double* fraction);
 
 

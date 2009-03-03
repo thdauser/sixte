@@ -8,12 +8,12 @@
 
 
 // Define the different detector Types.
-enum DetectorTypes {
+typedef enum {
   FRAMESTORE=1, 
   DEPFET    =2, 
   TES       =3,
   HTRS      =4
-};
+} DetectorTypes;
 
 
 // Data type for the detector pixels.
@@ -33,34 +33,34 @@ struct Ebounds_Row {
   float E_min, E_max;
 };
 
-struct Ebounds {
+typedef struct {
   struct Ebounds_Row *row;
-};
+} Ebounds;
 
 
 
 // Data structure for storing one single line of the detector redistribution matrix.
-struct RMF_Row {
+typedef struct {
   float E_low, E_high;
   int N_grp;
   int F_chan[1024];
   int N_chan[1024];
   float *matrix;
-};
+} RMF_Row;
 
 
 // Data structure to store the detector response matrix.
-struct RMF {
+typedef struct {
   int Nrows;               // number of rows in the detector redistribution matrix
   int Ncols;               // number of columns in the detector redistribution matrix
-  struct RMF_Row *row;     // data array for the detector RMF data
-};
+  RMF_Row *row;     // data array for the detector RMF data
+} RMF;
 
 
 
 // Detector data structure.
-struct Detector {
-  enum DetectorTypes type; // Detector Type (framestore, depfet, ...) 
+typedef struct {
+  DetectorTypes type;      // Detector Type (framestore, depfet, ...) 
 
   // Detector array (contains the charge created by the x-ray 
   // photons or additional data)
@@ -86,16 +86,15 @@ struct Detector {
   long low_threshold;      // lower detector threshold (in PHA)
   
   int Nchannels;           // Number of detector PHA channels
-  struct Ebounds ebounds;  // Detector energy bounds (relation PHA channel -> 
+  Ebounds ebounds;         // Detector energy bounds (relation PHA channel -> 
                            // [E_min; E_max])
-  struct RMF rmf;          // RMF
+  RMF rmf;                 // RMF
 
 
   // This is a pointer to the routine, which is called after each photon event.
   // Its task is to manage the detector action, i.e., perform the readout process
   // if it necessary.
-  void (*detector_action) (struct Detector*, double, 
-			   struct Eventlist_File*, int *);
+  void (*action) (void*, double, struct Eventlist_File*, int *);
 
 
   // DEPFET specific parameters:
@@ -123,7 +122,7 @@ struct Detector {
   // Data structure to obtain a pixel from given coordinates
   int*** htrs_lines2pixel; 
 
-};
+} Detector;
 
 
 

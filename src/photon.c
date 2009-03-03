@@ -128,12 +128,12 @@ int create_lightcurve(
 float photon_energy(
 		    struct source_cat_entry src,     // source data
 		    // Detector information like Nchannels and ebounds
-		    struct Detector detector         
+		    Detector* detector
 		    )
 {
   // get a random PHA value according to given PHA distribution
   double rand = get_random_number();
-  long upper = detector.Nchannels-1, lower=0, mid;
+  long upper = detector->Nchannels-1, lower=0, mid;
   
   // determine the energy of the photon
   while (upper-lower>1) {
@@ -150,8 +150,8 @@ float photon_energy(
   }
 
   // return energy chosen randomly from the determined PHA bin
-  return(detector.ebounds.row[lower].E_min + 
-	 (detector.ebounds.row[lower].E_max-detector.ebounds.row[lower].E_min)*
+  return(detector->ebounds.row[lower].E_min + 
+	 (detector->ebounds.row[lower].E_max-detector->ebounds.row[lower].E_min)*
 	 get_random_number());
 }
 
@@ -166,7 +166,7 @@ int create_photons(
 		   double time, double dt,       
 		   struct Photon_Entry** pl,      // time ordered photon list
 		   // Detector information (Nchannels, ebounds)
-		   struct Detector detector,     
+		   Detector* detector,     
 		   gsl_rng *gsl_random_g
 		   )
 {

@@ -21,7 +21,7 @@ int photon_detection_main() {
   char rmf_filename[FILENAME_LENGTH];        // input: RMF
 
   // Detector data structure (containing the pixel array, its width, ...)
-  struct Detector detector;   
+  Detector* detector;   
 
   struct Eventlist_File eventlist_file;
 
@@ -38,9 +38,12 @@ int photon_detection_main() {
     // --- Initialization ---
 
     // Read parameters using PIL library:
+    detector = get_Detector(&status);
+    if (status!=EXIT_SUCCESS) break;
+
     if ((status=photon_detection_getpar(impactlist_filename, rmf_filename,
 					eventlist_file.filename, &t0, &timespan,
-					&detector))) break;
+					detector))) break;
 
 
     // Initialize HEADAS random number generator and GSL generator for 
@@ -52,59 +55,51 @@ int photon_detection_main() {
 
     // GENERAL SETTINGS
     // Calculate initial parameter values from the PIL parameters:
-    detector.offset = detector.width/2;
+    detector->offset = detector->width/2;
     
     // size of the charge cloud [real pixel]
-    detector.ccsize = 3.*detector.ccsigma; ///detector.pixelwidth;       
+    detector->ccsize = 3.*detector->ccsigma;
 
     // Set the current detector frame to its initial value:
-    detector.frame = -1;
+    detector->frame = -1;
     
     // DETECTOR SPECIFIC SETTINGS
-    if (detector.type == FRAMESTORE) {
+    if (detector->type == FRAMESTORE) {
       headas_chat(5, "--> FRAMESTORE <--\n");
 
       // Set the first readout time such that the first readout is performed 
       // immediately at the beginning of the simulation (FRAMESTORE).
-      detector.readout_time = t0;
-      detector.frame = 0;
+      detector->readout_time = t0;
+      detector->frame = 0;
       
-      detector.detector_action = framestore_detector_action;
+      detector->action = framestore_detector_action;
 
-      status = get_detector(&detector);
-      
-    } else if (detector.type == DEPFET) {
+    } else if (detector->type == DEPFET) {
       headas_chat(5, "--> DEPFET <--\n");
       
       // Set the first readout time such that the first readout is performed 
       // immediately at the beginning of the simulation (DEPFET).
-      detector.readout_time = t0 - detector.dead_time; 
+      detector->readout_time = t0 - detector->dead_time; 
       // The readout process starts at the center of the WFI detector, 
       // but for that purpose the current line has to be set to 0, so that the
       // first readout is performed in the middle of the detector array.
-      detector.readout_line = 0;
+      detector->readout_line = 0;
       
-      detector.detector_action = depfet_detector_action;
+      detector->action = depfet_detector_action;
       
-      headas_chat(5, "dead time: %lf\n", detector.dead_time);
-      headas_chat(5, "clear time: %lf\n", detector.clear_time);
-      headas_chat(5, "readout time: %lf\n", detector.readout_time);
-
-      status = get_detector(&detector);
+      headas_chat(5, "dead time: %lf\n", detector->dead_time);
+      headas_chat(5, "clear time: %lf\n", detector->clear_time);
+      headas_chat(5, "readout time: %lf\n", detector->readout_time);
       
-    } else if (detector.type == TES) {
+    } else if (detector->type == TES) {
       headas_chat(5, "--> TES Microcalorimeter Array <--\n");
     
-      detector.detector_action = tes_detector_action;
+      detector->action = NULL; // tes_detector_action;
 
-      status = get_detector(&detector);
-
-    } else if (detector.type == HTRS) {
+    } else if (detector->type == HTRS) {
       headas_chat(5, "--> HTRS <--\n");
 
-      detector.detector_action = htrs_detector_action;
-
-      status = htrs_get_detector(&detector);
+      detector->action = NULL; // htrs_detector_action;
 
     } else {
 
@@ -116,7 +111,7 @@ int photon_detection_main() {
     if (status != EXIT_SUCCESS) break;
     
     // Consistency check for size of charge cloud:
-    if (detector.ccsize > 1.) {
+    if (detector->ccsize > 1.) {
       status=EXIT_FAILURE;
       sprintf(msg, "Error: charge cloud size greater than pixel width!\n");
       HD_ERROR_THROW(msg,status);
@@ -124,17 +119,17 @@ int photon_detection_main() {
     }
 
     // Get the energy bins of the PHA channels
-    if ((status=get_ebounds(&detector.ebounds, &detector.Nchannels, rmf_filename))
+    if ((status=get_ebounds(&detector->ebounds, &detector->Nchannels, rmf_filename))
 	!=EXIT_SUCCESS) break;
 
     // Get the detector redistribution matrix (RMF)
-    if ((status=get_rmf(&detector, rmf_filename)) != EXIT_SUCCESS) break;
+    if ((status=get_rmf(detector, rmf_filename)) != EXIT_SUCCESS) break;
 
     // Print some debug information:
-    headas_chat(5, "detector pixel width: %lf m\n", detector.pixelwidth);
-    headas_chat(5, "charge cloud size: %lf m\n", detector.ccsize);
-    headas_chat(5, "number of PHA channels: %d\n", detector.Nchannels);
-    headas_chat(5, "lower PHA threshold: %ld\n\n", detector.low_threshold);
+    headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
+    headas_chat(5, "charge cloud size: %lf m\n", detector->ccsize);
+    headas_chat(5, "number of PHA channels: %d\n", detector->Nchannels);
+    headas_chat(5, "lower PHA threshold: %ld\n\n", detector->low_threshold);
 
     // END of DETECTOR CONFIGURATION SETUP
 
@@ -188,7 +183,7 @@ int photon_detection_main() {
       // Call the detector action routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
-      detector.detector_action(&detector, time, &eventlist_file, &status);
+      detector->action(detector, time, &eventlist_file, &status);
       if (status != EXIT_SUCCESS) break;
 
 
@@ -199,17 +194,17 @@ int photon_detection_main() {
 	// corresponding charges there.
 
 	// Determine a detector channel (PHA channel) according to RMF.
-	long channel = detector_rmf(energy, detector.rmf);
+	long channel = detector_rmf(energy, &detector->rmf);
 	// Get the corresponding created charge.
-	float charge = get_charge(channel, detector.ebounds);
+	float charge = get_charge(channel, &detector->ebounds);
       
-	if (channel < 0)    printf("ERROR CHANNEL < 0!\n");     // REMOVE
-	if (channel > 4096) printf("ERROR CHANNEL too large!\n");
+	assert(channel >= 0);   
+	assert(channel <= 4096);
 
 	int x[4], y[4];
 	double fraction[4];
       
-	if ((detector.type == FRAMESTORE) || (detector.type == DEPFET)) {
+	if ((detector->type == FRAMESTORE) || (detector->type == DEPFET)) {
 	  // Determine the affected detector pixels.
 	  int npixels = get_pixel_square(detector, position, x, y, fraction);
 
@@ -218,7 +213,7 @@ int photon_detection_main() {
 	  for (count=0; count<npixels; count++) {
 	    if (x[count] != INVALID_PIXEL) {
 
-	      detector.pixel[x[count]][y[count]].charge += 
+	      detector->pixel[x[count]][y[count]].charge += 
 		charge * fraction[count] * 
 		// |        |-> charge fraction due to split events
 		// |-> charge created by incident photon
@@ -227,7 +222,7 @@ int photon_detection_main() {
 	    }
 	  }
 
-	} else if (detector.type == HTRS) {
+	} else if (detector->type == HTRS) {
 	  int npixels = htrs_get_pixel(detector, position, x, y, fraction);
 
 	  struct Event event;
@@ -238,19 +233,19 @@ int photon_detection_main() {
 	      if (htrs_detector_active(x[count], y[count], detector, time)) {
 		
 		// Save the time of the photon arrival in this pixel
-		detector.pixel[x[count]][y[count]].arrival = time;
+		detector->pixel[x[count]][y[count]].arrival = time;
 		
 		// Store the photon charge and the new arrival time:
 		event.pha = get_pha(charge*fraction[count], detector);
 		event.time = time;                // TODO: drift time
-		event.xi = detector.htrs_icoordinates2pixel[x[count]][y[count]] + 1;
+		event.xi = detector->htrs_icoordinates2pixel[x[count]][y[count]] + 1;
 		event.yi = 0;  // human readable HTRS pixels numbers start at 1 <-|
 		event.grade = 0;
 		event.frame = 0;
 
 		// Add the event to the FITS event list.
 		// Check lower PHA threshold:
-		if (event.pha >= detector.low_threshold) { 
+		if (event.pha >= detector->low_threshold) { 
 		  // There is an event in this pixel, so insert it into eventlist:
 		  add_eventlist_row(&eventlist_file, event, &status);
 		}
@@ -258,7 +253,7 @@ int photon_detection_main() {
 	    } // END x[count] != INVALID_PIXEL
 	  } // END of loop over all split partners.
 	
-	} else if (detector.type == TES) {
+	} else if (detector->type == TES) {
 	  get_pixel_square(detector, position, x, y, fraction);
 
 	  if (x[0] != INVALID_PIXEL) {
@@ -270,16 +265,16 @@ int photon_detection_main() {
 	    event.xi = x[0];
 	    event.yi = y[0];
 	    event.grade = 0;
-	    event.frame = detector.frame;
+	    event.frame = detector->frame;
 
 	    // Add the event to the FITS event list.
-	    if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
+	    if (event.pha >= detector->low_threshold) { // Check lower PHA threshold
 	      // There is an event in this pixel, so insert it into eventlist:
 	      add_eventlist_row(&eventlist_file, event, &status);
 	    }
 	  } // END x[0] != INVALID_PIXEL
 
-	} // END detector.type == TES
+	} // END detector->type == TES
 
       } // END 'time' within specified time interval
 
@@ -301,24 +296,24 @@ int photon_detection_main() {
 
   // Release memory of detector:
   int count;
-  if (detector.pixel) {
-    for (count = 0; count < detector.width; count++) {
-      if (detector.pixel[count]) {
-	free(detector.pixel[count]);
+  if (detector->pixel) {
+    for (count = 0; count < detector->width; count++) {
+      if (detector->pixel[count]) {
+	free(detector->pixel[count]);
       }
     }
-    free(detector.pixel);
+    free(detector->pixel);
   }
 
-  if (detector.type == HTRS) {
-    htrs_free_detector(&detector);
+  if (detector->type == HTRS) {
+    htrs_free_detector(detector);
   }
 
   // Release memory of detector Redistribution Matrix
-  free_rmf(detector.rmf);
+  free_rmf(&detector->rmf);
   
   // Release memory of detector EBOUNDS
-  free_ebounds(detector.ebounds);
+  free_ebounds(&detector->ebounds);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
 
@@ -336,7 +331,7 @@ int photon_detection_getpar(
 		       char eventlist_filename[],
 		       double *t0,        // start time
 		       double *timespan,  // time span
-		       struct Detector *detector
+		       Detector *detector
 		       )
 {
   char msg[MAXMSG];             // error output buffer

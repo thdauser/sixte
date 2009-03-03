@@ -2,17 +2,35 @@
  * This file contains the detector relevant procedures and functions.
  */
 
+
 #include "detectors.h"
+#include "detector.h"
+
+
+//////////////////////////////////////////////////////////////////////
+void detector_action(
+		     Detector* detector,
+		     double time, 
+		     struct Eventlist_File* eventlist_file,
+		     int *status
+		     ) 
+{
+  if (detector->action != NULL) {
+    detector->action((void*)detector, time, eventlist_file, status);
+  }
+}
 
 
 //////////////////////////////////////////////////////////////////////
 void framestore_detector_action(
-				struct Detector* detector,
+				void* det,
 				double time, 
 				struct Eventlist_File* eventlist_file,
-				int *fitsstatus
+				int *status
 				) 
 {
+  Detector *detector = (Detector*) det;
+
   // Check, if the detector integration time was exceeded. 
   // In that case, read out the detector.
   while (time > detector->readout_time) {
@@ -20,10 +38,10 @@ void framestore_detector_action(
     //insert_background_photons(*detector, background, detector->integration_time);
 
     // Readout the detector and create eventlist entries for the actual time:
-    readout(*detector, eventlist_file, fitsstatus);
+    readout(detector, eventlist_file, status);
 
     // Clear the detector array.
-    clear_detector(*detector);
+    clear_detector(detector);
 
     // Update the detector frame time to the next frame.
     detector->readout_time += detector->integration_time;
@@ -37,12 +55,14 @@ void framestore_detector_action(
 
 //////////////////////////////////////////////////////////////////////
 void depfet_detector_action(
-			    struct Detector* detector,
+			    void* det,
 			    double time, 
 			    struct Eventlist_File* eventlist_file,
-			    int *fitsstatus
+			    int *status
 			    ) 
 {
+  Detector *detector = (Detector*) det;
+
   // The DEPFET detector is read out line by line, with two readout lines 
   // starting in the middle of the detector array. The readout of one 
   // individual line requires the deadtime. The readout is performed at 
@@ -73,23 +93,23 @@ void depfet_detector_action(
     // Perform the readout on the 2 (!) current lines 
     // (i.e., the two new lines, chosen in the
     // step before) and write the data to the FITS file.
-    readout_line(*detector, detector->readout_line, eventlist_file, fitsstatus);
-    readout_line(*detector, detector->width -detector->readout_line -1, 
-		 eventlist_file, fitsstatus);
+    readout_line(detector, detector->readout_line, eventlist_file, status);
+    readout_line(detector, detector->width -detector->readout_line -1, 
+		 eventlist_file, status);
 
     // Clear the 2 readout detector lines.
-    clear_detector_line(*detector, detector->readout_line);
-    clear_detector_line(*detector, detector->width -detector->readout_line -1);
+    clear_detector_line(detector, detector->readout_line);
+    clear_detector_line(detector, detector->width -detector->readout_line -1);
 
   }
 }
 
 
 
-
+/*
 //////////////////////////////////////////////////////////////////////
 void tes_detector_action(
-			 struct Detector* detector,
+			 void* detector,
 			 double time, 
 			 struct Eventlist_File* eventlist_file,
 			 int *fitsstatus
@@ -103,34 +123,15 @@ void tes_detector_action(
 
 //////////////////////////////////////////////////////////////////////
 void htrs_detector_action(
-			  struct Detector* detector,
+			  void* detector,
 			  double time, 
 			  struct Eventlist_File* eventlist_file,
 			  int *fitsstatus
 			  ) 
 {
   // Do nothing.
-
-  /*
-  // Check, if the detector integration time was exceeded. 
-  // In that case, read out the detector.
-  while (time > detector->readout_time) {
-    // Add background photons to the detector pixels.
-    //insert_background_photons(*detector, background, detector->integration_time);
-
-    // Readout the detector and create eventlist entries for the actual time:
-    readout(*detector, eventlist_file, fitsstatus);
-
-    // Clear the detector array.
-    clear_detector(*detector);
-
-    // Update the detector frame time to the next frame.
-    detector->readout_time += detector->integration_time;
-    detector->frame++;
-  }
-  */
 }
-
+*/
 
 
 
@@ -140,21 +141,21 @@ void htrs_detector_action(
 // spectrum and count-rate.
 // TODO: consider splits?
 // TODO: zufällig Anzahl von Background-Photonen pro Zeitintervall?
-void insert_background_photons(
-			       struct Detector detector,
-			       struct source_cat_entry background, 
-			       double integration_time
-			       )
+static void insert_background_photons(
+				      Detector* detector,
+				      struct source_cat_entry background, 
+				      double integration_time
+				      )
 {
   // determine the number of required photons
   int N_photons = 
-    (int)(detector.width*detector.width*background.rate*integration_time);
+    (int)(detector->width*detector->width*background.rate*integration_time);
 
   int count;
   for (count=0; count<N_photons; count++) {
     // create individual photons
-    detector.pixel[(int)(detector.width*get_random_number())]
-      [(int)(detector.width*get_random_number())].charge += 
+    detector->pixel[(int)(detector->width*get_random_number())]
+      [(int)(detector->width*get_random_number())].charge += 
       photon_energy(background, detector);
   }
 }
@@ -166,51 +167,51 @@ void insert_background_photons(
 
 ///////////////////////////////////////////////////////
 long detector_rmf(
-		  float energy,     // photon energy
-		  struct RMF rmf    // detector RMF
+		  float energy,  // photon energy
+		  RMF* rmf       // detector RMF
 		  )
 {
   // Find the row in the RMF, which corresponds to the photon energy.
   long min, max, row;
   min = 0;
-  max = rmf.Nrows-1;
+  max = rmf->Nrows-1;
   while (max-min > 1) {
     row = (int)(0.5*(min+max));
-    if (rmf.row[row].E_high < energy) {
+    if (rmf->row[row].E_high < energy) {
       min = row;
     } else {
       max = row;
     }
   }
   // now final decision, whether max or min is right
-  if (rmf.row[max].E_low < energy) {
+  if (rmf->row[max].E_low < energy) {
     row = max;
   } else {
     row = min;
   }
   // check if the energy is higher than the highest value in the RMF
-  if (rmf.row[row].E_high < energy) {
+  if (rmf->row[row].E_high < energy) {
     return(0);  // TODO
   }
 
   // For each photon energy there is a particular number of PHA channels with 
   // a finite probability of getting the photon event.
-  if (rmf.row[row].F_chan[0] == 0) return(0);
+  if (rmf->row[row].F_chan[0] == 0) return(0);
 
   double p = get_random_number();
   long col;
   min = 0;
-  max = rmf.Ncols-1;
+  max = rmf->Ncols-1;
   while (max-min > 1) {
     col = (int)(0.5*(min+max));
-    if (rmf.row[row].matrix[col] < p) {
+    if (rmf->row[row].matrix[col] < p) {
       min = col;
     } else {
       max = col;
     }
   }
   // decide whether max or min
-  if (rmf.row[row].matrix[min] < p) {
+  if (rmf->row[row].matrix[min] < p) {
     col = max;
   } else {
     col = min;
@@ -219,29 +220,29 @@ long detector_rmf(
   // As 'col' is a matrix index of the reduced RMF,
   // one still has to find the true PHA channel.
   long count;
-  for (count=0; count<rmf.row[row].N_grp; count++) {
-    col -= rmf.row[row].N_chan[count];
+  for (count=0; count<rmf->row[row].N_grp; count++) {
+    col -= rmf->row[row].N_chan[count];
     if (col < 0) break;
   }
 
-  return((long)(rmf.row[row].F_chan[count] + rmf.row[row].N_chan[count]+col));
+  return((long)(rmf->row[row].F_chan[count] + rmf->row[row].N_chan[count]+col));
 }
 
 
 
 
 /////////////////////////////////////////
-void readout(
-	     struct Detector detector,
-	     struct Eventlist_File* eventlist_file,
-	     int *fitsstatus
-	     ) 
+static inline void readout(
+			   Detector* detector,
+			   struct Eventlist_File* eventlist_file,
+			   int *status
+			   ) 
 {
   int line;
 
   // read out the entire detector array
-  for (line=0; line<detector.width; line++) {
-    readout_line(detector, line, eventlist_file, fitsstatus);
+  for (line=0; line<detector->width; line++) {
+    readout_line(detector, line, eventlist_file, status);
   }
 }
 
@@ -250,29 +251,29 @@ void readout(
 
 
 /////////////////////////////////////////////////
-void readout_line(
-		  struct Detector detector,
-		  int line,
-		  struct Eventlist_File* eventlist_file,
-		  int *status
-		  ) 
+static inline void readout_line(
+				Detector* detector,
+				int line,
+				struct Eventlist_File* eventlist_file,
+				int *status
+				) 
 {
   int xi;
 
   // Read out one particular line of the detector array.
-  for (xi=0; xi<detector.width; xi++) {
-    if (detector.pixel[xi][line].charge > 1.e-6) {
+  for (xi=0; xi<detector->width; xi++) {
+    if (detector->pixel[xi][line].charge > 1.e-6) {
       struct Event event;
       // Determine the detector channel that corresponds to the charge in the 
       // detector pixel.
-      event.pha = get_pha(detector.pixel[xi][line].charge, detector);
-      if (event.pha >= detector.low_threshold) { // Check lower PHA threshold
+      event.pha = get_pha(detector->pixel[xi][line].charge, detector);
+      if (event.pha >= detector->low_threshold) { // Check lower PHA threshold
 	// There is an event in this pixel, so insert it into eventlist:
-	event.time = detector.readout_time;
+	event.time = detector->readout_time;
 	event.grade = 0;
 	event.xi = xi;
 	event.yi = line;
-	event.frame = detector.frame;
+	event.frame = detector->frame;
 	add_eventlist_row(eventlist_file, event, status);
       }
     }
@@ -284,41 +285,60 @@ void readout_line(
 
 
 ////////////////////////////////////////////////////////////////////////
-int get_detector(
-		 struct Detector *detector  // detector data structure
-		 )
+Detector* get_Detector(int* status)
 {
-  int status=0;              // error handling variable
+  Detector* detector=NULL;
+
   char msg[MAXMSG];          // error output buffer
 
-  headas_chat(5, "allocate memory for detector array ...\n");
-  // Allocate memory for the detector pixel array:
-  int count;
-  detector->pixel = (struct Pixel **) malloc(detector->width*sizeof(struct Pixel *));
-  if (detector->pixel) {
-    for (count=0; count<detector->width; count++) {
-      detector->pixel[count] = (struct Pixel *)
-	malloc(detector->width * sizeof(struct Pixel));
+  do { // Outer ERROR handling loop
 
-      if (!(detector->pixel[count])) {
-	status = EXIT_FAILURE;
-      }
+    headas_chat(5, "allocate memory for detector array ...\n");
+
+    // Allocate memory for the detector:
+    detector = (Detector*)malloc(sizeof(Detector));
+    if (detector == NULL) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: not enough memory available to store "
+	      "the detector array!\n");
+      HD_ERROR_THROW(msg, *status);
+      break;
     }
-  } else { status = EXIT_FAILURE; }
 
+    // Allocate memory for the detector pixel array:
+    int count;
+    detector->pixel = (struct Pixel **) malloc(detector->width*sizeof(struct Pixel *));
+    if (detector->pixel) {
+      for (count=0; (count<detector->width)&&(status==EXIT_SUCCESS); count++) {
+	detector->pixel[count] = (struct Pixel *)
+	  malloc(detector->width * sizeof(struct Pixel));
+	
+	if (!(detector->pixel[count])) {
+	  *status = EXIT_FAILURE;
+	  break;
+	}
+      }
+    } else { *status = EXIT_FAILURE; }
 
-  // Check if an error has occurred during memory allocation:
-  if (status==EXIT_FAILURE) {
-    sprintf(msg, "Error: not enough memory available to store "
-	    "the detector array!\n");
-    HD_ERROR_THROW(msg,status);
+    // Check if an error has occurred during memory allocation:
+    if (*status==EXIT_FAILURE) {
+      sprintf(msg, "Error: not enough memory available to store "
+	      "the detector array!\n");
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
 
-  } else {
     // Clear the detector array (at the beginning there are no charges).
-    clear_detector(*detector);      
-  }
+    clear_detector(detector);
 
-  return(status);
+  } while (0); // END of Error handling loop
+
+
+  if (*status==EXIT_SUCCESS) {
+    return(detector);
+  } else {
+    return(NULL);
+  }
 }
 
 
@@ -327,7 +347,7 @@ int get_detector(
 ////////////////////////////////////////////////////////////////////////////////
 // Searches for the minimum distance in an array with 4 entries and returns the 
 // corresponding index.
-int min_dist(double array[], int directions) 
+static inline int min_dist(double array[], int directions) 
 {
   int count, index=0;
   double minimum=array[0];
@@ -349,9 +369,8 @@ int min_dist(double array[], int directions)
 
 //////////////////////////////////////////////////////////////////////////////// 
 // Calculates the Gaussian integral using the GSL complementary error function.
-double gaussint(double x) 
+static inline double gaussint(double x) 
 {
-  //  return(gsl_sf_erfc(x*sqrt(2.))/2.);
   return(gsl_sf_erf_Q(x));
 }
 
@@ -361,7 +380,7 @@ double gaussint(double x)
 
 
 /////////////////////////////////////////////////////////////////////////////////
-int get_ebounds(struct Ebounds *ebounds, int *Nchannels, const char filename[])
+int get_ebounds(Ebounds *ebounds, int *Nchannels, const char filename[])
 {
   fitsfile *fptr=NULL;        // fitsfile pointer to RMF input file
 
@@ -447,9 +466,11 @@ int get_ebounds(struct Ebounds *ebounds, int *Nchannels, const char filename[])
 
 
 /////////////////////////////////////////////
-void free_ebounds(struct Ebounds ebounds) {
-  if (ebounds.row) {
-    free(ebounds.row);
+void free_ebounds(Ebounds* ebounds) {
+  if (ebounds) {
+    if (ebounds->row) {
+      free(ebounds->row);
+    }
   }
 }
 
@@ -457,7 +478,7 @@ void free_ebounds(struct Ebounds ebounds) {
 
 ///////////////////////////////////////////
 int get_rmf(
-	    struct Detector *detector,
+	    Detector *detector,
 	    char *rmf_name
 	    )
 {
@@ -556,8 +577,7 @@ int get_rmf(
 
     // Get memory for detector redistribution matrix.      
     // -> nrows, ncols might not be equal to Nchannels!!
-    detector->rmf.row = (struct RMF_Row*) malloc(detector->rmf.Nrows * 
-						 sizeof(struct RMF_Row));
+    detector->rmf.row = (RMF_Row*) malloc(detector->rmf.Nrows * sizeof(RMF_Row));
     if (detector->rmf.row) {
       for (count=0; count<detector->rmf.Nrows; count++) {
 	detector->rmf.row[count].matrix = (float*) malloc(detector->rmf.Ncols * 
@@ -649,19 +669,19 @@ int get_rmf(
 
 
 ///////////////////////////////////////////////////////////////
-void free_rmf(
-	      struct RMF rmf
-	      ) 
+void free_rmf(RMF* rmf) 
 {
   long count;
 
-  if (rmf.row) {
-    for (count=0; count < rmf.Nrows; count++) {
-      if (rmf.row[count].matrix) {
-	free(rmf.row[count].matrix);
+  if (rmf) {
+    if (rmf->row) {
+      for (count=0; count < rmf->Nrows; count++) {
+	if (rmf->row[count].matrix) {
+	  free(rmf->row[count].matrix);
+	}
       }
+      free(rmf->row);
     }
-    free(rmf.row);
   }
 }
 
@@ -669,10 +689,10 @@ void free_rmf(
 
 
 ////////////////////////////////////////////////////////////////
-void clear_detector(struct Detector detector) {
+static inline void clear_detector(Detector* detector) {
   int y;
 
-  for (y=0; y<detector.width; y++) {
+  for (y=0; y<detector->width; y++) {
     clear_detector_line(detector, y);
   }
 }
@@ -680,12 +700,12 @@ void clear_detector(struct Detector detector) {
 
 
 ////////////////////////////////////////////////////////////////
-void clear_detector_line(struct Detector detector, int line) {
+static inline void clear_detector_line(Detector* detector, int line) {
   int x;
 
-  for (x=0; x<detector.width; x++) {
-    detector.pixel[x][line].charge  = 0.;
-    detector.pixel[x][line].arrival = -detector.dead_time;
+  for (x=0; x<detector->width; x++) {
+    detector->pixel[x][line].charge  = 0.;
+    detector->pixel[x][line].arrival = -detector->dead_time;
   }
 }
 
@@ -695,15 +715,15 @@ void clear_detector_line(struct Detector detector, int line) {
 ////////////////////////////////////////////////////////////////
 int detector_active(
 		    int x, int y,
-		    struct Detector detector,
+		    Detector* detector,
 		    double time
 		    )
 {
-  if (detector.type == DEPFET) {
-    if ((y==detector.readout_line)||(y==detector.width -detector.readout_line -1)) {
+  if (detector->type == DEPFET) {
+    if ((y==detector->readout_line)||(y==detector->width -detector->readout_line -1)) {
       // If we are at the beginning of the readout interval of the regarded line
       // within the clear time, the photon is not measured.
-      if (time - detector.readout_time < detector.clear_time) {
+      if (time - detector->readout_time < detector->clear_time) {
 	// The specified line is cleared at the moment, so no photon can 
 	// be detected.
 	return(0);
@@ -724,12 +744,12 @@ int detector_active(
 
 ////////////////////////////////////////////////////////////////
 int htrs_detector_active(
-		    int x, int y,
-		    struct Detector detector,
-		    double time
-		    )
+			 int x, int y,
+			 Detector* detector,
+			 double time
+			 )
 {
-  if (time - detector.pixel[x][y].arrival < detector.dead_time) {
+  if (time - detector->pixel[x][y].arrival < detector->dead_time) {
     return(0);  // Pixel is INactive!
   } else {
     return(1);  // Pixel is active!
@@ -743,24 +763,24 @@ int htrs_detector_active(
 ////////////////////////////////////////////////////
 long get_pha(
 	     float charge, 
-	     struct Detector detector
+	     Detector* detector
 	     )
 {
   // Perform a binary search to obtain the detector PHA channel 
   // that corresponds to the given detector charge.
   long min, max, row;
   min = 0;
-  max = detector.Nchannels-1;
+  max = detector->Nchannels-1;
   while (max-min > 1) {
     row = (int)(0.5*(min+max));
-    if (detector.ebounds.row[row].E_max < charge) {
+    if (detector->ebounds.row[row].E_max < charge) {
       min = row;
     } else {
       max = row;
     }
   }
   // now final decision, wheter max or min is right
-  if (detector.ebounds.row[max].E_min < charge) {
+  if (detector->ebounds.row[max].E_min < charge) {
     row = max;
   } else {
     row = min;
@@ -768,8 +788,8 @@ long get_pha(
   // Check if the charge is higher than the highest value in the EBOUNDS table.
   // In that case 'row' is set to 'Nchannels', so the returned channel row+1 is
   //  N O T  a valid PHA channel !!!
-  if (detector.ebounds.row[row].E_max < charge) {
-    row = detector.Nchannels;
+  if (detector->ebounds.row[row].E_max < charge) {
+    row = detector->Nchannels;
   }
 
   // Return the PHA channel.
@@ -784,7 +804,7 @@ long get_pha(
 ////////////////////////////////////////////////////
 float get_charge(
 		 long channel, 
-		 struct Ebounds ebounds
+		 Ebounds* ebounds
 		 )
 {
   if (channel == 0) {
@@ -796,15 +816,15 @@ float get_charge(
 
   // Return the median of the charge that corresponds to the specified PHA channel
   // using the EBOUNDS table.
-  return(0.5*(ebounds.row[channel-1].E_min+ebounds.row[channel-1].E_max));
-  //                             |-> as channels start at 1  <-|
+  return(0.5*(ebounds->row[channel-1].E_min+ebounds->row[channel-1].E_max));
+  //                               |-> as channels start at 1  <-|
 }
 
 
 
 
 ///////////////////////////////////////////
-double linear_function(double x, double m, double t)
+static inline double linear_function(double x, double m, double t)
 {
   return(m*x + t);
 }
@@ -814,18 +834,17 @@ double linear_function(double x, double m, double t)
 
 
 ///////////////////////////////////////////
-int htrs_get_line(
-		  struct Point2d point, 
-		  double m, double dt, 
-		  struct Detector detector
-		  )
+static inline int htrs_get_line(
+				struct Point2d point, 
+				double m, double dt, 
+				Detector* detector
+				)
 {
   double dy = point.y - m * point.x;
-  int line = (int)(dy/dt + detector.width + 1.) -1;
-  //  x[0] = (int)(position.x/detector.pixelwidth+(double)(detector.width/2) +1.)-1;
+  int line = (int)(dy/dt + detector->width + 1.) -1;
 
   // Check whether the point lies below the lowest or above the highest allowed line:
-  if ((line < 0) || (line>= 2*detector.width)) line = INVALID_PIXEL;
+  if ((line < 0) || (line>= 2*detector->width)) line = INVALID_PIXEL;
 
   return(line);
 }
@@ -833,10 +852,10 @@ int htrs_get_line(
 
 
 ///////////////////////////////////////////
-double htrs_distance2line(
-			  struct Point2d point,
-			  double m, double t
-			  )
+static inline double htrs_distance2line(
+					struct Point2d point,
+					double m, double t
+					)
 {
   return(sqrt( pow(t-point.y+m*point.x, 2.) / (1+pow(m,2.)) ));
 }
@@ -844,15 +863,15 @@ double htrs_distance2line(
 
 
 ///////////////////////////////////////////
-void htrs_get_lines(
-		    struct Point2d point, 
-		    struct Detector detector, 
-		    int* l
-		    )
+inline void htrs_get_lines(
+				  struct Point2d point, 
+				  Detector* detector, 
+				  int* l
+				  )
 {
-  l[0] = htrs_get_line(point,        0.,    detector.h, detector);
-  l[1] = htrs_get_line(point, -sqrt(3.), 2* detector.h, detector);
-  l[2] = htrs_get_line(point,  sqrt(3.), 2* detector.h, detector);
+  l[0] = htrs_get_line(point,        0.,    detector->h, detector);
+  l[1] = htrs_get_line(point, -sqrt(3.), 2* detector->h, detector);
+  l[2] = htrs_get_line(point,  sqrt(3.), 2* detector->h, detector);
 }
 
 
@@ -860,7 +879,7 @@ void htrs_get_lines(
 
 ///////////////////////////////////////////
 int htrs_get_pixel(
-		   struct Detector detector, 
+		   Detector* detector, 
 		   struct Point2d point,
 		   int* x, int* y,
 		   double* fraction
@@ -889,17 +908,17 @@ int htrs_get_pixel(
   // belong to the same pixel).
   double distances[6] = {
     // upper
-    htrs_distance2line(point,        0., (l[0]+1 -detector.width)*   detector.h),
+    htrs_distance2line(point,        0., (l[0]+1 -detector->width)*   detector->h),
     // upper right
-    htrs_distance2line(point, -sqrt(3.), (l[1]+1-detector.width)*2.*detector.h),
+    htrs_distance2line(point, -sqrt(3.), (l[1]+1-detector->width)*2.*detector->h),
     // lower right
-    htrs_distance2line(point,  sqrt(3.), (l[2]  -detector.width)*2.*detector.h),
+    htrs_distance2line(point,  sqrt(3.), (l[2]  -detector->width)*2.*detector->h),
     // lower
-    htrs_distance2line(point,        0., (l[0]  -detector.width)*   detector.h),
+    htrs_distance2line(point,        0., (l[0]  -detector->width)*   detector->h),
     // lower left
-    htrs_distance2line(point, -sqrt(3.), (l[1]  -detector.width)*2.*detector.h),
+    htrs_distance2line(point, -sqrt(3.), (l[1]  -detector->width)*2.*detector->h),
     // upper left
-    htrs_distance2line(point,  sqrt(3.), (l[2]+1-detector.width)*2.*detector.h),
+    htrs_distance2line(point,  sqrt(3.), (l[2]+1-detector->width)*2.*detector->h),
   };
 
 
@@ -917,7 +936,7 @@ int htrs_get_pixel(
     if (secpixel != pixel) break;
   }
 
-  if ((minimum > detector.ccsize) || (secpixel == pixel)) {
+  if ((minimum > detector->ccsize) || (secpixel == pixel)) {
     // Single event!
     npixels=1;
     fraction[0] = 1.;
@@ -930,7 +949,7 @@ int htrs_get_pixel(
     x[1] = pixel_coordinates.x;
     y[1] = pixel_coordinates.y;
       
-    double mindistgauss = gaussint(distances[mindist]/detector.ccsigma);
+    double mindistgauss = gaussint(distances[mindist]/detector->ccsigma);
 
     fraction[0] = 1. - mindistgauss;
     fraction[1] =      mindistgauss;
@@ -944,14 +963,14 @@ int htrs_get_pixel(
 
 
 ///////////////////////////////////////////
-int htrs_get_lines2pixel(int* l, struct Detector detector)
+static inline int htrs_get_lines2pixel(int* l, Detector* detector)
 {
-  if ((l[0]<0)||(l[0]>=2*detector.width)||
-      (l[1]<0)||(l[1]>=2*detector.width)||
-      (l[2]<0)||(l[2]>=2*detector.width)) {
+  if ((l[0]<0)||(l[0]>=2*detector->width)||
+      (l[1]<0)||(l[1]>=2*detector->width)||
+      (l[2]<0)||(l[2]>=2*detector->width)) {
     return(INVALID_PIXEL);
   } else {
-    return(detector.htrs_lines2pixel[l[0]][l[1]][l[2]]);
+    return(detector->htrs_lines2pixel[l[0]][l[1]][l[2]]);
   }
 }
 
@@ -960,10 +979,11 @@ int htrs_get_lines2pixel(int* l, struct Detector detector)
 
 
 ///////////////////////////////////////////
-struct Point2i htrs_get_pixel2icoordinates(int pixel, struct Detector detector)
+static inline struct Point2i htrs_get_pixel2icoordinates(int pixel, 
+							 Detector* detector)
 {
   if (pixel != INVALID_PIXEL) {
-    return(detector.htrs_pixel2icoordinates[pixel]);
+    return(detector->htrs_pixel2icoordinates[pixel]);
   } else {
     struct Point2i point2i = {-1, -1};
     return(point2i);
@@ -978,12 +998,12 @@ struct Point2i htrs_get_pixel2icoordinates(int pixel, struct Detector detector)
 
 
 ///////////////////////////////////////////
-int htrs_get_detector(struct Detector* detector)
+Detector* htrs_get_Detector(int* status)
 {
+  Detector* detector=NULL;
   struct Point2d* centers = NULL;
 
   char msg[MAXMSG];        // buffer for error output messages
-  int status = EXIT_SUCCESS;
 
   // Determine hexagonal pixel dimensions:
   detector->h = detector->pixelwidth/2.;      
@@ -992,7 +1012,8 @@ int htrs_get_detector(struct Detector* detector)
   do { // Error handling loop 
     
     // Allocate memory for the detector pixel array:
-    if ((status=get_detector(detector))!=EXIT_SUCCESS) break;
+    detector=get_Detector(status);
+    if (detector==NULL) break;
 
     // Allocate memory and set the relation between the two different 
     // numbering arrays of the pixels in the hexagonal structure.
@@ -1000,18 +1021,18 @@ int htrs_get_detector(struct Detector* detector)
     detector->htrs_pixel2icoordinates = 
       (struct Point2i*)malloc(HTRS_N_PIXELS * sizeof(struct Point2i));
     if (detector->htrs_pixel2icoordinates == NULL) {
-      status = EXIT_FAILURE;
+      *status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
-      HD_ERROR_THROW(msg,status);
+      HD_ERROR_THROW(msg, *status);
       break;
     }
 
     detector->htrs_icoordinates2pixel = 
       (int**)malloc(detector->width * sizeof(int*));
     if (detector->htrs_icoordinates2pixel == NULL) {
-      status = EXIT_FAILURE;
+      *status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
-      HD_ERROR_THROW(msg,status);
+      HD_ERROR_THROW(msg, *status);
       break;
     }
 
@@ -1020,10 +1041,10 @@ int htrs_get_detector(struct Detector* detector)
       detector->htrs_icoordinates2pixel[xi] = 
 	(int*)malloc(detector->width * sizeof(int));
       if (detector->htrs_icoordinates2pixel[xi] == NULL) {
-	status = EXIT_FAILURE;
+	*status = EXIT_FAILURE;
 	sprintf(msg, "Error: Not enough memory available for HTRS "
 		"initialization!\n");
-	HD_ERROR_THROW(msg,status);
+	HD_ERROR_THROW(msg, *status);
 	break;
       }
 
@@ -1101,9 +1122,9 @@ int htrs_get_detector(struct Detector* detector)
     // Calculate the centers of the hexagonal HTRS pixels.
     centers = (struct Point2d*)malloc(HTRS_N_PIXELS * sizeof(struct Point2d));
     if (centers == NULL) {
-      status = EXIT_FAILURE;
+      *status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
-      HD_ERROR_THROW(msg,status);
+      HD_ERROR_THROW(msg,*status);
       break;
     }
     
@@ -1172,7 +1193,7 @@ int htrs_get_detector(struct Detector* detector)
 	  break;
 	}
 
-	htrs_get_lines(point, *detector, l);
+	htrs_get_lines(point, detector, l);
 	detector->htrs_lines2pixel[l[0]][l[1]][l[2]] = pixel;
       }
     }
@@ -1182,7 +1203,7 @@ int htrs_get_detector(struct Detector* detector)
 
   free(centers);
 
-  return(status);
+  return(detector);
 }
 
 
@@ -1190,7 +1211,7 @@ int htrs_get_detector(struct Detector* detector)
 
 
 ///////////////////////////////////////
-int get_pixel_square(struct Detector detector, 
+int get_pixel_square(Detector* detector, 
 		     struct Point2d position, 
 		     int* x, int* y, 
 		     double* fraction)
@@ -1204,11 +1225,11 @@ int get_pixel_square(struct Detector detector,
 
 
   // Calculate pixel indices (integer) of central affected pixel:
-  x[0] = (int)(position.x/detector.pixelwidth + (double)(detector.width/2) +1.)-1;
-  y[0] = (int)(position.y/detector.pixelwidth + (double)(detector.width/2) +1.)-1;
+  x[0] = (int)(position.x/detector->pixelwidth + (double)(detector->width/2) +1.)-1;
+  y[0] = (int)(position.y/detector->pixelwidth + (double)(detector->width/2) +1.)-1;
   
   // If charge cloud size is 0, i.e. no splits are created.
-  if (detector.ccsize < 1.e-20) {
+  if (detector->ccsize < 1.e-20) {
     // Only single events are possible!
     npixels = 1;
     fraction[0] = 1.;
@@ -1218,22 +1239,22 @@ int get_pixel_square(struct Detector detector,
     // surrounding pixel (in [m]):
     double distances[4] = { 
       // distance to right pixel edge
-      (x[0]-detector.offset+1)*detector.pixelwidth - position.x,
+      (x[0]-detector->offset+1)*detector->pixelwidth - position.x,
       // distance to upper edge
-      (y[0]-detector.offset+1)*detector.pixelwidth - position.y,
+      (y[0]-detector->offset+1)*detector->pixelwidth - position.y,
       // distance to left pixel edge
-      position.x - (x[0]-detector.offset)*detector.pixelwidth,
+      position.x - (x[0]-detector->offset)*detector->pixelwidth,
       // distance to lower edge
-      position.y - (y[0]-detector.offset)*detector.pixelwidth
+      position.y - (y[0]-detector->offset)*detector->pixelwidth
     };
 
     int mindist = min_dist(distances, 4);
-    if (distances[mindist] < detector.ccsize) {
+    if (distances[mindist] < detector->ccsize) {
       // Not a single event!
       x[1] = x[0] + xe[mindist];
       y[1] = y[0] + ye[mindist];
 
-      double mindistgauss = gaussint(distances[mindist]/detector.ccsigma);
+      double mindistgauss = gaussint(distances[mindist]/detector->ccsigma);
 
       double minimum = distances[mindist];
       // search for the next to minimum distance to an edge
@@ -1241,7 +1262,7 @@ int get_pixel_square(struct Detector detector,
       int secmindist = min_dist(distances, 4);
       distances[mindist] = minimum;
 
-      if (distances[secmindist] < detector.ccsize) {
+      if (distances[secmindist] < detector->ccsize) {
 	// Quadruple!
 	npixels = 4;
 
@@ -1251,7 +1272,7 @@ int get_pixel_square(struct Detector detector,
 	y[3] = y[1] + ye[secmindist];
 
 	// Calculate the different charge fractions in the 4 affected pixels.
-	double secmindistgauss = gaussint(distances[secmindist]/detector.ccsigma);
+	double secmindistgauss = gaussint(distances[secmindist]/detector->ccsigma);
 	fraction[0] = (1.-mindistgauss)*(1.-secmindistgauss);
 	fraction[1] =     mindistgauss *(1.-secmindistgauss);
 	fraction[2] = (1.-mindistgauss)*    secmindistgauss ;
@@ -1279,8 +1300,8 @@ int get_pixel_square(struct Detector detector,
   // Check whether all pixels lie inside the detector:
   int count;
   for(count=0; count<npixels; count++) {
-    if ((x[count]<0) || (x[count]>=detector.width) ||
-	(y[count]<0) || (y[count]>=detector.width)) {
+    if ((x[count]<0) || (x[count]>=detector->width) ||
+	(y[count]<0) || (y[count]>=detector->width)) {
       x[count] = INVALID_PIXEL;
       y[count] = INVALID_PIXEL;
     }
@@ -1296,7 +1317,7 @@ int get_pixel_square(struct Detector detector,
 
 
 ///////////////////////////////////////////////////////
-void htrs_free_detector(struct Detector* detector)
+void htrs_free_detector(Detector* detector)
 {
   free(detector->htrs_pixel2icoordinates);
 
