@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <math.h>
+#include <assert.h>
 
 #include "fitsio.h"
 #include "headas.h"
@@ -25,7 +26,7 @@
 
 // This structure is used to store the PSF data for one particular 
 // off-axis angle and one particular energy.
-struct PSF {
+typedef struct {
   double **restrict data;   // pointer to PSF data array [x][y]
 
   double angle;             // off-axis angle of this particular PSF
@@ -35,12 +36,12 @@ struct PSF {
   // is normalized to 1.  The scaling factor is stored here, and has to be used 
   // for rescaling the source spectra appropriately.
   double scaling_factor;
-};
+} PSF_Item;
 
 
 
 // Storage for the several PSF data units that belong to one mirror system.
-struct PSF_Store {
+typedef struct {
   // Number of PSF arrays in this store (#(offaxis-angles)*#(energies)):
   int N_elements;
   // Width of the PSF in pixels:
@@ -49,8 +50,8 @@ struct PSF_Store {
   double pixelwidth; 
 
   // PSF data for the individual off-axis angles and energies
-  struct PSF *psf;
-};
+  PSF_Item *item;
+} PSF;
 
 
 
@@ -70,7 +71,7 @@ struct PSF_Store {
 
 // Reads the PSF data file (containing FITS images) and
 // stores this data in the PSF storage. 
-int get_psf(struct PSF_Store*, const char*, int* status);
+PSF* get_psf(const char*, int* status);
 //int get_psf_old(struct PSF_Store *store, const char filename[FILENAME_LENGTH]);
 
 
@@ -80,16 +81,15 @@ int get_psf(struct PSF_Store*, const char*, int* status);
 // Return value is '1', if the photon hits the detector. If it does not fall onto the
 // detector, the function returns '0'.  The output detector position is stored 
 // in [mu m] in the first 2 parameters of the function.
-int get_psf_pos(struct Point2d*, struct Photon, struct Telescope,
-		struct PSF_Store);
+int get_psf_pos(struct Point2d*, struct Photon, struct Telescope, PSF*);
 
 
 // Releases the memory for the PSF storage.
-void free_psf_store(struct PSF_Store store);
+void free_psf(PSF*);
 
 
 // Stores the PSF information in the PSF_Store to a fitsfile.
-int save_psf_to_fits(struct PSF_Store store, const char filename[], int *status);
+int save_psf_to_fits(PSF *psf, const char filename[], int *status);
 
 
 // creates the necessary parameters to create the table in the FITS file
@@ -102,23 +102,23 @@ int insert_psf_fitsrow(double angle, double energy, int x, int y, double *data,
 		       long size, fitsfile *, long row);
 
 
+// Save the data contained in the PSF storage to images in a FITS file
+// according to the OGIP standards.
+int save_psf_image(PSF*, const char *, int *status);
+
+
 // This function reads one line of PSF data (i.e. a complete PSF image for one 
 // particular off-axis angle and one particular photon energy) from a FITS table.
 // The returned off-axis angle is given in [rad], the photon energy in [keV]. 
 //int read_psf_fitsrow(double *angle, double *energy, int *x, int *y, double *data, 
 //		     long size, fitsfile *fptr, long row);
-int read_psf_fitsrow(struct PSF *psf, double *data, long size, fitsfile *fptr, 
-		     long row);
-
-
-// Save the data contained in the PSF storage to images in a FITS file
-// according to the OGIP standards.
-int save_psf_image(struct PSF_Store, const char *, int *status);
+//int read_psf_fitsrow(PSF_Item*, double *data, long size, fitsfile *fptr, 
+//		     long row);
 
 
 // Read the PSF images from a OGIP PSF FITS file.
 //int read_psf_images(struct PSF_Store *, const char *, int *status);
 
 
-#endif
+#endif /* PSF_H */
 

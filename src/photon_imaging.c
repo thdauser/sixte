@@ -29,8 +29,8 @@ int photon_imaging_main() {
   fitsfile *impactlist_fptr=NULL;           
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-  struct PSF_Store psf_store; // Storage for the PSF (Point Spread Function) data 
-                              // (for different off-axis angles and energies)
+  PSF* psf;                   // PSF (Point Spread Function) data (for different 
+                              // off-axis angles and energies)
   char psf_filename[FILENAME_LENGTH]; // PSF input file
 
   char msg[MAXMSG];             // error output buffer
@@ -76,7 +76,9 @@ int photon_imaging_main() {
 
 
     // Get the PSF:
-    if ((status=get_psf(&psf_store, psf_filename, &status))!=EXIT_SUCCESS) break;
+    psf = get_psf(psf_filename, &status);
+    if (status != EXIT_SUCCESS) break;
+    //if ((status=get_psf(&psf_store, psf_filename, &status))!=EXIT_SUCCESS) break;
 
     // Create a new FITS file for the output of the impact list:
     remove(impactlist_filename);
@@ -179,7 +181,7 @@ int photon_imaging_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
-	if (get_psf_pos(&position, photon, telescope, psf_store)) {
+	if (get_psf_pos(&position, photon, telescope, psf)) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)
@@ -222,7 +224,7 @@ int photon_imaging_main() {
   if (sat_catalog) free(sat_catalog);
 
   // Release memory of PSF:
-  free_psf_store(psf_store);
+  free_psf(psf);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
 

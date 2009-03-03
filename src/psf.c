@@ -11,34 +11,34 @@
 // point. It returns the corresponding PSF data structure.
 // IMPORTANT: The function assumes that the individual PSF data sets lie on a 
 // regular pattern: energy_{i,j} = energy_{i,k} and angle_{i,j} = angle_{k,j} !
-struct PSF get_best_psf(
-			double offaxis_angle,   // photon off-axis angle [rad]
-			double energy,          // photon energy
-			struct PSF_Store store  // storage containing all PSF data
-			)
+PSF_Item *get_best_psf_item(
+			    double offaxis_angle, // photon off-axis angle [rad]
+			    double energy,        // photon energy
+			    PSF *psf              // PSF (all angles & energies)
+			    )
 {
   // In order to find the PSF that matches the required position best, perform a loop
   // over all available PSFs and remember the best one.
   int count, index=0;
-  double best_angle = store.psf[0].angle;
-  double best_energy = store.psf[0].energy;
-  for (count=1; count<store.N_elements; count++) {
-    if (offaxis_angle < 0.) { printf("Error: kleiner Null!\n"); } // TODO
+  double best_angle = psf->item[0].angle;
+  double best_energy = psf->item[0].energy;
+  for (count=1; count<psf->N_elements; count++) {
+    assert(offaxis_angle >= 0.); // TODO
 
     // Check whether the current PSF parameters (off-axis angle and energy)
     // are better than the best values found so far.
-    if ((fabs(store.psf[count].angle-offaxis_angle) - fabs(best_angle-offaxis_angle) 
+    if ((fabs(psf->item[count].angle-offaxis_angle) - fabs(best_angle-offaxis_angle) 
 	 < -0.000001) ||
-	(fabs(store.psf[count].energy-energy) - fabs(best_energy-energy) 
+	(fabs(psf->item[count].energy-energy) - fabs(best_energy-energy) 
 	 < -0.000001)) {
       // Set is better => set new optimum values.
       index = count;
-      best_angle = store.psf[index].angle;
-      best_energy = store.psf[index].energy;
+      best_angle  = psf->item[index].angle;
+      best_energy = psf->item[index].energy;
     }
   }
 
-  return(store.psf[index]);
+  return(&psf->item[index]);
 }
 
 
@@ -59,7 +59,7 @@ int get_psf_pos(
 		struct Photon photon,       // input photon
 		// telescope information (focal length, pointing direction)
 		struct Telescope telescope, 
-		struct PSF_Store store      // storage containing the PSF data
+		PSF* psf
 		)
 {
   // Calculate the off-axis angle
@@ -70,7 +70,7 @@ int get_psf_pos(
 
   // Determine, which PSF should be used for that particular source 
   // direction and photon energy.
-  struct PSF psf = get_best_psf(offaxis_angle, photon.energy, store);
+  PSF_Item* psf_item = get_best_psf_item(offaxis_angle, photon.energy, psf);
 
 
 
@@ -83,7 +83,7 @@ int get_psf_pos(
 
   // get a random number to determine a random hitting position
   double rnd = get_random_number();
-  if (rnd > psf.data[store.width-1][store.width-1]) {
+  if (rnd > psf_item->data[psf->width-1][psf->width-1]) {
     // The photon does not hit the detector at all (e.g. it is absorbed).
     n_outside++;
     return(0);
@@ -91,32 +91,32 @@ int get_psf_pos(
   // Otherwise the photon hits the detector.
   // Perform a binary search to determine the position:
   // -> one binary search for each of the 2 coordinates x and y
-  int high = store.width-1;
+  int high = psf->width-1;
   int low = 0;
   while (high-low > 1) {
-    if (psf.data[(low+high)/2][0] < rnd) {
+    if (psf_item->data[(low+high)/2][0] < rnd) {
       low = (low+high)/2;
     } else {
       high = (low+high)/2;
     }
   }
-  if (psf.data[low][store.width-1] > rnd) {
+  if (psf_item->data[low][psf->width-1] > rnd) {
     x1 = low;
   } else {
     x1 = high;
   }
     
   // Search for the y coordinate:
-  high = store.width-1;
+  high = psf->width-1;
   low = 0;
   while (high-low > 1) {
-    if (psf.data[x1][(low+high)/2] < rnd) {
+    if (psf_item->data[x1][(low+high)/2] < rnd) {
       low = (low+high)/2;
     } else {
       high = (low+high)/2;
     }
   }
-  if (psf.data[x1][low] < rnd) {
+  if (psf_item->data[x1][low] < rnd) {
     y1 = high;
   } else {
     y1 = low;
@@ -127,9 +127,9 @@ int get_psf_pos(
   // Randomize the [pixel] position (x1,y1), add the shift resulting 
   // from the off-axis angle difference (between actuall angle and the 
   // available angle in the PSF_Store), and transform all coordinates to [mu m]:
-  double x2 = ((double)(x1-store.width/2) + get_random_number()) *store.pixelwidth -
-              tan(offaxis_angle-psf.angle)*telescope.focal_length;
-  double y2 = ((double)(y1-store.width/2) + get_random_number()) *store.pixelwidth;
+  double x2 = ((double)(x1-psf->width/2) + get_random_number()) *psf->pixelwidth -
+              tan(offaxis_angle-psf_item->angle)*telescope.focal_length;
+  double y2 = ((double)(y1-psf->width/2) + get_random_number()) *psf->pixelwidth;
 
 
   // Rotate the PSF postition [mu m] according to the azimuth angle.
@@ -145,25 +145,25 @@ int get_psf_pos(
 
 ///////////////////////////////////////////////////////////////////////////
 // Releases the memory which has been allocated to store the PSF data.
-void free_psf_store(
-		    struct PSF_Store store // pointer to the PSF data structure
-		    )
+void free_psf(
+	      PSF *psf  // pointer to the PSF data structure
+	      )
 {
   int count1, count2;
 
-  if (store.psf) {
-    for (count1=0; count1<store.N_elements; count1++) {
-      if (store.psf[count1].data) {
-	for (count2=0; count2<store.width; count2++) {
-	  if (store.psf[count1].data[count2]) {
-	    free(store.psf[count1].data[count2]);
+  if (psf->item) {
+    for (count1=0; count1<psf->N_elements; count1++) {
+      if (psf->item[count1].data) {
+	for (count2=0; count2<psf->width; count2++) {
+	  if (psf->item[count1].data[count2]) {
+	    free(psf->item[count1].data[count2]);
 	  }
 	}
-	free(store.psf[count1].data);
+	free(psf->item[count1].data);
       }
     }
-    free(store.psf);
-    store.psf=NULL;
+    free(psf->item);
+    psf->item=NULL;
   }
 }
 
@@ -173,7 +173,7 @@ void free_psf_store(
 ////////////////////////////////////////////////////////////
 // This routine stores a PSF to a FITS file.
 int save_psf_to_fits(
-		     struct PSF_Store store,
+		     PSF *psf,
 		     const char filename[],
 		     int *status
 		     )
@@ -194,8 +194,8 @@ int save_psf_to_fits(
     // greater than 0).
     int n = 0;     // width and
     int m = 0;     // height of sub-rectangle
-    n = store.width; // TODO
-    m = store.width;
+    n = psf->width; // TODO
+    m = psf->width;
 
     // delete old FITS output file
     remove(filename);
@@ -210,7 +210,7 @@ int save_psf_to_fits(
     char *fform[PSF_NFIELDS];
     char *funit[PSF_NFIELDS];
     // create a binary table in the FITS file
-    psf_create_tbl_parameter(ftype, fform, funit, store.width);
+    psf_create_tbl_parameter(ftype, fform, funit, psf->width);
     if (fits_create_tbl(output_fptr, BINARY_TBL, 0, PSF_NFIELDS, ftype, fform, 
 			funit, "PSF" , status)) break;
     /* int fits_create_tbl(fitsfile *fptr, int tbltype, long nrows, int tfields,
@@ -221,9 +221,9 @@ int save_psf_to_fits(
 		   "name of the telescope", status);
     fits_write_key(output_fptr, TSTRING, "COMMENT", "DESCRIPT", 
 		   "simulated PSF for the eROSITA Wolter telescope",status);
-    fits_write_key(output_fptr, TINT, "WIDTH", &store.width, 
+    fits_write_key(output_fptr, TINT, "WIDTH", &psf->width, 
 		   "width of the entire PSF [pixel]",status);
-    fits_write_key(output_fptr, TDOUBLE, "PIXWIDTH", &store.pixelwidth, 
+    fits_write_key(output_fptr, TDOUBLE, "PIXWIDTH", &psf->pixelwidth, 
 		   "width of the PSF pixels in [mu m]",status);
     fits_write_key(output_fptr, TINT, "n", &n, "width of PSF sub-rectangle",status);
     fits_write_key(output_fptr, TINT, "m", &m, "height of PSF sub-rectangle",status);
@@ -248,26 +248,22 @@ int save_psf_to_fits(
 
     // Copy sub-rectangle to 1d-array for each energy and off-axis angle.
     long row=0;      // row in the FITS table
-    for (count1=0; count1<store.N_elements; count1++) {
+    for (count1=0; count1<psf->N_elements; count1++) {
       int x=0;       // coordinates of upper left corner of sub-rectangle
       int y=0;
 
       for (count2=x; count2<x+n; count2++) {
 	for (count3=y; count3<y+m; count3++) {
-	  sub_psf[((count2-x)*n+count3-y)] = store.psf[count1].data[count2][count3];
+	  sub_psf[((count2-x)*n+count3-y)] = psf->item[count1].data[count2][count3];
 	}
       }
     
       // write data row to FITS file                                
-      if ((*status=insert_psf_fitsrow(store.psf[count1].angle, 
-				      store.psf[count1].energy, x, y, sub_psf, n*m, 
+      if ((*status=insert_psf_fitsrow(psf->item[count1].angle, 
+				      psf->item[count1].energy, x, y, sub_psf, n*m, 
 				      output_fptr, ++row))) break;      
     }
     
-    // release the memory of the buffer array
-    free(sub_psf);
-    sub_psf=NULL;
-
   } while (0);   // end of the error handling loop
 
 
@@ -376,28 +372,37 @@ int insert_psf_fitsrow(
 
 
 ////////////////////////////////////////////////
-// Routine reads PSF data from a FITS image.
-int get_psf(
-	    struct PSF_Store* store,
-	    const char* filename,
-	    int* status
-	    )
+// Routine reads PSF data from a file with FITS images.
+PSF* get_psf(
+	     const char* filename,
+	     int* status
+	     )
 {
+  PSF* psf;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file
   double* data;          // input buffer (1D array)
   long count, count2, count3;
-
+  
   char msg[MAXMSG];      // error message output buffer
 
 
   do {  // beginning of error handling loop
 
-    // first open PSF FITS file
+    // Allocate memory for PSF data structure:
+    psf = (PSF*)malloc(sizeof(PSF));
+    if (psf == NULL) {
+      *status=EXIT_FAILURE;
+      sprintf(msg, "Error: memory allocation for PSF structure failed!\n");
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+
+    // Open PSF FITS file
     headas_chat(5, "open PSF FITS file '%s' ...\n", filename);
     if (fits_open_image(&fptr, filename, READONLY, status)) break;
     
     // Get the number of HDUs in the FITS file.
-    if (fits_get_num_hdus(fptr, &store->N_elements, status)) break;
+    if (fits_get_num_hdus(fptr, &psf->N_elements, status)) break;
     
     // Determine the width of the PSF image.
     long naxes[2];
@@ -408,25 +413,25 @@ int get_psf(
       HD_ERROR_THROW(msg, *status);
       break;
     } else {
-      store->width = (int)naxes[0];
+      psf->width = (int)naxes[0];
     }
     
     // Determine the pixelwidth of the PSF array from the header keywords.
     char comment[MAXMSG]; // buffer 
-    if (fits_read_key(fptr, TDOUBLE, "PIXWIDTH", &store->pixelwidth, comment, 
+    if (fits_read_key(fptr, TDOUBLE, "PIXWIDTH", &psf->pixelwidth, comment, 
 		      status)) break;
 
     
     // Get memory for the PSF.
-    store->psf = (struct PSF *) malloc(store->N_elements * sizeof(struct PSF));
-    if (store->psf) {   // memory was allocated successfully
-      for (count=0; count<store->N_elements; count++) {
-	store->psf[count].data = (double **) malloc(store->width * sizeof(double *));
-	if (store->psf[count].data) {
-	  for (count2=0; count2<store->width; count2++) {
-	    store->psf[count].data[count2] = (double *) 
-	      malloc(store->width * sizeof(double));
-	    if (!store->psf[count].data[count2]) {
+    psf->item = (PSF_Item *) malloc(psf->N_elements * sizeof(PSF_Item));
+    if (psf->item) {   // memory was allocated successfully
+      for (count=0; count<psf->N_elements; count++) {
+	psf->item[count].data = (double **) malloc(psf->width * sizeof(double *));
+	if (psf->item[count].data) {
+	  for (count2=0; count2<psf->width; count2++) {
+	    psf->item[count].data[count2] = (double *) 
+	      malloc(psf->width * sizeof(double));
+	    if (!psf->item[count].data[count2]) {
 	      *status = EXIT_FAILURE;
 	    }
 	  }
@@ -441,10 +446,10 @@ int get_psf(
     }
 
     // Allocate memory for input buffer (1D array)
-    data=(double*)malloc(store->width*store->width*sizeof(double));
+    data=(double*)malloc(psf->width*psf->width*sizeof(double));
     if (!data) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory for input buffer!\n");
+      sprintf(msg, "Error: not enough memory for PSF input buffer!\n");
       HD_ERROR_THROW(msg, *status);
       break;
     }
@@ -452,26 +457,26 @@ int get_psf(
 
 
     // Loop over the individual PSFs for the storage.
-    for (count=0; (count<store->N_elements)&&(*status==EXIT_SUCCESS); count++) {
+    for (count=0; (count<psf->N_elements)&&(*status==EXIT_SUCCESS); count++) {
       
       int hdutype;
       if (fits_movabs_hdu(fptr, count+1, &hdutype, status)) break;
 
       // Read the PSF information (energy, off-axis angle) from the
       // header keywords in each FITS HDU.
-      if (fits_read_key(fptr, TDOUBLE, "ENERGY", &store->psf[count].energy, comment, 
+      if (fits_read_key(fptr, TDOUBLE, "ENERGY", &psf->item[count].energy, comment, 
 			status)) break;
-      if (fits_read_key(fptr, TDOUBLE, "OFFAXANG", &store->psf[count].angle, comment, 
+      if (fits_read_key(fptr, TDOUBLE, "OFFAXANG", &psf->item[count].angle, comment, 
 			status)) break;      
       // convert the off-axis angle from [degree] to [rad]
-      store->psf[count].angle = store->psf[count].angle * M_PI/180.;
+      psf->item[count].angle = psf->item[count].angle * M_PI/180.;
 
 
       int anynul;
       double null_value=0.;
       long fpixel[2] = {1, 1};   // lower left corner
       //                |--|--> FITS coordinates start at (1,1)
-      long lpixel[2] = {store->width, store->width};  // upper right corner
+      long lpixel[2] = {psf->width, psf->width};  // upper right corner
       long inc[2] = {1, 1};
 
       if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value, 
@@ -483,33 +488,33 @@ int get_psf(
       // The partition function is more adequate for determining a random 
       // photon impact position on the detector.
       double sum=0.;
-      for (count2=0; count2<store->width; count2++) {
-	for (count3=0; count3<store->width; count3++) {
-	  sum += data[count2*store->width+count3];
-	  store->psf[count].data[count2][count3] = sum;
+      for (count2=0; count2<psf->width; count2++) {
+	for (count3=0; count3<psf->width; count3++) {
+	  sum += data[count2*psf->width+count3];
+	  psf->item[count].data[count2][count3] = sum;
 	}
       }
 
       // Store the integrated on-axis PSF for each energy band. (TODO)
-      store->psf[count].scaling_factor = 1.; // sum;
+      psf->item[count].scaling_factor = 1.; // sum;
       
 
       // Renormalize the PSF partition function to the integrated on-axis PSF.
-      for (count2=0; count2<store->width; count2++) {
-	for (count3=0; count3<store->width; count3++) {
-	  store->psf[count].data[count2][count3] = 
-	    store->psf[count].data[count2][count3]/store->psf[count].scaling_factor;
+      for (count2=0; count2<psf->width; count2++) {
+	for (count3=0; count3<psf->width; count3++) {
+	  psf->item[count].data[count2][count3] = 
+	    psf->item[count].data[count2][count3] / psf->item[count].scaling_factor;
 	}
       }
 
       // Plot normalization of PSF for current off-axis angle and energy
       headas_chat(5, "PSF: %lf of incident photons at (%lf rad, %lf keV), "
 		  "normalized to %lf, factor 1/%lf\n",  sum, 
-		  store->psf[count].angle, store->psf[count].energy, 
-		  sum/store->psf[count].scaling_factor, 
-		  store->psf[count].scaling_factor);
+		  psf->item[count].angle, psf->item[count].energy, 
+		  sum/psf->item[count].scaling_factor, 
+		  psf->item[count].scaling_factor);
 
-    } // END of loop over individual PSFs
+    } // END of loop over individual PSF items
   } while(0);  // END of error handling loop
 
 
@@ -519,7 +524,7 @@ int get_psf(
   // free memory of input buffer
   if (data) free(data);  
 
-  return(*status);
+  return(psf);
 }
 
 
@@ -528,7 +533,7 @@ int get_psf(
 
 /////////////////////////////////////////////
 int save_psf_image(
-		   struct PSF_Store store,
+		   PSF* psf,
 		   const char *filename,
 		   int *status
 		   )
@@ -547,15 +552,15 @@ int save_psf_image(
 
 
     // Loop over the different PSFs in the storage:
-    for (count=0; count<store.N_elements; count++) {
+    for (count=0; count<psf->N_elements; count++) {
 
       // Determine size of PSF sub-rectangles (don't save entire PSF but only 
       // the relevant region around the central peak, which has a probability 
       // greater than 0).
       int n = 0;     // width and
       int m = 0;     // height of sub-rectangle
-      n = store.width; // TODO
-      m = store.width;
+      n = psf->width; // TODO
+      m = psf->width;
 
       // Create the relevant PSF sub-rectangle:
       sub_psf = (double *) malloc((long)n*(long)m*sizeof(double));
@@ -570,15 +575,15 @@ int save_psf_image(
       int x, y;
       for (x=x0; x<x0+n; x++) {
 	for (y=y0; y<y0+m; y++) {
-	  sub_psf[((x-x0)*n+y-y0)] = store.psf[count].data[x][y];
+	  sub_psf[((x-x0)*n+y-y0)] = psf->item[count].data[x][y];
 	}
       }
     
 
       // Create an image in the FITS-file (primary HDU):
-      long naxes[2] = {(long)(store.width), (long)(store.width)};
+      long naxes[2] = {(long)(psf->width), (long)(psf->width)};
       if (fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status)) break;
-      //                             |-> naxis
+      //                                    |-> naxis
       int hdutype;
       if (fits_movabs_hdu(fptr, count+1, &hdutype, status)) break;
 
@@ -643,11 +648,11 @@ int save_psf_image(
     
       // TODO: Instead of using these keywords one should specifiy the 
       // physical units of the images.
-      fits_write_key(fptr, TDOUBLE, "PIXWIDTH", &store.pixelwidth, 
+      fits_write_key(fptr, TDOUBLE, "PIXWIDTH", &psf->pixelwidth, 
 		     "width of the PSF pixels in [mu m]", status);
-      fits_write_key(fptr, TDOUBLE, "ENERGY", &store.psf[count].energy, 
+      fits_write_key(fptr, TDOUBLE, "ENERGY", &psf->item[count].energy, 
 		     "photon energy for the PSF generation in [keV]", status);
-      fits_write_key(fptr, TDOUBLE, "OFFAXANG", &store.psf[count].angle, 
+      fits_write_key(fptr, TDOUBLE, "OFFAXANG", &psf->item[count].angle, 
 		     "off-axis angle in [deg]", status);
 
       
@@ -659,10 +664,10 @@ int save_psf_image(
       // Write the image to the file:
       long fpixel[2] = {x0+1, y0+1};                // lower left corner
       //                   |-----|--> FITS coordinates start at (1,1)
-      long lpixel[2] = {store.width, store.width};  // upper right corner
+      long lpixel[2] = {psf->width, psf->width};    // upper right corner
       fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, sub_psf, status);
       
-    } // END of loop over individual PSFs in the storage.
+    } // END of loop over individual PSF items in the storage.
 
   } while (0); // END of ERROR handling loop
 
