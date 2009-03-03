@@ -89,17 +89,18 @@ void free_psf(PSF*);
 
 
 // Stores the PSF information in the PSF_Store to a fitsfile.
-int save_psf_to_fits(PSF *psf, const char filename[], int *status);
+//int save_psf_to_fits(PSF *psf, const char filename[], int *status);
 
 
 // creates the necessary parameters to create the table in the FITS file
-void psf_create_tbl_parameter(char *ftype[PSF_NFIELDS], char *fform[PSF_NFIELDS], 
-			      char *funit[PSF_NFIELDS], int width);
+static void psf_create_tbl_parameter(char *ftype[PSF_NFIELDS], 
+				     char *fform[PSF_NFIELDS], 
+				     char *funit[PSF_NFIELDS], int width);
 
 
 // write PSF data to a FITS table
-int insert_psf_fitsrow(double angle, double energy, int x, int y, double *data, 
-		       long size, fitsfile *, long row);
+//int insert_psf_fitsrow(double angle, double energy, int x, int y, double *data, 
+//		       long size, fitsfile *, long row);
 
 
 // Save the data contained in the PSF storage to images in a FITS file

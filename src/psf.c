@@ -11,11 +11,11 @@
 // point. It returns the corresponding PSF data structure.
 // IMPORTANT: The function assumes that the individual PSF data sets lie on a 
 // regular pattern: energy_{i,j} = energy_{i,k} and angle_{i,j} = angle_{k,j} !
-PSF_Item *get_best_psf_item(
-			    double offaxis_angle, // photon off-axis angle [rad]
-			    double energy,        // photon energy
-			    PSF *psf              // PSF (all angles & energies)
-			    )
+static inline PSF_Item *get_best_psf_item(
+					  double offaxis_angle, 
+					  double energy,        
+					  PSF *psf  // PSF (all angles & energies)
+					  )
 {
   // In order to find the PSF that matches the required position best, perform a loop
   // over all available PSFs and remember the best one.
@@ -56,7 +56,7 @@ PSF_Item *get_best_psf_item(
 int get_psf_pos(
 		// output: coordinates of the photon on the detector [mu m]
 		struct Point2d* position,
-		struct Photon photon,       // input photon
+		struct Photon photon,       // incident photon
 		// telescope information (focal length, pointing direction)
 		struct Telescope telescope, 
 		PSF* psf
@@ -169,7 +169,7 @@ void free_psf(
 
 
 
-
+/*
 ////////////////////////////////////////////////////////////
 // This routine stores a PSF to a FITS file.
 int save_psf_to_fits(
@@ -213,9 +213,7 @@ int save_psf_to_fits(
     psf_create_tbl_parameter(ftype, fform, funit, psf->width);
     if (fits_create_tbl(output_fptr, BINARY_TBL, 0, PSF_NFIELDS, ftype, fform, 
 			funit, "PSF" , status)) break;
-    /* int fits_create_tbl(fitsfile *fptr, int tbltype, long nrows, int tfields,
-       char *ttype[],char *tform[], char *tunit[], char *extname, int *status)*/
-
+  
     // write headers
     fits_write_key(output_fptr, TSTRING, "TELESCOP", "eROSITA", 
 		   "name of the telescope", status);
@@ -277,7 +275,7 @@ int save_psf_to_fits(
 
   return(*status);
 }
-
+*/
 
 
 
@@ -286,12 +284,12 @@ int save_psf_to_fits(
 
 ////////////////////////////////////////////////////////////////////////
 // This routine creates the necessary data for the FITS-table layout.
-void psf_create_tbl_parameter(
-			      char *ftype[PSF_NFIELDS], 
-			      char *fform[PSF_NFIELDS], 
-			      char *funit[PSF_NFIELDS],
-			      int width      // width of the PSF array in [pixel]
-			      ) 
+static void psf_create_tbl_parameter(
+				     char *ftype[PSF_NFIELDS], 
+				     char *fform[PSF_NFIELDS], 
+				     char *funit[PSF_NFIELDS],
+				     int width // width of the PSF array in [pixel]
+				     ) 
 {
     int counter;
 
@@ -327,43 +325,6 @@ void psf_create_tbl_parameter(
 
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////////////
-// writes PSF data to a binary FITS table
-int insert_psf_fitsrow(
-		       double angle,          // off-axis angle
-		       double energy,         // photon energy
-		       int x, int y,          // coordinates of PSF sub-rectangle
-		       double *data, // PSF data (probabilities within sub-rectangle)
-		       long size,    // size of the sub-rectangle (width*height)
-		       fitsfile *output_fptr, // FITS file pointer to output file
-		       long row               // actual row in the FITS file
-		       )
-{
-  int status=EXIT_SUCCESS;  // error status
-
-  do {  // beginning of error handling loop (is only run once)
-
-    // insert new row to binary FITS table
-    if (fits_insert_rows(output_fptr, row-1, 1, &status)) break;
-
-    // insert table data
-      
-    // write column-entries
-    // fits_write_col(fitsfile *fptr, int datatype, int colnum, long firstrow,
-    //         long firstelem, long nelements, void *array, int *status)
-    if (fits_write_col(output_fptr, TDOUBLE, 1, row, 1, 1, &angle, &status)) break;
-    if (fits_write_col(output_fptr, TDOUBLE, 2, row, 1, 1, &energy, &status)) break;
-    if (fits_write_col(output_fptr, TINT, 3, row, 1, 1, &x, &status)) break;
-    if (fits_write_col(output_fptr, TINT, 4, row, 1, 1, &y, &status)) break;
-    if (fits_write_col(output_fptr, TDOUBLE, 5, row, 1, size, data, &status)) break;
-
-  } while (0);  // end of error loop
-
-
-  return(status);
-}
 
 
 
@@ -1030,4 +991,45 @@ int get_psf_old(
 
   return(status);
 }
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////
+// writes PSF data to a binary FITS table
+int insert_psf_fitsrow(
+		       double angle,          // off-axis angle
+		       double energy,         // photon energy
+		       int x, int y,          // coordinates of PSF sub-rectangle
+		       double *data, // PSF data (probabilities within sub-rectangle)
+		       long size,    // size of the sub-rectangle (width*height)
+		       fitsfile *output_fptr, // FITS file pointer to output file
+		       long row               // actual row in the FITS file
+		       )
+{
+  int status=EXIT_SUCCESS;  // error status
+
+  do {  // beginning of error handling loop (is only run once)
+
+    // insert new row to binary FITS table
+    if (fits_insert_rows(output_fptr, row-1, 1, &status)) break;
+
+    // insert table data
+      
+    // write column-entries
+    // fits_write_col(fitsfile *fptr, int datatype, int colnum, long firstrow,
+    //         long firstelem, long nelements, void *array, int *status)
+    if (fits_write_col(output_fptr, TDOUBLE, 1, row, 1, 1, &angle, &status)) break;
+    if (fits_write_col(output_fptr, TDOUBLE, 2, row, 1, 1, &energy, &status)) break;
+    if (fits_write_col(output_fptr, TINT, 3, row, 1, 1, &x, &status)) break;
+    if (fits_write_col(output_fptr, TINT, 4, row, 1, 1, &y, &status)) break;
+    if (fits_write_col(output_fptr, TDOUBLE, 5, row, 1, size, data, &status)) break;
+
+  } while (0);  // end of error loop
+
+
+  return(status);
+}
 */
+
+
