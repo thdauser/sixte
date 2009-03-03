@@ -88,37 +88,9 @@ int get_psf_pos(struct Point2d*, struct Photon, struct Telescope, PSF*);
 void free_psf(PSF*);
 
 
-// Stores the PSF information in the PSF_Store to a fitsfile.
-//int save_psf_to_fits(PSF *psf, const char filename[], int *status);
-
-
-// creates the necessary parameters to create the table in the FITS file
-static void psf_create_tbl_parameter(char *ftype[PSF_NFIELDS], 
-				     char *fform[PSF_NFIELDS], 
-				     char *funit[PSF_NFIELDS], int width);
-
-
-// write PSF data to a FITS table
-//int insert_psf_fitsrow(double angle, double energy, int x, int y, double *data, 
-//		       long size, fitsfile *, long row);
-
-
 // Save the data contained in the PSF storage to images in a FITS file
 // according to the OGIP standards.
 int save_psf_image(PSF*, const char *, int *status);
-
-
-// This function reads one line of PSF data (i.e. a complete PSF image for one 
-// particular off-axis angle and one particular photon energy) from a FITS table.
-// The returned off-axis angle is given in [rad], the photon energy in [keV]. 
-//int read_psf_fitsrow(double *angle, double *energy, int *x, int *y, double *data, 
-//		     long size, fitsfile *fptr, long row);
-//int read_psf_fitsrow(PSF_Item*, double *data, long size, fitsfile *fptr, 
-//		     long row);
-
-
-// Read the PSF images from a OGIP PSF FITS file.
-//int read_psf_images(struct PSF_Store *, const char *, int *status);
 
 
 #endif /* PSF_H */
