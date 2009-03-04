@@ -7,7 +7,7 @@
 #include <stdarg.h>
 
 #include "astrosources.h"
-
+#include "vector.h"
 
 
 ///////////////////////////////////////////////////////////////////
@@ -23,11 +23,19 @@ PointSourceFiles* get_PointSourceFiles(int* status, int nfiles, ...)
 
   do {  // BEGINNING of outer error handling loop
 
+    // Check if number of FITS files exceeds maximum allowed number:
+    if(nfiles > MAX_N_POINTSOURCEFILES) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: too many point-source files for input!\n");
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+
     // Get memory for the preselected source catalog.
     psf = (PointSourceFiles*) malloc(sizeof(PointSourceFiles));
     if (psf==NULL) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Not enough memory available to store the point-source "
+      sprintf(msg, "Error: not enough memory available to store the point-source "
 	      "catalog files!\n");
       HD_ERROR_THROW(msg, *status);
       break;
@@ -79,7 +87,9 @@ PointSourceFiles* get_PointSourceFiles(int* status, int nfiles, ...)
 			&psf->columns[file_counter][2], status);
       } while (0);  // END of inner error handling loop
 
-    } // END of opening the source catalog files
+    } // END of loop for opening the source catalog files
+
+    psf->nfiles = nfiles;  // Store the number of open FITS files.
 
   } while (0);   // END of outer error handling loop
   
@@ -100,7 +110,7 @@ void free_PointSourceFiles(PointSourceFiles* psf, int* status)
   int counter;
   
   // Close the FITS files with the source catalogs:
-  for (counter = 0; counter < MAX_N_POINTSOURCEFILES; counter++) {
+  for (counter = 0; counter < psf->nfiles; counter++) {
     if(psf->files[counter] != NULL) fits_close_file(psf->files[counter], status);
   }
 }
@@ -109,37 +119,20 @@ void free_PointSourceFiles(PointSourceFiles* psf, int* status)
 
 
 
-/*
-//////////////////////////////////////////////////////////////////////////
-// Get the preselected source catalogs with sources along the path of the 
-// telescope axis over the sky.
-int get_preselected_catalog(
-			    // preselected catalog: pointers to source_catalog
-			    struct source_cat_entry *selected_catalog, 
-			    // total number of sources in selected catalog
-			    long *nsources,                    
-			    // number of FITS sources files to be loaded
-			    const int n_sourcefiles,           
-			    // FITS file pointers to the original source catalogs
-			    fitsfile **sourcefiles,            
-			    // column numbers for r.a., declination, and count rate
-			    int columns[5][3],                 
-			    // pointing direction of the telescope axis
-			    struct vector telescope_direction, 
-			    // maximum alignment of source and telescope direction
-			    // for beeing chosen to the selected catalog
-			    const double pre_max_align,        
-			    // storage for individual source spectra
-			    struct Spectrum_Store spectrum_store,  
-			    // number of different source spectra
-			    const int Nspectra    
-			    )
-{
-  int status=0;              // error handling variable
-  char msg[MAXMSG];          // error output buffer
 
+//////////////////////////////////////////////////////////////////////////
+PointSourceCatalog* get_PointSourceCatalog(
+					   PointSourceFiles* psf, 
+					   struct vector telescope_direction,
+					   const double max_align,
+					   struct Spectrum_Store  spectrum_store,
+					   int* status
+					   )
+{
+  PointSourceCatalog* psc;
+  char msg[MAXMSG];          // error output buffer
   
-  do {  // beginning of outer error handling loop
+  do { // beginning of outer ERROR handling loop
 
     // Read-in the different source catalogs
     // from the FITS files and store the sources in an array:
@@ -150,69 +143,69 @@ int get_preselected_catalog(
     //                   |-> number of different source catalogs
     
     int file_counter;     // counter to access the different source filenames for opening
-    long nrows;           // number of rows in source catalog
-    int source_counter;   // counter to access the individual sources in the catalog
     double rasc, dec;     // source position
     float countrate;      // source countrate
-    struct vector source_direction; // source direction (unit vector)
-    *nsources=0;          // at the moment the selected catalog is empty
+    
+    // At the moment the selected catalog is empty:
+    psc->nsources = 0;
 
-    for(file_counter=0; (file_counter<n_sourcefiles)&&(status==EXIT_SUCCESS); 
+    for(file_counter=0; (file_counter<psf->nfiles)&&(*status==EXIT_SUCCESS); 
 	file_counter++) {
 
       do {  // beginning of inner ERROR handling loop
 
 	// Determine the number of rows in the source catalogue 
 	// (i.e. number of listed sources):
-	fits_get_num_rows(sourcefiles[file_counter], &nrows, &status);
+	long nrows;           // number of rows in source catalog
+	fits_get_num_rows(psf->files[file_counter], &nrows, status);
 
-	// read-in all sources from the individual table rows, one after another
+	// Read-in all sources from the individual table rows, one after another:
+	int source_counter; // counter to access the individual sources in the catalog
 	for (source_counter=0; (source_counter<nrows)&&(status==EXIT_SUCCESS); 
 	     source_counter++) {
-	  // read source data (right asension, declination, countrate, ...)
-	  if (get_srctbl_row(sourcefiles[file_counter], source_counter, 
-			     columns[file_counter], &rasc, &dec, &countrate, &status)) 
+	  // Read source data (right asension, declination, countrate, ...):
+	  if (get_srctbl_row(psf->files[file_counter], source_counter, 
+			     psf->columns[file_counter], &rasc, &dec, &countrate, status)) 
 	    break;
 
-	  // get a unit vector pointing in the direction of the source
-	  source_direction = unit_vector(rasc*M_PI/180., dec*M_PI/180.);
+	  // Get a unit vector pointing in the direction of the source:
+	  struct vector source_direction = unit_vector(rasc*M_PI/180., dec*M_PI/180.);
 	  
-	  // check, whether the source should be added to the preselected catalog:
-	  if(fabs(scalar_product(source_direction, telescope_direction))<pre_max_align) {
-	    if(*nsources > MAX_NSOURCES_PRE) {
-	      // too many sources
-	      status=EXIT_FAILURE;
-	      sprintf(msg, "Error: too many sources (%ld)!\n", *nsources);
+	  // Check whether the source should be added to the preselected catalog:
+	  if(fabs(scalar_product(source_direction, telescope_direction)) < max_align) {
+	    if(psc->nsources > MAX_N_POINTSOURCES) {
+	      // Too many sources !
+	      *status=EXIT_FAILURE;
+	      sprintf(msg, "Error: too many sources (%ld)!\n", psc->nsources+1);
 	      HD_ERROR_THROW(msg,status);
 	      break;
 	    }
 
-	    // add source to the preselected catalog
-	    selected_catalog[*nsources].rate = countrate;
+	    // Add the current source to the selected catalog:
+	    psc->sources[psc->nsources].rate = countrate;
 
 	    // save the source direction in the source catalog-array:
-	    selected_catalog[*nsources].r = source_direction;  // REMOVE
-	    selected_catalog[*nsources].ra = rasc;
-	    selected_catalog[*nsources].dec = dec;
+	    psc->sources[psc->nsources].ra = rasc;
+	    psc->sources[psc->nsources].dec = dec;
 	    // set lightcurve pointer to NULL
-	    selected_catalog[*nsources].lightcurve = NULL;
+	    psc->sources[psc->nsources].lightcurve = NULL;
 	    // so far there was no photon created for this source
-	    selected_catalog[*nsources].t_last_photon = -1.;
-	    // source spectrum   TODO: different spectra
-	    selected_catalog[*nsources].spectrum = &(spectrum_store.spectrum[0]);
+	    psc->sources[psc->nsources].t_last_photon = -1.;
+	    // source spectrum                                TODO: different spectra
+	    psc->sources[psc->nsources].spectrum = &(spectrum_store.spectrum[0]);
 
-	    // increase number of sources in preselected catalog
-	    (*nsources)++;
+	    // increase number of sources in the selected catalog
+	    psc->nsources++;
 	  }
-	}  // end of loop over all sources in the current catalog file
+	}          // end of loop over all sources in the current catalog file
 
-      } while (0);  // end of inner error handling loop
+      } while (0); // end of inner error handling loop
 
-    } // end of scanning the source catalogs
+    }              // end of scanning the source catalogs
 
-  } while (0);   // end of outer error handling loop
+  } while (0);     // end of outer error handling loop
 
-  return(status);
+  return(psc);
 }
-*/
+
 

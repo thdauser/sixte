@@ -59,6 +59,13 @@ PointSourceFiles* get_PointSourceFiles(int* status, int nfiles, ...);
 // Close the point.source catalog files.
 void free_PointSourceFiles(PointSourceFiles* psf, int* status);
 
+// Functions scans the point-source catalog and returns the sources 
+// close to the FOV.
+PointSourceCatalog* get_PointSourceCatalog(PointSourceFiles*, 
+					   struct vector telescope_direction,
+					   const double max_align,
+					   struct Spectrum_Store, int* status);
+				   
 
 #endif /* ASTROSOURCES_H */
 

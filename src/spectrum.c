@@ -30,6 +30,9 @@ int get_spectra(
       if ((status=get_spectrum(&(spectrum_store->spectrum[count]), Nchannels, 
 			       filenames[count]))!=EXIT_SUCCESS) break;
     }
+
+    spectrum_store->nspectra = Nfiles;
+
   } while (0);  // end of error handling loop
 
   return (status);

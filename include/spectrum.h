@@ -37,6 +37,7 @@ struct Spectrum{
 // Storage for several different spectra.
 struct Spectrum_Store{
   struct Spectrum *spectrum;
+  long nspectra;
 };
 
 

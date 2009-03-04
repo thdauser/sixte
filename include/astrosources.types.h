@@ -7,9 +7,10 @@
 
 // Maximum number of input source files:
 #define MAX_N_POINTSOURCEFILES 5
-#define MAX_NSOURCEFILES 5
+#define MAX_NSOURCEFILES 5        // REMOVE
 // Maximum number of sources in the preselected source catalog:
-#define MAX_NSOURCES_PRE 1000000
+#define MAX_NSOURCES_PRE 1000000  // REMOVE
+#define MAX_N_POINTSOURCES 1000000
 
 
 
@@ -38,10 +39,12 @@ typedef struct {
 
 typedef struct {
   PointSource* sources;
+  long nsources;
 } PointSourceCatalog;
 
 typedef struct {
   fitsfile* files[MAX_N_POINTSOURCEFILES];
+  int nfiles;
   int columns[MAX_N_POINTSOURCEFILES][3];
 } PointSourceFiles;
 
