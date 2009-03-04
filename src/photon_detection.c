@@ -306,7 +306,7 @@ int photon_detection_main() {
   }
 
   if (detector->type == HTRS) {
-    htrs_free_detector(detector);
+    htrs_free_Detector(detector);
   }
 
   // Release memory of detector Redistribution Matrix

@@ -1317,7 +1317,7 @@ int get_pixel_square(Detector* detector,
 
 
 ///////////////////////////////////////////////////////
-void htrs_free_detector(Detector* detector)
+void htrs_free_Detector(Detector* detector)
 {
   free(detector->htrs_pixel2icoordinates);
 

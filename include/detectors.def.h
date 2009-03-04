@@ -52,14 +52,14 @@ long get_pha(float, Detector*);
 float get_charge(long, Ebounds*);
 
 
-// Function allocates memory for the detector array.
+// Constructor: function allocates memory for the detector array.
 Detector* get_Detector(int*);
+// Destructor: function releases memory of detector.
+//void free_Detector(Detector* detector); // TODO
 
 
 // Get memory for detector EBOUNDS matrix and fill it with data from FITS file.
 int get_ebounds(Ebounds*, int *Nchannels, const char filename[]);
-
-
 // Release memory of detector EBOUNDS.
 void free_ebounds(Ebounds *);
 
@@ -85,13 +85,12 @@ int htrs_get_pixel(Detector*, struct Point2d,
 		   int* x, int* y, double* fraction);
 
 
-// This routine performs the initialization of the HTRS detector.
-// The return value is the error status.
+// Constructor: this routine performs the initialization of the HTRS
+// detector. The return value is the error status.
 Detector* htrs_get_Detector(int *);
-
-
-// Release all dynamically allocated memory in the HTRS detector structure.
-void htrs_free_detector(Detector*);
+// Destructor: release all dynamically allocated memory in the HTRS
+// detector structure.
+void htrs_free_Detector(Detector*);
 
 
 // Determines the pixel coordinates for a given point on a 2D array of 
