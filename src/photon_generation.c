@@ -5,12 +5,12 @@
 #endif
 
 
-#include "generate_photons.h"
-
+#include "photon_generation.h"
+#include "clusters.c"
 
 
 ////////////////////////////
-int generate_photons_getpar(
+int photon_generation_getpar(
 			    char orbit_filename[],
 			    char attitude_filename[],
 			    // number of input source catalog files
@@ -132,7 +132,7 @@ int generate_photons_getpar(
 
 
 //////////////////////////
-int generate_photons_main() 
+int photon_generation_main() 
 {
   // Names of several input and output files:
   char orbit_filename[FILENAME_LENGTH];      // input: orbit
@@ -188,7 +188,7 @@ int generate_photons_main()
 
 
   // register HEATOOL
-  set_toolname("generate_photons");
+  set_toolname("photon_generation");
   set_toolversion("0.01");
 
 
@@ -198,12 +198,12 @@ int generate_photons_main()
     detector = get_Detector(&status);
     if(status!=EXIT_SUCCESS) break;
     
-    if ((status = generate_photons_getpar(orbit_filename, attitude_filename,
-					  &n_sourcefiles, source_filename,
-					  spectrum_filename[0], rmf_filename, 
-					  photonlist_filename,
-					  &t0, &timespan, &bandwidth,
-					  &telescope))) break;
+    if ((status = photon_generation_getpar(orbit_filename, attitude_filename,
+					   &n_sourcefiles, source_filename,
+					   spectrum_filename[0], rmf_filename, 
+					   photonlist_filename,
+					   &t0, &timespan, &bandwidth,
+					   &telescope))) break;
 
 
     // Set last_update to such a small value, that a preselection of the 

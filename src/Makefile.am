@@ -6,7 +6,7 @@ CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = binary_stream generate_photons photon_detection photon_imaging psfgen
+bin_PROGRAMS = binary_stream photon_generation photon_detection photon_imaging psfgen
 
 # Libraries that are installed in the 'lib' directory.
 lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
@@ -29,14 +29,14 @@ binary_stream_LDFLAGS += @libape@ -lreadline
 binary_stream_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
 binary_stream_LDADD    = libdetectors.a -lm
 
-generate_photons_SOURCES  = generate_photons.c
-generate_photons_LDFLAGS  = @libcfitsio@ -lnsl
-generate_photons_LDFLAGS += @libape@ -lreadline
-generate_photons_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-generate_photons_LDFLAGS += -lgsl -lgslcblas -lm
-generate_photons_LDADD    = libdetectors.a
-generate_photons_LDADD   += libastrosources.a
-generate_photons_LDADD   += libsatellites.a
+photon_generation_SOURCES  = photon_generation.c
+photon_generation_LDFLAGS  = @libcfitsio@ -lnsl
+photon_generation_LDFLAGS += @libape@ -lreadline
+photon_generation_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
+photon_generation_LDFLAGS += -lgsl -lgslcblas -lm
+photon_generation_LDADD    = libdetectors.a
+photon_generation_LDADD   += libastrosources.a
+photon_generation_LDADD   += libsatellites.a
 
 photon_detection_SOURCES  = photon_detection.c
 photon_detection_LDFLAGS  = @libcfitsio@ -lnsl

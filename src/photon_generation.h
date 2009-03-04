@@ -1,5 +1,5 @@
-#ifndef GENERATE_PHOTONS_H
-#define GENERATE_PHOTONS_H 1
+#ifndef PHOTON_GENERATION_H
+#define PHOTON_GENERATION_H 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,10 +25,10 @@
 #include "check_fov.h"
 
 
-#define TOOLSUB generate_photons_main
+#define TOOLSUB photon_generation_main
 #include "headas_main.c"
 
 
 
-#endif /* GENERATE_PHOTONS_H */
+#endif /* PHOTON_GENERATION_H */
 
