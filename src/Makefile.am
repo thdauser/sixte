@@ -12,7 +12,7 @@ bin_PROGRAMS = binary_stream generate_photons photon_detection photon_imaging ps
 lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
 
 # Sources:
-libastrosources_a_SOURCES = spectrum.c sources.c photon.c fits_pha.c random.c check_fov.c
+libastrosources_a_SOURCES = spectrum.c sources.c pointsources.c photon.c fits_pha.c random.c check_fov.c
 
 libdetectors_a_SOURCES = detector.c eventlist.c psf.c random.c
 #libdetectors_a_LDFLAGS  = @libcfitsio@ -lnsl

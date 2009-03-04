@@ -29,9 +29,7 @@ int n_events, n_dead, n_interframe, n_outside;
 
 
 #include "detectors.types.h"
-
 #include "eventlist.h"
-
 #include "detectors.def.h"
 
 

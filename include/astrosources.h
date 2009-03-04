@@ -22,13 +22,9 @@
 #include "psf.h"
 #include "vector.h"
 
+
 #include "astrosources.types.h"
 
-
-// maximum number of input source files
-#define MAX_NSOURCEFILES 5
-// maximum number of sources in the preselected source catalog
-#define MAX_NSOURCES_PRE 1000000
 
 
 // Function loads the required source catalogs from the specified FITS files and
@@ -54,6 +50,14 @@ int get_preselected_catalog(struct source_cat_entry *selected_catalog,
 			    struct vector telescope_direction,
 			    const double pre_max_align, struct Spectrum_Store, 
 			    const int Nspectra);
+
+
+
+
+// Function opens the specified point-source catalog files.
+PointSourceFiles* get_PointSourceFiles(int* status, int nfiles, ...);
+// Close the point.source catalog files.
+void free_PointSourceFiles(PointSourceFiles* psf, int* status);
 
 
 #endif /* ASTROSOURCES_H */
