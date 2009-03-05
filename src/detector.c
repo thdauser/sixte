@@ -293,7 +293,7 @@ Detector* get_Detector(int* status)
 
   do { // Outer ERROR handling loop
 
-    headas_chat(5, "allocate memory for detector array ...\n");
+    headas_chat(5, "allocate memory for detector data structure ...\n");
 
     // Allocate memory for the detector:
     detector = (Detector*)malloc(sizeof(Detector));
@@ -304,6 +304,31 @@ Detector* get_Detector(int* status)
       HD_ERROR_THROW(msg, *status);
       break;
     }
+
+    detector->rmf.row=NULL;
+    detector->ebounds.row=NULL;
+
+  } while (0); // END of Error handling loop
+
+
+  if (*status==EXIT_SUCCESS) {
+    return(detector);
+  } else {
+    return(NULL);
+  }
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////
+int get_DetectorPixels(Detector* detector, int* status)
+{
+  char msg[MAXMSG];          // error output buffer
+
+  do { // Outer ERROR handling loop
+
+    headas_chat(5, "allocate memory for detector pixel array ...\n");
 
     // Allocate memory for the detector pixel array:
     int count;
@@ -333,13 +358,9 @@ Detector* get_Detector(int* status)
 
   } while (0); // END of Error handling loop
 
-
-  if (*status==EXIT_SUCCESS) {
-    return(detector);
-  } else {
-    return(NULL);
-  }
+  return(*status);
 }
+
 
 
 
@@ -427,7 +448,7 @@ int get_ebounds(Ebounds *ebounds, int *Nchannels, const char filename[])
       status=EXIT_FAILURE;
       sprintf(msg, "Error: Wrong number of data lines in FITS file '%s'!\n", 
 	      filename);
-      HD_ERROR_THROW(msg,status);
+      HD_ERROR_THROW(msg, status);
       break;
     }
   

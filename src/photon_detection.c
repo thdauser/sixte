@@ -54,10 +54,14 @@ int photon_detection_main() {
     // Set initial DETECTOR CONFIGURATION.
 
     // GENERAL SETTINGS
+
+    // Get the memory for the detector pixels
+    if (get_DetectorPixels(detector, &status)) break;
+
     // Calculate initial parameter values from the PIL parameters:
     detector->offset = detector->width/2;
-    
-    // size of the charge cloud [real pixel]
+
+    // Size of the charge cloud [real pixel]
     detector->ccsize = 3.*detector->ccsigma;
 
     // Set the current detector frame to its initial value:

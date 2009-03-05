@@ -54,6 +54,7 @@ float get_charge(long, Ebounds*);
 
 // Constructor: function allocates memory for the detector array.
 Detector* get_Detector(int*);
+int get_DetectorPixels(Detector*, int*);
 // Destructor: function releases memory of detector.
 //void free_Detector(Detector* detector); // TODO
 

@@ -211,7 +211,7 @@ PSF* get_psf(
     if (fits_get_img_size(fptr, 2, naxes, status)) break;
     if (naxes[0] != naxes[1]) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: PSF image must be a square!\n");
+      sprintf(msg, "Error: PSF image must be square!\n");
       HD_ERROR_THROW(msg, *status);
       break;
     } else {

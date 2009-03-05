@@ -6,6 +6,7 @@
 #include <malloc.h>
 #include <limits.h>
 #include <math.h>
+#include <string.h>
 #include <gsl/gsl_randist.h>
 
 #include "fitsio.h"

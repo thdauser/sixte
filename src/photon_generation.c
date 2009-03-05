@@ -143,8 +143,11 @@ int photon_generation_main()
   
   // Several input source catalog files:
   int n_sourcefiles;   // number of input source files
-  // Filenames of the individual source catalog files (FITS)
+  // Filenames of the individual source catalog files (FITS):
   char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH]; 
+  // X-ray Cluster image:
+  char cluster_filename[FILENAME_LENGTH];    // input: cluster image file
+  ClusterImage* cluster_image=NULL;
 
   double t0;        // start time of the photon generation
   double timespan;  //  time span of the photon generation
@@ -195,6 +198,7 @@ int photon_generation_main()
   do {  // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
+
     detector = get_Detector(&status);
     if(status!=EXIT_SUCCESS) break;
     
@@ -259,6 +263,16 @@ int photon_generation_main()
 				    source_catalog_files, source_data_columns, 
 				    source_filename))!=EXIT_SUCCESS) break;
 
+    // Get the specified galaxy cluster image:
+    if ((status = PILGetFname("cluster_filename", cluster_filename))) {
+      sprintf(msg, "Error reading the filename of the cluster image file!\n");
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+    if(strlen(cluster_filename) > 0) {
+      cluster_image = get_ClusterImage(cluster_filename, &status);
+      if (status != EXIT_SUCCESS) break;
+    }
 
     // Delete old photon list FITS file:
     remove(photonlist_filename);
@@ -443,7 +457,7 @@ int photon_generation_main()
   HDmtFree();
   gsl_rng_free(gsl_random_g);
 
-  // clear photon list
+  // Clear photon list
   clear_photon_list(&photon_list);
 
   // Release memory of orbit/attitude catalog
@@ -461,6 +475,7 @@ int photon_generation_main()
   // Release source catalogs
   free_source_catalogs(source_catalog_files,n_sourcefiles,
 		       &selected_catalog,&status);
+  free_ClusterImage(cluster_image);
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
