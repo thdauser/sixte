@@ -3,6 +3,12 @@ AM_CFLAGS   = -Wall
 #AM_CFLAGS   = -Wall -Werror
 CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
 
+LDADD  = @libhdinit@ @libhdutils@ @libhdio@
+LDADD += @libape@ -lreadline -lncurses 
+LDADD += @libcfitsio@ -lnsl -lm
+
+
+########### LIBRARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
@@ -13,55 +19,36 @@ lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
 
 # Sources:
 libastrosources_a_SOURCES = spectrum.c sources.c pointsources.c photon.c fits_pha.c random.c check_fov.c
-
 libdetectors_a_SOURCES = detector.c eventlist.c psf.c random.c
-#libdetectors_a_LDFLAGS  = @libcfitsio@ -lnsl
-#libdetectors_a_LDFLAGS += @libape@ -lreadline
-#libdetectors_a_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-
 libsatellites_a_SOURCES = orbatt.c fits_attitude.c fits_ctlg.c vector.c
 
 
+############ BINARIES #################
 
 binary_stream_SOURCES  = binary_stream.c
-binary_stream_LDFLAGS  = @libcfitsio@ -lnsl
-binary_stream_LDFLAGS += @libape@ -lreadline
-binary_stream_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-binary_stream_LDADD    = libdetectors.a -lm
+binary_stream_LDADD    = libdetectors.a
 
 photon_generation_SOURCES  = photon_generation.c
-photon_generation_LDFLAGS  = @libcfitsio@ -lnsl
-photon_generation_LDFLAGS += @libape@ -lreadline
-photon_generation_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-photon_generation_LDFLAGS += -lgsl -lgslcblas -lm
-photon_generation_LDADD    = libdetectors.a
+photon_generation_LDADD    = -lgsl -lgslcblas
+photon_generation_LDADD   += libdetectors.a
 photon_generation_LDADD   += libastrosources.a
 photon_generation_LDADD   += libsatellites.a
 
 photon_detection_SOURCES  = photon_detection.c
-photon_detection_LDFLAGS  = @libcfitsio@ -lnsl
-photon_detection_LDFLAGS += @libape@ -lreadline
-photon_detection_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-photon_detection_LDFLAGS += -lgsl -lgslcblas -lm
-photon_detection_LDADD    = libdetectors.a
+photon_detection_LDADD    = -lgsl -lgslcblas
+photon_detection_LDADD   += libdetectors.a
 photon_detection_LDADD   += libastrosources.a
 photon_detection_LDADD   += libsatellites.a
 
 photon_imaging_SOURCES  = photon_imaging.c
-photon_imaging_LDFLAGS  = @libcfitsio@ -lnsl
-photon_imaging_LDFLAGS += @libape@ -lreadline
-photon_imaging_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-photon_imaging_LDFLAGS += -lgsl -lgslcblas -lm
-photon_imaging_LDADD    = libdetectors.a
+photon_imaging_LDADD    = -lgsl -lgslcblas
+photon_imaging_LDADD   += libdetectors.a
 photon_imaging_LDADD   += libastrosources.a
 photon_imaging_LDADD   += libsatellites.a
 
 psfgen_SOURCES  = psfgen.c
-psfgen_LDFLAGS  = @libcfitsio@ -lnsl
-psfgen_LDFLAGS += @libape@ -lreadline
-psfgen_LDFLAGS += @libhdinit@ @libhdutils@ @libhdio@
-psfgen_LDFLAGS += -lgsl -lgslcblas -lm
-psfgen_LDADD    = libdetectors.a
+psfgen_LDADD    = -lgsl -lgslcblas
+psfgen_LDADD   += libdetectors.a
 psfgen_LDADD   += libastrosources.a
 psfgen_LDADD   += libsatellites.a
 

@@ -40,7 +40,7 @@ AC_SUBST(libcfitsio)
 
 
 libape="no"
-AC_CHECK_LIB(ape_2.4.0, pilclose_, [libape="-lape_2.4.0"], [], [-lreadline])
+AC_CHECK_LIB(ape_2.4.0, pilclose_, [libape="-lape_2.4.0"], [], [-lreadline -lncurses])
 if test "x$libape" = "xno"
 then
 	AC_MSG_ERROR([No ape (PIL) library found!])
@@ -48,18 +48,18 @@ fi
 AC_SUBST(libape)
 
 
-#libhdinit="no"
-#AC_CHECK_LIB(hdinit_2.5, headas_init, [libhdinit="-lhdinit_2.5"], [], 
-#  [-lhdutils_2.5 -lhdio_2.5 -lape_2.4.0 -lreadline -lcfitsio_3.12 -lnsl -lm])
-#if test "x$libhdinit" = "xno"
-#then
-#	AC_MSG_ERROR([No hdinit library found!])
-#fi
+libhdinit="no"
+AC_CHECK_LIB(hdinit_2.5, headas_init, [libhdinit="-lhdinit_2.5"], [], 
+  [-lhdutils_2.5 -lhdio_2.5 -lape_2.4.0 -lreadline -lncurses -lcfitsio_3.12 -lnsl -lm])
+if test "x$libhdinit" = "xno"
+then
+	AC_MSG_ERROR([No hdinit library found!])
+fi
 libhdinit="-lhdinit_2.5"
 AC_SUBST(libhdinit)
 
 
-#libhdutils="no"
+libhdutils="no"
 #AC_CHECK_LIB(hdutils_2.5, set_toolname, [libhdutils="-lhdutils_2.5"], [], [])
 #if test "x$libhdutils" = "xno"
 #then
