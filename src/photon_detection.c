@@ -88,8 +88,9 @@ int photon_detection_main() {
       // but for that purpose the current line has to be set to 0, so that the
       // first readout is performed in the middle of the detector array.
       detector->readout_line = 0;
-      
-      detector->action = depfet_detector_action;
+
+      detector->readout_line = detector->width;   // REMOVE !!!
+      detector->action = depfet_detector_action2; // !!!
       
       headas_chat(5, "dead time: %lf\n", detector->dead_time);
       headas_chat(5, "clear time: %lf\n", detector->clear_time);

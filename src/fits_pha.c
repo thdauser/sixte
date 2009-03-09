@@ -63,7 +63,7 @@ int insert_spectrum_fitsrow(
 
 
 
-// read spectrum line from a FITS table (PHA channel)
+// Read a line from a spectrum FITS table (PHA channel)
 int read_spec_fitsrow(
 		      long *channel,
 		      float *probability,
@@ -76,7 +76,8 @@ int read_spec_fitsrow(
   do {  // beginning of error handling loop (is only run once)
     int anynul;
     if (fits_read_col(fptr, TLONG, 1, row, 1, 1, channel, channel, &anynul, &status)) break;
-    if (fits_read_col(fptr, TFLOAT, 2, row, 1, 1, probability, probability, &anynul, &status)) break;
+    if (fits_read_col(fptr, TFLOAT, 2, row, 1, 1, probability, probability, 
+		      &anynul, &status)) break;
   } while(0);  // end of error handling loop
 
   return(status);

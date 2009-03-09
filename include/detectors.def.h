@@ -26,13 +26,15 @@
 void detector_action(Detector*, double time, struct Eventlist_File*, int* status);
 
 inline void framestore_detector_action(void*, double time, 
-					      struct Eventlist_File*, int *status);
+				       struct Eventlist_File*, int *status);
 inline void depfet_detector_action(void*, double time, 
-					  struct Eventlist_File*, int *status); 
+				   struct Eventlist_File*, int *status); 
+inline void depfet_detector_action2(void*, double time, 
+				   struct Eventlist_File*, int *status); 
 inline void tes_detector_action(void*, double time, struct Eventlist_File*, 
-				       int *status); 
+				int *status); 
 inline void htrs_detector_action(void*, double time, 
-					struct Eventlist_File*, int *status);
+				 struct Eventlist_File*, int *status);
 
 
 // Returns a detector PHA channel for the given photon energy according to the RMF.
