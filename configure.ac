@@ -49,12 +49,12 @@ AC_SUBST(libape)
 
 
 libhdinit="no"
-AC_CHECK_LIB(hdinit_2.5, headas_init, [libhdinit="-lhdinit_2.5"], [], 
-  [-lhdutils_2.5 -lhdio_2.5 -lape_2.4.0 -lreadline -lncurses -lcfitsio_3.12 -lnsl -lm])
-if test "x$libhdinit" = "xno"
-then
-	AC_MSG_ERROR([No hdinit library found!])
-fi
+#AC_CHECK_LIB(hdinit_2.5, headas_init, [libhdinit="-lhdinit_2.5"], [], 
+#  [-lhdutils_2.5 -lhdio_2.5 -lape_2.4.0 -lreadline -lncurses -lcfitsio_3.12 -lnsl -lm])
+#if test "x$libhdinit" = "xno"
+#then
+#	AC_MSG_ERROR([No hdinit library found!])
+#fi
 libhdinit="-lhdinit_2.5"
 AC_SUBST(libhdinit)
 
