@@ -455,6 +455,8 @@ int photon_detection_getpar(
       HD_ERROR_THROW(msg,status);
       return(status);
     }
+  } else {
+    detector->energy_threshold=0.;
   }
 
   // Get the name of the detector redistribution file (FITS file)
