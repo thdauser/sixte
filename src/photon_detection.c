@@ -134,8 +134,8 @@ int photon_detection_main() {
     headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
     headas_chat(5, "charge cloud size: %lf m\n", detector->ccsize);
     headas_chat(5, "number of PHA channels: %d\n", detector->Nchannels);
-    headas_chat(5, "PHA threshold: %ld\n", detector->pha_threshold);
-    headas_chat(5, "energy threshold: %lf\n\n", detector->energy_threshold);
+    headas_chat(5, "PHA threshold: channel %ld\n", detector->pha_threshold);
+    headas_chat(5, "energy threshold: %lf keV\n\n", detector->energy_threshold);
 
     // END of DETECTOR CONFIGURATION SETUP
 
