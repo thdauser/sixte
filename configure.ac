@@ -39,6 +39,9 @@ fi
 AC_SUBST(libcfitsio)
 
 
+#AC_CHECK_LIB(readline, ?, [], AC_MSG_ERROR([No readline library found!]), [])
+#AC_CHECK_LIB(ncurses, ?, [], AC_MSG_ERROR([No ncurses library found!]), [])
+
 libape="no"
 AC_CHECK_LIB(ape_2.4.0, pilclose_, [libape="-lape_2.4.0"], [], [-lreadline -lncurses])
 if test "x$libape" = "xno"

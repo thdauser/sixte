@@ -217,7 +217,6 @@ int photon_detection_main() {
 	  int count;
 	  for (count=0; count<npixels; count++) {
 	    if (x[count] != INVALID_PIXEL) {
-
 	      detector->pixel[x[count]][y[count]].charge += 
 		charge * fraction[count] * 
 		// |        |-> charge fraction due to split events
@@ -243,7 +242,7 @@ int photon_detection_main() {
 		// Store the photon charge and the new arrival time:
 		event.pha = get_pha(charge*fraction[count], detector);
 		event.time = time;                // TODO: drift time
-		event.xi = detector->htrs_icoordinates2pixel[x[count]][y[count]] + 1;
+		event.xi = detector->htrs_icoordinates2pixel[x[count]][y[count]]+1;
 		event.yi = 0;  // human readable HTRS pixels numbers start at 1 <-|
 		event.grade = 0;
 		event.frame = 0;
