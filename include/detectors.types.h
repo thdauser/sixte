@@ -83,7 +83,10 @@ typedef struct {
   double ccsigma;          // charge cloud sigma (needed to calculate size of 
                            // the charge cloud) [m]
   double ccsize;           // size of the charge cloud [m]
-  long low_threshold;      // lower detector threshold (in PHA)
+  
+  long pha_threshold;      // lower detector PHA threshold [PHA channels]
+  float energy_threshold;  // lower detector energy threshold [kev]
+  // If the PHA threshold is 0, the energy threshold is used.
   
   int Nchannels;           // Number of detector PHA channels
   Ebounds ebounds;         // Detector energy bounds (relation PHA channel -> 

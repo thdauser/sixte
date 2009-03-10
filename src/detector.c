@@ -317,9 +317,10 @@ static inline void readout_line(
       // detector pixel.
       event.pha = get_pha(detector->pixel[xi][line].charge, detector);
 
-      //      if(detector->pixel[xi][line].charge>=0.075) { // !!!
-      if (event.pha >= detector->low_threshold) { // Check lower PHA threshold
-	// There is an event in this pixel, so insert it into eventlist:
+      // Check lower threshold (PHA and energy):
+      if ((event.pha>=detector->pha_threshold) && 
+	  (detector->pixel[xi][line].charge>=detector->energy_threshold)) { 
+	// There is an event in this pixel, so insert it into the eventlist:
 	event.time = detector->readout_time;
 	event.grade = 0;
 	event.xi = xi;

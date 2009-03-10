@@ -134,7 +134,8 @@ int photon_detection_main() {
     headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
     headas_chat(5, "charge cloud size: %lf m\n", detector->ccsize);
     headas_chat(5, "number of PHA channels: %d\n", detector->Nchannels);
-    headas_chat(5, "lower PHA threshold: %ld\n\n", detector->low_threshold);
+    headas_chat(5, "PHA threshold: %ld\n", detector->pha_threshold);
+    headas_chat(5, "energy threshold: %lf\n\n", detector->energy_threshold);
 
     // END of DETECTOR CONFIGURATION SETUP
 
@@ -249,7 +250,8 @@ int photon_detection_main() {
 
 		// Add the event to the FITS event list.
 		// Check lower PHA threshold:
-		if (event.pha >= detector->low_threshold) { 
+		if ((event.pha >= detector->pha_threshold)&&
+		    (charge*fraction[count] >= detector->energy_threshold)){ 
 		  // There is an event in this pixel, so insert it into eventlist:
 		  add_eventlist_row(&eventlist_file, event, &status);
 		}
@@ -272,7 +274,8 @@ int photon_detection_main() {
 	    event.frame = detector->frame;
 
 	    // Add the event to the FITS event list.
-	    if (event.pha >= detector->low_threshold) { // Check lower PHA threshold
+	    if ((event.pha>=detector->pha_threshold)&&
+		(energy>=detector->energy_threshold)){ // Check lower PHA threshold
 	      // There is an event in this pixel, so insert it into eventlist:
 	      add_eventlist_row(&eventlist_file, event, &status);
 	    }
@@ -437,14 +440,21 @@ int photon_detection_getpar(
   if (status) return(status);
 
   
-  // Read the lower detector threshold (integer value):
-  int threshold;
-  if ((status = PILGetInt("lo_thres", &threshold))) {
-    sprintf(msg, "Error: could not determine lower detector threshold!\n");
+  // Read the detector thresholds (either integer PHA or float energy):
+  int pha_threshold;
+  if ((status = PILGetInt("pha_threshold", &pha_threshold))) {
+    sprintf(msg, "Error: could not determine detector PHA threshold!\n");
     HD_ERROR_THROW(msg,status);
     return(status);
   } else {
-    detector->low_threshold = (long)threshold;
+    detector->pha_threshold = (long)pha_threshold;
+  }
+  if (detector->pha_threshold==0) {
+    if ((status = PILGetReal4("energy_threshold", &detector->energy_threshold))) {
+      sprintf(msg, "Error: could not determine detector energy threshold!\n");
+      HD_ERROR_THROW(msg,status);
+      return(status);
+    }
   }
 
   // Get the name of the detector redistribution file (FITS file)
