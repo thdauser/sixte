@@ -43,10 +43,10 @@
 // Main routine.
 int psfgen_main()
 {
-  int psf_width;                        // in [pixel]
-  double psf_pixelwidth;                // in [m]
-  double focal_length;                  // in [m]
+  PSF psf;
   char psf_filename[FILENAME_LENGTH];   // output file (FITS file)
+  double focal_length; // in [m]
+  double hew;          // HEW of on-axis Gaussian [deg]
 
   char msg[MAXMSG];         // buffer for error output messages
   int status=EXIT_SUCCESS;  // error report status
@@ -58,47 +58,40 @@ int psfgen_main()
 
   do { // Beginning of outer ERROR handling loop
 
-    if ((status = PILGetInt("psf_width", &psf_width))) {
+    if ((status = PILGetInt("psf_width", &psf.width))) {
       sprintf(msg, "Error reading the width of the PSF!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
-
-    if ((status = PILGetReal("psf_pixelwidth", &psf_pixelwidth))) {
+    if ((status = PILGetReal("psf_pixelwidth", &psf.pixelwidth))) {
       sprintf(msg, "Error reading the width of the PSF pixels!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
-
     if ((status = PILGetReal("focal_length", &focal_length))) {
       sprintf(msg, "Error reading the focal length of the telescope!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
-
     if ((status = PILGetFname("psf_filename", psf_filename))) {
       sprintf(msg, "Error reading the name of PSF the output file!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
-
     int type;
     if ((status = PILGetInt("type", &type))) {
       sprintf(msg, "Error reading the PSF type!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
-
     if (type == 1) {  // Simple Gauss PSF
-      double hew;
       if ((status = PILGetReal("hew", &hew))) {
 	sprintf(msg, "Error reading the HEW!\n");
 	HD_ERROR_THROW(msg,status);
 	break;
       }
       hew = hew/(3600.);  // Rescaling from [arc sec] -> [deg]
-
-
+      psf.N_elements = 1;
 
     } // END of Simple Gauss PSF (type==1)
     
@@ -109,6 +102,75 @@ int psfgen_main()
       break;
     }
 
+    // --- END of PIL parameter input ---
+
+
+    // --- PSF initialization ---
+    
+    int count1, count2;
+    //    float X[psf.width], Y[psf.width];
+    //    for (count1=0; count1<psf.width; count1++) {
+    //      X[count1] = (count1-psf.width/2) * psf.pixelwidth;
+    //      Y[count1] = X[count1];
+    //    }
+
+    // Get memory for the PSF data.
+    psf.item = (PSF_Item *) malloc(psf.N_elements * sizeof(PSF_Item));
+    if (psf.item) {   // memory was allocated successfully
+      for (count1=0; count1<psf.N_elements; count1++) {
+	psf.item[count1].data = (double **) malloc(psf.width * sizeof(double **));
+	if (psf.item[count1].data) {
+	  for (count2=0; count2<psf.width; count2++) {
+	    psf.item[count1].data[count2] = 
+	      (double *) malloc(psf.width * sizeof(double));
+	    if (!psf.item[count1].data[count2]) {
+	      status = EXIT_FAILURE;
+	      break;
+	    }
+	  }
+	} else { status = EXIT_FAILURE; }
+      }
+    } else { status = EXIT_FAILURE; }
+    // Check if all necessary memory was allocated successfully:
+    if (status != EXIT_SUCCESS) {
+      sprintf(msg, "Error: not enough memory to store PSF data!\n");
+      HD_ERROR_THROW(msg, status);  
+      break;
+    }
+
+    // --- END of PSF initialization ---
+
+
+    // --- PSF data generation ---
+
+    // Create simple Gaussian PSF with a given HEW
+    psf.item[0].angle = 0.;
+    psf.item[0].energy = 1.;
+
+    // Fill the PSF array with a 2D Gaussian distribution.
+    double sigma = hew*M_PI/180.     // sigma in detector pixels
+      /(2.*sqrt(2.*log(2.))) 
+      /atan(psf.pixelwidth/focal_length);;  
+    headas_chat(5, "PSF Sigma: %.2lf pixel\n", sigma);
+    double x, y;
+    for (count1=0; count1<psf.width; count1++) {
+      for (count2=0; count2<psf.width; count2++) {
+	x = (double)(count1-psf.width/2);
+	y = (double)(count2-psf.width/2);
+	psf.item[0].data[count1][count2] = 
+	  (gsl_sf_erf_Q(x/sigma) - gsl_sf_erf_Q((x+1.)/sigma))* 
+	  (gsl_sf_erf_Q(y/sigma) - gsl_sf_erf_Q((y+1.)/sigma));
+      }
+    }
+
+    // --- END of PSF data generation ---
+
+
+    // Create FITS file and store the PSF data (for all off-axis angles and 
+    // energies in the same file).
+    remove(psf_filename);
+    save_psf_image(&psf, psf_filename, &status);
+
   } while (0); // END of outer Error handling loop
 
 
@@ -118,6 +180,7 @@ int psfgen_main()
   
   return(status);
 }
+
 
 
 /*
@@ -321,12 +384,8 @@ int create_psf_work(
 
     // Create FITS file and store the PSF data (for all off-axis angles and 
     // energies in the same file).
-    //save_psf_to_fits(store, outputfile, &status);
-
-    // Test: output to FITS image:
     remove(outputfile);
     save_psf_image(store, outputfile, &status);
-
 
   } while(0);  // END of error loop
 
@@ -343,9 +402,9 @@ int create_psf_work(
 
   return(status);
 }
-
-
 */
+
+
 
 
 ///////////////////////////////////////////////////////////////////////
