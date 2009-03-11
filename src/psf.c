@@ -219,8 +219,8 @@ PSF* get_psf(
     }
     
     // Determine the pixelwidth of the PSF array from the header keywords.
-    char comment[MAXMSG]; // buffer 
-    if (fits_read_key(fptr, TDOUBLE, "PIXWIDTH", &psf->pixelwidth, comment, 
+    char comment[MAXMSG]; // buffer   |-> "PIXWIDTH" !!!!
+    if (fits_read_key(fptr, TDOUBLE, "CDELT1", &psf->pixelwidth, comment, 
 		      status)) break;
 
     
@@ -392,7 +392,6 @@ int save_psf_image(
 
 
       // Write the header keywords for PSF FITS-files (CAL/GEN/92-027):
-      double dbuffer;
       fits_write_key(fptr, TSTRING, "CTYPE1", "DETX",
 		     "detector coordinate system", status);
       fits_write_key(fptr, TSTRING, "CTYPE2", "DETY",
@@ -413,27 +412,24 @@ int save_psf_image(
       fits_write_key(fptr, TSTRING, "HDUCLAS4", "NET",
 		     "", status);
 
-      fits_write_key(fptr, TDOUBLE, "TSTRING", "pixel", 
+      fits_write_key(fptr, TSTRING, "CUNIT1", "pixel", 
 		     "", status);
-      fits_write_key(fptr, TDOUBLE, "TSTRING", "pixel", 
+      fits_write_key(fptr, TSTRING, "CUNIT2", "pixel", 
 		     "", status);
-
-      dbuffer = 0.;
+      double dbuffer = 1.;
       fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
-		     "", status);
+		     "X axis reference pixel", status);
       fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
-		     "", status);
-      dbuffer = 0.;
+		     "Y axis reference pixel", status);
+      dbuffer = -psf->width/2;
       fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
-		     "", status);
+		     "coord of X ref pixel", status);
       fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
-		     "", status);
-      dbuffer = 0.;
-      fits_write_key(fptr, TDOUBLE, "CDELT1", &dbuffer, 
-		     "", status);
-      fits_write_key(fptr, TDOUBLE, "CDELT2", &dbuffer, 
-		     "", status);
-
+		     "coord of Y ref pixel", status);
+      fits_write_key(fptr, TDOUBLE, "CDELT1", &psf->pixelwidth, 
+		     "X axis increment", status);
+      fits_write_key(fptr, TDOUBLE, "CDELT2", &psf->pixelwidth, 
+		     "Y axis increment", status);
 
       dbuffer = 0.0;
       fits_write_key(fptr, TDOUBLE, "BACKGRND", &dbuffer, 
@@ -447,11 +443,10 @@ int save_psf_image(
 		     "Instrument", status);
       fits_write_key(fptr, TSTRING, "FILTER", "NONE",
 		     "Filter", status);
-    
-      // TODO: Instead of using these keywords one should specifiy the 
-      // physical units of the images.
-      fits_write_key(fptr, TDOUBLE, "PIXWIDTH", &psf->pixelwidth, 
-		     "width of the PSF pixels in [mu m]", status);
+
+      // Write the ENERGY and OFF-AXIS ANGLE for this particular PSF set.
+      // This information is used to find the appropriate PSF for 
+      // an incident photon with particular energy and off-axis angle.
       fits_write_key(fptr, TDOUBLE, "ENERGY", &psf->item[count].energy, 
 		     "photon energy for the PSF generation in [keV]", status);
       fits_write_key(fptr, TDOUBLE, "OFFAXANG", &psf->item[count].angle, 
