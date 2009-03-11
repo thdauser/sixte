@@ -30,9 +30,9 @@ AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 AC_SEARCH_LIBS(ffopen, [cfitsio cfitsio_3.04 cfitsio_3.07 cfitsio_3.12], [], \
 			 [AC_MSG_ERROR([No cfitsio library found!])], [])
 
-# -lreadline
-# -lncurses
-LIBS+="-lreadline -lncurses -lnsl"
+# -lncurses (beep ?)     (objdump -R/-T libncurses... )
+#LIBS+="-lncurses -lnsl"
+AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
 AC_SEARCH_LIBS(pilclose_, ape_2.4.0, [], \
 			 [AC_MSG_ERROR([No ape library (PIL) found!])], [])
 
