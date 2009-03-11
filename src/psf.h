@@ -69,10 +69,9 @@ typedef struct {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-// Reads the PSF data file (containing FITS images) and
-// stores this data in the PSF storage. 
+// Reads the specified PSF FITS file (containing images) and
+// stores these data in the PSF storage. 
 PSF* get_psf(const char*, int* status);
-//int get_psf_old(struct PSF_Store *store, const char filename[FILENAME_LENGTH]);
 
 
 // Calculates the position on the detector, where a photon at given sky position 

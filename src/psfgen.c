@@ -176,6 +176,8 @@ int psfgen_main()
 
   // --- Clean up ---
 
+  free_psf(&psf);
+
   if(status==EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   
   return(status);

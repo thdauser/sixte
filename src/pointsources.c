@@ -165,7 +165,8 @@ PointSourceCatalog* get_PointSourceCatalog(
 	     source_counter++) {
 	  // Read source data (right asension, declination, countrate, ...):
 	  if (get_srctbl_row(psf->files[file_counter], source_counter, 
-			     psf->columns[file_counter], &rasc, &dec, &countrate, status)) 
+			     psf->columns[file_counter], 
+			     &rasc, &dec, &countrate, status)) 
 	    break;
 
 	  // Get a unit vector pointing in the direction of the source:
@@ -177,7 +178,7 @@ PointSourceCatalog* get_PointSourceCatalog(
 	      // Too many sources !
 	      *status=EXIT_FAILURE;
 	      sprintf(msg, "Error: too many sources (%ld)!\n", psc->nsources+1);
-	      HD_ERROR_THROW(msg,status);
+	      HD_ERROR_THROW(msg, *status);
 	      break;
 	    }
 
