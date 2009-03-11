@@ -175,6 +175,9 @@ void free_psf(
 
 ///////////////////////////////////////////////////////
 // Routine reads PSF data from a file with FITS images.
+
+// TODO: Consider CRPIXn and CRVALn values on reading the PSF from the FITS file!
+
 PSF* get_psf(
 	     const char* filename,
 	     int* status
@@ -188,7 +191,7 @@ PSF* get_psf(
   char msg[MAXMSG];      // error message output buffer
 
 
-  do {  // beginning of error handling loop
+  do {  // beginning of ERROR handling loop
 
     // Allocate memory for PSF data structure:
     psf = (PSF*)malloc(sizeof(PSF));
