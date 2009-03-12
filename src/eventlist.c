@@ -144,7 +144,7 @@ int create_eventlist_file(
 
     // create the event list table
     if (fits_create_tbl(eventlist_file->fptr, BINARY_TBL, 0, N_EVENT_FIELDS, 
-			ftype, fform, funit, "EVENTLIST", status)) break;
+			ftype, fform, funit, "EVENTS", status)) break;
     
 
     // write descriptory data into the header of the FITS file

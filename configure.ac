@@ -36,12 +36,19 @@ AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!
 AC_SEARCH_LIBS(pilclose_, ape_2.4.0, [], \
 			 [AC_MSG_ERROR([No ape library (PIL) found!])], [])
 
+# HEADAS libraries:
 AC_SEARCH_LIBS(headas_chat, [hdio_2.5], [], \
 			 [AC_MSG_ERROR([No hdio library found!])], [])
 AC_SEARCH_LIBS(set_toolname, [hdutils_2.5], [], \
 			 [AC_MSG_ERROR([No hdutils library found!])], [])
 AC_SEARCH_LIBS(headas_init, [hdinit_2.5], [], \
 			 [AC_MSG_ERROR([No hdinit library found!])], [])
+
+# GSL Libraries:
+AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \
+			 [AC_MSG_ERROR([No gslcblas library found!])], [])
+AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
+			 [AC_MSG_ERROR([No gsl library found!])], [])
 
 
 # Check for header files:
