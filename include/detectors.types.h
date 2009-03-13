@@ -2,6 +2,8 @@
 #define DETECTOR_TYPES_H 1
 
 #include "fitsio.h"
+#include "heasp.h"
+
 #include "astrosources.types.h"
 #include "eventlist.types.h"
 
@@ -54,7 +56,7 @@ typedef struct {
   int Nrows;               // number of rows in the detector redistribution matrix
   int Ncols;               // number of columns in the detector redistribution matrix
   RMF_Row *row;     // data array for the detector RMF data
-} RMF;
+} mRMF;
 
 
 
@@ -91,7 +93,7 @@ typedef struct {
   int Nchannels;           // Number of detector PHA channels
   Ebounds ebounds;         // Detector energy bounds (relation PHA channel -> 
                            // [E_min; E_max])
-  RMF rmf;                 // RMF
+  struct RMF *rmf;
 
 
   // This is a pointer to the routine, which is called after each photon event.

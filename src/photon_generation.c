@@ -11,21 +11,21 @@
 
 ////////////////////////////
 int photon_generation_getpar(
-			    char orbit_filename[],
-			    char attitude_filename[],
-			    // number of input source catalog files
-			    int *n_sourcefiles,  
-			    // array containing the filename of each source file
-			    char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH],
-			    // PHA file containing the default source spectrum
-			    char spectrum_filename[],
-			    char rmf_filename[],
-			    char photonlist_filename[],
-			    double *t0,
-			    double *timespan,
-			    double *bandwidth,
-			    struct Telescope *telescope
-			    )
+			     char orbit_filename[],
+			     char attitude_filename[],
+			     // number of input source catalog files
+			     int *n_sourcefiles,  
+			     // array containing the filename of each source file
+			     char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH],
+			     // PHA file containing the default source spectrum
+			     char spectrum_filename[],
+			     char rmf_filename[],
+			     char photonlist_filename[],
+			     double *t0,
+			     double *timespan,
+			     double *bandwidth,
+			     struct Telescope *telescope
+			     )
 {
   // filename-buffer to access the different source files
   char cbuffer[FILENAME_LENGTH];

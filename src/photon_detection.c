@@ -21,7 +21,7 @@ int photon_detection_main() {
   char rmf_filename[FILENAME_LENGTH];        // input: RMF
 
   // Detector data structure (containing the pixel array, its width, ...)
-  Detector* detector;   
+  Detector* detector=NULL;
 
   struct Eventlist_File eventlist_file;
 
@@ -33,7 +33,7 @@ int photon_detection_main() {
   set_toolname("photon_detection");
   set_toolversion("0.01");
 
-  do {   // beginning of the error handling loop (will at most be run once)
+  do {   // beginning of the ERROR handling loop (will at most be run once)
 
     // --- Initialization ---
 
@@ -127,8 +127,9 @@ int photon_detection_main() {
     if ((status=get_ebounds(&detector->ebounds, &detector->Nchannels, rmf_filename))
 	!=EXIT_SUCCESS) break;
 
-    // Get the detector redistribution matrix (RMF)
-    if ((status=get_rmf(detector, rmf_filename)) != EXIT_SUCCESS) break;
+    // Read the detector RMF from the specified file and assign it to the 
+    // Detector data structure.
+    if ((status=detector_assign_rmf(detector, rmf_filename)) != EXIT_SUCCESS) break;
 
     // Print some debug information:
     headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
@@ -200,13 +201,25 @@ int photon_detection_main() {
 	// corresponding charges there.
 
 	// Determine a detector channel (PHA channel) according to RMF.
-	long channel = detector_rmf(energy, &detector->rmf);
+	// The channel is obtained from the RMF using the corresponding
+	// HEAdas routine which is based on drawing a random number.
+	long channel;
+	ReturnChannel(detector->rmf, energy, 1, &channel);
+
+	// Check if the photon is really measured. If the
+	// PHA channel returned by the HEAdas RMF function is '-1', 
+	// the photon is not detected.
+	if (channel==-1) {
+	  continue;  // -> Continue with the next photon in the list.
+	}
+	assert(channel>=0);
+
 	// Get the corresponding created charge.
+	// NOTE: In this simulation the charge is represented by the nominal
+	// photon energy which corresponds to the PHA channel according to the
+	// EBOUNDS table.
 	float charge = get_charge(channel, &detector->ebounds);
       
-	assert(channel >= 0);   
-	assert(channel <= 4096);
-
 	int x[4], y[4];
 	double fraction[4];
       
@@ -316,9 +329,6 @@ int photon_detection_main() {
     htrs_free_Detector(detector);
   }
 
-  // Release memory of detector Redistribution Matrix
-  free_rmf(&detector->rmf);
-  
   // Release memory of detector EBOUNDS
   free_ebounds(&detector->ebounds);
 

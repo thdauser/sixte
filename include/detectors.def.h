@@ -37,14 +37,6 @@ inline void htrs_detector_action(void*, double time,
 				 struct Eventlist_File*, int *status);
 
 
-// Returns a detector PHA channel for the given photon energy according to the RMF.
-// Caution: This PHA channel doesn't have to be equivalent to the photon energy. 
-// Depending on the detector redistribution matrix the energy can result in one 
-// of several possible PHA channels with certain probability.
-// If the energy is above the highest available energy bin in the RMF, the 
-// return value is "-1".
-long detector_rmf(float energy, RMF*);
-
 
 // Get the PHA channel that corresponds to a particular charge.
 long get_pha(float, Detector*);
@@ -67,12 +59,21 @@ int get_ebounds(Ebounds*, int *Nchannels, const char filename[]);
 void free_ebounds(Ebounds *);
 
 
+// Load the detector response matrix from a RMF FITS file and
+// assign it to the detector data structure.
+int detector_assign_rmf(Detector *, char *);
+
 // Load the detector response matrix from the given RMF file.
-int get_rmf(Detector *, char* rmf_name);
-
-
+//int get_rmf(Detector *, char* rmf_name);
+// Returns a detector PHA channel for the given photon energy according to the RMF.
+// Caution: This PHA channel doesn't have to be equivalent to the photon energy. 
+// Depending on the detector redistribution matrix the energy can result in one 
+// of several possible PHA channels with certain probability.
+// If the energy is above the highest available energy bin in the RMF, the 
+// return value is "-1".
+//long detector_rmf(float energy, mRMF*);
 // Release memory of detector response matrix.
-void free_rmf(RMF *);
+//void free_rmf(mRMF *);
 
 
 // This function returns '1', if the specified detector pixel is active at 

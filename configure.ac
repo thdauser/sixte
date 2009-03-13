@@ -27,7 +27,7 @@ LDFLAGS="$LDFLAGS -L$HEADAS/lib"
 # Check for libraries:
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 # -lnsl
-AC_SEARCH_LIBS(ffopen, [cfitsio cfitsio_3.04 cfitsio_3.07 cfitsio_3.12], [], \
+AC_SEARCH_LIBS(ffopen, [cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
 			 [AC_MSG_ERROR([No cfitsio library found!])], [])
 
 # -lncurses (beep ?)     (objdump -R/-T libncurses... )
@@ -43,6 +43,8 @@ AC_SEARCH_LIBS(set_toolname, [hdutils_2.5], [], \
 			 [AC_MSG_ERROR([No hdutils library found!])], [])
 AC_SEARCH_LIBS(headas_init, [hdinit_2.5], [], \
 			 [AC_MSG_ERROR([No hdinit library found!])], [])
+AC_SEARCH_LIBS(ReadRMFMatrix, [hdsp_2.5], [], \
+			 [AC_MSG_ERROR([No hdsp library found!])], [])
 
 # GSL Libraries:
 AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \

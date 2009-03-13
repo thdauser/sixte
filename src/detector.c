@@ -214,70 +214,6 @@ static void insert_background_photons(
 
 
 
-///////////////////////////////////////////////////////
-long detector_rmf(
-		  float energy,  // photon energy
-		  RMF* rmf       // detector RMF
-		  )
-{
-  // Find the row in the RMF, which corresponds to the photon energy.
-  long min, max, row;
-  min = 0;
-  max = rmf->Nrows-1;
-  while (max-min > 1) {
-    row = (int)(0.5*(min+max));
-    if (rmf->row[row].E_high < energy) {
-      min = row;
-    } else {
-      max = row;
-    }
-  }
-  // now final decision, whether max or min is right
-  if (rmf->row[max].E_low < energy) {
-    row = max;
-  } else {
-    row = min;
-  }
-  // check if the energy is higher than the highest value in the RMF
-  if (rmf->row[row].E_high < energy) {
-    return(0);  // TODO
-  }
-
-  // For each photon energy there is a particular number of PHA channels with 
-  // a finite probability of getting the photon event.
-  if (rmf->row[row].F_chan[0] == 0) return(0);
-
-  double p = get_random_number();
-  long col;
-  min = 0;
-  max = rmf->Ncols-1;
-  while (max-min > 1) {
-    col = (int)(0.5*(min+max));
-    if (rmf->row[row].matrix[col] < p) {
-      min = col;
-    } else {
-      max = col;
-    }
-  }
-  // decide whether max or min
-  if (rmf->row[row].matrix[min] < p) {
-    col = max;
-  } else {
-    col = min;
-  }
-
-  // As 'col' is a matrix index of the reduced RMF,
-  // one still has to find the true PHA channel.
-  long count;
-  for (count=0; count<rmf->row[row].N_grp; count++) {
-    col -= rmf->row[row].N_chan[count];
-    if (col < 0) break;
-  }
-
-  return((long)(rmf->row[row].F_chan[count] + rmf->row[row].N_chan[count]+col));
-}
-
-
 
 
 /////////////////////////////////////////
@@ -356,9 +292,6 @@ Detector* get_Detector(int* status)
       HD_ERROR_THROW(msg, *status);
       break;
     }
-
-    detector->rmf.row=NULL;
-    detector->ebounds.row=NULL;
 
   } while (0); // END of Error handling loop
 
@@ -549,213 +482,34 @@ void free_ebounds(Ebounds* ebounds) {
 
 
 
-///////////////////////////////////////////
-int get_rmf(
-	    Detector *detector,
-	    char *rmf_name
-	    )
-{
-  fitsfile *fptr=NULL;     // fitsfile pointer to RMF file
-  int count, count2;
-
-  int status=EXIT_SUCCESS; // error status
-  char msg[MAXMSG];        // buffer for error output messages
-
-
-  do {  // error handling loop (is only run once)
-    headas_chat(5, "load detector redistribution matrix (RMF) "
-		"from file '%s' ...\n", rmf_name);
-
-    // First open the RMF file:
-    if (fits_open_file(&fptr, rmf_name, READONLY, &status)) break;
-  
-    int hdunum, hdutype;
-    // After opening the FITS file, get the number of the current HDU.
-    if (fits_get_hdu_num(fptr, &hdunum) == 1) {
-      // This is the primary array, so try to move to the first extension and see 
-      // if it is a table.
-      if (fits_movabs_hdu(fptr, 2, &hdutype, &status)) break;
-    } else {
-      // Get the HDU type.
-      if (fits_get_hdu_type(fptr, &hdutype, &status)) break;
-    }
-
-    // If it is an image HDU, the program gives an error message.
-    if (hdutype==IMAGE_HDU) {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: FITS extension in file '%s' is not a table but "
-	      "an image (HDU number: %d)\n", rmf_name, hdunum);
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
-    /*
-    // Read the lower detector threshold [PHA] from the 
-    // corresponding header keyword.
-    int buffer = EXIT_SUCCESS;
-    char comment[MAXMSG];
-    if (fits_read_key(fptr, TLONG, "LO_THRES", &(detector->low_threshold), 
-		      comment, &buffer)) {
-      // The FITS file header does not contain a lower threshold,
-      // so try to read it from the PIL:
-      int int_buffer;
-      if ((buffer = PILGetInt("lo_thres", &int_buffer))) {
-	status += buffer;
-	sprintf(msg, "Error: lower detector threshold not specified!\n");
-	HD_ERROR_THROW(msg,status);
-	break;
-      } else {
-	detector->low_threshold = int_buffer;
-      }
-
-      
-      //sprintf(msg, "Error: FITS file '%s' contains no lower threshold "
-	//      "(header key 'LO_THRES')!\n", rmf_name);
-      //HD_ERROR_THROW(msg,status);
-      //break; 
-    }*/
-
-
-    // Determine the number of rows in the FITS file (number of 
-    // given points of time).
-    long Nrows;
-    fits_get_num_rows(fptr, &Nrows, &status);
-    detector->rmf.Nrows = (int)Nrows;
-
-
-    // Determine the number of columns in the RMF ( = max(sum(Nchan)) ).
-    detector->rmf.Ncols=0;
-    int buff_cols, Nchan[1024], ngrp=0;
-    int anynul=0;
-    for (count=1;((count<=detector->rmf.Nrows)&&(status==EXIT_SUCCESS));count++) {
-      if (fits_read_col(fptr, TINT, 3, count, 1, 1, &ngrp, &ngrp, 
-			&anynul, &status)) break;
-
-      for (count2=0; count2<1024; count2++) {
-	Nchan[count2] = 0;
-      }
-      if (fits_read_col(fptr, TINT, 5, count, 1, ngrp, Nchan, Nchan, 
-			&anynul, &status))
-	break;
-      for (count2=0, buff_cols=0; count2<ngrp; count2++) {
-	buff_cols += Nchan[count2];
-      }
-
-      if (buff_cols > detector->rmf.Ncols) {
-	detector->rmf.Ncols = buff_cols;
-      }
-    }
-    if (status!=EXIT_SUCCESS) break;
-  
-
-    // Get memory for detector redistribution matrix.      
-    // -> nrows, ncols might not be equal to Nchannels!!
-    detector->rmf.row = (RMF_Row*) malloc(detector->rmf.Nrows * sizeof(RMF_Row));
-    if (detector->rmf.row) {
-      for (count=0; count<detector->rmf.Nrows; count++) {
-	detector->rmf.row[count].matrix = (float*) malloc(detector->rmf.Ncols * 
-							  sizeof(float));
-	if (detector->rmf.row[count].matrix == NULL) {
-	  status = EXIT_FAILURE;
-	  sprintf(msg, "Error: Not enough memory available to store "
-		  "the detector RMF!\n");
-	  HD_ERROR_THROW(msg,status);
-	  break;
-	}
-      }
-    } else {
-      status = EXIT_FAILURE;
-      sprintf(msg, "Error: Not enough memory available to store "
-	      "the detector RMF!\n");
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
-    // Clear detector redistribution matrix:
-    for (count=0; count<detector->rmf.Nrows; count++) {
-      detector->rmf.row[count].N_grp = 0;
-      detector->rmf.row[count].E_low = 0.;
-      detector->rmf.row[count].E_high = 0.;
-      for (count2=0; count2<1024; count2++) {
-	detector->rmf.row[count].F_chan[count2] = 0;
-	detector->rmf.row[count].N_chan[count2] = 0;
-      }
-      for (count2=0; count2<detector->rmf.Ncols; count2++) {
-	detector->rmf.row[count].matrix[count2] = 0.;
-      }
-    }
-
-
-    // Read the individual lines of the RMF:
-    int renormalized_line = 0;
-    for (count=1; (count<=detector->rmf.Nrows)&&(status==EXIT_SUCCESS); count++) {
-      if ((status=read_rmf_fitsrow(&(detector->rmf.row[count-1].E_low),
-				   &(detector->rmf.row[count-1].E_high), 
-				   &(detector->rmf.row[count-1].N_grp), 
-				   detector->rmf.row[count-1].F_chan, 
-				   detector->rmf.row[count-1].N_chan, 
-				   detector->rmf.row[count-1].matrix, 
-				   fptr, count
-				   ))!=EXIT_SUCCESS) break;
-
-      // Create probability distribution for each individual row in the matrix,
-      // i.e. sum up the matrix columns for each row.
-      float sum=0.;
-      for (count2=0; count2<detector->rmf.Ncols; count2++) {
-	sum += detector->rmf.row[count-1].matrix[count2];
-	detector->rmf.row[count-1].matrix[count2] = sum;
-      }
-
-      // Check if the sum of the row is 1. In a real RMF file this should 
-      // be the case, as the effective area, the detector efficiency, etc. 
-      // should be represented in the ARF.
-      if (fabs((double)sum-1.0)>0.00001) {
-	// Normalize the row, so that the sum is unity:
-	for (count2=0; count2<detector->rmf.Ncols; count2++) {
-	  detector->rmf.row[count-1].matrix[count2] = 
-	    detector->rmf.row[count-1].matrix[count2]/sum;
-	}
-
-	// Print a warning for the user, that the lines in the RMF are 
-	// normalized by the program.
-	if (renormalized_line == 0) {
-	  headas_chat(0, "\nWarning: sum of elements in at least 1 RMF row was "
-		      "not equal to 1! Possibly the given file is not an RMF but "
-		      "an RSP file.\nRow normalizations are set to 1 by the "
-		      "simulation!\n\n");
-	  renormalized_line = 1;
-	}
-      }
-    }
-
-  } while (0);  // END of error handling loop.
-
-
-  //---------------
-  // clean up:
-  if (fptr) fits_close_file(fptr, &status);
-
-  return(status);
-}
 
 
 
 
 ///////////////////////////////////////////////////////////////
-void free_rmf(RMF* rmf) 
-{
-  long count;
+int detector_assign_rmf(Detector *detector, char *filename) {
+  fitsfile* fptr=NULL;
 
-  if (rmf) {
-    if (rmf->row) {
-      for (count=0; count < rmf->Nrows; count++) {
-	if (rmf->row[count].matrix) {
-	  free(rmf->row[count].matrix);
-	}
-      }
-      free(rmf->row);
-    }
+  int status=EXIT_SUCCESS;
+  char msg[MAXMSG];
+
+  // Allocate memory:
+  detector->rmf = (struct RMF*)malloc(sizeof(struct RMF));
+  if (detector->rmf==NULL) {
+    status=EXIT_FAILURE;
+    sprintf(msg, "Error: could not allocate memory for RMF!\n");
+    HD_ERROR_THROW(msg, status);
+    return(status);
   }
+
+  // Load the RMF from the FITS file using the HEAdas RMF access routines
+  // (part of libhdsp).
+  fits_open_file(&fptr, filename, READONLY, &status);
+  if (status != EXIT_SUCCESS) return(status);
+  if ((status=ReadRMFMatrix(fptr, 0, detector->rmf)) != EXIT_SUCCESS) return(status);
+  fits_close_file(fptr, &status);
+  
+  return(status);
 }
 
 
@@ -1507,6 +1261,260 @@ void split_events(
   }  // END of check for single event
 
 }
+
+
+
+
+///////////////////////////////////////////
+int get_rmf(
+	    Detector *detector,
+	    char *rmf_name
+	    )
+{
+  fitsfile *fptr=NULL;     // fitsfile pointer to RMF file
+  int count, count2;
+
+  int status=EXIT_SUCCESS; // error status
+  char msg[MAXMSG];        // buffer for error output messages
+
+
+  do {  // error handling loop (is only run once)
+    headas_chat(5, "load detector redistribution matrix (RMF) "
+		"from file '%s' ...\n", rmf_name);
+
+    // First open the RMF file:
+    if (fits_open_file(&fptr, rmf_name, READONLY, &status)) break;
+  
+    int hdunum, hdutype;
+    // After opening the FITS file, get the number of the current HDU.
+    if (fits_get_hdu_num(fptr, &hdunum) == 1) {
+      // This is the primary array, so try to move to the first extension and see 
+      // if it is a table.
+      if (fits_movabs_hdu(fptr, 2, &hdutype, &status)) break;
+    } else {
+      // Get the HDU type.
+      if (fits_get_hdu_type(fptr, &hdutype, &status)) break;
+    }
+
+    // If it is an image HDU, the program gives an error message.
+    if (hdutype==IMAGE_HDU) {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: FITS extension in file '%s' is not a table but "
+	      "an image (HDU number: %d)\n", rmf_name, hdunum);
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+    // Determine the number of rows in the FITS file (number of 
+    // given points of time).
+    long Nrows;
+    fits_get_num_rows(fptr, &Nrows, &status);
+    detector->mrmf.Nrows = (int)Nrows;
+
+    // Determine the number of columns in the RMF ( = max(sum(Nchan)) ).
+    detector->mrmf.Ncols=0;
+    int buff_cols, Nchan[1024], ngrp=0;
+    int anynul=0;
+    for (count=1;((count<=detector->mrmf.Nrows)&&(status==EXIT_SUCCESS));count++) {
+      if (fits_read_col(fptr, TINT, 3, count, 1, 1, &ngrp, &ngrp, 
+			&anynul, &status)) break;
+
+      for (count2=0; count2<1024; count2++) {
+	Nchan[count2] = 0;
+      }
+      if (fits_read_col(fptr, TINT, 5, count, 1, ngrp, Nchan, Nchan, 
+			&anynul, &status))
+	break;
+      for (count2=0, buff_cols=0; count2<ngrp; count2++) {
+	buff_cols += Nchan[count2];
+      }
+
+      if (buff_cols > detector->mrmf.Ncols) {
+	detector->mrmf.Ncols = buff_cols;
+      }
+    }
+    if (status!=EXIT_SUCCESS) break;
+  
+
+    // Get memory for detector redistribution matrix.      
+    // -> nrows, ncols might not be equal to Nchannels!!
+    detector->mrmf.row = (RMF_Row*) malloc(detector->mrmf.Nrows * sizeof(RMF_Row));
+    if (detector->mrmf.row) {
+      for (count=0; count<detector->mrmf.Nrows; count++) {
+	detector->mrmf.row[count].matrix = (float*) malloc(detector->mrmf.Ncols * 
+							  sizeof(float));
+	if (detector->mrmf.row[count].matrix == NULL) {
+	  status = EXIT_FAILURE;
+	  sprintf(msg, "Error: Not enough memory available to store "
+		  "the detector RMF!\n");
+	  HD_ERROR_THROW(msg,status);
+	  break;
+	}
+      }
+    } else {
+      status = EXIT_FAILURE;
+      sprintf(msg, "Error: Not enough memory available to store "
+	      "the detector RMF!\n");
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+    // Clear detector redistribution matrix:
+    for (count=0; count<detector->mrmf.Nrows; count++) {
+      detector->mrmf.row[count].N_grp = 0;
+      detector->mrmf.row[count].E_low = 0.;
+      detector->mrmf.row[count].E_high = 0.;
+      for (count2=0; count2<1024; count2++) {
+	detector->mrmf.row[count].F_chan[count2] = 0;
+	detector->mrmf.row[count].N_chan[count2] = 0;
+      }
+      for (count2=0; count2<detector->mrmf.Ncols; count2++) {
+	detector->mrmf.row[count].matrix[count2] = 0.;
+      }
+    }
+
+
+    // Read the individual lines of the RMF:
+    int renormalized_line = 0;
+    for (count=1; (count<=detector->mrmf.Nrows)&&(status==EXIT_SUCCESS); count++) {
+      if ((status=read_rmf_fitsrow(&(detector->mrmf.row[count-1].E_low),
+				   &(detector->mrmf.row[count-1].E_high), 
+				   &(detector->mrmf.row[count-1].N_grp), 
+				   detector->mrmf.row[count-1].F_chan, 
+				   detector->mrmf.row[count-1].N_chan, 
+				   detector->mrmf.row[count-1].matrix, 
+				   fptr, count
+				   ))!=EXIT_SUCCESS) break;
+
+      // Create probability distribution for each individual row in the matrix,
+      // i.e. sum up the matrix columns for each row.
+      float sum=0.;
+      for (count2=0; count2<detector->mrmf.Ncols; count2++) {
+	sum += detector->mrmf.row[count-1].matrix[count2];
+	detector->mrmf.row[count-1].matrix[count2] = sum;
+      }
+
+      // Check if the sum of the row is 1. In a real RMF file this should 
+      // be the case, as the effective area, the detector efficiency, etc. 
+      // should be represented in the ARF.
+      if (fabs((double)sum-1.0)>0.00001) {
+	// Normalize the row, so that the sum is unity:
+	for (count2=0; count2<detector->mrmf.Ncols; count2++) {
+	  detector->mrmf.row[count-1].matrix[count2] = 
+	    detector->mrmf.row[count-1].matrix[count2]/sum;
+	}
+
+	// Print a warning for the user, that the lines in the RMF are 
+	// normalized by the program.
+	if (renormalized_line == 0) {
+	  headas_chat(0, "\nWarning: sum of elements in at least 1 RMF row was "
+		      "not equal to 1! Possibly the given file is not an RMF but "
+		      "an RSP file.\nRow normalizations are set to 1 by the "
+		      "simulation!\n\n");
+	  renormalized_line = 1;
+	}
+      }
+    }
+
+  } while (0);  // END of error handling loop.
+
+
+  //---------------
+  // Clean up:
+  if (fptr) fits_close_file(fptr, &status);
+
+  return(status);
+}
+
+
+
+
+
+///////////////////////////////////////////////////////////////
+void free_rmf(mRMF* rmf) 
+{
+  long count;
+
+  if (rmf) {
+    if (rmf->row) {
+      for (count=0; count < rmf->Nrows; count++) {
+	if (rmf->row[count].matrix) {
+	  free(rmf->row[count].matrix);
+	}
+      }
+      free(rmf->row);
+    }
+  }
+}
+
+
+
+
+///////////////////////////////////////////////////////
+long detector_rmf(
+		  float energy,  // photon energy
+		  mRMF* rmf       // detector RMF
+		  )
+{
+  // Find the row in the RMF, which corresponds to the photon energy.
+  long min, max, row;
+  min = 0;
+  max = rmf->Nrows-1;
+  while (max-min > 1) {
+    row = (int)(0.5*(min+max));
+    if (rmf->row[row].E_high < energy) {
+      min = row;
+    } else {
+      max = row;
+    }
+  }
+  // now final decision, whether max or min is right
+  if (rmf->row[max].E_low < energy) {
+    row = max;
+  } else {
+    row = min;
+  }
+  // check if the energy is higher than the highest value in the RMF
+  if (rmf->row[row].E_high < energy) {
+    return(0);  // TODO
+  }
+
+  // For each photon energy there is a particular number of PHA channels with 
+  // a finite probability of getting the photon event.
+  if (rmf->row[row].F_chan[0] == 0) return(0);
+
+  double p = get_random_number();
+  long col;
+  min = 0;
+  max = rmf->Ncols-1;
+  while (max-min > 1) {
+    col = (int)(0.5*(min+max));
+    if (rmf->row[row].matrix[col] < p) {
+      min = col;
+    } else {
+      max = col;
+    }
+  }
+  // decide whether max or min
+  if (rmf->row[row].matrix[min] < p) {
+    col = max;
+  } else {
+    col = min;
+  }
+
+  // As 'col' is a matrix index of the reduced RMF,
+  // one still has to find the true PHA channel.
+  long count;
+  for (count=0; count<rmf->row[row].N_grp; count++) {
+    col -= rmf->row[row].N_chan[count];
+    if (col < 0) break;
+  }
+
+  return((long)(rmf->row[row].F_chan[count] + rmf->row[row].N_chan[count]+col));
+}
+
+
+
 */
 
 
