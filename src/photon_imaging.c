@@ -37,7 +37,7 @@ int photon_imaging_main() {
   int status=EXIT_SUCCESS;      // error status
 
 
-  // register HEATOOL
+  // Register HEATOOL:
   set_toolname("photon_imaging");
   set_toolversion("0.01");
 
@@ -78,7 +78,6 @@ int photon_imaging_main() {
     // Get the PSF:
     psf = get_psf(psf_filename, &status);
     if (status != EXIT_SUCCESS) break;
-    //if ((status=get_psf(&psf_store, psf_filename, &status))!=EXIT_SUCCESS) break;
 
     // Create a new FITS file for the output of the impact list:
     remove(impactlist_filename);
@@ -120,8 +119,11 @@ int photon_imaging_main() {
 		    &photon.ra, &photon.ra, &anynul, &status);
       fits_read_col(photonlist_fptr, TDOUBLE, 4, photonlist_row+1, 1, 1, 
 		    &photon.dec, &photon.dec, &anynul, &status);
-      
       if (status!=EXIT_SUCCESS) break;
+
+      // Convert from [decimal degrees] -> [rad]
+      photon.ra  = photon.ra *M_PI/180.;
+      photon.dec = photon.dec*M_PI/180.;
       photon.direction = unit_vector(photon.ra, photon.dec);
 
 

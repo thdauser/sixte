@@ -121,10 +121,9 @@ int get_spectrum(
       normalization += probability;
       spectrum->data[row-1] = probability;
     }
-
     if (status != EXIT_SUCCESS) break;
 
-    // Normalize spectrum to 1;
+    // Normalize spectrum to 1 and create distribution function:
     for (row=0; row<nrows; row++) {
       // TODO: scaling to be implemented
       sum += spectrum->data[row] / normalization;

@@ -73,7 +73,6 @@ int get_psf_pos(
   PSF_Item* psf_item = get_best_psf_item(offaxis_angle, photon.energy, psf);
 
 
-
   // Get a position from this closest PSF image using randomization.
 
   // Detector coordinates [pixel] of position obtained from closest PSF image.
@@ -313,9 +312,10 @@ PSF* get_psf(
       }
 
       // Plot normalization of PSF for current off-axis angle and energy
-      headas_chat(5, "PSF: %lf of incident photons at (%lf rad, %lf keV), "
-		  "normalized to %lf, factor 1/%lf\n",  sum, 
-		  psf->item[count].angle, psf->item[count].energy, 
+      headas_chat(5, "PSF: %lf of incident photons at (%.4lf deg, %.1lf keV), "
+		  "normalized to %.4lf, factor 1/%.4lf\n",  sum, 
+		  psf->item[count].angle*180./M_PI, 
+		  psf->item[count].energy, 
 		  sum/psf->item[count].scaling_factor, 
 		  psf->item[count].scaling_factor);
 
