@@ -70,7 +70,7 @@ int photon_imaging_main() {
 
 
     // Get the satellite catalog with the orbit and (telescope) attitude data:
-    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, timespan, 
+    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, timespan+100., 
 				      orbit_filename, attitude_filename))
 	!=EXIT_SUCCESS) break;
 

@@ -2,6 +2,7 @@
 #define DETECTOR_H 1
 
 
+
 // Reads out the entire detector and creates event list entries for the 
 // measured photons.
 static inline void readout(Detector*, struct Eventlist_File*, int *status);

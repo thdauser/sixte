@@ -126,33 +126,33 @@ int create_lightcurve(
 // The used spectrum is given in [PHA channels].
 // The function returns the photon energy in [keV].
 float photon_energy(
-		    struct source_cat_entry src,     // source data
-		    // Detector information like Nchannels and ebounds
+		    struct source_cat_entry src, // source data
+		    // Detector information like number of channels and ebounds
 		    Detector* detector
 		    )
 {
-  // get a random PHA value according to given PHA distribution
+  // Get a random PHA channel according to the given PHA distribution.
   double rand = get_random_number();
-  long upper = detector->Nchannels-1, lower=0, mid;
+  long upper=detector->rmf->NumberChannels-1, lower=0, mid;
   
-  // determine the energy of the photon
+  // Determine the energy of the photon.
   while (upper-lower>1) {
-    mid = (int)((lower+upper)/2);
-    if (src.spectrum->data[mid] < rand) {
+    mid = (long)((lower+upper)/2);
+    if (src.pha_spectrum->Pha[mid] < rand) {
       lower = mid;
     } else {
       upper = mid;
     }
   }
     
-  if (src.spectrum->data[lower] < rand) {
+  if (src.pha_spectrum->Pha[lower] < rand) {
     lower = upper;
   }
 
-  // return energy chosen randomly from the determined PHA bin
-  return(detector->ebounds.row[lower].E_min + 
-	 (detector->ebounds.row[lower].E_max-detector->ebounds.row[lower].E_min)*
-	 get_random_number());
+  // Return an energy chosen randomly out of the determined PHA bin:
+  return(detector->rmf->ChannelLowEnergy[lower] + 
+	 (detector->rmf->ChannelHighEnergy[lower]
+	  -detector->rmf->ChannelLowEnergy[lower])*get_random_number());
 }
 
 
@@ -165,7 +165,7 @@ int create_photons(
 		   // current time and time interval for photon creation
 		   double time, double dt,       
 		   struct Photon_Entry** pl,      // time ordered photon list
-		   // Detector information (Nchannels, ebounds)
+		   // Detector information (EBOUNDS)
 		   Detector* detector,     
 		   gsl_rng *gsl_random_g
 		   )

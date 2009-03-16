@@ -39,11 +39,11 @@ inline void htrs_detector_action(void*, double time,
 
 
 // Get the PHA channel that corresponds to a particular charge.
-long get_pha(float, Detector*);
+long get_channel(float, Detector*);
 
 // Get the charge that corresponds to a particular PHA channel according to 
 // the ebounds table.
-float get_charge(long, Ebounds*);
+float get_energy(long, Detector*);
 
 
 // Constructor: function allocates memory for the detector array.
@@ -53,15 +53,16 @@ int get_DetectorPixels(Detector*, int*);
 //void free_Detector(Detector* detector); // TODO
 
 
+/*
 // Get memory for detector EBOUNDS matrix and fill it with data from FITS file.
 int get_ebounds(Ebounds*, int *Nchannels, const char filename[]);
 // Release memory of detector EBOUNDS.
 void free_ebounds(Ebounds *);
+*/
 
-
-// Load the detector response matrix from a RMF FITS file and
-// assign it to the detector data structure.
-int detector_assign_rmf(Detector *, char *);
+// Load the detector response MATRIX and the EBOUNDS table from 
+// a RMF FITS file and assign them to the detector data structure.
+int detector_assign_rsp(Detector *, char *);
 
 // Load the detector response matrix from the given RMF file.
 //int get_rmf(Detector *, char* rmf_name);

@@ -45,7 +45,7 @@ int get_satellite_catalog(
 
 
     // Read-in the orbit and attitude data from the FITS files and store 
-    // it in satellite catalog array.
+    // them in the satellite catalog array.
     // First open the orbit file:
     if (fits_open_table(&orbit_fptr, orbit_filename, READONLY, &status)) break;
 

@@ -210,7 +210,8 @@ int get_preselected_catalog(
 	    // so far there was no photon created for this source
 	    selected_catalog[*nsources].t_last_photon = -1.;
 	    // source spectrum   TODO: different spectra
-	    selected_catalog[*nsources].spectrum = &(spectrum_store.spectrum[0]);
+	    selected_catalog[*nsources].spectrum=&(spectrum_store.spectrum[0]); // REMOVE
+	    selected_catalog[*nsources].pha_spectrum = &(spectrum_store.pha_spectrum[0]);
 
 	    // increase number of sources in preselected catalog
 	    (*nsources)++;

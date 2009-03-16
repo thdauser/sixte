@@ -217,7 +217,8 @@ int create_eventlist_file(
     if (fits_write_key(eventlist_file->fptr, TINT, "DETWIDTH", &detector->width, 
 		       "width (number of pixels) of the detector", status)) 
       break;
-    if (fits_write_key(eventlist_file->fptr, TINT, "DETCHANS", &detector->Nchannels, 
+    if (fits_write_key(eventlist_file->fptr, TINT, "DETCHANS", 
+		       &detector->rmf->NumberChannels, 
 		       "number of detector channels", status)) break;
 
     // instrument data

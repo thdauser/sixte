@@ -125,7 +125,7 @@ PointSourceCatalog* get_PointSourceCatalog(
 					   PointSourceFiles* psf, 
 					   struct vector telescope_direction,
 					   const double max_align,
-					   struct Spectrum_Store  spectrum_store,
+					   struct Spectrum_Store spectrum_store,
 					   int* status
 					   )
 {
@@ -193,18 +193,16 @@ PointSourceCatalog* get_PointSourceCatalog(
 	    // so far there was no photon created for this source
 	    psc->sources[psc->nsources].t_last_photon = -1.;
 	    // source spectrum                                TODO: different spectra
-	    psc->sources[psc->nsources].spectrum = &(spectrum_store.spectrum[0]);
+	    psc->sources[psc->nsources].spectrum=&(spectrum_store.spectrum[0]); // REMOVE
+	    psc->sources[psc->nsources].pha_spectrum = &(spectrum_store.pha_spectrum[0]);
 
 	    // increase number of sources in the selected catalog
 	    psc->nsources++;
 	  }
-	}          // end of loop over all sources in the current catalog file
-
-      } while (0); // end of inner error handling loop
-
-    }              // end of scanning the source catalogs
-
-  } while (0);     // end of outer error handling loop
+	} // END of loop over all sources in the current catalog file
+      } while (0); // END of inner error handling loop
+    } // END of scanning the source catalogs
+  } while (0); // END of outer error handling loop
 
   return(psc);
 }

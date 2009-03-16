@@ -69,7 +69,8 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
 	  malloc(ci->width*sizeof(struct ClusterPixel));
 	if(ci->pixel[count]==NULL) {
 	  *status=EXIT_FAILURE;
-	  sprintf(msg, "Error: could not allocate memory for storing the cluster image!\n");
+	  sprintf(msg, "Error: could not allocate memory for storing the "
+		  "cluster image!\n");
 	  HD_ERROR_THROW(msg, *status);
 	  break;
 	}

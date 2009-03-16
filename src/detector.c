@@ -251,7 +251,7 @@ static inline void readout_line(
       struct Event event;
       // Determine the detector channel that corresponds to the charge in the 
       // detector pixel.
-      event.pha = get_pha(detector->pixel[xi][line].charge, detector);
+      event.pha = get_channel(detector->pixel[xi][line].charge, detector);
 
       // Check lower threshold (PHA and energy):
       if ((event.pha>=detector->pha_threshold) && 
@@ -384,7 +384,7 @@ static inline double gaussint(double x)
 
 
 
-
+/*
 /////////////////////////////////////////////////////////////////////////////////
 int get_ebounds(Ebounds *ebounds, int *Nchannels, const char filename[])
 {
@@ -479,7 +479,7 @@ void free_ebounds(Ebounds* ebounds) {
     }
   }
 }
-
+*/
 
 
 
@@ -487,7 +487,7 @@ void free_ebounds(Ebounds* ebounds) {
 
 
 ///////////////////////////////////////////////////////////////
-int detector_assign_rmf(Detector *detector, char *filename) {
+int detector_assign_rsp(Detector *detector, char *filename) {
   fitsfile* fptr=NULL;
 
   int status=EXIT_SUCCESS;
@@ -506,7 +506,15 @@ int detector_assign_rmf(Detector *detector, char *filename) {
   // (part of libhdsp).
   fits_open_file(&fptr, filename, READONLY, &status);
   if (status != EXIT_SUCCESS) return(status);
+  
+  // Read the SPECRESP MATRIX or MATRIX extension:
   if ((status=ReadRMFMatrix(fptr, 0, detector->rmf)) != EXIT_SUCCESS) return(status);
+  // TODO: normalize the RMF:
+  //  NormalizeRMF(detector->rmf);
+
+  // Read the EBOUNDS extension:
+  if ((status=ReadRMFEbounds(fptr, 0, detector->rmf)) !=EXIT_SUCCESS) return(status);
+
   fits_close_file(fptr, &status);
   
   return(status);
@@ -586,7 +594,7 @@ int htrs_detector_active(
 
 
 
-
+/*
 ////////////////////////////////////////////////////
 long get_pha(
 	     float charge, 
@@ -623,11 +631,51 @@ long get_pha(
   return(row+1);
   //         |-> as channels start at 1
 }
+*/
+
+
+////////////////////////////////////////////////////
+long get_channel(
+		 float energy, 
+		 Detector* detector
+		 )
+{
+  // Check if the charge is outside the range of the energy bins defined
+  // in the EBOUNDS table. In that case the return value of this function is '-1'.
+  if ((detector->rmf->ChannelLowEnergy[0] > energy) ||
+      (detector->rmf->ChannelHighEnergy[detector->rmf->NumberChannels-1] < energy)) {
+    return(-1);
+  }
+  
+
+  // Perform a binary search to obtain the detector PHA channel 
+  // that corresponds to the given detector charge.
+  long min, max, row;
+  min = 0;
+  max = detector->rmf->NumberChannels-1;
+  while (max-min > 1) {
+    row = (long)(0.5*(min+max));
+    if (detector->rmf->ChannelHighEnergy[row] < energy) {
+      min = row;
+    } else {
+      max = row;
+    }
+  }
+  // Take the final decision wheter max or min is right:
+  if (detector->rmf->ChannelLowEnergy[max] < energy) {
+    row = max;
+  } else {
+    row = min;
+  }
+  
+  // Return the PHA channel.
+  return(row+detector->rmf->FirstChannel);
+}
 
 
 
 
-
+/*
 ////////////////////////////////////////////////////
 float get_charge(
 		 long channel, 
@@ -645,6 +693,24 @@ float get_charge(
   // using the EBOUNDS table.
   return(0.5*(ebounds->row[channel-1].E_min+ebounds->row[channel-1].E_max));
   //                               |-> as channels start at 1  <-|
+}
+*/
+
+////////////////////////////////////////////////////
+float get_energy(
+		 long channel, 
+		 Detector* detector
+		 )
+{
+  channel -= detector->rmf->FirstChannel;
+  if ((channel < 0) || (channel >= detector->rmf->NumberChannels)) {
+    return(-1.);
+  }
+
+  // Return the mean of the energy that corresponds to the specified PHA channel
+  // according to the EBOUNDS table.
+  return(0.5*(detector->rmf->ChannelLowEnergy[channel]
+	      +detector->rmf->ChannelHighEnergy[channel]));
 }
 
 
@@ -1261,7 +1327,6 @@ void split_events(
   }  // END of check for single event
 
 }
-
 
 
 

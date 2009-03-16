@@ -22,6 +22,11 @@
 #include "headas.h"
 #include "headas_error.h"
 
+#ifndef HEASP_H
+#define HEASP_H 1
+#include "heasp.h"
+#endif
+
 
 #define N_SPECTRA_FILES 1    // number of spectrum files (PHA files)
 
@@ -36,8 +41,10 @@ struct Spectrum{
 
 // Storage for several different spectra.
 struct Spectrum_Store{
-  struct Spectrum *spectrum;
+  struct Spectrum* spectrum;
   long nspectra;
+
+  struct PHA* pha_spectrum;
 };
 
 
@@ -56,6 +63,11 @@ int get_spectra(struct Spectrum_Store *, long Nchannels,
 // calculates the probability density (including normalization)
 // and stores the spectrum in an array.
 int get_spectrum(struct Spectrum *, long Nchannels, char filename[FILENAME_LENGTH]);
+
+// Read a spectrum from a FITS PHA file (following the OGIP standards).
+// The function uses routines from the HEAdas library 'libhdsp'.
+// The spectrum is stored in the specified Spectrum_Store.
+int assign_pha_spectrum(struct Spectrum_Store*, char* filename);
 
 // Release memory of spectrum array
 void free_spectra(struct Spectrum_Store *, long Nfiles);

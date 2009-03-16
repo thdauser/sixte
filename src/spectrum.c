@@ -6,15 +6,15 @@
 // Load spectra from PHA files using the method "get_spectrum".
 int get_spectra(
 		struct Spectrum_Store *spectrum_store,
-		long Nchannels,                       // number of PHA channels
+		long NumberChannels, // number of PHA channels in the detector EBOUNDS
 		char filenames[N_SPECTRA_FILES][FILENAME_LENGTH],
-		int Nfiles                            // number of spectra
+		int Nfiles           // number of spectra to be read
 		)
 {
   int status=EXIT_SUCCESS;  // error handling variable
   char msg[MAXMSG];         // error description output buffer
   
-  do {  // beginning of error handling loop
+  do {  // beginning of ERROR handling loop
     // get memory
     spectrum_store->spectrum = (struct Spectrum *) 
       malloc(Nfiles * sizeof(struct Spectrum));
@@ -27,15 +27,62 @@ int get_spectra(
     
     int count;
     for (count=0; count < Nfiles; count++) {
-      if ((status=get_spectrum(&(spectrum_store->spectrum[count]), Nchannels, 
+      if ((status=get_spectrum(&(spectrum_store->spectrum[count]), NumberChannels, 
 			       filenames[count]))!=EXIT_SUCCESS) break;
     }
 
     spectrum_store->nspectra = Nfiles;
 
-  } while (0);  // end of error handling loop
+
+    // Read a FITS PHA file and assign its content to the array
+    // of PHA spectra in the Spectrum_Store.
+    if ((status=assign_pha_spectrum(spectrum_store, filenames[0]))!=EXIT_SUCCESS) break;
+
+    // Check if the number of PHA channels in the spectrum is equivalent to
+    // the number of channels in the spectrum:
+    if (spectrum_store->pha_spectrum[0].NumberChannels != NumberChannels) {
+      status = EXIT_FAILURE;
+      sprintf(msg, "Error: number of PHA channels in spectrum '%s' (%ld) is not "
+	      "equivalent to the number of channels in the EBOUNDS table (%ld)!\n",
+	      filenames[0], spectrum_store->pha_spectrum[0].NumberChannels, 
+	      NumberChannels);
+      HD_ERROR_THROW(msg, status);
+      break;
+    }
+
+  } while (0);  // END of ERROR handling loop
 
   return (status);
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+int assign_pha_spectrum(struct Spectrum_Store* store, char* filename)
+{
+  fitsfile* fptr;
+
+  int status = EXIT_SUCCESS;
+  char msg[MAXMSG];
+
+  // Allocate memory:
+  store->pha_spectrum = (struct PHA*)malloc(sizeof(struct PHA));
+  if (store->pha_spectrum==NULL) {
+    status=EXIT_FAILURE;
+    sprintf(msg, "Error: could not allocate memory for RMF!\n");
+    HD_ERROR_THROW(msg, status);
+    return(status);
+  }
+
+  // Read the PHA spectrum from a given FITS file using the corresponding routine
+  // of libhdsp.
+  fits_open_file(&fptr, filename, READONLY, &status);
+  if (status != EXIT_SUCCESS) return(status);
+  if ((status=ReadPHAtypeI(fptr, 0, store->pha_spectrum))!=EXIT_SUCCESS) return(status);
+  fits_close_file(fptr, &status);
+  
+  return(status);
 }
 
 
@@ -53,7 +100,7 @@ int get_spectrum(
   char msg[MAXMSG];         // error description output buffer
   
 
-  do {    // beginning of error handling loop
+  do {    // beginning of ERROR handling loop
     // fill the spectrum array with data from the FITS file
     headas_chat(5, "load spectrum from file '%s' ...\n", filename);
 

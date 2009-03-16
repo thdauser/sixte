@@ -2,7 +2,11 @@
 #define DETECTOR_TYPES_H 1
 
 #include "fitsio.h"
+
+#ifndef HEASP_H
+#define HEASP_H 1
 #include "heasp.h"
+#endif
 
 #include "astrosources.types.h"
 #include "eventlist.types.h"
@@ -28,6 +32,7 @@ struct Pixel {  // union
 };
 
 
+/*
 // Data structure for storing the detector EBOUNDS 
 // (relation PHA channel -> [E_min; E_max]).
 struct Ebounds_Row {
@@ -50,14 +55,13 @@ typedef struct {
   float *matrix;
 } RMF_Row;
 
-
 // Data structure to store the detector response matrix.
 typedef struct {
   int Nrows;               // number of rows in the detector redistribution matrix
   int Ncols;               // number of columns in the detector redistribution matrix
   RMF_Row *row;     // data array for the detector RMF data
 } mRMF;
-
+*/
 
 
 // Detector data structure.
@@ -90,10 +94,10 @@ typedef struct {
   float energy_threshold;  // lower detector energy threshold [kev]
   // If the PHA threshold is 0, the energy threshold is used.
   
-  int Nchannels;           // Number of detector PHA channels
-  Ebounds ebounds;         // Detector energy bounds (relation PHA channel -> 
-                           // [E_min; E_max])
-  struct RMF *rmf;
+  //  int Nchannels;           // Number of detector PHA channels
+  //  Ebounds ebounds;         // Detector energy bounds (relation PHA channel -> 
+                               // [E_min; E_max])
+  struct RMF* rmf;
 
 
   // This is a pointer to the routine, which is called after each photon event.

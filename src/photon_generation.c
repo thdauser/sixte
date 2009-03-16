@@ -250,14 +250,14 @@ int photon_generation_main()
 				      timespan, orbit_filename, 
 				      attitude_filename)) !=EXIT_SUCCESS) break;
 
-    // Get the energy bins of the PHA channels:
-    if ((status=get_ebounds(&detector->ebounds, &detector->Nchannels, rmf_filename))
-	!=EXIT_SUCCESS) break;
+    // Read the detector RMF and EBOUNDS from the specified file and assign them to the 
+    // Detector data structure.
+    if ((status=detector_assign_rsp(detector, rmf_filename)) != EXIT_SUCCESS) break;
 
     // Get the source spectra:
-    if ((status=get_spectra(&spectrum_store, detector->Nchannels, spectrum_filename,
-			    N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
-        
+    if ((status=get_spectra(&spectrum_store, detector->rmf->NumberChannels, 
+			    spectrum_filename, N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
+    
     // Get the source catalogs:
     if ((status=get_source_catalogs(&selected_catalog, n_sourcefiles, 
 				    source_catalog_files, source_data_columns, 
@@ -479,9 +479,6 @@ int photon_generation_main()
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
-
-  // release memory of detector EBOUNDS
-  free_ebounds(&detector->ebounds);
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
 

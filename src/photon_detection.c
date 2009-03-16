@@ -123,18 +123,14 @@ int photon_detection_main() {
       break;
     }
 
-    // Get the energy bins of the PHA channels
-    if ((status=get_ebounds(&detector->ebounds, &detector->Nchannels, rmf_filename))
-	!=EXIT_SUCCESS) break;
-
-    // Read the detector RMF from the specified file and assign it to the 
-    // Detector data structure.
-    if ((status=detector_assign_rmf(detector, rmf_filename)) != EXIT_SUCCESS) break;
+    // Read the detector RMF and EBOUNDS from the specified file and 
+    // assign them to the Detector data structure.
+    if ((status=detector_assign_rsp(detector, rmf_filename)) != EXIT_SUCCESS) break;
 
     // Print some debug information:
     headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
     headas_chat(5, "charge cloud size: %lf m\n", detector->ccsize);
-    headas_chat(5, "number of PHA channels: %d\n", detector->Nchannels);
+    headas_chat(5, "number of PHA channels: %d\n", detector->rmf->NumberChannels);
     headas_chat(5, "PHA threshold: channel %ld\n", detector->pha_threshold);
     headas_chat(5, "energy threshold: %lf keV\n\n", detector->energy_threshold);
 
@@ -218,87 +214,86 @@ int photon_detection_main() {
 	// NOTE: In this simulation the charge is represented by the nominal
 	// photon energy which corresponds to the PHA channel according to the
 	// EBOUNDS table.
-	float charge = get_charge(channel, &detector->ebounds);
-      
-	int x[4], y[4];
-	double fraction[4];
-      
-	if ((detector->type == FRAMESTORE) || (detector->type == DEPFET)) {
-	  // Determine the affected detector pixels.
-	  int npixels = get_pixel_square(detector, position, x, y, fraction);
-
-	  // Add the charge created by the photon to the affected detector pixels.
-	  int count;
-	  for (count=0; count<npixels; count++) {
-	    if (x[count] != INVALID_PIXEL) {
-	      detector->pixel[x[count]][y[count]].charge += 
-		charge * fraction[count] * 
-		// |        |-> charge fraction due to split events
-		// |-> charge created by incident photon
-		detector_active(x[count], y[count], detector, time);
-	      // |-> "1" if pixel can measure charge, "0" else
-	    }
-	  }
-
-	} else if (detector->type == HTRS) {
-	  int npixels = htrs_get_pixel(detector, position, x, y, fraction);
-
-	  struct Event event;
-	  int count;
-	  for (count=0; count<npixels; count++) {
-	    if (x[count] != INVALID_PIXEL) {
-	      // Check if the affected detector pixel is active:
-	      if (htrs_detector_active(x[count], y[count], detector, time)) {
-		
-		// Save the time of the photon arrival in this pixel
-		detector->pixel[x[count]][y[count]].arrival = time;
-		
-		// Store the photon charge and the new arrival time:
-		event.pha = get_pha(charge*fraction[count], detector);
-		event.time = time;                // TODO: drift time
-		event.xi = detector->htrs_icoordinates2pixel[x[count]][y[count]]+1;
-		event.yi = 0;  // human readable HTRS pixels numbers start at 1 <-|
-		event.grade = 0;
-		event.frame = 0;
-
-		// Add the event to the FITS event list.
-		// Check lower PHA threshold:
-		if ((event.pha >= detector->pha_threshold)&&
-		    (charge*fraction[count] >= detector->energy_threshold)){ 
-		  // There is an event in this pixel, so insert it into eventlist:
-		  add_eventlist_row(&eventlist_file, event, &status);
-		}
-	      } // END htrs_detector_active(...)
-	    } // END x[count] != INVALID_PIXEL
-	  } // END of loop over all split partners.
+	float charge = get_energy(channel, detector);
 	
-	} else if (detector->type == TES) {
-	  get_pixel_square(detector, position, x, y, fraction);
+	if(energy > 0.) {
+	  int x[4], y[4];
+	  double fraction[4];
+      
+	  if ((detector->type == FRAMESTORE) || (detector->type == DEPFET)) {
+	    // Determine the affected detector pixels.
+	    int npixels = get_pixel_square(detector, position, x, y, fraction);
 
-	  if (x[0] != INVALID_PIXEL) {
-	    struct Event event;
-	  
-	    // Store the photon charge and the new arrival time:
-	    event.pha = get_pha(energy, detector);  // TODO: RMF
-	    event.time = time;
-	    event.xi = x[0];
-	    event.yi = y[0];
-	    event.grade = 0;
-	    event.frame = detector->frame;
-
-	    // Add the event to the FITS event list.
-	    if ((event.pha>=detector->pha_threshold)&&
-		(energy>=detector->energy_threshold)){ // Check lower PHA threshold
-	      // There is an event in this pixel, so insert it into eventlist:
-	      add_eventlist_row(&eventlist_file, event, &status);
+	    // Add the charge created by the photon to the affected detector pixels.
+	    int count;
+	    for (count=0; count<npixels; count++) {
+	      if (x[count] != INVALID_PIXEL) {
+		detector->pixel[x[count]][y[count]].charge += 
+		  charge * fraction[count] * 
+		  // |      |-> charge fraction due to split events
+		  // |-> charge created by incident photon
+		  detector_active(x[count], y[count], detector, time);
+		// |-> "1" if pixel can measure charge, "0" else
+	      }
 	    }
-	  } // END x[0] != INVALID_PIXEL
+	    
+	  } else if (detector->type == HTRS) {
+	    int npixels = htrs_get_pixel(detector, position, x, y, fraction);
+	    
+	    struct Event event;
+	    int count;
+	    for (count=0; count<npixels; count++) {
+	      if (x[count] != INVALID_PIXEL) {
+		// Check if the affected detector pixel is active:
+		if (htrs_detector_active(x[count], y[count], detector, time)) {
+		  
+		  // Save the time of the photon arrival in this pixel
+		  detector->pixel[x[count]][y[count]].arrival = time;
+		
+		  // Store the photon charge and the new arrival time:
+		  event.pha = get_channel(charge*fraction[count], detector);
+		  event.time = time;                // TODO: drift time
+		  event.xi = detector->htrs_icoordinates2pixel[x[count]][y[count]]+1;
+		  event.yi = 0;  // human readable HTRS pixels numbers start at 1 <-|
+		  event.grade = 0;
+		  event.frame = 0;
+		  
+		  // Add the event to the FITS event list.
+		  // Check lower PHA threshold:
+		  if ((event.pha >= detector->pha_threshold)&&
+		      (charge*fraction[count] >= detector->energy_threshold)){ 
+		    // There is an event in this pixel, so insert it into eventlist:
+		    add_eventlist_row(&eventlist_file, event, &status);
+		  }
+		} // END htrs_detector_active(...)
+	      } // END x[count] != INVALID_PIXEL
+	    } // END of loop over all split partners.
+	
+	  } else if (detector->type == TES) {
+	    get_pixel_square(detector, position, x, y, fraction);
+	    
+	    if (x[0] != INVALID_PIXEL) {
+	      struct Event event;
+	    
+	      // Store the photon charge and the new arrival time:
+	      event.pha = get_channel(energy, detector);  // TODO: RMF
+	      event.time = time;
+	      event.xi = x[0];
+	      event.yi = y[0];
+	      event.grade = 0;
+	      event.frame = detector->frame;
 
-	} // END detector->type == TES
-
+	      // Add the event to the FITS event list.
+	      if ((event.pha>=detector->pha_threshold)&&
+		  (energy>=detector->energy_threshold)){ // Check lower PHA threshold
+		// There is an event in this pixel, so insert it into eventlist:
+		add_eventlist_row(&eventlist_file, event, &status);
+	      }
+	    } // END x[0] != INVALID_PIXEL
+	  } // END detector->type == TES
+	} // END if(energy>0.)
       } // END 'time' within specified time interval
-
-    }  // END of scanning the impact list.
+    } // END of scanning the impact list.
 
   } while(0);  // END of the error handling loop.
 
@@ -328,9 +323,6 @@ int photon_detection_main() {
   if (detector->type == HTRS) {
     htrs_free_Detector(detector);
   }
-
-  // Release memory of detector EBOUNDS
-  free_ebounds(&detector->ebounds);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
 
