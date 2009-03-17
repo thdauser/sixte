@@ -14,9 +14,9 @@ int photon_generation_getpar(
 			     char orbit_filename[],
 			     char attitude_filename[],
 			     // number of input source catalog files
-			     int *n_sourcefiles,  
+			     int* n_sourcefiles,  
 			     // array containing the filename of each source file
-			     char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH],
+			     char** source_filename,
 			     // PHA file containing the default source spectrum
 			     char spectrum_filename[],
 			     char rmf_filename[],
@@ -54,7 +54,7 @@ int photon_generation_getpar(
   // Get the filenames of the individual source catalogs.
   else {
     int input_counter;
-    for(input_counter=0; input_counter<MAX_NSOURCEFILES; input_counter++) {
+    for(input_counter=0; input_counter<MAX_N_POINTSOURCEFILES; input_counter++) {
 
       sprintf(cbuffer,"sourcefile%d",input_counter+1);
 
@@ -137,30 +137,21 @@ int photon_generation_main()
   // Names of several input and output files:
   char orbit_filename[FILENAME_LENGTH];      // input: orbit
   char attitude_filename[FILENAME_LENGTH];   // input: attitude
-  char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];// input: source spectra
+  char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH]; // input: source spectra
   char rmf_filename[FILENAME_LENGTH];        // input: detector RMF
   char photonlist_filename[FILENAME_LENGTH]; // output: photon list
   
   // Several input source catalog files:
   int n_sourcefiles;   // number of input source files
   // Filenames of the individual source catalog files (FITS):
-  char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH]; 
+  char** source_filename=NULL;
   // X-ray Cluster image:
   char cluster_filename[FILENAME_LENGTH];    // input: cluster image file
   ClusterImage* cluster_image=NULL;
 
-  double t0;        // start time of the photon generation
-  double timespan;  //  time span of the photon generation
-  double bandwidth; // (half) width of the preselection band 
-                    // along the path of the telescope axis [rad]
-
-  // Catalog with orbit and attitude data over a particular timespan
-  struct Telescope *sat_catalog=NULL;     
-  // Number of entries in the orbit list ( <= orbit_nrows)
-  long sat_nentries;                      
-
+  /*
   // Source catalogs (FITS files)
-  fitsfile *source_catalog_files[MAX_NSOURCEFILES];
+  fitsfile* source_catalog_files[MAX_NSOURCEFILES];
   // Catalog of preselected sources along the path of the telescope axis
   struct source_cat_entry *selected_catalog=NULL;
   // Column numbers of r.a., declination and count rate in the individual files
@@ -168,6 +159,21 @@ int photon_generation_main()
   // Number of totally available sources (ROSAT + RND + ...) in entire catalog and
   // in preselected catalog respectively.
   long source_counter, nsources_pre=0;
+  */
+  // New data structures for point sources:
+  PointSourceFiles* pointsourcefiles=NULL;
+  PointSourceCatalog* pointsourcecatalog=NULL;
+  long source_counter;
+
+  double t0;        // start time of the photon generation
+  double timespan;  // time  span of the photon generation
+  double bandwidth; // (half) width of the preselection band 
+                    // along the path of the telescope axis [rad]
+
+  // Catalog with orbit and attitude data over a particular timespan
+  struct Telescope *sat_catalog=NULL;     
+  // Number of entries in the orbit list ( <= orbit_nrows)
+  long sat_nentries;                      
 
   // Storage for different source spectra (including background spectrum).
   struct Spectrum_Store spectrum_store; 
@@ -202,13 +208,33 @@ int photon_generation_main()
     detector = get_Detector(&status);
     if(status!=EXIT_SUCCESS) break;
     
-    if ((status = photon_generation_getpar(orbit_filename, attitude_filename,
-					   &n_sourcefiles, source_filename,
-					   spectrum_filename[0], rmf_filename, 
-					   photonlist_filename,
-					   &t0, &timespan, &bandwidth,
-					   &telescope))) break;
+    int count;
+    source_filename=(char**)malloc(MAX_N_POINTSOURCEFILES*sizeof(char*));
+    if (source_filename!=NULL) {
+      for(count=0; (count<MAX_N_POINTSOURCEFILES)&&(status==EXIT_SUCCESS); count++) {
+	source_filename[count] = (char*)malloc(FILENAME_LENGTH*sizeof(char));
+	if(source_filename[count]==NULL) {
+	  status=EXIT_FAILURE;
+	  sprintf(msg, "Error: not enough memory!\n");
+	  HD_ERROR_THROW(msg,status);
+	  break;
+	}
+      }
+    } else {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: not enough memory!\n");
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
 
+
+    if((status=photon_generation_getpar(orbit_filename, attitude_filename,
+					&n_sourcefiles, source_filename,
+					spectrum_filename[0], rmf_filename, 
+					photonlist_filename,
+					&t0, &timespan, &bandwidth,
+					&telescope))) break;
+    
 
     // Set last_update to such a small value, that a preselection of the 
     // source catalog is performed at the first timestep (last_update 
@@ -259,9 +285,11 @@ int photon_generation_main()
 			    spectrum_filename, N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
     
     // Get the source catalogs:
-    if ((status=get_source_catalogs(&selected_catalog, n_sourcefiles, 
+    /*    if ((status=get_source_catalogs(&selected_catalog, n_sourcefiles, 
 				    source_catalog_files, source_data_columns, 
-				    source_filename))!=EXIT_SUCCESS) break;
+				    source_filename))!=EXIT_SUCCESS) break;*/
+    pointsourcefiles = get_PointSourceFiles(n_sourcefiles, source_filename, &status);
+    if (status != EXIT_SUCCESS) break;
 
     // Get the specified galaxy cluster image:
     if ((status = PILGetFname("cluster_filename", cluster_filename))) {
@@ -338,13 +366,17 @@ int photon_generation_main()
 	n = 
 	  normalize_vector(vector_product(normalize_vector(sat_catalog[sat_counter].r),
 					  normalize_vector(sat_catalog[sat_counter].v)));
+	/*
 	if ((status=get_preselected_catalog(selected_catalog, &nsources_pre, 
 					    n_sourcefiles, source_catalog_files, 
 					    source_data_columns, n, pre_max_align, 
 					    spectrum_store, N_SPECTRA_FILES))
-	    !=EXIT_SUCCESS) break;
+					    !=EXIT_SUCCESS) break; */
+	if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog, n, 
+					  pre_max_align, spectrum_store))
+	   !=EXIT_SUCCESS) break;
 
-	// update the catalog-update-counter
+	// Update the catalog-update-counter
 	last_update = sat_catalog[sat_counter].time;
       }
       // END of preselection
@@ -352,7 +384,8 @@ int photon_generation_main()
 
 
       // CREATE PHOTONS for all sources  CLOSE TO  the FOV
-      for (source_counter=0; source_counter<nsources_pre; source_counter++) {
+      for (source_counter=0; source_counter<pointsourcecatalog->nsources; 
+	   source_counter++) {
 	// Check whether the source is inside the FOV:
 	
 	// First determine telescope pointing direction at the actual time.
@@ -366,12 +399,21 @@ int photon_generation_main()
 	
 	// Compare the source direction to the unit vector specifiing the 
 	// direction of the telescope:
-	if(check_fov(selected_catalog[source_counter].r, telescope.nz, 
-		     close_fov_min_align) == 0) {
+	//if(check_fov(selected_catalog[source_counter].r, telescope.nz, 
+	//	     close_fov_min_align) == 0) {
+	struct vector source_vector = 
+	  unit_vector(pointsourcecatalog->sources[source_counter].ra, 
+		      pointsourcecatalog->sources[source_counter].dec);
+	if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
+
 	  // The source is inside the FOV  => create photons:
-	  if ((status=create_photons(&selected_catalog[source_counter], time, dt, 
-				     &photon_list, detector, gsl_random_g))
+	  //	  if ((status=create_photons(&selected_catalog[source_counter], time, dt, 
+	  //				     &photon_list, detector, gsl_random_g))
+	  //	      !=EXIT_SUCCESS) break; 
+	  if ((status=create_photons(&(pointsourcecatalog->sources[source_counter]), 
+				     time, dt, &photon_list, detector, gsl_random_g))
 	      !=EXIT_SUCCESS) break; 
+
 	}
       }
 
@@ -415,7 +457,8 @@ int photon_generation_main()
 
 	// Compare the photon direction to the unit vector specifiing the 
 	// direction of the telescope axis:
-	if(check_fov(photon_list->photon.direction,telescope.nz,fov_min_align)==0) {
+	if (check_fov(&photon_list->photon.direction,
+		      &telescope.nz, fov_min_align)==0) {
 	  // Photon is inside the FOV!
 
 	  // Add the photon to the photon list file:
@@ -463,6 +506,7 @@ int photon_generation_main()
   // Release memory of orbit/attitude catalog
   if (sat_catalog) free(sat_catalog);
 
+  /*
   // Release the light curves for the individual sources
   for (source_counter=0; source_counter<nsources_pre; source_counter++) {
     if (selected_catalog[source_counter].lightcurve != NULL) {
@@ -474,7 +518,8 @@ int photon_generation_main()
   
   // Release source catalogs
   free_source_catalogs(source_catalog_files,n_sourcefiles,
-		       &selected_catalog,&status);
+  &selected_catalog,&status); */
+  free_PointSourceFiles(pointsourcefiles, &status);
   free_ClusterImage(cluster_image);
   
   // Release source spectra

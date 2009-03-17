@@ -89,7 +89,8 @@ struct lightcurve_entry {
 // Creates photons according to a particular rate specified by the given 
 // light curve and adds them to the time ordered photon list.
 // The return value is the value of the error status variable.
-int create_photons(struct source_cat_entry* src, double time, double dt,
+int create_photons(PointSource* ps, double time, double dt,
+//int create_photons(struct source_cat_entry* src, double time, double dt,
 		   struct Photon_Entry** pl, Detector*,
 		   gsl_rng *gsl_random_g);
 
@@ -101,11 +102,12 @@ int insert_photon(struct Photon_Entry **, struct Photon);
 
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
-float photon_energy(struct source_cat_entry src, Detector*);
+//float photon_energy(struct source_cat_entry src, Detector*);
+float photon_energy(PointSource* ps, Detector*);
 
 // Function produces a light curve for a given source.
-int create_lightcurve(struct source_cat_entry *src, double time, 
-		      gsl_rng *gsl_random_g);
+//int create_lightcurve(struct source_cat_entry *src, double time, 
+int create_lightcurve(PointSource* ps, double time, gsl_rng *gsl_random_g);
 
 
 // This routine creates a new FITS file with a binary table to store a photon list

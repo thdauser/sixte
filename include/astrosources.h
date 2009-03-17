@@ -27,13 +27,14 @@
 
 
 
+/*
 // Function loads the required source catalogs from the specified FITS files and
 // stores the source data in an array. Additionally it allocates the memory for the
 // preselected catalog.
 int get_source_catalogs(struct source_cat_entry **selected_catalog, 
 			const int n_sourcefiles, fitsfile **sourcefiles,
-			int columns[5][3], 
-			char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH]);
+			int columns[MAX_NSOURCEFILES][3], 
+			char** source_filename);
 
 
 // Releases the memory which has been allocated to store 
@@ -51,20 +52,19 @@ int get_preselected_catalog(struct source_cat_entry *selected_catalog,
 			    const double pre_max_align, struct Spectrum_Store, 
 			    const int Nspectra);
 
-
+*/
 
 
 // Function opens the specified point-source catalog files.
-PointSourceFiles* get_PointSourceFiles(int* status, int nfiles, ...);
+PointSourceFiles* get_PointSourceFiles(int nfiles, char** filename, int* status);
 // Close the point.source catalog files.
 void free_PointSourceFiles(PointSourceFiles* psf, int* status);
 
 // Functions scans the point-source catalog and returns the sources 
 // close to the FOV.
-PointSourceCatalog* get_PointSourceCatalog(PointSourceFiles*, 
-					   struct vector telescope_direction,
-					   const double max_align,
-					   struct Spectrum_Store, int* status);
+int get_PointSourceCatalog(PointSourceFiles*, PointSourceCatalog**,
+			   struct vector normal_vector, const double max_align,
+			   struct Spectrum_Store);
 				   
 
 #endif /* ASTROSOURCES_H */

@@ -192,10 +192,11 @@ void htrs_detector_action(
 // TODO: zufällig Anzahl von Background-Photonen pro Zeitintervall?
 static void insert_background_photons(
 				      Detector* detector,
-				      struct source_cat_entry background, 
+				      PointSource background, 
 				      double integration_time
 				      )
 {
+  /*
   // determine the number of required photons
   int N_photons = 
     (int)(detector->width*detector->width*background.rate*integration_time);
@@ -207,6 +208,7 @@ static void insert_background_photons(
       [(int)(detector->width*get_random_number())].charge += 
       photon_energy(background, detector);
   }
+  */ // TODO
 }
 
 

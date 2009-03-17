@@ -154,7 +154,7 @@ int photon_imaging_main() {
 
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
-      if(check_fov(photon.direction,telescope.nz,fov_min_align)==0) {
+      if (check_fov(&photon.direction, &telescope.nz, fov_min_align)==0) {
 	// Photon is inside the FOV!
 	
 	// Determine telescope data like direction etc. (attitude):
@@ -168,7 +168,7 @@ int photon_imaging_main() {
 					   photon.time));
 	// Remove the component along the vertical direction nz 
 	// (nx must be perpendicular to nz!):
-	double scp = scalar_product(telescope.nz,telescope.nx);
+	double scp = scalar_product(&telescope.nz, &telescope.nx);
 	telescope.nx.x -= scp*telescope.nz.x;
 	telescope.nx.y -= scp*telescope.nz.y;
 	telescope.nx.z -= scp*telescope.nz.z;

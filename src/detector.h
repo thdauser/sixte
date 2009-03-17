@@ -31,8 +31,7 @@ static inline void clear_detector_line(Detector*, int line);
 
 // Add background photons to the detector pixels  according to a given 
 // background spectrum and count-rate.
-static void insert_background_photons(Detector*, 
-				      struct source_cat_entry background, 
+static void insert_background_photons(Detector*, PointSource background, 
 				      double integration_time);
 
 

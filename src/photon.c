@@ -4,6 +4,7 @@
 #include "photon.h"
 
 
+/*
 ///////////////////////////////////////////////////////
 int create_lightcurve(
 		      struct source_cat_entry *src,// source catalog entry
@@ -102,7 +103,7 @@ int create_lightcurve(
 
 #endif // END of #ifndef CONSTANT_LIGHTCURVE
 
-  /*
+*/  /*
   // plot light curve for debugging
   double avg=0.;
   FILE *pfile=NULL;
@@ -113,13 +114,118 @@ int create_lightcurve(
   }
   printf("avg: %lf\n", avg);
   fclose(pfile);
-  */
+  */ /*
+
+  return(status);
+}
+*/
+
+
+
+///////////////////////////////////////////////////////
+int create_lightcurve(
+		      PointSource* ps, 
+		      double t0,             // start time for lightcurve
+     		      gsl_rng *gsl_random_g  // pointer to GSL random number generator
+		      )
+{
+  int count;
+
+  int status = EXIT_SUCCESS;    // error status
+  char msg[MAXMSG];             // error message output buffer
+
+
+  // At first light curve creation for this source, get memory for lightcurve.
+  if (ps->lightcurve == NULL) {
+    ps->lightcurve = (struct lightcurve_entry *) 
+      malloc((N_LIGHTCURVE_BINS+1) * sizeof(struct lightcurve_entry));
+    if (!(ps->lightcurve)) {
+      status = EXIT_FAILURE;
+      sprintf(msg, "Not enough memory available to store the lightcurve!\n");
+      HD_ERROR_THROW(msg,status);
+    }
+  }
+
+
+  // Generate the light curve:
+#ifdef CONSTANT_LIGHTCURVE // Create constant light curve with average count rate.
+  for (count=0; count<N_LIGHTCURVE_BINS; count++) {
+    ps->lightcurve[count].t = t0 + count * LIGHTCURVE_BINWIDTH;
+    ps->lightcurve[count].rate = ps->rate;
+  }
+  ps->lightcurve[N_LIGHTCURVE_BINS].t = 
+    t0 + N_LIGHTCURVE_BINS*LIGHTCURVE_BINWIDTH;
+
+#else  // Create a light curve with power law PSD and read noise.
+
+  // Repeat the light curve creation until we have proper data 
+  // (without zero-rates).
+  int check;
+  do { 
+    check=0;
+
+    // First create frequencies.
+    double freq[N_LIGHTCURVE_BINS];
+    for (count=0; count<N_LIGHTCURVE_BINS; count++) {
+      freq[count] = (double)count;
+    }
+    // Create PSD.
+    double psd[N_LIGHTCURVE_BINS];
+    for (count=0; count<N_LIGHTCURVE_BINS; count++) {
+      // create red noise: ~1/f² (Uttley, McHardy 2001)
+      psd[count] = pow(1./freq[count], 2.);  
+    }
+    // Create Fourier components.
+    double fcomp[N_LIGHTCURVE_BINS];
+    fcomp[0] = 0.;
+    for (count=1; count<N_LIGHTCURVE_BINS/2; count++) {
+      REAL(fcomp, count) = gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[count]);
+      IMAG(fcomp, count) = gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[count]);
+    }
+    fcomp[N_LIGHTCURVE_BINS/2] = 
+      gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[N_LIGHTCURVE_BINS/2]); // TODO 
+
+    // Perform Fourier transformation.
+    gsl_fft_halfcomplex_radix2_inverse(fcomp, 1, N_LIGHTCURVE_BINS);
+  
+    // Calculate mean and variance
+    double mean=0., variance=0.;
+    for (count=0; count<N_LIGHTCURVE_BINS; count++) {
+      mean += fcomp[count];
+      variance += pow(fcomp[count], 2.); 
+    }
+    mean = mean/(double)N_LIGHTCURVE_BINS;
+    variance = variance/(double)N_LIGHTCURVE_BINS;
+    variance -= pow(mean,2.);     // var = <x^2>-<x>^2
+
+    // desired properties of the light curve
+    const float mean_rate = ps->rate;
+    const float sigma = mean_rate/3.; // (mean_rate-10.)/3.;
+
+    // normalize and copy FFT array to light curve array
+    if (status != EXIT_FAILURE) {
+      for (count=0; count<N_LIGHTCURVE_BINS; count++) {
+	ps->lightcurve[count].t = t0 + count * LIGHTCURVE_BINWIDTH;
+	ps->lightcurve[count].rate = 
+	  (fcomp[count]-mean) *sigma/sqrt(variance) + mean_rate;  // TODO
+
+	// Avoid negative or close2zero count rates (no physical meaning):
+	if (ps->lightcurve[count].rate < 0.01*mean) { check = -1; }
+      }
+
+      ps->lightcurve[N_LIGHTCURVE_BINS].t = 
+	t0 + N_LIGHTCURVE_BINS * LIGHTCURVE_BINWIDTH;
+    }
+
+  } while (check==-1);  // Repeat the light curve creation until we have proper data.
+
+#endif // END of #ifndef CONSTANT_LIGHTCURVE
 
   return(status);
 }
 
 
-
+/*
 ///////////////////////////////////////////////////////////////////////////////////
 // Create a randomly chosen photon energy according to the spectrum of the 
 // specified source.
@@ -133,7 +239,7 @@ float photon_energy(
 {
   // Get a random PHA channel according to the given PHA distribution.
   double rand = get_random_number();
-  long upper=detector->rmf->NumberChannels-1, lower=0, mid;
+  long upper=src.pha_spectrum->NumberChannels-1, lower=0, mid;
   
   // Determine the energy of the photon.
   while (upper-lower>1) {
@@ -154,11 +260,44 @@ float photon_energy(
 	 (detector->rmf->ChannelHighEnergy[lower]
 	  -detector->rmf->ChannelLowEnergy[lower])*get_random_number());
 }
+*/
+
+
+///////////////////////////////////////////////////////////////////////////////////
+// Create a randomly chosen photon energy according to the spectrum of the 
+// specified source.
+// The used spectrum is given in [PHA channels].
+// The function returns the photon energy in [keV].
+float photon_energy(PointSource* ps, Detector* detector)
+{
+  // Get a random PHA channel according to the given PHA distribution.
+  double rand = get_random_number();
+  long upper=ps->pha_spectrum->NumberChannels-1, lower=0, mid;
+  
+  // Determine the energy of the photon.
+  while (upper-lower>1) {
+    mid = (long)((lower+upper)/2);
+    if (ps->pha_spectrum->Pha[mid] < rand) {
+      lower = mid;
+    } else {
+      upper = mid;
+    }
+  }
+    
+  if (ps->pha_spectrum->Pha[lower] < rand) {
+    lower = upper;
+  }
+
+  // Return an energy chosen randomly out of the determined PHA bin:
+  return(detector->rmf->ChannelLowEnergy[lower] + 
+	 (detector->rmf->ChannelHighEnergy[lower]
+	  -detector->rmf->ChannelLowEnergy[lower])*get_random_number());
+}
 
 
 
 
-
+/*
 ///////////////////////////////////////////////////////////////////////////////////
 int create_photons(
 		   struct source_cat_entry* src,  // source data
@@ -253,6 +392,100 @@ int create_photons(
 
   return(status);
 }
+*/
+
+///////////////////////////////////////////////////////////////////////////////////
+int create_photons(
+		   PointSource* ps,          // source data
+		   // current time and time interval for photon creation
+		   double time, double dt,       
+		   struct Photon_Entry** pl, // time ordered photon list
+		   Detector* detector,     
+		   gsl_rng *gsl_random_g
+		   )
+{
+  int bin=0;                         // light curve bin counter
+  // Flag: first photon in the generation process for this source, i.e.,
+  // in the run of this function. This is needed, because the first photon
+  // can be inserted at the beginning of the photon list.
+  int first_photon=1;              
+  // Alternative pointer to photon list, that can be moved along the list,   
+  // without loosing the first entry.
+  struct Photon_Entry* pe = NULL;  
+  int status=EXIT_SUCCESS;
+
+
+  // Set pe to point to the same value as pl 
+  // (pl is the pointer to the first entry in the entire photon list.).
+  // So pe can be updated and modified without loosing the first entry 
+  // of the photon list.
+  // The pointer pe is updated by insert_photon, so the scanning of the 
+  // photon list does not have to start at the first 
+  // entry for each individual photon.
+  // For one and the same source, the photons are created in temporal order.
+
+  // Copy the pointer to the photon list.
+  pe = *pl;
+  
+  // if there is no photon time stored so far
+  if (ps->t_last_photon < 0.) {
+    ps->t_last_photon = time;
+  }
+
+
+  // create photons and insert them in the given time ordered list
+  while (ps->t_last_photon < time+dt) {
+    struct Photon new_photon;        // buffer for new photon
+    new_photon.ra = ps->ra;
+    new_photon.dec = ps->dec; 
+    new_photon.direction = unit_vector(ps->ra, ps->dec); // REMOVE
+
+    // Create the energy of the new photon
+    new_photon.energy = photon_energy(ps, detector);
+
+    // Determine the current count rate of the light curve.
+    // If the source has no light curve, or the assigned light curve is 
+    // too old, create a new one.
+    if (ps->lightcurve == NULL) {
+      if ((status=create_lightcurve(ps, time, gsl_random_g)) != EXIT_SUCCESS) break;
+    } else if (ps->lightcurve[N_LIGHTCURVE_BINS].t < ps->t_last_photon) {
+      if ((status=create_lightcurve(ps, time, gsl_random_g)) != EXIT_SUCCESS) break;
+    }
+
+    // Find light curve time bin corresponding to the current time.
+    for ( ; bin<N_LIGHTCURVE_BINS; bin++) {
+      if (ps->lightcurve[bin+1].t > ps->t_last_photon) {
+	break;
+      }
+    }
+
+    // calculate arrival time depending on former photon creation
+    ps->t_last_photon += rndexp(1./(ps->lightcurve[bin].rate));
+    new_photon.time = ps->t_last_photon;
+
+
+    if (first_photon == 1) {
+      // The first photon for the list might be inserted at the 
+      // beginning of the time-ordered photon list.
+      // Therefore this case requires a special treatment.
+      if ((status=insert_photon(pl, new_photon)) != EXIT_SUCCESS) break;
+      pe = *pl;
+      first_photon = 0;
+    } else {
+      // If this is not the first photon for this source in the current 
+      // run of this function, give the variable pointer 'pe' to the 
+      // insertion procedure. 'pe' might point to later events in the 
+      // time-ordered photon list, whereas the beginning of the list
+      // is stored in '*pl'. The use of 'pe' can improve the program performance.
+
+      // Insert photon to the global photon list:
+      if ((status=insert_photon(&pe, new_photon)) != EXIT_SUCCESS) break;  
+    }
+  }
+
+  return(status);
+}
+
 
 
 

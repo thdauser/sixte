@@ -63,10 +63,10 @@ int get_psf_pos(
 		)
 {
   // Calculate the off-axis angle
-  double offaxis_angle = acos(scalar_product(telescope.nz, photon.direction));
+  double offaxis_angle = acos(scalar_product(&telescope.nz, &photon.direction));
   // and the azimuth of the source position.
-  double azimuth = atan2(scalar_product(telescope.ny,photon.direction), 
-			 scalar_product(telescope.nx,photon.direction));
+  double azimuth = atan2(scalar_product(&telescope.ny, &photon.direction), 
+			 scalar_product(&telescope.nx, &photon.direction));
 
   // Determine, which PSF should be used for that particular source 
   // direction and photon energy.

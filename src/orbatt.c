@@ -168,7 +168,7 @@ int get_satellite_catalog(
 
 	// nx:
 	nx = normalize_vector((*sat_catalog)[entry].v);
-	double scp = scalar_product(nx, (*sat_catalog)[entry].nz);
+	double scp = scalar_product(&nx, &((*sat_catalog)[entry].nz));
 	nx.x -= scp*(*sat_catalog)[entry].nz.x;
 	nx.y -= scp*(*sat_catalog)[entry].nz.y;
 	nx.z -= scp*(*sat_catalog)[entry].nz.z;	

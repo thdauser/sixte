@@ -12,14 +12,19 @@
 // The return value is 0 if the source is inside the FOV and >0 if it is outside.
 
 
-int check_fov(const struct vector x, const struct vector x0, /* struct vector h1, struct vector h2, double sin_dec_max, double sin_rasc_max, */ const double min_align)
-{
-  int result = 0;
 
-  if (scalar_product(x,x0) < min_align) {
-    // source is outside the FOV
-    result = 3;
-  } /* else {
+inline int check_fov(struct vector* const x, struct vector* const x0, 
+		     /* struct vector h1, struct vector h2, double sin_dec_max, 
+			double sin_rasc_max, */ 
+		     const double min_align)
+{
+  int result = 0; // source is inside the FOV !
+
+  if (scalar_product(x, x0) < min_align) {
+    result = 3;   // source is outside the FOV !
+  }
+
+  /* else {
     if (fabs(scalar_product(x,h1)) > sin_dec_max) {
       result += 1;
     }
@@ -27,9 +32,12 @@ int check_fov(const struct vector x, const struct vector x0, /* struct vector h1
       result += 2;
     }
     /////////////////
-    // probably it is not necessary to check right ascension, if declination is already out of range !!
+    // probably it is not necessary to check right ascension, 
+    // if declination is already out of range !!
     /////////////////
   } */
 
-  return result;
+  return(result);
 }
+
+

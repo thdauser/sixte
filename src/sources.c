@@ -16,9 +16,9 @@ int get_source_catalogs(
 			// FITS file pointers to the input source catalogs
 			fitsfile **sourcefiles,
 			// column numbers for r.a., declination, and count rate
-			int columns[5][3],
+			int columns[MAX_NSOURCEFILES][3],
 			// filenames of the source files
-			char source_filename[MAX_NSOURCEFILES][FILENAME_LENGTH] 
+			char** source_filename
       			)
 {
   int status=0;     // error handling variable
@@ -189,7 +189,7 @@ int get_preselected_catalog(
 	  source_direction = unit_vector(rasc*M_PI/180., dec*M_PI/180.);
 	  
 	  // check, whether the source should be added to the preselected catalog:
-	  if(fabs(scalar_product(source_direction, telescope_direction))<pre_max_align) {
+	  if(fabs(scalar_product(&source_direction,&telescope_direction))<pre_max_align) {
 	    if(*nsources > MAX_NSOURCES_PRE) {
 	      // too many sources
 	      status=EXIT_FAILURE;

@@ -21,7 +21,7 @@ struct vector unit_vector(double rasc, double dec);
 struct vector normalize_vector(struct vector);
 
 // calculates the scalar product of two vectors
-double scalar_product(struct vector, struct vector);
+inline double scalar_product(struct vector* const, struct vector* const);
 
 // calculates the vector product of two vectors
 struct vector vector_product(struct vector, struct vector);

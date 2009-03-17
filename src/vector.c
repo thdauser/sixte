@@ -18,7 +18,7 @@ struct vector unit_vector(double rasc, double dec)
 
 
 
-// returns a normalized vector (length 1.0, same direction)
+// Returns a normalized vector (length 1.0, same direction).
 struct vector normalize_vector(struct vector x) {
   double l;         // length of the vector x
   struct vector y;  // normalized vector
@@ -34,10 +34,10 @@ struct vector normalize_vector(struct vector x) {
 
 
 
-// calculates the scalar product of two vector structures
-double scalar_product(struct vector x, struct vector y)
+// Calculates the scalar product of two vector structures.
+inline double scalar_product(struct vector* const x, struct vector* const y)
 {
-  return(x.x*y.x + x.y*y.y + x.z*y.z);
+  return(x->x * y->x + x->y * y->y + x->z * y->z);
 }
 
 
@@ -57,7 +57,9 @@ struct vector vector_product(struct vector x, struct vector y) {
 
 // Function interpolates between two vectors at time t1 and t2 for the specified time 
 // and returns the interpolated vector.
-struct vector interpolate_vec(struct vector v1, double t1, struct vector v2, double t2, double time) {
+struct vector interpolate_vec(struct vector v1, double t1, 
+			      struct vector v2, double t2, 
+			      double time) {
   struct vector pos;
   
   pos.x = v1.x + (time-t1)/(t2-t1)*(v2.x-v1.x);

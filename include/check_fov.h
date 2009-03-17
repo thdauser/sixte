@@ -8,6 +8,9 @@
 #include "vector.h"
 
 
-int check_fov(const struct vector x, const struct vector x0, /* struct vector h1, struct vector h2, double sin_dec_max, double sin_rasc_max, */ const double min_dev);
+inline int check_fov(struct vector* const x, struct vector* const x0, 
+		     /* struct vector h1, struct vector h2, double sin_dec_max, 
+			double sin_rasc_max, */ 
+		     const double min_align);
 
-#endif
+#endif /* CHECK_FOV_H */
