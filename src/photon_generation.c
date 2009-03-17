@@ -261,7 +261,7 @@ int photon_generation_main()
     const double pre_max_align = sin(bandwidth);
 
     // time step for sky scanning loop
-    const double dt = 0.001;    // 10.* detector.integration_time; 
+    const double dt = 0.1;    // 10.* detector.integration_time; 
 
 
     // Initialize HEADAS random number generator and GSL generator for 
@@ -285,9 +285,6 @@ int photon_generation_main()
 			    spectrum_filename, N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
     
     // Get the source catalogs:
-    /*    if ((status=get_source_catalogs(&selected_catalog, n_sourcefiles, 
-				    source_catalog_files, source_data_columns, 
-				    source_filename))!=EXIT_SUCCESS) break;*/
     pointsourcefiles = get_PointSourceFiles(n_sourcefiles, source_filename, &status);
     if (status != EXIT_SUCCESS) break;
 
@@ -326,7 +323,7 @@ int photon_generation_main()
 
     struct vector n;   // normalized vector perpendicular to the orbital plane
 
-    struct Photon_Entry *pl_entry=NULL;     // "counter" variable for the photon list
+    struct Photon_Entry *pl_entry=NULL; // "counter" variable for the photon list
 
 
     // Beginning of actual simulation (after loading required data):
@@ -337,6 +334,7 @@ int photon_generation_main()
     // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
     // takes to slew over the entire FOV.
     for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
+      printf("time: %lf\n", time);
 
       // Get the last orbit entry before the time 'time':
       // (in order to interpolate the actual position and velocity between 
@@ -355,7 +353,6 @@ int photon_generation_main()
       }
 
 
-
       // PRESELECTION
       // Preselection of sources from the comprehensive catalog to 
       // improve the performance of the simulation:
@@ -366,12 +363,6 @@ int photon_generation_main()
 	n = 
 	  normalize_vector(vector_product(normalize_vector(sat_catalog[sat_counter].r),
 					  normalize_vector(sat_catalog[sat_counter].v)));
-	/*
-	if ((status=get_preselected_catalog(selected_catalog, &nsources_pre, 
-					    n_sourcefiles, source_catalog_files, 
-					    source_data_columns, n, pre_max_align, 
-					    spectrum_store, N_SPECTRA_FILES))
-					    !=EXIT_SUCCESS) break; */
 	if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog, n, 
 					  pre_max_align, spectrum_store))
 	   !=EXIT_SUCCESS) break;
@@ -383,7 +374,7 @@ int photon_generation_main()
 
 
 
-      // CREATE PHOTONS for all sources  CLOSE TO  the FOV
+      // CREATE PHOTONS for all point sources  CLOSE TO  the FOV
       for (source_counter=0; source_counter<pointsourcecatalog->nsources; 
 	   source_counter++) {
 	// Check whether the source is inside the FOV:
@@ -416,6 +407,77 @@ int photon_generation_main()
 
 	}
       }
+
+
+      // Create photons from the extended sources (clusters) and insert them
+      // to the photon list.
+      if (cluster_image!=NULL) {
+	// Loop over all pixels of the the image:
+	int xcount, ycount;
+	double ra, dec;
+	for(xcount=0; (xcount<cluster_image->width)&&(status==EXIT_SUCCESS); xcount++) {
+	  for(ycount=0; (ycount<cluster_image->width)&&(status==EXIT_SUCCESS); ycount++) {
+	    // Check whether the pixel lies CLOSE TO the FOV:
+	    ra  = (xcount-cluster_image->width/2+0.5)*cluster_image->pixelwidth;
+	    dec = (ycount-cluster_image->width/2+0.5)*cluster_image->pixelwidth;
+	    struct vector v = unit_vector(ra, dec);
+
+	    if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
+	      
+	      // --- Generate Photons from the pixel.
+	      /*
+	      if (cluster_image->pixel[xcount][ycount].t_last_photon<time) {
+		cluster_image->pixel[xcount][ycount].t_last_photon=time;
+	      }
+
+	      // Create photons and insert them into the given time-ordered list:
+	      while (cluster_image->pixel[xcount][ycount].t_last_photon < time+dt) {
+		struct Photon new_photon; // buffer for new photon
+		new_photon.ra  = ra;
+		new_photon.dec = dec; 
+		new_photon.direction = unit_vector(ra, dec); // REMOVE
+
+		// Determine the energy of the new photon according to 
+		// the default spectrum.
+		new_photon.energy = photon_energy(spectrum_store.pha_spectrum, detector);
+
+		// Determine arrival time depending on former photon creation
+		cluster_image->pixel[xcount][ycount].t_last_photon += 
+		  rndexp(1./(cluster_image->pixel[xcount][ycount].rate));
+		new_photon.time = cluster_image->pixel[xcount][ycount].t_last_photon;
+
+		// Insert the photon into the time-ordered list.
+		if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) break;
+	      } // END of loop 'while(...t_last_photon < time+dt)'
+	      */
+	      
+	      double random_number = get_random_number();
+	      if (random_number < cluster_image->pixel[xcount][ycount].rate * dt *1.e8) {
+		struct Photon new_photon; // buffer for new photon
+		new_photon.ra  = ra;
+		new_photon.dec = dec; 
+		new_photon.direction = unit_vector(ra, dec); // REMOVE
+
+		// Determine the energy of the new photon according to 
+		// the default spectrum.
+		new_photon.energy = photon_energy(spectrum_store.pha_spectrum, detector);
+
+		// Determine photon arrival time.
+		// cluster_image->pixel[xcount][ycount].t_last_photon += 
+		//   rndexp(1./(cluster_image->pixel[xcount][ycount].rate));
+		double rnd_time = get_random_number();
+		new_photon.time = time + dt*rnd_time;
+
+		// Insert the photon into the time-ordered list.
+		if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) break;
+	      }
+
+	      // --- END of photon generation from the cluster image pixel.
+
+	    } // END of check whether pixel is close to the FOV.
+	  }
+	} // END of loop over all pixel of the image.
+      } // END  if(cluster_image!=NULL)
 
 
 

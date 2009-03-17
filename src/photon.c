@@ -268,23 +268,23 @@ float photon_energy(
 // specified source.
 // The used spectrum is given in [PHA channels].
 // The function returns the photon energy in [keV].
-float photon_energy(PointSource* ps, Detector* detector)
+float photon_energy(struct PHA* pha_spectrum, Detector* detector)
 {
   // Get a random PHA channel according to the given PHA distribution.
   double rand = get_random_number();
-  long upper=ps->pha_spectrum->NumberChannels-1, lower=0, mid;
+  long upper = pha_spectrum->NumberChannels-1, lower=0, mid;
   
   // Determine the energy of the photon.
   while (upper-lower>1) {
     mid = (long)((lower+upper)/2);
-    if (ps->pha_spectrum->Pha[mid] < rand) {
+    if (pha_spectrum->Pha[mid] < rand) {
       lower = mid;
     } else {
       upper = mid;
     }
   }
     
-  if (ps->pha_spectrum->Pha[lower] < rand) {
+  if (pha_spectrum->Pha[lower] < rand) {
     lower = upper;
   }
 
@@ -404,7 +404,7 @@ int create_photons(
 		   gsl_rng *gsl_random_g
 		   )
 {
-  int bin=0;                         // light curve bin counter
+  int bin=0; // light curve bin counter
   // Flag: first photon in the generation process for this source, i.e.,
   // in the run of this function. This is needed, because the first photon
   // can be inserted at the beginning of the photon list.
@@ -433,7 +433,7 @@ int create_photons(
   }
 
 
-  // create photons and insert them in the given time ordered list
+  // Create photons and insert them into the given time-ordered list:
   while (ps->t_last_photon < time+dt) {
     struct Photon new_photon;        // buffer for new photon
     new_photon.ra = ps->ra;
@@ -441,7 +441,7 @@ int create_photons(
     new_photon.direction = unit_vector(ps->ra, ps->dec); // REMOVE
 
     // Create the energy of the new photon
-    new_photon.energy = photon_energy(ps, detector);
+    new_photon.energy = photon_energy(ps->pha_spectrum, detector);
 
     // Determine the current count rate of the light curve.
     // If the source has no light curve, or the assigned light curve is 
@@ -465,7 +465,8 @@ int create_photons(
 
 
     if (first_photon == 1) {
-      // The first photon for the list might be inserted at the 
+      // The first photon for this source in the current creation circle 
+      // might be inserted at the 
       // beginning of the time-ordered photon list.
       // Therefore this case requires a special treatment.
       if ((status=insert_photon(pl, new_photon)) != EXIT_SUCCESS) break;
@@ -481,7 +482,7 @@ int create_photons(
       // Insert photon to the global photon list:
       if ((status=insert_photon(&pe, new_photon)) != EXIT_SUCCESS) break;  
     }
-  }
+  } // END of loop 'while(t_last_photon < time+dt)'
 
   return(status);
 }

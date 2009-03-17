@@ -12,13 +12,14 @@
 
 
 struct ClusterPixel {
-  float rate;
-  double t_last_photon;
+  float rate;           // count rate in this pixel
+  double t_last_photon; // last photon emitted from this direction
 };
 
 typedef struct {
   struct ClusterPixel **pixel;
-  int width;
+  int width;         // width of the image [pixel]
+  double pixelwidth; // width of one pixel [rad]
 } ClusterImage;
 
 
@@ -59,6 +60,9 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
     } else {
       ci->width = (int)naxes[0];
     }
+
+    // Determine the width of one detector pixel. TODO
+    ci->pixelwidth = 3.32/3600. * M_PI/180.; // [rad]
 
     // Allocate memory for the pixels of the image:
     ci->pixel = (struct ClusterPixel**)malloc(ci->width*sizeof(struct ClusterPixel*));

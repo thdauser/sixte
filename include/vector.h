@@ -15,7 +15,7 @@ struct vector {
 
 // Returns a unit vector pointing in the specified direction of 
 // right ascension and declination
-struct vector unit_vector(double rasc, double dec);
+struct vector unit_vector(const double rasc, const double dec);
 
 // returns a normalized vector (length 1.0, same direction)
 struct vector normalize_vector(struct vector);

@@ -1,13 +1,12 @@
 #include "vector.h"
 
 
-// creates a unit vector from given theta and phi (in astronomical coordiantes)
-struct vector unit_vector(double rasc, double dec)
+// Creates a unit vector for specified right ascension and declination.
+// Angles have to be given in [rad].
+struct vector unit_vector(const double rasc, const double dec)
 {
   struct vector x;
-  double cos_dec;   // buffer variable
-
-  cos_dec = cos(dec);
+  double cos_dec = cos(dec);
 
   x.x = cos_dec * cos(rasc);
   x.y = cos_dec * sin(rasc);

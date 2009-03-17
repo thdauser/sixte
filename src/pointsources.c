@@ -211,7 +211,6 @@ int get_PointSourceCatalog(
 	    // so far there was no photon created for this source
 	    (*psc)->sources[(*psc)->nsources].t_last_photon = -1.;
 	    // source spectrum
-	    //	    (*psc)->sources[(*psc)->nsources].spectrum=&(spectrum_store.spectrum[0]); // REMOVE
 	    (*psc)->sources[(*psc)->nsources].pha_spectrum = 
 	      &(spectrum_store.pha_spectrum[0]);
 
