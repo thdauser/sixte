@@ -271,10 +271,13 @@ float photon_energy(
 float photon_energy(struct Spectrum* pha_spectrum, Detector* detector)
 {
   // Get a random PHA channel according to the given PHA distribution.
-  double rand = get_random_number();
+  float rand = (float)get_random_number();
   long upper = pha_spectrum->NumberChannels-1, lower=0, mid;
   
-  assert(rand <= pha_spectrum->rate[pha_spectrum->NumberChannels-1]);
+  if(rand > pha_spectrum->rate[pha_spectrum->NumberChannels-1]) {
+    printf("PHA sum: %f < RAND: %f\n", 
+	   pha_spectrum->rate[pha_spectrum->NumberChannels-1], rand);
+  }
 
   // Determine the energy of the photon.
   while (upper-lower>1) {
