@@ -37,7 +37,7 @@ int get_spectra(
     // Read a FITS PHA file and assign its content to the array
     // of PHA spectra in the Spectrum_Store.
     if ((status=assign_pha_spectrum(spectrum_store, filenames[0]))!=EXIT_SUCCESS) break;
-
+    
     // Check if the number of PHA channels in the spectrum is equivalent to
     // the number of channels in the spectrum:
     if (spectrum_store->pha_spectrum[0].NumberChannels != NumberChannels) {
@@ -49,6 +49,12 @@ int get_spectra(
       HD_ERROR_THROW(msg, status);
       break;
     }
+
+    float sum=0.;
+    for(count=0; count<spectrum_store->pha_spectrum[0].NumberChannels; count++) {
+      sum+= spectrum_store->pha_spectrum->Pha[count];
+    }
+    printf("--- PHA sum: %lf ---\n", sum);
 
   } while (0);  // END of ERROR handling loop
 
@@ -79,7 +85,7 @@ int assign_pha_spectrum(struct Spectrum_Store* store, char* filename)
   // of libhdsp.
   fits_open_file(&fptr, filename, READONLY, &status);
   if (status != EXIT_SUCCESS) return(status);
-  if ((status=ReadPHAtypeI(fptr, 0, store->pha_spectrum))!=EXIT_SUCCESS) return(status);
+  if ((status=ReadPHAtypeI(fptr, 1, store->pha_spectrum))!=EXIT_SUCCESS) return(status);
   fits_close_file(fptr, &status);
   
   return(status);
@@ -104,7 +110,7 @@ int get_spectrum(
     // fill the spectrum array with data from the FITS file
     headas_chat(5, "load spectrum from file '%s' ...\n", filename);
 
-    // first open PHA FITS file
+    // First of all open the PHA FITS file:
     if (fits_open_table(&pha_fptr, filename, READONLY, &status)) break;
   
     int hdunum, hdutype;
@@ -118,7 +124,7 @@ int get_spectrum(
       if (fits_get_hdu_type(pha_fptr, &hdutype, &status)) break;
     }
 
-    // image HDU results in an error message
+    // If the current HDU is an image extension, throw an error message:
     if (hdutype==IMAGE_HDU) {
       status=EXIT_FAILURE;
       sprintf(msg, "Error: FITS extension in file '%s' is not a table "
@@ -127,21 +133,20 @@ int get_spectrum(
       break;
     }
 
-    // get the number of rows in the FITS file (number of given points of time)
-    long nrows;
-    fits_get_num_rows(pha_fptr, &nrows, &status);
+    // Determine the number of rows in the FITS file (number of given points of time):
+    fits_get_num_rows(pha_fptr, &spectrum->NumberChannels, &status);
 
-    if (nrows != Nchannels) {
+    if (spectrum->NumberChannels != Nchannels) {
       headas_chat(0, "Warning: number of PHA channels in spectrum file '%s' is not "
 		  "equivalent to number of detector channels!\n", filename);
     }
   
 
-    // get memory for the spectrum
-    spectrum->data = (float *) malloc(nrows * sizeof(float));
-    if (!(spectrum->data)) {
+    // Get memory for the spectrum:
+    spectrum->rate = (float *) malloc(spectrum->NumberChannels * sizeof(float));
+    if (!(spectrum->rate)) {
       status = EXIT_FAILURE;
-      sprintf(msg, "Not enough memory available to store the source spectra!\n");
+      sprintf(msg, "Error: not enough memory available to store the source spectrum!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
@@ -150,7 +155,7 @@ int get_spectrum(
     long row;
     long channel=0;
     float probability=0., sum=0., normalization=0.;
-    for (row=1, sum=0.; (row <= nrows)&&(status==EXIT_SUCCESS); row++) {
+    for (row=1,sum=0.;(row <= spectrum->NumberChannels)&&(status==EXIT_SUCCESS); row++) {
       if ((status=read_spec_fitsrow(&channel, &probability, pha_fptr, row))
 	  !=EXIT_SUCCESS) break;
 
@@ -164,17 +169,16 @@ int get_spectrum(
 	break;
       }
       
-      // store the probability distribution for the individual PHA channels
+      // Store the count rate for the individual PHA channels:
       normalization += probability;
-      spectrum->data[row-1] = probability;
+      spectrum->rate[row-1] = probability;
     }
     if (status != EXIT_SUCCESS) break;
 
-    // Normalize spectrum to 1 and create distribution function:
-    for (row=0; row<nrows; row++) {
-      // TODO: scaling to be implemented
-      sum += spectrum->data[row] / normalization;
-      spectrum->data[row] = sum; 
+    // Normalize spectrum to 1 and create probability distribution function:
+    for (row=0; row<spectrum->NumberChannels; row++) {
+      sum += spectrum->rate[row] / normalization;
+      spectrum->rate[row] = sum; 
     }
     
   } while (0);  // end of error handling loop  
@@ -198,8 +202,8 @@ void free_spectra(struct Spectrum_Store *spectrum_store, long Nfiles)
 
   if (spectrum_store->spectrum!=NULL) {
     for (count=0; count<Nfiles; count++) {
-      if (spectrum_store->spectrum[count].data!= NULL) {
-	free(spectrum_store->spectrum[count].data);
+      if (spectrum_store->spectrum[count].rate!= NULL) {
+	free(spectrum_store->spectrum[count].rate);
       }
     }
     free(spectrum_store->spectrum);

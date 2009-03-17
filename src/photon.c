@@ -268,23 +268,25 @@ float photon_energy(
 // specified source.
 // The used spectrum is given in [PHA channels].
 // The function returns the photon energy in [keV].
-float photon_energy(struct PHA* pha_spectrum, Detector* detector)
+float photon_energy(struct Spectrum* pha_spectrum, Detector* detector)
 {
   // Get a random PHA channel according to the given PHA distribution.
   double rand = get_random_number();
   long upper = pha_spectrum->NumberChannels-1, lower=0, mid;
   
+  assert(rand <= pha_spectrum->rate[pha_spectrum->NumberChannels-1]);
+
   // Determine the energy of the photon.
   while (upper-lower>1) {
     mid = (long)((lower+upper)/2);
-    if (pha_spectrum->Pha[mid] < rand) {
+    if (pha_spectrum->rate[mid] < rand) {
       lower = mid;
     } else {
       upper = mid;
     }
   }
     
-  if (pha_spectrum->Pha[lower] < rand) {
+  if (pha_spectrum->rate[lower] < rand) {
     lower = upper;
   }
 
@@ -441,7 +443,7 @@ int create_photons(
     new_photon.direction = unit_vector(ps->ra, ps->dec); // REMOVE
 
     // Create the energy of the new photon
-    new_photon.energy = photon_energy(ps->pha_spectrum, detector);
+    new_photon.energy = photon_energy(ps->spectrum, detector);
 
     // Determine the current count rate of the light curve.
     // If the source has no light curve, or the assigned light curve is 

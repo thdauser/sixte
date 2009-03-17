@@ -16,8 +16,8 @@ typedef struct {
   float ra, dec;  // right ascension and declination of the source
   float rate;     // photon rate
   struct lightcurve_entry* lightcurve; // pointer to source lightcurve
-  //  struct Spectrum* spectrum;  // pointer to source spectrum REMOVE
-  struct PHA* pha_spectrum;   // source spectrum
+  struct Spectrum* spectrum;  // pointer to source spectrum REMOVE
+  //  struct PHA* pha_spectrum;   // source spectrum
   double t_last_photon;       // time of last photon, which was created for this source
 } PointSource;
 

@@ -460,7 +460,7 @@ int photon_generation_main()
 
 		// Determine the energy of the new photon according to 
 		// the default spectrum.
-		new_photon.energy = photon_energy(spectrum_store.pha_spectrum, detector);
+		new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
 
 		// Determine photon arrival time.
 		// cluster_image->pixel[xcount][ycount].t_last_photon += 

@@ -33,7 +33,9 @@
 
 // Data structure representing the specific spectrum of a source.
 struct Spectrum{
-  float *data;     // The index of the array represents the PHA channel, 
+  long NumberChannels;
+
+  float *rate;     // The index of the array represents the PHA channel, 
                    // and the value the relative counts.
                    // The total spectrum is normalized to 1.
 };

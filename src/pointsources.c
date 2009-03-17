@@ -102,9 +102,13 @@ void free_PointSourceFiles(PointSourceFiles* psf, int* status)
 {
   int counter;
   
-  // Close the FITS files with the source catalogs:
-  for (counter = 0; counter < psf->nfiles; counter++) {
-    if(psf->files[counter] != NULL) fits_close_file(psf->files[counter], status);
+  if (psf!=NULL) {
+    // Close the FITS files with the source catalogs:
+    for (counter = 0; counter < psf->nfiles; counter++) {
+      if(psf->files[counter] != NULL) fits_close_file(psf->files[counter], status);
+    }
+    free(psf);
+    psf=NULL;
   }
 }
 
@@ -211,8 +215,8 @@ int get_PointSourceCatalog(
 	    // so far there was no photon created for this source
 	    (*psc)->sources[(*psc)->nsources].t_last_photon = -1.;
 	    // source spectrum
-	    (*psc)->sources[(*psc)->nsources].pha_spectrum = 
-	      &(spectrum_store.pha_spectrum[0]);
+	    (*psc)->sources[(*psc)->nsources].spectrum = 
+	      &(spectrum_store.spectrum[0]);
 
 	    // increase number of sources in the selected catalog
 	    (*psc)->nsources++;

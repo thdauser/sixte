@@ -103,7 +103,7 @@ int insert_photon(struct Photon_Entry **, struct Photon);
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
 //float photon_energy(struct source_cat_entry src, Detector*);
-float photon_energy(struct PHA*, Detector*);
+float photon_energy(struct Spectrum*, Detector*);
 
 // Function produces a light curve for a given source.
 //int create_lightcurve(struct source_cat_entry *src, double time, 
