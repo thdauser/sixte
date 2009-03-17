@@ -24,14 +24,14 @@ CFLAGS="$CFLAGS -I$HEADAS/include"
 LDFLAGS="$LDFLAGS -L$HEADAS/lib"
 
 
-# Check for libraries:
+# Check for libraries:  (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 # -lnsl
+#LIBS+="-lnsl"
 AC_SEARCH_LIBS(ffopen, [cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
 			 [AC_MSG_ERROR([No cfitsio library found!])], [])
 
-# -lncurses (beep ?)     (objdump -R/-T libncurses... )
-#LIBS+="-lncurses -lnsl"
+AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
 AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
 AC_SEARCH_LIBS(pilclose_, ape_2.4.0, [], \
 			 [AC_MSG_ERROR([No ape library (PIL) found!])], [])
