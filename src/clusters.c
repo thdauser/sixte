@@ -81,7 +81,8 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
       }
     } else {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing the cluster image!\n");
+      sprintf(msg, "Error: could not allocate memory for storing the "
+	      "cluster image!\n");
       HD_ERROR_THROW(msg, *status);
       break;
     } 
@@ -90,7 +91,8 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
     input_buffer=(float*)malloc(ci->width*ci->width*sizeof(float));
     if(input_buffer==NULL) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing the cluster image!\n");
+      sprintf(msg, "Error: could not allocate memory for storing the "
+	      "cluster image!\n");
       HD_ERROR_THROW(msg, *status);
       break;
     }
@@ -113,8 +115,8 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
     int x, y;
     for(x=0; x<ci->width; x++) {
       for(y=0; y<ci->width; y++) {
-	ci->pixel[x][y].rate = input_buffer[x*ci->width + y];
-	ci->pixel[x][y].t_last_photon = 0.;
+	ci->pixel[ci->width-x-1][y].rate = input_buffer[x*ci->width + y];
+	ci->pixel[ci->width-x-1][y].t_last_photon = 0.;
       }
     }
 

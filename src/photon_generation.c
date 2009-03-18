@@ -122,8 +122,9 @@ int photon_generation_getpar(
   }
 
 
-  // Convert angle from [arc min] to [rad]
+  // Convert angles from [arc min] to [rad]
   *bandwidth = *bandwidth*M_PI/(60.*180.);
+  telescope->fov_diameter = telescope->fov_diameter*M_PI/(180.*60.);
 
   return(status);
 }
@@ -149,17 +150,6 @@ int photon_generation_main()
   char cluster_filename[FILENAME_LENGTH];    // input: cluster image file
   ClusterImage* cluster_image=NULL;
 
-  /*
-  // Source catalogs (FITS files)
-  fitsfile* source_catalog_files[MAX_NSOURCEFILES];
-  // Catalog of preselected sources along the path of the telescope axis
-  struct source_cat_entry *selected_catalog=NULL;
-  // Column numbers of r.a., declination and count rate in the individual files
-  int source_data_columns[5][3];       
-  // Number of totally available sources (ROSAT + RND + ...) in entire catalog and
-  // in preselected catalog respectively.
-  long source_counter, nsources_pre=0;
-  */
   // New data structures for point sources:
   PointSourceFiles* pointsourcefiles=NULL;
   PointSourceCatalog* pointsourcecatalog=NULL;
@@ -425,46 +415,19 @@ int photon_generation_main()
 	    if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
 	      
 	      // --- Generate Photons from the pixel.
-	      /*
-	      if (cluster_image->pixel[xcount][ycount].t_last_photon<time) {
-		cluster_image->pixel[xcount][ycount].t_last_photon=time;
-	      }
-
-	      // Create photons and insert them into the given time-ordered list:
-	      while (cluster_image->pixel[xcount][ycount].t_last_photon < time+dt) {
-		struct Photon new_photon; // buffer for new photon
-		new_photon.ra  = ra;
-		new_photon.dec = dec; 
-		new_photon.direction = unit_vector(ra, dec); // REMOVE
-
-		// Determine the energy of the new photon according to 
-		// the default spectrum.
-		new_photon.energy = photon_energy(spectrum_store.pha_spectrum, detector);
-
-		// Determine arrival time depending on former photon creation
-		cluster_image->pixel[xcount][ycount].t_last_photon += 
-		  rndexp(1./(cluster_image->pixel[xcount][ycount].rate));
-		new_photon.time = cluster_image->pixel[xcount][ycount].t_last_photon;
-
-		// Insert the photon into the time-ordered list.
-		if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) break;
-	      } // END of loop 'while(...t_last_photon < time+dt)'
-	      */
 	      
 	      double random_number = get_random_number();
-	      if (random_number < cluster_image->pixel[xcount][ycount].rate * dt *1.e8) {
+	      if (random_number < cluster_image->pixel[xcount][ycount].rate * dt *1.e9) {
 		struct Photon new_photon; // buffer for new photon
 		new_photon.ra  = ra;
 		new_photon.dec = dec; 
-		new_photon.direction = unit_vector(ra, dec); // REMOVE
+		new_photon.direction = v; // REMOVE
 
 		// Determine the energy of the new photon according to 
 		// the default spectrum.
 		new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
 
 		// Determine photon arrival time.
-		// cluster_image->pixel[xcount][ycount].t_last_photon += 
-		//   rndexp(1./(cluster_image->pixel[xcount][ycount].rate));
 		double rnd_time = get_random_number();
 		new_photon.time = time + dt*rnd_time;
 
