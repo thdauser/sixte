@@ -115,8 +115,8 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
     int x, y;
     for(x=0; x<ci->width; x++) {
       for(y=0; y<ci->width; y++) {
-	ci->pixel[ci->width-x-1][y].rate = input_buffer[x*ci->width + y];
-	ci->pixel[ci->width-x-1][y].t_last_photon = 0.;
+	ci->pixel[x][ci->width-1-y].rate = input_buffer[x*ci->width + y];
+	ci->pixel[x][ci->width-1-y].t_last_photon = 0.;
       }
     }
 

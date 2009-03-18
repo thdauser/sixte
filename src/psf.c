@@ -272,7 +272,7 @@ PSF* get_psf(
 			status)) break;
       if (fits_read_key(fptr, TDOUBLE, "OFFAXANG", &psf->item[count].angle, comment, 
 			status)) break;      
-      // convert the off-axis angle from [degree] to [rad]
+      // Convert the off-axis angle from [degree] to [rad]:
       psf->item[count].angle = psf->item[count].angle * M_PI/180.;
 
 
@@ -294,7 +294,8 @@ PSF* get_psf(
       double sum=0.;
       for (count2=0; count2<psf->width; count2++) {
 	for (count3=0; count3<psf->width; count3++) {
-	  sum += data[count2*psf->width+count3];
+	  // take care of choosing x- and y-axis properly!
+	  sum += data[count3*psf->width+count2];  
 	  psf->item[count].data[count2][count3] = sum;
 	}
       }
