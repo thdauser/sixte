@@ -121,9 +121,10 @@ int photon_imaging_main() {
 		    &photon.dec, &photon.dec, &anynul, &status);
       if (status!=EXIT_SUCCESS) break;
 
-      // Convert from [decimal degrees] -> [rad]
+      // Rescale from [deg] -> [rad]
       photon.ra  = photon.ra *M_PI/180.;
       photon.dec = photon.dec*M_PI/180.;
+      // Determine a unit vector pointing in the direction of the photon.
       photon.direction = unit_vector(photon.ra, photon.dec);
 
 
@@ -203,11 +204,8 @@ int photon_imaging_main() {
 
 	  }
 	} // END get_psf_pos(...)
-
       } // End of FOV check
-
     }  // END of scanning LOOP over the photon list.
-
   } while(0);  // END of the error handling loop.
 
 

@@ -27,10 +27,10 @@
 // This structure is used to store the PSF data for one particular 
 // off-axis angle and one particular energy.
 typedef struct {
-  double **restrict data;   // pointer to PSF data array [x][y]
+  double** data;   // pointer to PSF data array [x][y]
 
-  double angle;             // off-axis angle of this particular PSF
-  double energy;            // energy of this particular PSF
+  double angle;    // off-axis angle of this particular PSF [rad]
+  double energy;   // energy of this particular PSF [keV]
 
   // For each energy the PSFs are rescaled in such a way that the on-axis PSF 
   // is normalized to 1.  The scaling factor is stored here and has to be used 

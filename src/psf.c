@@ -12,8 +12,8 @@
 // IMPORTANT: The function assumes that the individual PSF data sets lie on a 
 // regular pattern: energy_{i,j} = energy_{i,k} and angle_{i,j} = angle_{k,j} !
 static inline PSF_Item *get_best_psf_item(
-					  double offaxis_angle, 
-					  double energy,        
+					  double offaxis_angle, // [rad]
+					  double energy,        // [rad]
 					  PSF *psf  // PSF (all angles & energies)
 					  )
 {

@@ -32,36 +32,6 @@ struct Pixel {  // union
 };
 
 
-/*
-// Data structure for storing the detector EBOUNDS 
-// (relation PHA channel -> [E_min; E_max]).
-struct Ebounds_Row {
-  long channel;
-  float E_min, E_max;
-};
-
-typedef struct {
-  struct Ebounds_Row *row;
-} Ebounds;
-
-
-
-// Data structure for storing one single line of the detector redistribution matrix.
-typedef struct {
-  float E_low, E_high;
-  int N_grp;
-  int F_chan[1024];
-  int N_chan[1024];
-  float *matrix;
-} RMF_Row;
-
-// Data structure to store the detector response matrix.
-typedef struct {
-  int Nrows;               // number of rows in the detector redistribution matrix
-  int Ncols;               // number of columns in the detector redistribution matrix
-  RMF_Row *row;     // data array for the detector RMF data
-} mRMF;
-*/
 
 
 // Detector data structure.
@@ -70,7 +40,7 @@ typedef struct {
 
   // Detector array (contains the charge created by the x-ray 
   // photons or additional data)
-  struct Pixel **restrict pixel;
+  struct Pixel ** pixel;
 
   int width;               // width (and height) of the detector 
                            // (number of [integer pixels])

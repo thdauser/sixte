@@ -50,7 +50,7 @@ struct Photon {
   double time;             // real time, when the photon is falling on the detector
   float energy;            // photon energy in [keV]
 
-  double ra, dec;          // right ascension and declination of photon position
+  double ra, dec;          // right ascension and declination of photon position [rad]
 
   // REMOVE
   struct vector direction; // direction from which the photon originates 

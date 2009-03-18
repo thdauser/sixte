@@ -593,16 +593,16 @@ int create_photonlist_file(
     // 3. right ascension
     strcpy(ftype[2], "RA");
     strcpy(fform[2], "D");
-    strcpy(funit[2], "decimal degrees");
+    strcpy(funit[2], "rad");
 
     // 4. declination
     strcpy(ftype[3], "DEC");
     strcpy(fform[3], "D");
-    strcpy(funit[3], "decimal degrees");
+    strcpy(funit[3], "decimal degree");
 
     // create the table
     if (fits_create_tbl(*fptr, BINARY_TBL, 0, N_PHOTON_FIELDS, 
-			ftype, fform, funit, "PHOTONLIST", status)) break;
+			ftype, fform, funit, "PHOTONS", status)) break;
     
 
     // write descriptory data into the header of the FITS file
@@ -686,7 +686,7 @@ int create_impactlist_file(
     strcpy(funit[2], "m");
 
     // 4. declination
-    strcpy(ftype[3], "y");
+    strcpy(ftype[3], "Y");
     strcpy(fform[3], "D");
     strcpy(funit[3], "m");
 

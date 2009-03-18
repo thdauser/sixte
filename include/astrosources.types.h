@@ -13,7 +13,7 @@
 
 
 typedef struct {
-  float ra, dec;  // right ascension and declination of the source
+  float ra, dec;  // right ascension and declination of the source [rad]
   float rate;     // photon rate
   struct lightcurve_entry* lightcurve; // pointer to source lightcurve
   struct Spectrum* spectrum;  // pointer to source spectrum REMOVE

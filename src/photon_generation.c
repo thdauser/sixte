@@ -251,7 +251,7 @@ int photon_generation_main()
     const double pre_max_align = sin(bandwidth);
 
     // time step for sky scanning loop
-    const double dt = 0.1;    // 10.* detector.integration_time; 
+    const double dt = 0.1;
 
 
     // Initialize HEADAS random number generator and GSL generator for 
@@ -364,7 +364,7 @@ int photon_generation_main()
 
 
 
-      // CREATE PHOTONS for all point sources  CLOSE TO  the FOV
+      // CREATE PHOTONS for all POINT sources CLOSE TO the FOV
       for (source_counter=0; source_counter<pointsourcecatalog->nsources; 
 	   source_counter++) {
 	// Check whether the source is inside the FOV:
@@ -487,15 +487,18 @@ int photon_generation_main()
 	  // Photon is inside the FOV!
 
 	  // Add the photon to the photon list file:
+	  // Rescale from [rad] -> [deg]:
+	  double ra  = photon_list->photon.ra *180./M_PI;
+	  double dec = photon_list->photon.dec*180./M_PI;
 	  fits_insert_rows(photonlist_fptr, photon_row++, 1, &status);
 	  fits_write_col(photonlist_fptr, TDOUBLE, 1, photon_row, 1, 1, 
 			 &photon_list->photon.time, &status);
 	  fits_write_col(photonlist_fptr, TFLOAT, 2, photon_row, 1, 1, 
 			 &photon_list->photon.energy, &status);
 	  fits_write_col(photonlist_fptr, TDOUBLE, 3, photon_row, 1, 1, 
-			 &photon_list->photon.ra, &status);
+			 &ra, &status);
 	  fits_write_col(photonlist_fptr, TDOUBLE, 4, photon_row, 1, 1, 
-			 &photon_list->photon.dec, &status);
+			 &dec, &status);
 	}
 
 	// Move to the next entry in the photon list and clear the current entry.
@@ -531,19 +534,6 @@ int photon_generation_main()
   // Release memory of orbit/attitude catalog
   if (sat_catalog) free(sat_catalog);
 
-  /*
-  // Release the light curves for the individual sources
-  for (source_counter=0; source_counter<nsources_pre; source_counter++) {
-    if (selected_catalog[source_counter].lightcurve != NULL) {
-      free(selected_catalog[source_counter].lightcurve);
-      selected_catalog[source_counter].lightcurve = NULL;
-      selected_catalog[source_counter].t_last_photon = -1.;
-    }
-  }
-  
-  // Release source catalogs
-  free_source_catalogs(source_catalog_files,n_sourcefiles,
-  &selected_catalog,&status); */
   free_PointSourceFiles(pointsourcefiles, &status);
   free_ClusterImage(cluster_image);
   

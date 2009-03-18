@@ -139,9 +139,9 @@ int get_PointSourceCatalog(
     //                   |  |-> number of columns (should be "3")
     //                   |-> number of different source catalogs
     
-    int file_counter;     // counter to access the different source filenames for opening
-    double rasc, dec;     // source position
-    float countrate;      // source countrate
+    int file_counter;   // counter to access the different source filenames for opening
+    double ra, dec;     // source position
+    float countrate;    // source countrate
 
     // Allocate memory:
     if (*psc==NULL) {
@@ -188,11 +188,14 @@ int get_PointSourceCatalog(
 	  // Read source data (right asension, declination, countrate, ...):
 	  if (get_srctbl_row(psf->files[file_counter], source_counter, 
 			     psf->columns[file_counter], 
-			     &rasc, &dec, &countrate, &status)) 
+			     &ra, &dec, &countrate, &status)) 
 	    break;
 
+	  // Rescale from [deg] -> [rad]
+	  ra  *= M_PI/180.; 
+	  dec *= M_PI/180.;
 	  // Get a unit vector pointing in the direction of the source:
-	  struct vector source_direction = unit_vector(rasc*M_PI/180., dec*M_PI/180.);
+	  struct vector source_direction = unit_vector(ra, dec);
 	  
 	  // Check whether the source should be added to the preselected catalog:
 	  if(fabs(scalar_product(&source_direction, &normal_vector)) < max_align) {
@@ -208,7 +211,7 @@ int get_PointSourceCatalog(
 	    (*psc)->sources[(*psc)->nsources].rate = countrate;
 
 	    // save the source direction in the source catalog-array:
-	    (*psc)->sources[(*psc)->nsources].ra = rasc;
+	    (*psc)->sources[(*psc)->nsources].ra = ra;
 	    (*psc)->sources[(*psc)->nsources].dec = dec;
 	    // set lightcurve pointer to NULL
 	    (*psc)->sources[(*psc)->nsources].lightcurve = NULL;
