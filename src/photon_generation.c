@@ -534,11 +534,40 @@ int photon_generation_main()
   // Release memory of orbit/attitude catalog
   if (sat_catalog) free(sat_catalog);
 
+  // Point Sources
   free_PointSourceFiles(pointsourcefiles, &status);
+  if (pointsourcecatalog != NULL) {
+    if (pointsourcecatalog->sources != NULL) {
+      int count;
+      for(count=0; count<pointsourcecatalog->nsources; count++) {
+	if (pointsourcecatalog->sources[count].lightcurve!=NULL) 
+	  free(pointsourcecatalog->sources[count].lightcurve);
+      }
+      free(pointsourcecatalog->sources);
+    }
+    free (pointsourcecatalog);
+  }
+
+  // Cluster Images
   free_ClusterImage(cluster_image);
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
+
+  // Detector data structure
+  if (detector!=NULL) {
+    if(detector->rmf!=NULL) free(detector->rmf);
+    free(detector);
+  }
+
+  // String buffers for filenames of source files
+  if (source_filename!=NULL) {
+    int count;
+    for(count=0; count<MAX_N_POINTSOURCEFILES; count++) {
+      if(source_filename[count]!=NULL) free(source_filename[count]);
+    }
+    free(source_filename);
+  }
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
 

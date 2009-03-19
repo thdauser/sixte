@@ -157,7 +157,7 @@ int get_PointSourceCatalog(
       }
     }
     
-    if((*psc)->sources==NULL) {
+    if ((*psc)->sources==NULL) {
       (*psc)->sources = (PointSource*)malloc(MAX_N_POINTSOURCES*sizeof(PointSource));
       if((*psc)->sources==NULL) {
 	status = EXIT_FAILURE;
@@ -165,8 +165,19 @@ int get_PointSourceCatalog(
 		"catalog!\n");
 	HD_ERROR_THROW(msg, status);
 	break;
+      } 
+    } else {
+      // Free the light  curves in the old PSC:
+      int count;
+      for (count=0; count<(*psc)->nsources; count++) {
+	if ((*psc)->sources[count].lightcurve != NULL) {
+	  free((*psc)->sources[count].lightcurve);
+	  (*psc)->sources[count].lightcurve = NULL;
+	}
       }
-    } // END of memory allocation
+    }// if (*psc)->sources == NULL
+    // END of memory allocation
+
 
     // At the moment the selected catalog is empty:
     (*psc)->nsources = 0;
