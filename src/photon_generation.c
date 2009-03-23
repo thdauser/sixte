@@ -285,7 +285,7 @@ int photon_generation_main()
       break;
     }
     if(strlen(cluster_filename) > 0) {
-      cluster_image = get_ClusterImage(cluster_filename, &status);
+      cluster_image = get_ClusterImage_fromFile(cluster_filename, &status);
       if (status != EXIT_SUCCESS) break;
     }
 

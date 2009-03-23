@@ -32,12 +32,26 @@ typedef struct {
 
 
 
+// Constructor for Cluster Images.
+ClusterImage* get_ClusterImage() 
+{
+  ClusterImage* ci=NULL;
+
+  // Allocate memory:
+  ci = (ClusterImage*)malloc(sizeof(ClusterImage));
+  if(ci!=NULL) {
+    ci->width=0;
+    ci->pixel=NULL;
+  }
+
+  return(ci);
+}
 
 
 
 // Constructor: Reads a cluster image from a FITS file and stores it in the 
 // corresponding data structure.
-ClusterImage* get_ClusterImage(char* filename, int* status)
+ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
 {
   ClusterImage* ci=NULL;
   fitsfile* fptr=NULL;
@@ -48,7 +62,7 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
   do { // Beginning of ERROR handling loop
 
     // Allocate memory:
-    ci = (ClusterImage*)malloc(sizeof(ClusterImage));
+    ci = get_ClusterImage();
     if(ci==NULL) {
       *status=EXIT_FAILURE;
       sprintf(msg, "Error: could not allocate memory for storing the cluster image!\n");
@@ -72,7 +86,10 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
       ci->width = (int)naxes[0];
     }
 
-    // Determine the width of one detector pixel. TODO
+    // Determine the width of one detector pixel.
+    char comment[MAXMSG]; // buffer
+    if (fits_read_key(fptr, TDOUBLE, "CDELT1", &ci->pixelwidth, comment, status)) break;
+
     ci->pixelwidth = 3.32/3600. * M_PI/180.; // [rad]
 
     // Allocate memory for the pixels of the image:
@@ -151,7 +168,7 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
 void free_ClusterImage(ClusterImage* ci) 
 {
   if(ci != NULL) {
-    if(ci->width>0) {
+    if(ci->width > 0) {
       int count;
       for(count=0; count<ci->width; count++) {
 	if(ci->pixel[count] != NULL) free(ci->pixel[count]);
@@ -186,7 +203,7 @@ void free_ClusterImageCatalog(ClusterImageCatalog* cic)
     if (cic->nimages > 0) {
       int count;
       for(count=0; count<cic->nimages; count++) {
-	free_ClusterImage(&(cic->images[count]));
+	//free_ClusterImage(&(cic->images[count])); // TODO
       }
     }
     free(cic);
