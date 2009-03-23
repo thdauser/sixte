@@ -13,15 +13,21 @@
 
 struct ClusterPixel {
   float rate;           // count rate in this pixel
-  double t_last_photon; // last photon emitted from this direction
+  //  double t_last_photon; // last photon emitted from this direction
 };
 
 typedef struct {
   struct ClusterPixel **pixel;
   int width;         // width of the image [pixel]
   double pixelwidth; // width of one pixel [rad]
+  double minra, maxra;   // minimum right ascension covered by the image [rad]
+  double mindec, maxcec; // maximum    -"-
 } ClusterImage;
 
+typedef struct {
+  int nimages;
+  ClusterImage* images; /* nimages */
+} ClusterImageCatalog;
 
 
 // Constructor: Reads a cluster image from a FITS file and stores it in the 
@@ -116,7 +122,7 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
     for(x=0; x<ci->width; x++) {
       for(y=0; y<ci->width; y++) {
 	ci->pixel[x][ci->width-1-y].rate = input_buffer[x*ci->width + y];
-	ci->pixel[x][ci->width-1-y].t_last_photon = 0.;
+	//	ci->pixel[x][ci->width-1-y].t_last_photon = 0.;
       }
     }
 

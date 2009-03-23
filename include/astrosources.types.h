@@ -22,8 +22,8 @@ typedef struct {
 } PointSource;
 
 typedef struct {
-  PointSource* sources;
   long nsources;
+  PointSource* sources; /* nsources */
 } PointSourceCatalog;
 
 typedef struct {

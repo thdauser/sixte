@@ -55,7 +55,7 @@ AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 
 # Check for header files:
 AC_HEADER_STDC
-AC_CHECK_HEADERS([stdio.h malloc.h stdlib.h string.h math.h])
+AC_CHECK_HEADERS([limit.h math.h malloc.h stdio.h stdlib.h stdarg.h string.h])
 #AC_CHECK_HEADERS([headas.h headas_error.h]) # -> problem: not accepted by preprocessor (but by compiler)!
 
 
