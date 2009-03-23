@@ -30,6 +30,11 @@ typedef struct {
 } ClusterImageCatalog;
 
 
+
+
+
+
+
 // Constructor: Reads a cluster image from a FITS file and stores it in the 
 // corresponding data structure.
 ClusterImage* get_ClusterImage(char* filename, int* status)
@@ -146,12 +151,45 @@ ClusterImage* get_ClusterImage(char* filename, int* status)
 void free_ClusterImage(ClusterImage* ci) 
 {
   if(ci != NULL) {
-    int count;
-    for(count=0; count<ci->width; count++) {
-      if(ci->pixel[count] != NULL) free(ci->pixel[count]);
+    if(ci->width>0) {
+      int count;
+      for(count=0; count<ci->width; count++) {
+	if(ci->pixel[count] != NULL) free(ci->pixel[count]);
+      }
+      free(ci->pixel);
     }
-    free(ci->pixel);
     free(ci);
+  }
+}
+
+
+// Constructor for the ClusterImageCatalog:
+ClusterImageCatalog* get_ClusterImageCatalog() 
+{
+  ClusterImageCatalog* cic = NULL;
+
+  cic = (ClusterImageCatalog*) malloc(sizeof(ClusterImageCatalog));
+
+  if(cic!=NULL) {
+    cic->nimages = 0;
+    cic->images = NULL;
+  }
+
+  return(cic);
+}
+
+
+// Desctructor for the ClusterImageCatalog:
+void free_ClusterImageCatalog(ClusterImageCatalog* cic) 
+{
+  if (cic!=NULL) {
+    if (cic->nimages > 0) {
+      int count;
+      for(count=0; count<cic->nimages; count++) {
+	free_ClusterImage(&(cic->images[count]));
+      }
+    }
+    free(cic);
   }
 }
 
