@@ -69,6 +69,14 @@ AC_C_CONST
 
 
 
+# PIL parameter files have to be installed to the $PFILES directory.
+AC_ARG_VAR([PFILESDIR], [target directory for .par files])
+if test -z "$PFILESDIR"; then
+        PFILESDIR="\$(pkgdatadir)"
+fi
+AC_SUBST([PFILESDIR])
+
+
 # Create the following Makefiles (including subdirectories).
 # A Makefile that is not listed here will not be created by 'automake'!
 AC_CONFIG_FILES([Makefile

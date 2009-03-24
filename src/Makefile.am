@@ -7,6 +7,10 @@ AM_CFLAGS += -Wall
 
 # LDADD = ...   add additional libraries
 
+
+pfilesdir   = @PFILESDIR@
+pfiles_DATA = 
+
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
@@ -27,24 +31,29 @@ bin_PROGRAMS = binary_stream photon_generation photon_detection photon_imaging p
 
 binary_stream_SOURCES  = binary_stream.c
 binary_stream_LDADD    = libdetectors.a
+pfiles_DATA           += binary_stream.par
 
 photon_generation_SOURCES  = photon_generation.c
 photon_generation_LDADD    = libdetectors.a
 photon_generation_LDADD   += libastrosources.a
 photon_generation_LDADD   += libsatellites.a
+pfiles_DATA               += photon_generation.par
 
 photon_detection_SOURCES  = photon_detection.c
 photon_detection_LDADD    = libdetectors.a
 photon_detection_LDADD   += libastrosources.a
 photon_detection_LDADD   += libsatellites.a
+pfiles_DATA              += photon_detection.par
 
 photon_imaging_SOURCES  = photon_imaging.c
 photon_imaging_LDADD    = libdetectors.a
 photon_imaging_LDADD   += libastrosources.a
 photon_imaging_LDADD   += libsatellites.a
+pfiles_DATA            += photon_imaging.par
 
 psfgen_SOURCES  = psfgen.c
 psfgen_LDADD    = libdetectors.a
 psfgen_LDADD   += libastrosources.a
 psfgen_LDADD   += libsatellites.a
+pfiles_DATA    += psfgen.par
 
