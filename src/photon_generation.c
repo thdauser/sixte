@@ -405,11 +405,13 @@ int photon_generation_main()
 	// Loop over all pixels of the the image:
 	int xcount, ycount;
 	double ra, dec;
-	for(xcount=0; (xcount<cluster_image->width)&&(status==EXIT_SUCCESS); xcount++) {
-	  for(ycount=0; (ycount<cluster_image->width)&&(status==EXIT_SUCCESS); ycount++) {
+	for(xcount=0; (xcount<cluster_image->naxis1)&&(status==EXIT_SUCCESS); xcount++) {
+	  for(ycount=0; (ycount<cluster_image->naxis2)&&(status==EXIT_SUCCESS); ycount++) {
 	    // Check whether the pixel lies CLOSE TO the FOV:
-	    ra  = (xcount-cluster_image->width/2+0.5)*cluster_image->pixelwidth;
-	    dec = (ycount-cluster_image->width/2+0.5)*cluster_image->pixelwidth;
+	    ra=cluster_image->crval1 
+	      +(xcount-cluster_image->crpix1+0.5)*cluster_image->cdelt1;
+	    dec=cluster_image->crval2
+	      +(ycount-cluster_image->crpix2+0.5)*cluster_image->cdelt2;
 	    struct vector v = unit_vector(ra, dec);
 
 	    if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {

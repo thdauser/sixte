@@ -18,10 +18,13 @@ struct ClusterPixel {
 
 typedef struct {
   struct ClusterPixel **pixel;
-  int width;         // width of the image [pixel]
-  double pixelwidth; // width of one pixel [rad]
+  int naxis1, naxis2;    // width of the image [pixel]
+  double cdelt1, cdelt2; // width of one pixel [rad]
+  double crpix1, crpix2; // [pixel]
+  double crval1, crval2; // [rad]
+
   double minra, maxra;   // minimum right ascension covered by the image [rad]
-  double mindec, maxcec; // maximum    -"-
+  double mindec, maxdec; // maximum    -"-
 } ClusterImage;
 
 typedef struct {
@@ -40,7 +43,8 @@ ClusterImage* get_ClusterImage()
   // Allocate memory:
   ci = (ClusterImage*)malloc(sizeof(ClusterImage));
   if(ci!=NULL) {
-    ci->width=0;
+    ci->naxis1=0;
+    ci->naxis2=0;
     ci->pixel=NULL;
   }
 
@@ -61,7 +65,7 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
 
   do { // Beginning of ERROR handling loop
 
-    // Allocate memory:
+    // Get an empty ClusterImage using the Constructor:
     ci = get_ClusterImage();
     if(ci==NULL) {
       *status=EXIT_FAILURE;
@@ -79,26 +83,48 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     if (fits_get_img_size(fptr, 2, naxes, status)) break;
     if (naxes[0] != naxes[1]) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: cluster image must be square!\n");
+      sprintf(msg, "Error: cluster image must be square!\n"); // TODO: really??
       HD_ERROR_THROW(msg, *status);
       break;
     } else {
-      ci->width = (int)naxes[0];
+      ci->naxis1 = (int)naxes[0];
+      ci->naxis2 = (int)naxes[1];
     }
 
     // Determine the width of one detector pixel.
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(fptr, TDOUBLE, "CDELT1", &ci->pixelwidth, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CDELT1", &ci->cdelt1, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CDELT2", &ci->cdelt2, comment, status)) break;
+    // Rescale from [deg] to [rad]:
+    ci->cdelt1 *= M_PI/180.;
+    ci->cdelt2 *= M_PI/180.;
 
-    ci->pixelwidth = 3.32/3600. * M_PI/180.; // [rad]
+    // From the header keywords determine the minimum and maximum
+    // right ascension and declination covered by the image:
+    double crpix1=0., crpix2=0., crval1=0., crval2=0.;
+    if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &crpix1, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &crpix2, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &crval1, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &crval2, comment, status)) break;
+    // Rescale from [deg] to [rad]:
+    crpix1 *= M_PI/180.;
+    crpix2 *= M_PI/180.;
+    crval1 *= M_PI/180.;
+    crval2 *= M_PI/180.;
+    // Determine the edges of the covered area:
+    ci->minra = crval1 - ci->cdelt1*crpix1;
+    ci->maxra = crval1 + ci->cdelt1*(ci->naxis1-crpix1);
+    ci->mindec = crval2 - ci->cdelt2*crpix2;
+    ci->maxdec = crval2 + ci->cdelt2*(ci->naxis2-crpix2);
+    
 
     // Allocate memory for the pixels of the image:
-    ci->pixel = (struct ClusterPixel**)malloc(ci->width*sizeof(struct ClusterPixel*));
-    if(ci!=NULL) {
+    ci->pixel = (struct ClusterPixel**)malloc(ci->naxis1*sizeof(struct ClusterPixel*));
+    if (ci!=NULL) {
       int count;
-      for(count=0; (count<ci->width)&&(*status==EXIT_SUCCESS); count++) {
+      for(count=0; (count<ci->naxis1)&&(*status==EXIT_SUCCESS); count++) {
 	ci->pixel[count] = (struct ClusterPixel*)
-	  malloc(ci->width*sizeof(struct ClusterPixel));
+	  malloc(ci->naxis2*sizeof(struct ClusterPixel));
 	if(ci->pixel[count]==NULL) {
 	  *status=EXIT_FAILURE;
 	  sprintf(msg, "Error: could not allocate memory for storing the "
@@ -116,7 +142,7 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     } 
     
     // Allocate memory for input buffer (1D array):
-    input_buffer=(float*)malloc(ci->width*ci->width*sizeof(float));
+    input_buffer=(float*)malloc(ci->naxis1*ci->naxis2*sizeof(float));
     if(input_buffer==NULL) {
       *status=EXIT_FAILURE;
       sprintf(msg, "Error: could not allocate memory for storing the "
@@ -132,7 +158,7 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     double null_value=0.;
     long fpixel[2] = {1, 1};   // lower left corner
     //                |--|--> FITS coordinates start at (1,1)
-    long lpixel[2] = {ci->width, ci->width}; // upper right corner
+    long lpixel[2] = {ci->naxis1, ci->naxis2}; // upper right corner
     long inc[2] = {1, 1};
     if (fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value, 
 			 input_buffer, &anynul, status)) break;
@@ -141,19 +167,18 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     // Transfer the image from the 1D input buffer to the 2D pixel array in
     // the data structure.
     int x, y;
-    for(x=0; x<ci->width; x++) {
-      for(y=0; y<ci->width; y++) {
-	ci->pixel[x][ci->width-1-y].rate = input_buffer[x*ci->width + y];
-	//	ci->pixel[x][ci->width-1-y].t_last_photon = 0.;
+    for(x=0; x<ci->naxis1; x++) {
+      for(y=0; y<ci->naxis2; y++) {
+	ci->pixel[x][ci->naxis2-1-y].rate = input_buffer[x*ci->naxis2 + y];
       }
     }
-
 
   } while(0); // END of Error handling loop
 
 
   // --- clean up ---
 
+  // free the input buffer
   if(input_buffer) free(input_buffer);
 
   // close FITS file (if open)
@@ -168,9 +193,9 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
 void free_ClusterImage(ClusterImage* ci) 
 {
   if(ci != NULL) {
-    if(ci->width > 0) {
+    if(ci->naxis1 > 0) {
       int count;
-      for(count=0; count<ci->width; count++) {
+      for(count=0; count<ci->naxis1; count++) {
 	if(ci->pixel[count] != NULL) free(ci->pixel[count]);
       }
       free(ci->pixel);
