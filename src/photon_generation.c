@@ -13,10 +13,6 @@
 int photon_generation_getpar(
 			     char orbit_filename[],
 			     char attitude_filename[],
-			     // number of input source catalog files
-			     int* n_sourcefiles,  
-			     // array containing the filename of each source file
-			     char** source_filename,
 			     // PHA file containing the default source spectrum
 			     char spectrum_filename[],
 			     char rmf_filename[],
@@ -27,9 +23,6 @@ int photon_generation_getpar(
 			     struct Telescope *telescope
 			     )
 {
-  // filename-buffer to access the different source files
-  char cbuffer[FILENAME_LENGTH];
-
   char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
 
@@ -43,38 +36,6 @@ int photon_generation_getpar(
   else if ((status = PILGetFname("attitude_filename", attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
     HD_ERROR_THROW(msg, status);
-  }
-
-  // Get the number of source input-files
-  else if ((status = PILGetInt("n_sourcefiles", n_sourcefiles))) {
-    sprintf(msg, "Error reading the number of source catalog files!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-
-  // Get the filenames of the individual source catalogs.
-  else {
-    int input_counter;
-    for(input_counter=0; input_counter<MAX_N_POINTSOURCEFILES; input_counter++) {
-
-      sprintf(cbuffer,"sourcefile%d",input_counter+1);
-
-      if (input_counter<*n_sourcefiles) {
-	// Read the source file from using PIL.
-	if ((status = PILGetFname(cbuffer, source_filename[input_counter]))) {
-	  sprintf(msg, "Error reading the name of the sourcefile No %d!\n", 
-		  input_counter);
-	  HD_ERROR_THROW(msg,status);
-	}
-
-      } else {
-	// Fill redundant input slots for source files with NULL value,
-	// in order to avoid errors with the HD_PARSTAMP routine.
-	PILPutFname(cbuffer, "");
-
-      }
-	
-    }
-    if (status) return(status);
   }
 
   // Get the filename of the default source spectrum (PHA FITS file)
@@ -142,6 +103,7 @@ int photon_generation_main()
   char rmf_filename[FILENAME_LENGTH];        // input: detector RMF
   char photonlist_filename[FILENAME_LENGTH]; // output: photon list
   
+  int source_category; // Source category: 1=Point sources, 2=Extended Sources
   // Several input source catalog files:
   int n_sourcefiles;   // number of input source files
   // Filenames of the individual source catalog files (FITS):
@@ -176,9 +138,11 @@ int photon_generation_main()
 
   // Photon list containing all created photons in the sky
   struct Photon_Entry *photon_list=NULL;  
-
   // Pointer to the FITS file for the output for the photon list.
   fitsfile *photonlist_fptr = NULL;
+
+  // time step for sky scanning loop
+  double dt = 0.1;
 
   gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
 
@@ -186,7 +150,7 @@ int photon_generation_main()
   int status = EXIT_SUCCESS;  // error status flag
 
 
-  // register HEATOOL
+  // Register HEATOOL
   set_toolname("photon_generation");
   set_toolversion("0.01");
 
@@ -198,28 +162,8 @@ int photon_generation_main()
     detector = get_Detector(&status);
     if(status!=EXIT_SUCCESS) break;
     
-    int count;
-    source_filename=(char**)malloc(MAX_N_POINTSOURCEFILES*sizeof(char*));
-    if (source_filename!=NULL) {
-      for(count=0; (count<MAX_N_POINTSOURCEFILES)&&(status==EXIT_SUCCESS); count++) {
-	source_filename[count] = (char*)malloc(FILENAME_LENGTH*sizeof(char));
-	if(source_filename[count]==NULL) {
-	  status=EXIT_FAILURE;
-	  sprintf(msg, "Error: not enough memory!\n");
-	  HD_ERROR_THROW(msg,status);
-	  break;
-	}
-      }
-    } else {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory!\n");
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
 
     if((status=photon_generation_getpar(orbit_filename, attitude_filename,
-					&n_sourcefiles, source_filename,
 					spectrum_filename[0], rmf_filename, 
 					photonlist_filename,
 					&t0, &timespan, &bandwidth,
@@ -250,9 +194,6 @@ int photon_generation_main()
     // preselection band along the orbit (angle(n,source) > 90-bandwidth)
     const double pre_max_align = sin(bandwidth);
 
-    // time step for sky scanning loop
-    const double dt = 0.1;
-
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -273,21 +214,89 @@ int photon_generation_main()
     // Get the source spectra:
     if ((status=get_spectra(&spectrum_store, detector->rmf->NumberChannels, 
 			    spectrum_filename, N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
-    
-    // Get the source catalogs:
-    pointsourcefiles = get_PointSourceFiles(n_sourcefiles, source_filename, &status);
-    if (status != EXIT_SUCCESS) break;
 
-    // Get the specified galaxy cluster image:
-    if ((status = PILGetFname("cluster_filename", cluster_filename))) {
-      sprintf(msg, "Error reading the filename of the cluster image file!\n");
-      HD_ERROR_THROW(msg,status);
+
+
+    // Determine the input sources (different categories):
+    if ((status = PILGetInt("source_category", &source_category))) {
+      sprintf(msg, "Error: wrong source category!\n");
+      HD_ERROR_THROW(msg, status);
       break;
     }
-    if(strlen(cluster_filename) > 0) {
+    if (source_category==POINT_SOURCES) { 
+
+      int count;
+      source_filename=(char**)malloc(MAX_N_POINTSOURCEFILES*sizeof(char*));
+      if (source_filename!=NULL) {
+	for(count=0; (count<MAX_N_POINTSOURCEFILES)&&(status==EXIT_SUCCESS); count++) {
+	  source_filename[count] = (char*)malloc(FILENAME_LENGTH*sizeof(char));
+	  if(source_filename[count]==NULL) {
+	    status=EXIT_FAILURE;
+	    sprintf(msg, "Error: not enough memory!\n");
+	    HD_ERROR_THROW(msg,status);
+	    break;
+	  }
+	}
+      } else {
+	status=EXIT_FAILURE;
+	sprintf(msg, "Error: not enough memory!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+
+      // Get the number of source input-files
+      if ((status = PILGetInt("n_sourcefiles", &n_sourcefiles))) {
+	sprintf(msg, "Error reading the number of source catalog files!\n");
+	HD_ERROR_THROW(msg, status);
+	break;
+      }
+      // Get the filenames of the individual source catalogs.
+      else {
+	int counter;
+	// filename-buffer to access the different source files
+	char cbuffer[FILENAME_LENGTH];
+
+	for(counter=0; counter<MAX_N_POINTSOURCEFILES; counter++) {
+	  sprintf(cbuffer,"sourcefile%d", counter+1);
+
+	  if (counter<n_sourcefiles) {
+	    // Read the source file from using PIL.
+	    if ((status = PILGetFname(cbuffer, source_filename[counter]))) {
+	      sprintf(msg, "Error reading the name of the sourcefile No %d!\n", 
+		      counter);
+	      HD_ERROR_THROW(msg, status);
+	    }
+	  } else {
+	    // Fill redundant input slots for source files with NULL value,
+	    // in order to avoid errors with the HD_PARSTAMP routine.
+	    PILPutFname(cbuffer, "");
+	  }
+	}
+	if (status) break;
+      }
+
+      // Load the source catalogs from the files:
+      pointsourcefiles = get_PointSourceFiles(n_sourcefiles, source_filename, &status);
+      if (status != EXIT_SUCCESS) break;
+      
+    } else if (source_category==EXTENDED_SOURCES) {
+
+      // Load the specified galaxy cluster image:
+      if ((status = PILGetFname("cluster_filename", cluster_filename))) {
+	sprintf(msg, "Error reading the filename of the cluster image file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
       cluster_image = get_ClusterImage_fromFile(cluster_filename, &status);
       if (status != EXIT_SUCCESS) break;
-    }
+
+    } else {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: wrong source category!\n");
+      HD_ERROR_THROW(msg, status);
+    } // different source categories
+
+
 
     // Delete old photon list FITS file:
     remove(photonlist_filename);
@@ -343,106 +352,108 @@ int photon_generation_main()
       }
 
 
-      // PRESELECTION
-      // Preselection of sources from the comprehensive catalog to 
-      // improve the performance of the simulation:
-      if (sat_catalog[sat_counter].time-last_update > ORBIT_UPDATE_TIME) {
-	// Preselect sources from the entire source catalog according to the 
-	// satellite's direction of movement.
-	// Calculate normalized vector perpendicular to the orbit plane:
-	n = 
-	  normalize_vector(vector_product(normalize_vector(sat_catalog[sat_counter].r),
-					  normalize_vector(sat_catalog[sat_counter].v)));
-	if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog, n, 
-					  pre_max_align, spectrum_store))
-	   !=EXIT_SUCCESS) break;
+      // First determine telescope pointing direction at the current time.
+      // TODO: replace this calculation by orbit interpolation.
+      telescope.nz =
+	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
+					 sat_catalog[sat_counter].time, 
+					 sat_catalog[sat_counter+1].nz,
+					 sat_catalog[sat_counter+1].time,time));
+      
 
-	// Update the catalog-update-counter
-	last_update = sat_catalog[sat_counter].time;
-      }
-      // END of preselection
+      if(source_category==POINT_SOURCES) {
 
-
-
-      // CREATE PHOTONS for all POINT sources CLOSE TO the FOV
-      for (source_counter=0; source_counter<pointsourcecatalog->nsources; 
-	   source_counter++) {
-	// Check whether the source is inside the FOV:
-	
-	// First determine telescope pointing direction at the actual time.
-	// TODO: replace this calculation by orbit interpolation.
-	telescope.nz =
-	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
-					   sat_catalog[sat_counter].time, 
-					   sat_catalog[sat_counter+1].nz,
-					   sat_catalog[sat_counter+1].time,time));
-	
-	
-	// Compare the source direction to the unit vector specifiing the 
-	// direction of the telescope:
-	//if(check_fov(selected_catalog[source_counter].r, telescope.nz, 
-	//	     close_fov_min_align) == 0) {
-	struct vector source_vector = 
-	  unit_vector(pointsourcecatalog->sources[source_counter].ra, 
-		      pointsourcecatalog->sources[source_counter].dec);
-	if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
-
-	  // The source is inside the FOV  => create photons:
-	  //	  if ((status=create_photons(&selected_catalog[source_counter], time, dt, 
-	  //				     &photon_list, detector, gsl_random_g))
-	  //	      !=EXIT_SUCCESS) break; 
-	  if ((status=create_photons(&(pointsourcecatalog->sources[source_counter]), 
-				     time, dt, &photon_list, detector, gsl_random_g))
-	      !=EXIT_SUCCESS) break; 
-
+	// PRESELECTION of Point sources
+	// Preselection of sources from the comprehensive catalog to 
+	// improve the performance of the simulation:
+	if (sat_catalog[sat_counter].time-last_update > ORBIT_UPDATE_TIME) {
+	  // Preselect sources from the entire source catalog according to the 
+	  // satellite's direction of movement.
+	  // Calculate normalized vector perpendicular to the orbit plane:
+	  n = 
+	    normalize_vector(vector_product(normalize_vector(sat_catalog[sat_counter].r),
+					    normalize_vector(sat_catalog[sat_counter].v)));
+	  if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog, n, 
+					    pre_max_align, spectrum_store))
+	     !=EXIT_SUCCESS) break;
+	  
+	  // Update the catalog-update-counter
+	  last_update = sat_catalog[sat_counter].time;
 	}
-      }
+	// END of preselection
 
 
-      // Create photons from the extended sources (clusters) and insert them
-      // to the photon list.
-      if (cluster_image!=NULL) {
-	// Loop over all pixels of the the image:
-	int xcount, ycount;
-	double ra, dec;
-	for(xcount=0; (xcount<cluster_image->naxis1)&&(status==EXIT_SUCCESS); xcount++) {
-	  for(ycount=0; (ycount<cluster_image->naxis2)&&(status==EXIT_SUCCESS); ycount++) {
-	    // Check whether the pixel lies CLOSE TO the FOV:
-	    ra=cluster_image->crval1 
-	      +(xcount-cluster_image->crpix1+0.5)*cluster_image->cdelt1;
-	    dec=cluster_image->crval2
-	      +(ycount-cluster_image->crpix2+0.5)*cluster_image->cdelt2;
-	    struct vector v = unit_vector(ra, dec);
 
-	    if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
-	      
-	      // --- Generate Photons from the pixel.
-	      
-	      double random_number = get_random_number();
-	      if (random_number < cluster_image->pixel[xcount][ycount].rate * dt *1.e9) {
-		struct Photon new_photon; // buffer for new photon
-		new_photon.ra  = ra;
-		new_photon.dec = dec; 
-		new_photon.direction = v; // REMOVE
-
-		// Determine the energy of the new photon according to 
-		// the default spectrum.
-		new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
-
-		// Determine photon arrival time.
-		double rnd_time = get_random_number();
-		new_photon.time = time + dt*rnd_time;
-
-		// Insert the photon into the time-ordered list.
-		if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) break;
-	      }
-
-	      // --- END of photon generation from the cluster image pixel.
-
-	    } // END of check whether pixel is close to the FOV.
+	// CREATE PHOTONS for all POINT sources CLOSE TO the FOV
+	for (source_counter=0; source_counter<pointsourcecatalog->nsources; 
+	     source_counter++) {
+	  // Check whether the source is inside the FOV:
+	  	  
+	  // Compare the source direction to the unit vector specifiing the 
+	  // direction of the telescope:
+	  struct vector source_vector = 
+	    unit_vector(pointsourcecatalog->sources[source_counter].ra, 
+			pointsourcecatalog->sources[source_counter].dec);
+	  if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
+	    
+	    // The source is inside the FOV  => create photons:
+	    if ((status=create_photons(&(pointsourcecatalog->sources[source_counter]), 
+				       time, dt, &photon_list, detector, gsl_random_g))
+		!=EXIT_SUCCESS) break; 
+	    
 	  }
-	} // END of loop over all pixel of the image.
-      } // END  if(cluster_image!=NULL)
+	}
+
+      } else if (source_category==EXTENDED_SOURCES) {
+
+	// Create photons from the extended sources (clusters) and insert them
+	// to the photon list.
+	if (cluster_image!=NULL) {
+	  // Loop over all pixels of the the image:
+	  int xcount, ycount;
+	  double ra, dec;
+	  for(xcount=0; (xcount<cluster_image->naxis1)&&(status==EXIT_SUCCESS); 
+	      xcount++) {
+	    for(ycount=0; (ycount<cluster_image->naxis2)&&(status==EXIT_SUCCESS); 
+		ycount++) {
+	      // Check whether the pixel lies CLOSE TO the FOV:
+	      ra=cluster_image->crval1 
+		+(xcount-cluster_image->crpix1+0.5)*cluster_image->cdelt1;
+	      dec=cluster_image->crval2
+		+(ycount-cluster_image->crpix2+0.5)*cluster_image->cdelt2;
+	      struct vector v = unit_vector(ra, dec);
+
+	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
+	      
+		// --- Generate Photons from the pixel.
+		
+		double random_number = get_random_number();
+		if (random_number < cluster_image->pixel[xcount][ycount].rate * dt *1.e9) {
+		  struct Photon new_photon; // buffer for new photon
+		  new_photon.ra  = ra;
+		  new_photon.dec = dec; 
+		  new_photon.direction = v; // REMOVE
+		  
+		  // Determine the energy of the new photon according to 
+		  // the default spectrum.
+		  new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
+		  
+		  // Determine photon arrival time.
+		  double rnd_time = get_random_number();
+		  new_photon.time = time + dt*rnd_time;
+		  
+		  // Insert the photon into the time-ordered list.
+		  if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) break;
+		}
+		
+		// --- END of photon generation from the cluster image pixel.
+		
+	      } // END of check whether pixel is close to the FOV.
+	    }
+	  } // END of loop over all pixel of the image.
+	} // END  if(cluster_image!=NULL)
+
+      } // END of decision which source category
 
 
 

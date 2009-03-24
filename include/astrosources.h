@@ -26,33 +26,8 @@
 #include "astrosources.types.h"
 
 
-
-/*
-// Function loads the required source catalogs from the specified FITS files and
-// stores the source data in an array. Additionally it allocates the memory for the
-// preselected catalog.
-int get_source_catalogs(struct source_cat_entry **selected_catalog, 
-			const int n_sourcefiles, fitsfile **sourcefiles,
-			int columns[MAX_NSOURCEFILES][3], 
-			char** source_filename);
-
-
-// Releases the memory which has been allocated to store 
-// the source catalogs (all sources and preselected).
-void free_source_catalogs(fitsfile **sourcefiles, const int n_sourcefiles,
-			  struct source_cat_entry **selected_catalog, int *status);
-
-
-// Get the preselected source catalogs with sources along the path of the 
-// telescope axis over the sky.
-int get_preselected_catalog(struct source_cat_entry *selected_catalog, 
-			    long *nsources, const int n_sourcefiles,
-			    fitsfile **sourcefiles, int columns[5][3], 
-			    struct vector telescope_direction,
-			    const double pre_max_align, struct Spectrum_Store, 
-			    const int Nspectra);
-
-*/
+#define POINT_SOURCES    1
+#define EXTENDED_SOURCES 2
 
 
 // Function opens the specified point-source catalog files.
