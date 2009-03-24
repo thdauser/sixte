@@ -72,7 +72,7 @@ AC_C_CONST
 # PIL parameter files have to be installed to the $PFILES directory.
 AC_ARG_VAR([PFILESDIR], [target directory for .par files])
 if test -z "$PFILESDIR"; then
-        PFILESDIR="\$(pkgdatadir)"
+        PFILESDIR="\$(HEADAS)/syspfiles"
 fi
 AC_SUBST([PFILESDIR])
 
