@@ -1,0 +1,8 @@
+psf_width,i,lq,384,1,10000,"width of the PSF array (pixel)"
+psf_pixelwidth,r,lq,75.0e-6,0.0,1000000.0,"width of the PSF pixels (m)"
+focal_length,r,lq,1.6,0.0,1000.0,"focal length of the telescope (m)"
+psf_filename,f,lq,"test.psf.image.fits",,,"name of the PSF output file (FITS file)"
+type,i,lq,1,1,4,"PSF type (1=Gaussian PSF)"
+hew,r,lq,15,0.0,1000.0,"HEW (arc sec)"
+chatter,i,lh,5,,,"chatter: control verbosity of the program"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"
