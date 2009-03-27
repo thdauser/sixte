@@ -272,6 +272,10 @@ int photon_generation_main()
 	    PILPutFname(cbuffer, "");
 	  }
 	}
+	// Clear the PIL parameter for the cluster filename in order to 
+	// avoid problems with HD_PARSTAMP.
+	PILPutFname("cluster_filename", "");
+
 	if (status) break;
       }
 
@@ -289,6 +293,18 @@ int photon_generation_main()
       }
       cluster_image = get_ClusterImage_fromFile(cluster_filename, &status);
       if (status != EXIT_SUCCESS) break;
+
+      // Clear the filenames of the point source catalogs in the PIL parameter file,
+      // otherwise HD_PARSTAMP might cause an error.
+      int counter;
+      // Filename-buffer to access the different source files:
+      char cbuffer[FILENAME_LENGTH];
+      for(counter=0; counter<MAX_N_POINTSOURCEFILES; counter++) {
+	sprintf(cbuffer,"sourcefile%d", counter+1);
+	// Fill redundant input slots for source files with NULL value,
+	// in order to avoid errors with the HD_PARSTAMP routine.
+	PILPutFname(cbuffer, "");
+      }
 
     } else {
       status=EXIT_FAILURE;
