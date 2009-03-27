@@ -19,7 +19,7 @@ lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
 # Sources:
 libastrosources_a_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 			random.c spectrum.c
-libdetectors_a_SOURCES = detector.c eventlist.c psf.c random.c
+libdetectors_a_SOURCES = detector.c eventlist.c psf.c random.c vector.c
 libsatellites_a_SOURCES = fits_attitude.c fits_ctlg.c orbatt.c vector.c
 
 
@@ -27,12 +27,15 @@ libsatellites_a_SOURCES = fits_attitude.c fits_ctlg.c orbatt.c vector.c
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = binary_stream create_htrs_psf \
+bin_PROGRAMS = binary_stream htrs_psfgen \
 		photon_generation photon_detection photon_imaging psfgen
 
 binary_stream_SOURCES  = binary_stream.c
 binary_stream_LDADD    = libdetectors.a
 pfiles_DATA           += binary_stream.par
+
+htrs_psfgen_SOURCES  = htrs_psfgen.c
+htrs_psfgen_LDADD    = libdetectors.a
 
 photon_generation_SOURCES  = photon_generation.c
 photon_generation_LDADD    = libdetectors.a

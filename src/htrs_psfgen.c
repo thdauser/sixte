@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "global_constants.h"
+#include "sixt.h"
 #include "detectors.h"
 #include "psf.h"
 
@@ -9,7 +9,7 @@
 int main()
 {
   Detector* detector;
-  struct PSF_Store store;
+  PSF psf;
 
   int count, count2;
 
@@ -19,31 +19,33 @@ int main()
 
   do { // Error handling loop 
 
-    // Detector Setup:
-    detector.type = HTRS;
-    detector.width = 7;
-    detector.pixelwidth = 4.0e-3;    // in [m]
+    detector = get_Detector(&status);
 
-    status = htrs_get_detector(&detector);
+    // Detector Setup:
+    detector->type = HTRS;
+    detector->width = 7;
+    detector->pixelwidth = 4.0e-3;    // in [m]
+
+    detector = htrs_get_Detector(detector, &status);
 
 
     // PSF Setup:
-    store.N_elements = 1;
-    store.width = 700;
-    store.pixelwidth = (detector.width*detector.pixelwidth)/store.width;
+    psf.N_elements = 1;
+    psf.width = 700;
+    psf.pixelwidth = (detector->width*detector->pixelwidth)/psf.width;
 
     // Get memory for the PSF.
-    store.psf = (struct PSF *) malloc(store.N_elements * sizeof(struct PSF));
-    if (store.psf) {   // memory was allocated successfully
-      for (count=0; count<store.N_elements; count++) {
-	store.psf[count].energy = 1.0;  // Default values.
-	store.psf[count].angle = 0.0;
-	store.psf[count].data = (double **) malloc(store.width * sizeof(double *));
-	if (store.psf[count].data) {
-	  for (count2=0; count2<store.width; count2++) {
-	    store.psf[count].data[count2] = (double *) 
-	      malloc(store.width * sizeof(double));
-	    if (!store.psf[count].data[count2]) {
+    psf.item = (PSF_Item *) malloc(psf.N_elements * sizeof(PSF_Item));
+    if (psf.item != NULL) {   // memory was allocated successfully
+      for (count=0; count<psf.N_elements; count++) {
+	psf.item[count].energy = 1.0;  // Default values.
+	psf.item[count].angle = 0.0;
+	psf.item[count].data = (double **) malloc(psf.width * sizeof(double *));
+	if (psf.item[count].data != NULL) {
+	  for (count2=0; count2<psf.width; count2++) {
+	    psf.item[count].data[count2] = (double *) 
+	      malloc(psf.width * sizeof(double));
+	    if (psf.item[count].data[count2] == NULL) {
 	      status = EXIT_FAILURE;
 	    }
 	  }
@@ -120,10 +122,10 @@ int main()
     double fraction[2];
 
     // Determine normalization
-    for(count=0; count<store.width; count++) {
-      for(count2=0; count2<store.width; count2++) {
-	position.x = (count-store.width/2+0.5)*store.pixelwidth;
-	position.y = (count2-store.width/2+0.5)*store.pixelwidth;
+    for(count=0; count<psf.width; count++) {
+      for(count2=0; count2<psf.width; count2++) {
+	position.x = (count-psf.width/2+0.5)*psf.pixelwidth;
+	position.y = (count2-psf.width/2+0.5)*psf.pixelwidth;
 	htrs_get_pixel(detector, position, x, y, fraction);
 	
 	if ((x[0]==3)&&(y[0]==3)) {
@@ -132,14 +134,14 @@ int main()
       }
     }
 
-    for(count=0; count<store.width; count++) {
-      for(count2=0; count2<store.width; count2++) {
-	position.x = (count-store.width/2+0.5)*store.pixelwidth;
-	position.y = (count2-store.width/2+0.5)*store.pixelwidth;
+    for(count=0; count<psf.width; count++) {
+      for(count2=0; count2<psf.width; count2++) {
+	position.x = (count-psf.width/2+0.5)*psf.pixelwidth;
+	position.y = (count2-psf.width/2+0.5)*psf.pixelwidth;
 	htrs_get_pixel(detector, position, x, y, fraction);
 	
 	if (x[0] != INVALID_PIXEL) {
-	  store.psf[0].data[count][count2] = psf_parts[x[0]][y[0]]/normalization;
+	  psf.item[0].data[count][count2] = psf_parts[x[0]][y[0]]/normalization;
 	  // Normalization (number of PSF pixels                   <-|
 	  // per HTRS pixel)
 	}
@@ -148,8 +150,7 @@ int main()
 
     // Store the PSF in a FITS file.
     remove("psf.htrs.image.fits");
-    status = save_psf_image(store, "psf.htrs.image.fits", &status);
-
+    status = save_psf_image(&psf, "psf.htrs.image.fits", &status);
 
   } while (0); // END of error handling loop
 

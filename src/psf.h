@@ -89,7 +89,7 @@ void free_psf(PSF*);
 
 // Save the data contained in the PSF storage to images in a FITS file
 // according to the OGIP standards.
-int save_psf_image(PSF*, const char *, int *status);
+int save_psf_image(PSF*, const char*, int* status);
 
 
 #endif /* PSF_H */
