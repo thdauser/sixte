@@ -420,12 +420,12 @@ int save_psf_image(
 		     "", status);
       fits_write_key(fptr, TSTRING, "CUNIT2", "pixel", 
 		     "", status);
-      double dbuffer = 1.;
+      double dbuffer = psf->width*0.5;
       fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
 		     "X axis reference pixel", status);
       fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
 		     "Y axis reference pixel", status);
-      dbuffer = -psf->width/2;
+      dbuffer = 0.;
       fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
 		     "coord of X ref pixel", status);
       fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 

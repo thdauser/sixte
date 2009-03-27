@@ -150,7 +150,7 @@ int main()
 
     // Store the PSF in a FITS file.
     remove("psf.htrs.image.fits");
-    status = save_psf_image(&psf, "psf.htrs.image.fits", &status);
+    status = save_psf_image(&psf, "htrs.psf.hexagons.fits", &status);
 
   } while (0); // END of error handling loop
 
