@@ -27,7 +27,8 @@ libsatellites_a_SOURCES = fits_attitude.c fits_ctlg.c orbatt.c vector.c
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = binary_stream photon_generation photon_detection photon_imaging psfgen
+bin_PROGRAMS = binary_stream create_htrs_psf \
+		photon_generation photon_detection photon_imaging psfgen
 
 binary_stream_SOURCES  = binary_stream.c
 binary_stream_LDADD    = libdetectors.a

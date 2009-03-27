@@ -95,6 +95,10 @@ int psfgen_main()
 
     } // END of Simple Gauss PSF (type==1)
     
+    else if (type == 2) { // HTRS hexagonal PSF
+
+    } // END of HTRS hexagonal PSF (type==2)
+
     else {  // invalid PSF type
       status = EXIT_FAILURE;
       sprintf(msg, "Error: Invalid PSF type!\n");
@@ -108,11 +112,6 @@ int psfgen_main()
     // --- PSF initialization ---
     
     int count1, count2;
-    //    float X[psf.width], Y[psf.width];
-    //    for (count1=0; count1<psf.width; count1++) {
-    //      X[count1] = (count1-psf.width/2) * psf.pixelwidth;
-    //      Y[count1] = X[count1];
-    //    }
 
     // Get memory for the PSF data.
     psf.item = (PSF_Item *) malloc(psf.N_elements * sizeof(PSF_Item));

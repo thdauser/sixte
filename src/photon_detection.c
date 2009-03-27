@@ -104,6 +104,8 @@ int photon_detection_main() {
     } else if (detector->type == HTRS) {
       headas_chat(5, "--> HTRS <--\n");
 
+      detector=htrs_get_Detector(detector, &status);
+
       detector->action = NULL; // htrs_detector_action;
 
     } else {
@@ -335,13 +337,13 @@ int photon_detection_main() {
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
 int photon_detection_getpar(
-		       char impactlist_filename[],
-		       char rmf_filename[],       
-		       char eventlist_filename[],
-		       double *t0,        // start time
-		       double *timespan,  // time span
-		       Detector *detector
-		       )
+			    char impactlist_filename[],
+			    char rmf_filename[],       
+			    char eventlist_filename[],
+			    double *t0,        // start time
+			    double *timespan,  // time span
+			    Detector *detector
+			    )
 {
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status

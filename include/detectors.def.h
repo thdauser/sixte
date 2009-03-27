@@ -92,7 +92,7 @@ int htrs_get_pixel(Detector*, struct Point2d,
 
 // Constructor: this routine performs the initialization of the HTRS
 // detector. The return value is the error status.
-Detector* htrs_get_Detector(int *);
+Detector* htrs_get_Detector(Detector*, int *);
 // Destructor: release all dynamically allocated memory in the HTRS
 // detector structure.
 void htrs_free_Detector(Detector*);

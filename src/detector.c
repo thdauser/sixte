@@ -893,9 +893,9 @@ static inline struct Point2i htrs_get_pixel2icoordinates(int pixel,
 
 
 ///////////////////////////////////////////
-Detector* htrs_get_Detector(int* status)
+Detector* htrs_get_Detector(Detector* detector, int* status)
 {
-  Detector* detector=NULL;
+  //  Detector* detector=NULL;
   struct Point2d* centers = NULL;
 
   char msg[MAXMSG];        // buffer for error output messages
@@ -907,8 +907,8 @@ Detector* htrs_get_Detector(int* status)
   do { // Error handling loop 
     
     // Allocate memory for the detector pixel array:
-    detector=get_Detector(status);
-    if (detector==NULL) break;
+    //detector=get_Detector(status);
+    //if (detector==NULL) break;
 
     // Allocate memory and set the relation between the two different 
     // numbering arrays of the pixels in the hexagonal structure.
