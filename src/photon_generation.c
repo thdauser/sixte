@@ -39,13 +39,13 @@ int photon_generation_getpar(
   }
 
   // Get the filename of the default source spectrum (PHA FITS file)
-  if ((status = PILGetFname("spectrum", spectrum_filename))) {
+  if ((status = PILGetFname("spectrum_filename", spectrum_filename))) {
     sprintf(msg, "Error reading the filename of the default spectrum (PHA)!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // Get the filename of the detector redistribution file (FITS file)
-  else if ((status = PILGetFname("rmf", rmf_filename))) {
+  else if ((status = PILGetFname("rmf_filename", rmf_filename))) {
     sprintf(msg, "Error reading the filename of the detector" 
 	    "redistribution matrix file (RMF)!\n");
     HD_ERROR_THROW(msg,status);
