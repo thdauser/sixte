@@ -282,6 +282,9 @@ int photon_generation_main()
       // Load the source catalogs from the files:
       pointsourcefiles = get_PointSourceFiles(n_sourcefiles, source_filename, &status);
       if (status != EXIT_SUCCESS) break;
+
+      // Use a short time interval for the orbit update:
+      dt = 0.001;
       
     } else if (source_category==EXTENDED_SOURCES) {
 
@@ -305,6 +308,9 @@ int photon_generation_main()
 	// in order to avoid errors with the HD_PARSTAMP routine.
 	PILPutFname(cbuffer, "");
       }
+
+      // Use a long \Delta t for the time loop:
+      dt = 0.1;
 
     } else {
       status=EXIT_FAILURE;

@@ -107,6 +107,7 @@ void depfet_detector_action(
 
 
 //////////////////////////////////////////////////////////////////////
+// DEPFET with only one readout direction.
 void depfet_detector_action2(
 			     void* det,
 			     double time, 
@@ -158,7 +159,7 @@ void depfet_detector_action2(
 /*
 //////////////////////////////////////////////////////////////////////
 void tes_detector_action(
-			 void* detector,
+			 void* det,
 			 double time, 
 			 struct Eventlist_File* eventlist_file,
 			 int *fitsstatus
@@ -169,10 +170,9 @@ void tes_detector_action(
 
 
 
-
 //////////////////////////////////////////////////////////////////////
 void htrs_detector_action(
-			  void* detector,
+			  void* det,
 			  double time, 
 			  struct Eventlist_File* eventlist_file,
 			  int *fitsstatus
@@ -293,6 +293,9 @@ Detector* get_Detector(int* status)
 	      "the detector array!\n");
       HD_ERROR_THROW(msg, *status);
       break;
+    } else { // Memory was allocated successfully.
+      detector->pixel=NULL;
+      detector->rmf=NULL;
     }
 
   } while (0); // END of Error handling loop
@@ -893,11 +896,12 @@ static inline struct Point2i htrs_get_pixel2icoordinates(int pixel,
 
 
 ///////////////////////////////////////////
-Detector* htrs_get_Detector(Detector* detector, int* status)
+int htrs_init_Detector(Detector* detector)
 {
   //  Detector* detector=NULL;
   struct Point2d* centers = NULL;
 
+  int status=EXIT_SUCCESS;
   char msg[MAXMSG];        // buffer for error output messages
 
   // Determine hexagonal pixel dimensions:
@@ -906,28 +910,24 @@ Detector* htrs_get_Detector(Detector* detector, int* status)
 
   do { // Error handling loop 
     
-    // Allocate memory for the detector pixel array:
-    //detector=get_Detector(status);
-    //if (detector==NULL) break;
-
     // Allocate memory and set the relation between the two different 
     // numbering arrays of the pixels in the hexagonal structure.
     // (linear numbering starting at the left bottom and 2D numbering)
     detector->htrs_pixel2icoordinates = 
       (struct Point2i*)malloc(HTRS_N_PIXELS * sizeof(struct Point2i));
     if (detector->htrs_pixel2icoordinates == NULL) {
-      *status = EXIT_FAILURE;
+      status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW(msg, status);
       break;
     }
 
     detector->htrs_icoordinates2pixel = 
       (int**)malloc(detector->width * sizeof(int*));
     if (detector->htrs_icoordinates2pixel == NULL) {
-      *status = EXIT_FAILURE;
+      status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW(msg, status);
       break;
     }
 
@@ -936,10 +936,10 @@ Detector* htrs_get_Detector(Detector* detector, int* status)
       detector->htrs_icoordinates2pixel[xi] = 
 	(int*)malloc(detector->width * sizeof(int));
       if (detector->htrs_icoordinates2pixel[xi] == NULL) {
-	*status = EXIT_FAILURE;
+	status = EXIT_FAILURE;
 	sprintf(msg, "Error: Not enough memory available for HTRS "
 		"initialization!\n");
-	HD_ERROR_THROW(msg, *status);
+	HD_ERROR_THROW(msg, status);
 	break;
       }
 
@@ -1017,9 +1017,9 @@ Detector* htrs_get_Detector(Detector* detector, int* status)
     // Calculate the centers of the hexagonal HTRS pixels.
     centers = (struct Point2d*)malloc(HTRS_N_PIXELS * sizeof(struct Point2d));
     if (centers == NULL) {
-      *status = EXIT_FAILURE;
+      status = EXIT_FAILURE;
       sprintf(msg, "Error: Not enough memory available for HTRS initialization!\n");
-      HD_ERROR_THROW(msg,*status);
+      HD_ERROR_THROW(msg, status);
       break;
     }
     
@@ -1096,9 +1096,11 @@ Detector* htrs_get_Detector(Detector* detector, int* status)
   } while (0);  // END of error handling loop
 
 
+  // --- clean up ---
+
   free(centers);
 
-  return(detector);
+  return(status);
 }
 
 

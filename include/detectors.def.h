@@ -31,10 +31,10 @@ inline void depfet_detector_action(void*, double time,
 				   struct Eventlist_File*, int *status); 
 inline void depfet_detector_action2(void*, double time, 
 				   struct Eventlist_File*, int *status); 
-inline void tes_detector_action(void*, double time, struct Eventlist_File*, 
+/*inline void tes_detector_action(void*, double time, struct Eventlist_File*, 
 				int *status); 
 inline void htrs_detector_action(void*, double time, 
-				 struct Eventlist_File*, int *status);
+struct Eventlist_File*, int *status); */
 
 
 
@@ -90,9 +90,9 @@ int htrs_get_pixel(Detector*, struct Point2d,
 		   int* x, int* y, double* fraction);
 
 
-// Constructor: this routine performs the initialization of the HTRS
+// This routine performs the initialization of the HTRS
 // detector. The return value is the error status.
-Detector* htrs_get_Detector(Detector*, int *);
+int htrs_init_Detector(Detector*);
 // Destructor: release all dynamically allocated memory in the HTRS
 // detector structure.
 void htrs_free_Detector(Detector*);

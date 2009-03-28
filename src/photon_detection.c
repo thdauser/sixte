@@ -104,7 +104,7 @@ int photon_detection_main() {
     } else if (detector->type == HTRS) {
       headas_chat(5, "--> HTRS <--\n");
 
-      detector=htrs_get_Detector(detector, &status);
+      status=htrs_init_Detector(detector);
 
       detector->action = NULL; // htrs_detector_action;
 
@@ -188,9 +188,10 @@ int photon_detection_main() {
       // Call the detector action routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
-      detector->action(detector, time, &eventlist_file, &status);
-      if (status != EXIT_SUCCESS) break;
-
+      if (detector->action != NULL) { // HTRS and TES do not have this routine.
+	detector->action(detector, time, &eventlist_file, &status);
+	if (status != EXIT_SUCCESS) break;
+      }
 
       // Check whether the event lies in the specified time interval:
       if ((time > t0) && (time < t0+timespan)) {

@@ -26,7 +26,7 @@ int main()
     detector->width = 7;
     detector->pixelwidth = 4.0e-3;    // in [m]
 
-    detector = htrs_get_Detector(detector, &status);
+    status = htrs_init_Detector(detector);
 
 
     // PSF Setup:
