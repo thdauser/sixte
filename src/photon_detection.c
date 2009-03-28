@@ -269,7 +269,7 @@ int photon_detection_main() {
 		    add_eventlist_row(&eventlist_file, event, &status);
 		  }
 		} // END htrs_detector_active(...)
-	      } // END x[count] != INVALID_PIXEL
+	      } else {printf("invalid pixel\n");} // END x[count] != INVALID_PIXEL
 	    } // END of loop over all split partners.
 	
 	  } else if (detector->type == TES) {
