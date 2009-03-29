@@ -24,7 +24,7 @@ int main()
     // Detector Setup:
     detector->type = HTRS;
     detector->width = 7;
-    detector->pixelwidth = 4.0e-3;    // in [m]
+    detector->pixelwidth = 4.e-3;    // in [m]
 
     status = htrs_init_Detector(detector);
 

@@ -241,7 +241,10 @@ int photon_detection_main() {
 	    }
 	    
 	  } else if (detector->type == HTRS) {
-	    int npixels = htrs_get_pixel(detector, position, x, y, fraction);
+	    struct Point2d position2;
+	    position2.x = position.y;
+	    position2.y = position.x; // TODO !!!!!!!!!!!!
+	    int npixels = htrs_get_pixel(detector, position2, x, y, fraction);
 	    
 	    struct Event event;
 	    int count;
@@ -269,7 +272,7 @@ int photon_detection_main() {
 		    add_eventlist_row(&eventlist_file, event, &status);
 		  }
 		} // END htrs_detector_active(...)
-	      } else {printf("invalid pixel\n");} // END x[count] != INVALID_PIXEL
+	      } else {printf("invalid pixel %lf, %lf\n", position.x, position.y);} // END x[count] != INVALID_PIXEL
 	    } // END of loop over all split partners.
 	
 	  } else if (detector->type == TES) {
