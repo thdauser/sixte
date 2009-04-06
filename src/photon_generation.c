@@ -16,7 +16,6 @@ int photon_generation_getpar(
 			     // PHA file containing the default source spectrum
 			     char spectrum_filename[],
 			     char rmf_filename[],
-			     char photonlist_filename[],
 			     double *t0,
 			     double *timespan,
 			     double *bandwidth,
@@ -48,13 +47,6 @@ int photon_generation_getpar(
   else if ((status = PILGetFname("rmf_filename", rmf_filename))) {
     sprintf(msg, "Error reading the filename of the detector" 
 	    "redistribution matrix file (RMF)!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // Get the filename of the Photon-List file (FITS file):
-  else if ((status = PILGetFname("photonlist_filename", photonlist_filename))) {
-    sprintf(msg, "Error reading the filename of the output file for "
-	    "the photon list!\n");
     HD_ERROR_THROW(msg,status);
   }
 
@@ -165,7 +157,6 @@ int photon_generation_main()
 
     if((status=photon_generation_getpar(orbit_filename, attitude_filename,
 					spectrum_filename[0], rmf_filename, 
-					photonlist_filename,
 					&t0, &timespan, &bandwidth,
 					&telescope))) break;
     
@@ -319,6 +310,12 @@ int photon_generation_main()
     } // different source categories
 
 
+    // Get the filename of the Photon-List file (FITS file):
+    if ((status = PILGetFname("photonlist_filename", photonlist_filename))) {
+      sprintf(msg, "Error reading the filename of the output file for "
+	      "the photon list!\n");
+      HD_ERROR_THROW(msg, status);
+    }
 
     // Delete old photon list FITS file:
     remove(photonlist_filename);
