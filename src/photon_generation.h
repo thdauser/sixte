@@ -1,4 +1,3 @@
-/* This is a test line and can be deteleted */
 #ifndef PHOTON_GENERATION_H
 #define PHOTON_GENERATION_H 1
 
