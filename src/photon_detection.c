@@ -12,13 +12,9 @@
 ////////////////////////////////////
 // Main procedure.
 int photon_detection_main() {
-  double t0;        // starting time of the simulation [s]
-  double timespan;  // time span of the simulation [s]
-
-  char impactlist_filename[FILENAME_LENGTH]; // input: impact list
+  struct Parameters parameters; // Containing all programm parameters read by PIL
   fitsfile *impactlist_fptr=NULL; 
   long impactlist_nrows;
-  char rmf_filename[FILENAME_LENGTH];        // input: RMF
 
   // Detector data structure (containing the pixel array, its width, ...)
   Detector* detector=NULL;
@@ -41,9 +37,11 @@ int photon_detection_main() {
     detector = get_Detector(&status);
     if (status!=EXIT_SUCCESS) break;
 
-    if ((status=photon_detection_getpar(impactlist_filename, rmf_filename,
-					eventlist_file.filename, &t0, &timespan,
-					detector))) break;
+    if ((status=getpar(&parameters))) break;
+    
+    // TODO move the following assignments to another place:
+    detector->type = parameters.detector_type;
+    strcpy(eventlist_file.filename, parameters.eventlist_filename);
 
 
     // Initialize HEADAS random number generator and GSL generator for 
@@ -58,10 +56,17 @@ int photon_detection_main() {
     // Get the memory for the detector pixels
     if (get_DetectorPixels(detector, &status)) break;
 
+    // 
+    detector->width = parameters.width;
+
     // Calculate initial parameter values from the PIL parameters:
     detector->offset = detector->width/2;
 
+    // Pixelwidth 
+    detector->pixelwidth = parameters.pixelwidth;
+
     // Size of the charge cloud [real pixel]
+    detector->ccsigma = parameters.ccsigma;
     detector->ccsize = 3.*detector->ccsigma;
 
     // Set the current detector frame to its initial value:
@@ -71,9 +76,11 @@ int photon_detection_main() {
     if (detector->type == FRAMESTORE) {
       headas_chat(5, "--> FRAMESTORE <--\n");
 
+      detector->integration_time=parameters.integration_time;
+
       // Set the first readout time such that the first readout is performed 
       // immediately at the beginning of the simulation (FRAMESTORE).
-      detector->readout_time = t0;
+      detector->readout_time = parameters.t0;
       detector->frame = 0;
       
       detector->action = framestore_detector_action;
@@ -81,16 +88,19 @@ int photon_detection_main() {
     } else if (detector->type == DEPFET) {
       headas_chat(5, "--> DEPFET <--\n");
       
+      detector->dead_time = parameters.dead_time;
+      detector->clear_time = parameters.clear_time;
+
       // Set the first readout time such that the first readout is performed 
       // immediately at the beginning of the simulation (DEPFET).
-      detector->readout_time = t0 - detector->dead_time; 
+      detector->readout_time = parameters.t0 - detector->dead_time; 
+      detector->readout_directions = parameters.readout_directions;
       // The readout process starts at the center of the WFI detector, 
       // but for that purpose the current line has to be set to 0, so that the
       // first readout is performed in the middle of the detector array.
       detector->readout_line = 0;
 
-      detector->readout_line = detector->width;   // REMOVE !!!
-      detector->action = depfet_detector_action2; // !!!
+      detector->action = depfet_detector_action;
       
       headas_chat(5, "dead time: %lf\n", detector->dead_time);
       headas_chat(5, "clear time: %lf\n", detector->clear_time);
@@ -104,6 +114,7 @@ int photon_detection_main() {
     } else if (detector->type == HTRS) {
       headas_chat(5, "--> HTRS <--\n");
 
+      detector->dead_time = parameters.dead_time;
       status=htrs_init_Detector(detector);
 
       detector->action = NULL; // htrs_detector_action;
@@ -127,7 +138,7 @@ int photon_detection_main() {
 
     // Read the detector RMF and EBOUNDS from the specified file and 
     // assign them to the Detector data structure.
-    if ((status=detector_assign_rsp(detector, rmf_filename)) != EXIT_SUCCESS) break;
+    if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) != EXIT_SUCCESS) break;
 
     // Print some debug information:
     headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
@@ -140,7 +151,7 @@ int photon_detection_main() {
 
 
     // Open impact list FITS file:
-    if (fits_open_table(&impactlist_fptr, impactlist_filename, 
+    if (fits_open_table(&impactlist_fptr, parameters.impactlist_filename, 
 			READONLY, &status)) break;
     // Determine the number of rows in the impact list:
     if (fits_get_num_rows(impactlist_fptr, &impactlist_nrows, &status)) break;
@@ -152,7 +163,7 @@ int photon_detection_main() {
     // Delete old event list:
     remove(eventlist_file.filename);
     // Create a new FITS file and a table for the event list:
-    if (create_eventlist_file(&eventlist_file, detector, t0, t0+timespan, 
+    if (create_eventlist_file(&eventlist_file, detector, parameters.t0, parameters.t0+parameters.timespan, 
 		        // HEADER keywords for event list FITS file:
 			// TELESCOP    CCD       INSTRUME
 			  "eROSITA",  "pnCCD1", "eROSITA",  &status)) break;
@@ -194,7 +205,7 @@ int photon_detection_main() {
       }
 
       // Check whether the event lies in the specified time interval:
-      if ((time > t0) && (time < t0+timespan)) {
+      if ((time > parameters.t0) && (time < parameters.t0+parameters.timespan)) {
 
 	// Measure the photon in the detector pixels, i.e., create the 
 	// corresponding charges there.
@@ -340,73 +351,76 @@ int photon_detection_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int photon_detection_getpar(
-			    char impactlist_filename[],
-			    char rmf_filename[],       
-			    char eventlist_filename[],
-			    double *t0,        // start time
-			    double *timespan,  // time span
-			    Detector *detector
-			    )
+int getpar(struct Parameters* parameters)
 {
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
 
   // Get the name of the impact list file (FITS file)
-  if ((status = PILGetFname("impactlist_filename", impactlist_filename))) {
+  if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
     sprintf(msg, "Error reading the name of the impact list file!\n");
     HD_ERROR_THROW(msg,status);
     return(status);
   }
 
   // Get the detector type (FRAMESTORE, DEPFET, TES microcalorimeter, ...)
-  int type;
-  if ((status = PILGetInt("detectortype", &type))) {
+  if ((status = PILGetInt("detector_type", &parameters->detector_type))) {
     sprintf(msg, "Error reading the detector type!\n");
     HD_ERROR_THROW(msg,status);
     return (status);
 
   } else {
-    switch (type) {
+    switch (parameters->detector_type) {
       // According to the different detector types, the program
       // has to read different parameters.
-    case 1: 
-      detector->type = FRAMESTORE; 
-
+    case 1:  // FRAMESTORE
+      
       // Get the integration time for the FRAMESTORE CCD.
-      if ((status = PILGetReal("integration_time", &detector->integration_time))) {
+      if ((status = PILGetReal("integration_time", &parameters->integration_time))) {
 	sprintf(msg, "Error reading the integration time!\n");
 	HD_ERROR_THROW(msg,status);
       }
 
       break;
 
-    case 2: 
-      detector->type = DEPFET;     
+    case 2:  // DEPFET
 
+      // Get the number of readout directions
+      if ((status = PILGetInt("readout_directions", &parameters->readout_directions))) {
+	sprintf(msg, "Error reading the detector readout directions!\n");
+	HD_ERROR_THROW(msg,status);
+	return(status);
+      } 
+      if ((parameters->readout_directions<1)||(parameters->readout_directions>2)) {
+	status=EXIT_FAILURE;
+	sprintf(msg, "Error: invalid number of detector readout directions!\n");
+	HD_ERROR_THROW(msg,status);
+	return(status);	
+      }
       // Get the dead time for the DEPFET APS (readout time per line).
-      if ((status = PILGetReal("dead_time", &detector->dead_time))) {
+      if ((status = PILGetReal("dead_time", &parameters->dead_time))) {
 	sprintf(msg, "Error reading the dead time!\n");
 	HD_ERROR_THROW(msg,status);
+	return(status);
       } 
       // Get the clear time for the DEPFET APS (time required to clear one line).
-      else if ((status = PILGetReal("clear_time", &detector->clear_time))) {
+      else if ((status = PILGetReal("clear_time", &parameters->clear_time))) {
 	sprintf(msg, "Error reading the clear time!\n");
 	HD_ERROR_THROW(msg,status);
+	return(status);
       }
       
       break;
 
-    case 3: 
-      detector->type = TES;        
+    case 3:  // TES Calorimeter Array
+
       break;
 
-    case 4:
-      detector->type = HTRS;
+    case 4:  // HTRS
 
       // Get the dead time for the HTRS (readout time of the charge 
       // cloud in a pixel).
-      if ((status = PILGetReal("dead_time", &detector->dead_time))) {
+      if ((status = PILGetReal("dead_time", &parameters->dead_time))) {
 	sprintf(msg, "Error reading the dead time!\n");
 	HD_ERROR_THROW(msg,status);
       } 
@@ -414,7 +428,8 @@ int photon_detection_getpar(
       break;
 
     default:     
-      detector->type = 0;
+      parameters->detector_type = 0;
+      status=EXIT_FAILURE;
       sprintf(msg, "Error: incorrect detector type!\n");
       HD_ERROR_THROW(msg,status);
     }
@@ -424,10 +439,10 @@ int photon_detection_getpar(
 
 
   // detector width [pixel]
-  if (detector->type == HTRS) {
-    detector->width = 7;  // HTRS can only be used for fixed pixel size!
+  if (parameters->detector_type == HTRS) {
+    parameters->width = 7;  // HTRS can only be used for fixed pixel size!
   } else {
-    if ((status = PILGetInt("det_width", &detector->width))) {
+    if ((status = PILGetInt("det_width", &parameters->width))) {
       sprintf(msg, "Error reading the width of the detector!\n");
       HD_ERROR_THROW(msg,status);
       return(status);
@@ -435,13 +450,13 @@ int photon_detection_getpar(
   }
 
   // [m]
-  if ((status = PILGetReal("det_pixelwidth", &detector->pixelwidth))) {
+  if ((status = PILGetReal("det_pixelwidth", &parameters->pixelwidth))) {
     sprintf(msg, "Error reading the width of the detector pixels!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // [m]
-  else if ((status = PILGetReal("ccsigma", &detector->ccsigma))) {
+  else if ((status = PILGetReal("ccsigma", &parameters->ccsigma))) {
     sprintf(msg, "Error reading the charge cloud sigma!\n");
     HD_ERROR_THROW(msg,status);
   }
@@ -455,39 +470,39 @@ int photon_detection_getpar(
     HD_ERROR_THROW(msg,status);
     return(status);
   } else {
-    detector->pha_threshold = (long)pha_threshold;
+    parameters->pha_threshold = (long)pha_threshold;
   }
-  if (detector->pha_threshold==0) {
-    if ((status = PILGetReal4("energy_threshold", &detector->energy_threshold))) {
+  if (parameters->pha_threshold==0) {
+    if ((status = PILGetReal4("energy_threshold", &parameters->energy_threshold))) {
       sprintf(msg, "Error: could not determine detector energy threshold!\n");
       HD_ERROR_THROW(msg,status);
       return(status);
     }
   } else {
-    detector->energy_threshold=0.;
+    parameters->energy_threshold=0.;
   }
 
   // Get the name of the detector redistribution file (FITS file)
-  if ((status = PILGetFname("rmf_filename", rmf_filename))) {
+  if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
     sprintf(msg, "Error reading the name of the detector" 
 	    "redistribution matrix file (RMF)!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // Get the name of the output event list (FITS file)
-  else if ((status = PILGetFname("eventlist_filename", eventlist_filename))) {
+  else if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     sprintf(msg, "Error reading the name of the event list file!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // Get the start time of the simulation
-  else if ((status = PILGetReal("t0", t0))) {
+  else if ((status = PILGetReal("t0", &parameters->t0))) {
     sprintf(msg, "Error reading the 't0' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // Get the timespan for the simulation
-  else if ((status = PILGetReal("timespan", timespan))) {
+  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     sprintf(msg, "Error reading the 'timespan' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }

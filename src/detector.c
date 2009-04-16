@@ -77,35 +77,37 @@ void depfet_detector_action(
   // TODO: Add background photons to the detector pixels
   //insert_background_photons(*detector, background, detector->integration_time);
 
-  // Determine, which 2 lines currently have to be read out.
+  // Determine, which line / which 2 lines currently have to be read out.
   while (time > detector->readout_time + detector->dead_time) {
     // The current line number has to be decreased (readout process starts in the
     // middle of the detector).
     detector->readout_line--;
     if (detector->readout_line < 0) { 
-      detector->readout_line = detector->offset - 1; 
+      detector->readout_line = 
+	(detector->readout_directions==1)?(detector->width-1):(detector->offset-1);
       detector->frame++;         // start new detector frame
     }
     // Update the current detector readout time, which is used in the 
     // event list output.
     detector->readout_time += detector->dead_time;
 
-    // Perform the readout on the 2 (!) current lines 
-    // (i.e., the two new lines, chosen in the
+    // Perform the readout on the 1 or 2 (!) current lines 
+    // (i.e., the one or two new lines, chosen in the
     // step before) and write the data to the FITS file.
+    // After the readout clear the  lines.
     readout_line(detector, detector->readout_line, eventlist_file, status);
-    readout_line(detector, detector->width -detector->readout_line -1, 
-		 eventlist_file, status);
-
-    // Clear the 2 readout detector lines.
     clear_detector_line(detector, detector->readout_line);
-    clear_detector_line(detector, detector->width -detector->readout_line -1);
 
-  }
+    if(detector->readout_directions=2) {
+      readout_line(detector, detector->width -detector->readout_line -1, 
+		   eventlist_file, status);
+      clear_detector_line(detector, detector->width -detector->readout_line -1);
+    }
+  } 
 }
 
 
-
+/*
 //////////////////////////////////////////////////////////////////////
 // DEPFET with only one readout direction.
 void depfet_detector_action2(
@@ -153,7 +155,7 @@ void depfet_detector_action2(
     clear_detector_line(detector, detector->readout_line);
   }
 }
-
+*/
 
 
 /*
@@ -1119,7 +1121,6 @@ int get_pixel_square(Detector* detector,
   // different array indices.
   int xe[4] = {1,0,-1,0};   
   int ye[4] = {0,1,0,-1};
-
 
   // Calculate pixel indices (integer) of central affected pixel:
   x[0] = (int)(position.x/detector->pixelwidth + (double)(detector->width/2) +1.)-1;

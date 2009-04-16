@@ -83,7 +83,7 @@ typedef struct {
   double clear_time;       // Time required to clear a row of pixels on the detector.
   int readout_line;        // Current readout line of the DEPFET detector 
                            // (not used for framestore).
-
+  int readout_directions;  // Either 1 or 2.
 
 
   // HTRS specific parameters:

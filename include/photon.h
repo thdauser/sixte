@@ -36,7 +36,7 @@ long photon_counter;
 
 // The light curve is constant, without red noise 
 // (so the photons have simply Poisson distribution).
-#define CONSTANT_LIGHTCURVE 1   
+//#define CONSTANT_LIGHTCURVE 1   
                                 
 
 // The following macros are used to the store light curve and the PSD 
