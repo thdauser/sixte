@@ -53,9 +53,6 @@ int photon_detection_main() {
 
     // GENERAL SETTINGS
 
-    // Get the memory for the detector pixels
-    if (get_DetectorPixels(detector, &status)) break;
-
     // 
     detector->width = parameters.width;
 
@@ -69,8 +66,17 @@ int photon_detection_main() {
     detector->ccsigma = parameters.ccsigma;
     detector->ccsize = 3.*detector->ccsigma;
 
-    // Set the current detector frame to its initial value:
+    // Event thresholds:
+    detector->pha_threshold = parameters.pha_threshold;
+    detector->energy_threshold = parameters.energy_threshold;
+
+    // Set the current detector frame to "-1", so the first measured frame
+    // starts at "0".
     detector->frame = -1;
+
+    // Get the memory for the detector pixels
+    if (get_DetectorPixels(detector, &status)) break;
+
     
     // DETECTOR SPECIFIC SETTINGS
     if (detector->type == FRAMESTORE) {
