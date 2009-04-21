@@ -478,7 +478,7 @@ int getpar(struct Parameters* parameters)
   } else {
     parameters->pha_threshold = (long)pha_threshold;
   }
-  if (parameters->pha_threshold==0) {
+  if (parameters->pha_threshold==-1) {
     if ((status = PILGetReal4("energy_threshold", &parameters->energy_threshold))) {
       sprintf(msg, "Error: could not determine detector energy threshold!\n");
       HD_ERROR_THROW(msg,status);

@@ -107,56 +107,6 @@ void depfet_detector_action(
 }
 
 
-/*
-//////////////////////////////////////////////////////////////////////
-// DEPFET with only one readout direction.
-void depfet_detector_action2(
-			     void* det,
-			     double time, 
-			     struct Eventlist_File* eventlist_file,
-			     int *status
-			     ) 
-{
-  Detector *detector = (Detector*) det;
-
-  // The DEPFET detector is read out line by line, with two readout lines 
-  // starting in the middle of the detector array. The readout of one 
-  // individual line requires the deadtime. The readout is performed at 
-  // the beginning of this interval. Then the charges in the line are cleared. 
-  // During the cleartime the pixels in the detector line are inactive, i.e., 
-  // they cannot receive new charge from incident photons during that time.
-  // Photons that hit the pixel during the deadtime but after the cleartime are 
-  // accepted and the created charge is stored in the pixel until the next readout
-  // process.
-
-
-  // TODO: Add background photons to the detector pixels
-  //insert_background_photons(*detector, background, detector->integration_time);
-
-  // Determine, which line currently has to be read out.
-  while (time > detector->readout_time + detector->dead_time) {
-    // The current line number has to be decreased (readout process starts in the
-    // middle of the detector).
-    detector->readout_line++;
-    if (detector->readout_line >= detector->width) { 
-      detector->readout_line = 0; 
-      detector->frame++;         // start new detector frame
-    }
-    // Update the current detector readout time, which is used in the 
-    // event list output.
-    detector->readout_time += detector->dead_time;
-
-    // Perform the readout on the 2 (!) current lines 
-    // (i.e., the two new lines, chosen in the
-    // step before) and write the data to the FITS file.
-    readout_line(detector, detector->readout_line, eventlist_file, status);
-
-    // Clear the 2 readout detector lines.
-    clear_detector_line(detector, detector->readout_line);
-  }
-}
-*/
-
 
 /*
 //////////////////////////////////////////////////////////////////////
@@ -260,6 +210,10 @@ static inline void readout_line(
       // Check lower threshold (PHA and energy):
       if ((event.pha>=detector->pha_threshold) && 
 	  (detector->pixel[xi][line].charge>=detector->energy_threshold)) { 
+
+	// REMOVE TODO
+	if (event.pha < 0) event.pha = detector->rmf->FirstChannel;
+	
 	// There is an event in this pixel, so insert it into the eventlist:
 	event.time = detector->readout_time;
 	event.grade = 0;
