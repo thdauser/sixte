@@ -2,6 +2,7 @@
 #define DETECTOR_H 1
 
 
+#define GAUSSIAN_CHARGE_CLOUDS 1 // Assume a Gaussian charge cloud shape.
 
 // Reads out the entire detector and creates event list entries for the 
 // measured photons.
