@@ -142,8 +142,8 @@ float photon_energy(struct Spectrum* pha_spectrum, Detector* detector)
 
   // Return an energy chosen randomly out of the determined PHA bin:
   return(detector->rmf->ChannelLowEnergy[lower] + 
-	 (detector->rmf->ChannelHighEnergy[lower]
-	  -detector->rmf->ChannelLowEnergy[lower])*get_random_number());
+	 get_random_number()*(detector->rmf->ChannelHighEnergy[lower]-
+			      detector->rmf->ChannelLowEnergy[lower]));
 }
 
 

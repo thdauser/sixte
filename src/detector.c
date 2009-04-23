@@ -650,8 +650,9 @@ float get_energy(
 
   // Return the mean of the energy that corresponds to the specified PHA channel
   // according to the EBOUNDS table.
-  return(0.5*(detector->rmf->ChannelLowEnergy[channel]
-	      +detector->rmf->ChannelHighEnergy[channel]));
+  return(detector->rmf->ChannelLowEnergy[channel] +
+	 get_random_number()*(detector->rmf->ChannelHighEnergy[channel]-
+			      detector->rmf->ChannelLowEnergy[channel]));
 }
 
 
