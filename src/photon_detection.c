@@ -236,7 +236,7 @@ int photon_detection_main() {
 	// EBOUNDS table.
 	float charge = get_energy(channel, detector);
 	
-	if(energy > 0.) {
+	if(charge > 0.) {
 	  int x[4], y[4];
 	  double fraction[4];
       
@@ -299,7 +299,7 @@ int photon_detection_main() {
 	      struct Event event;
 	    
 	      // Store the photon charge and the new arrival time:
-	      event.pha = get_channel(energy, detector);  // TODO: RMF
+	      event.pha = get_channel(charge, detector);  // TODO: RMF
 	      event.time = time;
 	      event.xi = x[0];
 	      event.yi = y[0];
@@ -308,13 +308,13 @@ int photon_detection_main() {
 
 	      // Add the event to the FITS event list.
 	      if ((event.pha>=detector->pha_threshold)&&
-		  (energy>=detector->energy_threshold)){ // Check lower PHA threshold
+		  (charge>=detector->energy_threshold)){ // Check lower PHA threshold
 		// There is an event in this pixel, so insert it into eventlist:
 		add_eventlist_row(&eventlist_file, event, &status);
 	      }
 	    } // END x[0] != INVALID_PIXEL
 	  } // END detector->type == TES
-	} // END if(energy>0.)
+	} // END if(charge>0.)
       } // END 'time' within specified time interval
     } // END of scanning the impact list.
 
