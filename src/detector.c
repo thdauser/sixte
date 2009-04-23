@@ -636,26 +636,6 @@ long get_channel(
 
 
 
-/*
-////////////////////////////////////////////////////
-float get_charge(
-		 long channel, 
-		 Ebounds* ebounds
-		 )
-{
-  if (channel == 0) {
-    return(0.0);
-  }
-  else if ((channel < 0) || (channel > 4096)) {
-    printf("Error: Invalid Ebounds channel (%ld)!\n", channel);
-  }
-
-  // Return the median of the charge that corresponds to the specified PHA channel
-  // using the EBOUNDS table.
-  return(0.5*(ebounds->row[channel-1].E_min+ebounds->row[channel-1].E_max));
-  //                               |-> as channels start at 1  <-|
-}
-*/
 
 ////////////////////////////////////////////////////
 float get_energy(
