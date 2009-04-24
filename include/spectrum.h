@@ -46,7 +46,7 @@ struct Spectrum_Store{
   struct Spectrum* spectrum;
   long nspectra;
 
-  struct PHA* pha_spectrum;
+  //  struct PHA* pha_spectrum;
 };
 
 

@@ -34,6 +34,7 @@ int get_spectra(
     spectrum_store->nspectra = Nfiles;
 
 
+    /*
     // Read a FITS PHA file and assign its content to the array
     // of PHA spectra in the Spectrum_Store.
     if ((status=assign_pha_spectrum(spectrum_store, filenames[0]))!=EXIT_SUCCESS) break;
@@ -55,7 +56,7 @@ int get_spectra(
       sum+= spectrum_store->pha_spectrum->Pha[count];
     }
     printf("--- PHA sum: %lf ---\n", sum);
-
+    */
   } while (0);  // END of ERROR handling loop
 
   return (status);
@@ -63,7 +64,7 @@ int get_spectra(
 
 
 
-
+/*
 //////////////////////////////////////////////////////////////////////
 int assign_pha_spectrum(struct Spectrum_Store* store, char* filename)
 {
@@ -90,7 +91,7 @@ int assign_pha_spectrum(struct Spectrum_Store* store, char* filename)
   
   return(status);
 }
-
+*/
 
 
 //////////////////////////////////////////////////////////////////////
