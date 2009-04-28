@@ -102,7 +102,7 @@ int photon_generation_main()
   char** source_filename=NULL;
   // X-ray Cluster image:
   char cluster_filename[FILENAME_LENGTH];    // input: cluster image file
-  ClusterImageCatalog* cic;
+  ClusterImageCatalog* cic = NULL;
 
   // New data structures for point sources:
   PointSourceFiles* pointsourcefiles=NULL;
@@ -601,7 +601,11 @@ int photon_generation_main()
   }
 
   // Cluster Images
-  free_ClusterImage(cic->images);
+  if(cic!=NULL) {
+    if(cic->images!=NULL) {
+      free_ClusterImage(cic->images);
+    }
+  }
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
