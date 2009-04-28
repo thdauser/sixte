@@ -102,7 +102,7 @@ int photon_generation_main()
   char** source_filename=NULL;
   // X-ray Cluster image:
   char cluster_filename[FILENAME_LENGTH];    // input: cluster image file
-  ClusterImage* cluster_image=NULL;
+  ClusterImageCatalog* cic;
 
   // New data structures for point sources:
   PointSourceFiles* pointsourcefiles=NULL;
@@ -278,23 +278,42 @@ int photon_generation_main()
       dt = 0.001;
       
     } else if (source_category==EXTENDED_SOURCES) {
+      // Read the cluster images from the specified FITS files.
+      cic = get_ClusterImageCatalog();
 
-      // Load the specified galaxy cluster image:
-      if ((status = PILGetFname("cluster_filename", cluster_filename))) {
-	sprintf(msg, "Error reading the filename of the cluster image file!\n");
-	HD_ERROR_THROW(msg,status);
+      // Get the number of source input-files
+      if ((status = PILGetInt("n_extended_source_files", &cic->nimages))) {
+	sprintf(msg, "Error reading the number of extended source files!\n");
+	HD_ERROR_THROW(msg, status);
 	break;
       }
-      cluster_image = get_ClusterImage_fromFile(cluster_filename, &status);
-      if (status != EXIT_SUCCESS) break;
+      if (cic->nimages<=0) {
+	status=EXIT_SUCCESS;
+	sprintf(msg, "Error: invalid number of sources files with "
+		"extended sources!\n");
+	HD_ERROR_THROW(msg, status);
+	break;
+      }
 
+      int filecounter;
+      for(filecounter=0; filecounter<cic->nimages; filecounter++) {
+	// Load the specified galaxy cluster image:
+	if ((status = PILGetFname("extended_source_filename", cluster_filename))) {
+	  sprintf(msg, "Error reading the filename of the cluster image file!\n");
+	  HD_ERROR_THROW(msg,status);
+	  break;
+	}
+	cic->images = get_ClusterImage_fromFile(cluster_filename, &status);
+	if (status != EXIT_SUCCESS) break;
+      } // END of loop over several extended source files
+    
       // Clear the filenames of the point source catalogs in the PIL parameter file,
       // otherwise HD_PARSTAMP might cause an error.
-      int counter;
+
       // Filename-buffer to access the different source files:
       char cbuffer[FILENAME_LENGTH];
-      for(counter=0; counter<MAX_N_POINTSOURCEFILES; counter++) {
-	sprintf(cbuffer,"sourcefile%d", counter+1);
+      for(filecounter=0; filecounter<MAX_N_POINTSOURCEFILES; filecounter++) {
+	sprintf(cbuffer,"sourcefile%d", filecounter+1);
 	// Fill redundant input slots for source files with NULL value,
 	// in order to avoid errors with the HD_PARSTAMP routine.
 	PILPutFname(cbuffer, "");
@@ -427,19 +446,19 @@ int photon_generation_main()
 
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.
-	if (cluster_image!=NULL) {
+	if (cic->images!=NULL) {
 	  // Loop over all pixels of the the image:
 	  int xcount, ycount;
 	  double ra, dec;
-	  for(xcount=0; (xcount<cluster_image->naxis1)&&(status==EXIT_SUCCESS); 
+	  for(xcount=0; (xcount<cic->images->naxis1)&&(status==EXIT_SUCCESS); 
 	      xcount++) {
-	    for(ycount=0; (ycount<cluster_image->naxis2)&&(status==EXIT_SUCCESS); 
+	    for(ycount=0; (ycount<cic->images->naxis2)&&(status==EXIT_SUCCESS); 
 		ycount++) {
 	      // Check whether the pixel lies CLOSE TO the FOV:
-	      ra=cluster_image->crval1+
-		(xcount-cluster_image->crpix1+0.5)*cluster_image->cdelt1; // [rad]
-	      dec=cluster_image->crval2+
-		(ycount-cluster_image->crpix2+0.5)*cluster_image->cdelt2; // [rad]
+	      ra=cic->images->crval1+
+		(xcount-cic->images->crpix1+0.5)*cic->images->cdelt1; // [rad]
+	      dec=cic->images->crval2+
+		(ycount-cic->images->crpix2+0.5)*cic->images->cdelt2; // [rad]
 	      struct vector v = unit_vector(ra, dec);
 
 	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
@@ -447,7 +466,7 @@ int photon_generation_main()
 		// --- Generate Photons from the pixel.
 		
 		double random_number = get_random_number();  //             REMOVE !!
-		if(random_number<cluster_image->pixel[xcount][ycount].rate*dt*1.e9){
+		if(random_number<cic->images->pixel[xcount][ycount].rate*dt*1.e9){
 		  struct Photon new_photon; // buffer for new photon
 		  new_photon.ra  = ra;
 		  new_photon.dec = dec; 
@@ -471,7 +490,7 @@ int photon_generation_main()
 	      } // END of check whether pixel is close to the FOV.
 	    }
 	  } // END of loop over all pixel of the image.
-	} // END  if(cluster_image!=NULL)
+	} // END  if(cic->images!=NULL)
 
       } // END of decision which source category
 
@@ -582,7 +601,7 @@ int photon_generation_main()
   }
 
   // Cluster Images
-  free_ClusterImage(cluster_image);
+  free_ClusterImage(cic->images);
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
