@@ -300,7 +300,7 @@ int photon_generation_main()
 	PILPutFname(cbuffer, "");
       }
 
-      // Use a long \Delta t for the time loop:
+      // Use a relative large \Delta t for the time loop:
       dt = 0.1;
 
     } else {
@@ -436,18 +436,18 @@ int photon_generation_main()
 	    for(ycount=0; (ycount<cluster_image->naxis2)&&(status==EXIT_SUCCESS); 
 		ycount++) {
 	      // Check whether the pixel lies CLOSE TO the FOV:
-	      ra=cluster_image->crval1 
-		+(xcount-cluster_image->crpix1+0.5)*cluster_image->cdelt1;
-	      dec=cluster_image->crval2
-		+(ycount-cluster_image->crpix2+0.5)*cluster_image->cdelt2;
+	      ra=cluster_image->crval1+
+		(xcount-cluster_image->crpix1+0.5)*cluster_image->cdelt1; // [rad]
+	      dec=cluster_image->crval2+
+		(ycount-cluster_image->crpix2+0.5)*cluster_image->cdelt2; // [rad]
 	      struct vector v = unit_vector(ra, dec);
 
 	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
 	      
 		// --- Generate Photons from the pixel.
 		
-		double random_number = get_random_number();
-		if (random_number < cluster_image->pixel[xcount][ycount].rate * dt *1.e9) {
+		double random_number = get_random_number();  //             REMOVE !!
+		if(random_number<cluster_image->pixel[xcount][ycount].rate*dt*1.e9){
 		  struct Photon new_photon; // buffer for new photon
 		  new_photon.ra  = ra;
 		  new_photon.dec = dec; 
@@ -462,7 +462,8 @@ int photon_generation_main()
 		  new_photon.time = time + dt*rnd_time;
 		  
 		  // Insert the photon into the time-ordered list.
-		  if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) break;
+		  if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
+		    break;
 		}
 		
 		// --- END of photon generation from the cluster image pixel.

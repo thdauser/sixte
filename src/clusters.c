@@ -69,7 +69,8 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     ci = get_ClusterImage();
     if(ci==NULL) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing the cluster image!\n");
+      sprintf(msg, "Error: could not allocate memory for storing "
+	      "the cluster image!\n");
       HD_ERROR_THROW(msg, *status);
       break;
     }
@@ -101,21 +102,19 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
 
     // From the header keywords determine the minimum and maximum
     // right ascension and declination covered by the image:
-    double crpix1=0., crpix2=0., crval1=0., crval2=0.;
-    if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &crpix1, comment, status)) break;
-    if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &crpix2, comment, status)) break;
-    if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &crval1, comment, status)) break;
-    if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &crval2, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &ci->crpix1, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &ci->crpix2, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &ci->crval1, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &ci->crval2, comment, status)) break;
     // Rescale from [deg] to [rad]:
-    crpix1 *= M_PI/180.;
-    crpix2 *= M_PI/180.;
-    crval1 *= M_PI/180.;
-    crval2 *= M_PI/180.;
+    ci->crval1 *= M_PI/180.;
+    ci->crval2 *= M_PI/180.;
+
     // Determine the edges of the covered area:
-    ci->minra = crval1 - ci->cdelt1*crpix1;
-    ci->maxra = crval1 + ci->cdelt1*(ci->naxis1-crpix1);
-    ci->mindec = crval2 - ci->cdelt2*crpix2;
-    ci->maxdec = crval2 + ci->cdelt2*(ci->naxis2-crpix2);
+    ci->minra = ci->crval1 - ci->cdelt1*ci->crpix1;
+    ci->maxra = ci->crval1 + ci->cdelt1*(ci->naxis1-ci->crpix1);
+    ci->mindec = ci->crval2 - ci->cdelt2*ci->crpix2;
+    ci->maxdec = ci->crval2 + ci->cdelt2*(ci->naxis2-ci->crpix2);
     
 
     // Allocate memory for the pixels of the image:

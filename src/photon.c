@@ -347,7 +347,7 @@ int create_photonlist_file(
     // 4. declination
     strcpy(ftype[3], "DEC");
     strcpy(fform[3], "D");
-    strcpy(funit[3], "decimal degree");
+    strcpy(funit[3], "rad");
 
     // create the table
     if (fits_create_tbl(*fptr, BINARY_TBL, 0, N_PHOTON_FIELDS, 
