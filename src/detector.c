@@ -95,14 +95,14 @@ void depfet_detector_action(
     // (i.e., the one or two new lines, chosen in the
     // step before) and write the data to the FITS file.
     // After the readout clear the  lines.
-    readout_line(detector, detector->readout_line, eventlist_file, status);
-    clear_detector_line(detector, detector->readout_line);
-
-    if(detector->readout_directions=2) {
-      readout_line(detector, detector->width -detector->readout_line -1, 
-		   eventlist_file, status);
-      clear_detector_line(detector, detector->width -detector->readout_line -1);
+    if(detector->readout_directions==2) {
+      readout_line(detector, detector->readout_line, eventlist_file, status);
+      clear_detector_line(detector, detector->readout_line);
     }
+
+    readout_line(detector, detector->width -detector->readout_line -1, 
+		 eventlist_file, status);
+    clear_detector_line(detector, detector->width -detector->readout_line -1);
   } 
 }
 

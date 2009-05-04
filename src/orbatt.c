@@ -15,8 +15,8 @@ int get_satellite_catalog(
 			  struct Telescope **sat_catalog, 
 			  // number of entries in the satellite catalog (return value)
 			  long *nentries,      
-			  double t0,       // requested start time for the catalog array
-			  double timespan, // requested end time for the catalog array
+			  double t0,      // requested start time for the catalog array
+			  double timespan,// requested end time for the catalog array
 			  const char orbit_filename[], 
 			  const char attitude_filename[]
 			  )
