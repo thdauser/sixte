@@ -371,7 +371,7 @@ int photon_generation_main()
     // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
     // takes to slew over the entire FOV.
     for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
-//      printf("time: %lf\n", time);
+      //  printf("\rtime: %lf", time);
 
       // Get the last orbit entry before the time 'time':
       // (in order to interpolate the actual position and velocity between 
