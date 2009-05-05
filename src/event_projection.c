@@ -4,41 +4,67 @@
 #error "Do not compile outside Autotools!"
 #endif
 
-#include "photon_imaging.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <malloc.h>
+#include <limits.h>
+
+#include "fitsio.h"
+#include "pil.h"
+#include "headas.h"
+#include "headas_error.h"
+
+#include "sixt.h"
+#include "vector.h"
+#include "check_fov.h"
+#include "fits_ctlg.h"
+#include "random.h"
+#include "psf.h"
+#include "photon.h"
+#include "telescope.h"
+#include "orbatt.h"
+
+
+#define TOOLSUB event_projection_main
+#include "headas_main.c"
+
+
+struct Parameters {
+  char orbit_filename[FILENAME_LENGTH];     // filename of orbit file
+  char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
+  char eventlist_filename[FILENAME_LENGTH]; // input: photon list
+  char skyimage_filename[FILENAME_LENGTH];  // output: impact list
+
+  double focal_length;
+  double fov_diameter;
+};
+
+
+int event_projection_getpar(struct Paramters *parameters);
 
 
 
 ////////////////////////////////////
 // Main procedure.
-int photon_imaging_main() {
-  double t0;        // starting time of the simulation
-  double timespan;  // time span of the simulation
+int event_projection_main() {
+  struct Parameters parameters;   // Program parameters
 
-  char orbit_filename[FILENAME_LENGTH];   // filename of orbit file
-  char attitude_filename[FILENAME_LENGTH];// filename of the attitude file
-  long sat_nentries;                      // number of entries in the orbit array 
-                                          // ( <= orbit_nrows )
-  struct Telescope *sat_catalog=NULL;     // catalog with orbit and attitude data 
-                                          // over a certain timespan
+  long sat_nentries; // number of entries in the orbit array ( <= orbit_nrows )
+  struct Telescope *sat_catalog=NULL; // catalog with orbit and attitude data 
+                                      // over a certain timespan
+  struct Eventlist_File eventlistfile;
 
-  char photonlist_filename[FILENAME_LENGTH]; // input: photon list
-  fitsfile *photonlist_fptr=NULL;            // FITS file pointer
-  long photonlist_nrows;                     // number of entries in the photon list
-
-  char impactlist_filename[FILENAME_LENGTH]; // output: impact list
   fitsfile *impactlist_fptr=NULL;           
-
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-  PSF* psf;                   // PSF (Point Spread Function) data (for different 
-                              // off-axis angles and energies)
-  char psf_filename[FILENAME_LENGTH]; // PSF input file
 
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
 
 
   // Register HEATOOL:
-  set_toolname("photon_imaging");
+  set_toolname("event_projection");
   set_toolversion("0.01");
 
 
@@ -46,11 +72,12 @@ int photon_imaging_main() {
 
     // --- Initialization ---
 
-    // read parameters using PIL library
-    if ((status=photon_imaging_getpar(photonlist_filename, orbit_filename, 
-				      attitude_filename, psf_filename, 
-				      impactlist_filename,
-				      &t0, &timespan, &telescope))) break;
+    // Read the program parameters using PIL library.
+    if ((status=event_projection_getpar(&parameters))) break;
+
+    // Based on the parameters set up the program configuration.
+    telescope.focal_length = parameters.focal_length;
+    telescope.fov_diameter = parameters.fov_diameter;
 
 
     // Calculate the minimum cos-value for sources inside the FOV: 
@@ -62,12 +89,9 @@ int photon_imaging_main() {
     // Gaussian distribution.
     HDmtInit(1);
 
-    // Open the FITS file with the input photon list:
-    if (fits_open_table(&photonlist_fptr, photonlist_filename, 
-			READONLY, &status)) break;
-    // Determine the number of rows in the photon list:
-    if (fits_get_num_rows(photonlist_fptr, &photonlist_nrows, &status)) break;
-
+    // Open the FITS file with the input event list:
+    eventlistfile=open_EventlistFile(parameters.eventlist_filename, &status);
+    if ((EXIT_SUCCESS!=status)||(NULL==eventlistfile)) break;
 
     // Get the satellite catalog with the orbit and (telescope) attitude data:
     if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, timespan+100., 
@@ -244,80 +268,49 @@ int photon_imaging_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int photon_imaging_getpar(
-			  // input: photon list file (FITS)
-			  char photonlist_filename[],
-			  // input: orbit file (FITS)
-			  char orbit_filename[], 
-			  // input: attitude file (FITS)
-			  char attitude_filename[],
-			  char psf_filename[],     // PSF FITS file
-			  char impactlist_filename[], // for output
-			  double *t0,              // start time for the simulation
-			  double *timespan,        // time span for the simulation
-			  struct Telescope *telescope
-			  )
+int event_projection_getpar(struct Paramters *parameters)
 {
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
 
-
-  // get the filename of the input photon list (FITS file)
-  if ((status = PILGetFname("photonlist_filename", photonlist_filename))) {
-    sprintf(msg, "Error reading the filename of the photon list!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // get the filename of the orbit file (FITS file)
-  else if ((status = PILGetFname("orbit_filename", orbit_filename))) {
+  // Get the filename of the orbit file (FITS file)
+  if ((status = PILGetFname("orbit_filename", parameters->orbit_filename))) {
     sprintf(msg, "Error reading the filename of the orbit file!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // get the filename of the attitude file (FITS file)
-  else if ((status = PILGetFname("attitude_filename", attitude_filename))) {
+  // Get the filename of the attitude file (FITS file)
+  else if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
     HD_ERROR_THROW(msg,status);
   }
+
+  // Get the filename of the input photon list (FITS file)
+  else if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
+    sprintf(msg, "Error reading the filename of the event list!\n");
+    HD_ERROR_THROW(msg,status);
+  }
   
-  // get the filename of the PSF data file (FITS file)
-  else if ((status = PILGetFname("psf_filename", psf_filename))) {
-    sprintf(msg, "Error reading the filename of the PSF file!\n");
+  // Get the filename of the output sky image FITS file
+  else if ((status = PILGetFname("skyimage_filename", parameters->skyimage_filename))) {
+    sprintf(msg, "Error reading the filename of the sky image output file!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // get the filename of the PSF data file (FITS file)
-  else if ((status = PILGetFname("impactlist_filename", impactlist_filename))) {
-    sprintf(msg, "Error reading the filename of the impact list output file!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // get the start time of the simulation
-  else if ((status = PILGetReal("t0", t0))) {
-    sprintf(msg, "Error reading the 't0' parameter!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // get the timespan for the simulation
-  else if ((status = PILGetReal("timespan", timespan))) {
-    sprintf(msg, "Error reading the 'timespan' parameter!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // read the diameter of the FOV (in arcmin)
-  else if ((status = PILGetReal("fov_diameter", &telescope->fov_diameter))) {
+  // Read the diameter of the FOV (in arcmin)
+  else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
     sprintf(msg, "Error reading the diameter of the FOV!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // read the focal length [m]
-  else if ((status = PILGetReal("focal_length", &telescope->focal_length))) {
+  // Read the focal length [m]
+  else if ((status = PILGetReal("focal_length", &parameters->focal_length))) {
     sprintf(msg, "Error reading the focal length!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // convert angles from [arc min] to [rad]
-  telescope->fov_diameter = telescope->fov_diameter*M_PI/(60.*180.); 
+  parameters->fov_diameter = parameters->fov_diameter*M_PI/(60.*180.); 
 
   return(status);
 }

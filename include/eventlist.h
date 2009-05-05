@@ -27,8 +27,12 @@ int create_eventlist_file(struct Eventlist_File*, Detector*,
 
 
 // Open an existing FITS file and try to get the first extension that contains
-// a binary table.
+// a binary table.          !! OBSOLETE !!
 int open_eventlist_file(struct Eventlist_File*, int* status);
+
+// Open an existing FITS file with a binary table event list
+// for reading access.
+int open_EventlistFile(char* filename, int* status);
 
 
 // This routine inserts one new line in the event list FITS table and writes

@@ -111,9 +111,9 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     ci->crval2 *= M_PI/180.;
 
     // Determine the edges of the covered area:
-    ci->minra = ci->crval1 - ci->cdelt1*ci->crpix1;
-    ci->maxra = ci->crval1 + ci->cdelt1*(ci->naxis1-ci->crpix1);
-    ci->mindec = ci->crval2 - ci->cdelt2*ci->crpix2;
+    ci->minra  = ci->crval1 - ci->cdelt1* ci->crpix1;
+    ci->maxra  = ci->crval1 + ci->cdelt1*(ci->naxis1-ci->crpix1);
+    ci->mindec = ci->crval2 - ci->cdelt2* ci->crpix2;
     ci->maxdec = ci->crval2 + ci->cdelt2*(ci->naxis2-ci->crpix2);
     
 
@@ -168,7 +168,7 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     int x, y;
     for(x=0; x<ci->naxis1; x++) {
       for(y=0; y<ci->naxis2; y++) {
-	ci->pixel[x][ci->naxis2-1-y].rate = input_buffer[x*ci->naxis2 + y];
+	ci->pixel[x][y].rate = input_buffer[x+ ci->naxis2*y];
       }
     }
 

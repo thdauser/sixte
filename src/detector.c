@@ -84,7 +84,7 @@ void depfet_detector_action(
     detector->readout_line--;
     if (detector->readout_line < 0) { 
       detector->readout_line = 
-	(detector->readout_directions==1)?(detector->width-1):(detector->offset-1);
+	(1==detector->readout_directions)?(detector->width-1):(detector->offset-1);
       detector->frame++;         // start new detector frame
     }
     // Update the current detector readout time, which is used in the 
@@ -95,7 +95,7 @@ void depfet_detector_action(
     // (i.e., the one or two new lines, chosen in the
     // step before) and write the data to the FITS file.
     // After the readout clear the  lines.
-    if(detector->readout_directions==2) {
+    if(2==detector->readout_directions) {
       readout_line(detector, detector->readout_line, eventlist_file, status);
       clear_detector_line(detector, detector->readout_line);
     }
@@ -243,7 +243,7 @@ Detector* get_Detector(int* status)
 
     // Allocate memory for the detector:
     detector = (Detector*)malloc(sizeof(Detector));
-    if (detector == NULL) {
+    if (NULL==detector) {
       *status = EXIT_FAILURE;
       sprintf(msg, "Error: not enough memory available to store "
 	      "the detector array!\n");
@@ -257,7 +257,7 @@ Detector* get_Detector(int* status)
   } while (0); // END of Error handling loop
 
 
-  if (*status==EXIT_SUCCESS) {
+  if (EXIT_SUCCESS==*status) {
     return(detector);
   } else {
     return(NULL);

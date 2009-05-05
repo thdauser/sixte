@@ -29,7 +29,6 @@ int photon_detection_main() {
   set_toolname("photon_detection");
   set_toolversion("0.01");
 
-  headas_chat(5, "===>  !!! Caution: RMF Feature disabled !!! <===\n");
 
   do {   // beginning of the ERROR handling loop (will at most be run once)
 
@@ -222,10 +221,7 @@ int photon_detection_main() {
 	// The channel is obtained from the RMF using the corresponding
 	// HEAdas routine which is based on drawing a random number.
 	long channel;
-	// !!!
-	//	ReturnChannel(detector->rmf, energy, 1, &channel);
-	channel = get_channel(energy, detector);
-	// !!!
+	ReturnChannel(detector->rmf, energy, 1, &channel);
 
 	// Check if the photon is really measured. If the
 	// PHA channel returned by the HEAdas RMF function is '-1', 

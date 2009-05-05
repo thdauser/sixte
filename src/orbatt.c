@@ -163,7 +163,7 @@ int get_satellite_catalog(
 	// Rescale from degrees to radians:
 	rollangle = rollangle*M_PI/180.;
 
-	// telescope direction nz:
+	// telescope pointing direction nz:
 	(*sat_catalog)[entry].nz = unit_vector(view_ra*M_PI/180., view_dec*M_PI/180.);
 
 	// nx:

@@ -314,12 +314,15 @@ int get_eventlist_row(struct Eventlist_File eventlist_file,
 
 
 ///////////////////////////////////////////////////////////////////
+// OBSOLETE !!
 int open_eventlist_file(
-			 struct Eventlist_File* eventlist_file,
-			 int* status
-			 )
+			struct Eventlist_File* eventlist_file,
+			int* status
+			)
 {
-  char msg[MAXMSG];       // buffer for error messages
+  char msg[MAXMSG];  // buffer for error messages
+
+  printf("\nWarning: Using obsolete event list opening routine!\n");
 
   do {  // ERROR handling loop
 
@@ -351,4 +354,52 @@ int open_eventlist_file(
   return(*status);
 }
 
+
+///////////////////////////////////////////////////////////////////
+// Opens an existing FITS file with a binary table event list
+// for reading access.
+int open_EventlistFile(char* filename, int* status)
+{
+  char msg[MAXMSG];  // buffer for error messages
+  struct Eventlist_File *eventlistfile = NULL;
+  
+  do {  // ERROR handling loop
+    
+    // Memory allocation:
+    eventlistfile = (struct Eventlist_File*)malloc(sizeof(struct Eventlist_File));
+    if (NULL==eventlistfile) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: memory allocation in event list open routine failed!\n");
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+
+    // Open the FITS file table for reading:
+    if (fits_open_table(&eventlistfile->fptr, filename, 
+			READONLY, status)) break;
+
+    // Get the HDU type
+    int hdutype;
+    if (fits_get_hdu_type(eventlistfile->fptr, &hdutype, status)) break;
+
+    // image HDU results in an error message
+    if (hdutype==IMAGE_HDU) {
+      *status=EXIT_FAILURE;
+      sprintf(msg, "Error: no table extension available in event list "
+	      "FITS file '%s'!\n", filename);
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+
+    // Determine the number of rows in the event list.
+    if (fits_get_num_rows(eventlistfile->fptr, &eventlistfile->nrows, status)) 
+      break;
+
+    // Set internal row counter to first row (starting at 0).
+    eventlistfile->row = 0;
+
+  } while(0);  // END of error handling loop
+
+  return(eventlistfile);
+}
 
