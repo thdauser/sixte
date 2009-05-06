@@ -220,6 +220,10 @@ static inline void readout_line(
 	event.xi = xi;
 	event.yi = line;
 	event.frame = detector->frame;
+	event.ra = NAN;
+	event.dec = NAN;
+	event.sky_xi = 0;
+	event.sky_yi = 0;
 	add_eventlist_row(eventlist_file, event, status);
       }
     }

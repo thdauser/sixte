@@ -9,7 +9,7 @@
 // Number of fields in an event list table:
 // TIME, PHA, GRADE, RAWX/COLUMN, RAWY/ROW,
 // FRAME, PATNUM, PATID
-#define N_EVENT_FIELDS 9
+#define N_EVENT_FIELDS 13
 
 
 // Structure that contains all information, which is necessary to access
@@ -34,6 +34,8 @@ struct Event {
   long frame;
   long patnum, patid;
   long pileup;
+  double ra, dec;      // right ascension and declination [degree]
+  long sky_xi, sky_yi; // integer sky pixel coordinates
 };
 
 

@@ -45,6 +45,19 @@ void add_eventlist_row(
   event.pileup = 0;
   fits_write_col(eventlist_file->fptr, TLONG, 9, eventlist_file->row, 
 		 1, 1, &event.pileup, status); 
+
+  // RA and DEC
+  fits_write_col(eventlist_file->fptr, TDOUBLE, 10, eventlist_file->row,
+		 1, 1, &event.ra, status);
+  fits_write_col(eventlist_file->fptr, TDOUBLE, 11, eventlist_file->row,
+		 1, 1, &event.dec, status);
+
+  // Sky coordinates X and Y
+  fits_write_col(eventlist_file->fptr, TLONG, 12, eventlist_file->row,
+		 1, 1, &event.sky_xi, status);
+  fits_write_col(eventlist_file->fptr, TLONG, 13, eventlist_file->row,
+		 1, 1, &event.sky_yi, status);
+
 }
 
 
@@ -141,13 +154,29 @@ int create_eventlist_file(
     strcpy(fform[8], "J");
     strcpy(funit[8], "");
 
+    // 10+11. Source position in coordinates RA and DEC
+    strcpy(ftype[9], "RA");
+    strcpy(fform[9], "D");  // R*8
+    strcpy(funit[9], "degree");
+    strcpy(ftype[10], "DEC");
+    strcpy(fform[10], "D");  // R*8
+    strcpy(funit[10], "degree");
 
-    // create the event list table
+    // 12+13. Sky coordinates in integer pixels of size 0.05" (eROSITA specific)
+    strcpy(ftype[11], "X");
+    strcpy(fform[11], "J");  // I*4
+    strcpy(funit[11], "pixel");
+    strcpy(ftype[12], "Y");
+    strcpy(fform[12], "J");  // I*4
+    strcpy(funit[12], "pixel");
+
+
+    // Create the event list table in the FITS file.
     if (fits_create_tbl(eventlist_file->fptr, BINARY_TBL, 0, N_EVENT_FIELDS, 
 			ftype, fform, funit, "EVENTS", status)) break;
     
 
-    // write descriptory data into the header of the FITS file
+    // Write descriptory data into the header of the FITS file.
     if (fits_write_key(eventlist_file->fptr, TSTRING, "COMMENT", "EVENTLIST",
 		       "content: eventlist of eROSITA simulation measurement", 
 		       status)) break;

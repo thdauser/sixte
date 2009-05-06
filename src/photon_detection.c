@@ -281,6 +281,10 @@ int photon_detection_main() {
 		  event.yi = 0;  // human readable HTRS pixels numbers start at 1 <-|
 		  event.grade = 0;
 		  event.frame = 0;
+		  event.ra = NAN;
+		  event.dec = NAN;
+		  event.sky_xi = 0;
+		  event.sky_yi = 0;
 		  
 		  // Add the event to the FITS event list.
 		  // Check lower PHA threshold:
@@ -290,7 +294,7 @@ int photon_detection_main() {
 		    add_eventlist_row(&eventlist_file, event, &status);
 		  }
 		} // END htrs_detector_active(...)
-	      } else {printf("invalid pixel %lf, %lf\n", position.x, position.y);} // END x[count] != INVALID_PIXEL
+	      } // END x[count] != INVALID_PIXEL
 	    } // END of loop over all split partners.
 	
 	  } else if (detector->type == TES) {
@@ -306,7 +310,11 @@ int photon_detection_main() {
 	      event.yi = y[0];
 	      event.grade = 0;
 	      event.frame = detector->frame;
-
+	      event.ra = NAN;
+	      event.dec = NAN;
+	      event.sky_xi = 0;
+	      event.sky_yi = 0;
+	      
 	      // Add the event to the FITS event list.
 	      if ((event.pha>=detector->pha_threshold)&&
 		  (charge>=detector->energy_threshold)){ // Check lower PHA threshold
