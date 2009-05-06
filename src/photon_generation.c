@@ -84,6 +84,24 @@ int photon_generation_getpar(
 
 
 
+//////////////////////////
+/** Determines whether a given angle (in [rad]) lies within the specified range. 
+ * The function returns a "1" if the angle lies within the specified range, 
+ * otherwise the return value is "0". */
+int check_angle_range(double angle, double min, double max) 
+{
+  while (fabs(angle-min) > M_PI) { min-=2*M_PI; }
+  while (fabs(angle-max) > M_PI) { max+=2*M_PI; }
+
+  if ((angle>min)&&(angle<max)) {
+    return(1);
+  } else {
+    return(0);
+  }
+}
+
+
+
 
 //////////////////////////
 int photon_generation_main() 
@@ -448,6 +466,10 @@ int photon_generation_main()
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.
 	if (cic->images!=NULL) {
+
+	  // Check whether the the current telescope axis lies within the specified field
+	  // or CLOSE TO it. !!
+
 	  // Loop over all pixels of the the image:
 	  int xcount, ycount;
 	  double ra, dec;

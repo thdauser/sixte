@@ -1,8 +1,8 @@
 #include "vector.h"
 
 
-// Creates a unit vector for specified right ascension and declination.
-// Angles have to be given in [rad].
+/** Creates a unit vector for specified right ascension and declination.
+ * Angles have to be given in [rad]. */
 struct vector unit_vector(const double rasc, const double dec)
 {
   struct vector x;
@@ -17,7 +17,7 @@ struct vector unit_vector(const double rasc, const double dec)
 
 
 
-// Returns a normalized vector (length 1.0, same direction).
+/** Returns a normalized vector (length 1.0, same direction).*/
 struct vector normalize_vector(struct vector x) {
   double l;         // length of the vector x
   struct vector y;  // normalized vector
@@ -33,7 +33,7 @@ struct vector normalize_vector(struct vector x) {
 
 
 
-// Calculates the scalar product of two vector structures.
+/** Calculates the scalar product of two vector structures.*/
 inline double scalar_product(struct vector* const x, struct vector* const y)
 {
   return(x->x * y->x + x->y * y->y + x->z * y->z);
@@ -41,7 +41,7 @@ inline double scalar_product(struct vector* const x, struct vector* const y)
 
 
 
-// calculates the vector product of two vectors
+/** Calculates the vector product of two vectors. */
 struct vector vector_product(struct vector x, struct vector y) {
   struct vector z;  // return vector
 
@@ -54,8 +54,8 @@ struct vector vector_product(struct vector x, struct vector y) {
 
  
 
-// Function interpolates between two vectors at time t1 and t2 for the specified time 
-// and returns the interpolated vector.
+/** Function interpolates between two vectors at time t1 and t2 for the specified time 
+ * and returns the interpolated vector. */
 struct vector interpolate_vec(struct vector v1, double t1, 
 			      struct vector v2, double t2, 
 			      double time) {
