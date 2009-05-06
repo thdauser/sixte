@@ -416,10 +416,8 @@ int save_psf_image(
       fits_write_key(fptr, TSTRING, "HDUCLAS4", "NET",
 		     "", status);
 
-      fits_write_key(fptr, TSTRING, "CUNIT1", "pixel", 
-		     "", status);
-      fits_write_key(fptr, TSTRING, "CUNIT2", "pixel", 
-		     "", status);
+      fits_write_key(fptr, TSTRING, "CUNIT1", "pixel", "", status);
+      fits_write_key(fptr, TSTRING, "CUNIT2", "pixel", "", status);
       double dbuffer = psf->width*0.5;
       fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
 		     "X axis reference pixel", status);

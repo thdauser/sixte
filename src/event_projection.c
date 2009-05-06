@@ -31,6 +31,18 @@
 #include "headas_main.c"
 
 
+#define REFXCUNI "deg"         // WCS physical unit of X axis 
+#define REFXCRPX (12960000)    // WCS axis reference pixel
+#define REFXCRVL (0.)          // [deg] WCS coord. at X axis ref. pixel
+#define REFXCDLT (1.38889e-05) // [deg/pix] WCS X increment at ref. pixel (0.05"/pixel)
+
+#define REFYCUNI "deg"         // WCS  physical unit of Y axis 
+#define REFYCRPX (6480000)     // WCS axis reference pixel
+#define REFYCRVL (0.)          // [deg] WCS coord. at Y axis ref. pixel
+#define REFYCDLT (1.38889e-05) // [deg/pix] WCS Y increment at ref. pixel (0.05"/pixel)
+
+
+/* Program parameters */
 struct Parameters {
   char orbit_filename[FILENAME_LENGTH];     // filename of orbit file
   char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
@@ -84,6 +96,32 @@ int event_projection_main() {
     // Open the FITS file with the input event list:
     eventlistfile=open_EventlistFile(parameters.eventlist_filename, READWRITE, &status);
     if ((EXIT_SUCCESS!=status)||(NULL==eventlistfile)) break;
+    
+    // Write header keywords.
+    fits_write_key(eventlistfile->fptr, TSTRING, "REFXCUNI", REFXCUNI, 
+		   "WCS physical unit of X axis", &status);
+    long lbuffer = REFXCRPX;
+    fits_write_key(eventlistfile->fptr, TLONG, "REFXCRPX", &lbuffer, 
+		   "WCS axis reference pixel", &status);
+    double dbuffer = REFXCRVL;
+    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFXCRVL", &dbuffer,
+		   "[deg] WCS coord. at X axis ref. pixel", &status);
+    dbuffer = REFXCDLT;
+    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFXCDLT", &dbuffer,
+		   "[deg/pix] WCS X increment at ref. pixel", &status);
+
+    fits_write_key(eventlistfile->fptr, TSTRING, "REFYCUNI", REFYCUNI, 
+		   "WCS physical unit of Y axis", &status);
+    lbuffer = REFYCRPX;
+    fits_write_key(eventlistfile->fptr, TLONG, "REFYCRPX", &lbuffer, 
+		   "WCS axis reference pixel", &status);
+    dbuffer = REFYCRVL;
+    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFYCRVL", &dbuffer,
+		   "[deg] WCS coord. at Y axis ref. pixel", &status);
+    dbuffer = REFYCDLT;
+    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFYCDLT", &dbuffer,
+		   "[deg/pix] WCS Y increment at ref. pixel", &status);
+
 
     // Determine the time of the first and of the last event in the list. 
     // (This data is needed to read the adequate orbit/attitude information.)
@@ -103,10 +141,6 @@ int event_projection_main() {
 	!=EXIT_SUCCESS) break;
 
 
-    // Get the PSF:
-    //    psf = get_psf(psf_filename, &status);
-    //    if (status != EXIT_SUCCESS) break;
-    
     // --- END of Initialization ---
 
 
@@ -191,12 +225,11 @@ int event_projection_main() {
 	-r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
       source_position = normalize_vector(source_position);
 
-      event.ra  = atan2(source_position.y, source_position.x);
-      event.dec = asin(source_position.z);
+      event.ra = atan2(source_position.y, source_position.x) * 180./M_PI;
+      event.dec = asin(source_position.z) * 180./M_PI;
 
-      event.sky_xi = 0;
-      event.sky_yi = 0;
-
+      event.sky_xi = (int)((event.ra -REFXCRVL)/REFXCDLT+REFXCRPX);
+      event.sky_yi = (int)((event.dec-REFYCRVL)/REFYCDLT+REFYCRPX);
 
 
       // Store the data in the Event List FITS file.
@@ -210,49 +243,6 @@ int event_projection_main() {
 		     1, 1, &event.sky_yi, &status);
 
 
-      /*
-      // Compare the photon direction to the unit vector specifiing the 
-      // direction of the telescope axis:
-      if (check_fov(&photon.direction, &telescope.nz, fov_min_align)==0) {
-	// Photon is inside the FOV!
-	
-	// Determine telescope data like direction etc. (attitude).
-	// The telescope coordinate system consists of a nx, ny, and nz axis.
-	// The nz axis is perpendicular to the detector plane and pointing along
-	// the telescope direction. The nx axis is align along the detector 
-	// x-direction, which is identical to the detector COLUMN.
-	// The ny axis ix pointing along the y-direction of the detector,
-	// which is also referred to as ROW.
-
-	
-	// Determine the photon impact position on the detector (in [m]):
-	struct Point2d position;  
-
-	// Convolution with PSF:
-	// Function returns 0, if the photon does not fall on the detector. 
-	// If it hits the detector, the return value is 1.
-	if (get_psf_pos(&position, photon, telescope, psf)) {
-	  // Check whether the photon hits the detector within the FOV. 
-	  // (Due to the effects of the mirrors it might have been scattered over 
-	  // the edge of the FOV, although the source is inside the FOV.)
-	  if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
-	      tan(telescope.fov_diameter)*telescope.focal_length) {
-	    
-	    // Insert the impact position with the photon data into the impact list:
-	    fits_insert_rows(impactlist_fptr, impactlist_row++, 1, &status);
-	    fits_write_col(impactlist_fptr, TDOUBLE, 1, impactlist_row, 1, 1, 
-			   &photon.time, &status);
-	    fits_write_col(impactlist_fptr, TFLOAT, 2, impactlist_row, 1, 1, 
-			   &photon.energy, &status);
-	    fits_write_col(impactlist_fptr, TDOUBLE, 3, impactlist_row, 1, 1, 
-			   &position.x, &status);
-	    fits_write_col(impactlist_fptr, TDOUBLE, 4, impactlist_row, 1, 1, 
-			   &position.y, &status);
-
-	  }
-	} // END get_psf_pos(...)
-      } // End of FOV check
-      */
     } // END of scanning-LOOP over the event list.
   } while(0);  // END of the error handling loop.
 
@@ -268,9 +258,6 @@ int event_projection_main() {
 
   // Release memory of orbit/attitude catalog
   if (sat_catalog) free(sat_catalog);
-
-  // Release memory of PSF:
-  //  free_psf(psf);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
 
