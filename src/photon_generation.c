@@ -371,7 +371,8 @@ int photon_generation_main()
     // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
     // takes to slew over the entire FOV.
     for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
-      //  printf("\rtime: %lf", time);
+      printf("\rtime: %.3lf s ", time);
+      fflush(NULL);
 
       // Get the last orbit entry before the time 'time':
       // (in order to interpolate the actual position and velocity between 
@@ -571,7 +572,7 @@ int photon_generation_main()
 
   // --- Clean up ---
   
-  headas_chat(5, "cleaning up ...\n");
+  headas_chat(5, "\ncleaning up ...\n");
 
   // Close FITS file
   if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
