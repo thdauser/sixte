@@ -299,39 +299,47 @@ int create_eventlist_file(
 ///////////////////////////////////////////////////////////////////////
 // This function reads a row of data from the event list FITS table.
 int get_eventlist_row(struct Eventlist_File eventlist_file, 
-		     struct Event* event,
-		     int *status) {
+		      struct Event* event, int *status) 
+{
   int anynul = 0;
 
   // time (1st column)
+  event->time = 0.;
   fits_read_col(eventlist_file.fptr, TDOUBLE, 1, eventlist_file.row+1, 1, 1, 
 		&event->time, &event->time, &anynul, status);
 
   // PHA channel (2nd column)
+  event->pha = 0;
   fits_read_col(eventlist_file.fptr, TLONG, 2, eventlist_file.row+1, 1, 1, 
 		&event->pha, &event->pha, &anynul, status);
 
   // Grade (specifies split events)
+  event->grade = 0;
   fits_read_col(eventlist_file.fptr, TINT, 3, eventlist_file.row+1, 1, 1, 
 		&event->grade, &event->grade, &anynul, status);
 
   // xi (3rd column)
+  event->xi = 0;
   fits_read_col(eventlist_file.fptr, TINT, 4, eventlist_file.row+1, 1, 1, 
 		&event->xi, &event->xi, &anynul, status);
 
   // yi (4th column)
+  event->yi = 0;
   fits_read_col(eventlist_file.fptr, TINT, 5, eventlist_file.row+1, 1, 1, 
 		&event->yi, &event->yi, &anynul, status);
 
   // frame
+  event->frame = 0;
   fits_read_col(eventlist_file.fptr, TLONG, 6, eventlist_file.row+1, 1, 1, 
 		&event->frame, &event->frame, &anynul, status);
 
   // patnum
+  event->patnum = 0;
   fits_read_col(eventlist_file.fptr, TLONG, 7, eventlist_file.row+1, 1, 1, 
 		&event->patnum, &event->patnum, &anynul, status);
 
   // patid
+  event->patid = 0;
   fits_read_col(eventlist_file.fptr, TLONG, 8, eventlist_file.row+1, 1, 1, 
 		&event->patid, &event->patid, &anynul, status);
 
@@ -387,7 +395,7 @@ int open_eventlist_file(
 ///////////////////////////////////////////////////////////////////
 // Opens an existing FITS file with a binary table event list
 // for reading access.
-struct Eventlist_File* open_EventlistFile(char* filename, int* status)
+struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* status)
 {
   char msg[MAXMSG];  // buffer for error messages
   struct Eventlist_File *eventlistfile = NULL;
@@ -405,7 +413,7 @@ struct Eventlist_File* open_EventlistFile(char* filename, int* status)
 
     // Open the FITS file table for reading:
     if (fits_open_table(&eventlistfile->fptr, filename, 
-			READONLY, status)) break;
+			access_mode, status)) break;
 
     // Get the HDU type
     int hdutype;

@@ -82,7 +82,7 @@ int event_projection_main() {
     HDmtInit(1);
 
     // Open the FITS file with the input event list:
-    eventlistfile=open_EventlistFile(parameters.eventlist_filename, &status);
+    eventlistfile=open_EventlistFile(parameters.eventlist_filename, READWRITE, &status);
     if ((EXIT_SUCCESS!=status)||(NULL==eventlistfile)) break;
 
     // Determine the time of the first and of the last event in the list. 
@@ -97,7 +97,7 @@ int event_projection_main() {
 
     // Get the satellite catalog with the orbit and (telescope) attitude data:
     if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, 
-				      t0, timespan+100., 
+				      0., timespan+100., 
 				      parameters.orbit_filename, 
 				      parameters.attitude_filename))
 	!=EXIT_SUCCESS) break;
@@ -110,12 +110,12 @@ int event_projection_main() {
     // --- END of Initialization ---
 
 
-    // --- Beginning of Imaging Process ---
+    // --- Beginning of the Imaging Process ---
 
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start imaging process ...\n");
 
-    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
+    // LOOP over all event in the FITS table
     long sat_counter=0;       // counter for orbit readout loop
 
     // SCAN PHOTON LIST    
@@ -143,14 +143,73 @@ int event_projection_main() {
 	break;
       }
 
-      // Check whether the photon is inside the FOV:
-      // First determine telescope pointing direction at the actual time.
+      // Determine the Position of the source on the sky:
+
+      // First determine telescope pointing direction at the current time.
       telescope.nz = 
 	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
 					 sat_catalog[sat_counter].time, 
 					 sat_catalog[sat_counter+1].nz, 
 					 sat_catalog[sat_counter+1].time, 
 					 event.time));
+      // Determine the current nx: perpendicular to telescope axis nz
+      // and in the direction of the satellite motion.
+      telescope.nx = 
+	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nx, 
+					 sat_catalog[sat_counter].time, 
+					 sat_catalog[sat_counter+1].nx, 
+					 sat_catalog[sat_counter+1].time, 
+					 event.time));
+      // Remove the component along the vertical direction nz 
+      // (nx must be perpendicular to nz!):
+      double scp = scalar_product(&telescope.nz, &telescope.nx);
+      telescope.nx.x -= scp*telescope.nz.x;
+      telescope.nx.y -= scp*telescope.nz.y;
+      telescope.nx.z -= scp*telescope.nz.z;
+      telescope.nx = normalize_vector(telescope.nx);
+      // The third axis of the coordinate system ny is perpendicular 
+      // to telescope axis nz and nx:
+      telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
+
+
+
+      // Determine RA, DEC and the sky coordinates (in pixel) of the source.
+      struct Point2d detector_position;
+      detector_position.x = ((double)(event.xi-384/2)+0.5)*75.e-6; // in [mu m]
+      detector_position.y = ((double)(event.yi-384/2)+0.5)*75.e-6; // in [mu m]
+      double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
+
+      double offaxis_angle = atan(d/telescope.focal_length);
+      double r = tan(offaxis_angle);
+
+      struct vector source_position;
+      source_position.x = telescope.nz.x 
+	-r*(detector_position.x/d*telescope.nx.x+detector_position.y/d*telescope.ny.x);
+      source_position.y = telescope.nz.y 
+	-r*(detector_position.x/d*telescope.nx.y+detector_position.y/d*telescope.ny.y);
+      source_position.z = telescope.nz.z 
+	-r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
+      source_position = normalize_vector(source_position);
+
+      event.ra  = atan2(source_position.y, source_position.x);
+      event.dec = asin(source_position.z);
+
+      event.sky_xi = 0;
+      event.sky_yi = 0;
+
+
+
+      // Store the data in the Event List FITS file.
+      fits_write_col(eventlistfile->fptr, TDOUBLE, 10, eventlistfile->row+1, 
+		     1, 1, &event.ra, &status);
+      fits_write_col(eventlistfile->fptr, TDOUBLE, 11, eventlistfile->row+1, 
+		     1, 1, &event.dec, &status);
+      fits_write_col(eventlistfile->fptr, TLONG, 12, eventlistfile->row+1, 
+		     1, 1, &event.sky_xi, &status);
+      fits_write_col(eventlistfile->fptr, TLONG, 13, eventlistfile->row+1, 
+		     1, 1, &event.sky_yi, &status);
+
+
       /*
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
@@ -165,25 +224,6 @@ int event_projection_main() {
 	// The ny axis ix pointing along the y-direction of the detector,
 	// which is also referred to as ROW.
 
-	// Determine the current nx: perpendicular to telescope axis nz
-	// and in the direction of the satellite motion.
-	telescope.nx = 
-	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nx, 
-					   sat_catalog[sat_counter].time, 
-					   sat_catalog[sat_counter+1].nx, 
-					   sat_catalog[sat_counter+1].time, 
-					   photon.time));
-	// Remove the component along the vertical direction nz 
-	// (nx must be perpendicular to nz!):
-	double scp = scalar_product(&telescope.nz, &telescope.nx);
-	telescope.nx.x -= scp*telescope.nz.x;
-	telescope.nx.y -= scp*telescope.nz.y;
-	telescope.nx.z -= scp*telescope.nz.z;
-	telescope.nx = normalize_vector(telescope.nx);
-
-	// The third axis of the coordinate system ny is perpendicular 
-	// to telescope axis nz and nx:
-	telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
 	
 	// Determine the photon impact position on the detector (in [m]):
 	struct Point2d position;  

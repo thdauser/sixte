@@ -30,9 +30,10 @@ int create_eventlist_file(struct Eventlist_File*, Detector*,
 // a binary table.          !! OBSOLETE !!
 int open_eventlist_file(struct Eventlist_File*, int* status);
 
-// Open an existing FITS file with a binary table event list
-// for reading access.
-struct Eventlist_File* open_EventlistFile(char* filename, int* status);
+/** Opens an existing FITS file with a binary table event list.
+ * The access_mode parameter can be either READONLY or READWRITE.
+ */
+struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* status);
 
 
 // This routine inserts one new line in the event list FITS table and writes

@@ -46,13 +46,13 @@ static inline PSF_Item *get_best_psf_item(
 
 
 
-// Calculates the position on the detector, where a photon at given sky 
-// position with specified energy hits the detector according to the PSF 
-// data and a random number generator (randomization over one PSF pixel).
-// Return value is '1', if the photon hits the detector. If it does not 
-// fall onto the detector, the function returns '0'.
-// The output detector position is stored in [mu m] in the first 2 parameters 
-//of the function.
+/** Calculates the position on the detector, where a photon at given sky 
+ * position with specified energy hits the detector according to the PSF 
+ * data and a random number generator (randomization over one PSF pixel).
+ * Return value is '1', if the photon hits the detector. If it does not 
+ * fall onto the detector, the function returns '0'.
+ * The output detector position is stored in [mu m] in the first 2 parameters 
+ * of the function. */
 int get_psf_pos(
 		// output: coordinates of the photon on the detector [mu m]
 		struct Point2d* position,

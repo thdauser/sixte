@@ -1,5 +1,5 @@
 impactlist_filename,fre,lq,"impacts.fits",,,"impact list file (FITS input file)"
-rmf_filename,fre,lq,"../rsp/erosita_7telfov_ff.rsp",,,"detector redistribution matrix file (RMF) (FITS input file)"
+rmf_filename,fre,lq,"../rsp/erosita_iii_1telonaxis_ff.rsp",,,"detector redistribution matrix file (RMF) (FITS input file)"
 eventlist_filename,f,lq,"events.fits",,,"event list file (FITS output file)"
 detector_type,i,lq,1,1,4,"detector type (1=FRAMESTORE, 2=DEPFET, 3=TES, 4=HTRS)"
 readout_directions,i,lq,1,1,2,"number of DEPFET readout directions"
