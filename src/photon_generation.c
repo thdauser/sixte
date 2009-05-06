@@ -461,7 +461,7 @@ int photon_generation_main()
 	  }
 	}
 
-      } else if (source_category==EXTENDED_SOURCES) {
+      } else if (EXTENDED_SOURCES==source_category) {
 
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.

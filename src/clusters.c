@@ -12,7 +12,7 @@
 
 
 struct ClusterPixel {
-  float rate;           // count rate in this pixel
+  float rate; /** count rate in this pixel */
   //  double t_last_photon; // last photon emitted from this direction
 };
 

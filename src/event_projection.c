@@ -228,9 +228,14 @@ int event_projection_main() {
       event.ra = atan2(source_position.y, source_position.x) * 180./M_PI;
       event.dec = asin(source_position.z) * 180./M_PI;
 
+      // Determine the pixel coordinates in the sky image:
       event.sky_xi = (int)((event.ra -REFXCRVL)/REFXCDLT+REFXCRPX);
       event.sky_yi = (int)((event.dec-REFYCRVL)/REFYCDLT+REFYCRPX);
 
+      // Put some randomization on the RA and DEC coordinate (within the sky pixel)
+      // to receive a continuous image.
+      event.ra  += get_random_number()*0.00265625; // Corresponds to the width of one detector pixel on 
+      event.dec += get_random_number()*0.00265625; // the sky (= (61.2/60.)°/384)
 
       // Store the data in the Event List FITS file.
       fits_write_col(eventlistfile->fptr, TDOUBLE, 10, eventlistfile->row+1, 
