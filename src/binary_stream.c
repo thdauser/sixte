@@ -168,7 +168,8 @@ int binary_stream_main()
       // EVENT mode, i.e., the events are transferred to a particular binary
       // data format without spectral binning or other modifications.
       
-      struct Binary_Output *binary_output = get_Binary_Output(N_EROSITA_BYTES, output_file);
+      struct Binary_Output *binary_output = 
+	get_Binary_Output(N_EROSITA_BYTES, output_file);
       struct Event *eventlist = (struct Event *)malloc(10000*sizeof(struct Event));
       if ((binary_output == NULL)||(eventlist==NULL)) {
 	status=EXIT_FAILURE;

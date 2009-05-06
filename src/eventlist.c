@@ -358,7 +358,7 @@ int open_eventlist_file(
 ///////////////////////////////////////////////////////////////////
 // Opens an existing FITS file with a binary table event list
 // for reading access.
-int open_EventlistFile(char* filename, int* status)
+struct Eventlist_File* open_EventlistFile(char* filename, int* status)
 {
   char msg[MAXMSG];  // buffer for error messages
   struct Eventlist_File *eventlistfile = NULL;

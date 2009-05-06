@@ -35,14 +35,13 @@ struct Parameters {
   char orbit_filename[FILENAME_LENGTH];     // filename of orbit file
   char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
   char eventlist_filename[FILENAME_LENGTH]; // input: photon list
-  char skyimage_filename[FILENAME_LENGTH];  // output: impact list
 
   double focal_length;
   double fov_diameter;
 };
 
 
-int event_projection_getpar(struct Paramters *parameters);
+int event_projection_getpar(struct Parameters *parameters);
 
 
 
@@ -54,13 +53,12 @@ int event_projection_main() {
   long sat_nentries; // number of entries in the orbit array ( <= orbit_nrows )
   struct Telescope *sat_catalog=NULL; // catalog with orbit and attitude data 
                                       // over a certain timespan
-  struct Eventlist_File eventlistfile;
+  struct Eventlist_File* eventlistfile;
 
-  fitsfile *impactlist_fptr=NULL;           
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
 
-  char msg[MAXMSG];             // error output buffer
-  int status=EXIT_SUCCESS;      // error status
+  char msg[MAXMSG];           // error output buffer
+  int status=EXIT_SUCCESS;    // error status
 
 
   // Register HEATOOL:
@@ -79,12 +77,6 @@ int event_projection_main() {
     telescope.focal_length = parameters.focal_length;
     telescope.fov_diameter = parameters.fov_diameter;
 
-
-    // Calculate the minimum cos-value for sources inside the FOV: 
-    // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align = cos(telescope.fov_diameter/2.); 
-    
-
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
@@ -93,77 +85,60 @@ int event_projection_main() {
     eventlistfile=open_EventlistFile(parameters.eventlist_filename, &status);
     if ((EXIT_SUCCESS!=status)||(NULL==eventlistfile)) break;
 
+    // Determine the time of the first and of the last event in the list. 
+    // (This data is needed to read the adequate orbit/attitude information.)
+    // Read the first event from the FITS file.
+    int anynul = 0.;
+    double t0=0., timespan=0.;
+    fits_read_col(eventlistfile->fptr, TDOUBLE, 1, 1, 1, 1, &t0, &t0, &anynul, &status);
+    fits_read_col(eventlistfile->fptr, TDOUBLE, 1, eventlistfile->nrows, 1, 1, 
+		  &timespan, &timespan, &anynul, &status);
+    
+
     // Get the satellite catalog with the orbit and (telescope) attitude data:
-    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, timespan+100., 
-				      orbit_filename, attitude_filename))
+    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, 
+				      t0, timespan+100., 
+				      parameters.orbit_filename, 
+				      parameters.attitude_filename))
 	!=EXIT_SUCCESS) break;
 
 
     // Get the PSF:
-    psf = get_psf(psf_filename, &status);
-    if (status != EXIT_SUCCESS) break;
-
-    // Create a new FITS file for the output of the impact list:
-    remove(impactlist_filename);
-    if ((create_impactlist_file(&impactlist_fptr, impactlist_filename, &status))) 
-      break;
-
+    //    psf = get_psf(psf_filename, &status);
+    //    if (status != EXIT_SUCCESS) break;
     
     // --- END of Initialization ---
 
 
     // --- Beginning of Imaging Process ---
 
-    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    long photonlist_row=0;    // current row in the input list
-    long impactlist_row=0;    //      -"-           output list
-    long sat_counter=0;       // counter for orbit readout loop
-
-
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start imaging process ...\n");
 
+    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
+    long sat_counter=0;       // counter for orbit readout loop
 
     // SCAN PHOTON LIST    
-    for(photonlist_row=0; (photonlist_row<photonlist_nrows)&&(status==EXIT_SUCCESS); 
-	photonlist_row++) {
+    for(eventlistfile->row=0; 
+	(eventlistfile->row<eventlistfile->nrows)&&(status==EXIT_SUCCESS); 
+	eventlistfile->row++) {
       
-      // Read an entry from the photon list:
-      int anynul = 0;
-      struct Photon photon;
-      photon.time = 0.;
-      photon.energy = 0.;
-      photon.ra = 0.;
-      photon.dec = 0.;
-      fits_read_col(photonlist_fptr, TDOUBLE, 1, photonlist_row+1, 1, 1, 
-		    &photon.time, &photon.time, &anynul, &status);
-      fits_read_col(photonlist_fptr, TFLOAT, 2, photonlist_row+1, 1, 1, 
-		    &photon.energy, &photon.energy, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 3, photonlist_row+1, 1, 1, 
-		    &photon.ra, &photon.ra, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 4, photonlist_row+1, 1, 1, 
-		    &photon.dec, &photon.dec, &anynul, &status);
-      if (status!=EXIT_SUCCESS) break;
+      // Read the event from the FITS file.
+      struct Event event;
+      if (get_eventlist_row(*eventlistfile, &event, &status)) break;
 
-      // Rescale from [deg] -> [rad]
-      photon.ra  = photon.ra *M_PI/180.;
-      photon.dec = photon.dec*M_PI/180.;
-      // Determine a unit vector pointing in the direction of the photon.
-      photon.direction = unit_vector(photon.ra, photon.dec);
-
-
-      // Get the last orbit entry before 'photon.time'
+      // Get the last orbit entry before 'event.time'
       // (in order to interpolate the position and velocity at this time  between 
       // the neighboring calculated orbit positions):
       for( ; sat_counter<sat_nentries; sat_counter++) {
-	if(sat_catalog[sat_counter].time>photon.time) {
+	if(sat_catalog[sat_counter].time>event.time) {
 	  break;
 	}
       }
-      if(fabs(sat_catalog[--sat_counter].time-photon.time)>600.) { 
+      if(fabs(sat_catalog[--sat_counter].time-event.time)>600.) { 
 	// no entry within 10 minutes !!
 	status = EXIT_FAILURE;
-	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", photon.time);
+	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", event.time);
 	HD_ERROR_THROW(msg,status);
 	break;
       }
@@ -175,8 +150,8 @@ int event_projection_main() {
 					 sat_catalog[sat_counter].time, 
 					 sat_catalog[sat_counter+1].nz, 
 					 sat_catalog[sat_counter+1].time, 
-					 photon.time));
-
+					 event.time));
+      /*
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
       if (check_fov(&photon.direction, &telescope.nz, fov_min_align)==0) {
@@ -237,26 +212,25 @@ int event_projection_main() {
 	  }
 	} // END get_psf_pos(...)
       } // End of FOV check
-    } // END of scanning LOOP over the photon list.
+      */
+    } // END of scanning-LOOP over the event list.
   } while(0);  // END of the error handling loop.
 
 
-
-  // --- cleaning up ---
+  // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
   // release HEADAS random number generator
   HDmtFree();
 
   // Close the FITS files.
-  if (impactlist_fptr) fits_close_file(impactlist_fptr, &status);
-  if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
+  if (eventlistfile->fptr) fits_close_file(eventlistfile->fptr, &status);
 
-  // Release memory of orbit catalog
+  // Release memory of orbit/attitude catalog
   if (sat_catalog) free(sat_catalog);
 
   // Release memory of PSF:
-  free_psf(psf);
+  //  free_psf(psf);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
 
@@ -268,7 +242,7 @@ int event_projection_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int event_projection_getpar(struct Paramters *parameters)
+int event_projection_getpar(struct Parameters *parameters)
 {
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
@@ -291,12 +265,6 @@ int event_projection_getpar(struct Paramters *parameters)
     HD_ERROR_THROW(msg,status);
   }
   
-  // Get the filename of the output sky image FITS file
-  else if ((status = PILGetFname("skyimage_filename", parameters->skyimage_filename))) {
-    sprintf(msg, "Error reading the filename of the sky image output file!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
   // Read the diameter of the FOV (in arcmin)
   else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
     sprintf(msg, "Error reading the diameter of the FOV!\n");
