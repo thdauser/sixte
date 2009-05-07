@@ -140,7 +140,24 @@ int event_projection_main() {
 				      parameters.attitude_filename))
 	!=EXIT_SUCCESS) break;
 
-
+    
+    // Create an array that contains the off-axis angle corresponding to 
+    // some particular positions on the detector.
+    struct angle_position_relation { 
+      double distance; // [m]
+      double angle;    // offaxis-angle [rad]
+    };
+    struct angle_position_relation apr[7] = {
+      { 0.      ,  0.                  },
+      { 0.002338,  5. /60.*M_PI/180. },
+      { 0.004662, 10. /60.*M_PI/180. },
+      { 0.006988, 15. /60.*M_PI/180. },
+      { 0.009288, 20. /60.*M_PI/180. },
+      { 0.011613, 25. /60.*M_PI/180. },
+      { 0.013938, 30. /60.*M_PI/180. }
+    };
+      
+    
     // --- END of Initialization ---
 
 
@@ -209,11 +226,27 @@ int event_projection_main() {
 
       // Determine RA, DEC and the sky coordinates (in pixel) of the source.
       struct Point2d detector_position;
-      detector_position.x = ((double)(event.xi-384/2)+0.5)*75.e-6; // in [mu m]
-      detector_position.y = ((double)(event.yi-384/2)+0.5)*75.e-6; // in [mu m]
+      detector_position.x = ((double)(event.xi-384/2)+0.5)*75.e-6; // in [m]
+      detector_position.y = ((double)(event.yi-384/2)+0.5)*75.e-6; // in [m]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
 
-      double offaxis_angle = atan(d/telescope.focal_length);
+      // Determine the offaxis_angle corresponding to the detector position.
+      double offaxis_angle; // = atan(d/telescope.focal_length);
+      // Interpolation:
+      int count;
+      for(count=1; count<7; count++) {
+	if (apr[count].distance>d) break;
+      }
+      if (count<6) {
+	offaxis_angle = apr[count-1].angle + 
+	  (d-apr[count-1].distance)/(apr[count].distance-apr[count-1].distance) * 
+	  (apr[count].angle-apr[count-1].angle);
+      } else {
+	offaxis_angle = apr[6].angle + 
+	  (d-apr[6].distance)/(apr[6].distance-apr[5].distance) *
+	  (apr[6].angle-apr[5].angle);
+      }
+
       double r = tan(offaxis_angle);
 
       struct vector source_position;

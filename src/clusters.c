@@ -28,7 +28,9 @@ typedef struct {
 } ClusterImage;
 
 typedef struct {
-  int nimages; /** total number of extended source images in the catalog */
+  /** total number of ClusterImage elements in the catalog */
+  int nimages;
+  /** catalog of ClusterImage elements */
   ClusterImage** images; /* nimages */
 } ClusterImageCatalog;
 
@@ -227,8 +229,11 @@ void free_ClusterImageCatalog(ClusterImageCatalog* cic)
     if (cic->nimages > 0) {
       int count;
       for(count=0; count<cic->nimages; count++) {
-	free_ClusterImage(&(cic->images[count]));
+	free_ClusterImage(cic->images[count]);
       }
+    }
+    if (cic->images!=NULL) {
+      free(cic->images);
     }
     free(cic);
   }
