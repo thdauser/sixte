@@ -26,8 +26,10 @@
 #include "astrosources.types.h"
 
 
-#define POINT_SOURCES    1
-#define EXTENDED_SOURCES 2
+typedef enum {
+  POINT_SOURCES=1,
+  EXTENDED_SOURCES=2
+} SourceCategory;
 
 
 // Function opens the specified point-source catalog files.

@@ -18,7 +18,7 @@ struct Parameters {
   char photonlist_filename[FILENAME_LENGTH];
 
   /** Category of input sources: 1=Point sources, 2=Extended Sources */
-  int source_category;
+  SourceCategory source_category;
 };
 
 
@@ -90,17 +90,20 @@ int photon_generation_getpar(
     HD_ERROR_THROW(msg, status);
   }
 
-  // Determine the name of the file that contains the filenames of 
-  // the extended source files.
-  else if ((status = PILGetFname("clusterlist_filename", 
-				 parameters->clusterlist_filename))) {
-    sprintf(msg, "Error reading the filename of the cluster list file!\n");
-    HD_ERROR_THROW(msg, status);
+  if (EXTENDED_SOURCES==parameters->source_category) {
+    // Determine the name of the file that contains the filenames of 
+    // the extended source files.
+    if ((status = PILGetFname("clusterlist_filename", 
+			      parameters->clusterlist_filename))) {
+      sprintf(msg, "Error reading the filename of the cluster list file!\n");
+      HD_ERROR_THROW(msg, status);
+    }
   }
 
-    // Get the filename of the Photon-List file (FITS file):
-  else if ((status = PILGetFname("photonlist_filename", 
-				 parameters->photonlist_filename))) {
+  // Get the filename of the Photon-List file (FITS file):
+  if ((EXIT_SUCCESS==status) && 
+      (status = PILGetFname("photonlist_filename", 
+			    parameters->photonlist_filename))) {
     sprintf(msg, "Error reading the filename of the output file for "
 	    "the photon list!\n");
     HD_ERROR_THROW(msg, status);
