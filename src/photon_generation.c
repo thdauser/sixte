@@ -9,13 +9,22 @@
 #include "clusters.c"
 
 
+struct Parameters {
+  char orbit_filename[FILENAME_LENGTH];
+  char attitude_filename[FILENAME_LENGTH];
+  char spectrum_filename[FILENAME_LENGTH];
+  char rmf_filename[FILENAME_LENGTH];
+  char clusterlist_filename[FILENAME_LENGTH];
+  char photonlist_filename[FILENAME_LENGTH];
+
+  /** Category of input sources: 1=Point sources, 2=Extended Sources */
+  int source_category;
+};
+
+
 ////////////////////////////
 int photon_generation_getpar(
-			     char orbit_filename[],
-			     char attitude_filename[],
-			     // PHA file containing the default source spectrum
-			     char spectrum_filename[],
-			     char rmf_filename[],
+			     struct Parameters* parameters,
 			     double *t0,
 			     double *timespan,
 			     double *bandwidth,
@@ -25,26 +34,27 @@ int photon_generation_getpar(
   char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
 
+
   // Get the filename of the Orbit file (FITS file):
-  if ((status = PILGetFname("orbit_filename", orbit_filename))) {
+  if ((status = PILGetFname("orbit_filename", parameters->orbit_filename))) {
     sprintf(msg, "Error reading the filename of the orbit file!\n");
     HD_ERROR_THROW(msg, status);
   }
 
   // Get the filename of the Attitude file (FITS file):
-  else if ((status = PILGetFname("attitude_filename", attitude_filename))) {
+  else if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
     HD_ERROR_THROW(msg, status);
   }
 
   // Get the filename of the default source spectrum (PHA FITS file)
-  if ((status = PILGetFname("spectrum_filename", spectrum_filename))) {
+  if ((status = PILGetFname("spectrum_filename", parameters->spectrum_filename))) {
     sprintf(msg, "Error reading the filename of the default spectrum (PHA)!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // Get the filename of the detector redistribution file (FITS file)
-  else if ((status = PILGetFname("rmf_filename", rmf_filename))) {
+  else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
     sprintf(msg, "Error reading the filename of the detector" 
 	    "redistribution matrix file (RMF)!\n");
     HD_ERROR_THROW(msg,status);
@@ -53,25 +63,47 @@ int photon_generation_getpar(
   // Get the start time of the photon generation
   else if ((status = PILGetReal("t0", t0))) {
     sprintf(msg, "Error reading the 't0' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW(msg, status);
   }
 
   // Get the timespan for the photon generation
   else if ((status = PILGetReal("timespan", timespan))) {
     sprintf(msg, "Error reading the 'timespan' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW(msg, status);
   }
 
   // Get the (half) width of the preselection band [arcmin]
   else if ((status = PILGetReal("bandwidth", bandwidth))) {
     sprintf(msg, "Error reading the 'bandwidth' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW(msg, status);
   }
 
   // Get the diameter of the FOV (in arcmin)
   else if ((status = PILGetReal("fov_diameter", &telescope->fov_diameter))) {
     sprintf(msg, "Error reading the diameter of the FOV!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW(msg, status);
+  }
+
+  // Determine the category of the input sources:
+  if ((status = PILGetInt("source_category", &parameters->source_category))) {
+    sprintf(msg, "Error: wrong source category!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+
+  // Determine the name of the file that contains the filenames of 
+  // the extended source files.
+  else if ((status = PILGetFname("clusterlist_filename", 
+				 parameters->clusterlist_filename))) {
+    sprintf(msg, "Error reading the filename of the cluster list file!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+
+    // Get the filename of the Photon-List file (FITS file):
+  else if ((status = PILGetFname("photonlist_filename", 
+				 parameters->photonlist_filename))) {
+    sprintf(msg, "Error reading the filename of the output file for "
+	    "the photon list!\n");
+    HD_ERROR_THROW(msg, status);
   }
 
 
@@ -106,20 +138,14 @@ int check_angle_range(double angle, double min, double max)
 //////////////////////////
 int photon_generation_main() 
 {
-  // Names of several input and output files:
-  char orbit_filename[FILENAME_LENGTH];      // input: orbit
-  char attitude_filename[FILENAME_LENGTH];   // input: attitude
-  char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH]; // input: source spectra
-  char rmf_filename[FILENAME_LENGTH];        // input: detector RMF
-  char photonlist_filename[FILENAME_LENGTH]; // output: photon list
+  // Program parameters.
+  struct Parameters parameters;
   
-  int source_category; // Source category: 1=Point sources, 2=Extended Sources
   // Several input source catalog files:
   int n_sourcefiles;   // number of input source files
   // Filenames of the individual source catalog files (FITS):
   char** source_filename=NULL;
   // X-ray Cluster image:
-  char cluster_filename[FILENAME_LENGTH];    // input: cluster image file
   ClusterImageCatalog* cic = NULL;
 
   // New data structures for point sources:
@@ -173,8 +199,7 @@ int photon_generation_main()
     if(status!=EXIT_SUCCESS) break;
     
 
-    if((status=photon_generation_getpar(orbit_filename, attitude_filename,
-					spectrum_filename[0], rmf_filename, 
+    if((status=photon_generation_getpar(&parameters, 
 					&t0, &timespan, &bandwidth,
 					&telescope))) break;
     
@@ -213,26 +238,22 @@ int photon_generation_main()
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
     if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, 
-				      timespan, orbit_filename, 
-				      attitude_filename)) !=EXIT_SUCCESS) break;
+				      timespan, parameters.orbit_filename, 
+				      parameters.attitude_filename)) !=EXIT_SUCCESS) break;
 
     // Read the detector RMF and EBOUNDS from the specified file and assign them to the 
     // Detector data structure.
-    if ((status=detector_assign_rsp(detector, rmf_filename)) != EXIT_SUCCESS) break;
+    if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) 
+	!= EXIT_SUCCESS) break;
 
     // Get the source spectra:
     if ((status=get_spectra(&spectrum_store, detector->rmf->NumberChannels, 
-			    spectrum_filename, N_SPECTRA_FILES)) != EXIT_SUCCESS) break;
+			    parameters.spectrum_filename, N_SPECTRA_FILES)) 
+	!= EXIT_SUCCESS) break;
 
 
 
-    // Determine the input sources (different categories):
-    if ((status = PILGetInt("source_category", &source_category))) {
-      sprintf(msg, "Error: wrong source category!\n");
-      HD_ERROR_THROW(msg, status);
-      break;
-    }
-    if (source_category==POINT_SOURCES) { 
+    if (parameters.source_category==POINT_SOURCES) { 
 
       int count;
       source_filename=(char**)malloc(MAX_N_POINTSOURCEFILES*sizeof(char*));
@@ -295,10 +316,55 @@ int photon_generation_main()
       // Use a short time interval for the orbit update:
       dt = 0.001;
       
-    } else if (source_category==EXTENDED_SOURCES) {
+    } else if (parameters.source_category==EXTENDED_SOURCES) {
       // Read the cluster images from the specified FITS files.
       cic = get_ClusterImageCatalog();
 
+      // Open the cluster list file:
+      FILE* clusterlist_fptr = fopen(parameters.clusterlist_filename, "r");
+      if (NULL==clusterlist_fptr) {
+	sprintf(msg, "Error: could not open the file containing the list "
+		"with the extended  sources!\n");
+	HD_ERROR_THROW(msg, status);
+	break;
+      } else {
+	// Determine the number of lines (= number of extended source files).
+	char line[MAXMSG];
+	while (fgets(line, MAXMSG, clusterlist_fptr)) {
+	  cic->nimages++;
+	}
+
+	if (cic->nimages<=0) {
+	  status=EXIT_SUCCESS;
+	  sprintf(msg, "Error: invalid number of sources files with "
+		  "extended sources!\n");
+	  HD_ERROR_THROW(msg, status);
+	  break;
+	}
+	
+	cic->images = (ClusterImage**)malloc(cic->nimages*sizeof(ClusterImage));
+	if (NULL==cic->images) {
+	  status=EXIT_SUCCESS;
+	  sprintf(msg, "Error: memory allocation for ClusterImageCatalog failed!\n");
+	  HD_ERROR_THROW(msg, status);
+	  break;
+	}
+
+	// Load all cluster image files specified in the cluster list file.
+	// Set the file pointer back to the beginning of the file:
+	fseek(clusterlist_fptr, 0, SEEK_SET);
+	int image_counter=0;
+	while (fscanf(clusterlist_fptr, "%s\n", line)>0) {
+	  // Load the specified galaxy cluster image:
+	  cic->images[image_counter++] = get_ClusterImage_fromFile(line, &status);
+	  if (status != EXIT_SUCCESS) break;
+	} // END of loop over all file entries in the cluster list file
+
+	// Close the cluster list file:
+	fclose(clusterlist_fptr);
+      }
+      
+      /*
       // Get the number of source input-files
       if ((status = PILGetInt("n_extended_source_files", &cic->nimages))) {
 	sprintf(msg, "Error reading the number of extended source files!\n");
@@ -332,14 +398,16 @@ int photon_generation_main()
 	cic->images[filecounter] = get_ClusterImage_fromFile(cluster_filename, &status);
 	if (status != EXIT_SUCCESS) break;
       } // END of loop over several extended source files
-    
+      */
+
       // Clear the filenames of the point source catalogs in the PIL parameter file,
       // otherwise HD_PARSTAMP might cause an error.
 
       // Filename-buffer to access the different source files:
+      int file_counter;
       char cbuffer[FILENAME_LENGTH];
-      for(filecounter=0; filecounter<MAX_N_POINTSOURCEFILES; filecounter++) {
-	sprintf(cbuffer,"sourcefile%d", filecounter+1);
+      for(file_counter=0; file_counter<MAX_N_POINTSOURCEFILES; file_counter++) {
+	sprintf(cbuffer,"sourcefile%d", file_counter+1);
 	// Fill redundant input slots for source files with NULL value,
 	// in order to avoid errors with the HD_PARSTAMP routine.
 	PILPutFname(cbuffer, "");
@@ -355,17 +423,11 @@ int photon_generation_main()
     } // different source categories
 
 
-    // Get the filename of the Photon-List file (FITS file):
-    if ((status = PILGetFname("photonlist_filename", photonlist_filename))) {
-      sprintf(msg, "Error reading the filename of the output file for "
-	      "the photon list!\n");
-      HD_ERROR_THROW(msg, status);
-    }
-
     // Delete old photon list FITS file:
-    remove(photonlist_filename);
+    remove(parameters.photonlist_filename);
     // Create a new FITS file for the output of the photon list:
-    if ((create_photonlist_file(&photonlist_fptr, photonlist_filename, &status))) 
+    if ((create_photonlist_file(&photonlist_fptr, 
+				parameters.photonlist_filename, &status)))
       break;
 
 
@@ -426,7 +488,7 @@ int photon_generation_main()
 					 sat_catalog[sat_counter+1].time,time));
       
 
-      if(source_category==POINT_SOURCES) {
+      if(parameters.source_category==POINT_SOURCES) {
 
 	// PRESELECTION of Point sources
 	// Preselection of sources from the comprehensive catalog to 
@@ -469,7 +531,7 @@ int photon_generation_main()
 	  }
 	}
 
-      } else if (EXTENDED_SOURCES==source_category) {
+      } else if (EXTENDED_SOURCES==parameters.source_category) {
 
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.
