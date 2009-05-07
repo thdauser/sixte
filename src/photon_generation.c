@@ -313,6 +313,14 @@ int photon_generation_main()
 	break;
       }
 
+      cic->images = (ClusterImage**)malloc(cic->nimages*sizeof(ClusterImage));
+      if (NULL==cic->images) {
+	status=EXIT_SUCCESS;
+	sprintf(msg, "Error: memory allocation for ClusterImageCatalog failed!\n");
+	HD_ERROR_THROW(msg, status);
+	break;
+      }
+
       int filecounter;
       for(filecounter=0; filecounter<cic->nimages; filecounter++) {
 	// Load the specified galaxy cluster image:
@@ -321,7 +329,7 @@ int photon_generation_main()
 	  HD_ERROR_THROW(msg,status);
 	  break;
 	}
-	cic->images = get_ClusterImage_fromFile(cluster_filename, &status);
+	cic->images[filecounter] = get_ClusterImage_fromFile(cluster_filename, &status);
 	if (status != EXIT_SUCCESS) break;
       } // END of loop over several extended source files
     
@@ -465,35 +473,41 @@ int photon_generation_main()
 
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.
-	if (cic->images!=NULL) {
+	int image_counter;
+	for (image_counter=0; image_counter<cic->nimages; image_counter++) {
 
+	  // TODO
 	  // Check whether the the current telescope axis lies within the specified field
 	  // or CLOSE TO it. !!
 
 	  // Loop over all pixels of the the image:
 	  int xcount, ycount;
 	  double ra, dec;
-	  for(xcount=0; (xcount<cic->images->naxis1)&&(status==EXIT_SUCCESS); 
+	  for(xcount=0; 
+	      (xcount<cic->images[image_counter]->naxis1)&&(status==EXIT_SUCCESS); 
 	      xcount++) {
-	    for(ycount=0; (ycount<cic->images->naxis2)&&(status==EXIT_SUCCESS); 
+	    for(ycount=0; 
+		(ycount<cic->images[image_counter]->naxis2)&&(status==EXIT_SUCCESS); 
 		ycount++) {
 	      // Check whether the pixel lies CLOSE TO the FOV:
-	      ra=cic->images->crval1+
-		(xcount-cic->images->crpix1+0.5)*cic->images->cdelt1; // [rad]
-	      dec=cic->images->crval2+
-		(ycount-cic->images->crpix2+0.5)*cic->images->cdelt2; // [rad]
+	      ra=cic->images[image_counter]->crval1+
+		(xcount-cic->images[image_counter]->crpix1+0.5)
+		*cic->images[image_counter]->cdelt1; // [rad]
+	      dec=cic->images[image_counter]->crval2+
+		(ycount-cic->images[image_counter]->crpix2+0.5)
+		*cic->images[image_counter]->cdelt2; // [rad]
 	      struct vector v = unit_vector(ra, dec);
 
 	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
 	      
 		// --- Generate Photons from the pixel.
 		
-		double random_number = get_random_number();  //             REMOVE !!
-		if(random_number<cic->images->pixel[xcount][ycount].rate*dt*1.e9){
-		  struct Photon new_photon; // buffer for new photon
-		  new_photon.ra  = ra;
-		  new_photon.dec = dec; 
-		  new_photon.direction = v; // REMOVE
+		double random_number = get_random_number();
+		if(random_number <                           //             REMOVE !!
+		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt*1.e9){
+		  struct Photon new_photon = { // buffer for new photon
+		    .ra=ra, .dec=dec, .direction=v }; 
+		                        // REMOVE
 		  
 		  // Determine the energy of the new photon according to 
 		  // the default spectrum.
@@ -513,8 +527,7 @@ int photon_generation_main()
 	      } // END of check whether pixel is close to the FOV.
 	    }
 	  } // END of loop over all pixel of the image.
-	} // END  if(cic->images!=NULL)
-
+	} // END of loop over different extend source images in the catalog
       } // END of decision which source category
 
 
@@ -623,12 +636,8 @@ int photon_generation_main()
     free (pointsourcecatalog);
   }
 
-  // Cluster Images
-  if(cic!=NULL) {
-    if(cic->images!=NULL) {
-      free_ClusterImage(cic->images);
-    }
-  }
+  // ClusterImageCatalog
+  free_ClusterImageCatalog(cic);
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);

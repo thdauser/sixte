@@ -18,18 +18,18 @@ struct ClusterPixel {
 
 typedef struct {
   struct ClusterPixel **pixel;
-  int naxis1, naxis2;    // width of the image [pixel]
-  double cdelt1, cdelt2; // width of one pixel [rad]
-  double crpix1, crpix2; // [pixel]
-  double crval1, crval2; // [rad]
+  int naxis1, naxis2;    /** width of the image [pixel] */
+  double cdelt1, cdelt2; /** width of one pixel [rad] */
+  double crpix1, crpix2; /** [pixel] */
+  double crval1, crval2; /** [rad] */
 
-  double minra, maxra;   // minimum right ascension covered by the image [rad]
+  double minra, maxra;   /** minimum right ascension covered by the image [rad] */
   double mindec, maxdec; // maximum    -"-
 } ClusterImage;
 
 typedef struct {
-  int nimages;
-  ClusterImage* images; /* nimages */
+  int nimages; /** total number of extended source images in the catalog */
+  ClusterImage** images; /* nimages */
 } ClusterImageCatalog;
 
 
@@ -204,7 +204,7 @@ void free_ClusterImage(ClusterImage* ci)
 }
 
 
-// Constructor for the ClusterImageCatalog:
+/** Constructor for the ClusterImageCatalog. */
 ClusterImageCatalog* get_ClusterImageCatalog() 
 {
   ClusterImageCatalog* cic = NULL;
@@ -220,14 +220,14 @@ ClusterImageCatalog* get_ClusterImageCatalog()
 }
 
 
-// Desctructor for the ClusterImageCatalog:
+/** Destructor for the ClusterImageCatalog. */
 void free_ClusterImageCatalog(ClusterImageCatalog* cic) 
 {
   if (cic!=NULL) {
     if (cic->nimages > 0) {
       int count;
       for(count=0; count<cic->nimages; count++) {
-	//free_ClusterImage(&(cic->images[count])); // TODO
+	free_ClusterImage(&(cic->images[count]));
       }
     }
     free(cic);
