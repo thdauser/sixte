@@ -27,6 +27,24 @@
 #define ORBIT_UPDATE_TIME 5400.     
 
 
+typedef struct {
+  /** Point of time for which this attitude is valid. */
+  double time;
+  /** Telescope pointing direction. */
+  struct vector nz;
+  /** Defines the detector x-direction.
+   * The x-axis doesn't necessarily have to point in the direction of the telescope
+   * motion, but can be distorted by the roll-angle. */
+  struct vector nx;
+} AttitudeEntry;
+
+typedef struct {
+  /** Number of AttituideEntry elements in the AttitudeCatalog. */
+  long nentries;
+  /** Individual AttitudeEntry elements giving the attitude of the telescope
+   * at a particular point of time. */
+  AttitudeEntry* attitudeentry;
+} AttitudeCatalog;
 
 
 // This function allocates memory for the satellite catalog 
@@ -36,5 +54,10 @@ int get_satellite_catalog(struct Telescope **, long *nentries, double t0,
 			  double timespan, const char orbit_filename[], 
 			  const char attitude_filename[]);
 
-#endif
+
+AttitudeCatalog* get_AttitudeCatalog(const char attitude_filename[],
+				     double t0, double timespan, int* status);
+
+
+#endif /* ORBATT_H */
 

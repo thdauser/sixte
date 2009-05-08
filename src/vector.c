@@ -52,6 +52,18 @@ struct vector vector_product(struct vector x, struct vector y) {
   return(z);
 }
 
+
+/** Calculates the difference between two vectors. */
+struct vector vector_difference(struct vector x2, struct vector x1) {
+  struct vector z;  // return vector
+
+  z.x = x2.x-x1.x;
+  z.y = x2.y-x1.y;
+  z.z = x2.z-x1.z;
+
+  return(z);
+}
+
  
 
 /** Function interpolates between two vectors at time t1 and t2 for the specified time 
@@ -67,4 +79,6 @@ struct vector interpolate_vec(struct vector v1, double t1,
 
   return(pos);
 }
+
+
 

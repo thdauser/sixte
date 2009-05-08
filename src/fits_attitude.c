@@ -67,35 +67,30 @@ int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], double time, d
 
 
 
-// reads a row of attitude data from the FITS file
+/** Reads a row of attitude data from a FITS file. */
 int get_atttbl_row(fitsfile *fptr, long row, char valtime[], double *time, 
 		   double *view_ra, double *view_dec, double *rollangle, int *status)
 {
   int anynul = 0;
-  double dbuffer[1];
   
   // TODO implement valtime
   valtime = "";
 
   // time
-  dbuffer[0] = 0.;
-  fits_read_col(fptr, TDOUBLE, 2, row+1, 1, 1, dbuffer, dbuffer, &anynul, status);
-  *time = dbuffer[0];
+  *time=0.;
+  fits_read_col(fptr, TDOUBLE, 2, row+1, 1, 1, time, time, &anynul, status);
 
   // right ascension of telescope direction
-  dbuffer[0] = 0.;
-  fits_read_col(fptr, TDOUBLE, 3, row+1, 1, 1, dbuffer, dbuffer, &anynul, status);
-  *view_ra = dbuffer[0];
+  *view_ra=0.;
+  fits_read_col(fptr, TDOUBLE, 3, row+1, 1, 1, view_ra, view_ra, &anynul, status);
 
   // declination of telescope direction
-  dbuffer[0] = 0.;
-  fits_read_col(fptr, TDOUBLE, 4, row+1, 1, 1, dbuffer, dbuffer, &anynul, status);
-  *view_dec = dbuffer[0];
+  *view_dec=0.;
+  fits_read_col(fptr, TDOUBLE, 4, row+1, 1, 1, view_dec, view_dec, &anynul, status);
   
   // roll angle
-  dbuffer[0] = 0.0;
-  fits_read_col(fptr, TDOUBLE, 5, row+1, 1, 1, dbuffer, dbuffer, &anynul, status);
-  *rollangle = dbuffer[0];
+  *rollangle=0.;
+  fits_read_col(fptr, TDOUBLE, 5, row+1, 1, 1, rollangle, rollangle, &anynul, status);
 
   return(anynul);
 }

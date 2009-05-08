@@ -26,9 +26,10 @@
 #include "astrosources.types.h"
 
 
+/** Category of input sources: 1=Point sources, 2=Extended Sources */
 typedef enum {
-  POINT_SOURCES=1,
-  EXTENDED_SOURCES=2
+  POINT_SOURCES    =1,
+  EXTENDED_SOURCES =2
 } SourceCategory;
 
 

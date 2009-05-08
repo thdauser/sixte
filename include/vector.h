@@ -26,6 +26,9 @@ inline double scalar_product(struct vector* const, struct vector* const);
 // calculates the vector product of two vectors
 struct vector vector_product(struct vector, struct vector);
 
+/** Calculates the difference between two vectors. */
+struct vector vector_difference(struct vector x2, struct vector x1);
+
 // interpolates between to orbit positions for the specified time
 // and returns a vector
 struct vector interpolate_vec(struct vector v1, double t1, struct vector v2, 

@@ -65,6 +65,7 @@ int event_projection_main() {
   long sat_nentries; // number of entries in the orbit array ( <= orbit_nrows )
   struct Telescope *sat_catalog=NULL; // catalog with orbit and attitude data 
                                       // over a certain timespan
+  AttitudeCatalog* attitudecatalog=NULL;
   struct Eventlist_File* eventlistfile;
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
@@ -139,6 +140,10 @@ int event_projection_main() {
 				      parameters.orbit_filename, 
 				      parameters.attitude_filename))
 	!=EXIT_SUCCESS) break;
+
+    if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
+						   t0, timespan, &status))) break;
+						   
 
     
     // Create an array that contains the off-axis angle corresponding to 
@@ -297,6 +302,8 @@ int event_projection_main() {
 
   // Release memory of orbit/attitude catalog
   if (sat_catalog) free(sat_catalog);
+
+  free_AttitudeCatalog(attitudecatalog);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
 

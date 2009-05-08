@@ -17,7 +17,6 @@ struct Parameters {
   char clusterlist_filename[FILENAME_LENGTH];
   char photonlist_filename[FILENAME_LENGTH];
 
-  /** Category of input sources: 1=Point sources, 2=Extended Sources */
   SourceCategory source_category;
 };
 
