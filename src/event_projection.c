@@ -58,12 +58,12 @@ int event_projection_getpar(struct Parameters *parameters);
 
 
 ////////////////////////////////////
-// Main procedure.
+/** Main procedure. */
 int event_projection_main() {
   struct Parameters parameters;   // Program parameters
 
-  long sat_nentries; // number of entries in the orbit array ( <= orbit_nrows )
-  struct Telescope *sat_catalog=NULL; // catalog with orbit and attitude data 
+  //  long sat_nentries; // number of entries in the orbit array ( <= orbit_nrows )
+  //  struct Telescope *sat_catalog=NULL; // catalog with orbit and attitude data 
                                       // over a certain timespan
   AttitudeCatalog* attitudecatalog=NULL;
   struct Eventlist_File* eventlistfile;
@@ -135,12 +135,13 @@ int event_projection_main() {
     
 
     // Get the satellite catalog with the orbit and (telescope) attitude data:
+    /* OBSOLETE
     if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, 
 				      0., timespan+100., 
 				      parameters.orbit_filename, 
 				      parameters.attitude_filename))
 	!=EXIT_SUCCESS) break;
-
+    */
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   t0, timespan, &status))) break;
 						   
@@ -172,7 +173,7 @@ int event_projection_main() {
     headas_chat(5, "start imaging process ...\n");
 
     // LOOP over all event in the FITS table
-    long sat_counter=0;       // counter for orbit readout loop
+    long attitude_counter=0;   // counter for entries in the AttitudeCatalog
 
     // SCAN PHOTON LIST    
     for(eventlistfile->row=0; 
@@ -184,14 +185,14 @@ int event_projection_main() {
       if (get_eventlist_row(*eventlistfile, &event, &status)) break;
 
       // Get the last orbit entry before 'event.time'
-      // (in order to interpolate the position and velocity at this time  between 
-      // the neighboring calculated orbit positions):
-      for( ; sat_counter<sat_nentries; sat_counter++) {
-	if(sat_catalog[sat_counter].time>event.time) {
+      // (in order to interpolate the attitude at this time between 
+      // the neighboring calculated values):
+      for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
+	if(attitudecatalog->entry[attitude_counter+1].time>event.time) {
 	  break;
 	}
       }
-      if(fabs(sat_catalog[--sat_counter].time-event.time)>600.) { 
+      if(fabs(attitudecatalog->entry[attitude_counter].time-event.time)>60.) { 
 	// no entry within 10 minutes !!
 	status = EXIT_FAILURE;
 	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", event.time);
@@ -203,18 +204,18 @@ int event_projection_main() {
 
       // First determine telescope pointing direction at the current time.
       telescope.nz = 
-	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
-					 sat_catalog[sat_counter].time, 
-					 sat_catalog[sat_counter+1].nz, 
-					 sat_catalog[sat_counter+1].time, 
+	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
+					 attitudecatalog->entry[attitude_counter].time, 
+					 attitudecatalog->entry[attitude_counter+1].nz, 
+					 attitudecatalog->entry[attitude_counter+1].time, 
 					 event.time));
       // Determine the current nx: perpendicular to telescope axis nz
       // and in the direction of the satellite motion.
       telescope.nx = 
-	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nx, 
-					 sat_catalog[sat_counter].time, 
-					 sat_catalog[sat_counter+1].nx, 
-					 sat_catalog[sat_counter+1].time, 
+	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nx, 
+					 attitudecatalog->entry[attitude_counter].time, 
+					 attitudecatalog->entry[attitude_counter+1].nx, 
+					 attitudecatalog->entry[attitude_counter+1].time, 
 					 event.time));
       // Remove the component along the vertical direction nz 
       // (nx must be perpendicular to nz!):
@@ -301,7 +302,7 @@ int event_projection_main() {
   if (eventlistfile->fptr) fits_close_file(eventlistfile->fptr, &status);
 
   // Release memory of orbit/attitude catalog
-  if (sat_catalog) free(sat_catalog);
+  //  if (sat_catalog) free(sat_catalog);
 
   free_AttitudeCatalog(attitudecatalog);
 

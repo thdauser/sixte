@@ -267,8 +267,8 @@ AttitudeCatalog* get_AttitudeCatalog(
       HD_ERROR_THROW(msg, *status);
       break;
     }
-    ac->attitudeentry = (AttitudeEntry*)malloc(nrows*sizeof(AttitudeEntry));
-    if (NULL==ac->attitudeentry) {
+    ac->entry = (AttitudeEntry*)malloc(nrows*sizeof(AttitudeEntry));
+    if (NULL==ac->entry) {
       *status = EXIT_FAILURE;
       sprintf(msg, "Error: not enough memory available to store the AttitudeCatalog!\n");
       HD_ERROR_THROW(msg, *status);
@@ -298,12 +298,12 @@ AttitudeCatalog* get_AttitudeCatalog(
 	}
 	  
 	// Calculate and store attitude data:
-	ac->attitudeentry[entry].time = time;
+	ac->entry[entry].time = time;
 	// Rescale from degrees to radians:
 	rollangle = rollangle*M_PI/180.;
 
 	// Telescope pointing direction nz:
-	ac->attitudeentry[entry].nz = unit_vector(view_ra*M_PI/180., view_dec*M_PI/180.);
+	ac->entry[entry].nz = unit_vector(view_ra*M_PI/180., view_dec*M_PI/180.);
 
 	entry++;
       }
@@ -322,31 +322,34 @@ AttitudeCatalog* get_AttitudeCatalog(
     // Loop over all AttitudeEntry elements in the AttitudeCatalog in
     // order to determine the telescope nx-direction (so far only the
     // nz direction is set).
+    // Check the change of the telescope pointing direction between two subsequent
+    // AttitudeEntry elements.
     struct vector dnz = 
-      vector_difference(ac->attitudeentry[1].nz, ac->attitudeentry[0].nz);
+      vector_difference(ac->entry[1].nz, ac->entry[0].nz);
     if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { 
       // Change of the telescope axis is too small to be significant.
       struct vector ny = {0., 1., 0.};
-      ac->attitudeentry[0].nx=vector_product(ac->attitudeentry[0].nz, ny); // TODO
+      ac->entry[0].nx=vector_product(ac->entry[0].nz, ny); // TODO
     } else {
-      ac->attitudeentry[0].nx=
-	normalize_vector(vector_product(vector_product(ac->attitudeentry[0].nz,
-						       ac->attitudeentry[1].nz),
-					ac->attitudeentry[0].nz));
+      // nx = (nz_0 x nz_1) x nz_0
+      ac->entry[0].nx=
+	normalize_vector(vector_product(vector_product(ac->entry[0].nz,
+						       ac->entry[1].nz),
+					ac->entry[0].nz));
     }
 
     for (entry=1; entry<ac->nentries; entry++) {
 
       struct vector dnz = 
-	vector_difference(ac->attitudeentry[entry].nz, ac->attitudeentry[entry-1].nz);
+	vector_difference(ac->entry[entry].nz, ac->entry[entry-1].nz);
       if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { 
 	// Change of the telescope axis is too small to be significant.
 	struct vector ny = {0., 1., 0.};
-	ac->attitudeentry[entry].nx=vector_product(ac->attitudeentry[entry].nz, ny); // TODO
+	ac->entry[entry].nx=vector_product(ac->entry[entry].nz, ny); // TODO
       } else {
-	ac->attitudeentry[entry].nx=
-	  normalize_vector(vector_difference(ac->attitudeentry[entry].nz,
-					     ac->attitudeentry[entry-1].nz));
+	ac->entry[entry].nx=
+	  normalize_vector(vector_difference(ac->entry[entry].nz,
+					     ac->entry[entry-1].nz));
       }
 
     } // END of loop over all AttitudeEntry elements for the calculation of nx.
@@ -360,7 +363,6 @@ AttitudeCatalog* get_AttitudeCatalog(
   if (att_fptr) fits_close_file(att_fptr, status);
 
   if (EXIT_SUCCESS != *status) ac = NULL;
-
   return(ac);
 }
 
@@ -370,7 +372,12 @@ AttitudeCatalog* get_AttitudeCatalog(
 /** Destructor for the AttitudeCatalog */
 void free_AttitudeCatalog(AttitudeCatalog* ac)
 {
-  if (NULL!=ac) {
+  if (NULL != ac) {
+    if (NULL != ac->entry) {
+      free(ac->entry);
+    }
     free(ac);
   }
 }
+
+

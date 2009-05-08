@@ -12,7 +12,7 @@
 struct Parameters {
   char orbit_filename[FILENAME_LENGTH];
   char attitude_filename[FILENAME_LENGTH];
-  char spectrum_filename[FILENAME_LENGTH];
+  char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];
   char rmf_filename[FILENAME_LENGTH];
   char clusterlist_filename[FILENAME_LENGTH];
   char photonlist_filename[FILENAME_LENGTH];
@@ -47,7 +47,7 @@ int photon_generation_getpar(
   }
 
   // Get the filename of the default source spectrum (PHA FITS file)
-  if ((status = PILGetFname("spectrum_filename", parameters->spectrum_filename))) {
+  if ((status = PILGetFname("spectrum_filename", parameters->spectrum_filename[0]))) {
     sprintf(msg, "Error reading the filename of the default spectrum (PHA)!\n");
     HD_ERROR_THROW(msg,status);
   }
@@ -84,10 +84,13 @@ int photon_generation_getpar(
   }
 
   // Determine the category of the input sources:
-  if ((status = PILGetInt("source_category", &parameters->source_category))) {
+  int category;
+  if ((status = PILGetInt("source_category", &category))) {
     sprintf(msg, "Error: wrong source category!\n");
     HD_ERROR_THROW(msg, status);
   }
+  parameters->source_category=category;
+  if (EXIT_SUCCESS!=status) return(status);
 
   if (EXTENDED_SOURCES==parameters->source_category) {
     // Determine the name of the file that contains the filenames of 
@@ -161,9 +164,10 @@ int photon_generation_main()
                     // along the path of the telescope axis [rad]
 
   // Catalog with orbit and attitude data over a particular timespan
-  struct Telescope *sat_catalog=NULL;     
+  //  struct Telescope *sat_catalog=NULL;     
   // Number of entries in the orbit list ( <= orbit_nrows)
-  long sat_nentries;                      
+  //  long sat_nentries;                      
+  AttitudeCatalog* attitudecatalog=NULL;
 
   // Storage for different source spectra (including background spectrum).
   struct Spectrum_Store spectrum_store; 
@@ -239,9 +243,14 @@ int photon_generation_main()
 
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
+    /*
     if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, 
 				      timespan, parameters.orbit_filename, 
 				      parameters.attitude_filename)) !=EXIT_SUCCESS) break;
+    */
+    if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
+						   t0, timespan, &status))) break;
+
 
     // Read the detector RMF and EBOUNDS from the specified file and assign them to the 
     // Detector data structure.
@@ -442,10 +451,10 @@ int photon_generation_main()
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
     double time;             // current time
 
-    long sat_counter=0;      // counter for orbit readout loop
-    long last_sat_counter=0; // stores sat_counter of former repetition, 
-                             // so the searching loop
-                             // doesn't have to start at 0 every time.
+    long attitude_counter=0;      // counter for orbit readout loop
+    long last_attitude_counter=0; // stores sat_counter of former repetition, 
+                                  // so the searching loop
+                                  // doesn't have to start at 0 every time.
     long photon_row=0;       // current row in photon list FITS file;
 
     struct vector n;   // normalized vector perpendicular to the orbital plane
@@ -464,15 +473,15 @@ int photon_generation_main()
       printf("\rtime: %.3lf s ", time);
       fflush(NULL);
 
-      // Get the last orbit entry before the time 'time':
-      // (in order to interpolate the actual position and velocity between 
-      // the neighboring calculated orbit positions)
-      for(; sat_counter<sat_nentries; sat_counter++) {
-	if(sat_catalog[sat_counter].time>time) {
+      // Get the last orbit entry before 'event.time'
+      // (in order to interpolate the attitude at this time between 
+      // the neighboring calculated values):
+      for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
+	if(attitudecatalog->entry[attitude_counter+1].time>time) {
 	  break;
 	}
       }
-      if(fabs(sat_catalog[--sat_counter].time-time)>600.) { 
+      if(fabs(attitudecatalog->entry[attitude_counter].time-time)>600.) { 
 	// no entry within 10 minutes !!
 	status = EXIT_FAILURE;
 	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
@@ -483,31 +492,37 @@ int photon_generation_main()
 
       // First determine telescope pointing direction at the current time.
       // TODO: replace this calculation by orbit interpolation.
+      telescope.nz = 
+	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
+					 attitudecatalog->entry[attitude_counter].time, 
+					 attitudecatalog->entry[attitude_counter+1].nz, 
+					 attitudecatalog->entry[attitude_counter+1].time, 
+					 time));
+      /*
       telescope.nz =
 	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
 					 sat_catalog[sat_counter].time, 
 					 sat_catalog[sat_counter+1].nz,
 					 sat_catalog[sat_counter+1].time,time));
-      
+      */
 
       if(parameters.source_category==POINT_SOURCES) {
 
 	// PRESELECTION of Point sources
 	// Preselection of sources from the comprehensive catalog to 
 	// improve the performance of the simulation:
-	if (sat_catalog[sat_counter].time-last_update > ORBIT_UPDATE_TIME) {
+	if (attitudecatalog->entry[attitude_counter].time-last_update > ORBIT_UPDATE_TIME) {
 	  // Preselect sources from the entire source catalog according to the 
-	  // satellite's direction of movement.
+	  // satellite's direction of motion.
 	  // Calculate normalized vector perpendicular to the orbit plane:
 	  n = 
-	    normalize_vector(vector_product(normalize_vector(sat_catalog[sat_counter].r),
-					    normalize_vector(sat_catalog[sat_counter].v)));
+	    normalize_vector(vector_product(normalize_vector(attitudecatalog->entry[attitude_counter].nz), normalize_vector(attitudecatalog->entry[attitude_counter].nx)));
 	  if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog, n, 
 					    pre_max_align, spectrum_store))
 	     !=EXIT_SUCCESS) break;
 	  
 	  // Update the catalog-update-counter
-	  last_update = sat_catalog[sat_counter].time;
+	  last_update = attitudecatalog->entry[attitude_counter].time;
 	}
 	// END of preselection
 
@@ -598,7 +613,7 @@ int photon_generation_main()
 
       // SCAN PHOTON LIST
       // Perform the actual measurement (i.e., scan the photon list).
-      sat_counter = last_sat_counter; 
+      attitude_counter = last_attitude_counter; 
       // Because we are now searching for events in the time interval [time-dt,time].
       while ((photon_list != NULL) && (status == EXIT_SUCCESS)) {
 	// If all photons up to the actual time have been treated, break the loop.
@@ -610,12 +625,12 @@ int photon_generation_main()
 	// Get the last orbit entry before the time 'photon_list->photon.time'
 	// (in order to interpolate the position and velocity at this time  between 
 	// the neighboring calculated orbit positions):
-	for( ; sat_counter<sat_nentries; sat_counter++) {
-	  if(sat_catalog[sat_counter].time>photon_list->photon.time) {
+	for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
+	  if(attitudecatalog->entry[attitude_counter+1].time>photon_list->photon.time) {
 	    break;
 	  }
 	}
-	if(fabs(sat_catalog[--sat_counter].time-time)>600.) { 
+	if(fabs(attitudecatalog->entry[attitude_counter].time-time)>600.) { 
 	  // no entry within 10 minutes !!
 	  status = EXIT_FAILURE;
 	  sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
@@ -624,12 +639,20 @@ int photon_generation_main()
 	}
 
 	// Check whether the photon is inside the FOV:
+	/*
 	// First determine telescope pointing direction at the current time.
 	telescope.nz = 
 	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
 					   sat_catalog[sat_counter].time, 
 					   sat_catalog[sat_counter+1].nz, 
 					   sat_catalog[sat_counter+1].time, 
+					   photon_list->photon.time)); */
+	// First determine telescope pointing direction at the current time.
+	telescope.nz = 
+	  normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
+					   attitudecatalog->entry[attitude_counter].time, 
+					   attitudecatalog->entry[attitude_counter+1].nz, 
+					   attitudecatalog->entry[attitude_counter+1].time, 
 					   photon_list->photon.time));
 
 	// Compare the photon direction to the unit vector specifiing the 
@@ -660,7 +683,7 @@ int photon_generation_main()
 
       }  // END of scanning the photon list.
 
-      last_sat_counter = sat_counter;
+      last_attitude_counter = attitude_counter;
     }   // END of outer time loop.
 
     // --- End of photon creation process ---
@@ -684,7 +707,9 @@ int photon_generation_main()
   clear_photon_list(&photon_list);
 
   // Release memory of orbit/attitude catalog
-  if (sat_catalog) free(sat_catalog);
+  //  if (sat_catalog) free(sat_catalog);
+
+  free_AttitudeCatalog(attitudecatalog);
 
   // Point Sources
   free_PointSourceFiles(pointsourcefiles, &status);

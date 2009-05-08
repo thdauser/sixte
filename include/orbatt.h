@@ -43,7 +43,7 @@ typedef struct {
   long nentries;
   /** Individual AttitudeEntry elements giving the attitude of the telescope
    * at a particular point of time. */
-  AttitudeEntry* attitudeentry;
+  AttitudeEntry* entry;
 } AttitudeCatalog;
 
 
@@ -55,8 +55,12 @@ int get_satellite_catalog(struct Telescope **, long *nentries, double t0,
 			  const char attitude_filename[]);
 
 
+/** Constructor for the AttitudeCatalog. */
 AttitudeCatalog* get_AttitudeCatalog(const char attitude_filename[],
 				     double t0, double timespan, int* status);
+
+/** Destructor for the AttitudeCatalog */
+void free_AttitudeCatalog(AttitudeCatalog* ac);
 
 
 #endif /* ORBATT_H */
