@@ -31,6 +31,12 @@
 
 struct Parameters {
   char attitude_filename[FILENAME_LENGTH];
+  char photonlist_filename[FILENAME_LENGTH]; // input: photon list
+  char psf_filename[FILENAME_LENGTH];        // input: PSF input file
+  char impactlist_filename[FILENAME_LENGTH]; // output: impact list
+
+  double t0;        // starting time of the simulation
+  double timespan;  // time span of the simulation
 };
 
 
@@ -40,10 +46,7 @@ struct Parameters {
 
 
 // Reads the program parameters using PIL
-int photon_imaging_getpar(struct Parameters* parameters,
-			  char photonlist_filename[], char psf_filename[], 
-			  char impactlist_filename[], double *t0, double *timespan, 
-			  struct Telescope *);
+int photon_imaging_getpar(struct Parameters* parameters, struct Telescope *);
 
 
 #endif

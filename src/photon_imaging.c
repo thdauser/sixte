@@ -14,22 +14,15 @@
 int photon_imaging_main() {
   struct Parameters parameters;
 
-  double t0;        // starting time of the simulation
-  double timespan;  // time span of the simulation
-
   AttitudeCatalog* attitudecatalog=NULL;
 
-  char photonlist_filename[FILENAME_LENGTH]; // input: photon list
   fitsfile *photonlist_fptr=NULL;            // FITS file pointer
   long photonlist_nrows;                     // number of entries in the photon list
-
-  char impactlist_filename[FILENAME_LENGTH]; // output: impact list
   fitsfile *impactlist_fptr=NULL;           
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
   PSF* psf;                   // PSF (Point Spread Function) data (for different 
                               // off-axis angles and energies)
-  char psf_filename[FILENAME_LENGTH]; // PSF input file
 
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
@@ -45,9 +38,7 @@ int photon_imaging_main() {
     // --- Initialization ---
 
     // read parameters using PIL library
-    if ((status=photon_imaging_getpar(&parameters, photonlist_filename, psf_filename, 
-				      impactlist_filename,
-				      &t0, &timespan, &telescope))) break;
+    if ((status=photon_imaging_getpar(&parameters, &telescope))) break;
 
 
     // Calculate the minimum cos-value for sources inside the FOV: 
@@ -60,7 +51,7 @@ int photon_imaging_main() {
     HDmtInit(1);
 
     // Open the FITS file with the input photon list:
-    if (fits_open_table(&photonlist_fptr, photonlist_filename, 
+    if (fits_open_table(&photonlist_fptr, parameters.photonlist_filename, 
 			READONLY, &status)) break;
     // Determine the number of rows in the photon list:
     if (fits_get_num_rows(photonlist_fptr, &photonlist_nrows, &status)) break;
@@ -70,15 +61,16 @@ int photon_imaging_main() {
     if (fits_read_key(photonlist_fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
 		      comment, &status)) break;
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
-						   t0, timespan, &status))) break;
+						   parameters.t0, parameters.timespan, 
+						   &status))) break;
 
     // Get the PSF:
-    psf = get_psf(psf_filename, &status);
+    psf = get_psf(parameters.psf_filename, &status);
     if (status != EXIT_SUCCESS) break;
 
     // Create a new FITS file for the output of the impact list:
-    remove(impactlist_filename);
-    if ((create_impactlist_file(&impactlist_fptr, impactlist_filename, &status))) 
+    remove(parameters.impactlist_filename);
+    if ((create_impactlist_file(&impactlist_fptr, parameters.impactlist_filename, &status))) 
       break;
     
     // Add important HEADER keywords to the impact list
@@ -251,12 +243,6 @@ int photon_imaging_main() {
 // This routine reads the program parameters using the PIL.
 int photon_imaging_getpar(
 			  struct Parameters* parameters,
-			  // input: photon list file (FITS)
-			  char photonlist_filename[],
-			  char psf_filename[],     // PSF FITS file
-			  char impactlist_filename[], // for output
-			  double *t0,              // start time for the simulation
-			  double *timespan,        // time span for the simulation
 			  struct Telescope *telescope
 			  )
 {
@@ -265,7 +251,7 @@ int photon_imaging_getpar(
 
 
   // get the filename of the input photon list (FITS file)
-  if ((status = PILGetFname("photonlist_filename", photonlist_filename))) {
+  if ((status = PILGetFname("photonlist_filename", parameters->photonlist_filename))) {
     sprintf(msg, "Error reading the filename of the photon list!\n");
     HD_ERROR_THROW(msg,status);
   }
@@ -279,25 +265,25 @@ int photon_imaging_getpar(
   */
   
   // get the filename of the PSF data file (FITS file)
-  else if ((status = PILGetFname("psf_filename", psf_filename))) {
+  else if ((status = PILGetFname("psf_filename", parameters->psf_filename))) {
     sprintf(msg, "Error reading the filename of the PSF file!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // get the filename of the PSF data file (FITS file)
-  else if ((status = PILGetFname("impactlist_filename", impactlist_filename))) {
+  else if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
     sprintf(msg, "Error reading the filename of the impact list output file!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // get the start time of the simulation
-  else if ((status = PILGetReal("t0", t0))) {
+  else if ((status = PILGetReal("t0", &parameters->t0))) {
     sprintf(msg, "Error reading the 't0' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
 
   // get the timespan for the simulation
-  else if ((status = PILGetReal("timespan", timespan))) {
+  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     sprintf(msg, "Error reading the 'timespan' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
