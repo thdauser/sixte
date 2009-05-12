@@ -479,7 +479,7 @@ int photon_generation_main()
 
 
       // First determine telescope pointing direction at the current time.
-      // TODO: replace this calculation by orbit interpolation.
+      // TODO: replace this calculation by proper attitude interpolation.
       telescope.nz = 
 	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
 					 attitudecatalog->entry[attitude_counter].time, 

@@ -44,7 +44,6 @@
 
 /* Program parameters */
 struct Parameters {
-  char orbit_filename[FILENAME_LENGTH];     // filename of orbit file
   char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
   char eventlist_filename[FILENAME_LENGTH]; // input: photon list
 
@@ -62,9 +61,6 @@ int event_projection_getpar(struct Parameters *parameters);
 int event_projection_main() {
   struct Parameters parameters;   // Program parameters
 
-  //  long sat_nentries; // number of entries in the orbit array ( <= orbit_nrows )
-  //  struct Telescope *sat_catalog=NULL; // catalog with orbit and attitude data 
-                                      // over a certain timespan
   AttitudeCatalog* attitudecatalog=NULL;
   struct Eventlist_File* eventlistfile;
 
@@ -321,14 +317,8 @@ int event_projection_getpar(struct Parameters *parameters)
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
 
-  // Get the filename of the orbit file (FITS file)
-  if ((status = PILGetFname("orbit_filename", parameters->orbit_filename))) {
-    sprintf(msg, "Error reading the filename of the orbit file!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
   // Get the filename of the attitude file (FITS file)
-  else if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
+  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
     HD_ERROR_THROW(msg,status);
   }
