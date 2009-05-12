@@ -10,7 +10,6 @@
 
 
 struct Parameters {
-  char orbit_filename[FILENAME_LENGTH];
   char attitude_filename[FILENAME_LENGTH];
   char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];
   char rmf_filename[FILENAME_LENGTH];
@@ -34,14 +33,8 @@ int photon_generation_getpar(
   int status = EXIT_SUCCESS;  // error status flag
 
 
-  // Get the filename of the Orbit file (FITS file):
-  if ((status = PILGetFname("orbit_filename", parameters->orbit_filename))) {
-    sprintf(msg, "Error reading the filename of the orbit file!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-
   // Get the filename of the Attitude file (FITS file):
-  else if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
+  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
     HD_ERROR_THROW(msg, status);
   }
@@ -243,11 +236,6 @@ int photon_generation_main()
 
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
-    /*
-    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, t0, 
-				      timespan, parameters.orbit_filename, 
-				      parameters.attitude_filename)) !=EXIT_SUCCESS) break;
-    */
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   t0, timespan, &status))) break;
 
