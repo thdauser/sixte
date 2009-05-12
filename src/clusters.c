@@ -169,7 +169,6 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     // the data structure and apply the correct factors to convert the pixel
     // information (surface brightness) into real count rate for eROSITA
     // (assuming a Raymond-Smith spectrum for the clusters).
-    double sum = 0.;
     int x, y;
     for(x=0; x<ci->naxis1; x++) {
       for(y=0; y<ci->naxis2; y++) {
@@ -177,10 +176,8 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
 	  * 7.72e11  // Energy to Count rate conversion for 0.5 to 2.0 keV band
 	             // [erg cm^-2] -> [counts]
 	  * 8.50022e-7; // Umrechnung [deg^-2] -> [pixel^-1]
-	sum += ci->pixel[x][y].rate;
       }
     }
-    printf("Pixelsumme: %lf\n", sum);
 
   } while(0); // END of Error handling loop
 

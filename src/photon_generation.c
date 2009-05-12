@@ -574,7 +574,6 @@ int photon_generation_main()
 		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt){
 		  struct Photon new_photon = { // buffer for new photon
 		    .ra=ra, .dec=dec, .direction=v }; 
-		                        // REMOVE
 		  
 		  // Determine the energy of the new photon according to 
 		  // the default spectrum.
@@ -627,14 +626,6 @@ int photon_generation_main()
 	}
 
 	// Check whether the photon is inside the FOV:
-	/*
-	// First determine telescope pointing direction at the current time.
-	telescope.nz = 
-	  normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
-					   sat_catalog[sat_counter].time, 
-					   sat_catalog[sat_counter+1].nz, 
-					   sat_catalog[sat_counter+1].time, 
-					   photon_list->photon.time)); */
 	// First determine telescope pointing direction at the current time.
 	telescope.nz = 
 	  normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
@@ -662,7 +653,7 @@ int photon_generation_main()
 			 &ra, &status);
 	  fits_write_col(photonlist_fptr, TDOUBLE, 4, photon_row, 1, 1, 
 			 &dec, &status);
-	}
+	} // END of photon is inside the FOV
 
 	// Move to the next entry in the photon list and clear the current entry.
 	pl_entry = photon_list->next_entry;
