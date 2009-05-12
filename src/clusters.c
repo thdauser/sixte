@@ -166,11 +166,16 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
 
     
     // Transfer the image from the 1D input buffer to the 2D pixel array in
-    // the data structure.
+    // the data structure and apply the correct factors to convert the pixel
+    // information (surface brightness) into real count rate for eROSITA
+    // (assuming a Raymond-Smith spectrum for the clusters).
     int x, y;
     for(x=0; x<ci->naxis1; x++) {
       for(y=0; y<ci->naxis2; y++) {
-	ci->pixel[x][y].rate = input_buffer[x+ ci->naxis2*y];
+	ci->pixel[x][y].rate = input_buffer[x+ ci->naxis2*y] // [erg cm^-2 s^-1 deg^-2 ]
+	  * 7.72e11  // Energy to Count rate conversion for 0.5 to 2.0 keV band
+	             // [erg cm^-2] -> [counts]
+	  * 8.50022e-7; // Umrechnung [deg^-2] -> [pixel^-1]
       }
     }
 

@@ -582,8 +582,8 @@ int photon_generation_main()
 		// --- Generate Photons from the pixel.
 		
 		double random_number = get_random_number();
-		if(random_number <                           //             REMOVE !!
-		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt*1.e9){
+		if(random_number <
+		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt){
 		  struct Photon new_photon = { // buffer for new photon
 		    .ra=ra, .dec=dec, .direction=v }; 
 		                        // REMOVE
