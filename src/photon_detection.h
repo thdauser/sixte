@@ -28,14 +28,16 @@
 //#define MIN(x,y) ( (x)<=(y) ?(x) :(y) )
 
 
+
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
 ////////////////////////////////////////////////////////////////////////
 
 struct Parameters {
-  char impactlist_filename[MAXMSG];
-  char rmf_filename[MAXMSG];
-  char eventlist_filename[MAXMSG];
+  char impactlist_filename[FILENAME_LENGTH];
+  char attitude_filename[FILENAME_LENGTH];
+  char rmf_filename[FILENAME_LENGTH];
+  char eventlist_filename[FILENAME_LENGTH];
   double t0;
   double timespan;
   

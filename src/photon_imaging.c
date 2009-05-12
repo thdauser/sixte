@@ -66,6 +66,9 @@ int photon_imaging_main() {
     if (fits_get_num_rows(photonlist_fptr, &photonlist_nrows, &status)) break;
 
     // Get the satellite catalog with the orbit and (telescope) attitude data:
+    char comment[MAXMSG]; // buffer
+    if (fits_read_key(photonlist_fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
+		      comment, &status)) break;
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   t0, timespan, &status))) break;
 
@@ -77,6 +80,10 @@ int photon_imaging_main() {
     remove(impactlist_filename);
     if ((create_impactlist_file(&impactlist_fptr, impactlist_filename, &status))) 
       break;
+    
+    // Add important HEADER keywords to the impact list
+    if (fits_write_key(impactlist_fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+		       "name of the attitude FITS file", &status)) break;
 
     
     // --- END of Initialization ---
@@ -263,11 +270,13 @@ int photon_imaging_getpar(
     HD_ERROR_THROW(msg,status);
   }
 
+  /*
   // get the filename of the attitude file (FITS file)
   else if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
     HD_ERROR_THROW(msg,status);
   }
+  */
   
   // get the filename of the PSF data file (FITS file)
   else if ((status = PILGetFname("psf_filename", psf_filename))) {

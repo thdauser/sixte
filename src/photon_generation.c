@@ -429,6 +429,11 @@ int photon_generation_main()
 				parameters.photonlist_filename, &status)))
       break;
 
+    // Add important HEADER keywords to the photon list
+    if (fits_write_key(photonlist_fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+		       "name of the attitude FITS file", &status)) break;
+    
+
 
     // --- End of Initialization ---
 
@@ -570,8 +575,8 @@ int photon_generation_main()
 		// --- Generate Photons from the pixel.
 		
 		double random_number = get_random_number();
-		if(random_number <
-		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt){
+		if(random_number <   //                                      REMOVE !!
+		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt*400){
 		  struct Photon new_photon = { // buffer for new photon
 		    .ra=ra, .dec=dec, .direction=v }; 
 		  

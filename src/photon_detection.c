@@ -10,9 +10,10 @@
 
 
 ////////////////////////////////////
-// Main procedure.
+/** Main procedure. */
 int photon_detection_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
+
   fitsfile *impactlist_fptr=NULL; 
   long impactlist_nrows;
 
@@ -163,6 +164,11 @@ int photon_detection_main() {
     // Determine the number of rows in the impact list:
     if (fits_get_num_rows(impactlist_fptr, &impactlist_nrows, &status)) break;
 
+    // Read HEADER keywords.
+    char comment[MAXMSG]; // buffer
+    if (fits_read_key(impactlist_fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
+		      comment, &status)) break;
+
 
     // Create event list FITS file:
     headas_chat(5, "create FITS file '%s' for output of event list ...\n", 
@@ -170,10 +176,16 @@ int photon_detection_main() {
     // Delete old event list:
     remove(eventlist_file.filename);
     // Create a new FITS file and a table for the event list:
-    if (create_eventlist_file(&eventlist_file, detector, parameters.t0, parameters.t0+parameters.timespan, 
-		        // HEADER keywords for event list FITS file:
-			// TELESCOP    CCD       INSTRUME
-			  "eROSITA",  "pnCCD1", "eROSITA",  &status)) break;
+    if (create_eventlist_file(&eventlist_file, detector, parameters.t0, 
+			      parameters.t0+parameters.timespan, 
+		           // HEADER keywords for event list FITS file:
+			   // TELESCOP    CCD       INSTRUME
+			      "eROSITA",  "pnCCD1", "eROSITA",  &status)) break;
+
+    // Add important HEADER keywords to the event list.
+    if (fits_write_key(eventlist_file.fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+		       "name of the attitude FITS file", &status)) break;
+    
 
     // --- END of Initialization ---
 

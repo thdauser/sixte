@@ -119,6 +119,11 @@ int event_projection_main() {
     fits_write_key(eventlistfile->fptr, TDOUBLE, "REFYCDLT", &dbuffer,
 		   "[deg/pix] WCS Y increment at ref. pixel", &status);
 
+    // Read HEADER keywords.
+    char comment[MAXMSG]; // buffer
+    if (fits_read_key(eventlistfile->fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
+		      comment, &status)) break;
+
 
     // Determine the time of the first and of the last event in the list. 
     // (This data is needed to read the adequate orbit/attitude information.)
@@ -131,13 +136,6 @@ int event_projection_main() {
     
 
     // Get the satellite catalog with the orbit and (telescope) attitude data:
-    /* OBSOLETE
-    if ((status=get_satellite_catalog(&sat_catalog, &sat_nentries, 
-				      0., timespan+100., 
-				      parameters.orbit_filename, 
-				      parameters.attitude_filename))
-	!=EXIT_SUCCESS) break;
-    */
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   t0, timespan, &status))) break;
 						   
@@ -297,9 +295,7 @@ int event_projection_main() {
   // Close the FITS files.
   if (eventlistfile->fptr) fits_close_file(eventlistfile->fptr, &status);
 
-  // Release memory of orbit/attitude catalog
-  //  if (sat_catalog) free(sat_catalog);
-
+  // Release memory of AttitudeCatalog
   free_AttitudeCatalog(attitudecatalog);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
@@ -317,14 +313,16 @@ int event_projection_getpar(struct Parameters *parameters)
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
 
+  /*
   // Get the filename of the attitude file (FITS file)
   if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
     HD_ERROR_THROW(msg,status);
   }
+  */
 
   // Get the filename of the input photon list (FITS file)
-  else if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
+  if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     sprintf(msg, "Error reading the filename of the event list!\n");
     HD_ERROR_THROW(msg,status);
   }
