@@ -1,5 +1,4 @@
 photonlist_filename,fre,lq,"photons.fits",,,"photon list file (FITS input file)"
-orbit_filename,fre,lq,"/home/schmid/data/sixt/orbit_steady.fits",,,"orbit file (FITS input file)"
 attitude_filename,fre,lq,"/home/schmid/data/sixt/attitude_steady.fits",,,"attitude file (FITS input file)"
 psf_filename,fre,lq,"erosita.psf.binned.fits",,,"PSF data file (FITS input file)"
 impactlist_filename,f,lq,"impacts.fits",,,"impact list file (FITS output file)"

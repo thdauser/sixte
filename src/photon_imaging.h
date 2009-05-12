@@ -16,15 +16,11 @@
 
 #include "sixt.h"
 #include "vector.h"
-//#include "spectrum.h"
 #include "check_fov.h"
 #include "fits_ctlg.h"
-//#include "imglib.h"
 #include "random.h"
-//#include "strftcpy.h"
 #include "psf.h"
 #include "photon.h"
-//#include "sources.h"
 #include "telescope.h"
 #include "orbatt.h"
 
@@ -33,14 +29,19 @@
 #include "headas_main.c"
 
 
+struct Parameters {
+  char attitude_filename[FILENAME_LENGTH];
+};
+
+
 ////////////////////////////////////////////////////////////////////////
 // Function declarations.
 ////////////////////////////////////////////////////////////////////////
 
 
 // Reads the program parameters using PIL
-int photon_imaging_getpar(char photonlist_filename[], char orbit_filename[], 
-			  char attitude_filename[], char psf_filename[], 
+int photon_imaging_getpar(struct Parameters* parameters,
+			  char photonlist_filename[], char psf_filename[], 
 			  char impactlist_filename[], double *t0, double *timespan, 
 			  struct Telescope *);
 

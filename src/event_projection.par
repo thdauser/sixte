@@ -1,5 +1,4 @@
 eventlist_filename,fre,lq,"events.fits",,,"event list file (FITS input file)"
-orbit_filename,fre,lq,"../../erosita/steady/orbit_steady.fits",,,"orbit file (FITS input file)"
 attitude_filename,fre,lq,"../../erosita/steady/attitude_steady.fits",,,"attitude file (FITS input file)"
 skyimage_filename,f,lq,"sky.fits",,,"sky image file (FITS output file)"
 t0,r,lq,0.0,,,"t0 - start time (s)  NOT USED! "

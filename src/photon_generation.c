@@ -413,7 +413,7 @@ int photon_generation_main()
       }
 
       // Use a relative large \Delta t for the time loop:
-      dt = 0.1;
+      dt = 1.0;
 
     } else {
       status=EXIT_FAILURE;
@@ -461,7 +461,7 @@ int photon_generation_main()
       printf("\rtime: %.3lf s ", time);
       fflush(NULL);
 
-      // Get the last orbit entry before 'event.time'
+      // Get the last attitude entry before 'time'
       // (in order to interpolate the attitude at this time between 
       // the neighboring calculated values):
       for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
