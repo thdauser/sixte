@@ -18,10 +18,15 @@ struct ClusterPixel {
 
 typedef struct {
   struct ClusterPixel **pixel;
-  int naxis1, naxis2;    /** width of the image [pixel] */
-  double cdelt1, cdelt2; /** width of one pixel [rad] */
-  double crpix1, crpix2; /** [pixel] */
-  double crval1, crval2; /** [rad] */
+
+  /** width of the image [pixel] */
+  int naxis1, naxis2;    
+  /** width of one pixel [rad] */
+  double cdelt1, cdelt2; 
+  /** [pixel] */
+  double crpix1, crpix2; 
+  /** [rad] */
+  double crval1, crval2; 
 
   double minra, maxra;   /** minimum right ascension covered by the image [rad] */
   double mindec, maxdec; // maximum    -"-

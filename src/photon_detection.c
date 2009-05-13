@@ -146,7 +146,8 @@ int photon_detection_main() {
 
     // Read the detector RMF and EBOUNDS from the specified file and 
     // assign them to the Detector data structure.
-    if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) != EXIT_SUCCESS) break;
+    if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) 
+	!= EXIT_SUCCESS) break;
 
     // Print some debug information:
     headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
@@ -166,7 +167,8 @@ int photon_detection_main() {
 
     // Read HEADER keywords.
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(impactlist_fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
+    if (fits_read_key(impactlist_fptr, TSTRING, "ATTITUDE", 
+		      &parameters.attitude_filename, 
 		      comment, &status)) break;
 
 
@@ -183,7 +185,8 @@ int photon_detection_main() {
 			      "eROSITA",  "pnCCD1", "eROSITA",  &status)) break;
 
     // Add important HEADER keywords to the event list.
-    if (fits_write_key(eventlist_file.fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+    if (fits_write_key(eventlist_file.fptr, TSTRING, "ATTITUDE", 
+		       parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
     
 
@@ -213,6 +216,8 @@ int photon_detection_main() {
 		    &position.x, &position.x, &anynul, &status);
       fits_read_col(impactlist_fptr, TDOUBLE, 4, impactlist_row+1, 1, 1, 
 		    &position.y, &position.y, &anynul, &status);
+
+      headas_chat(0, "\rtime: %.3lf s ", time);
 
 
       // Call the detector action routine: this routine checks, whether the 

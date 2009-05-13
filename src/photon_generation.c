@@ -13,7 +13,7 @@ struct Parameters {
   char attitude_filename[FILENAME_LENGTH];
   char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];
   char rmf_filename[FILENAME_LENGTH];
-  char clusterlist_filename[FILENAME_LENGTH];
+  char sourceimagelist_filename[FILENAME_LENGTH];
   char photonlist_filename[FILENAME_LENGTH];
 
   SourceCategory source_category;
@@ -88,8 +88,8 @@ int photon_generation_getpar(
   if (EXTENDED_SOURCES==parameters->source_category) {
     // Determine the name of the file that contains the filenames of 
     // the extended source files.
-    if ((status = PILGetFname("clusterlist_filename", 
-			      parameters->clusterlist_filename))) {
+    if ((status = PILGetFname("sourceimagelist_filename", 
+			      parameters->sourceimagelist_filename))) {
       sprintf(msg, "Error reading the filename of the cluster list file!\n");
       HD_ERROR_THROW(msg, status);
     }
@@ -220,11 +220,11 @@ int photon_generation_main()
     // angle(x0,source) <= 1/2 * diameter
     const double fov_min_align = cos(telescope.fov_diameter/2.); 
     
-    // minimum cos-value for sources close to the FOV (in the direct neighborhood) 
+    /** Minimum cos-value for sources close to the FOV (in the direct neighborhood). */
     const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
 
-    // maximum cos-value (minimum sin-value) for sources within the 
-    // preselection band along the orbit (angle(n,source) > 90-bandwidth)
+    /** Maximum cos-value (minimum sin-value) for sources within the 
+     * preselection band along the orbit. (angle(n,source) > 90-bandwidth) */
     const double pre_max_align = sin(bandwidth);
 
 
@@ -320,16 +320,16 @@ int photon_generation_main()
       cic = get_ClusterImageCatalog();
 
       // Open the cluster list file:
-      FILE* clusterlist_fptr = fopen(parameters.clusterlist_filename, "r");
-      if (NULL==clusterlist_fptr) {
+      FILE* sourceimagelist_fptr = fopen(parameters.sourceimagelist_filename, "r");
+      if (NULL==sourceimagelist_fptr) {
 	sprintf(msg, "Error: could not open the file containing the list "
-		"with the extended  sources!\n");
+		"with the source images!\n");
 	HD_ERROR_THROW(msg, status);
 	break;
       } else {
 	// Determine the number of lines (= number of extended source files).
 	char line[MAXMSG];
-	while (fgets(line, MAXMSG, clusterlist_fptr)) {
+	while (fgets(line, MAXMSG, sourceimagelist_fptr)) {
 	  cic->nimages++;
 	}
 
@@ -351,54 +351,18 @@ int photon_generation_main()
 
 	// Load all cluster image files specified in the cluster list file.
 	// Set the file pointer back to the beginning of the file:
-	fseek(clusterlist_fptr, 0, SEEK_SET);
+	fseek(sourceimagelist_fptr, 0, SEEK_SET);
 	int image_counter=0;
-	while (fscanf(clusterlist_fptr, "%s\n", line)>0) {
+	while (fscanf(sourceimagelist_fptr, "%s\n", line)>0) {
 	  // Load the specified galaxy cluster image:
 	  cic->images[image_counter++] = get_ClusterImage_fromFile(line, &status);
 	  if (status != EXIT_SUCCESS) break;
 	} // END of loop over all file entries in the cluster list file
 
 	// Close the cluster list file:
-	fclose(clusterlist_fptr);
+	fclose(sourceimagelist_fptr);
       }
       
-      /*
-      // Get the number of source input-files
-      if ((status = PILGetInt("n_extended_source_files", &cic->nimages))) {
-	sprintf(msg, "Error reading the number of extended source files!\n");
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
-      if (cic->nimages<=0) {
-	status=EXIT_SUCCESS;
-	sprintf(msg, "Error: invalid number of sources files with "
-		"extended sources!\n");
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
-
-      cic->images = (ClusterImage**)malloc(cic->nimages*sizeof(ClusterImage));
-      if (NULL==cic->images) {
-	status=EXIT_SUCCESS;
-	sprintf(msg, "Error: memory allocation for ClusterImageCatalog failed!\n");
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
-
-      int filecounter;
-      for(filecounter=0; filecounter<cic->nimages; filecounter++) {
-	// Load the specified galaxy cluster image:
-	if ((status = PILGetFname("extended_source_filename", cluster_filename))) {
-	  sprintf(msg, "Error reading the filename of the cluster image file!\n");
-	  HD_ERROR_THROW(msg,status);
-	  break;
-	}
-	cic->images[filecounter] = get_ClusterImage_fromFile(cluster_filename, &status);
-	if (status != EXIT_SUCCESS) break;
-      } // END of loop over several extended source files
-      */
-
       // Clear the filenames of the point source catalogs in the PIL parameter file,
       // otherwise HD_PARSTAMP might cause an error.
 
@@ -430,7 +394,8 @@ int photon_generation_main()
       break;
 
     // Add important HEADER keywords to the photon list
-    if (fits_write_key(photonlist_fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+    if (fits_write_key(photonlist_fptr, TSTRING, "ATTITUDE", 
+		       parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
     
 
@@ -575,8 +540,8 @@ int photon_generation_main()
 		// --- Generate Photons from the pixel.
 		
 		double random_number = get_random_number();
-		if(random_number <   //                                      REMOVE !!
-		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt*400){
+		if(random_number <
+		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
 		  struct Photon new_photon = { // buffer for new photon
 		    .ra=ra, .dec=dec, .direction=v }; 
 		  
@@ -595,7 +560,12 @@ int photon_generation_main()
 		
 		// --- END of photon generation from the cluster image pixel.
 		
-	      } // END of check whether pixel is close to the FOV.
+	      } else { // END of check whether pixel is close to the FOV.
+		// The source image pixel is far away from the telescope axis.
+		// Therefore we don't have to consider the directly neighboring 
+		// pixels and do a bigger step than to the nearest pixel.
+		ycount+=9;
+	      }
 	    }
 	  } // END of loop over all pixel of the image.
 	} // END of loop over different extend source images in the catalog
