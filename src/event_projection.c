@@ -121,7 +121,8 @@ int event_projection_main() {
 
     // Read HEADER keywords.
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(eventlistfile->fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
+    if (fits_read_key(eventlistfile->fptr, TSTRING, "ATTITUDE", 
+		      &parameters.attitude_filename, 
 		      comment, &status)) break;
 
 
@@ -226,8 +227,10 @@ int event_projection_main() {
 
       // Determine RA, DEC and the sky coordinates (in pixel) of the source.
       struct Point2d detector_position;
-      detector_position.x = ((double)(event.xi-384/2)+0.5)*75.e-6; // in [m]
-      detector_position.y = ((double)(event.yi-384/2)+0.5)*75.e-6; // in [m]
+      detector_position.x = 
+	((double)(event.xi-384/2)+get_random_number())*75.e-6; // in [m]
+      detector_position.y = 
+	((double)(event.yi-384/2)+get_random_number())*75.e-6; // in [m]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
 
       // Determine the offaxis_angle corresponding to the detector position.

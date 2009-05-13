@@ -46,6 +46,11 @@ void framestore_detector_action(
     // Update the detector frame time to the next frame.
     detector->readout_time += detector->integration_time;
     detector->frame+=2;
+
+    // Print the time of the current events in order (program status
+    // information for the user).
+    headas_chat(0, "\rtime: %.3lf s ", detector->readout_time);
+    fflush(NULL);
   }
 
 }

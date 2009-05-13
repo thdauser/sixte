@@ -428,7 +428,7 @@ int photon_generation_main()
     // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
     // takes to slew over the entire FOV.
     for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
-      printf("\rtime: %.3lf s ", time);
+      headas_chat(0, "\rtime: %.3lf s ", time);
       fflush(NULL);
 
       // Get the last attitude entry before 'time'
@@ -655,7 +655,7 @@ int photon_generation_main()
 
   // Release HEADAS random number generator:
   HDmtFree();
-  gsl_rng_free(gsl_random_g);
+  if (gsl_random_g!=NULL) gsl_rng_free(gsl_random_g);
 
   // Clear photon list
   clear_photon_list(&photon_list);

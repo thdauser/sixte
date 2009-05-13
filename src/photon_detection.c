@@ -217,8 +217,6 @@ int photon_detection_main() {
       fits_read_col(impactlist_fptr, TDOUBLE, 4, impactlist_row+1, 1, 1, 
 		    &position.y, &position.y, &anynul, &status);
 
-      headas_chat(0, "\rtime: %.3lf s ", time);
-
 
       // Call the detector action routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
@@ -350,7 +348,7 @@ int photon_detection_main() {
 
 
   // --- Cleaning up ---
-  headas_chat(5, "cleaning up ...\n");
+  headas_chat(5, "\ncleaning up ...\n");
 
   // Release HEADAS random number generator
   HDmtFree();
