@@ -17,17 +17,14 @@ struct Parameters {
   char photonlist_filename[FILENAME_LENGTH];
 
   SourceCategory source_category;
+
+  double t0, timespan;
+  double fov_diameter;
 };
 
 
 ////////////////////////////
-int photon_generation_getpar(
-			     struct Parameters* parameters,
-			     double *t0,
-			     double *timespan,
-			     double *bandwidth,
-			     struct Telescope *telescope
-			     )
+int photon_generation_getpar(struct Parameters* parameters)
 {
   char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
@@ -53,25 +50,19 @@ int photon_generation_getpar(
   }
 
   // Get the start time of the photon generation
-  else if ((status = PILGetReal("t0", t0))) {
+  else if ((status = PILGetReal("t0", &parameters->t0))) {
     sprintf(msg, "Error reading the 't0' parameter!\n");
     HD_ERROR_THROW(msg, status);
   }
 
   // Get the timespan for the photon generation
-  else if ((status = PILGetReal("timespan", timespan))) {
+  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     sprintf(msg, "Error reading the 'timespan' parameter!\n");
     HD_ERROR_THROW(msg, status);
   }
 
-  // Get the (half) width of the preselection band [arcmin]
-  else if ((status = PILGetReal("bandwidth", bandwidth))) {
-    sprintf(msg, "Error reading the 'bandwidth' parameter!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-
   // Get the diameter of the FOV (in arcmin)
-  else if ((status = PILGetReal("fov_diameter", &telescope->fov_diameter))) {
+  else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
     sprintf(msg, "Error reading the diameter of the FOV!\n");
     HD_ERROR_THROW(msg, status);
   }
@@ -104,10 +95,8 @@ int photon_generation_getpar(
     HD_ERROR_THROW(msg, status);
   }
 
-
   // Convert angles from [arc min] to [rad]
-  *bandwidth = *bandwidth*M_PI/(60.*180.);
-  telescope->fov_diameter = telescope->fov_diameter*M_PI/(180.*60.);
+  parameters->fov_diameter = parameters->fov_diameter*M_PI/(180.*60.);
 
   return(status);
 }
@@ -151,11 +140,6 @@ int photon_generation_main()
   PointSourceCatalog* pointsourcecatalog=NULL;
   long source_counter;
 
-  double t0;        // start time of the photon generation
-  double timespan;  // time  span of the photon generation
-  double bandwidth; // (half) width of the preselection band 
-                    // along the path of the telescope axis [rad]
-
   // Catalog with orbit and attitude data over a particular timespan
   //  struct Telescope *sat_catalog=NULL;     
   // Number of entries in the orbit list ( <= orbit_nrows)
@@ -198,15 +182,14 @@ int photon_generation_main()
     if(status!=EXIT_SUCCESS) break;
     
 
-    if((status=photon_generation_getpar(&parameters, 
-					&t0, &timespan, &bandwidth,
-					&telescope))) break;
+    if((status=photon_generation_getpar(&parameters))) break;
     
+    telescope.fov_diameter = parameters.fov_diameter;
 
     // Set last_update to such a small value, that a preselection of the 
     // source catalog is performed at the first timestep (last_update 
     // contains the time of the last source catalog preselection.):
-    const double former_time = t0 - ORBIT_UPDATE_TIME - 100.;
+    const double former_time = parameters.t0 - ORBIT_UPDATE_TIME - 100.;
     double last_update = former_time;
 
     // Defines the mathematical meaning of 'close' in the context that for 
@@ -224,8 +207,10 @@ int photon_generation_main()
     const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
 
     /** Maximum cos-value (minimum sin-value) for sources within the 
-     * preselection band along the orbit. (angle(n,source) > 90-bandwidth) */
-    const double pre_max_align = sin(bandwidth);
+     * preselection band along the orbit. The width of the preselection band
+     * is chose to be twice the diameter of the FOV. 
+     * (angle(n,source) > 90-bandwidth) */
+    const double pre_max_align = sin(2*telescope.fov_diameter);
 
 
     // Initialize HEADAS random number generator and GSL generator for 
@@ -237,7 +222,8 @@ int photon_generation_main()
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
-						   t0, timespan, &status))) break;
+						   parameters.t0, parameters.timespan, 
+						   &status))) break;
 
 
     // Read the detector RMF and EBOUNDS from the specified file and assign them to the 
@@ -415,7 +401,8 @@ int photon_generation_main()
                                   // doesn't have to start at 0 every time.
     long photon_row=0;       // current row in photon list FITS file;
 
-    struct vector n;   // normalized vector perpendicular to the orbital plane
+    // normalized vector perpendicular to the orbital plane
+    struct vector preselection_vector;
 
     struct Photon_Entry *pl_entry=NULL; // "counter" variable for the photon list
 
@@ -427,7 +414,9 @@ int photon_generation_main()
     // Time loop:
     // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
     // takes to slew over the entire FOV.
-    for(time=t0; (time<t0+timespan)&&(status==EXIT_SUCCESS); time+=dt) {
+    int first = 1;  // first run of the loop
+    for(time=parameters.t0; 
+	(time<parameters.t0+parameters.timespan)&&(status==EXIT_SUCCESS); time+=dt) {
       headas_chat(0, "\rtime: %.3lf s ", time);
       fflush(NULL);
 
@@ -456,16 +445,10 @@ int photon_generation_main()
 					 attitudecatalog->entry[attitude_counter+1].nz, 
 					 attitudecatalog->entry[attitude_counter+1].time, 
 					 time));
-      /*
-      telescope.nz =
-	normalize_vector(interpolate_vec(sat_catalog[sat_counter].nz, 
-					 sat_catalog[sat_counter].time, 
-					 sat_catalog[sat_counter+1].nz,
-					 sat_catalog[sat_counter+1].time,time));
-      */
 
-      if(parameters.source_category==POINT_SOURCES) {
+      if (parameters.source_category==POINT_SOURCES) {
 
+	/*
 	// PRESELECTION of Point sources
 	// Preselection of sources from the comprehensive catalog to 
 	// improve the performance of the simulation:
@@ -473,17 +456,40 @@ int photon_generation_main()
 	  // Preselect sources from the entire source catalog according to the 
 	  // satellite's direction of motion.
 	  // Calculate normalized vector perpendicular to the orbit plane:
-	  n = 
-	    normalize_vector(vector_product(normalize_vector(attitudecatalog->entry[attitude_counter].nz), normalize_vector(attitudecatalog->entry[attitude_counter].nx)));
-	  if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog, n, 
-					    pre_max_align, spectrum_store))
+	  preselection_vector = normalize_vector(vector_product(normalize_vector(
+	      attitudecatalog->entry[attitude_counter].nz), 
+	      normalize_vector(attitudecatalog->entry[attitude_counter].nx)));
+	  if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog,
+					    preselection_vector, pre_max_align,
+					    spectrum_store))
 	     !=EXIT_SUCCESS) break;
 	  
 	  // Update the catalog-update-counter
 	  last_update = attitudecatalog->entry[attitude_counter].time;
 	}
 	// END of preselection
-
+	*/
+	// PRESELECTION of Point sources
+	// Preselection of sources from the comprehensive catalog to 
+	// improve the performance of the simulation:
+	if ((1==first)||
+	    (scalar_product(&preselection_vector, &telescope.nz) > 
+	     cos(M_PI/2 - parameters.fov_diameter))) {
+	  // Preselect sources from the entire source catalog according to the 
+	  // satellite's direction of motion.
+	  // Calculate normalized vector perpendicular to the orbit plane:
+	  preselection_vector = normalize_vector(vector_product(normalize_vector(
+	      attitudecatalog->entry[attitude_counter].nz), 
+	      normalize_vector(attitudecatalog->entry[attitude_counter].nx)));
+	  if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog,
+					    preselection_vector, pre_max_align,
+					    spectrum_store))
+	     !=EXIT_SUCCESS) break;
+	  
+	  // Update the catalog-update-counter
+	  last_update = attitudecatalog->entry[attitude_counter].time;
+	}
+	// END of preselection
 
 
 	// CREATE PHOTONS for all POINT sources CLOSE TO the FOV
@@ -556,8 +562,7 @@ int photon_generation_main()
 		  // Insert the photon into the time-ordered list.
 		  if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
 		    break;
-		}
-		
+		}		
 		// --- END of photon generation from the cluster image pixel.
 		
 	      } else { // END of check whether pixel is close to the FOV.
@@ -572,7 +577,6 @@ int photon_generation_main()
       } // END of decision which source category
 
 
-
       // SCAN PHOTON LIST
       // Perform the actual measurement (i.e., scan the photon list).
       attitude_counter = last_attitude_counter; 
@@ -580,7 +584,7 @@ int photon_generation_main()
       while ((photon_list != NULL) && (status == EXIT_SUCCESS)) {
 	// If all photons up to the actual time have been treated, break the loop.
 	if ((photon_list->photon.time > time + dt)||
-	    (photon_list->photon.time > t0+timespan)) {
+	    (photon_list->photon.time > parameters.t0+parameters.timespan)) {
 	  break;
 	}
 
@@ -638,6 +642,7 @@ int photon_generation_main()
       }  // END of scanning the photon list.
 
       last_attitude_counter = attitude_counter;
+      first = 0;
     }   // END of outer time loop.
 
     // --- End of photon creation process ---
