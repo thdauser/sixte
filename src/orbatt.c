@@ -8,7 +8,7 @@
 
 
 // OBSOLETE 
-
+/*
 // This function allocates memory for the satellite catalog 
 // (containing orbit and attitude information), reads this data 
 // from the corresponding FITS files and stores it in the catalog.
@@ -209,7 +209,7 @@ int get_satellite_catalog(
   *nentries = entry;
   return(status);
 }
-
+*/
 
 
 /** Constructor for the AttitudeCatalog. */

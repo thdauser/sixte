@@ -50,9 +50,9 @@ typedef struct {
 // This function allocates memory for the satellite catalog 
 // (containing orbit and attitude information), reads this data 
 // from the corresponding FITS files and stores it in the catalog.
-int get_satellite_catalog(struct Telescope **, long *nentries, double t0, 
+/*int get_satellite_catalog(struct Telescope **, long *nentries, double t0, 
 			  double timespan, const char orbit_filename[], 
-			  const char attitude_filename[]);
+			  const char attitude_filename[]);*/
 
 
 /** Constructor for the AttitudeCatalog. */
