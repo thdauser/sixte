@@ -70,8 +70,8 @@ int photon_imaging_main() {
 
     // Create a new FITS file for the output of the impact list:
     remove(parameters.impactlist_filename);
-    if ((create_impactlist_file(&impactlist_fptr, parameters.impactlist_filename, &status))) 
-      break;
+    if ((create_impactlist_file(&impactlist_fptr, parameters.impactlist_filename, 
+				&status))) break;
     
     // Add important HEADER keywords to the impact list
     if (fits_write_key(impactlist_fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,

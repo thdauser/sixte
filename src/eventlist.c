@@ -5,9 +5,7 @@
 #endif
 
 
-
 #include "eventlist.h"
-
 
 
 //////////////////////////////////////////////////////////////////
@@ -84,8 +82,8 @@ int create_eventlist_file(
   do {   // Beginning of ERROR handling loop
 
     // Create a new FITS file:
-    if (fits_create_file(&eventlist_file->fptr, eventlist_file->filename, status)) 
-      break;
+    if (fits_create_file(&eventlist_file->fptr, eventlist_file->filename, 
+			 status)) break;
 
     // To create a FITS table, the format of the individual columns has to 
     // be specified.
@@ -182,8 +180,8 @@ int create_eventlist_file(
 		       status)) break;
 
     // general mission headers
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "MISSION", "SpectrumXGamma", 
-			"name of the mission", status)) break;
+    if (fits_write_key(eventlist_file->fptr, TSTRING, "MISSION", 
+		       "SpectrumXGamma", "name of the mission", status)) break;
     if (fits_write_key(eventlist_file->fptr, TSTRING, "COMMENT", "DESCRIPT", 
 			"eventlist file from the eROSITA telescope simulation",
 			status)) break;
@@ -222,12 +220,13 @@ int create_eventlist_file(
 		       status)) break;
 
     // Obligatory detector data
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "TELESCOP", telescope_name, 
-			"name of the telescope", status)) break;
+    if (fits_write_key (eventlist_file->fptr, TSTRING, "TELESCOP", 
+			telescope_name, "name of the telescope", status)) break;
     if (fits_write_key (eventlist_file->fptr, TSTRING, "DETNAM", ccd_name, 
 			"name of the detector", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "INSTRUME", instrument_name, 
-			"name of the instrument", status)) break;
+    if (fits_write_key (eventlist_file->fptr, TSTRING, "INSTRUME", 
+			instrument_name, "name of the instrument", status)) 
+      break;
 
     // Determine the CCD mode (FRAMESTORE, DEPFET, ...)
     char data_mode[20];
@@ -292,6 +291,10 @@ int create_eventlist_file(
 
   return (*status);
 }
+
+
+
+
 
 
 

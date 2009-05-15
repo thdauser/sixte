@@ -342,12 +342,12 @@ int create_photonlist_file(
     // 3. right ascension
     strcpy(ftype[2], "RA");
     strcpy(fform[2], "D");
-    strcpy(funit[2], "rad");
+    strcpy(funit[2], "deg");
 
     // 4. declination
     strcpy(ftype[3], "DEC");
     strcpy(fform[3], "D");
-    strcpy(funit[3], "rad");
+    strcpy(funit[3], "deg");
 
     // create the table
     if (fits_create_tbl(*fptr, BINARY_TBL, 0, N_PHOTON_FIELDS, 

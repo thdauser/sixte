@@ -19,23 +19,19 @@ struct ClusterPixel {
 typedef struct {
   struct ClusterPixel **pixel;
 
-  /** width of the image [pixel] */
-  int naxis1, naxis2;    
-  /** width of one pixel [rad] */
-  double cdelt1, cdelt2; 
-  /** [pixel] */
-  double crpix1, crpix2; 
-  /** [rad] */
-  double crval1, crval2; 
+  int naxis1, naxis2;    /**< Width of the image [pixel]. */
+  double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
+  double crpix1, crpix2; /**< [pixel] */
+  double crval1, crval2; /**< [rad] */
 
-  double minra, maxra;   /** minimum right ascension covered by the image [rad] */
-  double mindec, maxdec; // maximum    -"-
+  double minra, maxra;   /**< Maximum right ascension covered by the image [rad]. */
+  double mindec, maxdec; /**< Maximum declination covered by the image [rad]. */
 } ClusterImage;
 
 typedef struct {
-  /** total number of ClusterImage elements in the catalog */
+  /** Total number of ClusterImage elements in the catalog. */
   int nimages;
-  /** catalog of ClusterImage elements */
+  /** Catalog of ClusterImage elements. */
   ClusterImage** images; /* nimages */
 } ClusterImageCatalog;
 
