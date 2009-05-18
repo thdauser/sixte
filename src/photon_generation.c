@@ -473,8 +473,8 @@ int photon_generation_main()
 	// Preselection of sources from the comprehensive catalog to 
 	// improve the performance of the simulation:
 	if ((1==first)||
-	    (scalar_product(&preselection_vector, &telescope.nz) > 
-	     cos(M_PI/2 - parameters.fov_diameter))) {
+	    (fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
+	     sin(0.5*telescope.fov_diameter))) {
 	  // Preselect sources from the entire source catalog according to the 
 	  // satellite's direction of motion.
 	  // Calculate normalized vector perpendicular to the orbit plane:
