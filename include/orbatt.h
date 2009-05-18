@@ -22,9 +22,7 @@
 
 
 // maximum number of entries in the orbit-/attitude-catalog (satellite_catalog)
-#define MAX_NORBIT_ENTRIES 500000   
-// time intervals [s] to update the preselected source catalog
-#define ORBIT_UPDATE_TIME 5400.     
+//#define MAX_NORBIT_ENTRIES 500000   
 
 
 typedef struct {

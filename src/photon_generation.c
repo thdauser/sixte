@@ -186,11 +186,6 @@ int photon_generation_main()
     
     telescope.fov_diameter = parameters.fov_diameter;
 
-    // Set last_update to such a small value, that a preselection of the 
-    // source catalog is performed at the first timestep (last_update 
-    // contains the time of the last source catalog preselection.):
-    //    const double former_time = parameters.t0 - ORBIT_UPDATE_TIME - 100.;
-    //    double last_update = former_time;
 
     // Defines the mathematical meaning of 'close' in the context that for 
     // sources 'close to the FOV' the simulation creates a light curve.
@@ -448,27 +443,6 @@ int photon_generation_main()
 
       if (parameters.source_category==POINT_SOURCES) {
 
-	/*
-	// PRESELECTION of Point sources
-	// Preselection of sources from the comprehensive catalog to 
-	// improve the performance of the simulation:
-	if (attitudecatalog->entry[attitude_counter].time-last_update > ORBIT_UPDATE_TIME) {
-	  // Preselect sources from the entire source catalog according to the 
-	  // satellite's direction of motion.
-	  // Calculate normalized vector perpendicular to the orbit plane:
-	  preselection_vector = normalize_vector(vector_product(normalize_vector(
-	      attitudecatalog->entry[attitude_counter].nz), 
-	      normalize_vector(attitudecatalog->entry[attitude_counter].nx)));
-	  if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog,
-					    preselection_vector, pre_max_align,
-					    spectrum_store))
-	     !=EXIT_SUCCESS) break;
-	  
-	  // Update the catalog-update-counter
-	  last_update = attitudecatalog->entry[attitude_counter].time;
-	}
-	// END of preselection
-	*/
 	// PRESELECTION of Point sources
 	// Preselection of sources from the comprehensive catalog to 
 	// improve the performance of the simulation:
@@ -487,7 +461,6 @@ int photon_generation_main()
 	     !=EXIT_SUCCESS) break;
 	  
 	  // Update the catalog-update-counter
-	  //	  last_update = attitudecatalog->entry[attitude_counter].time;
 	}
 	// END of preselection
 
