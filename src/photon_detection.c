@@ -20,7 +20,7 @@ int photon_detection_main() {
   // Detector data structure (containing the pixel array, its width, ...)
   Detector* detector=NULL;
 
-  struct Eventlist_File eventlist_file;
+  struct Eventlist_File* eventlist_file=NULL;
 
   char msg[MAXMSG];          // error output buffer
   int status=EXIT_SUCCESS;   // error status
@@ -43,7 +43,6 @@ int photon_detection_main() {
     
     // TODO move the following assignments to another place:
     detector->type = parameters.detector_type;
-    strcpy(eventlist_file.filename, parameters.eventlist_filename);
 
 
     // Initialize HEADAS random number generator and GSL generator for 
@@ -174,15 +173,18 @@ int photon_detection_main() {
 
     // Create event list FITS file:
     headas_chat(5, "create FITS file '%s' for output of event list ...\n", 
-		eventlist_file.filename);
+		parameters.eventlist_filename);
     // Delete old event list:
-    remove(eventlist_file.filename);
+    remove(parameters.eventlist_filename);
     // Create a new FITS file and a table for the event list:
-    if (create_eventlist_file(&eventlist_file, detector, parameters.t0, 
-			      parameters.t0+parameters.timespan, &status)) break;
+    eventlist_file=create_Eventlist_File(parameters.eventlist_filename, 
+					 detector, parameters.t0, 
+					 parameters.t0+parameters.timespan, 
+					 &status);
+    if (EXIT_SUCCESS!=status) break;
 
     // Add important HEADER keywords to the event list.
-    if (fits_write_key(eventlist_file.fptr, TSTRING, "ATTITUDE", 
+    if (fits_write_key(eventlist_file->fptr, TSTRING, "ATTITUDE", 
 		       parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
     
@@ -219,7 +221,7 @@ int photon_detection_main() {
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
       if (detector->action != NULL) { // HTRS and TES do not have this routine.
-	detector->action(detector, time, &eventlist_file, &status);
+	detector->action(detector, time, eventlist_file, &status);
 	if (status != EXIT_SUCCESS) break;
       }
 
@@ -302,7 +304,7 @@ int photon_detection_main() {
 		  if ((event.pha >= detector->pha_threshold)&&
 		      (charge*fraction[count] >= detector->energy_threshold)){ 
 		    // There is an event in this pixel, so insert it into eventlist:
-		    add_eventlist_row(&eventlist_file, event, &status);
+		    add_eventlist_row(eventlist_file, event, &status);
 		  }
 		} // END htrs_detector_active(...)
 	      } // END x[count] != INVALID_PIXEL
@@ -329,7 +331,7 @@ int photon_detection_main() {
 	      if ((event.pha>=detector->pha_threshold)&&
 		  (charge>=detector->energy_threshold)){ // Check lower PHA threshold
 		// There is an event in this pixel, so insert it into eventlist:
-		add_eventlist_row(&eventlist_file, event, &status);
+		add_eventlist_row(eventlist_file, event, &status);
 	      }
 	    } // END x[0] != INVALID_PIXEL
 	  } // END detector->type == TES
@@ -349,7 +351,7 @@ int photon_detection_main() {
   HDmtFree();
 
   if (impactlist_fptr) fits_close_file(impactlist_fptr, &status);
-  if (eventlist_file.fptr) fits_close_file(eventlist_file.fptr, &status);
+  if (eventlist_file->fptr) fits_close_file(eventlist_file->fptr, &status);
 
   // Release memory of detector:
   int count;

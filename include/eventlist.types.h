@@ -24,7 +24,6 @@ struct Event {
 /** Structure that contains all information, which is necessary to access
  * an event list FITS file. */
 struct Eventlist_File {
-  char filename[FILENAME_LENGTH];
   fitsfile *fptr;
 
   DetectorTypes detectortype;

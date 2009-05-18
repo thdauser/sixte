@@ -64,15 +64,15 @@ void add_eventlist_row(struct Eventlist_File* ef, struct Event event, int *statu
 
 
 ///////////////////////////////////////////////////////////////////
-int create_eventlist_file(
-			  struct Eventlist_File* ef,
-			  Detector* detector,
-			  double tstart,
-			  double tend,
-			  int *status
-			  )
+struct Eventlist_File* create_Eventlist_File(
+					     char* filename,
+					     Detector* detector,
+					     double tstart,
+					     double tend,
+					     int *status
+					     )
 {
-  int counter;
+  struct Eventlist_File* ef=NULL;
 
   char mission[MAXMSG];
   char telescope[MAXMSG];
@@ -83,9 +83,20 @@ int create_eventlist_file(
   char msg[MAXMSG];  // error output buffer
 
   do {   // Beginning of ERROR handling loop
+    
+    // Allocate memory
+    ef = (struct Eventlist_File*)malloc(sizeof(struct Eventlist_File));
+    if (NULL==ef) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: memory allocation for Eventlist_File data structure failed!\n");
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+    struct Eventlist_File test = { .fptr=NULL };
+    *ef = test;
 
     // Create a new FITS file:
-    if (fits_create_file(&ef->fptr, ef->filename, status)) break;
+    if (fits_create_file(&ef->fptr, filename, status)) break;
 
     // To create a FITS table, the format of the individual columns has to 
     // be specified.
@@ -100,9 +111,9 @@ int create_eventlist_file(
       break;
     default:
       ef->ncolumns = 0;
+      *status = EXIT_FAILURE;
       sprintf(msg, "Error: invalid detector type in event list creation!\n");
       HD_ERROR_THROW(msg, *status);
-      *status = EXIT_FAILURE;
       break;
     }
     if (EXIT_SUCCESS!=*status) break;
@@ -113,6 +124,7 @@ int create_eventlist_file(
     char *funit[ef->ncolumns];
     
     // Allocate memory    
+    int counter;
     for(counter=0; counter<ef->ncolumns; counter++) {
       ftype[counter] = (char *) malloc(10 * sizeof(char));
       fform[counter] = (char *) malloc(10 * sizeof(char));
@@ -354,7 +366,7 @@ int create_eventlist_file(
 
   } while (0);  // end of error handling loop
 
-  return (*status);
+  return(ef);
 }
 
 
@@ -422,6 +434,7 @@ int get_eventlist_row(struct Eventlist_File ef,
 
 ///////////////////////////////////////////////////////////////////
 // OBSOLETE !!
+/*
 int open_eventlist_file(
 			struct Eventlist_File* eventlist_file,
 			int* status
@@ -460,7 +473,7 @@ int open_eventlist_file(
 
   return(*status);
 }
-
+*/
 
 
 

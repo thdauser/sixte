@@ -31,6 +31,11 @@
 
 
 
+struct Parameters {
+  char eventlist_filename[FILENAME_LENGTH];
+};
+
+
 ///////////////////////////////////////////////////
 // Convert a squence of chars into captial letters. 
 // The squence has to be terminated by a '\0' mark.
@@ -49,6 +54,8 @@ void strtoupper(char string[]) {
 //    MAIN
 int binary_stream_main()
 {
+  struct Parameters parameters;
+
   // Program output mode (events or spectrum)
   enum Mode {
     MODE_INVALID =0,
@@ -79,14 +86,14 @@ int binary_stream_main()
     // --- Initialization ---
     eventlist_file.fptr=NULL;
  
-    if ((status = PILGetFname("eventlist_filename", eventlist_file.filename))) {
+    if ((status = PILGetFname("eventlist_filename", parameters.eventlist_filename))) {
       sprintf(msg, "Error reading the name of the input event list file (FITS)!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
 
     int hdutype;
-    if (fits_open_table(&eventlist_file.fptr, eventlist_file.filename, 
+    if (fits_open_table(&eventlist_file.fptr, parameters.eventlist_filename, 
 			READONLY, &status)) break;
 
     // Get the HDU type.
@@ -95,7 +102,7 @@ int binary_stream_main()
     if (hdutype==IMAGE_HDU) {
       status=EXIT_FAILURE;
       sprintf(msg, "Error: input file '%s' contains no binary table!\n",
-	      eventlist_file.filename);
+	      parameters.eventlist_filename);
       HD_ERROR_THROW(msg, status);
       break;
     }

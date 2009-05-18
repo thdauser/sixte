@@ -20,8 +20,8 @@
 // It also inserts  header information.
 // The function returns '0', if it is run successfully.
 // Otherwise the return value is '1'.
-int create_eventlist_file(struct Eventlist_File*, Detector*,
-			  double tstart, double tend, int *status);
+struct Eventlist_File* create_Eventlist_File(char* filename, Detector*,
+					     double tstart, double tend, int *status);
 
 
 // Open an existing FITS file and try to get the first extension that contains
