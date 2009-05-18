@@ -21,9 +21,6 @@
 #include "telescope.h"
 
 
-// maximum number of entries in the orbit-/attitude-catalog (satellite_catalog)
-//#define MAX_NORBIT_ENTRIES 500000   
-
 
 typedef struct {
   /** Point of time for which this attitude is valid. */
@@ -45,19 +42,12 @@ typedef struct {
 } AttitudeCatalog;
 
 
-// This function allocates memory for the satellite catalog 
-// (containing orbit and attitude information), reads this data 
-// from the corresponding FITS files and stores it in the catalog.
-/*int get_satellite_catalog(struct Telescope **, long *nentries, double t0, 
-			  double timespan, const char orbit_filename[], 
-			  const char attitude_filename[]);*/
-
 
 /** Constructor for the AttitudeCatalog. */
 AttitudeCatalog* get_AttitudeCatalog(const char attitude_filename[],
 				     double t0, double timespan, int* status);
 
-/** Destructor for the AttitudeCatalog */
+/** Destructor for the AttitudeCatalog. */
 void free_AttitudeCatalog(AttitudeCatalog* ac);
 
 

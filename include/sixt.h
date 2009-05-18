@@ -7,5 +7,6 @@
 
 #define NAN (0./0.)            // Not a Number
 
+
 #endif /* SIXT_H */
 

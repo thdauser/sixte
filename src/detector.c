@@ -33,7 +33,7 @@ void framestore_detector_action(
 
   // Check, if the detector integration time was exceeded. 
   // In that case, read out the detector.
-  while (time > detector->readout_time) {
+  if (time > detector->readout_time) {
     // Add background photons to the detector pixels.
     //insert_background_photons(*detector, background, detector->integration_time);
 
@@ -43,9 +43,14 @@ void framestore_detector_action(
     // Clear the detector array.
     clear_detector(detector);
 
-    // Update the detector frame time to the next frame.
-    detector->readout_time += detector->integration_time;
-    detector->frame+=2;
+    // Update the detector frame time to the next frame until the current
+    // time is within the detector->readout interval.
+    // This CAN ONLY BE DONE for FRAMESTORE detectors!!
+    // For detectors with individual readout lines a more complicated method is required.
+    while (time > detector->readout_time) {
+      detector->readout_time += detector->integration_time;
+      detector->frame+=2;
+    }
 
     // Print the time of the current events in order (program status
     // information for the user).
@@ -221,7 +226,6 @@ static inline void readout_line(
 	
 	// There is an event in this pixel, so insert it into the eventlist:
 	event.time = detector->readout_time;
-	event.grade = 0;
 	event.xi = xi;
 	event.yi = line;
 	event.frame = detector->frame;

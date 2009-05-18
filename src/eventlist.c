@@ -9,52 +9,55 @@
 
 
 //////////////////////////////////////////////////////////////////
-void add_eventlist_row(
-		       struct Eventlist_File* eventlist_file, 
-		       struct Event event, int *status
-		       ) 
+void add_eventlist_row(struct Eventlist_File* ef, struct Event event, int *status) 
 {
-  fits_insert_rows(eventlist_file->fptr, eventlist_file->row++, 1, status);
-  fits_write_col(eventlist_file->fptr, TDOUBLE, 1, eventlist_file->row, 
-		 1, 1, &event.time, status);
-  fits_write_col(eventlist_file->fptr, TLONG, 2, eventlist_file->row, 
-		 1, 1, &event.pha, status);
-  fits_write_col(eventlist_file->fptr, TINT, 3, eventlist_file->row, 
-		 1, 1, &event.grade, status);
-  fits_write_col(eventlist_file->fptr, TINT, 4, eventlist_file->row, 
-		 1, 1, &event.xi, status);
-  fits_write_col(eventlist_file->fptr, TINT, 5, eventlist_file->row, 
-		 1, 1, &event.yi, status);
-  fits_write_col(eventlist_file->fptr, TLONG, 6, eventlist_file->row, 
-		 1, 1, &event.frame, status);
+  // Insert a new, empty row to the table:
+  fits_insert_rows(ef->fptr, ef->row++, 1, status);
+
+  if (0<ef->ctime) 
+    fits_write_col(ef->fptr, TDOUBLE, ef->ctime, ef->row, 1, 1, &event.time, status);
+  if (0<ef->cpha)
+    fits_write_col(ef->fptr, TLONG, ef->cpha, ef->row, 1, 1, &event.pha, status);
+  if (0<ef->crawx)
+    fits_write_col(ef->fptr, TINT, ef->crawx, ef->row, 1, 1, &event.xi, status);
+  if (0<ef->crawy)
+    fits_write_col(ef->fptr, TINT, ef->crawy, ef->row, 1, 1, &event.yi, status);
+  if (0<ef->cframe)
+    fits_write_col(ef->fptr, TLONG, ef->cframe, ef->row, 1, 1, &event.frame, status);
 
   // Set default values for PATNUM and PATID:
   // PATID has to be set to -1 !! 
   // Otherwise the pattern recognition algorithm doesn't work properly.
+
   // PATNUM
-  event.patnum = 0;
-  fits_write_col(eventlist_file->fptr, TLONG, 7, eventlist_file->row, 
-		 1, 1, &event.patnum, status);  
+  if (0<ef->cpatnum) {
+    event.patnum = 0;
+    fits_write_col(ef->fptr, TLONG, ef->cpatnum, ef->row, 1, 1, &event.patnum, status);  
+  }
+
   // PATID
-  event.patid = -1;
-  fits_write_col(eventlist_file->fptr, TLONG, 8, eventlist_file->row, 
-		 1, 1, &event.patid, status);
+  if (0<ef->cpatid) {
+    event.patid = -1;
+    fits_write_col(ef->fptr, TLONG, ef->cpatid, ef->row, 1, 1, &event.patid, status);
+  }
+
   // Pile-up
-  event.pileup = 0;
-  fits_write_col(eventlist_file->fptr, TLONG, 9, eventlist_file->row, 
-		 1, 1, &event.pileup, status); 
+  if (0<ef->cpileup) {
+    event.pileup = 0;
+    fits_write_col(ef->fptr, TLONG, ef->cpileup, ef->row, 1, 1, &event.pileup, status); 
+  }
 
   // RA and DEC
-  fits_write_col(eventlist_file->fptr, TDOUBLE, 10, eventlist_file->row,
-		 1, 1, &event.ra, status);
-  fits_write_col(eventlist_file->fptr, TDOUBLE, 11, eventlist_file->row,
-		 1, 1, &event.dec, status);
+  if (0<ef->cra) 
+    fits_write_col(ef->fptr, TDOUBLE, ef->cra, ef->row, 1, 1, &event.ra, status);
+  if (0<ef->cdec) 
+    fits_write_col(ef->fptr, TDOUBLE, ef->cdec, ef->row, 1, 1, &event.dec, status);
 
   // Sky coordinates X and Y
-  fits_write_col(eventlist_file->fptr, TLONG, 12, eventlist_file->row,
-		 1, 1, &event.sky_xi, status);
-  fits_write_col(eventlist_file->fptr, TLONG, 13, eventlist_file->row,
-		 1, 1, &event.sky_yi, status);
+  if (0<ef->cskyx) 
+    fits_write_col(ef->fptr, TLONG, ef->cskyx, ef->row, 1, 1, &event.sky_xi, status);
+  if (0<ef->cskyy) 
+    fits_write_col(ef->fptr, TLONG, ef->cskyy, ef->row, 1, 1, &event.sky_yi, status);
 
 }
 
@@ -62,35 +65,57 @@ void add_eventlist_row(
 
 ///////////////////////////////////////////////////////////////////
 int create_eventlist_file(
-			  struct Eventlist_File* eventlist_file,
+			  struct Eventlist_File* ef,
 			  Detector* detector,
 			  double tstart,
 			  double tend,
-			  char *telescope_name,
-			  char *ccd_name,
-			  char *instrument_name,
 			  int *status
 			  )
 {
-  char *ftype[N_EVENT_FIELDS];
-  char *fform[N_EVENT_FIELDS];
-  char *funit[N_EVENT_FIELDS];
   int counter;
+
+  char mission[MAXMSG];
+  char telescope[MAXMSG];
+  char instrument[MAXMSG];
+  char detname[MAXMSG];
+  char data_mode[MAXMSG];
 
   char msg[MAXMSG];  // error output buffer
 
   do {   // Beginning of ERROR handling loop
 
     // Create a new FITS file:
-    if (fits_create_file(&eventlist_file->fptr, eventlist_file->filename, 
-			 status)) break;
+    if (fits_create_file(&ef->fptr, ef->filename, status)) break;
 
     // To create a FITS table, the format of the individual columns has to 
     // be specified.
-    for(counter=0; counter<N_EVENT_FIELDS; counter++) {
-      // Allocate memory
-      ftype[counter] = (char *) malloc(8 * sizeof(char));
-      fform[counter] = (char *) malloc(4 * sizeof(char));
+    // Distingusih between the different detectors and determine the required 
+    // number of table columns.
+    switch (detector->type) {
+    case FRAMESTORE: 
+      ef->ncolumns = 9;
+      break;
+    case DEPFET:
+      ef->ncolumns = 8;
+      break;
+    default:
+      ef->ncolumns = 0;
+      sprintf(msg, "Error: invalid detector type in event list creation!\n");
+      HD_ERROR_THROW(msg, *status);
+      *status = EXIT_FAILURE;
+      break;
+    }
+    if (EXIT_SUCCESS!=*status) break;
+    ef->detectortype = detector->type;
+
+    char *ftype[ef->ncolumns];
+    char *fform[ef->ncolumns];
+    char *funit[ef->ncolumns];
+    
+    // Allocate memory    
+    for(counter=0; counter<ef->ncolumns; counter++) {
+      ftype[counter] = (char *) malloc(10 * sizeof(char));
+      fform[counter] = (char *) malloc(10 * sizeof(char));
       funit[counter] = (char *) malloc(10 * sizeof(char));
       
       // Check if all memory was allocated successfully:
@@ -99,195 +124,235 @@ int create_eventlist_file(
 	sprintf(msg, "Error: no memory allocation for FITS table parameters "
 		"failed (event list)!\n");
 	HD_ERROR_THROW(msg, *status);
+	break;
       }
     }
-
     // If an error has occurred during memory allocation, 
     // skip the following part.
     if (*status != EXIT_SUCCESS) break;
 
-    // Set the field types of the table in the FITS file.
-    // 1. time
-    strcpy(ftype[0], "TIME");
-    strcpy(fform[0], "D");
-    strcpy(funit[0], "s");
 
-    // 2. energy
-    strcpy(ftype[1], "PHA");
-    strcpy(fform[1], "J");
-    strcpy(funit[1], "channel");
+    // Define the Instrument-specific layout of the event list table:
+    int column_counter = 0;
+    switch (ef->detectortype) {
+    case FRAMESTORE: // eROSITA pnCCD
+      // Readout time
+      strcpy(ftype[column_counter], "TIME"); 
+      strcpy(fform[column_counter], "D"); 
+      strcpy(funit[column_counter], "s");
+      ef->ctime = ++column_counter;
+      // PHA channel
+      strcpy(ftype[column_counter], "PHA"); 
+      strcpy(fform[column_counter], "J"); 
+      strcpy(funit[column_counter], "channel");
+      ef->cpha = ++column_counter;
+      // RAWX and RAWY
+      strcpy(ftype[column_counter], "RAWX"); 
+      strcpy(fform[column_counter], "I"); 
+      strcpy(funit[column_counter], "");
+      ef->crawx = ++column_counter;
+      strcpy(ftype[column_counter], "RAWY"); 
+      strcpy(fform[column_counter], "I"); 
+      strcpy(funit[column_counter], "");
+      ef->crawy = ++column_counter;
+      // FRAME
+      strcpy(ftype[column_counter], "FRAME"); 
+      strcpy(fform[column_counter], "J"); 
+      strcpy(funit[column_counter], "");
+      ef->cframe = ++column_counter;
+      // Source position in equatorial coordinates RA and DEC
+      strcpy(ftype[column_counter], "RA"); 
+      strcpy(fform[column_counter], "D"); // R*8
+      strcpy(funit[column_counter], "degree");
+      ef->cra = ++column_counter;
+      strcpy(ftype[column_counter], "DEC"); 
+      strcpy(fform[column_counter], "D"); // R*8
+      strcpy(funit[column_counter], "degree");
+      ef->cdec = ++column_counter;
+      // Sky coordinates in integer pixels of size 0.05"
+      strcpy(ftype[column_counter], "X"); 
+      strcpy(fform[column_counter], "J"); // I*4
+      strcpy(funit[column_counter], "pixel");
+      ef->cskyx = ++column_counter;
+      strcpy(ftype[column_counter], "Y"); 
+      strcpy(fform[column_counter], "J"); // I*4
+      strcpy(funit[column_counter], "pixel");
+      ef->cskyy = ++column_counter;
 
-    // 3. grade
-    strcpy(ftype[2], "GRADE");
-    strcpy(fform[2], "I");
-    strcpy(funit[2], "");
+      ef->cpatid=0; ef->cpatnum=0; ef->cpileup=0;
 
-    // 4. x coordinate (integer pixel)
-    strcpy(ftype[3], "COLUMN");   // RAWX
-    strcpy(fform[3], "I");
-    strcpy(funit[3], "");
+      break;
 
-    // 5. y coordinate (integer pixel)
-    strcpy(ftype[4], "ROW");      // RAWY
-    strcpy(fform[4], "I");
-    strcpy(funit[4], "");
+    case DEPFET: // IXO WFI
+      // Readout time
+      strcpy(ftype[column_counter], "TIME"); 
+      strcpy(fform[column_counter], "D"); 
+      strcpy(funit[column_counter], "s");
+      ef->ctime = ++column_counter;
+      // PHA channel
+      strcpy(ftype[column_counter], "PHA"); 
+      strcpy(fform[column_counter], "J"); 
+      strcpy(funit[column_counter], "channel");
+      ef->cpha = ++column_counter;
+      // RAWX and RAWY
+      strcpy(ftype[column_counter], "COLUMN"); 
+      strcpy(fform[column_counter], "I"); 
+      strcpy(funit[column_counter], "");
+      ef->crawx = ++column_counter;
+      strcpy(ftype[column_counter], "ROW"); 
+      strcpy(fform[column_counter], "I"); 
+      strcpy(funit[column_counter], "");
+      ef->crawy = ++column_counter;
+      // FRAME
+      strcpy(ftype[column_counter], "FRAME"); 
+      strcpy(fform[column_counter], "J"); 
+      strcpy(funit[column_counter], "");
+      ef->cframe = ++column_counter;
+      // Pattern number
+      strcpy(ftype[column_counter], "PATNUM"); 
+      strcpy(fform[column_counter], "J"); 
+      strcpy(funit[column_counter], "");
+      ef->cpatnum = ++column_counter;
+      // Pattern ID
+      strcpy(ftype[column_counter], "PATID"); 
+      strcpy(fform[column_counter], "J"); 
+      strcpy(funit[column_counter], "");
+      ef->cpatid = ++column_counter;
+      // Pileup
+      strcpy(ftype[column_counter], "PILEUP"); 
+      strcpy(fform[column_counter], "J"); 
+      strcpy(funit[column_counter], "");
+      ef->cpileup = ++column_counter;
 
-    // 6. frame number
-    strcpy(ftype[5], "FRAME");
-    strcpy(fform[5], "J");
-    strcpy(funit[5], "");
-  
-    // 7. pattern number
-    strcpy(ftype[6], "PATNUM");
-    strcpy(fform[6], "J");
-    strcpy(funit[6], "");
+      ef->cra=0; ef->cdec=0; ef->cskyx=0; ef->cskyy=0;
 
-    // 8. pattern ID
-    strcpy(ftype[7], "PATID");
-    strcpy(fform[7], "J");
-    strcpy(funit[7], "");
+      break;
 
-    // 9. pileup
-    strcpy(ftype[8], "PILEUP");
-    strcpy(fform[8], "J");
-    strcpy(funit[8], "");
-
-    // 10+11. Source position in coordinates RA and DEC
-    strcpy(ftype[9], "RA");
-    strcpy(fform[9], "D");  // R*8
-    strcpy(funit[9], "degree");
-    strcpy(ftype[10], "DEC");
-    strcpy(fform[10], "D");  // R*8
-    strcpy(funit[10], "degree");
-
-    // 12+13. Sky coordinates in integer pixels of size 0.05" (eROSITA specific)
-    strcpy(ftype[11], "X");
-    strcpy(fform[11], "J");  // I*4
-    strcpy(funit[11], "pixel");
-    strcpy(ftype[12], "Y");
-    strcpy(fform[12], "J");  // I*4
-    strcpy(funit[12], "pixel");
-
+    default:
+      break;
+    }
 
     // Create the event list table in the FITS file.
-    if (fits_create_tbl(eventlist_file->fptr, BINARY_TBL, 0, N_EVENT_FIELDS, 
+    if (fits_create_tbl(ef->fptr, BINARY_TBL, 0, ef->ncolumns, 
 			ftype, fform, funit, "EVENTS", status)) break;
     
 
-    // Write descriptory data into the header of the FITS file.
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "COMMENT", "EVENTLIST",
-		       "content: eventlist of eROSITA simulation measurement", 
-		       status)) break;
+    // HEADER Keywords:
+    // Distinguish between the different missions:
+    switch (ef->detectortype) {
+    case FRAMESTORE:    // eROSITA
+      strcpy(mission,   "eROSITA");
+      strcpy(telescope, "eROSITA");
+      strcpy(detname,   "pnCCD1" );
+      strcpy(instrument,"eROSITA"); 
+      strcpy(data_mode, "FRAMESTORE");
+      break;
 
-    // general mission headers
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "MISSION", 
-		       "SpectrumXGamma", "name of the mission", status)) break;
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "COMMENT", "DESCRIPT", 
-			"eventlist file from the eROSITA telescope simulation",
-			status)) break;
+    case DEPFET:        // IXO WFI
+      strcpy(mission,   "IXO");
+      strcpy(telescope, "IXO");
+      strcpy(detname,   "WFI" );
+      strcpy(instrument,"WFI"); 
+      strcpy(data_mode, "DEPFET");
+      break;
 
-    // date and time headers
+    default:
+      break;
+    }
+
+    // Write descriptory data into the HEADER of the FITS file.
+    if (fits_write_key(ef->fptr, TSTRING, "COMMENT", "EVENTLIST", "", status)) break;
+
+    // General mission headers
+    if (fits_write_key(ef->fptr, TSTRING, "MISSION",  mission, 
+		       "name of the mission", status)) break;
+    if (fits_write_key(ef->fptr, TSTRING, "COMMENT", "DESCRIPT", 
+		       "content: event list generated by SIXT "
+		       "(SImulation of X-ray Telescopes)", status)) break;
+
+    // Obligatory detector data
+    if (fits_write_key (ef->fptr, TSTRING, "TELESCOP", telescope, 
+			"name of the telescope", status)) break;
+    if (fits_write_key (ef->fptr, TSTRING, "DETNAM", detname, 
+			"name of the detector", status)) break;
+    if (fits_write_key (ef->fptr, TSTRING, "INSTRUME", instrument, 
+			"name of the instrument", status)) break;
+
+    // Date and time headers
     char creation_date[30];
     int timeref;            // is 0, if returned time is in UTC
     if (fits_get_system_time(creation_date, &timeref, status)) break;
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "DATE", "2008-03-10",
+    if (fits_write_key(ef->fptr, TSTRING, "DATE", "2008-03-10",
 		       "FITS file creation date (yyyy-mm-dd)", status)) break;
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "DATE-OBS", 
-		       "2008-03-10T10:00:00",
+    if (fits_write_key(ef->fptr, TSTRING, "DATE-OBS", "2008-03-10T10:00:00",
 		       "start time for the orbit", status)) break;
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "DATE-END", "",
+    if (fits_write_key(ef->fptr, TSTRING, "DATE-END", "",
 		       "end time of the orbit", status)) break;
     double dbuffer = 0.;
-    if (fits_write_key(eventlist_file->fptr, TDOUBLE, "MJDSTART", &dbuffer,
+    if (fits_write_key(ef->fptr, TDOUBLE, "MJDSTART", &dbuffer,
 		       "start time of the orbit in Julian date format", 
 		       status)) break;
-    if (fits_write_key(eventlist_file->fptr, TDOUBLE, "MJDEND", &dbuffer,
+    if (fits_write_key(ef->fptr, TDOUBLE, "MJDEND", &dbuffer,
 		       "end time of the orbit in Julian date format", 
 		       status)) break;
     dbuffer = 0.;
-    if (fits_write_key(eventlist_file->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+    if (fits_write_key(ef->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		       "Clock correction", status)) break;
     long lbuffer = 0;
-    if (fits_write_key(eventlist_file->fptr, TLONG, "MJDREFI", &lbuffer,
-		       "integer part of reference time", 
-		       status)) break;
-    if (fits_write_key(eventlist_file->fptr, TDOUBLE, "MJDREFF", &dbuffer,
+    if (fits_write_key(ef->fptr, TLONG, "MJDREFI", &lbuffer,
+		       "integer part of reference time", status)) break;
+    if (fits_write_key(ef->fptr, TDOUBLE, "MJDREFF", &dbuffer,
 		       "fractional part of reference time", status)) break;
-    if (fits_write_key(eventlist_file->fptr, TDOUBLE, "TSTART", &tstart,
+    if (fits_write_key(ef->fptr, TDOUBLE, "TSTART", &tstart,
 		       "start time of the orbit", status)) break;
-    if (fits_write_key(eventlist_file->fptr, TDOUBLE, "TEND", &tend,
-		       "start time of the orbit", 
-		       status)) break;
+    if (fits_write_key(ef->fptr, TDOUBLE, "TEND", &tend, 
+		       "start time of the orbit", status)) break;
 
-    // Obligatory detector data
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "TELESCOP", 
-			telescope_name, "name of the telescope", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "DETNAM", ccd_name, 
-			"name of the detector", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "INSTRUME", 
-			instrument_name, "name of the instrument", status)) 
-      break;
 
     // Determine the CCD mode (FRAMESTORE, DEPFET, ...)
-    char data_mode[20];
-    if (detector->type == FRAMESTORE) {
-      strcpy(data_mode, "FRAMESTORE");
-    } else if (detector->type == DEPFET) {
-      strcpy(data_mode, "DEPFET");
-    } else if (detector->type == TES) {
-      strcpy(data_mode, "TES MCal");
-    } else {strcpy(data_mode, "unknown");}
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "DATAMODE", data_mode, "", 
-			status)) break;
-
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "FILTER", "none", "", status))
-      break;
-    if (fits_write_key(eventlist_file->fptr, TINT, "DETWIDTH", &detector->width, 
-		       "width (number of pixels) of the detector", status)) 
-      break;
-    if (fits_write_key(eventlist_file->fptr, TINT, "DETCHANS", 
-		       &detector->rmf->NumberChannels, 
+    if (fits_write_key (ef->fptr, TSTRING, "DATAMODE", data_mode, "", status)) break;
+    if (fits_write_key(ef->fptr, TSTRING, "FILTER", "none", "", status)) break;
+    if (fits_write_key(ef->fptr, TINT, "DETWIDTH", &detector->width, 
+		       "width (number of pixels) of the detector", status)) break;
+    if (fits_write_key(ef->fptr, TINT, "DETCHANS", &detector->rmf->NumberChannels,
 		       "number of detector channels", status)) break;
 
-    // instrument data
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "CREATOR", "simulation", 
-			"", status)) break;
+    // Instrument data
+    if (fits_write_key (ef->fptr, TSTRING, "CREATOR", "SIXT", "", status)) break;
 
-    // observation data
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "OBS_MODE", 
-			"all-sky survey", "", status)) break;
+    // Observation data
+    if (fits_write_key (ef->fptr, TSTRING, "OBS_MODE", "all-sky survey", "", status)) break;
 
-    // Additional detector information:
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "COLUMN", ftype[3], 
-			"column of event", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TSTRING, "ROW", ftype[4], 
-			"row of event", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TINT, "COLUMNS", &detector->width, 
-			"Number of columns", status)) break;
-    if (fits_write_key (eventlist_file->fptr, TINT, "ROWS", &detector->width, 
-			"Number of rows", status)) break;
+    // Additional detector information ONLY for IXO WFI:
+    if (DEPFET == ef->detectortype) {
+      if (fits_write_key (ef->fptr, TSTRING, "COLUMN", ftype[3],
+			  "column of event", status)) break;
+      if (fits_write_key (ef->fptr, TSTRING, "ROW", ftype[4],
+			  "row of event", status)) break;
+      if (fits_write_key (ef->fptr, TINT, "COLUMNS", &detector->width, 
+			  "Number of columns", status)) break;
+      if (fits_write_key (ef->fptr, TINT, "ROWS", &detector->width, 
+			  "Number of rows", status)) break;
+    }
     
-
 
     // If desired by the user, print all program parameters to HISTORY of 
     // FITS file (HDU number 1).
-    HDpar_stamp(eventlist_file->fptr, 2, status);
+    HDpar_stamp(ef->fptr, 2, status);
     
 
     // Set initial value for new event list (start at beginning of the file).
-    eventlist_file->row=0;  
-    eventlist_file->nrows=0;
+    ef->row=0;  
+    ef->nrows=0;
+
+    // clean up
+    for (counter=0; counter<ef->ncolumns; counter++) {
+      if (ftype[counter]) free(ftype[counter]);
+      if (fform[counter]) free(fform[counter]);
+      if (funit[counter]) free(funit[counter]);
+    }
 
   } while (0);  // end of error handling loop
-
-
-  //----------------
-  // clean up
-  for (counter=0; counter<N_EVENT_FIELDS; counter++) {
-    if (ftype[counter]) free(ftype[counter]);
-    if (fform[counter]) free(fform[counter]);
-    if (funit[counter]) free(funit[counter]);
-  }
 
   return (*status);
 }
@@ -301,50 +366,52 @@ int create_eventlist_file(
 
 ///////////////////////////////////////////////////////////////////////
 // This function reads a row of data from the event list FITS table.
-int get_eventlist_row(struct Eventlist_File eventlist_file, 
+int get_eventlist_row(struct Eventlist_File ef, 
 		      struct Event* event, int *status) 
 {
   int anynul = 0;
 
   // time (1st column)
   event->time = 0.;
-  fits_read_col(eventlist_file.fptr, TDOUBLE, 1, eventlist_file.row+1, 1, 1, 
-		&event->time, &event->time, &anynul, status);
+  if (0<ef.ctime)
+    fits_read_col(ef.fptr, TDOUBLE, ef.ctime, ef.row+1, 1, 1, 
+		  &event->time, &event->time, &anynul, status);
 
   // PHA channel (2nd column)
   event->pha = 0;
-  fits_read_col(eventlist_file.fptr, TLONG, 2, eventlist_file.row+1, 1, 1, 
-		&event->pha, &event->pha, &anynul, status);
-
-  // Grade (specifies split events)
-  event->grade = 0;
-  fits_read_col(eventlist_file.fptr, TINT, 3, eventlist_file.row+1, 1, 1, 
-		&event->grade, &event->grade, &anynul, status);
+  if (0<ef.cpha)
+    fits_read_col(ef.fptr, TLONG, ef.cpha, ef.row+1, 1, 1, 
+		  &event->pha, &event->pha, &anynul, status);
 
   // xi (3rd column)
   event->xi = 0;
-  fits_read_col(eventlist_file.fptr, TINT, 4, eventlist_file.row+1, 1, 1, 
-		&event->xi, &event->xi, &anynul, status);
+  if (0<ef.crawx)
+    fits_read_col(ef.fptr, TINT, ef.crawx, ef.row+1, 1, 1, 
+		  &event->xi, &event->xi, &anynul, status);
 
   // yi (4th column)
   event->yi = 0;
-  fits_read_col(eventlist_file.fptr, TINT, 5, eventlist_file.row+1, 1, 1, 
-		&event->yi, &event->yi, &anynul, status);
+  if (0<ef.crawy)
+    fits_read_col(ef.fptr, TINT, ef.crawy, ef.row+1, 1, 1, 
+		  &event->yi, &event->yi, &anynul, status);
 
   // frame
   event->frame = 0;
-  fits_read_col(eventlist_file.fptr, TLONG, 6, eventlist_file.row+1, 1, 1, 
-		&event->frame, &event->frame, &anynul, status);
+  if (0<ef.cframe) 
+    fits_read_col(ef.fptr, TLONG, ef.cframe, ef.row+1, 1, 1, 
+		  &event->frame, &event->frame, &anynul, status);
 
   // patnum
   event->patnum = 0;
-  fits_read_col(eventlist_file.fptr, TLONG, 7, eventlist_file.row+1, 1, 1, 
-		&event->patnum, &event->patnum, &anynul, status);
+  if (0<ef.cpatnum)
+    fits_read_col(ef.fptr, TLONG, ef.cpatnum, ef.row+1, 1, 1, 
+		  &event->patnum, &event->patnum, &anynul, status);
 
   // patid
   event->patid = 0;
-  fits_read_col(eventlist_file.fptr, TLONG, 8, eventlist_file.row+1, 1, 1, 
-		&event->patid, &event->patid, &anynul, status);
+  if (0<ef.cpatid)
+    fits_read_col(ef.fptr, TLONG, ef.cpatid, ef.row+1, 1, 1, 
+		  &event->patid, &event->patid, &anynul, status);
 
   return(anynul);
 }
@@ -395,19 +462,21 @@ int open_eventlist_file(
 }
 
 
+
+
 ///////////////////////////////////////////////////////////////////
 // Opens an existing FITS file with a binary table event list
 // for reading access.
 struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* status)
 {
   char msg[MAXMSG];  // buffer for error messages
-  struct Eventlist_File *eventlistfile = NULL;
+  struct Eventlist_File *ef = NULL;
   
   do {  // ERROR handling loop
     
     // Memory allocation:
-    eventlistfile = (struct Eventlist_File*)malloc(sizeof(struct Eventlist_File));
-    if (NULL==eventlistfile) {
+    ef = (struct Eventlist_File*)malloc(sizeof(struct Eventlist_File));
+    if (NULL==ef) {
       *status = EXIT_FAILURE;
       sprintf(msg, "Error: memory allocation in event list open routine failed!\n");
       HD_ERROR_THROW(msg, *status);
@@ -415,14 +484,14 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     }
 
     // Open the FITS file table for reading:
-    if (fits_open_table(&eventlistfile->fptr, filename, 
+    if (fits_open_table(&ef->fptr, filename, 
 			access_mode, status)) break;
 
     // Get the HDU type
     int hdutype;
-    if (fits_get_hdu_type(eventlistfile->fptr, &hdutype, status)) break;
+    if (fits_get_hdu_type(ef->fptr, &hdutype, status)) break;
 
-    // image HDU results in an error message
+    // Image HDU results in an error message.
     if (hdutype==IMAGE_HDU) {
       *status=EXIT_FAILURE;
       sprintf(msg, "Error: no table extension available in event list "
@@ -432,14 +501,44 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     }
 
     // Determine the number of rows in the event list.
-    if (fits_get_num_rows(eventlistfile->fptr, &eventlistfile->nrows, status)) 
+    if (fits_get_num_rows(ef->fptr, &ef->nrows, status)) 
       break;
 
     // Set internal row counter to first row (starting at 0).
-    eventlistfile->row = 0;
+    ef->row = 0;
+
+
+    // Determine the individual column numbers:
+    // REQUIRED columns:
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "TIME", &ef->ctime, status)) break;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "PHA", &ef->cpha, status)) break;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "FRAME", &ef->cframe, status)) break;
+    if((fits_get_colnum(ef->fptr, CASEINSEN, "RAWX", &ef->crawx, status)) && 
+       (fits_get_colnum(ef->fptr, CASEINSEN, "COLUMN", &ef->crawx, status))) break;
+    if((fits_get_colnum(ef->fptr, CASEINSEN, "RAWY", &ef->crawy, status)) && 
+       (fits_get_colnum(ef->fptr, CASEINSEN, "ROW", &ef->crawy, status))) break;
+
+    // OPTIONAL columns:
+    int opt_status=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "RA", &ef->cra, &opt_status)) ef->cra=0;
+    opt_status=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "DEC", &ef->cdec, &opt_status)) ef->cdec=0;
+    opt_status=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "X", &ef->cskyx, &opt_status)) ef->cskyx=0;
+    opt_status=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "Y", &ef->cskyy, &opt_status)) ef->cskyy=0;
+
+    opt_status=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "PATNUM", &ef->cpatnum, &opt_status)) 
+      ef->cpatnum=0;
+    opt_status=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "PATID", &ef->cpatid, &opt_status)) ef->cpatid=0;
+    opt_status=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "PILEUP", &ef->cpileup, &opt_status)) 
+      ef->cpileup=0;
 
   } while(0);  // END of error handling loop
 
-  return(eventlistfile);
+  return(ef);
 }
 

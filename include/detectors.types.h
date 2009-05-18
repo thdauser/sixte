@@ -10,44 +10,35 @@
 
 #include "astrosources.types.h"
 #include "eventlist.types.h"
+#include "detectors.enum.h"
 
 
 
-// Define the different detector Types.
-typedef enum {
-  FRAMESTORE=1, 
-  DEPFET    =2, 
-  TES       =3,
-  HTRS      =4
-} DetectorTypes;
-
-
-// Data type for the detector pixels.
+/** Represents a detector pixel. */
 struct Pixel {  // union
-  // charge stored in the pixel
+  /** Charge stored in the pixel. */
   float charge;    
 
-  // list of photon arrival times in the pixel (needed for TES)
+  /** List of photon arrival times in the pixel (needed for TES). */
   double arrival; 
 };
 
 
 
-
-// Detector data structure.
+/** Detector data structure. */
 typedef struct {
-  DetectorTypes type;      // Detector Type (framestore, depfet, ...) 
+  DetectorTypes type;      /**< Detector Type (framestore, depfet, ...). */
 
   // Detector array (contains the charge created by the x-ray 
   // photons or additional data)
   struct Pixel ** pixel;
 
-  int width;               // width (and height) of the detector 
-                           // (number of [integer pixels])
-  int offset;              // offset of the detector array [integer pixels], 
-                           // the physical origin of the detector (at the center) 
-                           // has the array-index 'offset'
-  double pixelwidth;       // width of a single pixel in the detector array [m]
+  int width;               /**< Width (and height) of the detector 
+			    *(number of [integer pixels]). */
+  int offset;              /**< Offset of the detector array [integer pixels], 
+			    * the physical origin of the detector (at the center)
+			    * has the array-index 'offset'. */
+  double pixelwidth;       /**< Width of a single pixel in the detector array [m]. */
 
   double integration_time; // Integration time of the entire pnCCD (!) 
                            // detector array

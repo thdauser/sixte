@@ -182,7 +182,6 @@ int binary_stream_main()
       for (count=0; count<10000; count++) {
 	eventlist[count].time=0.;
 	eventlist[count].pha=0;
-	eventlist[count].grade=0;
 	eventlist[count].xi=0;
 	eventlist[count].yi=0;
 	eventlist[count].frame=0;
@@ -264,7 +263,6 @@ int binary_stream_main()
       event.pha = 0;
       event.xi = 0;
       event.yi = 0;
-      event.grade = 0;
       event.patid = 0;
       event.patnum = 0;
       event.frame = 0;

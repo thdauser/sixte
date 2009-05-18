@@ -275,15 +275,14 @@ int event_projection_main() {
       event.sky_yi = (int)((event.dec-REFYCRVL)/REFYCDLT+REFYCRPX);
 
       // Store the data in the Event List FITS file.
-      fits_write_col(eventlistfile->fptr, TDOUBLE, 10, eventlistfile->row+1, 
-		     1, 1, &event.ra, &status);
-      fits_write_col(eventlistfile->fptr, TDOUBLE, 11, eventlistfile->row+1, 
-		     1, 1, &event.dec, &status);
-      fits_write_col(eventlistfile->fptr, TLONG, 12, eventlistfile->row+1, 
-		     1, 1, &event.sky_xi, &status);
-      fits_write_col(eventlistfile->fptr, TLONG, 13, eventlistfile->row+1, 
-		     1, 1, &event.sky_yi, &status);
-
+      fits_write_col(eventlistfile->fptr, TDOUBLE, eventlistfile->cra, 
+		     eventlistfile->row+1, 1, 1, &event.ra, &status);
+      fits_write_col(eventlistfile->fptr, TDOUBLE, eventlistfile->cdec, 
+		     eventlistfile->row+1, 1, 1, &event.dec, &status);
+      fits_write_col(eventlistfile->fptr, TLONG, eventlistfile->cskyx, 
+		     eventlistfile->row+1, 1, 1, &event.sky_xi, &status);
+      fits_write_col(eventlistfile->fptr, TLONG, eventlistfile->cskyy, 
+		     eventlistfile->row+1, 1, 1, &event.sky_yi, &status);
 
     } // END of scanning-LOOP over the event list.
   } while(0);  // END of the error handling loop.

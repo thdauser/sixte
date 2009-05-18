@@ -25,9 +25,6 @@
 #define HTRS_N_PIXELS (37)   // Total number of pixels in the HTRS array
 
 
-int n_events, n_dead, n_interframe, n_outside;
-
-
 #include "detectors.types.h"
 #include "eventlist.h"
 #include "detectors.def.h"

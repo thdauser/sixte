@@ -179,10 +179,7 @@ int photon_detection_main() {
     remove(eventlist_file.filename);
     // Create a new FITS file and a table for the event list:
     if (create_eventlist_file(&eventlist_file, detector, parameters.t0, 
-			      parameters.t0+parameters.timespan, 
-		           // HEADER keywords for event list FITS file:
-			   // TELESCOP    CCD       INSTRUME
-			      "eROSITA",  "pnCCD1", "eROSITA",  &status)) break;
+			      parameters.t0+parameters.timespan, &status)) break;
 
     // Add important HEADER keywords to the event list.
     if (fits_write_key(eventlist_file.fptr, TSTRING, "ATTITUDE", 
@@ -294,7 +291,6 @@ int photon_detection_main() {
 		  event.time = time;                // TODO: drift time
 		  event.xi = detector->htrs_icoordinates2pixel[x[count]][y[count]]+1;
 		  event.yi = 0;  // human readable HTRS pixels numbers start at 1 <-|
-		  event.grade = 0;
 		  event.frame = 0;
 		  event.ra = NAN;
 		  event.dec = NAN;
@@ -323,7 +319,6 @@ int photon_detection_main() {
 	      event.time = time;
 	      event.xi = x[0];
 	      event.yi = y[0];
-	      event.grade = 0;
 	      event.frame = detector->frame;
 	      event.ra = NAN;
 	      event.dec = NAN;
