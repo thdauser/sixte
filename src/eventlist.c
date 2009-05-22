@@ -92,8 +92,8 @@ struct Eventlist_File* create_Eventlist_File(
       HD_ERROR_THROW(msg, *status);
       break;
     }
-    struct Eventlist_File test = { .fptr=NULL };
-    *ef = test;
+    struct Eventlist_File empty_list = { .fptr=NULL };
+    *ef = empty_list;
 
     // Create a new FITS file:
     if (fits_create_file(&ef->fptr, filename, status)) break;
@@ -253,8 +253,8 @@ struct Eventlist_File* create_Eventlist_File(
     // Distinguish between the different missions:
     switch (ef->detectortype) {
     case FRAMESTORE:    // eROSITA
-      strcpy(mission,   "eROSITA");
-      strcpy(telescope, "eROSITA");
+      strcpy(mission,   "Simulation"); // SRG
+      strcpy(telescope, "FM4");
       strcpy(detname,   "pnCCD1" );
       strcpy(instrument,"eROSITA"); 
       strcpy(data_mode, "FRAMESTORE");
