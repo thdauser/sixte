@@ -31,20 +31,26 @@ int main()
 
     // PSF Setup:
     psf.N_elements = 1;
-    psf.width = 700;
-    psf.pixelwidth = (detector->width*detector->pixelwidth)/psf.width;
 
     // Get memory for the PSF.
     psf.item = (PSF_Item *) malloc(psf.N_elements * sizeof(PSF_Item));
-    if (psf.item != NULL) {   // memory was allocated successfully
+    if (psf.item != NULL) {   // Memory was allocated successfully!
       for (count=0; count<psf.N_elements; count++) {
+	psf.item[count].naxis1 = 700;
+	psf.item[count].naxis2 = 700;
+	psf.item[count].cdelt1 = 
+	  (detector->width*detector->pixelwidth)/psf.item[count].naxis1;
+	psf.item[count].cdelt2 = 
+	  (detector->width*detector->pixelwidth)/psf.item[count].naxis2;
+	
 	psf.item[count].energy = 1.0;  // Default values.
 	psf.item[count].angle = 0.0;
-	psf.item[count].data = (double **) malloc(psf.width * sizeof(double *));
+	psf.item[count].data = (double **) 
+	  malloc(psf.item[count].naxis1 * sizeof(double *));
 	if (psf.item[count].data != NULL) {
-	  for (count2=0; count2<psf.width; count2++) {
+	  for (count2=0; count2<psf.item[count].naxis1; count2++) {
 	    psf.item[count].data[count2] = (double *) 
-	      malloc(psf.width * sizeof(double));
+	      malloc(psf.item[count].naxis2 * sizeof(double));
 	    if (psf.item[count].data[count2] == NULL) {
 	      status = EXIT_FAILURE;
 	    }
@@ -122,10 +128,10 @@ int main()
     double fraction[2];
 
     // Determine normalization
-    for(count=0; count<psf.width; count++) {
-      for(count2=0; count2<psf.width; count2++) {
-	position.x = (count-psf.width/2+0.5)*psf.pixelwidth;
-	position.y = (count2-psf.width/2+0.5)*psf.pixelwidth;
+    for(count=0; count<psf.item[0].naxis1; count++) {
+      for(count2=0; count2<psf.item[0].naxis2; count2++) {
+	position.x = (count-psf.item[0].naxis1/2+0.5)*psf.item[0].cdelt1;
+	position.y = (count2-psf.item[0].naxis2/2+0.5)*psf.item[0].cdelt2;
 	htrs_get_pixel(detector, position, x, y, fraction);
 	
 	if ((x[0]==3)&&(y[0]==3)) {
@@ -134,10 +140,10 @@ int main()
       }
     }
 
-    for(count=0; count<psf.width; count++) {
-      for(count2=0; count2<psf.width; count2++) {
-	position.x = (count-psf.width/2+0.5)*psf.pixelwidth;
-	position.y = (count2-psf.width/2+0.5)*psf.pixelwidth;
+    for(count=0; count<psf.item[0].naxis1; count++) {
+      for(count2=0; count2<psf.item[0].naxis2; count2++) {
+	position.x = (count-psf.item[0].naxis1/2+0.5)*psf.item[0].cdelt1;
+	position.y = (count2-psf.item[0].naxis2/2+0.5)*psf.item[0].cdelt2;
 	htrs_get_pixel(detector, position, x, y, fraction);
 	
 	if (x[0] != INVALID_PIXEL) {
@@ -153,7 +159,6 @@ int main()
     status = save_psf_image(&psf, "htrs.psf.hexagons.fits", &status);
 
   } while (0); // END of error handling loop
-
 
   return(status);
 }

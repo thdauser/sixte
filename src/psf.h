@@ -32,6 +32,11 @@ typedef struct {
   double angle;    // off-axis angle of this particular PSF [rad]
   double energy;   // energy of this particular PSF [keV]
 
+  int naxis1, naxis2;    /**< Width of the image [pixel]. */
+  double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
+  double crpix1, crpix2; /**< [pixel] */
+  double crval1, crval2; /**< [rad] */
+
   // For each energy the PSFs are rescaled in such a way that the on-axis PSF 
   // is normalized to 1.  The scaling factor is stored here and has to be used 
   // for rescaling the source spectra appropriately.
@@ -45,9 +50,9 @@ typedef struct {
   // Number of PSF arrays in this store (#(offaxis-angles)*#(energies)):
   int N_elements;
   // Width of the PSF in pixels:
-  int width;     
+  //  int width;     
   // Width of a single PSF pixel in [m]:
-  double pixelwidth; 
+  //  double pixelwidth; 
 
   // PSF data for the individual off-axis angles and energies
   PSF_Item *item;

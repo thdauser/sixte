@@ -47,6 +47,8 @@ int psfgen_main()
   char psf_filename[FILENAME_LENGTH];   // output file (FITS file)
   double focal_length; // in [m]
   double hew;          // HEW of on-axis Gaussian [deg]
+  int psf_width;
+  double psf_pixelwidth;
 
   char msg[MAXMSG];         // buffer for error output messages
   int status=EXIT_SUCCESS;  // error report status
@@ -58,12 +60,12 @@ int psfgen_main()
 
   do { // Beginning of outer ERROR handling loop
 
-    if ((status = PILGetInt("psf_width", &psf.width))) {
+    if ((status = PILGetInt("psf_width", &psf_width))) {
       sprintf(msg, "Error reading the width of the PSF!\n");
       HD_ERROR_THROW(msg,status);
       break;
     }
-    if ((status = PILGetReal("psf_pixelwidth", &psf.pixelwidth))) {
+    if ((status = PILGetReal("psf_pixelwidth", &psf_pixelwidth))) {
       sprintf(msg, "Error reading the width of the PSF pixels!\n");
       HD_ERROR_THROW(msg,status);
       break;
@@ -117,11 +119,17 @@ int psfgen_main()
     psf.item = (PSF_Item *) malloc(psf.N_elements * sizeof(PSF_Item));
     if (psf.item) {   // memory was allocated successfully
       for (count1=0; count1<psf.N_elements; count1++) {
-	psf.item[count1].data = (double **) malloc(psf.width * sizeof(double **));
+	psf.item[count1].naxis1 = psf_width;
+	psf.item[count1].naxis2 = psf_width;
+	psf.item[count1].cdelt1 = psf_pixelwidth;
+	psf.item[count1].cdelt2 = psf_pixelwidth;
+
+	psf.item[count1].data = (double **) 
+	  malloc(psf.item[count1].naxis1 * sizeof(double **));
 	if (psf.item[count1].data) {
-	  for (count2=0; count2<psf.width; count2++) {
+	  for (count2=0; count2<psf.item[count1].naxis1; count2++) {
 	    psf.item[count1].data[count2] = 
-	      (double *) malloc(psf.width * sizeof(double));
+	      (double *) malloc(psf.item[count1].naxis2 * sizeof(double));
 	    if (!psf.item[count1].data[count2]) {
 	      status = EXIT_FAILURE;
 	      break;
@@ -149,13 +157,13 @@ int psfgen_main()
     // Fill the PSF array with a 2D Gaussian distribution.
     double sigma = hew*M_PI/180.     // sigma in detector pixels
       /(2.*sqrt(2.*log(2.))) 
-      /atan(psf.pixelwidth/focal_length);;  
+      /atan(psf.item[0].cdelt1/focal_length);;  
     headas_chat(5, "PSF Sigma: %.2lf pixel\n", sigma);
     double x, y;
-    for (count1=0; count1<psf.width; count1++) {
-      for (count2=0; count2<psf.width; count2++) {
-	x = (double)(count1-psf.width/2);
-	y = (double)(count2-psf.width/2);
+    for (count1=0; count1<psf.item[0].naxis1; count1++) {
+      for (count2=0; count2<psf.item[0].naxis2; count2++) {
+	x = (double)(count1-psf.item[0].naxis1/2);
+	y = (double)(count2-psf.item[0].naxis2/2);
 	psf.item[0].data[count1][count2] = 
 	  (gsl_sf_erf_Q(x/sigma) - gsl_sf_erf_Q((x+1.)/sigma))* 
 	  (gsl_sf_erf_Q(y/sigma) - gsl_sf_erf_Q((y+1.)/sigma));
