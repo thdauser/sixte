@@ -7,10 +7,13 @@
 #include "photon_imaging.h"
 
 
+// TODO REMOVE
+#include "vignetting.c"
+
 
 
 ////////////////////////////////////
-// Main procedure.
+/** Main procedure. */
 int photon_imaging_main() {
   struct Parameters parameters;
 
