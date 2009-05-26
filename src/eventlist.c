@@ -432,54 +432,10 @@ int get_eventlist_row(struct Eventlist_File ef,
 
 
 
-///////////////////////////////////////////////////////////////////
-// OBSOLETE !!
-/*
-int open_eventlist_file(
-			struct Eventlist_File* eventlist_file,
-			int* status
-			)
-{
-  char msg[MAXMSG];  // buffer for error messages
-
-  printf("\nWarning: Using obsolete event list opening routine!\n");
-
-  do {  // ERROR handling loop
-
-    if (fits_open_table(&eventlist_file->fptr, eventlist_file->filename, 
-			READONLY, status)) break;
-
-    // get the HDU type
-    int hdutype;
-    if (fits_get_hdu_type(eventlist_file->fptr, &hdutype, status)) break;
-
-    // image HDU results in an error message
-    if (hdutype==IMAGE_HDU) {
-      *status=EXIT_FAILURE;
-      sprintf(msg, "Error: no table extension available in event list "
-	      "FITS file '%s'!\n", eventlist_file->filename);
-      HD_ERROR_THROW(msg, *status);
-      break;
-    }
-
-    // determine number of rows in the event list
-    if (fits_get_num_rows(eventlist_file->fptr, &eventlist_file->nrows, status)) 
-      break;
-
-    // Set internal row counter to first row (starting at 0).
-    eventlist_file->row = 0;
-
-  } while(0);  // END of error handling loop
-
-  return(*status);
-}
-*/
-
-
 
 ///////////////////////////////////////////////////////////////////
-// Opens an existing FITS file with a binary table event list
-// for reading access.
+/** Opens an existing FITS file with a binary table event list
+ * for reading access. */
 struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* status)
 {
   char msg[MAXMSG];  // buffer for error messages
@@ -545,7 +501,8 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PATNUM", &ef->cpatnum, &opt_status)) 
       ef->cpatnum=0;
     opt_status=0;
-    if(fits_get_colnum(ef->fptr, CASEINSEN, "PATID", &ef->cpatid, &opt_status)) ef->cpatid=0;
+    if(fits_get_colnum(ef->fptr, CASEINSEN, "PATID", &ef->cpatid, &opt_status)) 
+      ef->cpatid=0;
     opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PILEUP", &ef->cpileup, &opt_status)) 
       ef->cpileup=0;

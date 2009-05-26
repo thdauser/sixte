@@ -24,8 +24,9 @@ int photon_imaging_main() {
   fitsfile *impactlist_fptr=NULL;           
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-  PSF* psf;                   // PSF (Point Spread Function) data (for different 
-                              // off-axis angles and energies)
+  PSF* psf=NULL; /**< PSF (Point Spread Function) data (for different off-axis angles 
+		  * and energies). */
+  Vignetting* vignetting=NULL; /**< Mirror vignetting data. */
 
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
@@ -69,6 +70,10 @@ int photon_imaging_main() {
 
     // Get the PSF:
     psf = get_psf(parameters.psf_filename, &status);
+    if (status != EXIT_SUCCESS) break;
+
+    // Get the Vignetting:
+    vignetting = get_Vignetting(parameters.vignetting_filename, &status);
     if (status != EXIT_SUCCESS) break;
 
     // Create a new FITS file for the output of the impact list:
@@ -253,7 +258,7 @@ int photon_imaging_getpar(
   int status=EXIT_SUCCESS;      // error status
 
 
-  // get the filename of the input photon list (FITS file)
+  // Get the filename of the input photon list (FITS file)
   if ((status = PILGetFname("photonlist_filename", parameters->photonlist_filename))) {
     sprintf(msg, "Error reading the filename of the photon list!\n");
     HD_ERROR_THROW(msg,status);
@@ -267,11 +272,18 @@ int photon_imaging_getpar(
   }
   */
   
-  // get the filename of the PSF data file (FITS file)
+  // Get the filename of the PSF data file (FITS file)
   else if ((status = PILGetFname("psf_filename", parameters->psf_filename))) {
     sprintf(msg, "Error reading the filename of the PSF file!\n");
     HD_ERROR_THROW(msg,status);
   }
+
+  // Get the filename of the vignetting data file (FITS file)
+  else if ((status = PILGetFname("vignetting_filename", parameters->vignetting_filename))) {
+    sprintf(msg, "Error reading the filename of the vignetting file!\n");
+    HD_ERROR_THROW(msg,status);
+  }
+
 
   // get the filename of the PSF data file (FITS file)
   else if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
