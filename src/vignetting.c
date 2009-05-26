@@ -187,3 +187,28 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 }
 
 
+
+/** Destructor for Vignetting data structure. */
+free_Vignetting(Vignetting* vi) {
+  if (NULL!=vi->energ_lo) free(vi->energ_lo);
+  if (NULL!=vi->energ_hi) free(vi->energ_hi);
+  if (NULL!=vi->theta)    free(vi->theta);
+  if (NULL!=vi->phi)      free(vi->phi);
+
+  if (NULL!=vi->vignet) {
+    int count1, count2;
+    for (count1=0; count1<vi->nenergies; count1++) {
+      if (NULL!=vi->vignet[count1]) {
+	for (count2=0; count2<vi->ntheta; count2++) {
+	  if (NULL!=vi->vignet[count1][count2]) {
+	    free(vi->vignet[count1][count2]);
+	  }
+	}
+	free(vi->vignet[count1]);
+      }
+    }
+    free(vi->vignet);
+  }
+}
+
+

@@ -235,9 +235,8 @@ int photon_imaging_main() {
   if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
 
   free_AttitudeCatalog(attitudecatalog);
-
-  // Release memory of PSF:
   free_psf(psf);
+  free_Vignetting(vignetting);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
 
