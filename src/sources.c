@@ -136,7 +136,7 @@ int get_preselected_catalog(
 			    // column numbers for r.a., declination, and count rate
 			    int columns[5][3],                 
 			    // pointing direction of the telescope axis
-			    struct vector telescope_direction, 
+			    Vector telescope_direction, 
 			    // maximum alignment of source and telescope direction
 			    // for beeing chosen to the selected catalog
 			    const double pre_max_align,        
@@ -165,7 +165,7 @@ int get_preselected_catalog(
     int source_counter;   // counter to access the individual sources in the catalog
     double rasc, dec;     // source position
     float countrate;      // source countrate
-    struct vector source_direction; // source direction (unit vector)
+    Vector source_direction; // source direction (unit vector)
     *nsources=0;          // at the moment the selected catalog is empty
 
     for(file_counter=0; (file_counter<n_sourcefiles)&&(status==EXIT_SUCCESS); 

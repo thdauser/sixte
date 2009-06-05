@@ -121,7 +121,7 @@ void free_PointSourceFiles(PointSourceFiles* psf, int* status)
 int get_PointSourceCatalog(
 			   PointSourceFiles* psf,
 			   PointSourceCatalog** psc,
-			   struct vector normal_vector,
+			   Vector normal_vector,
 			   const double max_align,
 			   struct Spectrum_Store spectrum_store
 			   )
@@ -206,7 +206,7 @@ int get_PointSourceCatalog(
 	  ra  *= M_PI/180.; 
 	  dec *= M_PI/180.;
 	  // Get a unit vector pointing in the direction of the source:
-	  struct vector source_direction = unit_vector(ra, dec);
+	  Vector source_direction = unit_vector(ra, dec);
 	  
 	  // Check whether the source should be added to the preselected catalog:
 	  if(fabs(scalar_product(&source_direction, &normal_vector)) < max_align) {

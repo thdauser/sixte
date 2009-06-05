@@ -171,7 +171,7 @@ void create_orbtbl_parameter(char *ftype[N_ORBIT_FIELDS], char *fform[N_ORBIT_FI
 
 
 // writes a row of orbit data in to the orbit FITS file
-void add_orbtbl_row(fitsfile *fptr, long row, double time, struct vector r, struct vector v, int *status) {
+void add_orbtbl_row(fitsfile *fptr, long row, double time, Vector r, Vector v, int *status) {
   fits_insert_rows(fptr, row++, 1, status);
   fits_write_col(fptr, TDOUBLE, 1, row, 1, 1, &time, status);
   fits_write_col(fptr, TDOUBLE, 2, row, 1, 1, &r.x, status);
@@ -186,7 +186,7 @@ void add_orbtbl_row(fitsfile *fptr, long row, double time, struct vector r, stru
 
 
 // reads a row of data from the orbit FITS file
-int get_orbtbl_row(fitsfile *fptr, long row, double *time, struct vector *r, struct vector *v, int *status)
+int get_orbtbl_row(fitsfile *fptr, long row, double *time, Vector *r, Vector *v, int *status)
 {
   int anynul = 0;
   double dbuffer[1];

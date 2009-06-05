@@ -41,7 +41,7 @@ void free_PointSourceFiles(PointSourceFiles* psf, int* status);
 // Functions scans the point-source catalog and returns the sources 
 // close to the FOV.
 int get_PointSourceCatalog(PointSourceFiles*, PointSourceCatalog**,
-			   struct vector normal_vector, const double max_align,
+			   Vector normal_vector, const double max_align,
 			   struct Spectrum_Store);
 				   
 

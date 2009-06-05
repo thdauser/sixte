@@ -3,9 +3,9 @@
 
 /** Creates a unit vector for specified right ascension and declination.
  * Angles have to be given in [rad]. */
-struct vector unit_vector(const double rasc, const double dec)
+Vector unit_vector(const double rasc, const double dec)
 {
-  struct vector x;
+  Vector x;
   double cos_dec = cos(dec);
 
   x.x = cos_dec * cos(rasc);
@@ -18,9 +18,9 @@ struct vector unit_vector(const double rasc, const double dec)
 
 
 /** Returns a normalized vector (length 1.0, same direction).*/
-struct vector normalize_vector(struct vector x) {
+Vector normalize_vector(Vector x) {
   double l;         // length of the vector x
-  struct vector y;  // normalized vector
+  Vector y;  // normalized vector
 
   l = sqrt(pow(x.x,2.0)+pow(x.y,2.0)+pow(x.z,2.0));
 
@@ -34,7 +34,7 @@ struct vector normalize_vector(struct vector x) {
 
 
 /** Calculates the scalar product of two vector structures.*/
-inline double scalar_product(struct vector* const x, struct vector* const y)
+inline double scalar_product(Vector* const x, Vector* const y)
 {
   return(x->x * y->x + x->y * y->y + x->z * y->z);
 }
@@ -42,8 +42,8 @@ inline double scalar_product(struct vector* const x, struct vector* const y)
 
 
 /** Calculates the vector product of two vectors. */
-struct vector vector_product(struct vector x, struct vector y) {
-  struct vector z;  // return vector
+Vector vector_product(Vector x, Vector y) {
+  Vector z;  // return vector
 
   z.x = x.y*y.z-x.z*y.y;
   z.y = x.z*y.x-x.x*y.z;
@@ -54,8 +54,8 @@ struct vector vector_product(struct vector x, struct vector y) {
 
 
 ////////////////////////////////////////////////////////////////
-struct vector vector_difference(struct vector x2, struct vector x1) {
-  struct vector z;  // return vector
+Vector vector_difference(Vector x2, Vector x1) {
+  Vector z;  // return vector
 
   z.x = x2.x-x1.x;
   z.y = x2.y-x1.y;
@@ -67,10 +67,10 @@ struct vector vector_difference(struct vector x2, struct vector x1) {
  
 
 /////////////////////////////////////////////////////////////////
-struct vector interpolate_vec(struct vector v1, double t1, 
-			      struct vector v2, double t2, 
+Vector interpolate_vec(Vector v1, double t1, 
+			      Vector v2, double t2, 
 			      double time) {
-  struct vector pos;
+  Vector pos;
   
   pos.x = v1.x + (time-t1)/(t2-t1)*(v2.x-v1.x);
   pos.y = v1.y + (time-t1)/(t2-t1)*(v2.y-v1.y);
@@ -82,7 +82,7 @@ struct vector interpolate_vec(struct vector v1, double t1,
 
 
 /////////////////////////////////////////////////////////////////
-void calculate_ra_dec(struct vector v, double* ra, double* dec)
+void calculate_ra_dec(Vector v, double* ra, double* dec)
 {
   // Determine the declination:
   *dec = asin(v.z/sqrt(scalar_product(&v, &v)));

@@ -26,11 +26,11 @@ typedef struct {
   /** Point of time for which this attitude is valid. */
   double time;
   /** Telescope pointing direction. */
-  struct vector nz;
+  Vector nz;
   /** Defines the detector x-direction.
    * The x-axis doesn't necessarily have to point in the direction of the telescope
    * motion, but can be distorted by the roll-angle. */
-  struct vector nx;
+  Vector nx;
 } AttitudeEntry;
 
 typedef struct {

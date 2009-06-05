@@ -47,14 +47,14 @@ long photon_counter;
 
 // Structure containing all information about a single photon in the sky
 struct Photon {
-  double time;             // real time, when the photon is falling on the detector
-  float energy;            // photon energy in [keV]
+  double time;  /**< Real time, when the photon is falling on the detector (in [s]). */
+  float energy; /**< Photon energy in [keV]. */
 
-  double ra, dec;          // right ascension and declination of photon position [rad]
+  double ra, dec; /**< Right ascension and declination of photon position [rad]. */
 
   // REMOVE
-  struct vector direction; // direction from which the photon originates 
-                           // (source direction)
+  Vector direction; // direction from which the photon originates 
+                    // (source direction)
 };
 
 

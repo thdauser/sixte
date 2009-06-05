@@ -398,7 +398,7 @@ int photon_generation_main()
     long photon_row=0;       // current row in photon list FITS file;
 
     // normalized vector perpendicular to the orbital plane
-    struct vector preselection_vector;
+    Vector preselection_vector;
 
     struct Photon_Entry *pl_entry=NULL; // "counter" variable for the photon list
 
@@ -472,7 +472,7 @@ int photon_generation_main()
 	  	  
 	  // Compare the source direction to the unit vector specifiing the 
 	  // direction of the telescope:
-	  struct vector source_vector = 
+	  Vector source_vector = 
 	    unit_vector(pointsourcecatalog->sources[source_counter].ra, 
 			pointsourcecatalog->sources[source_counter].dec);
 	  if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
@@ -497,13 +497,13 @@ int photon_generation_main()
 	  // or CLOSE TO it. (!!)
 
 	  // Vector in the direction of the reference pixel.
-	  struct vector refpixel_vector = 
+	  Vector refpixel_vector = 
 	    unit_vector(cic->images[image_counter]->crval1, 
 			cic->images[image_counter]->crval2);
 	  // Vector in the direction of the 1st image coordinate (right ascension).
-	  struct vector k = {0., 0., 0.};
+	  Vector k = {0., 0., 0.};
 	  // Vector in the direction of the 2nd image coordinate (declination).
-	  struct vector l = {0., 0., 0.};
+	  Vector l = {0., 0., 0.};
 
 	  // Determine a local coordinate system for the cluster image.
 	  if (fabs(refpixel_vector.z-1.) < 1.e-6) {
@@ -539,16 +539,22 @@ int photon_generation_main()
 	      // Check whether the pixel lies CLOSE TO the FOV:
 
 	      // Vector in the direction of the current pixel.
-	      struct vector pixel_vector; 
+	      Vector pixel_vector; 
 	      pixel_vector.x = refpixel_vector.x + 
-		(xcount - cic->images[image_counter]->crpix1+0.5)*k.x +
-		(ycount - cic->images[image_counter]->crpix2+0.5)*l.x;
+		(xcount - cic->images[image_counter]->crpix1 + 0.5)
+		*cic->images[image_counter]->cdelt1 * k.x +
+		(ycount - cic->images[image_counter]->crpix2 + 0.5)
+		*cic->images[image_counter]->cdelt2 * l.x;
 	      pixel_vector.y = refpixel_vector.y + 
-		(xcount - cic->images[image_counter]->crpix1+0.5)*k.y +
-		(ycount - cic->images[image_counter]->crpix2+0.5)*l.y;
+		(xcount - cic->images[image_counter]->crpix1 + 0.5)
+		*cic->images[image_counter]->cdelt1 * k.y +
+		(ycount - cic->images[image_counter]->crpix2 + 0.5)
+		*cic->images[image_counter]->cdelt2 * l.y;
 	      pixel_vector.z = refpixel_vector.z + 
-		(xcount - cic->images[image_counter]->crpix1+0.5)*k.z +
-		(ycount - cic->images[image_counter]->crpix2+0.5)*l.z;
+		(xcount - cic->images[image_counter]->crpix1 + 0.5)
+		*cic->images[image_counter]->cdelt1 * k.z +
+		(ycount - cic->images[image_counter]->crpix2 + 0.5)
+		*cic->images[image_counter]->cdelt2 * l.z;
 	      pixel_vector = normalize_vector(pixel_vector);
 
 	      /*
@@ -558,7 +564,7 @@ int photon_generation_main()
 	      dec=cic->images[image_counter]->crval2+
 		(ycount-cic->images[image_counter]->crpix2+0.5)
 		*cic->images[image_counter]->cdelt2; // [rad]
-	      struct vector v = unit_vector(ra, dec);
+	      Vector v = unit_vector(ra, dec);
 	      
 	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
 	      */

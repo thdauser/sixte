@@ -120,11 +120,11 @@ AttitudeCatalog* get_AttitudeCatalog(
     // nz direction is set).
     // Check the change of the telescope pointing direction between two subsequent
     // AttitudeEntry elements.
-    struct vector dnz = 
+    Vector dnz = 
       vector_difference(ac->entry[1].nz, ac->entry[0].nz);
     if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { 
       // Change of the telescope axis is too small to be significant.
-      struct vector ny = {0., 1., 0.};
+      Vector ny = {0., 1., 0.};
       ac->entry[0].nx=vector_product(ac->entry[0].nz, ny); // TODO
     } else {
       // nx = (nz_0 x nz_1) x nz_0
@@ -136,11 +136,11 @@ AttitudeCatalog* get_AttitudeCatalog(
 
     for (entry=1; entry<ac->nentries; entry++) {
 
-      struct vector dnz = 
+      Vector dnz = 
 	vector_difference(ac->entry[entry].nz, ac->entry[entry-1].nz);
       if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { 
 	// Change of the telescope axis is too small to be significant.
-	struct vector ny = {0., 1., 0.};
+	Vector ny = {0., 1., 0.};
 	ac->entry[entry].nx=vector_product(ac->entry[entry].nz, ny); // TODO
       } else {
 	ac->entry[entry].nx=

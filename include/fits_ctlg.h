@@ -16,7 +16,7 @@
 
 // define a structure which contains the necessary data for each source
 struct source {
-  struct vector r;  // position of the source
+  Vector r;  // position of the source
   double flux;      // energy flux
 };
 
@@ -42,14 +42,14 @@ int get_srctbl_row(fitsfile *fptr, long row, const int columns[],
 // define a structure to store the orbit data (time, position, velocity)
 struct orbit_entry {
   double time;      // time
-  struct vector r;  // position
-  struct vector v;  // velocity
+  Vector r;  // position
+  Vector v;  // velocity
 };
 
 
 // writes a row of orbit data into the orbit FITS file
 void add_orbtbl_row(fitsfile *fptr, long row, double time, 
-		    struct vector r, struct vector v, int *status);
+		    Vector r, Vector v, int *status);
 
 // creates the necessary parameters to generate the table in the FITS file
 void create_orbtbl_parameter(char *ftype[N_ORBIT_FIELDS], 
@@ -58,7 +58,7 @@ void create_orbtbl_parameter(char *ftype[N_ORBIT_FIELDS],
 
 // reads a row of data from the orbit FITS file
 int get_orbtbl_row(fitsfile *fptr, long row, double *time, 
-		   struct vector *r, struct vector *v, int *status);
+		   Vector *r, Vector *v, int *status);
 
 
 

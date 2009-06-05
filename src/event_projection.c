@@ -252,7 +252,7 @@ int event_projection_main() {
 
       double r = tan(offaxis_angle);
 
-      struct vector source_position;
+      Vector source_position;
       source_position.x = telescope.nz.x 
 	-r*(detector_position.x/d*telescope.nx.x+detector_position.y/d*telescope.ny.x);
       source_position.y = telescope.nz.y 
