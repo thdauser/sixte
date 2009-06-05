@@ -23,6 +23,7 @@
 #include "photon.h"
 #include "telescope.h"
 #include "orbatt.h"
+#include "vignetting.h"
 
 
 #define TOOLSUB photon_imaging_main

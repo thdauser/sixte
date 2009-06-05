@@ -24,37 +24,28 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-// This structure is used to store the PSF data for one particular 
-// off-axis angle and one particular energy.
+/** Stores the PSF data for one particular off-axis angle 
+ * and one particular energy. */
 typedef struct {
-  double** data;   // pointer to PSF data array [x][y]
+  double** data;   /**< pointer to PSF data array [x][y]. */
 
-  double angle;    // off-axis angle of this particular PSF [rad]
-  double energy;   // energy of this particular PSF [keV]
+  double angle;    /**< off-axis angle of this particular PSF [rad]. */
+  double energy;   /**< energy of this particular PSF [keV]. */
 
   int naxis1, naxis2;    /**< Width of the image [pixel]. */
   double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
   double crpix1, crpix2; /**< [pixel] */
   double crval1, crval2; /**< [rad] */
-
-  // For each energy the PSFs are rescaled in such a way that the on-axis PSF 
-  // is normalized to 1.  The scaling factor is stored here and has to be used 
-  // for rescaling the source spectra appropriately.
-  double scaling_factor;
 } PSF_Item;
 
 
 
-// Storage for the several PSF data units that belong to one mirror system.
+/** Storage for the several PSFs available for a mirror system. */
 typedef struct {
-  // Number of PSF arrays in this store (#(offaxis-angles)*#(energies)):
+  /** Number of PSF_Items in this store (#(offaxis-angles)*#(energies)). */
   int N_elements;
-  // Width of the PSF in pixels:
-  //  int width;     
-  // Width of a single PSF pixel in [m]:
-  //  double pixelwidth; 
 
-  // PSF data for the individual off-axis angles and energies
+  /** Array of PSF_Items for the different discrete off-axis angles and energies. */
   PSF_Item *item;
 } PSF;
 
@@ -66,7 +57,7 @@ typedef struct {
 #include "telescope.h"
 #include "photon.h"
 #include "point.h"
-
+#include "vignetting.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,16 +70,17 @@ typedef struct {
 PSF* get_psf(const char*, int* status);
 
 
-// Calculates the position on the detector, where a photon at given sky position 
-// with specified energy hits the detector according to the PSF data and a random 
-// number generator (randomization over one PSF pixel).
-// Return value is '1', if the photon hits the detector. If it does not fall onto the
-// detector, the function returns '0'.  The output detector position is stored 
-// in [mu m] in the first 2 parameters of the function.
-int get_psf_pos(struct Point2d*, struct Photon, struct Telescope, PSF*);
+/** Calculates the position on the detector, where a photon at given sky position 
+ * with specified energy hits the detector according to the PSF data. 
+ * The exact position is determined with a random number generator 
+ * (randomization over one PSF pixel).
+ * Return value is '1', if the photon hits the detector. If it does not fall onto the
+ * detector, the function returns '0'.  The output detector position is stored 
+ * in [m] in the first 2 parameters of the function. */
+int get_psf_pos(struct Point2d*, struct Photon, struct Telescope, Vignetting*, PSF*);
 
 
-// Releases the memory for the PSF storage.
+/** Releases the memory of the PSF storage. */
 void free_psf(PSF*);
 
 

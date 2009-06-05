@@ -59,6 +59,7 @@ int get_psf_pos(
 		struct Photon photon,     // incident photon
 		// telescope information (focal length, pointing direction)
 		struct Telescope telescope, 
+		Vignetting* vignetting,
 		PSF* psf
 		)
 {
@@ -82,13 +83,15 @@ int get_psf_pos(
 
   // Get a random number to determine a random hitting position
   double rnd = get_random_number();
-  if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
+  //  if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
+  if (rnd > get_Vignetting_Factor(vignetting, photon.energy, offaxis_angle, azimuth)) {
     // The photon does not hit the detector at all (e.g. it is absorbed).
     return(0);
   }
   // Otherwise the photon hits the detector.
-  // Perform a binary search to determine the position:
+  // Perform a binary search to determine a random position:
   // -> one binary search for each of the 2 coordinates x and y
+  rnd = get_random_number();
   int high = psf_item->naxis1-1;
   int low = 0;
   while (high-low > 1) {
@@ -149,21 +152,23 @@ void free_psf(
 	      PSF *psf  // pointer to the PSF data structure
 	      )
 {
-  int count1, count2;
-
-  if (psf->item) {
-    for (count1=0; count1<psf->N_elements; count1++) {
-      if (psf->item[count1].data) {
-	for (count2=0; count2<psf->item[count1].naxis1; count2++) {
-	  if (psf->item[count1].data[count2]) {
-	    free(psf->item[count1].data[count2]);
+  if (NULL!=psf) {
+    int count1, count2;
+    if (psf->item) {
+      for (count1=0; count1<psf->N_elements; count1++) {
+	if (psf->item[count1].data) {
+	  for (count2=0; count2<psf->item[count1].naxis1; count2++) {
+	    if (psf->item[count1].data[count2]) {
+	      free(psf->item[count1].data[count2]);
+	    }
 	  }
+	  free(psf->item[count1].data);
 	}
-	free(psf->item[count1].data);
       }
+      free(psf->item);
+      psf->item=NULL;
     }
-    free(psf->item);
-    psf->item=NULL;
+    free(psf);
   }
 }
 
@@ -312,25 +317,20 @@ PSF* get_psf(
 	}
       }
 
-      // Store the integrated on-axis PSF for each energy band. (TODO)
-      psf->item[count].scaling_factor = 1.; // sum;
-      
 
       // Renormalize the PSF partition function to the integrated on-axis PSF.
       for (count2=0; count2<psf->item[count].naxis1; count2++) {
 	for (count3=0; count3<psf->item[count].naxis2; count3++) {
 	  psf->item[count].data[count2][count3] = 
-	    psf->item[count].data[count2][count3] / psf->item[count].scaling_factor;
+	    psf->item[count].data[count2][count3];
 	}
       }
 
       // Plot normalization of PSF for current off-axis angle and energy
-      headas_chat(5, "PSF: %lf of incident photons at (%.4lf deg, %.1lf keV), "
-		  "normalized to %.4lf, factor 1/%.4lf\n",  sum, 
+      headas_chat(5, "PSF: images %.2lf%% of incident photons for "
+		  "%.4lf deg, %.1lf keV\n", sum * 100., 
 		  psf->item[count].angle*180./M_PI, 
-		  psf->item[count].energy, 
-		  sum/psf->item[count].scaling_factor, 
-		  psf->item[count].scaling_factor);
+		  psf->item[count].energy);
 
     } // END of loop over individual PSF items
   } while(0);  // END of error handling loop

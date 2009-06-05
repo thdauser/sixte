@@ -7,10 +7,6 @@
 #include "photon_imaging.h"
 
 
-// TODO REMOVE
-#include "vignetting.c"
-
-
 
 ////////////////////////////////////
 /** Main procedure. */
@@ -198,7 +194,7 @@ int photon_imaging_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
-	if (get_psf_pos(&position, photon, telescope, psf)) {
+	if (get_psf_pos(&position, photon, telescope, vignetting, psf)) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)
@@ -218,7 +214,8 @@ int photon_imaging_main() {
 
 	  }
 	} // END get_psf_pos(...)
-      } // End of FOV check
+	//      } // END of applying Vignetting correction.
+      } // End of FOV check.
     } // END of scanning LOOP over the photon list.
   } while(0);  // END of the error handling loop.
 

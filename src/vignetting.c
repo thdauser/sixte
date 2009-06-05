@@ -1,26 +1,7 @@
-#include <malloc.h>
-#include "fitsio.h"
-
-/** Data structure containing the mirror vignetting function. */
-typedef struct {
-  int nenergies; /**< Number of energy bins. */
-  int ntheta; /**< Number of off-axis angles. */
-  int nphi; /**< Number of azimuth angles. */
-
-  float* energ_lo; /**< Minimum energy of bin in [keV]. */
-  float* energ_hi; /**< Maximum energy of bin in [keV]. */
-  float* theta; /**< Off-axis angle in [rad]. */
-  float* phi; /**< Azimuth angle in [rad]. */
-  float*** vignet; /**< Vignetting data. Array[energy, theta, phi] */
-} Vignetting;
-
+#include "vignetting.h"
 
 
 /////////////////////////////////////////////////////////////
-/** Constructor of the Vignetting data structure. 
- * Loads the vignetting function from a given FITS file. 
- * The format of the FITS file is defined by 
- * OGIP Memo CAL/GEN/92-021. */
 Vignetting* get_Vignetting(char* filename, int* status) {
   Vignetting* vignetting=NULL;
   fitsfile* fptr=NULL;
@@ -160,6 +141,26 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 		  vignetting->nenergies*vignetting->ntheta*vignetting->nphi, 
 		  data_buffer, data_buffer, &anynul, status);
 
+    // Determine the minimum and maximum available energy:
+    int count; 
+    vignetting->Emin=-1.;
+    vignetting->Emax=-1.;
+    for (count=0; count<vignetting->nenergies; count++) {
+      if ((vignetting->energ_lo[count] < vignetting->Emin) || (vignetting->Emin<0.)) {
+	vignetting->Emin = vignetting->energ_lo[count];
+      }
+      if (vignetting->energ_hi[count] > vignetting->Emax) {
+	vignetting->Emax = vignetting->energ_hi[count];
+      }
+    }						
+    // Scale from [deg] -> [rad]:
+    for (count=0; count<vignetting->ntheta; count++) {
+      vignetting->theta[count] *= M_PI/360.;
+    }
+    for (count=0; count<vignetting->nphi; count++) {
+      vignetting->phi[count] *= M_PI/360.;
+    }
+
     // Transfer the data from the data buffer to the Vignetting data structure:
     if (EXIT_SUCCESS!=*status) break;
     int count1, count2, count3; 
@@ -188,27 +189,61 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 
 
 
-/** Destructor for Vignetting data structure. */
-free_Vignetting(Vignetting* vi) {
-  if (NULL!=vi->energ_lo) free(vi->energ_lo);
-  if (NULL!=vi->energ_hi) free(vi->energ_hi);
-  if (NULL!=vi->theta)    free(vi->theta);
-  if (NULL!=vi->phi)      free(vi->phi);
-
-  if (NULL!=vi->vignet) {
-    int count1, count2;
-    for (count1=0; count1<vi->nenergies; count1++) {
-      if (NULL!=vi->vignet[count1]) {
-	for (count2=0; count2<vi->ntheta; count2++) {
-	  if (NULL!=vi->vignet[count1][count2]) {
-	    free(vi->vignet[count1][count2]);
+//////////////////////////////////////////////
+void free_Vignetting(Vignetting* vi) {
+  if (NULL!=vi) {
+    if (NULL!=vi->energ_lo) free(vi->energ_lo);
+    if (NULL!=vi->energ_hi) free(vi->energ_hi);
+    if (NULL!=vi->theta)    free(vi->theta);
+    if (NULL!=vi->phi)      free(vi->phi);
+    
+    if (NULL!=vi->vignet) {
+      int count1, count2;
+      for (count1=0; count1<vi->nenergies; count1++) {
+	if (NULL!=vi->vignet[count1]) {
+	  for (count2=0; count2<vi->ntheta; count2++) {
+	    if (NULL!=vi->vignet[count1][count2]) {
+	      free(vi->vignet[count1][count2]);
+	    }
 	  }
+	  free(vi->vignet[count1]);
 	}
-	free(vi->vignet[count1]);
       }
+      free(vi->vignet);
     }
-    free(vi->vignet);
   }
+  free(vi);
 }
 
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi) {
+  float factor=0.;
+
+  if ((energy<vi->Emin) || (energy>vi->Emax)) {
+    factor = -1.; // Energy is out of range!
+  } else {
+    // Find the right energy bin:
+    int count;
+    for(count=0; count<vi->nenergies; count++) {
+      if ((energy>vi->energ_lo[count]) && (energy<=vi->energ_hi[count])) {
+	// Find the best fitting theta:
+	int count2;
+	float dtheta_min=-1.;
+	for(count2=0; count2<vi->ntheta; count2++) {
+	  if ((fabs(theta - vi->theta[count2]) < dtheta_min) || (dtheta_min<0.)) {
+	    dtheta_min = fabs(theta - vi->theta[count2]);
+	    factor = vi->vignet[count][count2][0];
+	  }
+	} // Loop to find the best theta.
+	break;
+      }
+    } // Loop to find the right energy bin.
+    assert (count<vi->nenergies);
+  }
+
+  return(factor);
+}
 
