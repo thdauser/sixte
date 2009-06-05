@@ -291,7 +291,7 @@ int photon_generation_main()
 	// Set the file pointer back to the beginning of the file:
 	fseek(pointsourcelist_fptr, 0, SEEK_SET);
 	while (fscanf(pointsourcelist_fptr, "%s\n", line)>0) {
-	  source_filename[catalog_counter] = line;
+	  strcpy(source_filename[catalog_counter], line);
 	}
 	// Clear the PIL parameter for the cluster filename in order to 
 	// avoid problems with HD_PARSTAMP.
@@ -488,122 +488,110 @@ int photon_generation_main()
 	int image_counter;
 	for (image_counter=0; image_counter<cic->nimages; image_counter++) {
 
-	  // TODO
-	  // Check whether the the current telescope axis lies within the specified field
-	  // or CLOSE TO it. (!!)
-
 	  // Vector in the direction of the reference pixel.
 	  Vector refpixel_vector = 
 	    unit_vector(cic->images[image_counter]->crval1, 
 			cic->images[image_counter]->crval2);
-	  // Vector in the direction of the 1st image coordinate (right ascension).
-	  Vector k = {0., 0., 0.};
-	  // Vector in the direction of the 2nd image coordinate (declination).
-	  Vector l = {0., 0., 0.};
 
-	  // Determine a local coordinate system for the cluster image.
-	  if (fabs(refpixel_vector.z-1.) < 1.e-6) {
-	    // The reference pixel lies at the north pole.
-	    k.y = 1.;
-	    l.x = -1.;
-	  } else if (fabs(refpixel_vector.z+1) < 1.e-6) {
-	    // The reference pixel lies at the south pole.
-	    k.y = 1.;
-	    l.x = 1.;
-	  } else {
-	    // The reference pixel is neither at the north nor at the south pole.
-	    k.x = -sin(cic->images[image_counter]->crval1);
-	    k.y =  cos(cic->images[image_counter]->crval1);
+	  // Check whether the the current telescope axis points to a direction 
+	  // close to the specified cluster image field (3°).
+	  if (check_fov(&refpixel_vector, &telescope.nz, cos(5.*M_PI/180.) )==0) {
+	    // Vector in the direction of the 1st image coordinate (right ascension).
+	    Vector k = {0., 0., 0.};
+	    // Vector in the direction of the 2nd image coordinate (declination).
+	    Vector l = {0., 0., 0.};
+
+	    // Determine a local coordinate system for the cluster image.
+	    if (fabs(refpixel_vector.z-1.) < 1.e-6) {
+	      // The reference pixel lies at the north pole.
+	      k.y = 1.;
+	      l.x = -1.;
+	    } else if (fabs(refpixel_vector.z+1) < 1.e-6) {
+	      // The reference pixel lies at the south pole.
+	      k.y = 1.;
+	      l.x = 1.;
+	    } else {
+	      // The reference pixel is neither at the north nor at the south pole.
+	      k.x = -sin(cic->images[image_counter]->crval1);
+	      k.y =  cos(cic->images[image_counter]->crval1);
 	    
-	    l.x = -sin(cic->images[image_counter]->crval2) * 
-	      cos(cic->images[image_counter]->crval1);
-	    l.y = -sin(cic->images[image_counter]->crval2) *
-	      sin(cic->images[image_counter]->crval1);
-	    l.z =  cos(cic->images[image_counter]->crval2);
-	  } // END reference pixel is at none of the poles.
-	  
-
-	  // Loop over all pixels of the the image:
-	  int xcount, ycount;
-	  for(xcount=0; 
-	      (xcount<cic->images[image_counter]->naxis1)&&(status==EXIT_SUCCESS); 
-	      xcount++) {
-	    for(ycount=0; 
-		(ycount<cic->images[image_counter]->naxis2)&&(status==EXIT_SUCCESS); 
-		ycount++) {
-
-	      // Check whether the pixel lies CLOSE TO the FOV:
-
-	      // Vector in the direction of the current pixel.
-	      Vector pixel_vector; 
-	      pixel_vector.x = refpixel_vector.x + 
-		(xcount - cic->images[image_counter]->crpix1 + 0.5)
-		*cic->images[image_counter]->cdelt1 * k.x +
-		(ycount - cic->images[image_counter]->crpix2 + 0.5)
-		*cic->images[image_counter]->cdelt2 * l.x;
-	      pixel_vector.y = refpixel_vector.y + 
-		(xcount - cic->images[image_counter]->crpix1 + 0.5)
-		*cic->images[image_counter]->cdelt1 * k.y +
-		(ycount - cic->images[image_counter]->crpix2 + 0.5)
-		*cic->images[image_counter]->cdelt2 * l.y;
-	      pixel_vector.z = refpixel_vector.z + 
-		(xcount - cic->images[image_counter]->crpix1 + 0.5)
-		*cic->images[image_counter]->cdelt1 * k.z +
-		(ycount - cic->images[image_counter]->crpix2 + 0.5)
-		*cic->images[image_counter]->cdelt2 * l.z;
-	      pixel_vector = normalize_vector(pixel_vector);
-
-	      /*
-	      ra=cic->images[image_counter]->crval1+
-		(xcount-cic->images[image_counter]->crpix1+0.5)
-		*cic->images[image_counter]->cdelt1; // [rad]
-	      dec=cic->images[image_counter]->crval2+
-		(ycount-cic->images[image_counter]->crpix2+0.5)
-		*cic->images[image_counter]->cdelt2; // [rad]
-	      Vector v = unit_vector(ra, dec);
-	      
-	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
-	      */
-
-	      if (check_fov(&pixel_vector, &telescope.nz, close_fov_min_align)==0) {
-
-		// --- Generate Photons from the pixel.
+	      l.x = -sin(cic->images[image_counter]->crval2) * 
+		cos(cic->images[image_counter]->crval1);
+	      l.y = -sin(cic->images[image_counter]->crval2) *
+		sin(cic->images[image_counter]->crval1);
+	      l.z =  cos(cic->images[image_counter]->crval2);
+	    } // END reference pixel is at none of the poles.
+	    
+	    
+	    // Loop over all pixels of the the image:
+	    int xcount, ycount;
+	    for(xcount=0; 
+		(xcount<cic->images[image_counter]->naxis1)&&(status==EXIT_SUCCESS); 
+		xcount++) {
+	      for(ycount=0; 
+		  (ycount<cic->images[image_counter]->naxis2)&&(status==EXIT_SUCCESS); 
+		  ycount++) {
 		
-		double random_number = get_random_number();
-		if(random_number <
-		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
-
-		  // Determine the right ascension and declination of the pixel.
-		  double ra, dec;
-		  calculate_ra_dec(pixel_vector, &ra, &dec);
-
-		  struct Photon new_photon = { // buffer for new photon
-		    .ra=ra, .dec=dec, .direction=pixel_vector }; 
-		  
-		  // Determine the energy of the new photon according to 
-		  // the default spectrum.
-		  new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
-		  
-		  // Determine photon arrival time.
-		  double rnd_time = get_random_number();
-		  new_photon.time = time + dt*rnd_time;
-		  
-		  // Insert the photon into the time-ordered list.
-		  if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
-		    break;
-		}		
-		// --- END of photon generation from the cluster image pixel.
+		// Check whether the pixel lies CLOSE TO the FOV:
 		
-	      } else { // END of check whether pixel is close to the FOV.
-		// The source image pixel is far away from the telescope axis.
-		// Therefore we don't have to consider the directly neighboring 
-		// pixels and do a bigger step than to the nearest pixel.
-		ycount+=9;
+		// Vector in the direction of the current pixel.
+		Vector pixel_vector; 
+		pixel_vector.x = refpixel_vector.x + 
+		  (xcount - cic->images[image_counter]->crpix1 + 0.5)
+		  *cic->images[image_counter]->cdelt1 * k.x +
+		  (ycount - cic->images[image_counter]->crpix2 + 0.5)
+		  *cic->images[image_counter]->cdelt2 * l.x;
+		pixel_vector.y = refpixel_vector.y + 
+		  (xcount - cic->images[image_counter]->crpix1 + 0.5)
+		  *cic->images[image_counter]->cdelt1 * k.y +
+		  (ycount - cic->images[image_counter]->crpix2 + 0.5)
+		  *cic->images[image_counter]->cdelt2 * l.y;
+		pixel_vector.z = refpixel_vector.z + 
+		  (xcount - cic->images[image_counter]->crpix1 + 0.5)
+		  *cic->images[image_counter]->cdelt1 * k.z +
+		  (ycount - cic->images[image_counter]->crpix2 + 0.5)
+		  *cic->images[image_counter]->cdelt2 * l.z;
+		pixel_vector = normalize_vector(pixel_vector);
+		
+		if (check_fov(&pixel_vector, &telescope.nz, close_fov_min_align)==0) {
+		  
+		  // --- Generate Photons from the pixel.
+		
+		  double random_number = get_random_number();
+		  if(random_number <
+		     cic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
+		    
+		    // Determine the right ascension and declination of the pixel.
+		    double ra, dec;
+		    calculate_ra_dec(pixel_vector, &ra, &dec);
+		    
+		    struct Photon new_photon = { // buffer for new photon
+		      .ra=ra, .dec=dec, .direction=pixel_vector }; 
+		    
+		    // Determine the energy of the new photon according to 
+		    // the default spectrum.
+		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
+		    
+		    // Determine photon arrival time.
+		    double rnd_time = get_random_number();
+		    new_photon.time = time + dt*rnd_time;
+		    
+		    // Insert the photon into the time-ordered list.
+		    if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
+		      break;
+		  } // END of photon generation from the cluster image pixel.
+		
+		} else { // END of check whether pixel is close to the FOV.
+		  // The source image pixel is far away from the telescope axis.
+		  // Therefore we don't have to consider the directly neighboring 
+		  // pixels and do a bigger step than to the nearest pixel.
+		  ycount+=9;
+		}
 	      }
-	    }
-	  } // END of loop over all pixel of the image.
-	} // END of loop over different extend source images in the catalog
-      } // END of decision which source category
+	    } // END of loop over all pixel of the image.
+	  } // END of check whether telescope axis points to the direction of the cluster field.
+	} // END of loop over different extend source images in the catalog.
+      } // END of decision which source category.
 
 
       // SCAN PHOTON LIST
