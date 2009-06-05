@@ -382,7 +382,6 @@ int photon_generation_main()
 		       "name of the attitude FITS file", &status)) break;
     
 
-
     // --- End of Initialization ---
 
 
@@ -417,9 +416,8 @@ int photon_generation_main()
       headas_chat(0, "\rtime: %.3lf s ", time);
       fflush(NULL);
 
-      // Get the last attitude entry before 'time'
-      // (in order to interpolate the attitude at this time between 
-      // the neighboring calculated values):
+      // Get the last attitude entry before 'time' (in order to interpolate 
+      // the attitude at this time between the neighboring calculated values):
       for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
 	if(attitudecatalog->entry[attitude_counter+1].time>time) {
 	  break;
@@ -496,18 +494,64 @@ int photon_generation_main()
 
 	  // TODO
 	  // Check whether the the current telescope axis lies within the specified field
-	  // or CLOSE TO it. !!
+	  // or CLOSE TO it. (!!)
+
+	  // Vector in the direction of the reference pixel.
+	  struct vector refpixel_vector = 
+	    unit_vector(cic->images[image_counter]->crval1, 
+			cic->images[image_counter]->crval2);
+	  // Vector in the direction of the 1st image coordinate (right ascension).
+	  struct vector k = {0., 0., 0.};
+	  // Vector in the direction of the 2nd image coordinate (declination).
+	  struct vector l = {0., 0., 0.};
+
+	  // Determine a local coordinate system for the cluster image.
+	  if (fabs(refpixel_vector.z-1.) < 1.e-6) {
+	    // The reference pixel lies at the north pole.
+	    k.y = 1.;
+	    l.x = -1.;
+	  } else if (fabs(refpixel_vector.z+1) < 1.e-6) {
+	    // The reference pixel lies at the south pole.
+	    k.y = 1.;
+	    l.x = 1.;
+	  } else {
+	    // The reference pixel is neither at the north nor at the south pole.
+	    k.x = -sin(cic->images[image_counter]->crval1);
+	    k.y =  cos(cic->images[image_counter]->crval1);
+	    
+	    l.x = -sin(cic->images[image_counter]->crval2) * 
+	      cos(cic->images[image_counter]->crval1);
+	    l.y = -sin(cic->images[image_counter]->crval2) *
+	      sin(cic->images[image_counter]->crval1);
+	    l.z =  cos(cic->images[image_counter]->crval2);
+	  } // END reference pixel is at none of the poles.
+	  
 
 	  // Loop over all pixels of the the image:
 	  int xcount, ycount;
-	  double ra, dec;
 	  for(xcount=0; 
 	      (xcount<cic->images[image_counter]->naxis1)&&(status==EXIT_SUCCESS); 
 	      xcount++) {
 	    for(ycount=0; 
 		(ycount<cic->images[image_counter]->naxis2)&&(status==EXIT_SUCCESS); 
 		ycount++) {
+
 	      // Check whether the pixel lies CLOSE TO the FOV:
+
+	      // Vector in the direction of the current pixel.
+	      struct vector pixel_vector; 
+	      pixel_vector.x = refpixel_vector.x + 
+		(xcount - cic->images[image_counter]->crpix1+0.5)*k.x +
+		(ycount - cic->images[image_counter]->crpix2+0.5)*l.x;
+	      pixel_vector.y = refpixel_vector.y + 
+		(xcount - cic->images[image_counter]->crpix1+0.5)*k.y +
+		(ycount - cic->images[image_counter]->crpix2+0.5)*l.y;
+	      pixel_vector.z = refpixel_vector.z + 
+		(xcount - cic->images[image_counter]->crpix1+0.5)*k.z +
+		(ycount - cic->images[image_counter]->crpix2+0.5)*l.z;
+	      pixel_vector = normalize_vector(pixel_vector);
+
+	      /*
 	      ra=cic->images[image_counter]->crval1+
 		(xcount-cic->images[image_counter]->crpix1+0.5)
 		*cic->images[image_counter]->cdelt1; // [rad]
@@ -515,16 +559,24 @@ int photon_generation_main()
 		(ycount-cic->images[image_counter]->crpix2+0.5)
 		*cic->images[image_counter]->cdelt2; // [rad]
 	      struct vector v = unit_vector(ra, dec);
-
-	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
 	      
+	      if (check_fov(&v, &telescope.nz, close_fov_min_align)==0) {
+	      */
+
+	      if (check_fov(&pixel_vector, &telescope.nz, close_fov_min_align)==0) {
+
 		// --- Generate Photons from the pixel.
 		
 		double random_number = get_random_number();
 		if(random_number <
 		   cic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
+
+		  // Determine the right ascension and declination of the pixel.
+		  double ra, dec;
+		  calculate_ra_dec(pixel_vector, &ra, &dec);
+
 		  struct Photon new_photon = { // buffer for new photon
-		    .ra=ra, .dec=dec, .direction=v }; 
+		    .ra=ra, .dec=dec, .direction=pixel_vector }; 
 		  
 		  // Determine the energy of the new photon according to 
 		  // the default spectrum.

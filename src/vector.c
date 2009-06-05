@@ -53,7 +53,7 @@ struct vector vector_product(struct vector x, struct vector y) {
 }
 
 
-/** Calculates the difference between two vectors. */
+////////////////////////////////////////////////////////////////
 struct vector vector_difference(struct vector x2, struct vector x1) {
   struct vector z;  // return vector
 
@@ -66,8 +66,7 @@ struct vector vector_difference(struct vector x2, struct vector x1) {
 
  
 
-/** Function interpolates between two vectors at time t1 and t2 for the specified time 
- * and returns the interpolated vector. */
+/////////////////////////////////////////////////////////////////
 struct vector interpolate_vec(struct vector v1, double t1, 
 			      struct vector v2, double t2, 
 			      double time) {
@@ -81,4 +80,14 @@ struct vector interpolate_vec(struct vector v1, double t1,
 }
 
 
+
+/////////////////////////////////////////////////////////////////
+void calculate_ra_dec(struct vector v, double* ra, double* dec)
+{
+  // Determine the declination:
+  *dec = asin(v.z/sqrt(scalar_product(&v, &v)));
+
+  // Determine the right ascension:
+  *ra = atan2(v.y, v.x);
+}
 
