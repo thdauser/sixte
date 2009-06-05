@@ -317,15 +317,6 @@ PSF* get_psf(
 	}
       }
 
-
-      // Renormalize the PSF partition function to the integrated on-axis PSF.
-      for (count2=0; count2<psf->item[count].naxis1; count2++) {
-	for (count3=0; count3<psf->item[count].naxis2; count3++) {
-	  psf->item[count].data[count2][count3] = 
-	    psf->item[count].data[count2][count3];
-	}
-      }
-
       // Plot normalization of PSF for current off-axis angle and energy
       headas_chat(5, "PSF: images %.2lf%% of incident photons for "
 		  "%.4lf deg, %.1lf keV\n", sum * 100., 
