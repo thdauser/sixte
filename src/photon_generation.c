@@ -15,6 +15,7 @@ struct Parameters {
   char attitude_filename[FILENAME_LENGTH];
   char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];
   char rmf_filename[FILENAME_LENGTH];
+  char pointsourcelist_filename[FILENAME_LENGTH];
   char sourceimagelist_filename[FILENAME_LENGTH];
   char photonlist_filename[FILENAME_LENGTH];
 
@@ -78,7 +79,15 @@ int photon_generation_getpar(struct Parameters* parameters)
   parameters->source_category=category;
   if (EXIT_SUCCESS!=status) return(status);
 
-  if (EXTENDED_SOURCES==parameters->source_category) {
+  if (POINT_SOURCES==parameters->source_category) {
+    // Determine the name of the file that contains the filenames of 
+    // the extended source files.
+    if ((status = PILGetFname("pointsourcelist_filename", 
+			      parameters->pointsourcelist_filename))) {
+      sprintf(msg, "Error reading the filename of the list of point source catalogs!\n");
+      HD_ERROR_THROW(msg, status);
+    }
+  } else if (EXTENDED_SOURCES==parameters->source_category) {
     // Determine the name of the file that contains the filenames of 
     // the extended source files.
     if ((status = PILGetFname("sourceimagelist_filename", 
@@ -162,7 +171,7 @@ int photon_generation_main()
   // Pointer to the FITS file for the output for the photon list.
   fitsfile *photonlist_fptr = NULL;
 
-  // time step for sky scanning loop
+  // Time step for sky scanning loop
   double dt = 0.1;
 
   gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
@@ -237,52 +246,52 @@ int photon_generation_main()
 
     if (parameters.source_category==POINT_SOURCES) { 
 
-      int count;
-      source_filename=(char**)malloc(MAX_N_POINTSOURCEFILES*sizeof(char*));
-      if (source_filename!=NULL) {
-	for(count=0; (count<MAX_N_POINTSOURCEFILES)&&(status==EXIT_SUCCESS); count++) {
-	  source_filename[count] = (char*)malloc(FILENAME_LENGTH*sizeof(char));
-	  if(source_filename[count]==NULL) {
-	    status=EXIT_FAILURE;
+      // Open the cluster list file:
+      FILE* pointsourcelist_fptr = fopen(parameters.pointsourcelist_filename, "r");
+      if (NULL==pointsourcelist_fptr) {
+	sprintf(msg, "Error: could not open the file containing the list "
+		"of point source catalogs!\n");
+	HD_ERROR_THROW(msg, status);
+	break;
+      } else {
+	// Determine the number of lines (= number of extended source files).
+	char line[MAXMSG];
+	n_sourcefiles = 0;
+	while (fgets(line, MAXMSG, pointsourcelist_fptr)) {
+	  n_sourcefiles++;
+	}
+
+	if (n_sourcefiles<=0) {
+	  status=EXIT_SUCCESS;
+	  sprintf(msg, "Error: invalid number of point source catalogs!\n");
+	  HD_ERROR_THROW(msg, status);
+	  break;
+	}
+
+	// Allocate memory for the point source catalog filenames.
+	source_filename=(char**)malloc(n_sourcefiles*sizeof(char*));
+	if (NULL==source_filename) {
+	  status=EXIT_SUCCESS;
+	  sprintf(msg, "Error: not enough memory!\n");
+	  HD_ERROR_THROW(msg, status);
+	  break;
+	}
+	int catalog_counter;
+	for(catalog_counter=0;catalog_counter<n_sourcefiles; catalog_counter++) {
+	  source_filename[catalog_counter] = (char*)malloc(FILENAME_LENGTH*sizeof(char));
+	  if (NULL==source_filename[catalog_counter]) {
+	    status=EXIT_SUCCESS;
 	    sprintf(msg, "Error: not enough memory!\n");
-	    HD_ERROR_THROW(msg,status);
+	    HD_ERROR_THROW(msg, status);
 	    break;
 	  }
 	}
-      } else {
-	status=EXIT_FAILURE;
-	sprintf(msg, "Error: not enough memory!\n");
-	HD_ERROR_THROW(msg,status);
-	break;
-      }
 
-      // Get the number of source input-files
-      if ((status = PILGetInt("n_sourcefiles", &n_sourcefiles))) {
-	sprintf(msg, "Error reading the number of source catalog files!\n");
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
-      // Get the filenames of the individual source catalogs.
-      else {
-	int counter;
-	// filename-buffer to access the different source files
-	char cbuffer[FILENAME_LENGTH];
-
-	for(counter=0; counter<MAX_N_POINTSOURCEFILES; counter++) {
-	  sprintf(cbuffer,"sourcefile%d", counter+1);
-
-	  if (counter<n_sourcefiles) {
-	    // Read the source file from using PIL.
-	    if ((status = PILGetFname(cbuffer, source_filename[counter]))) {
-	      sprintf(msg, "Error reading the name of the sourcefile No %d!\n", 
-		      counter);
-	      HD_ERROR_THROW(msg, status);
-	    }
-	  } else {
-	    // Fill redundant input slots for source files with NULL value,
-	    // in order to avoid errors with the HD_PARSTAMP routine.
-	    PILPutFname(cbuffer, "");
-	  }
+	// Load all point source catalogs specified in the point source list file.
+	// Set the file pointer back to the beginning of the file:
+	fseek(pointsourcelist_fptr, 0, SEEK_SET);
+	while (fscanf(pointsourcelist_fptr, "%s\n", line)>0) {
+	  source_filename[catalog_counter] = line;
 	}
 	// Clear the PIL parameter for the cluster filename in order to 
 	// avoid problems with HD_PARSTAMP.
@@ -346,19 +355,6 @@ int photon_generation_main()
 	fclose(sourceimagelist_fptr);
       }
       
-      // Clear the filenames of the point source catalogs in the PIL parameter file,
-      // otherwise HD_PARSTAMP might cause an error.
-
-      // Filename-buffer to access the different source files:
-      int file_counter;
-      char cbuffer[FILENAME_LENGTH];
-      for(file_counter=0; file_counter<MAX_N_POINTSOURCEFILES; file_counter++) {
-	sprintf(cbuffer,"sourcefile%d", file_counter+1);
-	// Fill redundant input slots for source files with NULL value,
-	// in order to avoid errors with the HD_PARSTAMP routine.
-	PILPutFname(cbuffer, "");
-      }
-
       // Use a relative large \Delta t for the time loop:
       dt = 1.0;
 
@@ -732,7 +728,7 @@ int photon_generation_main()
   // String buffers for filenames of source files
   if (source_filename!=NULL) {
     int count;
-    for(count=0; count<MAX_N_POINTSOURCEFILES; count++) {
+    for(count=0; count<n_sourcefiles; count++) {
       if(source_filename[count]!=NULL) free(source_filename[count]);
     }
     free(source_filename);
