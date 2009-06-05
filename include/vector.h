@@ -36,7 +36,7 @@ struct vector interpolate_vec(struct vector v1, double t1, struct vector v2,
 
 /** Function determines the equatorial coordinates of right ascension 
  * and declination for a given vector pointing in a specific direction. 
- * The angles are calculated in [radians].
+ * The angles are calculated in [rad].
  * The given vector doesn't have to be normalized. */
 void calculate_ra_dec(struct vector v, /**< Direction. Does not have to be normalized. */
 		      double* ra, /**< Right ascension. Unit: [rad], Interval: [-pi;pi]. */ 

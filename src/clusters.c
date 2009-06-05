@@ -99,9 +99,6 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     char comment[MAXMSG]; // buffer
     if (fits_read_key(fptr, TDOUBLE, "CDELT1", &ci->cdelt1, comment, status)) break;
     if (fits_read_key(fptr, TDOUBLE, "CDELT2", &ci->cdelt2, comment, status)) break;
-    // Rescale from [deg] to [rad]:
-    ci->cdelt1 *= M_PI/180.;
-    ci->cdelt2 *= M_PI/180.;
 
     // From the header keywords determine the minimum and maximum
     // right ascension and declination covered by the image:
@@ -109,9 +106,6 @@ ClusterImage* get_ClusterImage_fromFile(char* filename, int* status)
     if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &ci->crpix2, comment, status)) break;
     if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &ci->crval1, comment, status)) break;
     if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &ci->crval2, comment, status)) break;
-    // Rescale from [deg] to [rad]:
-    ci->crval1 *= M_PI/180.;
-    ci->crval2 *= M_PI/180.;
 
     // Determine the edges of the covered area:
     ci->minra  = ci->crval1 - ci->cdelt1* ci->crpix1;
