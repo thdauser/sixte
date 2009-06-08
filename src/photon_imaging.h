@@ -22,7 +22,7 @@
 #include "psf.h"
 #include "photon.h"
 #include "telescope.h"
-#include "orbatt.h"
+#include "attitudecatalog.h"
 #include "vignetting.h"
 
 

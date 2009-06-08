@@ -3,8 +3,8 @@
  * contains all definitions for orbit and attitude handling.
  */
 
-#ifndef ORBATT_H
-#define ORBATT_H 1
+#ifndef ATTITUDECATALOG_H
+#define ATTITUDECATALOG_H 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,8 +15,8 @@
 #include "headas.h"
 #include "headas_error.h"
 
-#include "fits_attitude.h"
-#include "fits_ctlg.h"
+#include "sixt.h"
+#include "attitudefile.h"
 #include "vector.h"
 #include "telescope.h"
 
@@ -51,5 +51,5 @@ AttitudeCatalog* get_AttitudeCatalog(const char attitude_filename[],
 void free_AttitudeCatalog(AttitudeCatalog* ac);
 
 
-#endif /* ORBATT_H */
+#endif /* ATTITUDECATALOG_H */
 

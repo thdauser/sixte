@@ -1,10 +1,9 @@
 /** 
- * This file belongs to 'measurement.c' and
- * contains all source code for orbit and attitude handling.
+ * Contains the code for AttitudeCatalog.
  */
 
-#include "sixt.h"
-#include "orbatt.h"
+
+#include "attitudecatalog.h"
 
 
 

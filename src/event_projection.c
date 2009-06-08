@@ -24,7 +24,7 @@
 #include "psf.h"
 #include "photon.h"
 #include "telescope.h"
-#include "orbatt.h"
+#include "attitudecatalog.h"
 
 
 #define TOOLSUB event_projection_main

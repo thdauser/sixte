@@ -1,6 +1,7 @@
-#ifndef FITS_ATTITUDE_H
-#define FITS_ATTITUDE_H 1
+#ifndef ATTITUDEFILE_H
+#define ATTITUDEFILE_H 1
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
 
@@ -63,11 +64,5 @@ void create_attitudetbl_parameter(char *ftype[N_ATTITUDE_FIELDS],
 				  char *fform[N_ATTITUDE_FIELDS], 
 				  char *funit[N_ATTITUDE_FIELDS]);
 
-/** Reads a row of data from the attitude FITS file. */
-/*
-int get_atttbl_row(fitsfile *fptr, long row, char valtime[], double *time, 
-		   double *view_ra, double *view_dec, double *rollangle, 
-		   int *status);*/
 
-
-#endif /* FITS_ATTITUDE_H */
+#endif /* ATTITUDEFILE_H */

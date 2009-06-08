@@ -21,7 +21,7 @@
 #include "photon.h"
 #include "astrosources.h"
 #include "telescope.h"
-#include "orbatt.h"
+#include "attitudecatalog.h"
 #include "detectors.h"
 #include "check_fov.h"
 

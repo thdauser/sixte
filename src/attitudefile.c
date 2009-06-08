@@ -1,4 +1,4 @@
-#include "fits_attitude.h"
+#include "attitudefile.h"
 
 
 // creates the necessary parameters to generate the attitude table in the FITS file
@@ -178,5 +178,8 @@ AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* sta
   if(EXIT_SUCCESS!=*status) af=NULL;
   return(af);
 }
+
+
+
 
 
