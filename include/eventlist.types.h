@@ -33,8 +33,8 @@ struct Eventlist_File {
   long nrows;   /**< Total number of rows in the table. */
 
   /* Column numbers of the individual event list entries. 
-   * The numbers start at 1. The number 0 means, that there is no corresponding
-   * column in the table. */
+   * The numbers start at 1. The number 0 means, that there 
+   * is no corresponding column in the table. */
   int ctime, cpha, crawx, crawy, cframe;
   int cra, cdec, cskyx, cskyy;
   int cpatnum, cpatid, cpileup;

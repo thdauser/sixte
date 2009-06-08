@@ -509,6 +509,7 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
 
   } while(0);  // END of error handling loop
 
+  if(EXIT_SUCCESS!=*status) ef=NULL;
   return(ef);
 }
 

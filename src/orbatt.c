@@ -10,50 +10,24 @@
 
 /** Constructor for the AttitudeCatalog. */
 AttitudeCatalog* get_AttitudeCatalog(
-				     const char attitude_filename[],
+				     const char filename[],
 				     double t0, double timespan,
 				     int* status
 				     )
 {
   AttitudeCatalog* ac=NULL;
-
-  fitsfile *att_fptr=NULL; // FITS file pointer to attitude file
-  int hdunum, hdutype;     // HDU number and type for FITS access
-  long nrows;              // number of lines in the FITS file
-  long counter, entry=0;   // Counters for the AttitudeEntry elements in the FITS
-                           // file and int the AttitudeCatalog respectively. 
+  AttitudeFile* af=NULL;
+  long entry=0; // Counter for the AttitudeEntry elements in the AttitudeCatalog.
   char msg[MAXMSG];
 
   do {  // beginning of ERROR handling loop
 
     // Read-in the attitude data from the FITS file and store 
     // them in the AttitudeCatalog.
+
     // Open the attitude file:
-    if (fits_open_table(&att_fptr, attitude_filename, READONLY, status)) break;
-
-    // After opening the attitude file, get the number of the current HDU
-    if (fits_get_hdu_num(att_fptr, &hdunum) == 1) {
-      // This is the primary array, so try to move to the first extension 
-      // and see if it is a table
-      if (fits_movabs_hdu(att_fptr, 2, &hdutype, status)) break;
-    } else {
-      // get the HDU type
-      if (fits_get_hdu_type(att_fptr, &hdutype, status)) break;
-    }
-
-    // image HDU results in an error message
-    if (hdutype==IMAGE_HDU) {
-      *status=EXIT_FAILURE;
-      sprintf(msg, "Error: FITS extension in attitude file '%s' is not a table "
-	      "but an image (HDU number: %d)\n", attitude_filename, hdunum);
-      HD_ERROR_THROW(msg, *status);
-      break;
-    }
-
-    // Get the number of rows in the attitude file 
-    // (number of given points of time)
-    fits_get_num_rows(att_fptr, &nrows, status);
-
+    af = open_AttitudeFile(filename, READONLY, status);
+    if (NULL==af) break;
 
     // Get memory for the AttitudeCatalog:
     ac = (AttitudeCatalog*)malloc(sizeof(AttitudeCatalog));
@@ -63,7 +37,7 @@ AttitudeCatalog* get_AttitudeCatalog(
       HD_ERROR_THROW(msg, *status);
       break;
     }
-    ac->entry = (AttitudeEntry*)malloc(nrows*sizeof(AttitudeEntry));
+    ac->entry = (AttitudeEntry*)malloc(af->nrows*sizeof(AttitudeEntry));
     if (NULL==ac->entry) {
       *status = EXIT_FAILURE;
       sprintf(msg, "Error: not enough memory available to store the AttitudeCatalog!\n");
@@ -72,20 +46,16 @@ AttitudeCatalog* get_AttitudeCatalog(
     }
 
     
-    /* Point of time at which the attitude data are valid. */
-    double time;
-    char valtime[19];
-    /* Angles specifying the direction of the telescope (attitude data). */
-    double view_ra, view_dec, rollangle;  
-
     // Read all lines from attitude file subsequently.
-    for (counter=0, entry=0; (counter<nrows)&&(!*status); counter++) {
-      if (get_atttbl_row(att_fptr, counter, valtime, &time, &view_ra, 
-			 &view_dec, &rollangle, status)) break;
+    AttitudeFileEntry afe;
+    for (af->row=0, entry=0; !*status; af->row++) {
+      
+      afe = read_AttitudeFileEntry(af, status);
+      if (EXIT_SUCCESS!=*status) break;
 
-      if (time >= t0) {
+      if (afe.time >= t0) {
 	// Check if we are already at the end of the attitude file:
-	if (counter>=nrows) {
+	if (af->row>=af->nrows) {
 	  *status=EXIT_FAILURE;
 	  sprintf(msg, "Error: Not enough attitude data available for the "
 		  "specified period from %lf to %lf!", t0, timespan);
@@ -94,19 +64,19 @@ AttitudeCatalog* get_AttitudeCatalog(
 	}
 	  
 	// Calculate and store attitude data:
-	ac->entry[entry].time = time;
+	ac->entry[entry].time = afe.time;
 	// Rescale from degrees to radians:
-	rollangle = rollangle*M_PI/180.;
+	afe.rollang = afe.rollang*M_PI/180.;
 
 	// Telescope pointing direction nz:
-	ac->entry[entry].nz = unit_vector(view_ra*M_PI/180., view_dec*M_PI/180.);
+	ac->entry[entry].nz = unit_vector(afe.viewra*M_PI/180., afe.viewdec*M_PI/180.);
 
 	entry++;
       }
 	  
       // Check whether the end of the reading process 
       // (end of specified period) is reached.
-      if (time > t0+timespan) {
+      if (afe.time >= t0+timespan) {
 	break;
       }
     }  // End of the attitude readout loop
@@ -155,8 +125,11 @@ AttitudeCatalog* get_AttitudeCatalog(
 
   // --- clean up ---
 
-  // close FITS files
-  if (att_fptr) fits_close_file(att_fptr, status);
+  // Close FITS file
+  if (NULL!=af) {
+    if (af->fptr) fits_close_file(af->fptr, status);
+    free(af);
+  }
 
   if (EXIT_SUCCESS != *status) ac = NULL;
   return(ac);

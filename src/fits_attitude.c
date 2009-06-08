@@ -67,7 +67,7 @@ int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], double time, d
 
 
 
-/** Reads a row of attitude data from a FITS file. */
+/*
 int get_atttbl_row(fitsfile *fptr, long row, char valtime[], double *time, 
 		   double *view_ra, double *view_dec, double *rollangle, int *status)
 {
@@ -94,4 +94,89 @@ int get_atttbl_row(fitsfile *fptr, long row, char valtime[], double *time,
 
   return(anynul);
 }
+*/
+
+
+
+////////////////////////////////////////
+AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status)
+{
+  AttitudeFileEntry afe = { .time = 0. };
+  int anynul = 0;
+ 
+  // TIME
+  fits_read_col(af->fptr, TDOUBLE, af->ctime, af->row+1, 1, 1, 
+		&afe.time, &afe.time, &anynul, status);
+  // VIEWRA
+  fits_read_col(af->fptr, TDOUBLE, af->cviewra, af->row+1, 1, 1, 
+		&afe.viewra, &afe.viewra, &anynul, status);
+  // VIEWDEC
+  fits_read_col(af->fptr, TDOUBLE, af->cviewdec, af->row+1, 1, 1, 
+		&afe.viewdec, &afe.viewdec, &anynul, status);
+  // ROLLANG
+  fits_read_col(af->fptr, TDOUBLE, af->crollang, af->row+1, 1, 1, 
+		&afe.rollang, &afe.rollang, &anynul, status);
+
+  return(afe);
+}
+
+
+
+
+///////////////////////////////
+AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* status)
+{
+  AttitudeFile* af=NULL;
+  char msg[MAXMSG];  // buffer for error messages
+
+  do { // Beginning of ERROR handling loop
+
+    af = (AttitudeFile*)malloc(sizeof(AttitudeFile));
+    if (NULL==af) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: memory allocation in attitude file "
+	      "open routine failed!\n");
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+    
+    // Open the FITS file table for reading:
+    af->fptr=NULL;
+    if (fits_open_table(&af->fptr, filename, 
+			access_mode, status)) break;
+
+    // Get the HDU type
+    int hdutype;
+    if (fits_get_hdu_type(af->fptr, &hdutype, status)) break;
+
+    // Image HDU results in an error message.
+    if (hdutype==IMAGE_HDU) {
+      *status=EXIT_FAILURE;
+      sprintf(msg, "Error: no table extension available in attitude "
+	      "FITS file '%s'!\n", filename);
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+
+    // Determine the number of rows in the attitude file.
+    if (fits_get_num_rows(af->fptr, &af->nrows, status)) 
+      break;
+
+    // Set internal row counter to first row (starting at 0).
+    af->row = 0;
+
+
+    // Determine the individual column numbers:
+    // REQUIRED columns:
+    if(fits_get_colnum(af->fptr, CASEINSEN, "TIME", &af->ctime, status)) break;
+    if(fits_get_colnum(af->fptr, CASEINSEN, "VIEWRA", &af->cviewra, status)) break;
+    if(fits_get_colnum(af->fptr, CASEINSEN, "VIEWDECL", &af->cviewdec, status)) break;
+    if(fits_get_colnum(af->fptr, CASEINSEN, "ROLLANG", &af->crollang, status)) break;
+  
+  } while(0); // END of ERROR handling loop
+
+  if(EXIT_SUCCESS!=*status) af=NULL;
+  return(af);
+}
+
 

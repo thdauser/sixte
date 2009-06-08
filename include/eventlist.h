@@ -26,7 +26,7 @@ struct Eventlist_File* create_Eventlist_File(char* filename, Detector*,
 
 // Open an existing FITS file and try to get the first extension that contains
 // a binary table.          !! OBSOLETE !!
-int open_eventlist_file(struct Eventlist_File*, int* status);
+//int open_eventlist_file(struct Eventlist_File*, int* status);
 
 /** Opens an existing FITS file with a binary table event list.
  * The access_mode parameter can be either READONLY or READWRITE.
@@ -44,7 +44,8 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
 void add_eventlist_row(struct Eventlist_File*, struct Event, int *status);
 
 
-// This function reads a row of data from the event list FITS file.
+/** This function reads a row of data from the event list FITS file.
+ * The function does NOT increment the row counter of the Eventlist_File object. */
 int get_eventlist_row(struct Eventlist_File, struct Event*, int *status);
 
 
