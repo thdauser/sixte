@@ -1,5 +1,5 @@
-#ifndef IMAGING_H
-#define IMAGING_H 1
+#ifndef PHOTON_IMAGING_H
+#define PHOTON_IMAGING_H 1
 
 
 #include <stdio.h>
@@ -51,4 +51,4 @@ struct Parameters {
 int photon_imaging_getpar(struct Parameters* parameters, struct Telescope *);
 
 
-#endif
+#endif /* PHOTON_IMAGING_H */

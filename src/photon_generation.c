@@ -8,7 +8,7 @@
 #include "photon_generation.h"
 
 // TODO REMOVE
-#include "clusters.c"
+#include "sourceimage.c"
 
 
 struct Parameters {
@@ -144,7 +144,7 @@ int photon_generation_main()
   // Filenames of the individual source catalog files (FITS):
   char** source_filename=NULL;
   // X-ray Cluster image:
-  ClusterImageCatalog* cic = NULL;
+  SourceImageCatalog* sic = NULL;
 
   // New data structures for point sources:
   PointSourceFiles* pointsourcefiles=NULL;
@@ -309,7 +309,7 @@ int photon_generation_main()
       
     } else if (parameters.source_category==EXTENDED_SOURCES) {
       // Read the cluster images from the specified FITS files.
-      cic = get_ClusterImageCatalog();
+      sic = get_SourceImageCatalog();
 
       // Open the cluster list file:
       FILE* sourceimagelist_fptr = fopen(parameters.sourceimagelist_filename, "r");
@@ -322,10 +322,10 @@ int photon_generation_main()
 	// Determine the number of lines (= number of extended source files).
 	char line[MAXMSG];
 	while (fgets(line, MAXMSG, sourceimagelist_fptr)) {
-	  cic->nimages++;
+	  sic->nimages++;
 	}
 
-	if (cic->nimages<=0) {
+	if (sic->nimages<=0) {
 	  status=EXIT_SUCCESS;
 	  sprintf(msg, "Error: invalid number of sources files with "
 		  "extended sources!\n");
@@ -333,8 +333,8 @@ int photon_generation_main()
 	  break;
 	}
 	
-	cic->images = (ClusterImage**)malloc(cic->nimages*sizeof(ClusterImage));
-	if (NULL==cic->images) {
+	sic->images = (SourceImage**)malloc(sic->nimages*sizeof(SourceImage));
+	if (NULL==sic->images) {
 	  status=EXIT_SUCCESS;
 	  sprintf(msg, "Error: memory allocation for ClusterImageCatalog failed!\n");
 	  HD_ERROR_THROW(msg, status);
@@ -347,7 +347,7 @@ int photon_generation_main()
 	int image_counter=0;
 	while (fscanf(sourceimagelist_fptr, "%s\n", line)>0) {
 	  // Load the specified galaxy cluster image:
-	  cic->images[image_counter++] = get_ClusterImage_fromFile(line, &status);
+	  sic->images[image_counter++] = get_SourceImage_fromFile(line, &status);
 	  if (status != EXIT_SUCCESS) break;
 	} // END of loop over all file entries in the cluster list file
 
@@ -486,12 +486,12 @@ int photon_generation_main()
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.
 	int image_counter;
-	for (image_counter=0; image_counter<cic->nimages; image_counter++) {
+	for (image_counter=0; image_counter<sic->nimages; image_counter++) {
 
 	  // Vector in the direction of the reference pixel.
 	  Vector refpixel_vector = 
-	    unit_vector(cic->images[image_counter]->crval1, 
-			cic->images[image_counter]->crval2);
+	    unit_vector(sic->images[image_counter]->crval1, 
+			sic->images[image_counter]->crval2);
 
 	  // Check whether the the current telescope axis points to a direction 
 	  // close to the specified cluster image field (3°).
@@ -512,24 +512,24 @@ int photon_generation_main()
 	      l.x = 1.;
 	    } else {
 	      // The reference pixel is neither at the north nor at the south pole.
-	      k.x = -sin(cic->images[image_counter]->crval1);
-	      k.y =  cos(cic->images[image_counter]->crval1);
+	      k.x = -sin(sic->images[image_counter]->crval1);
+	      k.y =  cos(sic->images[image_counter]->crval1);
 	    
-	      l.x = -sin(cic->images[image_counter]->crval2) * 
-		cos(cic->images[image_counter]->crval1);
-	      l.y = -sin(cic->images[image_counter]->crval2) *
-		sin(cic->images[image_counter]->crval1);
-	      l.z =  cos(cic->images[image_counter]->crval2);
+	      l.x = -sin(sic->images[image_counter]->crval2) * 
+		cos(sic->images[image_counter]->crval1);
+	      l.y = -sin(sic->images[image_counter]->crval2) *
+		sin(sic->images[image_counter]->crval1);
+	      l.z =  cos(sic->images[image_counter]->crval2);
 	    } // END reference pixel is at none of the poles.
 	    
 	    
 	    // Loop over all pixels of the the image:
 	    int xcount, ycount;
 	    for(xcount=0; 
-		(xcount<cic->images[image_counter]->naxis1)&&(status==EXIT_SUCCESS); 
+		(xcount<sic->images[image_counter]->naxis1)&&(status==EXIT_SUCCESS); 
 		xcount++) {
 	      for(ycount=0; 
-		  (ycount<cic->images[image_counter]->naxis2)&&(status==EXIT_SUCCESS); 
+		  (ycount<sic->images[image_counter]->naxis2)&&(status==EXIT_SUCCESS); 
 		  ycount++) {
 		
 		// Check whether the pixel lies CLOSE TO the FOV:
@@ -537,20 +537,20 @@ int photon_generation_main()
 		// Vector in the direction of the current pixel.
 		Vector pixel_vector; 
 		pixel_vector.x = refpixel_vector.x + 
-		  (xcount - cic->images[image_counter]->crpix1 + 0.5)
-		  *cic->images[image_counter]->cdelt1 * k.x +
-		  (ycount - cic->images[image_counter]->crpix2 + 0.5)
-		  *cic->images[image_counter]->cdelt2 * l.x;
+		  (xcount - sic->images[image_counter]->crpix1 + 0.5)
+		  *sic->images[image_counter]->cdelt1 * k.x +
+		  (ycount - sic->images[image_counter]->crpix2 + 0.5)
+		  *sic->images[image_counter]->cdelt2 * l.x;
 		pixel_vector.y = refpixel_vector.y + 
-		  (xcount - cic->images[image_counter]->crpix1 + 0.5)
-		  *cic->images[image_counter]->cdelt1 * k.y +
-		  (ycount - cic->images[image_counter]->crpix2 + 0.5)
-		  *cic->images[image_counter]->cdelt2 * l.y;
+		  (xcount - sic->images[image_counter]->crpix1 + 0.5)
+		  *sic->images[image_counter]->cdelt1 * k.y +
+		  (ycount - sic->images[image_counter]->crpix2 + 0.5)
+		  *sic->images[image_counter]->cdelt2 * l.y;
 		pixel_vector.z = refpixel_vector.z + 
-		  (xcount - cic->images[image_counter]->crpix1 + 0.5)
-		  *cic->images[image_counter]->cdelt1 * k.z +
-		  (ycount - cic->images[image_counter]->crpix2 + 0.5)
-		  *cic->images[image_counter]->cdelt2 * l.z;
+		  (xcount - sic->images[image_counter]->crpix1 + 0.5)
+		  *sic->images[image_counter]->cdelt1 * k.z +
+		  (ycount - sic->images[image_counter]->crpix2 + 0.5)
+		  *sic->images[image_counter]->cdelt2 * l.z;
 		pixel_vector = normalize_vector(pixel_vector);
 		
 		if (check_fov(&pixel_vector, &telescope.nz, close_fov_min_align)==0) {
@@ -559,7 +559,7 @@ int photon_generation_main()
 		
 		  double random_number = get_random_number();
 		  if(random_number <
-		     cic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
+		     sic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
 		    
 		    // Determine the right ascension and declination of the pixel.
 		    double ra, dec;
@@ -682,9 +682,6 @@ int photon_generation_main()
   // Clear photon list
   clear_photon_list(&photon_list);
 
-  // Release memory of orbit/attitude catalog
-  //  if (sat_catalog) free(sat_catalog);
-
   free_AttitudeCatalog(attitudecatalog);
 
   // Point Sources
@@ -701,8 +698,7 @@ int photon_generation_main()
     free (pointsourcecatalog);
   }
 
-  // ClusterImageCatalog
-  free_ClusterImageCatalog(cic);
+  free_SourceImageCatalog(sic);
   
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
