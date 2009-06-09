@@ -171,17 +171,29 @@ int photon_detection_main() {
 		      comment, &status)) break;
 
 
-    // Create event list FITS file:
-    headas_chat(5, "create FITS file '%s' for output of event list ...\n", 
+    // Create event list FITS file.
+    char eventlist_template_filename[] = "erosita.eventlist.tpl";
+    headas_chat(5, "create FITS file '%s' according to template '%s' ...\n", 
 		parameters.eventlist_filename);
-    // Delete old event list:
+    // Delete old event list file:
     remove(parameters.eventlist_filename);
+    // Create the new event list file according to the appropriate template:
+    fitsfile* ef_fptr=NULL;
+    char buffer[FILENAME_LENGTH];
+    sprintf(buffer, "%s(%s)", parameters.eventlist_filename, eventlist_template_filename);
+    if (fits_create_file(&ef_fptr, buffer, &status)) break;
+    if (fits_close_file(ef_fptr, &status)) break;
+    
+    // Open the newly created event list FITS file for output:
+    headas_chat(5, "open FITS file '%s' for output of event list ...\n",
+		parameters.eventlist_filename);
+    eventlist_file = open_EventlistFile(parameters.eventlist_filename, READWRITE, &status);
     // Create a new FITS file and a table for the event list:
-    eventlist_file=create_Eventlist_File(parameters.eventlist_filename, 
+    /*    eventlist_file=create_Eventlist_File(parameters.eventlist_filename, 
 					 detector, parameters.t0, 
 					 parameters.t0+parameters.timespan, 
 					 &status);
-    if (EXIT_SUCCESS!=status) break;
+					 if (EXIT_SUCCESS!=status) break;*/
 
     // Add important HEADER keywords to the event list.
     if (fits_write_key(eventlist_file->fptr, TSTRING, "ATTITUDE", 
