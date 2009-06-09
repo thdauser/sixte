@@ -1,44 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-
-
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
-
-#include "sixt.h"
-
-
-
-struct SourceImagePixel {
-  float rate; /** count rate in this pixel */
-  //  double t_last_photon; // last photon emitted from this direction
-};
-
-typedef struct {
-  struct SourceImagePixel **pixel;
-
-  int naxis1, naxis2;    /**< Width of the image [pixel]. */
-  double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
-  double crpix1, crpix2; /**< [pixel] */
-  double crval1, crval2; /**< [rad] */
-
-  double minra, maxra;   /**< Maximum right ascension covered by the image [rad]. */
-  double mindec, maxdec; /**< Maximum declination covered by the image [rad]. */
-} SourceImage;
-
-typedef struct {
-  /** Total number of ClusterImage elements in the catalog. */
-  int nimages;
-  /** Catalog of ClusterImage elements. */
-  SourceImage** images; /* nimages */
-} SourceImageCatalog;
+#include "sourceimage.h"
 
 
 
 
-/** Constructor for SourceImage objects. */
+////////////////////////////
 SourceImage* get_SourceImage() 
 {
   SourceImage* si=NULL;
@@ -56,9 +21,7 @@ SourceImage* get_SourceImage()
 
 
 
-/** Constructor for SourceImage objects. 
- * Reads a SourceImage from a FITS file and stores it in the 
- * corresponding data structure. */
+/////////////////////////////////////
 SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 {
   SourceImage* si=NULL;
@@ -115,7 +78,8 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     
 
     // Allocate memory for the pixels of the image:
-    si->pixel = (struct SourceImagePixel**)malloc(si->naxis1*sizeof(struct SourceImagePixel*));
+    si->pixel = (struct SourceImagePixel**)
+      malloc(si->naxis1*sizeof(struct SourceImagePixel*));
     if (si->pixel!=NULL) {
       int count;
       for(count=0; (count<si->naxis1)&&(*status==EXIT_SUCCESS); count++) {
@@ -190,7 +154,8 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 
 
 
-/** Destructor for SourceImage objects. */
+
+/////////////////////
 void free_SourceImage(SourceImage* si) 
 {
   if(si != NULL) {
@@ -206,7 +171,7 @@ void free_SourceImage(SourceImage* si)
 }
 
 
-/** Constructor for the SourceImageCatalog. */
+//////////////////////////////////////////
 SourceImageCatalog* get_SourceImageCatalog() 
 {
   SourceImageCatalog* sic = NULL;
@@ -222,7 +187,9 @@ SourceImageCatalog* get_SourceImageCatalog()
 }
 
 
-/** Destructor for the SourceImageCatalog. */
+
+
+////////////////////////////
 void free_SourceImageCatalog(SourceImageCatalog* sic) 
 {
   if (sic!=NULL) {

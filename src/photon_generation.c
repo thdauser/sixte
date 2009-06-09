@@ -7,8 +7,6 @@
 
 #include "photon_generation.h"
 
-// TODO REMOVE
-#include "sourceimage.c"
 
 
 struct Parameters {
@@ -79,6 +77,7 @@ int photon_generation_getpar(struct Parameters* parameters)
   parameters->source_category=category;
   if (EXIT_SUCCESS!=status) return(status);
 
+
   if (POINT_SOURCES==parameters->source_category) {
     // Determine the name of the file that contains the filenames of 
     // the extended source files.
@@ -102,9 +101,10 @@ int photon_generation_getpar(struct Parameters* parameters)
   }
   if (EXIT_SUCCESS!=status) return(status);
 
+
   // Get the filename of the Photon-List file (FITS file):
-  if (status = PILGetFname("photonlist_filename", 
-			   parameters->photonlist_filename)) {
+  if ((status = PILGetFname("photonlist_filename", 
+			    parameters->photonlist_filename))) {
     sprintf(msg, "Error reading the filename of the output file for "
 	    "the photon list!\n");
     HD_ERROR_THROW(msg, status);

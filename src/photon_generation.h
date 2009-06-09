@@ -16,6 +16,7 @@
 #include "headas_rand.h"
 
 #include "sixt.h"
+#include "sourceimage.h"
 #include "vector.h"
 #include "spectrum.h"
 #include "photon.h"

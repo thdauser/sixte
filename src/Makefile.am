@@ -18,7 +18,7 @@ lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
 
 # Sources:
 libastrosources_a_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
-			random.c spectrum.c
+			random.c spectrum.c sourceimage.c
 libdetectors_a_SOURCES = detector.c eventlist.c psf.c vignetting.c random.c vector.c
 libsatellites_a_SOURCES = attitudecatalog.c attitudefile.c fits_ctlg.c vector.c
 
