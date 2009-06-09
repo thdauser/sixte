@@ -35,9 +35,9 @@
 struct Spectrum{
   long NumberChannels;
 
-  float *rate;     // The index of the array represents the PHA channel, 
-                   // and the value the relative counts.
-                   // The total spectrum is normalized to 1.
+  float *rate; /**< Array of photon rates per PHA channel.
+		* The rates respresent the relative photon rates.
+                * The total spectrum is normalized to 1. */
 };
 
 

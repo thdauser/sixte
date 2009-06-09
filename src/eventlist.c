@@ -62,7 +62,7 @@ void add_eventlist_row(struct Eventlist_File* ef, struct Event event, int *statu
 }
 
 
-
+/*
 ///////////////////////////////////////////////////////////////////
 struct Eventlist_File* create_Eventlist_File(
 					     char* filename,
@@ -368,7 +368,7 @@ struct Eventlist_File* create_Eventlist_File(
 
   return(ef);
 }
-
+*/
 
 
 

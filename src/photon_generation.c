@@ -87,7 +87,7 @@ int photon_generation_getpar(struct Parameters* parameters)
       sprintf(msg, "Error reading the filename of the list of point source catalogs!\n");
       HD_ERROR_THROW(msg, status);
     }
-  } else if (EXTENDED_SOURCES==parameters->source_category) {
+  } else if (SOURCE_IMAGES==parameters->source_category) {
     // Determine the name of the file that contains the filenames of 
     // the extended source files.
     if ((status = PILGetFname("sourceimagelist_filename", 
@@ -95,12 +95,16 @@ int photon_generation_getpar(struct Parameters* parameters)
       sprintf(msg, "Error reading the filename of the cluster list file!\n");
       HD_ERROR_THROW(msg, status);
     }
+  } else {
+    status=EXIT_FAILURE;
+    sprintf(msg, "Error: unknown source category file!\n");
+    HD_ERROR_THROW(msg, status);
   }
+  if (EXIT_SUCCESS!=status) return(status);
 
   // Get the filename of the Photon-List file (FITS file):
-  if ((EXIT_SUCCESS==status) && 
-      (status = PILGetFname("photonlist_filename", 
-			    parameters->photonlist_filename))) {
+  if (status = PILGetFname("photonlist_filename", 
+			   parameters->photonlist_filename)) {
     sprintf(msg, "Error reading the filename of the output file for "
 	    "the photon list!\n");
     HD_ERROR_THROW(msg, status);
@@ -307,7 +311,7 @@ int photon_generation_main()
       // Use a short time interval for the orbit update:
       dt = 0.001;
       
-    } else if (parameters.source_category==EXTENDED_SOURCES) {
+    } else if (SOURCE_IMAGES==parameters.source_category) {
       // Read the cluster images from the specified FITS files.
       sic = get_SourceImageCatalog();
 
@@ -481,7 +485,7 @@ int photon_generation_main()
 	  }
 	}
 
-      } else if (EXTENDED_SOURCES==parameters.source_category) {
+      } else if (SOURCE_IMAGES==parameters.source_category) {
 
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.
