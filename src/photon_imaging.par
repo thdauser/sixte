@@ -5,7 +5,7 @@ psf_filename,fre,lq,"erosita.psf.binned.fits",,,"PSF data file (FITS input file)
 vignetting_filename,fre,lq,"erosita.vignetting.fits",,,"Vignetting data file (FITS input file)"
 impactlist_filename,f,lq,"impacts.fits",,,"impact list file (FITS output file)"
 t0,r,lq,0.0,,,"t0 - start time (s)  NOT USED! "
-timespan,r,lq,5000.0,0.0,1000000000.0,"time interval for the measurement simulation (s)  NOT USED! "
+timespan,r,lq,432000.0,0.0,1000000000.0,"time interval for the measurement simulation (s) "
 fov_diameter,r,lq,61.2,0.0,600.0,"diameter of the FOV (arc minutes)"
 focal_length,r,lq,1.6,0.0,100.0,"focal length of the mirror system (m)"
 chatter,i,lh,5,,,"chatter: control verbosity of the program"

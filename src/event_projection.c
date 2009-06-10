@@ -46,6 +46,9 @@
 struct Parameters {
   char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
   char eventlist_filename[FILENAME_LENGTH]; // input: photon list
+  
+  double t0;
+  double timespan;
 
   double focal_length;
   double fov_diameter;
@@ -62,7 +65,7 @@ int event_projection_main() {
   struct Parameters parameters;   // Program parameters
 
   AttitudeCatalog* attitudecatalog=NULL;
-  struct Eventlist_File* eventlistfile;
+  struct Eventlist_File* eventlistfile=NULL;
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
 
@@ -84,7 +87,8 @@ int event_projection_main() {
 
     // Based on the parameters set up the program configuration.
     telescope.focal_length = parameters.focal_length;
-    telescope.fov_diameter = parameters.fov_diameter;
+    telescope.fov_diameter = parameters.fov_diameter; // [rad]
+    double radperpixel = telescope.fov_diameter/384;
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -129,48 +133,48 @@ int event_projection_main() {
     // Determine the time of the first and of the last event in the list. 
     // (This data is needed to read the adequate orbit/attitude information.)
     // Read the first event from the FITS file.
-    int anynul = 0.;
-    double t0=0., timespan=0.;
-    fits_read_col(eventlistfile->fptr, TDOUBLE, 1, 1, 1, 1, &t0, &t0, &anynul, &status);
-    fits_read_col(eventlistfile->fptr, TDOUBLE, 1, eventlistfile->nrows, 1, 1, 
-		  &timespan, &timespan, &anynul, &status);
+    //int anynul = 0.;
+    //double t0=0., timespan=0.;
+    //fits_read_col(eventlistfile->fptr, TDOUBLE, 1, 1, 1, 1, &t0, &t0, &anynul, &status);
+    //fits_read_col(eventlistfile->fptr, TDOUBLE, 1, eventlistfile->nrows, 1, 1, 
+    //		  &timespan, &timespan, &anynul, &status);
     
 
-    // Get the satellite catalog with the orbit and (telescope) attitude data:
+    // Get the satellite catalog with the telescope attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
-						   t0, timespan, &status))) break;
+						   parameters.t0, parameters.timespan, 
+						   &status))) break;
 						   
 
-    
     // Create an array that contains the off-axis angle corresponding to 
     // some particular positions on the detector.
-    struct angle_position_relation { 
-      double distance; // [m]
-      double angle;    // offaxis-angle [rad]
-    };
-    struct angle_position_relation apr[7] = {
-      { 0.      ,  0.                  },
-      { 0.002338,  5. /60.*M_PI/180. },
-      { 0.004662, 10. /60.*M_PI/180. },
-      { 0.006988, 15. /60.*M_PI/180. },
-      { 0.009288, 20. /60.*M_PI/180. },
-      { 0.011613, 25. /60.*M_PI/180. },
-      { 0.013938, 30. /60.*M_PI/180. }
-    };
-      
+    //    struct angle_position_relation { 
+    //      double distance; // [m]
+    //    double angle;    // offaxis-angle [rad]
+    //  };
+    //  struct angle_position_relation apr[7] = {
+    //    { 0.      ,  0.                  },
+    //      { 0.002338,  5. /60.*M_PI/180. },
+    //      { 0.004662, 10. /60.*M_PI/180. },
+    //      { 0.006988, 15. /60.*M_PI/180. },
+    //      { 0.009288, 20. /60.*M_PI/180. },
+    //      { 0.011613, 25. /60.*M_PI/180. },
+    //      { 0.013938, 30. /60.*M_PI/180. }
+    //    };      
     
     // --- END of Initialization ---
 
 
-    // --- Beginning of the Imaging Process ---
+
+    // --- Beginning of the Sky Imaging Process ---
 
     // Beginning of actual simulation (after loading required data):
-    headas_chat(5, "start imaging process ...\n");
+    headas_chat(5, "start sky imaging process ...\n");
 
     // LOOP over all event in the FITS table
     long attitude_counter=0;   // counter for entries in the AttitudeCatalog
 
-    // SCAN PHOTON LIST    
+    // SCAN EVENT LIST    
     for(eventlistfile->row=0; 
 	(eventlistfile->row<eventlistfile->nrows)&&(status==EXIT_SUCCESS); 
 	eventlistfile->row++) {
@@ -179,7 +183,10 @@ int event_projection_main() {
       struct Event event;
       if (get_eventlist_row(*eventlistfile, &event, &status)) break;
 
-      // Get the last orbit entry before 'event.time'
+      // Check whether we are finished.
+      if (event.time > parameters.t0+parameters.timespan) break;
+
+      // Get the last attitude entry before 'event.time'
       // (in order to interpolate the attitude at this time between 
       // the neighboring calculated values):
       for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
@@ -226,6 +233,7 @@ int event_projection_main() {
 
 
       // Determine RA, DEC and the sky coordinates (in pixel) of the source.
+      // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
 	((double)(event.xi-384/2)+get_random_number())*75.e-6; // in [m]
@@ -233,24 +241,28 @@ int event_projection_main() {
 	((double)(event.yi-384/2)+get_random_number())*75.e-6; // in [m]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
 
-      // Determine the offaxis_angle corresponding to the detector position.
-      double offaxis_angle; // = atan(d/telescope.focal_length);
+      // Determine the off-axis angle corresponding to the detector position.
+      double offaxis_angle = d/75.e-6 * radperpixel; // [rad]
+      //      double offaxis_angle; // = atan(d/telescope.focal_length);
       // Interpolation:
-      int count;
-      for(count=1; count<7; count++) {
-	if (apr[count].distance>d) break;
-      }
-      if (count<6) {
-	offaxis_angle = apr[count-1].angle + 
-	  (d-apr[count-1].distance)/(apr[count].distance-apr[count-1].distance) * 
-	  (apr[count].angle-apr[count-1].angle);
-      } else {
-	offaxis_angle = apr[6].angle + 
-	  (d-apr[6].distance)/(apr[6].distance-apr[5].distance) *
-	  (apr[6].angle-apr[5].angle);
-      }
+      //      int count;
+      //      for(count=1; count<7; count++) {
+      //	if (apr[count].distance>d) break;
+      //      }
+      //      if (count<6) {
+      //	offaxis_angle = apr[count-1].angle + 
+      //	  (d-apr[count-1].distance)/(apr[count].distance-apr[count-1].distance) * 
+      //	  (apr[count].angle-apr[count-1].angle);
+      //      } else {
+      //	offaxis_angle = apr[6].angle + 
+      //	  (d-apr[6].distance)/(apr[6].distance-apr[5].distance) *
+      //	  (apr[6].angle-apr[5].angle);
+      //      }
 
-      double r = tan(offaxis_angle);
+      // Determine the source position on the sky using the telescope 
+      // axis pointing vector and a vector from the point of the intersection 
+      // of the optical axis with the sky plane.
+      double r = tan(offaxis_angle); // length of this vector
 
       Vector source_position;
       source_position.x = telescope.nz.x 
@@ -261,14 +273,17 @@ int event_projection_main() {
 	-r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
       source_position = normalize_vector(source_position);
 
-      event.ra = atan2(source_position.y, source_position.x) * 180./M_PI;
-      event.dec = asin(source_position.z) * 180./M_PI;
+      // Determine the equatorial coordinates RA and DEC:
+      calculate_ra_dec(source_position, &event.ra, &event.dec);
+      event.ra  *= 180./M_PI; // [rad] -> [deg]
+      event.dec *= 180./M_PI; // [rad] -> [deg]
+
 
       // Put some randomization on the RA and DEC coordinate (within the sky pixel)
       // to receive a continuous image.
       // (spread by the width of one detector pixel on the sky)
-      event.ra  += (get_random_number()-0.5)*0.00265625; // (= (61.2/60.)°/384)
-      event.dec += (get_random_number()-0.5)*0.00265625;
+      //      event.ra  += (get_random_number()-0.5)*0.00265625; // (= (61.2/60.)°/384)
+      //      event.dec += (get_random_number()-0.5)*0.00265625;
 
       // Determine the pixel coordinates in the sky image:
       event.sky_xi = (int)((event.ra -REFXCRVL)/REFXCDLT+REFXCRPX);
@@ -295,7 +310,9 @@ int event_projection_main() {
   HDmtFree();
 
   // Close the FITS files.
-  if (eventlistfile->fptr) fits_close_file(eventlistfile->fptr, &status);
+  if (NULL!=eventlistfile) {
+    if (eventlistfile->fptr) fits_close_file(eventlistfile->fptr, &status);
+  }
 
   // Release memory of AttitudeCatalog
   free_AttitudeCatalog(attitudecatalog);
@@ -315,14 +332,6 @@ int event_projection_getpar(struct Parameters *parameters)
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
 
-  /*
-  // Get the filename of the attitude file (FITS file)
-  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
-    sprintf(msg, "Error reading the filename of the attitude file!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-  */
-
   // Get the filename of the input photon list (FITS file)
   if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     sprintf(msg, "Error reading the filename of the event list!\n");
@@ -338,6 +347,18 @@ int event_projection_getpar(struct Parameters *parameters)
   // Read the focal length [m]
   else if ((status = PILGetReal("focal_length", &parameters->focal_length))) {
     sprintf(msg, "Error reading the focal length!\n");
+    HD_ERROR_THROW(msg,status);
+  }
+
+  // get the start time of the simulation
+  else if ((status = PILGetReal("t0", &parameters->t0))) {
+    sprintf(msg, "Error reading the 't0' parameter!\n");
+    HD_ERROR_THROW(msg,status);
+  }
+
+  // get the timespan for the simulation
+  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
+    sprintf(msg, "Error reading the 'timespan' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
 

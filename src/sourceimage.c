@@ -2,7 +2,6 @@
 
 
 
-
 ////////////////////////////
 SourceImage* get_SourceImage() 
 {

@@ -56,7 +56,7 @@ int photon_imaging_main() {
     // Determine the number of rows in the photon list:
     if (fits_get_num_rows(photonlist_fptr, &photonlist_nrows, &status)) break;
 
-    // Get the satellite catalog with the orbit and (telescope) attitude data:
+    // Get the satellite catalog with the telescope attitude data:
     char comment[MAXMSG]; // buffer
     if (fits_read_key(photonlist_fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
 		      comment, &status)) break;
@@ -259,14 +259,6 @@ int photon_imaging_getpar(
     sprintf(msg, "Error reading the filename of the photon list!\n");
     HD_ERROR_THROW(msg,status);
   }
-
-  /*
-  // get the filename of the attitude file (FITS file)
-  else if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
-    sprintf(msg, "Error reading the filename of the attitude file!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-  */
   
   // Get the filename of the PSF data file (FITS file)
   else if ((status = PILGetFname("psf_filename", parameters->psf_filename))) {

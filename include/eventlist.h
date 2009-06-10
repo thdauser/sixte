@@ -24,6 +24,7 @@ struct Eventlist_File* create_Eventlist_File(char* filename, Detector*,
 					     double tstart, double tend, int *status);
 */
 
+
 /** Opens an existing FITS file with a binary table event list.
  * The access_mode parameter can be either READONLY or READWRITE.
  */

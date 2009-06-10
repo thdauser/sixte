@@ -3,7 +3,7 @@ source_category,i,lq,3,1|3,,"source category (1=Point sources, 2=Sources Images)
 pointsourcelist_filename,fre,lq,"pointsources.files",,,"file with list of point source catalogs (ASCII file)"
 sourceimagelist_filename,fre,lq,"clusters.files",,,"file with list of source images (ASCII file)"
 spectrum_filename,fre,lq,"../clusters/raymond.pha",,,"default source spectrum (PHA) (FITS input file)"
-rmf_filename,fre,lq,"../rsp/erosita_iii_1telonaxis_ff.rsp",,,"detector redistribution matrix (RMF) (FITS input file)"
+ebounds_filename,fre,lq,"../rsp/erosita_iii_1telonaxis_ff.rsp",,,"file containing energy bounds, e.g, detector redistribution matrix file with EBOUNDS table (RMF) (FITS input file)"
 photonlist_filename,f,lq,"photons.fits",,,"file for the photon list (FITS output file)"
 t0,r,lq,0.0,,,"t0 - start time (s)"
 timespan,r,lq,432000.0,0.0,1000000000.0,"time interval for the measurement simulation (s)"
