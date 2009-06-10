@@ -236,13 +236,13 @@ int event_projection_main() {
       // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
-	((double)(event.xi-384/2)+get_random_number())*75.e-6; // in [m]
+	((double)(event.xi-384/2)+get_random_number()); // in [floating point pixel]
       detector_position.y = 
-	((double)(event.yi-384/2)+get_random_number())*75.e-6; // in [m]
+	((double)(event.yi-384/2)+get_random_number()); // in [floating point pixel]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
 
       // Determine the off-axis angle corresponding to the detector position.
-      double offaxis_angle = d/75.e-6 * radperpixel; // [rad]
+      double offaxis_angle = d * radperpixel; // [rad]
       //      double offaxis_angle; // = atan(d/telescope.focal_length);
       // Interpolation:
       //      int count;

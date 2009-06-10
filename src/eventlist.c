@@ -504,6 +504,9 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PILEUP", &ef->cpileup, &opt_status)) 
       ef->cpileup=0;
+    // Clear the HEAdas error stack in order to delete error messages created
+    // due to missing OPTIONAL column names.
+    HDerror_reset();
 
   } while(0);  // END of error handling loop
 
