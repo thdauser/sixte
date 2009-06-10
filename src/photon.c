@@ -213,7 +213,7 @@ int create_photons(
       }
     }
 
-    // calculate arrival time depending on former photon creation
+    // Calculate arrival time depending on previous photon.
     ps->t_last_photon += rndexp(1./(ps->lightcurve[bin].rate));
     new_photon.time = ps->t_last_photon;
 
@@ -269,7 +269,7 @@ int insert_photon(struct Photon_Entry **pe, struct Photon ph) {
     pe = &((*pe)->next_entry);
   }
 
-  // create a new Photon_Entry and insert it at the current position
+  // Create a new Photon_Entry and insert it at the current position
   struct Photon_Entry *buffer=NULL;
   buffer = (struct Photon_Entry *) malloc(sizeof(struct Photon_Entry));
 

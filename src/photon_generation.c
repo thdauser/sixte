@@ -530,10 +530,10 @@ int photon_generation_main()
 	    // Loop over all pixels of the the image:
 	    int xcount, ycount;
 	    for(xcount=0; 
-		(xcount<sic->images[image_counter]->naxis1)&&(status==EXIT_SUCCESS); 
+		(xcount<sic->images[image_counter]->naxis1)&&(EXIT_SUCCESS==status);
 		xcount++) {
 	      for(ycount=0; 
-		  (ycount<sic->images[image_counter]->naxis2)&&(status==EXIT_SUCCESS); 
+		  (ycount<sic->images[image_counter]->naxis2)&&(EXIT_SUCCESS==status); 
 		  ycount++) {
 		
 		// Check whether the pixel lies CLOSE TO the FOV:
@@ -560,7 +560,43 @@ int photon_generation_main()
 		if (check_fov(&pixel_vector, &telescope.nz, close_fov_min_align)==0) {
 		  
 		  // --- Generate Photons from the pixel.
-		
+
+		  // Determine the right ascension and declination of the pixel.
+		  double ra, dec;
+		  calculate_ra_dec(pixel_vector, &ra, &dec);
+
+		  if(time-sic->images[image_counter]->pixel[xcount][ycount].t_last_photon>2*dt)
+		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = time-dt;
+		  
+		  while (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon
+			 <=time) {
+		    
+
+		    // Determine photon arrival time.
+		     
+		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon +=
+		      rndexp((double)(1./sic->images[image_counter]->pixel[xcount][ycount].rate));
+		    if (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon >=
+			time+600.) {
+		      sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = -dt;
+		      break;
+		    }
+
+		    struct Photon new_photon = { // buffer for new photon
+		      .ra=ra, .dec=dec, .direction=pixel_vector,
+		      .time=sic->images[image_counter]->pixel[xcount][ycount].t_last_photon };
+
+		    // Determine the energy of the new photon according to 
+		    // the default spectrum.
+		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
+		    
+		    // Insert the photon into the time-ordered list.
+		    if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
+		      break;
+
+		  }
+
+		  /*
 		  double random_number = get_random_number();
 		  if(random_number <
 		     sic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
@@ -575,7 +611,7 @@ int photon_generation_main()
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.
 		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
-		    
+
 		    // Determine photon arrival time.
 		    double rnd_time = get_random_number();
 		    new_photon.time = time + dt*rnd_time;
@@ -583,7 +619,9 @@ int photon_generation_main()
 		    // Insert the photon into the time-ordered list.
 		    if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
 		      break;
-		  } // END of photon generation from the cluster image pixel.
+	           } */
+		  
+		  // END of photon generation from the cluster image pixel.
 		
 		} else { // END of check whether pixel is close to the FOV.
 		  // The source image pixel is far away from the telescope axis.

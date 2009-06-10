@@ -134,6 +134,8 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 	  * 7.72e11  // Energy to Count rate conversion for 0.5 to 2.0 keV band
 	             // [erg cm^-2] -> [counts]
 	  * 8.50022e-7; // Conversion [deg^-2] -> [pixel^-1]
+
+	si->pixel[x][y].t_last_photon = -1.;
       }
     }
 
