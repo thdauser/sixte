@@ -570,14 +570,12 @@ int photon_generation_main()
 		  
 		  while (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon
 			 <=time) {
-		    
 
 		    // Determine photon arrival time.
-		     
 		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon +=
 		      rndexp((double)(1./sic->images[image_counter]->pixel[xcount][ycount].rate));
 		    if (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon >=
-			time+600.) {
+			time+200.) {
 		      sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = -dt;
 		      break;
 		    }
@@ -593,7 +591,6 @@ int photon_generation_main()
 		    // Insert the photon into the time-ordered list.
 		    if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
 		      break;
-
 		  }
 
 		  /*

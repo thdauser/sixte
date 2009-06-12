@@ -69,6 +69,12 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &si->crval1, comment, status)) break;
     if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &si->crval2, comment, status)) break;
 
+    // Convert from [deg] to [rad]
+    si->cdelt1 *= M_PI/180.;
+    si->cdelt2 *= M_PI/180.;
+    si->crval1 *= M_PI/180.;
+    si->crval2 *= M_PI/180.;
+
     // Determine the edges of the covered area:
     si->minra  = si->crval1 - si->cdelt1* si->crpix1;
     si->maxra  = si->crval1 + si->cdelt1*(si->naxis1-si->crpix1);
@@ -130,11 +136,7 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     int x, y;
     for(x=0; x<si->naxis1; x++) {
       for(y=0; y<si->naxis2; y++) {
-	si->pixel[x][y].rate = input_buffer[x+ si->naxis2*y] // [erg cm^-2 s^-1 deg^-2 ]
-	  * 7.72e11  // Energy to Count rate conversion for 0.5 to 2.0 keV band
-	             // [erg cm^-2] -> [counts]
-	  * 8.50022e-7; // Conversion [deg^-2] -> [pixel^-1]
-
+	si->pixel[x][y].rate = input_buffer[x+ si->naxis2*y]; // [photons/s]
 	si->pixel[x][y].t_last_photon = -1.;
       }
     }

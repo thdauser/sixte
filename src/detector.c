@@ -483,8 +483,9 @@ int detector_assign_rsp(Detector *detector, char *filename) {
   
   // Read the SPECRESP MATRIX or MATRIX extension:
   if ((status=ReadRMFMatrix(fptr, 0, detector->rmf)) != EXIT_SUCCESS) return(status);
+
   // TODO: normalize the RMF:
-  NormalizeRMF(detector->rmf);
+  //NormalizeRMF(detector->rmf);
 
   // Read the EBOUNDS extension:
   if ((status=ReadRMFEbounds(fptr, 0, detector->rmf)) !=EXIT_SUCCESS) return(status);

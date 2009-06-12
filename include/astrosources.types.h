@@ -21,10 +21,12 @@ typedef struct {
   double t_last_photon;       // time of last photon, which was created for this source
 } PointSource;
 
+
 typedef struct {
   long nsources;
   PointSource* sources; /* nsources */
 } PointSourceCatalog;
+
 
 typedef struct {
   fitsfile* files[MAX_N_POINTSOURCEFILES];
