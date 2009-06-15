@@ -32,7 +32,8 @@ Vector vector_difference(Vector x2, Vector x1);
 /** Function interpolates between two vectors at time t1 and t2 for the specified time 
  * and returns the interpolated vector. */
 Vector interpolate_vec(Vector v1, double t1, Vector v2, 
-			      double t2, double time);
+		       double t2, double time);
+Vector interpolate_vec2(Vector v1, double t1, Vector v2, double t2, double time);
 
 /** Function determines the equatorial coordinates of right ascension 
  * and declination for a given vector pointing in a specific direction. 

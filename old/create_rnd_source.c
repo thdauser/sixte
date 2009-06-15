@@ -32,6 +32,6 @@ void create_rnd_source_position(double *rasc, double *dec) {
 
 // creates a random source intensity according to a powerlaw distribution with index alpha
 float get_rnd_intensity(double powerlaw_index) {
-  return((float)pow(-get_random_number()+1., 1./powerlaw_index));
+  return((float)pow(get_random_number(), 1./powerlaw_index));
 }
 

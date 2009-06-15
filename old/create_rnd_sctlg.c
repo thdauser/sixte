@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////
+../////////////////////////////////////////////////////////////////////////
 //
 // This program is part of the eROSITA simulation and creates 
 // a specified number of randomly distributed sources on the sky,
@@ -50,22 +50,20 @@ int create_rnd_sctlg_work(const int n_sources, const double powerlaw_index, cons
 // main procedure
 int create_rnd_sctlg_main() 
 {
-  int n_sources;                        // number of sources, the program should create
-  double powerlaw_index;                // powerlaw index for logN-logS distribution
-  double l_thres, u_thres;              // lower and upper threshold for created sources [erg cm^-2 s^-1]
-  char outputfile[FILENAME_LENGTH];     // name of the outputfile
+  int n_sources;           // number of sources, the program should create
+  double powerlaw_index;   // powerlaw index for logN-logS distribution
+  double l_thres, u_thres; // lower and upper threshold for created sources [erg cm^-2 s^-1]
+  char outputfile[FILENAME_LENGTH]; // name of the outputfile
 
-  int status=0;                         // error status
+  int status=0;                     // error status
 
 
   // HEATOOLs: register program
   set_toolname("create_rnd_sctlg");
   set_toolversion("0.01");
 
-
   // read parameters using PIL library
   status = create_rnd_sctlg_getpar(&n_sources, &powerlaw_index, &l_thres, &u_thres, outputfile);
-
 
   if(!status) {
     // perform the actual work: create the requested number of random sources
@@ -74,8 +72,6 @@ int create_rnd_sctlg_main()
 
     headas_chat(5, "finished\n");
   }
-
-
 
   return(status);
 }
@@ -171,7 +167,7 @@ int create_rnd_sctlg_work(
     if (fits_write_key(output_fptr, TSTRING, "COMMENT", "random sources","randomly distributed sources", &status)) break;
     if (fits_write_key(output_fptr, TSTRING, "COMMENT", "r.a., dec, count rate", "right ascension, declination, photon cps", &status)) break;
 
-  // if desired by the user, print all program parameters to HISTORY of FITS file (HDU number 1)
+    // if desired by the user, print all program parameters to HISTORY of FITS file (HDU number 1)
     HDpar_stamp(output_fptr, 2, &status);
 
     // check, if errors have occurred on writing the headers

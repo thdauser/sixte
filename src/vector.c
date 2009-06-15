@@ -82,6 +82,34 @@ Vector interpolate_vec(Vector v1, double t1,
 
 
 /////////////////////////////////////////////////////////////////
+Vector interpolate_vec2(Vector v1, double t1, Vector v2, double t2, double time)
+{
+  Vector r; // r(time)
+  Vector x1 = normalize_vector(v1); // use as first base vector
+  Vector x2 = normalize_vector(v2);
+
+  double alpha = acos(scalar_product(&x1, &x2)); // angle between v1 and v2 [rad]
+
+  if (alpha > 0.1/3600*M_PI/180.) { // Greater than 0.1 arcsec.
+    Vector d = {.x=v2.x-cos(alpha)*v1.x, 
+		.y=v2.y-cos(alpha)*v1.y, 
+		.z=v2.z-cos(alpha)*v1.z};
+    x2 = normalize_vector(d); // second base vector
+    
+    double dalpha = alpha*(time-t1)/(t2-t1); // angle-difference
+
+    r.x = cos(dalpha)*x1.x + sin(dalpha)*x2.x;
+    r.y = cos(dalpha)*x1.y + sin(dalpha)*x2.y;
+    r.z = cos(dalpha)*x1.z + sin(dalpha)*x2.z;			      
+  } else { // Quasi no motion at all.
+    r = v1;
+  }
+
+  return(r);
+}
+
+
+/////////////////////////////////////////////////////////////////
 void calculate_ra_dec(Vector v, double* ra, double* dec)
 {
   // Determine the declination:
