@@ -581,7 +581,7 @@ int photon_generation_main()
 
 		    // Determine photon arrival time.
 		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon +=
-		      rndexp((double)(1./sic->images[image_counter]->pixel[xcount][ycount].rate));
+		      rndexp(1./(double)sic->images[image_counter]->pixel[xcount][ycount].rate);
 		    if (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon >=
 			time+200.) {
 		      sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = -dt;

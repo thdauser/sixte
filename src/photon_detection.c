@@ -171,12 +171,12 @@ int photon_detection_main() {
 		      comment, &status)) break;
 
 
-    // Create event list FITS file.
+    // Delete old event list file:
+    remove(parameters.eventlist_filename);
+    // Create new event list FITS file.
     char eventlist_template_filename[] = "erosita.eventlist.tpl";
     headas_chat(5, "create FITS file '%s' according to template '%s' ...\n", 
 		parameters.eventlist_filename);
-    // Delete old event list file:
-    remove(parameters.eventlist_filename);
     // Create the new event list file according to the appropriate template:
     fitsfile* ef_fptr=NULL;
     char buffer[FILENAME_LENGTH];
@@ -189,13 +189,9 @@ int photon_detection_main() {
 		parameters.eventlist_filename);
     eventlist_file = open_EventlistFile(parameters.eventlist_filename, READWRITE, &status);
     // Create a new FITS file and a table for the event list:
-    /*    eventlist_file=create_Eventlist_File(parameters.eventlist_filename, 
-					 detector, parameters.t0, 
-					 parameters.t0+parameters.timespan, 
-					 &status);
-					 if (EXIT_SUCCESS!=status) break;*/
 
-    // Add important HEADER keywords to the event list.
+
+    // Add important additional HEADER keywords to the event list.
     if (fits_write_key(eventlist_file->fptr, TSTRING, "ATTITUDE", 
 		       parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
@@ -208,26 +204,46 @@ int photon_detection_main() {
 
     headas_chat(5, "start detection process ...\n");
 
-    long impactlist_row;
-    for(impactlist_row=0; (impactlist_row<impactlist_nrows)&&(status==EXIT_SUCCESS); 
-	impactlist_row++) {
+    int anynul;
+    double time, next_real_impact_time=0., next_background_event_time=0.;
+    float energy;
+    struct Point2d position;
+    long impactlist_row=0;
+    while((impactlist_row<impactlist_nrows)&&(status==EXIT_SUCCESS)) {
 
-      // Read an entry from the impact list:
-      int anynul = 0;
-      double time = 0.;
-      float energy = 0.;
-      struct Point2d position;
-      position.x = 0.;
-      position.y = 0.;
-      fits_read_col(impactlist_fptr, TDOUBLE, 1, impactlist_row+1, 1, 1, 
-		    &time, &time, &anynul, &status);
-      fits_read_col(impactlist_fptr, TFLOAT, 2, impactlist_row+1, 1, 1, 
-		    &energy, &energy, &anynul, &status);
-      fits_read_col(impactlist_fptr, TDOUBLE, 3, impactlist_row+1, 1, 1, 
-		    &position.x, &position.x, &anynul, &status);
-      fits_read_col(impactlist_fptr, TDOUBLE, 4, impactlist_row+1, 1, 1, 
-		    &position.y, &position.y, &anynul, &status);
+      if (next_background_event_time < next_real_impact_time) {
+	// The current event is a background event:
+	time = next_background_event_time;
+	energy = 1.; // TODO
+	position.x = 2*(get_random_number()-0.5) * (detector->offset*detector->pixelwidth);
+	position.y = 2*(get_random_number()-0.5) * (detector->offset*detector->pixelwidth);
+	// TODO: prevent PSF check for these events !!
 
+	// Determine the time of the NEXT background event:
+	parameters.background_rate = 1.0;
+	next_background_event_time += rndexp(1./(double)parameters.background_rate);
+
+      } else {
+	// The current event is obtained from the impact list:
+	// Read an entry from the impact list:
+	anynul = 0;
+	time = next_real_impact_time;
+	energy = 0.;
+	position.x = 0.;
+	position.y = 0.;
+	fits_read_col(impactlist_fptr, TFLOAT, 2, impactlist_row+1, 1, 1, 
+		      &energy, &energy, &anynul, &status);
+	fits_read_col(impactlist_fptr, TDOUBLE, 3, impactlist_row+1, 1, 1, 
+		      &position.x, &position.x, &anynul, &status);
+	fits_read_col(impactlist_fptr, TDOUBLE, 4, impactlist_row+1, 1, 1, 
+		      &position.y, &position.y, &anynul, &status);
+
+	// Get the time of the next entry in the impact list:
+	impactlist_row++;
+	next_real_impact_time = 0.;
+	fits_read_col(impactlist_fptr, TDOUBLE, 1, impactlist_row+1, 1, 1, 
+		      &next_real_impact_time, &next_real_impact_time, &anynul, &status);
+      }
 
       // Call the detector action routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
@@ -526,6 +542,13 @@ int getpar(struct Parameters* parameters)
     sprintf(msg, "Error reading the name of the detector" 
 	    "redistribution matrix file (RMF)!\n");
     HD_ERROR_THROW(msg,status);
+  }
+
+  // Get the background count rate
+  else if ((status = PILGetReal4("background_rate", &parameters->background_rate))) {
+    sprintf(msg, "Error: could not determine the detector background rate!\n");
+    HD_ERROR_THROW(msg,status);
+    return(status);
   }
 
   // Get the name of the output event list (FITS file)

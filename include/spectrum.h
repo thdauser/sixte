@@ -1,13 +1,14 @@
 // The X-ray telescope simulation can handle several source spectra. 
 // To each individual X-ray source a spectrum can be assigned. The 
 // background spectrum is also handled in the same way as the source spectra.
-// The simulation loads the spectra from PHA files containing the counts per 
-// detector PHA channel. That means in order to create an appropriate input 
+// The simulation loads the spectra from PHA files containing the relative photon
+// generation ratio per detector PHA channel. 
+// That means in order to create an appropriate input 
 // spectrum from a specified model, the energies have to be binned to the 
 // EBOUNDS of the detector response.
 // The spectrum (i.e. the counts) can be normalized in an arbitrary way, as 
 // the simulation normalizes the spectrum to 1 after reading it from the file. 
-// The source count rate / flux has to be set via the 'src_cps' field in the 
+// The absolute photon rate for a source has to be set via the 'PPS' field in the 
 // source catalog.
 
 #ifndef SPECTRUM_H

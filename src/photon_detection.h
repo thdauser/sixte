@@ -43,11 +43,13 @@ struct Parameters {
   double integration_time;
   double dead_time;
   double clear_time;
-  int width;
-  double pixelwidth;
+  int width; /**< Width of the detector in pixels. */
+  double pixelwidth; /**< Width of one detector pixel in [m]. */
   double ccsigma;
   long pha_threshold;
   float energy_threshold;
+
+  float background_rate; /**< Rate of background events. */
 };
 
 
