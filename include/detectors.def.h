@@ -1,5 +1,4 @@
 /** 
- * Header file for "measurement_det.c".
  * Contains definitions/function headers needed to handle detector stuff.
  */
 

@@ -143,22 +143,14 @@ int photon_generation_main()
   // Program parameters.
   struct Parameters parameters;
   
-  // Several input source catalog files:
-  int n_sourcefiles;   // number of input source files
-  // Filenames of the individual source catalog files (FITS):
-  char** source_filename=NULL;
+  // Data structures for point sources:
+  PointSourceFileCatalog* pointsourcefilecatalog=NULL;
+  PointSourceCatalog* pointsourcecatalog=NULL;
+
   // X-ray Cluster image:
   SourceImageCatalog* sic = NULL;
 
-  // New data structures for point sources:
-  PointSourceFiles* pointsourcefiles=NULL;
-  PointSourceCatalog* pointsourcecatalog=NULL;
-  long source_counter;
-
-  // Catalog with orbit and attitude data over a particular timespan
-  //  struct Telescope *sat_catalog=NULL;     
-  // Number of entries in the orbit list ( <= orbit_nrows)
-  //  long sat_nentries;                      
+  // Catalog with attitude data.
   AttitudeCatalog* attitudecatalog=NULL;
 
   // Storage for different source spectra (including background spectrum).
@@ -166,6 +158,7 @@ int photon_generation_main()
 
   // Telescope data (like FOV diameter or focal length)
   struct Telescope telescope; 
+
   // Detector data structure (containing the pixel array, its width, 
   // RMF, EBOUNDS ...)
   Detector* detector=NULL;
@@ -177,6 +170,9 @@ int photon_generation_main()
 
   // Time step for sky scanning loop
   double dt = 0.1;
+
+  // Counter for several input source catalog files:
+  long source_counter;
 
   gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
 
@@ -250,6 +246,15 @@ int photon_generation_main()
 
     if (parameters.source_category==POINT_SOURCES) { 
 
+      // Load the source catalogs from the files:
+      pointsourcefilecatalog = get_PointSourceFileCatalog();
+      if (NULL==pointsourcefilecatalog) {
+	status = EXIT_FAILURE;
+	sprintf(msg, "Error: allocation of PointSourceFileCatalog failed!\n");
+	HD_ERROR_THROW(msg, status);
+	break;
+      }
+
       // Open the cluster list file:
       FILE* pointsourcelist_fptr = fopen(parameters.pointsourcelist_filename, "r");
       if (NULL==pointsourcelist_fptr) {
@@ -260,60 +265,56 @@ int photon_generation_main()
       } else {
 	// Determine the number of lines (= number of extended source files).
 	char line[MAXMSG];
-	n_sourcefiles = 0;
+	pointsourcefilecatalog->nfiles = 0;
 	while (fgets(line, MAXMSG, pointsourcelist_fptr)) {
-	  n_sourcefiles++;
+	  pointsourcefilecatalog->nfiles++;
 	}
 
-	if (n_sourcefiles<=0) {
-	  status=EXIT_SUCCESS;
-	  sprintf(msg, "Error: invalid number of point source catalogs!\n");
-	  HD_ERROR_THROW(msg, status);
-	  break;
+	if (0==pointsourcefilecatalog->nfiles) {
+	  sprintf(msg, "Warning: Point Source List File '%s' contains no data!\n",
+		  parameters.pointsourcelist_filename);
 	}
 
-	// Allocate memory for the point source catalog filenames.
-	source_filename=(char**)malloc(n_sourcefiles*sizeof(char*));
-	if (NULL==source_filename) {
-	  status=EXIT_SUCCESS;
-	  sprintf(msg, "Error: not enough memory!\n");
+	// Allocate memory for the point source files.
+	pointsourcefilecatalog->files = 
+	  (PointSourceFile**)malloc(pointsourcefilecatalog->nfiles*sizeof(PointSourceFile*));
+	if (NULL==pointsourcefilecatalog->files) {
+	  status=EXIT_FAILURE;
+	  sprintf(msg, "Error: not enough memory to allocate PointSourceFiles!\n");
 	  HD_ERROR_THROW(msg, status);
 	  break;
-	}
-	int catalog_counter;
-	for(catalog_counter=0;catalog_counter<n_sourcefiles; catalog_counter++) {
-	  source_filename[catalog_counter] = (char*)malloc(FILENAME_LENGTH*sizeof(char));
-	  if (NULL==source_filename[catalog_counter]) {
-	    status=EXIT_SUCCESS;
-	    sprintf(msg, "Error: not enough memory!\n");
-	    HD_ERROR_THROW(msg, status);
-	    break;
-	  }
-	}
+	}	
 
 	// Load all point source catalogs specified in the point source list file.
 	// Set the file pointer back to the beginning of the file:
 	fseek(pointsourcelist_fptr, 0, SEEK_SET);
+	int file_counter = 0;
 	while (fscanf(pointsourcelist_fptr, "%s\n", line)>0) {
-	  strcpy(source_filename[catalog_counter], line);
+	  // Add the specified PointSourceFile the the PointSourceFileCatalog:
+	  pointsourcefilecatalog->files[file_counter] = 
+	    get_PointSourceFile_fromFile(line, &status);
+	  if (status != EXIT_SUCCESS) break;
 	}
-	// Clear the PIL parameter for the cluster filename in order to 
-	// avoid problems with HD_PARSTAMP.
-	PILPutFname("cluster_filename", "");
-
-	if (status) break;
+	if (status != EXIT_SUCCESS) break;
+      
+	// Close the Point Source List File.
+	fclose(pointsourcelist_fptr);
       }
-
-      // Load the source catalogs from the files:
-      pointsourcefiles = get_PointSourceFiles(n_sourcefiles, source_filename, &status);
-      if (status != EXIT_SUCCESS) break;
 
       // Use a short time interval for the orbit update:
       dt = 0.001;
       
     } else if (SOURCE_IMAGES==parameters.source_category) {
       // Read the cluster images from the specified FITS files.
+
+      // Get a new SourceImageCatalog object.
       sic = get_SourceImageCatalog();
+      if (NULL==sic) {
+	status = EXIT_FAILURE;
+	sprintf(msg, "Error: allocation of SourceImageCatalog failed!\n");
+	HD_ERROR_THROW(msg, status);
+	break;
+      }
 
       // Open the cluster list file:
       FILE* sourceimagelist_fptr = fopen(parameters.sourceimagelist_filename, "r");
@@ -330,16 +331,16 @@ int photon_generation_main()
 	}
 
 	if (sic->nimages<=0) {
-	  status=EXIT_SUCCESS;
+	  status=EXIT_FAILURE;
 	  sprintf(msg, "Error: invalid number of sources files with "
 		  "extended sources!\n");
 	  HD_ERROR_THROW(msg, status);
 	  break;
 	}
 	
-	sic->images = (SourceImage**)malloc(sic->nimages*sizeof(SourceImage));
+	sic->images = (SourceImage**)malloc(sic->nimages*sizeof(SourceImage*));
 	if (NULL==sic->images) {
-	  status=EXIT_SUCCESS;
+	  status=EXIT_FAILURE;
 	  sprintf(msg, "Error: memory allocation for ClusterImageCatalog failed!\n");
 	  HD_ERROR_THROW(msg, status);
 	  break;
@@ -354,6 +355,7 @@ int photon_generation_main()
 	  sic->images[image_counter++] = get_SourceImage_fromFile(line, &status);
 	  if (status != EXIT_SUCCESS) break;
 	} // END of loop over all file entries in the cluster list file
+	if (status != EXIT_SUCCESS) break;
 
 	// Close the cluster list file:
 	fclose(sourceimagelist_fptr);
@@ -449,16 +451,24 @@ int photon_generation_main()
 	if ((1==first)||
 	    (fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
 	     sin(0.5*telescope.fov_diameter))) {
+
+	  // Release old PointSourceCatalog:
+	  free_PointSourceCatalog(pointsourcecatalog);
+	  pointsourcecatalog = NULL;
+
 	  // Preselect sources from the entire source catalog according to the 
 	  // satellite's direction of motion.
 	  // Calculate normalized vector perpendicular to the orbit plane:
 	  preselection_vector = normalize_vector(vector_product(normalize_vector(
-	      attitudecatalog->entry[attitude_counter].nz), 
+	      attitudecatalog->entry[attitude_counter].nz),
 	      normalize_vector(attitudecatalog->entry[attitude_counter].nx)));
-	  if((status=get_PointSourceCatalog(pointsourcefiles, &pointsourcecatalog,
-					    preselection_vector, pre_max_align,
-					    spectrum_store))
-	     !=EXIT_SUCCESS) break;
+
+	  pointsourcecatalog=get_PointSourceCatalog(pointsourcefilecatalog, 
+						    preselection_vector, 
+						    pre_max_align,
+						    spectrum_store,
+						    &status);
+	  if((EXIT_SUCCESS!=status)||(NULL==pointsourcecatalog)) break;
 	  
 	  // Update the catalog-update-counter
 	}
@@ -721,22 +731,14 @@ int photon_generation_main()
   // Clear photon list
   clear_photon_list(&photon_list);
 
+  // Attitude Catalog
   free_AttitudeCatalog(attitudecatalog);
 
   // Point Sources
-  free_PointSourceFiles(pointsourcefiles, &status);
-  if (pointsourcecatalog != NULL) {
-    if (pointsourcecatalog->sources != NULL) {
-      int count;
-      for(count=0; count<pointsourcecatalog->nsources; count++) {
-	if (pointsourcecatalog->sources[count].lightcurve!=NULL) 
-	  free(pointsourcecatalog->sources[count].lightcurve);
-      }
-      free(pointsourcecatalog->sources);
-    }
-    free (pointsourcecatalog);
-  }
+  free_PointSourceFileCatalog(pointsourcefilecatalog);
+  free_PointSourceCatalog(pointsourcecatalog);
 
+  // Extended Source Images
   free_SourceImageCatalog(sic);
   
   // Release source spectra
@@ -746,15 +748,6 @@ int photon_generation_main()
   if (detector!=NULL) {
     if(detector->rmf!=NULL) free(detector->rmf);
     free(detector);
-  }
-
-  // String buffers for filenames of source files
-  if (source_filename!=NULL) {
-    int count;
-    for(count=0; count<n_sourcefiles; count++) {
-      if(source_filename[count]!=NULL) free(source_filename[count]);
-    }
-    free(source_filename);
   }
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");

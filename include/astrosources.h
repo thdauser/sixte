@@ -32,17 +32,6 @@ typedef enum {
   SOURCE_IMAGES    =3
 } SourceCategory;
 
-
-// Function opens the specified point-source catalog files.
-PointSourceFiles* get_PointSourceFiles(int nfiles, char** filename, int* status);
-// Close the point.source catalog files.
-void free_PointSourceFiles(PointSourceFiles* psf, int* status);
-
-// Functions scans the point-source catalog and returns the sources 
-// close to the FOV.
-int get_PointSourceCatalog(PointSourceFiles*, PointSourceCatalog**,
-			   Vector normal_vector, const double max_align,
-			   struct Spectrum_Store);
 				   
 
 #endif /* ASTROSOURCES_H */

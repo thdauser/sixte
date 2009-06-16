@@ -3,13 +3,13 @@
 
 /** Creates a unit vector for specified right ascension and declination.
  * Angles have to be given in [rad]. */
-Vector unit_vector(const double rasc, const double dec)
+Vector unit_vector(const double ra, const double dec)
 {
   Vector x;
   double cos_dec = cos(dec);
 
-  x.x = cos_dec * cos(rasc);
-  x.y = cos_dec * sin(rasc);
+  x.x = cos_dec * cos(ra);
+  x.y = cos_dec * sin(ra);
   x.z = sin(dec);
 
   return(x);
@@ -68,8 +68,8 @@ Vector vector_difference(Vector x2, Vector x1) {
 
 /////////////////////////////////////////////////////////////////
 Vector interpolate_vec(Vector v1, double t1, 
-			      Vector v2, double t2, 
-			      double time) {
+		       Vector v2, double t2, 
+		       double time) {
   Vector pos;
   
   pos.x = v1.x + (time-t1)/(t2-t1)*(v2.x-v1.x);

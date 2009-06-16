@@ -22,7 +22,6 @@
 
 #include "vector.h"
 #include "detectors.types.h"
-#include "astrosources.types.h"
 
 
 long photon_counter;
@@ -77,7 +76,7 @@ struct lightcurve_entry {
 
 // Include own header files.
 #include "detectors.h"
-#include "astrosources.h"
+#include "astrosources.types.h"
 #include "random.h"
 
 
@@ -90,9 +89,7 @@ struct lightcurve_entry {
 // light curve and adds them to the time ordered photon list.
 // The return value is the value of the error status variable.
 int create_photons(PointSource* ps, double time, double dt,
-//int create_photons(struct source_cat_entry* src, double time, double dt,
-		   struct Photon_Entry** pl, Detector*,
-		   gsl_rng *gsl_random_g);
+		   struct Photon_Entry** pl, Detector*, gsl_rng *gsl_random_g);
 
 // Clears the photon list.
 void clear_photon_list(struct Photon_Entry **);

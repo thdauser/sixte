@@ -341,12 +341,12 @@ int create_photonlist_file(
 
     // 3. right ascension
     strcpy(ftype[2], "RA");
-    strcpy(fform[2], "D");
+    strcpy(fform[2], "E");
     strcpy(funit[2], "deg");
 
     // 4. declination
     strcpy(ftype[3], "DEC");
-    strcpy(fform[3], "D");
+    strcpy(fform[3], "E");
     strcpy(funit[3], "deg");
 
     // create the table

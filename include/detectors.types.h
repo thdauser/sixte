@@ -8,7 +8,7 @@
 #include "heasp.h"
 #endif
 
-#include "astrosources.types.h"
+
 #include "eventlist.types.h"
 #include "detectors.enum.h"
 
