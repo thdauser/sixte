@@ -76,7 +76,7 @@ struct lightcurve_entry {
 
 // Include own header files.
 #include "detectors.h"
-#include "astrosources.types.h"
+#include "pointsources.h"
 #include "random.h"
 
 

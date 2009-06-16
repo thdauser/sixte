@@ -89,6 +89,7 @@ int get_source_catalogs(
 
 
 
+
 ////////////////////////////////////////////////////////////
 // Releases the memory which has been allocated to store 
 // the source catalogs (all sources and preselected).

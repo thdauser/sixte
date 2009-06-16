@@ -19,7 +19,6 @@
 #include "sixt.h"
 #include "vector.h"
 #include "check_fov.h"
-#include "fits_ctlg.h"
 #include "random.h"
 #include "psf.h"
 #include "photon.h"

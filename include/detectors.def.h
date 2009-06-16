@@ -12,8 +12,6 @@
 #include "point.h"
 
 #include "detectors.types.h"
-#include "astrosources.types.h"
-
 
 
 // This routine is called after each photon event. It takes care of the detector 

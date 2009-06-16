@@ -1,5 +1,5 @@
-#ifndef ASTROSOURCES_TYPES_H
-#define ASTROSOURCES_TYPES_H (1)
+#ifndef POINTSOURCES_H
+#define POINTSOURCES_H (1)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,6 @@
 
 #include "spectrum.h"
 #include "vector.h"
-
 
 
 // Maximum number of sources in the preselected source catalog:
@@ -94,5 +93,5 @@ void free_PointSourceCatalog(PointSourceCatalog* psc);
  * given in [rad]. */
 int get_PointSourceTable_Row(PointSourceFile*, long row, PointSource*, int* status);
 
-#endif /* ASTROSOURCES_TYPES_H */
+#endif /* POINTSOURCES_H */
 

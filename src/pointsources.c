@@ -3,7 +3,7 @@
  */
 
 
-#include "astrosources.h"
+#include "pointsources.h"
 
 
 
@@ -78,7 +78,6 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
       HD_ERROR_THROW(msg, *status);
       break;
     }
-
 
     // OPEN the specified FITS file and store basic information.
     headas_chat(5, "open point-source catalog in file '%s' ...\n", filename);

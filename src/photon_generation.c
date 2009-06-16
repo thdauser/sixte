@@ -171,9 +171,6 @@ int photon_generation_main()
   // Time step for sky scanning loop
   double dt = 0.1;
 
-  // Counter for several input source catalog files:
-  long source_counter;
-
   gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
 
   char msg[MAXMSG];           // error message buffer
@@ -476,6 +473,7 @@ int photon_generation_main()
 
 
 	// CREATE PHOTONS for all POINT sources CLOSE TO the FOV
+	long source_counter;
 	for (source_counter=0; source_counter<pointsourcecatalog->nsources; 
 	     source_counter++) {
 	  // Check whether the source is inside the FOV:

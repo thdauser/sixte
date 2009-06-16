@@ -27,6 +27,9 @@
 #include "heasp.h"
 #endif
 
+#include "fits_pha.h"
+#include "sixt.h"
+
 
 #define N_SPECTRA_FILES 1    // number of spectrum files (PHA files)
 
@@ -48,11 +51,6 @@ struct Spectrum_Store{
 
   //  struct PHA* pha_spectrum;
 };
-
-
-
-#include "sixt.h"
-#include "psf.h"
 
 
 
