@@ -571,6 +571,8 @@ int photon_generation_main()
 		  double ra, dec;
 		  calculate_ra_dec(pixel_vector, &ra, &dec);
 
+		  // TODO: image_pixel = pixel; instead of the long pointer calls ??
+
 		  if(time-sic->images[image_counter]->pixel[xcount][ycount].t_last_photon>2*dt)
 		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = time-dt;
 		  

@@ -522,7 +522,14 @@ struct PhotonOrderedListEntry* CreateOrderedPhotonList
     first_ptr = CreateOrderedPhotonList(&(*tree_ptr)->sptr, list_ptr, status);
     if (EXIT_SUCCESS!=*status) return(NULL);
 
-    // Add the current entry to the time-ordered list.
+    // If the following list entries exist, move the list pointer to a position, where
+    // the new photon can be inserted:
+    while(NULL!=*list_ptr) {
+      if ((*list_ptr)->photon.time > (*tree_ptr)->photon.time) break;
+    }
+
+    // Insert the current entry into the time-ordered list at the right position.
+    struct PhotonOrderedListEntry* next = *list_ptr;
     (*list_ptr) = (struct PhotonOrderedListEntry*)malloc(sizeof(struct PhotonOrderedListEntry));
     if (NULL==*list_ptr) {
       *status=EXIT_FAILURE;
@@ -530,6 +537,7 @@ struct PhotonOrderedListEntry* CreateOrderedPhotonList
       return(NULL);
     }
     (*list_ptr)->photon = (*tree_ptr)->photon;
+    (*list_ptr)->next = next;
     
     // Check if this new entry is the first in the total time-ordered list.
     if (NULL==first_ptr) { first_ptr = (*list_ptr); }
