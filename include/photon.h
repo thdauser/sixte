@@ -132,8 +132,9 @@ int create_impactlist_file(fitsfile **, char filename[], int *status);
 
 
 /** Insert a new photon to an existing binary tree.
- * The pointer to the PhotonBinaryTreeEntry can be NULL. */
-void insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry**, Photon*);
+ * The pointer to the PhotonBinaryTreeEntry can be NULL. 
+ * The return value is the error status. */
+int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry**, Photon*);
 
 
 #endif  /* PHOTON_H */

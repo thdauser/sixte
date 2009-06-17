@@ -469,22 +469,84 @@ int create_impactlist_file(
 
 
 /////////////////////////////////////////////////////////////////////
-void insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
+int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
 {
+  int status = EXIT_SUCCESS;
+
   if (NULL==*ptr) {
     // Reached an end of the tree. So create a new entry and insert it here.
     *ptr = (struct PhotonBinaryTreeEntry*)malloc(sizeof(struct PhotonBinaryTreeEntry));
+    if (NULL==*ptr) { // Check if memory allocation was successfull
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for binary tree failed!\n", status);
+      return(status);
+    }
+
     (*ptr)->photon = *ph;
     (*ptr)->sptr = NULL;
     (*ptr)->gptr = NULL;
+
   } else {
     // We have to go deeper into the tree. So decide whether the new photon
     // is earlier or later than the current entry.
     if ((*ptr)->photon.time > ph->time) {
-      insert_Photon2BinaryTree(&(*ptr)->sptr, ph);
+      status=insert_Photon2BinaryTree(&(*ptr)->sptr, ph);
     } else {
-      insert_Photon2BinaryTree(&(*ptr)->gptr, ph);
+      status=insert_Photon2BinaryTree(&(*ptr)->gptr, ph);
     }
   }
+
+  return(status);
 }
 
+
+
+////////////////////////////////////////////////////////////////////
+/** Creates a time-ordered photon list from a given binary tree.
+ * The return value is a pointer to the first entry in the ordered list.
+ * The routine deletes the binary tree after the readout. */
+struct PhotonOrderedListEntry* CreateOrderedPhotonList
+(struct PhotonBinaryTreeEntry** tree_ptr /**< Pointer to the binary tree. 
+					  * Will be reset to NULL by this routine. 
+					  * (*tree_ptr) might be NULL. */,
+ struct PhotonOrderedListEntry** list_ptr /**< Pointer to the pointer to the next entry in the 
+					   * current entry of the time-ordered list. 
+					   * (*list_ptr) should be NULL. */,
+ int* status /**< Error status. */ ) 
+{
+  struct PhotonOrderedListEntry* first_ptr = NULL;
+
+  // Check if the current tree entry exists.
+  if (NULL != *tree_ptr) {
+    // Add the entries before the current one the time-ordered list.
+    first_ptr = CreateOrderedPhotonList(&(*tree_ptr)->sptr, list_ptr, status);
+    if (EXIT_SUCCESS!=*status) return(NULL);
+
+    // Add the current entry to the time-ordered list.
+    (*list_ptr) = (struct PhotonOrderedListEntry*)malloc(sizeof(struct PhotonOrderedListEntry));
+    if (NULL==*list_ptr) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for time-ordered photon list failed!\n", *status);
+      return(NULL);
+    }
+    (*list_ptr)->photon = (*tree_ptr)->photon;
+    
+    // Check if this new entry is the first in the total time-ordered list.
+    if (NULL==first_ptr) { first_ptr = (*list_ptr); }
+    
+    // Set the list pointer to the 'next' entry of the newly created list entry.
+    list_ptr = &(*list_ptr)->next;
+
+    // Add the entries after the current one to the time-ordered list.
+    CreateOrderedPhotonList(&(*tree_ptr)->gptr, list_ptr, status);
+    if (EXIT_SUCCESS!=*status) return(NULL);
+
+    // Delete the binary tree entry as it is not required any more.
+    free(*tree_ptr);
+    *tree_ptr=NULL;
+
+  } // END if current tree entry exists.
+
+  return(first_ptr);
+}
+						       
