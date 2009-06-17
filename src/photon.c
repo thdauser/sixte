@@ -153,7 +153,7 @@ int create_photons(
 		   PointSource* ps,          // source data
 		   // current time and time interval for photon creation
 		   double time, double dt,       
-		   struct Photon_Entry** pl, // time ordered photon list
+		   struct PhotonOrderedListEntry** pl, // time ordered photon list
 		   Detector* detector,     
 		   gsl_rng *gsl_random_g
 		   )
@@ -165,7 +165,7 @@ int create_photons(
   int first_photon=1;              
   // Alternative pointer to photon list, that can be moved along the list,   
   // without loosing the first entry.
-  struct Photon_Entry* pe = NULL;  
+  struct PhotonOrderedListEntry* pe = NULL;  
   int status=EXIT_SUCCESS;
 
 
@@ -246,10 +246,10 @@ int create_photons(
 
 ////////////////////////////////////////////////////////////////
 // Clears the photon list.
-void clear_photon_list(struct Photon_Entry **pe) {
+void clear_photon_list(struct PhotonOrderedListEntry **pe) {
   if ((*pe) != NULL) {
     // this is not the last entry in the list, so call routine recursively
-    clear_photon_list(&((*pe)->next_entry));
+    clear_photon_list(&((*pe)->next));
 
     // free memory and reset pointer to NULL
     free(*pe);
@@ -262,16 +262,16 @@ void clear_photon_list(struct Photon_Entry **pe) {
 ////////////////////////////////////////////////////////////////
 // Inserts a new photon into the time-ordered photon list.
 // The return value is the value of the error status.
-int insert_photon(struct Photon_Entry **pe, Photon ph) {
+int insert_photon(struct PhotonOrderedListEntry **pe, Photon ph) {
   char msg[MAXMSG];
 
   while (((*pe)!=NULL) && (ph.time > (*pe)->photon.time)) {
-    pe = &((*pe)->next_entry);
+    pe = &((*pe)->next);
   }
 
-  // Create a new Photon_Entry and insert it at the current position
-  struct Photon_Entry *buffer=NULL;
-  buffer = (struct Photon_Entry *) malloc(sizeof(struct Photon_Entry));
+  // Create a new PhotonOrderedListEntry and insert it at the current position
+  struct PhotonOrderedListEntry *buffer=NULL;
+  buffer = (struct PhotonOrderedListEntry *) malloc(sizeof(struct PhotonOrderedListEntry));
 
   if (buffer==NULL) {
     sprintf(msg, "Error: Could not allocate memory for photon entry!\n");
@@ -279,7 +279,7 @@ int insert_photon(struct Photon_Entry **pe, Photon ph) {
     return(EXIT_FAILURE);
   } else {
     buffer->photon = ph;
-    buffer->next_entry = *pe;
+    buffer->next = *pe;
     *pe = buffer;
     return(EXIT_SUCCESS);
   }
@@ -465,4 +465,26 @@ int create_impactlist_file(
   return(*status);
 }
 
+
+
+
+/////////////////////////////////////////////////////////////////////
+void insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
+{
+  if (NULL==*ptr) {
+    // Reached an end of the tree. So create a new entry and insert it here.
+    *ptr = (struct PhotonBinaryTreeEntry*)malloc(sizeof(struct PhotonBinaryTreeEntry));
+    (*ptr)->photon = *ph;
+    (*ptr)->sptr = NULL;
+    (*ptr)->gptr = NULL;
+  } else {
+    // We have to go deeper into the tree. So decide whether the new photon
+    // is earlier or later than the current entry.
+    if ((*ptr)->photon.time > ph->time) {
+      insert_Photon2BinaryTree(&(*ptr)->sptr, ph);
+    } else {
+      insert_Photon2BinaryTree(&(*ptr)->gptr, ph);
+    }
+  }
+}
 

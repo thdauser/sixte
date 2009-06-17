@@ -164,7 +164,7 @@ int photon_generation_main()
   Detector* detector=NULL;
 
   // Photon list containing all created photons in the sky
-  struct Photon_Entry *photon_list=NULL;  
+  struct PhotonOrderedListEntry *photon_list=NULL;  
   // Pointer to the FITS file for the output for the photon list.
   fitsfile *photonlist_fptr = NULL;
 
@@ -399,7 +399,7 @@ int photon_generation_main()
     // normalized vector perpendicular to the orbital plane
     Vector preselection_vector;
 
-    struct Photon_Entry *pl_entry=NULL; // "counter" variable for the photon list
+    struct PhotonOrderedListEntry *pl_entry=NULL; // "counter" variable for the photon list
 
 
     // Beginning of actual simulation (after loading required data):
@@ -698,7 +698,7 @@ int photon_generation_main()
 	} // END of photon is inside the FOV
 
 	// Move to the next entry in the photon list and clear the current entry.
-	pl_entry = photon_list->next_entry;
+	pl_entry = photon_list->next;
 	free(photon_list);
 	photon_list = pl_entry;
 

@@ -61,11 +61,19 @@ typedef struct {
 
 // Structure containing a photon and a pointer to the next photon in the 
 // time-ordered photon list.
-struct Photon_Entry {
+struct PhotonOrderedListEntry {
   Photon photon; 
-  struct Photon_Entry *next_entry;  // pointer to the next entry
+  struct PhotonOrderedListEntry *next;  // pointer to the next entry
 };
 
+
+/** Entry in the binary tree that stores the generated photons. */
+struct PhotonBinaryTreeEntry {
+  Photon photon; /**< Photon data. */
+
+  struct PhotonBinaryTreeEntry* sptr; /**< Pointer to entry with smaller time value. */
+  struct PhotonBinaryTreeEntry* gptr; /**< Pointer to entry with greater time value. */
+};
 
 
 // Structure representing a bin in the lightcurve.
@@ -92,13 +100,13 @@ struct lightcurve_entry {
 // light curve and adds them to the time ordered photon list.
 // The return value is the value of the error status variable.
 int create_photons(PointSource* ps, double time, double dt,
-		   struct Photon_Entry** pl, Detector*, gsl_rng *gsl_random_g);
+		   struct PhotonOrderedListEntry** pl, Detector*, gsl_rng *gsl_random_g);
 
 // Clears the photon list.
-void clear_photon_list(struct Photon_Entry **);
+void clear_photon_list(struct PhotonOrderedListEntry **);
 
 // Inserts a new photon into the time ordered photon list.
-int insert_photon(struct Photon_Entry **, Photon);
+int insert_photon(struct PhotonOrderedListEntry **, Photon);
 
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
@@ -121,6 +129,11 @@ int create_photonlist_file(fitsfile **, char filename[], int *status);
 // of photons on the detector. The list can be further processed by a detector
 // simulation to create an event list.
 int create_impactlist_file(fitsfile **, char filename[], int *status);
+
+
+/** Insert a new photon to an existing binary tree.
+ * The pointer to the PhotonBinaryTreeEntry can be NULL. */
+void insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry**, Photon*);
 
 
 #endif  /* PHOTON_H */
