@@ -1,4 +1,4 @@
-CFLAGS = -g -W -Wall -O0       # activate this line for debug mode
+#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
 
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include -I@top_srcdir@/include

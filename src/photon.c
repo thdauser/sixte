@@ -189,7 +189,7 @@ int create_photons(
 
   // Create photons and insert them into the given time-ordered list:
   while (ps->t_last_photon < time+dt) {
-    struct Photon new_photon;        // buffer for new photon
+    Photon new_photon;        // buffer for new photon
     new_photon.ra = ps->ra;
     new_photon.dec = ps->dec; 
     new_photon.direction = unit_vector(ps->ra, ps->dec); // REMOVE
@@ -262,7 +262,7 @@ void clear_photon_list(struct Photon_Entry **pe) {
 ////////////////////////////////////////////////////////////////
 // Inserts a new photon into the time-ordered photon list.
 // The return value is the value of the error status.
-int insert_photon(struct Photon_Entry **pe, struct Photon ph) {
+int insert_photon(struct Photon_Entry **pe, Photon ph) {
   char msg[MAXMSG];
 
   while (((*pe)!=NULL) && (ph.time > (*pe)->photon.time)) {

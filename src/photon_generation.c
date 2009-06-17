@@ -466,8 +466,6 @@ int photon_generation_main()
 						    spectrum_store,
 						    &status);
 	  if((EXIT_SUCCESS!=status)||(NULL==pointsourcecatalog)) break;
-	  
-	  // Update the catalog-update-counter
 	}
 	// END of preselection
 
@@ -582,13 +580,14 @@ int photon_generation_main()
 		    // Determine photon arrival time.
 		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon +=
 		      rndexp(1./(double)sic->images[image_counter]->pixel[xcount][ycount].rate);
+
 		    if (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon >=
 			time+200.) {
 		      sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = -dt;
 		      break;
 		    }
 
-		    struct Photon new_photon = { // buffer for new photon
+		    Photon new_photon = { // buffer for new photon
 		      .ra=ra, .dec=dec, .direction=pixel_vector,
 		      .time=sic->images[image_counter]->pixel[xcount][ycount].t_last_photon };
 
@@ -610,7 +609,7 @@ int photon_generation_main()
 		    double ra, dec;
 		    calculate_ra_dec(pixel_vector, &ra, &dec);
 		    
-		    struct Photon new_photon = { // buffer for new photon
+		    Photon new_photon = { // buffer for new photon
 		      .ra=ra, .dec=dec, .direction=pixel_vector }; 
 		    
 		    // Determine the energy of the new photon according to 

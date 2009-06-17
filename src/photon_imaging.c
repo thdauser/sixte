@@ -103,7 +103,7 @@ int photon_imaging_main() {
       
       // Read an entry from the photon list:
       int anynul = 0;
-      struct Photon photon;
+      Photon photon;
       photon.time = 0.;
       photon.energy = 0.;
       photon.ra = 0.;

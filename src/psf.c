@@ -56,7 +56,7 @@ static inline PSF_Item *get_best_psf_item(
 int get_psf_pos(
 		// output: coordinates of the photon on the detector [m]
 		struct Point2d* position,
-		struct Photon photon,     // incident photon
+		Photon photon,     // incident photon
 		// telescope information (focal length, pointing direction)
 		struct Telescope telescope, 
 		Vignetting* vignetting,

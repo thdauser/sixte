@@ -44,8 +44,9 @@ long photon_counter;
 #define IMAG(z,i) ((z)[N_LIGHTCURVE_BINS-(i)])
 
 
-// Structure containing all information about a single photon in the sky
-struct Photon {
+
+/** Contains all information about a single photon in the sky. */
+typedef struct {
   double time;  /**< Real time, when the photon is falling on the detector (in [s]). */
   float energy; /**< Photon energy in [keV]. */
 
@@ -54,14 +55,14 @@ struct Photon {
   // REMOVE
   Vector direction; // direction from which the photon originates 
                     // (source direction)
-};
+} Photon;
 
 
 
 // Structure containing a photon and a pointer to the next photon in the 
 // time-ordered photon list.
 struct Photon_Entry {
-  struct Photon photon;             // photon
+  Photon photon; 
   struct Photon_Entry *next_entry;  // pointer to the next entry
 };
 
@@ -72,6 +73,8 @@ struct lightcurve_entry {
   double t;           // lower time of bin
   double rate;        // source count rate within the time bin
 };
+
+
 
 
 // Include own header files.
@@ -95,7 +98,7 @@ int create_photons(PointSource* ps, double time, double dt,
 void clear_photon_list(struct Photon_Entry **);
 
 // Inserts a new photon into the time ordered photon list.
-int insert_photon(struct Photon_Entry **, struct Photon);
+int insert_photon(struct Photon_Entry **, Photon);
 
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.

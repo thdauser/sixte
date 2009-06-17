@@ -20,8 +20,11 @@ AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 
 # Compiler and Linker Flags:
-CFLAGS="$CFLAGS -I$HEADAS/include"
-LDFLAGS="$LDFLAGS -L$HEADAS/lib"
+# "-g -W -Wall -O0" for the compiler for debugging
+# "-Werror" for the compiler to treat warnings as errors
+# "-pg" for the compiler and linker to include information for gprof (Profiler)
+CFLAGS="$CFLAGS -I$HEADAS/include -g -W -Wall -O0 -pg"
+LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg "
 
 
 # Check for libraries:  (objdump -R/-T libncurses...)

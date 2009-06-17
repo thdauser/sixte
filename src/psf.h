@@ -77,7 +77,7 @@ PSF* get_psf(const char*, int* status);
  * Return value is '1', if the photon hits the detector. If it does not fall onto the
  * detector, the function returns '0'.  The output detector position is stored 
  * in [m] in the first 2 parameters of the function. */
-int get_psf_pos(struct Point2d*, struct Photon, struct Telescope, Vignetting*, PSF*);
+int get_psf_pos(struct Point2d*, Photon, struct Telescope, Vignetting*, PSF*);
 
 
 /** Releases the memory of the PSF storage. */
