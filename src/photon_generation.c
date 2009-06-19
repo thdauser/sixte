@@ -163,8 +163,10 @@ int photon_generation_main()
   // RMF, EBOUNDS ...)
   Detector* detector=NULL;
 
-  // Photon list containing all created photons in the sky
-  struct PhotonOrderedListEntry *photon_list=NULL;  
+  // Time-ordered photon binary tree.
+  struct PhotonBinaryTreeEntry* photon_tree=NULL;
+  // Time-ordered photon list containing all created photons in the sky
+  struct PhotonOrderedListEntry* photon_list=NULL;  
   // Pointer to the FITS file for the output for the photon list.
   fitsfile *photonlist_fptr = NULL;
 
@@ -574,10 +576,10 @@ int photon_generation_main()
 		  // TODO: image_pixel = pixel; instead of the long pointer calls ??
 
 		  if(time-sic->images[image_counter]->pixel[xcount][ycount].t_last_photon>2*dt)
-		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = time-dt;
+		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = time;
 		  
 		  while (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon
-			 <=time) {
+			 <=time + dt) {
 
 		    // Determine photon arrival time.
 		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon +=
@@ -597,36 +599,11 @@ int photon_generation_main()
 		    // the default spectrum.
 		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
 		    
-		    // Insert the photon into the time-ordered list.
-		    if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
-		      break;
-		  }
+		    // Add the photon to the binary tree.
+		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
+			!=EXIT_SUCCESS) break;
 
-		  /*
-		  double random_number = get_random_number();
-		  if(random_number <
-		     sic->images[image_counter]->pixel[xcount][ycount].rate*dt*4){
-		    
-		    // Determine the right ascension and declination of the pixel.
-		    double ra, dec;
-		    calculate_ra_dec(pixel_vector, &ra, &dec);
-		    
-		    Photon new_photon = { // buffer for new photon
-		      .ra=ra, .dec=dec, .direction=pixel_vector }; 
-		    
-		    // Determine the energy of the new photon according to 
-		    // the default spectrum.
-		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
-
-		    // Determine photon arrival time.
-		    double rnd_time = get_random_number();
-		    new_photon.time = time + dt*rnd_time;
-		    
-		    // Insert the photon into the time-ordered list.
-		    if ((status=insert_photon(&photon_list, new_photon))!=EXIT_SUCCESS) 
-		      break;
-	           } */
-		  
+		  }		  
 		  // END of photon generation from the cluster image pixel.
 		
 		} else { // END of check whether pixel is close to the FOV.
@@ -640,6 +617,16 @@ int photon_generation_main()
 	  } // END of check whether telescope axis points to the direction of the cluster field.
 	} // END of loop over different extend source images in the catalog.
       } // END of decision which source category.
+
+
+
+      // If a binary tree with photon entries is present, insert its entries to the 
+      // time-ordered photon list.
+      if (NULL!=photon_tree) {
+	struct PhotonOrderedListEntry* photon_list_current = photon_list;
+	status = CreateOrderedPhotonList(&photon_tree, &photon_list, &photon_list_current);
+	if (EXIT_SUCCESS!=status) break;
+      }
 
 
       // SCAN PHOTON LIST
@@ -686,7 +673,7 @@ int photon_generation_main()
 
 	  // Add the photon to the photon list file:
 	  // Rescale from [rad] -> [deg]:
-	  double ra  = photon_list->photon.ra *180./M_PI;
+	  double ra  = photon_list->photon.ra *180./M_PI; // TODO: photon.ra should already be rad
 	  double dec = photon_list->photon.dec*180./M_PI;
 	  fits_insert_rows(photonlist_fptr, photon_row++, 1, &status);
 	  fits_write_col(photonlist_fptr, TDOUBLE, 1, photon_row, 1, 1, 

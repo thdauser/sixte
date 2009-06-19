@@ -102,11 +102,31 @@ struct lightcurve_entry {
 int create_photons(PointSource* ps, double time, double dt,
 		   struct PhotonOrderedListEntry** pl, Detector*, gsl_rng *gsl_random_g);
 
-// Clears the photon list.
-void clear_photon_list(struct PhotonOrderedListEntry **);
 
-// Inserts a new photon into the time ordered photon list.
-int insert_photon(struct PhotonOrderedListEntry **, Photon);
+
+/** Inserts a new photon into the time-ordered photon list.
+ * If the list does not exist so far, the routine creates a new list.
+ * The return value is the error status. */
+int insert_Photon2TimeOrderedList
+(struct PhotonOrderedListEntry** first /**< Address of the pointer to the absolutely first 
+					* entry in the time-ordered list. The pointer might be
+					* NULL, if the list is empty. 
+					* Might be modified by the routine. */,
+ struct PhotonOrderedListEntry** current /**< Address of the pointer to the entry in the time- 
+					  * ordered list where the insert routine should start 
+					  * searching. That may not be the absolutely first 
+					  * entry of the list. Might be NULL, if it points to
+					  * the end of the list. The routine might modify the
+					  * pointer. */,
+ Photon* ph /**< Data of the photon that should be inserted. */);
+
+
+
+/** Clear the time-ordered photon list. */
+void clear_photon_list(struct PhotonOrderedListEntry ** /**< Address of the pointer to the
+							 * first entry of the list. 
+							 * Might be NULL. */);
+
 
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
@@ -132,9 +152,30 @@ int create_impactlist_file(fitsfile **, char filename[], int *status);
 
 
 /** Insert a new photon to an existing binary tree.
- * The pointer to the PhotonBinaryTreeEntry can be NULL. 
- * The return value is the error status. */
-int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry**, Photon*);
+ * The pointer to the PhotonBinaryTreeEntry can be NULL. */
+int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** /**< Address of the Pointer to the 
+							     * first entry of the binary tree.
+							     * Can be NULL. */,
+			     Photon* /**< Data of the photon that should be inserted. */ );
+
+
+/** Creates a time-ordered photon list from a given binary tree.
+ * The return value is the error status.
+ * The routine deletes the binary tree after the readout. */
+int CreateOrderedPhotonList
+(struct PhotonBinaryTreeEntry** tree_ptr /**< Pointer to the binary tree. 
+					  * Will be reset to NULL by this routine. 
+					  * (*tree_ptr) might be NULL. */,
+ struct PhotonOrderedListEntry** list_first /**< Address of the pointer to the pointer to 
+					     * the absolutely 
+					     * first entry in the time-ordered list. 
+					     * (*list_ptr) might be NULL, if the list is 
+					     * empty. */,
+ struct PhotonOrderedListEntry** list_current /**< Address of the pointer to the current entry
+					       * in the time-ordered photon list.
+					       * Might be NULL, if it points to the end of the
+					       * list. */ );
+
 
 
 #endif  /* PHOTON_H */
