@@ -5,7 +5,8 @@
 #include "headas_rand.h"
 
 
-// This routine creates random numbers using the HEAdas random number generator.
+
+//////////////////////////////////////////////
 inline double get_random_number()
 {
   // Return a value out of the interval [0,1):
@@ -15,9 +16,6 @@ inline double get_random_number()
 
 
 /////////////////////////////////////////////////////////////////////////
-// Returns a random value on the basis of an exponential distribution 
-// with a given average distance.Here this function is used to calculate 
-//the temporal differences between individual photons from a source.
 inline double rndexp(double avgdist)
 {
   double rand = get_random_number();
