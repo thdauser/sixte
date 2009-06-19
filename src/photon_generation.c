@@ -435,12 +435,13 @@ int photon_generation_main()
 
       // First determine telescope pointing direction at the current time.
       // TODO: replace this calculation by proper attitude interpolation.
-      telescope.nz = 
-	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-					 attitudecatalog->entry[attitude_counter].time, 
-					 attitudecatalog->entry[attitude_counter+1].nz, 
-					 attitudecatalog->entry[attitude_counter+1].time, 
-					 time));
+      telescope.nz = interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
+				     attitudecatalog->entry[attitude_counter].time, 
+				     attitudecatalog->entry[attitude_counter+1].nz, 
+				     attitudecatalog->entry[attitude_counter+1].time, 
+				     time);
+      normalize_vector_fast(&telescope.nz);
+
 
       if (parameters.source_category==POINT_SOURCES) {
 
@@ -563,7 +564,7 @@ int photon_generation_main()
 		  *sic->images[image_counter]->cdelt1 * k.z +
 		  (ycount - sic->images[image_counter]->crpix2 + 0.5)
 		  *sic->images[image_counter]->cdelt2 * l.z;
-		pixel_vector = normalize_vector(pixel_vector);
+		normalize_vector_fast(&pixel_vector);
 		
 		if (check_fov(&pixel_vector, &telescope.nz, close_fov_min_align)==0) {
 		  
@@ -658,12 +659,13 @@ int photon_generation_main()
 
 	// Check whether the photon is inside the FOV:
 	// First determine telescope pointing direction at the current time.
-	telescope.nz = 
-	  normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-					   attitudecatalog->entry[attitude_counter].time, 
-					   attitudecatalog->entry[attitude_counter+1].nz, 
-					   attitudecatalog->entry[attitude_counter+1].time, 
-					   photon_list->photon.time));
+	telescope.nz = interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
+				       attitudecatalog->entry[attitude_counter].time, 
+				       attitudecatalog->entry[attitude_counter+1].nz, 
+				       attitudecatalog->entry[attitude_counter+1].time, 
+				       photon_list->photon.time);
+	normalize_vector_fast(&telescope.nz);
+
 
 	// Compare the photon direction to the unit vector specifiing the 
 	// direction of the telescope axis:

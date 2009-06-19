@@ -17,9 +17,9 @@ Vector unit_vector(const double ra, const double dec)
 
 
 
-/** Returns a normalized vector (length 1.0, same direction).*/
+/////////////////////////////////////////////////////
 Vector normalize_vector(Vector x) {
-  double l;         // length of the vector x
+  double l;  // length of the vector x
   Vector y;  // normalized vector
 
   l = sqrt(pow(x.x,2.0)+pow(x.y,2.0)+pow(x.z,2.0));
@@ -29,6 +29,15 @@ Vector normalize_vector(Vector x) {
   y.z = x.z/l;
 
   return(y);
+}
+/////////////////////////////////////////////////////
+inline void normalize_vector_fast(Vector* v) {
+  double l;  // length of the vector x
+  l = sqrt(pow(v->x,2.0)+pow(v->y,2.0)+pow(v->z,2.0));
+
+  v->x /= l;
+  v->y /= l;
+  v->z /= l;
 }
 
 

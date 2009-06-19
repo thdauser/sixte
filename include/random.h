@@ -14,12 +14,14 @@
 
 
 // This routines Creates random numbers using the HEAdas random number generator.
-double get_random_number();
+inline double get_random_number();
 
 // Returns a random value on the basis of an exponential distribution with a given average.
-// Here this function is used to calculate the temporal differences between individual photons from a source.
-double rndexp(double avg);
+// Here this function is used to calculate the temporal differences between individual photons 
+// from a source.
+inline double rndexp(double avg);
 
 
 
-#endif
+#endif /* RANDOM_H */
+

@@ -17,8 +17,11 @@ typedef struct {
 // right ascension and declination
 Vector unit_vector(const double ra, const double dec);
 
-// returns a normalized vector (length 1.0, same direction)
+/** Returns a normalized vector of length 1.0 with the same direction as the original vector).*/
 Vector normalize_vector(Vector);
+/** Faster than normalize_vector. 
+ * Deals with pointer instead of handling structures at function call. */
+inline void normalize_vector_fast(Vector* v);
 
 // calculates the scalar product of two vectors
 inline double scalar_product(Vector* const, Vector* const);
