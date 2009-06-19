@@ -587,7 +587,7 @@ int photon_generation_main()
 
 		    if (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon >=
 			time+200.) {
-		      sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = -dt;
+		      sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = dt;
 		      break;
 		    }
 

@@ -236,13 +236,19 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
 				  struct PhotonOrderedListEntry** current, 
 				  Photon* ph) 
 {
+  // The iterator is shifted over the time-ordered list to find the right entry.
+  struct PhotonOrderedListEntry** iterator = current;
+
   // Find the right entry where to insert the new photon.
-  while ((NULL!=*current) && ((*current)->photon.time < ph->time)) {
-    current = &((*current)->next);
+  while ((NULL!=*iterator) && ((*iterator)->photon.time < ph->time)) {
+    iterator = &((*iterator)->next);
   }
-  // Now '*current' points to the entry before which the new photon has to be inserted.
+  // Now '*iterator' points to the entry before which the new photon has to be inserted.
+  // I.e. 'iterator' is equivalent to '&[fromer_entry]->next'. 
+  // Therefore changeing '*iterator' means redirecting the chain.
+  // '*iterator' has to be redirected to the new entry.
     
-  // Create a new PhotonOrderedListEntry and insert it before '**current'.
+  // Create a new PhotonOrderedListEntry and insert it before '**iterator'.
   struct PhotonOrderedListEntry* new_entry=NULL;
   new_entry = (struct PhotonOrderedListEntry*)malloc(sizeof(struct PhotonOrderedListEntry));
   if (NULL==new_entry) {
@@ -252,15 +258,16 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
 
   // Set the values of the new entry:
   new_entry->photon = *ph;
-  new_entry->next = *current;
-  
-  if (*current == *first) {
+  new_entry->next = *iterator;
+  if (*iterator == *first) {
     // If the new photon was inserted as first entry of the list, the pointer to this 
     // first entry has to be redirected.
     *first = new_entry;
   }
-  
-  *current = new_entry;
+  *iterator = new_entry;
+
+  // The pointer '*current' should point to the next entry in the time-ordered list.
+  *current = new_entry->next;
     
   return(EXIT_SUCCESS);
 }
