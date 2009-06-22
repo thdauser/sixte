@@ -401,8 +401,6 @@ int photon_generation_main()
     // normalized vector perpendicular to the orbital plane
     Vector preselection_vector;
 
-    struct PhotonOrderedListEntry *pl_entry=NULL; // "counter" variable for the photon list
-
 
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start photon generation process ...\n");
@@ -689,7 +687,7 @@ int photon_generation_main()
 	} // END of photon is inside the FOV
 
 	// Move to the next entry in the photon list and clear the current entry.
-	pl_entry = photon_list->next;
+	struct PhotonOrderedListEntry* pl_entry = photon_list->next; // Buffer
 	free(photon_list);
 	photon_list = pl_entry;
 
@@ -717,7 +715,7 @@ int photon_generation_main()
   if (gsl_random_g!=NULL) gsl_rng_free(gsl_random_g);
 
   // Clear photon list
-  clear_photon_list(&photon_list);
+  clear_PhotonList(&photon_list);
 
   // Attitude Catalog
   free_AttitudeCatalog(attitudecatalog);

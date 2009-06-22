@@ -116,14 +116,14 @@ int insert_Photon2TimeOrderedList
 					  * ordered list where the insert routine should start 
 					  * searching. That may not be the absolutely first 
 					  * entry of the list. Might be NULL, if it points to
-					  * the end of the list. The routine might modify the
+					  * the end of the list. The routine might modifies the
 					  * pointer. */,
  Photon* ph /**< Data of the photon that should be inserted. */);
 
 
 
 /** Clear the time-ordered photon list. */
-void clear_photon_list(struct PhotonOrderedListEntry ** /**< Address of the pointer to the
+void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the pointer to the
 							 * first entry of the list. 
 							 * Might be NULL. */);
 

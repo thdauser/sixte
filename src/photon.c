@@ -218,10 +218,10 @@ int create_photons(
 
 
 ////////////////////////////////////////////////////////////////
-void clear_photon_list(struct PhotonOrderedListEntry** pole) {
+void clear_PhotonList(struct PhotonOrderedListEntry** pole) {
   if ((*pole) != NULL) {
     // This is not the last entry in the list, so call routine recursively.
-    clear_photon_list(&((*pole)->next));
+    clear_PhotonList(&((*pole)->next));
 
     // Free memory and reset pointer to NULL.
     free(*pole);
@@ -249,8 +249,8 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
   // '*iterator' has to be redirected to the new entry.
     
   // Create a new PhotonOrderedListEntry and insert it before '**iterator'.
-  struct PhotonOrderedListEntry* new_entry=NULL;
-  new_entry = (struct PhotonOrderedListEntry*)malloc(sizeof(struct PhotonOrderedListEntry));
+  struct PhotonOrderedListEntry* new_entry = 
+    (struct PhotonOrderedListEntry*)malloc(sizeof(struct PhotonOrderedListEntry));
   if (NULL==new_entry) {
     HD_ERROR_THROW("Error: Could not allocate memory for new photon entry!\n", EXIT_FAILURE);
     return(EXIT_FAILURE);
@@ -266,9 +266,9 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
   }
   *iterator = new_entry;
 
-  // The pointer '*current' should point to the next entry in the time-ordered list.
-  *current = new_entry->next;
-    
+  // The pointer '*current' should point to the new entry in the time-ordered list.
+  *current = new_entry;
+  
   return(EXIT_SUCCESS);
 }
 
@@ -520,3 +520,4 @@ int CreateOrderedPhotonList(struct PhotonBinaryTreeEntry** tree_ptr,
   return(status);
 }
 						       
+
