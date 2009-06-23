@@ -163,6 +163,13 @@ int photon_detection_main() {
 			READONLY, &status)) break;
     // Determine the number of rows in the impact list:
     if (fits_get_num_rows(impactlist_fptr, &impactlist_nrows, &status)) break;
+    if (0 >= impactlist_nrows) {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: impact list in file '%s' is empty!\n", 
+	      parameters.impactlist_filename);
+      HD_ERROR_THROW(msg, status);
+      break;
+    }
 
     // Read HEADER keywords.
     char comment[MAXMSG]; // buffer
@@ -209,7 +216,8 @@ int photon_detection_main() {
     float energy;
     struct Point2d position;
     long impactlist_row=0;
-    while((impactlist_row<impactlist_nrows)&&(status==EXIT_SUCCESS)) {
+    while (status==EXIT_SUCCESS) {
+      // TODO: Break the loop, when interval time+timespan is exceeded.
 
       if (next_background_event_time < next_real_impact_time) {
 	// The current event is a background event:
@@ -240,6 +248,7 @@ int photon_detection_main() {
 
 	// Get the time of the next entry in the impact list:
 	impactlist_row++;
+	if (impactlist_row>=impactlist_nrows) break; // Reached end of impact list.
 	next_real_impact_time = 0.;
 	fits_read_col(impactlist_fptr, TDOUBLE, 1, impactlist_row+1, 1, 1, 
 		      &next_real_impact_time, &next_real_impact_time, &anynul, &status);
@@ -379,7 +388,9 @@ int photon_detection_main() {
   HDmtFree();
 
   if (impactlist_fptr) fits_close_file(impactlist_fptr, &status);
-  if (eventlist_file->fptr) fits_close_file(eventlist_file->fptr, &status);
+  if (NULL!=eventlist_file) {
+    if (eventlist_file->fptr) fits_close_file(eventlist_file->fptr, &status);
+  }
 
   // Release memory of detector:
   int count;
