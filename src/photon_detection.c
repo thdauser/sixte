@@ -219,16 +219,16 @@ int photon_detection_main() {
     while (status==EXIT_SUCCESS) {
       // TODO: Break the loop, when interval time+timespan is exceeded.
 
-      if (next_background_event_time < next_real_impact_time) {
+      if ((parameters.background_rate > 0.) && 
+	  (next_background_event_time < next_real_impact_time)) {
 	// The current event is a background event:
 	time = next_background_event_time;
 	energy = 1.; // TODO
 	position.x = 2*(get_random_number()-0.5) * (detector->offset*detector->pixelwidth);
 	position.y = 2*(get_random_number()-0.5) * (detector->offset*detector->pixelwidth);
 	// TODO: prevent PSF check for these events !!
-
+	
 	// Determine the time of the NEXT background event:
-	parameters.background_rate = 1.0;
 	next_background_event_time += rndexp(1./(double)parameters.background_rate);
 
       } else {
