@@ -181,13 +181,14 @@ int photon_detection_main() {
     // Delete old event list file:
     remove(parameters.eventlist_filename);
     // Create new event list FITS file.
-    char eventlist_template_filename[] = "erosita.eventlist.tpl";
     headas_chat(5, "create FITS file '%s' according to template '%s' ...\n", 
-		parameters.eventlist_filename);
-    // Create the new event list file according to the appropriate template:
+		parameters.eventlist_filename,
+		parameters.eventlist_template_filename);
+    // Create the new event list file according to the selected template:
     fitsfile* ef_fptr=NULL;
     char buffer[FILENAME_LENGTH];
-    sprintf(buffer, "%s(%s)", parameters.eventlist_filename, eventlist_template_filename);
+    sprintf(buffer, "%s(%s)", parameters.eventlist_filename, 
+	    parameters.eventlist_template_filename);
     if (fits_create_file(&ef_fptr, buffer, &status)) break;
     if (fits_close_file(ef_fptr, &status)) break;
     
@@ -566,6 +567,12 @@ int getpar(struct Parameters* parameters)
   else if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     sprintf(msg, "Error reading the name of the event list file!\n");
     HD_ERROR_THROW(msg,status);
+  }
+
+  // Get the name of the output event list TEMPLATE (ASCII file)
+  else if ((status = PILGetFname("eventlist_template_filename", 
+				 parameters->eventlist_template_filename))) {
+    HD_ERROR_THROW("Error reading the name of the event list file!\n", status);
   }
 
   // Get the start time of the simulation

@@ -34,6 +34,7 @@ struct Parameters {
   char attitude_filename[FILENAME_LENGTH];
   char rmf_filename[FILENAME_LENGTH];
   char eventlist_filename[FILENAME_LENGTH];
+  char eventlist_template_filename[FILENAME_LENGTH];
   double t0;
   double timespan;
   
