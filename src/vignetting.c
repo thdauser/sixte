@@ -155,10 +155,10 @@ Vignetting* get_Vignetting(char* filename, int* status) {
     }						
     // Scale from [deg] -> [rad]:
     for (count=0; count<vignetting->ntheta; count++) {
-      vignetting->theta[count] *= M_PI/360.;
+      vignetting->theta[count] *= M_PI/180.;
     }
     for (count=0; count<vignetting->nphi; count++) {
-      vignetting->phi[count] *= M_PI/360.;
+      vignetting->phi[count] *= M_PI/180.;
     }
 
     // Transfer the data from the data buffer to the Vignetting data structure:
