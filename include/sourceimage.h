@@ -22,7 +22,7 @@ struct SourceImagePixel {
 
 /** Object containing the extended source image from one FITS image extension. */
 typedef struct {
-  struct SourceImagePixel **pixel;
+  struct SourceImagePixel** pixel;
 
   int naxis1, naxis2;    /**< Width of the image [pixel]. */
   double cdelt1, cdelt2; /**< Width of one pixel [rad]. */

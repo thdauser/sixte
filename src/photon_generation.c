@@ -194,7 +194,7 @@ int photon_generation_main()
 
     if((status=photon_generation_getpar(&parameters))) break;
     
-    telescope.fov_diameter = parameters.fov_diameter;
+    telescope.fov_diameter = parameters.fov_diameter; // in [rad]
 
 
     // Defines the mathematical meaning of 'close' in the context that for 
@@ -310,17 +310,15 @@ int photon_generation_main()
       sic = get_SourceImageCatalog();
       if (NULL==sic) {
 	status = EXIT_FAILURE;
-	sprintf(msg, "Error: allocation of SourceImageCatalog failed!\n");
-	HD_ERROR_THROW(msg, status);
+	HD_ERROR_THROW("Error: allocation of SourceImageCatalog failed!\n", status);
 	break;
       }
 
       // Open the cluster list file:
       FILE* sourceimagelist_fptr = fopen(parameters.sourceimagelist_filename, "r");
       if (NULL==sourceimagelist_fptr) {
-	sprintf(msg, "Error: could not open the file containing the list "
-		"with the source images!\n");
-	HD_ERROR_THROW(msg, status);
+	HD_ERROR_THROW("Error: could not open the file containing the list "
+		       "with the source images!\n", status);
 	break;
       } else {
 	// Determine the number of lines (= number of extended source files).
@@ -331,9 +329,8 @@ int photon_generation_main()
 
 	if (sic->nimages<=0) {
 	  status=EXIT_FAILURE;
-	  sprintf(msg, "Error: invalid number of sources files with "
-		  "extended sources!\n");
-	  HD_ERROR_THROW(msg, status);
+	  HD_ERROR_THROW("Error: invalid number of sources files with "
+			 "extended sources!\n", status);
 	  break;
 	}
 	
@@ -505,7 +502,7 @@ int photon_generation_main()
 			sic->images[image_counter]->crval2);
 
 	  // Check whether the the current telescope axis points to a direction 
-	  // close to the specified cluster image field (3°).
+	  // close to the specified cluster image field (5°).
 	  if (check_fov(&refpixel_vector, &telescope.nz, cos(5.*M_PI/180.) )==0) {
 	    // Vector in the direction of the 1st image coordinate (right ascension).
 	    Vector k = {0., 0., 0.};
@@ -572,27 +569,27 @@ int photon_generation_main()
 		  double ra, dec;
 		  calculate_ra_dec(pixel_vector, &ra, &dec);
 
-		  // TODO: image_pixel = pixel; instead of the long pointer calls ??
+		  // Current pixel.
+		  struct SourceImagePixel* pixel = &(sic->images[image_counter]->pixel[xcount][ycount]);
 
-		  if(time-sic->images[image_counter]->pixel[xcount][ycount].t_last_photon>2*dt)
-		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = time;
+		  if (time - pixel->t_last_photon > 2*dt) {
+		    pixel->t_last_photon = time;
+		  }
 		  
-		  while (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon
-			 <=time + dt) {
+		  while (pixel->t_last_photon <= time + dt) {
 
 		    // Determine photon arrival time.
-		    sic->images[image_counter]->pixel[xcount][ycount].t_last_photon +=
-		      rndexp(1./(double)sic->images[image_counter]->pixel[xcount][ycount].rate);
+		    pixel->t_last_photon +=
+		      rndexp(1./(double)pixel->rate);
 
-		    if (sic->images[image_counter]->pixel[xcount][ycount].t_last_photon >=
-			time+200.) {
-		      sic->images[image_counter]->pixel[xcount][ycount].t_last_photon = dt;
+		    if (pixel->t_last_photon >=	time+200.) {
+		      pixel->t_last_photon = dt;
 		      break;
 		    }
 
 		    Photon new_photon = { // buffer for new photon
 		      .ra=ra, .dec=dec, .direction=pixel_vector,
-		      .time=sic->images[image_counter]->pixel[xcount][ycount].t_last_photon };
+		      .time = pixel->t_last_photon };
 
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.
