@@ -349,8 +349,7 @@ int photon_generation_main()
 
     } else {
       status=EXIT_FAILURE;
-      sprintf(msg, "Error: wrong source category!\n");
-      HD_ERROR_THROW(msg, status);
+      HD_ERROR_THROW("Error: wrong source category!\n", status);
     } // different source categories
 
 
@@ -374,13 +373,13 @@ int photon_generation_main()
     // --- Beginning of Photon generation process ---
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    double time;             // current time
+    double time; // current time
 
-    long attitude_counter=0;      // counter for orbit readout loop
+    long attitude_counter=0; // counter for orbit readout loop
     long last_attitude_counter=0; // stores sat_counter of former repetition, 
                                   // so the searching loop
                                   // doesn't have to start at 0 every time.
-    long photon_row=0;       // current row in photon list FITS file;
+    long photon_row=0; // current row in photon list FITS file;
 
     // normalized vector perpendicular to the orbital plane
     Vector preselection_vector;

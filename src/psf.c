@@ -131,9 +131,10 @@ int get_psf_pos(
   //double x2 = ((double)(x1-psf->width/2) + get_random_number()) *psf->pixelwidth -
   //              tan(offaxis_angle-psf_item->angle)*telescope.focal_length;
   //double y2 = ((double)(y1-psf->width/2) + get_random_number()) *psf->pixelwidth;
-  double x2 = ((double)x1-psf_item->crpix1+1. + get_random_number())*psf_item->cdelt1 
+  double x2 = ((double)x1-psf_item->crpix1 + get_random_number())*psf_item->cdelt1 
     + psf_item->crval1 - tan(offaxis_angle-psf_item->angle)*telescope.focal_length;
-  double y2 = ((double)y1-psf_item->crpix2+1.)*psf_item->cdelt2 + psf_item->crval2;
+  double y2 = ((double)y1-psf_item->crpix2 + get_random_number())*psf_item->cdelt2 
+    + psf_item->crval2;
 
   // Rotate the PSF postition [mu m] according to the azimuth angle.
   position->x = cos(azimuth)*x2 - sin(azimuth)*y2;
