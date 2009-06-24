@@ -486,6 +486,7 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
        (fits_get_colnum(ef->fptr, CASEINSEN, "ROW", &ef->crawy, status))) break;
 
     // OPTIONAL columns:
+    // eROSITA:
     int opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "RA", &ef->cra, &opt_status)) ef->cra=0;
     opt_status=0;
@@ -495,6 +496,7 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "Y", &ef->cskyy, &opt_status)) ef->cskyy=0;
 
+    // IXO WFI:
     opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PATNUM", &ef->cpatnum, &opt_status)) 
       ef->cpatnum=0;
@@ -504,6 +506,7 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PILEUP", &ef->cpileup, &opt_status)) 
       ef->cpileup=0;
+
     // Clear the HEAdas error stack in order to delete error messages created
     // due to missing OPTIONAL column names.
     HDerror_reset();

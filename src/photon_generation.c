@@ -13,8 +13,7 @@ struct Parameters {
   char attitude_filename[FILENAME_LENGTH];
   char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];
   char rmf_filename[FILENAME_LENGTH];
-  char pointsourcelist_filename[FILENAME_LENGTH];
-  char sourceimagelist_filename[FILENAME_LENGTH];
+  char sourcelist_filename[FILENAME_LENGTH];
   char photonlist_filename[FILENAME_LENGTH];
 
   SourceCategory source_category;
@@ -75,35 +74,23 @@ int photon_generation_getpar(struct Parameters* parameters)
     HD_ERROR_THROW(msg, status);
   }
   parameters->source_category=category;
-  if (EXIT_SUCCESS!=status) return(status);
-
-
-  if (POINT_SOURCES==parameters->source_category) {
-    // Determine the name of the file that contains the filenames of 
-    // the extended source files.
-    if ((status = PILGetFname("pointsourcelist_filename", 
-			      parameters->pointsourcelist_filename))) {
-      sprintf(msg, "Error reading the filename of the list of point source catalogs!\n");
-      HD_ERROR_THROW(msg, status);
-    }
-  } else if (SOURCE_IMAGES==parameters->source_category) {
-    // Determine the name of the file that contains the filenames of 
-    // the extended source files.
-    if ((status = PILGetFname("sourceimagelist_filename", 
-			      parameters->sourceimagelist_filename))) {
-      sprintf(msg, "Error reading the filename of the cluster list file!\n");
-      HD_ERROR_THROW(msg, status);
-    }
-  } else {
+  if ((parameters->source_category != POINT_SOURCES) && 
+      (parameters->source_category != SOURCE_IMAGES)) {
     status=EXIT_FAILURE;
-    sprintf(msg, "Error: unknown source category file!\n");
-    HD_ERROR_THROW(msg, status);
+    HD_ERROR_THROW("Error: unknown source category file!\n", status);
   }
   if (EXIT_SUCCESS!=status) return(status);
 
 
+  // Determine the name of the file that contains a list with the filenames of 
+  // the source files.
+  if ((status = PILGetFname("sourcelist_filename", 
+			    parameters->sourcelist_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the list of source catalogs!\n", status);
+  }
+
   // Get the filename of the Photon-List file (FITS file):
-  if ((status = PILGetFname("photonlist_filename", 
+  else if ((status = PILGetFname("photonlist_filename", 
 			    parameters->photonlist_filename))) {
     sprintf(msg, "Error reading the filename of the output file for "
 	    "the photon list!\n");
@@ -255,7 +242,7 @@ int photon_generation_main()
       }
 
       // Open the cluster list file:
-      FILE* pointsourcelist_fptr = fopen(parameters.pointsourcelist_filename, "r");
+      FILE* pointsourcelist_fptr = fopen(parameters.sourcelist_filename, "r");
       if (NULL==pointsourcelist_fptr) {
 	sprintf(msg, "Error: could not open the file containing the list "
 		"of point source catalogs!\n");
@@ -271,7 +258,7 @@ int photon_generation_main()
 
 	if (0==pointsourcefilecatalog->nfiles) {
 	  sprintf(msg, "Warning: Point Source List File '%s' contains no data!\n",
-		  parameters.pointsourcelist_filename);
+		  parameters.sourcelist_filename);
 	}
 
 	// Allocate memory for the point source files.
@@ -301,7 +288,7 @@ int photon_generation_main()
       }
 
       // Use a short time interval for the orbit update:
-      dt = 0.001;
+      dt = 0.1;
       
     } else if (SOURCE_IMAGES==parameters.source_category) {
       // Read the cluster images from the specified FITS files.
@@ -315,7 +302,7 @@ int photon_generation_main()
       }
 
       // Open the cluster list file:
-      FILE* sourceimagelist_fptr = fopen(parameters.sourceimagelist_filename, "r");
+      FILE* sourceimagelist_fptr = fopen(parameters.sourcelist_filename, "r");
       if (NULL==sourceimagelist_fptr) {
 	HD_ERROR_THROW("Error: could not open the file containing the list "
 		       "with the source images!\n", status);
@@ -502,8 +489,8 @@ int photon_generation_main()
 			sic->images[image_counter]->crval2);
 
 	  // Check whether the the current telescope axis points to a direction 
-	  // close to the specified cluster image field (5°).
-	  if (check_fov(&refpixel_vector, &telescope.nz, cos(5.*M_PI/180.) )==0) {
+	  // close to the specified cluster image field (3°).
+	  if (check_fov(&refpixel_vector, &telescope.nz, cos(3.*M_PI/180.) )==0) {
 	    // Vector in the direction of the 1st image coordinate (right ascension).
 	    Vector k = {0., 0., 0.};
 	    // Vector in the direction of the 2nd image coordinate (declination).
@@ -570,9 +557,10 @@ int photon_generation_main()
 		  calculate_ra_dec(pixel_vector, &ra, &dec);
 
 		  // Current pixel.
-		  struct SourceImagePixel* pixel = &(sic->images[image_counter]->pixel[xcount][ycount]);
+		  struct SourceImagePixel* pixel = 
+		    &(sic->images[image_counter]->pixel[xcount][ycount]);
 
-		  if (time - pixel->t_last_photon > 2*dt) {
+		  if (pixel->t_last_photon < time) {
 		    pixel->t_last_photon = time;
 		  }
 		  
@@ -582,12 +570,14 @@ int photon_generation_main()
 		    pixel->t_last_photon +=
 		      rndexp(1./(double)pixel->rate);
 
+		    /*
 		    if (pixel->t_last_photon >=	time+200.) {
-		      pixel->t_last_photon = dt;
+		      pixel->t_last_photon = 200.;
 		      break;
 		    }
+		    */
 
-		    Photon new_photon = { // buffer for new photon
+		    Photon new_photon = { // Buffer for the new photon.
 		      .ra=ra, .dec=dec, .direction=pixel_vector,
 		      .time = pixel->t_last_photon };
 
@@ -600,13 +590,13 @@ int photon_generation_main()
 			!=EXIT_SUCCESS) break;
 
 		  }		  
-		  // END of photon generation from the cluster image pixel.
+		  // END of photon generation from the SourceImagePixel.
 		
 		} else { // END of check whether pixel is close to the FOV.
 		  // The source image pixel is far away from the telescope axis.
 		  // Therefore we don't have to consider the directly neighboring 
 		  // pixels and do a bigger step than to the nearest pixel.
-		  ycount+=9;
+		  ycount+=10;
 		}
 	      }
 	    } // END of loop over all pixel of the image.
