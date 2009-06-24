@@ -113,6 +113,11 @@ void depfet_detector_action(
     readout_line(detector, detector->width -detector->readout_line -1, 
 		 eventlist_file, status);
     clear_detector_line(detector, detector->width -detector->readout_line -1);
+
+    // Print the time of the current events in order (program status
+    // information for the user).
+    headas_chat(0, "\rtime: %.3lf s ", detector->readout_time);
+    fflush(NULL);
   } 
 }
 
@@ -248,8 +253,6 @@ Detector* get_Detector(int* status)
 {
   Detector* detector=NULL;
 
-  char msg[MAXMSG];          // error output buffer
-
   do { // Outer ERROR handling loop
 
     headas_chat(5, "allocate memory for detector data structure ...\n");
@@ -258,9 +261,8 @@ Detector* get_Detector(int* status)
     detector = (Detector*)malloc(sizeof(Detector));
     if (NULL==detector) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory available to store "
-	      "the detector array!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: not enough memory available to store "
+		     "the detector array!\n", *status);
       break;
     } else { // Memory was allocated successfully.
       detector->pixel=NULL;
@@ -283,7 +285,6 @@ Detector* get_Detector(int* status)
 ////////////////////////////////////////////////////////////////////////
 int get_DetectorPixels(Detector* detector, int* status)
 {
-  char msg[MAXMSG];          // error output buffer
 
   do { // Outer ERROR handling loop
 
@@ -306,9 +307,8 @@ int get_DetectorPixels(Detector* detector, int* status)
 
     // Check if an error has occurred during memory allocation:
     if (*status==EXIT_FAILURE) {
-      sprintf(msg, "Error: not enough memory available to store "
-	      "the detector array!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: not enough memory available to store "
+		     "the detector array!\n", *status);
       break;
     }
 
