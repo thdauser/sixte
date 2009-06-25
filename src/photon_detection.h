@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <limits.h>
 #include <assert.h>
+#include <time.h>
 
 #include "fitsio.h"
 #include "pil.h"

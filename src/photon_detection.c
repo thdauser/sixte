@@ -203,6 +203,21 @@ int photon_detection_main() {
     if (fits_write_key(eventlist_file->fptr, TSTRING, "ATTITUDE", 
 		       parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
+
+    // Set the time-keyword in the Event List Header.
+    // See also: Stevens, "Advanced Programming in the UNIX environment", p. 155 ff.
+    time_t current_time;
+    if (NULL != time(&current_time)) {
+      struct tm* current_time_utc = gmtime(&current_time);
+      if (NULL != current_time_utc) {
+	char current_time_str[MAXMSG];
+	if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", current_time_utc) > 0) {
+	  // Return value should be == 19 !
+	  if (fits_write_key(eventlist_file->fptr, TSTRING, "DATE-OBS", current_time_str, 
+			     "Start Time (UTC) of exposure", &status)) break;
+	}
+      }
+    } // END of writing time information to Event File FITS header.
     
 
     // --- END of Initialization ---
