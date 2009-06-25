@@ -566,26 +566,36 @@ int photon_generation_main()
 		  struct SourceImagePixel* pixel = 
 		    &(sic->images[image_counter]->pixel[xcount][ycount]);
 
-		  if (pixel->t_last_photon < time) {
-		    pixel->t_last_photon = time;
+		  
+		  // TODO: needs to be replaced by exponential distribution:
+		  double rnd = get_random_number();
+		  if (rnd < pixel->rate * dt) {
+		    // Generate a new photon for this pixel
+		    Photon new_photon  = {
+		      .ra=ra, .dec=dec, .direction=pixel_vector,
+		      .time = time + get_random_number()*dt };
+		    
+		    // Determine the energy of the new photon according to 
+		    // the default spectrum.
+		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
+
+		    // Add the photon to the binary tree.
+		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
+			!=EXIT_SUCCESS) break;
+		  }
+		  /*
+		  if (pixel->t_next_photon < time) {
+		    pixel->t_next_photon = time;
 		  }
 		  
-		  while (pixel->t_last_photon <= time + dt) {
+		  while (pixel->t_next_photon <= time + dt) {
 
 		    // Determine photon arrival time.
-		    pixel->t_last_photon +=
-		      rndexp(1./(double)pixel->rate);
-
-		    /*
-		    if (pixel->t_last_photon >=	time+200.) {
-		      pixel->t_last_photon = 200.;
-		      break;
-		    }
-		    */
+		    pixel->t_next_photon += rndexp(1./(double)pixel->rate);
 
 		    Photon new_photon = { // Buffer for the new photon.
 		      .ra=ra, .dec=dec, .direction=pixel_vector,
-		      .time = pixel->t_last_photon };
+		      .time = pixel->t_next_photon };
 
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.
@@ -596,6 +606,7 @@ int photon_generation_main()
 			!=EXIT_SUCCESS) break;
 
 		  }		  
+		  */
 		  // END of photon generation from the SourceImagePixel.
 		
 		} else { // END of check whether pixel is close to the FOV.

@@ -16,7 +16,7 @@
 /** One pixel in the extended SourceImage. */
 struct SourceImagePixel {
   float rate; /**< Photon rate in this pixel */
-  double t_last_photon; /**< Time of last photon emitted from this Pixel. */
+  double t_next_photon; /**< Time of next photon emitted from this Pixel. */
 };
 
 

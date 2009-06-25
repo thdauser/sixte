@@ -137,7 +137,7 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     for(x=0; x<si->naxis1; x++) {
       for(y=0; y<si->naxis2; y++) {
 	si->pixel[x][y].rate = input_buffer[x+ si->naxis2*y]; // [photons/s]
-	si->pixel[x][y].t_last_photon = 0.;
+	si->pixel[x][y].t_next_photon = 0.;
       }
     }
 
