@@ -496,7 +496,7 @@ int detector_assign_rsp(Detector *detector, char *filename) {
 
 #ifdef NORMALIZE_RMF
   // Normalize the RMF:
-  headas_printf("### Warning: RMF is explicitly renormalized!\n");
+  headas_printf("### Warning: RMF is explicitly renormalized! ###\n");
   NormalizeRMF(detector->rmf);
 #else
   // Check if the RSP file contains Matrix Rows with a sum of more than 1.
@@ -514,7 +514,7 @@ int detector_assign_rsp(Detector *detector, char *filename) {
     }
   }
   if (maxsum > 1.) {
-    headas_printf("### Warning: RSP probably contains mirror ARF (row-sum = %lf)!\n", maxsum);
+    headas_printf("### Warning: RSP probably contains mirror ARF (row-sum = %lf)! ###\n", maxsum);
   }
 #endif
 

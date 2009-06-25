@@ -213,7 +213,7 @@ int photon_detection_main() {
 	char current_time_str[MAXMSG];
 	if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", current_time_utc) > 0) {
 	  // Return value should be == 19 !
-	  if (fits_write_key(eventlist_file->fptr, TSTRING, "DATE-OBS", current_time_str, 
+	  if (fits_update_key(eventlist_file->fptr, TSTRING, "DATE-OBS", current_time_str, 
 			     "Start Time (UTC) of exposure", &status)) break;
 	}
       }
