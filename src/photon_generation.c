@@ -609,8 +609,8 @@ int photon_generation_main()
       // time-ordered photon list.
       if (NULL!=photon_tree) {
 	struct PhotonOrderedListEntry* photon_list_current = photon_list;
-	status = CreateOrderedPhotonList(&photon_tree, &photon_list, &photon_list_current);
-	if (EXIT_SUCCESS!=status) break;
+	if (EXIT_SUCCESS!=(status=CreateOrderedPhotonList(&photon_tree, &photon_list, 
+							  &photon_list_current))) break;
       }
 
 
@@ -701,7 +701,7 @@ int photon_generation_main()
   if (gsl_random_g!=NULL) gsl_rng_free(gsl_random_g);
 
   // Clear photon list
-  clear_PhotonList(&photon_list);
+  clear_PhotonList(&photon_list, 0);
 
   // Attitude Catalog
   free_AttitudeCatalog(attitudecatalog);

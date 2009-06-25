@@ -218,10 +218,12 @@ int create_photons(
 
 
 ////////////////////////////////////////////////////////////////
-void clear_PhotonList(struct PhotonOrderedListEntry** pole) {
+void clear_PhotonList(struct PhotonOrderedListEntry** pole, long recursion_counter) {
   if ((*pole) != NULL) {
+    printf("Clear Photon List, Rekursion: %ld\n", recursion_counter);
+
     // This is not the last entry in the list, so call routine recursively.
-    clear_PhotonList(&((*pole)->next));
+    clear_PhotonList(&((*pole)->next), recursion_counter+1);
 
     // Free memory and reset pointer to NULL.
     free(*pole);

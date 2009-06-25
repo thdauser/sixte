@@ -92,11 +92,22 @@ void depfet_detector_action(
     // The current line number has to be decreased (readout process starts in the
     // middle of the detector).
     detector->readout_line--;
-    if (detector->readout_line < 0) { 
+    if (detector->readout_line < 0) {       
+      // Start new detector frame:
+      detector->frame++; 
       detector->readout_line = 
 	(1==detector->readout_directions)?(detector->width-1):(detector->offset-1);
-      detector->frame++;         // start new detector frame
+
+      // Print the time of the current events in order (program status
+      // information for the user).
+      if (0 == detector->frame % 100000) {
+	// Display this status information only each 100 000 frames in order to 
+	// avoid numerical load due to the displaying on STDOUT.
+	headas_chat(0, "\rtime: %.3lf s ", detector->readout_time);
+	fflush(NULL);
+      }
     }
+
     // Update the current detector readout time, which is used in the 
     // event list output.
     detector->readout_time += detector->dead_time;
@@ -114,10 +125,6 @@ void depfet_detector_action(
 		 eventlist_file, status);
     clear_detector_line(detector, detector->width -detector->readout_line -1);
 
-    // Print the time of the current events in order (program status
-    // information for the user).
-    headas_chat(0, "\rtime: %.3lf s ", detector->readout_time);
-    fflush(NULL);
   } 
 }
 
@@ -227,7 +234,8 @@ static inline void readout_line(
 	  (detector->pixel[xi][line].charge>=detector->energy_threshold)) { 
 
 	// REMOVE TODO
-	if (event.pha < 0) event.pha = detector->rmf->FirstChannel;
+	assert(event.pha >= 0);
+	// Maybe: if (event.pha < 0) continue;
 	
 	// There is an event in this pixel, so insert it into the eventlist:
 	event.time = detector->readout_time;
@@ -465,14 +473,12 @@ int detector_assign_rsp(Detector *detector, char *filename) {
   fitsfile* fptr=NULL;
 
   int status=EXIT_SUCCESS;
-  char msg[MAXMSG];
 
   // Allocate memory:
   detector->rmf = (struct RMF*)malloc(sizeof(struct RMF));
-  if (detector->rmf==NULL) {
+  if (NULL==detector->rmf) {
     status=EXIT_FAILURE;
-    sprintf(msg, "Error: could not allocate memory for RMF!\n");
-    HD_ERROR_THROW(msg, status);
+    HD_ERROR_THROW("Error: could not allocate memory for RMF!\n", status);
     return(status);
   }
 
@@ -484,8 +490,33 @@ int detector_assign_rsp(Detector *detector, char *filename) {
   // Read the SPECRESP MATRIX or MATRIX extension:
   if ((status=ReadRMFMatrix(fptr, 0, detector->rmf)) != EXIT_SUCCESS) return(status);
 
-  // TODO: normalize the RMF:
-  //NormalizeRMF(detector->rmf);
+  // Print some information:
+  headas_chat(5, "RMF loaded with %ld energy bins and %ld channels\n",
+	      detector->rmf->NumberEnergyBins, detector->rmf->NumberChannels);
+
+#ifdef NORMALIZE_RMF
+  // Normalize the RMF:
+  headas_printf("### Warning: RMF is explicitly renormalized!\n");
+  NormalizeRMF(detector->rmf);
+#else
+  // Check if the RSP file contains Matrix Rows with a sum of more than 1.
+  // In that case the RSP probably also contains the mirror ARF, what should 
+  // normally not be the case for this simulation.
+  long chancount, bincount;
+  double maxsum = 0.;
+  for (bincount=0; bincount<detector->rmf->NumberEnergyBins ; bincount++) {
+    double sum = 0.;
+    for (chancount=0; chancount<detector->rmf->NumberChannels; chancount++) {
+      sum += ReturnRMFElement(detector->rmf, chancount, bincount);
+    }
+    if (sum > maxsum) {
+      maxsum = sum;
+    }
+  }
+  if (maxsum > 1.) {
+    headas_printf("### Warning: RSP probably contains mirror ARF (row-sum = %lf)!\n", maxsum);
+  }
+#endif
 
   // Read the EBOUNDS extension:
   if ((status=ReadRMFEbounds(fptr, 0, detector->rmf)) !=EXIT_SUCCESS) return(status);
@@ -644,7 +675,7 @@ long get_channel(
   }
   
   // Return the PHA channel.
-  return(row+detector->rmf->FirstChannel);
+  return(row + detector->rmf->FirstChannel);
 }
 
 

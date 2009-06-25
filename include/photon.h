@@ -20,6 +20,7 @@
 #include "headas.h"
 #include "headas_error.h"
 
+#include "sixt.h"
 #include "vector.h"
 #include "detectors.types.h"
 
@@ -42,6 +43,7 @@ long photon_counter;
 // in the right format for the GSL routines.
 #define REAL(z,i) ((z)[(i)])
 #define IMAG(z,i) ((z)[N_LIGHTCURVE_BINS-(i)])
+
 
 
 
@@ -125,7 +127,7 @@ int insert_Photon2TimeOrderedList
 /** Clear the time-ordered photon list. */
 void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the pointer to the
 							 * first entry of the list. 
-							 * Might be NULL. */);
+							 * Might be NULL. */, long);  // REMOVE
 
 
 // Creates a randomly chosen photon energy according to the spectrum of the 

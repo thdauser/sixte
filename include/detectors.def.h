@@ -35,11 +35,12 @@ struct Eventlist_File*, int *status); */
 
 
 
-// Get the PHA channel that corresponds to a particular charge.
+/** Get the PHA channel that corresponds to a particular charge 
+ * according to the EBOUNDS table. */
 long get_channel(float, Detector*);
 
-// Get the charge that corresponds to a particular PHA channel according to 
-// the ebounds table.
+/** Get the charge corresponding to a particular PHA channel according to 
+ * the EBOUNDS table. */
 float get_energy(long, Detector*);
 
 

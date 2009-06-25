@@ -477,17 +477,31 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
 
     // Determine the individual column numbers:
     // REQUIRED columns:
+    int status2 = EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "TIME", &ef->ctime, status)) break;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PHA", &ef->cpha, status)) break;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "FRAME", &ef->cframe, status)) break;
+
     if((fits_get_colnum(ef->fptr, CASEINSEN, "RAWX", &ef->crawx, status)) && 
-       (fits_get_colnum(ef->fptr, CASEINSEN, "COLUMN", &ef->crawx, status))) break;
+       (fits_get_colnum(ef->fptr, CASEINSEN, "COLUMN", &ef->crawx, &status2))) {
+      *status += status2; 
+      break;
+    } else {
+      *status = EXIT_SUCCESS;
+      status2 = EXIT_SUCCESS;
+    }
     if((fits_get_colnum(ef->fptr, CASEINSEN, "RAWY", &ef->crawy, status)) && 
-       (fits_get_colnum(ef->fptr, CASEINSEN, "ROW", &ef->crawy, status))) break;
+       (fits_get_colnum(ef->fptr, CASEINSEN, "ROW", &ef->crawy, &status2))) {
+      *status += status2; 
+      break;
+    } else {
+      *status = EXIT_SUCCESS;
+      status2 = EXIT_SUCCESS;
+    }
 
     // OPTIONAL columns:
     // eROSITA:
-    int opt_status=0;
+    int opt_status = EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "RA", &ef->cra, &opt_status)) ef->cra=0;
     opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "DEC", &ef->cdec, &opt_status)) ef->cdec=0;

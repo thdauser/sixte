@@ -8,6 +8,7 @@
 #include <math.h>
 #include <string.h>
 #include <gsl/gsl_randist.h>
+#include <assert.h>
 
 #include "fitsio.h"
 #include "pil.h"
