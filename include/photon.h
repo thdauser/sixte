@@ -32,11 +32,6 @@ long photon_counter;
 #define LIGHTCURVE_BINWIDTH   (0.0005)
 #define N_PHOTON_FIELDS       (4)     // TIME, ENERGY, RA, DEC
 #define N_IMPACT_FIELDS       (4)     // TIME, ENERGY, X, Y
-
-
-// The light curve is constant, without red noise 
-// (so the photons have simply Poisson distribution).
-#define CONSTANT_LIGHTCURVE 1   
                                 
 
 // The following macros are used to the store light curve and the PSD 

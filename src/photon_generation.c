@@ -229,6 +229,13 @@ int photon_generation_main()
 	!= EXIT_SUCCESS) break;
 
 
+    // Determine which kind of light curves will be used:
+#ifdef CONSTANT_LIGHTCURVE
+    // NO red-noise statistics according to Timmer & Koenig (1995).
+    headas_printf("### Warning: using constant light curves!\n");
+#endif
+
+
 
     if (parameters.source_category==POINT_SOURCES) { 
 
