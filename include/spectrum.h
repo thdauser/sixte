@@ -47,8 +47,8 @@ struct Spectrum{
 
 // Storage for several different spectra.
 struct Spectrum_Store{
-  struct Spectrum* spectrum;
-  long nspectra;
+  struct Spectrum* spectrum; /**< Array of the individual spectra in the storage. */
+  long nspectra; /**< Total number of spectra in the storage. */
 
   //  struct PHA* pha_spectrum;
 };

@@ -530,10 +530,11 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
       ef->cpileup=0;
 
     // Determine the PixelOffset (numbering scheme of RAWX and RAWY).
-    // Manly used for eROSITA, as the numbering starts at 1 instead of 0 there.
+    // Mainly used for eROSITA, as the numbering starts at 1 instead of 0 there.
+    // Default value is 0.
     char comment[MAXMSG];
     opt_status=EXIT_SUCCESS;
-    if(fits_read_key(ef->fptr, TDOUBLE, "PXOFFSET", &ef->PixelOffset, comment, status)) {
+    if(fits_read_key(ef->fptr, TINT, "PXOFFSET", &ef->PixelOffset, comment, &opt_status)) {
       ef->PixelOffset = 0;
     }
 
