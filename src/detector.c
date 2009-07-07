@@ -648,9 +648,10 @@ long get_channel(
 {
   // Check if the charge is outside the range of the energy bins defined
   // in the EBOUNDS table. In that case the return value of this function is '-1'.
-  if ((detector->rmf->ChannelLowEnergy[0] > energy) ||
-      (detector->rmf->ChannelHighEnergy[detector->rmf->NumberChannels-1] < energy)) {
-    return(-1);
+  if (detector->rmf->ChannelLowEnergy[0] > energy) {
+    return(0); // TODO
+  } else if (detector->rmf->ChannelHighEnergy[detector->rmf->NumberChannels-1] < energy) {
+    return(detector->rmf->NumberChannels - 1 + detector->rmf->FirstChannel);
   }
   
 

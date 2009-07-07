@@ -18,10 +18,14 @@ void add_eventlist_row(struct Eventlist_File* ef, struct Event event, int *statu
     fits_write_col(ef->fptr, TDOUBLE, ef->ctime, ef->row, 1, 1, &event.time, status);
   if (0<ef->cpha)
     fits_write_col(ef->fptr, TLONG, ef->cpha, ef->row, 1, 1, &event.pha, status);
-  if (0<ef->crawx)
+  if (0<ef->crawx) {
+    event.xi += ef->PixelOffset;
     fits_write_col(ef->fptr, TINT, ef->crawx, ef->row, 1, 1, &event.xi, status);
-  if (0<ef->crawy)
+  }
+  if (0<ef->crawy) {
+    event.yi += ef->PixelOffset;
     fits_write_col(ef->fptr, TINT, ef->crawy, ef->row, 1, 1, &event.yi, status);
+  }
   if (0<ef->cframe)
     fits_write_col(ef->fptr, TLONG, ef->cframe, ef->row, 1, 1, &event.frame, status);
 
@@ -400,12 +404,14 @@ int get_eventlist_row(struct Eventlist_File ef,
   if (0<ef.crawx)
     fits_read_col(ef.fptr, TINT, ef.crawx, ef.row+1, 1, 1, 
 		  &event->xi, &event->xi, &anynul, status);
+  event->xi += ef.PixelOffset;
 
   // yi (4th column)
   event->yi = 0;
   if (0<ef.crawy)
     fits_read_col(ef.fptr, TINT, ef.crawy, ef.row+1, 1, 1, 
 		  &event->yi, &event->yi, &anynul, status);
+  event->yi += ef.PixelOffset;
 
   // frame
   event->frame = 0;
@@ -499,27 +505,37 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
       status2 = EXIT_SUCCESS;
     }
 
+
     // OPTIONAL columns:
-    // eROSITA:
     int opt_status = EXIT_SUCCESS;
+    // eROSITA:
+    opt_status = EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "RA", &ef->cra, &opt_status)) ef->cra=0;
-    opt_status=0;
+    opt_status=EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "DEC", &ef->cdec, &opt_status)) ef->cdec=0;
-    opt_status=0;
+    opt_status=EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "X", &ef->cskyx, &opt_status)) ef->cskyx=0;
-    opt_status=0;
+    opt_status=EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "Y", &ef->cskyy, &opt_status)) ef->cskyy=0;
 
     // IXO WFI:
     opt_status=0;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PATNUM", &ef->cpatnum, &opt_status)) 
       ef->cpatnum=0;
-    opt_status=0;
+    opt_status=EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PATID", &ef->cpatid, &opt_status)) 
       ef->cpatid=0;
-    opt_status=0;
+    opt_status=EXIT_SUCCESS;
     if(fits_get_colnum(ef->fptr, CASEINSEN, "PILEUP", &ef->cpileup, &opt_status)) 
       ef->cpileup=0;
+
+    // Determine the PixelOffset (numbering scheme of RAWX and RAWY).
+    // Manly used for eROSITA, as the numbering starts at 1 instead of 0 there.
+    char comment[MAXMSG];
+    opt_status=EXIT_SUCCESS;
+    if(fits_read_key(ef->fptr, TDOUBLE, "PXOFFSET", &ef->PixelOffset, comment, status)) {
+      ef->PixelOffset = 0;
+    }
 
     // Clear the HEAdas error stack in order to delete error messages created
     // due to missing OPTIONAL column names.

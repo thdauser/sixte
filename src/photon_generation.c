@@ -719,7 +719,7 @@ int photon_generation_main()
   if (gsl_random_g!=NULL) gsl_rng_free(gsl_random_g);
 
   // Clear photon list
-  clear_PhotonList(&photon_list, 0);
+  clear_PhotonList(&photon_list);
 
   // Attitude Catalog
   free_AttitudeCatalog(attitudecatalog);

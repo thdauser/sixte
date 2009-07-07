@@ -217,8 +217,8 @@ int create_psf_work(
 
     // Fill the PSF array with a 2D Gaussian distribution.
     double hew =  // HEW in detector pixels
-      tan(5 /3600. /180. * M_PI)*focal_length  /store.pixelwidth;
-    //    tan (HEW)             *focal length  /pixelwidth
+      tan(5./3600. /180. * M_PI)*focal_length  /store.pixelwidth;
+    //tan (HEW)                 *focal length  /pixelwidth
     double sigma = hew /(2.*sqrt(2.*log(2.)));  // sigma in detector pixels
     headas_chat(5, "HEW: %lf pixel\n", hew);
     headas_chat(5, "PSF Sigma: %lf pixel\n", sigma);

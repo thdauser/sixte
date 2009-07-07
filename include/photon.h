@@ -122,7 +122,7 @@ int insert_Photon2TimeOrderedList
 /** Clear the time-ordered photon list. */
 void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the pointer to the
 							 * first entry of the list. 
-							 * Might be NULL. */, long);  // REMOVE
+							 * Might be NULL. */);
 
 
 // Creates a randomly chosen photon energy according to the spectrum of the 

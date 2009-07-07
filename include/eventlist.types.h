@@ -38,6 +38,8 @@ struct Eventlist_File {
   int ctime, cpha, crawx, crawy, cframe;
   int cra, cdec, cskyx, cskyy;
   int cpatnum, cpatid, cpileup;
+
+  int PixelOffset; /**< Offset of the pixel numbering. Number of the first pixel. */
 };
 
 
