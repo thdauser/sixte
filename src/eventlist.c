@@ -399,19 +399,19 @@ int get_eventlist_row(struct Eventlist_File ef,
     fits_read_col(ef.fptr, TLONG, ef.cpha, ef.row+1, 1, 1, 
 		  &event->pha, &event->pha, &anynul, status);
 
-  // xi (3rd column)
+  // xi (3rd column) (RAWX)
   event->xi = 0;
   if (0<ef.crawx)
     fits_read_col(ef.fptr, TINT, ef.crawx, ef.row+1, 1, 1, 
 		  &event->xi, &event->xi, &anynul, status);
-  event->xi += ef.PixelOffset;
+  event->xi -= ef.PixelOffset;
 
-  // yi (4th column)
+  // yi (4th column) (RAWY)
   event->yi = 0;
   if (0<ef.crawy)
     fits_read_col(ef.fptr, TINT, ef.crawy, ef.row+1, 1, 1, 
 		  &event->yi, &event->yi, &anynul, status);
-  event->yi += ef.PixelOffset;
+  event->yi -= ef.PixelOffset;
 
   // frame
   event->frame = 0;
