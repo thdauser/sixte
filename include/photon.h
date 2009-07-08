@@ -6,22 +6,13 @@
 #ifndef PHOTON_H
 #define PHOTON_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <math.h>
-#include <assert.h>
+#include "sixt.h"
 
 // GSL header files
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_fft_halfcomplex.h>
 #include <gsl/gsl_randist.h>
 
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
-
-#include "sixt.h"
 #include "vector.h"
 #include "random_sixt.h"
 

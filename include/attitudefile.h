@@ -1,21 +1,12 @@
 #ifndef ATTITUDEFILE_H
 #define ATTITUDEFILE_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
-
 #include "sixt.h"
-
 
 #define N_ATTITUDE_FIELDS 6  // number of fields in the attitude table
 
 
-
+/** Data structure describing an attitude file. */
 typedef struct {
   fitsfile* fptr; /**< File pointer to the FITS file. */
 
@@ -30,6 +21,7 @@ typedef struct {
 } AttitudeFile;
 
 
+/** Contains a line of attitude data from a FITS file. */
 typedef struct {
   double time; /**< Time for which the AttitudeFileEntry is valid. */
   double viewra; /**< Right ascension of telescope pointing direction [deg]. */

@@ -1,19 +1,6 @@
 #ifndef PHOTON_DETECTION_H
 #define PHOTON_DETECTION_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <malloc.h>
-#include <limits.h>
-#include <assert.h>
-#include <time.h>
-
-#include "fitsio.h"
-#include "pil.h"
-#include "headas.h"
-#include "headas_error.h"
-
 #include "sixt.h"
 #include "detectors.h"
 #include "photon.h"

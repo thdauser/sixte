@@ -1,19 +1,5 @@
-/** 
- * This file is the header file of 'orbatt.c'
- * contains all definitions for orbit and attitude handling.
- */
-
 #ifndef ATTITUDECATALOG_H
 #define ATTITUDECATALOG_H 1
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <math.h>
-
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
 
 #include "sixt.h"
 #include "attitudefile.h"
@@ -21,7 +7,7 @@
 #include "telescope.h"
 
 
-
+/** Entry of the AttitudeCatalog. */
 typedef struct {
   /** Point of time for which this attitude is valid. */
   double time;
@@ -33,6 +19,7 @@ typedef struct {
   Vector nx;
 } AttitudeEntry;
 
+/** Catalog containing the attitude information for an X-ray telescope. */
 typedef struct {
   /** Number of AttituideEntry elements in the AttitudeCatalog. */
   long nentries;

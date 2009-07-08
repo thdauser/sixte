@@ -1,18 +1,10 @@
 #ifndef EVENTLIST_H
 #define EVENTLIST_H (1)
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <malloc.h>
 
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
-
+#include "sixt.h"
 #include "eventlist.types.h"
 #include "detectors.types.h"
-#include "sixt.h"
 
 
 /*
@@ -44,7 +36,6 @@ void add_eventlist_row(struct Eventlist_File*, struct Event, int *status);
 /** This function reads a row of data from the event list FITS file.
  * The function does NOT increment the row counter of the Eventlist_File object. */
 int get_eventlist_row(struct Eventlist_File, struct Event*, int *status);
-
 
 
 #endif /* EVENTLIST_H */

@@ -8,7 +8,6 @@
 #include "photon_detection.h"
 
 
-
 ////////////////////////////////////
 /** Main procedure. */
 int photon_detection_main() {

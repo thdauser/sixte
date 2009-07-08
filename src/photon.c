@@ -1,8 +1,4 @@
-/** 
- * This file contains routines/functions for photon handling.
- */
 #include "photon.h"
-
 
 
 ///////////////////////////////////////////////////////

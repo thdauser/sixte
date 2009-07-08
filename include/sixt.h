@@ -6,6 +6,8 @@
 #include <limits.h>
 #include <malloc.h>
 #include <math.h>
+#include <time.h>
+#include <string.h>
 #include <assert.h>
 
 #include "fitsio.h"
@@ -14,10 +16,10 @@
 #include "headas_error.h"
 
 
-#define FILENAME_LENGTH 256    // maximum lenght of a filename
-#define MAXMSG 256             // maximum length of an output/error message
+#define FILENAME_LENGTH 256 /**< Maximum lenght of a filename. */
+#define MAXMSG 256 /**< Maximum length of a message string. */
 
-#define NAN (0./0.)            // Not a Number
+#define NAN (0./0.) /**< Not a Number. */
 
 
 #endif /* SIXT_H */

@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 #include "random_sixt.h"
-#include "fits_pha.h"
+//#include "fits_pha.h"
 
 #define GAUSSIAN_CHARGE_CLOUDS 1 // Assume a Gaussian charge cloud shape.
 
