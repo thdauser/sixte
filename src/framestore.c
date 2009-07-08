@@ -7,13 +7,9 @@ int init_FramestoreDetector(Detector* detector, struct FramestoreParameters para
   int status = EXIT_SUCCESS;
   
   do { // Error handling loop.
-    
-    // Check if the detector type is really FRAMESTORE.
-    if (FRAMESTORE != detector->type) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: selected detector type is NOT FRAMESTORE !\n", status);
-      break;
-    }
+
+    // Set the detector tpye.
+    detector->type = FRAMESTORE;
 
     // Allocate memory for the framestore-specific elements in the detector data
     // structure.
@@ -38,8 +34,15 @@ int init_FramestoreDetector(Detector* detector, struct FramestoreParameters para
       break;
     }
 
+    // Set the first readout time such that the first readout is performed 
+    // immediately at the beginning of the simulation.
+    detector->readout_time = parameters.t0;
+
     // Set the readout routine:
     detector->readout = readout_FramestoreDetector;
+
+    // Get the memory for the detector pixels
+    if (get_DetectorPixels(detector, &status)) break;
 
   } while(0); // End of Error handling loop.
 

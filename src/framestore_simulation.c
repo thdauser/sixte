@@ -47,7 +47,6 @@ int framestore_simulation_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // GENERAL SETTINGS
-    detector->type = FRAMESTORE;
     detector->width = parameters.width;
     detector->offset = detector->width/2;
     detector->pixelwidth = parameters.pixelwidth;
@@ -59,18 +58,11 @@ int framestore_simulation_main() {
     // DETECTOR SPECIFIC SETTINGS
     struct FramestoreParameters framestoreparameters = {
       .integration_time = parameters.integration_time,
-      .ccsigma          = parameters.ccsigma
+      .ccsigma          = parameters.ccsigma,
+      .t0               = parameters.t0
     };
     init_FramestoreDetector(detector, framestoreparameters);    
     
-    // Get the memory for the detector pixels
-    if (get_DetectorPixels(detector, &status)) break;
-
-    // Set the first readout time such that the first readout is performed 
-    // immediately at the beginning of the simulation.
-    detector->readout_time = parameters.t0; // TODO move to init_FramestoreDetector() routine.
-      
-     
     // Read the detector RMF and EBOUNDS from the specified file and 
     // assign them to the Detector data structure.
     if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) 

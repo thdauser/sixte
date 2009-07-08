@@ -22,6 +22,7 @@ struct FramestoreProperties {
 struct FramestoreParameters {
   double integration_time;
   double ccsigma;
+  double t0;
 };
 
 ////////////////////////////////////////////////////////
