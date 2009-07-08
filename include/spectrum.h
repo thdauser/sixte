@@ -6,8 +6,9 @@
 // That means in order to create an appropriate input 
 // spectrum from a specified model, the energies have to be binned to the 
 // EBOUNDS of the detector response.
-// The spectrum (i.e. the counts) can be normalized in an arbitrary way, as 
-// the simulation normalizes the spectrum to 1 after reading it from the file. 
+// In principle the spectrum (i.e. the counts) can be normalized in an arbitrary way, as 
+// the simulation normalizes the spectrum to 1 after reading it from the file, but it is
+// strongly recommended to use only spectra that are normalized to 1.
 // The absolute photon rate for a source has to be set via the 'PPS' field in the 
 // source catalog.
 

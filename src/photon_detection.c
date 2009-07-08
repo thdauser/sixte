@@ -63,7 +63,7 @@ int photon_detection_main() {
     // Pixelwidth 
     detector->pixelwidth = parameters.pixelwidth;
 
-    // Size of the charge cloud [real pixel]
+    // Size of the charge cloud [m]
     detector->ccsigma = parameters.ccsigma;
     detector->ccsize = 3.*detector->ccsigma;
 
