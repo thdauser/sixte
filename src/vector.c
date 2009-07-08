@@ -1,8 +1,7 @@
 #include "vector.h"
 
 
-/** Creates a unit vector for specified right ascension and declination.
- * Angles have to be given in [rad]. */
+/////////////////////////////////////////////////////
 Vector unit_vector(const double ra, const double dec)
 {
   Vector x;

@@ -73,7 +73,7 @@ void depfet_detector_action(
 {
   Detector *detector = (Detector*) det;
 
-  // The DEPFET detector is read out line by line, with two readout lines 
+  // The WFI detector is read out line by line, with two readout lines 
   // starting in the middle of the detector array. The readout of one 
   // individual line requires the deadtime. The readout is performed at 
   // the beginning of this interval. Then the charges in the line are cleared. 
@@ -261,7 +261,7 @@ Detector* get_Detector(int* status)
 {
   Detector* detector=NULL;
 
-  do { // Outer ERROR handling loop
+  do { // Outer ERROR handling loop.
 
     headas_chat(5, "allocate memory for detector data structure ...\n");
 
@@ -272,19 +272,15 @@ Detector* get_Detector(int* status)
       HD_ERROR_THROW("Error: not enough memory available to store "
 		     "the detector array!\n", *status);
       break;
-    } else { // Memory was allocated successfully.
+    } else { // Memory has been allocated successfully.
       detector->pixel=NULL;
       detector->rmf=NULL;
     }
 
-  } while (0); // END of Error handling loop
+  } while (0); // END of Error handling loop.
 
-
-  if (EXIT_SUCCESS==*status) {
-    return(detector);
-  } else {
-    return(NULL);
-  }
+  // Return a pointer to the newly created detector data structure.
+  return(detector);
 }
 
 
@@ -361,108 +357,6 @@ static inline double gaussint(double x)
 {
   return(gsl_sf_erf_Q(x));
 }
-
-
-
-
-
-/*
-/////////////////////////////////////////////////////////////////////////////////
-int get_ebounds(Ebounds *ebounds, int *Nchannels, const char filename[])
-{
-  fitsfile *fptr=NULL;        // fitsfile pointer to RMF input file
-
-  int status=EXIT_SUCCESS;    // error status
-  char msg[MAXMSG];           // buffer for error output messages
-
-
-  do {  // error handling loop (is only run once)
-    headas_chat(5, "load EBOUNDS from file '%s' ...\n", filename);
-
-    // First open the RMF FITS file:
-    if (fits_open_file(&fptr, filename, READONLY, &status)) break;
-  
-    int hdunum, hdutype;
-    // After opening the FITS file, get the number of the current HDU.
-    if (fits_get_hdu_num(fptr, &hdunum) == 1) {
-      // This is the primary array, so try to move to the first extension and 
-      // see if it is a table.
-      if (fits_movabs_hdu(fptr, 3, &hdutype, &status)) break;
-    } else {
-      // get the HDU type
-      if (fits_get_hdu_type(fptr, &hdutype, &status)) break;
-    }
-
-    // image HDU results in an error message
-    if (hdutype==IMAGE_HDU) {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: FITS extension in file '%s' is not a table but an image "
-	      "(HDU number: %d)\n", filename, hdunum);
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
-    // get the number of PHA channels from the corresponding header keyword
-    char comment[MAXMSG];
-    if (fits_read_key(fptr, TLONG, "DETCHANS", Nchannels, comment, &status)) break;
-
-
-    // get the number of rows in the FITS file (number of given points of time)
-    long nrows;
-    fits_get_num_rows(fptr, &nrows, &status);
-
-    if (nrows != *Nchannels) {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: Wrong number of data lines in FITS file '%s'!\n", 
-	      filename);
-      HD_ERROR_THROW(msg, status);
-      break;
-    }
-  
-
-    // get memory for detector EBOUNDS
-    ebounds->row = (struct Ebounds_Row*) malloc(nrows * sizeof(struct Ebounds_Row));
-    if (ebounds->row == NULL) {
-      status = EXIT_FAILURE;
-      sprintf(msg, "Not enough memory available to store the PHA channel data!\n");
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
-
-    // Read the EBOUNDS data from the RMF-FITS file and store them in array
-    long row;
-    long channel=0;
-    float Emin=0., Emax=0.;
-    for (row=0; (row < nrows)&&(status==EXIT_SUCCESS); row++) {
-      if ((status=read_ebounds_fitsrow(&channel, &Emin, &Emax, fptr, row+1))
-	  !=EXIT_SUCCESS) break;
-      ebounds->row[row].channel = channel;
-      ebounds->row[row].E_min = Emin;
-      ebounds->row[row].E_max = Emax;
-    }
-  } while (0);  // end of error handling loop
-
-
-  // clean up:
-  if (fptr) fits_close_file(fptr, &status);
-
-  return (status);
-}
-
-
-
-
-/////////////////////////////////////////////
-void free_ebounds(Ebounds* ebounds) {
-  if (ebounds) {
-    if (ebounds->row) {
-      free(ebounds->row);
-    }
-  }
-}
-*/
-
 
 
 
@@ -560,7 +454,7 @@ int detector_active(
 		    double time
 		    )
 {
-  if (detector->type == DEPFET) {
+  if (detector->type == WFI) {
     if ((y==detector->readout_line)||(y==detector->width -detector->readout_line -1)) {
       // If we are at the beginning of the readout interval of the regarded line
       // within the clear time, the photon is not measured.
@@ -1662,7 +1556,105 @@ long detector_rmf(
 
 
 
+
+/////////////////////////////////////////////////////////////////////////////////
+int get_ebounds(Ebounds *ebounds, int *Nchannels, const char filename[])
+{
+  fitsfile *fptr=NULL;        // fitsfile pointer to RMF input file
+
+  int status=EXIT_SUCCESS;    // error status
+  char msg[MAXMSG];           // buffer for error output messages
+
+
+  do {  // error handling loop (is only run once)
+    headas_chat(5, "load EBOUNDS from file '%s' ...\n", filename);
+
+    // First open the RMF FITS file:
+    if (fits_open_file(&fptr, filename, READONLY, &status)) break;
+  
+    int hdunum, hdutype;
+    // After opening the FITS file, get the number of the current HDU.
+    if (fits_get_hdu_num(fptr, &hdunum) == 1) {
+      // This is the primary array, so try to move to the first extension and 
+      // see if it is a table.
+      if (fits_movabs_hdu(fptr, 3, &hdutype, &status)) break;
+    } else {
+      // get the HDU type
+      if (fits_get_hdu_type(fptr, &hdutype, &status)) break;
+    }
+
+    // image HDU results in an error message
+    if (hdutype==IMAGE_HDU) {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: FITS extension in file '%s' is not a table but an image "
+	      "(HDU number: %d)\n", filename, hdunum);
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+    // get the number of PHA channels from the corresponding header keyword
+    char comment[MAXMSG];
+    if (fits_read_key(fptr, TLONG, "DETCHANS", Nchannels, comment, &status)) break;
+
+
+    // get the number of rows in the FITS file (number of given points of time)
+    long nrows;
+    fits_get_num_rows(fptr, &nrows, &status);
+
+    if (nrows != *Nchannels) {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: Wrong number of data lines in FITS file '%s'!\n", 
+	      filename);
+      HD_ERROR_THROW(msg, status);
+      break;
+    }
+  
+
+    // get memory for detector EBOUNDS
+    ebounds->row = (struct Ebounds_Row*) malloc(nrows * sizeof(struct Ebounds_Row));
+    if (ebounds->row == NULL) {
+      status = EXIT_FAILURE;
+      sprintf(msg, "Not enough memory available to store the PHA channel data!\n");
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+
+    // Read the EBOUNDS data from the RMF-FITS file and store them in array
+    long row;
+    long channel=0;
+    float Emin=0., Emax=0.;
+    for (row=0; (row < nrows)&&(status==EXIT_SUCCESS); row++) {
+      if ((status=read_ebounds_fitsrow(&channel, &Emin, &Emax, fptr, row+1))
+	  !=EXIT_SUCCESS) break;
+      ebounds->row[row].channel = channel;
+      ebounds->row[row].E_min = Emin;
+      ebounds->row[row].E_max = Emax;
+    }
+  } while (0);  // end of error handling loop
+
+
+  // clean up:
+  if (fptr) fits_close_file(fptr, &status);
+
+  return (status);
+}
+
+
+
+
+/////////////////////////////////////////////
+void free_ebounds(Ebounds* ebounds) {
+  if (ebounds) {
+    if (ebounds->row) {
+      free(ebounds->row);
+    }
+  }
+}
 */
+
+
+
 
 
 

@@ -1,11 +1,14 @@
 #ifndef VECTOR_H
 #define VECTOR_H 1
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <malloc.h>
+#include <assert.h>
 
 
-// data structure with three double-valued components (= 3d vector)
+/** 3-dimensional vector. Data structure with three double-valued components. */
 typedef struct {
   double x;
   double y;
@@ -13,8 +16,8 @@ typedef struct {
 } Vector;
 
 
-// Returns a unit vector pointing in the specified direction of 
-// right ascension and declination
+/** Creates a unit vector for specified right ascension and declination.
+ * Angles have to be given in [rad]. */
 Vector unit_vector(const double ra, const double dec);
 
 /** Returns a normalized vector of length 1.0 with the same direction as the original vector).*/

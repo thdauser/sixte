@@ -1,21 +1,26 @@
 #ifndef FITS_PHA_H
 #define FITS_PHA_H 1
 
-#include <malloc.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <malloc.h>
+#include <assert.h>
+#include <limits.h>
 
 #include "fitsio.h"
+#include "headas.h"
+#include "headas_rand.h"
 
 
 #define PHA_NFIELDS 3
 #define SPECTRUM_NFIELDS 2
 
 
-////////////////////////////////////////////////////////////////
-// Spectra
-
 // creates the necessary data for the FITS-table layout
-void spectrum_create_tbl_parameter(char *ftype[PHA_NFIELDS], char *fform[PHA_NFIELDS], char *funit[PHA_NFIELDS]);
+void spectrum_create_tbl_parameter(char *ftype[PHA_NFIELDS], 
+				   char *fform[PHA_NFIELDS], 
+				   char *funit[PHA_NFIELDS]);
 
 // writes detector response data to a binary FITS table
 int insert_spectrum_fitsrow(long channel, float p, fitsfile *fptr, long row);
@@ -25,7 +30,7 @@ int read_spec_fitsrow(long *channel, float *probability, fitsfile *fptr, long ro
 
 
 
-////////////////////////////////////////////////////////////////
+/*
 // Detector redistribution matrix (RMF)
 
 // creates the necessary data for the FITS-table layout
@@ -40,7 +45,7 @@ int read_rmf_fitsrow(float *Emin, float *Emax, int *Ngrp, int *Fchan, int *Nchan
 
 // read EBOUNDS data line from a FITS table (one PHA channel)
 int read_ebounds_fitsrow(long *channel, float *Emin, float *Emax, fitsfile *fptr, long row);
-
+*/
 
 #endif
 

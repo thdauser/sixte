@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <math.h>
+#include <assert.h>
 
 // GSL header files
 #include <gsl/gsl_errno.h>
@@ -22,7 +23,7 @@
 
 #include "sixt.h"
 #include "vector.h"
-#include "detectors.types.h"
+#include "random_sixt.h"
 
 
 long photon_counter;

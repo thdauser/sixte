@@ -6,9 +6,9 @@
 #include <math.h>
 #include <malloc.h>
 #include <assert.h>
-#include "fitsio.h"
 
 #include "sixt.h"
+#include "fitsio.h"
 #include "headas.h"
 #include "headas_error.h"
 
@@ -49,4 +49,4 @@ void free_Vignetting(Vignetting* vi);
 float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi);
 
 
-#endif // #ifndef VIGNETTING_H
+#endif /* VIGNETTING_H */

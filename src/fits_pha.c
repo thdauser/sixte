@@ -1,9 +1,6 @@
 #include "fits_pha.h"
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Spectra
-
 // creates the necessary data for the FITS-table layout
 void spectrum_create_tbl_parameter(
 				   char *ftype[SPECTRUM_NFIELDS], 
@@ -85,6 +82,7 @@ int read_spec_fitsrow(
 
 
 
+/*
 ////////////////////////////////////////////////////////////////////
 // Detector Redistribution Matrix
 
@@ -220,4 +218,4 @@ int read_ebounds_fitsrow(
   return(status);
 }
 
-
+*/

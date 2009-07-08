@@ -107,8 +107,9 @@ int get_spectrum(
   char msg[MAXMSG];         // error description output buffer
   
 
-  do {    // beginning of ERROR handling loop
-    // fill the spectrum array with data from the FITS file
+  do { // Beginning of ERROR handling loop.
+
+    // Fill the spectrum array with data from the FITS file.
     headas_chat(5, "load spectrum from file '%s' ...\n", filename);
 
     // First of all open the PHA FITS file:

@@ -1,10 +1,9 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H 1
 
-#include <assert.h>
-
-#include "random.h"
-
+#include "sixt.h"
+#include "random_sixt.h"
+#include "fits_pha.h"
 
 #define GAUSSIAN_CHARGE_CLOUDS 1 // Assume a Gaussian charge cloud shape.
 

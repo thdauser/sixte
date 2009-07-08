@@ -4,7 +4,7 @@
 /** Specification index for the different detector types. */
 typedef enum {
   FRAMESTORE=1, 
-  DEPFET    =2, 
+  WFI       =2, 
   TES       =3,
   HTRS      =4
 } DetectorTypes;

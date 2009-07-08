@@ -1,10 +1,4 @@
-/** 
- * Contains routines/functions needed to handle point sources / point source catalogs.
- */
-
-
 #include "pointsources.h"
-
 
 
 ////////////////////////////////////////////////////

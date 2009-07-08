@@ -2,22 +2,10 @@
 #define PHOTON_IMAGING_H 1
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <malloc.h>
-#include <limits.h>
-//#include <gsl/gsl_randist.h>
-
-#include "fitsio.h"
-#include "pil.h"
-#include "headas.h"
-#include "headas_error.h"
-
 #include "sixt.h"
 #include "vector.h"
 #include "check_fov.h"
-#include "random.h"
+#include "random_sixt.h"
 #include "psf.h"
 #include "photon.h"
 #include "telescope.h"

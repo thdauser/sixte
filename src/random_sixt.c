@@ -1,9 +1,4 @@
-#include <math.h>
-#include <limits.h>
-
-#include "random.h"
-#include "headas_rand.h"
-
+#include "random_sixt.h"
 
 
 //////////////////////////////////////////////

@@ -15,30 +15,50 @@
 
 
 /** Represents a detector pixel. */
-struct Pixel {  // union
+struct Pixel {
   /** Charge stored in the pixel. */
   float charge;    
-
   /** List of photon arrival times in the pixel (needed for TES). */
   double arrival; 
 };
 
 
+/** Properties specific for a Framestore CCD detector. */
+struct FramestoreProperties {
+  double integration_time; /**< Integration time of the entire pnCCD (!) 
+			    * detector array.
+			    * (= Span of time between 2 subsequent readouts). */
+  long frame; /**< Number of the current frame. */
+
+  double ccsigma; /**< Charge cloud sigma [m]. This quantity is used to calculate size of 
+		   * the charge cloud. */
+  double ccsize; /**< Size of the charge cloud [m]. Defined as three times ccsigma. */
+
+};
+
+
+/** Detector-specific properties of the individual detector types. */
+union DetectorSpecificProperties {
+  struct FramestoreProperties framestore;
+};
+
 
 /** Detector data structure. */
 typedef struct {
-  DetectorTypes type;      /**< Detector Type (framestore, depfet, ...). */
+  DetectorTypes type; /**< Detector Type (FRAMESTORE, WFI, TES, HTRS, ...). */
 
   // Detector array (contains the charge created by the x-ray 
   // photons or additional data)
   struct Pixel ** pixel;
 
-  int width;               /**< Width (and height) of the detector 
-			    *(number of [integer pixels]). */
-  int offset;              /**< Offset of the detector array [integer pixels], 
-			    * the physical origin of the detector (at the center)
-			    * has the array-index 'offset'. */
-  double pixelwidth;       /**< Width of a single pixel in the detector array [m]. */
+  int width; /**< Width (and height) of the detector (number of [integer pixels]). */
+
+  int offset; /**< Offset of the detector array [integer pixels]. 
+	       * The physical origin of the detector (at the center of the detector) 
+	       * has the array-index 'offset'. */
+
+  double pixelwidth; /**< Width of a single pixel in the detector array [m]. */
+
 
   double integration_time; // Integration time of the entire pnCCD (!) 
                            // detector array
@@ -52,19 +72,29 @@ typedef struct {
   double ccsize;           // size of the charge cloud [m]
   
   long pha_threshold;      // lower detector PHA threshold [PHA channels]
-  float energy_threshold;  // lower detector energy threshold [kev]
-  // If the PHA threshold is 0, the energy threshold is used.
+  float energy_threshold; /**< Lower detector energy threshold [keV]. */
+  // If the PHA threshold is -1, the energy threshold is used.
   
-  //  int Nchannels;           // Number of detector PHA channels
-  //  Ebounds ebounds;         // Detector energy bounds (relation PHA channel -> 
-                               // [E_min; E_max])
-  struct RMF* rmf;
+  struct RMF* rmf; /**< Detector response matrix. Includes the RMF and the detector-specific
+		    * response elements like filter transmission and quantum efficiency.
+		    * So the sum of each line of the response matrix HAS TO BE less
+		    * or equal 1 (sum <= 1) !
+		    * The RMF can be normalized explicitly to be a real RMF without 
+		    * photon loss due response effects by setting the compiler flag 
+		    * "-DNORMALIZE_RMF".
+		    * The mirror specific elements are treated SEPARATELY in the photon
+		    * imaging process. */
 
 
   // This is a pointer to the routine, which is called after each photon event.
   // Its task is to manage the detector action, i.e., perform the readout process
   // if it necessary.
   void (*action) (void*, double, struct Eventlist_File*, int *);
+
+
+  /** Detector specific elements. Contains different detector properties 
+   * according to the selected detector type. */
+  union DetectorSpecificProperties specific;
 
 
   // DEPFET specific parameters:

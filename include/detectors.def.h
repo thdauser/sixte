@@ -1,13 +1,6 @@
-/** 
- * Contains definitions/function headers needed to handle detector stuff.
- */
-
 #ifndef DETECTORS_DEF_H
 #define DETECTORS_DEF_H (1)
 
-
-#include "fits_pha.h"
-#include "random.h"
 #include "photon.h"
 #include "point.h"
 
@@ -44,19 +37,16 @@ long get_channel(float, Detector*);
 float get_energy(long, Detector*);
 
 
-// Constructor: function allocates memory for the detector array.
+/** Constructor. Allocates memory for the general detector data structure, but
+ * not for the detector-specific elements that are different for the individual
+ * detector types. */
 Detector* get_Detector(int*);
+/** Constructor. Allocates memory for the pixel array. */
 int get_DetectorPixels(Detector*, int*);
 // Destructor: function releases memory of detector.
 //void free_Detector(Detector* detector); // TODO
 
 
-/*
-// Get memory for detector EBOUNDS matrix and fill it with data from FITS file.
-int get_ebounds(Ebounds*, int *Nchannels, const char filename[]);
-// Release memory of detector EBOUNDS.
-void free_ebounds(Ebounds *);
-*/
 
 // Load the detector response MATRIX and the EBOUNDS table from 
 // a RMF FITS file and assign them to the detector data structure.
@@ -106,6 +96,12 @@ int get_pixel_square(Detector*, struct Point2d,
 		     int* x, int* y, double* fraction);
 
 
+/*
+// Get memory for detector EBOUNDS matrix and fill it with data from FITS file.
+int get_ebounds(Ebounds*, int *Nchannels, const char filename[]);
+// Release memory of detector EBOUNDS.
+void free_ebounds(Ebounds *);
+*/
 
 
 #endif  /*  DETECTORS_DEF_H */

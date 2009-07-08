@@ -2,11 +2,6 @@
 #define DETECTORS_H (1)
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <math.h>
-
 // The GNU Scientific Library Errorfunction is used to calculate charge 
 // distribution of split events (assuming a Gaussian shape for the carge cloud).
 #include <gsl/gsl_sf_erf.h>

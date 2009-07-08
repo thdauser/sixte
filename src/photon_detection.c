@@ -92,14 +92,14 @@ int photon_detection_main() {
       
       detector->action = framestore_detector_action;
 
-    } else if (detector->type == DEPFET) {
-      headas_chat(5, "--> DEPFET <--\n");
+    } else if (detector->type == WFI) {
+      headas_chat(5, "--> WFI <--\n");
       
       detector->dead_time = parameters.dead_time;
       detector->clear_time = parameters.clear_time;
 
       // Set the first readout time such that the first readout is performed 
-      // immediately at the beginning of the simulation (DEPFET).
+      // immediately at the beginning of the simulation (WFI).
       detector->readout_time = parameters.t0 - detector->dead_time; 
       detector->readout_directions = parameters.readout_directions;
       // The readout process starts at the center of the WFI detector, 
@@ -207,7 +207,7 @@ int photon_detection_main() {
     // Set the time-keyword in the Event List Header.
     // See also: Stevens, "Advanced Programming in the UNIX environment", p. 155 ff.
     time_t current_time;
-    if (NULL != time(&current_time)) {
+    if (0 != time(&current_time)) {
       struct tm* current_time_utc = gmtime(&current_time);
       if (NULL != current_time_utc) {
 	char current_time_str[MAXMSG];
@@ -308,7 +308,7 @@ int photon_detection_main() {
 	  int x[4], y[4];
 	  double fraction[4];
       
-	  if ((detector->type == FRAMESTORE) || (detector->type == DEPFET)) {
+	  if ((detector->type == FRAMESTORE) || (detector->type == WFI)) {
 	    // Determine the affected detector pixels.
 	    int npixels = get_pixel_square(detector, position, x, y, fraction);
 
@@ -445,7 +445,7 @@ int getpar(struct Parameters* parameters)
     return(status);
   }
 
-  // Get the detector type (FRAMESTORE, DEPFET, TES microcalorimeter, ...)
+  // Get the detector type (FRAMESTORE, WFI, TES microcalorimeter, ...)
   if ((status = PILGetInt("detector_type", &parameters->detector_type))) {
     sprintf(msg, "Error reading the detector type!\n");
     HD_ERROR_THROW(msg,status);
@@ -465,7 +465,7 @@ int getpar(struct Parameters* parameters)
 
       break;
 
-    case 2:  // DEPFET
+    case 2:  // WFI
 
       // Get the number of readout directions
       if ((status = PILGetInt("readout_directions", &parameters->readout_directions))) {
@@ -479,13 +479,13 @@ int getpar(struct Parameters* parameters)
 	HD_ERROR_THROW(msg,status);
 	return(status);	
       }
-      // Get the dead time for the DEPFET APS (readout time per line).
+      // Get the dead time for the WFI APS (readout time per line).
       if ((status = PILGetReal("dead_time", &parameters->dead_time))) {
 	sprintf(msg, "Error reading the dead time!\n");
 	HD_ERROR_THROW(msg,status);
 	return(status);
       } 
-      // Get the clear time for the DEPFET APS (time required to clear one line).
+      // Get the clear time for the WFI APS (time required to clear one line).
       else if ((status = PILGetReal("clear_time", &parameters->clear_time))) {
 	sprintf(msg, "Error reading the clear time!\n");
 	HD_ERROR_THROW(msg,status);

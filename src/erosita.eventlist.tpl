@@ -44,6 +44,8 @@ OFCODE          String          / Code name of the Offset map
 GAINCAME        String          / Code name of the CAMEX amplification
 TIMEDEL         Real            / Length of exposure entry interval [s]
 CHOPPER         String          / electronic chopper in use
+# HEADERs specific for SIXT simulation
+PXOFFSET        1               / Pixel offset - number of the first pixel
 #Column definitions
 	TTYPE#  FRAME           / Frame number
 	TFORM#  J               / Format of column FRAME

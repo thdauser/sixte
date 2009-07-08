@@ -1,27 +1,17 @@
 #ifndef PSF_H
 #define PSF_H 1
 
-
-/** 
- * This file contains all definitions required for PSF calculations.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <math.h>
 #include <assert.h>
 
+#include "sixt.h"
 #include "fitsio.h"
 #include "headas.h"
 #include "headas_error.h"
 
-
-#define PSF_NFIELDS 5 // number of fields in the table (= number of columns)
-
-
-
-//////////////////////////////////////////////////////////////////////////////
 
 
 /** Stores the PSF data for one particular off-axis angle 
@@ -51,9 +41,7 @@ typedef struct {
 
 
 
-#include "detectors.h"
-#include "vector.h"
-#include "random.h"
+#include "random_sixt.h"
 #include "telescope.h"
 #include "photon.h"
 #include "point.h"

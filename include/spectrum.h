@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <math.h>
+#include <assert.h>
 
 #include "fitsio.h"
 #include "headas.h"
@@ -29,8 +30,8 @@
 #include "heasp.h"
 #endif
 
-#include "fits_pha.h"
 #include "sixt.h"
+#include "fits_pha.h"
 
 
 #define N_SPECTRA_FILES 1    // number of spectrum files (PHA files)

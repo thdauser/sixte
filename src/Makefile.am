@@ -16,13 +16,14 @@ pfiles_DATA =
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-lib_LIBRARIES = libastrosources.a libdetectors.a libsatellites.a
+lib_LIBRARIES = libastrosources.a libdetectors.a libmirror.a libsatellites.a
 
 # Sources:
 libastrosources_a_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
-			random.c spectrum.c sourceimage.c
-libdetectors_a_SOURCES = detector.c eventlist.c psf.c vignetting.c random.c vector.c
-libsatellites_a_SOURCES = attitudecatalog.c attitudefile.c vector.c
+			    random_sixt.c spectrum.c sourceimage.c
+libdetectors_a_SOURCES    = detector.c eventlist.c random_sixt.c vector.c
+libmirror_a_SOURCES       = psf.c vignetting.c vector.c random_sixt.c
+libsatellites_a_SOURCES   = attitudecatalog.c attitudefile.c vector.c
 
 
 ############ BINARIES #################
@@ -37,7 +38,7 @@ binary_stream_LDADD    = libdetectors.a
 pfiles_DATA           += binary_stream.par
 
 htrs_psfgen_SOURCES  = htrs_psfgen.c
-htrs_psfgen_LDADD    = libdetectors.a
+htrs_psfgen_LDADD    = libmirror.a libdetectors.a
 
 photon_generation_SOURCES  = photon_generation.c
 photon_generation_LDADD    = libdetectors.a
@@ -53,6 +54,7 @@ pfiles_DATA              += photon_detection.par
 
 photon_imaging_SOURCES  = photon_imaging.c
 photon_imaging_LDADD    = libdetectors.a
+photon_imaging_LDADD   += libmirror.a
 photon_imaging_LDADD   += libastrosources.a
 photon_imaging_LDADD   += libsatellites.a
 pfiles_DATA            += photon_imaging.par
@@ -65,6 +67,7 @@ pfiles_DATA              += event_projection.par
 
 psfgen_SOURCES  = psfgen.c
 psfgen_LDADD    = libdetectors.a
+psfgen_LDADD   += libmirror.a
 psfgen_LDADD   += libastrosources.a
 psfgen_LDADD   += libsatellites.a
 pfiles_DATA    += psfgen.par

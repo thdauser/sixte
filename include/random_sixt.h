@@ -1,13 +1,12 @@
-/** 
- * Header file of random.c
- */
-
 #ifndef RANDOM_H
 #define RANDOM_H 1
 
+#include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <math.h>
+#include <malloc.h>
+#include <assert.h>
+#include <limits.h>
 
 #include "headas.h"
 #include "headas_rand.h"
