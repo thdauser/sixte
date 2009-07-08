@@ -33,8 +33,9 @@ libsatellites_a_SOURCES   = attitudecatalog.c attitudefile.c vector.c
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = binary_stream htrs_psfgen psfgen \
-		photon_generation photon_detection photon_imaging event_projection
+bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
+	       	photon_generation photon_detection photon_imaging event_projection \
+		framestore_simulation
 
 binary_stream_SOURCES  = binary_stream.c
 binary_stream_LDADD    = libdetectors.a
@@ -55,6 +56,13 @@ photon_detection_LDADD   += libframestore.a
 photon_detection_LDADD   += libastrosources.a
 photon_detection_LDADD   += libsatellites.a
 pfiles_DATA              += photon_detection.par
+
+framestore_simulation_SOURCES  = framestore_simulation.c
+framestore_simulation_LDADD    = libdetectors.a
+framestore_simulation_LDADD   += libframestore.a
+framestore_simulation_LDADD   += libastrosources.a
+framestore_simulation_LDADD   += libsatellites.a
+pfiles_DATA    += framestore_simulation.par
 
 photon_imaging_SOURCES  = photon_imaging.c
 photon_imaging_LDADD    = libmirror.a

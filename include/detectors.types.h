@@ -67,7 +67,7 @@ typedef struct {
   // This is a pointer to the routine, which is called after each photon event.
   // Its task is to manage the detector action, i.e., perform the readout process
   // if it necessary.
-  void (*action) (void*, double, struct Eventlist_File*, int *);
+  void (*readout) (void*, double, struct Eventlist_File*, int *);
 
 
   /** Detector-specific elements. Pointer to a data structure that contains 

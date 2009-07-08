@@ -1,5 +1,5 @@
-#ifndef PHOTON_DETECTION_H
-#define PHOTON_DETECTION_H 1
+#ifndef FRAMESTORE_SIMULATION_H
+#define FRAMESTORE_SIMULATION_H 1
 
 #include "sixt.h"
 #include "detectors.h"
@@ -9,7 +9,7 @@
 #include "point.h"
 
 
-#define TOOLSUB photon_detection_main
+#define TOOLSUB framestore_simulation_main
 #include "headas_main.c"
 
 
@@ -28,11 +28,8 @@ struct Parameters {
   double timespan;
   
   // Detector specific parameters:
-  int detector_type;
-  int readout_directions;   // only for DEPFET
   double integration_time;
   double dead_time;
-  double clear_time;
   int width; /**< Width of the detector in pixels. */
   double pixelwidth; /**< Width of one detector pixel in [m]. */
   double ccsigma;
@@ -52,5 +49,5 @@ struct Parameters {
 int getpar(struct Parameters* parameters);
 
 
-#endif /* PHOTON_DETECTION_H */
+#endif /* FRAMESTORE_SIMULATION_H */
 

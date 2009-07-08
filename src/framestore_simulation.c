@@ -5,12 +5,12 @@
 #endif
 
 
-#include "photon_detection.h"
+#include "framestore_simulation.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int photon_detection_main() {
+int framestore_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
   fitsfile *impactlist_fptr=NULL; 
@@ -26,7 +26,7 @@ int photon_detection_main() {
 
 
   // Register HEATOOL:
-  set_toolname("photon_detection");
+  set_toolname("framestore_simulation");
   set_toolversion("0.01");
 
 
@@ -35,124 +35,47 @@ int photon_detection_main() {
     // --- Initialization ---
 
     // Read parameters using PIL library:
-    detector = get_Detector(&status);
-    if (status!=EXIT_SUCCESS) break;
-
     if ((status=getpar(&parameters))) break;
     
-    // TODO move the following assignments to another place:
-    detector->type = parameters.detector_type;
-
-
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
 
 
     // Set initial DETECTOR CONFIGURATION.
+    detector = get_Detector(&status);
+    if (EXIT_SUCCESS!=status) break;
 
     // GENERAL SETTINGS
-
-    // 
+    detector->type = FRAMESTORE;
     detector->width = parameters.width;
-
-    // Calculate initial parameter values from the PIL parameters:
     detector->offset = detector->width/2;
-
-    // Pixelwidth 
     detector->pixelwidth = parameters.pixelwidth;
-
-    // Size of the charge cloud [m]
-    detector->ccsigma = parameters.ccsigma;
-    detector->ccsize = 3.*detector->ccsigma;
 
     // Event thresholds:
     detector->pha_threshold = parameters.pha_threshold;
     detector->energy_threshold = parameters.energy_threshold;
 
-    // Set the current detector frame to "-1", so the first measured frame
-    // starts at "0".
-    detector->frame = -1;
-
+    // DETECTOR SPECIFIC SETTINGS
+    struct FramestoreParameters framestoreparameters = {
+      .integration_time = parameters.integration_time,
+      .ccsigma          = parameters.ccsigma
+    };
+    init_FramestoreDetector(detector, framestoreparameters);    
+    
     // Get the memory for the detector pixels
     if (get_DetectorPixels(detector, &status)) break;
 
-    
-    // DETECTOR SPECIFIC SETTINGS
-    if (detector->type == FRAMESTORE) {
-      headas_chat(5, "--> FRAMESTORE <--\n");
-
-      detector->integration_time=parameters.integration_time;
-
-      // Set the first readout time such that the first readout is performed 
-      // immediately at the beginning of the simulation (FRAMESTORE).
-      detector->readout_time = parameters.t0;
-      detector->frame = 0;
+    // Set the first readout time such that the first readout is performed 
+    // immediately at the beginning of the simulation.
+    detector->readout_time = parameters.t0; // TODO move to init_FramestoreDetector() routine.
       
-      detector->readout = readout_FramestoreDetector;
-
-    } else if (detector->type == WFI) {
-      headas_chat(5, "--> WFI <--\n");
-      
-      detector->dead_time = parameters.dead_time;
-      detector->clear_time = parameters.clear_time;
-
-      // Set the first readout time such that the first readout is performed 
-      // immediately at the beginning of the simulation (WFI).
-      detector->readout_time = parameters.t0 - detector->dead_time; 
-      detector->readout_directions = parameters.readout_directions;
-      // The readout process starts at the center of the WFI detector, 
-      // but for that purpose the current line has to be set to 0, so that the
-      // first readout is performed in the middle of the detector array.
-      detector->readout_line = 0;
-
-      detector->readout = depfet_detector_action;
-      
-      headas_chat(5, "dead time: %lf\n", detector->dead_time);
-      headas_chat(5, "clear time: %lf\n", detector->clear_time);
-      headas_chat(5, "readout time: %lf\n", detector->readout_time);
-      
-    } else if (detector->type == TES) {
-      headas_chat(5, "--> TES Microcalorimeter Array <--\n");
-    
-      detector->readout = NULL; // tes_detector_action;
-
-    } else if (detector->type == HTRS) {
-      headas_chat(5, "--> HTRS <--\n");
-
-      detector->dead_time = parameters.dead_time;
-      status=htrs_init_Detector(detector);
-
-      detector->readout = NULL; // htrs_detector_action;
-
-    } else {
-
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: invalid detector type!\n");
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-    if (status != EXIT_SUCCESS) break;
-    
-    // Consistency check for size of charge cloud:
-    if (detector->ccsize > 1.) {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: charge cloud size greater than pixel width!\n");
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
+     
     // Read the detector RMF and EBOUNDS from the specified file and 
     // assign them to the Detector data structure.
     if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) 
 	!= EXIT_SUCCESS) break;
 
-    // Print some debug information:
-    headas_chat(5, "detector pixel width: %lf m\n", detector->pixelwidth);
-    headas_chat(5, "charge cloud size: %lf m\n", detector->ccsize);
-    headas_chat(5, "number of PHA channels: %d\n", detector->rmf->NumberChannels);
-    headas_chat(5, "PHA threshold: channel %ld\n", detector->pha_threshold);
-    headas_chat(5, "energy threshold: %lf keV\n\n", detector->energy_threshold);
 
     // END of DETECTOR CONFIGURATION SETUP
 
@@ -441,97 +364,22 @@ int getpar(struct Parameters* parameters)
   if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
     sprintf(msg, "Error reading the name of the impact list file!\n");
     HD_ERROR_THROW(msg,status);
-    return(status);
   }
 
-  // Get the detector type (FRAMESTORE, WFI, TES microcalorimeter, ...)
-  if ((status = PILGetInt("detector_type", &parameters->detector_type))) {
-    sprintf(msg, "Error reading the detector type!\n");
+  // Get the integration time of the FRAMESTORE CCD.
+  else if ((status = PILGetReal("integration_time", &parameters->integration_time))) {
+    sprintf(msg, "Error reading the integration time!\n");
     HD_ERROR_THROW(msg,status);
-    return (status);
-
-  } else {
-    switch (parameters->detector_type) {
-      // According to the different detector types, the program
-      // has to read different parameters.
-    case 1:  // FRAMESTORE
-      
-      // Get the integration time for the FRAMESTORE CCD.
-      if ((status = PILGetReal("integration_time", &parameters->integration_time))) {
-	sprintf(msg, "Error reading the integration time!\n");
-	HD_ERROR_THROW(msg,status);
-      }
-
-      break;
-
-    case 2:  // WFI
-
-      // Get the number of readout directions
-      if ((status = PILGetInt("readout_directions", &parameters->readout_directions))) {
-	sprintf(msg, "Error reading the detector readout directions!\n");
-	HD_ERROR_THROW(msg,status);
-	return(status);
-      } 
-      if ((parameters->readout_directions<1)||(parameters->readout_directions>2)) {
-	status=EXIT_FAILURE;
-	sprintf(msg, "Error: invalid number of detector readout directions!\n");
-	HD_ERROR_THROW(msg,status);
-	return(status);	
-      }
-      // Get the dead time for the WFI APS (readout time per line).
-      if ((status = PILGetReal("dead_time", &parameters->dead_time))) {
-	sprintf(msg, "Error reading the dead time!\n");
-	HD_ERROR_THROW(msg,status);
-	return(status);
-      } 
-      // Get the clear time for the WFI APS (time required to clear one line).
-      else if ((status = PILGetReal("clear_time", &parameters->clear_time))) {
-	sprintf(msg, "Error reading the clear time!\n");
-	HD_ERROR_THROW(msg,status);
-	return(status);
-      }
-      
-      break;
-
-    case 3:  // TES Calorimeter Array
-
-      break;
-
-    case 4:  // HTRS
-
-      // Get the dead time for the HTRS (readout time of the charge 
-      // cloud in a pixel).
-      if ((status = PILGetReal("dead_time", &parameters->dead_time))) {
-	sprintf(msg, "Error reading the dead time!\n");
-	HD_ERROR_THROW(msg,status);
-      } 
-
-      break;
-
-    default:     
-      parameters->detector_type = 0;
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: incorrect detector type!\n");
-      HD_ERROR_THROW(msg,status);
-    }
   }
-  if (status) return(status);
-  // END of handling different detector types.
 
-
-  // detector width [pixel]
-  if (parameters->detector_type == HTRS) {
-    parameters->width = 7;  // HTRS can only be used for fixed pixel size!
-  } else {
-    if ((status = PILGetInt("det_width", &parameters->width))) {
-      sprintf(msg, "Error reading the width of the detector!\n");
-      HD_ERROR_THROW(msg,status);
-      return(status);
-    }
+  // Detector width [pixel]
+  else if ((status = PILGetInt("det_width", &parameters->width))) {
+    sprintf(msg, "Error reading the width of the detector!\n");
+    HD_ERROR_THROW(msg,status);
   }
 
   // [m]
-  if ((status = PILGetReal("det_pixelwidth", &parameters->pixelwidth))) {
+  else if ((status = PILGetReal("det_pixelwidth", &parameters->pixelwidth))) {
     sprintf(msg, "Error reading the width of the detector pixels!\n");
     HD_ERROR_THROW(msg,status);
   }
@@ -600,7 +448,6 @@ int getpar(struct Parameters* parameters)
     sprintf(msg, "Error reading the 'timespan' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
-
 
   return(status);
 }

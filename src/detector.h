@@ -2,35 +2,15 @@
 #define DETECTOR_H 1
 
 #include "sixt.h"
+#include "detectors.h"
 #include "random_sixt.h"
-//#include "fits_pha.h"
 
 #define GAUSSIAN_CHARGE_CLOUDS 1 // Assume a Gaussian charge cloud shape.
-
-// Reads out the entire detector and creates event list entries for the 
-// measured photons.
-static inline void readout(Detector*, struct Eventlist_File*, int *status);
-
-
-// Reads out a particular detector line and creates event list entries 
-// for the measured photons.
-static inline void readout_line(Detector*, int line, struct Eventlist_File*, 
-				int *fitsstatus);
 
 
 // Determines the index of the minimum value in an array of distances to 
 // the pixel borders.
 static inline int min_dist(double array[], int directions);
-
-
-// This routine clears the entire detector pixel array 
-// (i.e., all created charges are removed, e.g., after read out).
-static inline void clear_detector(Detector*);
-
-
-// This routine clears a particular line of the detector pixel array 
-// (i.e., all created charges are removed, e.g., after read out).
-static inline void clear_detector_line(Detector*, int line);
 
 
 // Add background photons to the detector pixels  according to a given 

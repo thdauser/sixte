@@ -15,8 +15,6 @@
 // nothing.
 void detector_action(Detector*, double time, struct Eventlist_File*, int* status);
 
-inline void framestore_detector_action(void*, double time, 
-				       struct Eventlist_File*, int *status);
 inline void depfet_detector_action(void*, double time, 
 				   struct Eventlist_File*, int *status); 
 inline void depfet_detector_action2(void*, double time, 
@@ -25,6 +23,26 @@ inline void depfet_detector_action2(void*, double time,
 				int *status); 
 inline void htrs_detector_action(void*, double time, 
 struct Eventlist_File*, int *status); */
+
+
+/** Reads out the entire detector and creates event list entries for the 
+ * measured photons. */
+inline void readout(Detector*, struct Eventlist_File*, int *status);
+
+/** Reads out a particular detector line and creates event list entries 
+ * for the measured photons. */
+inline void readout_line(Detector*, int line, struct Eventlist_File*, 
+				int *fitsstatus);
+
+
+/** This routine clears the entire detector pixel array 
+ * (i.e., all created charges are removed, e.g., after read out). */
+inline void clear_detector(Detector*);
+
+
+/** This routine clears a particular line of the detector pixel array 
+ * (i.e., all created charges are removed, e.g., after read out). */
+inline void clear_detector_line(Detector*, int line);
 
 
 
