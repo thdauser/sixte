@@ -2,9 +2,8 @@
 #define EVENTLIST_TYPES_H (1)
 
 
-#include "detectors.enum.h"
-#include "fitsio.h"
 #include "sixt.h"
+#include "detectors.enum.h"
 
 
 /** Event. */

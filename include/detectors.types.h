@@ -1,8 +1,6 @@
 #ifndef DETECTOR_TYPES_H
 #define DETECTOR_TYPES_H 1
 
-#include "fitsio.h"
-
 #ifndef HEASP_H
 #define HEASP_H 1
 #include "heasp.h"
@@ -13,7 +11,6 @@
 #include "detectors.enum.h"
 
 
-
 /** Represents a detector pixel. */
 struct Pixel {
   /** Charge stored in the pixel. */
@@ -22,25 +19,6 @@ struct Pixel {
   double arrival; 
 };
 
-
-/** Properties specific for a Framestore CCD detector. */
-struct FramestoreProperties {
-  double integration_time; /**< Integration time of the entire pnCCD (!) 
-			    * detector array.
-			    * (= Span of time between 2 subsequent readouts). */
-  long frame; /**< Number of the current frame. */
-
-  double ccsigma; /**< Charge cloud sigma [m]. This quantity is used to calculate size of 
-		   * the charge cloud. */
-  double ccsize; /**< Size of the charge cloud [m]. Defined as three times ccsigma. */
-
-};
-
-
-/** Detector-specific properties of the individual detector types. */
-union DetectorSpecificProperties {
-  struct FramestoreProperties framestore;
-};
 
 
 /** Detector data structure. */
@@ -92,9 +70,11 @@ typedef struct {
   void (*action) (void*, double, struct Eventlist_File*, int *);
 
 
-  /** Detector specific elements. Contains different detector properties 
-   * according to the selected detector type. */
-  union DetectorSpecificProperties specific;
+  /** Detector-specific elements. Pointer to a data structure that contains 
+   * detector-specific properties for the different detector type. 
+   * The data structure is allocated and assigned to the pointer by the
+   * init_{DETECTOR_TYPE}(...) routine.*/
+  void* specific;
 
 
   // DEPFET specific parameters:

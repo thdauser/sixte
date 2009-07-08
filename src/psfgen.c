@@ -17,25 +17,15 @@
 #endif
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <malloc.h>
-#include <math.h>
+#include "sixt.h"
 
 // GNU scientific library: error function (calculation of gaussian integral)
 #include <gsl/gsl_sf_erf.h>
 
-#include "fitsio.h"
-#include "pil.h"
-#include "headas.h"
-#include "headas_error.h"
+#include "psf.h"
 
 #define TOOLSUB psfgen_main
 #include "headas_main.c"
-
-#include "sixt.h"
-#include "psf.h"
 
 
 
@@ -155,7 +145,7 @@ int psfgen_main()
     psf.item[0].energy = 1.;
 
     // Fill the PSF array with a 2D Gaussian distribution.
-    double sigma = hew*M_PI/180.     // sigma in detector pixels
+    double sigma = hew*M_PI/180.  // sigma in detector pixels
       /(2.*sqrt(2.*log(2.))) 
       /atan(psf.item[0].cdelt1/focal_length);;  
     headas_chat(5, "PSF Sigma: %.2lf pixel\n", sigma);

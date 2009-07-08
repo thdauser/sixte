@@ -14,6 +14,7 @@
 #include "pil.h"
 #include "headas.h"
 #include "headas_error.h"
+#include "headas_rand.h"
 
 
 #define FILENAME_LENGTH 256 /**< Maximum lenght of a filename. */

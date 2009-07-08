@@ -275,6 +275,7 @@ Detector* get_Detector(int* status)
     } else { // Memory has been allocated successfully.
       detector->pixel=NULL;
       detector->rmf=NULL;
+      detector->specific=NULL;
     }
 
   } while (0); // END of Error handling loop.
