@@ -87,3 +87,14 @@ int impactlist_getNextRow(struct ImpactlistFile* imf, struct Impact* impact) {
   return(status);
 }
 
+
+
+int impactlist_EOF(struct ImpactlistFile* imf) {
+  if (imf->row >= imf->nrows) {
+    return(1);
+  } else {
+    return(0);
+  }
+}
+
+

@@ -44,5 +44,11 @@ int impactlist_openFile(struct ImpactlistFile* imf, char* filename, int access_m
  * increased to 'row==1'. */
 int impactlist_getNextRow(struct ImpactlistFile* imf, struct Impact* impact);
 
+/** Checks whether the end of the impact list is reached. 
+ * If the internal pointer of the ImpactlistFile data structure points to the last line
+ * in the file, i.e. this is the formerly read line, or has an even higher value, the 
+ * function return value is 1, otherwise it is 0. */
+int impactlist_EOF(struct ImpactlistFile*);
+
 
 #endif /* IMPACTLIST_H */

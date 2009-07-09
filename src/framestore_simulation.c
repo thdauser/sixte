@@ -124,7 +124,6 @@ int framestore_simulation_main() {
     if(EXIT_SUCCESS!=(status=impactlist_getNextRow(&impactlistfile, &next_impact))) break;
 
     while (EXIT_SUCCESS==status) {
-      // TODO: Break the loop, when interval time+timespan is exceeded.
 
       if ((parameters.background_rate>0.) && (next_background_event_time<next_impact.time)) {
 	// The current event is a background event:
@@ -145,14 +144,14 @@ int framestore_simulation_main() {
 	  // Read in the next row from the impact list:
 	  if(EXIT_SUCCESS!=(status=impactlist_getNextRow(&impactlistfile, &next_impact))) break;
 	  // Check if we reached the end of the impact list:
-	  if (impactlistfile.row >= impactlistfile.nrows) reached_end_of_impactlist = 1;
+	  if (impactlist_EOF(&impactlistfile)) reached_end_of_impactlist = 1;
 	} else {
 	  // There are no further rows in the impact list. So we have to stop here.
 	  break;
 	}
       }
 
-      // Call the detector action routine: this routine checks, whether the 
+      // Call the detector readout routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
       if (detector->readout != NULL) { // HTRS and TES do not have this routine.
@@ -163,50 +162,10 @@ int framestore_simulation_main() {
       // Check whether the event lies in the specified time interval:
       if ((impact.time > parameters.t0) && (impact.time < parameters.t0+parameters.timespan)) {
 
-	// Measure the photon in the detector pixels, i.e., create the 
-	// corresponding charges there.
+	// Call the photon detection routine that generates the right charge
+	// and stores it in the detector pixels.
+	detector->add_impact(detector, &impact);
 
-	// Determine a detector channel (PHA channel) according to RMF.
-	// The channel is obtained from the RMF using the corresponding
-	// HEAdas routine which is based on drawing a random number.
-	long channel;
-	ReturnChannel(detector->rmf, impact.energy, 1, &channel);
-
-	// Check if the photon is really measured. If the
-	// PHA channel returned by the HEAdas RMF function is '-1', 
-	// the photon is not detected.
-	if (channel==-1) {
-	  continue;  // -> Continue with the next photon in the list.
-	}
-	assert(channel>=0);
-
-	// Get the corresponding created charge.
-	// NOTE: In this simulation the charge is represented by the nominal
-	// photon energy which corresponds to the PHA channel according to the
-	// EBOUNDS table.
-	float charge = get_energy(channel, detector);
-	
-	if(charge > 0.) {
-	  int x[4], y[4];
-	  double fraction[4];
-	  
-	  // Determine the affected detector pixels.
-	  int npixels = get_pixel_square(detector, impact.position, x, y, fraction);
-
-	  // Add the charge created by the photon to the affected detector pixels.
-	  int count;
-	  for (count=0; count<npixels; count++) {
-	    if (x[count] != INVALID_PIXEL) {
-	      detector->pixel[x[count]][y[count]].charge += 
-		charge * fraction[count] * 
-		// |      |-> charge fraction due to split events
-		// |-> charge created by incident photon
-		detector_active(x[count], y[count], detector, impact.time);
-	      // |-> "1" if pixel can measure charge, "0" else
-	    }
-	  }
-	  
-	} // END if(charge>0.)
       } // END 'time' within specified time interval
     } // END of scanning the impact list.
 

@@ -6,7 +6,8 @@
 #include "heasp.h"
 #endif
 
-
+#include "sixt.h"
+#include "impactlist.h"
 #include "eventlist.types.h"
 #include "detectors.enum.h"
 
@@ -38,8 +39,8 @@ struct Pixel {
 typedef struct {
   DetectorTypes type; /**< Detector Type (FRAMESTORE, WFI, TES, HTRS, ...). */
 
-  // Detector array (contains the charge created by the x-ray 
-  // photons or additional data)
+  /** Detector pixel array. Contains the charge created by the x-ray 
+   * photons, and additional data if necessary. */
   struct Pixel ** pixel;
 
   int width; /**< Width (and height) of the detector (number of [integer pixels]). */
@@ -50,37 +51,32 @@ typedef struct {
 
   double pixelwidth; /**< Width of a single pixel in the detector array [m]. */
 
-
-  //  double integration_time; // Integration time of the entire pnCCD (!) 
-                           // detector array
-                           // (= span of time between 2 subsequent readouts).
-  double dead_time;        // Necessary time to read out one line of the DEPFET 
-                           // or one pixel of the HTRS (!) detectors.
-  long frame;              // Number of the current frame.
-
   double ccsigma; /**< Charge cloud sigma [m]. This quantity is used to calculate size of 
 		   * the charge cloud. */
   double ccsize; /**< Size of the charge cloud [m]. Defined as three times ccsigma. */
+
+  double dead_time; // Necessary time to read out one line of the DEPFET 
+                    // or one pixel of the HTRS (!) detectors.
+
+  long frame; /** Number of the current frame. */
+
+  double readout_time; /**< Current readout time. The end of the integration 
+			* time / beginning of dead time. */
   
-  long pha_threshold;      // lower detector PHA threshold [PHA channels]
+  long pha_threshold; // lower detector PHA threshold [PHA channels]
   float energy_threshold; /**< Lower detector energy threshold [keV]. */
   // If the PHA threshold is -1, the energy threshold is used.
   
-  struct RMF* rmf; /**< Detector response matrix. Includes the RMF and the detector-specific
-		    * response elements like filter transmission and quantum efficiency.
-		    * So the sum of each line of the response matrix HAS TO BE less
-		    * or equal 1 (sum <= 1) !
-		    * The RMF can be normalized explicitly to be a real RMF without 
-		    * photon loss due response effects by setting the compiler flag 
-		    * "-DNORMALIZE_RMF".
-		    * The mirror specific elements are treated SEPARATELY in the photon
-		    * imaging process. */
-
-
-  // This is a pointer to the routine, which is called after each photon event.
-  // Its task is to manage the detector action, i.e., perform the readout process
-  // if it necessary.
-  void (*readout) (void*, double, struct Eventlist_File*, int *);
+  /** Detector response matrix. Includes the RMF and the detector-specific
+   * response elements like filter transmission and quantum efficiency.
+   * So the sum of each line of the response matrix HAS TO BE less
+   * or equal 1 (sum <= 1) !
+   * The RMF can be normalized explicitly to be a real RMF without 
+   * photon loss due response effects by setting the compiler flag 
+   * "-DNORMALIZE_RMF".
+   * The mirror specific elements are treated SEPARATELY in the photon
+   * imaging process. */
+  struct RMF* rmf;
 
 
   /** Detector-specific elements. Pointer to a data structure that contains 
@@ -91,9 +87,6 @@ typedef struct {
 
 
   // DEPFET specific parameters:
-
-  double readout_time;     // Current readout time (i.e., the end of the 
-                           // integration time/beginning of dead time).
   double clear_time;       // Time required to clear a row of pixels on the detector.
   int readout_line;        // Current readout line of the DEPFET detector 
                            // (not used for framestore).
@@ -101,7 +94,6 @@ typedef struct {
 
 
   // HTRS specific parameters:
-
   double a;   // length of one egde of the hexagonal pixels
   double h;   // height of one of the six equilateral triangles that define
               // the hexagonal structure of the pixels.
@@ -114,6 +106,21 @@ typedef struct {
 
   // Data structure to obtain a pixel from given coordinates
   int*** htrs_lines2pixel; 
+
+
+  /** Pointer to the routine that is called to read out the detector.
+   * The routine has to decide on its own, whether a readout is required, as e.g.
+   * the integration time is expired.
+   * If NO readout is to be performed, the routine simply does nothing.
+   * Otherwise it calls the appropriate routines to store the events from the detector
+   * in the output event list. 
+   * The routine is also responsible for clearing the detector pixels after the readout. */
+  void (*readout) (void*, double, struct Eventlist_File*, int*);
+
+  /** Pointer to the routine that is called when a new photon hits the detector.
+   * The routine determines the generated charge according to the photon energy and
+   * the detector response. Split events are taken into account if 'ccsize>0.'. */
+  void (*add_impact) (void*, struct Impact*);
 
 } Detector;
 

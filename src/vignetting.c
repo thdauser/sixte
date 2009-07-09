@@ -222,6 +222,12 @@ void free_Vignetting(Vignetting* vi) {
 float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi) {
   float factor=0.;
 
+  // At the moment this routine can only handle the case with phi = 0.
+  if (phi!=0.) {
+    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
+    return(0.);
+  }
+
   if ((energy<vi->Emin) || (energy>vi->Emax)) {
     factor = -1.; // Energy is out of range!
   } else {

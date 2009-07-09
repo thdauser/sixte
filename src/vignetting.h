@@ -1,17 +1,7 @@
 #ifndef VIGNETTING_H
 #define VIGNETTING_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <malloc.h>
-#include <assert.h>
-
 #include "sixt.h"
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
-
 
 /** Data structure containing the mirror vignetting function. */
 typedef struct {

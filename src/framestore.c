@@ -39,6 +39,8 @@ int init_FramestoreDetector(Detector* detector, struct DetectorParameters detpar
       HD_ERROR_THROW("Error: charge cloud size greater than pixel width!\n", status);
       break;
     }
+    
+    detector->frame = 0;
 
     // Thresholds:
     detector->pha_threshold = detpar.pha_threshold;
@@ -54,15 +56,19 @@ int init_FramestoreDetector(Detector* detector, struct DetectorParameters detpar
 
 
     // Set the FRAMESTORE-SPECIFIC properties.
-    properties->frame = 0;
+    //    properties->frame = 0;
     properties->integration_time = framepar.integration_time;
 
     // Set the first readout time such that the first readout is performed 
     // immediately at the beginning of the simulation.
     detector->readout_time = detpar.t0;
 
+
     // Set the readout routine:
     detector->readout = readout_FramestoreDetector;
+
+    // Set the photon detection routine:
+    detector->add_impact = add_Impact2FramestoreDetector;
 
   } while(0); // End of Error handling loop.
 
@@ -110,3 +116,56 @@ void readout_FramestoreDetector(
   }
 
 }
+
+
+
+
+/////////////////////////////////////////////////////
+void add_Impact2FramestoreDetector (void* det, struct Impact* impact) {
+  Detector* detector = (Detector*) det;
+
+  // Determine a detector channel (PHA channel) according to RMF.
+  // The channel is obtained from the RMF using the corresponding
+  // HEAdas routine which is based on drawing a random number.
+  long channel;
+  ReturnChannel(detector->rmf, impact->energy, 1, &channel);
+
+  // Check if the photon is really measured. If the
+  // PHA channel returned by the HEAdas RMF function is '-1', 
+  // the photon is not detected.
+  if (channel==-1) {
+    return; // Break the function (and continue with the next photon).
+  }
+  assert(channel>=0);
+
+  // Get the corresponding created charge.
+  // NOTE: In this simulation the charge is represented by the nominal
+  // photon energy which corresponds to the PHA channel according to the
+  // EBOUNDS table.
+  float charge = get_energy(channel, detector);
+  
+  if(charge > 0.) {
+    int x[4], y[4];
+    double fraction[4];
+    
+    // Determine the affected detector pixels.
+    int npixels = get_pixel_square(detector, impact->position, x, y, fraction);
+    
+    // Add the charge created by the photon to the affected detector pixels.
+    int count;
+    for (count=0; count<npixels; count++) {
+      if (x[count] != INVALID_PIXEL) {
+	detector->pixel[x[count]][y[count]].charge += 
+	  charge * fraction[count] * 
+	  // |      |-> charge fraction due to split events
+	  // |-> charge created by incident photon
+	  detector_active(x[count], y[count], detector, impact->time);
+	// |-> "1" if pixel can measure charge, "0" else
+      }
+    }
+  } // END if(charge>0.)
+
+}
+
+
+
