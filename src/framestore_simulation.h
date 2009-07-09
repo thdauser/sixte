@@ -22,7 +22,7 @@
 struct Parameters {
   char impactlist_filename[FILENAME_LENGTH];
   char attitude_filename[FILENAME_LENGTH];
-  char rmf_filename[FILENAME_LENGTH];
+  char rmf_filename[MAXMSG];
   char eventlist_filename[FILENAME_LENGTH];
   char templatedir[MAXMSG];
   char eventlist_template_filename[MAXMSG];
@@ -32,9 +32,11 @@ struct Parameters {
   // Detector specific parameters:
   double integration_time;
   double dead_time;
+
   int width; /**< Width of the detector in pixels. */
   double pixelwidth; /**< Width of one detector pixel in [m]. */
   double ccsigma;
+
   long pha_threshold;
   float energy_threshold;
 

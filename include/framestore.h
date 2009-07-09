@@ -16,15 +16,13 @@ struct FramestoreProperties {
 
 struct FramestoreParameters {
   double integration_time;
-  double ccsigma;
-  double t0;
 };
 
 ////////////////////////////////////////////////////////
 
 
 /** Setup the configuration of a framestore detector. */
-int init_FramestoreDetector(Detector*, struct FramestoreParameters);
+int init_FramestoreDetector(Detector*, struct DetectorParameters, struct FramestoreParameters);
 
 /** Read out the framestore detector IF necessary. 
  * If the integration interval since the last readout operation is exceeded,

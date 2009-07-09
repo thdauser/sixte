@@ -42,28 +42,25 @@ int framestore_simulation_main() {
     detector = get_Detector(&status);
     if (EXIT_SUCCESS!=status) break;
 
-    // GENERAL SETTINGS
-    detector->width = parameters.width;
-    detector->offset = detector->width/2;
-    detector->pixelwidth = parameters.pixelwidth;
-
-    // Event thresholds:
-    detector->pha_threshold = parameters.pha_threshold;
-    detector->energy_threshold = parameters.energy_threshold;
-
-    // DETECTOR SPECIFIC SETTINGS
-    struct FramestoreParameters framestoreparameters = {
-      .integration_time = parameters.integration_time,
+    // General detector settings.
+    struct DetectorParameters detectorparameters = {
+      .width = parameters.width,
+      .pixelwidth = parameters.pixelwidth,
       .ccsigma          = parameters.ccsigma,
+
+      .pha_threshold = parameters.pha_threshold,
+      .energy_threshold = parameters.energy_threshold,
+
       .t0               = parameters.t0
     };
-    init_FramestoreDetector(detector, framestoreparameters);    
-    
-    // Read the detector RMF and EBOUNDS from the specified file and 
-    // assign them to the Detector data structure.
-    if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) 
-	!= EXIT_SUCCESS) break;
+    strcpy(detectorparameters.rmf_filename, parameters.rmf_filename);
 
+    // Framestore-specific settings
+    struct FramestoreParameters framestoreparameters = {
+      .integration_time = parameters.integration_time,
+    };
+    init_FramestoreDetector(detector, detectorparameters, framestoreparameters);    
+    
     // END of DETECTOR CONFIGURATION SETUP
 
 

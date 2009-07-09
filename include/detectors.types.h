@@ -11,6 +11,20 @@
 #include "detectors.enum.h"
 
 
+/** Parameters for initialization of the detector data structure. */
+struct DetectorParameters {
+  int width; /**< Width of the detector in pixels. */
+  double pixelwidth;
+  double ccsigma;
+
+  char rmf_filename[MAXMSG];
+  long pha_threshold;
+  float energy_threshold;
+
+  double t0;
+};
+
+
 /** Represents a detector pixel. */
 struct Pixel {
   /** Charge stored in the pixel. */
@@ -18,7 +32,6 @@ struct Pixel {
   /** List of photon arrival times in the pixel (needed for TES). */
   double arrival; 
 };
-
 
 
 /** Detector data structure. */

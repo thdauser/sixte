@@ -2,7 +2,9 @@
 
 
 //////////////////////////////////////////////////
-int init_FramestoreDetector(Detector* detector, struct FramestoreParameters parameters) {
+int init_FramestoreDetector(Detector* detector, struct DetectorParameters detpar,
+			    struct FramestoreParameters framepar) 
+{
   struct FramestoreProperties* properties = NULL;
   int status = EXIT_SUCCESS;
   
@@ -21,13 +23,15 @@ int init_FramestoreDetector(Detector* detector, struct FramestoreParameters para
       break;
     }
 
-    // Set the framestore-specific properties.
-    properties->frame = 0;
-    properties->integration_time = parameters.integration_time;
+    // Set the GENERAL detector properties.
+    // Detector size:
+    detector->width  = detpar.width;
+    detector->offset = detpar.width/2;
+    detector->pixelwidth = detpar.pixelwidth;
 
     // Set the charge cloud size:
-    detector->ccsigma = parameters.ccsigma;
-    detector->ccsize  = 3.*parameters.ccsigma;
+    detector->ccsigma =    detpar.ccsigma;
+    detector->ccsize  = 3.*detpar.ccsigma;
 
     // Consistency check for size of charge cloud:
     if (detector->ccsize > detector->pixelwidth) {
@@ -36,15 +40,29 @@ int init_FramestoreDetector(Detector* detector, struct FramestoreParameters para
       break;
     }
 
-    // Set the first readout time such that the first readout is performed 
-    // immediately at the beginning of the simulation.
-    detector->readout_time = parameters.t0;
-
-    // Set the readout routine:
-    detector->readout = readout_FramestoreDetector;
+    // Thresholds:
+    detector->pha_threshold = detpar.pha_threshold;
+    detector->energy_threshold = detpar.energy_threshold;
 
     // Get the memory for the detector pixels
     if (get_DetectorPixels(detector, &status)) break;
+
+    // Read the detector RMF and EBOUNDS from the specified file and 
+    // assign them to the Detector data structure.
+    if ((status=detector_assign_rsp(detector, detpar.rmf_filename)) 
+	!= EXIT_SUCCESS) break;
+
+
+    // Set the FRAMESTORE-SPECIFIC properties.
+    properties->frame = 0;
+    properties->integration_time = framepar.integration_time;
+
+    // Set the first readout time such that the first readout is performed 
+    // immediately at the beginning of the simulation.
+    detector->readout_time = detpar.t0;
+
+    // Set the readout routine:
+    detector->readout = readout_FramestoreDetector;
 
   } while(0); // End of Error handling loop.
 
