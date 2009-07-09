@@ -18,15 +18,16 @@ pfiles_DATA =
 # Libraries that are installed in the 'lib' directory.
 lib_LIBRARIES = libastrosources.a \
 		libdetectors.a libframestore.a \
-		libmirror.a libsatellites.a
+		libmirror.a libsatellites.a libfitsfiles.a
 
 # Sources:
 libastrosources_a_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 			    random_sixt.c spectrum.c sourceimage.c
-libdetectors_a_SOURCES    = detector.c eventlist.c random_sixt.c vector.c
+libdetectors_a_SOURCES    = detector.c random_sixt.c vector.c
 libframestore_a_SOURCES   = framestore.c
 libmirror_a_SOURCES       = psf.c vignetting.c vector.c random_sixt.c
 libsatellites_a_SOURCES   = attitudecatalog.c attitudefile.c vector.c
+libfitsfiles_a_SOURCES    = eventlist.c impactlist.c
 
 
 ############ BINARIES #################
@@ -39,6 +40,7 @@ bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
 
 binary_stream_SOURCES  = binary_stream.c
 binary_stream_LDADD    = libdetectors.a
+binary_stream_LDADD   += libfitsfiles.a
 pfiles_DATA           += binary_stream.par
 
 htrs_psfgen_SOURCES  = htrs_psfgen.c
@@ -55,6 +57,7 @@ photon_detection_LDADD    = libdetectors.a
 photon_detection_LDADD   += libframestore.a
 photon_detection_LDADD   += libastrosources.a
 photon_detection_LDADD   += libsatellites.a
+photon_detection_LDADD   += libfitsfiles.a
 pfiles_DATA              += photon_detection.par
 
 framestore_simulation_SOURCES  = framestore_simulation.c
@@ -62,6 +65,7 @@ framestore_simulation_LDADD    = libdetectors.a
 framestore_simulation_LDADD   += libframestore.a
 framestore_simulation_LDADD   += libastrosources.a
 framestore_simulation_LDADD   += libsatellites.a
+framestore_simulation_LDADD   += libfitsfiles.a
 pfiles_DATA    += framestore_simulation.par
 
 photon_imaging_SOURCES  = photon_imaging.c
@@ -74,6 +78,7 @@ event_projection_SOURCES  = event_projection.c
 event_projection_LDADD    = libdetectors.a
 event_projection_LDADD   += libastrosources.a
 event_projection_LDADD   += libsatellites.a
+event_projection_LDADD   += libfitsfiles.a
 pfiles_DATA              += event_projection.par
 
 psfgen_SOURCES  = psfgen.c
