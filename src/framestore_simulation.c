@@ -13,15 +13,12 @@
 int framestore_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
-  fitsfile *impactlist_fptr=NULL; 
-  long impactlist_nrows;
-
   // Detector data structure (containing the pixel array, its width, ...)
   Detector* detector=NULL;
 
+  struct ImpactlistFile impactlistfile;
   struct Eventlist_File* eventlist_file=NULL;
 
-  char msg[MAXMSG];          // error output buffer
   int status=EXIT_SUCCESS;   // error status
 
 
@@ -67,31 +64,17 @@ int framestore_simulation_main() {
     if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) 
 	!= EXIT_SUCCESS) break;
 
-
     // END of DETECTOR CONFIGURATION SETUP
 
 
-    // Open impact list FITS file:
-    if (fits_open_table(&impactlist_fptr, parameters.impactlist_filename, 
-			READONLY, &status)) break;
-    // Determine the number of rows in the impact list:
-    if (fits_get_num_rows(impactlist_fptr, &impactlist_nrows, &status)) break;
-    if (0 >= impactlist_nrows) {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: impact list in file '%s' is empty!\n", 
-	      parameters.impactlist_filename);
-      HD_ERROR_THROW(msg, status);
-      break;
-    }
-
-    // Read HEADER keywords.
-    char comment[MAXMSG]; // buffer
-    if (fits_read_key(impactlist_fptr, TSTRING, "ATTITUDE", 
-		      &parameters.attitude_filename, 
-		      comment, &status)) break;
+    // Open the impact list FITS file.
+    if(EXIT_SUCCESS!=(status=impactlist_openFile(&impactlistfile, parameters.impactlist_filename, 
+						 READONLY))) break;
+    strcpy(parameters.attitude_filename, impactlistfile.attitude_filename);
+    
 
 
-    // Delete old event list file:
+    // Delete old EVENT LIST file:
     remove(parameters.eventlist_filename);
     // Create new event list FITS file.
     headas_chat(5, "create FITS file '%s' according to template '%s' ...\n", 
@@ -109,9 +92,6 @@ int framestore_simulation_main() {
     headas_chat(5, "open FITS file '%s' for output of event list ...\n",
 		parameters.eventlist_filename);
     eventlist_file = open_EventlistFile(parameters.eventlist_filename, READWRITE, &status);
-    // Create a new FITS file and a table for the event list:
-
-
     // Add important additional HEADER keywords to the event list.
     if (fits_write_key(eventlist_file->fptr, TSTRING, "ATTITUDE", 
 		       parameters.attitude_filename,
@@ -139,60 +119,52 @@ int framestore_simulation_main() {
     // --- Beginning of Detection Process ---
 
     headas_chat(5, "start detection process ...\n");
+    struct Impact impact, next_impact;
+    double next_background_event_time=0.;
+    int reached_end_of_impactlist=0;
 
-    int anynul;
-    double time, next_real_impact_time=0., next_background_event_time=0.;
-    float energy;
-    struct Point2d position;
-    long impactlist_row=0;
-    while (status==EXIT_SUCCESS) {
+    // Read the first row of the impact list.
+    if(EXIT_SUCCESS!=(status=impactlist_getNextRow(&impactlistfile, &next_impact))) break;
+
+    while (EXIT_SUCCESS==status) {
       // TODO: Break the loop, when interval time+timespan is exceeded.
 
-      if ((parameters.background_rate > 0.) && 
-	  (next_background_event_time < next_real_impact_time)) {
+      if ((parameters.background_rate>0.) && (next_background_event_time<next_impact.time)) {
 	// The current event is a background event:
-	time = next_background_event_time;
-	energy = 1.; // TODO
-	position.x = 2*(get_random_number()-0.5) * (detector->offset*detector->pixelwidth);
-	position.y = 2*(get_random_number()-0.5) * (detector->offset*detector->pixelwidth);
+	impact.time = next_background_event_time;
+	impact.energy = 1.; // TODO
+	impact.position.x = 2*(get_random_number()-0.5)*(detector->offset*detector->pixelwidth);
+	impact.position.y = 2*(get_random_number()-0.5)*(detector->offset*detector->pixelwidth);
 	// TODO: prevent PSF check for these events !!
 	
 	// Determine the time of the NEXT background event:
 	next_background_event_time += rndexp(1./(double)parameters.background_rate);
 
       } else {
-	// The current event is obtained from the impact list:
-	// Read an entry from the impact list:
-	anynul = 0;
-	time = next_real_impact_time;
-	energy = 0.;
-	position.x = 0.;
-	position.y = 0.;
-	fits_read_col(impactlist_fptr, TFLOAT, 2, impactlist_row+1, 1, 1, 
-		      &energy, &energy, &anynul, &status);
-	fits_read_col(impactlist_fptr, TDOUBLE, 3, impactlist_row+1, 1, 1, 
-		      &position.x, &position.x, &anynul, &status);
-	fits_read_col(impactlist_fptr, TDOUBLE, 4, impactlist_row+1, 1, 1, 
-		      &position.y, &position.y, &anynul, &status);
+	// The current event is obtained from the impact list.
+	impact = next_impact;
 
-	// Get the time of the next entry in the impact list:
-	impactlist_row++;
-	if (impactlist_row>=impactlist_nrows) break; // Reached end of impact list.
-	next_real_impact_time = 0.;
-	fits_read_col(impactlist_fptr, TDOUBLE, 1, impactlist_row+1, 1, 1, 
-		      &next_real_impact_time, &next_real_impact_time, &anynul, &status);
+	if (0==reached_end_of_impactlist) {
+	  // Read in the next row from the impact list:
+	  if(EXIT_SUCCESS!=(status=impactlist_getNextRow(&impactlistfile, &next_impact))) break;
+	  // Check if we reached the end of the impact list:
+	  if (impactlistfile.row >= impactlistfile.nrows) reached_end_of_impactlist = 1;
+	} else {
+	  // There are no further rows in the impact list. So we have to stop here.
+	  break;
+	}
       }
 
       // Call the detector action routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
       if (detector->readout != NULL) { // HTRS and TES do not have this routine.
-	detector->readout(detector, time, eventlist_file, &status);
+	detector->readout(detector, impact.time, eventlist_file, &status);
 	if (status != EXIT_SUCCESS) break;
       }
 
       // Check whether the event lies in the specified time interval:
-      if ((time > parameters.t0) && (time < parameters.t0+parameters.timespan)) {
+      if ((impact.time > parameters.t0) && (impact.time < parameters.t0+parameters.timespan)) {
 
 	// Measure the photon in the detector pixels, i.e., create the 
 	// corresponding charges there.
@@ -201,7 +173,7 @@ int framestore_simulation_main() {
 	// The channel is obtained from the RMF using the corresponding
 	// HEAdas routine which is based on drawing a random number.
 	long channel;
-	ReturnChannel(detector->rmf, energy, 1, &channel);
+	ReturnChannel(detector->rmf, impact.energy, 1, &channel);
 
 	// Check if the photon is really measured. If the
 	// PHA channel returned by the HEAdas RMF function is '-1', 
@@ -220,87 +192,23 @@ int framestore_simulation_main() {
 	if(charge > 0.) {
 	  int x[4], y[4];
 	  double fraction[4];
-      
-	  if ((detector->type == FRAMESTORE) || (detector->type == WFI)) {
-	    // Determine the affected detector pixels.
-	    int npixels = get_pixel_square(detector, position, x, y, fraction);
+	  
+	  // Determine the affected detector pixels.
+	  int npixels = get_pixel_square(detector, impact.position, x, y, fraction);
 
-	    // Add the charge created by the photon to the affected detector pixels.
-	    int count;
-	    for (count=0; count<npixels; count++) {
-	      if (x[count] != INVALID_PIXEL) {
-		detector->pixel[x[count]][y[count]].charge += 
-		  charge * fraction[count] * 
-		  // |      |-> charge fraction due to split events
-		  // |-> charge created by incident photon
-		  detector_active(x[count], y[count], detector, time);
-		// |-> "1" if pixel can measure charge, "0" else
-	      }
+	  // Add the charge created by the photon to the affected detector pixels.
+	  int count;
+	  for (count=0; count<npixels; count++) {
+	    if (x[count] != INVALID_PIXEL) {
+	      detector->pixel[x[count]][y[count]].charge += 
+		charge * fraction[count] * 
+		// |      |-> charge fraction due to split events
+		// |-> charge created by incident photon
+		detector_active(x[count], y[count], detector, impact.time);
+	      // |-> "1" if pixel can measure charge, "0" else
 	    }
-	    
-	  } else if (detector->type == HTRS) {
-	    struct Point2d position2;
-	    position2.x = position.y;
-	    position2.y = position.x; // TODO !!!!!!!!!!!!
-	    int npixels = htrs_get_pixel(detector, position2, x, y, fraction);
-	    
-	    struct Event event;
-	    int count;
-	    for (count=0; count<npixels; count++) {
-	      if (x[count] != INVALID_PIXEL) {
-		// Check if the affected detector pixel is active:
-		if (htrs_detector_active(x[count], y[count], detector, time)) {
-		  
-		  // Save the time of the photon arrival in this pixel
-		  detector->pixel[x[count]][y[count]].arrival = time;
-		
-		  // Store the photon charge and the new arrival time:
-		  event.pha = get_channel(charge*fraction[count], detector);
-		  event.time = time;                // TODO: drift time
-		  event.xi = detector->htrs_icoordinates2pixel[x[count]][y[count]]+1;
-		  event.yi = 0;  // human readable HTRS pixels numbers start at 1 <-|
-		  event.frame = 0;
-		  event.ra = NAN;
-		  event.dec = NAN;
-		  event.sky_xi = 0;
-		  event.sky_yi = 0;
-		  
-		  // Add the event to the FITS event list.
-		  // Check lower PHA threshold:
-		  if ((event.pha >= detector->pha_threshold)&&
-		      (charge*fraction[count] >= detector->energy_threshold)){ 
-		    // There is an event in this pixel, so insert it into eventlist:
-		    add_eventlist_row(eventlist_file, event, &status);
-		  }
-		} // END htrs_detector_active(...)
-	      } // END x[count] != INVALID_PIXEL
-	    } // END of loop over all split partners.
-	
-	  } else if (detector->type == TES) {
-	    get_pixel_square(detector, position, x, y, fraction);
-	    
-	    if (x[0] != INVALID_PIXEL) {
-	      struct Event event;
-	    
-	      // Store the photon charge and the new arrival time:
-	      event.pha = get_channel(charge, detector);  // TODO: RMF
-	      event.time = time;
-	      event.xi = x[0];
-	      event.yi = y[0];
-	      event.frame = detector->frame;
-	      event.ra = NAN;
-	      event.dec = NAN;
-	      event.sky_xi = 0;
-	      event.sky_yi = 0;
-	      
-	      // Add the event to the FITS event list.
-	      if ((event.pha>=detector->pha_threshold)&&
-		  (charge>=detector->energy_threshold)){ // Check lower PHA threshold
-		// There is an event in this pixel, so insert it into eventlist:
-		add_eventlist_row(eventlist_file, event, &status);
-	      }
-	    } // END x[0] != INVALID_PIXEL
-	  } // END detector->type == TES
+	  }
+	  
 	} // END if(charge>0.)
       } // END 'time' within specified time interval
     } // END of scanning the impact list.
@@ -316,7 +224,8 @@ int framestore_simulation_main() {
   // Release HEADAS random number generator
   HDmtFree();
 
-  if (impactlist_fptr) fits_close_file(impactlist_fptr, &status);
+  if (NULL!=impactlistfile.fptr) fits_close_file(impactlistfile.fptr, &status);
+
   if (NULL!=eventlist_file) {
     if (eventlist_file->fptr) fits_close_file(eventlist_file->fptr, &status);
   }
@@ -332,10 +241,6 @@ int framestore_simulation_main() {
       }
       free(detector->pixel);
     }
-  }
-
-  if (detector->type == HTRS) {
-    htrs_free_Detector(detector);
   }
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");

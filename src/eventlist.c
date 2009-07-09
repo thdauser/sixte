@@ -457,15 +457,14 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     }
 
     // Open the FITS file table for reading:
-    if (fits_open_table(&ef->fptr, filename, 
-			access_mode, status)) break;
+    if (fits_open_table(&ef->fptr, filename, access_mode, status)) break;
 
     // Get the HDU type
     int hdutype;
     if (fits_get_hdu_type(ef->fptr, &hdutype, status)) break;
 
     // Image HDU results in an error message.
-    if (hdutype==IMAGE_HDU) {
+    if (IMAGE_HDU==hdutype) {
       *status=EXIT_FAILURE;
       sprintf(msg, "Error: no table extension available in event list "
 	      "FITS file '%s'!\n", filename);
@@ -474,8 +473,7 @@ struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* 
     }
 
     // Determine the number of rows in the event list.
-    if (fits_get_num_rows(ef->fptr, &ef->nrows, status)) 
-      break;
+    if (fits_get_num_rows(ef->fptr, &ef->nrows, status)) break;
 
     // Set internal row counter to first row (starting at 0).
     ef->row = 0;

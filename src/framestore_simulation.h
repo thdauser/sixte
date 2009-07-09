@@ -7,6 +7,7 @@
 #include "photon.h"
 #include "eventlist.h"
 #include "point.h"
+#include "impactlist.h"
 
 
 #define TOOLSUB framestore_simulation_main
