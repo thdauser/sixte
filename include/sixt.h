@@ -17,8 +17,8 @@
 #include "headas_rand.h"
 
 
-#define FILENAME_LENGTH 256 /**< Maximum lenght of a filename. */
-#define MAXMSG 256 /**< Maximum length of a message string. */
+#define FILENAME_LENGTH 512 /**< Maximum lenght of a filename. */
+#define MAXMSG 512 /**< Maximum length of a message string. */
 
 #define NAN (0./0.) /**< Not a Number. */
 

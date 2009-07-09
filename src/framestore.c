@@ -24,11 +24,13 @@ int init_FramestoreDetector(Detector* detector, struct FramestoreParameters para
     // Set the framestore-specific properties.
     properties->frame = 0;
     properties->integration_time = parameters.integration_time;
-    properties->ccsigma = parameters.ccsigma;
-    properties->ccsize  = 3.*parameters.ccsigma;
+
+    // Set the charge cloud size:
+    detector->ccsigma = parameters.ccsigma;
+    detector->ccsize  = 3.*parameters.ccsigma;
 
     // Consistency check for size of charge cloud:
-    if (properties->ccsize > detector->pixelwidth) {
+    if (detector->ccsize > detector->pixelwidth) {
       status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: charge cloud size greater than pixel width!\n", status);
       break;
@@ -61,13 +63,11 @@ void readout_FramestoreDetector(
 				int *status
 				) 
 {
-  Detector *detector = (Detector*) det;
+  Detector* detector = (Detector*) det;
 
   // Check, if the detector integration time was exceeded. 
   // In that case, read out the detector.
   if (time > detector->readout_time) {
-    // Add background photons to the detector pixels.
-    //insert_background_photons(*detector, background, detector->integration_time);
 
     // Readout the detector and create eventlist entries for the actual time:
     readout(detector, eventlist_file, status);
@@ -79,8 +79,9 @@ void readout_FramestoreDetector(
     // time is within the detector->readout interval.
     // This CAN ONLY BE DONE for FRAMESTORE detectors!!
     // For detectors with individual readout lines a more complicated method is required.
+    struct FramestoreProperties* specific = (struct FramestoreProperties*)detector->specific;
     while (time > detector->readout_time) {
-      detector->readout_time += detector->integration_time;
+      detector->readout_time += specific->integration_time;
       detector->frame+=2;
     }
 

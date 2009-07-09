@@ -396,7 +396,7 @@ inline void clear_detector_line(Detector* detector, int line) {
 
   for (x=0; x<detector->width; x++) {
     detector->pixel[x][line].charge  = 0.;
-    detector->pixel[x][line].arrival = -detector->dead_time;
+    detector->pixel[x][line].arrival = -1.e-16; // TODO detector->dead_time;
   }
 }
 

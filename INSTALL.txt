@@ -32,4 +32,22 @@ To continue type:
  make
  make install
 
+The simulation package uses several FITS template files to create FITS files. 
+These templates are stored in ${prefix}/share/sixt/templates during the installation.
+In order to be able to use these files, you either have to specify this path at each 
+program call, or you can store it in the environment variable SIXT_FITS_TEMPLATES.
+When using the simulation frequently it is strongly recommended to set the environment 
+variable in the shell startup scripts.
+
+If you are using csh add the following line to your .cshrc
+
+ setenv SIXT_FITS_TEMPLATES ${prefix}/share/sixt/templates
+
+If you are using bash add add the following line to your .bashrc
+
+ export SIXT_FITS_TEMPLATES=${prefix}/share/sixt/templates
+
+Where in both calls the expression ${prefix} has to be replaced by the value you have 
+specified at calling .configure. (Don't use '${prefix}' literally!)
+
 If everything worked properly you can now use the software.

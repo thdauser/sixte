@@ -38,16 +38,16 @@ typedef struct {
   double pixelwidth; /**< Width of a single pixel in the detector array [m]. */
 
 
-  double integration_time; // Integration time of the entire pnCCD (!) 
+  //  double integration_time; // Integration time of the entire pnCCD (!) 
                            // detector array
                            // (= span of time between 2 subsequent readouts).
   double dead_time;        // Necessary time to read out one line of the DEPFET 
                            // or one pixel of the HTRS (!) detectors.
   long frame;              // Number of the current frame.
 
-  double ccsigma;          // charge cloud sigma (needed to calculate size of 
-                           // the charge cloud) [m]
-  double ccsize;           // size of the charge cloud [m]
+  double ccsigma; /**< Charge cloud sigma [m]. This quantity is used to calculate size of 
+		   * the charge cloud. */
+  double ccsize; /**< Size of the charge cloud [m]. Defined as three times ccsigma. */
   
   long pha_threshold;      // lower detector PHA threshold [PHA channels]
   float energy_threshold; /**< Lower detector energy threshold [keV]. */

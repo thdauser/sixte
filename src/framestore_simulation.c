@@ -41,7 +41,6 @@ int framestore_simulation_main() {
     // Gaussian distribution.
     HDmtInit(1);
 
-
     // Set initial DETECTOR CONFIGURATION.
     detector = get_Detector(&status);
     if (EXIT_SUCCESS!=status) break;
@@ -101,8 +100,8 @@ int framestore_simulation_main() {
     // Create the new event list file according to the selected template:
     fitsfile* ef_fptr=NULL;
     char buffer[FILENAME_LENGTH];
-    sprintf(buffer, "%s(%s)", parameters.eventlist_filename, 
-	    parameters.eventlist_template_filename);
+    sprintf(buffer, "%s(%s/%s)", parameters.eventlist_filename, 
+	    parameters.templatedir, parameters.eventlist_template_filename);
     if (fits_create_file(&ef_fptr, buffer, &status)) break;
     if (fits_close_file(ef_fptr, &status)) break;
     
@@ -323,14 +322,16 @@ int framestore_simulation_main() {
   }
 
   // Release memory of detector:
-  int count;
-  if (detector->pixel) {
-    for (count = 0; count < detector->width; count++) {
-      if (detector->pixel[count]) {
-	free(detector->pixel[count]);
+  if (detector != NULL) {
+    if (detector->pixel != NULL) {
+      int count;
+      for (count = 0; count < detector->width; count++) {
+	if (detector->pixel[count]) {
+	  free(detector->pixel[count]);
+	}
       }
+      free(detector->pixel);
     }
-    free(detector->pixel);
   }
 
   if (detector->type == HTRS) {
@@ -349,37 +350,31 @@ int framestore_simulation_main() {
 // This routine reads the program parameters using the PIL.
 int getpar(struct Parameters* parameters)
 {
-  char msg[MAXMSG];             // error output buffer
-  int status=EXIT_SUCCESS;      // error status
+  int status=EXIT_SUCCESS; // error status
 
   // Get the name of the impact list file (FITS file)
   if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
-    sprintf(msg, "Error reading the name of the impact list file!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
   }
 
   // Get the integration time of the FRAMESTORE CCD.
   else if ((status = PILGetReal("integration_time", &parameters->integration_time))) {
-    sprintf(msg, "Error reading the integration time!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the integration time!\n", status);
   }
 
   // Detector width [pixel]
   else if ((status = PILGetInt("det_width", &parameters->width))) {
-    sprintf(msg, "Error reading the width of the detector!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the width of the detector!\n", status);
   }
 
   // [m]
   else if ((status = PILGetReal("det_pixelwidth", &parameters->pixelwidth))) {
-    sprintf(msg, "Error reading the width of the detector pixels!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the width of the detector pixels!\n", status);
   }
 
   // [m]
   else if ((status = PILGetReal("ccsigma", &parameters->ccsigma))) {
-    sprintf(msg, "Error reading the charge cloud sigma!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the charge cloud sigma!\n", status);
   }
   if (status) return(status);
 
@@ -387,16 +382,14 @@ int getpar(struct Parameters* parameters)
   // Read the detector thresholds (either integer PHA or float energy):
   int pha_threshold;
   if ((status = PILGetInt("pha_threshold", &pha_threshold))) {
-    sprintf(msg, "Error: could not determine detector PHA threshold!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error: could not determine detector PHA threshold!\n", status);
     return(status);
   } else {
     parameters->pha_threshold = (long)pha_threshold;
   }
   if (parameters->pha_threshold==-1) {
     if ((status = PILGetReal4("energy_threshold", &parameters->energy_threshold))) {
-      sprintf(msg, "Error: could not determine detector energy threshold!\n");
-      HD_ERROR_THROW(msg,status);
+      HD_ERROR_THROW("Error: could not determine detector energy threshold!\n", status);
       return(status);
     }
   } else {
@@ -405,41 +398,47 @@ int getpar(struct Parameters* parameters)
 
   // Get the name of the detector redistribution file (FITS file)
   if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
-    sprintf(msg, "Error reading the name of the detector" 
-	    "redistribution matrix file (RMF)!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the name of the detector" 
+		   "redistribution matrix file (RMF)!\n", status);
   }
 
   // Get the background count rate
   else if ((status = PILGetReal4("background_rate", &parameters->background_rate))) {
-    sprintf(msg, "Error: could not determine the detector background rate!\n");
-    HD_ERROR_THROW(msg,status);
-    return(status);
+    HD_ERROR_THROW("Error: could not determine the detector background rate!\n", status);
   }
 
   // Get the name of the output event list (FITS file)
   else if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
-    sprintf(msg, "Error reading the name of the event list file!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // Get the name of the output event list TEMPLATE (ASCII file)
-  else if ((status = PILGetFname("eventlist_template_filename", 
-				 parameters->eventlist_template_filename))) {
     HD_ERROR_THROW("Error reading the name of the event list file!\n", status);
   }
 
   // Get the start time of the simulation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
-    sprintf(msg, "Error reading the 't0' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
   }
 
   // Get the timespan for the simulation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
-    sprintf(msg, "Error reading the 'timespan' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
+  
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
+  
+  else { 
+    char* buffer;
+    if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
+      strcpy(parameters->templatedir, buffer);
+    } else {
+      if ((status = PILGetFname("fits_templates", parameters->templatedir))) {
+	HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
+      }
+    }
+  }
+
+  // Set the event list template file for eROSITA:
+  strcpy(parameters->eventlist_template_filename, "erosita.eventlist.tpl");
 
   return(status);
 }

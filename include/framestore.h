@@ -11,11 +11,6 @@ struct FramestoreProperties {
 			    * detector array.
 			    * (= Span of time between 2 subsequent readouts). */
   long frame; /**< Number of the current frame. */
-
-  double ccsigma; /**< Charge cloud sigma [m]. This quantity is used to calculate size of 
-		   * the charge cloud. */
-  double ccsize; /**< Size of the charge cloud [m]. Defined as three times ccsigma. */
-
 };
 
 
