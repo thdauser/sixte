@@ -10,8 +10,18 @@ AM_CFLAGS += -DCONSTANT_LIGHTCURVE # use a constant light curve instead of red n
 # LDADD = ...   add additional libraries
 
 
+########## DIRECTORIES ###############
+
+# Directory where to install the PIL parameter files.
 pfilesdir   = @PFILESDIR@
 pfiles_DATA = 
+
+# Directory where to install the FITS template files.
+fitstemplatesdir = $(pkgdatadir)/templates
+fitstemplates_DATA 	 = erosita.eventlist.tpl 
+fitstemplates_DATA	+= wfi.full1024.eventlist.tpl 
+fitstemplates_DATA 	+= wfi.window16.eventlist.tpl
+
 
 ########### LIBRARIES #################
 
