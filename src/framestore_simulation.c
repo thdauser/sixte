@@ -41,13 +41,14 @@ int framestore_simulation_main() {
 
     // General detector settings.
     struct FramestoreDetectorParameters fdparameters = {
-      //.width = parameters.width,
-      //.pixelwidth = parameters.pixelwidth,
-      //.ccsigma          = parameters.ccsigma,
-
-      //.pha_threshold = parameters.pha_threshold,
-      //.energy_threshold = parameters.energy_threshold,
-
+      .pixels = { .xwidth = parameters.width,
+		  .ywidth = parameters.width,
+		  .xpixelwidth = parameters.pixelwidth,
+		  .ypixelwidth = parameters.pixelwidth },
+      .generic = { .ccsigma = parameters.ccsigma, 
+		   .pha_threshold = parameters.pha_threshold,
+		   .energy_threshold = parameters.energy_threshold,
+		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
       .integration_time = parameters.integration_time,
       .t0               = parameters.t0
     };

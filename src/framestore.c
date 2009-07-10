@@ -35,83 +35,12 @@ void addImpact2FramestoreDetector(FramestoreDetector* fd)
 
 
 /*
-//////////////////////////////////////////////////
-int init_FramestoreDetector(Detector* detector, struct DetectorParameters detpar,
-			    struct FramestoreParameters framepar) 
-{
-  struct FramestoreProperties* properties = NULL;
-  int status = EXIT_SUCCESS;
-  
-  do { // Error handling loop.
-
-    // Set the detector tpye.
-    detector->type = FRAMESTORE;
-
-    // Allocate memory for the framestore-specific elements in the detector data
-    // structure.
-    properties = malloc(sizeof(struct FramestoreProperties));
-    if (NULL==properties) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for detector specific elements failed !\n", 
-		     status);
-      break;
-    }
-
-    // Set the GENERAL detector properties.
-    // Detector size:
-    detector->width  = detpar.width;
-    detector->offset = detpar.width/2;
-    detector->pixelwidth = detpar.pixelwidth;
-
-    // Set the charge cloud size:
-    detector->ccsigma =    detpar.ccsigma;
-    detector->ccsize  = 3.*detpar.ccsigma;
-
-    // Consistency check for size of charge cloud:
-    if (detector->ccsize > detector->pixelwidth) {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: charge cloud size greater than pixel width!\n", status);
-      break;
-    }
-    
-    detector->frame = 0;
-
-    // Thresholds:
-    detector->pha_threshold = detpar.pha_threshold;
-    detector->energy_threshold = detpar.energy_threshold;
-
-    // Get the memory for the detector pixels
-    if (get_DetectorPixels(detector, &status)) break;
-
-    // Read the detector RMF and EBOUNDS from the specified file and 
-    // assign them to the Detector data structure.
-    if ((status=detector_assign_rsp(detector, detpar.rmf_filename)) 
-	!= EXIT_SUCCESS) break;
-
-
-    // Set the FRAMESTORE-SPECIFIC properties.
-    //    properties->frame = 0;
-    properties->integration_time = framepar.integration_time;
-
-    // Set the first readout time such that the first readout is performed 
-    // immediately at the beginning of the simulation.
-    detector->readout_time = detpar.t0;
-
-
-    // Set the readout routine:
-    detector->readout = readout_FramestoreDetector;
-
-    // Set the photon detection routine:
-    detector->add_impact = add_Impact2FramestoreDetector;
-
-  } while(0); // End of Error handling loop.
-
-  detector->specific = properties; // (void*)
-  return(status);
+// Consistency check for size of charge cloud:
+if (detector->ccsize > detector->pixelwidth) {
+status=EXIT_FAILURE;
+HD_ERROR_THROW("Error: charge cloud size greater than pixel width!\n", status);
+break;
 }
-
-
-
 
 //////////////////////////////////////////////////////////////////////
 void readout_FramestoreDetector(
