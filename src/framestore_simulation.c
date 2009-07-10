@@ -109,7 +109,7 @@ int framestore_simulation_main() {
     // --- Beginning of Detection Process ---
 
     headas_chat(5, "start detection process ...\n");
-    struct Impact impact, next_impact;
+    Impact impact, next_impact;
     double next_background_event_time=0.;
     int reached_end_of_impactlist=0;
 

@@ -24,11 +24,11 @@ struct ImpactlistFile {
 
 
 /** Impact of a photon on the detector plane. */
-struct Impact {
+typedef struct {
   double time;
   float energy;
   struct Point2d position;
-};
+} Impact;
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +42,7 @@ int impactlist_openFile(struct ImpactlistFile* imf, char* filename, int access_m
  * row counter of the ImpactlistFile data structure. E.g. if 'row==0' at the beginning of
  * the function call, the first row from the FITS table is read and the counter is 
  * increased to 'row==1'. */
-int impactlist_getNextRow(struct ImpactlistFile* imf, struct Impact* impact);
+int impactlist_getNextRow(struct ImpactlistFile* imf, Impact* impact);
 
 /** Checks whether the end of the impact list is reached. 
  * If the internal pointer of the ImpactlistFile data structure points to the last line

@@ -120,7 +120,7 @@ typedef struct {
   /** Pointer to the routine that is called when a new photon hits the detector.
    * The routine determines the generated charge according to the photon energy and
    * the detector response. Split events are taken into account if 'ccsize>0.'. */
-  void (*add_impact) (void*, struct Impact*);
+  void (*add_impact) (void*, Impact*);
 
 } Detector;
 

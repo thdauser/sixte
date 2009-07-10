@@ -23,7 +23,7 @@ int initFramestoreDetector(FramestoreDetector* fd,
 
 
 
-void readoutFramestoreDetector(FramestoreDetector* fd) 
+void readoutFramestoreDetector(FramestoreDetector* fd)
 {
   return;
 }

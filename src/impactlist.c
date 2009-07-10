@@ -52,7 +52,7 @@ int impactlist_openFile(struct ImpactlistFile* imf, char* filename, int access_m
 
 
 
-int impactlist_getNextRow(struct ImpactlistFile* imf, struct Impact* impact) {
+int impactlist_getNextRow(struct ImpactlistFile* imf, Impact* impact) {
   int status = EXIT_SUCCESS;
   int anynul = 0;
 
