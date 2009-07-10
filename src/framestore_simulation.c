@@ -14,7 +14,7 @@ int framestore_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
   // Detector data structure (containing the pixel array, its width, ...)
-  Detector* detector=NULL;
+  FramestoreDetector detector;
 
   struct ImpactlistFile impactlistfile;
   struct Eventlist_File* eventlist_file=NULL;
@@ -27,7 +27,7 @@ int framestore_simulation_main() {
   set_toolversion("0.01");
 
 
-  do {   // beginning of the ERROR handling loop (will at most be run once)
+  do { // Beginning of the ERROR handling loop (will at most be run once).
 
     // --- Initialization ---
 
@@ -38,28 +38,21 @@ int framestore_simulation_main() {
     // Gaussian distribution.
     HDmtInit(1);
 
-    // Set initial DETECTOR CONFIGURATION.
-    detector = get_Detector(&status);
-    if (EXIT_SUCCESS!=status) break;
 
     // General detector settings.
-    struct DetectorParameters detectorparameters = {
-      .width = parameters.width,
-      .pixelwidth = parameters.pixelwidth,
-      .ccsigma          = parameters.ccsigma,
+    struct FramestoreDetectorParameters fdparameters = {
+      //.width = parameters.width,
+      //.pixelwidth = parameters.pixelwidth,
+      //.ccsigma          = parameters.ccsigma,
 
-      .pha_threshold = parameters.pha_threshold,
-      .energy_threshold = parameters.energy_threshold,
+      //.pha_threshold = parameters.pha_threshold,
+      //.energy_threshold = parameters.energy_threshold,
 
+      .integration_time = parameters.integration_time,
       .t0               = parameters.t0
     };
-    strcpy(detectorparameters.rmf_filename, parameters.rmf_filename);
-
-    // Framestore-specific settings
-    struct FramestoreParameters framestoreparameters = {
-      .integration_time = parameters.integration_time,
-    };
-    init_FramestoreDetector(detector, detectorparameters, framestoreparameters);    
+    //    strcpy(detectorparameters.rmf_filename, parameters.rmf_filename);
+    if(EXIT_SUCCESS!=(status=initFramestoreDetector(&detector, &fdparameters))) break;
     
     // END of DETECTOR CONFIGURATION SETUP
 
@@ -128,8 +121,10 @@ int framestore_simulation_main() {
 	// The current event is a background event:
 	impact.time = next_background_event_time;
 	impact.energy = 1.; // TODO
-	impact.position.x = 2*(get_random_number()-0.5)*(detector->offset*detector->pixelwidth);
-	impact.position.y = 2*(get_random_number()-0.5)*(detector->offset*detector->pixelwidth);
+	impact.position.x=2*(get_random_number()-0.5)*
+	  (detector.pixels.xoffset*detector.pixels.xpixelwidth);
+	impact.position.y=2*(get_random_number()-0.5)*
+	  (detector.pixels.yoffset*detector.pixels.ypixelwidth);
 	// TODO: prevent PSF check for these events !!
 	
 	// Determine the time of the NEXT background event:
@@ -153,17 +148,14 @@ int framestore_simulation_main() {
       // Call the detector readout routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
-      if (detector->readout != NULL) { // HTRS and TES do not have this routine.
-	detector->readout(detector, impact.time, eventlist_file, &status);
-	if (status != EXIT_SUCCESS) break;
-      }
+      readoutFramestoreDetector(&detector);
 
       // Check whether the event lies in the specified time interval:
       if ((impact.time > parameters.t0) && (impact.time < parameters.t0+parameters.timespan)) {
 
 	// Call the photon detection routine that generates the right charge
 	// and stores it in the detector pixels.
-	detector->add_impact(detector, &impact);
+	addImpact2FramestoreDetector(&detector);
 
       } // END 'time' within specified time interval
     } // END of scanning the impact list.
@@ -185,21 +177,9 @@ int framestore_simulation_main() {
     if (eventlist_file->fptr) fits_close_file(eventlist_file->fptr, &status);
   }
 
-  // Release memory of detector:
-  if (detector != NULL) {
-    if (detector->pixel != NULL) {
-      int count;
-      for (count = 0; count < detector->width; count++) {
-	if (detector->pixel[count]) {
-	  free(detector->pixel[count]);
-	}
-      }
-      free(detector->pixel);
-    }
-  }
+  // TODO Release memory of detector.
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
-
   return(status);
 }
 

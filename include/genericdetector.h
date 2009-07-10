@@ -2,7 +2,12 @@
 #define GENERICDETECTOR_H 1
 
 #include "sixt.h"
+
+#ifndef HEASP_H
+#define HEASP_H 1
 #include "heasp.h"
+#endif
+
 
 
 /** Generic x-ray detector. Contains common data/specifications that are defined for

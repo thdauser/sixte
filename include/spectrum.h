@@ -15,23 +15,14 @@
 #ifndef SPECTRUM_H
 #define SPECTRUM_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <math.h>
-#include <assert.h>
-
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
+#include "sixt.h"
+#include "fits_pha.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
 #include "heasp.h"
 #endif
 
-#include "sixt.h"
-#include "fits_pha.h"
 
 
 #define N_SPECTRA_FILES 1    // number of spectrum files (PHA files)

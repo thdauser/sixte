@@ -1,6 +1,40 @@
 #include "framestore.h"
 
 
+int initFramestoreDetector(FramestoreDetector* fd, 
+			   struct FramestoreDetectorParameters* parameters)
+{
+  int status = EXIT_SUCCESS;
+
+  // Call the initialization routines of the underlying data structures.
+  initGenericDetector(&fd->generic, &parameters->generic);
+  initSquarePixels(&fd->pixels, &parameters->pixels);
+
+  // Set up the framestore configuration.
+  fd->integration_time = parameters->integration_time;
+
+  // Set the first readout time such that the first readout is performed 
+  // immediately at the beginning of the simulation.
+  fd->readout_time = parameters->t0;
+  fd->frame = 0;
+
+  return(status);
+}
+
+
+
+void readoutFramestoreDetector(FramestoreDetector* fd) 
+{
+  return;
+}
+
+void addImpact2FramestoreDetector(FramestoreDetector* fd)
+{
+  return;
+}
+
+
+/*
 //////////////////////////////////////////////////
 int init_FramestoreDetector(Detector* detector, struct DetectorParameters detpar,
 			    struct FramestoreParameters framepar) 
@@ -167,5 +201,5 @@ void add_Impact2FramestoreDetector (void* det, struct Impact* impact) {
 
 }
 
-
+*/
 

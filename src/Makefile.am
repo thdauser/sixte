@@ -27,14 +27,14 @@ fitstemplates_DATA 	+= wfi.window16.eventlist.tpl
 
 # Libraries that are installed in the 'lib' directory.
 lib_LIBRARIES = libastrosources.a \
-		libdetectors.a libframestore.a \
+		libdetectors.a \
 		libmirror.a libsatellites.a libfitsfiles.a
 
 # Sources:
 libastrosources_a_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 			    random_sixt.c spectrum.c sourceimage.c
-libdetectors_a_SOURCES    = detector.c random_sixt.c vector.c squarepixels.c genericdetector.c
-libframestore_a_SOURCES   = framestore.c
+libdetectors_a_SOURCES    = detector.c random_sixt.c vector.c \
+				squarepixels.c genericdetector.c framestore.c
 libmirror_a_SOURCES       = psf.c vignetting.c vector.c random_sixt.c
 libsatellites_a_SOURCES   = attitudecatalog.c attitudefile.c vector.c
 libfitsfiles_a_SOURCES    = eventlist.c impactlist.c
@@ -64,7 +64,6 @@ pfiles_DATA               += photon_generation.par
 
 #photon_detection_SOURCES  = photon_detection.c
 #photon_detection_LDADD    = libdetectors.a
-#photon_detection_LDADD   += libframestore.a
 #photon_detection_LDADD   += libastrosources.a
 #photon_detection_LDADD   += libsatellites.a
 #photon_detection_LDADD   += libfitsfiles.a
@@ -72,7 +71,6 @@ pfiles_DATA               += photon_generation.par
 
 framestore_simulation_SOURCES  = framestore_simulation.c
 framestore_simulation_LDADD    = libdetectors.a
-framestore_simulation_LDADD   += libframestore.a
 framestore_simulation_LDADD   += libastrosources.a
 framestore_simulation_LDADD   += libsatellites.a
 framestore_simulation_LDADD   += libfitsfiles.a
