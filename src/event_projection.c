@@ -5,21 +5,10 @@
 #endif
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <malloc.h>
-#include <limits.h>
-
-#include "fitsio.h"
-#include "pil.h"
-#include "headas.h"
-#include "headas_error.h"
-
 #include "sixt.h"
 #include "vector.h"
 #include "check_fov.h"
-#include "random.h"
+#include "random_sixt.h"
 #include "psf.h"
 #include "photon.h"
 #include "telescope.h"
@@ -127,6 +116,13 @@ int event_projection_main() {
     if (fits_read_key(eventlistfile->fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, 
 		      comment, &status)) break;
+
+    if (0==strlen(parameters.attitude_filename)) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: no attitude file specified in FITS header of event list!\n",
+		     status);
+      break;
+    }
 
 
     // Determine the time of the first and of the last event in the list. 

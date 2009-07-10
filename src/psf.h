@@ -1,16 +1,7 @@
 #ifndef PSF_H
 #define PSF_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <math.h>
-#include <assert.h>
-
 #include "sixt.h"
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_error.h"
 
 
 

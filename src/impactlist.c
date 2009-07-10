@@ -36,6 +36,15 @@ int impactlist_openFile(struct ImpactlistFile* imf, char* filename, int access_m
     if(fits_get_colnum(imf->fptr, CASEINSEN, "X", &imf->cx, &status)) break;
     if(fits_get_colnum(imf->fptr, CASEINSEN, "Y", &imf->cy, &status)) break;
 
+    // Read header keywords from the FITS file.
+    int opt_status = EXIT_SUCCESS;
+    char comment[MAXMSG];
+    if ((fits_read_key(imf->fptr, TSTRING, "ATTITUDE", imf->attitude_filename, 
+		       comment, &opt_status))) {
+      strcpy(imf->attitude_filename, "");
+      HDerror_reset();
+    }
+
   } while(0);  // END of error handling loop
 
   return(status);
@@ -78,11 +87,6 @@ int impactlist_getNextRow(struct ImpactlistFile* imf, struct Impact* impact) {
     HD_ERROR_THROW("Error: reading from impact list failed!\n", status);
     return(status);
   }
-
-  // Read header keywords from the FITS file.
-  char comment[MAXMSG];
-  if ((fits_read_key(imf->fptr, TSTRING, "ATTITUDE", &imf->attitude_filename, comment, &status)))
-    return(status);
 
   return(status);
 }
