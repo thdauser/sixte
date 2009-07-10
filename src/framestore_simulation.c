@@ -70,7 +70,6 @@ int framestore_simulation_main() {
     strcpy(parameters.attitude_filename, impactlistfile.attitude_filename);
     
 
-
     // Delete old EVENT LIST file:
     remove(parameters.eventlist_filename);
     // Create new event list FITS file.
