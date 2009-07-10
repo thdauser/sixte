@@ -79,3 +79,63 @@ int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* p
   return(status);
 }
 
+
+
+long getChannel(float energy, struct RMF* rmf)
+{
+  // Check if the charge is outside the range of the energy bins defined
+  // in the EBOUNDS table. In that case the return value of this function is '-1'.
+  if (rmf->ChannelLowEnergy[0] > energy) {
+    return(0); // TODO
+  } else if (rmf->ChannelHighEnergy[rmf->NumberChannels-1] < energy) {
+    return(rmf->NumberChannels - 1 + rmf->FirstChannel);
+  }
+  
+  // Perform a binary search to obtain the detector PHA channel 
+  // that corresponds to the given detector charge.
+  long min, max, row;
+  min = 0;
+  max = rmf->NumberChannels-1;
+  while (max-min > 1) {
+    row = (long)(0.5*(min+max));
+    if (rmf->ChannelHighEnergy[row] < energy) {
+      min = row;
+    } else {
+      max = row;
+    }
+  }
+  // Take the final decision wheter max or min is right:
+  if (rmf->ChannelLowEnergy[max] < energy) {
+    row = max;
+  } else {
+    row = min;
+  }
+  
+  // Return the PHA channel.
+  return(row + rmf->FirstChannel);
+}
+
+
+
+float getEnergy(long channel, struct RMF* rmf)
+{
+  // Subtract the channel offset (EBOUNDS may either start at 0 or at 1).
+  channel -= rmf->FirstChannel;
+  if ((channel < 0) || (channel >= rmf->NumberChannels)) {
+    return(-1.);
+  }
+
+  // Return the mean of the energy that corresponds to the specified PHA channel
+  // according to the EBOUNDS table.
+  return(rmf->ChannelLowEnergy[channel] +
+	 get_random_number()*(rmf->ChannelHighEnergy[channel]-
+			      rmf->ChannelLowEnergy[channel]));
+}
+
+
+
+
+inline double gaussint(double x) 
+{
+  return(gsl_sf_erf_Q(x));
+}

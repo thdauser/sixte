@@ -2,12 +2,19 @@
 #define GENERICDETECTOR_H 1
 
 #include "sixt.h"
+#include "random_sixt.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
 #include "heasp.h"
 #endif
 
+// The GNU Scientific Library Errorfunction is used to calculate charge 
+// distribution of split events (assuming a Gaussian shape for the carge cloud).
+#include <gsl/gsl_sf_erf.h>
+
+
+#define INVALID_PIXEL (-1)   // flags an invalid pixel
 
 
 /** Generic x-ray detector. Contains common data/specifications that are defined for
@@ -17,7 +24,7 @@ typedef struct {
 		   * the charge cloud. */
   double ccsize; /**< Size of the charge cloud [m]. Defined as three times ccsigma. */
 
-  long pha_threshold; // lower detector PHA threshold [PHA channels]
+  long pha_threshold; /**< lower detector PHA threshold [PHA channels]. */
   float energy_threshold; /**< Lower detector energy threshold [keV]. */
 
   /** Detector response matrix. Includes the RMF and the detector-specific
@@ -48,7 +55,19 @@ struct GenericDetectorParameters {
 ////////////////////////////////////////////////////////////////////
 
 
+/** Set up the initial configuraton for the GenericDetector data structure. */
 int initGenericDetector(GenericDetector*, struct GenericDetectorParameters*);
+
+/** Determines the PHA channel corresponding to a given energy according to the EBOUNDS
+ * table of the detector response. */
+long getChannel(float energy, struct RMF* rmf);
+
+/** Determine the charge corresponding to a particular PHA channel according to 
+ * the EBOUNDS table. */
+float getEnergy(long channel, struct RMF* rmf);
+
+/** Calculates the Gaussian integral using the GSL complementary error function. */
+inline double gaussint(double x);
 
 
 #endif /* GENERICDETECTOR_H */

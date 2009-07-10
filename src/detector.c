@@ -149,10 +149,10 @@ static void insert_background_photons(
 
 /////////////////////////////////////////
 inline void readout(
-			   Detector* detector,
-			   struct Eventlist_File* eventlist_file,
-			   int *status
-			   ) 
+		    Detector* detector,
+		    struct Eventlist_File* eventlist_file,
+		    int *status
+		    ) 
 {
   int line;
 
@@ -168,11 +168,11 @@ inline void readout(
 
 /////////////////////////////////////////////////
 inline void readout_line(
-				Detector* detector,
-				int line,
-				struct Eventlist_File* eventlist_file,
-				int *status
-				) 
+			 Detector* detector,
+			 int line,
+			 struct Eventlist_File* eventlist_file,
+			 int *status
+			 ) 
 {
   int xi;
 
@@ -1135,8 +1135,6 @@ int get_pixel_square(
   // the detector array.
   return(npixels);
 }
-
-
 #endif
 
 
