@@ -1,16 +1,16 @@
-#ifndef FRAMESTORE_SIMULATION_H
-#define FRAMESTORE_SIMULATION_H 1
+#ifndef WFI_SIMULATION_H
+#define WFI_SIMULATION_H 1
 
 #include "sixt.h"
 #include "detectors.h"
-#include "framestore.h"
+#include "wfidetector.h"
 #include "photon.h"
 #include "eventlist.h"
 #include "point.h"
 #include "impactlist.h"
 
 
-#define TOOLSUB framestore_simulation_main
+#define TOOLSUB wfi_simulation_main
 #include "headas_main.c"
 
 
@@ -29,9 +29,10 @@ struct Parameters {
   double t0;
   double timespan;
   
-  // Detector specific parameters:
-  double integration_time;
-  double dead_time;
+  // WFI Detector specific parameters:
+  int readout_directions;
+  double line_readout_time;
+  double line_clear_time;
 
   int width; /**< Width of the detector in pixels. */
   double pixelwidth; /**< Width of one detector pixel in [m]. */
@@ -50,8 +51,8 @@ struct Parameters {
 
 
 // Reads the program parameters using PIL
-int getpar(struct Parameters* parameters);
+static int getpar(struct Parameters* parameters);
 
 
-#endif /* FRAMESTORE_SIMULATION_H */
+#endif /* WFI_SIMULATION_H */
 

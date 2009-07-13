@@ -53,6 +53,9 @@ void cleanupSquarePixels(SquarePixels* sp);
 /** Clear the array of SquarePixels. */
 inline void clearSquarePixels(SquarePixels*);
 
+/** Clear on line of Pixels. A line is defined to have constant detector x-coordinate. */
+inline void clearLineSquarePixels(SquarePixels* sp, const int line);
+
 /** Determine the split ratios of a photon impact on an array of square pixels. */
 int getSquarePixelsSplits(SquarePixels*, GenericDetector*, struct Point2d position, 
 			  int* x, int* y, double* fraction);

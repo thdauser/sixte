@@ -34,7 +34,8 @@ lib_LIBRARIES = libastrosources.a \
 libastrosources_a_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 			    random_sixt.c spectrum.c sourceimage.c
 libdetectors_a_SOURCES    = detector.c random_sixt.c vector.c \
-				squarepixels.c genericdetector.c framestoredetector.c
+				squarepixels.c genericdetector.c \
+				framestoredetector.c wfidetector.c
 libmirror_a_SOURCES       = psf.c vignetting.c vector.c random_sixt.c
 libsatellites_a_SOURCES   = attitudecatalog.c attitudefile.c vector.c
 libfitsfiles_a_SOURCES    = eventlist.c impactlist.c
@@ -46,7 +47,7 @@ libfitsfiles_a_SOURCES    = eventlist.c impactlist.c
 # in the 'bin' directory.
 bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
 	       	photon_generation photon_imaging event_projection \
-		framestore_simulation #photon_detection
+		framestore_simulation wfi_simulation #photon_detection
 
 binary_stream_SOURCES  = binary_stream.c
 binary_stream_LDADD    = libdetectors.a libfitsfiles.a
@@ -75,6 +76,13 @@ framestore_simulation_LDADD   += libastrosources.a
 framestore_simulation_LDADD   += libsatellites.a
 framestore_simulation_LDADD   += libfitsfiles.a
 pfiles_DATA    += framestore_simulation.par
+
+wfi_simulation_SOURCES  = wfi_simulation.c
+wfi_simulation_LDADD    = libdetectors.a
+wfi_simulation_LDADD   += libastrosources.a
+wfi_simulation_LDADD   += libsatellites.a
+wfi_simulation_LDADD   += libfitsfiles.a
+pfiles_DATA    += wfi_simulation.par
 
 photon_imaging_SOURCES  = photon_imaging.c
 photon_imaging_LDADD    = libmirror.a

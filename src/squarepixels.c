@@ -39,16 +39,26 @@ int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters
 
 
 
+////////////////////////////////////////////////////////////////
+inline void clearLineSquarePixels(SquarePixels* sp, const int line) 
+{
+  int x;
+
+  for (x=0; x<sp->xwidth; x++) {
+    sp->array[x][line].charge = 0.;
+  }
+}
+
+
+
 
 ////////////////////////////////////////////////////////////////
 inline void clearSquarePixels(SquarePixels* sp) 
 {
-  int x, y;
+  int line;
   
-  for (x=0; x<sp->xwidth; x++) {
-    for (y=0; y<sp->ywidth; y++) {
-      sp->array[x][y].charge = 0.;
-    }
+  for (line=0; line<sp->ywidth; line++) {
+    clearLineSquarePixels(sp, line);
   }
 }
 

@@ -52,7 +52,6 @@ int framestore_simulation_main() {
       .integration_time = parameters.integration_time,
       .t0               = parameters.t0
     };
-    //    strcpy(detectorparameters.rmf_filename, parameters.rmf_filename);
     if(EXIT_SUCCESS!=(status=initFramestoreDetector(&detector, &fdparameters))) break;
     
     // END of DETECTOR CONFIGURATION SETUP
@@ -267,7 +266,6 @@ int getpar(struct Parameters* parameters)
   // Get the name of the FITS template directory.
   // First try to read it from the environment variable.
   // If the variable does not exist, read it from the PIL.
-  
   else { 
     char* buffer;
     if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {

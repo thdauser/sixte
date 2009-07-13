@@ -34,8 +34,8 @@ struct FramestoreDetectorParameters {
 };
 
 
-
 ////////////////////////////////////////////////////////
+
 
 /** Set up the configuration of a FramestoreDetector. 
  * The routine also calls the init routines of the underlying data structures. */

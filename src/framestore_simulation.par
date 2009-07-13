@@ -1,7 +1,7 @@
 impactlist_filename,fre,lq,"equatorial_field/impacts_equator.fits",,,"impact list file (FITS input file) "
 rmf_filename,fre,lq,"../rsp/erosita_iv_qe1det.rsp",,,"detector redistribution matrix file (RMF) (FITS input file) "
 eventlist_filename,f,lq,"events.fits",,,"event list file (FITS output file) "
-eventlist_template_filename,fre,lq,"events.tpl",,,"event list template file (ASCII input file) "
+fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 integration_time,r,lq,50.001e-3,0.0,1000000.0,"integration time for the FRAMSTEORE CCD (s) "
 dead_time,r,lq,2.e-6,0.0,1000000.0,"dead time (s) "
 det_width,i,lq,384,0,10000,"width of the detector (pixels) "

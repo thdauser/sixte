@@ -5,25 +5,25 @@
 #endif
 
 
-#include "framestore_simulation.h"
+#include "wfi_simulation.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int framestore_simulation_main() {
+int wfi_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
   // Detector data structure (containing the pixel array, its width, ...)
-  FramestoreDetector detector;
+  WFIDetector detector;
 
   struct ImpactlistFile impactlistfile;
   struct Eventlist_File* eventlist_file=NULL;
 
-  int status=EXIT_SUCCESS;   // error status
+  int status=EXIT_SUCCESS; // error status
 
 
   // Register HEATOOL:
-  set_toolname("framestore_simulation");
+  set_toolname("wfi_simulation");
   set_toolversion("0.01");
 
 
@@ -40,7 +40,7 @@ int framestore_simulation_main() {
 
 
     // General detector settings.
-    struct FramestoreDetectorParameters fdparameters = {
+    struct WFIDetectorParameters fdparameters = {
       .pixels = { .xwidth = parameters.width,
 		  .ywidth = parameters.width,
 		  .xpixelwidth = parameters.pixelwidth,
@@ -49,11 +49,12 @@ int framestore_simulation_main() {
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
-      .integration_time = parameters.integration_time,
-      .t0               = parameters.t0
+      .readout_directions = parameters.readout_directions,
+      .line_readout_time = parameters.line_readout_time,
+      .line_clear_time   = parameters.line_clear_time,
+      .t0                = parameters.t0
     };
-    //    strcpy(detectorparameters.rmf_filename, parameters.rmf_filename);
-    if(EXIT_SUCCESS!=(status=initFramestoreDetector(&detector, &fdparameters))) break;
+    if(EXIT_SUCCESS!=(status=initWFIDetector(&detector, &fdparameters))) break;
     
     // END of DETECTOR CONFIGURATION SETUP
 
@@ -149,14 +150,14 @@ int framestore_simulation_main() {
       // Call the detector readout routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
-      checkReadoutFramestoreDetector(&detector, impact.time, eventlist_file);
+      checkReadoutWFIDetector(&detector, impact.time, eventlist_file);
 
       // Check whether the event lies in the specified time interval:
       if ((impact.time > parameters.t0) && (impact.time < parameters.t0+parameters.timespan)) {
 
 	// Call the photon detection routine that generates the right charge
 	// and stores it in the detector pixels.
-	addImpact2FramestoreDetector(&detector, &impact);
+	addImpact2WFIDetector(&detector, &impact);
 
       } // END if 'time' within specified time interval
     } // END of scanning the impact list.
@@ -179,7 +180,7 @@ int framestore_simulation_main() {
   }
 
   // Release memory of detector.
-  cleanupFramestoreDetector(&detector);
+  cleanupWFIDetector(&detector);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
@@ -190,7 +191,7 @@ int framestore_simulation_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int getpar(struct Parameters* parameters)
+static int getpar(struct Parameters* parameters)
 {
   int status=EXIT_SUCCESS; // error status
 
@@ -199,9 +200,19 @@ int getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
   }
 
-  // Get the integration time of the FRAMESTORE CCD.
-  else if ((status = PILGetReal("integration_time", &parameters->integration_time))) {
-    HD_ERROR_THROW("Error reading the integration time!\n", status);
+  // Number of readout directions.
+  else if ((status = PILGetInt("readout_directions", &parameters->readout_directions))) {
+    HD_ERROR_THROW("Error reading the number of readout directions!\n", status);
+  }
+
+  // Get the readout time for one detector line.
+  else if ((status = PILGetReal("line_readout_time", &parameters->line_readout_time))) {
+    HD_ERROR_THROW("Error reading the readout time per detector line!\n", status);
+  }
+
+  // Get the clear time for one detector line.
+  else if ((status = PILGetReal("line_clear_time", &parameters->line_clear_time))) {
+    HD_ERROR_THROW("Error reading the clear time per detector line!\n", status);
   }
 
   // Detector width [pixel]
@@ -267,7 +278,6 @@ int getpar(struct Parameters* parameters)
   // Get the name of the FITS template directory.
   // First try to read it from the environment variable.
   // If the variable does not exist, read it from the PIL.
-  
   else { 
     char* buffer;
     if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
@@ -280,7 +290,17 @@ int getpar(struct Parameters* parameters)
   }
 
   // Set the event list template file for eROSITA:
-  strcpy(parameters->eventlist_template_filename, "erosita.eventlist.tpl");
+  if (16==parameters->width) {
+    strcpy(parameters->eventlist_template_filename, "wfi.window16.eventlist.tpl");
+  } else if (1024==parameters->width) {
+    strcpy(parameters->eventlist_template_filename, "wfi.full1024.eventlist.tpl");
+  } else {
+    status = EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: detector width (%d pixels) is not supported!\n", parameters->width);
+    HD_ERROR_THROW(msg, status);
+    return(status);
+  }
 
   return(status);
 }
