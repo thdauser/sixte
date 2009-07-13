@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 #include "detectors.h"
-#include "framestore.h"
+#include "framestoredetector.h"
 #include "photon.h"
 #include "eventlist.h"
 #include "point.h"

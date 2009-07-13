@@ -34,7 +34,7 @@ lib_LIBRARIES = libastrosources.a \
 libastrosources_a_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 			    random_sixt.c spectrum.c sourceimage.c
 libdetectors_a_SOURCES    = detector.c random_sixt.c vector.c \
-				squarepixels.c genericdetector.c framestore.c
+				squarepixels.c genericdetector.c framestoredetector.c
 libmirror_a_SOURCES       = psf.c vignetting.c vector.c random_sixt.c
 libsatellites_a_SOURCES   = attitudecatalog.c attitudefile.c vector.c
 libfitsfiles_a_SOURCES    = eventlist.c impactlist.c

@@ -1,4 +1,4 @@
-#include "framestore.h"
+#include "framestoredetector.h"
 
 
 int initFramestoreDetector(FramestoreDetector* fd, 
