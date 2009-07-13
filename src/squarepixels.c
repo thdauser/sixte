@@ -54,6 +54,25 @@ inline void clearSquarePixels(SquarePixels* sp)
 
 
 
+
+////////////////////////////////////////////////////////////////
+void cleanupSquarePixels(SquarePixels* sp) 
+{
+  if (NULL!=sp->array) {
+    int count;
+    for (count=0; count<sp->xwidth; count++) {
+      if (NULL!=sp->array[count]) {
+	free(sp->array[count]);
+      }
+    }
+    free(sp->array);
+    sp->array=NULL;
+  }
+}
+
+
+
+
 ////////////////////////////////////////////////////////////////
 /** Determines the minimum distance value out of an array with 4
  * entries and returns the corresponding index. */

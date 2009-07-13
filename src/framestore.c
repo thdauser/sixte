@@ -23,6 +23,13 @@ int initFramestoreDetector(FramestoreDetector* fd,
 
 
 
+void cleanupFramestoreDetector(FramestoreDetector* fd) 
+{
+  cleanupSquarePixels(&fd->pixels);
+}
+
+
+
 int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time, 
 				   struct Eventlist_File* ef)
 {

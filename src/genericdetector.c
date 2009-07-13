@@ -24,6 +24,7 @@ int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* p
 
 
 
+
 struct RMF* loadRMF(char* filename, int* status) 
 {
   fitsfile* fptr=NULL;

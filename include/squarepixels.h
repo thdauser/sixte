@@ -47,6 +47,9 @@ struct SquarePixelsParameters {
  * Sets the basic properties and allocates memory for the pixel array. */
 int initSquarePixels(SquarePixels*, struct SquarePixelsParameters*);
 
+/** Clean up the SquarePixels data structure. E.g. release allocated memory. */
+void cleanupSquarePixels(SquarePixels* sp);
+
 /** Clear the array of SquarePixels. */
 inline void clearSquarePixels(SquarePixels*);
 

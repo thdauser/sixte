@@ -40,6 +40,10 @@ struct FramestoreDetectorParameters {
  * The routine also calls the init routines of the underlying data structures. */
 int initFramestoreDetector(FramestoreDetector*, struct FramestoreDetectorParameters*);
 
+/** Clean up the FramestoreDetector data structure. 
+ * Release allocated memory and call cleanup routines of underlying structures. */
+void cleanupFramestoreDetector(FramestoreDetector* fd);
+
 /** This routine is called for readout of the FramestoreDetector.
  * The routine itself checks, whether a readout is necessary according to the current
  * time and readout time. If it's time to do a readout, the routine calls the function
