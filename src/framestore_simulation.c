@@ -169,7 +169,7 @@ int framestore_simulation_main() {
   // --- Cleaning up ---
   headas_chat(5, "\ncleaning up ...\n");
 
-  // Release HEADAS random number generator
+  // Release HEADAS random number generator.
   HDmtFree();
 
   if (NULL!=impactlistfile.fptr) fits_close_file(impactlistfile.fptr, &status);
@@ -178,7 +178,8 @@ int framestore_simulation_main() {
     if (eventlist_file->fptr) fits_close_file(eventlist_file->fptr, &status);
   }
 
-  // TODO Release memory of detector.
+  // Release memory of detector.
+  cleanupFramestoreDetector(&detector);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
