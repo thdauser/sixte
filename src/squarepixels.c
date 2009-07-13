@@ -31,6 +31,9 @@ int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters
     }
   }
 
+  // Clear the pixels.
+  clearSquarePixels(sp);
+
   return(status);
 }
 

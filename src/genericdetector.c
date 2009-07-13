@@ -1,6 +1,29 @@
 #include "genericdetector.h"
 
 
+
+int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* parameters) 
+{
+  int status = EXIT_SUCCESS;
+
+  // Set the charge cloud dimensions:
+  gd->ccsigma =    parameters->ccsigma;
+  gd->ccsize  = 3.*parameters->ccsigma;
+  
+  // Set the event thresholds:
+  gd->pha_threshold = parameters->pha_threshold;
+  gd->energy_threshold = parameters->energy_threshold;
+
+  // Read the detector RMF and EBOUNDS from the specified file and 
+  // assign them to the Detector data structure.
+  gd->rmf = loadRMF(parameters->rmf_filename, &status);
+  if(EXIT_SUCCESS!=status) return(status);
+
+  return(status);
+}
+
+
+
 struct RMF* loadRMF(char* filename, int* status) 
 {
   fitsfile* fptr=NULL;
@@ -58,26 +81,6 @@ struct RMF* loadRMF(char* filename, int* status)
 }
 
 
-
-int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* parameters) 
-{
-  int status = EXIT_SUCCESS;
-
-  // Set the charge cloud dimensions:
-  gd->ccsigma =    parameters->ccsigma;
-  gd->ccsize  = 3.*parameters->ccsigma;
-  
-  // Set the event thresholds:
-  gd->pha_threshold = parameters->pha_threshold;
-  gd->energy_threshold = parameters->energy_threshold;
-
-  // Read the detector RMF and EBOUNDS from the specified file and 
-  // assign them to the Detector data structure.
-  gd->rmf = loadRMF(parameters->rmf_filename, &status);
-  if(EXIT_SUCCESS!=status) return(status);
-
-  return(status);
-}
 
 
 

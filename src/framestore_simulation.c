@@ -158,10 +158,10 @@ int framestore_simulation_main() {
 	// and stores it in the detector pixels.
 	addImpact2FramestoreDetector(&detector, &impact);
 
-      } // END 'time' within specified time interval
+      } // END if 'time' within specified time interval
     } // END of scanning the impact list.
 
-  } while(0);  // END of the error handling loop.
+  } while(0); // END of the error handling loop.
 
   // --- END of Detection process ---
 
