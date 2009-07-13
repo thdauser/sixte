@@ -17,8 +17,9 @@ typedef struct {
    * (= Span of time between 2 subsequent readouts). */
   double integration_time; 
 
-  double readout_time; /**< Current readout time. The end of the integration 
-			* time / beginning of dead time. */
+  /** Current readout time. The end of the integration 
+   * time / beginning of dead time. */
+  double readout_time; 
 
   long frame; /**< Number of the current frame. */
 
