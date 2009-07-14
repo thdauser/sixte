@@ -3,7 +3,9 @@ The installation of this package is based on the GNU autotools.
 If you checked out the sources directly from the repository you first have
 to create a configure script from the existing 'configure.ac'.
 For this purpose go into the main directory of the package (where there is 
-this file) and run the 'autoreconf' command belonging to the GNU autotools:
+this file) and run the 'autoreconf' command belonging to the GNU autotools.
+(If you extraced the code from the .tar.gz archive, you can skip the following
+step and continue with the next paragraph.)
 
  cd sixt/
  autoreconf --install

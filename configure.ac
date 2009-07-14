@@ -74,8 +74,14 @@ AC_C_CONST
 
 # PIL parameter files have to be installed to the $PFILES directory.
 AC_ARG_VAR([PFILESDIR], [target directory for .par files])
-if test -z "$PFILESDIR"; then
-        PFILESDIR="\$(HEADAS)/syspfiles"
+if test -z "$PFILESDIR"
+then
+	if test -z "$HEADAS"
+	then
+		PFILESDIR="\$(HEADAS)/syspfiles"
+	else
+		AC_MSG_ERROR([Environment variable '$HEADAS' is not set], [])
+	fi
 fi
 AC_SUBST([PFILESDIR])
 
