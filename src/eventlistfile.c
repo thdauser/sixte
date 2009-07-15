@@ -5,7 +5,52 @@
 #endif
 
 
-#include "eventlist.h"
+#include "eventlistfile.h"
+
+
+
+int openEventlistFile(EventlistFile* ef, char* filename, int access_mode)
+{
+  char msg[MAXMSG];
+  int status = EXIT_SUCCESS;
+
+  // Open the FITS file table for reading:
+  if (fits_open_table(&ef->fptr, filename, access_mode, &status)) return(status);;
+
+  // Get the HDU type
+  int hdutype;
+  if (fits_get_hdu_type(ef->fptr, &hdutype, &status)) return(status);;
+  // Image HDU results in an error message.
+  if (IMAGE_HDU==hdutype) {
+    status=EXIT_FAILURE;
+    sprintf(msg, "Error: no table extension available in FITS file '%s'!\n", filename);
+    HD_ERROR_THROW(msg, status);
+    return(status);
+  }
+
+  // Determine the number of rows in the event list.
+  if (fits_get_num_rows(ef->fptr, &ef->nrows, &status)) return(status);
+  // Set internal row counter to first row (starting at 0).
+  ef->row = 0;
+
+  return(status);
+}
+
+
+
+int closeEventlistFile(EventlistFile* ef) 
+{
+  int status = EXIT_SUCCESS;
+
+  if (NULL!=ef->fptr) {
+    fits_close_file(ef->fptr, &status);
+  }
+
+  return(status);
+}
+
+
+
 
 
 //////////////////////////////////////////////////////////////////

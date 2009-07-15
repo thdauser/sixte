@@ -7,6 +7,24 @@
 #include "detectors.types.h"
 
 
+/** Structure that contains all information, which is necessary to access
+ * a generic event list FITS file. */
+typedef struct {
+  fitsfile *fptr; /**< Pointer to the FITS file containing the event list. */
+
+  /** Current row in the table (starting at 0). 
+   * If row is equal to 0, that means that so far no line has been read from the
+   * event list file. The next line to read is the first line. After the reading
+   * process row will have the value 1. */
+  long row; 
+
+  long nrows; /**< Total number of rows in the table. */
+} EventlistFile;
+
+
+////////////////////////////////////////////////////
+
+
 /*
 // This function creates a new event list table in the specified FITS file.
 // It also inserts  header information.
@@ -21,6 +39,17 @@ struct Eventlist_File* create_Eventlist_File(char* filename, Detector*,
  * The access_mode parameter can be either READONLY or READWRITE.
  */
 struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* status);
+
+
+/** Opens an existing FITS file with a binary table event list.
+ * Apart from opening the FITS file the function also determines the number of rows in 
+ * the FITS table and initializes the EventlistFile data structure. 
+ * The access_mode parameter can be either READONLY or READWRITE.
+ */
+int openEventlistFile(EventlistFile*, char* filename, int access_mode);
+
+/** Close an open event list FITS file. */
+int closeEventlistFile(EventlistFile*);
 
 
 // This routine inserts one new line in the event list FITS table and writes

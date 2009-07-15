@@ -38,7 +38,7 @@ libdetectors_a_SOURCES    = detector.c random_sixt.c vector.c \
 				framestoredetector.c wfidetector.c
 libmirror_a_SOURCES       = psf.c vignetting.c vector.c random_sixt.c
 libsatellites_a_SOURCES   = attitudecatalog.c attitudefile.c vector.c
-libfitsfiles_a_SOURCES    = eventlist.c impactlist.c
+libfitsfiles_a_SOURCES    = eventlistfile.c impactlist.c
 
 
 ############ BINARIES #################

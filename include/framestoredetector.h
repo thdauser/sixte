@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 #include "impactlist.h"
-#include "eventlist.h"
+#include "eventlistfile.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
 

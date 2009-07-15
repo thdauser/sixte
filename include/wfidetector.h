@@ -4,7 +4,7 @@
 #include "sixt.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
-#include "eventlist.h"
+#include "eventlistfile.h"
 #include "impactlist.h"
 
 
