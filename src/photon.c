@@ -111,7 +111,7 @@ int create_lightcurve(
 // specified source.
 // The used spectrum is given in [PHA channels].
 // The function returns the photon energy in [keV].
-float photon_energy(struct Spectrum* pha_spectrum, Detector* detector)
+float photon_energy(struct Spectrum* pha_spectrum, struct RMF* rmf)
 {
   // Get a random PHA channel according to the given PHA distribution.
   float rand = (float)get_random_number();
@@ -137,9 +137,9 @@ float photon_energy(struct Spectrum* pha_spectrum, Detector* detector)
   }
 
   // Return an energy chosen randomly out of the determined PHA bin:
-  return(detector->rmf->ChannelLowEnergy[lower] + 
-	 get_random_number()*(detector->rmf->ChannelHighEnergy[lower]-
-			      detector->rmf->ChannelLowEnergy[lower]));
+  return(rmf->ChannelLowEnergy[lower] + 
+	 get_random_number()*(rmf->ChannelHighEnergy[lower]-
+			      rmf->ChannelLowEnergy[lower]));
 }
 
 
@@ -151,7 +151,7 @@ int create_photons(
 		   double dt /**< Time interval for photon generation. */,       
 		   struct PhotonOrderedListEntry** list_first /**< Address of pointer to 
 							       * time-ordered photon list. */,
-		   Detector* detector,     
+		   struct RMF* rmf,     
 		   gsl_rng *gsl_random_g
 		   )
 {
@@ -178,7 +178,7 @@ int create_photons(
     new_photon.direction = unit_vector(ps->ra, ps->dec); // REMOVE
 
     // Create the energy of the new photon
-    new_photon.energy = photon_energy(ps->spectrum, detector);
+    new_photon.energy = photon_energy(ps->spectrum, rmf);
 
     // Determine the current count rate of the light curve.
     // If the source has no light curve, or the assigned light curve is 

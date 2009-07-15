@@ -146,9 +146,8 @@ int photon_generation_main()
   // Telescope data (like FOV diameter or focal length)
   struct Telescope telescope; 
 
-  // Detector data structure (containing the pixel array, its width, 
-  // RMF, EBOUNDS ...)
-  Detector* detector=NULL;
+  // RMF & EBOUNDS
+  struct RMF* rmf=NULL;
 
   // Time-ordered photon binary tree.
   struct PhotonBinaryTreeEntry* photon_tree=NULL;
@@ -174,10 +173,6 @@ int photon_generation_main()
   do {  // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-
-    detector = get_Detector(&status);
-    if(status!=EXIT_SUCCESS) break;
-    
 
     if((status=photon_generation_getpar(&parameters))) break;
     
@@ -218,13 +213,12 @@ int photon_generation_main()
 						   &status))) break;
 
 
-    // Read the detector RMF and EBOUNDS from the specified file and assign them to the 
-    // Detector data structure.
-    if ((status=detector_assign_rsp(detector, parameters.rmf_filename)) 
-	!= EXIT_SUCCESS) break;
+    // Read RMF and EBOUNDS from the given file.
+    rmf = loadRMF(parameters.rmf_filename, &status);
+    if (EXIT_SUCCESS!=status) break;
 
     // Get the source spectra:
-    if ((status=get_spectra(&spectrum_store, detector->rmf->NumberChannels, 
+    if ((status=get_spectra(&spectrum_store, rmf->NumberChannels, 
 			    parameters.spectrum_filename, N_SPECTRA_FILES)) 
 	!= EXIT_SUCCESS) break;
 
@@ -476,7 +470,7 @@ int photon_generation_main()
 	    
 	    // The source is inside the FOV  => create photons:
 	    if ((status=create_photons(&(pointsourcecatalog->sources[source_counter]), 
-				       time, dt, &photon_list, detector, gsl_random_g))
+				       time, dt, &photon_list, rmf, gsl_random_g))
 		!=EXIT_SUCCESS) break; 
 	    
 	  }
@@ -577,7 +571,7 @@ int photon_generation_main()
 		    
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.
-		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
+		    new_photon.energy = photon_energy(spectrum_store.spectrum, rmf);
 
 		    // Add the photon to the binary tree.
 		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
@@ -599,7 +593,7 @@ int photon_generation_main()
 
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.
-		    new_photon.energy = photon_energy(spectrum_store.spectrum, detector);
+		    new_photon.energy = photon_energy(spectrum_store.spectrum, rmf);
 		    
 		    // Add the photon to the binary tree.
 		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
@@ -734,14 +728,7 @@ int photon_generation_main()
   // Release source spectra
   free_spectra(&spectrum_store, N_SPECTRA_FILES);
 
-  // Detector data structure
-  if (detector!=NULL) {
-    if(detector->rmf!=NULL) free(detector->rmf);
-    free(detector);
-  }
-
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
-
   return(status);
 }
 

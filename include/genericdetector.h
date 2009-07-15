@@ -61,7 +61,7 @@ int initGenericDetector(GenericDetector*, struct GenericDetectorParameters*);
 /** Load an RMF/RSP matrix and the corresponding EBOUNDS from a response file. 
  * If the compiler flag '-DNORMALIZE_RMF' is set, the RSP is renormalized to an RMF in
  * such a way that the sum of each matrix row/column(?) is 1. */
-struct RMF* loadRMF(char* filename, int* status) ;
+struct RMF* loadRMF(char* filename, int* status);
 
 /** Determines the PHA channel corresponding to a given energy according to the EBOUNDS
  * table of the detector response. */

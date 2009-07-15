@@ -1,12 +1,13 @@
 #ifndef DETECTOR_TYPES_H
 #define DETECTOR_TYPES_H 1
 
+#include "sixt.h"
+
 #ifndef HEASP_H
 #define HEASP_H 1
 #include "heasp.h"
 #endif
 
-#include "sixt.h"
 #include "impactlist.h"
 #include "eventlist.types.h"
 #include "detectors.enum.h"

@@ -2,7 +2,7 @@
 #define PHOTON_DETECTION_H 1
 
 #include "sixt.h"
-#include "detectors.h"
+#include "detector.h"
 #include "framestore.h"
 #include "photon.h"
 #include "eventlistfile.h"

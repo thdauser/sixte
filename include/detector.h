@@ -2,10 +2,20 @@
 #define DETECTOR_H 1
 
 #include "sixt.h"
-#include "detectors.h"
+
+// The GNU Scientific Library Errorfunction is used to calculate charge 
+// distribution of split events (assuming a Gaussian shape for the carge cloud).
+#include <gsl/gsl_sf_erf.h>
+
 #include "random_sixt.h"
+#include "detectors.enum.h"
+#include "detectors.types.h"
+#include "detectors.def.h"
+
 
 #define GAUSSIAN_CHARGE_CLOUDS 1 // Assume a Gaussian charge cloud shape.
+#define INVALID_PIXEL (-1)   // flags an invalid pixel
+#define HTRS_N_PIXELS (37)   // Total number of pixels in the HTRS array
 
 
 // Determines the index of the minimum value in an array of distances to 

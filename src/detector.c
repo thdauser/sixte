@@ -119,7 +119,7 @@ void htrs_detector_action(
 // spectrum and count-rate.
 // TODO: consider splits?
 // TODO: zufällig Anzahl von Background-Photonen pro Zeitintervall?
-static void insert_background_photons(
+void insert_background_photons(
 				      Detector* detector,
 				      PointSource background, 
 				      double integration_time
@@ -284,7 +284,7 @@ int get_DetectorPixels(Detector* detector, int* status)
 ////////////////////////////////////////////////////////////////////////////////
 // Searches for the minimum distance in an array with 4 entries and returns the 
 // corresponding index.
-static inline int min_dist(double array[], int directions) 
+inline int min_dist(double array[], int directions) 
 {
   int count, index=0;
   double minimum=array[0];
@@ -306,7 +306,7 @@ static inline int min_dist(double array[], int directions)
 
 //////////////////////////////////////////////////////////////////////////////// 
 // Calculates the Gaussian integral using the GSL complementary error function.
-static inline double gaussint(double x) 
+inline double gaussint(double x) 
 {
   return(gsl_sf_erf_Q(x));
 }
@@ -552,7 +552,7 @@ float get_energy(
 
 
 ///////////////////////////////////////////
-static inline double linear_function(double x, double m, double t)
+inline double linear_function(double x, double m, double t)
 {
   return(m*x + t);
 }
@@ -562,7 +562,7 @@ static inline double linear_function(double x, double m, double t)
 
 
 ///////////////////////////////////////////
-static inline int htrs_get_line(
+inline int htrs_get_line(
 				struct Point2d point, 
 				double m, double dt, 
 				Detector* detector
@@ -580,7 +580,7 @@ static inline int htrs_get_line(
 
 
 ///////////////////////////////////////////
-static inline double htrs_distance2line(
+inline double htrs_distance2line(
 					struct Point2d point,
 					double m, double t
 					)
@@ -691,7 +691,7 @@ int htrs_get_pixel(
 
 
 ///////////////////////////////////////////
-static inline int htrs_get_lines2pixel(int* l, Detector* detector)
+inline int htrs_get_lines2pixel(int* l, Detector* detector)
 {
   if ((l[0]<0)||(l[0]>=2*detector->width)||
       (l[1]<0)||(l[1]>=2*detector->width)||
@@ -707,7 +707,7 @@ static inline int htrs_get_lines2pixel(int* l, Detector* detector)
 
 
 ///////////////////////////////////////////
-static inline struct Point2i htrs_get_pixel2icoordinates(int pixel, 
+inline struct Point2i htrs_get_pixel2icoordinates(int pixel, 
 							 Detector* detector)
 {
   if (pixel != INVALID_PIXEL) {

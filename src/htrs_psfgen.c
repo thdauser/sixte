@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "sixt.h"
-#include "detectors.h"
+#include "detector.h"
 #include "psf.h"
 
 

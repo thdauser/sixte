@@ -8,6 +8,11 @@
 
 #include "sixt.h"
 
+#ifndef HEASP_H
+#define HEASP_H 1
+#include "heasp.h"
+#endif
+
 // GSL header files
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_fft_halfcomplex.h>
@@ -67,17 +72,16 @@ struct PhotonBinaryTreeEntry {
 
 // Structure representing a bin in the lightcurve.
 struct lightcurve_entry {
-  double t;           // lower time of bin
-  double rate;        // source count rate within the time bin
+  double t;    // lower time of bin
+  double rate; // source count rate within the time bin
 };
 
 
 
 
 // Include own header files.
-#include "detectors.h"
 #include "pointsources.h"
-#include "random.h"
+#include "random_sixt.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -89,7 +93,7 @@ struct lightcurve_entry {
 // light curve and adds them to the time ordered photon list.
 // The return value is the value of the error status variable.
 int create_photons(PointSource* ps, double time, double dt,
-		   struct PhotonOrderedListEntry** pl, Detector*, gsl_rng *gsl_random_g);
+		   struct PhotonOrderedListEntry** pl, struct RMF*, gsl_rng *gsl_random_g);
 
 
 
@@ -120,7 +124,7 @@ void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the point
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
 //float photon_energy(struct source_cat_entry src, Detector*);
-float photon_energy(struct Spectrum*, Detector*);
+float photon_energy(struct Spectrum*, struct RMF* rmf);
 
 // Function produces a light curve for a given source.
 //int create_lightcurve(struct source_cat_entry *src, double time, 
