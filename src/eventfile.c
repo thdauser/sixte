@@ -8,7 +8,7 @@
 #include "eventfile.h"
 
 
-int openEventlistFile(EventlistFile* ef, char* filename, int access_mode)
+int openEventFile(EventFile* ef, char* filename, int access_mode)
 {
   char msg[MAXMSG];
   int status = EXIT_SUCCESS;
@@ -39,7 +39,7 @@ int openEventlistFile(EventlistFile* ef, char* filename, int access_mode)
 
 
 
-int closeEventlistFile(EventlistFile* ef) 
+int closeEventFile(EventFile* ef) 
 {
   int status = EXIT_SUCCESS;
 
@@ -53,8 +53,7 @@ int closeEventlistFile(EventlistFile* ef)
 
 
 
-
-int EventlistFileEOF(EventlistFile* ef) {
+int EventFileEOF(EventFile* ef) {
   if (ef->row >= ef->nrows) {
     return(1);
   } else {

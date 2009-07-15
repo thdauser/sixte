@@ -21,7 +21,7 @@ int initFramestoreDetector(FramestoreDetector* fd,
   fd->frame = 0;
 
   // Create and open new event list file.
-  status = openNeweROSITAEventlistFile(&fd->eventlist, parameters->eventlist_filename,
+  status = openNeweROSITAEventFile(&fd->eventlist, parameters->eventlist_filename,
 				       parameters->eventlist_template);
   if (EXIT_SUCCESS!=status) return(status);
 
@@ -33,7 +33,7 @@ int initFramestoreDetector(FramestoreDetector* fd,
 void cleanupFramestoreDetector(FramestoreDetector* fd) 
 {
   cleanupSquarePixels(&fd->pixels);
-  closeeROSITAEventlistFile(&fd->eventlist);
+  closeeROSITAEventFile(&fd->eventlist);
 }
 
 

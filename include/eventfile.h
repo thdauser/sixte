@@ -17,7 +17,7 @@ typedef struct {
   long row; 
 
   long nrows; /**< Total number of rows in the table. */
-} EventlistFile;
+} EventFile;
 
 
 ////////////////////////////////////////////////////
@@ -25,20 +25,20 @@ typedef struct {
 
 /** Opens an existing FITS file with a binary table event list.
  * Apart from opening the FITS file the function also determines the number of rows in 
- * the FITS table and initializes the EventlistFile data structure. 
+ * the FITS table and initializes the EventFile data structure. 
  * The access_mode parameter can be either READONLY or READWRITE.
  */
-int openEventlistFile(EventlistFile*, char* filename, int access_mode);
+int openEventFile(EventFile*, char* filename, int access_mode);
 
 /** Close an open event list FITS file. */
-int closeEventlistFile(EventlistFile*);
+int closeEventFile(EventFile*);
 
 
 /** Checks whether the end of the event list is reached. 
- * If the internal pointer of the EventlistFile data structure points to the last line
+ * If the internal pointer of the EventFile data structure points to the last line
  * in the file, i.e. this is the formerly read line, or has an even higher value, the 
  * function return value is 1, otherwise it is 0. */
-int EventlistFileEOF(EventlistFile*);
+int EventFileEOF(EventFile*);
 
 
 #endif /* EVENTFILE_H */

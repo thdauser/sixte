@@ -24,7 +24,7 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
   wd->frame = -1;
 
   // Create a new event list FITS file and open it.
-  status = openNewWFIEventlistFile(&wd->eventlist, parameters->eventlist_filename,
+  status = openNewWFIEventFile(&wd->eventlist, parameters->eventlist_filename,
 				   parameters->eventlist_template);
   if (EXIT_SUCCESS!=status) return(status);
 
@@ -37,7 +37,7 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
 void cleanupWFIDetector(WFIDetector* wd)
 {
   cleanupSquarePixels(&wd->pixels);
-  closeWFIEventlistFile(&wd->eventlist);
+  closeWFIEventFile(&wd->eventlist);
 }
 
 

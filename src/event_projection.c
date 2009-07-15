@@ -52,7 +52,7 @@ int event_projection_main() {
   struct Parameters parameters;   // Program parameters
 
   AttitudeCatalog* attitudecatalog=NULL;
-  eROSITAEventlistFile eventlistfile;
+  eROSITAEventFile eventlistfile;
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
 
@@ -82,7 +82,7 @@ int event_projection_main() {
     HDmtInit(1);
 
     // Open the FITS file with the input event list:
-    status=openeROSITAEventlistFile(&eventlistfile, parameters.eventlist_filename, READWRITE);
+    status=openeROSITAEventFile(&eventlistfile, parameters.eventlist_filename, READWRITE);
     if (EXIT_SUCCESS!=status) break;
     
     // Write header keywords.
@@ -168,11 +168,11 @@ int event_projection_main() {
     long attitude_counter=0;   // counter for entries in the AttitudeCatalog
 
     // SCAN EVENT LIST
-    while((EXIT_SUCCESS==status) && (0==EventlistFileEOF(&eventlistfile.generic))) {
+    while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventlistfile.generic))) {
       
       // Read the event from the FITS file.
       eROSITAEvent event;
-      status=eROSITAEventlistFile_getNextRow(&eventlistfile, &event);
+      status=eROSITAEventFile_getNextRow(&eventlistfile, &event);
       if(EXIT_SUCCESS!=status) break;
 
       // Check whether we are finished.
@@ -302,7 +302,7 @@ int event_projection_main() {
   HDmtFree();
 
   // Close the FITS files.
-  closeeROSITAEventlistFile(&eventlistfile);
+  closeeROSITAEventFile(&eventlistfile);
 
   // Release memory of AttitudeCatalog
   free_AttitudeCatalog(attitudecatalog);

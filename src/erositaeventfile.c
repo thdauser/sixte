@@ -1,12 +1,12 @@
 #include "erositaeventfile.h"
 
 
-int openeROSITAEventlistFile(eROSITAEventlistFile* eef, char* filename, int access_mode)
+int openeROSITAEventFile(eROSITAEventFile* eef, char* filename, int access_mode)
 {
   int status = EXIT_SUCCESS;
 
   // Call the corresponding routine of the underlying structure.
-  status = openEventlistFile(&eef->generic, filename, access_mode);
+  status = openEventFile(&eef->generic, filename, access_mode);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Determine the eROSITA-specific elements of the event list.
@@ -36,7 +36,7 @@ int openeROSITAEventlistFile(eROSITAEventlistFile* eef, char* filename, int acce
 }
 
 
-int openNeweROSITAEventlistFile(eROSITAEventlistFile* eef, char* filename, char* template)
+int openNeweROSITAEventFile(eROSITAEventFile* eef, char* filename, char* template)
 {
   int status=EXIT_SUCCESS;
 
@@ -72,22 +72,22 @@ int openNeweROSITAEventlistFile(eROSITAEventlistFile* eef, char* filename, char*
 
 
   // Open the newly created FITS file.
-  status = openeROSITAEventlistFile(eef, filename, READWRITE);
+  status = openeROSITAEventFile(eef, filename, READWRITE);
 
   return(status);
 }
 
 
 
-int closeeROSITAEventlistFile(eROSITAEventlistFile* eef)
+int closeeROSITAEventFile(eROSITAEventFile* eef)
 {
   // Call the corresponding routine of the underlying structure.
-  return(closeEventlistFile(&eef->generic));
+  return(closeEventFile(&eef->generic));
 }
 
 
 
-int addeROSITAEvent2File(eROSITAEventlistFile* eef, eROSITAEvent* event)
+int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
 {
   int status=EXIT_SUCCESS;
 
@@ -126,7 +126,7 @@ int addeROSITAEvent2File(eROSITAEventlistFile* eef, eROSITAEvent* event)
 
 
 
-int eROSITAEventlistFile_getNextRow(eROSITAEventlistFile* eef, eROSITAEvent* event)
+int eROSITAEventFile_getNextRow(eROSITAEventFile* eef, eROSITAEvent* event)
 {
   int status=EXIT_SUCCESS;
   int anynul = 0;

@@ -1,12 +1,12 @@
 #include "wfieventfile.h"
 
 
-int openWFIEventlistFile(WFIEventlistFile* wef, char* filename, int access_mode)
+int openWFIEventFile(WFIEventFile* wef, char* filename, int access_mode)
 {
   int status = EXIT_SUCCESS;
 
   // Call the corresponding routine of the underlying structure.
-  status = openEventlistFile(&wef->generic, filename, access_mode);
+  status = openEventFile(&wef->generic, filename, access_mode);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Determine the WFI-specific elements of the event list.
@@ -34,7 +34,7 @@ int openWFIEventlistFile(WFIEventlistFile* wef, char* filename, int access_mode)
 }
 
 
-int openNewWFIEventlistFile(WFIEventlistFile* wef, char* filename, char* template)
+int openNewWFIEventFile(WFIEventFile* wef, char* filename, char* template)
 {
   int status=EXIT_SUCCESS;
 
@@ -70,21 +70,21 @@ int openNewWFIEventlistFile(WFIEventlistFile* wef, char* filename, char* templat
 
 
   // Open the newly created FITS file.
-  status = openWFIEventlistFile(wef, filename, READWRITE);
+  status = openWFIEventFile(wef, filename, READWRITE);
 
   return(status);
 }
 
 
 
-int closeWFIEventlistFile(WFIEventlistFile* wef)
+int closeWFIEventFile(WFIEventFile* wef)
 {
   // Call the corresponding routine of the underlying structure.
-  return(closeEventlistFile(&wef->generic));
+  return(closeEventFile(&wef->generic));
 }
 
 
-int addWFIEvent2File(WFIEventlistFile* wef, WFIEvent* event)
+int addWFIEvent2File(WFIEventFile* wef, WFIEvent* event)
 {
   int status=EXIT_SUCCESS;
 

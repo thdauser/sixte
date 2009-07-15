@@ -55,7 +55,7 @@ int binary_stream_main()
   };
   enum Mode mode;
 
-  eROSITAEventlistFile eventlistfile; // FITS file containing the event list
+  eROSITAEventFile eventlistfile; // FITS file containing the event list
   char output_filename[FILENAME_LENGTH];
   FILE *output_file = NULL;
   double binning_time; // Delta t (time step, length of each spectrum)
@@ -82,7 +82,7 @@ int binary_stream_main()
     }
 
     // Open the event list FITS file.
-    status=openeROSITAEventlistFile(&eventlistfile, parameters.eventlist_filename, READONLY);
+    status=openeROSITAEventFile(&eventlistfile, parameters.eventlist_filename, READONLY);
     if(EXIT_SUCCESS!=status) return(status);
 
     // Determine the output mode (events or spectrum) according to the 
@@ -175,10 +175,10 @@ int binary_stream_main()
 
     // Loop over all entries in the event list:
     int n_buffered_events=0;
-    while(0==EventlistFileEOF(&eventlistfile.generic)) {
+    while(0==EventFileEOF(&eventlistfile.generic)) {
 
       // Read the event from the FITS file.
-      status=eROSITAEventlistFile_getNextRow(&eventlistfile, &(eventlist[n_buffered_events]));
+      status=eROSITAEventFile_getNextRow(&eventlistfile, &(eventlist[n_buffered_events]));
       if(EXIT_SUCCESS!=status) break;
 
       if (eventlist[n_buffered_events].frame > eventlist[0].frame) {
@@ -345,7 +345,7 @@ int binary_stream_main()
 
   // Close files
   if (output_file) fclose(output_file);
-  closeeROSITAEventlistFile(&eventlistfile);
+  closeeROSITAEventFile(&eventlistfile);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);

@@ -34,7 +34,7 @@ typedef struct {
   long frame; 
 
   /** Output event list. */
-  WFIEventlistFile eventlist;
+  WFIEventFile eventlist;
 
 } WFIDetector;
 

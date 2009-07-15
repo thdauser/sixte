@@ -25,7 +25,7 @@ typedef struct {
 
   long frame; /**< Number of the current frame. */
 
-  eROSITAEventlistFile eventlist; /**< Event list FITS file for the eROSITA-specific events. */
+  eROSITAEventFile eventlist; /**< Event list FITS file for the eROSITA-specific events. */
 
 } FramestoreDetector;
 
