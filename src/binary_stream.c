@@ -5,22 +5,13 @@
 #endif
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <malloc.h>
-
-#include "fitsio.h"
-#include "pil.h"
-#include "headas.h"
-#include "headas_error.h"
+#include "sixt.h"
+#include "eventlistfile.h"
+#include "erositaevent.h"
+#include "erositaeventlistfile.h"
 
 #define TOOLSUB binary_stream_main
 #include "headas_main.c"
-
-#include "sixt.h"
-#include "detectors.h"
 
 
 // Number of bytes per TLM byte frame
@@ -64,7 +55,7 @@ int binary_stream_main()
   };
   enum Mode mode;
 
-  struct Eventlist_File eventlist_file;   // FITS file
+  eROSITAEventlistFile eventlistfile; // FITS file containing the event list
   char output_filename[FILENAME_LENGTH];
   FILE *output_file = NULL;
   double binning_time; // Delta t (time step, length of each spectrum)
@@ -84,39 +75,26 @@ int binary_stream_main()
   do { // Beginning of ERROR handling loop
 
     // --- Initialization ---
-    eventlist_file.fptr=NULL;
  
     if ((status = PILGetFname("eventlist_filename", parameters.eventlist_filename))) {
-      sprintf(msg, "Error reading the name of the input event list file (FITS)!\n");
-      HD_ERROR_THROW(msg,status);
+      HD_ERROR_THROW("Error reading the name of the input event list file (FITS)!\n", status);
       break;
     }
 
-    int hdutype;
-    if (fits_open_table(&eventlist_file.fptr, parameters.eventlist_filename, 
-			READONLY, &status)) break;
-
-    // Get the HDU type.
-    if (fits_get_hdu_type(eventlist_file.fptr, &hdutype, &status)) break;
-    // If the open HDU is an image extension, throw an error.
-    if (hdutype==IMAGE_HDU) {
-      status=EXIT_FAILURE;
-      sprintf(msg, "Error: input file '%s' contains no binary table!\n",
-	      parameters.eventlist_filename);
-      HD_ERROR_THROW(msg, status);
-      break;
-    }
+    // Open the event list FITS file.
+    status=openeROSITAEventlistFile(&eventlistfile, parameters.eventlist_filename, READONLY);
+    if(EXIT_SUCCESS!=status) return(status);
 
     // Determine the output mode (events or spectrum) according to the 
     // telescope and detector type specified in the FITS header keywords.
     char telescop[MAXMSG], instrume[MAXMSG];
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(eventlist_file.fptr, TSTRING, "TELESCOP", telescop, 
+    if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "TELESCOP", telescop, 
 		      comment, &status)) break;
-    if (fits_read_key(eventlist_file.fptr, TSTRING, "INSTRUME", instrume, 
+    if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "INSTRUME", instrume, 
 		      comment, &status)) break;
 
-    // convert to captial letters:
+    // Convert to captial letters:
     strtoupper(telescop); 
     strtoupper(instrume); 
 
@@ -131,10 +109,6 @@ int binary_stream_main()
     } else {
       mode = MODE_INVALID;
     }
-
-    // Determine the number of rows in the event list.
-    if (fits_get_num_rows(eventlist_file.fptr, &eventlist_file.nrows, &status)) 
-      break;
 
 
     // Get the name of the output file (binary).
@@ -171,204 +145,198 @@ int binary_stream_main()
     // Loop over all events in the FITS file:
     headas_chat(5, "processing events ...\n");
 
-    if (mode == MODE_EVENTS) {
-      // EVENT mode, i.e., the events are transferred to a particular binary
-      // data format without spectral binning or other modifications.
+    
+    /*if (mode == MODE_EVENTS) { */
+    // EVENT mode, i.e., the events are transferred to a particular binary
+    // data format without spectral binning or other modifications.
       
-      struct Binary_Output *binary_output = 
-	get_Binary_Output(N_EROSITA_BYTES, output_file);
-      struct Event *eventlist = (struct Event *)malloc(10000*sizeof(struct Event));
-      if ((binary_output == NULL)||(eventlist==NULL)) {
-	status=EXIT_FAILURE;
-	sprintf(msg, "Error: memory allocation failed!\n");
-	HD_ERROR_THROW(msg,status);
-	break;
-      }
-      // Clear the event buffer:
-      int count;
-      for (count=0; count<10000; count++) {
-	eventlist[count].time=0.;
-	eventlist[count].pha=0;
-	eventlist[count].xi=0;
-	eventlist[count].yi=0;
-	eventlist[count].frame=0;
-	eventlist[count].patnum=0;
-	eventlist[count].patid=0;
-	eventlist[count].pileup=0;
-      }
+    struct Binary_Output *binary_output = 
+      get_Binary_Output(N_EROSITA_BYTES, output_file);
+    eROSITAEvent *eventlist = (eROSITAEvent*)malloc(10000*sizeof(eROSITAEvent));
+    if ((NULL==binary_output)||(NULL==eventlist)) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation failed!\n", status);
+      break;
+    }
+    // Clear the event buffer:
+    int count;
+    for (count=0; count<10000; count++) {
+      eventlist[count].time=0.;
+      eventlist[count].pha=0;
+      eventlist[count].xi=0;
+      eventlist[count].yi=0;
+      eventlist[count].frame=0;
+      eventlist[count].ra=NAN;
+      eventlist[count].dec=NAN;
+      eventlist[count].sky_xi=0;
+      eventlist[count].sky_yi=0;	    
+    }
 
 
-      // Loop over all entries in the event list:
-      int n_buffered_events=0;
-      for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
-	   eventlist_file.row++) {
-      
-	// Read the event from the FITS file.
-	if (get_eventlist_row(eventlist_file, &(eventlist[n_buffered_events]), 
-			      &status)) break;
+    // Loop over all entries in the event list:
+    int n_buffered_events=0;
+    while(0==EventlistFileEOF(&eventlistfile.generic)) {
 
-	if (eventlist[n_buffered_events].frame > eventlist[0].frame) {
-	  // Write the events to the binary output.
-	  int count;
-	  for (count=0; count<n_buffered_events; count++) {
-	    if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
-	      status=EXIT_FAILURE;
-	      sprintf(msg, "Error: generation of binary format failed!\n");
-	      HD_ERROR_THROW(msg,status);
-	      break;
-	    }
-	  }
-	  // Finish the TLM record, even if it is not full yet.
-	  if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
-	    status=EXIT_FAILURE;
-	    sprintf(msg, "Error: generation of binary format failed!\n");
-	    HD_ERROR_THROW(msg,status);
-	    break;
-	  }
-	  
-	  // New buffering period has started.
-	  eventlist[0] = eventlist[n_buffered_events];
-	  n_buffered_events = 0;
+      // Read the event from the FITS file.
+      status=eROSITAEventlistFile_getNextRow(&eventlistfile, &(eventlist[n_buffered_events]));
+      if(EXIT_SUCCESS!=status) break;
 
-	} // END of loop over all buffered events
-
-	n_buffered_events++;
-	
-      } // END of loop over all entries in the event list.
-
-      if (status == EXIT_SUCCESS) {
+      if (eventlist[n_buffered_events].frame > eventlist[0].frame) {
 	// Write the events to the binary output.
 	int count;
 	for (count=0; count<n_buffered_events; count++) {
 	  if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
 	    status=EXIT_FAILURE;
-	    sprintf(msg, "Error: generation of binary format failed!\n");
-	    HD_ERROR_THROW(msg,status);
+	    HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
 	    break;
 	  }
 	}
-
+	// Finish the TLM record, even if it is not full yet.
 	if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
 	  status=EXIT_FAILURE;
-	  sprintf(msg, "Error: generation of binary format failed!\n");
-	  HD_ERROR_THROW(msg,status);
+	  HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
+	  break;
+	}
+	  
+	// New buffering period has started.
+	eventlist[0] = eventlist[n_buffered_events];
+	n_buffered_events = 0;
+
+      } // END of loop over all buffered events
+
+      n_buffered_events++;
+	
+    } // END of loop over all entries in the event list.
+
+    if (EXIT_SUCCESS==status) {
+      // Write the events to the binary output.
+      int count;
+      for (count=0; count<n_buffered_events; count++) {
+	if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
+	  status=EXIT_FAILURE;
+	  HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
 	  break;
 	}
       }
 
-      if (status != EXIT_SUCCESS) {
-	free_Binary_Output(binary_output);
-	if (eventlist) free (eventlist);
+      if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
 	break;
       }
+    }
+    if (EXIT_SUCCESS!=status) {
+      free_Binary_Output(binary_output);
+      if (eventlist) free(eventlist);
+      break;
+    }
 
-    } else if (mode == MODE_SPECTRUM) {
-      // The individual events are binned to spectra before they are converted
-      // to a byte stream.
+      /*  } else if (mode == MODE_SPECTRUM) { 
+    // The individual events are binned to spectra before they are converted
+    // to a byte stream.
 
-      struct Event event;
-      event.pha = 0;
-      event.xi = 0;
-      event.yi = 0;
-      event.patid = 0;
-      event.patnum = 0;
-      event.frame = 0;
-      event.pileup = 0;
+    struct eROSITAEvent event;
+    event.pha = 0;
+    event.xi = 0;
+    event.yi = 0;
+    event.patid = 0;
+    event.patnum = 0;
+    event.frame = 0;
+    event.pileup = 0;
 
-      double time = binning_time; // Time of the current spectrum (end of spectrum)
-      long channel;      // Channel counter
-      unsigned char spectrum[Nchannels];  // Buffer for binning the spectrum.
-      unsigned char output_buffer[N_HTRS_BYTES];
-
-      // Clear the output buffer:
-      binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
-      // Clear the spectrum:
-      binary_output_clear_bytes(spectrum, Nchannels);
-
-      for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
-	   eventlist_file.row++) {
+    double time = binning_time; // Time of the current spectrum (end of spectrum)
+    long channel;      // Channel counter
+    unsigned char spectrum[Nchannels];  // Buffer for binning the spectrum.
+    unsigned char output_buffer[N_HTRS_BYTES];
+    
+    // Clear the output buffer:
+    binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
+    // Clear the spectrum:
+    binary_output_clear_bytes(spectrum, Nchannels);
+    
+    for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
+	 eventlist_file.row++) {
       
-	// Read the event from the FITS file.
-	if (get_eventlist_row(eventlist_file, &event, &status)) break;
-
+      // Read the event from the FITS file.
+      if (get_eventlist_row(eventlist_file, &event, &status)) break;
       
-	// Check whether binning time was exceeded:
-	if (event.time > time) {
-	  // Store binned spectrum, clear spectrum buffer and start
-	  // new binning cycle:
-	  for (channel=0; channel<Nchannels; channel+=2) {	  
+      // Check whether binning time was exceeded:
+      if (event.time > time) {
+	// Store binned spectrum, clear spectrum buffer and start
+	// new binning cycle:
+	for (channel=0; channel<Nchannels; channel+=2) {	  
+	  
+	  if (spectrum[channel]   > max) max = spectrum[channel];
+	  if (spectrum[channel+1] > max) max = spectrum[channel+1];
+	  
+	  output_buffer[9 + (channel/2)%119] = (unsigned char)
+	    ((spectrum[channel] << 4) + (spectrum[channel+1] & 0x0F));
+	  
+	  // Clear binned spectrum:
+	  spectrum[channel]   = 0;  
+	  spectrum[channel+1] = 0;
+	  
+	  if ((channel+2)%28 == 0) { // Byte frame (128 byte) is complete!
 	    
-	    if (spectrum[channel]   > max) max = spectrum[channel];
-	    if (spectrum[channel+1] > max) max = spectrum[channel+1];
-	    
-	    output_buffer[9 + (channel/2)%119] = (unsigned char)
-	      ((spectrum[channel] << 4) + (spectrum[channel+1] & 0x0F));
-	    
-	    // Clear binned spectrum:
-	    spectrum[channel]   = 0;  
-	    spectrum[channel+1] = 0;
-
-	    if ((channel+2)%28 == 0) { // Byte frame (128 byte) is complete!
-	      
-	      // Syncword 1 and 2:
-	      // output_buffer[0] = (char)'K';
-	      // output_buffer[1] = (char)'R';
-	      output_buffer[0] = 0x4B;  // 'K'
-	      output_buffer[1] = 0x82;  // 'R'
+	    // Syncword 1 and 2:
+	    // output_buffer[0] = (char)'K';
+	    // output_buffer[1] = (char)'R';
+	    output_buffer[0] = 0x4B;  // 'K'
+	    output_buffer[1] = 0x82;  // 'R'
 	    
 	      // Spectrum Time:
-	      long ltime = (long)(time/binning_time);
-	      output_buffer[2] = (unsigned char)(ltime>>24);
-	      output_buffer[3] = (unsigned char)(ltime>>16);
-	      output_buffer[4] = (unsigned char)(ltime>>8);
-	      output_buffer[5] = (unsigned char)ltime;
-	      //headas_chat(5, "%ld: %u %u %u %u\n", ltime, output_buffer[2], 
-	      //	output_buffer[3], output_buffer[4], output_buffer[5]);
-
-	      // Spectrum Sequence counter:
-	      output_buffer[6] = (channel/238);
-
-	      // Data type ID:
-	      output_buffer[7] = 0x83;  // 'S'
-	      // 0x..   -> hexadecimal
-	      // 0...   -> octal
-
-	      // Number of used bytes:
-	      if (channel/119 == 4) {
-		output_buffer[8] = 0x24; // 36
-	      } else {
-		output_buffer[8] = 0x77; // 119
-	      }
+	    long ltime = (long)(time/binning_time);
+	    output_buffer[2] = (unsigned char)(ltime>>24);
+	    output_buffer[3] = (unsigned char)(ltime>>16);
+	    output_buffer[4] = (unsigned char)(ltime>>8);
+	    output_buffer[5] = (unsigned char)ltime;
+	    //headas_chat(5, "%ld: %u %u %u %u\n", ltime, output_buffer[2], 
+	    //	output_buffer[3], output_buffer[4], output_buffer[5]);
 	    
-	      // Write bytes to file
-	      int nbytes = fwrite (output_buffer, 1, N_HTRS_BYTES, output_file);
-	      if (nbytes < N_HTRS_BYTES) {
-		status=EXIT_FAILURE;
-		sprintf(msg, "Error: writing data to output file '%s' failed!\n", 
-			output_filename);
-		HD_ERROR_THROW(msg,status);
-	      }
+	    // Spectrum Sequence counter:
+	    output_buffer[6] = (channel/238);
 
-	      // Clear the output buffer:
-	      binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
+	    // Data type ID:
+	    output_buffer[7] = 0x83;  // 'S'
+	    // 0x..   -> hexadecimal
+	    // 0...   -> octal
 	    
-	    } // END of starting new byte frame
+	    // Number of used bytes:
+	    if (channel/119 == 4) {
+	      output_buffer[8] = 0x24; // 36
+	    } else {
+	      output_buffer[8] = 0x77; // 119
+	    }
+	    
+	    // Write bytes to file
+	    int nbytes = fwrite (output_buffer, 1, N_HTRS_BYTES, output_file);
+	    if (nbytes < N_HTRS_BYTES) {
+	      status=EXIT_FAILURE;
+	      sprintf(msg, "Error: writing data to output file '%s' failed!\n", 
+		      output_filename);
+	      HD_ERROR_THROW(msg,status);
+	    }
+	    
+	    // Clear the output buffer:
+	    binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
+	    
+	  } // END of starting new byte frame
+	  
+	} // END of loop over binned spectrum
+	time += binning_time;  // next binning cycle
 
-	  } // END of loop over binned spectrum
-	  time += binning_time;  // next binning cycle
+      }
 
-	}
-
-	if ((event.pha<=0)||(event.pha>Nchannels)) printf("Error!!\n");
-
-	// Add event to the spectrum.
-	spectrum[event.pha-1]++;
-
-      } // END of loop over all events in the FITS file
-
-      headas_chat(5, "maximum spectral bin: %u\n", max);
+      if ((event.pha<=0)||(event.pha>Nchannels)) printf("Error!!\n");
+      
+      // Add event to the spectrum.
+      spectrum[event.pha-1]++;
+      
+    } // END of loop over all events in the FITS file
+    
+    headas_chat(5, "maximum spectral bin: %u\n", max);
   
-    } // END (mode == MODE_SPECTRUM)
+    } // END (mode == MODE_SPECTRUM) */
 
   } while (0); // END of ERROR handling loop
 
@@ -377,10 +345,9 @@ int binary_stream_main()
 
   // Close files
   if (output_file) fclose(output_file);
-  if (eventlist_file.fptr) fits_close_file(eventlist_file.fptr, &status);
+  closeeROSITAEventlistFile(&eventlistfile);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
-
   return(status);
 }
 

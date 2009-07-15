@@ -67,7 +67,6 @@ int impactlist_getNextRow(struct ImpactlistFile* imf, Impact* impact) {
   }
 
   // Read in the data.
-  // time (1st column)
   impact->time = 0.;
   if (0<imf->ctime) fits_read_col(imf->fptr, TDOUBLE, imf->ctime, imf->row, 1, 1, 
 				  &impact->time, &impact->time, &anynul, &status);

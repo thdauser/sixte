@@ -3,8 +3,6 @@
 
 
 #include "sixt.h"
-#include "eventlist.types.h"
-#include "detectors.types.h"
 
 
 /** Structure that contains all information, which is necessary to access
@@ -25,22 +23,6 @@ typedef struct {
 ////////////////////////////////////////////////////
 
 
-/*
-// This function creates a new event list table in the specified FITS file.
-// It also inserts  header information.
-// The function returns '0', if it is run successfully.
-// Otherwise the return value is '1'.
-struct Eventlist_File* create_Eventlist_File(char* filename, Detector*,
-					     double tstart, double tend, int *status);
-*/
-
-
-/** Opens an existing FITS file with a binary table event list.
- * The access_mode parameter can be either READONLY or READWRITE.
- */
-struct Eventlist_File* open_EventlistFile(char* filename, int access_mode, int* status);
-
-
 /** Opens an existing FITS file with a binary table event list.
  * Apart from opening the FITS file the function also determines the number of rows in 
  * the FITS table and initializes the EventlistFile data structure. 
@@ -52,19 +34,11 @@ int openEventlistFile(EventlistFile*, char* filename, int access_mode);
 int closeEventlistFile(EventlistFile*);
 
 
-// This routine inserts one new line in the event list FITS table and writes
-// the specified event data.
-// The required parameters are:
-// * a pointer to the fitsfile,
-// * the row, after which the new line is inserted (starting at 0),
-// * the event data like time, PHA value, grade and detector coordinates,
-// * and the fits status variable for error handling.
-void add_eventlist_row(struct Eventlist_File*, struct Event, int *status);
-
-
-/** This function reads a row of data from the event list FITS file.
- * The function does NOT increment the row counter of the Eventlist_File object. */
-int get_eventlist_row(struct Eventlist_File, struct Event*, int *status);
+/** Checks whether the end of the event list is reached. 
+ * If the internal pointer of the EventlistFile data structure points to the last line
+ * in the file, i.e. this is the formerly read line, or has an even higher value, the 
+ * function return value is 1, otherwise it is 0. */
+int EventlistFileEOF(EventlistFile*);
 
 
 #endif /* EVENTLISTFILE_H */

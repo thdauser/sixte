@@ -15,7 +15,6 @@
 
 #include "detectors.enum.h"
 #include "detectors.types.h"
-#include "eventlistfile.h"
 #include "detectors.def.h"
 
 

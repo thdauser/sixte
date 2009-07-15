@@ -1,10 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <ctype.h>
-#include <math.h>
+#include "sixt.h"
+#include "erositaevent.h"
 
-#include "eventlist.types.h"
 
 // Data structure for the byte output writing routine.
 struct Binary_Output {
@@ -123,7 +119,7 @@ int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
 // Routine which is called to write an eROSITA event to the Binary_Output.
 // Return value is '0' if everything is ok, otherwise the function returns '-1'.
 int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
-				       struct Event *event)
+				       eROSITAEvent *event)
 {
   // Check for overflows:
   if (event->pha > 0x3FFF) return (-1);

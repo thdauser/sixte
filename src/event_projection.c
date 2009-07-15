@@ -13,7 +13,7 @@
 #include "photon.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
-
+#include "erositaeventlistfile.h"
 
 #define TOOLSUB event_projection_main
 #include "headas_main.c"
@@ -53,7 +53,7 @@ int event_projection_main() {
   struct Parameters parameters;   // Program parameters
 
   AttitudeCatalog* attitudecatalog=NULL;
-  struct Eventlist_File* eventlistfile=NULL;
+  eROSITAEventlistFile eventlistfile;
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
 
@@ -83,39 +83,38 @@ int event_projection_main() {
     HDmtInit(1);
 
     // Open the FITS file with the input event list:
-    eventlistfile=open_EventlistFile(parameters.eventlist_filename, READWRITE, &status);
-    if ((EXIT_SUCCESS!=status)||(NULL==eventlistfile)) break;
+    status=openeROSITAEventlistFile(&eventlistfile, parameters.eventlist_filename, READWRITE);
+    if (EXIT_SUCCESS!=status) break;
     
     // Write header keywords.
-    fits_write_key(eventlistfile->fptr, TSTRING, "REFXCUNI", REFXCUNI, 
-		   "WCS physical unit of X axis", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TSTRING, "REFXCUNI", REFXCUNI, 
+		       "WCS physical unit of X axis", &status)) break;
     long lbuffer = REFXCRPX;
-    fits_write_key(eventlistfile->fptr, TLONG, "REFXCRPX", &lbuffer, 
-		   "WCS axis reference pixel", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TLONG, "REFXCRPX", &lbuffer, 
+		       "WCS axis reference pixel", &status)) break;
     double dbuffer = REFXCRVL;
-    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFXCRVL", &dbuffer,
-		   "[deg] WCS coord. at X axis ref. pixel", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFXCRVL", &dbuffer,
+		       "[deg] WCS coord. at X axis ref. pixel", &status)) break;
     dbuffer = REFXCDLT;
-    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFXCDLT", &dbuffer,
-		   "[deg/pix] WCS X increment at ref. pixel", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFXCDLT", &dbuffer,
+		       "[deg/pix] WCS X increment at ref. pixel", &status)) break;
 
-    fits_write_key(eventlistfile->fptr, TSTRING, "REFYCUNI", REFYCUNI, 
-		   "WCS physical unit of Y axis", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TSTRING, "REFYCUNI", REFYCUNI, 
+		       "WCS physical unit of Y axis", &status)) break;
     lbuffer = REFYCRPX;
-    fits_write_key(eventlistfile->fptr, TLONG, "REFYCRPX", &lbuffer, 
-		   "WCS axis reference pixel", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TLONG, "REFYCRPX", &lbuffer, 
+		       "WCS axis reference pixel", &status)) break;
     dbuffer = REFYCRVL;
-    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFYCRVL", &dbuffer,
-		   "[deg] WCS coord. at Y axis ref. pixel", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFYCRVL", &dbuffer,
+		       "[deg] WCS coord. at Y axis ref. pixel", &status)) break;
     dbuffer = REFYCDLT;
-    fits_write_key(eventlistfile->fptr, TDOUBLE, "REFYCDLT", &dbuffer,
-		   "[deg/pix] WCS Y increment at ref. pixel", &status);
+    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFYCDLT", &dbuffer,
+		       "[deg/pix] WCS Y increment at ref. pixel", &status)) break;
 
     // Read HEADER keywords.
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(eventlistfile->fptr, TSTRING, "ATTITUDE", 
-		      &parameters.attitude_filename, 
-		      comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "ATTITUDE", 
+		      &parameters.attitude_filename, comment, &status)) break;
 
     if (0==strlen(parameters.attitude_filename)) {
       status = EXIT_FAILURE;
@@ -130,8 +129,8 @@ int event_projection_main() {
     // Read the first event from the FITS file.
     //int anynul = 0.;
     //double t0=0., timespan=0.;
-    //fits_read_col(eventlistfile->fptr, TDOUBLE, 1, 1, 1, 1, &t0, &t0, &anynul, &status);
-    //fits_read_col(eventlistfile->fptr, TDOUBLE, 1, eventlistfile->nrows, 1, 1, 
+    //fits_read_col(eventlistfile.fptr, TDOUBLE, 1, 1, 1, 1, &t0, &t0, &anynul, &status);
+    //fits_read_col(eventlistfile.fptr, TDOUBLE, 1, eventlistfile.nrows, 1, 1, 
     //		  &timespan, &timespan, &anynul, &status);
     
 
@@ -169,14 +168,13 @@ int event_projection_main() {
     // LOOP over all event in the FITS table
     long attitude_counter=0;   // counter for entries in the AttitudeCatalog
 
-    // SCAN EVENT LIST    
-    for(eventlistfile->row=0; 
-	(eventlistfile->row<eventlistfile->nrows)&&(status==EXIT_SUCCESS); 
-	eventlistfile->row++) {
+    // SCAN EVENT LIST
+    while((EXIT_SUCCESS==status) && (0==EventlistFileEOF(&eventlistfile.generic))) {
       
       // Read the event from the FITS file.
-      struct Event event;
-      if (get_eventlist_row(*eventlistfile, &event, &status)) break;
+      eROSITAEvent event;
+      status=eROSITAEventlistFile_getNextRow(&eventlistfile, &event);
+      if(EXIT_SUCCESS!=status) break;
 
       // Check whether we are finished.
       if (event.time > parameters.t0+parameters.timespan) break;
@@ -285,14 +283,14 @@ int event_projection_main() {
       event.sky_yi = (int)((event.dec-REFYCRVL)/REFYCDLT+REFYCRPX);
 
       // Store the data in the Event List FITS file.
-      fits_write_col(eventlistfile->fptr, TDOUBLE, eventlistfile->cra, 
-		     eventlistfile->row+1, 1, 1, &event.ra, &status);
-      fits_write_col(eventlistfile->fptr, TDOUBLE, eventlistfile->cdec, 
-		     eventlistfile->row+1, 1, 1, &event.dec, &status);
-      fits_write_col(eventlistfile->fptr, TLONG, eventlistfile->cskyx, 
-		     eventlistfile->row+1, 1, 1, &event.sky_xi, &status);
-      fits_write_col(eventlistfile->fptr, TLONG, eventlistfile->cskyy, 
-		     eventlistfile->row+1, 1, 1, &event.sky_yi, &status);
+      fits_write_col(eventlistfile.generic.fptr, TDOUBLE, eventlistfile.cra,
+		     eventlistfile.generic.row, 1, 1, &event.ra, &status);
+      fits_write_col(eventlistfile.generic.fptr, TDOUBLE, eventlistfile.cdec, 
+		     eventlistfile.generic.row, 1, 1, &event.dec, &status);
+      fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cskyx, 
+		     eventlistfile.generic.row, 1, 1, &event.sky_xi, &status);
+      fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cskyy, 
+		     eventlistfile.generic.row, 1, 1, &event.sky_yi, &status);
 
     } // END of scanning-LOOP over the event list.
   } while(0);  // END of the error handling loop.
@@ -305,15 +303,12 @@ int event_projection_main() {
   HDmtFree();
 
   // Close the FITS files.
-  if (NULL!=eventlistfile) {
-    if (eventlistfile->fptr) fits_close_file(eventlistfile->fptr, &status);
-  }
+  closeeROSITAEventlistFile(&eventlistfile);
 
   // Release memory of AttitudeCatalog
   free_AttitudeCatalog(attitudecatalog);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
-
   return(status);
 }
 

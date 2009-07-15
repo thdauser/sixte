@@ -110,10 +110,10 @@ int addeROSITAEvent2File(eROSITAEventlistFile* eef, eROSITAEvent* event)
 
   // Set RA, DEC, X, and Y to default values.
   event->ra = NAN;
-  if (fits_write_col(eef->generic.fptr, TLONG, eef->cra, eef->generic.row, 
+  if (fits_write_col(eef->generic.fptr, TDOUBLE, eef->cra, eef->generic.row, 
 		     1, 1, &event->ra, &status)) return(status);
   event->dec = NAN;
-  if (fits_write_col(eef->generic.fptr, TLONG, eef->cdec, eef->generic.row, 
+  if (fits_write_col(eef->generic.fptr, TDOUBLE, eef->cdec, eef->generic.row, 
 		     1, 1, &event->dec, &status)) return(status);
   event->sky_xi = 0;
   if (fits_write_col(eef->generic.fptr, TLONG, eef->cskyx, eef->generic.row, 
@@ -121,6 +121,64 @@ int addeROSITAEvent2File(eROSITAEventlistFile* eef, eROSITAEvent* event)
   event->sky_yi = 0;
   if (fits_write_col(eef->generic.fptr, TLONG, eef->cskyy, eef->generic.row, 
 		     1, 1, &event->sky_yi, &status)) return(status);
+
+  return(status);
+}
+
+
+
+int eROSITAEventlistFile_getNextRow(eROSITAEventlistFile* eef, eROSITAEvent* event)
+{
+  int status=EXIT_SUCCESS;
+  int anynul = 0;
+
+  // Move counter to next line.
+  eef->generic.row++;
+
+  // Check if there is still a row available.
+  if (eef->generic.row > eef->generic.nrows) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: event list file contains no further entries!\n", status);
+    return(status);
+  }
+
+  // Read in the data.
+  event->time = 0.;
+  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->ctime, eef->generic.row, 1, 1, 
+		    &event->time, &event->time, &anynul, &status)) return(status);
+  event->pha = 0;
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cpha, eef->generic.row, 1, 1, 
+		    &event->pha, &event->pha, &anynul, &status)) return(status);
+  event->xi = 0;
+  if (fits_read_col(eef->generic.fptr, TINT, eef->crawx, eef->generic.row, 1, 1, 
+		    &event->xi, &event->xi, &anynul, &status)) return(status);
+  event->yi = 0;
+  if (fits_read_col(eef->generic.fptr, TINT, eef->crawy, eef->generic.row, 1, 1, 
+		    &event->yi, &event->yi, &anynul, &status)) return(status);
+  event->frame = 0;
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cframe, eef->generic.row, 1, 1, 
+		    &event->frame, &event->frame, &anynul, &status)) return(status);
+
+  event->ra = NAN;
+  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cra, eef->generic.row, 1, 1, 
+		    &event->ra, &event->ra, &anynul, &status)) return(status);
+  event->dec = NAN;
+  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cdec, eef->generic.row, 1, 1, 
+		    &event->dec, &event->dec, &anynul, &status)) return(status);
+  event->sky_xi = 0;
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cskyx, eef->generic.row, 1, 1, 
+		    &event->sky_xi, &event->sky_xi, &anynul, &status)) return(status);
+  event->sky_yi = 0;
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cskyy, eef->generic.row, 1, 1, 
+		    &event->sky_yi, &event->sky_yi, &anynul, &status)) return(status);
+
+  
+  // Check if an error occurred during the reading process.
+  if (0!=anynul) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: reading from event list failed!\n", status);
+    return(status);
+  }
 
   return(status);
 }

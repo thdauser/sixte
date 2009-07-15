@@ -43,5 +43,10 @@ int closeeROSITAEventlistFile(eROSITAEventlistFile*);
 /** Append a new eROSITA event to the to event list. */
 int addeROSITAEvent2File(eROSITAEventlistFile*, eROSITAEvent*);
 
+/** Read the next eROSITAEvent from the eROSITAEventlistFile.
+ * This routine increases the internal counter of the eROSITAEventlistFile data structure.
+ * The return value is the error status. */
+int eROSITAEventlistFile_getNextRow(eROSITAEventlistFile*, eROSITAEvent*);
+
 
 #endif /* EROSITAEVENTLISTFILE */

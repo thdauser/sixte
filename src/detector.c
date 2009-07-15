@@ -1,6 +1,8 @@
 #include "detector.h"
 
 
+/*
+
 //////////////////////////////////////////////////////////////////////
 void detector_action(
 		     Detector* detector,
@@ -13,7 +15,6 @@ void detector_action(
     detector->readout((void*)detector, time, eventlist_file, status);
   }
 }
-
 
 
 
@@ -85,7 +86,7 @@ void depfet_detector_action(
 
 
 
-/*
+
 //////////////////////////////////////////////////////////////////////
 void tes_detector_action(
 			 void* det,
@@ -109,7 +110,6 @@ void htrs_detector_action(
 {
   // Do nothing.
 }
-*/
 
 
 
@@ -125,7 +125,6 @@ static void insert_background_photons(
 				      double integration_time
 				      )
 {
-  /*
   // determine the number of required photons
   int N_photons = 
     (int)(detector->width*detector->width*background.rate*integration_time);
@@ -137,10 +136,8 @@ static void insert_background_photons(
       [(int)(detector->width*get_random_number())].charge += 
       photon_energy(background, detector);
   }
-  */ // TODO
+  // TODO
 }
-
-
 
 
 
@@ -207,7 +204,7 @@ inline void readout_line(
   }
 }
 
-
+*/
 
 
 

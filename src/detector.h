@@ -13,12 +13,6 @@
 static inline int min_dist(double array[], int directions);
 
 
-// Add background photons to the detector pixels  according to a given 
-// background spectrum and count-rate.
-static void insert_background_photons(Detector*, PointSource background, 
-				      double integration_time);
-
-
 // Returns the pixel index that corresponds to the pixel segment which is
 // defined by the 3 given line indices.
 static inline int htrs_get_lines2pixel(int* l, Detector*);
