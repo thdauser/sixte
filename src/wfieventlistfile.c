@@ -90,14 +90,7 @@ int addWFIEvent2File(WFIEventlistFile* wef, WFIEvent* event)
   int status=EXIT_SUCCESS;
 
   // Insert a new, empty row to the table:
-  if (fits_insert_rows(wef->generic.fptr, wef->generic.row, 1, &status)) {
-    if (EXIT_SUCCESS!=status) {
-      printf("remove this!\n");
-      return(status);
-    } else {
-      printf("change this!\n");
-    }
-  }
+  if (fits_insert_rows(wef->generic.fptr, wef->generic.row, 1, &status)) return(status);
   wef->generic.row++;
   wef->generic.nrows++;
 

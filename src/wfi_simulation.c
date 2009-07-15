@@ -244,7 +244,7 @@ static int getpar(struct Parameters* parameters)
     }
   }
 
-  // Set the event list template file for eROSITA:
+  // Set the event list template file for the different WFI modes:
   char template_filename[MAXMSG];
   if (16==parameters->width) {
     strcpy(template_filename, "wfi.window16.eventlist.tpl");

@@ -17,7 +17,6 @@ int framestore_simulation_main() {
   FramestoreDetector detector;
 
   struct ImpactlistFile impactlistfile;
-  struct Eventlist_File* eventlist_file=NULL;
 
   int status=EXIT_SUCCESS;   // error status
 
@@ -33,6 +32,11 @@ int framestore_simulation_main() {
 
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
+
+
+    // Open the impact list FITS file.
+    if(EXIT_SUCCESS!=(status=impactlist_openFile(&impactlistfile, parameters.impactlist_filename, 
+						 READONLY))) break;
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -49,58 +53,19 @@ int framestore_simulation_main() {
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
-      .integration_time = parameters.integration_time,
-      .t0               = parameters.t0
+      .integration_time   = parameters.integration_time,
+      .t0                 = parameters.t0,
+      .eventlist_filename = parameters.eventlist_filename /* String address!! */,
+      .eventlist_template = parameters.eventlist_template
     };
     if(EXIT_SUCCESS!=(status=initFramestoreDetector(&detector, &fdparameters))) break;
     
-    // END of DETECTOR CONFIGURATION SETUP
+    // END of DETECTOR CONFIGURATION SETUP    
 
-
-    // Open the impact list FITS file.
-    if(EXIT_SUCCESS!=(status=impactlist_openFile(&impactlistfile, parameters.impactlist_filename, 
-						 READONLY))) break;
-    strcpy(parameters.attitude_filename, impactlistfile.attitude_filename);
-    
-
-    // Delete old EVENT LIST file:
-    remove(parameters.eventlist_filename);
-    // Create new event list FITS file.
-    headas_chat(5, "create FITS file '%s' according to template '%s' ...\n", 
-		parameters.eventlist_filename,
-		parameters.eventlist_template_filename);
-    // Create the new event list file according to the selected template:
-    fitsfile* ef_fptr=NULL;
-    char buffer[FILENAME_LENGTH];
-    sprintf(buffer, "%s(%s/%s)", parameters.eventlist_filename, 
-	    parameters.templatedir, parameters.eventlist_template_filename);
-    if (fits_create_file(&ef_fptr, buffer, &status)) break;
-    if (fits_close_file(ef_fptr, &status)) break;
-    
-    // Open the newly created event list FITS file for output:
-    headas_chat(5, "open FITS file '%s' for output of event list ...\n",
-		parameters.eventlist_filename);
-    eventlist_file = open_EventlistFile(parameters.eventlist_filename, READWRITE, &status);
     // Add important additional HEADER keywords to the event list.
-    if (fits_write_key(eventlist_file->fptr, TSTRING, "ATTITUDE", 
-		       parameters.attitude_filename,
+    if (fits_write_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
+		       impactlistfile.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
-
-    // Set the time-keyword in the Event List Header.
-    // See also: Stevens, "Advanced Programming in the UNIX environment", p. 155 ff.
-    time_t current_time;
-    if (0 != time(&current_time)) {
-      struct tm* current_time_utc = gmtime(&current_time);
-      if (NULL != current_time_utc) {
-	char current_time_str[MAXMSG];
-	if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", current_time_utc) > 0) {
-	  // Return value should be == 19 !
-	  if (fits_update_key(eventlist_file->fptr, TSTRING, "DATE-OBS", current_time_str, 
-			     "Start Time (UTC) of exposure", &status)) break;
-	}
-      }
-    } // END of writing time information to Event File FITS header.
-    
 
     // --- END of Initialization ---
 
@@ -148,7 +113,7 @@ int framestore_simulation_main() {
       // Call the detector readout routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
-      checkReadoutFramestoreDetector(&detector, impact.time, eventlist_file);
+      checkReadoutFramestoreDetector(&detector, impact.time);
 
       // Check whether the event lies in the specified time interval:
       if ((impact.time > parameters.t0) && (impact.time < parameters.t0+parameters.timespan)) {
@@ -172,10 +137,6 @@ int framestore_simulation_main() {
   HDmtFree();
 
   if (NULL!=impactlistfile.fptr) fits_close_file(impactlistfile.fptr, &status);
-
-  if (NULL!=eventlist_file) {
-    if (eventlist_file->fptr) fits_close_file(eventlist_file->fptr, &status);
-  }
 
   // Release memory of detector.
   cleanupFramestoreDetector(&detector);
@@ -269,16 +230,16 @@ int getpar(struct Parameters* parameters)
   else { 
     char* buffer;
     if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-      strcpy(parameters->templatedir, buffer);
+      strcpy(parameters->eventlist_template, buffer);
     } else {
-      if ((status = PILGetFname("fits_templates", parameters->templatedir))) {
+      if ((status = PILGetFname("fits_templates", parameters->eventlist_template))) {
 	HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
       }
     }
   }
 
   // Set the event list template file for eROSITA:
-  strcpy(parameters->eventlist_template_filename, "erosita.eventlist.tpl");
+  strcat(parameters->eventlist_template, "/erosita.eventlist.tpl");
 
   return(status);
 }

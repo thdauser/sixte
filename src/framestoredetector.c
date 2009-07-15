@@ -20,6 +20,11 @@ int initFramestoreDetector(FramestoreDetector* fd,
   fd->readout_time = parameters->t0;
   fd->frame = 0;
 
+  // Create and open new event list file.
+  status = openNeweROSITAEventlistFile(&fd->eventlist, parameters->eventlist_filename,
+				       parameters->eventlist_template);
+  if (EXIT_SUCCESS!=status) return(status);
+
   return(status);
 }
 
@@ -28,12 +33,12 @@ int initFramestoreDetector(FramestoreDetector* fd,
 void cleanupFramestoreDetector(FramestoreDetector* fd) 
 {
   cleanupSquarePixels(&fd->pixels);
+  closeeROSITAEventlistFile(&fd->eventlist);
 }
 
 
 
-int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time, 
-				   struct Eventlist_File* ef)
+int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
 {
   int status = EXIT_SUCCESS;
 
@@ -42,7 +47,7 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time,
   if (time > fd->readout_time) {
 
     // Readout the detector and create eventlist entries for the actual time:
-    status = readoutFramestoreDetector(fd, ef);
+    status = readoutFramestoreDetector(fd);
 
     // Clear the detector array.
     clearSquarePixels(&fd->pixels);
@@ -68,7 +73,7 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time,
 
 
 
-inline int readoutFramestoreDetector(FramestoreDetector* fd, struct Eventlist_File* ef) 
+inline int readoutFramestoreDetector(FramestoreDetector* fd) 
 {
   int x, y;
   int status = EXIT_SUCCESS;
@@ -77,7 +82,7 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd, struct Eventlist_Fi
   for (x=0; x<fd->pixels.xwidth; x++) {
     for (y=0; y<fd->pixels.ywidth; y++) {
       if (fd->pixels.array[x][y].charge > 1.e-6) {
-	struct Event event;
+	eROSITAEvent event;
 	// Determine the detector channel that corresponds to the charge stored
 	// in the detector pixel.
 	event.pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
@@ -95,11 +100,8 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd, struct Eventlist_Fi
 	  event.xi = x;
 	  event.yi = y;
 	  event.frame = fd->frame;
-	  event.ra = NAN;
-	  event.dec = NAN;
-	  event.sky_xi = 0;
-	  event.sky_yi = 0;
-	  add_eventlist_row(ef, event, &status);
+
+	  status=addeROSITAEvent2File(&fd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
 	} // END of check for threshold
       } // END of check whether  charge > 1.e-6

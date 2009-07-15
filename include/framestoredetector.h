@@ -4,6 +4,8 @@
 #include "sixt.h"
 #include "impactlist.h"
 #include "eventlistfile.h"
+#include "erositaeventlistfile.h"
+#include "erositaevent.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
 
@@ -23,6 +25,8 @@ typedef struct {
 
   long frame; /**< Number of the current frame. */
 
+  eROSITAEventlistFile eventlist; /**< Event list FITS file for the eROSITA-specific events. */
+
 } FramestoreDetector;
 
 
@@ -31,6 +35,8 @@ struct FramestoreDetectorParameters {
   struct SquarePixelsParameters pixels;
   double integration_time;
   double t0;
+  char* eventlist_filename;
+  char* eventlist_template;
 };
 
 
@@ -49,11 +55,11 @@ void cleanupFramestoreDetector(FramestoreDetector* fd);
  * The routine itself checks, whether a readout is necessary according to the current
  * time and readout time. If it's time to do a readout, the routine calls the function
  * readoutFramestoreDetector(). */
-int checkReadoutFramestoreDetector(FramestoreDetector*, double time, struct Eventlist_File*);
+int checkReadoutFramestoreDetector(FramestoreDetector*, double time);
 
 /** Read out the FramestoreDetector.
  * The measured events are stored in an event list FITS file. */
-inline int readoutFramestoreDetector(FramestoreDetector*, struct Eventlist_File*);
+inline int readoutFramestoreDetector(FramestoreDetector*);
 
 /** Add a new photon impact to the FramestoreDetector pixels.
  * The generated charge is determined according to the detector response.

@@ -2,4 +2,6 @@
 include_HEADERS = sixt.h point.h vector.h telescope.h check_fov.h random_sixt.h \
 		spectrum.h photon.h astrosources.h pointsources.h sourceimage.h \
 		genericdetector.h squarepixels.h framestoredetector.h wfidetector.h \
-		eventlistfile.h wfieventlistfile.h wfievent.h impactlist.h
+		eventlistfile.h wfieventlistfile.h wfievent.h \
+		erositaeventlistfile.h erositaevent.h \
+		impactlist.h
