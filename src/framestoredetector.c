@@ -7,8 +7,10 @@ int initFramestoreDetector(FramestoreDetector* fd,
   int status = EXIT_SUCCESS;
 
   // Call the initialization routines of the underlying data structures.
-  initGenericDetector(&fd->generic, &parameters->generic);
-  initSquarePixels(&fd->pixels, &parameters->pixels);
+  status = initGenericDetector(&fd->generic, &parameters->generic);
+  if (EXIT_SUCCESS!=status) return(status);
+  status = initSquarePixels(&fd->pixels, &parameters->pixels);
+  if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the framestore configuration.
   fd->integration_time = parameters->integration_time;

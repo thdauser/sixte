@@ -14,6 +14,8 @@ int openEventlistFile(EventlistFile* ef, char* filename, int access_mode)
   char msg[MAXMSG];
   int status = EXIT_SUCCESS;
 
+  headas_chat(5, "open event list file '%s' ...\n", filename);
+
   // Open the FITS file table for reading:
   if (fits_open_table(&ef->fptr, filename, access_mode, &status)) return(status);;
 
@@ -43,7 +45,8 @@ int closeEventlistFile(EventlistFile* ef)
   int status = EXIT_SUCCESS;
 
   if (NULL!=ef->fptr) {
-    fits_close_file(ef->fptr, &status);
+    if (fits_close_file(ef->fptr, &status)) return(status);
+    ef->fptr = NULL;
   }
 
   return(status);

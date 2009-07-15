@@ -6,6 +6,7 @@
 #include "squarepixels.h"
 #include "eventlistfile.h"
 #include "impactlist.h"
+#include "wfieventlistfile.h"
 
 
 typedef struct {
@@ -32,6 +33,9 @@ typedef struct {
   /** Number of the current frame. */
   long frame; 
 
+  /** Output event list. */
+  WFIEventlistFile eventlist;
+
 } WFIDetector;
 
 
@@ -41,6 +45,8 @@ struct WFIDetectorParameters {
 
   double line_readout_time, line_clear_time;
   int readout_directions;
+  char* eventlist_filename;
+  char* eventlist_template;
 
   double t0;
 };
@@ -58,11 +64,11 @@ int initWFIDetector(WFIDetector*, struct WFIDetectorParameters*);
 void cleanupWFIDetector(WFIDetector* wd);
 
 /** Check out whether the WFI detector needs to be read out. */
-int checkReadoutWFIDetector(WFIDetector*, double time, struct Eventlist_File*);
+int checkReadoutWFIDetector(WFIDetector*, double time);
 
 /**  Read out the charge from the currently active readout lines (one or two) 
  * of the WFI detector. */
-inline int readoutLinesWFIDetector(WFIDetector*, struct Eventlist_File*);
+inline int readoutLinesWFIDetector(WFIDetector*);
 
 /** Add a photon impact to the WFI detector pixel array.
  * The generated charge is determined according to the detector RSP.

@@ -1,5 +1,5 @@
-#ifndef EVENTLIST_H
-#define EVENTLIST_H (1)
+#ifndef EVENTLISTFILE_H
+#define EVENTLISTFILE_H (1)
 
 
 #include "sixt.h"
@@ -67,4 +67,4 @@ void add_eventlist_row(struct Eventlist_File*, struct Event, int *status);
 int get_eventlist_row(struct Eventlist_File, struct Event*, int *status);
 
 
-#endif /* EVENTLIST_H */
+#endif /* EVENTLISTFILE_H */

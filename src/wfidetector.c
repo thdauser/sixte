@@ -6,8 +6,10 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
   int status = EXIT_SUCCESS;
 
   // Call the initialization routines of the underlying data structures.
-  initGenericDetector(&wd->generic, &parameters->generic);
-  initSquarePixels(&wd->pixels, &parameters->pixels);
+  status = initGenericDetector(&wd->generic, &parameters->generic);
+  if (EXIT_SUCCESS!=status) return(status);
+  status = initSquarePixels(&wd->pixels, &parameters->pixels);
+  if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the WFI configuration.
   wd->line_readout_time = parameters->line_readout_time;
@@ -21,6 +23,11 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
   wd->readout_lines[1] = wd->pixels.ywidth-1;
   wd->frame = -1;
 
+  // Create a new event list FITS file and open it.
+  status = openNewWFIEventlistFile(&wd->eventlist, parameters->eventlist_filename,
+				   parameters->eventlist_template);
+  if (EXIT_SUCCESS!=status) return(status);
+
   return(status);
 }
 
@@ -30,6 +37,7 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
 void cleanupWFIDetector(WFIDetector* wd)
 {
   cleanupSquarePixels(&wd->pixels);
+  closeWFIEventlistFile(&wd->eventlist);
 }
 
 
@@ -84,7 +92,7 @@ void addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
 
 
 
-int checkReadoutWFIDetector(WFIDetector* wd, double time, struct Eventlist_File* ef) 
+int checkReadoutWFIDetector(WFIDetector* wd, double time) 
 {
   int status=EXIT_SUCCESS;
 
@@ -131,7 +139,7 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time, struct Eventlist_File*
     // step before) and write the data to the FITS file.
     // After the readout clear the  lines.
 
-    status = readoutLinesWFIDetector(wd, ef);
+    status = readoutLinesWFIDetector(wd);
     if(EXIT_SUCCESS!=status) return(status);
 
     // Clear the previously read out lines.
@@ -149,7 +157,7 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time, struct Eventlist_File*
 
 
 
-inline int readoutLinesWFIDetector(WFIDetector* wd, struct Eventlist_File* ef)
+inline int readoutLinesWFIDetector(WFIDetector* wd)
 {
   int x, lineindex;
   int status = EXIT_SUCCESS;
@@ -158,7 +166,7 @@ inline int readoutLinesWFIDetector(WFIDetector* wd, struct Eventlist_File* ef)
   for (lineindex=0; lineindex<wd->readout_directions; lineindex++) {
     for (x=0; x<wd->pixels.xwidth; x++) {
       if (wd->pixels.array[x][wd->readout_lines[lineindex]].charge > 1.e-6) {
-	struct Event event;
+	WFIEvent event;
 	// Determine the detector channel that corresponds to the charge stored
 	// in the detector pixel.
 	event.pha = getChannel(wd->pixels.array[x][wd->readout_lines[lineindex]].charge, 
@@ -178,11 +186,7 @@ inline int readoutLinesWFIDetector(WFIDetector* wd, struct Eventlist_File* ef)
 	  event.xi = x;
 	  event.yi = wd->readout_lines[lineindex];
 	  event.frame = wd->frame;
-	  event.ra = NAN;
-	  event.dec = NAN;
-	  event.sky_xi = 0;
-	  event.sky_yi = 0;
-	  add_eventlist_row(ef, event, &status);
+	  status = addWFIEvent2File(&wd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
 	} // END of check for threshold
       } // END of check whether  charge > 1.e-6
