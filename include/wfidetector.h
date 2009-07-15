@@ -4,9 +4,9 @@
 #include "sixt.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "impactlist.h"
-#include "wfieventlistfile.h"
+#include "wfieventfile.h"
 
 
 typedef struct {

@@ -13,7 +13,7 @@
 #include "photon.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
-#include "erositaeventlistfile.h"
+#include "erositaeventfile.h"
 
 #define TOOLSUB event_projection_main
 #include "headas_main.c"
@@ -44,7 +44,6 @@ struct Parameters {
 
 
 int event_projection_getpar(struct Parameters *parameters);
-
 
 
 ////////////////////////////////////

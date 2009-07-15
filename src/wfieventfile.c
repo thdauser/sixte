@@ -1,5 +1,4 @@
-#include "wfieventlistfile.h"
-
+#include "wfieventfile.h"
 
 
 int openWFIEventlistFile(WFIEventlistFile* wef, char* filename, int access_mode)

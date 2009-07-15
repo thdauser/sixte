@@ -5,7 +5,7 @@
 #include "detector.h"
 #include "framestoredetector.h"
 #include "photon.h"
-#include "eventlistfile.h"
+#include "erositaeventfile.h"
 #include "point.h"
 #include "impactlist.h"
 

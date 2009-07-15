@@ -1,5 +1,4 @@
-#include "erositaeventlistfile.h"
-
+#include "erositaeventfile.h"
 
 
 int openeROSITAEventlistFile(eROSITAEventlistFile* eef, char* filename, int access_mode)

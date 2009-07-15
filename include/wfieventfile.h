@@ -1,9 +1,9 @@
-#ifndef WFIEVENTLISTFILE_H
-#define WFIEVENTLISTFILE_H 1
+#ifndef WFIEVENTFILE_H
+#define WFIEVENTFILE_H 1
 
 #include "sixt.h"
 #include "wfievent.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 
 
 typedef struct {
@@ -44,4 +44,4 @@ int closeWFIEventlistFile(WFIEventlistFile*);
 int addWFIEvent2File(WFIEventlistFile*, WFIEvent*);
 
 
-#endif /* WFIEVENTLISTFILE */
+#endif /* WFIEVENTFILE */

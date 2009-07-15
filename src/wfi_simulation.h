@@ -5,7 +5,7 @@
 #include "detector.h"
 #include "wfidetector.h"
 #include "photon.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "point.h"
 #include "impactlist.h"
 

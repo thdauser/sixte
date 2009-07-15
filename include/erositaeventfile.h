@@ -1,9 +1,9 @@
-#ifndef EROSITAEVENTLISTFILE_H
-#define EROSITAEVENTLISTFILE_H 1
+#ifndef EROSITAEVENTFILE_H
+#define EROSITAEVENTFILE_H 1
 
 #include "sixt.h"
 #include "erositaevent.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 
 
 typedef struct {
@@ -49,4 +49,4 @@ int addeROSITAEvent2File(eROSITAEventlistFile*, eROSITAEvent*);
 int eROSITAEventlistFile_getNextRow(eROSITAEventlistFile*, eROSITAEvent*);
 
 
-#endif /* EROSITAEVENTLISTFILE */
+#endif /* EROSITAEVENTFILE */

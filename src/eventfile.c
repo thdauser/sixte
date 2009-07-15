@@ -5,7 +5,7 @@
 #endif
 
 
-#include "eventlistfile.h"
+#include "eventfile.h"
 
 
 int openEventlistFile(EventlistFile* ef, char* filename, int access_mode)

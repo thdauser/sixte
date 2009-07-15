@@ -1,5 +1,5 @@
-#ifndef EVENTLISTFILE_H
-#define EVENTLISTFILE_H (1)
+#ifndef EVENTFILE_H
+#define EVENTFILE_H (1)
 
 
 #include "sixt.h"
@@ -41,4 +41,4 @@ int closeEventlistFile(EventlistFile*);
 int EventlistFileEOF(EventlistFile*);
 
 
-#endif /* EVENTLISTFILE_H */
+#endif /* EVENTFILE_H */

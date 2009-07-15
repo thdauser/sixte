@@ -6,9 +6,9 @@
 
 
 #include "sixt.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "erositaevent.h"
-#include "erositaeventlistfile.h"
+#include "erositaeventfile.h"
 
 #define TOOLSUB binary_stream_main
 #include "headas_main.c"

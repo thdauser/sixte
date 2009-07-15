@@ -3,8 +3,8 @@
 
 #include "sixt.h"
 #include "impactlist.h"
-#include "eventlistfile.h"
-#include "erositaeventlistfile.h"
+#include "eventfile.h"
+#include "erositaeventfile.h"
 #include "erositaevent.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
