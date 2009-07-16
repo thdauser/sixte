@@ -32,7 +32,7 @@ lib_LTLIBRARIES = libastrosources.la libdetectors.la \
 # Sources:
 libastrosources_la_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 			    random_sixt.c spectrum.c sourceimage.c
-libdetectors_la_SOURCES    = detector.c random_sixt.c vector.c \
+libdetectors_la_SOURCES    = detector.c random_sixt.c \
 			squarepixels.c genericdetector.c eventfile.c detectorbackground.c \
 			framestoredetector.c erositaeventfile.c \
 			wfidetector.c wfieventfile.c

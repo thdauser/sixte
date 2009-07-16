@@ -1,15 +1,7 @@
-#ifndef RANDOM_H
-#define RANDOM_H 1
+#ifndef RANDOM_SIXT_H
+#define RANDOM_SIXT_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <malloc.h>
-#include <assert.h>
-#include <limits.h>
-
-#include "headas.h"
-#include "headas_rand.h"
+#include "sixt.h"
 
 
 /** This routine creates random numbers using the HEAdas random number generator.
@@ -24,6 +16,5 @@ inline double get_random_number();
 inline double rndexp(double avg);
 
 
-
-#endif /* RANDOM_H */
+#endif /* RANDOM_SIXT_H */
 

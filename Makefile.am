@@ -1,3 +1,4 @@
+
 EXTRA_DIST = INSTALL.txt # include INSTALL.txt in the distributed package
 
 # The sub-directories are built before the current directory.

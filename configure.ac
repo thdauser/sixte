@@ -15,7 +15,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 # Check for programs:
 AC_PROG_CC     # Search for a C-Compiler and store it in the Variable 'CC'.
 
-LT_INIT #([shared]) ([disable-shared])
+AC_DISABLE_SHARED
+LT_INIT #([disable-shared]) #([shared]) 
 AC_PROG_LIBTOOL #deprecated
 AM_PROG_LIBTOOL
 #AC_DISABLE_SHARED
