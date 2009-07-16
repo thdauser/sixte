@@ -78,9 +78,9 @@ if test -z "$PFILESDIR"
 then
 	if test -z "$HEADAS"
 	then
-		PFILESDIR="\$(HEADAS)/syspfiles"
+		PFILESDIR="\${HEADAS}/syspfiles"
 	else
-		AC_MSG_ERROR([Environment variable '$HEADAS' is not set], [])
+		AC_MSG_ERROR([Environment variable '\$HEADAS' is not set], [])
 	fi
 fi
 AC_SUBST([PFILESDIR])

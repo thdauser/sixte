@@ -9,7 +9,7 @@
 #endif
 
 #include "impactlist.h"
-#include "eventlist.types.h"
+//#include "eventlist.types.h"
 #include "detectors.enum.h"
 
 
@@ -116,7 +116,7 @@ typedef struct {
    * Otherwise it calls the appropriate routines to store the events from the detector
    * in the output event list. 
    * The routine is also responsible for clearing the detector pixels after the readout. */
-  void (*readout) (void*, double, struct Eventlist_File*, int*);
+  //void (*readout) (void*, double, struct Eventlist_File*, int*);
 
   /** Pointer to the routine that is called when a new photon hits the detector.
    * The routine determines the generated charge according to the photon energy and
