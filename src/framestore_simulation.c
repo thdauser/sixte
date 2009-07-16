@@ -73,47 +73,19 @@ int framestore_simulation_main() {
     // --- Beginning of Detection Process ---
 
     headas_chat(5, "start detection process ...\n");
-    Impact impact, next_impact;
-    double next_background_event_time=0.;
-    int reached_end_of_impactlist=0;
+    Impact impact;
 
-    // Read the first row of the impact list.
-    if(EXIT_SUCCESS!=(status=impactlist_getNextRow(&impactlistfile, &next_impact))) break;
+    // Loop over all impacts in the FITS file.
+    while ((EXIT_SUCCESS==status)&&(0==impactlist_EOF(&impactlistfile))) {
 
-    while (EXIT_SUCCESS==status) {
-
-      if ((parameters.background_rate>0.) && (next_background_event_time<next_impact.time)) {
-	// The current event is a background event:
-	impact.time = next_background_event_time;
-	impact.energy = 1.; // TODO
-	impact.position.x=2*(get_random_number()-0.5)*
-	  (detector.pixels.xoffset*detector.pixels.xpixelwidth);
-	impact.position.y=2*(get_random_number()-0.5)*
-	  (detector.pixels.yoffset*detector.pixels.ypixelwidth);
-	// TODO: prevent PSF check for these events !!
-	
-	// Determine the time of the NEXT background event:
-	next_background_event_time += rndexp(1./(double)parameters.background_rate);
-
-      } else {
-	// The current event is obtained from the impact list.
-	impact = next_impact;
-
-	if (0==reached_end_of_impactlist) {
-	  // Read in the next row from the impact list:
-	  if(EXIT_SUCCESS!=(status=impactlist_getNextRow(&impactlistfile, &next_impact))) break;
-	  // Check if we reached the end of the impact list:
-	  if (impactlist_EOF(&impactlistfile)) reached_end_of_impactlist = 1;
-	} else {
-	  // There are no further rows in the impact list. So we have to stop here.
-	  break;
-	}
-      }
+      status=impactlist_getNextRow(&impactlistfile, &impact);
+      if(EXIT_SUCCESS!=status) break;
 
       // Call the detector readout routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
-      checkReadoutFramestoreDetector(&detector, impact.time);
+      status=checkReadoutFramestoreDetector(&detector, impact.time);
+      if(EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
       if ((impact.time > parameters.t0) && (impact.time < parameters.t0+parameters.timespan)) {
