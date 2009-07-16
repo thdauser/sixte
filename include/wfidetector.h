@@ -77,7 +77,7 @@ inline int readoutLinesWFIDetector(WFIDetector*);
 int addImpact2WFIDetector(WFIDetector*, Impact*);
 
 /** Returns 1 if the detector is sensitive in the pixel (x,y) at the specified time. */
-inline int WFIDetectorIsSensitive(int x, int y, WFIDetector*, double time);
+inline int WFIDetectorIsSensitive(int y, WFIDetector*, double time);
 
 
 #endif /* WFIDETECTOR */

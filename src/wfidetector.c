@@ -93,7 +93,7 @@ int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
 	  charge * fraction[count] * 
 	  // |      |-> charge fraction due to split events
 	  // |-> charge created by incident photon
-	  WFIDetectorIsSensitive(x[count], y[count], wd, impact->time);
+	  WFIDetectorIsSensitive(y[count], wd, impact->time);
 	  // |-> "1" if pixel can measure charge, "0" else
       }
     }
@@ -211,7 +211,7 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 
 
 
-inline int WFIDetectorIsSensitive(int x, int y, WFIDetector* wd, double time)
+inline int WFIDetectorIsSensitive(int y, WFIDetector* wd, double time)
 {
   if ((y==wd->readout_lines[0])||
       ((2==wd->readout_directions)&&(y==wd->readout_lines[1]))) {
