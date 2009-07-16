@@ -303,14 +303,14 @@ inline int min_dist(double array[], int directions)
 
 
 
-
+/*
 //////////////////////////////////////////////////////////////////////////////// 
 // Calculates the Gaussian integral using the GSL complementary error function.
 inline double gaussint(double x) 
 {
   return(gsl_sf_erf_Q(x));
 }
-
+*/
 
 
 

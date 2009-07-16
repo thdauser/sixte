@@ -11,6 +11,7 @@
 #include "detectors.enum.h"
 #include "detectors.types.h"
 #include "detectors.def.h"
+#include "genericdetector.h"
 
 
 #define GAUSSIAN_CHARGE_CLOUDS 1 // Assume a Gaussian charge cloud shape.
