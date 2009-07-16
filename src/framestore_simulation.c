@@ -84,15 +84,13 @@ int framestore_simulation_main() {
       // Check whether the event lies in the specified time interval:
       if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) continue;
 
-      // Call the detector readout routine: this routine checks, whether the 
-      // integration time is exceeded and performs the readout in this case. 
-      // Otherwise it will simply do nothing.
-      status=checkReadoutFramestoreDetector(&detector, impact.time);
-      if(EXIT_SUCCESS!=status) break;
-
       // Call the photon detection routine that generates the right charge
       // and stores it in the detector pixels.
-      addImpact2FramestoreDetector(&detector, &impact);
+      // Before generating and adding the charge to the detector the routine also 
+      // checks, whether the integration time is exceeded and performs the readout 
+      // in that case. 
+      status=addImpact2FramestoreDetector(&detector, &impact);
+      if(EXIT_SUCCESS!=status) break;
 
     } // END of scanning the impact list.
 

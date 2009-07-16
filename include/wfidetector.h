@@ -74,7 +74,7 @@ inline int readoutLinesWFIDetector(WFIDetector*);
  * The generated charge is determined according to the detector RSP.
  * Split events are taken into account based on a Gaussian-shape charge cloud model.
  * The charge in the in the pixels is summed up, i.e., realistic pile up is implemented. */
-void addImpact2WFIDetector(WFIDetector*, Impact*);
+int addImpact2WFIDetector(WFIDetector*, Impact*);
 
 /** Returns 1 if the detector is sensitive in the pixel (x,y) at the specified time. */
 inline int WFIDetectorIsSensitive(int x, int y, WFIDetector*, double time);

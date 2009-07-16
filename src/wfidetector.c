@@ -47,8 +47,14 @@ int cleanupWFIDetector(WFIDetector* wd)
 
 
 
-void addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
+int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
 {
+  int status=EXIT_SUCCESS;
+
+  // Before adding the new impact to the detector check whether
+  // a readout has to be performed in advance.
+  status=checkReadoutWFIDetector(wd, impact->time);
+
   // Determine a detector channel (PHA channel) according to the RMF.
   // The channel is obtained from the RMF using the corresponding
   // HEAdas routine which is based on drawing a random number.
@@ -61,7 +67,7 @@ void addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
   // This can happen as the RMF is actually an RSP including, e.g., 
   // the detector quantum efficiency and filter transmission.
   if (-1==channel) {
-    return; // Break the function (and continue with the next photon).
+    return(status); // Break the function (and continue with the next photon).
   }
   assert(channel>=0);
 
@@ -92,6 +98,8 @@ void addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
       }
     }
   } // END if(charge>0.)
+
+  return(status);
 }
 
 

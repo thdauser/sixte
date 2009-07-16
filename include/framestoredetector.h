@@ -67,7 +67,7 @@ inline int readoutFramestoreDetector(FramestoreDetector*);
  * a Gaussian charge cloud model.
  * The new charge is added to the charge already contained in the detector pixel, 
  * so pileup effects are taken into account. */
-void addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
+int addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
 
 /** Returns 1 if the detector is sensitive in the pixel (x,y) at the specified time. */
 //inline int FramestoreDetectorIsSensitive(int x, int y, FramestoreDetector* fd, double time);
