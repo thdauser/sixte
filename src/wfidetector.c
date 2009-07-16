@@ -36,6 +36,9 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
 
 void cleanupWFIDetector(WFIDetector* wd)
 {
+  // TODO: Perform one last readout !!
+
+  // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&wd->pixels);
   closeWFIEventFile(&wd->eventlist);
 }
@@ -147,8 +150,7 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time)
     for(lineindex=0; lineindex<wd->readout_directions; lineindex++) {
       clearLineSquarePixels(&wd->pixels, wd->readout_lines[lineindex]);
     }
-
-  } 
+  }
   
   return(status);
 }
