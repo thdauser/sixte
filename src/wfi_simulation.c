@@ -77,22 +77,26 @@ int wfi_simulation_main() {
       status=impactlist_getNextRow(&impactlistfile, &impact);
       if (EXIT_SUCCESS!=status) break;
 
+      // Check whether the event lies in the specified time interval:
+      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) continue;
+
       // Call the detector readout routine: this routine checks, whether the 
       // integration time is exceeded and performs the readout in this case. 
       // Otherwise it will simply do nothing.
       status=checkReadoutWFIDetector(&detector, impact.time);
       if (EXIT_SUCCESS!=status) break;
 	
-      // Check whether the event lies in the specified time interval:
-      if ((impact.time > parameters.t0) && (impact.time < parameters.t0+parameters.timespan)) {
+      // Call the photon detection routine that generates the right charge
+      // and stores it in the detector pixels.
+      addImpact2WFIDetector(&detector, &impact);
 
-	// Call the photon detection routine that generates the right charge
-	// and stores it in the detector pixels.
-	addImpact2WFIDetector(&detector, &impact);
-
-      } // END if 'time' within specified time interval
     } // END of scanning the impact list.
 
+    // TODO: Perform one last readout !!
+    // Otherwise charges/impacts might be lost.
+    status=checkReadoutWFIDetector(&detector, parameters.t0+parameters.timespan);
+    if (EXIT_SUCCESS!=status) break;
+    
   } while(0); // END of the error handling loop.
 
   // --- END of Detection process ---

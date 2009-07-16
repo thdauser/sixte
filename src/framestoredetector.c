@@ -32,6 +32,7 @@ int initFramestoreDetector(FramestoreDetector* fd,
 
 void cleanupFramestoreDetector(FramestoreDetector* fd) 
 {
+  // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&fd->pixels);
   closeeROSITAEventFile(&fd->eventlist);
 }

@@ -36,8 +36,6 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
 
 void cleanupWFIDetector(WFIDetector* wd)
 {
-  // TODO: Perform one last readout !!
-
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&wd->pixels);
   closeWFIEventFile(&wd->eventlist);
