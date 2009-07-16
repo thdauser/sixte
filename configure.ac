@@ -92,7 +92,6 @@ AC_SUBST([PFILESDIR])
 # Create the following Makefiles (including subdirectories).
 # A Makefile that is not listed here will not be created by 'automake'!
 AC_CONFIG_FILES([Makefile
-		src/Makefile
-		include/Makefile])
+		src/Makefile])
 AC_OUTPUT
 
