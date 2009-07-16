@@ -30,11 +30,15 @@ int initFramestoreDetector(FramestoreDetector* fd,
 
 
 
-void cleanupFramestoreDetector(FramestoreDetector* fd) 
+int cleanupFramestoreDetector(FramestoreDetector* fd) 
 {
+  int status=EXIT_SUCCESS;
+
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&fd->pixels);
-  closeeROSITAEventFile(&fd->eventlist);
+  status+=closeeROSITAEventFile(&fd->eventlist);
+
+  return(status);
 }
 
 

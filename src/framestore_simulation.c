@@ -115,7 +115,7 @@ int framestore_simulation_main() {
   if (NULL!=impactlistfile.fptr) fits_close_file(impactlistfile.fptr, &status);
 
   // Release memory of detector.
-  cleanupFramestoreDetector(&detector);
+  status+=cleanupFramestoreDetector(&detector);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);

@@ -61,7 +61,7 @@ int initWFIDetector(WFIDetector*, struct WFIDetectorParameters*);
 
 /** Clean up the WFIDetector data structure. 
  * Release allocated memory and call clean-up routines of underlying structures. */
-void cleanupWFIDetector(WFIDetector* wd);
+int cleanupWFIDetector(WFIDetector* wd);
 
 /** Check out whether the WFI detector needs to be read out. */
 int checkReadoutWFIDetector(WFIDetector*, double time);

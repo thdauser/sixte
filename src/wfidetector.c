@@ -34,11 +34,15 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
 
 
 
-void cleanupWFIDetector(WFIDetector* wd)
+int cleanupWFIDetector(WFIDetector* wd)
 {
+  int status=EXIT_SUCCESS;
+
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&wd->pixels);
-  closeWFIEventFile(&wd->eventlist);
+  status = closeWFIEventFile(&wd->eventlist);
+
+  return(status);
 }
 
 
