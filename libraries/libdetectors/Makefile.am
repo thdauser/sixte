@@ -3,12 +3,16 @@ AM_CFLAGS += -I@top_srcdir@/libraries/libsixt
 AM_CFLAGS += -I@top_srcdir@/src # REMOVE THIS LINE !!
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror 
+#AM_CFLAGS += -DNORMALIZE_RMF # explicitly normalize the RSP to an RMF
 
 
 ########## DIRECTORIES ###############
 
 # Directory where to install the FITS template files.
 fitstemplatesdir = $(pkgdatadir)/templates
+dist_fitstemplates_DATA  = erosita.eventlist.tpl 
+dist_fitstemplates_DATA	+= wfi.full1024.eventlist.tpl 
+dist_fitstemplates_DATA += wfi.window16.eventlist.tpl
 
 
 ########### LIBRARIES #################

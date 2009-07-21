@@ -95,6 +95,8 @@ AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		libraries/libsixt/Makefile
 		libraries/libdetectors/Makefile
+		tools/Makefile
+		tools/wfi_simulation/Makefile
 		src/Makefile])
 AC_OUTPUT
 

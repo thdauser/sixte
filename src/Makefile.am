@@ -18,12 +18,6 @@ AM_CFLAGS += -DCONSTANT_LIGHTCURVE # use a constant light curve instead of red n
 pfilesdir   = @PFILESDIR@
 dist_pfiles_DATA = 
 
-# Directory where to install the FITS template files.
-fitstemplatesdir = $(pkgdatadir)/templates
-dist_fitstemplates_DATA  = erosita.eventlist.tpl 
-dist_fitstemplates_DATA	+= wfi.full1024.eventlist.tpl 
-dist_fitstemplates_DATA += wfi.window16.eventlist.tpl
-
 
 ########### LIBRARIES #################
 
@@ -65,7 +59,7 @@ include_HEADERS = telescope.h check_fov.h \
 # in the 'bin' directory.
 bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
 	       	photon_generation photon_imaging event_projection \
-		framestore_simulation wfi_simulation #photon_detection
+		framestore_simulation #photon_detection
 
 binary_stream_SOURCES = binary_stream.c
 binary_stream_LDADD   = @top_srcdir@/libraries/libdetectors/libdetectors.la
@@ -91,12 +85,6 @@ framestore_simulation_LDADD    = @top_srcdir@/libraries/libdetectors/libdetector
 framestore_simulation_LDADD   += libastrosources.la
 framestore_simulation_LDADD   += libsatellites.la
 dist_pfiles_DATA    += framestore_simulation.par
-
-wfi_simulation_SOURCES  = wfi_simulation.c wfi_simulation.h
-wfi_simulation_LDADD    = @top_srcdir@/libraries/libdetectors/libdetectors.la
-wfi_simulation_LDADD   += libastrosources.la
-wfi_simulation_LDADD   += libsatellites.la
-dist_pfiles_DATA    += wfi_simulation.par
 
 photon_imaging_SOURCES  = photon_imaging.c photon_imaging.h
 photon_imaging_LDADD    = libmirror.la
