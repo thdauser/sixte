@@ -27,7 +27,7 @@ libdetectors_la_SOURCES = detector.c \
 			  detectorbackground.c \
 			  framestoredetector.c erositaeventfile.c \
 			  wfidetector.c wfieventfile.c
-libdetectors_la_LIBADD 	= @top_srcdir@/libraries/libsixt/libsixt.la
+libdetectors_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 
 
 ############ HEADERS #################

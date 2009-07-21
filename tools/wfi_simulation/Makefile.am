@@ -14,7 +14,7 @@ AM_CFLAGS += -Wall
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
-pfilesdir   = @PFILESDIR@
+pfilesdir = @PFILESDIR@
 dist_pfiles_DATA =
 
 
@@ -24,6 +24,6 @@ dist_pfiles_DATA =
 # in the 'bin' directory.
 bin_PROGRAMS = 	wfi_simulation
 
-wfi_simulation_SOURCES  = wfi_simulation.c wfi_simulation.h
-wfi_simulation_LDADD    = @top_srcdir@/libraries/libdetectors/libdetectors.la
-dist_pfiles_DATA    += wfi_simulation.par
+wfi_simulation_SOURCES = wfi_simulation.c wfi_simulation.h
+wfi_simulation_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
+dist_pfiles_DATA += wfi_simulation.par

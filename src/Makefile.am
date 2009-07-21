@@ -15,7 +15,7 @@ AM_CFLAGS += -DCONSTANT_LIGHTCURVE # use a constant light curve instead of red n
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
-pfilesdir   = @PFILESDIR@
+pfilesdir = @PFILESDIR@
 dist_pfiles_DATA = 
 
 
@@ -28,7 +28,7 @@ lib_LTLIBRARIES = libastrosources.la \
 # Sources:
 libastrosources_la_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 			    spectrum.c sourceimage.c
-libastrosources_la_LIBADD  = @top_srcdir@/libraries/libsixt/libsixt.la
+libastrosources_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
 
 #libdetectors_la_SOURCES = detector.c \
 #			  squarepixels.c genericdetector.c \
@@ -36,13 +36,13 @@ libastrosources_la_LIBADD  = @top_srcdir@/libraries/libsixt/libsixt.la
 #			  detectorbackground.c \
 #			  framestoredetector.c erositaeventfile.c \
 #			  wfidetector.c wfieventfile.c
-#libdetectors_la_LIBADD 	= @top_srcdir@/libraries/libsixt/libsixt.la
+#libdetectors_la_LIBADD 	= @top_builddir@/libraries/libsixt/libsixt.la
 
 libmirror_la_SOURCES    = psf.c vignetting.c
-libmirror_la_LIBADD	= @top_srcdir@/libraries/libsixt/libsixt.la
+libmirror_la_LIBADD	= @top_builddir@/libraries/libsixt/libsixt.la
 
 libsatellites_la_SOURCES   = attitudecatalog.c attitudefile.c
-libsatellites_la_LIBADD    = @top_srcdir@/libraries/libsixt/libsixt.la
+libsatellites_la_LIBADD    = @top_builddir@/libraries/libsixt/libsixt.la
 
 
 ############ HEADERS #################
@@ -61,23 +61,23 @@ bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
 	       	photon_generation photon_imaging event_projection #photon_detection
 
 binary_stream_SOURCES = binary_stream.c
-binary_stream_LDADD   = @top_srcdir@/libraries/libdetectors/libdetectors.la
+binary_stream_LDADD   = @top_builddir@/libraries/libdetectors/libdetectors.la
 dist_pfiles_DATA     += binary_stream.par
 
 htrs_psfgen_SOURCES  = htrs_psfgen.c
-htrs_psfgen_LDADD    = libmirror.la @top_srcdir@/libraries/libdetectors/libdetectors.la
+htrs_psfgen_LDADD    = libmirror.la @top_builddir@/libraries/libdetectors/libdetectors.la
 
 photon_generation_SOURCES  = photon_generation.c photon_generation.h
-photon_generation_LDADD    = @top_srcdir@/libraries/libdetectors/libdetectors.la
+photon_generation_LDADD    = @top_builddir@/libraries/libdetectors/libdetectors.la
 photon_generation_LDADD   += libastrosources.la
 photon_generation_LDADD   += libsatellites.la
 dist_pfiles_DATA          += photon_generation.par
 
 #photon_detection_SOURCES  = photon_detection.c
-#photon_detection_LDADD    = @top_srcdir@/libraries/libdetectors/libdetectors.la
+#photon_detection_LDADD    = @top_builddir@/libraries/libdetectors/libdetectors.la
 #photon_detection_LDADD   += libastrosources.la
 #photon_detection_LDADD   += libsatellites.la
-#dist_pfiles_DATA              += photon_detection.par
+#dist_pfiles_DATA         += photon_detection.par
 
 photon_imaging_SOURCES  = photon_imaging.c photon_imaging.h
 photon_imaging_LDADD    = libmirror.la
@@ -86,7 +86,7 @@ photon_imaging_LDADD   += libsatellites.la
 dist_pfiles_DATA            += photon_imaging.par
 
 event_projection_SOURCES  = event_projection.c
-event_projection_LDADD    = @top_srcdir@/libraries/libdetectors/libdetectors.la
+event_projection_LDADD    = @top_builddir@/libraries/libdetectors/libdetectors.la
 event_projection_LDADD   += libastrosources.la
 event_projection_LDADD   += libsatellites.la
 dist_pfiles_DATA              += event_projection.par
