@@ -27,7 +27,7 @@ dist_fitstemplates_DATA += wfi.window16.eventlist.tpl
 
 # Libraries that are installed in the 'lib' directory.
 lib_LTLIBRARIES = libastrosources.la libdetectors.la \
-		libmirror.la libsatellites.la libfitsfiles.la
+		libmirror.la libsatellites.la
 
 # Sources:
 libastrosources_la_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
@@ -35,22 +35,24 @@ libastrosources_la_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
 libastrosources_la_LIBADD  = @top_srcdir@/libraries/libsixt/libsixt.la
 
 libdetectors_la_SOURCES = detector.c \
-			squarepixels.c genericdetector.c eventfile.c detectorbackground.c \
-			framestoredetector.c erositaeventfile.c \
-			wfidetector.c wfieventfile.c
+			  squarepixels.c genericdetector.c \
+			  eventfile.c impactlist.c \
+			  detectorbackground.c \
+			  framestoredetector.c erositaeventfile.c \
+			  wfidetector.c wfieventfile.c
 libdetectors_la_LIBADD 	= @top_srcdir@/libraries/libsixt/libsixt.la
 
-libmirror_la_SOURCES    = psf.c vignetting.c vector.c
+libmirror_la_SOURCES    = psf.c vignetting.c
 libmirror_la_LIBADD	= @top_srcdir@/libraries/libsixt/libsixt.la
 
-libsatellites_la_SOURCES   = attitudecatalog.c attitudefile.c vector.c
-libfitsfiles_la_SOURCES    = impactlist.c
+libsatellites_la_SOURCES   = attitudecatalog.c attitudefile.c
+libsatellites_la_LIBADD    = @top_srcdir@/libraries/libsixt/libsixt.la
 
 
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = vector.h telescope.h check_fov.h \
+include_HEADERS = telescope.h check_fov.h \
 		spectrum.h photon.h astrosources.h pointsources.h sourceimage.h \
 		fits_pha.h attitudefile.h attitudecatalog.h psf.h vignetting.h \
 		detector.h detectors.types.h detectors.def.h detectors.enum.h \
@@ -70,15 +72,14 @@ bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
 		framestore_simulation wfi_simulation #photon_detection
 
 binary_stream_SOURCES = binary_stream.c
-binary_stream_LDADD   = libdetectors.la libfitsfiles.la
-binary_stream_LDADD  += libfitsfiles.la
+binary_stream_LDADD   = libdetectors.la
 dist_pfiles_DATA     += binary_stream.par
 
 htrs_psfgen_SOURCES  = htrs_psfgen.c
-htrs_psfgen_LDADD    = libmirror.la libdetectors.la libfitsfiles.la
+htrs_psfgen_LDADD    = libmirror.la libdetectors.la
 
 photon_generation_SOURCES  = photon_generation.c photon_generation.h
-photon_generation_LDADD    = libdetectors.la libfitsfiles.la
+photon_generation_LDADD    = libdetectors.la
 photon_generation_LDADD   += libastrosources.la
 photon_generation_LDADD   += libsatellites.la
 dist_pfiles_DATA          += photon_generation.par
@@ -87,21 +88,18 @@ dist_pfiles_DATA          += photon_generation.par
 #photon_detection_LDADD    = libdetectors.la
 #photon_detection_LDADD   += libastrosources.la
 #photon_detection_LDADD   += libsatellites.la
-#photon_detection_LDADD   += libfitsfiles.la
 #dist_pfiles_DATA              += photon_detection.par
 
 framestore_simulation_SOURCES  = framestore_simulation.c framestore_simulation.h
 framestore_simulation_LDADD    = libdetectors.la
 framestore_simulation_LDADD   += libastrosources.la
 framestore_simulation_LDADD   += libsatellites.la
-framestore_simulation_LDADD   += libfitsfiles.la
 dist_pfiles_DATA    += framestore_simulation.par
 
 wfi_simulation_SOURCES  = wfi_simulation.c wfi_simulation.h
 wfi_simulation_LDADD    = libdetectors.la
 wfi_simulation_LDADD   += libastrosources.la
 wfi_simulation_LDADD   += libsatellites.la
-wfi_simulation_LDADD   += libfitsfiles.la
 dist_pfiles_DATA    += wfi_simulation.par
 
 photon_imaging_SOURCES  = photon_imaging.c photon_imaging.h
@@ -114,7 +112,6 @@ event_projection_SOURCES  = event_projection.c
 event_projection_LDADD    = libdetectors.la
 event_projection_LDADD   += libastrosources.la
 event_projection_LDADD   += libsatellites.la
-event_projection_LDADD   += libfitsfiles.la
 dist_pfiles_DATA              += event_projection.par
 
 psfgen_SOURCES  = psfgen.c
