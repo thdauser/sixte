@@ -19,11 +19,6 @@
 #define HTRS_N_PIXELS (37)   // Total number of pixels in the HTRS array
 
 
-// Determines the index of the minimum value in an array of distances to 
-// the pixel borders.
-inline int min_dist(double array[], int directions);
-
-
 // Returns the pixel index that corresponds to the pixel segment which is
 // defined by the 3 given line indices.
 inline int htrs_get_lines2pixel(int* l, Detector*);
