@@ -94,6 +94,7 @@ AC_SUBST([PFILESDIR])
 AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		libraries/libsixt/Makefile
+		libraries/libdetectors/Makefile
 		src/Makefile])
 AC_OUTPUT
 

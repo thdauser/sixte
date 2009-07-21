@@ -35,7 +35,7 @@ int create_lightcurve(
   ps->lightcurve[N_LIGHTCURVE_BINS].t = 
     t0 + N_LIGHTCURVE_BINS*LIGHTCURVE_BINWIDTH;
 
-#else  // Create a light curve with power law PSD and read noise.
+#else  // Create a light curve with power-law PSD and read noise.
 
   // Repeat the light curve creation until we have proper data 
   // (without zero-rates).

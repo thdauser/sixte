@@ -1,17 +1,6 @@
-#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
-
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror 
-
-# LDADD = ...   add additional libraries
-
-
-########## DIRECTORIES ###############
-
-# Directory where to install the FITS template files.
-fitstemplatesdir = $(pkgdatadir)/templates
 
 
 ########### LIBRARIES #################
