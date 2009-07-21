@@ -26,5 +26,5 @@ bin_PROGRAMS = event_projection
 
 event_projection_SOURCES = event_projection.c
 event_projection_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
-event_projection_LDADD+= @top_builddir@/src/libsatellites.la
+event_projection_LDADD+= @top_builddir@/libraries/libsatellites/libsatellites.la
 

@@ -1,5 +1,6 @@
 AM_CFLAGS  = -I${HEADAS}/include
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt
+AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror 
 
