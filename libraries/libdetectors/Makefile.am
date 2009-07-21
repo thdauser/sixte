@@ -21,8 +21,7 @@ dist_fitstemplates_DATA += wfi.window16.eventlist.tpl
 lib_LTLIBRARIES = libdetectors.la
 
 # Sources:
-libdetectors_la_SOURCES = detector.c \
-			  squarepixels.c genericdetector.c \
+libdetectors_la_SOURCES = squarepixels.c genericdetector.c \
 			  eventfile.c impactlist.c \
 			  detectorbackground.c \
 			  framestoredetector.c erositaeventfile.c \
@@ -33,8 +32,7 @@ libdetectors_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = detector.h detectors.types.h detectors.def.h detectors.enum.h \
-		  genericdetector.h squarepixels.h \
+include_HEADERS = genericdetector.h squarepixels.h \
 		  eventfile.h impactlist.h \
 		  detectorbackground.h \
 		  framestoredetector.h erositaeventfile.h erositaevent.h \

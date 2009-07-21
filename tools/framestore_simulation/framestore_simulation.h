@@ -2,9 +2,7 @@
 #define FRAMESTORE_SIMULATION_H 1
 
 #include "sixt.h"
-#include "detector.h"
 #include "framestoredetector.h"
-#include "photon.h"
 #include "erositaeventfile.h"
 #include "point.h"
 #include "impactlist.h"

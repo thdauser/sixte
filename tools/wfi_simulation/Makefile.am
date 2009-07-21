@@ -4,7 +4,7 @@
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
-AM_CFLAGS += -I@top_srcdir@/src # REMOVE THIS LINE !!
+#AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -15,7 +15,7 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA =
+dist_pfiles_DATA = wfi_simulation.par
 
 
 ############ BINARIES #################
@@ -26,4 +26,4 @@ bin_PROGRAMS = 	wfi_simulation
 
 wfi_simulation_SOURCES = wfi_simulation.c wfi_simulation.h
 wfi_simulation_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
-dist_pfiles_DATA += wfi_simulation.par
+

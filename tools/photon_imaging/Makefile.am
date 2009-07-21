@@ -3,8 +3,9 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
-AM_CFLAGS += -I@top_srcdir@/src # REMOVE THIS LINE !!
+AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
+AM_CFLAGS += -I@top_srcdir@/libraries/libmirrors
+AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -25,7 +26,7 @@ dist_pfiles_DATA = photon_imaging.par
 bin_PROGRAMS = photon_imaging
 
 photon_imaging_SOURCES = photon_imaging.c photon_imaging.h
-photon_imaging_LDADD  = @top_builddir@/src/libmirror.la
-photon_imaging_LDADD += @top_builddir@/src/libastrosources.la
-photon_imaging_LDADD += @top_builddir@/src/libsatellites.la
+photon_imaging_LDADD  = @top_builddir@/libraries/libmirrors/libmirrors.la
+photon_imaging_LDADD += @top_builddir@/libraries/libastrosources/libastrosources.la
+photon_imaging_LDADD += @top_builddir@/libraries/libsatellites/libsatellites.la
 

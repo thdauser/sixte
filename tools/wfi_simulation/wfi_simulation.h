@@ -2,9 +2,7 @@
 #define WFI_SIMULATION_H 1
 
 #include "sixt.h"
-#include "detector.h"
 #include "wfidetector.h"
-#include "photon.h"
 #include "eventfile.h"
 #include "point.h"
 #include "impactlist.h"

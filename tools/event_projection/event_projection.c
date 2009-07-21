@@ -7,10 +7,8 @@
 
 #include "sixt.h"
 #include "vector.h"
-#include "check_fov.h"
+#include "point.h"
 #include "sixt_random.h"
-#include "psf.h"
-#include "photon.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
 #include "erositaeventfile.h"
@@ -33,7 +31,7 @@
 /* Program parameters */
 struct Parameters {
   char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
-  char eventlist_filename[FILENAME_LENGTH]; // input: photon list
+  char eventlist_filename[FILENAME_LENGTH]; // input: event list
   
   double t0;
   double timespan;

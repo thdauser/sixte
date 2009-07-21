@@ -4,7 +4,7 @@
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
-AM_CFLAGS += -I@top_srcdir@/src # REMOVE THIS LINE !!
+AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
