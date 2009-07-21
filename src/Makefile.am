@@ -58,8 +58,7 @@ include_HEADERS = telescope.h check_fov.h \
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
 bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
-	       	photon_generation photon_imaging event_projection \
-		framestore_simulation #photon_detection
+	       	photon_generation photon_imaging event_projection #photon_detection
 
 binary_stream_SOURCES = binary_stream.c
 binary_stream_LDADD   = @top_srcdir@/libraries/libdetectors/libdetectors.la
@@ -79,12 +78,6 @@ dist_pfiles_DATA          += photon_generation.par
 #photon_detection_LDADD   += libastrosources.la
 #photon_detection_LDADD   += libsatellites.la
 #dist_pfiles_DATA              += photon_detection.par
-
-framestore_simulation_SOURCES  = framestore_simulation.c framestore_simulation.h
-framestore_simulation_LDADD    = @top_srcdir@/libraries/libdetectors/libdetectors.la
-framestore_simulation_LDADD   += libastrosources.la
-framestore_simulation_LDADD   += libsatellites.la
-dist_pfiles_DATA    += framestore_simulation.par
 
 photon_imaging_SOURCES  = photon_imaging.c photon_imaging.h
 photon_imaging_LDADD    = libmirror.la
