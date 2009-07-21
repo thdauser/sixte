@@ -98,6 +98,7 @@ AC_CONFIG_FILES([Makefile
 		tools/Makefile
 		tools/wfi_simulation/Makefile
 		tools/framestore_simulation/Makefile
+		tools/event_projection/Makefile
 		src/Makefile])
 AC_OUTPUT
 

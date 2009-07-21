@@ -321,7 +321,7 @@ int event_projection_getpar(struct Parameters *parameters)
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
 
-  // Get the filename of the input photon list (FITS file)
+  // Get the filename of the input event list (FITS file)
   if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     sprintf(msg, "Error reading the filename of the event list!\n");
     HD_ERROR_THROW(msg,status);
