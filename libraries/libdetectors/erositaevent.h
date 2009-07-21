@@ -6,6 +6,7 @@
 typedef struct {
   double time;
   long pha;
+  float energy; /**< Event energy [eV] */
   int xi, yi;
   long frame;
 

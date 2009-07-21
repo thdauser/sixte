@@ -102,6 +102,7 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	
 	  // There is an event in this pixel, so insert it into the eventlist:
 	  event.time = fd->readout_time;
+	  event.energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
 	  event.xi = x;
 	  event.yi = y;
 	  event.frame = fd->frame;

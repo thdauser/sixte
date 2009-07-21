@@ -52,9 +52,13 @@ PXOFFSET        1               / Pixel offset - number of the first pixel
 	TTYPE#  TIME            / Time of event
 	TFORM#  D               / Format of column TIME
 	TUNIT#  s               / Unit of column TIME
+
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  I               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
+	TTYPE#	ENERGY          / Calibrated event energy
+	TFORM#  E               / Format of column RAWX
+	TUNIT#  eV              / Unit of column RAWX
 
 	TTYPE#	RAWX            / Event X Position
 	TFORM#  I               / Format of column RAWX
@@ -92,6 +96,3 @@ PXOFFSET        1               / Pixel offset - number of the first pixel
 	TTYPE#  AMP_COR         / Gain+CTI corrected amplitudes
 	TFORM#  E               / Format of column AMP_GAIN
 	TUNIT#  ADU             / Unit of column AMP_GAIN
-	TTYPE#  ENERGY          / calibrated event energy
-	TFORM#  E               / Format of column ENERGY
-	TUNIT#  eV              / Unit of column ENERGY
