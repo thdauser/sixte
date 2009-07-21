@@ -1,10 +1,8 @@
 #CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
 
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include -I@top_srcdir@/include
+AM_CFLAGS  = -I${HEADAS}/include
 AM_CFLAGS += -Wall 
-#AM_CFLAGS += -DNORMALIZE_RMF # explicitly normalize the RSP to an RMF
-AM_CFLAGS += -DCONSTANT_LIGHTCURVE # use a constant light curve instead of red noise according to Timmer & Koenig (1995)
 #AM_CFLAGS += -Wall -Werror 
 
 # LDADD = ...   add additional libraries
@@ -28,5 +26,5 @@ libsixt_la_SOURCES = sixt_random.c
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = sixt_random.h
+include_HEADERS = sixt.h sixt_random.h point.h
 

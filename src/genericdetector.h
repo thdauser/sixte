@@ -2,7 +2,7 @@
 #define GENERICDETECTOR_H 1
 
 #include "sixt.h"
-#include "random_sixt.h"
+#include "sixt_random.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1

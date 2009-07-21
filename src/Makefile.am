@@ -1,13 +1,13 @@
 #CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
 
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include -I@top_srcdir@/include
+AM_CFLAGS  = -I${HEADAS}/include -I@top_srcdir@/libraries/libsixt
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -DNORMALIZE_RMF # explicitly normalize the RSP to an RMF
 AM_CFLAGS += -DCONSTANT_LIGHTCURVE # use a constant light curve instead of red noise according to Timmer & Koenig (1995)
-#AM_CFLAGS += -Wall -Werror 
+#AM_CFLAGS += -Wall -Werror
 
-# LDADD = ...   add additional libraries
+#LDADD = ...    add additional libraries
 
 
 ########## DIRECTORIES ###############
@@ -31,12 +31,18 @@ lib_LTLIBRARIES = libastrosources.la libdetectors.la \
 
 # Sources:
 libastrosources_la_SOURCES = check_fov.c fits_pha.c pointsources.c photon.c \
-			    random_sixt.c spectrum.c sourceimage.c
-libdetectors_la_SOURCES    = detector.c random_sixt.c \
+			    spectrum.c sourceimage.c
+libastrosources_la_LIBADD  = @top_srcdir@/libraries/libsixt/libsixt.la
+
+libdetectors_la_SOURCES = detector.c \
 			squarepixels.c genericdetector.c eventfile.c detectorbackground.c \
 			framestoredetector.c erositaeventfile.c \
 			wfidetector.c wfieventfile.c
-libmirror_la_SOURCES       = psf.c vignetting.c vector.c random_sixt.c
+libdetectors_la_LIBADD 	= @top_srcdir@/libraries/libsixt/libsixt.la
+
+libmirror_la_SOURCES    = psf.c vignetting.c vector.c
+libmirror_la_LIBADD	= @top_srcdir@/libraries/libsixt/libsixt.la
+
 libsatellites_la_SOURCES   = attitudecatalog.c attitudefile.c vector.c
 libfitsfiles_la_SOURCES    = impactlist.c
 
@@ -44,7 +50,7 @@ libfitsfiles_la_SOURCES    = impactlist.c
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = point.h vector.h telescope.h check_fov.h random_sixt.h \
+include_HEADERS = vector.h telescope.h check_fov.h \
 		spectrum.h photon.h astrosources.h pointsources.h sourceimage.h \
 		fits_pha.h attitudefile.h attitudecatalog.h psf.h vignetting.h \
 		detector.h detectors.types.h detectors.def.h detectors.enum.h \
@@ -63,10 +69,10 @@ bin_PROGRAMS = 	binary_stream htrs_psfgen psfgen \
 	       	photon_generation photon_imaging event_projection \
 		framestore_simulation wfi_simulation #photon_detection
 
-binary_stream_SOURCES  = binary_stream.c
-binary_stream_LDADD    = libdetectors.la libfitsfiles.la
-binary_stream_LDADD   += libfitsfiles.la
-dist_pfiles_DATA           += binary_stream.par
+binary_stream_SOURCES = binary_stream.c
+binary_stream_LDADD   = libdetectors.la libfitsfiles.la
+binary_stream_LDADD  += libfitsfiles.la
+dist_pfiles_DATA     += binary_stream.par
 
 htrs_psfgen_SOURCES  = htrs_psfgen.c
 htrs_psfgen_LDADD    = libmirror.la libdetectors.la libfitsfiles.la
@@ -75,7 +81,7 @@ photon_generation_SOURCES  = photon_generation.c photon_generation.h
 photon_generation_LDADD    = libdetectors.la libfitsfiles.la
 photon_generation_LDADD   += libastrosources.la
 photon_generation_LDADD   += libsatellites.la
-dist_pfiles_DATA               += photon_generation.par
+dist_pfiles_DATA          += photon_generation.par
 
 #photon_detection_SOURCES  = photon_detection.c
 #photon_detection_LDADD    = libdetectors.la

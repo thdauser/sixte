@@ -19,7 +19,7 @@
 #include <gsl/gsl_randist.h>
 
 #include "vector.h"
-#include "random_sixt.h"
+#include "sixt_random.h"
 
 
 long photon_counter;
@@ -81,7 +81,7 @@ struct lightcurve_entry {
 
 // Include own header files.
 #include "pointsources.h"
-#include "random_sixt.h"
+
 
 
 //////////////////////////////////////////////////////////////////////////

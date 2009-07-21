@@ -7,7 +7,7 @@
 // distribution of split events (assuming a Gaussian shape for the carge cloud).
 #include <gsl/gsl_sf_erf.h>
 
-#include "random_sixt.h"
+#include "sixt_random.h"
 #include "detectors.enum.h"
 #include "detectors.types.h"
 #include "detectors.def.h"

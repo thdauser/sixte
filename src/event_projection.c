@@ -8,7 +8,7 @@
 #include "sixt.h"
 #include "vector.h"
 #include "check_fov.h"
-#include "random_sixt.h"
+#include "sixt_random.h"
 #include "psf.h"
 #include "photon.h"
 #include "telescope.h"

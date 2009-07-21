@@ -32,7 +32,7 @@ typedef struct {
 
 
 
-#include "random_sixt.h"
+#include "sixt_random.h"
 #include "telescope.h"
 #include "photon.h"
 #include "point.h"
