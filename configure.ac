@@ -96,6 +96,8 @@ AC_CONFIG_FILES([Makefile
 		libraries/libsixt/Makefile
 		libraries/libdetectors/Makefile
 		tools/Makefile
+		tools/photon_generation/Makefile
+		tools/photon_imaging/Makefile
 		tools/wfi_simulation/Makefile
 		tools/framestore_simulation/Makefile
 		tools/event_projection/Makefile
