@@ -69,7 +69,8 @@ typedef struct {
  * This data structure contains the parameters for setting up the WFIDetector data structure.  
  * It is used as input for the initWFIDetector() routine.  
  * Besides some generic detector parameters especially the readout
- * mode and the event file for data output have to be defined. */
+ * mode and the event file for data output have to be defined. 
+ * For documentation of the inidividual parameters see WFIDetector. */
 struct WFIDetectorParameters {
   struct GenericDetectorParameters generic;
   struct SquarePixelsParameters pixels;

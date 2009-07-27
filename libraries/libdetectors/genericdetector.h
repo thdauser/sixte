@@ -17,15 +17,32 @@
 #define INVALID_PIXEL (-1)   // flags an invalid pixel
 
 
-/** Generic x-ray detector. Contains common data/specifications that are defined for
- * all different kinds of detectors. */
+/** Generic x-ray detector. 
+ * Contains common data/specifications that are defined for
+ * all different kinds of detectors. 
+ * The GenericDetector data structure is usually included as element of more specific
+ * detector models like, e.g. WFIDetector or FramestoreDetector.*/
 typedef struct {
-  double ccsigma; /**< Charge cloud sigma [m]. This quantity is used to calculate size of 
-		   * the charge cloud. */
-  double ccsize; /**< Size of the charge cloud [m]. Defined as three times ccsigma. */
 
-  long pha_threshold; /**< lower detector PHA threshold [PHA channels]. */
-  float energy_threshold; /**< Lower detector energy threshold [keV]. */
+  /** Sigma value for Gaussian shape charge clouds (given in [m]).
+   * This quantity is used to calculate size/extension of the Gaussian shape 
+   * charge cloud. */
+  double ccsigma;
+  /** Size of the charge cloud (given in [m]). 
+   * Quantity to estimate the extension of a Gaussian shape charge cloud.
+   * The value is defined to be three times ccsigma.
+   * It is assumed that approximately all charge is with in a radius of 
+   * this size (3 sigma) around the center of the charge cloud. */
+  double ccsize; 
+
+  /** Lower detector PHA threshold [PHA channels]. 
+   * Events with a lower PHA value are dismissed.
+   * If the PHA threshold is set to "-1"  the energy threshold is taken into account. */
+  long pha_threshold;
+  /** Lower detector energy threshold [keV]. 
+   * Events with a lower energy / pixel charge are dismissed. 
+   * This value is only regarded if the pha_threshold is set to "-1". */
+  float energy_threshold; 
 
   /** Detector response matrix. Includes the RMF and the detector-specific
    * response elements like filter transmission and quantum efficiency.
@@ -41,7 +58,9 @@ typedef struct {
 } GenericDetector;
 
 
-/** Data required to initialize the GenericDetector data structure. */
+/** Data required to initialize the GenericDetector data structure. 
+ * The meaning of the inidividual parameters is the same as in the GenericDetector
+ * data structure. */
 struct GenericDetectorParameters {
   double ccsigma;
 
@@ -55,7 +74,9 @@ struct GenericDetectorParameters {
 ////////////////////////////////////////////////////////////////////
 
 
-/** Set up the initial configuraton for the GenericDetector data structure. */
+/** Set up the initial configuraton for the GenericDetector data structure. 
+ * This routines sets the values of the GenericDetector elements according
+ * to the given parameters. */
 int initGenericDetector(GenericDetector*, struct GenericDetectorParameters*);
 
 /** Load an RMF/RSP matrix and the corresponding EBOUNDS from a response file. 
@@ -64,11 +85,18 @@ int initGenericDetector(GenericDetector*, struct GenericDetectorParameters*);
 struct RMF* loadRMF(char* filename, int* status);
 
 /** Determines the PHA channel corresponding to a given energy according to the EBOUNDS
- * table of the detector response. */
+ * table of the detector response. 
+ * The routine performs a binary search to obtain the PHA channel the specified 
+ * energy lies in. The energy has to be given in the same unit as the EBOUNDS are.
+ * That is usually [keV]. */
 long getChannel(float energy, struct RMF* rmf);
 
 /** Determine the charge corresponding to a particular PHA channel according to 
- * the EBOUNDS table. */
+ * the EBOUNDS table. 
+ * The input channel must have the same offset as in the EBOUNDS table. I.e. if the first
+ * channel in the EBOUNDS has the number 1, the numbering starts at 1. If the first channel 
+ * has the number 0, the numbering starts at 0.
+ * The returned energy is given in the same units as the EBOUNDS. That is usually [keV]. */
 float getEnergy(long channel, struct RMF* rmf);
 
 /** Calculates the Gaussian integral using the GSL complementary error function. */
