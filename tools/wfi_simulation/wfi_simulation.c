@@ -13,7 +13,11 @@
 int wfi_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
-  // Detector data structure (containing the pixel array, its width, ...)
+  // WFIDetector data structure.
+  // This is the main object for the simulation of the WFI. It contains all
+  // important parameters of the detector (the pixel array, its width, 
+  // the readout mode, ...) and is used to store the incident photons.
+  // Before the first use it has to be initialized.
   WFIDetector detector;
 
   struct ImpactlistFile impactlistfile;
@@ -43,6 +47,8 @@ int wfi_simulation_main() {
 						 READONLY))) break;
 
     // Detector settings.
+    // Store the settings for the WFIDetector in the corresponding data structure
+    // and call the initialization routine in order to allocate memory etc.
     struct WFIDetectorParameters fdparameters = {
       .pixels = { .xwidth = parameters.width,
 		  .ywidth = parameters.width,
