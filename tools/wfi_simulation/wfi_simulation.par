@@ -1,5 +1,5 @@
 impactlist_filename,fre,lq,"../impacts_200mCrab.fits",,,"impact list file (FITS input file) "
-rmf_filename,fre,lq,"/home/schmid/ixo/response/detector_specific_response/ixo_cdf_wfi_default.detector.rsp",,,"detector redistribution matrix file (RMF) (FITS input file) "
+rmf_filename,fre,lq,"/home/schmid/ixo/response/detector_specific_response/ixo_cdf_wfi_default.detector.rsp",,,"detector response file (RSP = detector-specific ARF * RMF) (FITS input file) "
 eventlist_filename,f,lq,"events_200mCrab.fits",,,"event list file (FITS output file) "
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 readout_directions,i,lq,2,1,2,"number of readout directions "

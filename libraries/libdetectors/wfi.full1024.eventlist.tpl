@@ -37,9 +37,6 @@ ROW             ROW
 COLUMNS         1024
 ROWS            1024
 
-# HEADERs specific for SIXT simulation
-PXOFFSET        0               / Pixel offset - number of the first pixel
-
 #Column definitions
 	TTYPE#  TIME            / Time of event
 	TFORM#  D               / Format of column TIME

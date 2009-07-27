@@ -78,7 +78,7 @@ if test -z "$PFILESDIR"
 then
 	if test -z "$HEADAS"
 	then
-		PFILESDIR="\${HEADAS}/syspfiles"
+		PFILESDIR="\${HEADAS}/pfiles"
 	else
 		AC_MSG_ERROR([Environment variable '\$HEADAS' is not set], [])
 	fi
@@ -102,7 +102,6 @@ AC_CONFIG_FILES([Makefile
 		tools/framestore_simulation/Makefile
 		tools/event_projection/Makefile
 		tools/psfgen/Makefile
-		tools/binary_stream/Makefile
-		src/Makefile])
+		tools/binary_stream/Makefile])
 AC_OUTPUT
 
