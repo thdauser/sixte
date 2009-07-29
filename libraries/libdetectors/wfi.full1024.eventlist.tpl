@@ -1,5 +1,4 @@
 ################################################################################
-# general keywords, common to most(all) eROSITA fits files
 XTENSION        BINTABLE        / Binary table extension
 EXTNAME         EVENTS          / Extension name
 ORIGIN          REMEIS          / Origin of FITS File

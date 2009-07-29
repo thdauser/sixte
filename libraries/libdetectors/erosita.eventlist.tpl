@@ -47,6 +47,8 @@ CHOPPER         String          / electronic chopper in use
 #Column definitions
 	TTYPE#  FRAME           / Frame number
 	TFORM#  J               / Format of column FRAME
+	TUNIT#                  / Unit of column FRAME
+
 	TTYPE#  TIME            / Time of event
 	TFORM#  D               / Format of column TIME
 	TUNIT#  s               / Unit of column TIME
