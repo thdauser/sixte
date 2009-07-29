@@ -4,8 +4,8 @@ EXTNAME         EVENTS          / Extension name
 ORIGIN          REMEIS          / Origin of FITS File
 CREATOR         String          / Program that created this FITS file
 MISSION         String          / Mission name
-TELESCOP        String          / Telescope name
-INSTRUME        String          / Instrument name
+TELESCOP        IXO             / Telescope name
+INSTRUME        XMS             / Instrument name
 OBS_MODE        String          / Observation mode
 DATAMODE        String          / Instrument data mode
 FRAMETIM        Real            / nominal frame time
