@@ -74,7 +74,8 @@ int cleanupXMSDetector(XMSDetector* wd);
 /** Add a photon impact to the XMSDetector pixel array.
  * This is the standard routine to be called for the simulation of the XMSDetector.
  * For a new photon incident on the detector this routine determines the resulting
- * generated charge from the detector response and stores the event in the output event file. 
+ * generated charge from the detector response and stores the event in the output event file.
+ * Split events are taken into account based on a Gaussian charge cloud shape.
  */
 int addImpact2XMSDetector(XMSDetector*, Impact*);
 

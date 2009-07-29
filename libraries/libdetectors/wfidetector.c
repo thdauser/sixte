@@ -189,7 +189,7 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 	    (wd->pixels.array[x][wd->readout_lines[lineindex]].charge>=
 	     wd->generic.energy_threshold)) { 
 
-	  // REMOVE TODO
+	  // TODOO REMOVE
 	  assert(event.pha >= 0);
 	  // Maybe: if (event.pha < 0) continue;
 	
