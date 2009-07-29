@@ -5,8 +5,8 @@
 #include "genericdetector.h"
 #include "squarepixels.h"
 #include "eventfile.h"
-#include "impactlist.h"
 #include "wfieventfile.h"
+#include "impactlist.h"
 
 
 /** Model for the WFI detector on IXO.
@@ -58,7 +58,7 @@ typedef struct {
   long frame; 
 
   /** Output event list. 
-   * The event read out from the detector array are written to this event file that must
+   * The events read out from the detector array are written to this event file that must
    * have the WFI-specific format. */
   WFIEventFile eventlist;
 
