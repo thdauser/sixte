@@ -9,7 +9,7 @@ int initXMSDetector(XMSDetector* xd, struct XMSDetectorParameters* parameters)
   status = initGenericDetector(&xd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
   //  status = initSquarePixels(&xd->pixels, &parameters->pixels);
-  if (EXIT_SUCCESS!=status) return(status);
+  //  if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the XMS configuration.
   // --- Currently nothing to do. ---
