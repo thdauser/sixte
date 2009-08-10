@@ -452,8 +452,7 @@ inline int htrs_get_lines2pixel(int* l, Detector* detector)
 
 
 ///////////////////////////////////////////
-inline struct Point2i htrs_get_pixel2icoordinates(int pixel, 
-							 Detector* detector)
+inline struct Point2i htrs_get_pixel2icoordinates(int pixel, Detector* detector)
 {
   if (pixel != INVALID_PIXEL) {
     return(detector->htrs_pixel2icoordinates[pixel]);
