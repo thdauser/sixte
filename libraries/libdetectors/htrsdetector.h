@@ -3,6 +3,7 @@
 
 #include "sixt.h"
 #include "genericdetector.h"
+#include "hexagonalpixels.h"
 #include "eventfile.h"
 #include "htrseventfile.h"
 #include "impactlist.h"
@@ -23,6 +24,8 @@ typedef struct {
 
   /** Generic Detector properties like, e.g., the detector response. */
   GenericDetector generic;
+  /** Array of hexagonal pixels. */
+  HexagonalPixels pixels;
 
   /** Output event list. 
    * The events read out from the detector array are written to this event file that must
@@ -40,6 +43,7 @@ typedef struct {
  */
 struct HTRSDetectorParameters {
   struct GenericDetectorParameters generic;
+  struct HexagonalPixelsParameters pixels;
 
   char* eventlist_filename;
   char* eventlist_template;
