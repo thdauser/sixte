@@ -57,13 +57,13 @@ struct HexagonalPixelsParameters {
 
 /** Initialization routine for the HexagonalPixels data structure. 
  * Sets the basic properties and allocates memory for the pixel array. */
-//int initHexagonalPixels(HexagonalPixels*, struct HexagonalPixelsParameters*);
+int initHexagonalPixels(HexagonalPixels*, struct HexagonalPixelsParameters*);
 
 /** Clean up the HexagonalPixels data structure. E.g. release allocated memory. */
-//void cleanupHexagonalPixels(HexagonalPixels* sp);
+void cleanupHexagonalPixels(HexagonalPixels* sp);
 
 /** Clear the array of HexagonalPixels. */
-//inline void clearHexagonalPixels(HexagonalPixels*);
+inline void clearHexagonalPixels(HexagonalPixels*);
 
 /** Clear on line of Pixels. A line is defined to have constant detector x-coordinate. */
 //inline void clearLineHexagonalPixels(HexagonalPixels* sp, const int line);
