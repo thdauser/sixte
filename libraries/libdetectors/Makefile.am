@@ -28,7 +28,7 @@ libdetectors_la_SOURCES = squarepixels.c genericdetector.c \
 			  framestoredetector.c erositaeventfile.c \
 			  wfidetector.c wfieventfile.c \
 			  xmsdetector.c xmseventfile.c \
-			  htrsdetector.c
+			  htrsdetector.c htrseventfile.c
 
 libdetectors_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 
@@ -42,5 +42,5 @@ include_HEADERS = genericdetector.h squarepixels.h \
 		  framestoredetector.h erositaeventfile.h erositaevent.h \
 		  wfidetector.h wfieventfile.h wfievent.h \
 		  xmsdetector.h xmseventfile.h xmsevent.h \
-		  htrsdetector.h
+		  htrsdetector.h htrseventfile.h htrsevent.h
 
