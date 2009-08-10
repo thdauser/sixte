@@ -308,10 +308,10 @@ inline double linear_function(double x, double m, double t)
 
 ///////////////////////////////////////////
 inline int htrs_get_line(
-				struct Point2d point, 
-				double m, double dt, 
-				Detector* detector
-				)
+			 struct Point2d point, 
+			 double m, double dt, 
+			 Detector* detector
+			 )
 {
   double dy = point.y - m * point.x;
   int line = (int)(dy/dt + detector->width + 1.) -1;
@@ -326,9 +326,9 @@ inline int htrs_get_line(
 
 ///////////////////////////////////////////
 inline double htrs_distance2line(
-					struct Point2d point,
-					double m, double t
-					)
+				 struct Point2d point,
+				 double m, double t
+				 )
 {
   return(sqrt( pow(t-point.y+m*point.x, 2.) / (1+pow(m,2.)) ));
 }
@@ -337,10 +337,10 @@ inline double htrs_distance2line(
 
 ///////////////////////////////////////////
 inline void htrs_get_lines(
-				  struct Point2d point, 
-				  Detector* detector, 
-				  int* l
-				  )
+			   struct Point2d point, 
+			   Detector* detector, 
+			   int* l
+			   )
 {
   l[0] = htrs_get_line(point,        0.,    detector->h, detector);
   l[1] = htrs_get_line(point, -sqrt(3.), 2* detector->h, detector);

@@ -100,7 +100,7 @@ int initWFIDetector(WFIDetector*, struct WFIDetectorParameters*);
  * This routine should be called if the WFIDetector data structure is not required any more.
  * It takes care of releasing allocated memory and closes open file connections.
  * If applicable it calls clean-up routines of underlying data structures. */
-int cleanupWFIDetector(WFIDetector* wd);
+int cleanupWFIDetector(WFIDetector*);
 
 /** Check out whether the WFI detector needs to be read out. 
  * Regarding the given time and the current readout time of the WFIDetector this

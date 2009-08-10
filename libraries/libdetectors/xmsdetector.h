@@ -28,7 +28,6 @@ typedef struct {
   /** Array of square pixels. */
   SquarePixels pixels;
 
-
   /** Output event list. 
    * The events read out from the detector array are written to this event file that must
    * have the XMS-specific format. */
@@ -69,7 +68,7 @@ int initXMSDetector(XMSDetector*, struct XMSDetectorParameters*);
  * It takes care of releasing allocated memory and closes open file connections.
  * If applicable it calls clean-up routines of underlying data structures. 
  */
-int cleanupXMSDetector(XMSDetector* wd);
+int cleanupXMSDetector(XMSDetector*);
 
 /** Add a photon impact to the XMSDetector pixel array.
  * This is the standard routine to be called for the simulation of the XMSDetector.

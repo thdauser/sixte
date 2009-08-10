@@ -69,7 +69,15 @@ int initHTRSDetector(HTRSDetector*, struct HTRSDetectorParameters*);
  * It takes care of releasing allocated memory and closes open file connections.
  * If applicable it calls clean-up routines of underlying data structures. 
  */
-int cleanupHTRSDetector(HTRSDetector* wd);
+int cleanupHTRSDetector(HTRSDetector*);
+
+/** Add a photon impact to the HTRSDetector pixel array.
+ * This is the standard routine to be called for the simulation of the HTRSDetector.
+ * For a new photon incident on the detector this routine determines the resulting
+ * generated charge from the detector response and stores the event in the output event file.
+ * Split events are taken into account based on a Gaussian charge cloud shape.
+ */
+int addImpact2HTRSDetector(HTRSDetector*, Impact*);
 
 
 #endif /* HTRSDETECTOR_H */

@@ -6,6 +6,9 @@
 #include "genericdetector.h"
 
 
+#define HTRS_N_PIXELS (37) // Total number of pixels in the HTRS array
+
+
 /** One hexagonal detector pixel. */
 typedef struct {
   float charge; /**< Charge stored in this detector pixel. */

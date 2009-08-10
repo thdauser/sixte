@@ -49,7 +49,7 @@ int initFramestoreDetector(FramestoreDetector*, struct FramestoreDetectorParamet
 
 /** Clean up the FramestoreDetector data structure. 
  * Release allocated memory and call clean-up routines of underlying structures. */
-int cleanupFramestoreDetector(FramestoreDetector* fd);
+int cleanupFramestoreDetector(FramestoreDetector*);
 
 /** This routine is called for readout of the FramestoreDetector.
  * The routine itself checks, whether a readout is necessary according to the current
