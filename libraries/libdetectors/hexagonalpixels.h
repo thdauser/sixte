@@ -16,6 +16,26 @@ typedef struct {
 } HexagonalPixel;
 
 
+/** Different orientations for the 6 sub-triangles a hexagonal pixel consists of. */
+typedef enum {
+  TRIANGLE_ORIENTATION_RIGHT      =0,
+  TRIANGLE_ORIENTATION_UPPER_RIGHT=1,
+  TRIANGLE_ORIENTATION_UPPER_LEFT =2,
+  TRIANGLE_ORIENTATION_LEFT       =3,
+  TRIANGLE_ORIENTATION_LOWER_LEFT =4,
+  TRIANGLE_ORIENTATION_LOWER_RIGHT=5
+} SubTriangleDirection;
+
+
+/** Contains information about the sub-triangle of a hexagonal pixel. */
+typedef struct {
+  /** Index of the hexagonal pixel. */
+  int pixelindex;
+  /** Orientation of the sub-triangle. */
+  SubTriangleDirection orientation; 
+} HexagonalPixelLineIndexInformation;
+
+
 /** Data specific for detectos with an array of hexagonal pixels. */
 typedef struct {
   int npixels; /**< Total number of pixels. Currently has to be 37. */
@@ -31,8 +51,11 @@ typedef struct {
 
   HexagonalPixel* array; /**< 1-dimensional array of hexagonal pixels. */
 
-  /** Auxiliary array used to convert line indices to pixel indices. */
-  int LineIndices2Pixel
+  /** Auxiliary array used to convert line indices to pixel indices. 
+   * Addtionally to the pixel index corresponding to the given combination
+   * of 3 line indices the array entry also provides information about the 
+   * orientation of the corresponding sub-triangle of the hexagonal pixel. */
+  HexagonalPixelLineIndexInformation lineIndexInformation
   [2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET +1]
   [2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET +1]
   [2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET +1];

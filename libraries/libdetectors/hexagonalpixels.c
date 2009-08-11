@@ -32,26 +32,32 @@ static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, struct Poin
 
 /** Set up the auxiliary array that is used to convert line indices to the corresponding
  * pixel index. The pixel indices start at 0. */
-static inline void setLineIndices2Pixels(HexagonalPixels* hp, int l0, int l1, int l2, int pixel)
+static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2, 
+					   HexagonalPixelLineIndexInformation information)
 {
-  hp->LineIndices2Pixel
+  hp->lineIndexInformation
     [l0+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET]
     [l1+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET]
-    [l2+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET] = pixel;
+    [l2+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET] = information;
 }
 
 
 
 /** Determine the pixel that corresponds to the 3 given line indices. 
- * The pixel indices start at 0. */
-static inline int getHexagonalPixelFromLineIndices(HexagonalPixels* hp, int l0, int l1, int l2)
+ * The function returns information about the sub-triangle, namely the pixel index 
+ * and the orientation within the hexagonal pixel it belongs to.
+ * If the indices correspond to an invalid pixel, the return value has the pixelindex -1.
+ * The pixel indices start at 0.*/
+static inline HexagonalPixelLineIndexInformation getLineIndexInformation
+(HexagonalPixels* hp, int l0, int l1, int l2)
 {
   if ((l0+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET<0) || (l0>HEXAGONAL_PIXELS_LINE_INDEX_OFFSET) ||
       (l1+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET<0) || (l1>HEXAGONAL_PIXELS_LINE_INDEX_OFFSET) ||
       (l2+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET<0) || (l2>HEXAGONAL_PIXELS_LINE_INDEX_OFFSET)) {
-    return(INVALID_PIXEL);
+    HexagonalPixelLineIndexInformation information = { .pixelindex = INVALID_PIXEL };
+    return(information);
   } else {
-    return(hp->LineIndices2Pixel
+    return(hp->lineIndexInformation
 	   [l0+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET]
 	   [l1+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET]
 	   [l2+HEXAGONAL_PIXELS_LINE_INDEX_OFFSET]);
@@ -208,7 +214,9 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
   for (l0=0; l0<2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET+1; l0++) {
     for (l1=0; l1<2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET+1; l1++) {
       for (l2=0; l2<2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET+1; l2++) {
-	hp->LineIndices2Pixel[l0][l1][l2] = INVALID_PIXEL;
+	HexagonalPixelLineIndexInformation lineIndexInformation = 
+	  { .pixelindex = INVALID_PIXEL };
+	hp->lineIndexInformation[l0][l1][l2] = lineIndexInformation;
       }
     }
   }
@@ -223,35 +231,44 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
     // For each pixel choose 6 points located around the center and
     // determine the line indices which define this pixel section.
     for (direction=0; direction<6; direction++) {
+      HexagonalPixelLineIndexInformation lineIndexInformation = 
+	{ .pixelindex = pixel };
+
       point = centers[pixel];
 	
       switch(direction) {
       case 0: // right from center
 	point.x += hp->h/2;
+	lineIndexInformation.orientation = TRIANGLE_ORIENTATION_RIGHT;
 	break;
       case 1: // upper right section
 	point.x += hp->h/2*cos60;
 	point.y += hp->h/2*sin60;
+	lineIndexInformation.orientation = TRIANGLE_ORIENTATION_UPPER_RIGHT;
 	break;
       case 2: // upper left section
 	point.x -= hp->h/2*cos60;
 	point.y += hp->h/2*sin60;
+	lineIndexInformation.orientation = TRIANGLE_ORIENTATION_UPPER_LEFT;
 	break;
       case 3: // left from center
 	point.x -= hp->h/2;
+	lineIndexInformation.orientation = TRIANGLE_ORIENTATION_LEFT;
 	break;
       case 4: // lower left section
 	point.x -= hp->h/2*cos60;
 	point.y -= hp->h/2*sin60;
+	lineIndexInformation.orientation = TRIANGLE_ORIENTATION_LOWER_LEFT;
 	break;
       case 5: // lower right section
 	point.x += hp->h/2*cos60;
 	point.y -= hp->h/2*sin60;
+	lineIndexInformation.orientation = TRIANGLE_ORIENTATION_LOWER_RIGHT;
 	break;
       }
 
       getHexagonalPixelLineIndices(hp, point, &l0, &l1, &l2);
-      setLineIndices2Pixels(hp, l0, l1, l2, pixel);
+      setLineIndexInformation(hp, l0, l1, l2, lineIndexInformation);
     } // End of loop over directions
   } // End of loop over all pixels
 
@@ -281,27 +298,6 @@ inline void clearHexagonalPixels(HexagonalPixels* hp)
 
 
 
-/** Determines the minimum distance value out of an array with 6
- * entries and returns the corresponding index. */
-static inline int getMinimumDistance(double array[]) 
-{
-  int count, index=0;
-  double minimum=array[0];
-
-  for (count=1; count<6; count++) {
-    if ( (minimum < 0.) ||
-	 ((array[count]<=minimum)&&(array[count]>=0.)) ) {
-      minimum = array[count];
-      index = count;
-    }
-  }
-
-  return(index);
-}
-
-
-
-///////////////////////////////////////////
 static inline double getHexagonalPixelDistance2Line(struct Point2d position,
 						    double m, double t)
 {
@@ -311,8 +307,8 @@ static inline double getHexagonalPixelDistance2Line(struct Point2d position,
 
 
 int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd, 
-			     struct Point2d position, 
-			     int* pixel, double* fraction)
+			    struct Point2d position, 
+			    int* pixel, double* fraction)
 {
   // Determine the 3 lines that define the sub-triangle of the pixel
   // the point position lies within.
@@ -320,8 +316,10 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
   getHexagonalPixelLineIndices(hp, position, &l0, &l1, &l2);
 
   // From these 3 line indices now determine the pixel.
-  pixel[0] = getHexagonalPixelFromLineIndices(hp, l0, l1, l2);
-
+  HexagonalPixelLineIndexInformation lineIndexInformation = 
+    getLineIndexInformation(hp, l0, l1, l2);
+  pixel[0] = lineIndexInformation.pixelindex;
+  
 
   //    Split Events.
   // Check if charge cloud size is zero.
@@ -331,52 +329,48 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
     return(1);
   }
 
-  // Distances to neighbouring pixel segments (equilateral triangles, CAN possibly
-  // belong to the same pixel).
-  double distances[6] = {
-    // right
-    getHexagonalPixelDistance2Line(position,        0., (l0+1)  *hp->h),
-    // upper right
-    getHexagonalPixelDistance2Line(position, -sqrt(3.), (l2+1)*2*hp->h),
-    // upper left
-    getHexagonalPixelDistance2Line(position,  sqrt(3.),  l1   *2*hp->h),
-    // left
-    getHexagonalPixelDistance2Line(position,        0.,  l0     *hp->h),
-    // lower left
-    getHexagonalPixelDistance2Line(position, -sqrt(3.),  l2   *2*hp->h),
-    // lower right
-    getHexagonalPixelDistance2Line(position,  sqrt(3.), (l1+1)*2*hp->h),
-  };
 
-  // Find the closest distance to the nearest neighbouring pixel.
-  int count, mindist;
-  double minimum;
-  int dl[3][6] = {
-    {1, 0, 0, -1, 0, 0},
-    {0, 0, -1, 0, 0, 1},
-    {0, 1, 0, 0, -1, 0}
-  };
-  for(count=0; count<3; count++) {
-    mindist = getMinimumDistance(distances);
-    minimum = distances[mindist];
-
-    int k0 = l0+dl[0][mindist];
-    int k1 = l1+dl[1][mindist];
-    int k2 = l2+dl[2][mindist];
-    pixel[1] = getHexagonalPixelFromLineIndices(hp, k0, k1, k2);
-    
-    if (pixel[1] != pixel[0]) break;
-    distances[mindist] = -1.;
+  // Determine the distance to the next neighboring pixel.
+  double distance; // Distance to next neighboring pixel
+  int k0=l0, k1=l1, k2=l2; // Line indices of next neighboring pixel
+  switch (lineIndexInformation.orientation) {
+  case TRIANGLE_ORIENTATION_RIGHT:
+    distance = getHexagonalPixelDistance2Line(position,        0., (l0+1)  *hp->h);
+    k0++;
+    break;
+  case TRIANGLE_ORIENTATION_UPPER_RIGHT:
+    distance = getHexagonalPixelDistance2Line(position, -sqrt(3.), (l2+1)*2*hp->h);
+    k2++;
+    break;
+  case TRIANGLE_ORIENTATION_UPPER_LEFT:
+    distance = getHexagonalPixelDistance2Line(position,  sqrt(3.),  l1   *2*hp->h);
+    k1--;
+    break;
+  case TRIANGLE_ORIENTATION_LEFT:
+    distance = getHexagonalPixelDistance2Line(position,        0.,  l0     *hp->h);
+    k0--;
+    break;
+  case TRIANGLE_ORIENTATION_LOWER_LEFT:
+    distance = getHexagonalPixelDistance2Line(position, -sqrt(3.),  l2   *2*hp->h);
+    k2--;
+    break;
+  case TRIANGLE_ORIENTATION_LOWER_RIGHT:
+    distance = getHexagonalPixelDistance2Line(position,  sqrt(3.), (l1+1)*2*hp->h);
+    k1++;
+    break;
   }
 
-  if ((minimum > gd->ccsize) || (pixel[1] == pixel[0])) {
+  // Check whether this is really a split event:
+  if (distance > gd->ccsize) {
     // Single event!
     fraction[0] = 1.;
     return(1);
 
   } else {
     // Double event!
-    double mindistgauss = gaussint(minimum/gd->ccsigma);
+    pixel[1] = getLineIndexInformation(hp, k0, k1, k2).pixelindex;
+
+    double mindistgauss = gaussint(distance/gd->ccsigma);
     fraction[0] = 1. - mindistgauss;
     fraction[1] =      mindistgauss;
     
