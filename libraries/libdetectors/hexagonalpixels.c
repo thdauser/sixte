@@ -256,7 +256,6 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
   } // End of loop over all pixels
 
 
-
   return(status);
 }
 
@@ -282,7 +281,38 @@ inline void clearHexagonalPixels(HexagonalPixels* hp)
 
 
 
-void getHexagonalPixel(HexagonalPixels* hp, struct Point2d position, int* pixel)
+/** Determines the minimum distance value out of an array with 6
+ * entries and returns the corresponding index. */
+static inline int getMinimumDistance(double array[]) 
+{
+  int count, index=0;
+  double minimum=array[0];
+
+  for (count=1; count<6; count++) {
+    if ( (minimum < 0.) ||
+	 ((array[count]<=minimum)&&(array[count]>=0.)) ) {
+      minimum = array[count];
+      index = count;
+    }
+  }
+
+  return(index);
+}
+
+
+
+///////////////////////////////////////////
+static inline double getHexagonalPixelDistance2Line(struct Point2d position,
+						    double m, double t)
+{
+  return(sqrt( pow(t-position.x+m*position.y, 2.) / (1+pow(m,2.)) ));
+}
+
+
+
+int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd, 
+			     struct Point2d position, 
+			     int* pixel, double* fraction)
 {
   // Determine the 3 lines that define the sub-triangle of the pixel
   // the point position lies within.
@@ -290,7 +320,68 @@ void getHexagonalPixel(HexagonalPixels* hp, struct Point2d position, int* pixel)
   getHexagonalPixelLineIndices(hp, position, &l0, &l1, &l2);
 
   // From these 3 line indices now determine the pixel.
-  *pixel = getHexagonalPixelFromLineIndices(hp, l0, l1, l2);
+  pixel[0] = getHexagonalPixelFromLineIndices(hp, l0, l1, l2);
+
+
+  //    Split Events.
+  // Check if charge cloud size is zero.
+  if (gd->ccsize < 1.e-20) {
+    // Only single events are possible!
+    fraction[0] = 1.;
+    return(1);
+  }
+
+  // Distances to neighbouring pixel segments (equilateral triangles, CAN possibly
+  // belong to the same pixel).
+  double distances[6] = {
+    // right
+    getHexagonalPixelDistance2Line(position,        0., (l0+1)  *hp->h),
+    // upper right
+    getHexagonalPixelDistance2Line(position, -sqrt(3.), (l2+1)*2*hp->h),
+    // upper left
+    getHexagonalPixelDistance2Line(position,  sqrt(3.),  l1   *2*hp->h),
+    // left
+    getHexagonalPixelDistance2Line(position,        0.,  l0     *hp->h),
+    // lower left
+    getHexagonalPixelDistance2Line(position, -sqrt(3.),  l2   *2*hp->h),
+    // lower right
+    getHexagonalPixelDistance2Line(position,  sqrt(3.), (l1+1)*2*hp->h),
+  };
+
+  // Find the closest distance to the nearest neighbouring pixel.
+  int count, mindist;
+  double minimum;
+  int dl[3][6] = {
+    {1, 0, 0, -1, 0, 0},
+    {0, 0, -1, 0, 0, 1},
+    {0, 1, 0, 0, -1, 0}
+  };
+  for(count=0; count<3; count++) {
+    mindist = getMinimumDistance(distances);
+    minimum = distances[mindist];
+
+    int k0 = l0+dl[0][mindist];
+    int k1 = l1+dl[1][mindist];
+    int k2 = l2+dl[2][mindist];
+    pixel[1] = getHexagonalPixelFromLineIndices(hp, k0, k1, k2);
+    
+    if (pixel[1] != pixel[0]) break;
+    distances[mindist] = -1.;
+  }
+
+  if ((minimum > gd->ccsize) || (pixel[1] == pixel[0])) {
+    // Single event!
+    fraction[0] = 1.;
+    return(1);
+
+  } else {
+    // Double event!
+    double mindistgauss = gaussint(minimum/gd->ccsigma);
+    fraction[0] = 1. - mindistgauss;
+    fraction[1] =      mindistgauss;
+    
+    return(2);
+  }
 }
 
 

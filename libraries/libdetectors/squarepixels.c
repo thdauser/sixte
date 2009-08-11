@@ -39,7 +39,6 @@ int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters
 
 
 
-////////////////////////////////////////////////////////////////
 inline void clearLineSquarePixels(SquarePixels* sp, const int line) 
 {
   int x;
@@ -50,8 +49,6 @@ inline void clearLineSquarePixels(SquarePixels* sp, const int line)
 
 
 
-
-////////////////////////////////////////////////////////////////
 inline void clearSquarePixels(SquarePixels* sp) 
 {
   int line;
@@ -62,8 +59,6 @@ inline void clearSquarePixels(SquarePixels* sp)
 
 
 
-
-////////////////////////////////////////////////////////////////
 void cleanupSquarePixels(SquarePixels* sp) 
 {
   if (NULL!=sp->array) {
@@ -80,8 +75,6 @@ void cleanupSquarePixels(SquarePixels* sp)
 
 
 
-
-////////////////////////////////////////////////////////////////
 /** Determines the minimum distance value out of an array with 4
  * entries and returns the corresponding index. */
 static inline int getMinimumDistance(double array[]) 
@@ -102,8 +95,6 @@ static inline int getMinimumDistance(double array[])
 
 
 
-
-///////////////////////////////////////
 int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d position, 
 			  int* x, int* y, double* fraction)
 {

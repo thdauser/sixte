@@ -75,13 +75,18 @@ void cleanupHexagonalPixels(HexagonalPixels* sp);
 /** Clear the array of HexagonalPixels. */
 inline void clearHexagonalPixels(HexagonalPixels*);
 
-/** Determine the Pixel index of the pixel that is hit by the photon
- * impact at the given position. */
-void getHexagonalPixel(HexagonalPixels* hp, struct Point2d position, int* pixel);
-
-/** Determine the split ratios of a photon impact on an array of hexagonal pixels. */
-//int getHexagonalPixelsSplits(HexagonalPixels*, GenericDetector*, struct Point2d position, 
-//			     int* x, int* y, double* fraction);
+/** Determine the Pixel index of the pixel(s) that is (are) affected by the photon
+ * impact at the given position. 
+ * The routine determines the primary impact pixel and, if appropriate, also the 
+ * split partner in a double split event, if the selected charge cloud size is none-zero,
+ * and the event is close enough to the pixel edge. 
+ * The accroding charge fractions are also determined by the routine.
+ * The generated charge is distributed among the two pixels according to a Gaussian shape
+ * charge cloud model. 
+ * The return valud of the function is the number of split partners, i.e., it is either
+ * 1 or 2. */
+int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd, 
+			    struct Point2d position, int* pixel, double* fraction);
 
 
 #endif /* HEXAGONAL_PIXELS_H */
