@@ -23,6 +23,7 @@ int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode)
 }
 
 
+
 int openNewHTRSEventFile(HTRSEventFile* hef, char* filename, char* template)
 {
   int status=EXIT_SUCCESS;
@@ -87,8 +88,9 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
 		     1, 1, &event->time, &status)) return(status);
   if (fits_write_col(hef->generic.fptr, TLONG, hef->cpha, hef->generic.row, 
 		     1, 1, &event->pha, &status)) return(status);
+  int pixel = event->pixel+1;
   if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, hef->generic.row, 
-		     1, 1, &event->pixel, &status)) return(status);
+		     1, 1, &pixel, &status)) return(status);
 
   return(status);
 }

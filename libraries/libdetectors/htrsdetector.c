@@ -66,37 +66,40 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   if (charge > 0.) {
 
     // Determine the affected pixel(s) and their corresponding charge fractions.
-    int pixel = 0; // TODO
+    int pixel;
+    getHexagonalPixel(&hd->pixels, impact->position, &pixel);
     double fraction = 1.; // TODO
 
-    // Add the charge created by the photon to the affected detector pixel(s).
-    HTRSEvent event;
+    if (INVALID_PIXEL != pixel) {
+      // Add the charge created by the photon to the affected detector pixel(s).
+      HTRSEvent event;
 
-    // Determine the detector channel that corresponds to the charge fraction
-    // created by the incident photon in the regarded pixel.
-    event.pha = getChannel(charge * fraction, hd->generic.rmf);
-    //                     |        |-> charge fraction due to split events
-    //                     |-> charge created by incident photon
+      // Determine the detector channel that corresponds to the charge fraction
+      // created by the incident photon in the regarded pixel.
+      event.pha = getChannel(charge * fraction, hd->generic.rmf);
+      //                     |        |-> charge fraction due to split events
+      //                     |-> charge created by incident photon
+      
+      // Check lower threshold (PHA and energy):
+      if ((event.pha>=hd->generic.pha_threshold) && 
+	  (charge*fraction>=hd->generic.energy_threshold)) { 
+	
+	// TODO REMOVE
+	assert(event.pha >= 0);
+	// Maybe: if (event.pha < 0) continue;
+	
+	// The impact has generated an event in this pixel,
+	// so add it to the event file.
+	event.pixel = pixel;
+	event.time = impact->time;
+	
+	// Add event to event file.
+	status = addHTRSEvent2File(&hd->eventlist, &event);
+	if (EXIT_SUCCESS!=status) return(status);
 
-    // Check lower threshold (PHA and energy):
-    if ((event.pha>=hd->generic.pha_threshold) && 
-	(charge*fraction>=hd->generic.energy_threshold)) { 
-
-      // TODO REMOVE
-      assert(event.pha >= 0);
-      // Maybe: if (event.pha < 0) continue;
-
-      // The impact has generated an event in this pixel,
-      // so add it to the event file.
-      event.pixel = pixel;
-      event.time = impact->time;
-
-      // Add event to event file.
-      status = addHTRSEvent2File(&hd->eventlist, &event);
-      if (EXIT_SUCCESS!=status) return(status);
-
-    } // END Check for thresholds.
-  } // END if(charge>0.)
+      } // END Check for thresholds.
+    } // END if(charge>0.)
+  } // END if valid pixel
 
   return(status);
 }

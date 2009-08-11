@@ -104,10 +104,12 @@ int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
 		     1, 1, &event->pha, &status)) return(status);
   if (fits_write_col(eef->generic.fptr, TFLOAT, eef->cenergy, eef->generic.row, 
 		     1, 1, &event->energy, &status)) return(status);
+  int rawx = event->xi+1;
   if (fits_write_col(eef->generic.fptr, TINT, eef->crawx, eef->generic.row, 
-		     1, 1, &event->xi, &status)) return(status);
+		     1, 1, &rawx, &status)) return(status);
+  int rawy = event->yi+1;
   if (fits_write_col(eef->generic.fptr, TINT, eef->crawy, eef->generic.row, 
-		     1, 1, &event->yi, &status)) return(status);
+		     1, 1, &rawy, &status)) return(status);
   if (fits_write_col(eef->generic.fptr, TLONG, eef->cframe, eef->generic.row, 
 		     1, 1, &event->frame, &status)) return(status);
 
@@ -155,12 +157,16 @@ int eROSITAEventFile_getNextRow(eROSITAEventFile* eef, eROSITAEvent* event)
   event->energy = 0.;
   if (fits_read_col(eef->generic.fptr, TFLOAT, eef->cenergy, eef->generic.row, 1, 1, 
 		    &event->energy, &event->energy, &anynul, &status)) return(status);
+
   event->xi = 0;
   if (fits_read_col(eef->generic.fptr, TINT, eef->crawx, eef->generic.row, 1, 1, 
 		    &event->xi, &event->xi, &anynul, &status)) return(status);
+  event->xi--;
   event->yi = 0;
   if (fits_read_col(eef->generic.fptr, TINT, eef->crawy, eef->generic.row, 1, 1, 
 		    &event->yi, &event->yi, &anynul, &status)) return(status);
+  event->yi--;
+
   event->frame = 0;
   if (fits_read_col(eef->generic.fptr, TLONG, eef->cframe, eef->generic.row, 1, 1, 
 		    &event->frame, &event->frame, &anynul, &status)) return(status);

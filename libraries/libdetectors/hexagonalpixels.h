@@ -7,6 +7,7 @@
 
 
 #define HTRS_N_PIXELS (37) // Total number of pixels in the HTRS array
+#define HEXAGONAL_PIXELS_LINE_INDEX_OFFSET (7) // Offset of the line indices defining the pixels
 
 
 /** One hexagonal detector pixel. */
@@ -29,6 +30,12 @@ typedef struct {
   double h; 
 
   HexagonalPixel* array; /**< 1-dimensional array of hexagonal pixels. */
+
+  /** Auxiliary array used to convert line indices to pixel indices. */
+  int LineIndices2Pixel
+  [2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET +1]
+  [2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET +1]
+  [2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET +1];
 
 } HexagonalPixels;
 
@@ -68,8 +75,9 @@ void cleanupHexagonalPixels(HexagonalPixels* sp);
 /** Clear the array of HexagonalPixels. */
 inline void clearHexagonalPixels(HexagonalPixels*);
 
-/** Clear on line of Pixels. A line is defined to have constant detector x-coordinate. */
-//inline void clearLineHexagonalPixels(HexagonalPixels* sp, const int line);
+/** Determine the Pixel index of the pixel that is hit by the photon
+ * impact at the given position. */
+void getHexagonalPixel(HexagonalPixels* hp, struct Point2d position, int* pixel);
 
 /** Determine the split ratios of a photon impact on an array of hexagonal pixels. */
 //int getHexagonalPixelsSplits(HexagonalPixels*, GenericDetector*, struct Point2d position, 

@@ -41,7 +41,9 @@ int openNewHTRSEventFile(HTRSEventFile*, char* filename, char* template);
 /** Close an open HTRS event list FITS file. */
 int closeHTRSEventFile(HTRSEventFile*);
 
-/** Append a new HTRS event to the to event list. */
+/** Append a new HTRS event to the to event list. 
+ * In the given HTRSEvent data structure the pixel numbering starts at 0, but in the
+ * event file the numbering has to start at 1. So the routine adds a 1 to the pixel index. */
 int addHTRSEvent2File(HTRSEventFile*, HTRSEvent*);
 
 

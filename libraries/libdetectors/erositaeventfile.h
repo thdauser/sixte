@@ -40,11 +40,16 @@ int openNeweROSITAEventFile(eROSITAEventFile*, char* filename, char* template);
 /** Close an open eROSITA event list FITS file. */
 int closeeROSITAEventFile(eROSITAEventFile*);
 
-/** Append a new eROSITA event to the to event list. */
+/** Append a new eROSITA event to the to event list. 
+ * The inserted event has a pixel numbering starting at 0, whereas the numbering
+ * in the event file RAWX and RAWY have to start at 1. 
+ * So the routine adds a 1 to the raw pixel coordinates. */
 int addeROSITAEvent2File(eROSITAEventFile*, eROSITAEvent*);
 
 /** Read the next eROSITAEvent from the eROSITAEventFile.
  * This routine increases the internal counter of the eROSITAEventFile data structure.
+ * In the event file the numbering of RAWX and RAXY starts at 1, whereas in the returned
+ * eROSITAEvent data structure the numbering of xi and yi starts at 0.
  * The return value is the error status. */
 int eROSITAEventFile_getNextRow(eROSITAEventFile*, eROSITAEvent*);
 

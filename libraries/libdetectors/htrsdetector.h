@@ -45,6 +45,8 @@ struct HTRSDetectorParameters {
   struct GenericDetectorParameters generic;
   struct HexagonalPixelsParameters pixels;
 
+  double dead_time;
+
   char* eventlist_filename;
   char* eventlist_template;
 };
