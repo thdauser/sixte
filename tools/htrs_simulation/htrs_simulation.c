@@ -63,7 +63,6 @@ int htrs_simulation_main() {
       .eventlist_template = parameters.eventlist_template /* String address!! */
     };
     if(EXIT_SUCCESS!=(status=initHTRSDetector(&detector, &hdparameters))) break;
-
     // END of DETECTOR CONFIGURATION SETUP    
 
     // --- END of Initialization ---

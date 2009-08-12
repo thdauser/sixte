@@ -306,6 +306,21 @@ static inline double getHexagonalPixelDistance2Line(struct Point2d position,
 
 
 
+void getHexagonalPixel(HexagonalPixels* hp, struct Point2d position, int* pixel)
+{
+  // Determine the 3 lines that define the sub-triangle of the pixel
+  // the point position lies within.
+  int l0, l1, l2;
+  getHexagonalPixelLineIndices(hp, position, &l0, &l1, &l2);
+
+  // From these 3 line indices now determine the pixel.
+  HexagonalPixelLineIndexInformation lineIndexInformation = 
+    getLineIndexInformation(hp, l0, l1, l2);
+  *pixel = lineIndexInformation.pixelindex;
+}
+
+
+
 int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd, 
 			    struct Point2d position, 
 			    int* pixel, double* fraction)
@@ -319,7 +334,7 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
   HexagonalPixelLineIndexInformation lineIndexInformation = 
     getLineIndexInformation(hp, l0, l1, l2);
   pixel[0] = lineIndexInformation.pixelindex;
-  
+
 
   //    Split Events.
   // Check if charge cloud size is zero.

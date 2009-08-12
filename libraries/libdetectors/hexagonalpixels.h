@@ -93,10 +93,13 @@ struct HexagonalPixelsParameters {
 int initHexagonalPixels(HexagonalPixels*, struct HexagonalPixelsParameters*);
 
 /** Clean up the HexagonalPixels data structure. E.g. release allocated memory. */
-void cleanupHexagonalPixels(HexagonalPixels* sp);
+void cleanupHexagonalPixels(HexagonalPixels*);
 
 /** Clear the array of HexagonalPixels. */
 inline void clearHexagonalPixels(HexagonalPixels*);
+
+/** Determine the Hexagonal pixel that contains the specified position. */
+void getHexagonalPixel(HexagonalPixels*, struct Point2d position, int* pixel);
 
 /** Determine the Pixel index of the pixel(s) that is (are) affected by the photon
  * impact at the given position. 
@@ -108,7 +111,7 @@ inline void clearHexagonalPixels(HexagonalPixels*);
  * charge cloud model. 
  * The return valud of the function is the number of split partners, i.e., it is either
  * 1 or 2. */
-int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd, 
+int getHexagonalPixelSplits(HexagonalPixels*, GenericDetector*, 
 			    struct Point2d position, int* pixel, double* fraction);
 
 

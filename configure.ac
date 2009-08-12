@@ -104,6 +104,7 @@ AC_CONFIG_FILES([Makefile
 		tools/xms_simulation/Makefile
 		tools/event_projection/Makefile
 		tools/psfgen/Makefile
-		tools/binary_stream/Makefile])
+		tools/binary_stream/Makefile
+		tools/htrs_psfgen/Makefile])
 AC_OUTPUT
 
