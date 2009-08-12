@@ -128,7 +128,7 @@ int main()
 	getHexagonalPixel(&hexagonalPixels, position, &pixel);
 	
 	if (INVALID_PIXEL != pixel) {
-	  //                 |-------|--> x and y are exchanged to obtain the
+	  //                 |----------> x and y are exchanged to obtain the
 	  //                 |       |    correct orientation in the FITS image
 	  psf.item[0].data[count2][count] = psf_parts[pixel]/normalization;
 	  // Normalization (number of PSF pixels per HTRS pixel) <-|

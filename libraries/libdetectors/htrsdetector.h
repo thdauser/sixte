@@ -27,6 +27,12 @@ typedef struct {
   /** Array of hexagonal pixels. */
   HexagonalPixels pixels;
 
+  /** Dead time of a pixel after an event detection.
+   * If a new photon arrives during the dead time after a previous event
+   * the new photon will not be detected. This is a model for the physical
+   * readout and clearing process of the detector pixel. */
+  double dead_time;
+
   /** Output event list. 
    * The events read out from the detector array are written to this event file that must
    * have the HTRS-specific format. */

@@ -12,7 +12,7 @@ int initHTRSDetector(HTRSDetector* hd, struct HTRSDetectorParameters* parameters
   if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the HTRS configuration.
-  // --- Currently nothing to do. ---
+  hd->dead_time = parameters->dead_time;
 
   // Create a new FITS event file and open it.
   status = openNewHTRSEventFile(&hd->eventlist, parameters->eventlist_filename,
@@ -72,21 +72,29 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 					  pixel, fraction);
 
     // Loop over all split partners.
-    int pixel_index;
-    for (pixel_index=0; pixel_index<nsplits; pixel_index++) {
-      if (INVALID_PIXEL != pixel[pixel_index]) {
+    int pixel_counter;
+    for (pixel_counter=0; pixel_counter<nsplits; pixel_counter++) {
+      if (INVALID_PIXEL != pixel[pixel_counter]) {
+	
+	// Check if the pixel is currently active.
+	if (impact->time - hd->pixels.array[pixel[pixel_counter]].last_impact < hd->dead_time) {
+	  // The photon cannot be detected in this pixel as it is still within the
+	  // dead time after the previous event.
+	  continue;
+	}
+
 	// Add the charge created by the photon to the affected detector pixel(s).
 	HTRSEvent event;
 
 	// Determine the detector channel that corresponds to the charge fraction
 	// created by the incident photon in the regarded pixel.
-	event.pha = getChannel(charge * fraction[pixel_index], hd->generic.rmf);
+	event.pha = getChannel(charge * fraction[pixel_counter], hd->generic.rmf);
 	//                     |        |-> charge fraction due to split events
 	//                     |-> charge created by incident photon
       
 	// Check lower threshold (PHA and energy):
 	if ((event.pha>=hd->generic.pha_threshold) && 
-	    (charge*fraction[pixel_index]>=hd->generic.energy_threshold)) { 
+	    (charge*fraction[pixel_counter]>=hd->generic.energy_threshold)) { 
 	
 	  // TODO REMOVE
 	  assert(event.pha >= 0);
@@ -94,9 +102,13 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  
 	  // The impact has generated an event in this pixel,
 	  // so add it to the event file.
-	  event.pixel = pixel[pixel_index];
+	  event.pixel = pixel[pixel_counter];
 	  event.time = impact->time;
 	  
+	  // Store the time of this impact in the pixel in order to consider the
+	  // dead time.
+	  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
+
 	  // Add event to event file.
 	  status = addHTRSEvent2File(&hd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);

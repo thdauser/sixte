@@ -293,6 +293,7 @@ inline void clearHexagonalPixels(HexagonalPixels* hp)
   int x;
   for (x=0; x<hp->npixels; x++) {
     hp->array[x].charge = 0.;
+    hp->array[x].last_impact = -1.e20;
   }
 }
 

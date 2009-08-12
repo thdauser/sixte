@@ -13,6 +13,7 @@
 /** One hexagonal detector pixel. */
 typedef struct {
   float charge; /**< Charge stored in this detector pixel. */
+  double last_impact; /**< Time of the last photon impact. */
 } HexagonalPixel;
 
 
