@@ -101,6 +101,7 @@ AC_CONFIG_FILES([Makefile
 		tools/wfi_simulation/Makefile
 		tools/framestore_simulation/Makefile
 		tools/htrs_simulation/Makefile
+		tools/xms_simulation/Makefile
 		tools/event_projection/Makefile
 		tools/psfgen/Makefile
 		tools/binary_stream/Makefile])
