@@ -289,7 +289,7 @@ int photon_generation_main()
       }
 
       // Use a short time interval for the orbit update:
-      dt = 0.1;
+      dt = 0.01;
       
     } else if (SOURCE_IMAGES==parameters.source_category) {
       // Read the cluster images from the specified FITS files.

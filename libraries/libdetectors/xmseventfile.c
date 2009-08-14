@@ -16,9 +16,9 @@ int openXMSEventFile(XMSEventFile* xef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "PHA", &xef->cpha, &status)) 
     return(status);
-  if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "COLUMN", &xef->crawx, &status)) 
+  if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "RAWX", &xef->crawx, &status)) 
     return(status);
-  if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "ROW", &xef->crawy, &status)) 
+  if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "RAWY", &xef->crawy, &status)) 
     return(status);
 
   return(status);

@@ -28,7 +28,7 @@ typedef struct {
   HexagonalPixels pixels;
 
   /** Dead time of a pixel after an event detection.
-   * If a new photon arrives during the dead time after a previous event
+   * If a new photon arrives during the dead time after a previous event in the same pixel,
    * the new photon will not be detected. This is a model for the physical
    * readout and clearing process of the detector pixel. */
   double dead_time;
