@@ -76,11 +76,10 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
     int count;
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
-	XMSEvent event = {};
 
 	// Determine the detector channel that corresponds to the charge fraction
 	// created by the incident photon in the regarded pixel.
-	event.pha = getChannel(charge * fraction[count], xd->generic.rmf);
+	XMSEvent event = { .pha = getChannel(charge * fraction[count], xd->generic.rmf) };
 	//                     |        |-> charge fraction due to split events
 	//                     |-> charge created by incident photon
 
@@ -101,9 +100,8 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
 	  // Add event to event file.
 	  status = addXMSEvent2File(&xd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
-
 	} // END Check for thresholds.
-      } // END if valid pixel
+      }// END if valid pixel
     } // END of loop over all affected pixels.
   } // END if(charge>0.)
 

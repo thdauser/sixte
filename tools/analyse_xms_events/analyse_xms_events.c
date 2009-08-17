@@ -65,6 +65,8 @@ int analyse_xms_events_main() {
 	event.grade = 1; // High precision
       } else if (1 == nbefore + nafter) {
 	event.grade = 2; // Intermediate precision
+      } else {
+	event.grade = 1000; // Worse
       }
 
 

@@ -45,7 +45,8 @@ int xms_simulation_main() {
 
 
     // Open the impact list FITS file.
-    if(EXIT_SUCCESS!=(status=impactlist_openFile(&impactlistfile, parameters.impactlist_filename, 
+    if(EXIT_SUCCESS!=(status=impactlist_openFile(&impactlistfile, 
+						 parameters.impactlist_filename, 
 						 READONLY))) break;
 
     // Detector settings.
