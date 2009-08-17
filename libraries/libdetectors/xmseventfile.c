@@ -20,6 +20,8 @@ int openXMSEventFile(XMSEventFile* xef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "RAWY", &xef->crawy, &status)) 
     return(status);
+  if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "GRADE", &xef->cgrade, &status)) 
+    return(status);
 
   return(status);
 }
@@ -75,6 +77,7 @@ int closeXMSEventFile(XMSEventFile* xef)
 }
 
 
+
 int addXMSEvent2File(XMSEventFile* xef, XMSEvent* event)
 {
   int status=EXIT_SUCCESS;
@@ -92,8 +95,52 @@ int addXMSEvent2File(XMSEventFile* xef, XMSEvent* event)
 		     1, 1, &event->xi, &status)) return(status);
   if (fits_write_col(xef->generic.fptr, TINT, xef->crawy, xef->generic.row, 
 		     1, 1, &event->yi, &status)) return(status);
+  if (fits_write_col(xef->generic.fptr, TINT, xef->cgrade, xef->generic.row, 
+		     1, 1, &event->grade, &status)) return(status);
 
   return(status);
 }
 
 
+
+int XMSEventFile_getNextRow(XMSEventFile* ef, XMSEvent* event)
+{
+  int status=EXIT_SUCCESS;
+  int anynul = 0;
+
+  // Move counter to next line.
+  ef->generic.row++;
+
+  // Check if there is still a row available.
+  if (ef->generic.row > ef->generic.nrows) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: event list file contains no further entries!\n", status);
+    return(status);
+  }
+
+  // Read in the data.
+  event->time = 0.;
+  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 1, 1, 
+		    &event->time, &event->time, &anynul, &status)) return(status);
+  event->pha = 0;
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->cpha, ef->generic.row, 1, 1, 
+		    &event->pha, &event->pha, &anynul, &status)) return(status);
+  event->xi = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1, 
+		    &event->xi, &event->xi, &anynul, &status)) return(status);
+  event->yi = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1, 
+		    &event->yi, &event->yi, &anynul, &status)) return(status);
+  event->grade = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->cgrade, ef->generic.row, 1, 1, 
+		    &event->grade, &event->grade, &anynul, &status)) return(status);
+  
+  // Check if an error occurred during the reading process.
+  if (0!=anynul) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: reading from event list failed!\n", status);
+    return(status);
+  }
+
+  return(status);
+}

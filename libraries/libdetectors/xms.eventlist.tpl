@@ -45,3 +45,7 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#	RAWY            / Event Y Position
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
+
+	TTYPE#	GRADE           / Energy Accuracy (1=high, 2=intermediate, ...)
+	TFORM#  I               /
+	TUNIT#                  /

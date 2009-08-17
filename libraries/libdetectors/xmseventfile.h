@@ -14,7 +14,7 @@ typedef struct {
   /* Column numbers of the individual XMS-specific event list entries.
    * The numbers start at 1. The number 0 means, that there 
    * is no corresponding column in the table. */
-  int ctime, cpha, crawx, crawy;
+  int ctime, cpha, crawx, crawy, cgrade;
 
 } XMSEventFile;
 
@@ -43,6 +43,13 @@ int closeXMSEventFile(XMSEventFile*);
 
 /** Append a new XMS event to the to event list. */
 int addXMSEvent2File(XMSEventFile*, XMSEvent*);
+
+/** Read the next XMSEvent from the XMSEventFile.
+ * This routine increases the internal counter of the XMSEventFile data structure.
+ * In the event file and in the returned XMSEvent data structure the numbering of RAWX 
+ * and RAXY starts at 0.
+ * The return value of the function is the error status. */
+int XMSEventFile_getNextRow(XMSEventFile*, XMSEvent*);
 
 
 #endif /* XMSEVENTFILE */

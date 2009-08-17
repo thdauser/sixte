@@ -38,6 +38,7 @@ int openeROSITAEventFile(eROSITAEventFile* eef, char* filename, int access_mode)
 }
 
 
+
 int openNeweROSITAEventFile(eROSITAEventFile* eef, char* filename, char* template)
 {
   int status=EXIT_SUCCESS;

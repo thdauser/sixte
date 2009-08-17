@@ -15,6 +15,7 @@
 struct Parameters{
   /** Filename of the XMS event file. */
   char eventlist_filename[MAXMSG];
+
   /** Characteristic time unit of the TES microcalorimeter. */
   double time_unit;
   /** Time units before and after and event that may not be affected by further

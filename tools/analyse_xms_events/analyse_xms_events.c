@@ -1,6 +1,39 @@
 #include "analyse_xms_events.h"
 
 
+int analyse_xms_events_main() {
+  struct Parameters parameters;
+  XMSEventFile eventfile;
+  int status = EXIT_SUCCESS;
+
+
+  // Register HEATOOL
+  set_toolname("scan_tes_events");
+  set_toolversion("0.01");
+
+
+  do { // ERROR handling loop
+
+    // Read parameters by PIL:
+    status = analyse_xms_events_getpar(&parameters);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Open the event file.
+    status=openXMSEventFile(&eventfile, parameters.eventlist_filename, READWRITE);
+    if (EXIT_SUCCESS!=status) break;
+
+  } while(0); // End of error handling loop
+
+
+  // --- clean up ---
+  closeXMSEventFile(&eventfile);
+
+  return(status);
+}
+
+
+
+/*
 void analyse_tes_event(
 		       double* event_list,
 		       double t_0, double t_1,
@@ -208,7 +241,7 @@ int analyse_xms_events_main() {
 
   return(status);
 }
-
+*/
 
 
 int analyse_xms_events_getpar(struct Parameters* parameters)
