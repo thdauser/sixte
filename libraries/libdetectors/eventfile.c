@@ -63,6 +63,17 @@ int EventFileEOF(EventFile* ef) {
 
 
 
+int EventFileRowIsValid(EventFile* ef, long row) {
+  // Check if the specified row is valid.
+  if ((row <= 0) || (row > ef->nrows)) {
+    return(0);
+  } else {
+    return(1);
+  }
+}
+
+
+
 /*
 ///////////////////////////////////////////////////////////////////////
 // This function reads a row of data from the event list FITS table.

@@ -168,7 +168,7 @@ int event_projection_main() {
     // SCAN EVENT LIST
     while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventlistfile.generic))) {
       
-      // Read the event from the FITS file.
+      // Read the next event from the FITS file.
       eROSITAEvent event;
       status=eROSITAEventFile_getNextRow(&eventlistfile, &event);
       if(EXIT_SUCCESS!=status) break;

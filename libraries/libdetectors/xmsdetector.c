@@ -8,8 +8,8 @@ int initXMSDetector(XMSDetector* xd, struct XMSDetectorParameters* parameters)
   // Call the initialization routines of the underlying data structures.
   status = initGenericDetector(&xd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
-  //  status = initSquarePixels(&xd->pixels, &parameters->pixels);
-  //  if (EXIT_SUCCESS!=status) return(status);
+  status = initSquarePixels(&xd->pixels, &parameters->pixels);
+  if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the XMS configuration.
   // --- Currently nothing to do. ---
@@ -76,7 +76,7 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
     int count;
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
-	XMSEvent event;
+	XMSEvent event = {};
 
 	// Determine the detector channel that corresponds to the charge fraction
 	// created by the incident photon in the regarded pixel.

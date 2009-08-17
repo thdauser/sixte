@@ -51,5 +51,17 @@ int addXMSEvent2File(XMSEventFile*, XMSEvent*);
  * The return value of the function is the error status. */
 int XMSEventFile_getNextRow(XMSEventFile*, XMSEvent*);
 
+/** Read a specific row from the XMSEventfile.
+ * This routine does NOT increase the internal counter of the XMSEventFile data structure.
+ * In the event file and in the returned XMSEvent data structure the numbering of RAWX 
+ * and RAXY starts at 0.
+ * The return value of the function is the error status. */
+int XMSEventFile_getRow(XMSEventFile*, XMSEvent*, long row);
+
+/** Write the specified column in the XMSEventFile.
+ * The data to be written is given by the XMSEvent.
+ * The row already must exist. Otherwise an error is returned. */
+int XMSEventFile_writeRow(XMSEventFile*, XMSEvent*, long row);
+
 
 #endif /* XMSEVENTFILE */

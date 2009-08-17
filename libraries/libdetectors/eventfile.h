@@ -33,12 +33,16 @@ int openEventFile(EventFile*, char* filename, int access_mode);
 /** Close an open event list FITS file. */
 int closeEventFile(EventFile*);
 
-
 /** Checks whether the end of the event list is reached. 
  * If the internal pointer of the EventFile data structure points to the last line
  * in the file, i.e. this is the formerly read line, or has an even higher value, the 
  * function return value is 1, otherwise it is 0. */
 int EventFileEOF(EventFile*);
+
+/** Checks whether the specified row is valid with respect to the event file. 
+ * The return value is '1' if the row exists in the FITS file, 
+ * otherwise it is '0'. */
+int EventFileRowIsValid(EventFile*, long row);
 
 
 #endif /* EVENTFILE_H */

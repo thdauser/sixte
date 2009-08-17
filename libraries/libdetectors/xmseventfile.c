@@ -87,16 +87,8 @@ int addXMSEvent2File(XMSEventFile* xef, XMSEvent* event)
   xef->generic.row++;
   xef->generic.nrows++;
 
-  if (fits_write_col(xef->generic.fptr, TDOUBLE, xef->ctime, xef->generic.row, 
-		     1, 1, &event->time, &status)) return(status);
-  if (fits_write_col(xef->generic.fptr, TLONG, xef->cpha, xef->generic.row, 
-		     1, 1, &event->pha, &status)) return(status);
-  if (fits_write_col(xef->generic.fptr, TINT, xef->crawx, xef->generic.row, 
-		     1, 1, &event->xi, &status)) return(status);
-  if (fits_write_col(xef->generic.fptr, TINT, xef->crawy, xef->generic.row, 
-		     1, 1, &event->yi, &status)) return(status);
-  if (fits_write_col(xef->generic.fptr, TINT, xef->cgrade, xef->generic.row, 
-		     1, 1, &event->grade, &status)) return(status);
+  // Write the event data to the newly created row.
+  status=XMSEventFile_writeRow(xef, event, xef->generic.row);
 
   return(status);
 }
@@ -106,7 +98,6 @@ int addXMSEvent2File(XMSEventFile* xef, XMSEvent* event)
 int XMSEventFile_getNextRow(XMSEventFile* ef, XMSEvent* event)
 {
   int status=EXIT_SUCCESS;
-  int anynul = 0;
 
   // Move counter to next line.
   ef->generic.row++;
@@ -118,21 +109,41 @@ int XMSEventFile_getNextRow(XMSEventFile* ef, XMSEvent* event)
     return(status);
   }
 
+  // Read the new XMSEvent from the file.
+  status=XMSEventFile_getRow(ef, event, ef->generic.row);
+
+  return(status);
+}
+
+
+
+int XMSEventFile_getRow(XMSEventFile* ef, XMSEvent* event, long row)
+{
+  int status=EXIT_SUCCESS;
+  int anynul = 0;
+
+  // Check if the specified row is valid.
+  if (0==EventFileRowIsValid(&ef->generic, row)) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: invalid row in event file!\n", status);
+    return(status);
+  }
+
   // Read in the data.
   event->time = 0.;
-  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ctime, row, 1, 1, 
 		    &event->time, &event->time, &anynul, &status)) return(status);
   event->pha = 0;
-  if (fits_read_col(ef->generic.fptr, TLONG, ef->cpha, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->cpha, row, 1, 1, 
 		    &event->pha, &event->pha, &anynul, &status)) return(status);
   event->xi = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, row, 1, 1, 
 		    &event->xi, &event->xi, &anynul, &status)) return(status);
   event->yi = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, row, 1, 1, 
 		    &event->yi, &event->yi, &anynul, &status)) return(status);
   event->grade = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->cgrade, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TINT, ef->cgrade, row, 1, 1, 
 		    &event->grade, &event->grade, &anynul, &status)) return(status);
   
   // Check if an error occurred during the reading process.
@@ -141,6 +152,25 @@ int XMSEventFile_getNextRow(XMSEventFile* ef, XMSEvent* event)
     HD_ERROR_THROW("Error: reading from event list failed!\n", status);
     return(status);
   }
+
+  return(status);
+}
+
+
+
+int XMSEventFile_writeRow(XMSEventFile* xef, XMSEvent* event, long row) {
+  int status=EXIT_SUCCESS;
+
+  if (fits_write_col(xef->generic.fptr, TDOUBLE, xef->ctime, row, 
+		     1, 1, &event->time, &status)) return(status);
+  if (fits_write_col(xef->generic.fptr, TLONG, xef->cpha, row, 
+		     1, 1, &event->pha, &status)) return(status);
+  if (fits_write_col(xef->generic.fptr, TINT, xef->crawx, row, 
+		     1, 1, &event->xi, &status)) return(status);
+  if (fits_write_col(xef->generic.fptr, TINT, xef->crawy, row, 
+		     1, 1, &event->yi, &status)) return(status);
+  if (fits_write_col(xef->generic.fptr, TINT, xef->cgrade, row, 
+		     1, 1, &event->grade, &status)) return(status);
 
   return(status);
 }
