@@ -15,6 +15,8 @@ typedef struct {
   int ctime, cpha, crawx, crawy, cframe;
   int cpatnum, cpatid, cpileup;
 
+  /** Number of detector columns and rows. */
+  int columns, rows;
 } WFIEventFile;
 
 
@@ -42,6 +44,13 @@ int closeWFIEventFile(WFIEventFile*);
 
 /** Append a new WFI event to the to event list. */
 int addWFIEvent2File(WFIEventFile*, WFIEvent*);
+
+/** Read the next WFIEvent from the WFIEventFile.
+ * This routine increases the internal counter of the WFIEventFile data structure.
+ * In the event file and in the returned WFIEvent data structure the numbering of RAWX 
+ * and RAXY starts at 0.
+ * The return value of the function is the error status. */
+int WFIEventFile_getNextRow(WFIEventFile*, WFIEvent*);
 
 
 #endif /* WFIEVENTFILE */

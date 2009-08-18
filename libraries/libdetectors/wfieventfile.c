@@ -30,6 +30,13 @@ int openWFIEventFile(WFIEventFile* wef, char* filename, int access_mode)
   if(fits_get_colnum(wef->generic.fptr, CASEINSEN, "PILEUP", &wef->cpileup, &status)) 
     return(status);
 
+  // Read the header keywords:
+  char comment[MAXMSG];
+  if(fits_read_key(wef->generic.fptr, TLONG, "COLUMNS", &wef->columns, comment, &status))
+    return(status);
+  if(fits_read_key(wef->generic.fptr, TLONG, "ROWS", &wef->rows, comment, &status))
+    return(status);
+
   return(status);
 }
 
@@ -84,6 +91,7 @@ int closeWFIEventFile(WFIEventFile* wef)
 }
 
 
+
 int addWFIEvent2File(WFIEventFile* wef, WFIEvent* event)
 {
   int status=EXIT_SUCCESS;
@@ -119,6 +127,59 @@ int addWFIEvent2File(WFIEventFile* wef, WFIEvent* event)
   event->pileup = 0;
   if (fits_write_col(wef->generic.fptr, TLONG, wef->cpileup, wef->generic.row, 
 		     1, 1, &event->pileup, &status)) return(status);
+
+  return(status);
+}
+
+
+
+int WFIEventFile_getNextRow(WFIEventFile* ef, WFIEvent* event)
+{
+  int status=EXIT_SUCCESS;
+  int anynul = 0;
+
+  // Move counter to next line.
+  ef->generic.row++;
+
+  // Check if there is still a row available.
+  if (ef->generic.row > ef->generic.nrows) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: event list file contains no further entries!\n", status);
+    return(status);
+  }
+
+  // Read in the data.
+  event->time = 0.;
+  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 1, 1, 
+		    &event->time, &event->time, &anynul, &status)) return(status);
+  event->pha = 0;
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->cpha, ef->generic.row, 1, 1, 
+		    &event->pha, &event->pha, &anynul, &status)) return(status);
+  event->xi = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1, 
+		    &event->xi, &event->xi, &anynul, &status)) return(status);
+  event->yi = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1, 
+		    &event->yi, &event->yi, &anynul, &status)) return(status);
+  event->frame = 0;
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->cframe, ef->generic.row, 1, 1, 
+		    &event->frame, &event->frame, &anynul, &status)) return(status);
+  event->patnum = 0;
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->cpatnum, ef->generic.row, 1, 1, 
+		    &event->patnum, &event->patnum, &anynul, &status)) return(status);
+  event->patid = 0;
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->cpatid, ef->generic.row, 1, 1, 
+		    &event->patid, &event->patid, &anynul, &status)) return(status);
+  event->pileup = 0;
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->cpileup, ef->generic.row, 1, 1, 
+		    &event->pileup, &event->pileup, &anynul, &status)) return(status);
+  
+  // Check if an error occurred during the reading process.
+  if (0!=anynul) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: reading from event list failed!\n", status);
+    return(status);
+  }
 
   return(status);
 }

@@ -44,6 +44,7 @@ int analyse_xms_events_main() {
 	if (event.time - eventbuffer.time > 
 	    parameters.units_before_pulse * parameters.time_unit) break;
 	if ((event.xi == eventbuffer.xi) && (event.yi == eventbuffer.yi)) nbefore++;
+	if (nbefore > 2) break; // Avoid too many unnecessary loop runs.
 	row--;
       }
       if (EXIT_SUCCESS!=status) break;
@@ -55,6 +56,7 @@ int analyse_xms_events_main() {
 	if (eventbuffer.time - event.time > 
 	    parameters.units_after_pulse * parameters.time_unit) break;
 	if ((event.xi == eventbuffer.xi) && (event.yi == eventbuffer.yi)) nafter++;
+	if (nafter > 2) break; // Avoid too many unnecessary loop runs.
 	row++;
       }
       if (EXIT_SUCCESS!=status) break;

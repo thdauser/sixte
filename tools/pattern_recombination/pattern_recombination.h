@@ -8,16 +8,23 @@
 #include "headas_main.c"
 
 
+#define ARRAY_LENGTH 100000
+
+
 struct Parameters{
-  /** Filename of the XMS event file. */
+  /** Filename of the input WFI event file. */
   char eventlist_filename[MAXMSG];
+  /** Filename of the output pattern file. */
+  char pattern_filename[MAXMSG];
+  /** Template for the new pattern  FITS file. */
+  char templatedir[MAXMSG];
+
+  /** Filename of the detector response file containing the EBOUNDS table. */
+  char response_filename[MAXMSG];
 };
 
 
 //////////////////////////////////////////////////////////////////
-
-
-int pattern_recombination_getpar(struct Parameters*);
 
 
 #endif /* PATTERN_RECOMBINATION_H */
