@@ -8,9 +8,6 @@
 #define TOOLSUB analyse_xms_events_main
 #include "headas_main.c"
 
-// Number of photons stored in the event list for each individual pixel.
-#define XMS_EVENT_LIST_ENTRIES 5
-
 
 struct Parameters{
   /** Filename of the XMS event file. */

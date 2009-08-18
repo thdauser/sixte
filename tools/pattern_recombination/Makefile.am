@@ -14,15 +14,15 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = analyse_xms_events.par
+dist_pfiles_DATA = pattern_recombination.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = analyse_xms_events
+bin_PROGRAMS = pattern_recombination
 
-analyse_xms_events_SOURCES = analyse_xms_events.c analyse_xms_events.h
-analyse_xms_events_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+pattern_recombination_SOURCES = pattern_recombination.c pattern_recombination.h
+pattern_recombination_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
 
