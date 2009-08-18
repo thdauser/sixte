@@ -24,6 +24,6 @@ dist_pfiles_DATA = analyse_xms_events.par
 # in the 'bin' directory.
 bin_PROGRAMS = analyse_xms_events
 
-analyse_xms_events_SOURCES = analyse_xms_events.c
+analyse_xms_events_SOURCES = analyse_xms_events.c analyse_xms_events.h
 analyse_xms_events_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
 
