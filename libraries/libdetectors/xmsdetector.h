@@ -13,6 +13,9 @@
  * X-ray Microcalorimeter Spectrometer (XMS) detector on IXO.
  * This data structure contains the data required for the simulation of the XMS. 
  * It inherits some properties of the GenericDetector and SquarePixels data structures.
+ * The XMS detector consists of an inner and an outer TES pixel array, therefore the
+ * data structure contains 2 GenericDetector and 2 SquarePixels data structures.
+ *
  * The XMSDetector data structure can be initialized by calling the initXMSDetector() function
  * with a XMSDetectorParameters data structure containing the desired setup.
  * A new photon Impact can be added to the XMSDetector array by the function 
@@ -24,9 +27,9 @@
 typedef struct {
 
   /** Generic Detector properties like, e.g., the detector response. */
-  GenericDetector generic;
+  GenericDetector generic_inner, generic_outer;
   /** Array of square pixels. */
-  SquarePixels pixels;
+  SquarePixels pixels_inner, pixel_outer;
 
   /** Output event list. 
    * The events read out from the detector array are written to this event file that must
@@ -42,8 +45,8 @@ typedef struct {
  * It is used as input for the initXMSDetector() routine.  
  * For documentation of the inidividual parameters see XMSDetector. */
 struct XMSDetectorParameters {
-  struct GenericDetectorParameters generic;
-  struct SquarePixelsParameters pixels;
+  struct GenericDetectorParameters generic_inner, generic_outer;
+  struct SquarePixelsParameters pixels_inner, pixels_outer;
 
   char* eventlist_filename;
   char* eventlist_template;

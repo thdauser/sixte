@@ -53,14 +53,14 @@ int xms_simulation_main() {
     // Store the settings for the XMSDetector in the corresponding data structure
     // and call the initialization routine in order to allocate memory etc.
     struct XMSDetectorParameters hdparameters = {
-      .pixels = { .xwidth=parameters.width,
-		  .ywidth=parameters.width,
-		  .xpixelwidth = parameters.pixelwidth,
-		  .ypixelwidth = parameters.pixelwidth },
-      .generic = { .ccsigma = parameters.ccsigma, 
-		   .pha_threshold = parameters.pha_threshold,
-		   .energy_threshold = parameters.energy_threshold,
-		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
+      .pixels_inner = { .xwidth=parameters.width,
+			.ywidth=parameters.width,
+			.xpixelwidth = parameters.pixelwidth,
+			.ypixelwidth = parameters.pixelwidth },
+      .generic_inner = { .ccsigma = parameters.ccsigma, 
+			 .pha_threshold = parameters.pha_threshold,
+			 .energy_threshold = parameters.energy_threshold,
+			 .rmf_filename = parameters.rmf_filename /* String address!! */ },
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template /* String address!! */
     };

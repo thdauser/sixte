@@ -4,8 +4,6 @@
 #include "psf.h"
 
 
-
-
 // This function determines from the sky position of the source and the photon
 // energy, which PSF data should be used to calculate the photon-detector hitting 
 // point. It returns the corresponding PSF data structure.

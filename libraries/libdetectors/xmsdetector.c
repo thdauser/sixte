@@ -6,9 +6,9 @@ int initXMSDetector(XMSDetector* xd, struct XMSDetectorParameters* parameters)
   int status = EXIT_SUCCESS;
 
   // Call the initialization routines of the underlying data structures.
-  status = initGenericDetector(&xd->generic, &parameters->generic);
+  status = initGenericDetector(&xd->generic_inner, &parameters->generic_inner);
   if (EXIT_SUCCESS!=status) return(status);
-  status = initSquarePixels(&xd->pixels, &parameters->pixels);
+  status = initSquarePixels(&xd->pixels_inner, &parameters->pixels_inner);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the XMS configuration.
@@ -29,7 +29,7 @@ int cleanupXMSDetector(XMSDetector* xd)
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  cleanupSquarePixels(&xd->pixels);
+  cleanupSquarePixels(&xd->pixels_inner);
   status = closeXMSEventFile(&xd->eventlist);
 
   return(status);
@@ -46,7 +46,7 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
   // The channel is obtained from the RMF using the corresponding
   // HEAdas routine which is based on drawing a random number.
   long channel;
-  ReturnChannel(xd->generic.rmf, impact->energy, 1, &channel);
+  ReturnChannel(xd->generic_inner.rmf, impact->energy, 1, &channel);
 
   // Check if the photon is really measured. If the
   // PHA channel returned by the HEAdas RMF function is '-1', 
@@ -62,14 +62,14 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, xd->generic.rmf);
+  float charge = getEnergy(channel, xd->generic_inner.rmf);
   
   if (charge > 0.) {
     int x[4], y[4];
     double fraction[4];
     
     // Determine the affected detector pixels.
-    int npixels = getSquarePixelsSplits(&xd->pixels, &xd->generic, impact->position, 
+    int npixels = getSquarePixelsSplits(&xd->pixels_inner, &xd->generic_inner, impact->position, 
 					x, y, fraction);
     
     // Add the charge created by the photon to the affected detector pixels.
@@ -79,13 +79,13 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
 
 	// Determine the detector channel that corresponds to the charge fraction
 	// created by the incident photon in the regarded pixel.
-	XMSEvent event = { .pha = getChannel(charge * fraction[count], xd->generic.rmf) };
+	XMSEvent event = { .pha = getChannel(charge * fraction[count], xd->generic_inner.rmf) };
 	//                     |        |-> charge fraction due to split events
 	//                     |-> charge created by incident photon
 
 	// Check lower threshold (PHA and energy):
-	if ((event.pha>=xd->generic.pha_threshold) && 
-	    (charge*fraction[count]>=xd->generic.energy_threshold)) { 
+	if ((event.pha>=xd->generic_inner.pha_threshold) && 
+	    (charge*fraction[count]>=xd->generic_inner.energy_threshold)) { 
 
 	  // TODO REMOVE
 	  assert(event.pha >= 0);
