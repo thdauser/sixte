@@ -239,7 +239,11 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 	  centralidx[ncentralidx++] = i;
 	}
       }
-      assert(2==ncentralidx);
+      /*
+      if (2!=ncentralidx) { // REMOVE
+	printf("%d, %d, %ld\n", event.xi, event.yi, event.frame);
+	}*/
+      assert(2<=ncentralidx);
       int pass = 0;
 
       // Now we test if the central elements share column (xi) and row (yi) 
