@@ -26,10 +26,14 @@
  */
 typedef struct {
 
-  /** Generic Detector properties like, e.g., the detector response. */
+  /** Generic Detector properties like, e.g., the detector response. 
+   * There are two GenericDetector data structures, one for the inner and one for 
+   * the outer array of TES pixels. */
   GenericDetector generic_inner, generic_outer;
-  /** Array of square pixels. */
-  SquarePixels pixels_inner, pixel_outer;
+  /** Array of square pixels.
+   * There are two SquarePixels data structures, one for the inner and one for 
+   * the outer array of TES pixels. */
+  SquarePixels pixels_inner, pixels_outer;
 
   /** Output event list. 
    * The events read out from the detector array are written to this event file that must

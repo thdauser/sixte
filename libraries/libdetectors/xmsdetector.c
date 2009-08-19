@@ -6,9 +6,16 @@ int initXMSDetector(XMSDetector* xd, struct XMSDetectorParameters* parameters)
   int status = EXIT_SUCCESS;
 
   // Call the initialization routines of the underlying data structures.
+  // Inner TES pixel array:
   status = initGenericDetector(&xd->generic_inner, &parameters->generic_inner);
   if (EXIT_SUCCESS!=status) return(status);
   status = initSquarePixels(&xd->pixels_inner, &parameters->pixels_inner);
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Outer TES pixel array:
+  status = initGenericDetector(&xd->generic_outer, &parameters->generic_outer);
+  if (EXIT_SUCCESS!=status) return(status);
+  status = initSquarePixels(&xd->pixels_outer, &parameters->pixels_outer);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the XMS configuration.
@@ -30,6 +37,7 @@ int cleanupXMSDetector(XMSDetector* xd)
 
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&xd->pixels_inner);
+  cleanupSquarePixels(&xd->pixels_outer);
   status = closeXMSEventFile(&xd->eventlist);
 
   return(status);
