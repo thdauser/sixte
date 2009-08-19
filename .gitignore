@@ -10,3 +10,17 @@ doc
 .deps
 .libs
 sixt*.tar.gz
+
+# Binaries:
+analyse_xms_events
+binary_stream
+event_projection
+framestore_simulation
+htrs_psfgen
+htrs_simulation
+pattern_recombination
+photon_generation
+photon_imaging
+psfgen
+wfi_simulation
+xms_simulation

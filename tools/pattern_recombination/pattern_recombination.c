@@ -239,11 +239,9 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 	  centralidx[ncentralidx++] = i;
 	}
       }
-      /*
-      if (2!=ncentralidx) { // REMOVE
-	printf("%d, %d, %ld\n", event.xi, event.yi, event.frame);
-	}*/
-      assert(2<=ncentralidx);
+      assert(2<=ncentralidx); 
+      // TODO: quadruples with equal PHA values in all 4 pixels are
+      // marked as invalid!!
       int pass = 0;
 
       // Now we test if the central elements share column (xi) and row (yi) 
