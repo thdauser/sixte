@@ -19,18 +19,18 @@
 
 struct Parameters {
   char impactlist_filename[FILENAME_LENGTH];
-  char rmf_filename[MAXMSG];
+  char rmf_filename_inner[MAXMSG], rmf_filename_outer[MAXMSG];
   char eventlist_filename[MAXMSG];
   char eventlist_template[MAXMSG];
   double t0;
   double timespan;
   
-  int width;
-  double pixelwidth;
+  int width_inner, width_outer;
+  double pixelwidth_inner, pixelwidth_outer;
 
-  double ccsigma;
-  long pha_threshold;
-  float energy_threshold;
+  double ccsigma_inner, ccsigma_outer;
+  long pha_threshold_inner, pha_threshold_outer;
+  float energy_threshold_inner, energy_threshold_outer;
 
   float background_rate; /**< Rate of background events. */
 };
