@@ -36,7 +36,7 @@ int pattern_recombination_getpar(struct Parameters* parameters)
 
 
 
-WFIEvent mark(int row, int column, int rows, int columns, WFIEvent ccdarr[columns][rows], 
+WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr, 
 	      WFIEvent* maxevent, WFIEvent* evtlist, long* nevtlist, struct RMF* rmf) 
 {
   // Return immediately if the pixel is empty.
@@ -51,14 +51,14 @@ WFIEvent mark(int row, int column, int rows, int columns, WFIEvent ccdarr[column
   // ... and mark as deleted.
   ccdarr[column][row].patnum = -1;
 
-  evtlist[*nevtlist++] = myevent;
+  evtlist[(*nevtlist)++] = myevent;
   if (myevent.pha > maxevent->pha) {
     *maxevent = myevent;
   }
 
   // Visit neighbours:
-  int visitrow[8] = { row-1, row+1, row  , row  , row-1, row-1, row+1, row+1 };
-  int visitcol[8] = { row  , row  , row-1, row+1, row-1, row+1, row-1, row+1 };
+  int visitrow[8]={row-1 , row+1 , row     , row     , row-1   , row-1   , row+1   , row+1   };
+  int visitcol[8]={column, column, column-1, column+1, column-1, column+1, column-1, column+1};
 
   int i;
   for (i=0; i<8; i++) {
@@ -97,7 +97,7 @@ long min(long* array, long nelements)
       minidx = i;
     }
   }
-  return(minidx);
+  return(array[minidx]);
 }
 
 
@@ -111,7 +111,7 @@ long max(long* array, long nelements)
       maxidx = i;
     }
   }
-  return(maxidx);
+  return(array[maxidx]);
 }
 
 
@@ -119,12 +119,6 @@ long max(long* array, long nelements)
 WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 {
   long i;
-
-  // Get rid of first element in list (emptyevent)
-  //  for (i=0; i<*ncomponents-1; i++) {
-  //    components[i] = components[i+1];
-  //  }
-  //  (*ncomponents)--;
 
   // Get events with maximum and minimum energy:
   long maximum=0, minimum=1000000;
@@ -287,6 +281,209 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 
 
 
+int pattern_recombination_main() {
+  struct Parameters parameters;
+  WFIEventFile eventfile;
+  WFIEventFile patternfile;
+  WFIEvent** ccdarr=NULL;
+
+  char msg[MAXMSG];
+  int status = EXIT_SUCCESS;
+
+
+  // Register HEATOOL
+  set_toolname("pattern_recombination");
+  set_toolversion("0.01");
+
+  do { // ERROR handling loop
+
+    // Read parameters by PIL:
+    status = pattern_recombination_getpar(&parameters);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Initialize HEADAS random number generator.
+    HDmtInit(1);
+
+    // Read the EBOUNDS from the detector response file.
+    struct RMF* rmf = loadRMF(parameters.response_filename, &status);
+
+    // Open the INPUT event file:
+    status = openWFIEventFile(&eventfile, parameters.eventlist_filename, READONLY);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Check if the input file is empty:
+    if (0 == eventfile.rows) {
+      status=EXIT_FAILURE;
+      sprintf(msg, "Error: input file '%s' does not contain any events!\n", 
+	      parameters.eventlist_filename);
+      HD_ERROR_THROW(msg, status);
+      break;
+    }
+
+    // Create a new OUTPUT event / pattern file:
+    // Set the event list template file for the different WFI modes:
+    char template_filename[MAXMSG];
+    strcpy(template_filename, parameters.templatedir);
+    strcat(template_filename, "/");
+    if (16==eventfile.columns) {
+      strcat(template_filename, "wfi.window16.eventlist.tpl");
+    } else if (1024==eventfile.columns) {
+      strcat(template_filename, "wfi.full1024.eventlist.tpl");
+    } else {
+      status = EXIT_FAILURE;
+      sprintf(msg, "Error: detector width (%d pixels) is not supported!\n", eventfile.columns);
+      HD_ERROR_THROW(msg, status);
+      break;
+    }
+    // Create and open the new file
+    status = openNewWFIEventFile(&patternfile, parameters.pattern_filename, template_filename);
+    if (EXIT_SUCCESS!=status) break;
+
+
+    // Get memory for the CCD array.
+    ccdarr = (WFIEvent**)malloc(eventfile.columns*sizeof(WFIEvent*));
+    if (NULL==ccdarr) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation failed!\n", status);
+      break;
+    } 
+    long i;
+    for (i=0; i<eventfile.columns; i++) {
+      ccdarr[i] = (WFIEvent*)malloc(eventfile.rows*sizeof(WFIEvent));
+      if (NULL==ccdarr[i]) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation failed!\n", status);
+      break;
+      }
+    }
+    if (EXIT_SUCCESS!=status) break;
+    
+
+    // Starting values for the emptyevent in the pattern search.
+    WFIEvent emptyevent = {
+      .pha = -1,
+      .xi = -1,
+      .yi = -1,
+      .frame = -1,
+      .patnum = -1,
+      .patid = 0,
+      .pileup = 0
+    };
+
+
+    // List of events belonging to the same frame.
+    WFIEvent eventlist[ARRAY_LENGTH];
+    // Components of a split pattern.
+    WFIEvent components[ARRAY_LENGTH];
+    // Read the first event from the input event file.
+    long neventlist=1;
+    status=WFIEventFile_getNextRow(&eventfile, &(eventlist[0]));
+    if(EXIT_SUCCESS!=status) break;
+    
+    // Read in all subsequent events from the event file.
+    WFIEvent newevent;
+    while ((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventfile.generic))) {
+
+      // Read the next event from the FITS file.
+      status=WFIEventFile_getNextRow(&eventfile, &newevent);
+      if(EXIT_SUCCESS!=status) break;
+
+      // Check if the new event belongs to the same frame as the previous ones:
+      if (newevent.frame != eventlist[0].frame) {
+
+	// Perform pattern recognition on this frame.
+	// Write current events onto WFI detector pixel matrix:
+
+	// Clear CCD array
+	long j;
+	for (i=0; i<eventfile.columns; i++) {
+	  for (j=0; j<eventfile.rows; j++) {
+	    ccdarr[i][j] = emptyevent;
+	  }
+	}
+
+	assert(neventlist<ARRAY_LENGTH);
+	for (i=0; i<neventlist; i++) {
+	  ccdarr[eventlist[i].xi][eventlist[i].yi] = eventlist[i];
+	  ccdarr[eventlist[i].xi][eventlist[i].yi].patnum = 0;
+	}
+	
+	// Find singles and multiples:
+	for (i=0; (i<neventlist)&&(EXIT_SUCCESS==status); i++) {
+	  // Combine event at this position:
+	  int column = eventlist[i].xi;
+	  int row    = eventlist[i].yi;
+	  // Check event, if it has not yet been dealt with:
+	  if (-1!=ccdarr[column][row].patnum) { // Choose only pixels with events.
+	    // Initialize maxevent (holding the recombined photon energy at the position
+	    // of the event with the maximum photon energy.
+	    WFIEvent maxevent = emptyevent;
+	    // Becomes a list, containing the events the current pattern is build from.
+	    long ncomponents = 0;
+
+	    WFIEvent event = mark(row, column, eventfile.rows, eventfile.columns,
+				  ccdarr, &maxevent, components, &ncomponents, rmf);
+
+	    // Call pattern_id() to check for valild patterns and label them.
+	    // Not needed for border events and singles.
+	    // Here the generated pattern is labeled.
+	    WFIEvent pattern;
+	    if (1 == event.patnum) {
+	      event.patid = 0; // Set single patid.
+	      pattern = event;
+	    } else {
+	      pattern = pattern_id(components, ncomponents, event);
+	    }
+
+	    // Write the new pattern to the OUTPUT pattern file.
+	    status = addWFIEvent2File(&patternfile, &pattern);
+	    if (EXIT_SUCCESS!=status) break;
+
+	  } // END choose only pixels with events.
+	} // END of loop over all photons in this frame.
+
+	//---------
+	// Start new frame:
+	eventlist[0] = newevent;
+	neventlist = 1;
+
+      } else {
+	// Event belongs to the same frame as the previous ones, therefore just 
+	// add it to the existing list.
+	eventlist[neventlist++] = newevent;
+      }
+      
+    } // END of loop over all events in the event file.
+            
+  } while(0); // End of error handling loop
+
+
+  // --- Clean Up ---
+
+  // Free memory from the CCD array.
+  if (NULL!=ccdarr) {
+    long i;
+    for (i=0; i<eventfile.columns; i++) {
+      if (NULL!=ccdarr[i]) {
+	free(ccdarr[i]);
+      }
+    }
+    free(ccdarr);
+  }
+      
+  // Close the event files:
+  closeWFIEventFile(&eventfile);
+  closeWFIEventFile(&patternfile);
+
+  // Release HEADAS random number generator.
+  HDmtFree();
+
+  return(status);
+}
+
+
+
+/*
 WFIEvent* pattern_recognition(WFIEvent* evlist, long* nevlist, struct RMF* rmf, 
 			      int columns, int rows)
 {
@@ -380,86 +577,4 @@ WFIEvent* pattern_recognition(WFIEvent* evlist, long* nevlist, struct RMF* rmf,
   
   return(evlist);
 } // END of pattern_recognition()
-
-
-
-int pattern_recombination_main() {
-  struct Parameters parameters;
-  WFIEventFile eventfile;
-  WFIEventFile patternfile;
-  WFIEvent* evlist = NULL; // Event list
-
-  int status = EXIT_SUCCESS;
-
-
-  // Register HEATOOL
-  set_toolname("pattern_recombination");
-  set_toolversion("0.01");
-
-  do { // ERROR handling loop
-
-    // Read parameters by PIL:
-    status = pattern_recombination_getpar(&parameters);
-    if (EXIT_SUCCESS!=status) break;
-
-    // Open the INPUT event file:
-    status = openWFIEventFile(&eventfile, parameters.eventlist_filename, READWRITE);
-    if (EXIT_SUCCESS!=status) break;
-
-    // Create a new OUTPUT event / pattern file:
-    // Set the event list template file for the different WFI modes:
-    char template_filename[MAXMSG];
-    strcpy(template_filename, parameters.templatedir);
-    strcat(template_filename, "/");
-    if (16==eventfile.columns) {
-      strcat(template_filename, "wfi.window16.eventlist.tpl");
-    } else if (1024==eventfile.columns) {
-      strcat(template_filename, "wfi.full1024.eventlist.tpl");
-    } else {
-      status = EXIT_FAILURE;
-      char msg[MAXMSG];
-      sprintf(msg, "Error: detector width (%d pixels) is not supported!\n", eventfile.columns);
-      HD_ERROR_THROW(msg, status);
-      return(status);
-    }
-    // Create and open the new file
-    status = openNewWFIEventFile(&patternfile, parameters.pattern_filename, template_filename);
-    if (EXIT_SUCCESS!=status) return(status);
-
-
-
-    // Read in all events from the event file.
-    long nevlist = 0;
-    evlist = (WFIEvent*)malloc(eventfile.generic.nrows*sizeof(WFIEvent));
-    if (NULL==evlist) {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for event list failed!\n", status);
-      break;
-    }
-    while ((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventfile.generic))) {
-      // Read the next event from the FITS file.
-      status=WFIEventFile_getNextRow(&eventfile, &(evlist[nevlist++]));
-      if(EXIT_SUCCESS!=status) break;
-    } // END of loop over all events in the event file.
-    
-
-    // Read the EBOUNDS from the detector response file.
-    struct RMF* rmf = loadRMF(parameters.response_filename, &status);
-    
-    // Perform the pattern recognition algorithm.
-    /*evlist =*/ pattern_recognition(evlist, &nevlist, rmf, eventfile.columns, eventfile.rows);
-    
-    
-  } while(0); // End of error handling loop
-
-
-  // --- Clean Up ---
-
-  // Free memory from the event list.
-  if (NULL!=evlist) free(evlist);
-
-  // Close the event file:
-  closeWFIEventFile(&eventfile);
-
-  return(status);
-}
+*/

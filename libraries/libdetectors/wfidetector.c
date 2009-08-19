@@ -167,8 +167,6 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time)
 
 
 
-
-
 inline int readoutLinesWFIDetector(WFIDetector* wd)
 {
   int x, lineindex;
@@ -178,11 +176,12 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
   for (lineindex=0; lineindex<wd->readout_directions; lineindex++) {
     for (x=0; x<wd->pixels.xwidth; x++) {
       if (wd->pixels.array[x][wd->readout_lines[lineindex]].charge > 1.e-6) {
-	WFIEvent event;
 	// Determine the detector channel that corresponds to the charge stored
 	// in the detector pixel.
-	event.pha = getChannel(wd->pixels.array[x][wd->readout_lines[lineindex]].charge, 
-			       wd->generic.rmf);
+	WFIEvent event = {
+	  .pha = getChannel(wd->pixels.array[x][wd->readout_lines[lineindex]].charge, 
+			    wd->generic.rmf)
+	};
 
 	// Check lower threshold (PHA and energy):
 	if ((event.pha>=wd->generic.pha_threshold) && 
@@ -198,6 +197,10 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 	  event.xi = x;
 	  event.yi = wd->readout_lines[lineindex];
 	  event.frame = wd->frame;
+	  event.patnum = 0;
+	  event.patid = -1;
+	  event.pileup = 0;
+
 	  status = addWFIEvent2File(&wd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
 	} // END of check for threshold

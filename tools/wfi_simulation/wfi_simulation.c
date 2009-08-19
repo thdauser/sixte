@@ -37,8 +37,7 @@ int wfi_simulation_main() {
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
     
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
+    // Initialize HEADAS random number generator.
     HDmtInit(1);
 
 

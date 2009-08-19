@@ -112,19 +112,10 @@ int addWFIEvent2File(WFIEventFile* wef, WFIEvent* event)
   if (fits_write_col(wef->generic.fptr, TLONG, wef->cframe, wef->generic.row, 
 		     1, 1, &event->frame, &status)) return(status);
 
-  // Set default values for PATNUM and PATID:
-  // PATID has to be set to -1 !! 
-  // Otherwise the pattern recognition algorithm doesn't work properly.
-  // PATNUM
-  event->patnum = 0;
   if (fits_write_col(wef->generic.fptr, TLONG, wef->cpatnum, wef->generic.row, 
 		     1, 1, &event->patnum, &status)) return(status);
-  // PATID
-  event->patid = -1;
   if (fits_write_col(wef->generic.fptr, TLONG, wef->cpatid, wef->generic.row, 
 		     1, 1, &event->patid, &status)) return(status);
-  // Pile-up
-  event->pileup = 0;
   if (fits_write_col(wef->generic.fptr, TLONG, wef->cpileup, wef->generic.row, 
 		     1, 1, &event->pileup, &status)) return(status);
 
