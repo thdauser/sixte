@@ -22,9 +22,12 @@ int openXMSEventFile(XMSEventFile* xef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "GRADE", &xef->cgrade, &status)) 
     return(status);
+  if(fits_get_colnum(xef->generic.fptr, CASEINSEN, "ARRAY", &xef->carray, &status)) 
+    return(status);
 
   return(status);
 }
+
 
 
 int openNewXMSEventFile(XMSEventFile* xef, char* filename, char* template)
@@ -145,6 +148,9 @@ int XMSEventFile_getRow(XMSEventFile* ef, XMSEvent* event, long row)
   event->grade = 0;
   if (fits_read_col(ef->generic.fptr, TINT, ef->cgrade, row, 1, 1, 
 		    &event->grade, &event->grade, &anynul, &status)) return(status);
+  event->array = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->carray, row, 1, 1, 
+		    &event->array, &event->array, &anynul, &status)) return(status);
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
@@ -171,6 +177,9 @@ int XMSEventFile_writeRow(XMSEventFile* xef, XMSEvent* event, long row) {
 		     1, 1, &event->yi, &status)) return(status);
   if (fits_write_col(xef->generic.fptr, TINT, xef->cgrade, row, 
 		     1, 1, &event->grade, &status)) return(status);
+  if (fits_write_col(xef->generic.fptr, TINT, xef->carray, row, 
+		     1, 1, &event->array, &status)) return(status);
 
   return(status);
 }
+

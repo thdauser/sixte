@@ -14,7 +14,7 @@ typedef struct {
   /* Column numbers of the individual XMS-specific event list entries.
    * The numbers start at 1. The number 0 means, that there 
    * is no corresponding column in the table. */
-  int ctime, cpha, crawx, crawy, cgrade;
+  int ctime, cpha, crawx, crawy, cgrade, carray;
 
 } XMSEventFile;
 

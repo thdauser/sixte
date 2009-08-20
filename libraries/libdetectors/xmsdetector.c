@@ -45,7 +45,6 @@ int cleanupXMSDetector(XMSDetector* xd)
 
 
 
-
 int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
 {
   int status=EXIT_SUCCESS;
@@ -75,25 +74,55 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
   if (charge > 0.) {
     int x[4], y[4];
     double fraction[4];
-    
-    // Determine the affected detector pixels.
-    int npixels = getSquarePixelsSplits(&xd->pixels_inner, &xd->generic_inner, impact->position, 
-					x, y, fraction);
+
+    // Check whether the impact position lies within the inner or the outer TES
+    // microcalorimeter array.
+    XMSEvent event={ .grade=0 };
+    int npixels;
+    if ((impact->position.x > -xd->pixels_inner.xoffset*xd->pixels_inner.xpixelwidth) &&
+	(impact->position.x <  xd->pixels_inner.xoffset*xd->pixels_inner.xpixelwidth) &&
+	(impact->position.y > -xd->pixels_inner.yoffset*xd->pixels_inner.ypixelwidth) &&
+	(impact->position.y <  xd->pixels_inner.yoffset*xd->pixels_inner.ypixelwidth)) {
+      // Impact position is within the inner pixel array.
+      event.array = 1;
+      // Determine the affected detector pixels.
+      npixels = getSquarePixelsSplits(&xd->pixels_inner, &xd->generic_inner, impact->position, 
+				      x, y, fraction);
+    } else { 
+      // Impact position is either within the outer pixel array or even completely
+      // outside the detector.
+      event.array = 2;
+      // Determine the affected detector pixels.
+      npixels = getSquarePixelsSplits(&xd->pixels_outer, &xd->generic_outer, impact->position, 
+				      x, y, fraction);
+    }
+
     
     // Add the charge created by the photon to the affected detector pixels.
     int count;
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
 
+	long pha_threshold;
+	float energy_threshold;
 	// Determine the detector channel that corresponds to the charge fraction
 	// created by the incident photon in the regarded pixel.
-	XMSEvent event = { .pha = getChannel(charge * fraction[count], xd->generic_inner.rmf) };
-	//                     |        |-> charge fraction due to split events
-	//                     |-> charge created by incident photon
+	if (1 == event.array) {
+	  event.pha = getChannel(charge * fraction[count], xd->generic_inner.rmf);
+	  //                     |        |-> charge fraction due to split events
+	  //                     |-> charge created by incident photon
+	  pha_threshold = xd->generic_inner.pha_threshold;
+	  energy_threshold = xd->generic_inner.energy_threshold;
+	} else {
+	  event.pha = getChannel(charge * fraction[count], xd->generic_outer.rmf);
+	  //                     |        |-> charge fraction due to split events
+	  //                     |-> charge created by incident photon
+	  pha_threshold = xd->generic_outer.pha_threshold;
+	  energy_threshold = xd->generic_outer.energy_threshold;
+	}
 
 	// Check lower threshold (PHA and energy):
-	if ((event.pha>=xd->generic_inner.pha_threshold) && 
-	    (charge*fraction[count]>=xd->generic_inner.energy_threshold)) { 
+	if ((event.pha>=pha_threshold) && (charge*fraction[count]>=energy_threshold)) { 
 
 	  // TODO REMOVE
 	  assert(event.pha >= 0);

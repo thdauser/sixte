@@ -3,6 +3,10 @@
 
 #include "sixt.h"
 
+#include "telescope.h"
+#include "photon.h"
+#include "point.h"
+#include "vignetting.h"
 
 
 /** Stores the PSF data for one particular off-axis angle 
@@ -20,7 +24,6 @@ typedef struct {
 } PSF_Item;
 
 
-
 /** Storage for the several PSFs available for a mirror system. */
 typedef struct {
   /** Number of PSF_Items in this store (#(offaxis-angles)*#(energies)). */
@@ -29,14 +32,6 @@ typedef struct {
   /** Array of PSF_Items for the different discrete off-axis angles and energies. */
   PSF_Item *item;
 } PSF;
-
-
-
-#include "sixt_random.h"
-#include "telescope.h"
-#include "photon.h"
-#include "point.h"
-#include "vignetting.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -49,3 +49,7 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#	GRADE           / Energy Accuracy (1=high, 2=intermediate, ...)
 	TFORM#  I               /
 	TUNIT#                  /
+
+	TTYPE#	ARRAY           / TES Array (1=inner, 2=outer)
+	TFORM#  I               /
+	TUNIT#                  /

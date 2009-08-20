@@ -1,6 +1,3 @@
-/** 
- * This file contains all source code for PSF calculations.
- */
 #include "psf.h"
 
 
@@ -38,9 +35,6 @@ static inline PSF_Item *get_best_psf_item(
 
   return(&psf->item[index]);
 }
-
-
-
 
 
 
@@ -90,6 +84,16 @@ int get_psf_pos(
   // Perform a binary search to determine a random position:
   // -> one binary search for each of the 2 coordinates x and y
   rnd = get_random_number();
+
+  // TODO: This section is only necessary for PSFs that are not normalized to 1,
+  // i.e., contain some vignetting effects. According to commonly used definition 
+  // of a PSF, this should not be the case. So this part of code can be removed,
+  // if only proper PSFs are used.
+  if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
+    // The photon does not hit the detector at all (e.g. it is absorbed).
+    return(0);
+  }
+
   int high = psf_item->naxis1-1;
   int low = 0;
   while (high-low > 1) {
@@ -143,9 +147,6 @@ int get_psf_pos(
 
 
 
-
-
-////////////////////////////////////////////////////////////////////////
 // Releases the memory which has been allocated to store the PSF data.
 void free_psf(
 	      PSF *psf  // pointer to the PSF data structure
@@ -173,9 +174,6 @@ void free_psf(
 
 
 
-
-
-///////////////////////////////////////////////////////
 /** Constructor for the PSF data structure.
  * Reads PSF data from a FITS file with image extensions. 
  * The file format is given by OGIP Calibration Memo 
@@ -337,10 +335,6 @@ PSF* get_psf(
 
 
 
-
-
-
-/////////////////////////////////////////////
 int save_psf_image(
 		   PSF* psf,
 		   const char *filename,
