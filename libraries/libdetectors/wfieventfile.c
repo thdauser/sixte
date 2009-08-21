@@ -41,6 +41,7 @@ int openWFIEventFile(WFIEventFile* wef, char* filename, int access_mode)
 }
 
 
+
 int openNewWFIEventFile(WFIEventFile* wef, char* filename, char* template)
 {
   int status=EXIT_SUCCESS;

@@ -46,6 +46,7 @@ int closeEventFile(EventFile* ef)
   if (NULL!=ef->fptr) {
     if (fits_close_file(ef->fptr, &status)) return(status);
     ef->fptr = NULL;
+    headas_chat(5, "Closed event file (containing %ld rows).\n", ef->nrows);
   }
 
   return(status);

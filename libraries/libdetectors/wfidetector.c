@@ -33,7 +33,6 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
 
 
 
-
 int cleanupWFIDetector(WFIDetector* wd)
 {
   int status=EXIT_SUCCESS;
