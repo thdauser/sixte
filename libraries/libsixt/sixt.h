@@ -21,7 +21,7 @@
 #define FILENAME_LENGTH 512 /**< Maximum lenght of a filename. */
 #define MAXMSG 512 /**< Maximum length of a message string. */
 
-#define NAN (0./0.) /**< Not a Number. */
+#define SIXT_NAN (0./0.) /**< Not a Number. */
 
 
 #endif /* SIXT_H */
