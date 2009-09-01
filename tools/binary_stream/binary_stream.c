@@ -359,8 +359,8 @@ int binary_stream_main()
       eventlist[count].xi=0;
       eventlist[count].yi=0;
       eventlist[count].frame=0;
-      eventlist[count].ra=NAN;
-      eventlist[count].dec=NAN;
+      eventlist[count].ra=SIXT_NAN;
+      eventlist[count].dec=SIXT_NAN;
       eventlist[count].sky_xi=0;
       eventlist[count].sky_yi=0;	    
     }
