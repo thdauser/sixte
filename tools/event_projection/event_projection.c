@@ -17,17 +17,6 @@
 #include "headas_main.c"
 
 
-#define REFXCUNI "deg"         // WCS physical unit of X axis 
-#define REFXCRPX (12960000)    // WCS axis reference pixel
-#define REFXCRVL (0.)          // [deg] WCS coord. at X axis ref. pixel
-#define REFXCDLT (1.38889e-05) // [deg/pix] WCS X increment at ref. pixel (0.05"/pixel)
-
-#define REFYCUNI "deg"         // WCS  physical unit of Y axis 
-#define REFYCRPX (6480000)     // WCS axis reference pixel
-#define REFYCRVL (0.)          // [deg] WCS coord. at Y axis ref. pixel
-#define REFYCDLT (1.38889e-05) // [deg/pix] WCS Y increment at ref. pixel (0.05"/pixel)
-
-
 /* Program parameters */
 struct Parameters {
   char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
@@ -51,6 +40,10 @@ int event_projection_main() {
 
   AttitudeCatalog* attitudecatalog=NULL;
   eROSITAEventFile eventlistfile;
+
+  // WCS keywords:
+  double tcrpxx, tcrvlx, tcdltx;
+  double tcrpxy, tcrvly, tcdlty;
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
 
@@ -83,6 +76,7 @@ int event_projection_main() {
     status=openeROSITAEventFile(&eventlistfile, parameters.eventlist_filename, READWRITE);
     if (EXIT_SUCCESS!=status) break;
     
+    /*
     // Write header keywords.
     if (fits_write_key(eventlistfile.generic.fptr, TSTRING, "REFXCUNI", REFXCUNI, 
 		       "WCS physical unit of X axis", &status)) break;
@@ -107,52 +101,56 @@ int event_projection_main() {
     dbuffer = REFYCDLT;
     if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFYCDLT", &dbuffer,
 		       "[deg/pix] WCS Y increment at ref. pixel", &status)) break;
+    */
+
 
     // Read HEADER keywords.
     char comment[MAXMSG]; // buffer
+    // Attitude File:
     if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, comment, &status)) break;
-
     if (0==strlen(parameters.attitude_filename)) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: no attitude file specified in FITS header of event list!\n",
 		     status);
       break;
     }
+    
+    // WCS keywords:
+    char columnnumber[3];
+    char tcrpx[10];
+    char tcrvl[10];
+    char tcdlt[10];
+    // For the sky x-coordinate:
+    strcpy(tcrpx, "TCRPX");
+    strcpy(tcrvl, "TCRVL");
+    strcpy(tcdlt, "TCDLT");
+    sprintf(columnnumber, "%d", eventlistfile.cskyx);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrpx, columnnumber),
+		      &tcrpxx, comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrvl, columnnumber),
+		      &tcrvlx, comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcdlt, columnnumber),
+		      &tcdltx, comment, &status)) break;
 
-
-    // Determine the time of the first and of the last event in the list. 
-    // (This data is needed to read the adequate orbit/attitude information.)
-    // Read the first event from the FITS file.
-    //int anynul = 0.;
-    //double t0=0., timespan=0.;
-    //fits_read_col(eventlistfile.fptr, TDOUBLE, 1, 1, 1, 1, &t0, &t0, &anynul, &status);
-    //fits_read_col(eventlistfile.fptr, TDOUBLE, 1, eventlistfile.nrows, 1, 1, 
-    //		  &timespan, &timespan, &anynul, &status);
+    // For the sky y-coordinate:
+    strcpy(tcrpx, "TCRPX");
+    strcpy(tcrvl, "TCRVL");
+    strcpy(tcdlt, "TCDLT");
+    sprintf(columnnumber, "%d", eventlistfile.cskyy);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrpx, columnnumber),
+		      &tcrpxy, comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrvl, columnnumber),
+		      &tcrvly, comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcdlt, columnnumber),
+		      &tcdlty, comment, &status)) break;
     
 
     // Get the satellite catalog with the telescope attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   parameters.t0, parameters.timespan, 
 						   &status))) break;
-						   
-
-    // Create an array that contains the off-axis angle corresponding to 
-    // some particular positions on the detector.
-    //    struct angle_position_relation { 
-    //      double distance; // [m]
-    //    double angle;    // offaxis-angle [rad]
-    //  };
-    //  struct angle_position_relation apr[7] = {
-    //    { 0.      ,  0.                  },
-    //      { 0.002338,  5. /60.*M_PI/180. },
-    //      { 0.004662, 10. /60.*M_PI/180. },
-    //      { 0.006988, 15. /60.*M_PI/180. },
-    //      { 0.009288, 20. /60.*M_PI/180. },
-    //      { 0.011613, 25. /60.*M_PI/180. },
-    //      { 0.013938, 30. /60.*M_PI/180. }
-    //    };      
-    
+						       
     // --- END of Initialization ---
 
 
@@ -233,21 +231,6 @@ int event_projection_main() {
 
       // Determine the off-axis angle corresponding to the detector position.
       double offaxis_angle = d * radperpixel; // [rad]
-      //      double offaxis_angle; // = atan(d/telescope.focal_length);
-      // Interpolation:
-      //      int count;
-      //      for(count=1; count<7; count++) {
-      //	if (apr[count].distance>d) break;
-      //      }
-      //      if (count<6) {
-      //	offaxis_angle = apr[count-1].angle + 
-      //	  (d-apr[count-1].distance)/(apr[count].distance-apr[count-1].distance) * 
-      //	  (apr[count].angle-apr[count-1].angle);
-      //      } else {
-      //	offaxis_angle = apr[6].angle + 
-      //	  (d-apr[6].distance)/(apr[6].distance-apr[5].distance) *
-      //	  (apr[6].angle-apr[5].angle);
-      //      }
 
       // Determine the source position on the sky using the telescope 
       // axis pointing vector and a vector from the point of the intersection 
@@ -268,16 +251,15 @@ int event_projection_main() {
       event.ra  *= 180./M_PI; // [rad] -> [deg]
       event.dec *= 180./M_PI; // [rad] -> [deg]
 
-
-      // Put some randomization on the RA and DEC coordinate (within the sky pixel)
-      // to receive a continuous image.
-      // (spread by the width of one detector pixel on the sky)
-      //      event.ra  += (get_random_number()-0.5)*0.00265625; // (= (61.2/60.)°/384)
-      //      event.dec += (get_random_number()-0.5)*0.00265625;
-
       // Determine the pixel coordinates in the sky image:
-      event.sky_xi = (int)((event.ra -REFXCRVL)/REFXCDLT+REFXCRPX);
-      event.sky_yi = (int)((event.dec-REFYCRVL)/REFYCDLT+REFYCRPX);
+      event.sky_xi =  (int)((event.ra -tcrvlx)/tcdltx+tcrpxx);
+      if ((event.ra -tcrvlx)<0.) {
+	event.sky_xi--;
+      }
+      event.sky_yi =  (int)((event.dec-tcrvly)/tcdlty+tcrpxy);
+      if ((event.dec-tcrvly)<0.) {
+	event.sky_yi --;
+      }
 
       // Store the data in the Event List FITS file.
       fits_write_col(eventlistfile.generic.fptr, TDOUBLE, eventlistfile.cra,

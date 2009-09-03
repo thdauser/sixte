@@ -48,39 +48,53 @@ CHOPPER         String          / electronic chopper in use
 	TTYPE#  FRAME           / Frame number
 	TFORM#  J               / Format of column FRAME
 	TUNIT#                  / Unit of column FRAME
-
 	TTYPE#  TIME            / Time of event
 	TFORM#  D               / Format of column TIME
 	TUNIT#  s               / Unit of column TIME
-
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  I               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
 	TTYPE#	ENERGY          / Calibrated event energy
 	TFORM#  E               / Format of column RAWX
 	TUNIT#  eV              / Unit of column RAWX
-
 	TTYPE#	RAWX            / Event X Position
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX
+	TCTYP#	RAWX
+	TCUNI#	m
+	TCRPX#	192.5
+	TCRVL#	0.
+	TCDLT#  7.5e-5
 	TTYPE#	RAWY            / Event Y Position
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
-
+	TCTYP#	RAWY
+	TCUNI#	m
+	TCRPX#	192.5
+	TCRVL#	0.
+	TCDLT#  7.5e-5
 	TTYPE#	RA              / right ascension (J2000)
 	TFORM#  D               / Format of column RA
 	TUNIT#  deg             / Unit of column RA
 	TTYPE#	DEC             / declination (J2000)
 	TFORM#  D               / Format of column DEC
 	TUNIT#  deg             / Unit of column DEC
-	
 	TTYPE#  X               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column X
 	TUNIT#  pixel           / Unit of column X
+	TCTYP#	RA---TAN
+	TCUNI#	deg		/ WCS physical unit of X axis
+	TCRPX#	0.		/ WCS axis reference pixel
+	TCRVL#	0.		/ WCS coord. at X axis ref. pixel
+	TCDLT#  1.38889e-05	/ WCS X increment at ref. pixel
 	TTYPE#  Y               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column Y
 	TUNIT#  pixel           / Unit of column Y
-	
+	TCTYP#	DEC--TAN
+	TCUNI#	deg		/ WCS physical unit of X axis
+	TCRPX#	0.		/ WCS axis reference pixel
+	TCRVL#	0.		/ WCS coord. at X axis ref. pixel
+	TCDLT#  1.38889e-05	/ WCS X increment at ref. pixel
 	TTYPE#  PAT_TYP         / Pattern Type
 	TFORM#  I		/ Format of column PAT_TYP
 	TUNIT#  1234: sdtq ..   / Unit of column PAT_TYP

@@ -69,7 +69,8 @@ int openNeweROSITAEventFile(eROSITAEventFile* eef, char* filename, char* templat
 			    "Start Time (UTC) of exposure", &status)) return(status);
       }
     }
-  } // END of writing time information to Event File FITS header.
+  } 
+  // END of writing time information to Event File FITS header.
 
   if (fits_close_file(fptr, &status)) return(status);
 
