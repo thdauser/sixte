@@ -40,26 +40,30 @@ ROWS            1024
 	TTYPE#  TIME            / Time of event
 	TFORM#  D               / Format of column TIME
 	TUNIT#  s               / Unit of column TIME
-
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
-
 	TTYPE#	COLUMN          / Event X Position
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX
+	TCTYP#	RAWX
+	TCUNI#	m
+	TCRPX#	192.5
+	TCRVL#	0.
+	TCDLT#  1.0e-4
 	TTYPE#	ROW             / Event Y Position
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
-
+	TCTYP#	RAWY
+	TCUNI#	m
+	TCRPX#	192.5
+	TCRVL#	0.
+	TCDLT#  1.0e-4
 	TTYPE#  FRAME           / Frame number of event
 	TFORM#  J               / Format of column FRAME
-	
 	TTYPE#  PATNUM          / Number of pixels in event
 	TFORM#  I		/ Format of column PATNUM
-
 	TTYPE#  PATID           / ID with respect to XMM
 	TFORM#  I               / Format of column PATID
-
 	TTYPE#  PILEUP          / Has energy pileup occurred? Needed for patternrecog.
 	TFORM#  J               / Format of column PILEUP
