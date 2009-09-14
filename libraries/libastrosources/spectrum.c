@@ -1,7 +1,6 @@
 #include "spectrum.h"
 
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Load spectra from PHA files using the method "get_spectrum".
 int get_spectra(
@@ -16,8 +15,8 @@ int get_spectra(
   
   do {  // beginning of ERROR handling loop
     // get memory
-    spectrum_store->spectrum = (struct Spectrum *) 
-      malloc(Nfiles * sizeof(struct Spectrum));
+    spectrum_store->spectrum = (Spectrum *) 
+      malloc(Nfiles * sizeof(Spectrum));
     if (!spectrum_store->spectrum) {
       status = EXIT_FAILURE;
       sprintf(msg, "Not enough memory available to store the source spectra!\n");
@@ -96,7 +95,7 @@ int assign_pha_spectrum(struct Spectrum_Store* store, char* filename)
 
 //////////////////////////////////////////////////////////////////////
 int get_spectrum(
-		 struct Spectrum *spectrum,
+		 Spectrum *spectrum,
 		 long Nchannels,
 		 char filename[FILENAME_LENGTH]
 		 )

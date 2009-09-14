@@ -1,16 +1,7 @@
 #ifndef POINTSOURCES_H
 #define POINTSOURCES_H (1)
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <math.h>
-#include <assert.h>
-
-#include "fitsio.h"
-#include "headas.h"
-#include "headas_rand.h"
-
+#include "sixt.h"
 #include "spectrum.h"
 #include "vector.h"
 
@@ -24,7 +15,7 @@ typedef struct {
   float ra, dec; /**< Right ascension and declination of the source [rad]. */
   float rate; /**< Average photon rate [photons/s]. */
   struct lightcurve_entry* lightcurve; /**< Pointer to source lightcurve. */
-  struct Spectrum* spectrum; /**< Pointer to source spectrum. */
+  Spectrum *spectrum; /**< Pointer to source spectrum. */
   //  struct PHA* pha_spectrum;   // source spectrum
   double t_last_photon; /** Time of last photon created for this source. */
 } PointSource;

@@ -1,8 +1,3 @@
-/** 
- * Header file of "photon.c".
- * It contains all definitions for photon handling.
- */
-
 #ifndef PHOTON_H
 #define PHOTON_H 1
 
@@ -38,7 +33,6 @@ long photon_counter;
 
 
 
-
 /** Contains all information about a single photon in the sky. */
 typedef struct {
   double time;  /**< Real time, when the photon is falling on the detector (in [s]). */
@@ -50,7 +44,6 @@ typedef struct {
   Vector direction; // direction from which the photon originates 
                     // (source direction)
 } Photon;
-
 
 
 // Structure containing a photon and a pointer to the next photon in the 
@@ -124,7 +117,7 @@ void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the point
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
 //float photon_energy(struct source_cat_entry src, Detector*);
-float photon_energy(struct Spectrum*, struct RMF* rmf);
+float photon_energy(Spectrum*, struct RMF* rmf);
 
 // Function produces a light curve for a given source.
 //int create_lightcurve(struct source_cat_entry *src, double time, 

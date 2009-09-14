@@ -1,6 +1,6 @@
 AM_CFLAGS  = -I${HEADAS}/include
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt
-AM_CFLAGS += -I@top_srcdir@/src # REMOVE THIS LINE !!
+AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror 
 #AM_CFLAGS += -DNORMALIZE_RMF # explicitly normalize the RSP to an RMF
@@ -31,7 +31,8 @@ libdetectors_la_SOURCES = genericdetector.c squarepixels.c hexagonalpixels.c \
 			  xmsdetector.c xmseventfile.c \
 			  htrsdetector.c htrseventfile.c
 
-libdetectors_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
+libdetectors_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
+libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosources.la
 
 
 ############ HEADERS #################

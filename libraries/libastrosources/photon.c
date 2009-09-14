@@ -111,7 +111,7 @@ int create_lightcurve(
 // specified source.
 // The used spectrum is given in [PHA channels].
 // The function returns the photon energy in [keV].
-float photon_energy(struct Spectrum* pha_spectrum, struct RMF* rmf)
+float photon_energy(Spectrum* pha_spectrum, struct RMF* rmf)
 {
   // Get a random PHA channel according to the given PHA distribution.
   float rand = (float)get_random_number();

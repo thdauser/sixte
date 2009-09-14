@@ -24,28 +24,34 @@
 #endif
 
 
-
 #define N_SPECTRA_FILES 1    // number of spectrum files (PHA files)
 
 
-// Data structure representing the specific spectrum of a source.
-struct Spectrum{
+/** Data structure representing the specific spectrum of a source. */
+typedef struct {
+  /** Number of channels in the PHA spectrum. */
   long NumberChannels;
 
-  float *rate; /**< Array of photon rates per PHA channel.
-		* The rates respresent the relative photon rates.
-                * The total spectrum is normalized to 1. */
-};
+  /** Relative photon rates of the individual spectral bins.
+   * Array contains the photon rates per PHA channel.
+   * The rates respresent the relative photon rates, i.e., the total spectrum is 
+   * normalized to 1. */
+  float *rate; 
+} Spectrum;
 
 
-// Storage for several different spectra.
+/** Storage for several different spectra. */
 struct Spectrum_Store{
-  struct Spectrum* spectrum; /**< Array of the individual spectra in the storage. */
-  long nspectra; /**< Total number of spectra in the storage. */
+  /** Array of the individual spectra in the storage. */
+  Spectrum* spectrum; 
+  /** Total number of spectra in the storage. */
+  long nspectra; 
 
   //  struct PHA* pha_spectrum;
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////
 
 
 // Load the spectra from PHA files using the method "get_spectrum".
@@ -56,7 +62,7 @@ int get_spectra(struct Spectrum_Store *, long Nchannels,
 // Loads the specified PHA file containing a source spectrum, 
 // calculates the probability density (including normalization)
 // and stores the spectrum in an array.
-int get_spectrum(struct Spectrum *, long Nchannels, char filename[FILENAME_LENGTH]);
+int get_spectrum(Spectrum *, long Nchannels, char filename[FILENAME_LENGTH]);
 
 // Read a spectrum from a FITS PHA file (following the OGIP standards).
 // The function uses routines from the HEAdas library 'libhdsp'.
@@ -65,7 +71,6 @@ int assign_pha_spectrum(struct Spectrum_Store*, char* filename);
 
 // Release memory of spectrum array
 void free_spectra(struct Spectrum_Store *, long Nfiles);
-
 
 
 #endif  /* SPECTRUM_H */

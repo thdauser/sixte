@@ -17,7 +17,6 @@ PointSourceFileCatalog* get_PointSourceFileCatalog() {
 
 
 
-
 /////////////////////////////////////////////////////////
 void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
   if (NULL!=psfc) {
@@ -35,7 +34,6 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
     free(psfc);
   }
 }
-
 
 
 

@@ -1,6 +1,7 @@
 #ifndef SIXT_H
 #define SIXT_H 1
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
