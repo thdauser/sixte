@@ -1,8 +1,8 @@
-#include "simplecosmicbackground.h"
+#include "uniformdetectorbackground.h"
 
 
-int initSimpleCosmicBackground(SimpleCosmicBackground* background, 
-			       struct SimpleCosmicBackgroundParameters* parameters)
+int initUniformDetectorBackground(UniformDetectorBackground* background, 
+				  struct UniformDetectorBackgroundParameters* parameters)
 {
   int status = EXIT_SUCCESS;
 
@@ -24,7 +24,8 @@ int initSimpleCosmicBackground(SimpleCosmicBackground* background,
 }
 
 
-int cleanupSimpleCosmicBackground(SimpleCosmicBackground* background)
+
+int cleanupUniformDetectorBackground(UniformDetectorBackground* background)
 {
   // Release allocated memory.
   cleanupSpectrum(&background->spectrum);

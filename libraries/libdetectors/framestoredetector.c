@@ -11,7 +11,7 @@ int initFramestoreDetector(FramestoreDetector* fd,
   if (EXIT_SUCCESS!=status) return(status);
   status = initSquarePixels(&fd->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
-  status = initSimpleCosmicBackground(&fd->background, &parameters->background);
+  status = initUniformDetectorBackground(&fd->background, &parameters->background);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the framestore configuration.
@@ -38,7 +38,7 @@ int cleanupFramestoreDetector(FramestoreDetector* fd)
 
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&fd->pixels);
-  cleanupSimpleCosmicBackground(&fd->background);
+  cleanupUniformDetectorBackground(&fd->background);
   status+=closeeROSITAEventFile(&fd->eventlist);
 
   return(status);
