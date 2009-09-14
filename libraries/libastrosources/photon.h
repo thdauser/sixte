@@ -15,6 +15,7 @@
 
 #include "vector.h"
 #include "sixt_random.h"
+#include "pointsources.h"
 
 
 long photon_counter;
@@ -71,12 +72,6 @@ struct lightcurve_entry {
 
 
 
-
-// Include own header files.
-#include "pointsources.h"
-
-
-
 //////////////////////////////////////////////////////////////////////////
 //   Function declarations
 //////////////////////////////////////////////////////////////////////////
@@ -87,7 +82,6 @@ struct lightcurve_entry {
 // The return value is the value of the error status variable.
 int create_photons(PointSource* ps, double time, double dt,
 		   struct PhotonOrderedListEntry** pl, struct RMF*, gsl_rng *gsl_random_g);
-
 
 
 /** Inserts a new photon into the time-ordered photon list.
@@ -107,7 +101,6 @@ int insert_Photon2TimeOrderedList
  Photon* ph /**< Data of the photon that should be inserted. */);
 
 
-
 /** Clear the time-ordered photon list. */
 void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the pointer to the
 							 * first entry of the list. 
@@ -116,7 +109,6 @@ void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the point
 
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
-//float photon_energy(struct source_cat_entry src, Detector*);
 float photon_energy(Spectrum*, struct RMF* rmf);
 
 // Function produces a light curve for a given source.
@@ -161,7 +153,6 @@ int CreateOrderedPhotonList
 					       * in the time-ordered photon list.
 					       * Might be NULL, if it points to the end of the
 					       * list. */ );
-
 
 
 #endif  /* PHOTON_H */

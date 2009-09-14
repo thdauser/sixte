@@ -13,7 +13,6 @@
 
 
 typedef struct {
-
   GenericDetector generic;
   SquarePixels pixels;
   UniformDetectorBackground background;
@@ -26,9 +25,11 @@ typedef struct {
    * time / beginning of dead time. */
   double readout_time; 
 
-  long frame; /**< Number of the current frame. */
+  /** Number of the current frame. */
+  long frame; 
 
-  eROSITAEventFile eventlist; /**< Event list FITS file for the eROSITA-specific events. */
+  /** Event list FITS file for the eROSITA-specific events. */
+  eROSITAEventFile eventlist; 
 
 } FramestoreDetector;
 
@@ -58,8 +59,8 @@ int cleanupFramestoreDetector(FramestoreDetector*);
 
 /** This routine is called for readout of the FramestoreDetector.
  * The routine itself checks, whether a readout is necessary according to the current
- * time and readout time. If it's time to do a readout, the routine calls the function
- * readoutFramestoreDetector(). */
+ * time and readout time. If it's time to do a readout, the routine initiates the 
+ * readout process by calling readoutFramestoreDetector(). */
 int checkReadoutFramestoreDetector(FramestoreDetector*, double time);
 
 /** Read out the FramestoreDetector.
@@ -73,9 +74,6 @@ inline int readoutFramestoreDetector(FramestoreDetector*);
  * The new charge is added to the charge already contained in the detector pixel, 
  * so pileup effects are taken into account. */
 int addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
-
-/** Returns 1 if the detector is sensitive in the pixel (x,y) at the specified time. */
-//inline int FramestoreDetectorIsSensitive(int x, int y, FramestoreDetector* fd, double time);
 
 
 #endif /* FRAMESTORE_H */

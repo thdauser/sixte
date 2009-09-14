@@ -52,10 +52,21 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
 
   // Check, if the detector integration time was exceeded. 
   // In that case, read out the detector.
-  if (time > fd->readout_time) {
+  while (time > fd->readout_time) {
+    // It's time to read out the detector!
 
+    // First add background events.
+    // Uniformly distributed detector background events:
+    while (fd->background.nextImpact.time < fd->readout_time) {
+      // Add the background event to the CCD array.
+      addImpact2FramestoreDetector(fd, &fd->background.nextImpact);
+      // Create a new background event.
+      createUniformDetectorBackgroundImpact(&fd->background, &fd->pixels, fd->generic.rmf);
+    }
+      
     // Readout the detector and create eventlist entries for the actual time:
     status = readoutFramestoreDetector(fd);
+    if (EXIT_SUCCESS!=status) return(status);
 
     // Clear the detector array.
     clearSquarePixels(&fd->pixels);
@@ -64,12 +75,10 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
     // time is within the detector->readout interval.
     // This CAN ONLY BE DONE for FRAMESTORE detectors!
     // For detectors with individual readout lines a more complicated method is required.
-    while (time > fd->readout_time) {
-      fd->readout_time += fd->integration_time;
-      fd->frame += 2;
-    }
+    fd->readout_time += fd->integration_time;
+    fd->frame += 2;
 
-    // Print the time of the current events in order (program status
+    // Print the time of the current events (program status
     // information for the user).
     headas_printf("\rtime: %.3lf s ", fd->readout_time);
     fflush(NULL);
@@ -164,11 +173,9 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
 	fd->pixels.array[x[count]][y[count]].charge += 
-	  charge * fraction[count]; /*   * 
+	  charge * fraction[count];
 	  // |      |-> charge fraction due to split events
 	  // |-> charge created by incident photon
-	  FramestoreDetectorIsSensitive(x[count], y[count], fd, impact->time);
-	  // |-> "1" if pixel can measure charge, "0" else */
       }
     }
   } // END if(charge>0.)
@@ -176,15 +183,6 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
   return(status);
 }
 
-
-
-/*
-inline int FramestoreDetectorIsSensitive(int x, int y, FramestoreDetector* fd, double time)
-{
-  // The specified detector pixel is active at the moment.
-  return(1);
-}
-*/
 
 
 /*
