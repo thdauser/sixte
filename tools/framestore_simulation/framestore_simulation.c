@@ -45,14 +45,22 @@ int framestore_simulation_main() {
 
     // General detector settings.
     struct FramestoreDetectorParameters fdparameters = {
-      .pixels = { .xwidth = parameters.width,
-		  .ywidth = parameters.width,
-		  .xpixelwidth = parameters.pixelwidth,
-		  .ypixelwidth = parameters.pixelwidth },
-      .generic = { .ccsigma = parameters.ccsigma, 
-		   .pha_threshold = parameters.pha_threshold,
-		   .energy_threshold = parameters.energy_threshold,
-		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
+      .pixels = 
+      { .xwidth = parameters.width,
+	.ywidth = parameters.width,
+	.xpixelwidth = parameters.pixelwidth,
+	.ypixelwidth = parameters.pixelwidth 
+      },
+      .generic = 
+      { .ccsigma          = parameters.ccsigma, 
+	.pha_threshold    = parameters.pha_threshold,
+	.energy_threshold = parameters.energy_threshold,
+	.rmf_filename     = parameters.rmf_filename /* String address!! */ 
+      },
+      .background = 
+      { .rate              = parameters.background_rate,
+	.spectrum_filename = parameters.background_filename /* String address!! */
+      },
       .integration_time   = parameters.integration_time,
       .t0                 = parameters.t0,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
@@ -181,6 +189,11 @@ int getpar(struct Parameters* parameters)
   // Get the background count rate
   else if ((status = PILGetReal4("background_rate", &parameters->background_rate))) {
     HD_ERROR_THROW("Error: could not determine the detector background rate!\n", status);
+  }
+
+  // Get the filename of the detector background spectrum.
+  else if ((status = PILGetFname("background_filename", parameters->background_filename))) {
+    HD_ERROR_THROW("Error: could not determine the detector background spectrum!\n", status);
   }
 
   // Get the name of the output event list (FITS file)

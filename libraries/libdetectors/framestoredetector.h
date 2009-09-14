@@ -1,6 +1,7 @@
 #ifndef FRAMESTORE_H
 #define FRAMESTORE_H 1
 
+
 #include "sixt.h"
 #include "impactlist.h"
 #include "eventfile.h"
@@ -8,12 +9,14 @@
 #include "erositaevent.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
+#include "simplecosmicbackground.h"
 
 
 typedef struct {
 
   GenericDetector generic;
   SquarePixels pixels;
+  SimpleCosmicBackground background;
 
   /** Integration time of the entire pnCCD (!) detector array.
    * (= Span of time between 2 subsequent readouts). */
@@ -33,10 +36,12 @@ typedef struct {
 struct FramestoreDetectorParameters {
   struct GenericDetectorParameters generic;
   struct SquarePixelsParameters pixels;
+  struct SimpleCosmicBackgroundParameters background;
+
   double integration_time;
   double t0;
   char* eventlist_filename;
-  char* eventlist_template;
+  char* eventlist_template;  
 };
 
 

@@ -34,8 +34,8 @@ typedef struct {
 
   /** Relative photon rates of the individual spectral bins.
    * Array contains the photon rates per PHA channel.
-   * The rates respresent the relative photon rates, i.e., the total spectrum is 
-   * normalized to 1. */
+   * The rates respresent the relative photon rates, i.e., 
+   * the total spectrum is normalized to 1. */
   float *rate; 
 } Spectrum;
 
@@ -58,11 +58,12 @@ struct Spectrum_Store{
 int get_spectra(struct Spectrum_Store *, long Nchannels, 
 		char filenames[N_SPECTRA_FILES][FILENAME_LENGTH], int Nfiles);
 
-
-// Loads the specified PHA file containing a source spectrum, 
-// calculates the probability density (including normalization)
-// and stores the spectrum in an array.
-int get_spectrum(Spectrum *, long Nchannels, char filename[FILENAME_LENGTH]);
+/** Loads the specified PHA file containing a source spectrum.
+ * The data are read from the PHA file, the probability density (including normalization) 
+ * of the relative photon rates in the individual channels is calculated and
+ * stored in the Spectrum data structure. */
+int get_spectrum(Spectrum*, long Nchannels, char filename[FILENAME_LENGTH]); // Obsolete
+int loadSpectrum(Spectrum*, char* filename);
 
 // Read a spectrum from a FITS PHA file (following the OGIP standards).
 // The function uses routines from the HEAdas library 'libhdsp'.
@@ -71,6 +72,9 @@ int assign_pha_spectrum(struct Spectrum_Store*, char* filename);
 
 // Release memory of spectrum array
 void free_spectra(struct Spectrum_Store *, long Nfiles);
+
+/** Release previously allocated memory. */
+void cleanupSpectrum(Spectrum*);
 
 
 #endif  /* SPECTRUM_H */

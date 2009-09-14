@@ -1,6 +1,7 @@
 #ifndef FRAMESTORE_SIMULATION_H
 #define FRAMESTORE_SIMULATION_H 1
 
+
 #include "sixt.h"
 #include "framestoredetector.h"
 #include "erositaeventfile.h"
@@ -12,13 +13,12 @@
 #include "headas_main.c"
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
 ////////////////////////////////////////////////////////////////////////
 
 struct Parameters {
-  char impactlist_filename[FILENAME_LENGTH];
+  char impactlist_filename[MAXMSG];
   char rmf_filename[MAXMSG];
   char eventlist_filename[MAXMSG];
   char eventlist_template[MAXMSG];
@@ -36,6 +36,7 @@ struct Parameters {
   long pha_threshold;
   float energy_threshold;
 
+  char background_filename[MAXMSG]; /**< Filename of the detector background spectrum. */
   float background_rate; /**< Rate of background events. */
 };
 
