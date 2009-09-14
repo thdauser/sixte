@@ -1,0 +1,7 @@
+attitude_filename,fre,lq,"attitude_equator_scan.fits",,,"attitude file (FITS input file) "
+skyimage_filename,f,lq,"sky.fits",,,"sky image file (FITS output file) "
+t0,r,lq,0.0,,,"t0 - start time (s) "
+timespan,r,lq,15724800.0,0.0,1000000000.0,"time interval for the measurement simulation (s) "
+fov_diameter,r,lq,61.2,0.0,600.0,"diameter of the FOV (arc minutes) "
+chatter,i,lh,5,,,"chatter: control verbosity of the program "
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "
