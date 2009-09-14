@@ -25,7 +25,7 @@ lib_LTLIBRARIES = libdetectors.la
 # Sources:
 libdetectors_la_SOURCES = genericdetector.c squarepixels.c hexagonalpixels.c \
 			  eventfile.c impactlist.c \
-			  detectorbackground.c \
+			  simplecosmicbackground.c \
 			  framestoredetector.c erositaeventfile.c \
 			  wfidetector.c wfieventfile.c \
 			  xmsdetector.c xmseventfile.c \
@@ -39,7 +39,7 @@ libdetectors_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 # Define the headers that will be installed in $(includedir) :
 include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h \
 		  eventfile.h impactlist.h \
-		  detectorbackground.h \
+		  simplecosmicbackground.h \
 		  framestoredetector.h erositaeventfile.h erositaevent.h \
 		  wfidetector.h wfieventfile.h wfievent.h \
 		  xmsdetector.h xmseventfile.h xmsevent.h \
