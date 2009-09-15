@@ -4,54 +4,55 @@
 #error "Do not compile outside Autotools!"
 #endif
 
-
 #include "sixt.h"
 #include "vector.h"
 #include "point.h"
 #include "sixt_random.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
+#include "check_fov.h"
 
-#define TOOLSUB eroExposure_main
+#define TOOLSUB eroexposure_main
 #include "headas_main.c"
 
 
 /* Program parameters */
 struct Parameters {
-  char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
-  char eventlist_filename[FILENAME_LENGTH]; // input: event list
+  char attitude_filename[FILENAME_LENGTH];    // filename of the attitude file
+  char exposuremap_filename[FILENAME_LENGTH]; // output: exposure map
   
   double t0;
   double timespan;
 
-  double focal_length;
   double fov_diameter;
 };
 
 
-int eroExposure_getpar(struct Parameters *parameters);
+int eroexposure_getpar(struct Parameters *parameters);
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int eroExposure_main() {
-  int status=EXIT_SUCCESS;    // error status
-  /*
-  struct Parameters parameters;   // Program parameters
+int eroexposure_main() {
+  struct Parameters parameters; // Program parameters.
   
   AttitudeCatalog* attitudecatalog=NULL;
+  struct Telescope telescope; // Telescope data (like FOV diameter or focal length).
+  const double dt = 1.;       // Step width for the exposure map calculation.
+  
+  float** exposureMap=NULL;   // Array for the calculation of the exposure map.
+  float*  exposureMap1d=NULL; // 1d exposure map for storing in FITS image.
+  const long xwidth=288000;   // Dimensions of exposure map.
+  const long ywidth=288000;
+  int x, y;                   // Counters.
+  fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
 
-  // WCS keywords:
-  double tcrpxx, tcrvlx, tcdltx;
-  double tcrpxy, tcrvly, tcdlty;
-
-  struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-
-  char msg[MAXMSG];           // error output buffer
+  int status=EXIT_SUCCESS;    // Error status.
+  char msg[MAXMSG];           // Error output buffer.
 
 
   // Register HEATOOL:
-  set_toolname("eroExposure");
+  set_toolname("eroexposure");
   set_toolversion("0.01");
   
 
@@ -60,62 +61,40 @@ int eroExposure_main() {
     // --- Initialization ---
     
     // Read the program parameters using PIL library.
-    if ((status=eroExposure_getpar(&parameters))) break;
+    if ((status=eroexposure_getpar(&parameters))) break;
 
-    // Based on the parameters set up the program configuration.
-    telescope.focal_length = parameters.focal_length;
+    // Get memory for the exposure map.
+    exposureMap = (float**)malloc(xwidth*sizeof(float*));
+    if (NULL!=exposureMap) {
+      for (x=0; x<xwidth; x++) {
+	exposureMap[x] = (float*)malloc(ywidth*sizeof(float));
+	if (NULL!=exposureMap[x]) {
+	  // Clear the exposure map.
+	  for (y=0; y<ywidth; y++) {
+	    exposureMap[x][y] = 0.;
+	  }
+	} else {
+	  status = EXIT_FAILURE;
+	  HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
+	  break;
+	}
+      }
+    } else {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
+      break;
+    }
+    if (EXIT_SUCCESS!=status) break;
+    
+    // Set up the telescope configuration.
     telescope.fov_diameter = parameters.fov_diameter; // [rad]
-    double radperpixel = telescope.fov_diameter/384;
+    // Calculate the minimum cos-value for sources inside the FOV: 
+    // (angle(x0,source) <= 1/2 * diameter)
+    const double fov_min_align = cos(telescope.fov_diameter/2.); 
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
-
-    // Open the FITS file with the input event list:
-    status=openeROSITAEventFile(&eventlistfile, parameters.eventlist_filename, READWRITE);
-    if (EXIT_SUCCESS!=status) break;
-    
-    // Read HEADER keywords.
-    char comment[MAXMSG]; // buffer
-    // Attitude File:
-    if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "ATTITUDE", 
-		      &parameters.attitude_filename, comment, &status)) break;
-    if (0==strlen(parameters.attitude_filename)) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: no attitude file specified in FITS header of event list!\n",
-		     status);
-      break;
-    }
-    
-    // WCS keywords:
-    char columnnumber[3];
-    char tcrpx[10];
-    char tcrvl[10];
-    char tcdlt[10];
-    // For the sky x-coordinate:
-    strcpy(tcrpx, "TCRPX");
-    strcpy(tcrvl, "TCRVL");
-    strcpy(tcdlt, "TCDLT");
-    sprintf(columnnumber, "%d", eventlistfile.cskyx);
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrpx, columnnumber),
-		      &tcrpxx, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrvl, columnnumber),
-		      &tcrvlx, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcdlt, columnnumber),
-		      &tcdltx, comment, &status)) break;
-
-    // For the sky y-coordinate:
-    strcpy(tcrpx, "TCRPX");
-    strcpy(tcrvl, "TCRVL");
-    strcpy(tcdlt, "TCDLT");
-    sprintf(columnnumber, "%d", eventlistfile.cskyy);
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrpx, columnnumber),
-		      &tcrpxy, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrvl, columnnumber),
-		      &tcrvly, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcdlt, columnnumber),
-		      &tcdlty, comment, &status)) break;
-    
 
     // Get the satellite catalog with the telescope attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
@@ -126,141 +105,127 @@ int eroExposure_main() {
 
 
 
-    // --- Beginning of the Sky Imaging Process ---
+    // --- Beginning of Exposure Map calculation
+    headas_chat(5, "calculation of exposure map ...\n");
 
-    // Beginning of actual simulation (after loading required data):
-    headas_chat(5, "start sky imaging process ...\n");
+    // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
+    double time;
+    long attitude_counter=0;   // Counter for entries in the AttitudeCatalog.
 
-    // LOOP over all event in the FITS table
-    long attitude_counter=0;   // counter for entries in the AttitudeCatalog
-
-    // SCAN EVENT LIST
-    while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventlistfile.generic))) {
+    for (time=parameters.t0; (time<parameters.t0+parameters.timespan)&&(EXIT_SUCCESS==status);
+	 time+=dt) {
       
-      // Read the next event from the FITS file.
-      eROSITAEvent event;
-      status=eROSITAEventFile_getNextRow(&eventlistfile, &event);
-      if(EXIT_SUCCESS!=status) break;
-
-      // Check whether we are finished.
-      if (event.time > parameters.t0+parameters.timespan) break;
-
-      // Get the last attitude entry before 'event.time'
-      // (in order to interpolate the attitude at this time between 
-      // the neighboring calculated values):
+      // Get the last attitude entry before 'time', in order to interpolate 
+      // the attitude at this time between the neighboring calculated values):
       for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
-	if(attitudecatalog->entry[attitude_counter+1].time>event.time) {
+	if(attitudecatalog->entry[attitude_counter+1].time > time) {
 	  break;
 	}
       }
-      if(fabs(attitudecatalog->entry[attitude_counter].time-event.time)>60.) { 
-	// no entry within 10 minutes !!
+      if(fabs(attitudecatalog->entry[attitude_counter].time-time)>60.) { 
+	// No entry within 1 minute !!
 	status = EXIT_FAILURE;
-	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", event.time);
+	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
 	HD_ERROR_THROW(msg,status);
 	break;
       }
 
-      // Determine the Position of the source on the sky:
-
-      // First determine telescope pointing direction at the current time.
+      // Determine the telescope pointing direction at the current time.
       telescope.nz = 
 	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
 					 attitudecatalog->entry[attitude_counter].time, 
 					 attitudecatalog->entry[attitude_counter+1].nz, 
 					 attitudecatalog->entry[attitude_counter+1].time, 
-					 event.time));
-      // Determine the current nx: perpendicular to telescope axis nz
-      // and in the direction of the satellite motion.
-      telescope.nx = 
-	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nx, 
-					 attitudecatalog->entry[attitude_counter].time, 
-					 attitudecatalog->entry[attitude_counter+1].nx, 
-					 attitudecatalog->entry[attitude_counter+1].time, 
-					 event.time));
-      // Remove the component along the vertical direction nz 
-      // (nx must be perpendicular to nz!):
-      double scp = scalar_product(&telescope.nz, &telescope.nx);
-      telescope.nx.x -= scp*telescope.nz.x;
-      telescope.nx.y -= scp*telescope.nz.y;
-      telescope.nx.z -= scp*telescope.nz.z;
-      telescope.nx = normalize_vector(telescope.nx);
-      // The third axis of the coordinate system ny is perpendicular 
-      // to telescope axis nz and nx:
-      telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
+					 time));
+      // Calculate the RA and DEC of the pointing direction.
+      double telescope_ra, telescope_dec;
+      calculate_ra_dec(telescope.nz, &telescope_ra, &telescope_dec);
+      
+      // Determine the starting and stopping array indices for the loop over the
+      // relevant part of the exposure map:
+      double rad_per_pixel = 2*M_PI/1000;
+      double x0 = (int)((telescope_ra +M_PI)/rad_per_pixel);
+      double y0 = (int)((telescope_dec+M_PI)/rad_per_pixel);
+      double x1 = x0 - 100; double x2 = x0 + 100;
+      double y1 = y0 - 100; double y2 = y0 + 100;
 
-
-
-      // Determine RA, DEC and the sky coordinates (in pixel) of the source.
-      // Exact position on the detector:
-      struct Point2d detector_position;
-      detector_position.x = 
-	((double)(event.xi-384/2)+get_random_number()); // in [floating point pixel]
-      detector_position.y = 
-	((double)(event.yi-384/2)+get_random_number()); // in [floating point pixel]
-      double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
-
-      // Determine the off-axis angle corresponding to the detector position.
-      double offaxis_angle = d * radperpixel; // [rad]
-
-      // Determine the source position on the sky using the telescope 
-      // axis pointing vector and a vector from the point of the intersection 
-      // of the optical axis with the sky plane.
-      double r = tan(offaxis_angle); // length of this vector
-
-      Vector source_position;
-      source_position.x = telescope.nz.x 
-	-r*(detector_position.x/d*telescope.nx.x+detector_position.y/d*telescope.ny.x);
-      source_position.y = telescope.nz.y 
-	-r*(detector_position.x/d*telescope.nx.y+detector_position.y/d*telescope.ny.y);
-      source_position.z = telescope.nz.z 
-	-r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
-      source_position = normalize_vector(source_position);
-
-      // Determine the equatorial coordinates RA and DEC:
-      calculate_ra_dec(source_position, &event.ra, &event.dec);
-      event.ra  *= 180./M_PI; // [rad] -> [deg]
-      event.dec *= 180./M_PI; // [rad] -> [deg]
-
-      // Determine the pixel coordinates in the sky image:
-      event.sky_xi =  (int)((event.ra -tcrvlx)/tcdltx+tcrpxx);
-      if ((event.ra -tcrvlx)<0.) {
-	event.sky_xi--;
-      }
-      event.sky_yi =  (int)((event.dec-tcrvly)/tcdlty+tcrpxy);
-      if ((event.dec-tcrvly)<0.) {
-	event.sky_yi --;
+      // 2d Loop over the exposure map in order to determine all pixels that
+      // are currently within the FOV.
+      Vector pixel_position;
+      for (x=x1; x<=x2; x++) {
+	for (y=y1; y<=y2; y++) {
+	  pixel_position = unit_vector(telescope_ra  + (x-x0)*rad_per_pixel, 
+				       telescope_dec + (y-y0)*rad_per_pixel);
+	}
       }
 
-      // Store the data in the Event List FITS file.
-      fits_write_col(eventlistfile.generic.fptr, TDOUBLE, eventlistfile.cra,
-		     eventlistfile.generic.row, 1, 1, &event.ra, &status);
-      fits_write_col(eventlistfile.generic.fptr, TDOUBLE, eventlistfile.cdec, 
-		     eventlistfile.generic.row, 1, 1, &event.dec, &status);
-      fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cskyx, 
-		     eventlistfile.generic.row, 1, 1, &event.sky_xi, &status);
-      fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cskyy, 
-		     eventlistfile.generic.row, 1, 1, &event.sky_yi, &status);
+      // Check if the pixel currently lies within the FOV.
+      if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
+	// Pixel lies inside the FOV!
+	exposureMap[x][y] += dt;
+      }
+      
+    } // END of scanning-LOOP over the specified time interval.
+    // END of generating the exposure map.
 
-    } // END of scanning-LOOP over the event list.
 
-    
+    // Store the exposure map in a FITS file image.
+    headas_chat(5, "store exposure map in FITS image ...\n");
+
+    // Convert the exposure map to a 1d-array to store it in the FITS image.
+    exposureMap1d = (float*)malloc(xwidth*ywidth*sizeof(float));
+    if (NULL==exposureMap1d) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for 1d exposure map failed!\n", status);
+      break;
+    }
+    for (x=0; x<xwidth; x++) {
+      for (y=0; y<ywidth; y++) {
+	exposureMap1d[x*xwidth + y] = exposureMap[x][y];
+      }
+    }
+
+    // Create a new FITS-file:
+    if (fits_create_file(&fptr, parameters.exposuremap_filename, &status)) break;
+    // Create an image in the FITS-file (primary HDU):
+    long naxes[2] = { xwidth, ywidth };
+    if (fits_create_img(fptr, FLOAT_IMG, 2, naxes, &status)) break;
+    //                                   |-> naxis
+
+    // Write the image to the file:
+    long fpixel[2] = {1, 1};  // Lower left corner.
+    //                |--|--> FITS coordinates start at (1,1)
+    // Upper right corner.
+    long lpixel[2] = {xwidth, ywidth}; 
+    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, exposureMap1d, &status);
+
   } while(0);  // END of the error handling loop.
 
 
   // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
-  
   // release HEADAS random number generator
   HDmtFree();
 
-  // Close the FITS files.
-  closeeROSITAEventFile(&eventlistfile);
+  // Close the exposure map FITS file.
+  if(fptr) fits_close_file(fptr, &status);
 
   // Release memory of AttitudeCatalog
   free_AttitudeCatalog(attitudecatalog);
-  */
+
+  // Release memory of exposure map.
+  if (NULL!=exposureMap) {
+    for (x=0; x<xwidth; x++) {
+      if (NULL!=exposureMap[x]) {
+	free(exposureMap[x]);
+      }
+    }
+    free(exposureMap);
+  }
+  if (NULL!=exposureMap1d) {
+    free(exposureMap1d);
+  }
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);
@@ -271,44 +236,39 @@ int eroExposure_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int eroExposure_getpar(struct Parameters *parameters)
+int eroexposure_getpar(struct Parameters *parameters)
 {
   //  char msg[MAXMSG];         // error output buffer
   int status=EXIT_SUCCESS;  // error status
-  /*
-  // Get the filename of the input event list (FITS file)
-  if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
-    sprintf(msg, "Error reading the filename of the event list!\n");
-    HD_ERROR_THROW(msg,status);
+  
+  // Get the filename of the input attitude file (FITS file)
+  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
   }
   
+  // Get the filename of the output exposure map (FITS file)
+  else if ((status = PILGetFname("exposuremap_filename", parameters->exposuremap_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the exposure map!\n", status);
+  }
+
   // Read the diameter of the FOV (in arcmin)
   else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
-    sprintf(msg, "Error reading the diameter of the FOV!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
   }
 
-  // Read the focal length [m]
-  else if ((status = PILGetReal("focal_length", &parameters->focal_length))) {
-    sprintf(msg, "Error reading the focal length!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // get the start time of the simulation
+  // Get the start time of the simulation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
-    sprintf(msg, "Error reading the 't0' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
   }
 
-  // get the timespan for the simulation
+  // Get the timespan for the simulation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
-    sprintf(msg, "Error reading the 'timespan' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
 
   // convert angles from [arc min] to [rad]
   parameters->fov_diameter = parameters->fov_diameter*M_PI/(60.*180.); 
-  */
+  
   return(status);
 }
 

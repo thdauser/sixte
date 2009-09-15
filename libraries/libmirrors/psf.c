@@ -457,9 +457,9 @@ int save_psf_image(
 
 
       // Write the image to the file:
-      long fpixel[2] = {x0+1, y0+1};                // lower left corner
+      long fpixel[2] = {x0+1, y0+1};  // Lower left corner.
       //                   |-----|--> FITS coordinates start at (1,1)
-      // upper right corner
+      // Upper right corner.
       long lpixel[2] = {psf->item[count].naxis1, psf->item[count].naxis2}; 
       fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, sub_psf, status);
       
@@ -468,7 +468,7 @@ int save_psf_image(
   } while (0); // END of ERROR handling loop
 
 
-  // close the FITS-file
+  // Close the FITS file.
   if(fptr) fits_close_file(fptr, status);
 
   return(*status);

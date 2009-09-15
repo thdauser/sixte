@@ -1,5 +1,5 @@
 attitude_filename,fre,lq,"attitude_equator_scan.fits",,,"attitude file (FITS input file) "
-skyimage_filename,f,lq,"sky.fits",,,"sky image file (FITS output file) "
+exposuremap_filename,f,lq,"exposure.fits",,,"exposure map file (FITS output file) "
 t0,r,lq,0.0,,,"t0 - start time (s) "
 timespan,r,lq,15724800.0,0.0,1000000000.0,"time interval for the measurement simulation (s) "
 fov_diameter,r,lq,61.2,0.0,600.0,"diameter of the FOV (arc minutes) "

@@ -4,6 +4,7 @@
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
+AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -26,4 +27,5 @@ bin_PROGRAMS = eroexposure
 eroexposure_SOURCES = eroexposure.c
 eroexposure_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
 eroexposure_LDADD+= @top_builddir@/libraries/libsatellites/libsatellites.la
+eroexposure_LDADD+= @top_builddir@/libraries/libastrosources/libastrosources.la
 

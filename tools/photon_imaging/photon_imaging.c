@@ -44,7 +44,6 @@ int photon_imaging_main() {
     // (angle(x0,source) <= 1/2 * diameter)
     const double fov_min_align = cos(telescope.fov_diameter/2.); 
     
-
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
