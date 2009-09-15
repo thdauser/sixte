@@ -14,16 +14,16 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = eroExposure.par
+dist_pfiles_DATA = eroexposure.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = eroExposure
+bin_PROGRAMS = eroexposure
 
-eroExposure_SOURCES = eroExposure.c
-eroExposure_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
-eroExposure_LDADD+= @top_builddir@/libraries/libsatellites/libsatellites.la
+eroexposure_SOURCES = eroexposure.c
+eroexposure_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
+eroexposure_LDADD+= @top_builddir@/libraries/libsatellites/libsatellites.la
 
