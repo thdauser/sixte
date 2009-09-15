@@ -11,8 +11,6 @@ int initFramestoreDetector(FramestoreDetector* fd,
   if (EXIT_SUCCESS!=status) return(status);
   status = initSquarePixels(&fd->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
-  status = initUniformDetectorBackground(&fd->background, &parameters->background);
-  if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the framestore configuration.
   fd->integration_time = parameters->integration_time;
@@ -38,7 +36,6 @@ int cleanupFramestoreDetector(FramestoreDetector* fd)
 
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&fd->pixels);
-  cleanupUniformDetectorBackground(&fd->background);
   status+=closeeROSITAEventFile(&fd->eventlist);
 
   return(status);
@@ -52,17 +49,8 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
 
   // Check, if the detector integration time was exceeded. 
   // In that case, read out the detector.
-  while (time > fd->readout_time) {
+  if (time > fd->readout_time) {
     // It's time to read out the detector!
-
-    // First add background events.
-    // Uniformly distributed detector background events:
-    while (fd->background.nextImpact.time < fd->readout_time) {
-      // Add the background event to the CCD array.
-      addImpact2FramestoreDetector(fd, &fd->background.nextImpact);
-      // Create a new background event.
-      createUniformDetectorBackgroundImpact(&fd->background, &fd->pixels, fd->generic.rmf);
-    }
       
     // Readout the detector and create eventlist entries for the actual time:
     status = readoutFramestoreDetector(fd);
@@ -75,8 +63,10 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
     // time is within the detector->readout interval.
     // This CAN ONLY BE DONE for FRAMESTORE detectors!
     // For detectors with individual readout lines a more complicated method is required.
-    fd->readout_time += fd->integration_time;
-    fd->frame += 2;
+    while (time > fd->readout_time) {
+      fd->readout_time += fd->integration_time;
+      fd->frame += 2;
+    }
 
     // Print the time of the current events (program status
     // information for the user).

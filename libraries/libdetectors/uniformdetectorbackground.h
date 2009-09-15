@@ -45,7 +45,10 @@ int initUniformDetectorBackground(UniformDetectorBackground*,
  * Release allocated memory and call clean-up routines of underlying structures. */
 int cleanupUniformDetectorBackground(UniformDetectorBackground*);
 
-
+/** Create new UniformDetectorBackground event (Impact object).
+ * The background event is generated with random 
+ * position on the detector, random energy according to spectrum, and random
+ * event time according to Poisson statistics and average background rate. */
 int createUniformDetectorBackgroundImpact(UniformDetectorBackground*, SquarePixels*,
 					  struct RMF*);
 

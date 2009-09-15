@@ -7,7 +7,7 @@
 #include "erositaeventfile.h"
 #include "point.h"
 #include "impactlist.h"
-
+#include "uniformdetectorbackground.h"
 
 #define TOOLSUB framestore_simulation_main
 #include "headas_main.c"

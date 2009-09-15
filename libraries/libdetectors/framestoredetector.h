@@ -9,13 +9,11 @@
 #include "erositaevent.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
-#include "uniformdetectorbackground.h"
 
 
 typedef struct {
   GenericDetector generic;
   SquarePixels pixels;
-  UniformDetectorBackground background;
 
   /** Integration time of the entire pnCCD (!) detector array.
    * (= Span of time between 2 subsequent readouts). */
@@ -37,7 +35,6 @@ typedef struct {
 struct FramestoreDetectorParameters {
   struct GenericDetectorParameters generic;
   struct SquarePixelsParameters pixels;
-  struct UniformDetectorBackgroundParameters background;
 
   double integration_time;
   double t0;

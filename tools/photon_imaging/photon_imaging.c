@@ -7,7 +7,6 @@
 #include "photon_imaging.h"
 
 
-
 ////////////////////////////////////
 /** Main procedure. */
 int photon_imaging_main() {

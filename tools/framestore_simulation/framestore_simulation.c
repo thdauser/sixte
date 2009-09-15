@@ -13,12 +13,15 @@
 int framestore_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
-  // Detector data structure (containing the pixel array, its width, ...)
+  // Detector data structure (containing the pixel array, its width, ...).
   FramestoreDetector detector;
+
+  // Data structure to model the detector background.
+  UniformDetectorBackground background;
 
   struct ImpactlistFile impactlistfile;
 
-  int status=EXIT_SUCCESS;   // error status
+  int status=EXIT_SUCCESS; // Error status.
 
 
   // Register HEATOOL:
@@ -43,7 +46,7 @@ int framestore_simulation_main() {
     HDmtInit(1);
 
 
-    // General detector settings.
+    // DETECTOR setup.
     struct FramestoreDetectorParameters fdparameters = {
       .pixels = 
       { .xwidth = parameters.width,
@@ -57,18 +60,23 @@ int framestore_simulation_main() {
 	.energy_threshold = parameters.energy_threshold,
 	.rmf_filename     = parameters.rmf_filename /* String address!! */ 
       },
-      .background = 
-      { .rate              = parameters.background_rate,
-	.spectrum_filename = parameters.background_filename /* String address!! */
-      },
       .integration_time   = parameters.integration_time,
       .t0                 = parameters.t0,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template
     };
     if(EXIT_SUCCESS!=(status=initFramestoreDetector(&detector, &fdparameters))) break;
-    
     // END of DETECTOR CONFIGURATION SETUP    
+
+
+    // Setup detector BACKGROUND data structure.
+    struct UniformDetectorBackgroundParameters bkgdparameters = {
+      .rate              = parameters.background_rate,
+      .spectrum_filename = parameters.background_filename /* String address!! */
+    };
+    if(EXIT_SUCCESS!=(status=initUniformDetectorBackground(&background, &bkgdparameters))) break;
+    // END of BACKGROUND CONFIGURATION SETUP
+
 
     // Add important additional HEADER keywords to the event list.
     if (fits_write_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
@@ -82,6 +90,7 @@ int framestore_simulation_main() {
 
     headas_chat(5, "start detection process ...\n");
     Impact impact;
+    double former_impact_time=-1000.; // Time of the last impact.
 
     // Loop over all impacts in the FITS file.
     while ((EXIT_SUCCESS==status)&&(0==impactlist_EOF(&impactlistfile))) {
@@ -90,7 +99,46 @@ int framestore_simulation_main() {
       if(EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
-      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) continue;
+      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) 
+	continue;
+
+      // Insert Background events.
+      // If the difference between to subsequent cosmic photon impacts
+      // is greater than 60s, interrupt the background generation in order
+      // to avoid numerical costs during periods in which the telescope is not
+      // pointing to any interesting part in the sky. These times will be skipped
+      // anyway.
+      if (impact.time-former_impact_time > 60.) {
+	// Fill up the time in the 60s after the last photon impact with background events.
+	while (background.nextImpact.time - former_impact_time < 60.) {
+	  // Add the background event to the CCD array.
+	  status=addImpact2FramestoreDetector(&detector, &background.nextImpact);
+	  if(EXIT_SUCCESS!=status) break;
+	  // Create a new background event.
+	  createUniformDetectorBackgroundImpact(&background, &detector.pixels, 
+						detector.generic.rmf);
+	}
+	if(EXIT_SUCCESS!=status) break;
+	// Jump to the next interval where cosmic photons arrive at the detector.
+	// Leave out the time in between in order to reduce numerical costs.
+	Impact nextImpact = { .time = impact.time - 60.,
+			      .energy = 0.,
+			      .position = { .x=0., .y=0. } };
+	background.nextImpact = nextImpact;
+      }
+      
+      // Insert uniformly distributed detector background events in the interval between
+      // the last background event and the current photon arrival time.
+      while (background.nextImpact.time < impact.time) {
+	// Add the background event to the CCD array.
+	status=addImpact2FramestoreDetector(&detector, &background.nextImpact);
+	if(EXIT_SUCCESS!=status) break;
+	// Create a new background event.
+	createUniformDetectorBackgroundImpact(&background, &detector.pixels, 
+					      detector.generic.rmf);
+      }
+      if(EXIT_SUCCESS!=status) break;
+      // END of inserting background events.
 
       // Call the photon detection routine that generates the right charge
       // and stores it in the detector pixels.
@@ -99,6 +147,9 @@ int framestore_simulation_main() {
       // in that case. 
       status=addImpact2FramestoreDetector(&detector, &impact);
       if(EXIT_SUCCESS!=status) break;
+
+      // Save the time of the current impact (necessary for background generation).
+      former_impact_time = impact.time;
 
     } // END of scanning the impact list.
 
@@ -122,6 +173,9 @@ int framestore_simulation_main() {
 
   // Release memory of detector.
   status+=cleanupFramestoreDetector(&detector);
+
+  // Release memory of background data structure.
+  status+=cleanupUniformDetectorBackground(&background);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
