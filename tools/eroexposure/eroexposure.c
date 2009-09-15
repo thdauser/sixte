@@ -23,6 +23,7 @@ struct Parameters {
   
   double t0;
   double timespan;
+  double dt;       // Step width for the exposure map calculation.
 
   double fov_diameter;
 };
@@ -38,12 +39,11 @@ int eroexposure_main() {
   
   AttitudeCatalog* attitudecatalog=NULL;
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length).
-  const double dt = 1.;       // Step width for the exposure map calculation.
   
   float** exposureMap=NULL;   // Array for the calculation of the exposure map.
   float*  exposureMap1d=NULL; // 1d exposure map for storing in FITS image.
-  const long xwidth=288000;   // Dimensions of exposure map.
-  const long ywidth=288000;
+  const long xwidth=360;      // Dimensions of exposure map.
+  const long ywidth=180;
   int x, y;                   // Counters.
   fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
 
@@ -106,15 +106,19 @@ int eroexposure_main() {
 
 
     // --- Beginning of Exposure Map calculation
-    headas_chat(5, "calculation of exposure map ...\n");
+    headas_chat(5, "calculate the exposure map ...\n");
 
     // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
     double time;
-    long attitude_counter=0;   // Counter for entries in the AttitudeCatalog.
+    long attitude_counter=0; // Counter for entries in the AttitudeCatalog.
 
     for (time=parameters.t0; (time<parameters.t0+parameters.timespan)&&(EXIT_SUCCESS==status);
-	 time+=dt) {
+	 time+=parameters.dt) {
       
+      // Print the current time (program status information for the user).
+      headas_printf("\rtime: %.1lf s ", time);
+      fflush(NULL);
+
       // Get the last attitude entry before 'time', in order to interpolate 
       // the attitude at this time between the neighboring calculated values):
       for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
@@ -143,9 +147,10 @@ int eroexposure_main() {
       
       // Determine the starting and stopping array indices for the loop over the
       // relevant part of the exposure map:
-      double rad_per_pixel = 2*M_PI/1000;
-      double x0 = (int)((telescope_ra +M_PI)/rad_per_pixel);
-      double y0 = (int)((telescope_dec+M_PI)/rad_per_pixel);
+      double xrad_per_pixel = 2*M_PI/xwidth;
+      double yrad_per_pixel = 2*M_PI/ywidth;
+      double x0 = (int)((telescope_ra +M_PI)/xrad_per_pixel);
+      double y0 = (int)((telescope_dec+M_PI)/yrad_per_pixel);
       double x1 = x0 - 100; double x2 = x0 + 100;
       double y1 = y0 - 100; double y2 = y0 + 100;
 
@@ -154,15 +159,15 @@ int eroexposure_main() {
       Vector pixel_position;
       for (x=x1; x<=x2; x++) {
 	for (y=y1; y<=y2; y++) {
-	  pixel_position = unit_vector(telescope_ra  + (x-x0)*rad_per_pixel, 
-				       telescope_dec + (y-y0)*rad_per_pixel);
+	  pixel_position = unit_vector(telescope_ra  + (x-x0)*xrad_per_pixel, 
+				       telescope_dec + (y-y0)*yrad_per_pixel);
 	}
       }
 
       // Check if the pixel currently lies within the FOV.
       if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
 	// Pixel lies inside the FOV!
-	exposureMap[x][y] += dt;
+	exposureMap[x][y] += parameters.dt;
       }
       
     } // END of scanning-LOOP over the specified time interval.
@@ -170,7 +175,8 @@ int eroexposure_main() {
 
 
     // Store the exposure map in a FITS file image.
-    headas_chat(5, "store exposure map in FITS image ...\n");
+    headas_chat(5, "\nstore exposure map in FITS image '%s' ...\n", 
+		parameters.exposuremap_filename);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
     exposureMap1d = (float*)malloc(xwidth*ywidth*sizeof(float));
@@ -256,17 +262,22 @@ int eroexposure_getpar(struct Parameters *parameters)
     HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
   }
 
-  // Get the start time of the simulation
+  // Get the start time of the exposure map calculation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
     HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
   }
 
-  // Get the timespan for the simulation
+  // Get the timespan for the exposure map calculation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
 
-  // convert angles from [arc min] to [rad]
+  // Get the time step for the exposure map calculation
+  else if ((status = PILGetReal("dt", &parameters->dt))) {
+    HD_ERROR_THROW("Error reading the 'dt' parameter!\n", status);
+  }
+
+  // Convert angles from [arc min] to [rad]
   parameters->fov_diameter = parameters->fov_diameter*M_PI/(60.*180.); 
   
   return(status);
