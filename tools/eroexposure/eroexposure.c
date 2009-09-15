@@ -148,7 +148,7 @@ int eroexposure_main() {
       // Determine the starting and stopping array indices for the loop over the
       // relevant part of the exposure map:
       double xrad_per_pixel = 2*M_PI/xwidth;
-      double yrad_per_pixel = 2*M_PI/ywidth;
+      double yrad_per_pixel =   M_PI/ywidth;
       double x0 = (int)((telescope_ra +M_PI)/xrad_per_pixel);
       double y0 = (int)((telescope_dec+M_PI)/yrad_per_pixel);
       double x1 = x0 - 100; double x2 = x0 + 100;
@@ -161,13 +161,19 @@ int eroexposure_main() {
 	for (y=y1; y<=y2; y++) {
 	  pixel_position = unit_vector(telescope_ra  + (x-x0)*xrad_per_pixel, 
 				       telescope_dec + (y-y0)*yrad_per_pixel);
-	}
-      }
 
-      // Check if the pixel currently lies within the FOV.
-      if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
-	// Pixel lies inside the FOV!
-	exposureMap[x][y] += parameters.dt;
+	  // Check if the pixel currently lies within the FOV.
+	  if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
+	    // Pixel lies inside the FOV!
+	    long xi=x, yi=y;
+	    while (xi<      0) xi+=xwidth;
+	    while (xi>=xwidth) xi-=xwidth;
+	    while (yi<      0) yi+=ywidth;
+	    while (yi>=ywidth) yi-=ywidth;
+	    exposureMap[xi][yi] += parameters.dt;
+	  }
+
+	}
       }
       
     } // END of scanning-LOOP over the specified time interval.
@@ -229,6 +235,7 @@ int eroexposure_main() {
     }
     free(exposureMap);
   }
+  printf("2d successfully freed!\n");
   if (NULL!=exposureMap1d) {
     free(exposureMap1d);
   }
