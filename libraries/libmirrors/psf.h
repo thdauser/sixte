@@ -43,7 +43,6 @@ typedef struct {
 // stores these data in the PSF storage. 
 PSF* get_psf(const char*, int* status);
 
-
 /** Calculates the position on the detector, where a photon at given sky position 
  * with specified energy hits the detector according to the PSF data. 
  * The exact position is determined with a random number generator 
@@ -53,10 +52,8 @@ PSF* get_psf(const char*, int* status);
  * in [m] in the first 2 parameters of the function. */
 int get_psf_pos(struct Point2d*, Photon, struct Telescope, Vignetting*, PSF*);
 
-
 /** Releases the memory of the PSF storage. */
 void free_psf(PSF*);
-
 
 // Save the data contained in the PSF storage to images in a FITS file
 // according to the OGIP standards.
