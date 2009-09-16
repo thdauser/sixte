@@ -1,7 +1,6 @@
 #ifndef SOURCEIMAGE_H
 #define SOURCEIMAGE_H 1
 
-
 #include "sixt.h"
 
 
@@ -35,28 +34,22 @@ typedef struct {
 } SourceImageCatalog;
 
 
-
-
 //////////////////////////////////////////////////////////////////
 
 
 /** Constructor for SourceImage objects. */
 SourceImage* get_SourceImage();
 
-
 /** Constructor for SourceImage objects. 
  * Reads a SourceImage from a FITS file and stores it in the 
  * corresponding data structure. */
 SourceImage* get_SourceImage_fromFile(char* filename, int* status);
 
-
 /** Destructor for SourceImage objects. */
 void free_SourceImage(SourceImage* si);
 
-
 /** Constructor for the SourceImageCatalog. */
 SourceImageCatalog* get_SourceImageCatalog();
-
 
 /** Destructor for the SourceImageCatalog. */
 void free_SourceImageCatalog(SourceImageCatalog* sic);

@@ -25,5 +25,21 @@
 #define TOOLSUB photon_generation_main
 #include "headas_main.c"
 
+
+struct Parameters {
+  char attitude_filename[MAXMSG];
+  char spectrum_filename[N_SPECTRA_FILES][MAXMSG];
+  char rmf_filename[MAXMSG];
+  char sourcelist_filename[MAXMSG];
+  char photonlist_filename[MAXMSG];
+  char photonlist_template[MAXMSG];
+
+  SourceCategory source_category;
+
+  double t0, timespan;
+  double fov_diameter;
+};
+
+
 #endif /* PHOTON_GENERATION_H */
 

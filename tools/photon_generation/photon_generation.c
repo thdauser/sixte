@@ -4,23 +4,7 @@
 #error "Do not compile outside Autotools!"
 #endif
 
-
 #include "photon_generation.h"
-
-
-struct Parameters {
-  char attitude_filename[MAXMSG];
-  char spectrum_filename[N_SPECTRA_FILES][MAXMSG];
-  char rmf_filename[MAXMSG];
-  char sourcelist_filename[MAXMSG];
-  char photonlist_filename[MAXMSG];
-  char photonlist_template[MAXMSG];
-
-  SourceCategory source_category;
-
-  double t0, timespan;
-  double fov_diameter;
-};
 
 
 ////////////////////////////
@@ -135,7 +119,6 @@ int check_angle_range(double angle, double min, double max)
     return(0);
   }
 }
-
 
 
 
@@ -324,6 +307,9 @@ int photon_generation_main()
 		       "with the source images!\n", status);
 	break;
       } else {
+	// Determine the WCS header keywords.
+	// TODO 
+
 	// Determine the number of lines (= number of extended source files).
 	char line[MAXMSG];
 	while (fgets(line, MAXMSG, sourceimagelist_fptr)) {
@@ -543,19 +529,19 @@ int photon_generation_main()
 		// Vector in the direction of the current pixel.
 		Vector pixel_vector; 
 		pixel_vector.x = refpixel_vector.x + 
-		  (xcount - sic->images[image_counter]->crpix1 + 0.5)
+		  (xcount - sic->images[image_counter]->crpix1 + 1.)
 		  *sic->images[image_counter]->cdelt1 * k.x +
-		  (ycount - sic->images[image_counter]->crpix2 + 0.5)
+		  (ycount - sic->images[image_counter]->crpix2 + 1.)
 		  *sic->images[image_counter]->cdelt2 * l.x;
 		pixel_vector.y = refpixel_vector.y + 
-		  (xcount - sic->images[image_counter]->crpix1 + 0.5)
+		  (xcount - sic->images[image_counter]->crpix1 + 1.)
 		  *sic->images[image_counter]->cdelt1 * k.y +
-		  (ycount - sic->images[image_counter]->crpix2 + 0.5)
+		  (ycount - sic->images[image_counter]->crpix2 + 1.)
 		  *sic->images[image_counter]->cdelt2 * l.y;
 		pixel_vector.z = refpixel_vector.z + 
-		  (xcount - sic->images[image_counter]->crpix1 + 0.5)
+		  (xcount - sic->images[image_counter]->crpix1 + 1.)
 		  *sic->images[image_counter]->cdelt1 * k.z +
-		  (ycount - sic->images[image_counter]->crpix2 + 0.5)
+		  (ycount - sic->images[image_counter]->crpix2 + 1.)
 		  *sic->images[image_counter]->cdelt2 * l.z;
 		normalize_vector_fast(&pixel_vector);
 		

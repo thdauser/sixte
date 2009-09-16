@@ -1,7 +1,6 @@
 #include "sourceimage.h"
 
 
-
 ////////////////////////////
 SourceImage* get_SourceImage() 
 {
@@ -27,7 +26,6 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
   fitsfile* fptr=NULL;
   float* input_buffer=NULL;
   char msg[MAXMSG]; 
-
 
   do { // Beginning of ERROR handling loop
 
@@ -76,10 +74,10 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     si->crval2 *= M_PI/180.;
 
     // Determine the edges of the covered area:
-    si->minra  = si->crval1 - si->cdelt1* si->crpix1;
-    si->maxra  = si->crval1 + si->cdelt1*(si->naxis1-si->crpix1);
-    si->mindec = si->crval2 - si->cdelt2* si->crpix2;
-    si->maxdec = si->crval2 + si->cdelt2*(si->naxis2-si->crpix2);
+    si->minra  = si->crval1 - si->cdelt1*(si->crpix1-0.5);
+    si->maxra  = si->crval1 + si->cdelt1*(si->naxis1-(si->crpix1-0.5));
+    si->mindec = si->crval2 - si->cdelt2*(si->crpix2-0.5);
+    si->maxdec = si->crval2 + si->cdelt2*(si->naxis2-(si->crpix2-0.5));
     
 
     // Allocate memory for the pixels of the image:
