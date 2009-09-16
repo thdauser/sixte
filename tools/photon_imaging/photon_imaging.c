@@ -15,7 +15,7 @@ int photon_imaging_main() {
   AttitudeCatalog* attitudecatalog=NULL;
 
   PhotonListFile photonlistfile;
-  fitsfile *impactlist_fptr=NULL;           
+  ImpactListFile impactlistfile;
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
   PSF* psf=NULL; /**< PSF (Point Spread Function) data (for different off-axis angles 
@@ -52,9 +52,10 @@ int photon_imaging_main() {
 				READONLY);
     if (EXIT_SUCCESS!=status) break;
 
-    // Get the satellite catalog with the telescope attitude data:
+    // Open the attitude file specified in the header keywords of the photon list.
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
+    if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
+		      &parameters.attitude_filename, 
 		      comment, &status)) break;
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   parameters.t0, parameters.timespan, 
@@ -68,29 +69,26 @@ int photon_imaging_main() {
     vignetting = get_Vignetting(parameters.vignetting_filename, &status);
     if (status != EXIT_SUCCESS) break;
 
-    // Create a new FITS file for the output of the impact list:
-    remove(parameters.impactlist_filename);
-    if ((create_impactlist_file(&impactlist_fptr, parameters.impactlist_filename, 
-				&status))) break;
-    
-    // Add important HEADER keywords to the impact list
-    if (fits_write_key(impactlist_fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
-		       "name of the attitude FITS file", &status)) break;
+    // Create a new FITS file for the output of the impact list.
+    status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 
+				   parameters.impactlist_template);
+    if (EXIT_SUCCESS!=status) break;
 
+    // Add attitude filename to header keywords.
+    if (fits_update_key(impactlistfile.fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+		       "name of the attitude FITS file", &status)) break;
     
     // --- END of Initialization ---
 
 
+
     // --- Beginning of Imaging Process ---
-
-    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    long impactlist_row=0;    // current row in the output list
-    long attitude_counter=0;  // counter for AttitudeCatalog
-
 
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start imaging process ...\n");
 
+    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
+    long attitude_counter=0;  // counter for AttitudeCatalog
 
     // SCAN PHOTON LIST    
     for(photonlistfile.row=0; (photonlistfile.row<photonlistfile.nrows)&&(EXIT_SUCCESS==status); 
@@ -197,19 +195,17 @@ int photon_imaging_main() {
 	      tan(telescope.fov_diameter)*telescope.focal_length) {
 	    
 	    // Insert the impact position with the photon data into the impact list:
-	    fits_insert_rows(impactlist_fptr, impactlist_row++, 1, &status);
-	    fits_write_col(impactlist_fptr, TDOUBLE, 1, impactlist_row, 1, 1, 
-			   &photon.time, &status);
-	    fits_write_col(impactlist_fptr, TFLOAT, 2, impactlist_row, 1, 1, 
-			   &photon.energy, &status);
-	    fits_write_col(impactlist_fptr, TDOUBLE, 3, impactlist_row, 1, 1, 
-			   &position.x, &status);
-	    fits_write_col(impactlist_fptr, TDOUBLE, 4, impactlist_row, 1, 1, 
-			   &position.y, &status);
-
+	    fits_insert_rows(impactlistfile.fptr, impactlistfile.row++, 1, &status);
+	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.ctime, 
+			   impactlistfile.row, 1, 1, &photon.time, &status);
+	    fits_write_col(impactlistfile.fptr, TFLOAT, impactlistfile.cenergy, 
+			   impactlistfile.row, 1, 1, &photon.energy, &status);
+	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cx, 
+			   impactlistfile.row, 1, 1, &position.x, &status);
+	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cy, 
+			   impactlistfile.row, 1, 1, &position.y, &status);
 	  }
 	} // END get_psf_pos(...)
-	//      } // END of applying Vignetting correction.
       } // End of FOV check.
     } // END of scanning LOOP over the photon list.
   } while(0);  // END of the error handling loop.
@@ -223,7 +219,7 @@ int photon_imaging_main() {
   HDmtFree();
 
   // Close the FITS files.
-  if (impactlist_fptr) fits_close_file(impactlist_fptr, &status);
+  status += closeImpactListFile(&impactlistfile);
   status += closePhotonListFile(&photonlistfile);
 
   free_AttitudeCatalog(attitudecatalog);
@@ -297,8 +293,24 @@ int photon_imaging_getpar(
     sprintf(msg, "Error reading the focal length!\n");
     HD_ERROR_THROW(msg,status);
   }
+  if (EXIT_SUCCESS!=status) return(status);
 
-  // convert angles from [arc min] to [rad]
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
+  char* buffer;
+  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(parameters->impactlist_template, buffer);
+  } else {
+    if ((status = PILGetFname("fits_templates", parameters->impactlist_template))) {
+      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
+      
+    }
+  }
+  // Set the impact list template file:
+  strcat(parameters->impactlist_template, "/impactlist.tpl");
+
+  // Convert angles from [arc min] to [rad].
   telescope->fov_diameter = telescope->fov_diameter*M_PI/(60.*180.); 
 
   return(status);

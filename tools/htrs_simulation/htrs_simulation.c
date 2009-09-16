@@ -4,7 +4,6 @@
 #error "Do not compile outside Autotools!"
 #endif
 
-
 #include "htrs_simulation.h"
 
 
@@ -22,7 +21,7 @@ int htrs_simulation_main() {
   // Before the first usage it has to be initialized.
   HTRSDetector detector;
 
-  struct ImpactlistFile impactlistfile;
+  ImpactListFile impactlistfile;
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -45,8 +44,10 @@ int htrs_simulation_main() {
 
 
     // Open the impact list FITS file.
-    if(EXIT_SUCCESS!=(status=impactlist_openFile(&impactlistfile, parameters.impactlist_filename, 
-						 READONLY))) break;
+    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename, 
+				READONLY);
+    if (EXIT_SUCCESS!=status) break;
+
 
     // Detector settings.
     // Store the settings for the HTRSDetector in the corresponding data structure
@@ -74,9 +75,9 @@ int htrs_simulation_main() {
     Impact impact; // Buffer to store the impacts read from the FITS file.
 
     // Loop over all impacts in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==impactlist_EOF(&impactlistfile))) {
+    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(&impactlistfile))) {
 
-      status=impactlist_getNextRow(&impactlistfile, &impact);
+      status=getNextImpactListFileRow(&impactlistfile, &impact);
       if (EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
@@ -103,7 +104,8 @@ int htrs_simulation_main() {
   // Release HEADAS random number generator.
   HDmtFree();
 
-  if (NULL!=impactlistfile.fptr) fits_close_file(impactlistfile.fptr, &status);
+  // Close the FITS files.
+  status += closeImpactListFile(&impactlistfile);
 
   // Release memory of detector.
   status+=cleanupHTRSDetector(&detector);

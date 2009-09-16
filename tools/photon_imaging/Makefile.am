@@ -6,6 +6,7 @@ AM_CFLAGS += -I@top_srcdir@/libraries/libsixt
 AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -I@top_srcdir@/libraries/libmirrors
 AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
+AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -29,4 +30,5 @@ photon_imaging_SOURCES = photon_imaging.c photon_imaging.h
 photon_imaging_LDADD  = @top_builddir@/libraries/libmirrors/libmirrors.la
 photon_imaging_LDADD += @top_builddir@/libraries/libastrosources/libastrosources.la
 photon_imaging_LDADD += @top_builddir@/libraries/libsatellites/libsatellites.la
+photon_imaging_LDADD += @top_builddir@/libraries/libdetectors/libdetectors.la
 

@@ -31,3 +31,4 @@ libastrosources_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 # Define the headers that will be installed in $(includedir) :
 include_HEADERS = astrosources.h pointsources.h sourceimage.h photon.h spectrum.h \
 		  fits_pha.h check_fov.h photonlistfile.h
+

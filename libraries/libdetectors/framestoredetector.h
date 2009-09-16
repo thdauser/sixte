@@ -3,7 +3,7 @@
 
 
 #include "sixt.h"
-#include "impactlist.h"
+#include "impact.h"
 #include "eventfile.h"
 #include "erositaeventfile.h"
 #include "erositaevent.h"

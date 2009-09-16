@@ -6,7 +6,7 @@
 #include "hexagonalpixels.h"
 #include "eventfile.h"
 #include "htrseventfile.h"
-#include "impactlist.h"
+#include "impact.h"
 
 
 /** Model for the HTRS detector on IXO.

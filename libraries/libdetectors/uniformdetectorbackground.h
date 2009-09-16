@@ -4,7 +4,7 @@
 
 #include "sixt.h"
 #include "sixt_random.h"
-#include "impactlist.h"
+#include "impact.h"
 #include "spectrum.h"
 #include "photon.h"
 #include "squarepixels.h"

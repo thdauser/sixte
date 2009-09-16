@@ -6,7 +6,7 @@
 #include "squarepixels.h"
 #include "eventfile.h"
 #include "wfieventfile.h"
-#include "impactlist.h"
+#include "impact.h"
 
 
 /** Model for the WFI detector on IXO.

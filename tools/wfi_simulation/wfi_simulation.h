@@ -5,12 +5,11 @@
 #include "wfidetector.h"
 #include "eventfile.h"
 #include "point.h"
-#include "impactlist.h"
-
+#include "impact.h"
+#include "impactlistfile.h"
 
 #define TOOLSUB wfi_simulation_main
 #include "headas_main.c"
-
 
 
 ////////////////////////////////////////////////////////////////////////

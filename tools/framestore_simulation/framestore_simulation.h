@@ -6,7 +6,8 @@
 #include "framestoredetector.h"
 #include "erositaeventfile.h"
 #include "point.h"
-#include "impactlist.h"
+#include "impact.h"
+#include "impactlistfile.h"
 #include "uniformdetectorbackground.h"
 
 #define TOOLSUB framestore_simulation_main
@@ -16,6 +17,7 @@
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
 ////////////////////////////////////////////////////////////////////////
+
 
 struct Parameters {
   char impactlist_filename[MAXMSG];

@@ -19,7 +19,8 @@ int framestore_simulation_main() {
   // Data structure to model the detector background.
   UniformDetectorBackground background;
 
-  struct ImpactlistFile impactlistfile;
+  ImpactListFile impactlistfile;
+  char attitude_filename[MAXMSG];
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -36,11 +37,17 @@ int framestore_simulation_main() {
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
 
-
-    // Open the impact list FITS file.
-    if(EXIT_SUCCESS!=(status=impactlist_openFile(&impactlistfile, parameters.impactlist_filename, 
-						 READONLY))) break;
+    // Open the FITS file with the input impact list:
+    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename, 
+				READONLY);
+    if (EXIT_SUCCESS!=status) break;
     
+    // Determine the name of the attitude file from the FITS header.
+    char comment[MAXMSG]; // buffer
+    if (fits_read_key(impactlistfile.fptr, TSTRING, "ATTITUDE", 
+		      attitude_filename, comment, &status)) break;
+
+
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
@@ -80,10 +87,10 @@ int framestore_simulation_main() {
 
     // Add important additional HEADER keywords to the event list.
     if (fits_write_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
-		       impactlistfile.attitude_filename,
-		       "name of the attitude FITS file", &status)) break;
+		       attitude_filename, "name of the attitude FITS file", &status)) break;
 
     // --- END of Initialization ---
+
 
 
     // --- Beginning of Detection Process ---
@@ -93,9 +100,9 @@ int framestore_simulation_main() {
     double former_impact_time=-1000.; // Time of the last impact.
 
     // Loop over all impacts in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==impactlist_EOF(&impactlistfile))) {
+    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(&impactlistfile))) {
 
-      status=impactlist_getNextRow(&impactlistfile, &impact);
+      status=getNextImpactListFileRow(&impactlistfile, &impact);
       if(EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
@@ -169,7 +176,8 @@ int framestore_simulation_main() {
   // Release HEADAS random number generator.
   HDmtFree();
 
-  if (NULL!=impactlistfile.fptr) fits_close_file(impactlistfile.fptr, &status);
+  // Close the FITS files.
+  status += closeImpactListFile(&impactlistfile);
 
   // Release memory of detector.
   status+=cleanupFramestoreDetector(&detector);
@@ -180,7 +188,6 @@ int framestore_simulation_main() {
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
 }
-
 
 
 

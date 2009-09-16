@@ -29,7 +29,6 @@ int photon_generation_getpar(struct Parameters* parameters)
   char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
 
-
   // Get the filename of the Attitude file (FITS file):
   if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     sprintf(msg, "Error reading the filename of the attitude file!\n");
@@ -110,11 +109,10 @@ int photon_generation_getpar(struct Parameters* parameters)
       
     }
   }
-  // Set the photon list template file for eROSITA:
+  // Set the photon list template file:
   strcat(parameters->photonlist_template, "/photonlist.tpl");
 
-
-  // Convert angles from [arc min] to [rad]
+  // Convert angles from [arc min] to [rad].
   parameters->fov_diameter = parameters->fov_diameter*M_PI/(180.*60.);
 
   return(status);
@@ -371,6 +369,7 @@ int photon_generation_main()
     } // different source categories
 
 
+    // Generate new photon list FITS file for output of generated photons.
     status = openNewPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
 				   parameters.photonlist_template);
     if (EXIT_SUCCESS!=status) break;

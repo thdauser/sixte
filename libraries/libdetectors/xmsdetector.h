@@ -6,7 +6,7 @@
 #include "squarepixels.h"
 #include "eventfile.h"
 #include "xmseventfile.h"
-#include "impactlist.h"
+#include "impact.h"
 
 
 /** Model for the Transition Edge Sensor (TES) Calorimeter /

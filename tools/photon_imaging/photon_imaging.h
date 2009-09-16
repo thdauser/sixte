@@ -9,6 +9,8 @@
 #include "psf.h"
 #include "photon.h"
 #include "photonlistfile.h"
+#include "impact.h"
+#include "impactlistfile.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
 #include "vignetting.h"
@@ -19,11 +21,12 @@
 
 
 struct Parameters {
-  char attitude_filename[FILENAME_LENGTH];
-  char photonlist_filename[FILENAME_LENGTH]; // input: photon list
-  char psf_filename[FILENAME_LENGTH];        // input: PSF input file
-  char vignetting_filename[FILENAME_LENGTH];
-  char impactlist_filename[FILENAME_LENGTH]; // output: impact list
+  char attitude_filename[MAXMSG];   // input: attitude file
+  char photonlist_filename[MAXMSG]; // input: photon list
+  char psf_filename[MAXMSG];        // input: PSF file
+  char vignetting_filename[MAXMSG]; // input: vignetting file
+  char impactlist_filename[MAXMSG]; // output: impact list
+  char impactlist_template[MAXMSG];
 
   double t0;        // starting time of the simulation
   double timespan;  // time span of the simulation

@@ -5,12 +5,11 @@
 #include "xmsdetector.h"
 #include "eventfile.h"
 #include "point.h"
-#include "impactlist.h"
-
+#include "impact.h"
+#include "impactlistfile.h"
 
 #define TOOLSUB xms_simulation_main
 #include "headas_main.c"
-
 
 
 ////////////////////////////////////////////////////////////////////////
