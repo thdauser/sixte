@@ -8,13 +8,13 @@
 #include "photon_generation.h"
 
 
-
 struct Parameters {
-  char attitude_filename[FILENAME_LENGTH];
-  char spectrum_filename[N_SPECTRA_FILES][FILENAME_LENGTH];
-  char rmf_filename[FILENAME_LENGTH];
-  char sourcelist_filename[FILENAME_LENGTH];
-  char photonlist_filename[FILENAME_LENGTH];
+  char attitude_filename[MAXMSG];
+  char spectrum_filename[N_SPECTRA_FILES][MAXMSG];
+  char rmf_filename[MAXMSG];
+  char sourcelist_filename[MAXMSG];
+  char photonlist_filename[MAXMSG];
+  char photonlist_template[MAXMSG];
 
   SourceCategory source_category;
 
@@ -96,6 +96,23 @@ int photon_generation_getpar(struct Parameters* parameters)
 	    "the photon list!\n");
     HD_ERROR_THROW(msg, status);
   }
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
+  char* buffer;
+  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(parameters->photonlist_template, buffer);
+  } else {
+    if ((status = PILGetFname("fits_templates", parameters->photonlist_template))) {
+      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
+      
+    }
+  }
+  // Set the photon list template file for eROSITA:
+  strcat(parameters->photonlist_template, "/photonlist.tpl");
+
 
   // Convert angles from [arc min] to [rad]
   parameters->fov_diameter = parameters->fov_diameter*M_PI/(180.*60.);
@@ -153,8 +170,8 @@ int photon_generation_main()
   struct PhotonBinaryTreeEntry* photon_tree=NULL;
   // Time-ordered photon list containing all created photons in the sky
   struct PhotonOrderedListEntry* photon_list=NULL;  
-  // Pointer to the FITS file for the output for the photon list.
-  fitsfile *photonlist_fptr = NULL;
+  // Data structure for the output to the photon list FITS file.
+  PhotonListFile photonlistfile;
 
   // Time step for sky scanning loop
   double dt = 0.1;
@@ -354,19 +371,15 @@ int photon_generation_main()
     } // different source categories
 
 
-    // Delete old photon list FITS file:
-    remove(parameters.photonlist_filename);
-    // Create a new FITS file for the output of the photon list:
-    if ((create_photonlist_file(&photonlist_fptr, 
-				parameters.photonlist_filename, &status)))
-      break;
+    status = openNewPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
+				   parameters.photonlist_template);
+    if (EXIT_SUCCESS!=status) break;
 
     // Add important HEADER keywords to the photon list
-    if (fits_write_key(photonlist_fptr, TSTRING, "ATTITUDE", 
-		       parameters.attitude_filename,
-		       "name of the attitude FITS file", &status)) break;
+    if (fits_update_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
+			parameters.attitude_filename,
+			"name of the attitude FITS file", &status)) break;
     
-
     // --- End of Initialization ---
 
 
@@ -380,7 +393,6 @@ int photon_generation_main()
     long last_attitude_counter=0; // stores sat_counter of former repetition, 
                                   // so the searching loop
                                   // doesn't have to start at 0 every time.
-    long photon_row=0; // current row in photon list FITS file;
 
     // normalized vector perpendicular to the orbital plane
     Vector preselection_vector;
@@ -673,15 +685,15 @@ int photon_generation_main()
 	  // Rescale from [rad] -> [deg]:
 	  double ra  = photon_list->photon.ra *180./M_PI; // TODO: photon.ra should already be rad
 	  double dec = photon_list->photon.dec*180./M_PI;
-	  fits_insert_rows(photonlist_fptr, photon_row++, 1, &status);
-	  fits_write_col(photonlist_fptr, TDOUBLE, 1, photon_row, 1, 1, 
-			 &photon_list->photon.time, &status);
-	  fits_write_col(photonlist_fptr, TFLOAT, 2, photon_row, 1, 1, 
-			 &photon_list->photon.energy, &status);
-	  fits_write_col(photonlist_fptr, TDOUBLE, 3, photon_row, 1, 1, 
-			 &ra, &status);
-	  fits_write_col(photonlist_fptr, TDOUBLE, 4, photon_row, 1, 1, 
-			 &dec, &status);
+	  fits_insert_rows(photonlistfile.fptr, photonlistfile.row++, 1, &status);
+	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.ctime, 
+			 photonlistfile.row, 1, 1, &photon_list->photon.time, &status);
+	  fits_write_col(photonlistfile.fptr, TFLOAT, photonlistfile.cenergy, 
+			 photonlistfile.row, 1, 1, &photon_list->photon.energy, &status);
+	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cra, 
+			 photonlistfile.row, 1, 1, &ra, &status);
+	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
+			 photonlistfile.row, 1, 1, &dec, &status);
 	} // END of photon is inside the FOV
 
 	// Move to the next entry in the photon list and clear the current entry.
@@ -705,8 +717,7 @@ int photon_generation_main()
   
   headas_chat(5, "\ncleaning up ...\n");
 
-  // Close FITS file
-  if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
+  status += closePhotonListFile(&photonlistfile);
 
   // Release HEADAS random number generator:
   HDmtFree();
@@ -731,8 +742,6 @@ int photon_generation_main()
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);
 }
-
-
 
 
 

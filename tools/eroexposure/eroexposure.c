@@ -44,7 +44,7 @@ int eroexposure_main() {
   float*  exposureMap1d=NULL; // 1d exposure map for storing in FITS image.
   const long xwidth=360;      // Dimensions of exposure map.
   const long ywidth=180;
-  int x, y;                   // Counters.
+  long x, y;                  // Counters.
   fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
 
   int status=EXIT_SUCCESS;    // Error status.
@@ -217,25 +217,29 @@ int eroexposure_main() {
   // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
-  // release HEADAS random number generator
+  // Release HEADAS random number generator.
+  printf("HDMT\n");
   HDmtFree();
 
   // Close the exposure map FITS file.
-  if(fptr) fits_close_file(fptr, &status);
+  printf("Exposure Map FITS file\n");
+  if(NULL!=fptr) fits_close_file(fptr, &status);
 
-  // Release memory of AttitudeCatalog
+  // Release memory of AttitudeCatalog.
+  printf("Attitude Catalog\n");
   free_AttitudeCatalog(attitudecatalog);
 
   // Release memory of exposure map.
+  printf("Exposure Map\n");
   if (NULL!=exposureMap) {
     for (x=0; x<xwidth; x++) {
       if (NULL!=exposureMap[x]) {
 	free(exposureMap[x]);
+	exposureMap[x]=NULL;
       }
     }
     free(exposureMap);
   }
-  printf("2d successfully freed!\n");
   if (NULL!=exposureMap1d) {
     free(exposureMap1d);
   }

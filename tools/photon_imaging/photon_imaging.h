@@ -8,6 +8,7 @@
 #include "sixt_random.h"
 #include "psf.h"
 #include "photon.h"
+#include "photonlistfile.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
 #include "vignetting.h"

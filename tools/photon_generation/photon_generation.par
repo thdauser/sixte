@@ -4,6 +4,7 @@ sourcelist_filename,fre,lq,"pointsources.files",,,"file with list of point sourc
 spectrum_filename,fre,lq,"wfi.absorbed_powerlaw.pha",,,"default source spectrum (PHA) (FITS input file)"
 rmf_filename,fre,lq,"../../response/detector_specific_response/ixo_cdf_wfi_default.detector.rsp",,,"file containing energy bounds, e.g, detector redistribution matrix file with EBOUNDS table (RMF) (FITS input file)"
 photonlist_filename,f,lq,"photons_20mCrab.fits",,,"file for the photon list (FITS output file)"
+fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 t0,r,lq,0.0,,,"t0 - start time (s)"
 timespan,r,lq,500.0,0.0,1000000000.0,"time interval for the measurement simulation (s)"
 bandwidth,r,lh,90.0,0.0,600.0,"(half) width of the preselection band (arc minutes)"

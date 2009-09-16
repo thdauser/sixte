@@ -14,8 +14,7 @@ int photon_imaging_main() {
 
   AttitudeCatalog* attitudecatalog=NULL;
 
-  fitsfile *photonlist_fptr=NULL;            // FITS file pointer
-  long photonlist_nrows;                     // number of entries in the photon list
+  PhotonListFile photonlistfile;
   fitsfile *impactlist_fptr=NULL;           
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
@@ -49,14 +48,13 @@ int photon_imaging_main() {
     HDmtInit(1);
 
     // Open the FITS file with the input photon list:
-    if (fits_open_table(&photonlist_fptr, parameters.photonlist_filename, 
-			READONLY, &status)) break;
-    // Determine the number of rows in the photon list:
-    if (fits_get_num_rows(photonlist_fptr, &photonlist_nrows, &status)) break;
+    status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
+				READONLY);
+    if (EXIT_SUCCESS!=status) break;
 
     // Get the satellite catalog with the telescope attitude data:
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(photonlist_fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
+    if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", &parameters.attitude_filename, 
 		      comment, &status)) break;
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   parameters.t0, parameters.timespan, 
@@ -86,8 +84,7 @@ int photon_imaging_main() {
     // --- Beginning of Imaging Process ---
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    long photonlist_row=0;    // current row in the input list
-    long impactlist_row=0;    //      -"-           output list
+    long impactlist_row=0;    // current row in the output list
     long attitude_counter=0;  // counter for AttitudeCatalog
 
 
@@ -96,8 +93,8 @@ int photon_imaging_main() {
 
 
     // SCAN PHOTON LIST    
-    for(photonlist_row=0; (photonlist_row<photonlist_nrows)&&(status==EXIT_SUCCESS); 
-	photonlist_row++) {
+    for(photonlistfile.row=0; (photonlistfile.row<photonlistfile.nrows)&&(EXIT_SUCCESS==status); 
+	photonlistfile.row++) {
       
       // Read an entry from the photon list:
       int anynul = 0;
@@ -106,14 +103,14 @@ int photon_imaging_main() {
       photon.energy = 0.;
       photon.ra = 0.;
       photon.dec = 0.;
-      fits_read_col(photonlist_fptr, TDOUBLE, 1, photonlist_row+1, 1, 1, 
-		    &photon.time, &photon.time, &anynul, &status);
-      fits_read_col(photonlist_fptr, TFLOAT, 2, photonlist_row+1, 1, 1, 
-		    &photon.energy, &photon.energy, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 3, photonlist_row+1, 1, 1, 
-		    &photon.ra, &photon.ra, &anynul, &status);
-      fits_read_col(photonlist_fptr, TDOUBLE, 4, photonlist_row+1, 1, 1, 
-		    &photon.dec, &photon.dec, &anynul, &status);
+      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.ctime, 
+		    photonlistfile.row+1, 1, 1, &photon.time, &photon.time, &anynul, &status);
+      fits_read_col(photonlistfile.fptr, TFLOAT, photonlistfile.cenergy, 
+		    photonlistfile.row+1, 1, 1, &photon.energy, &photon.energy, &anynul, &status);
+      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cra, 
+		    photonlistfile.row+1, 1, 1, &photon.ra, &photon.ra, &anynul, &status);
+      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
+		    photonlistfile.row+1, 1, 1, &photon.dec, &photon.dec, &anynul, &status);
       if (status!=EXIT_SUCCESS) break;
 
       // Rescale from [deg] -> [rad]
@@ -227,7 +224,7 @@ int photon_imaging_main() {
 
   // Close the FITS files.
   if (impactlist_fptr) fits_close_file(impactlist_fptr, &status);
-  if (photonlist_fptr) fits_close_file(photonlist_fptr, &status);
+  status += closePhotonListFile(&photonlistfile);
 
   free_AttitudeCatalog(attitudecatalog);
   free_psf(psf);

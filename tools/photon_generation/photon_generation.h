@@ -14,6 +14,7 @@
 #include "vector.h"
 #include "spectrum.h"
 #include "photon.h"
+#include "photonlistfile.h"
 #include "astrosources.h"
 #include "telescope.h"
 #include "attitudecatalog.h"

@@ -115,19 +115,10 @@ float photon_energy(Spectrum*, struct RMF* rmf);
 //int create_lightcurve(struct source_cat_entry *src, double time, 
 int create_lightcurve(PointSource* ps, double time, gsl_rng *gsl_random_g);
 
-
-// This routine creates a new FITS file with a binary table to store a photon list
-// of photons from astronomical x-ray sources. The photon list can be read by a 
-// telescope simulation for further processing and calculating the impact positions
-// of the photons on the detector.
-int create_photonlist_file(fitsfile **, char filename[], int *status);
-
-
 // This routine creates a new FITS file with a binary table to store an impact list
 // of photons on the detector. The list can be further processed by a detector
 // simulation to create an event list.
 int create_impactlist_file(fitsfile **, char filename[], int *status);
-
 
 /** Insert a new photon to an existing binary tree.
  * The pointer to the PhotonBinaryTreeEntry can be NULL. */
