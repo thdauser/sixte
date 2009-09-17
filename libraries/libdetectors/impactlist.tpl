@@ -13,9 +13,19 @@ TUNIT#          s        	/
 TTYPE#  	ENERGY          / Energy of the incident photon
 TFORM#  	E   		/
 TUNIT#  	keV             / 
-TTYPE#  	X               / Right ascension of the source
+TTYPE#  	X               / X coordinate of photon impact
 TFORM#  	D               / 
 TUNIT#  	m               / 
-TTYPE#		Y               / Declination of the source
+TCTYP#		RAWX		/
+TCRPX#		0.		/
+TCRVL#		0.		/
+TCDLT#		1.		/
+TCUNI#		m		/
+TTYPE#		Y               / Y coordinate of photon impact
 TFORM#  	D               / 
 TUNIT#  	m               /
+TCTYP#		RAWY		/
+TCRPX#		0.		/
+TCRVL#		0.		/
+TCDLT#		1.		/
+TCUNI#		m		/
