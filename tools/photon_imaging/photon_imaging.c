@@ -16,6 +16,10 @@ int photon_imaging_main() {
 
   PhotonListFile photonlistfile;
   ImpactListFile impactlistfile;
+  // WCS reference values for the position of the orginial input data.
+  // These data are needed for the eROSITA image reconstruction algorithm
+  // in order to determine the right WCS header keywords for, e.g., cluster images.
+  double refxcrvl, refycrvl; 
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
   PSF* psf=NULL; /**< PSF (Point Spread Function) data (for different off-axis angles 
@@ -51,9 +55,14 @@ int photon_imaging_main() {
     status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
 				READONLY);
     if (EXIT_SUCCESS!=status) break;
+    // Read WCS keywords from FITS header.
+    char comment[MAXMSG]; // String buffer.
+    if (fits_read_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, 
+		      comment, &status)) break;    
+    if (fits_read_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, 
+		      comment, &status)) break;    
 
     // Open the attitude file specified in the header keywords of the photon list.
-    char comment[MAXMSG]; // buffer
     if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, 
 		      comment, &status)) break;
@@ -73,8 +82,10 @@ int photon_imaging_main() {
     status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 
 				   parameters.impactlist_template);
     if (EXIT_SUCCESS!=status) break;
-
-    // Add attitude filename to header keywords.
+    // Write header keywords.
+    if (fits_update_key(impactlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status)) break;
+    if (fits_update_key(impactlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status)) break;
+    // Add attitude filename.
     if (fits_update_key(impactlistfile.fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
     

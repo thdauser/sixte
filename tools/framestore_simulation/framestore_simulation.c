@@ -19,6 +19,11 @@ int framestore_simulation_main() {
   UniformDetectorBackground background;
 
   ImpactListFile impactlistfile;
+  // WCS reference values for the position of the orginial input data.
+  // These data are needed for the eROSITA image reconstruction algorithm
+  // in order to determine the right WCS header keywords for, e.g., cluster images.
+  double refxcrvl, refycrvl; 
+  // Filename of the attitude file.
   char attitude_filename[MAXMSG];
 
   int status=EXIT_SUCCESS; // Error status.
@@ -40,9 +45,13 @@ int framestore_simulation_main() {
     status = openImpactListFile(&impactlistfile, parameters.impactlist_filename, 
 				READONLY);
     if (EXIT_SUCCESS!=status) break;
-    
-    // Determine the name of the attitude file from the FITS header.
+    // Determine the WCS keywords.
     char comment[MAXMSG]; // buffer
+    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, 
+		      comment, &status)) break;    
+    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, 
+		      comment, &status)) break;    
+    // Determine the name of the attitude file from the FITS header.
     if (fits_read_key(impactlistfile.fptr, TSTRING, "ATTITUDE", 
 		      attitude_filename, comment, &status)) break;
 
