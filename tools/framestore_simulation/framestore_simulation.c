@@ -4,7 +4,6 @@
 #error "Do not compile outside Autotools!"
 #endif
 
-
 #include "framestore_simulation.h"
 
 
@@ -109,15 +108,34 @@ int framestore_simulation_main() {
       if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) 
 	continue;
 
-      // Insert Background events.
-      // If the difference between to subsequent cosmic photon impacts
-      // is greater than 60s, interrupt the background generation in order
-      // to avoid numerical costs during periods in which the telescope is not
-      // pointing to any interesting part in the sky. These times will be skipped
-      // anyway.
-      if (impact.time-former_impact_time > 60.) {
-	// Fill up the time in the 60s after the last photon impact with background events.
-	while (background.nextImpact.time - former_impact_time < 60.) {
+      if (background.rate > 0.) { // Insert Background events.
+	// If the difference between to subsequent cosmic photon impacts
+	// is greater than 60s, interrupt the background generation in order
+	// to avoid numerical costs during periods in which the telescope is not
+	// pointing to any interesting part in the sky. These times will be skipped
+	// anyway.
+	if (impact.time-former_impact_time > 60.) {
+	  // Fill up the time in the 60s after the last photon impact with background events.
+	  while (background.nextImpact.time-former_impact_time<60.) {
+	  // Add the background event to the CCD array.
+	    status=addImpact2FramestoreDetector(&detector, &background.nextImpact);
+	    if(EXIT_SUCCESS!=status) break;
+	    // Create a new background event.
+	    createUniformDetectorBackgroundImpact(&background, &detector.pixels, 
+						  detector.generic.rmf);
+	  }
+	  if(EXIT_SUCCESS!=status) break;
+	  // Jump to the next interval where cosmic photons arrive at the detector.
+	  // Leave out the time in between in order to reduce numerical costs.
+	  Impact nextImpact = { .time = impact.time - 60.,
+				.energy = 0.,
+				.position = { .x=0., .y=0. } };
+	  background.nextImpact = nextImpact;
+	}
+      
+	// Insert uniformly distributed detector background events in the interval between
+	// the last background event and the current photon arrival time.
+	while (background.nextImpact.time < impact.time) {
 	  // Add the background event to the CCD array.
 	  status=addImpact2FramestoreDetector(&detector, &background.nextImpact);
 	  if(EXIT_SUCCESS!=status) break;
@@ -126,26 +144,7 @@ int framestore_simulation_main() {
 						detector.generic.rmf);
 	}
 	if(EXIT_SUCCESS!=status) break;
-	// Jump to the next interval where cosmic photons arrive at the detector.
-	// Leave out the time in between in order to reduce numerical costs.
-	Impact nextImpact = { .time = impact.time - 60.,
-			      .energy = 0.,
-			      .position = { .x=0., .y=0. } };
-	background.nextImpact = nextImpact;
-      }
-      
-      // Insert uniformly distributed detector background events in the interval between
-      // the last background event and the current photon arrival time.
-      while (background.nextImpact.time < impact.time) {
-	// Add the background event to the CCD array.
-	status=addImpact2FramestoreDetector(&detector, &background.nextImpact);
-	if(EXIT_SUCCESS!=status) break;
-	// Create a new background event.
-	createUniformDetectorBackgroundImpact(&background, &detector.pixels, 
-					      detector.generic.rmf);
-      }
-      if(EXIT_SUCCESS!=status) break;
-      // END of inserting background events.
+      }	// END of inserting background events.
 
       // Call the photon detection routine that generates the right charge
       // and stores it in the detector pixels.

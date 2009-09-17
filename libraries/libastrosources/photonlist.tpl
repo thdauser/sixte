@@ -16,6 +16,16 @@ TUNIT#  	keV             /
 TTYPE#  	RA              / Right ascension of the source
 TFORM#  	E               / 
 TUNIT#  	deg             / 
+TCTYP#		RA---TAN	/
+TCRPX#		0.		/
+TCRVL#		0.		/
+TCDLT#		1.		/
+TCUNI#		deg		/
 TTYPE#		DEC             / Declination of the source
 TFORM#  	E               / 
 TUNIT#  	deg             /
+TCTYP#		DEC--TAN	/
+TCRPX#		0.		/
+TCRVL#		0.		/
+TCDLT#		1.		/
+TCUNI#		deg		/

@@ -79,7 +79,7 @@ int closeImpactListFile(ImpactListFile* ilf)
   if (NULL!=ilf->fptr) {
     if (fits_close_file(ilf->fptr, &status)) return(status);
     ilf->fptr = NULL;
-    headas_chat(5, "closed event file (containing %ld rows).\n", ilf->nrows);
+    headas_chat(5, "closed impact list file (containing %ld rows).\n", ilf->nrows);
   }
 
   return(status);

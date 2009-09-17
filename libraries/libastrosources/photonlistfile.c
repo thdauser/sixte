@@ -79,7 +79,7 @@ int closePhotonListFile(PhotonListFile* plf)
   if (NULL!=plf->fptr) {
     if (fits_close_file(plf->fptr, &status)) return(status);
     plf->fptr = NULL;
-    headas_chat(5, "closed event file (containing %ld rows).\n", plf->nrows);
+    headas_chat(5, "closed photon list file (containing %ld rows).\n", plf->nrows);
   }
 
   return(status);

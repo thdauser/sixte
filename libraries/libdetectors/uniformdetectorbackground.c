@@ -22,7 +22,7 @@ int initUniformDetectorBackground(UniformDetectorBackground* background,
 
   // Set the nextImpact (representing the next detector background event) 
   // to the default value.
-  Impact emptyImpact = { .energy=0., .time=0., .position={.x=0., .y=0.} };
+  Impact emptyImpact = { .energy=0., .time=HUGE, .position={.x=0., .y=0.} };
   background->nextImpact = emptyImpact;
 
   return(status);
@@ -43,6 +43,9 @@ int cleanupUniformDetectorBackground(UniformDetectorBackground* background)
 int createUniformDetectorBackgroundImpact(UniformDetectorBackground* background, 
 					  SquarePixels* pixels, struct RMF* rmf)
 {
+  // If no background is used, return without doing anything.
+  if (0.==background->rate) return(EXIT_SUCCESS);
+
   // Create a new impact representing a detector background event.
   
   // Determine the position of the event on the CCD.

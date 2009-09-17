@@ -10,6 +10,10 @@
 
 #include <gsl/gsl_randist.h>
 
+#include <wcs.h>
+#include <wcshdr.h>
+//#include <wcsfix.h>
+
 #include "sourceimage.h"
 #include "vector.h"
 #include "spectrum.h"

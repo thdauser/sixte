@@ -19,8 +19,9 @@
 #include "headas_rand.h"
 
 
-#define FILENAME_LENGTH 512 /**< Maximum lenght of a filename. */
+#define FILENAME_LENGTH 512 /**< Maximum length of a filename. */
 #define MAXMSG 512 /**< Maximum length of a message string. */
+#define HEADER_LENGTH 288001 /**< Maximum length of a FITS header string. */
 
 #define SIXT_NAN (0./0.) /**< Not a Number. */
 

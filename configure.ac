@@ -26,8 +26,8 @@ AM_PROG_LIBTOOL
 # "-g -W -Wall -O0" for the compiler for debugging
 # "-Werror" for the compiler to treat warnings as errors
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
-CFLAGS="$CFLAGS -I$HEADAS/include -g -W -Wall -O0 -pg"
-LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg "
+CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -W -Wall -O0 -pg"
+LDFLAGS="$LDFLAGS -L$HEADAS/lib -lwcs-4.3 -g -W -Wall -O0 -pg "
 
 
 # Check for libraries:  (objdump -R/-T libncurses...)
