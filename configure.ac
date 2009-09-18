@@ -27,7 +27,7 @@ AM_PROG_LIBTOOL
 # "-Werror" for the compiler to treat warnings as errors
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -W -Wall -O0 -pg"
-LDFLAGS="$LDFLAGS -L$HEADAS/lib -lwcs-4.3 -g -W -Wall -O0 -pg "
+LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg "
 
 
 # Check for libraries:  (objdump -R/-T libncurses...)
@@ -57,6 +57,9 @@ AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])
 AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
+
+# WCS Library:
+AC_SEARCH_LIBS(wcsbth, [wcs-4.3], [], [AC_MSG_ERROR([No WCS library found!])], [])
 
 
 # Check for header files:
