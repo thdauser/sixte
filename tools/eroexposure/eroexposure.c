@@ -23,9 +23,13 @@ struct Parameters {
   
   double t0;
   double timespan;
-  double dt;       // Step width for the exposure map calculation.
+  double dt; /**< Step width for the exposure map calculation. */
 
   double fov_diameter;
+
+  double ra0 , ra1;  /**< Desired right ascension range. */
+  double dec0, dec1; /**< Desired declination range. */
+  long ra_bins, dec_bins; /**< Number of bins in right ascension and declination. */
 };
 
 
@@ -40,8 +44,8 @@ int eroexposure_main() {
   AttitudeCatalog* attitudecatalog=NULL;
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length).
   
-  float** exposureMap=NULL;   // Array for the calculation of the exposure map.
-  float*  exposureMap1d=NULL; // 1d exposure map for storing in FITS image.
+  float** expoMap=NULL;       // Array for the calculation of the exposure map.
+  float*  expoMap1d=NULL;     // 1d exposure map for storing in FITS image.
   const long xwidth=360;      // Dimensions of exposure map.
   const long ywidth=180;
   long x, y;                  // Counters.
@@ -64,14 +68,14 @@ int eroexposure_main() {
     if ((status=eroexposure_getpar(&parameters))) break;
 
     // Get memory for the exposure map.
-    exposureMap = (float**)malloc(xwidth*sizeof(float*));
-    if (NULL!=exposureMap) {
+    expoMap = (float**)malloc(xwidth*sizeof(float*));
+    if (NULL!=expoMap) {
       for (x=0; x<xwidth; x++) {
-	exposureMap[x] = (float*)malloc(ywidth*sizeof(float));
-	if (NULL!=exposureMap[x]) {
+	expoMap[x] = (float*)malloc(ywidth*sizeof(float));
+	if (NULL!=expoMap[x]) {
 	  // Clear the exposure map.
 	  for (y=0; y<ywidth; y++) {
-	    exposureMap[x][y] = 0.;
+	    expoMap[x][y] = 0.;
 	  }
 	} else {
 	  status = EXIT_FAILURE;
@@ -170,12 +174,10 @@ int eroexposure_main() {
 	    while (xi>=xwidth) xi-=xwidth;
 	    while (yi<      0) yi+=ywidth;
 	    while (yi>=ywidth) yi-=ywidth;
-	    exposureMap[xi][yi] += parameters.dt;
+	    expoMap[xi][yi] += parameters.dt;
 	  }
-
 	}
       }
-      
     } // END of scanning-LOOP over the specified time interval.
     // END of generating the exposure map.
 
@@ -185,19 +187,20 @@ int eroexposure_main() {
 		parameters.exposuremap_filename);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
-    exposureMap1d = (float*)malloc(xwidth*ywidth*sizeof(float));
-    if (NULL==exposureMap1d) {
+    expoMap1d = (float*)malloc(xwidth*ywidth*sizeof(float));
+    if (NULL==expoMap1d) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for 1d exposure map failed!\n", status);
       break;
     }
     for (x=0; x<xwidth; x++) {
       for (y=0; y<ywidth; y++) {
-	exposureMap1d[x*xwidth + y] = exposureMap[x][y];
+	expoMap1d[x*ywidth + y] = expoMap[x][y];
       }
     }
 
-    // Create a new FITS-file:
+    // Create a new FITS-file (remove existing one before):
+    remove(parameters.exposuremap_filename);
     if (fits_create_file(&fptr, parameters.exposuremap_filename, &status)) break;
     // Create an image in the FITS-file (primary HDU):
     long naxes[2] = { xwidth, ywidth };
@@ -209,7 +212,7 @@ int eroexposure_main() {
     //                |--|--> FITS coordinates start at (1,1)
     // Upper right corner.
     long lpixel[2] = {xwidth, ywidth}; 
-    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, exposureMap1d, &status);
+    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expoMap1d, &status);
 
   } while(0);  // END of the error handling loop.
 
@@ -218,30 +221,26 @@ int eroexposure_main() {
   headas_chat(5, "cleaning up ...\n");
 
   // Release HEADAS random number generator.
-  printf("HDMT\n");
   HDmtFree();
 
   // Close the exposure map FITS file.
-  printf("Exposure Map FITS file\n");
   if(NULL!=fptr) fits_close_file(fptr, &status);
 
   // Release memory of AttitudeCatalog.
-  printf("Attitude Catalog\n");
   free_AttitudeCatalog(attitudecatalog);
 
   // Release memory of exposure map.
-  printf("Exposure Map\n");
-  if (NULL!=exposureMap) {
+  if (NULL!=expoMap) {
     for (x=0; x<xwidth; x++) {
-      if (NULL!=exposureMap[x]) {
-	free(exposureMap[x]);
-	exposureMap[x]=NULL;
+      if (NULL!=expoMap[x]) {
+	free(expoMap[x]);
+	expoMap[x]=NULL;
       }
     }
-    free(exposureMap);
+    free(expoMap);
   }
-  if (NULL!=exposureMap1d) {
-    free(exposureMap1d);
+  if (NULL!=expoMap1d) {
+    free(expoMap1d);
   }
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
@@ -255,8 +254,8 @@ int eroexposure_main() {
 // This routine reads the program parameters using the PIL.
 int eroexposure_getpar(struct Parameters *parameters)
 {
-  //  char msg[MAXMSG];         // error output buffer
-  int status=EXIT_SUCCESS;  // error status
+  int ra_bins, dec_bins;    // Buffer
+  int status=EXIT_SUCCESS;  // Error status
   
   // Get the filename of the input attitude file (FITS file)
   if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
@@ -288,7 +287,33 @@ int eroexposure_getpar(struct Parameters *parameters)
     HD_ERROR_THROW("Error reading the 'dt' parameter!\n", status);
   }
 
-  // Convert angles from [arc min] to [rad]
+  // Get the position of the desired section of the sky 
+  // (right ascension and declination range).
+  else if ((status = PILGetReal("ra0", &parameters->ra0))) {
+    HD_ERROR_THROW("Error reading the 'ra0' parameter!\n", status);
+  }
+  else if ((status = PILGetReal("ra1", &parameters->ra1))) {
+    HD_ERROR_THROW("Error reading the 'ra1' parameter!\n", status);
+  }
+  else if ((status = PILGetReal("dec0", &parameters->dec0))) {
+    HD_ERROR_THROW("Error reading the 'dec0' parameter!\n", status);
+  }
+  else if ((status = PILGetReal("dec1", &parameters->dec1))) {
+    HD_ERROR_THROW("Error reading the 'dec1' parameter!\n", status);
+  }
+  // Get the number of bins for the exposure map.
+  else if ((status = PILGetInt("ra_bins", &ra_bins))) {
+    HD_ERROR_THROW("Error reading the number of RA bins!\n", status);
+  }
+  else if ((status = PILGetInt("dec_bins", &dec_bins))) {
+    HD_ERROR_THROW("Error reading the number of DEC bins!\n", status);
+  }
+
+  // Convert Integer types to Long.
+  parameters->ra_bins  = (long)ra_bins;
+  parameters->dec_bins = (long)dec_bins;
+
+  // Convert angles from [arc min] to [rad].
   parameters->fov_diameter = parameters->fov_diameter*M_PI/(60.*180.); 
   
   return(status);

@@ -92,10 +92,16 @@ int framestore_simulation_main() {
     if(EXIT_SUCCESS!=(status=initUniformDetectorBackground(&background, &bkgdparameters))) break;
     // END of BACKGROUND CONFIGURATION SETUP
 
-
     // Add important additional HEADER keywords to the event list.
-    if (fits_write_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
-		       attitude_filename, "name of the attitude FITS file", &status)) break;
+    char keyword[MAXMSG];
+    sprintf(keyword, "TCRVL%d", detector.eventlist.cskyx);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, &refxcrvl, 
+			"", &status)) break;
+    sprintf(keyword, "TCRVL%d", detector.eventlist.cskyy);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, &refycrvl, 
+			"", &status)) break;
+    if (fits_update_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
+			attitude_filename, "name of the attitude FITS file", &status)) break;
 
     // --- END of Initialization ---
 

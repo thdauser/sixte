@@ -82,7 +82,7 @@ int photon_imaging_main() {
     status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 
 				   parameters.impactlist_template);
     if (EXIT_SUCCESS!=status) break;
-    // Write header keywords.
+    // Write WCS header keywords.
     if (fits_update_key(impactlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status)) break;
     if (fits_update_key(impactlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status)) break;
     // Add attitude filename.
@@ -215,6 +215,7 @@ int photon_imaging_main() {
 			   impactlistfile.row, 1, 1, &position.x, &status);
 	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cy, 
 			   impactlistfile.row, 1, 1, &position.y, &status);
+	    impactlistfile.nrows++;
 	  }
 	} // END get_psf_pos(...)
       } // End of FOV check.

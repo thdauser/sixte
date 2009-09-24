@@ -75,37 +75,9 @@ int event_projection_main() {
     // Open the FITS file with the input event list:
     status=openeROSITAEventFile(&eventlistfile, parameters.eventlist_filename, READWRITE);
     if (EXIT_SUCCESS!=status) break;
-    
-    /*
-    // Write header keywords.
-    if (fits_write_key(eventlistfile.generic.fptr, TSTRING, "REFXCUNI", REFXCUNI, 
-		       "WCS physical unit of X axis", &status)) break;
-    long lbuffer = REFXCRPX;
-    if (fits_write_key(eventlistfile.generic.fptr, TLONG, "REFXCRPX", &lbuffer, 
-		       "WCS axis reference pixel", &status)) break;
-    double dbuffer = REFXCRVL;
-    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFXCRVL", &dbuffer,
-		       "[deg] WCS coord. at X axis ref. pixel", &status)) break;
-    dbuffer = REFXCDLT;
-    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFXCDLT", &dbuffer,
-		       "[deg/pix] WCS X increment at ref. pixel", &status)) break;
-
-    if (fits_write_key(eventlistfile.generic.fptr, TSTRING, "REFYCUNI", REFYCUNI, 
-		       "WCS physical unit of Y axis", &status)) break;
-    lbuffer = REFYCRPX;
-    if (fits_write_key(eventlistfile.generic.fptr, TLONG, "REFYCRPX", &lbuffer, 
-		       "WCS axis reference pixel", &status)) break;
-    dbuffer = REFYCRVL;
-    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFYCRVL", &dbuffer,
-		       "[deg] WCS coord. at Y axis ref. pixel", &status)) break;
-    dbuffer = REFYCDLT;
-    if (fits_write_key(eventlistfile.generic.fptr, TDOUBLE, "REFYCDLT", &dbuffer,
-		       "[deg/pix] WCS Y increment at ref. pixel", &status)) break;
-    */
-
 
     // Read HEADER keywords.
-    char comment[MAXMSG]; // buffer
+    char comment[MAXMSG];
     // Attitude File:
     if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, comment, &status)) break;
@@ -115,36 +87,31 @@ int event_projection_main() {
 		     status);
       break;
     }
-    
-    // WCS keywords:
-    char columnnumber[3];
-    char tcrpx[10];
-    char tcrvl[10];
-    char tcdlt[10];
-    // For the sky x-coordinate:
-    strcpy(tcrpx, "TCRPX");
-    strcpy(tcrvl, "TCRVL");
-    strcpy(tcdlt, "TCDLT");
-    sprintf(columnnumber, "%d", eventlistfile.cskyx);
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrpx, columnnumber),
-		      &tcrpxx, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrvl, columnnumber),
-		      &tcrvlx, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcdlt, columnnumber),
-		      &tcdltx, comment, &status)) break;
 
-    // For the sky y-coordinate:
-    strcpy(tcrpx, "TCRPX");
-    strcpy(tcrvl, "TCRVL");
-    strcpy(tcdlt, "TCDLT");
-    sprintf(columnnumber, "%d", eventlistfile.cskyy);
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrpx, columnnumber),
-		      &tcrpxy, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcrvl, columnnumber),
-		      &tcrvly, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, strcat(tcdlt, columnnumber),
-		      &tcdlty, comment, &status)) break;
-    
+    // Read and write WCS header keywords.
+    char keyword[MAXMSG];
+    // The "X" column.
+    sprintf(keyword, "TCRVL%d", eventlistfile.cskyx);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrvlx, 
+		      comment, &status)) break;    
+    sprintf(keyword, "TCDLT%d", eventlistfile.cskyx);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdltx, 
+		      comment, &status)) break;
+    tcrpxx = tcrvlx/tcdltx;
+    sprintf(keyword, "TCRPX%d", eventlistfile.cskyx);
+    if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxx, 
+			comment, &status)) break;
+    // The "Y" column.
+    sprintf(keyword, "TCRVL%d", eventlistfile.cskyy);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrvly, 
+		      comment, &status)) break;
+    sprintf(keyword, "TCDLT%d", eventlistfile.cskyy);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdlty,
+		      comment, &status)) break;
+    tcrpxy = tcrvly/tcdlty;
+    sprintf(keyword, "TCRPX%d", eventlistfile.cskyy);
+    if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxy,
+			comment, &status)) break;
 
     // Get the satellite catalog with the telescope attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
@@ -219,7 +186,6 @@ int event_projection_main() {
       telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
 
 
-
       // Determine RA, DEC and the sky coordinates (in pixel) of the source.
       // Exact position on the detector:
       struct Point2d detector_position;
@@ -235,7 +201,7 @@ int event_projection_main() {
       // Determine the source position on the sky using the telescope 
       // axis pointing vector and a vector from the point of the intersection 
       // of the optical axis with the sky plane.
-      double r = tan(offaxis_angle); // length of this vector
+      double r = tan(offaxis_angle); // Length of this vector.
 
       Vector source_position;
       source_position.x = telescope.nz.x 
@@ -252,13 +218,13 @@ int event_projection_main() {
       event.dec *= 180./M_PI; // [rad] -> [deg]
 
       // Determine the pixel coordinates in the sky image:
-      event.sky_xi =  (int)((event.ra -tcrvlx)/tcdltx+tcrpxx);
+      event.sky_xi = (int)((event.ra -tcrvlx)/tcdltx+tcrpxx);
       if ((event.ra -tcrvlx)<0.) {
 	event.sky_xi--;
       }
-      event.sky_yi =  (int)((event.dec-tcrvly)/tcdlty+tcrpxy);
+      event.sky_yi = (int)((event.dec-tcrvly)/tcdlty+tcrpxy);
       if ((event.dec-tcrvly)<0.) {
-	event.sky_yi --;
+	event.sky_yi--;
       }
 
       // Store the data in the Event List FITS file.

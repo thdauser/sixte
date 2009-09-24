@@ -7,18 +7,14 @@ Vignetting* get_Vignetting(char* filename, int* status) {
   fitsfile* fptr=NULL;
   float* data_buffer=NULL;
 
-  char msg[MAXMSG]; 
-
-
   do {
 
     // Allocate memory for the Vignetting data STRUCTURE:
     vignetting = (Vignetting*)malloc(sizeof(Vignetting));
     if (NULL==vignetting) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing "
-	      "the vignetting data!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: could not allocate memory for storing "
+		     "the vignetting data!\n", *status);
       break;
     }
 
@@ -50,9 +46,8 @@ Vignetting* get_Vignetting(char* filename, int* status) {
     if ((NULL==vignetting->energ_lo) || (NULL==vignetting->energ_hi) ||
 	(NULL==vignetting->theta) || (NULL==vignetting->phi)) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing "
-	      "the vignetting data!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: could not allocate memory for storing "
+		     "the vignetting data!\n", *status);
       break;
     } else {
       int count;
@@ -85,25 +80,22 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 	      }
 	    } else {
 	      *status=EXIT_FAILURE;
-	      sprintf(msg, "Error: could not allocate memory for storing "
-		      "the vignetting data!\n");
-	      HD_ERROR_THROW(msg, *status);
+	      HD_ERROR_THROW("Error: could not allocate memory for storing "
+			     "the vignetting data!\n", *status);
 	      break;
 	    }
 	  }
 	} else {
 	  *status=EXIT_FAILURE;
-	  sprintf(msg, "Error: could not allocate memory for storing "
-		  "the vignetting data!\n");
-	  HD_ERROR_THROW(msg, *status);
+	  HD_ERROR_THROW("Error: could not allocate memory for storing "
+			 "the vignetting data!\n", *status);
 	  break;
 	}
       }
     } else {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing "
-	      "the vignetting data!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: could not allocate memory for storing "
+		     "the vignetting data!\n", *status);
       break;
     }
     if (EXIT_SUCCESS!=*status) break;
@@ -113,9 +105,8 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 				 vignetting->nphi*sizeof(float));
     if (NULL==data_buffer) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing "
-	      "the vignetting data!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: could not allocate memory for storing "
+		     "the vignetting data!\n", *status);
       break;
     } else {
       int count;
@@ -217,15 +208,15 @@ void free_Vignetting(Vignetting* vi) {
 
 
 
-
 ///////////////////////////////////////////////////////////////////////////////
 float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi) {
   float factor=0.;
 
   // At the moment this routine can only handle the case with phi = 0.
   if (phi!=0.) {
-    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
-    return(0.);
+    factor = 0.; // Do nothing
+    /*    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
+	  return(0.); */
   }
 
   if ((energy<vi->Emin) || (energy>vi->Emax)) {
