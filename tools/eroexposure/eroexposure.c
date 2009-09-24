@@ -27,8 +27,8 @@ struct Parameters {
 
   double fov_diameter;
 
-  double ra0 , ra1;  /**< Desired right ascension range [rad]. */
-  double dec0, dec1; /**< Desired declination range [rad]. */
+  double ra1 , ra2;  /**< Desired right ascension range [rad]. */
+  double dec1, dec2; /**< Desired declination range [rad]. */
   long ra_bins, dec_bins; /**< Number of bins in right ascension and declination. */
 };
 
@@ -48,6 +48,14 @@ int eroexposure_main() {
   float*  expoMap1d=NULL;     // 1d exposure map for storing in FITS image.
   long x, y;                  // Counters.
   fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
+
+  // WCS parameters.
+  // Reference pixels.
+  double rpix1, rpix2;
+  // [rad] values of reference pixels.
+  double rval1, rval2;
+  // CDELT1 and CDELT2 WCS-values in [rad].
+  double delt1, delt2; 
 
   int status=EXIT_SUCCESS;    // Error status.
   char msg[MAXMSG];           // Error output buffer.
@@ -87,6 +95,14 @@ int eroexposure_main() {
       break;
     }
     if (EXIT_SUCCESS!=status) break;
+
+    // Determine the WCS parameters.
+    delt1 = (parameters.ra2 -parameters.ra1 )/parameters.ra_bins;
+    delt2 = (parameters.dec2-parameters.dec1)/parameters.dec_bins;
+    rpix1 = (parameters.ra_bins /2)+ 0.5;
+    rpix2 = (parameters.dec_bins/2)+ 0.5;
+    rval1 = (parameters.ra1 + (parameters.ra_bins /2)*delt1);
+    rval2 = (parameters.dec1+ (parameters.dec_bins/2)*delt2);
     
     // Set up the telescope configuration.
     telescope.fov_diameter = parameters.fov_diameter; // [rad]
@@ -102,7 +118,6 @@ int eroexposure_main() {
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   parameters.t0, parameters.timespan, 
 						   &status))) break;
-						       
     // --- END of Initialization ---
 
 
@@ -132,7 +147,7 @@ int eroexposure_main() {
 	// No entry within 1 minute !!
 	status = EXIT_FAILURE;
 	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
-	HD_ERROR_THROW(msg,status);
+	HD_ERROR_THROW(msg, status);
 	break;
       }
 
@@ -146,32 +161,34 @@ int eroexposure_main() {
       // Calculate the RA and DEC of the pointing direction.
       double telescope_ra, telescope_dec;
       calculate_ra_dec(telescope.nz, &telescope_ra, &telescope_dec);
-      
-      // Determine the starting and stopping array indices for the loop over the
-      // relevant part of the exposure map:
-      double xrad_per_pixel = (parameters.ra1 -parameters.ra0 )/parameters.ra_bins;
-      double yrad_per_pixel = (parameters.dec1-parameters.dec0)/parameters.dec_bins;
-      double x0 = (int)((telescope_ra +M_PI)/xrad_per_pixel);
-      double y0 = (int)((telescope_dec+M_PI)/yrad_per_pixel);
-      double x1 = x0 - 100; double x2 = x0 + 100;
-      double y1 = y0 - 100; double y2 = y0 + 100;
+
+      // Check if the specified field of the sky might be within the FOV.
+      // TODO
 
       // 2d Loop over the exposure map in order to determine all pixels that
       // are currently within the FOV.
+      double x1 = 0; double x2 = parameters.ra_bins-1;
+      double y1 = 0; double y2 = parameters.dec_bins-1;
       Vector pixel_position;
       for (x=x1; x<=x2; x++) {
 	for (y=y1; y<=y2; y++) {
-	  pixel_position = unit_vector(telescope_ra  + (x-x0)*xrad_per_pixel, 
-				       telescope_dec + (y-y0)*yrad_per_pixel);
+	  pixel_position = unit_vector((x-(rpix1-1.0))*delt1 + rval1,
+				       (y-(rpix2-1.0))*delt2 + rval2);
+				       
+				       /*
+	  pixel_position = unit_vector(telescope_ra  + (x-x0)*parameters.delt1, 
+	  telescope_dec + (y-y0)*parameters.delt2); */
 
 	  // Check if the pixel currently lies within the FOV.
 	  if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
 	    // Pixel lies inside the FOV!
 	    long xi=x, yi=y;
+	    /*
 	    while (xi<                   0) xi+=parameters.ra_bins;
 	    while (xi>= parameters.ra_bins) xi-=parameters.ra_bins;
 	    while (yi<                   0) yi+=parameters.dec_bins;
 	    while (yi>=parameters.dec_bins) yi-=parameters.dec_bins;
+	    */
 	    expoMap[xi][yi] += parameters.dt;
 	  }
 	}
@@ -205,9 +222,30 @@ int eroexposure_main() {
     if (fits_create_img(fptr, FLOAT_IMG, 2, naxes, &status)) break;
     //                                   |-> naxis
 
+    // Write WCS keywords to the FITS header of the newly created image.
+    double buffer;
+    if (fits_update_key(fptr, TSTRING, "CTYPE1", "RA", "", &status)) break;   
+    if (fits_update_key(fptr, TSTRING, "CUNIT1", "deg", "", &status)) break;   
+    buffer = rval1 * 180./M_PI;
+    if (fits_update_key(fptr, TDOUBLE, "CRVAL1", &buffer, "", &status)) break;
+    buffer = rpix1;
+    if (fits_update_key(fptr, TDOUBLE, "CRPIX1", &buffer, "", &status)) break;
+    buffer = delt1 * 180./M_PI;
+    if (fits_update_key(fptr, TDOUBLE, "CDELT1", &buffer, "", &status)) break;
+
+    if (fits_update_key(fptr, TSTRING, "CTYPE2", "DEC", "", &status)) break;   
+    if (fits_update_key(fptr, TSTRING, "CUNIT2", "deg", "", &status)) break;   
+    buffer = rval2 * 180./M_PI;
+    if (fits_update_key(fptr, TDOUBLE, "CRVAL2", &buffer, "", &status)) break;
+    buffer = rpix2;
+    if (fits_update_key(fptr, TDOUBLE, "CRPIX2", &buffer, "", &status)) break;
+    buffer = delt2  * 180./M_PI;
+    if (fits_update_key(fptr, TDOUBLE, "CDELT2", &buffer, "", &status)) break;
+
+
     // Write the image to the file:
     long fpixel[2] = {1, 1};  // Lower left corner.
-    //                |--|--> FITS coordinates start at (1,1)
+    //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
     long lpixel[2] = {parameters.ra_bins, parameters.dec_bins}; 
     fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expoMap1d, &status);
@@ -287,17 +325,17 @@ int eroexposure_getpar(struct Parameters *parameters)
 
   // Get the position of the desired section of the sky 
   // (right ascension and declination range).
-  else if ((status = PILGetReal("ra0", &parameters->ra0))) {
-    HD_ERROR_THROW("Error reading the 'ra0' parameter!\n", status);
-  }
   else if ((status = PILGetReal("ra1", &parameters->ra1))) {
     HD_ERROR_THROW("Error reading the 'ra1' parameter!\n", status);
   }
-  else if ((status = PILGetReal("dec0", &parameters->dec0))) {
-    HD_ERROR_THROW("Error reading the 'dec0' parameter!\n", status);
+  else if ((status = PILGetReal("ra2", &parameters->ra2))) {
+    HD_ERROR_THROW("Error reading the 'ra2' parameter!\n", status);
   }
   else if ((status = PILGetReal("dec1", &parameters->dec1))) {
     HD_ERROR_THROW("Error reading the 'dec1' parameter!\n", status);
+  }
+  else if ((status = PILGetReal("dec2", &parameters->dec2))) {
+    HD_ERROR_THROW("Error reading the 'dec2' parameter!\n", status);
   }
   // Get the number of bins for the exposure map.
   else if ((status = PILGetInt("ra_bins", &ra_bins))) {
@@ -312,10 +350,10 @@ int eroexposure_getpar(struct Parameters *parameters)
   parameters->dec_bins = (long)dec_bins;
 
   // Convert angles from [deg] to [rad].
-  parameters->ra0  *= M_PI/180.;
   parameters->ra1  *= M_PI/180.;
-  parameters->dec0 *= M_PI/180.;
+  parameters->ra2  *= M_PI/180.;
   parameters->dec1 *= M_PI/180.;
+  parameters->dec2 *= M_PI/180.;
 
   // Convert angles from [arc min] to [rad].
   parameters->fov_diameter *= M_PI/(60.*180.); 
