@@ -27,8 +27,8 @@ struct Parameters {
 
   double fov_diameter;
 
-  double ra0 , ra1;  /**< Desired right ascension range. */
-  double dec0, dec1; /**< Desired declination range. */
+  double ra0 , ra1;  /**< Desired right ascension range [rad]. */
+  double dec0, dec1; /**< Desired declination range [rad]. */
   long ra_bins, dec_bins; /**< Number of bins in right ascension and declination. */
 };
 
@@ -46,8 +46,6 @@ int eroexposure_main() {
   
   float** expoMap=NULL;       // Array for the calculation of the exposure map.
   float*  expoMap1d=NULL;     // 1d exposure map for storing in FITS image.
-  const long xwidth=360;      // Dimensions of exposure map.
-  const long ywidth=180;
   long x, y;                  // Counters.
   fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
 
@@ -68,13 +66,13 @@ int eroexposure_main() {
     if ((status=eroexposure_getpar(&parameters))) break;
 
     // Get memory for the exposure map.
-    expoMap = (float**)malloc(xwidth*sizeof(float*));
+    expoMap = (float**)malloc(parameters.ra_bins*sizeof(float*));
     if (NULL!=expoMap) {
-      for (x=0; x<xwidth; x++) {
-	expoMap[x] = (float*)malloc(ywidth*sizeof(float));
+      for (x=0; x<parameters.ra_bins; x++) {
+	expoMap[x] = (float*)malloc(parameters.dec_bins*sizeof(float));
 	if (NULL!=expoMap[x]) {
 	  // Clear the exposure map.
-	  for (y=0; y<ywidth; y++) {
+	  for (y=0; y<parameters.dec_bins; y++) {
 	    expoMap[x][y] = 0.;
 	  }
 	} else {
@@ -151,8 +149,8 @@ int eroexposure_main() {
       
       // Determine the starting and stopping array indices for the loop over the
       // relevant part of the exposure map:
-      double xrad_per_pixel = 2*M_PI/xwidth;
-      double yrad_per_pixel =   M_PI/ywidth;
+      double xrad_per_pixel = (parameters.ra1 -parameters.ra0 )/parameters.ra_bins;
+      double yrad_per_pixel = (parameters.dec1-parameters.dec0)/parameters.dec_bins;
       double x0 = (int)((telescope_ra +M_PI)/xrad_per_pixel);
       double y0 = (int)((telescope_dec+M_PI)/yrad_per_pixel);
       double x1 = x0 - 100; double x2 = x0 + 100;
@@ -170,10 +168,10 @@ int eroexposure_main() {
 	  if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
 	    // Pixel lies inside the FOV!
 	    long xi=x, yi=y;
-	    while (xi<      0) xi+=xwidth;
-	    while (xi>=xwidth) xi-=xwidth;
-	    while (yi<      0) yi+=ywidth;
-	    while (yi>=ywidth) yi-=ywidth;
+	    while (xi<                   0) xi+=parameters.ra_bins;
+	    while (xi>= parameters.ra_bins) xi-=parameters.ra_bins;
+	    while (yi<                   0) yi+=parameters.dec_bins;
+	    while (yi>=parameters.dec_bins) yi-=parameters.dec_bins;
 	    expoMap[xi][yi] += parameters.dt;
 	  }
 	}
@@ -187,15 +185,15 @@ int eroexposure_main() {
 		parameters.exposuremap_filename);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
-    expoMap1d = (float*)malloc(xwidth*ywidth*sizeof(float));
+    expoMap1d = (float*)malloc(parameters.ra_bins*parameters.dec_bins*sizeof(float));
     if (NULL==expoMap1d) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for 1d exposure map failed!\n", status);
       break;
     }
-    for (x=0; x<xwidth; x++) {
-      for (y=0; y<ywidth; y++) {
-	expoMap1d[x + y*xwidth] = expoMap[x][y];
+    for (x=0; x<parameters.ra_bins; x++) {
+      for (y=0; y<parameters.dec_bins; y++) {
+	expoMap1d[x + y*parameters.ra_bins] = expoMap[x][y];
       }
     }
 
@@ -203,7 +201,7 @@ int eroexposure_main() {
     remove(parameters.exposuremap_filename);
     if (fits_create_file(&fptr, parameters.exposuremap_filename, &status)) break;
     // Create an image in the FITS-file (primary HDU):
-    long naxes[2] = { xwidth, ywidth };
+    long naxes[2] = { parameters.ra_bins, parameters.dec_bins };
     if (fits_create_img(fptr, FLOAT_IMG, 2, naxes, &status)) break;
     //                                   |-> naxis
 
@@ -211,7 +209,7 @@ int eroexposure_main() {
     long fpixel[2] = {1, 1};  // Lower left corner.
     //                |--|--> FITS coordinates start at (1,1)
     // Upper right corner.
-    long lpixel[2] = {xwidth, ywidth}; 
+    long lpixel[2] = {parameters.ra_bins, parameters.dec_bins}; 
     fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expoMap1d, &status);
 
   } while(0);  // END of the error handling loop.
@@ -231,7 +229,7 @@ int eroexposure_main() {
 
   // Release memory of exposure map.
   if (NULL!=expoMap) {
-    for (x=0; x<xwidth; x++) {
+    for (x=0; x<parameters.ra_bins; x++) {
       if (NULL!=expoMap[x]) {
 	free(expoMap[x]);
 	expoMap[x]=NULL;
@@ -313,8 +311,14 @@ int eroexposure_getpar(struct Parameters *parameters)
   parameters->ra_bins  = (long)ra_bins;
   parameters->dec_bins = (long)dec_bins;
 
+  // Convert angles from [deg] to [rad].
+  parameters->ra0  *= M_PI/180.;
+  parameters->ra1  *= M_PI/180.;
+  parameters->dec0 *= M_PI/180.;
+  parameters->dec1 *= M_PI/180.;
+
   // Convert angles from [arc min] to [rad].
-  parameters->fov_diameter = parameters->fov_diameter*M_PI/(60.*180.); 
+  parameters->fov_diameter *= M_PI/(60.*180.); 
   
   return(status);
 }
