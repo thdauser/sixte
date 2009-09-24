@@ -175,10 +175,6 @@ int eroexposure_main() {
 	  pixel_position = unit_vector((x-(rpix1-1.0))*delt1 + rval1,
 				       (y-(rpix2-1.0))*delt2 + rval2);
 				       
-				       /*
-	  pixel_position = unit_vector(telescope_ra  + (x-x0)*parameters.delt1, 
-	  telescope_dec + (y-y0)*parameters.delt2); */
-
 	  // Check if the pixel currently lies within the FOV.
 	  if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
 	    // Pixel lies inside the FOV!

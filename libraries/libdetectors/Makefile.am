@@ -24,13 +24,13 @@ dist_fitstemplates_DATA += impactlist.tpl
 lib_LTLIBRARIES = libdetectors.la
 
 # Sources:
-libdetectors_la_SOURCES = genericdetector.c squarepixels.c hexagonalpixels.c \
+libdetectors_la_SOURCES = genericdetector.c squarepixels.c \
 			  eventfile.c impactlistfile.c \
 			  uniformdetectorbackground.c \
 			  framestoredetector.c erositaeventfile.c \
 			  wfidetector.c wfieventfile.c \
 			  xmsdetector.c xmseventfile.c \
-			  htrsdetector.c htrseventfile.c
+			  htrsdetector.c htrseventfile.c hexagonalpixels.c arcpixels.c
 
 libdetectors_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
 libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosources.la
@@ -39,7 +39,7 @@ libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosourc
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h \
+include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h arcpixels.h \
 		  eventfile.h impactlistfile.h impact.h \
 		  uniformdetectorbackground.h \
 		  framestoredetector.h erositaeventfile.h erositaevent.h \
