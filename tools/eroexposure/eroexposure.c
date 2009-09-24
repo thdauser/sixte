@@ -195,7 +195,7 @@ int eroexposure_main() {
     }
     for (x=0; x<xwidth; x++) {
       for (y=0; y<ywidth; y++) {
-	expoMap1d[x*ywidth + y] = expoMap[x][y];
+	expoMap1d[x + y*xwidth] = expoMap[x][y];
       }
     }
 
@@ -243,7 +243,7 @@ int eroexposure_main() {
     free(expoMap1d);
   }
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
   return(status);
 }
 
