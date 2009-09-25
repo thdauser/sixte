@@ -103,7 +103,6 @@ int photon_generation_getpar(struct Parameters* parameters)
 }
 
 
-
 //////////////////////////
 /** Determines whether a given angle (in [rad]) lies within the specified range. 
  * The function returns a "1" if the angle lies within the specified range, 
@@ -121,7 +120,6 @@ int check_angle_range(double angle, double min, double max)
 }
 
 
-
 //////////////////////////
 int photon_generation_main() 
 {
@@ -135,6 +133,8 @@ int photon_generation_main()
   SourceImageCatalog* sic = NULL;
   // WCS keywords from the input source file:
   struct wcsprm *wcs;
+  // Number of WCS keyword sets.
+  int nwcs; 
 
   // Catalog with attitude data.
   AttitudeCatalog* attitudecatalog=NULL;
@@ -266,8 +266,7 @@ int photon_generation_main()
 	  (PointSourceFile**)malloc(pointsourcefilecatalog->nfiles*sizeof(PointSourceFile*));
 	if (NULL==pointsourcefilecatalog->files) {
 	  status=EXIT_FAILURE;
-	  sprintf(msg, "Error: not enough memory to allocate PointSourceFiles!\n");
-	  HD_ERROR_THROW(msg, status);
+	  HD_ERROR_THROW("Error: not enough memory to allocate PointSourceFiles!\n", status);
 	  break;
 	}	
 
@@ -285,6 +284,22 @@ int photon_generation_main()
       
 	// Close the Point Source List File.
 	fclose(pointsourcelist_fptr);
+
+	// Read the header from the LAST Point Source FITS file to obtain
+	// the WCS keywords.
+	fitsfile* catalog_fptr=NULL;
+	char* header; // Buffer string for the FITS header.
+	int nkeyrec, nreject;
+	if (fits_open_image(&catalog_fptr, line, READONLY, &status)) break;
+	if (fits_hdr2str(catalog_fptr, 1, NULL, 0, &header, &nkeyrec, &status)) break;
+	fits_close_file(catalog_fptr, &status);
+	if (status!=EXIT_SUCCESS) break;	
+	// Determine the WCS header keywords from the header string.
+	if ((wcsbth(header, nkeyrec, 0, 3, WCSHDR_PIXLIST, NULL, &nreject, &nwcs, &wcs))) {
+	  status=EXIT_FAILURE;
+	  HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
+	  break;
+	}
       }
 
       // Use a short time interval for the orbit update:
@@ -347,29 +362,32 @@ int photon_generation_main()
 	// Read the header from the LAST source image FITS file to obtain
 	// the WCS keywords.
 	fitsfile* image_fptr=NULL;
-	char* header; //char header[HEADER_LENGTH]; // Buffer string for the FITS header.
-	int ctrl, nkeyrec, nreject, nwcs, relax;
+	char* header; // Buffer string for the FITS header.
+	int nkeyrec, nreject;
 	if (fits_open_image(&image_fptr, line, READONLY, &status)) break;
 	if (fits_hdr2str(image_fptr, 1, NULL, 0, &header, &nkeyrec, &status)) break;
 	fits_close_file(image_fptr, &status);
 	if (status != EXIT_SUCCESS) break;	
 	// Determine the WCS header keywords from the header string.
-	if ((status=wcspih(header, nkeyrec, relax, ctrl, &nreject, &nwcs, &wcs))) {
+	if ((wcspih(header, nkeyrec, 0, 3, &nreject, &nwcs, &wcs))) {
 	  status=EXIT_FAILURE;
-	  sprintf(msg, "Error: could not read WCS keywords from FITS header!\n");
-	  HD_ERROR_THROW(msg, status);
+	  HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
 	  break;
 	}
       }
       
-      // Use a relative large \Delta t for the time loop:
+      // Use a relatively large \Delta t for the time loop:
       dt = 1.0;
 
     } else {
       status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: wrong source category!\n", status);
-    } // different source categories
+    } // END of different source categories.
+    if (EXIT_SUCCESS!=status) break;
 
+    if (0==nwcs) {
+      headas_chat(1, "Warning: source file contains no WCS header keywords!\n");
+    }
 
     // Generate new photon list FITS file for output of generated photons.
     status = openNewPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
@@ -381,11 +399,12 @@ int photon_generation_main()
 			parameters.attitude_filename,
 			"name of the attitude FITS file", &status)) break;
     // WCS keywords.
-    if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcs->crval[0],
-			"", &status)) break;
-    if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcs->crval[1],
-			"", &status)) break;
-    
+    if (nwcs > 0) {
+      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcs->crval[0],
+			  "", &status)) break;
+      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcs->crval[1],
+			  "", &status)) break;
+    }
     // --- End of Initialization ---
 
 
