@@ -386,7 +386,7 @@ int photon_generation_main()
     if (EXIT_SUCCESS!=status) break;
 
     if (0==nwcs) {
-      headas_chat(1, "Warning: source file contains no WCS header keywords!\n");
+      headas_chat(1, "Warning: source file contains no appropriate WCS header keywords!\n");
     }
 
     // Generate new photon list FITS file for output of generated photons.
@@ -719,6 +719,7 @@ int photon_generation_main()
 			 photonlistfile.row, 1, 1, &ra, &status);
 	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
 			 photonlistfile.row, 1, 1, &dec, &status);
+	  photonlistfile.nrows++;
 	} // END of photon is inside the FOV
 
 	// Move to the next entry in the photon list and clear the current entry.
