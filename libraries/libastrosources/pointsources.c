@@ -36,7 +36,6 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
 }
 
 
-
 //////////////////////////////////////////////////////////
 PointSourceFile* get_PointSourceFile() {
   PointSourceFile* psf = (PointSourceFile*)malloc(sizeof(PointSourceFile));
@@ -59,7 +58,6 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
   PointSourceFile* psf = NULL;
   char msg[MAXMSG];      // error output buffer
 
-  
   do { // Beginning of ERROR handling loop.
     
     // Call the generic constructor.
@@ -102,16 +100,17 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
     if (fits_get_colnum(psf->fptr, CASEINSEN, "PPS", &psf->crate, status)) break;
     if (fits_get_colnum(psf->fptr, CASEINSEN, "SPECTRUM", &psf->cspectrum, status)) break;
 
-    // TODO: If spectrum column is not available, use HEADER keyword instead.
-
     // Determine the number of rows in the FITS table:
     if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) break;	
+
+    // Load spectra specified in the FITS header.
+    *status = loadSpectra(psf->fptr, &psf->spectrumstore);
+    if (EXIT_SUCCESS!=*status) break;
 
   } while (0); // END of ERROR handling loop.
 
   return(psf);
 }
-
 
 
 ///////////////////////////////////////////////////////////
@@ -124,11 +123,12 @@ void free_PointSourceFile(PointSourceFile* psf) {
       fits_close_file(psf->fptr, &status);
     }
 
+    // Release the SpectrumStore.
+    freeSpectrumStore(&psf->spectrumstore);
+
     free(psf);
   }
 }
-
-
 
 
 //////////////////////////////////////////////////////////////////////////

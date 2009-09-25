@@ -24,8 +24,11 @@ typedef struct {
  * This data structure is generated from the sources sorted out of the 
  * PointSourceFile objects in the PointSourceFileCatalog. */
 typedef struct {
+  /** Number of PointSource objects contained in the PointSourceCatalog. */
   long nsources;
-  PointSource* sources; /* nsources */
+  /** Array containing the individual PointSource objects. 
+   * Lenght of the array is nsources. */
+  PointSource* sources;
 } PointSourceCatalog;
 
 
@@ -41,6 +44,9 @@ typedef struct {
    * If 'cspectrum' is 0, the default spectrum given by the header keyword 'SPECTRUM' 
    * should be used as source spectrum. */
   int cra, cdec, crate, cspectrum;
+
+  /** SpectrumStore containing the spectra that are used in this PointSourceCatalog. */
+  SpectrumStore spectrumstore;
 } PointSourceFile;
 
 /** Collection of point source FITS files.
@@ -51,11 +57,9 @@ typedef struct {
 } PointSourceFileCatalog;
 
 
-
 /////////////////////////////////////////////////////////////////
 // Function Declarations.
 /////////////////////////////////////////////////////////////////
-
 
 
 /** Constructor. */
@@ -63,9 +67,9 @@ PointSourceFileCatalog* get_PointSourceFileCatalog();
 /** Destructor. */
 void free_PointSourceFileCatalog(PointSourceFileCatalog*);
 
-/** Constructor. */
+/** Constructor returning a pointer to an empty PointSourceFile object. */
 PointSourceFile* get_PointSourceFile();
-/** Enhanced constructor specifying a source file. */
+/** Enhanced constructor specifying a source file to be loaded. */
 PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status);
 /** Destructor. */
 void free_PointSourceFile(PointSourceFile*);

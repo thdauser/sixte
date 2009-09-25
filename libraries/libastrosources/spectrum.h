@@ -40,7 +40,7 @@ typedef struct {
 } Spectrum;
 
 
-/** Storage for several different spectra. */
+/** Storage for several different spectra. (obsolete) */
 struct Spectrum_Store{
   /** Array of the individual spectra in the storage. */
   Spectrum* spectrum; 
@@ -51,8 +51,25 @@ struct Spectrum_Store{
 };
 
 
-////////////////////////////////////////////////////////////////////////////////////
+/** Storage for several different spectra. */
+typedef struct {
+  /** Array of the individual spectra in the storage. */
+  Spectrum* spectrum; 
+  /** Total number of spectra in the storage. */
+  long nspectra; 
+} SpectrumStore;
 
+
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
+
+
+/** Load spectra from the files specified in a FITS header.
+ * The function scans the FITS header of the file given by the file pointer
+ * and searches for the NSPECTRA and SPECnnnn keywords. The specified source
+ * spectra are then loaded from the PHA files and store in the SpectrumStore. */
+int loadSpectra(fitsfile*, SpectrumStore*);
 
 // Load the spectra from PHA files using the method "get_spectrum".
 int get_spectra(struct Spectrum_Store *, long Nchannels, 
@@ -72,6 +89,9 @@ int assign_pha_spectrum(struct Spectrum_Store*, char* filename);
 
 // Release memory of spectrum array
 void free_spectra(struct Spectrum_Store *, long Nfiles);
+
+/** Destructor for SpectrumStore. */
+void freeSpectrumStore(SpectrumStore*);
 
 /** Release previously allocated memory. */
 void cleanupSpectrum(Spectrum*);

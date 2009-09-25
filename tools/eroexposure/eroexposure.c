@@ -57,6 +57,9 @@ int eroexposure_main() {
   // CDELT1 and CDELT2 WCS-values in [rad].
   double delt1, delt2; 
 
+  double telescope_ra, telescope_dec;
+  Vector pixel_position;
+
   int status=EXIT_SUCCESS;    // Error status.
   char msg[MAXMSG];           // Error output buffer.
 
@@ -69,7 +72,6 @@ int eroexposure_main() {
   do {  // Beginning of the ERROR handling loop (will at most be run once)
 
     // --- Initialization ---
-    
     // Read the program parameters using PIL library.
     if ((status=eroexposure_getpar(&parameters))) break;
 
@@ -109,6 +111,15 @@ int eroexposure_main() {
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
     const double fov_min_align = cos(telescope.fov_diameter/2.); 
+    double field_min_align;
+    if ((parameters.ra2-parameters.ra1 > M_PI/6.) || 
+	(parameters.dec2-parameters.dec1 > M_PI/6.)) {
+      field_min_align = -2.; // Actually -1 should be sufficient, but -2 is even safer.
+    } else {
+      field_min_align = cos((sqrt(pow(parameters.ra2-parameters.ra1, 2.) +
+				  pow(parameters.dec2-parameters.dec1, 2.)) +
+			     telescope.fov_diameter)/2.);
+    }
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -159,17 +170,20 @@ int eroexposure_main() {
 					 attitudecatalog->entry[attitude_counter+1].time, 
 					 time));
       // Calculate the RA and DEC of the pointing direction.
-      double telescope_ra, telescope_dec;
       calculate_ra_dec(telescope.nz, &telescope_ra, &telescope_dec);
+      if (telescope_dec > 1.55) printf("declination: %lf\n", telescope_dec);
 
       // Check if the specified field of the sky might be within the FOV.
-      // TODO
+      // Otherwise break this run and continue at the beginning of the loop 
+      // with the next time step.
+      pixel_position = unit_vector((parameters.ra_bins/2-(rpix1-1.0))*delt1 + rval1,
+				   (parameters.dec_bins/2-(rpix2-1.0))*delt2 + rval2);
+      if (check_fov(&pixel_position, &telescope.nz, field_min_align)!=0) continue;
 
       // 2d Loop over the exposure map in order to determine all pixels that
       // are currently within the FOV.
       double x1 = 0; double x2 = parameters.ra_bins-1;
       double y1 = 0; double y2 = parameters.dec_bins-1;
-      Vector pixel_position;
       for (x=x1; x<=x2; x++) {
 	for (y=y1; y<=y2; y++) {
 	  pixel_position = unit_vector((x-(rpix1-1.0))*delt1 + rval1,

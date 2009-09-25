@@ -2,6 +2,46 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////
+int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
+{
+  char comment[MAXMSG]; // String buffers.
+  int status=EXIT_SUCCESS;
+
+  do { // Beginning of Error Handling Loop.
+
+    // Try to find out the number of SPECTRA from the FITS header of the source file.
+    if (fits_read_key(source_fptr, TLONG, "NSPECTRA", &store->nspectra, comment, 
+		      &status)) break;
+
+    // Get memory to store the spectra.
+    store->spectrum = (Spectrum *)malloc(store->nspectra*sizeof(Spectrum));
+    if (NULL==store->spectrum) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Not enough memory available to store the source spectra!\n", status);
+      break;
+    }
+    
+    // Load the spectra from the PHA files.
+    long count;
+    char filename[MAXMSG], key[MAXMSG];
+    for (count=0; (EXIT_SUCCESS==status)&&(count<store->nspectra); count++) {
+      // Determine the name of the source file from the FITS header.
+      sprintf(key, "SPEC%04ld", count+1);
+      if (fits_read_key(source_fptr, TSTRING, key, filename, comment, &status)) break;
+
+      // Load the spectrum from the named PHA file and add it to the SpectrumStore.
+      status = loadSpectrum(&store->spectrum[count], filename);
+      if (EXIT_SUCCESS!=status) break;
+    }
+    if (EXIT_SUCCESS!=status) break;
+
+  } while(0); // End of Error Handling Loop.
+
+  return(status);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Load spectra from PHA files using the method "get_spectrum".
 int get_spectra(
 		struct Spectrum_Store *spectrum_store,
@@ -10,8 +50,7 @@ int get_spectra(
 		int Nfiles           // number of spectra to be read
 		)
 {
-  int status=EXIT_SUCCESS;  // error handling variable
-  char msg[MAXMSG];         // error description output buffer
+  int status=EXIT_SUCCESS;
   
   do {  // beginning of ERROR handling loop
     // get memory
@@ -19,8 +58,7 @@ int get_spectra(
       malloc(Nfiles * sizeof(Spectrum));
     if (!spectrum_store->spectrum) {
       status = EXIT_FAILURE;
-      sprintf(msg, "Not enough memory available to store the source spectra!\n");
-      HD_ERROR_THROW(msg,status);
+      HD_ERROR_THROW("Not enough memory available to store the source spectra!\n", status);
       break;
     }
     
@@ -31,7 +69,6 @@ int get_spectra(
     }
 
     spectrum_store->nspectra = Nfiles;
-
 
     /*
     // Read a FITS PHA file and assign its content to the array
@@ -301,12 +338,20 @@ void free_spectra(struct Spectrum_Store *spectrum_store, long Nfiles)
 }
 
 
-
 void cleanupSpectrum(Spectrum* spectrum)
 {
   if (NULL!=spectrum->rate) {
     free(spectrum->rate);
     spectrum->rate=NULL;
   }
+}
+
+
+void freeSpectrumStore(SpectrumStore* store){
+  long count;
+  for(count=0; count<store->nspectra; count++) {
+    cleanupSpectrum(&store->spectrum[count]);
+  }
+  store->nspectra=0;
 }
 
