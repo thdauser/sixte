@@ -18,14 +18,12 @@ SourceImage* get_SourceImage()
 }
 
 
-
 /////////////////////////////////////
 SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 {
   SourceImage* si=NULL;
   fitsfile* fptr=NULL;
   float* input_buffer=NULL;
-  char msg[MAXMSG]; 
 
   do { // Beginning of ERROR handling loop
 
@@ -33,9 +31,8 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     si = get_SourceImage();
     if(si==NULL) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing "
-	      "the SourceImage!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: could not allocate memory to store "
+		     "the SourceImage!\n", *status);
       break;
     }
 
@@ -48,8 +45,7 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     if (fits_get_img_size(fptr, 2, naxes, status)) break;
     if (naxes[0] != naxes[1]) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: SourcImage must be square!\n"); // TODO: really??
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: SourcImage must be square!\n", *status); // TODO: really??
       break;
     } else {
       si->naxis1 = (int)naxes[0];
@@ -80,6 +76,11 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     si->maxdec = si->crval2 + si->cdelt2*(si->naxis2-(si->crpix2-0.5));
     
 
+    // Load the spectra specified in the FITS header.
+    *status = loadSpectra(fptr, &si->spectrumstore);
+    if (EXIT_SUCCESS!=*status) break;
+
+
     // Allocate memory for the pixels of the image:
     si->pixel = (struct SourceImagePixel**)
       malloc(si->naxis1*sizeof(struct SourceImagePixel*));
@@ -90,17 +91,15 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 	  malloc(si->naxis2*sizeof(struct SourceImagePixel));
 	if(si->pixel[count]==NULL) {
 	  *status=EXIT_FAILURE;
-	  sprintf(msg, "Error: could not allocate memory for storing the "
-		  "extended SourceImage!\n");
-	  HD_ERROR_THROW(msg, *status);
+	  HD_ERROR_THROW("Error: could not allocate memory for storing the "
+			 "extended SourceImage!\n", *status);
 	  break;
 	}
       }
     } else {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing the "
-	      "extended SourceImage!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: could not allocate memory for storing the "
+		     "extended SourceImage!\n", *status);
       break;
     } 
     
@@ -108,9 +107,8 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     input_buffer=(float*)malloc(si->naxis1*si->naxis2*sizeof(float));
     if(input_buffer==NULL) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: could not allocate memory for storing the "
-	      "extended SourceImage!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: could not allocate memory for storing the "
+		     "extended SourceImage!\n", *status);
       break;
     }
     // END of memory allocation

@@ -2,6 +2,7 @@
 #define SOURCEIMAGE_H 1
 
 #include "sixt.h"
+#include "spectrum.h"
 
 
 /** One pixel in the extended SourceImage. */
@@ -22,6 +23,9 @@ typedef struct {
 
   double minra, maxra;   /**< Maximum right ascension covered by the image [rad]. */
   double mindec, maxdec; /**< Maximum declination covered by the image [rad]. */
+
+  /** SpectrumStore containing the source spectra used for this image of the sky. */
+  SpectrumStore spectrumstore;
 } SourceImage;
 
 

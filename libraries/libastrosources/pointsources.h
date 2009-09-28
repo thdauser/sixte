@@ -89,7 +89,6 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog*, Vector norma
 /** Destructor. */
 void free_PointSourceCatalog(PointSourceCatalog* psc);
 
-
 /** Reads a table from a FITS source catalogue. 
  * The right ascension and declination of the return PointSource structure are 
  * given in [rad]. */

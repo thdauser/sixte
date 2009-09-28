@@ -591,7 +591,8 @@ int photon_generation_main()
 		    
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.
-		    new_photon.energy = 1.; // TODO photon_energy(spectrum_store.spectrum, rmf);
+		    new_photon.energy = 
+		      photon_energy(sic->images[image_counter]->spectrumstore.spectrum, rmf);
 
 		    // Add the photon to the binary tree.
 		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
@@ -703,23 +704,22 @@ int photon_generation_main()
 	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
 			 photonlistfile.row, 1, 1, &dec, &status);
 	  photonlistfile.nrows++;
-	} // END of photon is inside the FOV
+	} // END of: photon is inside the FOV?
 
 	// Move to the next entry in the photon list and clear the current entry.
 	struct PhotonOrderedListEntry* pl_entry = photon_list->next; // Buffer
 	free(photon_list);
 	photon_list = pl_entry;
 
-      }  // END of scanning the photon list.
+      } // END of scanning the photon list.
 
       last_attitude_counter = attitude_counter;
       first = 0;
-    }   // END of outer time loop.
+    } // END of outer time loop.
 
     // --- End of photon creation process ---
 
   } while(0); // END of ERROR HANDLING Loop.
-
 
 
   // --- Clean up ---

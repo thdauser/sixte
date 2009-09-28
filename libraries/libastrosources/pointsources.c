@@ -209,7 +209,7 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 	    // Source spectrum.
 	    if ((ps.spectrum_index<1) || 
 		(ps.spectrum_index>psfc->files[file_counter]->spectrumstore.nspectra)) {
-	      headas_chat(0, "### Warning: no source spectrum specified for point source!\n"
+	      headas_chat(0, "\n### Warning: no source spectrum specified for point source!\n"
 			  "     Using default spectrum instead.\n");
 	      psc->sources[psc->nsources].spectrum =
 		&psfc->files[file_counter]->spectrumstore.spectrum[0];

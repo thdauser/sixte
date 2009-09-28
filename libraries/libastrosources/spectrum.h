@@ -24,9 +24,6 @@
 #endif
 
 
-#define N_SPECTRA_FILES 1    // number of spectrum files (PHA files)
-
-
 /** Data structure representing the specific spectrum of a source. */
 typedef struct {
   /** Number of channels in the PHA spectrum. */
@@ -38,15 +35,6 @@ typedef struct {
    * the total spectrum is normalized to 1. */
   float *rate; 
 } Spectrum;
-
-
-/** Storage for several different spectra. (obsolete) */
-struct Spectrum_Store{
-  /** Array of the individual spectra in the storage. */
-  Spectrum* spectrum; 
-  /** Total number of spectra in the storage. */
-  long nspectra; 
-};
 
 
 /** Storage for several different spectra. */
@@ -69,24 +57,11 @@ typedef struct {
  * spectra are then loaded from the PHA files and store in the SpectrumStore. */
 int loadSpectra(fitsfile*, SpectrumStore*);
 
-// Load the spectra from PHA files using the method "get_spectrum".
-int get_spectra(struct Spectrum_Store *, long Nchannels, 
-		char filenames[N_SPECTRA_FILES][FILENAME_LENGTH], int Nfiles);
-
 /** Loads the specified PHA file containing a source spectrum.
  * The data are read from the PHA file, the probability density (including normalization) 
  * of the relative photon rates in the individual channels is calculated and
  * stored in the Spectrum data structure. */
-int get_spectrum(Spectrum*, long Nchannels, char filename[FILENAME_LENGTH]); // Obsolete
 int loadSpectrum(Spectrum*, char* filename);
-
-// Read a spectrum from a FITS PHA file (following the OGIP standards).
-// The function uses routines from the HEAdas library 'libhdsp'.
-// The spectrum is stored in the specified Spectrum_Store.
-int assign_pha_spectrum(struct Spectrum_Store*, char* filename);
-
-// Release memory of spectrum array
-void free_spectra(struct Spectrum_Store *, long Nfiles);
 
 /** Destructor for SpectrumStore. */
 void freeSpectrumStore(SpectrumStore*);
