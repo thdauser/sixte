@@ -46,8 +46,6 @@ struct Spectrum_Store{
   Spectrum* spectrum; 
   /** Total number of spectra in the storage. */
   long nspectra; 
-
-  //  struct PHA* pha_spectrum;
 };
 
 

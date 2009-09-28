@@ -13,6 +13,12 @@ int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
     if (fits_read_key(source_fptr, TLONG, "NSPECTRA", &store->nspectra, comment, 
 		      &status)) break;
 
+    if (store->nspectra<1) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: No spectra specified in point source catalog!\n", status);
+      break;
+    }
+
     // Get memory to store the spectra.
     store->spectrum = (Spectrum *)malloc(store->nspectra*sizeof(Spectrum));
     if (NULL==store->spectrum) {
@@ -175,7 +181,7 @@ int get_spectrum(
     fits_get_num_rows(pha_fptr, &spectrum->NumberChannels, &status);
 
     if (spectrum->NumberChannels != Nchannels) {
-      headas_chat(0, "Warning: number of PHA channels in spectrum file '%s' is not "
+      headas_chat(0, "### Warning: number of PHA channels in spectrum file '%s' is not "
 		  "equivalent to number of detector channels!\n", filename);
     }
   

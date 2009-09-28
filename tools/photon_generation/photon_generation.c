@@ -19,12 +19,6 @@ int photon_generation_getpar(struct Parameters* parameters)
     HD_ERROR_THROW(msg, status);
   }
 
-  // Get the filename of the default source spectrum (PHA FITS file)
-  if ((status = PILGetFname("spectrum_filename", parameters->spectrum_filename[0]))) {
-    sprintf(msg, "Error reading the filename of the default spectrum (PHA)!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
   // Get the filename of the detector redistribution file (FITS file)
   else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
     sprintf(msg, "Error reading the filename of the detector" 
@@ -139,9 +133,6 @@ int photon_generation_main()
   // Catalog with attitude data.
   AttitudeCatalog* attitudecatalog=NULL;
 
-  // Storage for different source spectra (including background spectrum).
-  struct Spectrum_Store spectrum_store; 
-
   // Telescope data (like FOV diameter or focal length)
   struct Telescope telescope; 
 
@@ -216,12 +207,6 @@ int photon_generation_main()
     rmf = loadRMF(parameters.rmf_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    // Get the source spectra:
-    if ((status=get_spectra(&spectrum_store, rmf->NumberChannels, 
-			    parameters.spectrum_filename, N_SPECTRA_FILES)) 
-	!= EXIT_SUCCESS) break;
-
-
     // Determine which kind of light curves will be used:
 #ifdef CONSTANT_LIGHTCURVE
     // NO red-noise statistics according to Timmer & Koenig (1995).
@@ -257,7 +242,7 @@ int photon_generation_main()
 	}
 
 	if (0==pointsourcefilecatalog->nfiles) {
-	  sprintf(msg, "Warning: Point Source List File '%s' contains no data!\n",
+	  sprintf(msg, "### Warning: Point Source List File '%s' contains no data!\n",
 		  parameters.sourcelist_filename);
 	}
 
@@ -340,8 +325,7 @@ int photon_generation_main()
 	sic->images = (SourceImage**)malloc(sic->nimages*sizeof(SourceImage*));
 	if (NULL==sic->images) {
 	  status=EXIT_FAILURE;
-	  sprintf(msg, "Error: memory allocation for ClusterImageCatalog failed!\n");
-	  HD_ERROR_THROW(msg, status);
+	  HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
 	  break;
 	}
 
@@ -386,7 +370,7 @@ int photon_generation_main()
     if (EXIT_SUCCESS!=status) break;
 
     if (0==nwcs) {
-      headas_chat(1, "Warning: source file contains no appropriate WCS header keywords!\n");
+      headas_chat(1, "### Warning: source file contains no appropriate WCS header keywords!\n");
     }
 
     // Generate new photon list FITS file for output of generated photons.
@@ -485,7 +469,6 @@ int photon_generation_main()
 	  pointsourcecatalog=get_PointSourceCatalog(pointsourcefilecatalog, 
 						    preselection_vector, 
 						    pre_max_align,
-						    spectrum_store,
 						    &status);
 	  if((EXIT_SUCCESS!=status)||(NULL==pointsourcecatalog)) break;
 	}
@@ -608,7 +591,7 @@ int photon_generation_main()
 		    
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.
-		    new_photon.energy = photon_energy(spectrum_store.spectrum, rmf);
+		    new_photon.energy = 1.; // TODO photon_energy(spectrum_store.spectrum, rmf);
 
 		    // Add the photon to the binary tree.
 		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
@@ -762,9 +745,6 @@ int photon_generation_main()
   // Extended Source Images
   free_SourceImageCatalog(sic);
   
-  // Release source spectra
-  free_spectra(&spectrum_store, N_SPECTRA_FILES);
-
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);
 }

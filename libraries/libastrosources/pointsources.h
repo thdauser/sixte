@@ -15,8 +15,16 @@ typedef struct {
   float ra, dec; /**< Right ascension and declination of the source [rad]. */
   float rate; /**< Average photon rate [photons/s]. */
   struct lightcurve_entry* lightcurve; /**< Pointer to source lightcurve. */
+
   Spectrum *spectrum; /**< Pointer to source spectrum. */
-  //  struct PHA* pha_spectrum;   // source spectrum
+
+  /** Index of the source spectrum within the SpectrumStore.
+   * This number represents the index of the source spectrum within the SpectrumStore
+   * of the PointSourceCatalog. 
+   * Warning: the spectrum_index starts  at 1 (not at 0). */
+  long spectrum_index; 
+			  
+
   double t_last_photon; /** Time of last photon created for this source. */
 } PointSource;
 
@@ -27,10 +35,9 @@ typedef struct {
   /** Number of PointSource objects contained in the PointSourceCatalog. */
   long nsources;
   /** Array containing the individual PointSource objects. 
-   * Lenght of the array is nsources. */
+   * Length of the array is nsources. */
   PointSource* sources;
 } PointSourceCatalog;
-
 
 
 /** Gives information about a FITS file with point sources. */
@@ -40,9 +47,7 @@ typedef struct {
   long nrows; /**< Number of rows / PointSources in the FITS table. */
 
   /** Column names of the point source specific data columns in the FITS table. 
-   * If a column is not available in the FITS file, the corresponding variable is 0.
-   * If 'cspectrum' is 0, the default spectrum given by the header keyword 'SPECTRUM' 
-   * should be used as source spectrum. */
+   * If a column is not available in the FITS file, the corresponding variable is 0. */
   int cra, cdec, crate, cspectrum;
 
   /** SpectrumStore containing the spectra that are used in this PointSourceCatalog. */
@@ -80,8 +85,7 @@ void free_PointSourceFile(PointSourceFile*);
  * the cos(sin?)-value of the maximum angle between the source direction and the scan plane.
  * For each selected source a Spectrum and a Lightcurve are assigned. */
 PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog*, Vector normal_vector, 
-					   const double max_align, struct Spectrum_Store,
-					   int* status);
+					   const double max_align, int* status);
 /** Destructor. */
 void free_PointSourceCatalog(PointSourceCatalog* psc);
 

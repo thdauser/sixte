@@ -16,7 +16,6 @@ PointSourceFileCatalog* get_PointSourceFileCatalog() {
 }
 
 
-
 /////////////////////////////////////////////////////////
 void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
   if (NULL!=psfc) {
@@ -135,12 +134,11 @@ void free_PointSourceFile(PointSourceFile* psf) {
 PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc, 
 					   Vector normal_vector, 
 					   const double max_align,
-					   struct Spectrum_Store spectrum_store,
 					   int* status)
 {
   PointSourceCatalog* psc = NULL;
 
-  char msg[MAXMSG];  // error output buffer
+  char msg[MAXMSG];  // Error output buffer.
   
   do { // Beginning of outer ERROR handling loop.
     
@@ -148,8 +146,8 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
     psc = (PointSourceCatalog*)malloc(sizeof(PointSourceCatalog));
     if (NULL==psc) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory available to store the PointSourceCatalog!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: not enough memory available to store the PointSourceCatalog!\n", 
+		     *status);
       break;
     }
     psc->nsources = 0;
@@ -157,8 +155,8 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
     psc->sources = (PointSource*)malloc(MAX_N_POINTSOURCES*sizeof(PointSource));
     if(NULL==psc->sources) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory available to store the PointSourceCcatalog!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: not enough memory available to store the PointSourceCcatalog!\n", 
+		     *status);
       break;
     } 
     // END of memory allocation
@@ -200,17 +198,27 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 	    // Add the current source to the selected catalog:
 	    psc->sources[psc->nsources].rate = ps.rate;
 
-	    // save the source direction in the source catalog-array:
+	    // Save the source direction in the source catalog-array:
 	    psc->sources[psc->nsources].ra  = ps.ra;
 	    psc->sources[psc->nsources].dec = ps.dec;
-	    // set lightcurve pointer to NULL
+	    // Set lightcurve pointer to NULL
 	    psc->sources[psc->nsources].lightcurve = NULL;
-	    // so far there was no photon created for this source
+	    // So far there was no photon created for this source
 	    psc->sources[psc->nsources].t_last_photon = -1.;
-	    // source spectrum
-	    psc->sources[psc->nsources].spectrum = &(spectrum_store.spectrum[0]);
 
-	    // increase number of sources in the selected catalog
+	    // Source spectrum.
+	    if ((ps.spectrum_index<1) || 
+		(ps.spectrum_index>psfc->files[file_counter]->spectrumstore.nspectra)) {
+	      headas_chat(0, "### Warning: no source spectrum specified for point source!\n"
+			  "     Using default spectrum instead.\n");
+	      psc->sources[psc->nsources].spectrum =
+		&psfc->files[file_counter]->spectrumstore.spectrum[0];
+	    } else {
+	      psc->sources[psc->nsources].spectrum = //&(spectrum_store.spectrum[0]);
+		&psfc->files[file_counter]->spectrumstore.spectrum[ps.spectrum_index-1];
+	    }
+
+	    // Increase number of sources in the selected catalog
 	    psc->nsources++;
 	  }
 	} // END of loop over all sources in the current catalog file
@@ -220,7 +228,6 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 
   return(psc);
 }
-
 
 
 ////////////////////////////////////////////////////
@@ -239,7 +246,6 @@ void free_PointSourceCatalog(PointSourceCatalog* psc)
 }
 
 
-
 //////////////////////////////////////////////////////
 int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, int* status) 
 {
@@ -249,9 +255,10 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, in
   ps->ra = 0.;
   ps->dec = 0.;
   ps->rate = 0.;
+  ps->spectrum_index = 0;
   ps->spectrum = NULL;
   ps->lightcurve = NULL;
-  ps->t_last_photon = -1;
+  ps->t_last_photon = -1.;
 
   // Read the data from the FITS table.
 
@@ -273,7 +280,9 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, in
   fits_read_col(psf->fptr, TFLOAT, psf->crate, row+1, 1, 1, &ps->rate, &ps->rate, 
 		&anynul, status);
 
-  // TODO: Spectrum
+  // Spectrum:
+  fits_read_col(psf->fptr, TLONG, psf->cspectrum, row+1, 1, 1, &ps->spectrum_index, 
+		&ps->spectrum_index, &anynul, status);
 
   return(anynul);  
 }

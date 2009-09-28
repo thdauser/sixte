@@ -32,7 +32,6 @@
 
 struct Parameters {
   char attitude_filename[MAXMSG];
-  char spectrum_filename[N_SPECTRA_FILES][MAXMSG];
   char rmf_filename[MAXMSG];
   char sourcelist_filename[MAXMSG];
   char photonlist_filename[MAXMSG];
