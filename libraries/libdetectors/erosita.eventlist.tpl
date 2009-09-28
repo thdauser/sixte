@@ -73,10 +73,10 @@ CHOPPER         String          / electronic chopper in use
 	TCRPX#	192.5
 	TCRVL#	0.
 	TCDLT#  7.5e-5
-	TTYPE#	RA              / right ascension (J2000)
+	TTYPE#	RA              / Right Ascension (J2000)
 	TFORM#  D               / Format of column RA
 	TUNIT#  deg             / Unit of column RA
-	TTYPE#	DEC             / declination (J2000)
+	TTYPE#	DEC             / Declination (J2000)
 	TFORM#  D               / Format of column DEC
 	TUNIT#  deg             / Unit of column DEC
 	TTYPE#  X               / sky coordinates (pixel size 0.05'')
@@ -84,17 +84,17 @@ CHOPPER         String          / electronic chopper in use
 	TUNIT#  pixel           / Unit of column X
 	TCTYP#	RA---TAN
 	TCUNI#	deg		/ WCS physical unit of X axis
-	TCRPX#	0.		/ WCS axis reference pixel
+	TCRPX#	0.		/ WCS X axis reference pixel
 	TCRVL#	0.		/ WCS coord. at X axis ref. pixel
 	TCDLT#  1.38889e-05	/ WCS X increment at ref. pixel
 	TTYPE#  Y               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column Y
 	TUNIT#  pixel           / Unit of column Y
 	TCTYP#	DEC--TAN
-	TCUNI#	deg		/ WCS physical unit of X axis
-	TCRPX#	0.		/ WCS axis reference pixel
-	TCRVL#	0.		/ WCS coord. at X axis ref. pixel
-	TCDLT#  1.38889e-05	/ WCS X increment at ref. pixel
+	TCUNI#	deg		/ WCS physical unit of Y axis
+	TCRPX#	0.		/ WCS Y axis reference pixel
+	TCRVL#	0.		/ WCS coord. at Y axis ref. pixel
+	TCDLT#  1.38889e-05	/ WCS Y increment at ref. pixel
 	TTYPE#  PAT_TYP         / Pattern Type
 	TFORM#  I		/ Format of column PAT_TYP
 	TUNIT#  1234: sdtq ..   / Unit of column PAT_TYP

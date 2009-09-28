@@ -97,7 +97,7 @@ int event_projection_main() {
     sprintf(keyword, "TCDLT%d", eventlistfile.cskyx);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdltx, 
 		      comment, &status)) break;
-    tcrpxx = tcrvlx/tcdltx;
+    tcrpxx = 0.; //tcrvlx/tcdltx;
     sprintf(keyword, "TCRPX%d", eventlistfile.cskyx);
     if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxx, 
 			comment, &status)) break;
@@ -108,7 +108,7 @@ int event_projection_main() {
     sprintf(keyword, "TCDLT%d", eventlistfile.cskyy);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdlty,
 		      comment, &status)) break;
-    tcrpxy = tcrvly/tcdlty;
+    tcrpxy = 0.; //tcrvly/tcdlty;
     sprintf(keyword, "TCRPX%d", eventlistfile.cskyy);
     if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxy,
 			comment, &status)) break;
@@ -215,6 +215,7 @@ int event_projection_main() {
       // Determine the equatorial coordinates RA and DEC:
       calculate_ra_dec(source_position, &event.ra, &event.dec);
       event.ra  *= 180./M_PI; // [rad] -> [deg]
+      if (event.ra<0.) event.ra += 360.;
       event.dec *= 180./M_PI; // [rad] -> [deg]
 
       // Determine the pixel coordinates in the sky image:
