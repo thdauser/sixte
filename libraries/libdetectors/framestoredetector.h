@@ -1,5 +1,5 @@
-#ifndef FRAMESTORE_H
-#define FRAMESTORE_H 1
+#ifndef FRAMESTOREDETECTOR_H
+#define FRAMESTOREDETECTOR_H 1
 
 
 #include "sixt.h"
@@ -9,6 +9,11 @@
 #include "erositaevent.h"
 #include "genericdetector.h"
 #include "squarepixels.h"
+
+
+////////////////////////////////////////////////////////////////////////
+// Type declarations.
+////////////////////////////////////////////////////////////////////////
 
 
 typedef struct {
@@ -43,7 +48,9 @@ struct FramestoreDetectorParameters {
 };
 
 
-////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
 
 
 /** Set up the configuration of a FramestoreDetector. 
@@ -73,5 +80,5 @@ inline int readoutFramestoreDetector(FramestoreDetector*);
 int addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
 
 
-#endif /* FRAMESTORE_H */
+#endif /* FRAMESTOREDETECTOR_H */
 
