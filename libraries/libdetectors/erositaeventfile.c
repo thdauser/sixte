@@ -24,6 +24,8 @@ int openeROSITAEventFile(eROSITAEventFile* eef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(eef->generic.fptr, CASEINSEN, "RAWY", &eef->crawy, &status)) 
     return(status);
+  if(fits_get_colnum(eef->generic.fptr, CASEINSEN, "CCDNR", &eef->cccdnr, &status)) 
+    return(status);
 
   if(fits_get_colnum(eef->generic.fptr, CASEINSEN, "RA", &eef->cra, &status)) 
     return(status);
@@ -36,7 +38,6 @@ int openeROSITAEventFile(eROSITAEventFile* eef, char* filename, int access_mode)
 
   return(status);
 }
-
 
 
 int openNeweROSITAEventFile(eROSITAEventFile* eef, char* filename, char* template)
@@ -82,13 +83,11 @@ int openNeweROSITAEventFile(eROSITAEventFile* eef, char* filename, char* templat
 }
 
 
-
 int closeeROSITAEventFile(eROSITAEventFile* eef)
 {
   // Call the corresponding routine of the underlying structure.
   return(closeEventFile(&eef->generic));
 }
-
 
 
 int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
@@ -114,6 +113,8 @@ int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
 		     1, 1, &rawy, &status)) return(status);
   if (fits_write_col(eef->generic.fptr, TLONG, eef->cframe, eef->generic.row, 
 		     1, 1, &event->frame, &status)) return(status);
+  if (fits_write_col(eef->generic.fptr, TSHORT, eef->cccdnr, eef->generic.row, 
+		     1, 1, &event->ccdnr, &status)) return(status);
 
   // Set RA, DEC, X, and Y to default values.
   event->ra = SIXT_NAN;
@@ -131,7 +132,6 @@ int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
 
   return(status);
 }
-
 
 
 int eROSITAEventFile_getNextRow(eROSITAEventFile* eef, eROSITAEvent* event)
@@ -172,6 +172,9 @@ int eROSITAEventFile_getNextRow(eROSITAEventFile* eef, eROSITAEvent* event)
   event->frame = 0;
   if (fits_read_col(eef->generic.fptr, TLONG, eef->cframe, eef->generic.row, 1, 1, 
 		    &event->frame, &event->frame, &anynul, &status)) return(status);
+  event->ccdnr = 0;
+  if (fits_read_col(eef->generic.fptr, TSHORT, eef->cccdnr, eef->generic.row, 1, 1, 
+		    &event->ccdnr, &event->ccdnr, &anynul, &status)) return(status);
 
   event->ra = SIXT_NAN;
   if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cra, eef->generic.row, 1, 1, 

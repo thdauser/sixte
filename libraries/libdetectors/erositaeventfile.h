@@ -12,7 +12,7 @@ typedef struct {
   /* Column numbers of the individual eROSITA-specific event list entries.
    * The numbers start at 1. The number 0 means, that there 
    * is no corresponding column in the table. */
-  int ctime, cpha, cenergy, crawx, crawy, cframe;
+  int ctime, cpha, cenergy, crawx, crawy, cframe, cccdnr;
   int cra, cdec, cskyx, cskyy;
 
 } eROSITAEventFile;

@@ -10,6 +10,10 @@ typedef struct {
   int xi, yi; /**< Pixel coordinates starting at 0. */
   long frame;
 
+  /** Number of the CCD.
+   * For eROSITA the CCDs are numbered from 1 to 7. */
+  char ccdnr;
+
   double ra, dec; /**< Right ascension and declination [degree]. */
   long sky_xi, sky_yi; /**< Integer sky pixel coordinates. */
 } eROSITAEvent;
