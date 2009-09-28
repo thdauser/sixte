@@ -13,9 +13,7 @@ int erosita_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
   // Detector data structure (containing the pixel array, its width, ...).
-  const int NCCDS = 1;
-  FramestoreDetector detector[NCCDS];
-  int ccdindex; // Counter for the individual CCDs.
+  eROSITADetectors detector;
 
   // Data structure to model the detector background.
   UniformDetectorBackground background;
@@ -43,20 +41,6 @@ int erosita_simulation_main() {
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
 
-    // Open the FITS file with the input impact list:
-    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename, 
-				READONLY);
-    if (EXIT_SUCCESS!=status) break;
-    // Determine the WCS keywords.
-    char comment[MAXMSG]; // buffer
-    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, 
-		      comment, &status)) break;    
-    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, 
-		      comment, &status)) break;    
-    // Determine the name of the attitude file from the FITS header.
-    if (fits_read_key(impactlistfile.fptr, TSTRING, "ATTITUDE", 
-		      attitude_filename, comment, &status)) break;
-
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -64,7 +48,7 @@ int erosita_simulation_main() {
 
 
     // DETECTOR setup.
-    struct FramestoreDetectorParameters fdparameters = {
+    struct eROSITADetectorsParameters fdparameters = {
       .pixels = 
       { .xwidth = parameters.width,
 	.ywidth = parameters.width,
@@ -82,23 +66,33 @@ int erosita_simulation_main() {
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template
     };
-    // Init the 7 individual framestore CCDs.
-    for (ccdindex=0; ccdindex<NCCDS; ccdindex++) {
-      status=initFramestoreDetector(&detector[ccdindex], &fdparameters);
-      if(EXIT_SUCCESS!=status) break;
-    }
+    status=initeROSITADetectors(&detector, &fdparameters);
     if(EXIT_SUCCESS!=status) break;
     // END of DETECTOR CONFIGURATION SETUP    
 
+    // Open the FITS file with the input impact list:
+    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename, 
+				READONLY);
+    if (EXIT_SUCCESS!=status) break;
+    // Determine the WCS keywords.
+    char comment[MAXMSG]; // buffer
+    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, 
+		      comment, &status)) break;    
+    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, 
+		      comment, &status)) break;    
+    // Determine the name of the attitude file from the FITS header.
+    if (fits_read_key(impactlistfile.fptr, TSTRING, "ATTITUDE", 
+		      attitude_filename, comment, &status)) break;
+
     // Add important additional HEADER keywords to the event list.
     char keyword[MAXMSG];
-    sprintf(keyword, "TCRVL%d", detector[0].eventlist.cskyx);
-    if (fits_update_key(detector[0].eventlist.generic.fptr, TDOUBLE, keyword, &refxcrvl, 
+    sprintf(keyword, "TCRVL%d", detector.eventlist.cskyx);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, &refxcrvl, 
 			"", &status)) break;
-    sprintf(keyword, "TCRVL%d", detector[0].eventlist.cskyy);
-    if (fits_update_key(detector[0].eventlist.generic.fptr, TDOUBLE, keyword, &refycrvl, 
+    sprintf(keyword, "TCRVL%d", detector.eventlist.cskyy);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, &refycrvl, 
 			"", &status)) break;
-    if (fits_update_key(detector[0].eventlist.generic.fptr, TSTRING, "ATTITUDE", 
+    if (fits_update_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
 			attitude_filename, "name of the attitude FITS file", &status)) break;
 
 
@@ -139,12 +133,12 @@ int erosita_simulation_main() {
 	if (impact.time-former_impact_time > 60.) {
 	  // Fill up the time in the 60s after the last photon impact with background events.
 	  while (background.nextImpact.time-former_impact_time<60.) {
-	  // Add the background event to the CCD array.
-	    status=addImpact2FramestoreDetector(&detector[0], &background.nextImpact);
+	    // Add the background event to the CCD array.
+	    status=addImpact2eROSITADetectors(&detector, &background.nextImpact);
 	    if(EXIT_SUCCESS!=status) break;
 	    // Create a new background event.
-	    createUniformDetectorBackgroundImpact(&background, &detector[0].pixels, 
-						  detector[0].generic.rmf);
+	    createUniformDetectorBackgroundImpact(&background, &detector.pixels[0],
+						  detector.generic.rmf);
 	  }
 	  if(EXIT_SUCCESS!=status) break;
 	  // Jump to the next interval where cosmic photons arrive at the detector.
@@ -159,11 +153,11 @@ int erosita_simulation_main() {
 	// the last background event and the current photon arrival time.
 	while (background.nextImpact.time < impact.time) {
 	  // Add the background event to the CCD array.
-	  status=addImpact2FramestoreDetector(&detector[0], &background.nextImpact);
+	  status=addImpact2eROSITADetectors(&detector, &background.nextImpact);
 	  if(EXIT_SUCCESS!=status) break;
 	  // Create a new background event.
-	  createUniformDetectorBackgroundImpact(&background, &detector[0].pixels, 
-						detector[0].generic.rmf);
+	  createUniformDetectorBackgroundImpact(&background, &detector.pixels[0], 
+						detector.generic.rmf);
 	}
 	if(EXIT_SUCCESS!=status) break;
       }	// END of inserting background events.
@@ -173,7 +167,7 @@ int erosita_simulation_main() {
       // Before generating and adding the charge to the detector the routine also 
       // checks, whether the integration time is exceeded and performs the readout 
       // in that case. 
-      status=addImpact2FramestoreDetector(&detector[0], &impact);
+      status=addImpact2eROSITADetectors(&detector, &impact);
       if(EXIT_SUCCESS!=status) break;
 
       // Save the time of the current impact (necessary for background generation).
@@ -181,9 +175,9 @@ int erosita_simulation_main() {
 
     } // END of scanning the impact list.
 
-    // Perform a final readout of the FramestoreDetector.
+    // Perform a final readout of the eROSITADetectors.
     // Otherwise the last stored charges may be lost.
-    status=readoutFramestoreDetector(&detector[0]);
+    status=readouteROSITADetectors(&detector);
     if(EXIT_SUCCESS!=status) break;
 
   } while(0); // END of the error handling loop.
@@ -201,10 +195,8 @@ int erosita_simulation_main() {
   status += closeImpactListFile(&impactlistfile);
 
   // Release memory of detector.
-  for (ccdindex=0; ccdindex<NCCDS; ccdindex++) {
-    status+=cleanupFramestoreDetector(&detector[ccdindex]);
-  }
-
+  status+=cleanupeROSITADetectors(&detector);
+  
   // Release memory of background data structure.
   status+=cleanupUniformDetectorBackground(&background);
 
@@ -225,7 +217,7 @@ int getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
   }
 
-  // Get the integration time of the FRAMESTORE CCD.
+  // Get the integration time of the eROSITA CCDs.
   else if ((status = PILGetReal("integration_time", &parameters->integration_time))) {
     HD_ERROR_THROW("Error reading the integration time!\n", status);
   }

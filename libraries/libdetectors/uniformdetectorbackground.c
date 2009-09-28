@@ -17,7 +17,7 @@ int initUniformDetectorBackground(UniformDetectorBackground* background,
   } else { // No background spectrum specified.
     // Set the background event rate to the default value of 0.
     background->rate = 0.;
-    headas_chat(1, "Warning: no detector background spectrum specified!\n");
+    headas_chat(0, "### Warning: no detector background spectrum specified!\n");
   }
 
   // Set the nextImpact (representing the next detector background event) 

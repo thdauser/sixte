@@ -11,6 +11,10 @@
 #include "squarepixels.h"
 
 
+/** Number of eROSITA telescopes / framestore pnCCDs. */
+#define NeROSITATELESCOPES 7
+
+
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
@@ -18,7 +22,7 @@
 
 typedef struct {
   GenericDetector generic;
-  SquarePixels pixels;
+  SquarePixels pixels[NeROSITATELESCOPES];
 
   /** Integration time of the entire pnCCD (!) detector array.
    * (= Span of time between 2 subsequent readouts). */
@@ -26,13 +30,13 @@ typedef struct {
 
   /** Current readout time. The end of the integration 
    * time / beginning of dead time. */
-  double readout_time; 
+  double readout_time;
 
   /** Number of the current frame. */
   long frame; 
 
   /** Event list FITS file for the eROSITA-specific events. */
-  eROSITAEventFile eventlist; 
+  eROSITAEventFile eventlist;
 
 } eROSITADetectors;
 

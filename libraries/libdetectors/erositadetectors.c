@@ -9,8 +9,12 @@ int initeROSITADetectors(eROSITADetectors* fd,
   // Call the initialization routines of the underlying data structures.
   status = initGenericDetector(&fd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
-  status = initSquarePixels(&fd->pixels, &parameters->pixels);
-  if (EXIT_SUCCESS!=status) return(status);
+  
+  int ccdindex;
+  for(ccdindex=0; ccdindex<NeROSITATELESCOPES; ccdindex++) {
+    status = initSquarePixels(&fd->pixels[ccdindex], &parameters->pixels);
+    if (EXIT_SUCCESS!=status) return(status);
+  }
 
   // Set up the erosita configuration.
   fd->integration_time = parameters->integration_time;
@@ -22,7 +26,7 @@ int initeROSITADetectors(eROSITADetectors* fd,
 
   // Create and open new event list file.
   status = openNeweROSITAEventFile(&fd->eventlist, parameters->eventlist_filename,
-				       parameters->eventlist_template);
+				   parameters->eventlist_template);
   if (EXIT_SUCCESS!=status) return(status);
 
   return(status);
@@ -34,7 +38,10 @@ int cleanupeROSITADetectors(eROSITADetectors* fd)
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  cleanupSquarePixels(&fd->pixels);
+  int ccdindex;
+  for(ccdindex=0; ccdindex<NeROSITATELESCOPES; ccdindex++) {
+    cleanupSquarePixels(&fd->pixels[ccdindex]);
+  }
   status+=closeeROSITAEventFile(&fd->eventlist);
 
   return(status);
@@ -55,7 +62,10 @@ int checkReadouteROSITADetectors(eROSITADetectors* fd, double time)
     if (EXIT_SUCCESS!=status) return(status);
 
     // Clear the detector array.
-    clearSquarePixels(&fd->pixels);
+    int ccdindex;
+    for(ccdindex=0; ccdindex<NeROSITATELESCOPES; ccdindex++) {
+      clearSquarePixels(&fd->pixels[ccdindex]);
+    }
 
     // Update the detector frame time to the next frame until the current
     // time is within the detector->readout interval.
@@ -78,39 +88,44 @@ int checkReadouteROSITADetectors(eROSITADetectors* fd, double time)
 
 inline int readouteROSITADetectors(eROSITADetectors* fd) 
 {
+  int ccdindex;
   int x, y;
   int status = EXIT_SUCCESS;
 
-  // Read out the entire detector array.
-  for (x=0; x<fd->pixels.xwidth; x++) {
-    for (y=0; y<fd->pixels.ywidth; y++) {
-      if (fd->pixels.array[x][y].charge > 1.e-6) {
-	eROSITAEvent event;
-	// Determine the detector channel that corresponds to the charge stored
-	// in the detector pixel.
-	event.pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
-
-	// Check lower threshold (PHA and energy):
-	if ((event.pha>=fd->generic.pha_threshold) && 
-	    (fd->pixels.array[x][y].charge>=fd->generic.energy_threshold)) { 
-
-	  // REMOVE TODO
-	  assert(event.pha >= 0);
-	  // Maybe: if (event.pha < 0) continue;
-	
-	  // There is an event in this pixel, so insert it into the eventlist:
-	  event.time = fd->readout_time;
-	  event.energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
-	  event.xi = x;
-	  event.yi = y;
-	  event.frame = fd->frame;
-
-	  status=addeROSITAEvent2File(&fd->eventlist, &event);
-	  if (EXIT_SUCCESS!=status) return(status);
-	} // END of check for threshold
-      } // END of check whether  charge > 1.e-6
-    } // END of loop over y
-  } // END of loop over x
+  // Read out all of the three eROSITA CCDs.
+  for(ccdindex=0; ccdindex<NeROSITATELESCOPES; ccdindex++) {
+    // Read out the entire detector array.
+    for (x=0; x<fd->pixels[ccdindex].xwidth; x++) {
+      for (y=0; y<fd->pixels[ccdindex].ywidth; y++) {
+	if (fd->pixels[ccdindex].array[x][y].charge > 1.e-6) {
+	  eROSITAEvent event;
+	  // Determine the detector channel that corresponds to the charge stored
+	  // in the detector pixel.
+	  event.pha = getChannel(fd->pixels[ccdindex].array[x][y].charge, fd->generic.rmf);
+	  
+	  // Check lower threshold (PHA and energy):
+	  if ((event.pha>=fd->generic.pha_threshold) && 
+	      (fd->pixels[ccdindex].array[x][y].charge>=fd->generic.energy_threshold)) { 
+	    
+	    // REMOVE TODO
+	    assert(event.pha >= 0);
+	    // Maybe: if (event.pha < 0) continue;
+	    
+	    // There is an event in this pixel, so insert it into the eventlist:
+	    event.time = fd->readout_time;
+	    event.energy = fd->pixels[ccdindex].array[x][y].charge * 1.e3; // [eV]
+	    event.xi = x;
+	    event.yi = y;
+	    event.frame = fd->frame;
+	    event.ccdnr = ccdindex+1;
+	    
+	    status=addeROSITAEvent2File(&fd->eventlist, &event);
+	    if (EXIT_SUCCESS!=status) return(status);
+	  } // END of check for threshold
+	} // END of check whether  charge > 1.e-6
+      } // END of loop over y
+    } // END of loop over x
+  } // END of loop over the 7 telescopes / CCDs
 
   return(status);
 }
@@ -149,16 +164,20 @@ int addImpact2eROSITADetectors(eROSITADetectors* fd, Impact* impact)
   if (charge > 0.) {
     int x[4], y[4];
     double fraction[4];
-    
+
+    // Choose randomly 1 of the 7 CCDs.
+    int ccdindex = (int)(get_random_number()*NeROSITATELESCOPES);
+    assert(ccdindex<NeROSITATELESCOPES);
+
     // Determine the affected detector pixels.
-    int npixels = getSquarePixelsSplits(&fd->pixels, &fd->generic, impact->position, 
+    int npixels = getSquarePixelsSplits(&fd->pixels[ccdindex], &fd->generic, impact->position, 
 					x, y, fraction);
     
     // Add the charge created by the photon to the affected detector pixels.
     int count;
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
-	fd->pixels.array[x[count]][y[count]].charge += 
+	fd->pixels[ccdindex].array[x[count]][y[count]].charge += 
 	  charge * fraction[count];
 	  // |      |-> charge fraction due to split events
 	  // |-> charge created by incident photon

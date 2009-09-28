@@ -3,7 +3,7 @@
 
 
 #include "sixt.h"
-#include "framestoredetector.h"
+#include "erositadetectors.h"
 #include "erositaeventfile.h"
 #include "point.h"
 #include "impact.h"
