@@ -90,7 +90,6 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
   clearHexagonalPixels(hp);
 
 
-
   // Set up some auxiliary data that is required to determine the affected pixels
   // for a cartesian photon impact position.
   // Determine the coordinates of the pixel centers (pixel numbering according to Oosterbroek):
