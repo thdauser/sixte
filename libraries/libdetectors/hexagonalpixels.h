@@ -117,7 +117,7 @@ void getHexagonalPixel(HexagonalPixels*, struct Point2d position, int* pixel);
  * The accroding charge fractions are also determined by the routine.
  * The generated charge is distributed among the two pixels according to a Gaussian shape
  * charge cloud model. 
- * The return valud of the function is the number of split partners, i.e., it is either
+ * The return value of the function is the number of split partners, i.e., it is either
  * 1 or 2. */
 int getHexagonalPixelSplits(HexagonalPixels*, GenericDetector*, 
 			    struct Point2d position, int* pixel, double* fraction);
