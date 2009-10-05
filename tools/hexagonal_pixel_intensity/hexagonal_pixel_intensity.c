@@ -11,9 +11,9 @@ int main(int argc, char* argv[])
   int pixel; // Pixel hit by an incident photon.
 
   int count_pixelwidth;                // Counter for the different pixel widths.
-  const int n_pixelwidths=2;          // Number of different pixelwidths to simulate.
+  const int n_pixelwidths=37;          // Number of different pixelwidths to simulate.
   const double min_pixelwidth=0.5e-3;  // Minimum pixel width ([m]).
-  const double step_pixelwidth=0.5e-3; // Increment step for the pixel width ([m]).
+  const double step_pixelwidth=0.125e-3; // Increment step for the pixel width ([m]).
 
   HexagonalPixels hexagonalPixels[n_pixelwidths];
 
@@ -80,12 +80,12 @@ int main(int argc, char* argv[])
     for (count_pixelwidth=0; count_pixelwidth<n_pixelwidths; count_pixelwidth++) {
       // Determine the statistics and print them.
       long ndetected=0;
-      double mean=0., mean2;
+      double mean2=0.;
       for (pixel=0; pixel<37; pixel++) {
 	ndetected += nphotons[count_pixelwidth][pixel];
 	mean2 += pow((double)nphotons[count_pixelwidth][pixel], 2.)/37.;
       }
-      mean = ndetected*1./37.;
+      double mean = ndetected*1./37.;
       
       printf("%lf %ld %ld %lf %lf\n",
 	     min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width

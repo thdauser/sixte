@@ -105,7 +105,6 @@ int create_lightcurve(
 
 
 
-
 ///////////////////////////////////////////////////////////////////////////////////
 // Create a randomly chosen photon energy according to the spectrum of the 
 // specified source.

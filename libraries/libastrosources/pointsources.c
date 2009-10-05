@@ -16,6 +16,7 @@ PointSourceFileCatalog* get_PointSourceFileCatalog() {
 }
 
 
+
 /////////////////////////////////////////////////////////
 void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
   if (NULL!=psfc) {
@@ -35,6 +36,7 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
 }
 
 
+
 //////////////////////////////////////////////////////////
 PointSourceFile* get_PointSourceFile() {
   PointSourceFile* psf = (PointSourceFile*)malloc(sizeof(PointSourceFile));
@@ -49,6 +51,7 @@ PointSourceFile* get_PointSourceFile() {
 
   return(psf);
 }
+
 
 
 //////////////////////////////////////////////////////////
@@ -228,6 +231,7 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 
   return(psc);
 }
+
 
 
 ////////////////////////////////////////////////////
