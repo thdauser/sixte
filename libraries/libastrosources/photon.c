@@ -28,15 +28,7 @@ int create_lightcurve(
 
 
   // Generate the light curve:
-#ifdef CONSTANT_LIGHTCURVE // Create constant light curve with average count rate.
-  for (count=0; count<N_LIGHTCURVE_BINS; count++) {
-    ps->lightcurve[count].t = t0 + count * LIGHTCURVE_BINWIDTH;
-    ps->lightcurve[count].rate = ps->rate;
-  }
-  ps->lightcurve[N_LIGHTCURVE_BINS].t = 
-    t0 + N_LIGHTCURVE_BINS*LIGHTCURVE_BINWIDTH;
-
-#else  // Create a light curve with power-law PSD and read noise.
+  // Create a light curve with power-law PSD and read noise.
 
   // Repeat the light curve creation until we have proper data 
   // (without zero-rates).
@@ -99,8 +91,6 @@ int create_lightcurve(
 
   } while (check==-1);  // Repeat the light curve creation until we have proper data.
 
-#endif // END of #ifndef CONSTANT_LIGHTCURVE
-
   return(status);
 }
 */
@@ -155,8 +145,6 @@ int create_photons(
 		   gsl_rng *gsl_random_g
 		   )
 {
-  //  int bin=0; // light curve bin counter
-
   // Second pointer to photon list, that can be moved along the list,   
   // without loosing the first entry.
   struct PhotonOrderedListEntry* list_current = *list_first;
@@ -197,28 +185,6 @@ int create_photons(
       }
     }
 
-    /*
-    // Determine the current count rate of the light curve.
-    // If the source has no light curve, or the assigned light curve is 
-    // too old, create a new one.
-    if (ps->lightcurve == NULL) {
-      if ((status=create_lightcurve(ps, time, gsl_random_g)) != EXIT_SUCCESS) break;
-    } else if (ps->lightcurve[N_LIGHTCURVE_BINS].t < ps->t_last_photon) {
-      if ((status=create_lightcurve(ps, time, gsl_random_g)) != EXIT_SUCCESS) break;
-    }
-
-    // Find light curve time bin corresponding to the current time.
-    for ( ; bin<N_LIGHTCURVE_BINS; bin++) {
-      if (ps->lightcurve[bin+1].t > ps->t_last_photon) {
-	break;
-      }
-    }
-
-    // Calculate arrival time depending on previous photon.
-    ps->t_last_photon += rndexp(1./(ps->lightcurve[bin].rate));
-    new_photon.time = ps->t_last_photon;
-    */
-
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
     assert(new_photon.time>0.);
     ps->t_last_photon = new_photon.time;
@@ -234,9 +200,9 @@ int create_photons(
 
 
 
-
 ////////////////////////////////////////////////////////////////
-void clear_PhotonList(struct PhotonOrderedListEntry** pole) {
+void clear_PhotonList(struct PhotonOrderedListEntry** pole)
+{
   if ((*pole) != NULL) {
     // This is not the last entry in the list, so call routine recursively.
     clear_PhotonList(&((*pole)->next));
@@ -289,96 +255,6 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
   
   return(EXIT_SUCCESS);
 }
-
-
-
-///////////////////////////////////////////////////////////////////
-int create_impactlist_file(
-			   fitsfile **fptr,
-			   char filename[],
-			   int *status
-			   )
-{
-  char *ftype[N_IMPACT_FIELDS];
-  char *fform[N_IMPACT_FIELDS];
-  char *funit[N_IMPACT_FIELDS];
-  int counter;
-
-  char msg[MAXMSG];  // error output buffer
-
-  do { // Beginning of ERROR handling loop
-
-    // Create a new FITS file:
-    if (fits_create_file(fptr, filename, status)) break;
-
-    // To create a FITS table, the format of the individual columns has to 
-    // be specified.
-    for(counter=0; counter<N_PHOTON_FIELDS; counter++) {
-      // Allocate memory
-      ftype[counter] = (char *) malloc(8 * sizeof(char));
-      fform[counter] = (char *) malloc(4 * sizeof(char));
-      funit[counter] = (char *) malloc(20 * sizeof(char));
-
-      // Check if all memory was allocated successfully:
-      if ((!ftype[counter]) || (!fform[counter]) || (!funit[counter])) {
-	*status = EXIT_FAILURE;
-	sprintf(msg, "Error: no memory allocation for FITS table parameters "
-		"failed (impact list)!\n");
-	HD_ERROR_THROW(msg, *status);
-      }
-    }
-
-    // If an error has occurred during memory allocation, 
-    // skip the following part.
-    if (*status != EXIT_SUCCESS) break;
-
-    // Set the field types of the table in the FITS file.
-    // 1. time
-    strcpy(ftype[0], "TIME");
-    strcpy(fform[0], "D");
-    strcpy(funit[0], "s");
-
-    // 2. energy
-    strcpy(ftype[1], "ENERGY");
-    strcpy(fform[1], "E");
-    strcpy(funit[1], "keV");
-
-    // 3. right ascension
-    strcpy(ftype[2], "X");
-    strcpy(fform[2], "D");
-    strcpy(funit[2], "m");
-
-    // 4. declination
-    strcpy(ftype[3], "Y");
-    strcpy(fform[3], "D");
-    strcpy(funit[3], "m");
-
-    // create the table
-    if (fits_create_tbl(*fptr, BINARY_TBL, 0, N_PHOTON_FIELDS, 
-			ftype, fform, funit, "IMPACTLIST", status)) break;
-    
-
-    // write descriptory data into the header of the FITS file
-    if (fits_write_key(*fptr, TSTRING, "COMMENT", "IMPACTLIST", "", status)) break;
-
-    // If desired by the user, print all program parameters to HISTORY of 
-    // FITS file (HDU number 1).
-    HDpar_stamp(*fptr, 2, status);
-    
-  } while (0);  // END of ERROR handling loop
-
-
-  //----------------
-  // clean up
-  for (counter=0; counter<N_PHOTON_FIELDS; counter++) {
-    if (ftype[counter]) free(ftype[counter]);
-    if (fform[counter]) free(fform[counter]);
-    if (funit[counter]) free(funit[counter]);
-  }
-
-  return(*status);
-}
-
 
 
 

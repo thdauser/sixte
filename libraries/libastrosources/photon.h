@@ -18,14 +18,16 @@
 #include "pointsources.h"
 
 
+////////////////////////////////////////////////////////////////////////
+// Definitions.
+////////////////////////////////////////////////////////////////////////
+
+
 long photon_counter;
 
 // Constants defining the light curve arrays
 #define N_LIGHTCURVE_BINS     (2048)
 #define LIGHTCURVE_BINWIDTH   (0.0005)
-#define N_PHOTON_FIELDS       (4)     // TIME, ENERGY, RA, DEC
-#define N_IMPACT_FIELDS       (4)     // TIME, ENERGY, X, Y
-                                
 
 // The following macros are used to the store light curve and the PSD 
 // in the right format for the GSL routines.
@@ -45,7 +47,7 @@ typedef struct {
 
   double ra, dec; /**< Right ascension and declination of photon position [rad]. */
 
-  // REMOVE
+  // REMOVE (obsolete)
   Vector direction; // direction from which the photon originates 
                     // (source direction)
 } Photon;
@@ -92,44 +94,34 @@ int create_photons(PointSource* ps, double time, double dt,
  * If the list does not exist so far, the routine creates a new list.
  * The return value is the error status. */
 int insert_Photon2TimeOrderedList
-(struct PhotonOrderedListEntry** first /**< Address of the pointer to the absolutely first 
-					* entry in the time-ordered list. The pointer might be
-					* NULL, if the list is empty. 
-					* Might be modified by the routine. */,
- struct PhotonOrderedListEntry** current /**< Address of the pointer to the entry in the time- 
-					  * ordered list where the insert routine should start 
-					  * searching. That may not be the absolutely first 
-					  * entry of the list. Might be NULL, if it points to
-					  * the end of the list. The routine might modifies the
-					  * pointer. */,
- Photon* ph /**< Data of the photon that should be inserted. */);
+(/** Address of the pointer to the absolutely first entry in the time-ordered list. 
+  * The pointer might be  NULL, if the list is empty. The routine might modify the pointer. */
+ struct PhotonOrderedListEntry** first,
+ /** Address of the pointer to the entry in the time-ordered list where the insert 
+  * routine should start searching. That may not be the absolutely first entry of 
+  * the list. Might be NULL, if it points to the end of the list. The routine 
+  * might modify the pointer. */
+ struct PhotonOrderedListEntry** current,
+ /** Data of the photon that should be inserted. */
+ Photon* ph);
 
 
 /** Clear the time-ordered photon list. */
-void clear_PhotonList(struct PhotonOrderedListEntry ** /**< Address of the pointer to the
-							 * first entry of the list. 
-							 * Might be NULL. */);
+void clear_PhotonList(/** Address of the pointer to the first entry of the list. 
+		       * Might be NULL. */
+		      struct PhotonOrderedListEntry** pole);
 
 
 // Creates a randomly chosen photon energy according to the spectrum of the 
 // specified source.
 float photon_energy(Spectrum*, struct RMF* rmf);
 
-// Function produces a light curve for a given source.
-//int create_lightcurve(struct source_cat_entry *src, double time, 
-int create_lightcurve(PointSource* ps, double time, gsl_rng *gsl_random_g);
-
-// This routine creates a new FITS file with a binary table to store an impact list
-// of photons on the detector. The list can be further processed by a detector
-// simulation to create an event list.
-int create_impactlist_file(fitsfile **, char filename[], int *status);
-
 /** Insert a new photon to an existing binary tree.
  * The pointer to the PhotonBinaryTreeEntry can be NULL. */
-int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** /**< Address of the Pointer to the 
-							     * first entry of the binary tree.
-							     * Can be NULL. */,
-			     Photon* /**< Data of the photon that should be inserted. */ );
+int insert_Photon2BinaryTree(/** Address of the pointer to the first entry of the binary tree.
+			      * Can be NULL. */
+			     struct PhotonBinaryTreeEntry** first_entry,
+			     Photon* photon/**< Data of the photon that should be inserted. */ );
 
 
 /** Creates a time-ordered photon list from a given binary tree.
