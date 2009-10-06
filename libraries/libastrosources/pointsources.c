@@ -47,6 +47,7 @@ PointSourceFile* get_PointSourceFile() {
     psf->cdec = 0;
     psf->crate = 0;
     psf->cspectrum = 0;
+    psf->clightcurve = 0;
   }
 
   return(psf);
@@ -101,6 +102,7 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
     if (fits_get_colnum(psf->fptr, CASEINSEN, "DEC", &psf->cdec, status)) break;
     if (fits_get_colnum(psf->fptr, CASEINSEN, "PPS", &psf->crate, status)) break;
     if (fits_get_colnum(psf->fptr, CASEINSEN, "SPECTRUM", &psf->cspectrum, status)) break;
+    if (fits_get_colnum(psf->fptr, CASEINSEN, "LIGHTCUR", &psf->clightcurve, status)) break;
 
     // Determine the number of rows in the FITS table:
     if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) break;	
@@ -113,6 +115,7 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
 
   return(psf);
 }
+
 
 
 ///////////////////////////////////////////////////////////
@@ -131,6 +134,7 @@ void free_PointSourceFile(PointSourceFile* psf) {
     free(psf);
   }
 }
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -201,11 +205,13 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 	    // Save the source direction in the source catalog-array:
 	    psc->sources[psc->nsources].ra  = ps.ra;
 	    psc->sources[psc->nsources].dec = ps.dec;
-	    // Set lightcurve pointer to NULL
-	    psc->sources[psc->nsources].lightcurve = NULL;
+
+	    // Set the light curve type to the value specified in the source catalog.
+	    psc->sources[psc->nsources].lc_type = ps.lc_type;
+	    // Set light curve pointer to NULL
 	    psc->sources[psc->nsources].lc = NULL;
 	    // So far there was no photon created for this source
-	    psc->sources[psc->nsources].t_last_photon = -1.;
+	    psc->sources[psc->nsources].t_last_photon = 0.;
 
 	    // Source spectrum.
 	    if ((ps.spectrum_index<1) || 
@@ -238,9 +244,6 @@ void free_PointSourceCatalog(PointSourceCatalog* psc)
   if (NULL != psc) {
     int count;
     for (count=0; count<psc->nsources; count++) {
-      if (psc->sources[count].lightcurve != NULL) {
-	free(psc->sources[count].lightcurve);
-      }
       if (psc->sources[count].lc != NULL) {
 	freeLinLightCurve(psc->sources[count].lc);
       }
@@ -251,6 +254,7 @@ void free_PointSourceCatalog(PointSourceCatalog* psc)
 }
 
 
+
 //////////////////////////////////////////////////////
 int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, int* status) 
 {
@@ -259,12 +263,14 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, in
   // Set default values.
   ps->ra = 0.;
   ps->dec = 0.;
+
   ps->rate = 0.;
+  ps->lc_type = T_LC_CONSTANT;
+  ps->lc = NULL;
+  ps->t_last_photon = 0.;
+
   ps->spectrum_index = 0;
   ps->spectrum = NULL;
-  ps->lightcurve = NULL;
-  ps->lc = NULL;
-  ps->t_last_photon = -1.;
 
   // Read the data from the FITS table.
 
@@ -286,9 +292,13 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, in
   fits_read_col(psf->fptr, TFLOAT, psf->crate, row+1, 1, 1, &ps->rate, &ps->rate, 
 		&anynul, status);
 
-  // Spectrum:
+  // Spectrum type:
   fits_read_col(psf->fptr, TLONG, psf->cspectrum, row+1, 1, 1, &ps->spectrum_index, 
 		&ps->spectrum_index, &anynul, status);
+
+  // Light curve type:
+  fits_read_col(psf->fptr, TLONG, psf->clightcurve, row+1, 1, 1, &ps->lc_type, 
+		&ps->lc_type, &anynul, status);
 
   return(anynul);  
 }

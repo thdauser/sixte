@@ -14,21 +14,31 @@
 /** Contains all data to specify the properties of a point source. */
 typedef struct {
   float ra, dec; /**< Right ascension and declination of the source [rad]. */
-  float rate; /**< Average photon rate [photons/s]. */
-  struct lightcurve_entry* lightcurve; /**< Pointer to source light curve. */
 
-  LinLightCurve* lc; /**< Piece-wise linear light curve for this X-ray source. */
-
-  Spectrum *spectrum; /**< Pointer to source spectrum. */
+  /** Average photon rate [photons/s]. */
+  float rate; 
+  /** Type of the light curve particular for this PointSource.
+   * There are different possible values:
+   * T_LC_CONSTANT (=0) means a constant light curve.
+   * T_LC_TIMMER_KOENIG (=-1) means a light curve with red noise according 
+   * to Timmer & Koenig (1995).
+   * Positive values can be used to designate a particular FITS file containing 
+   * a light curve. */
+  long lc_type;
+  /** Pointer to object with Piece-wise linear light curve for this X-ray source. */
+  LinLightCurve* lc; 
 
   /** Index of the source spectrum within the SpectrumStore.
    * This number represents the index of the source spectrum within the SpectrumStore
    * of the PointSourceCatalog. 
    * Warning: the spectrum_index starts  at 1 (not at 0). */
   long spectrum_index; 
-			  
 
-  double t_last_photon; /** Time of last photon created for this source. */
+  Spectrum *spectrum; /**< Pointer to source spectrum. */
+
+  /** Time of last photon created for this source. */
+  double t_last_photon; 
+
 } PointSource;
 
 /** Contains all PointSources from one and the same FITS file. 
@@ -43,7 +53,8 @@ typedef struct {
 } PointSourceCatalog;
 
 
-/** Gives information about a FITS file with point sources. */
+/** PointSourceFile containing information about X-ray point sources.
+ * Provides information about a FITS file with point sources. */
 typedef struct {
   fitsfile* fptr;
 
@@ -51,7 +62,7 @@ typedef struct {
 
   /** Column names of the point source specific data columns in the FITS table. 
    * If a column is not available in the FITS file, the corresponding variable is 0. */
-  int cra, cdec, crate, cspectrum;
+  int cra, cdec, crate, cspectrum, clightcurve;
 
   /** SpectrumStore containing the spectra that are used in this PointSourceCatalog. */
   SpectrumStore spectrumstore;

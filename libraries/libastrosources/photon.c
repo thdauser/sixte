@@ -2,6 +2,7 @@
 
 
 ///////////////////////////////////////////////////////
+/*
 int create_lightcurve(
 		      PointSource* ps, 
 		      double t0,             // start time for lightcurve
@@ -10,8 +11,8 @@ int create_lightcurve(
 {
   int count;
 
-  int status = EXIT_SUCCESS;    // error status
-  char msg[MAXMSG];             // error message output buffer
+  int status = EXIT_SUCCESS; // Error status
+  char msg[MAXMSG];          // Error message output buffer
 
 
   // At first light curve creation for this source, get memory for lightcurve.
@@ -102,7 +103,7 @@ int create_lightcurve(
 
   return(status);
 }
-
+*/
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -181,19 +182,19 @@ int create_photons(
     // Determine the impact time of the photon according to the light
     // curve of the source.
     if (NULL==ps->lc) {
-//    if (0==0) { // TODO replace by (0==ps->lightcurve)
+      if (T_LC_CONSTANT==ps->lc_type) {
 	ps->lc = getLinLightCurve(1, &status);
 	if (EXIT_SUCCESS!=status) break;
 	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
 	if (EXIT_SUCCESS!=status) break;
-//    }
+      }
     }
 
     if (time > ps->lc->t0 + ps->lc->nvalues*ps->lc->step_width) {
-//    if (0==0) { // TODO replace by (0==ps->lightcurve)
+      if (T_LC_CONSTANT==ps->lc_type) {
 	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
 	if (EXIT_SUCCESS!=status) break;
-//    }
+      }
     }
 
     /*
