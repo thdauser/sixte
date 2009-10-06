@@ -4,6 +4,11 @@
 #include "sixt.h"
 #include "sixt_random.h"
 
+// GSL header files
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_fft_halfcomplex.h>
+#include <gsl/gsl_randist.h>
+
 
 ////////////////////////////////////////////////////////////////////////
 // Definitions.
@@ -14,6 +19,12 @@
 #define T_LC_CONSTANT 0
 /** Light curve type: red noise according to Timmer & Koenig (1995). */
 #define T_LC_TIMMER_KOENIG -1 
+
+
+// The following macros are used to the store light curve and the PSD 
+// in the right format for the GSL routines.
+#define REAL(z,i) ((z)[(i)])
+#define IMAG(z,i) ((z)[lc->nvalues-(i)])
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -35,8 +46,8 @@ typedef struct {
 
   /** Piece-wise linear light curve data points ([photons/s]). 
    * The value a_k represents the gradient of the light curve between 
-   * the time t_k (= t0 + k*step_width) and t_{k+1}. 
-   * The value b_k represents the contants contribution at t_k. */
+   * the time t_k (= t0 + k*step_width) and t_{k+1} (slope). 
+   * The value b_k represents the contant contribution (intercept) at t_k. */
   double* a, *b;
 
   /** Auxiliary data.
@@ -67,15 +78,17 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status);
 int initConstantLinLightCurve(LinLightCurve* lc, double mean_rate, double t0, 
 			      double step_width);
 
-/** Constructor generating a light curve according to the algorithm proposed
- * by Timmer & Koenig (1995). 
- * The function first allocates the memory required for the LinLightCurve
- * object. Then it generates the light curve data using the Timmer & Koenig
- * randomization process with the given parameters. */
-//LinLightCurve* getTimmerLinLightCurve(double mean_rate, double sigma, double t0, 
-//				long nvalues, double step_width, int* status);
+/** Initialization routine generating a light curve according to the algorithm proposed
+ * by Timmer & Koenig. 
+ * The LinLightCurve object already must exist and the memory must be allocated.
+ * The light curve data are generated using the algorithm proposed by Timmer & Koenig (1995),
+ * which is a phase and amplitude randomization process. The generated light curve
+ * is normalized to fullfill the specified mean count rate and rms. */
+int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_width, 
+				  double mean_rate, double sigma, gsl_rng *gsl_random_g);
 
-/** Destructor. */
+/** Destructor. 
+ * Releases the memory allocated for the LinLightCurve object by the constructor. */
 void freeLinLightCurve(LinLightCurve*);
 
 /** Determine next photon generation time from current point of time and given

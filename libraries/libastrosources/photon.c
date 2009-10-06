@@ -1,101 +1,6 @@
 #include "photon.h"
 
 
-///////////////////////////////////////////////////////
-/*
-int create_lightcurve(
-		      PointSource* ps, 
-		      double t0,             // start time for lightcurve
-     		      gsl_rng *gsl_random_g  // pointer to GSL random number generator
-		      )
-{
-  int count;
-
-  int status = EXIT_SUCCESS; // Error status
-  char msg[MAXMSG];          // Error message output buffer
-
-
-  // At first light curve creation for this source, get memory for lightcurve.
-  if (ps->lightcurve == NULL) {
-    ps->lightcurve = (struct lightcurve_entry *) 
-      malloc((N_LIGHTCURVE_BINS+1) * sizeof(struct lightcurve_entry));
-    if (!(ps->lightcurve)) {
-      status = EXIT_FAILURE;
-      sprintf(msg, "Not enough memory available to store the lightcurve!\n");
-      HD_ERROR_THROW(msg,status);
-    }
-  }
-
-
-  // Generate the light curve:
-  // Create a light curve with power-law PSD and read noise.
-
-  // Repeat the light curve creation until we have proper data 
-  // (without zero-rates).
-  int check;
-  do { 
-    check=0;
-
-    // First create frequencies.
-    double freq[N_LIGHTCURVE_BINS];
-    for (count=0; count<N_LIGHTCURVE_BINS; count++) {
-      freq[count] = (double)count;
-    }
-    // Create PSD.
-    double psd[N_LIGHTCURVE_BINS];
-    for (count=0; count<N_LIGHTCURVE_BINS; count++) {
-      // create red noise: ~1/f² (Uttley, McHardy 2001)
-      psd[count] = pow(1./freq[count], 2.);  
-    }
-    // Create Fourier components.
-    double fcomp[N_LIGHTCURVE_BINS];
-    fcomp[0] = 0.;
-    for (count=1; count<N_LIGHTCURVE_BINS/2; count++) {
-      REAL(fcomp, count) = gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[count]);
-      IMAG(fcomp, count) = gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[count]);
-    }
-    fcomp[N_LIGHTCURVE_BINS/2] = 
-      gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[N_LIGHTCURVE_BINS/2]); // TODO 
-
-    // Perform Fourier transformation.
-    gsl_fft_halfcomplex_radix2_inverse(fcomp, 1, N_LIGHTCURVE_BINS);
-  
-    // Calculate mean and variance
-    double mean=0., variance=0.;
-    for (count=0; count<N_LIGHTCURVE_BINS; count++) {
-      mean += fcomp[count];
-      variance += pow(fcomp[count], 2.); 
-    }
-    mean = mean/(double)N_LIGHTCURVE_BINS;
-    variance = variance/(double)N_LIGHTCURVE_BINS;
-    variance -= pow(mean,2.);     // var = <x^2>-<x>^2
-
-    // desired properties of the light curve
-    const float mean_rate = ps->rate;
-    const float sigma = mean_rate/3.; // (mean_rate-10.)/3.;
-
-    // normalize and copy FFT array to light curve array
-    if (status != EXIT_FAILURE) {
-      for (count=0; count<N_LIGHTCURVE_BINS; count++) {
-	ps->lightcurve[count].t = t0 + count * LIGHTCURVE_BINWIDTH;
-	ps->lightcurve[count].rate = 
-	  (fcomp[count]-mean) *sigma/sqrt(variance) + mean_rate;  // TODO
-
-	// Avoid negative or close2zero count rates (no physical meaning):
-	if (ps->lightcurve[count].rate < 0.01*mean) { check = -1; }
-      }
-
-      ps->lightcurve[N_LIGHTCURVE_BINS].t = 
-	t0 + N_LIGHTCURVE_BINS * LIGHTCURVE_BINWIDTH;
-    }
-
-  } while (check==-1);  // Repeat the light curve creation until we have proper data.
-
-  return(status);
-}
-*/
-
-
 ///////////////////////////////////////////////////////////////////////////////////
 // Create a randomly chosen photon energy according to the spectrum of the 
 // specified source.
@@ -175,12 +80,22 @@ int create_photons(
 	if (EXIT_SUCCESS!=status) break;
 	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
 	if (EXIT_SUCCESS!=status) break;
+      } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
+	ps->lc = getLinLightCurve(10000, &status);
+	if (EXIT_SUCCESS!=status) break;
+	status = initTimmerKoenigLinLightCurve(ps->lc, time, 100., ps->rate,
+					       ps->rate/3., gsl_random_g);
+	if (EXIT_SUCCESS!=status) break;
       }
     }
 
     if (time > ps->lc->t0 + ps->lc->nvalues*ps->lc->step_width) {
       if (T_LC_CONSTANT==ps->lc_type) {
 	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
+	if (EXIT_SUCCESS!=status) break;
+      } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
+	status = initTimmerKoenigLinLightCurve(ps->lc, time, 100., ps->rate,
+					       ps->rate/3., gsl_random_g);
 	if (EXIT_SUCCESS!=status) break;
       }
     }

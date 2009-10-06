@@ -4,9 +4,6 @@ AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror 
 
-# Use a constant light curve instead of red noise according to Timmer & Koenig (1995):
-AM_CFLAGS += -DCONSTANT_LIGHTCURVE
-
 
 ########## DIRECTORIES ###############
 

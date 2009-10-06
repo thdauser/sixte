@@ -26,11 +26,6 @@
 // Counter for the number of entirely generated photons.
 long photon_counter;
 
-// The following macros are used to the store light curve and the PSD 
-// in the right format for the GSL routines.
-#define REAL(z,i) ((z)[(i)])
-#define IMAG(z,i) ((z)[N_LIGHTCURVE_BINS-(i)])
-
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
