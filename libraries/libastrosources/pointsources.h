@@ -4,6 +4,7 @@
 #include "sixt.h"
 #include "spectrum.h"
 #include "vector.h"
+#include "linlightcurve.h"
 
 
 // Maximum number of sources in the preselected source catalog:
@@ -15,6 +16,8 @@ typedef struct {
   float ra, dec; /**< Right ascension and declination of the source [rad]. */
   float rate; /**< Average photon rate [photons/s]. */
   struct lightcurve_entry* lightcurve; /**< Pointer to source lightcurve. */
+
+  LinLightCurve* lightCurve; /**< Pointer to the light curve of this source. */
 
   Spectrum *spectrum; /**< Pointer to source spectrum. */
 

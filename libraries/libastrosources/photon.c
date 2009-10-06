@@ -148,8 +148,8 @@ int create_photons(
 		   PointSource* ps /**< Source data. */,
 		   double time /**< Current time. */, 
 		   double dt /**< Time interval for photon generation. */,       
-		   struct PhotonOrderedListEntry** list_first /**< Address of pointer to 
-							       * time-ordered photon list. */,
+		   /** Address of pointer to time-ordered photon list.*/
+		   struct PhotonOrderedListEntry** list_first,
 		   struct RMF* rmf,     
 		   gsl_rng *gsl_random_g
 		   )
@@ -161,7 +161,6 @@ int create_photons(
   struct PhotonOrderedListEntry* list_current = *list_first;
 
   int status=EXIT_SUCCESS;
-
 
   // If there is no photon time stored so far, set the current time.
   if (ps->t_last_photon < 0.) {
