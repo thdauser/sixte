@@ -79,9 +79,7 @@ int initConstantLinLightCurve(LinLightCurve* lc, double mean_rate, double t0,
 
 
 int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_width,
-				  double mean_rate, double sigma, 
-				  /** Pointer to GSL random number generator. */
-				  gsl_rng *gsl_random_g)
+				  double mean_rate, double sigma)
 {
   if (NULL==lc) { 
     // The LinLightCurve object already must exist.
@@ -118,12 +116,14 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     return(EXIT_FAILURE);
   }
   fcomp[0] = 0.;
+  double randr, randi;
   for (count=1; count<lc->nvalues/2; count++) {
-    REAL(fcomp, count) = gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[count]);
-    IMAG(fcomp, count) = gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[count]);
+    get_gauss_random_numbers(&randr, &randi);
+    REAL(fcomp, count) = randr*sqrt(psd[count]);
+    IMAG(fcomp, count) = randi*sqrt(psd[count]);
   }
-  fcomp[lc->nvalues/2] = 
-    gsl_ran_ugaussian(gsl_random_g)*sqrt(psd[lc->nvalues/2]); // TODO 
+  get_gauss_random_numbers(&randr, &randi);
+  fcomp[lc->nvalues/2] = randr*sqrt(psd[lc->nvalues/2]); // TODO 
 
   // Perform Fourier transformation.
   gsl_fft_halfcomplex_radix2_inverse(fcomp, 1, lc->nvalues);

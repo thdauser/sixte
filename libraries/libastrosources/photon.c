@@ -46,8 +46,7 @@ int create_photons(
 		   double dt /**< Time interval for photon generation. */,       
 		   /** Address of pointer to time-ordered photon list.*/
 		   struct PhotonOrderedListEntry** list_first,
-		   struct RMF* rmf,     
-		   gsl_rng *gsl_random_g
+		   struct RMF* rmf
 		   )
 {
   // Second pointer to photon list, that can be moved along the list,   
@@ -84,7 +83,7 @@ int create_photons(
 	ps->lc = getLinLightCurve(131072, &status);
 	if (EXIT_SUCCESS!=status) break;
 	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
-					       ps->rate/3., gsl_random_g);
+					       ps->rate/3.);
 	if (EXIT_SUCCESS!=status) break;
       } else {
 	status=EXIT_FAILURE;
@@ -99,7 +98,7 @@ int create_photons(
 	if (EXIT_SUCCESS!=status) break;
       } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
 	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
-					       ps->rate/3., gsl_random_g);
+					       ps->rate/3.);
 	if (EXIT_SUCCESS!=status) break;
       }
     }

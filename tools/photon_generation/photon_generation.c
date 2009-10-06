@@ -149,8 +149,6 @@ int photon_generation_main()
   // Time step for sky scanning loop
   double dt = 0.1;
 
-  gsl_rng *gsl_random_g=NULL; // pointer to GSL random number generator
-
   char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
 
@@ -190,11 +188,8 @@ int photon_generation_main()
     const double pre_max_align = sin(2*telescope.fov_diameter);
 
 
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
+    // Initialize HEADAS random number generator.
     HDmtInit(1);
-    gsl_rng_env_setup();
-    gsl_random_g = gsl_rng_alloc(gsl_rng_default);
 
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
@@ -483,7 +478,7 @@ int photon_generation_main()
 	    
 	    // The source is inside the FOV  => create photons:
 	    if ((status=create_photons(&(pointsourcecatalog->sources[source_counter]), 
-				       time, dt, &photon_list, rmf, gsl_random_g))
+				       time, dt, &photon_list, rmf))
 		!=EXIT_SUCCESS) break; 
 	    
 	  }
@@ -723,7 +718,6 @@ int photon_generation_main()
 
   // Release HEADAS random number generator:
   HDmtFree();
-  if (gsl_random_g!=NULL) gsl_rng_free(gsl_random_g);
 
   // Clear photon list
   clear_PhotonList(&photon_list);

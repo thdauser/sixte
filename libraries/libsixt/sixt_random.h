@@ -16,5 +16,11 @@ inline double get_random_number();
 inline double rndexp(double avg);
 
 
+/** Determine 2 (!) Gaussian distributed random numbers using
+ * the Box-Muller method (Gould & Tobochnik, p. 432).
+ * The standard deviation of the random numbers is 1. */
+inline void get_gauss_random_numbers(double* x, double* y);
+
+
 #endif /* SIXT_RANDOM_H */
 

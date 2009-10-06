@@ -8,8 +8,6 @@
 #include "heasp.h"
 #endif
 
-#include <gsl/gsl_randist.h>
-
 #include <wcs.h>
 #include <wcshdr.h>
 //#include <wcsfix.h>

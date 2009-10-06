@@ -7,7 +7,6 @@
 // GSL header files
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_fft_halfcomplex.h>
-#include <gsl/gsl_randist.h>
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -88,7 +87,7 @@ int initConstantLinLightCurve(LinLightCurve* lc, double mean_rate, double t0,
  * which is a phase and amplitude randomization process. The generated light curve
  * is normalized to fullfill the specified mean count rate and rms. */
 int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_width, 
-				  double mean_rate, double sigma, gsl_rng *gsl_random_g);
+				  double mean_rate, double sigma);
 
 /** Destructor. 
  * Releases the memory allocated for the LinLightCurve object by the constructor. */

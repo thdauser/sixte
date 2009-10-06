@@ -10,7 +10,7 @@ inline double get_random_number()
 
 
 
-/////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////
 inline double rndexp(double avgdist)
 {
   double rand = get_random_number();
@@ -21,5 +21,15 @@ inline double rndexp(double avgdist)
   return(-log(rand)*avgdist);
 }
 
+
+//////////////////////////////////////////////
+inline void get_gauss_random_numbers(double* x, double* y)
+{
+  double sqrt_2rho = sqrt(-log(get_random_number())*2.);
+  double phi = get_random_number()*2.*M_PI;
+
+  *x = sqrt_2rho * cos(phi);
+  *y = sqrt_2rho * sin(phi);
+}
 
 
