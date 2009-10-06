@@ -23,11 +23,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 
+// Counter for the number of entirely generated photons.
 long photon_counter;
-
-// Constants defining the light curve arrays
-#define N_LIGHTCURVE_BINS     (2048)
-#define LIGHTCURVE_BINWIDTH   (0.0005)
 
 // The following macros are used to the store light curve and the PSD 
 // in the right format for the GSL routines.
