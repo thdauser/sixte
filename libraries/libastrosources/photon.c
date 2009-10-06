@@ -154,7 +154,7 @@ int create_photons(
 		   gsl_rng *gsl_random_g
 		   )
 {
-  int bin=0; // light curve bin counter
+  //  int bin=0; // light curve bin counter
 
   // Second pointer to photon list, that can be moved along the list,   
   // without loosing the first entry.
@@ -169,15 +169,34 @@ int create_photons(
 
 
   // Create photons and insert them into the given time-ordered list:
+  Photon new_photon; // Buffer for new Photon.
   while (ps->t_last_photon < time+dt) {
-    Photon new_photon; // buffer for new photon
     new_photon.ra = ps->ra;
     new_photon.dec = ps->dec; 
     new_photon.direction = unit_vector(ps->ra, ps->dec); // REMOVE
 
-    // Create the energy of the new photon
+    // Determine the energy of the new photon
     new_photon.energy = photon_energy(ps->spectrum, rmf);
 
+    // Determine the impact time of the photon according to the light
+    // curve of the source.
+    if (NULL==ps->lc) {
+//    if (0==0) { // TODO replace by (0==ps->lightcurve)
+	ps->lc = getLinLightCurve(1, &status);
+	if (EXIT_SUCCESS!=status) break;
+	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
+	if (EXIT_SUCCESS!=status) break;
+//    }
+    }
+
+    if (time > ps->lc->t0 + ps->lc->nvalues*ps->lc->step_width) {
+//    if (0==0) { // TODO replace by (0==ps->lightcurve)
+	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
+	if (EXIT_SUCCESS!=status) break;
+//    }
+    }
+
+    /*
     // Determine the current count rate of the light curve.
     // If the source has no light curve, or the assigned light curve is 
     // too old, create a new one.
@@ -197,7 +216,11 @@ int create_photons(
     // Calculate arrival time depending on previous photon.
     ps->t_last_photon += rndexp(1./(ps->lightcurve[bin].rate));
     new_photon.time = ps->t_last_photon;
+    */
 
+    new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
+    assert(new_photon.time>0.);
+    ps->t_last_photon = new_photon.time;
 
     // Insert photon to the global photon list:
     if ((status=insert_Photon2TimeOrderedList(list_first, &list_current, &new_photon)) 

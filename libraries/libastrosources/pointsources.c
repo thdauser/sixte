@@ -179,9 +179,6 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 	     (source_counter < psfc->files[file_counter]->nrows) && (EXIT_SUCCESS==*status); 
 	     source_counter++) {
 	  // Read source data (right asension, declination, photon rate, spectrum):
-	  //if (get_srctbl_row(psf->files[file_counter], source_counter, 
-	  //		     psf->columns[file_counter], 
-	  //		     &ra, &dec, &countrate, status))
 	  if (get_PointSourceTable_Row(psfc->files[file_counter], source_counter,
 				       &ps, status)) break;
 
@@ -206,6 +203,7 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 	    psc->sources[psc->nsources].dec = ps.dec;
 	    // Set lightcurve pointer to NULL
 	    psc->sources[psc->nsources].lightcurve = NULL;
+	    psc->sources[psc->nsources].lc = NULL;
 	    // So far there was no photon created for this source
 	    psc->sources[psc->nsources].t_last_photon = -1.;
 
@@ -243,6 +241,9 @@ void free_PointSourceCatalog(PointSourceCatalog* psc)
       if (psc->sources[count].lightcurve != NULL) {
 	free(psc->sources[count].lightcurve);
       }
+      if (psc->sources[count].lc != NULL) {
+	freeLinLightCurve(psc->sources[count].lc);
+      }
     }
 
     free(psc);
@@ -262,6 +263,7 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, in
   ps->spectrum_index = 0;
   ps->spectrum = NULL;
   ps->lightcurve = NULL;
+  ps->lc = NULL;
   ps->t_last_photon = -1.;
 
   // Read the data from the FITS table.

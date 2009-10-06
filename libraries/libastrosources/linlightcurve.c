@@ -132,6 +132,7 @@ double getPhotonTime(LinLightCurve* lc, double time)
   
   // Determine the respective index k of the light curve.
   long k = (long)((time-lc->t0)/lc->step_width);
+  assert(k>=0);
   while (k < lc->nvalues) {
     // Step 2 in the algorithm is not required, as the u_k are already stored as
     // auxiliary data in the LinLightCurve object.

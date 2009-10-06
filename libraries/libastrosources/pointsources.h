@@ -15,9 +15,9 @@
 typedef struct {
   float ra, dec; /**< Right ascension and declination of the source [rad]. */
   float rate; /**< Average photon rate [photons/s]. */
-  struct lightcurve_entry* lightcurve; /**< Pointer to source lightcurve. */
+  struct lightcurve_entry* lightcurve; /**< Pointer to source light curve. */
 
-  LinLightCurve* lightCurve; /**< Pointer to the light curve of this source. */
+  LinLightCurve* lc; /**< Piece-wise linear light curve for this X-ray source. */
 
   Spectrum *spectrum; /**< Pointer to source spectrum. */
 

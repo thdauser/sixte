@@ -51,8 +51,8 @@ int photon_generation_getpar(struct Parameters* parameters)
     HD_ERROR_THROW(msg, status);
   }
   parameters->source_category=category;
-  if ((parameters->source_category != POINT_SOURCES) && 
-      (parameters->source_category != SOURCE_IMAGES)) {
+  if ((POINT_SOURCES != parameters->source_category) && 
+      (SOURCE_IMAGES != parameters->source_category)) {
     status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: unknown source category file!\n", status);
   }
@@ -215,7 +215,7 @@ int photon_generation_main()
 
 
 
-    if (parameters.source_category==POINT_SOURCES) { 
+    if (POINT_SOURCES==parameters.source_category) { 
 
       // Load the source catalogs from the files:
       pointsourcefilecatalog = get_PointSourceFileCatalog();
