@@ -81,11 +81,15 @@ int create_photons(
 	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
 	if (EXIT_SUCCESS!=status) break;
       } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	ps->lc = getLinLightCurve(10000, &status);
+	ps->lc = getLinLightCurve(131072, &status);
 	if (EXIT_SUCCESS!=status) break;
-	status = initTimmerKoenigLinLightCurve(ps->lc, time, 100., ps->rate,
+	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
 					       ps->rate/3., gsl_random_g);
 	if (EXIT_SUCCESS!=status) break;
+      } else {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Unknown light curve type!\n", EXIT_FAILURE);
+	break;
       }
     }
 
@@ -94,7 +98,7 @@ int create_photons(
 	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
 	if (EXIT_SUCCESS!=status) break;
       } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	status = initTimmerKoenigLinLightCurve(ps->lc, time, 100., ps->rate,
+	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
 					       ps->rate/3., gsl_random_g);
 	if (EXIT_SUCCESS!=status) break;
       }

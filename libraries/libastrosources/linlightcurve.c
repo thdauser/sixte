@@ -11,6 +11,10 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status)
 		   EXIT_FAILURE);
     return(NULL);
   }
+  lc->a = NULL;
+  lc->b = NULL;
+  lc->u = NULL;
+
   lc->a = (double*)malloc(nvalues*sizeof(double));
   if (NULL==lc->a) {
     free(lc);
@@ -141,7 +145,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
 		   EXIT_FAILURE);
     return(EXIT_FAILURE);
   }
-  for (count=0; count<lc->nvalues-1; count++) {
+  for (count=0; count<lc->nvalues; count++) {
     rate[count] = (fcomp[count]-mean) *sigma/sqrt(variance) + mean_rate;
     // Avoid negative photon rates (no physical meaning):
     if (rate[count]<0.) { rate[count] = 0.; }
@@ -160,6 +164,11 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   lc->b[count] = rate[count];
   lc->u[count] = 1.-exp(-rate[count]*lc->step_width);
 
+
+  // Release allocated memory
+  free(psd);
+  free(fcomp);
+  free(rate);
 
   return(EXIT_SUCCESS);
 }

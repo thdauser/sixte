@@ -16,10 +16,13 @@
 
 
 /** Light curve type: constant light curve. */
-#define T_LC_CONSTANT 0
+#define T_LC_CONSTANT (0)
 /** Light curve type: red noise according to Timmer & Koenig (1995). */
-#define T_LC_TIMMER_KOENIG -1 
+#define T_LC_TIMMER_KOENIG (-1)
 
+/** Width of the time steps in the light curve generated with the 
+ * Timmer & Koenig algorithm. */
+#define TK_LC_STEP_WIDTH (0.0001)
 
 // The following macros are used to the store light curve and the PSD 
 // in the right format for the GSL routines.
@@ -48,7 +51,7 @@ typedef struct {
    * The value a_k represents the gradient of the light curve between 
    * the time t_k (= t0 + k*step_width) and t_{k+1} (slope). 
    * The value b_k represents the contant contribution (intercept) at t_k. */
-  double* a, *b;
+  double *a, *b;
 
   /** Auxiliary data.
    * The values u_k are required in the algorithm proposed by Klein & Roberts
