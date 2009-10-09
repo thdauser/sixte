@@ -47,6 +47,7 @@ int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
 }
 
 
+
 int loadSpectrum(Spectrum* spectrum, char* filename)
 {
   fitsfile *fptr=NULL;
@@ -72,7 +73,6 @@ int loadSpectrum(Spectrum* spectrum, char* filename)
       // Get the HDU type.
       if (fits_get_hdu_type(fptr, &hdutype, &status)) break;
     }
-
     // If the current HDU is an image extension, throw an error message:
     if (IMAGE_HDU==hdutype) {
       status=EXIT_FAILURE;

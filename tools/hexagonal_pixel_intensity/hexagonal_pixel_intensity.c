@@ -87,13 +87,17 @@ int main(int argc, char* argv[])
       }
       double mean = ndetected*1./37.;
       
-      printf("%lf %ld %ld %lf %lf\n",
+      printf("%lf %ld %ld %lf %lf\t pixel:",
 	     min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width
 	     ntotal_photons,                   // Total number of photons
 	     ndetected,                        // Number of detected photons
 	     ndetected*1./ntotal_photons,      // Fraction of detected photons
 	     sqrt(mean2-pow(mean,2.))/mean     // rms/mean
 	     );
+      for (pixel=0; pixel<37; pixel++) {
+	printf(" %lf,", (double)nphotons[count_pixelwidth][pixel]/ntotal_photons);
+      }
+      printf("\n");
 
     } // END of loop over different pixel widths.
 

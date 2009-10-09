@@ -7,96 +7,6 @@
 #include "photon_generation.h"
 
 
-////////////////////////////
-int photon_generation_getpar(struct Parameters* parameters)
-{
-  char msg[MAXMSG];           // error message buffer
-  int status = EXIT_SUCCESS;  // error status flag
-
-  // Get the filename of the Attitude file (FITS file):
-  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
-    sprintf(msg, "Error reading the filename of the attitude file!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-
-  // Get the filename of the detector redistribution file (FITS file)
-  else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
-    sprintf(msg, "Error reading the filename of the detector" 
-	    "redistribution matrix file (RMF)!\n");
-    HD_ERROR_THROW(msg,status);
-  }
-
-  // Get the start time of the photon generation
-  else if ((status = PILGetReal("t0", &parameters->t0))) {
-    sprintf(msg, "Error reading the 't0' parameter!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-
-  // Get the timespan for the photon generation
-  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
-    sprintf(msg, "Error reading the 'timespan' parameter!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-
-  // Get the diameter of the FOV (in arcmin)
-  else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
-    sprintf(msg, "Error reading the diameter of the FOV!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-
-  // Determine the category of the input sources:
-  int category;
-  if ((status = PILGetInt("source_category", &category))) {
-    sprintf(msg, "Error: wrong source category!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-  parameters->source_category=category;
-  if ((POINT_SOURCES != parameters->source_category) && 
-      (SOURCE_IMAGES != parameters->source_category)) {
-    status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: unknown source category file!\n", status);
-  }
-  if (EXIT_SUCCESS!=status) return(status);
-
-
-  // Determine the name of the file that contains a list with the filenames of 
-  // the source files.
-  if ((status = PILGetFname("sourcelist_filename", 
-			    parameters->sourcelist_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the list of source catalogs!\n", status);
-  }
-
-  // Get the filename of the Photon-List file (FITS file):
-  else if ((status = PILGetFname("photonlist_filename", 
-			    parameters->photonlist_filename))) {
-    sprintf(msg, "Error reading the filename of the output file for "
-	    "the photon list!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-  if (EXIT_SUCCESS!=status) return(status);
-
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(parameters->photonlist_template, buffer);
-  } else {
-    if ((status = PILGetFname("fits_templates", parameters->photonlist_template))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      
-    }
-  }
-  // Set the photon list template file:
-  strcat(parameters->photonlist_template, "/photonlist.tpl");
-
-  // Convert angles from [arc min] to [rad].
-  parameters->fov_diameter = parameters->fov_diameter*M_PI/(180.*60.);
-
-  return(status);
-}
-
-
 //////////////////////////
 /** Determines whether a given angle (in [rad]) lies within the specified range. 
  * The function returns a "1" if the angle lies within the specified range, 
@@ -112,6 +22,7 @@ int check_angle_range(double angle, double min, double max)
     return(0);
   }
 }
+
 
 
 //////////////////////////
@@ -528,6 +439,9 @@ int photon_generation_main()
 	    
 	    // Loop over all pixels of the the image:
 	    int xcount, ycount;
+	    Vector pixel_vector; // Vector in the direction of the current pixel.
+	    double ra, dec; // Right ascension and declination of the individual pixels.
+	    struct SourceImagePixel* pixel; // Currently chosen pixel.
 	    for(xcount=0; 
 		(xcount<sic->images[image_counter]->naxis1)&&(EXIT_SUCCESS==status);
 		xcount++) {
@@ -538,7 +452,6 @@ int photon_generation_main()
 		// Check whether the pixel lies CLOSE TO the FOV:
 		
 		// Vector in the direction of the current pixel.
-		Vector pixel_vector; 
 		pixel_vector.x = refpixel_vector.x + 
 		  (xcount - sic->images[image_counter]->crpix1 + 1.)
 		  *sic->images[image_counter]->cdelt1 * k.x +
@@ -561,13 +474,10 @@ int photon_generation_main()
 		  // --- Generate Photons from the pixel.
 
 		  // Determine the right ascension and declination of the pixel.
-		  double ra, dec;
 		  calculate_ra_dec(pixel_vector, &ra, &dec);
 
 		  // Current pixel.
-		  struct SourceImagePixel* pixel = 
-		    &(sic->images[image_counter]->pixel[xcount][ycount]);
-
+		  pixel = &(sic->images[image_counter]->pixel[xcount][ycount]);
 		  
 		  // TODO: needs to be replaced by exponential distribution:
 		  double rnd = get_random_number();
@@ -738,3 +648,91 @@ int photon_generation_main()
 
 
 
+////////////////////////////
+int photon_generation_getpar(struct Parameters* parameters)
+{
+  char msg[MAXMSG];           // error message buffer
+  int status = EXIT_SUCCESS;  // error status flag
+
+  // Get the filename of the Attitude file (FITS file):
+  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
+    sprintf(msg, "Error reading the filename of the attitude file!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+
+  // Get the filename of the detector redistribution file (FITS file)
+  else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
+    sprintf(msg, "Error reading the filename of the detector" 
+	    "redistribution matrix file (RMF)!\n");
+    HD_ERROR_THROW(msg,status);
+  }
+
+  // Get the start time of the photon generation
+  else if ((status = PILGetReal("t0", &parameters->t0))) {
+    sprintf(msg, "Error reading the 't0' parameter!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+
+  // Get the timespan for the photon generation
+  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
+    sprintf(msg, "Error reading the 'timespan' parameter!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+
+  // Get the diameter of the FOV (in arcmin)
+  else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
+    sprintf(msg, "Error reading the diameter of the FOV!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+
+  // Determine the category of the input sources:
+  int category;
+  if ((status = PILGetInt("source_category", &category))) {
+    sprintf(msg, "Error: wrong source category!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+  parameters->source_category=category;
+  if ((POINT_SOURCES != parameters->source_category) && 
+      (SOURCE_IMAGES != parameters->source_category)) {
+    status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: unknown source category file!\n", status);
+  }
+  if (EXIT_SUCCESS!=status) return(status);
+
+
+  // Determine the name of the file that contains a list with the filenames of 
+  // the source files.
+  if ((status = PILGetFname("sourcelist_filename", 
+			    parameters->sourcelist_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the list of source catalogs!\n", status);
+  }
+
+  // Get the filename of the Photon-List file (FITS file):
+  else if ((status = PILGetFname("photonlist_filename", 
+			    parameters->photonlist_filename))) {
+    sprintf(msg, "Error reading the filename of the output file for "
+	    "the photon list!\n");
+    HD_ERROR_THROW(msg, status);
+  }
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
+  char* buffer;
+  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(parameters->photonlist_template, buffer);
+  } else {
+    if ((status = PILGetFname("fits_templates", parameters->photonlist_template))) {
+      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
+      
+    }
+  }
+  // Set the photon list template file:
+  strcat(parameters->photonlist_template, "/photonlist.tpl");
+
+  // Convert angles from [arc min] to [rad].
+  parameters->fov_diameter = parameters->fov_diameter*M_PI/(180.*60.);
+
+  return(status);
+}

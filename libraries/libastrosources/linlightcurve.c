@@ -50,6 +50,96 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status)
 
 
 
+LinLightCurve* loadLinLightCurveFromFile(char* filename, double mean_rate, int* status)
+{
+  LinLightCurve* lc=NULL;
+  fitsfile* fptr;
+
+  int crate; // Column in the FITS table containing the rates.
+  double* rate; // Input buffer for light curve rates.
+
+  char msg[MAXMSG];
+
+  do { // Beginning of  ERROR handling loop.
+
+    // Open the FITS file.
+    if(fits_open_table(&fptr, filename, READONLY, status)) break;
+
+    int hdunum, hdutype;
+    // After opening the FITS file, get the number of the current HDU.
+    if (1==fits_get_hdu_num(fptr, &hdunum)) {
+      // This is the primary array, so try to move to the first extension 
+      // and see if it is a table.
+      if (fits_movabs_hdu(fptr, 2, &hdutype, status)) break;
+    } else {
+      // Get the HDU type.
+      if (fits_get_hdu_type(fptr, &hdutype, status)) break;
+    }
+    // If the current HDU is an image extension, throw an error message:
+    if (IMAGE_HDU==hdutype) {
+      *status=EXIT_FAILURE;
+      sprintf(msg, "Error: FITS extension in file '%s' is not a table "
+	      "but an image (HDU number: %d)\n", filename, hdunum);
+      HD_ERROR_THROW(msg, *status);
+      break;
+    }
+
+    // Determine the number of rows in the table.
+    long nrows=0;
+    if (fits_get_num_rows(fptr, &nrows, status)) break;
+    
+    // Get a LinLightCurve object from the standard constructor with the
+    // required number of time bins.
+    lc = getLinLightCurve(nrows, status);
+    if (EXIT_SUCCESS!=*status) break;
+
+    // Determine the start time and the step width in the light curve from the FITS header.
+    char comment[MAXMSG]; // Buffer
+    if (fits_read_key(fptr, TDOUBLE, "TSTART", &lc->t0, comment, status)) break;
+    if (fits_read_key(fptr, TDOUBLE, "BINWIDTH", &lc->step_width, comment, status)) break;
+
+    // Determine the column in the FITS table that contains the rates.
+    if(fits_get_colnum(fptr, CASEINSEN, "RATE", &crate, status)) break;
+
+    // Load the rates from the FITS table.
+    rate = (double*)malloc(nrows*sizeof(double));
+    if (NULL==rate) {
+      HD_ERROR_THROW("Error: Could not allocate memory for light curve!\n", EXIT_FAILURE);
+      break;
+    }
+    long row;
+    int anynul=0;
+    double mean=0.;
+    for (row=0; row<nrows; row++) {
+      rate[row]=0.;
+      if (fits_read_col(fptr, TDOUBLE, crate, row+1, 1, 1, &(rate[row]), &(rate[row]), 
+			&anynul, status)) break;
+      mean+=rate[row];
+    }
+    mean /= nrows;
+    // Scale the light curve to the desired mean photon rate.
+    for (row=0; row<nrows; row++) {
+      rate[row] *= mean_rate/mean;
+    }
+    
+    // Set the data (slopes, intercepts, ...) required by the LinLightCurve object.
+    setLinLightCurveData(lc, rate);
+
+  } while(0); // END of ERROR handling loop.
+
+  // --- Clean up ---
+  fits_close_file(fptr, status);
+  free(rate);
+
+  if (EXIT_SUCCESS==*status) {
+    return(lc);
+  } else {
+    return(NULL);
+  }
+}
+
+
+
 int initConstantLinLightCurve(LinLightCurve* lc, double mean_rate, double t0,
 			      double step_width)
 {
@@ -86,7 +176,8 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     return(EXIT_FAILURE);
   }
   if (1>lc->nvalues) { 
-    // The LinLightCurve object must provide memory for at least 1 data point.
+    // The LinLightCurve object must provide memory for at least 
+    // 1 data point.
     return(EXIT_FAILURE);
   }
 
@@ -95,13 +186,14 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   lc->step_width = step_width;
 
   
-  // Create light curve data according to the algorithm proposed by Timmer & Koenig.
+  // Create light curve data according to the algorithm 
+  // proposed by Timmer & Koenig.
   long count;
   // First create a PSD.
   double* psd = (double*)malloc(lc->nvalues*sizeof(double));
   if (NULL==psd) {
-    HD_ERROR_THROW("Error: Could not allocate memory for PSD (light curve generation)!\n",
-		   EXIT_FAILURE);
+    HD_ERROR_THROW("Error: Could not allocate memory for PSD "
+		   "(light curve generation)!\n", EXIT_FAILURE);
     return(EXIT_FAILURE);
   }
   for (count=0; count<lc->nvalues; count++) {
@@ -111,8 +203,8 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   // Create Fourier components.
   double* fcomp = (double*)malloc(lc->nvalues*sizeof(double));
   if (NULL==fcomp) {
-    HD_ERROR_THROW("Error: Could not allocate memory for Fourier components of light curve!\n",
-		   EXIT_FAILURE);
+    HD_ERROR_THROW("Error: Could not allocate memory for Fourier "
+		   "components of light curve!\n", EXIT_FAILURE);
     return(EXIT_FAILURE);
   }
   fcomp[0] = 0.;
@@ -151,6 +243,23 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     if (rate[count]<0.) { rate[count] = 0.; }
   }
 
+  // Set the data (slopes, intercepts, ...) required by the LinLightCurve object.
+  setLinLightCurveData(lc, rate);
+
+  // Release allocated memory
+  free(psd);
+  free(fcomp);
+  free(rate);
+
+  return(EXIT_SUCCESS);
+}
+
+
+
+void setLinLightCurveData(LinLightCurve* lc, double* rate)
+{
+  long count;
+
   // Determine the auxiliary values for the light curve.
   for (count=0; count<lc->nvalues-1; count++) {
     lc->a[count] = (rate[count+1]-rate[count])/lc->step_width;
@@ -163,14 +272,6 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   lc->a[count] = 0.;
   lc->b[count] = rate[count];
   lc->u[count] = 1.-exp(-rate[count]*lc->step_width);
-
-
-  // Release allocated memory
-  free(psd);
-  free(fcomp);
-  free(rate);
-
-  return(EXIT_SUCCESS);
 }
 
 

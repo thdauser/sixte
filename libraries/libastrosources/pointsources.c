@@ -67,8 +67,7 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
     psf = get_PointSourceFile();
     if (NULL==psf) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: memory allocation for PointSourceFile failed!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: memory allocation for PointSourceFile failed!\n", *status);
       break;
     }
 
@@ -144,7 +143,6 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 					   int* status)
 {
   PointSourceCatalog* psc = NULL;
-
   char msg[MAXMSG];  // Error output buffer.
   
   do { // Beginning of outer ERROR handling loop.
@@ -208,10 +206,28 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 
 	    // Set the light curve type to the value specified in the source catalog.
 	    psc->sources[psc->nsources].lc_type = ps.lc_type;
-	    // Set light curve pointer to NULL
-	    psc->sources[psc->nsources].lc = NULL;
-	    // So far there was no photon created for this source
-	    psc->sources[psc->nsources].t_last_photon = 0.;
+	    // If the light curve type is a value > 0 meaning that the particular
+	    // light curve for this source is given in a FITS file, load that file
+	    // and assign the pointer to the light curve.
+	    if (0<ps.lc_type) {
+	      // Try and find out the name of the FITS file containing the light curve.
+	      char lc_filename[MAXMSG], key[MAXMSG], comment[MAXMSG]; // Buffers
+	      sprintf(key, "LC%06ld", ps.lc_type);
+	      if (fits_read_key(psfc->files[file_counter]->fptr, TSTRING, key, 
+				lc_filename, comment, status)) break;
+	      // Then load the file data and store the light curve.
+	      psc->sources[psc->nsources].lc = 
+		loadLinLightCurveFromFile(lc_filename, ps.rate, status);
+	      if (EXIT_SUCCESS!=*status) break;
+	      // So far there was no photon created for this source.
+	      psc->sources[psc->nsources].t_last_photon = 0.;
+
+	    } else {
+	      // Set light curve pointer to NULL.
+	      psc->sources[psc->nsources].lc = NULL;
+	      // So far there was no photon created for this source.
+	      psc->sources[psc->nsources].t_last_photon = 0.;
+	    }
 
 	    // Source spectrum.
 	    if ((ps.spectrum_index<1) || 

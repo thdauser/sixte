@@ -42,5 +42,8 @@ struct Parameters {
 };
 
 
+int photon_generation_getpar(struct Parameters* parameters);
+
+
 #endif /* PHOTON_GENERATION_H */
 

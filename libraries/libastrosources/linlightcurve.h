@@ -21,7 +21,7 @@
 
 /** Width of the time steps in the light curve generated with the 
  * Timmer & Koenig algorithm. */
-#define TK_LC_STEP_WIDTH (0.0001)
+#define TK_LC_STEP_WIDTH (10.0)
 
 // The following macros are used to the store light curve and the PSD 
 // in the right format for the GSL routines.
@@ -72,6 +72,13 @@ typedef struct {
  * initialized, i.e., may have arbitrary values. */
 LinLightCurve* getLinLightCurve(long nvalues, int* status);
 
+/** Load a light curve from a FITS file and store it in a LinLightCurve object.
+ * The memory for the LinLightCurve object is allocated by calling the standard
+ * constructor with the parameters (light  curve length etc.) given in the FITS
+ * file. After reading the light curve from the file it is scaled with the specifiec
+ * mean photon rate. */
+LinLightCurve* loadLinLightCurveFromFile(char* lc_filename, double mean_rate, int* status);
+
 /** Initialization routine creating a light curve with a constant photon rate. 
  * The light curve object already has to be allocated in advance by the
  * constructor getLinLightCurve().
@@ -99,6 +106,10 @@ void freeLinLightCurve(LinLightCurve*);
  * proposed by Klein & Roberts (1984). This paper describes a Poisson 
  * generator for piecewise-linear light curves. */
 double getPhotonTime(LinLightCurve*, double time);
+
+/** For given photon rates set the data required for the LinLightCurve object
+ * (slopes, intercepts, ...). */
+void setLinLightCurveData(LinLightCurve* lc, double* rate);
 
 
 #endif /* LINLIGHTCURVE_H */
