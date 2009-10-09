@@ -104,16 +104,22 @@ LinLightCurve* loadLinLightCurveFromFile(char* filename, double mean_rate, int* 
     // Load the rates from the FITS table.
     rate = (double*)malloc(nrows*sizeof(double));
     if (NULL==rate) {
-      HD_ERROR_THROW("Error: Could not allocate memory for light curve!\n", EXIT_FAILURE);
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Could not allocate memory for light curve!\n", *status);
       break;
     }
     long row;
     int anynul=0;
     double mean=0.;
-    for (row=0; row<nrows; row++) {
+    for (row=0; (row<nrows)&&(EXIT_SUCCESS==*status); row++) {
       rate[row]=0.;
       if (fits_read_col(fptr, TDOUBLE, crate, row+1, 1, 1, &(rate[row]), &(rate[row]), 
 			&anynul, status)) break;
+      if (0.>=rate[row]) {
+	*status=EXIT_FAILURE;	
+	HD_ERROR_THROW("Error: Rate in light curve must be greater than zero!\n", *status);
+	break;
+      }
       mean+=rate[row];
     }
     mean /= nrows;
