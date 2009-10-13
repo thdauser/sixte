@@ -13,7 +13,6 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status)
   }
   lc->a = NULL;
   lc->b = NULL;
-  lc->u = NULL;
 
   lc->a = (double*)malloc(nvalues*sizeof(double));
   if (NULL==lc->a) {
@@ -26,16 +25,6 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status)
   lc->b = (double*)malloc(nvalues*sizeof(double));
   if (NULL==lc->b) {
     free(lc->a);
-    free(lc);
-    *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not allocate memory for LinLightCurve!\n", 
-		   EXIT_FAILURE);
-    return(NULL);
-  }
-  lc->u = (double*)malloc(nvalues*sizeof(double));
-  if (NULL==lc->u) {
-    free(lc->a);
-    free(lc->b);
     free(lc);
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: Could not allocate memory for LinLightCurve!\n", 
@@ -161,7 +150,6 @@ int initConstantLinLightCurve(LinLightCurve* lc, double mean_rate, double t0,
   for (index=0; index<lc->nvalues; index++) {
     lc->a[index] = 0.;
     lc->b[index] = mean_rate;
-    lc->u[index] = 1.-exp(-mean_rate*step_width);
   }
 
   return(EXIT_SUCCESS);
@@ -264,15 +252,11 @@ void setLinLightCurveData(LinLightCurve* lc, double* rate)
   // Determine the auxiliary values for the light curve.
   for (count=0; count<lc->nvalues-1; count++) {
     lc->a[count] = (rate[count+1]-rate[count])/lc->step_width;
-    lc->b[count] = rate[count]-(lc->t0+count*lc->step_width)*lc->a[count];
-    lc->u[count] = 1.-exp(-lc->a[count]/2.*(pow((count+1)*lc->step_width,2.)-
-					    pow(count*lc->step_width,2.)) 
-			  -lc->b[count]*lc->step_width);
+    lc->b[count] = rate[count]; /*-(lc->t0+count*lc->step_width)*lc->a[count];*/
   }
   // Set the values for the last data point in the light curve.
   lc->a[count] = 0.;
   lc->b[count] = rate[count];
-  lc->u[count] = 1.-exp(-rate[count]*lc->step_width);
 }
 
 
@@ -287,10 +271,6 @@ void freeLinLightCurve(LinLightCurve* lightcurve)
     if (NULL!=lightcurve->b) {
       free(lightcurve->b);
       lightcurve->b=NULL;
-    }
-    if (NULL!=lightcurve->u) {
-      free(lightcurve->u);
-      lightcurve->u=NULL;
     }
     lightcurve->nvalues=0;
   }
@@ -311,28 +291,37 @@ double getPhotonTime(LinLightCurve* lc, double time)
 
   // Step 1 in the algorithm.
   double u = get_random_number();
-  
+
   // Determine the respective index k of the light curve.
   long k = (long)((time-lc->t0)/lc->step_width);
+  // Determine the relative time within the k-th interval, i.e., t=0 lies
+  // at the beginning of the k-th interval.
+  double t;
+  double uk;
   assert(k>=0);
   while (k < lc->nvalues) {
-    // Step 2 in the algorithm is not required, as the u_k are already stored as
-    // auxiliary data in the LinLightCurve object.
+    // Determine the relative time within the k-th interval, i.e., t=0 lies
+    // at the beginning of the k-th interval.
+    t = time-(lc->t0+k*lc->step_width);
+
+    // Step 2 in the algorithm.
+    uk = 1.-exp(-lc->a[k]/2.*(pow(lc->step_width,2.)-pow(t,2.))
+		-lc->b[k]*(lc->step_width-t));
     // Step 3 in the algorithm.
-    if (u <= lc->u[k]) {
+    if (u <= uk) {
       if (0. != lc->a[k]) {
-	return((-lc->b[k] + sqrt(pow(lc->b[k],2.) + pow(lc->a[k]*time,2.) + 
-				 2.*lc->a[k]*lc->b[k]*time - 2.*lc->a[k]*log(1.-u)))
-	       /lc->a[k]);
+	return(lc->t0+k*lc->step_width + 
+	       (-lc->b[k]+sqrt(pow(lc->b[k],2.) + pow(lc->a[k]*t,2.) + 
+			       2*lc->a[k]*lc->b[k]*t - 2.*lc->a[k]*log(1.-u)))/lc->a[k]);
       } else { // a_k == 0
 	return(time-log(1.-u)/lc->b[k]);
       }
 
     } else {
       // Step 4 (u > u_k).
-      u = (u-lc->u[k])/(1-lc->u[k]);
+      u = (u-uk)/(1-uk);
       k++;
-      time = lc->t0 + k*lc->step_width;
+      time = lc->t0 + k*lc->step_width;;
     }
   }
 

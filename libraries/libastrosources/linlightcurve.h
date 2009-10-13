@@ -52,12 +52,6 @@ typedef struct {
    * The value b_k represents the contant contribution (intercept) at t_k. */
   double *a, *b;
 
-  /** Auxiliary data.
-   * The values u_k are required in the algorithm proposed by Klein & Roberts
-   * and are calculated in advance in order to accelerate the calculation
-   * of the photon creation times. */
-  double* u;
-
 } LinLightCurve;
 
 
