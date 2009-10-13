@@ -50,7 +50,7 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status)
 
 
 
-LinLightCurve* loadLinLightCurveFromFile(char* filename, double mean_rate, int* status)
+LinLightCurve* loadLinLightCurveFromFile(char* filename, double source_rate, int* status)
 {
   LinLightCurve* lc=NULL;
   fitsfile* fptr;
@@ -110,7 +110,6 @@ LinLightCurve* loadLinLightCurveFromFile(char* filename, double mean_rate, int* 
     }
     long row;
     int anynul=0;
-    double mean=0.;
     for (row=0; (row<nrows)&&(EXIT_SUCCESS==*status); row++) {
       rate[row]=0.;
       if (fits_read_col(fptr, TDOUBLE, crate, row+1, 1, 1, &(rate[row]), &(rate[row]), 
@@ -120,12 +119,8 @@ LinLightCurve* loadLinLightCurveFromFile(char* filename, double mean_rate, int* 
 	HD_ERROR_THROW("Error: Rate in light curve must be greater than zero!\n", *status);
 	break;
       }
-      mean+=rate[row];
-    }
-    mean /= nrows;
-    // Scale the light curve to the desired mean photon rate.
-    for (row=0; row<nrows; row++) {
-      rate[row] *= mean_rate/mean;
+      // Scale the light curve to the desired source photon rate.
+      rate[row] *= source_rate;
     }
     
     // Set the data (slopes, intercepts, ...) required by the LinLightCurve object.

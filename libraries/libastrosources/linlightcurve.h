@@ -76,8 +76,12 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status);
  * The memory for the LinLightCurve object is allocated by calling the standard
  * constructor with the parameters (light  curve length etc.) given in the FITS
  * file. After reading the light curve from the file it is scaled with the specifiec
- * mean photon rate. */
-LinLightCurve* loadLinLightCurveFromFile(char* lc_filename, double mean_rate, int* status);
+ * source photon rate. 
+ * A rate of 1. in the input light curve (column "RATE") means that this light curve
+ * bin after multiplication with the value of source_rate gives the full source photon
+ * rate given in the source catalog. If the light curve contains values >1., the 
+ * generated photon rate can even exceed the rate given in the source catalog. */
+LinLightCurve* loadLinLightCurveFromFile(char* lc_filename, double source_rate, int* status);
 
 /** Initialization routine creating a light curve with a constant photon rate. 
  * The light curve object already has to be allocated in advance by the

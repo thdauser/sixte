@@ -104,7 +104,15 @@ int create_photons(
     }
 
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
-    assert(new_photon.time>0.);
+    /*    printf("New photon: %lf\n", new_photon.time);
+    if (new_photon.time-ps->t_last_photon>1.) {
+      printf("+++ Time difference: %lf\n", new_photon.time-ps->t_last_photon);
+      }*/
+    if (new_photon.time<=0.) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Time for new photon < 0.!\n", EXIT_FAILURE);
+      break;
+    }
     ps->t_last_photon = new_photon.time;
 
     // Insert photon to the global photon list:
