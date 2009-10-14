@@ -113,9 +113,10 @@ void getArcPixel(ArcPixels* ap, struct Point2d position, int* ring, int* pixel)
   }
 
   // Search for the pixel index within this ring.
-  double angle = atan2(position.y, position.x); // angle within [-pi:pi]
-  if (angle < 0.) angle+=M_PI;                  // now angle within [0:2pi]
-  *pixel = (int)((angle-ap->offset_angle[*ring])/(M_PI/ap->npixels[*ring]));
+  double angle = atan2(position.y, position.x); // Angle is within [-pi:pi].
+  angle -= ap->offset_angle[*ring]; // Subtract the offset angle.
+  if (angle < 0.) angle+=M_PI;      // Now the angle is within [0:2pi]
+  *pixel = (int)(angle/(M_PI/ap->npixels[*ring]));
 }
 
 

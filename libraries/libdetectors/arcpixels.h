@@ -5,6 +5,7 @@
 #include "point.h"
 #include "genericdetector.h"
 
+
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
@@ -32,7 +33,7 @@ typedef struct {
    * respective pixel ring. The inner radius of the ring i is given by the radius of the 
    * ring i-1 (for i>0). */
   double* radius;
-  /** Offset angle of the first pixel in each ring.
+  /** Offset angle of the first pixel in each ring ([rad]).
    * In general the pixels may not start the 3 o'clock position in the rings, but
    * the border of pixel with the index 0 may have an angular offset from the 3 o'clock
    * position. These offsets are measured in counter-clock-wise direction. */
