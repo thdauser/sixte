@@ -99,24 +99,39 @@ void cleanupArcPixels(ArcPixels* ap)
 
 
 
-void getArcPixel(ArcPixels* ap, struct Point2d position, int* ring, int* pixel)
+void getArcPixel(ArcPixels* ap, struct Point2d position, int* pixel)
 {
+  int ring, number; // Ring and internal pixel number within this ring.
+
   // Search for the corresponding pixel ring.
   double radius = sqrt(pow(position.x,2.)+pow(position.y,2.));
-  for(*ring=0; *ring < ap->nrings; (*ring)++) {
-    if (radius < ap->radius[*ring]) break;
+  for(ring=0; ring < ap->nrings; ring++) {
+    if (radius < ap->radius[ring]) break;
   }
-  if (*ring==ap->nrings) {
-    *ring =INVALID_PIXEL;
+  if (ring==ap->nrings) {
     *pixel=INVALID_PIXEL;
     return;
   }
 
   // Search for the pixel index within this ring.
   double angle = atan2(position.y, position.x); // Angle is within [-pi:pi].
-  angle -= ap->offset_angle[*ring]; // Subtract the offset angle.
+  angle -= ap->offset_angle[ring];  // Subtract the offset angle.
   if (angle < 0.) angle+=M_PI;      // Now the angle is within [0:2pi]
-  *pixel = (int)(angle/(M_PI/ap->npixels[*ring]));
+  number = (int)(angle/(M_PI/ap->npixels[ring]));
+
+  // Determine the absolute pixel index (numbering for all pixels of this
+  // detector) from the given ring and internal pixel number in this ring.
+  *pixel = getArcPixelIndex(ap, ring, number);
 }
 
+
+
+int getArcPixelIndex(ArcPixels* ap, int ring, int number)
+{
+  int count, index=0;
+  for(count=0; count<ring; count++) {
+    index += ap->npixels[count];
+  }
+  return(index+number);
+}
 

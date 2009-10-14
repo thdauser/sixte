@@ -57,18 +57,22 @@ struct ArcPixelsParameters {
 
 /** Initialization routine for the ArcPixels data structure. 
  * Sets the basic properties and allocates memory for the pixel array. */
-int initArcPixels(ArcPixels*, struct ArcPixelsParameters*);
+int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app);
 
 /** Clean up the ArcPixels data structure. E.g. release allocated memory. */
-void cleanupArcPixels(ArcPixels*);
+void cleanupArcPixels(ArcPixels* ap);
 
 /** Clear the array of ArcPixels. */
-inline void clearArcPixels(ArcPixels*);
+inline void clearArcPixels(ArcPixels* ap);
 
 /** Determine the ArcPixel that contains the specified position. 
- * Return values are the detector ring and the pixel index within this ring. */
-void getArcPixel(ArcPixels*, struct Point2d position, int* ring, int* pixel);
+ * The return value is the absolute pixel index (i.e., within the global
+ * numbering of all pixels of this detector) of the affected pixel. */
+void getArcPixel(ArcPixels* ap, struct Point2d position, int* pixel);
 
+/** Determine the absolute pixel index from a given ring and the pixel 
+ * number within this ring. */
+int getArcPixelIndex(ArcPixels* ap, int ring, int number);
 
 #endif /* ARCPIXELS_H */
 

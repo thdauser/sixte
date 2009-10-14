@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
     ntotal_photons=impactlistfile.nrows;
 
     // Loop over all impacts in the FITS file.
-    int ring, pixel;
+    int pixel;
     while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(&impactlistfile))) {
 
       status=getNextImpactListFileRow(&impactlistfile, &impact);
@@ -96,14 +96,8 @@ int main(int argc, char* argv[])
       } // END of loop over different pixel widths.
 
       // Determine the ArcPixel that is hit by the photon.
-      getArcPixel(&arcPixels, impact.position, &ring, &pixel);
-      if (0==ring) {
-	arc_nphotons[0]++;
-      } else if (1==ring) {
-	arc_nphotons[1+pixel]++;
-      } else if ((2==ring)||(3==ring)) {
-	arc_nphotons[7+(ring-2)*12+pixel]++;
-      }
+      getArcPixel(&arcPixels, impact.position, &pixel);
+      arc_nphotons[pixel]++;
 	
     } // END of scanning the impact list.
 
