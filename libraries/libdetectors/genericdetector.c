@@ -1,7 +1,6 @@
 #include "genericdetector.h"
 
 
-
 int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* parameters) 
 {
   int status = EXIT_SUCCESS;
@@ -21,7 +20,6 @@ int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* p
 
   return(status);
 }
-
 
 
 
@@ -83,8 +81,6 @@ struct RMF* loadRMF(char* filename, int* status)
 
 
 
-
-
 long getChannel(float energy, struct RMF* rmf)
 {
   // Check if the charge is outside the range of the energy bins defined
@@ -135,7 +131,6 @@ float getEnergy(long channel, struct RMF* rmf)
 	 get_random_number()*(rmf->ChannelHighEnergy[channel]-
 			      rmf->ChannelLowEnergy[channel]));
 }
-
 
 
 

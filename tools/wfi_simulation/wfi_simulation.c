@@ -231,6 +231,8 @@ static int getpar(struct Parameters* parameters)
     strcpy(template_filename, "wfi.window16.eventlist.tpl");
   } else if (1024==parameters->width) {
     strcpy(template_filename, "wfi.full1024.eventlist.tpl");
+  } else if (64==parameters->width) {
+    strcpy(template_filename, "wfi.labor64.eventlist.tpl");
   } else {
     status = EXIT_FAILURE;
     char msg[MAXMSG];

@@ -13,6 +13,7 @@ fitstemplatesdir = $(pkgdatadir)/templates
 dist_fitstemplates_DATA  = erosita.eventlist.tpl 
 dist_fitstemplates_DATA	+= wfi.full1024.eventlist.tpl 
 dist_fitstemplates_DATA += wfi.window16.eventlist.tpl
+dist_fitstemplates_DATA += wfi.labor64.eventlist.tpl
 dist_fitstemplates_DATA += xms.eventlist.tpl
 dist_fitstemplates_DATA += htrs.eventlist.tpl
 dist_fitstemplates_DATA += impactlist.tpl

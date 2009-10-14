@@ -282,10 +282,20 @@ int photon_generation_main()
 			parameters.attitude_filename,
 			"name of the attitude FITS file", &status)) break;
     // WCS keywords.
-    if (nwcs > 0) {
+    if (nwcs > 0) { 
+      // If WCS keywords have been read from the source catalog / images file,
+      // store them also in the photon list.
       if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcs->crval[0],
 			  "", &status)) break;
       if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcs->crval[1],
+			  "", &status)) break;
+    } else {
+      // Otherwise, if no WCS keywords are specified so far, use the RA=0 and 
+      // DEC=0 as default values.
+      double wcsbuffer=0.;
+      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcsbuffer,
+			  "", &status)) break;
+      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcsbuffer,
 			  "", &status)) break;
     }
     // --- End of Initialization ---

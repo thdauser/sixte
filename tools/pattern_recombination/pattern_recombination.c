@@ -331,6 +331,8 @@ int pattern_recombination_main() {
       strcat(template_filename, "wfi.window16.eventlist.tpl");
     } else if (1024==eventfile.columns) {
       strcat(template_filename, "wfi.full1024.eventlist.tpl");
+    } else if (64==eventfile.columns) {
+      strcat(template_filename, "wfi.labor64.eventlist.tpl");
     } else {
       status = EXIT_FAILURE;
       sprintf(msg, "Error: detector width (%d pixels) is not supported!\n", eventfile.columns);
