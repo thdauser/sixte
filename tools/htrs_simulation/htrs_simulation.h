@@ -31,7 +31,9 @@ struct Parameters {
   float background_rate; /**< Rate of background events. */
 
   // HTRS Detector specific parameters:
+#ifdef HTRS_HEXPIXELS
   double pixelwidth;
+#endif
   double dead_time;
 };
 

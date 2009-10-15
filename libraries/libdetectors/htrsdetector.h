@@ -3,7 +3,14 @@
 
 #include "sixt.h"
 #include "genericdetector.h"
+
+#ifdef HTRS_HEXPIXELS
 #include "hexagonalpixels.h"
+#endif
+#ifdef HTRS_ARCPIXELS
+#include "arcpixels.h"
+#endif
+
 #include "eventfile.h"
 #include "htrseventfile.h"
 #include "impact.h"
@@ -24,8 +31,15 @@ typedef struct {
 
   /** Generic Detector properties like, e.g., the detector response. */
   GenericDetector generic;
+
+#ifdef HTRS_HEXPIXELS
   /** Array of hexagonal pixels. */
   HexagonalPixels pixels;
+#endif
+#ifdef HTRS_ARCPIXELS
+  /** Array of ArcPixels. */
+  ArcPixels pixels;
+#endif
 
   /** Dead time of a pixel after an event detection.
    * If a new photon arrives during the dead time after a previous event in the same pixel,
@@ -49,7 +63,13 @@ typedef struct {
  */
 struct HTRSDetectorParameters {
   struct GenericDetectorParameters generic;
+
+#ifdef HTRS_HEXPIXELS
   struct HexagonalPixelsParameters pixels;
+#endif
+#ifdef HTRS_ARCPIXELS
+  struct ArcPixelsParameters pixels;
+#endif
 
   double dead_time;
 
@@ -69,7 +89,7 @@ struct HTRSDetectorParameters {
  * For some of these tasks it simply calls the init routines of the underlying 
  * data structures. 
  */
-int initHTRSDetector(HTRSDetector*, struct HTRSDetectorParameters*);
+int initHTRSDetector(HTRSDetector* hd, struct HTRSDetectorParameters* parameters);
 
 /** Clean up the HTRSDetector data structure. 
  * This routine should be called when the HTRSDetector data structure 
@@ -77,7 +97,7 @@ int initHTRSDetector(HTRSDetector*, struct HTRSDetectorParameters*);
  * It takes care of releasing allocated memory and closes open file connections.
  * If applicable it calls clean-up routines of underlying data structures. 
  */
-int cleanupHTRSDetector(HTRSDetector*);
+int cleanupHTRSDetector(HTRSDetector* hd);
 
 /** Add a photon impact to the HTRSDetector pixel array.
  * This is the standard routine to be called for the simulation of the HTRSDetector.
@@ -85,7 +105,7 @@ int cleanupHTRSDetector(HTRSDetector*);
  * generated charge from the detector response and stores the event in the output event file.
  * Split events are taken into account based on a Gaussian charge cloud shape.
  */
-int addImpact2HTRSDetector(HTRSDetector*, Impact*);
+int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact);
 
 
 #endif /* HTRSDETECTOR_H */

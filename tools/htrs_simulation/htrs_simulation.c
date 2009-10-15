@@ -52,6 +52,7 @@ int htrs_simulation_main() {
     // Detector settings.
     // Store the settings for the HTRSDetector in the corresponding data structure
     // and call the initialization routine in order to allocate memory etc.
+#ifdef HTRS_HEXPIXELS
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .npixels = 37,
 		  .pixelwidth = parameters.pixelwidth },
@@ -63,6 +64,25 @@ int htrs_simulation_main() {
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template /* String address!! */
     };
+#endif
+#ifdef HTRS_ARCPIXELS
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.26e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
+    double offset_angle[4] = { 0., 0., M_PI/12, 0. };
+    struct HTRSDetectorParameters hdparameters = {
+      .pixels = { .nrings = 4,
+		  .npixels = npixels,
+		  .radius = radii,
+		  .offset_angle = offset_angle },
+      .generic = { .ccsigma = parameters.ccsigma, 
+		   .pha_threshold = parameters.pha_threshold,
+		   .energy_threshold = parameters.energy_threshold,
+		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
+      .dead_time          = parameters.dead_time,
+      .eventlist_filename = parameters.eventlist_filename /* String address!! */,
+      .eventlist_template = parameters.eventlist_template /* String address!! */
+    };
+#endif
     if(EXIT_SUCCESS!=(status=initHTRSDetector(&detector, &hdparameters))) break;
     // END of DETECTOR CONFIGURATION SETUP    
 
@@ -133,10 +153,12 @@ static int getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the dead time for the detector pixels!\n", status);
   }
 
+#ifdef HTRS_HEXPIXELS
   // [m]
   else if ((status = PILGetReal("pixelwidth", &parameters->pixelwidth))) {
     HD_ERROR_THROW("Error reading the width of the detector pixels!\n", status);
   }
+#endif
 
   // [m]
   else if ((status = PILGetReal("ccsigma", &parameters->ccsigma))) {

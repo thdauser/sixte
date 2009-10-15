@@ -15,16 +15,17 @@ int main(int argc, char* argv[])
   int count_pixelwidth;                  // Counter for the different pixel widths.
   const double min_pixelwidth=0.5e-3;    // Minimum pixel width ([m]).
   const double step_pixelwidth=0.125e-3; // Increment step for the pixel width ([m]).
-  const int n_pixelwidths=37;           // Number of different pixelwidths to simulate.
+  const int n_pixelwidths=37;            // Number of different pixelwidths to simulate.
   HexagonalPixels hexagonalPixels[n_pixelwidths];
-  long hex_nphotons[n_pixelwidths][37]; // Number of photons per hexagonal pixel.
+  long hex_nphotons[n_pixelwidths][37];  // Number of photons per hexagonal pixel.
 #endif
 #ifdef HTRS_ARCPIXELS
   ArcPixels arcPixels;
-  long arc_nphotons[31];                // Number of photons per arc pixel.
+  long arc_nphotons[31]; // Number of photons per arc pixel.
+  int ring;
 #endif
 
-  long ntotal_photons;                  // Total number of photons.
+  long ntotal_photons;   // Total number of photons.
 
   int status = EXIT_SUCCESS;
 
@@ -106,8 +107,10 @@ int main(int argc, char* argv[])
 
 #ifdef HTRS_ARCPIXELS
       // Determine the ArcPixel that is hit by the photon.
-      getArcPixel(&arcPixels, impact.position, &pixel);
-      arc_nphotons[pixel]++;
+      getArcPixel(&arcPixels, impact.position, &ring, &pixel);
+      // Determine the absolute pixel index (numbering for all pixels of this
+      // detector) from the given ring and internal pixel number in this ring.
+      arc_nphotons[getArcPixelIndex(&arcPixels, ring, pixel)]++;
 #endif
     } // END of scanning the impact list.
 
@@ -130,15 +133,13 @@ int main(int argc, char* argv[])
       }
       mean = ndetected*1./37.;
       
-      printf("%lf %ld %ld %lf %lf\n",
+      printf("%lf %ld %ld %lf %lf\t pixel:",
 	     min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width
 	     ntotal_photons,               // Total number of photons
 	     ndetected,                    // Number of detected photons
 	     ndetected*1./ntotal_photons,  // Fraction of detected photons
 	     sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	     );
-      printf("radii: %lf %lf %lf %lf\n", radii[0], radii[1], radii[2], radii[3]);
-      printf("pixel:");
       for (pixel=0; pixel<37; pixel++) {
 	printf(" %lf,", (double)hex_nphotons[count_pixelwidth][pixel]/ntotal_photons);
       }
@@ -157,12 +158,13 @@ int main(int argc, char* argv[])
     }
     mean = ndetected*1./31.;
       
-    printf("%ld %ld %lf %lf\t pixel:",
+    printf("%ld %ld %lf %lf\n",
 	   ntotal_photons,               // Total number of photons
 	   ndetected,                    // Number of detected photons
 	   ndetected*1./ntotal_photons,  // Fraction of detected photons
 	   sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	   );
+    printf("radii: %lf %lf %lf %lf\npixel:", radii[0], radii[1], radii[2], radii[3]);
     for (pixel=0; pixel<31; pixel++) {
       printf(" %lf,", (double)arc_nphotons[pixel]/ntotal_photons);
     }

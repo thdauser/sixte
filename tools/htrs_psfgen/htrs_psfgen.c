@@ -5,6 +5,7 @@
 
 int main()
 {
+#ifdef HTRS_HEXPIXELS
   HexagonalPixels hexagonalPixels;
   PSF psf;
 
@@ -147,4 +148,7 @@ int main()
   cleanupHexagonalPixels(&hexagonalPixels);
 
   return(status);
+#else
+  return(-1);
+#endif
 }
