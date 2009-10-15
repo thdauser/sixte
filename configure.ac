@@ -111,7 +111,7 @@ AC_CONFIG_FILES([Makefile
 		tools/psfgen/Makefile
 		tools/binary_stream/Makefile
 		tools/htrs_psfgen/Makefile
-		tools/hexagonal_pixel_intensity/Makefile
+		tools/htrs_pixel_intensity/Makefile
 		tools/analyse_xms_events/Makefile
 		tools/pattern_recombination/Makefile])
 AC_OUTPUT

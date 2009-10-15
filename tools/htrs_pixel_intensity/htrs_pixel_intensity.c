@@ -11,11 +11,10 @@ int main(int argc, char* argv[])
   Impact impact;
   int pixel; // Pixel hit by an incident photon.
 
+#ifdef HTRS_HEXPIXELS
   int count_pixelwidth;                  // Counter for the different pixel widths.
   const double min_pixelwidth=0.5e-3;    // Minimum pixel width ([m]).
   const double step_pixelwidth=0.125e-3; // Increment step for the pixel width ([m]).
-
-#ifdef HTRS_HEXPIXELS
   const int n_pixelwidths=37;           // Number of different pixelwidths to simulate.
   HexagonalPixels hexagonalPixels[n_pixelwidths];
   long hex_nphotons[n_pixelwidths][37]; // Number of photons per hexagonal pixel.
@@ -64,7 +63,7 @@ int main(int argc, char* argv[])
     }
 
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.26e-3, 5.49e-3, 8.63e-3, 12.0e-3 };
+    double radii[4] = { 2.26e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., M_PI/12, 0. };
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
@@ -131,13 +130,15 @@ int main(int argc, char* argv[])
       }
       mean = ndetected*1./37.;
       
-      printf("%lf %ld %ld %lf %lf\t pixel:",
+      printf("%lf %ld %ld %lf %lf\n",
 	     min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width
 	     ntotal_photons,               // Total number of photons
 	     ndetected,                    // Number of detected photons
 	     ndetected*1./ntotal_photons,  // Fraction of detected photons
 	     sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	     );
+      printf("radii: %lf %lf %lf %lf\n", radii[0], radii[1], radii[2], radii[3]);
+      printf("pixel:");
       for (pixel=0; pixel<37; pixel++) {
 	printf(" %lf,", (double)hex_nphotons[count_pixelwidth][pixel]/ntotal_photons);
       }
@@ -156,8 +157,7 @@ int main(int argc, char* argv[])
     }
     mean = ndetected*1./31.;
       
-    printf("%lf %ld %ld %lf %lf\t pixel:",
-	   min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width
+    printf("%ld %ld %lf %lf\t pixel:",
 	   ntotal_photons,               // Total number of photons
 	   ndetected,                    // Number of detected photons
 	   ndetected*1./ntotal_photons,  // Fraction of detected photons
