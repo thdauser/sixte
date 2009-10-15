@@ -11,17 +11,21 @@ int main(int argc, char* argv[])
   Impact impact;
   int pixel; // Pixel hit by an incident photon.
 
-  int count_pixelwidth;                // Counter for the different pixel widths.
-  const int n_pixelwidths=37;          // Number of different pixelwidths to simulate.
-  const double min_pixelwidth=0.5e-3;  // Minimum pixel width ([m]).
+  int count_pixelwidth;                  // Counter for the different pixel widths.
+  const double min_pixelwidth=0.5e-3;    // Minimum pixel width ([m]).
   const double step_pixelwidth=0.125e-3; // Increment step for the pixel width ([m]).
 
+#ifdef HTRS_HEXPIXELS
+  const int n_pixelwidths=37;           // Number of different pixelwidths to simulate.
   HexagonalPixels hexagonalPixels[n_pixelwidths];
-  ArcPixels arcPixels; 
-
-  long ntotal_photons;              // Total number of photons.
   long hex_nphotons[n_pixelwidths][37]; // Number of photons per hexagonal pixel.
+#endif
+#ifdef HTRS_ARCPIXELS
+  ArcPixels arcPixels;
   long arc_nphotons[31];                // Number of photons per arc pixel.
+#endif
+
+  long ntotal_photons;                  // Total number of photons.
 
   int status = EXIT_SUCCESS;
 
@@ -32,6 +36,7 @@ int main(int argc, char* argv[])
 
   do { // Error handling loop.
 
+#ifdef HTRS_HEXPIXELS
     // Loop over the different pixel widths.
     for (count_pixelwidth=0; count_pixelwidth<n_pixelwidths; count_pixelwidth++) {
       // Init buffers for statistical data.
@@ -50,7 +55,9 @@ int main(int argc, char* argv[])
 						   &hpparameters))) break;
     } // END of loop over different pixel widths.
     if (EXIT_SUCCESS!=status) break;
+#endif
 
+#ifdef HTRS_ARCPIXELS
     // Setup the configuration of the ArcPixels structure.
     for (pixel=0; pixel<31; pixel++) {
       arc_nphotons[pixel] = 0;
@@ -68,8 +75,9 @@ int main(int argc, char* argv[])
     // Initialization of ArcPixels data structure.
     if(EXIT_SUCCESS!=(status=initArcPixels(&arcPixels, &apparameters))) break;
     // END setup of ArcPixels.
-
+#endif
     
+
     // Open the impact list FITS file.
     status = openImpactListFile(&impactlistfile, argv[1], READONLY);
     if (EXIT_SUCCESS!=status) break;
@@ -83,6 +91,7 @@ int main(int argc, char* argv[])
       status=getNextImpactListFileRow(&impactlistfile, &impact);
       if (EXIT_SUCCESS!=status) break;
 
+#ifdef HTRS_HEXPIXELS
       // Loop over the different pixel widths.
       for (count_pixelwidth=0; count_pixelwidth<n_pixelwidths; count_pixelwidth++) {
 	// Determine the hexagonal pixel that is hit by the photon.
@@ -94,11 +103,13 @@ int main(int argc, char* argv[])
 	  hex_nphotons[count_pixelwidth][pixel]++;
 	}
       } // END of loop over different pixel widths.
+#endif
 
+#ifdef HTRS_ARCPIXELS
       // Determine the ArcPixel that is hit by the photon.
       getArcPixel(&arcPixels, impact.position, &pixel);
       arc_nphotons[pixel]++;
-	
+#endif
     } // END of scanning the impact list.
 
 
@@ -107,6 +118,7 @@ int main(int argc, char* argv[])
     double mean=0.;
     double mean2=0.;
 
+#ifdef HTRS_HEXPIXELS
     printf("# Hexagonal Pixel Structure (different pixel sizes):\n");
     // Loop over the different pixel sizes.
     for (count_pixelwidth=0; count_pixelwidth<n_pixelwidths; count_pixelwidth++) {
@@ -131,8 +143,9 @@ int main(int argc, char* argv[])
       }
       printf("\n");
     } // END of loop over different pixel sizes.
+#endif
 
-
+#ifdef HTRS_ARCPIXELS
     printf("# ArcPixel Structure:\n");
     // Determine the statistics and print them.
     ndetected=0;
@@ -154,7 +167,7 @@ int main(int argc, char* argv[])
       printf(" %lf,", (double)arc_nphotons[pixel]/ntotal_photons);
     }
     printf("\n");
-    
+#endif
 
   } while (0); // END of error handling loop.
 
@@ -164,11 +177,18 @@ int main(int argc, char* argv[])
   // Close the impact list file.
   status += closeImpactListFile(&impactlistfile);
 
+#ifdef HTRS_HEXPIXELS
   // Loop over the different pixel widths.
   for (count_pixelwidth=0; count_pixelwidth<n_pixelwidths; count_pixelwidth++) {
     // Release memory.
     cleanupHexagonalPixels(&hexagonalPixels[count_pixelwidth]);
   } // END of loop over different pixel widths.
+#endif
+
+#ifdef HTRS_ARCPIXELS
+  cleanupArcPixels(&arcPixels);
+#endif
 
   return(status);
 }
+
