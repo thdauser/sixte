@@ -62,6 +62,7 @@ inline void clearArcPixels(ArcPixels* ap)
   for (ring=0; ring<ap->nrings; ring++) {
     for (pixel=0; pixel<ap->npixels[ring]; pixel++) {
       ap->array[ring][pixel].charge = 0.;
+      ap->array[ring][pixel].last_impact = -1.e20;
     }
   }
 }
