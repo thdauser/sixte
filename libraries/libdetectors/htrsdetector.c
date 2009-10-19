@@ -148,7 +148,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	event.pha = getChannel(charge, hd->generic.rmf);
 	//                     |-> charge created by incident photon
 	
-	// Check lower threshold (PHA and energy):
+	// Check lower thresholds (PHA and energy):
 	if ((event.pha>=hd->generic.pha_threshold) && 
 	    (charge>=hd->generic.energy_threshold)) { 
 	  

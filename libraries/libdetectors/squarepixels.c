@@ -31,6 +31,14 @@ int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters
     }
   }
 
+  // Get the memory for the read-out flags of the individual detector lines.
+  sp->line2readout = (int*)malloc(sp->ywidth*sizeof(int));
+  if (NULL==sp->line2readout) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", status);
+    return(status);
+  }
+
   // Clear the pixels.
   clearSquarePixels(sp);
 
@@ -45,6 +53,7 @@ inline void clearLineSquarePixels(SquarePixels* sp, const int line)
   for (x=0; x<sp->xwidth; x++) {
     sp->array[x][line].charge = 0.;
   }
+  sp->line2readout[line] = 0;
 }
 
 
@@ -70,6 +79,11 @@ void cleanupSquarePixels(SquarePixels* sp)
     }
     free(sp->array);
     sp->array=NULL;
+  }
+  
+  if (NULL!=sp->line2readout) {
+    free(sp->line2readout);
+    sp->line2readout=NULL;
   }
 }
 

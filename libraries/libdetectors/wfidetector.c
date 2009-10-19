@@ -94,13 +94,17 @@ int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
 	  // |-> charge created by incident photon
 	  WFIDetectorIsSensitive(y[count], wd, impact->time);
 	  // |-> "1" if pixel can measure charge, "0" else
+	
+	// Set the read-out flag for this line. That means that the line has
+	// been affected by an event since the last read-out cycle. So it
+	// has to be read out in the next one again.
+	wd->pixels.line2readout[y[count]] = 1;
       }
     }
   } // END if(charge>0.)
 
   return(status);
 }
-
 
 
 
@@ -169,47 +173,50 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time)
 inline int readoutLinesWFIDetector(WFIDetector* wd)
 {
   int x, lineindex;
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
-  // Read out the entire detector array.
+  // Read out only the 1 or 2 detector read-out lines from the whole detector array.
   for (lineindex=0; lineindex<wd->readout_directions; lineindex++) {
-    for (x=0; x<wd->pixels.xwidth; x++) {
-      if (wd->pixels.array[x][wd->readout_lines[lineindex]].charge > 1.e-6) {
-	// Determine the detector channel that corresponds to the charge stored
-	// in the detector pixel.
-	WFIEvent event = {
-	  .pha = getChannel(wd->pixels.array[x][wd->readout_lines[lineindex]].charge, 
-			    wd->generic.rmf)
-	};
+    // Check whether any pixel in this line has been affected by an event since
+    // the last read-out cycle. If not, the line can be neglected.
+    if (1==wd->pixels.line2readout[wd->readout_lines[lineindex]]) {
+      for (x=0; x<wd->pixels.xwidth; x++) {
+	if (wd->pixels.array[x][wd->readout_lines[lineindex]].charge > 1.e-6) {
+	  // Determine the detector channel that corresponds to the charge stored
+	  // in the detector pixel.
+	  WFIEvent event = {
+	    .pha = getChannel(wd->pixels.array[x][wd->readout_lines[lineindex]].charge, 
+			      wd->generic.rmf)
+	  };
 
-	// Check lower threshold (PHA and energy):
-	if ((event.pha>=wd->generic.pha_threshold) && 
-	    (wd->pixels.array[x][wd->readout_lines[lineindex]].charge>=
-	     wd->generic.energy_threshold)) { 
-
-	  // TODOO REMOVE
-	  assert(event.pha >= 0);
-	  // Maybe: if (event.pha < 0) continue;
-	
-	  // There is an event in this pixel, so insert it into the eventlist:
-	  event.time = wd->readout_time;
-	  event.xi = x;
-	  event.yi = wd->readout_lines[lineindex];
-	  event.frame = wd->frame;
-	  event.patnum = 0;
-	  event.patid = -1;
-	  event.pileup = 0;
-
-	  status = addWFIEvent2File(&wd->eventlist, &event);
-	  if (EXIT_SUCCESS!=status) return(status);
-	} // END of check for threshold
-      } // END of check whether  charge > 1.e-6
-    } // END of loop over x
+	  // Check lower threshold (PHA and energy):
+	  if ((event.pha>=wd->generic.pha_threshold) && 
+	      (wd->pixels.array[x][wd->readout_lines[lineindex]].charge>=
+	       wd->generic.energy_threshold)) { 
+	    
+	    // TODOO REMOVE
+	    assert(event.pha >= 0);
+	    // Maybe: if (event.pha < 0) continue;
+	    
+	    // There is an event in this pixel, so insert it into the eventlist:
+	    event.time = wd->readout_time;
+	    event.xi = x;
+	    event.yi = wd->readout_lines[lineindex];
+	    event.frame = wd->frame;
+	    event.patnum = 0;
+	    event.patid = -1;
+	    event.pileup = 0;
+	    
+	    status = addWFIEvent2File(&wd->eventlist, &event);
+	    if (EXIT_SUCCESS!=status) return(status);
+	  } // END of check for threshold
+	} // END of check whether  charge > 1.e-6
+      } // END of loop over x
+    } // END of check whether any pixel in the line has been affected by an impact
   } // END of loop over readout lines
 
   return(status);
 }
-
 
 
 
