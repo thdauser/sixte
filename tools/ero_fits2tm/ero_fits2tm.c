@@ -6,11 +6,10 @@
 
 
 #include "sixt.h"
-#include "eventfile.h"
 #include "erositaevent.h"
 #include "erositaeventfile.h"
 
-#define TOOLSUB binary_stream_main
+#define TOOLSUB ero_fits2tm_main
 #include "headas_main.c"
 
 
@@ -50,7 +49,6 @@ struct Binary_Output {
 
 
 
-
 // Clear the given byte buffer with 'length' bytes.
 void binary_output_clear_bytes(unsigned char *bytes, const int length) {
   int count;
@@ -58,6 +56,7 @@ void binary_output_clear_bytes(unsigned char *bytes, const int length) {
     bytes[count] = 0;
   }
 }
+
 
 
 // Constructor of Binary_Output
@@ -149,8 +148,6 @@ int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
 
 
 
-
-
 // Routine which is called to write an eROSITA event to the Binary_Output.
 // Return value is '0' if everything is ok, otherwise the function returns '-1'.
 int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
@@ -231,12 +228,9 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
 
 
 
-
-
-
 //////////////////////////////////
 //    MAIN
-int binary_stream_main()
+int ero_fits2tm_main()
 {
   struct Parameters parameters;
 
@@ -261,7 +255,7 @@ int binary_stream_main()
 
 
   // HEATOOLs: register program
-  set_toolname("binary_stream");
+  set_toolname("ero_fits2tm");
   set_toolversion("0.01");
 
 

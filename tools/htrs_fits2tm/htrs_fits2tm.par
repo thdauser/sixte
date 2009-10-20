@@ -1,0 +1,5 @@
+eventlist_filename,fre,lq,"events.fits",,,"filename of the inputfile containing the event list (FITS)"
+output_filename,f,lq,"binary_events.dat",,,"filename of the outputfile for the byte stream"
+binning_time,r,lq,1.0e-3,0.0,1000000.0,"time step for the spectral binning of the events"
+chatter,i,lh,5,,,"chatter: control verbosity of the program"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

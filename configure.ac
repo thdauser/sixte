@@ -104,14 +104,15 @@ AC_CONFIG_FILES([Makefile
 		tools/wfi_simulation/Makefile
 		tools/framestore_simulation/Makefile
 		tools/erosita_simulation/Makefile
-		tools/htrs_simulation/Makefile
 		tools/xms_simulation/Makefile
 		tools/event_projection/Makefile
 		tools/eroexposure/Makefile
 		tools/psfgen/Makefile
-		tools/binary_stream/Makefile
+		tools/ero_fits2tm/Makefile
+		tools/htrs_simulation/Makefile
 		tools/htrs_psfgen/Makefile
 		tools/htrs_pixel_intensity/Makefile
+		tools/htrs_fits2tm/Makefile
 		tools/analyse_xms_events/Makefile
 		tools/pattern_recombination/Makefile])
 AC_OUTPUT

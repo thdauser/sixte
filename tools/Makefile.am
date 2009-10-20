@@ -3,5 +3,6 @@
 SUBDIRS = photon_generation photon_imaging psfgen\
 	wfi_simulation framestore_simulation erosita_simulation htrs_simulation \
 	xms_simulation \
-	event_projection binary_stream htrs_psfgen analyse_xms_events \
-	pattern_recombination eroexposure htrs_pixel_intensity
+	event_projection ero_fits2tm analyse_xms_events \
+	pattern_recombination eroexposure \
+	htrs_psfgen htrs_pixel_intensity htrs_fits2tm

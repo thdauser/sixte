@@ -141,9 +141,9 @@ int htrs_simulation_main() {
 // This routine reads the program parameters using the PIL.
 static int getpar(struct Parameters* parameters)
 {
-  int status=EXIT_SUCCESS; // error status
+  int status=EXIT_SUCCESS; // Error status.
 
-  // Get the name of the impact list file (FITS file)
+  // Get the name of the impact list file (FITS file).
   if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
   }
