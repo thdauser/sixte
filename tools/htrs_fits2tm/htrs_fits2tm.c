@@ -47,6 +47,8 @@ int htrs_fits2tm_main()
 
   HTRSEventFile eventfile;
   FILE *output_file=NULL;
+  TelemetryPacket tmpacket;
+
   //  unsigned int max = 0;
 
   char msg[MAXMSG];    // error message buffer
@@ -67,7 +69,7 @@ int htrs_fits2tm_main()
 
     // Open the event list FITS file.
     status=openHTRSEventFile(&eventfile, parameters.eventlist_filename, READONLY);
-    if(EXIT_SUCCESS!=status) return(status);
+    if(EXIT_SUCCESS!=status) break;
 
     // Open the binary file for output:
     output_file = fopen(parameters.output_filename, "w+");
@@ -78,6 +80,10 @@ int htrs_fits2tm_main()
       HD_ERROR_THROW(msg, status);
       break;
     }
+
+    // Initialize the TelemetryPacket data structure.
+    status=initTelemetryPacket(&tmpacket, parameters.n_packet_bits);
+    if(EXIT_SUCCESS!=status) break;
 
 
       /*  } else if (mode == MODE_SPECTRUM) { 
@@ -192,7 +198,10 @@ int htrs_fits2tm_main()
 
   // --- Clean up ---
 
-  // Close files
+  // Release the memory for the internal storage of the TelemetryPacket.
+  cleanupTelemetryPacket(&tmpacket);
+
+  // Close files.
   if (NULL!=output_file) fclose(output_file);
   closeHTRSEventFile(&eventfile);
 

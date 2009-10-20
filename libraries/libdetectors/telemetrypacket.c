@@ -33,3 +33,13 @@ void cleanupTelemetryPacket(TelemetryPacket* packet)
 
 
 
+void newTelemetryPacket(TelemetryPacket* packet)
+{
+  int count;
+  for(count=0; count<packet->nbits; count++) {
+    packet->data[count]=0;
+  }
+  packet->current_bit=0;
+}
+
+

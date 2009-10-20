@@ -39,5 +39,9 @@ int initTelemetryPacket(TelemetryPacket* packet, int nbits);
 /** Release the memory allocated in the initTelemetryPacket() routine. */
 void cleanupTelemetryPacket(TelemetryPacket* packet);
 
+/** Clean the data in the TelemetryPacket internal storage 
+ * (set all values to zero) and reset the internat bit counter. */
+void newTelemetryPacket(TelemetryPacket* packet);
+
 
 #endif /* TELEMETRYPACKET_H */
