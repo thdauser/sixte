@@ -8,6 +8,7 @@
 #include "sixt.h"
 #include "htrsevent.h"
 #include "htrseventfile.h"
+#include "telemetrypacket.h"
 
 #define TOOLSUB htrs_fits2tm_main
 #include "headas_main.c"
@@ -19,13 +20,13 @@ struct Parameters {
   char output_filename[FILENAME_LENGTH];
 
   // Number of bits in each telemetry packet.
-  unsigned long n_packet_bits;
+  int n_packet_bits;
   // Number of bits for the telemetry header.
-  unsigned long n_header_bits;
+  int n_header_bits;
   // Number of bits per spectral bin.
-  unsigned long n_bin_bits;
+  int n_bin_bits;
   // Number of response channels binned to one spectral bin.
-  unsigned long n_bin_size;
+  int bin_size;
   // Integration time for one spectrum.
   double integration_time;
 };
@@ -213,6 +214,26 @@ static int getpar(struct Parameters* parameters)
   // Get the name of the output file (binary).
   else if ((status = PILGetFname("output_filename", parameters->output_filename))) {
     HD_ERROR_THROW("Error reading the filename of the output file (binary)!\n", status);
+  }
+
+  else if ((status = PILGetInt("n_packet_bits", &parameters->n_packet_bits))) {
+    HD_ERROR_THROW("Error reading the number of bits per telemetry packet!\n", status);
+  }
+
+  else if ((status = PILGetInt("n_header_bits", &parameters->n_header_bits))) {
+    HD_ERROR_THROW("Error reading the number of bits for the packet header!\n", status);
+  }
+
+  else if ((status = PILGetInt("n_bin_bits", &parameters->n_bin_bits))) {
+    HD_ERROR_THROW("Error reading the number of bits per spectral bin!\n", status);
+  }
+
+  else if ((status = PILGetInt("bin_size", &parameters->bin_size))) {
+    HD_ERROR_THROW("Error reading the spectral bin size (response channels per bin)!\n", status);
+  }
+
+  else if ((status = PILGetReal("integration_time", &parameters->integration_time))) {
+    HD_ERROR_THROW("Error reading the integration time per spectrum!\n", status);
   }
 
   return(status);

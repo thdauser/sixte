@@ -58,7 +58,8 @@ struct ArcPixelsParameters {
 
 
 /** Initialization routine for the ArcPixels data structure. 
- * Sets the basic properties and allocates memory for the pixel array. */
+ * Sets the basic properties and allocates memory for the pixel array.
+ * The return value is the error status. */
 int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app);
 
 /** Clean up the ArcPixels data structure. E.g. release allocated memory. */

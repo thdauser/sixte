@@ -31,7 +31,8 @@ libdetectors_la_SOURCES = genericdetector.c squarepixels.c \
 			  framestoredetector.c erositadetectors.c erositaeventfile.c \
 			  wfidetector.c wfieventfile.c \
 			  xmsdetector.c xmseventfile.c \
-			  htrsdetector.c htrseventfile.c hexagonalpixels.c arcpixels.c
+			  htrsdetector.c htrseventfile.c hexagonalpixels.c arcpixels.c \
+			  telemetrypacket.c
 
 libdetectors_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
 libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosources.la
@@ -46,5 +47,5 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h arcpixels.h
 		  framestoredetector.h erositadetectors.h erositaeventfile.h erositaevent.h \
 		  wfidetector.h wfieventfile.h wfievent.h \
 		  xmsdetector.h xmseventfile.h xmsevent.h \
-		  htrsdetector.h htrseventfile.h htrsevent.h
-
+		  htrsdetector.h htrseventfile.h htrsevent.h \
+		  telemetrypacket.h
