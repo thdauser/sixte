@@ -43,5 +43,16 @@ void cleanupTelemetryPacket(TelemetryPacket* packet);
  * (set all values to zero) and reset the internat bit counter. */
 void newTelemetryPacket(TelemetryPacket* packet);
 
+/** Returns the number of still unused and therefore available bits in the
+ * TelemetryPacket. */
+int availableBitsInTelemetryPacket(TelemetryPacket* packet);
+
+/** Add binary data to the TelemetryPacket. 
+ * The amount of 'nbits' is written from the memory section 'data' is pointing to,
+ * and is inserted at the position designated by 'current_bit' in the 
+ * TelemetryPackets internal data storage. 
+ * The return value of the function is the error status. */
+int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data, int nbits);
+
 
 #endif /* TELEMETRYPACKET_H */

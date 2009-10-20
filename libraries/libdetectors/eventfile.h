@@ -35,7 +35,7 @@ int closeEventFile(EventFile*);
 
 /** Checks whether the end of the event list is reached. 
  * If the internal pointer of the EventFile data structure points to the last line
- * in the file, i.e. this is the formerly read line, or has an even higher value, the 
+ * in the file, i.e., that is the formerly read line, or has an even higher value, the 
  * function return value is 1, otherwise it is 0. */
 int EventFileEOF(EventFile*);
 

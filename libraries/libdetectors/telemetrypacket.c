@@ -43,3 +43,28 @@ void newTelemetryPacket(TelemetryPacket* packet)
 }
 
 
+
+int availableBitsInTelemetryPacket(TelemetryPacket* packet)
+{
+  return(packet->nbits-packet->current_bit);
+}
+
+
+
+int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data, int nbits)
+{
+  // Currently only multiple numbers of 8 bits (1 byte) are allowed for the number
+  // of bytes to be transferred.
+  assert(nbits%8==0);
+
+  int index;
+  for(index=0; index<nbits/8; index++) {
+    packet->data[packet->current_bit/8 +index] = data[index];
+  }
+
+  return(EXIT_SUCCESS);
+}
+
+
+
+

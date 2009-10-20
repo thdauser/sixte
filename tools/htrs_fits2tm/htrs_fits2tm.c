@@ -49,9 +49,18 @@ int htrs_fits2tm_main()
   FILE *output_file=NULL;
   TelemetryPacket tmpacket;
 
+  // Number of bins in the spectrum.
+  int n_spectrum_bins=0;
+  // Buffer for the spectral binning.
+  int* spectrum=NULL;
+  // Number of bits per binned spectrum.
+  int n_spectrum_bits=0;
+  // Byte buffer for the spectrum. In order to write it to the TelemetryPacket
+  // the spectrum is converted to a binary byte buffer.
+  unsigned char* byte_buffer=NULL;
   //  unsigned int max = 0;
 
-  char msg[MAXMSG];    // error message buffer
+  char msg[MAXMSG]; // Error message buffer
   int status=EXIT_SUCCESS;
 
 
@@ -71,6 +80,17 @@ int htrs_fits2tm_main()
     status=openHTRSEventFile(&eventfile, parameters.eventlist_filename, READONLY);
     if(EXIT_SUCCESS!=status) break;
 
+    // Determine the number of bits required for one spectrum.
+    if (n_rsp_channels % parameters.bin_size != 0) {
+      n_spectrum_bins = n_rsp_channels/parameters.bin_size +1;
+    } else {
+      n_spectrum_bins = n_rsp_channels/parameters.bin_size;
+    }
+    n_spectrum_bits = n_spectrum_bins * parameters.n_bin_bits;
+    // Currently the number of bits must be a multiple of 8, i.e., we are only
+    // dealing with complete bytes.
+    assert(n_spectrum_bits % 8 == 0);
+    
     // Open the binary file for output:
     output_file = fopen(parameters.output_filename, "w+");
     if (NULL==output_file) {
@@ -81,26 +101,105 @@ int htrs_fits2tm_main()
       break;
     }
 
+    // Allocate memory for the spectrum buffer.
+    spectrum=(int*)malloc(n_spectrum_bins*sizeof(int));
+    if (NULL==spectrum) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Could not allocate memory for spectrum buffer!\n", status);
+      break;
+    }
+    int bin; // Counter.
+    for(bin=0; bin<n_spectrum_bins; bin++) {
+      spectrum[bin]=0;
+    }
+
+    // Allocate memory for the byte buffer.
+    byte_buffer=(unsigned char*)malloc(n_spectrum_bits/8*sizeof(unsigned char*));
+    if (NULL==byte_buffer) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Could not allocate memory for byte buffer!\n", status);
+      break;
+    }
+    /*    int bin; // Counter.
+    for(bin=0; bin<n_spectrum_bits/8; bin++) {
+      byte_buffer[bin]=0;
+      }*/
+
     // Initialize the TelemetryPacket data structure.
     status=initTelemetryPacket(&tmpacket, parameters.n_packet_bits);
     if(EXIT_SUCCESS!=status) break;
+    // Start a new (the first) Telemetry Packet.
+    newTelemetryPacket(&tmpacket);
 
 
-      /*  } else if (mode == MODE_SPECTRUM) { 
-    // The individual events are binned to spectra before they are converted
-    // to a byte stream.
+    // --- END of Initialization ---
 
-    struct eROSITAEvent event;
-    event.pha = 0;
-    event.xi = 0;
-    event.yi = 0;
-    event.patid = 0;
-    event.patnum = 0;
-    event.frame = 0;
-    event.pileup = 0;
 
-    double time = binning_time; // Time of the current spectrum (end of spectrum)
-    long channel;      // Channel counter
+    // Loop repeated as long as there are entries in the event file.
+    HTRSEvent event = { .time=0. };
+    double spectrum_time=0.;
+    while ((EXIT_SUCCESS==status)&&(0==EventFileEOF(&eventfile.generic))) {
+      
+      // Read the next event from the event file.
+      status=HTRSEventFile_getNextRow(&eventfile, &event);
+
+      // If the time exceed since starting the spectral binning is larger 
+      // than the binning time, close the spectrum and add it to the 
+      // current TelemetryPacket.
+      if (event.time-spectrum_time > parameters.integration_time) {
+	
+	// Check whether the TelemetryPacket can store another spectrum,
+	// or whether it is already full. In the latter case, write
+	// the data to the binary output file and start a new packet.
+	if (availableBitsInTelemetryPacket(&tmpacket)<n_spectrum_bits) {
+	  // TODO: Store the telemetry packet in the output binary file.
+	  
+	  // Start a new Telemetry Packet.
+	  newTelemetryPacket(&tmpacket);
+	}
+	
+	// TODO REMOVE
+	printf("size of unsigned char: %d\n", sizeof(unsigned char));
+
+	// TODO Convert the spectrum to binary format and add it to the 
+	// TelemetryPacket.
+	int byte_index, bit_in_byte;
+	for(byte_index=0; byte_index<(n_spectrum_bits/8); byte_index++) {
+	  byte_buffer[byte_index]=0;
+	}
+	for(bin=0; bin<n_spectrum_bins; bin++) {
+	  byte_index = (bin*parameters.n_bin_bits)/8;
+	  bit_in_byte = (bin*parameters.n_bin_bits)%8;
+	  // Check whether the current spectral bin fits within the current
+	  // byte, ...
+	  if (bit_in_byte <= 8-parameters.n_bin_bits) {
+	    byte_buffer[byte_index] += 
+	      (unsigned char)(spectrum[bin]<<(8-parameters.n_bin_bits-bit_in_byte));
+	  } else {
+	    // ... or whether it overlaps with 2 bytes.
+	    byte_buffer[byte_index] += 
+	      (unsigned char)(spectrum[bin]>>(parameters.n_bin_bits+bit_in_byte-8));
+	    byte_buffer[byte_index+1] += 
+	      (unsigned char)(spectrum[bin]<<(18-parameters.n_bin_bits-bit_in_byte));
+	  }
+
+	  // Clear the spectrum buffer.
+	  spectrum[bin]=0;
+	}
+	
+	status = addData2TelemetryPacket(&tmpacket, byte_buffer, n_spectrum_bits);
+	if(EXIT_SUCCESS!=status) break;
+
+      } else { 
+	// The newly read event has to be added to the current spectrum.
+	// (The binning time was not exceeded.)
+	bin = event.pha/parameters.bin_size;
+	spectrum[bin]++;
+
+      } // END Newly read event belongs to current spectrum.
+    } // END of loop over all entries in the event file.
+
+    /* 
     unsigned char spectrum[Nchannels];  // Buffer for binning the spectrum.
     unsigned char output_buffer[N_HTRS_BYTES];
     
@@ -176,27 +275,17 @@ int htrs_fits2tm_main()
 	    binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
 	    
 	  } // END of starting new byte frame
-	  
-	} // END of loop over binned spectrum
-	time += binning_time;  // next binning cycle
 
       }
-
-      if ((event.pha<=0)||(event.pha>Nchannels)) printf("Error!!\n");
-      
-      // Add event to the spectrum.
-      spectrum[event.pha-1]++;
-      
-    } // END of loop over all events in the FITS file
-    
-    headas_chat(5, "maximum spectral bin: %u\n", max);
-  
-    } // END (mode == MODE_SPECTRUM) */
+    */
 
   } while (0); // END of ERROR handling loop
 
 
   // --- Clean up ---
+
+  // Release memory for the spectrum buffer.
+  if (NULL!=spectrum) free(spectrum);
 
   // Release the memory for the internal storage of the TelemetryPacket.
   cleanupTelemetryPacket(&tmpacket);
