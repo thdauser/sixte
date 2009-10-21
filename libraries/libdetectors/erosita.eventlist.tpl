@@ -84,7 +84,7 @@ CHOPPER         String          / electronic chopper in use
 	TUNIT#  pixel           / Unit of column X
 	TCTYP#	RA---TAN
 	TCUNI#	deg		/ WCS physical unit of X axis
-	TCRPX#	0.		/ WCS X axis reference pixel
+	TCRPX#	0.5		/ WCS X axis reference pixel
 	TCRVL#	0.		/ WCS coord. at X axis ref. pixel
 	TCDLT#  1.38889e-05	/ WCS X increment at ref. pixel
 	TTYPE#  Y               / sky coordinates (pixel size 0.05'')
@@ -92,7 +92,7 @@ CHOPPER         String          / electronic chopper in use
 	TUNIT#  pixel           / Unit of column Y
 	TCTYP#	DEC--TAN
 	TCUNI#	deg		/ WCS physical unit of Y axis
-	TCRPX#	0.		/ WCS Y axis reference pixel
+	TCRPX#	0.5		/ WCS Y axis reference pixel
 	TCRVL#	0.		/ WCS coord. at Y axis ref. pixel
 	TCDLT#  1.38889e-05	/ WCS Y increment at ref. pixel
 	TTYPE#  PAT_TYP         / Pattern Type

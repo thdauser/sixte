@@ -21,7 +21,7 @@ photon_generation
 photon_imaging
 psfgen
 xms_simulation
-eroexposure
+ero_exposure
 ero_fits2tm
 erosita_simulation
 hexagonal_pixel_intensity

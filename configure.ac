@@ -106,9 +106,9 @@ AC_CONFIG_FILES([Makefile
 		tools/erosita_simulation/Makefile
 		tools/xms_simulation/Makefile
 		tools/event_projection/Makefile
-		tools/eroexposure/Makefile
 		tools/psfgen/Makefile
 		tools/ero_fits2tm/Makefile
+		tools/ero_exposure/Makefile
 		tools/htrs_simulation/Makefile
 		tools/htrs_psfgen/Makefile
 		tools/htrs_pixel_intensity/Makefile
