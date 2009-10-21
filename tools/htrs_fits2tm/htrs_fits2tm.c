@@ -101,7 +101,7 @@ int htrs_fits2tm_main()
       maximum = (maximum<<1) + 1;
     }
     max_counts = (int)maximum;
-    printf("Maximum number of counts per spectral bin: %d\n", max_counts);
+    printf("maximum number of counts per spectral bin: %d\n", max_counts);
     
     // Open the binary file for output:
     output_file = fopen(parameters.output_filename, "w+");
@@ -135,9 +135,16 @@ int htrs_fits2tm_main()
     // Initialize the TelemetryPacket data structure.
     status=initTelemetryPacket(&tmpacket, parameters.n_packet_bits);
     if(EXIT_SUCCESS!=status) break;
+
     // Start a new (the first) Telemetry Packet.
     newTelemetryPacket(&tmpacket);
-
+    // Add the Packet header.
+    for (count=0; count*8<parameters.n_header_bits; count++) {
+      byte_buffer[count] = 0;
+    }
+    status = addData2TelemetryPacket(&tmpacket, byte_buffer, count*8);
+    if (EXIT_SUCCESS!=status) break;
+    
 
     // --- END of Initialization ---
 
@@ -164,8 +171,12 @@ int htrs_fits2tm_main()
 
 	  // Start a new TelemetryPacket.
 	  newTelemetryPacket(&tmpacket);
-
-	  // TODO Add the Packet header.
+	  // Add the Packet header.
+	  for (count=0; count*8<parameters.n_header_bits; count++) {
+	    byte_buffer[count] = 0;
+	  }
+	  status = addData2TelemetryPacket(&tmpacket, byte_buffer, count*8);
+	  if (EXIT_SUCCESS!=status) break;
 	}
 	
 	// Convert the spectrum to binary format and add it to the 
@@ -175,7 +186,8 @@ int htrs_fits2tm_main()
 	  byte_buffer[byte_index]=0;
 	}
 	for(count=0; count<n_spectrum_bins; count++) {
-	  // TODO
+	  // Check whether the maximum number of counts in this spectral bin is exceeded.
+	  // (Overflows due to the limited number of bits per bin have to be avoided.)
 	  if(spectrum[count]>max_counts) {
 	    printf("Warning: overflow (maximum number of counts per bin exceeded)!\n");
 	    spectrum[count]=max_counts;
