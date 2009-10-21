@@ -58,13 +58,27 @@ int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data, int nb
   assert(nbits%8==0);
 
   int index;
-  for(index=0; index<nbits/8; index++) {
-    packet->data[packet->current_bit/8 +index] = data[index];
+  for(index=0; index*8<nbits; index++) {
+    // Copy the data to the internal storage of the TelemetryPacket.
+    packet->data[packet->current_bit/8] = data[index];
+    // Increase the internal bit counter.
+    packet->current_bit += 8;
   }
 
   return(EXIT_SUCCESS);
 }
 
 
+
+int writeTelemetryPacket2File(TelemetryPacket* packet, FILE* file)
+{
+  // Write the bytes from the internal storage to the file.
+  int nbytes = fwrite (packet->data, 1, packet->nbits/8, file);
+  if (nbytes < packet->nbits) {
+    return(EXIT_FAILURE);
+  } else {
+    return(EXIT_SUCCESS);
+  }
+}
 
 

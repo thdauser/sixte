@@ -54,5 +54,9 @@ int availableBitsInTelemetryPacket(TelemetryPacket* packet);
  * The return value of the function is the error status. */
 int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data, int nbits);
 
+/** Write the data stored in the TelemetryPacket to an output stream (usually a file).
+ * The return value of the function is the error status. */
+int writeTelemetryPacket2File(TelemetryPacket* packet, FILE* file);
+
 
 #endif /* TELEMETRYPACKET_H */

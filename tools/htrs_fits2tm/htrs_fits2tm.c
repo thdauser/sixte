@@ -46,7 +46,7 @@ int htrs_fits2tm_main()
   struct Parameters parameters;
 
   HTRSEventFile eventfile;
-  FILE *output_file=NULL;
+  FILE* output_file=NULL;
   TelemetryPacket tmpacket;
 
   // Number of bins in the spectrum.
@@ -120,10 +120,6 @@ int htrs_fits2tm_main()
       HD_ERROR_THROW("Error: Could not allocate memory for byte buffer!\n", status);
       break;
     }
-    /*    int bin; // Counter.
-    for(bin=0; bin<n_spectrum_bits/8; bin++) {
-      byte_buffer[bin]=0;
-      }*/
 
     // Initialize the TelemetryPacket data structure.
     status=initTelemetryPacket(&tmpacket, parameters.n_packet_bits);
@@ -152,22 +148,27 @@ int htrs_fits2tm_main()
 	// or whether it is already full. In the latter case, write
 	// the data to the binary output file and start a new packet.
 	if (availableBitsInTelemetryPacket(&tmpacket)<n_spectrum_bits) {
-	  // TODO: Store the telemetry packet in the output binary file.
+	  // Store the telemetry packet in the output binary file.
+	  writeTelemetryPacket2File(&tmpacket, output_file);
+
+	  exit(0); //RM
 	  
-	  // Start a new Telemetry Packet.
+	  // Start a new TelemetryPacket.
 	  newTelemetryPacket(&tmpacket);
+
+	  // TODO Add the Packet header.
 	}
 	
-	// TODO REMOVE
-	printf("size of unsigned char: %d\n", sizeof(unsigned char));
-
-	// TODO Convert the spectrum to binary format and add it to the 
+	// Convert the spectrum to binary format and add it to the 
 	// TelemetryPacket.
 	int byte_index, bit_in_byte;
 	for(byte_index=0; byte_index<(n_spectrum_bits/8); byte_index++) {
 	  byte_buffer[byte_index]=0;
 	}
 	for(bin=0; bin<n_spectrum_bins; bin++) {
+	  // TODO
+	  assert(spectrum[bin]<8);
+
 	  byte_index = (bin*parameters.n_bin_bits)/8;
 	  bit_in_byte = (bin*parameters.n_bin_bits)%8;
 	  // Check whether the current spectral bin fits within the current
@@ -180,7 +181,7 @@ int htrs_fits2tm_main()
 	    byte_buffer[byte_index] += 
 	      (unsigned char)(spectrum[bin]>>(parameters.n_bin_bits+bit_in_byte-8));
 	    byte_buffer[byte_index+1] += 
-	      (unsigned char)(spectrum[bin]<<(18-parameters.n_bin_bits-bit_in_byte));
+	      (unsigned char)(spectrum[bin]<<(16-parameters.n_bin_bits-bit_in_byte));
 	  }
 
 	  // Clear the spectrum buffer.
@@ -190,6 +191,9 @@ int htrs_fits2tm_main()
 	status = addData2TelemetryPacket(&tmpacket, byte_buffer, n_spectrum_bits);
 	if(EXIT_SUCCESS!=status) break;
 
+	// Update the time for the spectral binning.
+	spectrum_time += parameters.integration_time;
+
       } else { 
 	// The newly read event has to be added to the current spectrum.
 	// (The binning time was not exceeded.)
@@ -198,86 +202,6 @@ int htrs_fits2tm_main()
 
       } // END Newly read event belongs to current spectrum.
     } // END of loop over all entries in the event file.
-
-    /* 
-    unsigned char spectrum[Nchannels];  // Buffer for binning the spectrum.
-    unsigned char output_buffer[N_HTRS_BYTES];
-    
-    // Clear the output buffer:
-    binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
-    // Clear the spectrum:
-    binary_output_clear_bytes(spectrum, Nchannels);
-    
-    for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
-	 eventlist_file.row++) {
-      
-      // Read the event from the FITS file.
-      if (get_eventlist_row(eventlist_file, &event, &status)) break;
-      
-      // Check whether binning time was exceeded:
-      if (event.time > time) {
-	// Store binned spectrum, clear spectrum buffer and start
-	// new binning cycle:
-	for (channel=0; channel<Nchannels; channel+=2) {	  
-	  
-	  if (spectrum[channel]   > max) max = spectrum[channel];
-	  if (spectrum[channel+1] > max) max = spectrum[channel+1];
-	  
-	  output_buffer[9 + (channel/2)%119] = (unsigned char)
-	    ((spectrum[channel] << 4) + (spectrum[channel+1] & 0x0F));
-	  
-	  // Clear binned spectrum:
-	  spectrum[channel]   = 0;  
-	  spectrum[channel+1] = 0;
-	  
-	  if ((channel+2)%28 == 0) { // Byte frame (128 byte) is complete!
-	    
-	    // Syncword 1 and 2:
-	    // output_buffer[0] = (char)'K';
-	    // output_buffer[1] = (char)'R';
-	    output_buffer[0] = 0x4B;  // 'K'
-	    output_buffer[1] = 0x82;  // 'R'
-	    
-	      // Spectrum Time:
-	    long ltime = (long)(time/binning_time);
-	    output_buffer[2] = (unsigned char)(ltime>>24);
-	    output_buffer[3] = (unsigned char)(ltime>>16);
-	    output_buffer[4] = (unsigned char)(ltime>>8);
-	    output_buffer[5] = (unsigned char)ltime;
-	    //headas_chat(5, "%ld: %u %u %u %u\n", ltime, output_buffer[2], 
-	    //	output_buffer[3], output_buffer[4], output_buffer[5]);
-	    
-	    // Spectrum Sequence counter:
-	    output_buffer[6] = (channel/238);
-
-	    // Data type ID:
-	    output_buffer[7] = 0x83;  // 'S'
-	    // 0x..   -> hexadecimal
-	    // 0...   -> octal
-	    
-	    // Number of used bytes:
-	    if (channel/119 == 4) {
-	      output_buffer[8] = 0x24; // 36
-	    } else {
-	      output_buffer[8] = 0x77; // 119
-	    }
-	    
-	    // Write bytes to file
-	    int nbytes = fwrite (output_buffer, 1, N_HTRS_BYTES, output_file);
-	    if (nbytes < N_HTRS_BYTES) {
-	      status=EXIT_FAILURE;
-	      sprintf(msg, "Error: writing data to output file '%s' failed!\n", 
-		      output_filename);
-	      HD_ERROR_THROW(msg,status);
-	    }
-	    
-	    // Clear the output buffer:
-	    binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
-	    
-	  } // END of starting new byte frame
-
-      }
-    */
 
   } while (0); // END of ERROR handling loop
 
