@@ -61,6 +61,7 @@ Vector vector_product(Vector x, Vector y) {
 }
 
 
+
 ////////////////////////////////////////////////////////////////
 Vector vector_difference(Vector x2, Vector x1) {
   Vector z;  // return vector
@@ -115,6 +116,7 @@ Vector interpolate_vec2(Vector v1, double t1, Vector v2, double t2, double time)
 
   return(r);
 }
+
 
 
 /////////////////////////////////////////////////////////////////

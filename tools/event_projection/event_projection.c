@@ -97,7 +97,7 @@ int event_projection_main() {
     sprintf(keyword, "TCDLT%d", eventlistfile.cskyx);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdltx, 
 		      comment, &status)) break;
-    tcrpxx = 0.; //tcrvlx/tcdltx;
+    tcrpxx=0.;
     sprintf(keyword, "TCRPX%d", eventlistfile.cskyx);
     if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxx, 
 			comment, &status)) break;
@@ -108,7 +108,7 @@ int event_projection_main() {
     sprintf(keyword, "TCDLT%d", eventlistfile.cskyy);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdlty,
 		      comment, &status)) break;
-    tcrpxy = 0.; //tcrvly/tcdlty;
+    tcrpxy=0.;
     sprintf(keyword, "TCRPX%d", eventlistfile.cskyy);
     if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxy,
 			comment, &status)) break;
@@ -128,13 +128,13 @@ int event_projection_main() {
     headas_chat(5, "start sky imaging process ...\n");
 
     // LOOP over all event in the FITS table
-    long attitude_counter=0;   // counter for entries in the AttitudeCatalog
+    long attitude_counter=0; // Counter for entries in the AttitudeCatalog.
 
     // SCAN EVENT LIST
+    eROSITAEvent event;
     while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventlistfile.generic))) {
       
       // Read the next event from the FITS file.
-      eROSITAEvent event;
       status=eROSITAEventFile_getNextRow(&eventlistfile, &event);
       if(EXIT_SUCCESS!=status) break;
 
@@ -200,8 +200,8 @@ int event_projection_main() {
 
       // Determine the source position on the sky using the telescope 
       // axis pointing vector and a vector from the point of the intersection 
-      // of the optical axis with the sky plane.
-      double r = tan(offaxis_angle); // Length of this vector.
+      // of the optical axis with the sky plane to the source position.
+      double r = tan(offaxis_angle); // Length of this vector (in the sky projection plane).
 
       Vector source_position;
       source_position.x = telescope.nz.x 
@@ -213,10 +213,16 @@ int event_projection_main() {
       source_position = normalize_vector(source_position);
 
       // Determine the equatorial coordinates RA and DEC:
+      // (RA and DEC are in the range [-pi:pi] and [-pi/2:pi/2] respectively.)
       calculate_ra_dec(source_position, &event.ra, &event.dec);
       event.ra  *= 180./M_PI; // [rad] -> [deg]
-      if (event.ra<0.) event.ra += 360.;
       event.dec *= 180./M_PI; // [rad] -> [deg]
+
+      // TODO: For fields around ra=0,dec=0 it is convient to have RA in the range
+      // [-180°:180°], whereas for fields at the survey poles RA should be in the range
+      // [0°:360°] in order to be displayed properly with ds9.
+      //      if (event.ra<0.) event.ra += 360.;
+
 
       // Determine the pixel coordinates in the sky image:
       event.sky_xi = (int)((event.ra -tcrvlx)/tcdltx+tcrpxx);
