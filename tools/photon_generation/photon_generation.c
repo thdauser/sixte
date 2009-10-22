@@ -555,8 +555,7 @@ int photon_generation_main()
       }
 
 
-      // SCAN PHOTON LIST
-      // Perform the actual measurement (i.e., scan the photon list).
+      // SCAN PHOTON LIST to store the photons in a FITS file.
       attitude_counter = last_attitude_counter; 
       // Because we are now searching for events in the time interval [time-dt,time].
       while ((photon_list != NULL) && (status == EXIT_SUCCESS)) {
@@ -746,3 +745,5 @@ int photon_generation_getpar(struct Parameters* parameters)
 
   return(status);
 }
+
+
