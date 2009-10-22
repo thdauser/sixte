@@ -110,5 +110,15 @@ void free_PointSourceCatalog(PointSourceCatalog* psc);
  * given in [rad]. */
 int get_PointSourceTable_Row(PointSourceFile*, long row, PointSource*, int* status);
 
+/** Add a new PointSourceFile object to the PointSourceFileCatalog.
+ * The function takes care of allocating enough memory,
+ * loads the FITS HDU specified by the filename and the HDU number, and
+ * adds it to the catalog.
+ * The return value is the error status.
+ */
+int addPointSourceFile2Catalog(PointSourceFileCatalog* psfc, char* filename, 
+			       int sources_hdu);
+
+
 #endif /* POINTSOURCES_H */
 

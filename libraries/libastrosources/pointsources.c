@@ -309,3 +309,45 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row, PointSource* ps, in
 
 
 
+int addPointSourceFile2Catalog(PointSourceFileCatalog* psfc, 
+			       char* filename, int sources_hdu)
+{
+  int status=EXIT_SUCCESS;
+
+  // Check, if this is the first file in the PointSourceFileCatalog.
+  // If yes, we have to use malloc to get the memory, otherwise we
+  // use realloc the resize the formerly allocated memory.
+  if (0==psfc->nfiles) {
+    // Allocate memory for one PointSourceFile.
+    psfc->files = (PointSourceFile**)malloc(sizeof(PointSourceFile*));
+    if (NULL==psfc->files) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: not enough memory to allocate "
+		     "PointSourceFiles!\n", status);
+      return(status);
+    }	
+    // Set the initial number of point source files to 1.
+    psfc->nfiles = 1;
+  } else { // The catalog already contains some files.
+    // Extend the allocated memory for an additional PointSourceFile.
+    psfc->files = (PointSourceFile**)realloc(psfc->files, (psfc->nfiles+1)*sizeof(PointSourceFile*));
+    if (NULL==psfc->files) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: not enough memory to allocate "
+		     "PointSourceFiles!\n", status);
+      return(status);
+    }	
+    // Set the initial number of point source files to 1.
+    psfc->nfiles++;
+  } // END of memory allocation.
+
+  
+  // Load all point source catalogs specified in the point source list file.
+  psfc->files[psfc->nfiles-1] = 
+    get_PointSourceFile_fromFile(filename, sources_hdu, &status);
+
+  return(status);
+}
+
+
+

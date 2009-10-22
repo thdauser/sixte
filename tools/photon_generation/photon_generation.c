@@ -8,7 +8,8 @@
 
 
 //////////////////////////
-/** Determines whether a given angle (in [rad]) lies within the specified range. 
+/** Determines whether a given angle (in [rad]) lies within the specified 
+ * range. 
  * The function returns a "1" if the angle lies within the specified range, 
  * otherwise the return value is "0". */
 int check_angle_range(double angle, double min, double max) 
@@ -91,8 +92,10 @@ int photon_generation_main()
     // angle(x0,source) <= 1/2 * diameter
     const double fov_min_align = cos(telescope.fov_diameter/2.); 
     
-    /** Minimum cos-value for sources close to the FOV (in the direct neighborhood). */
-    const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+    /** Minimum cos-value for sources close to the FOV (in the direct 
+     *neighborhood). */
+    const double close_fov_min_align = 
+      cos(close_mult*telescope.fov_diameter/2.); 
 
     /** Maximum cos-value (minimum sin-value) for sources within the 
      * preselection band along the orbit. The width of the preselection band
@@ -118,12 +121,14 @@ int photon_generation_main()
     // Open the source file to check the contents.
     headas_chat(5, "open FITS file '%s' searching for X-ray sources ...\n",
 		parameters.sources_filename);
-    if (fits_open_file(&sources_fptr, parameters.sources_filename, READONLY, &status)) break;
+    if (fits_open_file(&sources_fptr, parameters.sources_filename, READONLY, 
+		       &status)) break;
     // Determine the number of HDUs in the FITS file and the current HDU.
     int sources_n_hdus=0, sources_hdu=0;
     if (fits_get_num_hdus(sources_fptr, &sources_n_hdus, &status)) break;
     fits_get_hdu_num(sources_fptr, &sources_hdu);
-    // Determine the type of the first HDU (which should be IMAGE_HDU in any case).
+    // Determine the type of the first HDU (which should be IMAGE_HDU in 
+    // any case).
     int sources_hdu_type=0;
     if (fits_get_hdu_type(sources_fptr, &sources_hdu_type, &status)) break;
     headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", sources_hdu, 
@@ -133,13 +138,16 @@ int photon_generation_main()
     // For this purpose check the header keyword NAXIS.
     int sources_hdu_naxis=0;
     char comment[MAXMSG];
-    if (fits_read_key(sources_fptr, TINT, "NAXIS", &sources_hdu_naxis, comment, &status)) break;
+    if (fits_read_key(sources_fptr, TINT, "NAXIS", &sources_hdu_naxis, comment, 
+		      &status)) break;
     headas_chat(5, " NAXIS: %d", sources_hdu_naxis);
       
     if (0<sources_hdu_naxis) {
-      // The first (IMAGE) extension is not empty. So the source category is SOURCE_IMAGE.
+      // The first (IMAGE) extension is not empty. So the source category 
+      // is SOURCE_IMAGE.
       // Load the source image data from the HDU.
-      headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from current HDU ...\n");
+      headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from current"
+		  " HDU ...\n");
       sourceCategory = SOURCE_IMAGES;
       
     } else {
@@ -152,11 +160,13 @@ int photon_generation_main()
 		    sources_n_hdus, sources_hdu_type);
 
 	if (IMAGE_HDU==sources_hdu_type) {
-	  headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from current HDU ...\n");
+	  headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from "
+		      "current HDU ...\n");
 	  sourceCategory = SOURCE_IMAGES;
 
 	} else { // Assume BINARY_TBL (=2).
-	  headas_chat(5, " --> source type: POINT_SOURCES\n load data from current HDU ...\n");
+	  headas_chat(5, " --> source type: POINT_SOURCES\n load data from "
+		      "current HDU ...\n");
 	  sourceCategory = POINT_SOURCES;
 
 	}
@@ -167,7 +177,8 @@ int photon_generation_main()
 
     if (INVALID_SOURCE==sourceCategory) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Could not find valid source data in input file!\n", status);
+      HD_ERROR_THROW("Error: Could not find valid source data in input file!\n",
+		     status);
       break;
     }
 
@@ -180,25 +191,12 @@ int photon_generation_main()
       pointsourcefilecatalog = get_PointSourceFileCatalog();
       if (NULL==pointsourcefilecatalog) {
 	status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: allocation of PointSourceFileCatalog failed!\n", status);
+	HD_ERROR_THROW("Error: allocation of PointSourceFileCatalog failed!\n",
+		       status);
 	break;
       }
       
-      // TODO Set the default number of point source catalogs to 1.
-      pointsourcefilecatalog->nfiles = 1;
-
-      // Allocate memory for the point source files.
-      pointsourcefilecatalog->files = 
-	(PointSourceFile**)malloc(pointsourcefilecatalog->nfiles*sizeof(PointSourceFile*));
-      if (NULL==pointsourcefilecatalog->files) {
-	status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: not enough memory to allocate PointSourceFiles!\n", status);
-	break;
-      }	
-
-      // Load all point source catalogs specified in the point source list file.
-      pointsourcefilecatalog->files[0] = 
-	get_PointSourceFile_fromFile(parameters.sources_filename, sources_hdu, &status);
+      status=addPointSourceFile2Catalog(pointsourcefilecatalog, parameters.sources_filename, sources_hdu);
       if (status != EXIT_SUCCESS) break;
       
       // Read the header from the LAST Point Source FITS file to obtain
