@@ -18,6 +18,15 @@ typedef struct {
   /** Number of bits reserved for the packet header.
    * This number is included in value nbits. */
   int n_header_bits;
+  /** Number of bits per binned spectrum. */
+  int n_spectrum_bits;
+  /** Number of bits per spectrum bin. */
+  int n_bin_bits;
+
+  /** Maximum number of counts per spectral bin.
+   * Due to the limited number of bits per spectral bin, the maximum number
+   * of counts per bin is limited. The following variable represents this maximum. */
+  int max_counts;
 
   /** Buffer for conversions to binary data. */
   unsigned char* byte_buffer;
@@ -28,6 +37,8 @@ typedef struct {
 struct HTRSTelemetryPacketParameters {
   int n_packet_bits;
   int n_header_bits;
+  int n_spectrum_bits;
+  int n_bin_bits;
 };
 
 
@@ -60,9 +71,11 @@ int availableBitsInHTRSTelemetryPacket(HTRSTelemetryPacket* packet);
  * and is inserted at the position designated by 'current_bit' in the 
  * HTRSTelemetryPackets internal data storage. 
  * The return value of the function is the error status. */
-int addData2HTRSTelemetryPacket(HTRSTelemetryPacket* packet, unsigned char* data, int nbits);
+int addSpectrum2HTRSTelemetryPacket(HTRSTelemetryPacket* packet, int* spectrum, 
+				    int n_spectrum_bins);
 
-/** Write the data stored in the HTRSTelemetryPacket to an output stream (usually a file).
+/** Write the data stored in the HTRSTelemetryPacket to an output stream 
+ * (usually a file).
  * The return value of the function is the error status. */
 int writeHTRSTelemetryPacket2File(HTRSTelemetryPacket* packet, FILE* file);
 

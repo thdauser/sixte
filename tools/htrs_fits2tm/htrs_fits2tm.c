@@ -53,14 +53,6 @@ int htrs_fits2tm_main()
   int n_spectrum_bins=0;
   // Buffer for the spectral binning.
   int* spectrum=NULL;
-  // Number of bits per binned spectrum.
-  int n_spectrum_bits=0;
-  // Byte buffer for the spectrum. In order to write it to the TelemetryPacket
-  // the spectrum is converted to a binary byte buffer.
-  unsigned char* byte_buffer=NULL;
-  // Due to the limited number of bits per spectral bin, the maximum number
-  // of counts per bin is limited. The following variable represents this maximum.
-  int max_counts=0;
 
   int count; // Counter.
 
@@ -84,24 +76,12 @@ int htrs_fits2tm_main()
     status=openHTRSEventFile(&eventfile, parameters.eventlist_filename, READONLY);
     if(EXIT_SUCCESS!=status) break;
 
-    // Determine the number of bits required for one spectrum.
+    // Determine the number of spectral bins.
     if (n_rsp_channels % parameters.bin_size != 0) {
       n_spectrum_bins = n_rsp_channels/parameters.bin_size +1;
     } else {
       n_spectrum_bins = n_rsp_channels/parameters.bin_size;
     }
-    n_spectrum_bits = n_spectrum_bins * parameters.n_bin_bits;
-    // Currently the number of bits must be a multiple of 8, i.e., we are only
-    // dealing with complete bytes.
-    assert(n_spectrum_bits % 8 == 0);
-
-    // Determine the maximum number of counts per spectral bin.
-    unsigned char maximum=0;
-    for (count=0; count<parameters.n_bin_bits; count++) {
-      maximum = (maximum<<1) + 1;
-    }
-    max_counts = (int)maximum;
-    printf("maximum number of counts per spectral bin: %d\n", max_counts);
     
     // Open the binary file for output:
     output_file = fopen(parameters.output_filename, "w+");
@@ -124,18 +104,12 @@ int htrs_fits2tm_main()
       spectrum[count]=0;
     }
 
-    // Allocate memory for the byte buffer.
-    byte_buffer=(unsigned char*)malloc(n_spectrum_bits/8*sizeof(unsigned char*));
-    if (NULL==byte_buffer) {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Could not allocate memory for byte buffer!\n", status);
-      break;
-    }
-
     // Initialize the TelemetryPacket data structure.
     struct HTRSTelemetryPacketParameters htpp = {
       .n_packet_bits = parameters.n_packet_bits,
-      .n_header_bits = parameters.n_header_bits
+      .n_header_bits = parameters.n_header_bits,
+      .n_spectrum_bits = n_spectrum_bins * parameters.n_bin_bits,
+      .n_bin_bits      = parameters.n_bin_bits
     };
     status=initHTRSTelemetryPacket(&htmpacket, &htpp);
     if(EXIT_SUCCESS!=status) break;
@@ -164,7 +138,7 @@ int htrs_fits2tm_main()
 	// Check whether the TelemetryPacket can store another spectrum,
 	// or whether it is already full. In the latter case, write
 	// the data to the binary output file and start a new packet.
-	if (availableBitsInHTRSTelemetryPacket(&htmpacket)<n_spectrum_bits) {
+	if (availableBitsInHTRSTelemetryPacket(&htmpacket)<htmpacket.n_spectrum_bits) {
 	  // Store the telemetry packet in the output binary file.
 	  writeHTRSTelemetryPacket2File(&htmpacket, output_file);
 
@@ -175,40 +149,14 @@ int htrs_fits2tm_main()
 	
 	// Convert the spectrum to binary format and add it to the 
 	// TelemetryPacket.
-	int byte_index, bit_in_byte;
-	for(byte_index=0; byte_index<(n_spectrum_bits/8); byte_index++) {
-	  byte_buffer[byte_index]=0;
-	}
+	status = addSpectrum2HTRSTelemetryPacket(&htmpacket, spectrum, n_spectrum_bins);
+	if(EXIT_SUCCESS!=status) break;
+
+	// Clear the spectrum buffer.
 	for(count=0; count<n_spectrum_bins; count++) {
-	  // Check whether the maximum number of counts in this spectral bin is exceeded.
-	  // (Overflows due to the limited number of bits per bin have to be avoided.)
-	  if(spectrum[count]>max_counts) {
-	    printf("Warning: overflow (maximum number of counts per bin exceeded)!\n");
-	    spectrum[count]=max_counts;
-	  }
-
-	  byte_index = (count*parameters.n_bin_bits)/8;
-	  bit_in_byte = (count*parameters.n_bin_bits)%8;
-	  // Check whether the current spectral bin fits within the current
-	  // byte, ...
-	  if (bit_in_byte <= 8-parameters.n_bin_bits) {
-	    byte_buffer[byte_index] += 
-	      (unsigned char)(spectrum[count]<<(8-parameters.n_bin_bits-bit_in_byte));
-	  } else {
-	    // ... or whether it overlaps with 2 bytes.
-	    byte_buffer[byte_index] += 
-	      (unsigned char)(spectrum[count]>>(parameters.n_bin_bits+bit_in_byte-8));
-	    byte_buffer[byte_index+1] += 
-	      (unsigned char)(spectrum[count]<<(16-parameters.n_bin_bits-bit_in_byte));
-	  }
-
-	  // Clear the spectrum buffer.
 	  spectrum[count]=0;
 	}
 	
-	status = addData2HTRSTelemetryPacket(&htmpacket, byte_buffer, n_spectrum_bits);
-	if(EXIT_SUCCESS!=status) break;
-
 	// Update the time for the spectral binning.
 	spectrum_time += parameters.integration_time;
 
@@ -226,7 +174,6 @@ int htrs_fits2tm_main()
 
   // --- Clean up ---
 
-  if (NULL!=byte_buffer) free(byte_buffer);
   // Release memory for the spectrum buffer.
   if (NULL!=spectrum) free(spectrum);
 
