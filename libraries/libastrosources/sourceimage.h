@@ -63,6 +63,12 @@ SourceImageCatalog* get_SourceImageCatalog();
 /** Destructor for the SourceImageCatalog. */
 void free_SourceImageCatalog(SourceImageCatalog* sic);
 
+/** Add new SourceImage object to the SourceImageCatalog.
+ * The new image is loaded from the FITS HDU designated by fptr and
+ * added to the SourceImageCatalog.
+ * The return value is the error status. */
+int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr);
+
 
 #endif /* SOURCEIMAGE_H */
 

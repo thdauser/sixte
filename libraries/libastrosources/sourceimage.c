@@ -202,8 +202,6 @@ SourceImageCatalog* get_SourceImageCatalog()
 
 
 
-
-////////////////////////////
 void free_SourceImageCatalog(SourceImageCatalog* sic) 
 {
   if (sic!=NULL) {
@@ -219,4 +217,41 @@ void free_SourceImageCatalog(SourceImageCatalog* sic)
     free(sic);
   }
 }
+
+
+
+int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr) 
+{
+  int status=EXIT_SUCCESS;
+
+  // Check if the SourceImageCatalog is empty.
+  // If yes, we have to use malloc to get the memory, otherwise we
+  // use realloc the resize the formerly allocated memory.
+  if (0==sic->nimages) {
+    // Allocate memory.
+    sic->images = (SourceImage**)malloc(sizeof(SourceImage*));
+    if (NULL==sic->images) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
+      return(status);
+    }
+    sic->nimages=1; // Initial value.
+	
+  } else { // SourceImageCatalog already contains SourceImage objects.
+    // Resize the formerly allocated memory.
+    sic->images = (SourceImage**)realloc(sic->images, (sic->nimages+1)*sizeof(SourceImage*));
+    if (NULL==sic->images) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
+      return(status);
+    }
+    sic->nimages++;
+  } // END of memory allocation.
+
+  // Load the cluster image in the current HDU.
+  sic->images[sic->nimages-1] = get_SourceImage_fromHDU(fptr, &status);
+
+  return(status);
+}
+
 

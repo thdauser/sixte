@@ -183,19 +183,26 @@ int photon_generation_main()
     }
 
 
+    // Get new objects for the PointSourceFileCatalog and the 
+    // SourceImageCatalog.
+    pointsourcefilecatalog = get_PointSourceFileCatalog();
+    if (NULL==pointsourcefilecatalog) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: allocation of PointSourceFileCatalog failed!\n",
+		     status);
+      break;
+    }
+    sic = get_SourceImageCatalog();
+    if (NULL==sic) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: allocation of SourceImageCatalog failed!\n", status);
+      break;
+    }
+
     // Load the X-ray source data using the appropriate routines for the 
     // respective source category.
     if (POINT_SOURCES==sourceCategory) { 
-
-      // Load the source catalog from the current HDU.
-      pointsourcefilecatalog = get_PointSourceFileCatalog();
-      if (NULL==pointsourcefilecatalog) {
-	status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: allocation of PointSourceFileCatalog failed!\n",
-		       status);
-	break;
-      }
-      
+      // Load the point source catalog from the current HDU.
       status=addPointSourceFile2Catalog(pointsourcefilecatalog, parameters.sources_filename, sources_hdu);
       if (status != EXIT_SUCCESS) break;
       
@@ -216,29 +223,8 @@ int photon_generation_main()
       
     } else if (SOURCE_IMAGES==sourceCategory) {
       // Read the cluster images from the current FITS HDU.
-
-      // Get a new SourceImageCatalog object.
-      sic = get_SourceImageCatalog();
-      if (NULL==sic) {
-	status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: allocation of SourceImageCatalog failed!\n", status);
-	break;
-      }
-
-      // Determine the number of lines (= number of extended source files).
-      sic->nimages=1; // TODO default value.
-	
-      // Allocate memory.
-      sic->images = (SourceImage**)malloc(sic->nimages*sizeof(SourceImage*));
-      if (NULL==sic->images) {
-	status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
-	break;
-      }
-
-      // Load the cluster image in the current HDU.
-      sic->images[0] = get_SourceImage_fromHDU(sources_fptr, &status);
-      if (status != EXIT_SUCCESS) break;
+      status=addSourceImage2Catalog(sic, sources_fptr);
+      if(EXIT_SUCCESS!=status) break;
 
       // Read the header from the LAST source image FITS file to obtain
       // the WCS keywords.
