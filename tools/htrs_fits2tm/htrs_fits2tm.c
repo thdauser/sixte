@@ -8,7 +8,7 @@
 #include "sixt.h"
 #include "htrsevent.h"
 #include "htrseventfile.h"
-#include "telemetrypacket.h"
+#include "htrstelemetrypacket.h"
 
 #define TOOLSUB htrs_fits2tm_main
 #include "headas_main.c"
@@ -47,7 +47,7 @@ int htrs_fits2tm_main()
 
   HTRSEventFile eventfile;
   FILE* output_file=NULL;
-  TelemetryPacket tmpacket;
+  HTRSTelemetryPacket htmpacket;
 
   // Number of bins in the spectrum.
   int n_spectrum_bins=0;
@@ -133,16 +133,15 @@ int htrs_fits2tm_main()
     }
 
     // Initialize the TelemetryPacket data structure.
-    status=initTelemetryPacket(&tmpacket, parameters.n_packet_bits);
+    struct HTRSTelemetryPacketParameters htpp = {
+      .n_packet_bits = parameters.n_packet_bits,
+      .n_header_bits = parameters.n_header_bits
+    };
+    status=initHTRSTelemetryPacket(&htmpacket, &htpp);
     if(EXIT_SUCCESS!=status) break;
 
     // Start a new (the first) Telemetry Packet.
-    newTelemetryPacket(&tmpacket);
-    // Add the Packet header.
-    for (count=0; count*8<parameters.n_header_bits; count++) {
-      byte_buffer[count] = 0;
-    }
-    status = addData2TelemetryPacket(&tmpacket, byte_buffer, count*8);
+    status = newHTRSTelemetryPacket(&htmpacket);
     if (EXIT_SUCCESS!=status) break;
     
 
@@ -157,7 +156,7 @@ int htrs_fits2tm_main()
       // Read the next event from the event file.
       status=HTRSEventFile_getNextRow(&eventfile, &event);
 
-      // If the time exceed since starting the spectral binning is larger 
+      // If the time exceeded since starting the spectral binning is larger 
       // than the binning time, close the spectrum and add it to the 
       // current TelemetryPacket.
       if (event.time-spectrum_time > parameters.integration_time) {
@@ -165,17 +164,12 @@ int htrs_fits2tm_main()
 	// Check whether the TelemetryPacket can store another spectrum,
 	// or whether it is already full. In the latter case, write
 	// the data to the binary output file and start a new packet.
-	if (availableBitsInTelemetryPacket(&tmpacket)<n_spectrum_bits) {
+	if (availableBitsInHTRSTelemetryPacket(&htmpacket)<n_spectrum_bits) {
 	  // Store the telemetry packet in the output binary file.
-	  writeTelemetryPacket2File(&tmpacket, output_file);
+	  writeHTRSTelemetryPacket2File(&htmpacket, output_file);
 
 	  // Start a new TelemetryPacket.
-	  newTelemetryPacket(&tmpacket);
-	  // Add the Packet header.
-	  for (count=0; count*8<parameters.n_header_bits; count++) {
-	    byte_buffer[count] = 0;
-	  }
-	  status = addData2TelemetryPacket(&tmpacket, byte_buffer, count*8);
+	  status = newHTRSTelemetryPacket(&htmpacket);
 	  if (EXIT_SUCCESS!=status) break;
 	}
 	
@@ -212,7 +206,7 @@ int htrs_fits2tm_main()
 	  spectrum[count]=0;
 	}
 	
-	status = addData2TelemetryPacket(&tmpacket, byte_buffer, n_spectrum_bits);
+	status = addData2HTRSTelemetryPacket(&htmpacket, byte_buffer, n_spectrum_bits);
 	if(EXIT_SUCCESS!=status) break;
 
 	// Update the time for the spectral binning.
@@ -232,11 +226,12 @@ int htrs_fits2tm_main()
 
   // --- Clean up ---
 
+  if (NULL!=byte_buffer) free(byte_buffer);
   // Release memory for the spectrum buffer.
   if (NULL!=spectrum) free(spectrum);
 
   // Release the memory for the internal storage of the TelemetryPacket.
-  cleanupTelemetryPacket(&tmpacket);
+  cleanupHTRSTelemetryPacket(&htmpacket);
 
   // Close files.
   if (NULL!=output_file) fclose(output_file);
