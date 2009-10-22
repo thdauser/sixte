@@ -1,7 +1,6 @@
 #include "sourceimage.h"
 
 
-////////////////////////////
 SourceImage* get_SourceImage() 
 {
   SourceImage* si=NULL;
@@ -18,11 +17,36 @@ SourceImage* get_SourceImage()
 }
 
 
-/////////////////////////////////////
+
 SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 {
   SourceImage* si=NULL;
   fitsfile* fptr=NULL;
+
+  do { // Beginning of ERROR handling loop
+
+    // Open image FITS file
+    headas_chat(5, "open extended SourceImage FITS file '%s' ...\n", filename);
+    if (fits_open_image(&fptr, filename, READONLY, status)) break;
+    
+    // Load the image using a different constructor which accepts FITS file pointers.
+    si = get_SourceImage_fromHDU(fptr, status);
+
+  } while(0); // END of Error handling loop
+
+  // --- clean up ---
+
+  // close FITS file (if open)
+  if(fptr!=NULL) fits_close_file(fptr, status);
+
+  return(si);
+}
+
+
+
+SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
+{
+  SourceImage* si=NULL;
   float* input_buffer=NULL;
 
   do { // Beginning of ERROR handling loop
@@ -36,10 +60,6 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
       break;
     }
 
-    // Open image FITS file
-    headas_chat(5, "open extended SourceImage FITS file '%s' ...\n", filename);
-    if (fits_open_image(&fptr, filename, READONLY, status)) break;
-    
     // Determine the width of the image.
     long naxes[2];
     if (fits_get_img_size(fptr, 2, naxes, status)) break;
@@ -145,16 +165,11 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
   // free the input buffer
   if(input_buffer) free(input_buffer);
 
-  // close FITS file (if open)
-  if(fptr!=NULL) fits_close_file(fptr, status);
-
   return(si);
 }
 
 
 
-
-/////////////////////
 void free_SourceImage(SourceImage* si) 
 {
   if(si != NULL) {
@@ -170,7 +185,7 @@ void free_SourceImage(SourceImage* si)
 }
 
 
-//////////////////////////////////////////
+
 SourceImageCatalog* get_SourceImageCatalog() 
 {
   SourceImageCatalog* sic = NULL;

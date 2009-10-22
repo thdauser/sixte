@@ -10,7 +10,6 @@
 
 #include <wcs.h>
 #include <wcshdr.h>
-//#include <wcsfix.h>
 
 #include "sourceimage.h"
 #include "vector.h"
@@ -31,11 +30,9 @@
 struct Parameters {
   char attitude_filename[MAXMSG];
   char rmf_filename[MAXMSG];
-  char sourcelist_filename[MAXMSG];
+  char sources_filename[MAXMSG];
   char photonlist_filename[MAXMSG];
   char photonlist_template[MAXMSG];
-
-  SourceCategory source_category;
 
   double t0, timespan;
   double fov_diameter;

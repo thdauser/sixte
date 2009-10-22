@@ -49,6 +49,11 @@ SourceImage* get_SourceImage();
  * corresponding data structure. */
 SourceImage* get_SourceImage_fromFile(char* filename, int* status);
 
+/** Constructor for SourceImage objects. 
+ * Reads a SourceImage from a FITS file and stores it in the 
+ * corresponding data structure. */
+SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status);
+
 /** Destructor for SourceImage objects. */
 void free_SourceImage(SourceImage* si);
 

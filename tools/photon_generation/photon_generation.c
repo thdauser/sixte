@@ -31,22 +31,24 @@ int photon_generation_main()
   // Program parameters.
   struct Parameters parameters;
   
+  // FITS file containing the input sources.
+  fitsfile* sources_fptr=NULL;
+  // TODO Source category.
+  SourceCategory sourceCategory=INVALID_SOURCE;
   // Data structures for point sources:
   PointSourceFileCatalog* pointsourcefilecatalog=NULL;
   PointSourceCatalog* pointsourcecatalog=NULL;
   // X-ray Cluster image:
   SourceImageCatalog* sic = NULL;
   // WCS keywords from the input source file:
-  struct wcsprm *wcs;
+  struct wcsprm *wcs=NULL;
   // Number of WCS keyword sets.
-  int nwcs; 
+  int nwcs=0; 
 
   // Catalog with attitude data.
   AttitudeCatalog* attitudecatalog=NULL;
-
   // Telescope data (like FOV diameter or focal length)
   struct Telescope telescope; 
-
   // RMF & EBOUNDS
   struct RMF* rmf=NULL;
 
@@ -58,7 +60,7 @@ int photon_generation_main()
   PhotonListFile photonlistfile;
 
   // Time step for sky scanning loop
-  double dt = 0.1;
+  double dt=0.1;
 
   char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
@@ -113,84 +115,109 @@ int photon_generation_main()
     if (EXIT_SUCCESS!=status) break;
 
 
+    // Open the source file to check the contents.
+    headas_chat(5, "open FITS file '%s' searching for X-ray sources ...\n",
+		parameters.sources_filename);
+    if (fits_open_file(&sources_fptr, parameters.sources_filename, READONLY, &status)) break;
+    // Determine the number of HDUs in the FITS file and the current HDU.
+    int sources_n_hdus=0, sources_hdu=0;
+    if (fits_get_num_hdus(sources_fptr, &sources_n_hdus, &status)) break;
+    fits_get_hdu_num(sources_fptr, &sources_hdu);
+    // Determine the type of the first HDU (which should be IMAGE_HDU in any case).
+    int sources_hdu_type=0;
+    if (fits_get_hdu_type(sources_fptr, &sources_hdu_type, &status)) break;
+    headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", sources_hdu, 
+		sources_n_hdus, sources_hdu_type);
+      
+    // Check whether the first (IMAGE) HDU is empty.
+    // For this purpose check the header keyword NAXIS.
+    int sources_hdu_naxis=0;
+    char comment[MAXMSG];
+    if (fits_read_key(sources_fptr, TINT, "NAXIS", &sources_hdu_naxis, comment, &status)) break;
+    headas_chat(5, " NAXIS: %d", sources_hdu_naxis);
+      
+    if (0<sources_hdu_naxis) {
+      // The first (IMAGE) extension is not empty. So the source category is SOURCE_IMAGE.
+      // Load the source image data from the HDU.
+      headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from current HDU ...\n");
+      sourceCategory = SOURCE_IMAGES;
+      
+    } else {
+      // The primary extension is empty, so move to the next extension.
+      headas_chat(5, " --> empty\n move to next HDU ...\n");
+      while (sources_hdu<sources_n_hdus) {
+	if (fits_movrel_hdu(sources_fptr, 1, &sources_hdu_type, &status)) break;
+	sources_hdu++;
+	headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", sources_hdu, 
+		    sources_n_hdus, sources_hdu_type);
 
-    if (POINT_SOURCES==parameters.source_category) { 
+	if (IMAGE_HDU==sources_hdu_type) {
+	  headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from current HDU ...\n");
+	  sourceCategory = SOURCE_IMAGES;
 
-      // Load the source catalogs from the files:
+	} else { // Assume BINARY_TBL (=2).
+	  headas_chat(5, " --> source type: POINT_SOURCES\n load data from current HDU ...\n");
+	  sourceCategory = POINT_SOURCES;
+
+	}
+      } // END of loop over the remaining HDUs after the primary extension.
+      if (EXIT_SUCCESS!=status) break;
+
+    } // END of check whether primary extension is empty.
+
+    if (INVALID_SOURCE==sourceCategory) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Could not find valid source data in input file!\n", status);
+      break;
+    }
+
+
+    // Load the X-ray source data using the appropriate routines for the 
+    // respective source category.
+    if (POINT_SOURCES==sourceCategory) { 
+
+      // Load the source catalog from the current HDU.
       pointsourcefilecatalog = get_PointSourceFileCatalog();
       if (NULL==pointsourcefilecatalog) {
 	status = EXIT_FAILURE;
-	sprintf(msg, "Error: allocation of PointSourceFileCatalog failed!\n");
-	HD_ERROR_THROW(msg, status);
+	HD_ERROR_THROW("Error: allocation of PointSourceFileCatalog failed!\n", status);
 	break;
       }
-
-      // Open the cluster list file:
-      FILE* pointsourcelist_fptr = fopen(parameters.sourcelist_filename, "r");
-      if (NULL==pointsourcelist_fptr) {
-	sprintf(msg, "Error: could not open the file containing the list "
-		"of point source catalogs!\n");
-	HD_ERROR_THROW(msg, status);
-	break;
-      } else {
-	// Determine the number of lines (= number of extended source files).
-	char line[MAXMSG];
-	pointsourcefilecatalog->nfiles = 0;
-	while (fgets(line, MAXMSG, pointsourcelist_fptr)) {
-	  pointsourcefilecatalog->nfiles++;
-	}
-
-	if (0==pointsourcefilecatalog->nfiles) {
-	  sprintf(msg, "### Warning: Point Source List File '%s' contains no data!\n",
-		  parameters.sourcelist_filename);
-	}
-
-	// Allocate memory for the point source files.
-	pointsourcefilecatalog->files = 
-	  (PointSourceFile**)malloc(pointsourcefilecatalog->nfiles*sizeof(PointSourceFile*));
-	if (NULL==pointsourcefilecatalog->files) {
-	  status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: not enough memory to allocate PointSourceFiles!\n", status);
-	  break;
-	}	
-
-	// Load all point source catalogs specified in the point source list file.
-	// Set the file pointer back to the beginning of the file:
-	fseek(pointsourcelist_fptr, 0, SEEK_SET);
-	int file_counter = 0;
-	while (fscanf(pointsourcelist_fptr, "%s\n", line)>0) {
-	  // Add the specified PointSourceFile the the PointSourceFileCatalog:
-	  pointsourcefilecatalog->files[file_counter] = 
-	    get_PointSourceFile_fromFile(line, &status);
-	  if (status != EXIT_SUCCESS) break;
-	}
-	if (status != EXIT_SUCCESS) break;
       
-	// Close the Point Source List File.
-	fclose(pointsourcelist_fptr);
+      // TODO Set the default number of point source catalogs to 1.
+      pointsourcefilecatalog->nfiles = 1;
 
-	// Read the header from the LAST Point Source FITS file to obtain
-	// the WCS keywords.
-	fitsfile* catalog_fptr=NULL;
-	char* header; // Buffer string for the FITS header.
-	int nkeyrec, nreject;
-	if (fits_open_image(&catalog_fptr, line, READONLY, &status)) break;
-	if (fits_hdr2str(catalog_fptr, 1, NULL, 0, &header, &nkeyrec, &status)) break;
-	fits_close_file(catalog_fptr, &status);
-	if (status!=EXIT_SUCCESS) break;	
-	// Determine the WCS header keywords from the header string.
-	if ((wcsbth(header, nkeyrec, 0, 3, WCSHDR_PIXLIST, NULL, &nreject, &nwcs, &wcs))) {
-	  status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
-	  break;
-	}
+      // Allocate memory for the point source files.
+      pointsourcefilecatalog->files = 
+	(PointSourceFile**)malloc(pointsourcefilecatalog->nfiles*sizeof(PointSourceFile*));
+      if (NULL==pointsourcefilecatalog->files) {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: not enough memory to allocate PointSourceFiles!\n", status);
+	break;
+      }	
+
+      // Load all point source catalogs specified in the point source list file.
+      pointsourcefilecatalog->files[0] = 
+	get_PointSourceFile_fromFile(parameters.sources_filename, sources_hdu, &status);
+      if (status != EXIT_SUCCESS) break;
+      
+      // Read the header from the LAST Point Source FITS file to obtain
+      // the WCS keywords.
+      char* header; // Buffer string for the FITS header.
+      int nkeyrec, nreject;
+      if (fits_hdr2str(sources_fptr, 1, NULL, 0, &header, &nkeyrec, &status)) break;
+      // Determine the WCS header keywords from the header string.
+      if ((wcsbth(header, nkeyrec, 0, 3, WCSHDR_PIXLIST, NULL, &nreject, &nwcs, &wcs))) {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
+	break;
       }
 
       // Use a short time interval for the orbit update:
       dt = 0.01;
       
-    } else if (SOURCE_IMAGES==parameters.source_category) {
-      // Read the cluster images from the specified FITS files.
+    } else if (SOURCE_IMAGES==sourceCategory) {
+      // Read the cluster images from the current FITS HDU.
 
       // Get a new SourceImageCatalog object.
       sic = get_SourceImageCatalog();
@@ -200,73 +227,37 @@ int photon_generation_main()
 	break;
       }
 
-      // Open the cluster list file:
-      FILE* sourceimagelist_fptr = fopen(parameters.sourcelist_filename, "r");
-      if (NULL==sourceimagelist_fptr) {
-	HD_ERROR_THROW("Error: could not open the file containing the list "
-		       "with the source images!\n", status);
-	break;
-      } else {
-
-	// Determine the number of lines (= number of extended source files).
-	char line[MAXMSG];
-	while (fgets(line, MAXMSG, sourceimagelist_fptr)) {
-	  sic->nimages++;
-	}
-
-	if (sic->nimages<=0) {
-	  status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: invalid number of sources files with "
-			 "extended sources!\n", status);
-	  break;
-	}
+      // Determine the number of lines (= number of extended source files).
+      sic->nimages=1; // TODO default value.
 	
-	sic->images = (SourceImage**)malloc(sic->nimages*sizeof(SourceImage*));
-	if (NULL==sic->images) {
-	  status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
-	  break;
-	}
+      // Allocate memory.
+      sic->images = (SourceImage**)malloc(sic->nimages*sizeof(SourceImage*));
+      if (NULL==sic->images) {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
+	break;
+      }
 
-	// Load all cluster image files specified in the cluster list file.
-	// Set the file pointer back to the beginning of the file:
-	fseek(sourceimagelist_fptr, 0, SEEK_SET);
-	int image_counter=0;
-	while (fscanf(sourceimagelist_fptr, "%s\n", line)>0) {
-	  // Load the specified galaxy cluster image:
-	  sic->images[image_counter++] = get_SourceImage_fromFile(line, &status);
-	  if (status != EXIT_SUCCESS) break;
-	} // END of loop over all file entries in the cluster list file
-	if (status != EXIT_SUCCESS) break;
+      // Load the cluster image in the current HDU.
+      sic->images[0] = get_SourceImage_fromHDU(sources_fptr, &status);
+      if (status != EXIT_SUCCESS) break;
 
-	// Close the cluster list file:
-	fclose(sourceimagelist_fptr);
-
-	// Read the header from the LAST source image FITS file to obtain
-	// the WCS keywords.
-	fitsfile* image_fptr=NULL;
-	char* header; // Buffer string for the FITS header.
-	int nkeyrec, nreject;
-	if (fits_open_image(&image_fptr, line, READONLY, &status)) break;
-	if (fits_hdr2str(image_fptr, 1, NULL, 0, &header, &nkeyrec, &status)) break;
-	fits_close_file(image_fptr, &status);
-	if (status != EXIT_SUCCESS) break;	
-	// Determine the WCS header keywords from the header string.
-	if ((wcspih(header, nkeyrec, 0, 3, &nreject, &nwcs, &wcs))) {
-	  status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
-	  break;
-	}
+      // Read the header from the LAST source image FITS file to obtain
+      // the WCS keywords.
+      char* header; // Buffer string for the FITS header.
+      int nkeyrec, nreject;
+      if (fits_hdr2str(sources_fptr, 1, NULL, 0, &header, &nkeyrec, &status)) break;
+      // Determine the WCS header keywords from the header string.
+      if ((wcspih(header, nkeyrec, 0, 3, &nreject, &nwcs, &wcs))) {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
+	break;
       }
       
       // Use a relatively large \Delta t for the time loop:
       dt = 1.0;
 
-    } else {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: wrong source category!\n", status);
     } // END of different source categories.
-    if (EXIT_SUCCESS!=status) break;
 
     if (0==nwcs) {
       headas_chat(1, "### Warning: source file contains no appropriate WCS header keywords!\n");
@@ -355,7 +346,8 @@ int photon_generation_main()
       normalize_vector_fast(&telescope.nz);
 
 
-      if (parameters.source_category==POINT_SOURCES) {
+      
+      if (POINT_SOURCES==sourceCategory) {
 
 	// PRESELECTION of Point sources
 	// Preselection of sources from the comprehensive catalog to 
@@ -405,7 +397,7 @@ int photon_generation_main()
 	  }
 	}
 
-      } else if (SOURCE_IMAGES==parameters.source_category) {
+      } else if (SOURCE_IMAGES==sourceCategory) {
 
 	// Create photons from the extended sources (clusters) and insert them
 	// to the photon list.
@@ -631,7 +623,7 @@ int photon_generation_main()
 
   // --- Clean up ---
   
-  headas_chat(5, "\ncleaning up ...\n");
+  headas_chat(3, "\ncleaning up ...\n");
 
   status += closePhotonListFile(&photonlistfile);
 
@@ -644,6 +636,8 @@ int photon_generation_main()
   // Attitude Catalog
   free_AttitudeCatalog(attitudecatalog);
 
+  if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
+  
   // Point Sources
   free_PointSourceFileCatalog(pointsourcefilecatalog);
   free_PointSourceCatalog(pointsourcecatalog);
@@ -694,26 +688,11 @@ int photon_generation_getpar(struct Parameters* parameters)
     HD_ERROR_THROW(msg, status);
   }
 
-  // Determine the category of the input sources:
-  int category;
-  if ((status = PILGetInt("source_category", &category))) {
-    sprintf(msg, "Error: wrong source category!\n");
-    HD_ERROR_THROW(msg, status);
-  }
-  parameters->source_category=category;
-  if ((POINT_SOURCES != parameters->source_category) && 
-      (SOURCE_IMAGES != parameters->source_category)) {
-    status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: unknown source category file!\n", status);
-  }
-  if (EXIT_SUCCESS!=status) return(status);
-
-
-  // Determine the name of the file that contains a list with the filenames of 
-  // the source files.
-  if ((status = PILGetFname("sourcelist_filename", 
-			    parameters->sourcelist_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the list of source catalogs!\n", status);
+  // Determine the name of the file that contains the input sources (either
+  // a point source catalog, source images, or a FITS grouping extension listing
+  // several input files).
+  else if ((status = PILGetFname("sources_filename", parameters->sources_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the input sources!\n", status);
   }
 
   // Get the filename of the Photon-List file (FITS file):

@@ -53,6 +53,7 @@ typedef struct {
 } PointSourceCatalog;
 
 
+
 /** PointSourceFile containing information about X-ray point sources.
  * Provides information about a FITS file with point sources. */
 typedef struct {
@@ -67,6 +68,7 @@ typedef struct {
   /** SpectrumStore containing the spectra that are used in this PointSourceCatalog. */
   SpectrumStore spectrumstore;
 } PointSourceFile;
+
 
 /** Collection of point source FITS files.
  * Used as input for the point source selection algorithm. */
@@ -88,8 +90,8 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog*);
 
 /** Constructor returning a pointer to an empty PointSourceFile object. */
 PointSourceFile* get_PointSourceFile();
-/** Enhanced constructor specifying a source file to be loaded. */
-PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status);
+/** Enhanced constructor specifying a source file and the right HDU number to be loaded. */
+PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* status);
 /** Destructor. */
 void free_PointSourceFile(PointSourceFile*);
 

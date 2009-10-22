@@ -1,7 +1,6 @@
 #include "pointsources.h"
 
 
-////////////////////////////////////////////////////
 PointSourceFileCatalog* get_PointSourceFileCatalog() {
   PointSourceFileCatalog* psfc = NULL;
 
@@ -17,7 +16,6 @@ PointSourceFileCatalog* get_PointSourceFileCatalog() {
 
 
 
-/////////////////////////////////////////////////////////
 void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
   if (NULL!=psfc) {
     if (psfc->nfiles>0) {
@@ -37,7 +35,6 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
 
 
 
-//////////////////////////////////////////////////////////
 PointSourceFile* get_PointSourceFile() {
   PointSourceFile* psf = (PointSourceFile*)malloc(sizeof(PointSourceFile));
 
@@ -55,8 +52,7 @@ PointSourceFile* get_PointSourceFile() {
 
 
 
-//////////////////////////////////////////////////////////
-PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status) 
+PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* status) 
 {
   PointSourceFile* psf = NULL;
   char msg[MAXMSG];      // error output buffer
@@ -64,7 +60,7 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
   do { // Beginning of ERROR handling loop.
     
     // Call the generic constructor.
-    psf = get_PointSourceFile();
+    psf=get_PointSourceFile();
     if (NULL==psf) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for PointSourceFile failed!\n", *status);
@@ -75,22 +71,14 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int* status)
     headas_chat(5, "open point-source catalog in file '%s' ...\n", filename);
 
     // Open the source catalogue (FITS-file):
-    if(fits_open_table(&psf->fptr, filename, READONLY, status)) break;
-    // Get the HDU number in the source catalogue:
-    int hdunum, hdutype; // Needed to access the HDUs in the source FITS file.
-    if(1 == fits_get_hdu_num(psf->fptr, &hdunum)) {
-      // This is the primary array,
-      // so try to move to the first extension and see if it is a table:
-      fits_movabs_hdu(psf->fptr, 2, &hdutype, status);
-    } else {
-      // Get the HDU type:
-      fits_get_hdu_type(psf->fptr, &hdutype, status);
-    }
+    if(fits_open_file(&psf->fptr, filename, READONLY, status)) break;
+    int hdutype; // Type of the HDU
+    if(fits_movabs_hdu(psf->fptr, hdu, &hdutype, status)) break;
     // Image HDU results in an error message:
     if (IMAGE_HDU==hdutype) {
       *status=EXIT_FAILURE;
       sprintf(msg, "Error: FITS extension in source catalog file '%s' is "
-	      "not a table but an image (HDU number: %d)!\n", filename, hdunum);
+	      "not a table but an image (HDU number: %d)!\n", filename, hdu);
       HD_ERROR_THROW(msg, *status);
       break;
     }

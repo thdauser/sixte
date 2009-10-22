@@ -17,6 +17,7 @@
 
 /** Category of input sources: 1=Point sources, 2=Extended Source Images */
 typedef enum {
+  INVALID_SOURCE   =0,
   POINT_SOURCES    =1,
   SOURCE_IMAGES    =3
 } SourceCategory;
