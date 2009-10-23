@@ -132,7 +132,8 @@ int main(int argc, char* argv[])
 	mean2 += pow((double)hex_nphotons[count_pixelwidth][pixel], 2.)/37.;
       }
       mean = ndetected*1./37.;
-      
+
+      printf("# N_photons, N_detected_photons, fraction of detected photons, sigma/average");
       printf("%lf %ld %ld %lf %lf\t pixel:",
 	     min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width
 	     ntotal_photons,               // Total number of photons
@@ -164,7 +165,7 @@ int main(int argc, char* argv[])
 	   ndetected*1./ntotal_photons,  // Fraction of detected photons
 	   sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	   );
-    printf("radii: %lf %lf %lf %lf\npixel:", radii[0], radii[1], radii[2], radii[3]);
+    printf("# radii: %lf %lf %lf %lf\n# pixel:", radii[0], radii[1], radii[2], radii[3]);
     for (pixel=0; pixel<31; pixel++) {
       printf(" %lf,", (double)arc_nphotons[pixel]/ntotal_photons);
     }
