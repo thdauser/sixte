@@ -154,7 +154,7 @@ int eroexposure_main() {
 	  break;
 	}
       }
-      if(fabs(attitudecatalog->entry[attitude_counter].time-time)>60.) { 
+      if(fabs(attitudecatalog->entry[attitude_counter].time-time)>600.) { 
 	// No entry within 1 minute !!
 	status = EXIT_FAILURE;
 	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
@@ -171,7 +171,6 @@ int eroexposure_main() {
 					 time));
       // Calculate the RA and DEC of the pointing direction.
       calculate_ra_dec(telescope.nz, &telescope_ra, &telescope_dec);
-      if (telescope_dec > 1.55) printf("declination: %lf\n", telescope_dec);
 
       // Check if the specified field of the sky might be within the FOV.
       // Otherwise break this run and continue at the beginning of the loop 
