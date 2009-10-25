@@ -14,11 +14,11 @@ AM_CFLAGS += -Wall
 lib_LTLIBRARIES = libmirrors.la
 
 # Sources:
-libmirrors_la_SOURCES = psf.c vignetting.c
+libmirrors_la_SOURCES = psf.c vignetting.c codedmask.c
 libmirrors_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
 
 
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = psf.h vignetting.h
+include_HEADERS = psf.h vignetting.h codedmask.h
