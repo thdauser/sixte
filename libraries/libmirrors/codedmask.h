@@ -34,8 +34,9 @@ typedef struct {
 
   int naxis1, naxis2;    /**< Width of the image [pixel]. */
   double cdelt1, cdelt2; /**< Width of one pixel [m]. */
-  double crpix1, crpix2; /**< [pixel] */
-  double crval1, crval2; /**< [m] */
+  double crpix1, crpix2; /**< Reference pixel [pixel] */
+  double crval1, crval2; /**< Value at reference pixel [m] */
+
 } CodedMask;
 
 
@@ -49,6 +50,12 @@ typedef struct {
  * It does not allocate any memory for the mask data. This has
  * to be done separately. */
 CodedMask* getCodedMask(int* status);
+
+/** Advanced Constructor.
+ * The constructor obtains a new CodedMask object from the basic constructor
+ * loads a coded mask from the specified file, and stores it in the newly
+ * created object. */
+CodedMask* getCodedMaskFromFile(char* filename, int* status);
 
 /** Destructor. */
 void freeCodedMask(CodedMask* mask);

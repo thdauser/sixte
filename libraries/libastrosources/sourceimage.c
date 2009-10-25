@@ -51,7 +51,8 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 
   do { // Beginning of ERROR handling loop
 
-    // Get an empty SourceImage using the standard Constructor without any arguments:
+    // Get an empty SourceImage using the standard Constructor without 
+    // any arguments:
     si = get_SourceImage();
     if(si==NULL) {
       *status=EXIT_FAILURE;
