@@ -4,17 +4,19 @@
 int initHTRSTelemetryPacket(HTRSTelemetryPacket* packet,
 			    struct HTRSTelemetryPacketParameters* parameters)
 {
+  int status=EXIT_SUCCESS;
+
   // The total number of bits per packet must be a multiple of 8.
   assert(parameters->n_packet_bits % 8 == 0);
-
-  packet->n_header_bits   = parameters->n_header_bits;
-
+  // Get a new TelemetryPacket object.
+  packet->tp = getTelemetryPacket(parameters->n_packet_bits, &status);
+  
   // Currently the total number of bits per spectrum must be a multiple of 8, 
   // i.e., we are only dealing with complete bytes.
   packet->n_spectrum_bits = parameters->n_spectrum_bits;
   assert(packet->n_spectrum_bits % 8 == 0);
-
   packet->n_bin_bits      = parameters->n_bin_bits;
+  packet->n_header_bits   = parameters->n_header_bits;
 
   // Determine the maximum number of counts per spectral bin.
   unsigned char maximum=0;
@@ -25,20 +27,23 @@ int initHTRSTelemetryPacket(HTRSTelemetryPacket* packet,
   packet->max_counts = (int)maximum;
 
   // Allocate memory for the byte buffer.
-  packet->byte_buffer=(unsigned char*)malloc(parameters->n_packet_bits/8*sizeof(unsigned char*));
+  packet->byte_buffer=
+    (unsigned char*)malloc(parameters->n_packet_bits/8*sizeof(unsigned char*));
   if (NULL==packet->byte_buffer) {
-    HD_ERROR_THROW("Error: Could not allocate memory for byte buffer!\n", EXIT_FAILURE);
-    return(EXIT_FAILURE);
+    status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Could not allocate memory for byte buffer!\n", 
+		   status);
+    return(status);
   }
 
-  return(initTelemetryPacket(&packet->tp, parameters->n_packet_bits));
+  return(status);
 }
 
 
 
 void cleanupHTRSTelemetryPacket(HTRSTelemetryPacket* packet)
 {
-  cleanupTelemetryPacket(&packet->tp);
+  freeTelemetryPacket(packet->tp);
   if (NULL!=packet->byte_buffer) free(packet->byte_buffer);
 }
 
@@ -47,7 +52,7 @@ void cleanupHTRSTelemetryPacket(HTRSTelemetryPacket* packet)
 int newHTRSTelemetryPacket(HTRSTelemetryPacket* packet)
 {
   // Initialize new empty Packet.
-  newTelemetryPacket(&packet->tp);
+  newTelemetryPacket(packet->tp);
 
   // Add the Packet header.
   int count;
@@ -55,14 +60,14 @@ int newHTRSTelemetryPacket(HTRSTelemetryPacket* packet)
     packet->byte_buffer[count] = 0;
   }
 
-  return(addData2TelemetryPacket(&packet->tp, packet->byte_buffer, count*8));
+  return(addData2TelemetryPacket(packet->tp, packet->byte_buffer, count*8));
 }
 
 
 
 int availableBitsInHTRSTelemetryPacket(HTRSTelemetryPacket* packet)
 {
-  return(availableBitsInTelemetryPacket(&packet->tp));
+  return(availableBitsInTelemetryPacket(packet->tp));
 }
 
 
@@ -100,14 +105,15 @@ int addSpectrum2HTRSTelemetryPacket(HTRSTelemetryPacket* packet, int* spectrum,
 
   }
  
-  return(addData2TelemetryPacket(&packet->tp, packet->byte_buffer, packet->n_spectrum_bits));
+  return(addData2TelemetryPacket(packet->tp, packet->byte_buffer, 
+				 packet->n_spectrum_bits));
 }
 
 
 
 int writeHTRSTelemetryPacket2File(HTRSTelemetryPacket* packet, FILE* file)
 {
-  return(writeTelemetryPacket2File(&packet->tp, file));
+  return(writeTelemetryPacket2File(packet->tp, file));
 }
 
 

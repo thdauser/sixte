@@ -13,7 +13,7 @@
 typedef struct {
 
   /** TelemetryPacket containing the actual data. */
-  TelemetryPacket tp;
+  TelemetryPacket* tp;
 
   /** Number of bits reserved for the packet header.
    * This number is included in value nbits. */
