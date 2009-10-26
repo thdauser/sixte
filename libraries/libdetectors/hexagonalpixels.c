@@ -373,6 +373,9 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
     distance = getHexagonalPixelDistance2Line(position,  sqrt(3.), (l1+1)*2*hp->h);
     k1++;
     break;
+  default:
+    // ERROR
+    return(-1);
   }
 
   // Check whether this is really a split event:

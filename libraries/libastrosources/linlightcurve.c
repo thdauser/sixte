@@ -45,7 +45,7 @@ LinLightCurve* loadLinLightCurveFromFile(char* filename, double source_rate, int
   fitsfile* fptr;
 
   int crate; // Column in the FITS table containing the rates.
-  double* rate; // Input buffer for light curve rates.
+  double* rate=NULL; // Input buffer for light curve rates.
 
   char msg[MAXMSG];
 

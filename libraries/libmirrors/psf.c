@@ -182,7 +182,7 @@ PSF* get_psf(
 {
   PSF* psf;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file
-  double* data;          // input buffer (1D array)
+  double* data=NULL;     // input buffer (1D array)
   long count, count2, count3;
   
   char msg[MAXMSG];      // error message output buffer
@@ -211,8 +211,7 @@ PSF* get_psf(
     psf->item = (PSF_Item *) malloc(psf->N_elements * sizeof(PSF_Item));
     if (NULL==psf->item) {   // memory was allocated successfully
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory to store PSF data!\n");
-      HD_ERROR_THROW(msg, *status);  
+      HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", *status);  
       break;
     }
 
@@ -271,8 +270,7 @@ PSF* get_psf(
 			   *sizeof(double));
       if (NULL==data) {
 	*status = EXIT_FAILURE;
-	sprintf(msg, "Error: not enough memory for PSF input buffer!\n");
-	HD_ERROR_THROW(msg, *status);
+	HD_ERROR_THROW("Error: not enough memory for PSF input buffer!\n", *status);
 	break;
       }
       
@@ -332,11 +330,7 @@ PSF* get_psf(
 
 
 
-int save_psf_image(
-		   PSF* psf,
-		   const char *filename,
-		   int *status
-		   )
+int save_psf_image(PSF* psf, const char *filename, int *status)
 {
   int count;
   double *sub_psf=NULL;

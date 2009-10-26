@@ -24,11 +24,11 @@ AM_PROG_LIBTOOL
 
 # Compiler and Linker Flags:
 # "-g -W -Wall -O0" for the compiler for debugging
+# "-g" to create debugging information (seems to be used automatically by autotools)
 # "-Werror" for the compiler to treat warnings as errors
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
-CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -W -Wall -O0 -pg -DHTRS_HEXPIXELS"
-LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg "
-
+CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -W -Wall -DHTRS_HEXPIXELS -pg"
+LDFLAGS="$LDFLAGS -L$HEADAS/lib -W -Wall -pg"
 
 # Check for libraries:  (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])

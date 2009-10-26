@@ -139,7 +139,7 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 
   // Case with 2 events have same energy, pick first in list.
   int equalenergyfound = 0;
-  long maxidx, minidx, mididx;
+  long maxidx=0, minidx=0, mididx=0;
   maxidx = min(amaxidx, nmaxidx);
   if (nmaxidx > 1) {
     mididx = max(amaxidx, nmaxidx);

@@ -30,6 +30,7 @@ htrs_simulation
 htrs_pixel_intensity
 htrs_fits2tm
 wfi_simulation
+comaimg
 
 # Autotool stuff:
 aclocal.m4
