@@ -19,6 +19,7 @@ typedef struct {
   /** Number of bits reserved for the packet header.
    * This number is included in value nbits. */
   int n_header_bits;
+
   /** Number of bits per binned spectrum. */
   int n_spectrum_bits;
   /** Number of bits per spectrum bin. */
@@ -39,7 +40,8 @@ typedef struct {
 struct HTRSTelStreamParameters {
   int n_packet_bits;
   int n_header_bits;
-  int n_spectrum_bits;
+  
+int n_spectrum_bits;
   int n_bin_bits;
 };
 
@@ -58,7 +60,8 @@ HTRSTelStream* getHTRSTelStream
  * allocated memory. */
 void freeHTRSTelStream(HTRSTelStream* stream);
 
-/** Add a new event to the HTRSTelStream. */
+/** Add a new event to the HTRSTelStream. The function adds HTRSEvent
+ * objects to the HTRSTelStream. */
 int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event, 
 			   int* status);
 
