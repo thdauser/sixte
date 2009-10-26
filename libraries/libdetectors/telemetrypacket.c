@@ -73,7 +73,7 @@ int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data,
 
   if (nbits <= 8) { // Add the low-end bits to the telemetry packet.
     // Clear all bits except for the significant ones.
-    byte = ( (data[0]<<(8-nbits)) >> (8-nbits) );
+    byte = data[0] & (0xFF>>(8-nbits));
     // Determine the position where the bit has to be inserted.
     index   = packet->current_bit / 8;
     modulus = packet->current_bit % 8;
