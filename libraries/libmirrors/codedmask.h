@@ -3,6 +3,13 @@
 
 #include "sixt.h"
 #include "photon.h"
+#include "telescope.h"
+#include "point.h"
+#include "vector.h"
+
+
+#define TRANSPARENT 1 /**< Pixel is transparent for X-rays. */
+#define OPAQUE 0 /**< Pixel is opaque for X-rays. */
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -28,9 +35,9 @@ typedef struct {
   /** Number of transparent pixels. */
   int n_transparent_pixels;
 
-  /** Opacity of the mask.
-   * The opacity is defined as the ratio #(opaque pixels)/#(all pixels). */
-  double opacity;
+  /** Transparency of the mask.
+   * The transparency is defined as the ratio #(transparent pixels)/#(all pixels). */
+  double transparency;
 
   int naxis1, naxis2;    /**< Width of the image [pixel]. */
   double cdelt1, cdelt2; /**< Width of one pixel [m]. */
@@ -59,6 +66,13 @@ CodedMask* getCodedMaskFromFile(char* filename, int* status);
 
 /** Destructor. */
 void freeCodedMask(CodedMask* mask);
+
+/** Determine the impact position of a photon on the detector plane according to
+ * the coded mask aperture.
+ * The function return value is 1 if the photon passes the mask. If the photon is
+ * absorbed by an opaque pixel in the mask, the return value is zero. */
+int getCodedMaskImpactPos(struct Point2d* position, Photon* photon, CodedMask* mask, 
+			  struct Telescope* telescope);
 
 
 #endif /* CODEDMASK_H */

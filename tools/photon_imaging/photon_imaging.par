@@ -2,6 +2,7 @@ photonlist_filename,fre,lq,"photons_2Crab.fits",,,"photon list file (FITS input 
 psf_filename,fre,lq,"~/ixo/wfi/wfi.psf.25.fits",,,"PSF data file (FITS input file)"
 vignetting_filename,fre,lq,"~/ixo/ixo.vignetting.fits",,,"Vignetting data file (FITS input file)"
 impactlist_filename,f,lq,"impacts_2Crab.fits",,,"impact list file (FITS output file)"
+fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 t0,r,lq,0.0,,,"t0 - start time (s)  NOT USED! "
 timespan,r,lq,5.0,0.0,1000000000.0,"time interval for the measurement simulation (s) "
 fov_diameter,r,lq,61.2,0.0,600.0,"diameter of the FOV (arc minutes)"

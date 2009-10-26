@@ -247,9 +247,6 @@ int ero_fits2tm_main()
   FILE *output_file = NULL;
   double binning_time; // Delta t (time step, length of each spectrum)
 
-  const long Nchannels = 1024;
-  unsigned int max = 0;
-
   char msg[MAXMSG];    // error message buffer
   int status=EXIT_SUCCESS;
 

@@ -10,23 +10,17 @@
 ////////////////////////////////////
 /** Main procedure. */
 int comaimg_main() {
-  int status=EXIT_SUCCESS;      // Error status.
-
-  /*
   struct Parameters parameters;
 
   AttitudeCatalog* attitudecatalog=NULL;
-
+  struct Telescope telescope; // Telescope data.
   PhotonListFile photonlistfile;
   ImpactListFile impactlistfile;
-  // WCS reference values for the position of the orginial input data.
-  // These data are needed for the eROSITA image reconstruction algorithm
-  // in order to determine the right WCS header keywords for, e.g., cluster images.
-  double refxcrvl, refycrvl; 
+  double refxcrvl=0., refycrvl=0.;
+  CodedMask* mask=NULL;
 
-  struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-
-  char msg[MAXMSG];             // error output buffer
+  int status=EXIT_SUCCESS; // Error status.
+  char msg[MAXMSG];
 
 
   // Register HEATOOL:
@@ -39,12 +33,12 @@ int comaimg_main() {
     // --- Initialization ---
 
     // read parameters using PIL library
-    if ((status=comaimg_getpar(&parameters, &telescope))) break;
+    if ((status=comaimg_getpar(&parameters))) break;
 
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align = cos(telescope.fov_diameter/2.); 
+    const double fov_min_align = cos(M_PI/3.);
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -54,28 +48,17 @@ int comaimg_main() {
     status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
 				READONLY);
     if (EXIT_SUCCESS!=status) break;
-    // Read WCS keywords from FITS header.
-    char comment[MAXMSG]; // String buffer.
-    if (fits_read_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, 
-		      comment, &status)) break;    
-    if (fits_read_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, 
-		      comment, &status)) break;    
 
     // Open the attitude file specified in the header keywords of the photon list.
+    char comment[MAXMSG];
     if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
-		      &parameters.attitude_filename, 
-		      comment, &status)) break;
-    if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
-						   parameters.t0, parameters.timespan, 
-						   &status))) break;
+		      &parameters.attitude_filename, comment, &status)) break;
+    if (NULL==(attitudecatalog=getEntireAttitudeCatalog(parameters.attitude_filename,
+							&status))) break;
 
-    // Get the PSF:
-    psf = get_psf(parameters.psf_filename, &status);
-    if (status != EXIT_SUCCESS) break;
+    // Load the coded mask from the file.
+    mask = getCodedMaskFromFile(parameters.mask_filename, &status);
 
-    // Get the Vignetting:
-    vignetting = get_Vignetting(parameters.vignetting_filename, &status);
-    if (status != EXIT_SUCCESS) break;
 
     // Create a new FITS file for the output of the impact list.
     status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 
@@ -89,7 +72,6 @@ int comaimg_main() {
 		       "name of the attitude FITS file", &status)) break;
     
     // --- END of Initialization ---
-
 
 
     // --- Beginning of Imaging Process ---
@@ -106,11 +88,7 @@ int comaimg_main() {
       
       // Read an entry from the photon list:
       int anynul = 0;
-      Photon photon;
-      photon.time = 0.;
-      photon.energy = 0.;
-      photon.ra = 0.;
-      photon.dec = 0.;
+      Photon photon = { .time=0., .energy=0., .ra=0., .dec=0. };
       fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.ctime, 
 		    photonlistfile.row+1, 1, 1, &photon.time, &photon.time, &anynul, &status);
       fits_read_col(photonlistfile.fptr, TFLOAT, photonlistfile.cenergy, 
@@ -144,7 +122,7 @@ int comaimg_main() {
 	break;
       }
 
-
+   
       // Check whether the photon is inside the FOV:
       // First determine telescope pointing direction at the current time.
       // TODO: replace this calculation by proper attitude interpolation.
@@ -154,7 +132,6 @@ int comaimg_main() {
 					 attitudecatalog->entry[attitude_counter+1].nz, 
 					 attitudecatalog->entry[attitude_counter+1].time, 
 					 photon.time));
-
 
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
@@ -186,7 +163,6 @@ int comaimg_main() {
 	telescope.nx.z -= scp*telescope.nz.z;
 	telescope.nx = normalize_vector(telescope.nx);
 
-
 	// The third axis of the coordinate system ny is perpendicular 
 	// to telescope axis nz and nx:
 	telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
@@ -197,30 +173,30 @@ int comaimg_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
-	if (get_psf_pos(&position, photon, telescope, vignetting, psf)) {
+	if (1==getCodedMaskImpactPos(&position, &photon, mask, &telescope)) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)
-	  if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
-	      tan(telescope.fov_diameter)*telescope.focal_length) {
+	  //if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
+	  //    tan(telescope.fov_diameter)*telescope.focal_length) {
 	    
-	    // Insert the impact position with the photon data into the impact list:
-	    fits_insert_rows(impactlistfile.fptr, impactlistfile.row++, 1, &status);
-	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.ctime, 
-			   impactlistfile.row, 1, 1, &photon.time, &status);
-	    fits_write_col(impactlistfile.fptr, TFLOAT, impactlistfile.cenergy, 
-			   impactlistfile.row, 1, 1, &photon.energy, &status);
-	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cx, 
-			   impactlistfile.row, 1, 1, &position.x, &status);
-	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cy, 
-			   impactlistfile.row, 1, 1, &position.y, &status);
-	    impactlistfile.nrows++;
-	  }
+	  // Insert the impact position with the photon data into the impact list:
+	  fits_insert_rows(impactlistfile.fptr, impactlistfile.row++, 1, &status);
+	  fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.ctime, 
+			 impactlistfile.row, 1, 1, &photon.time, &status);
+	  fits_write_col(impactlistfile.fptr, TFLOAT, impactlistfile.cenergy, 
+			 impactlistfile.row, 1, 1, &photon.energy, &status);
+	  fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cx, 
+			 impactlistfile.row, 1, 1, &position.x, &status);
+	  fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cy, 
+			 impactlistfile.row, 1, 1, &position.y, &status);
+	  impactlistfile.nrows++;
+	  //}
 	} // END get_psf_pos(...)
       } // End of FOV check.
     } // END of scanning LOOP over the photon list.
-  } while(0);  // END of the error handling loop.
 
+  } while(0);  // END of the error handling loop.
 
 
   // --- cleaning up ---
@@ -234,19 +210,14 @@ int comaimg_main() {
   status += closePhotonListFile(&photonlistfile);
 
   free_AttitudeCatalog(attitudecatalog);
-  free_psf(psf);
-  free_Vignetting(vignetting);
+  freeCodedMask(mask);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
-
-  */
   return(status);
 }
 
 
 
-////////////////////////////////////////////////////////////////
-// This routine reads the program parameters using the PIL.
 int comaimg_getpar(struct Parameters* parameters)
 {
   int status=EXIT_SUCCESS; // Error status.
@@ -268,8 +239,25 @@ int comaimg_getpar(struct Parameters* parameters)
 
   // Read the distance between the coded mask and the detector plane [m].
   else if ((status = PILGetReal("mask_distance", &parameters->mask_distance))) {
-    HD_ERROR_THROW("Error reading the focal length!\n", status);
+    HD_ERROR_THROW("Error reading the distance between the mask and the detector plane!\n", 
+		   status);
   }
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
+  char* buffer;
+  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(parameters->impactlist_template, buffer);
+  } else {
+    if ((status = PILGetFname("fits_templates", parameters->impactlist_template))) {
+      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
+      
+    }
+  }
+  // Set the impact list template file:
+  strcat(parameters->impactlist_template, "/impactlist.tpl");
 
   return(status);
 }
