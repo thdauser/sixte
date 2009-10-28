@@ -42,7 +42,7 @@ int framestore_simulation_main() {
     if ((status=getpar(&parameters))) break;
 
     // Open the FITS file with the input impact list:
-    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename, 
+    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename,
 				READONLY);
     if (EXIT_SUCCESS!=status) break;
     // Determine the WCS keywords.
@@ -87,13 +87,14 @@ int framestore_simulation_main() {
     // Add important additional HEADER keywords to the event list.
     char keyword[MAXMSG];
     sprintf(keyword, "TCRVL%d", detector.eventlist.cskyx);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, &refxcrvl, 
-			"", &status)) break;
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+			&refxcrvl, "", &status)) break;
     sprintf(keyword, "TCRVL%d", detector.eventlist.cskyy);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, &refycrvl, 
-			"", &status)) break;
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+			&refycrvl, "", &status)) break;
     if (fits_update_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
-			attitude_filename, "name of the attitude FITS file", &status)) break;
+			attitude_filename, "name of the attitude FITS file", 
+			&status)) break;
 
 
     // Setup detector BACKGROUND data structure.
@@ -101,7 +102,9 @@ int framestore_simulation_main() {
       .rate              = parameters.background_rate,
       .spectrum_filename = parameters.background_filename /* String address!! */
     };
-    if(EXIT_SUCCESS!=(status=initUniformDetectorBackground(&background, &bkgdparameters))) break;
+    if(EXIT_SUCCESS!=(status=initUniformDetectorBackground(&background, 
+							   &bkgdparameters))) 
+      break;
     // END of BACKGROUND CONFIGURATION SETUP
 
     // --- END of Initialization ---

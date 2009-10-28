@@ -1,7 +1,7 @@
 #include "comadetector.h"
 
 
-CoMaDetector* initCoMaDetector(struct CoMaDetectorParameters* parameters,
+CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
 			       int* status)
 {
   // Allocate memory for the CoMaDetector object.

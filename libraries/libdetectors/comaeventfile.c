@@ -4,7 +4,7 @@
 CoMaEventFile* openCoMaEventFile(char* filename, int access_mode, int* status)
 {
   CoMaEventFile* ef=(CoMaEventFile*)malloc(sizeof(CoMaEventFile));
-  if (NULL=ef) {
+  if (NULL==ef) {
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: Could not allocate memory for CoMaEventFile "
 		   "object!\n", *status);
@@ -12,7 +12,7 @@ CoMaEventFile* openCoMaEventFile(char* filename, int access_mode, int* status)
   }
   
   // Call the corresponding routine of the underlying structure.
-  *status = openEventFile(ef->generic, filename, access_mode);
+  *status = openEventFile(&ef->generic, filename, access_mode);
   if (EXIT_SUCCESS!=*status) return(ef);
 
   // Determine the CoMa-specific elements of the event list.
@@ -20,7 +20,7 @@ CoMaEventFile* openCoMaEventFile(char* filename, int access_mode, int* status)
   // REQUIRED columns:
   if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "TIME", &ef->ctime, status)) 
     return(ef);
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "ENERGY", &ef->cpha, 
+  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "ENERGY", &ef->cenergy, 
 		     status)) 
     return(ef);
   if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "X", &ef->cxi, status)) 
@@ -63,7 +63,7 @@ CoMaEventFile* openNewCoMaEventFile(char* filename, char* template, int* status)
 
   // Close the newly created file again. It will be immediately re-opened
   // by the standard constructor.
-  if (fits_close_file(fptr, &status)) return(status);
+  if (fits_close_file(fptr, status)) return(NULL);
 
 
   // Open the newly created FITS file.
