@@ -82,29 +82,31 @@ struct HTRSDetectorParameters {
 ////////////////////////////////////////////////////////
 
 
-/** Set up the configuration of a HTRSDetector. 
- * The routine is responsible to set up the initial the HTRSDetector configuration which
- * is given in the HTRSDetectorParameters data structure.
- * It has to take care of allocating the required memory for the pixel array and to 
- * create an event file for the output of the measured data.
- * For some of these tasks it simply calls the init routines of the underlying 
- * data structures. 
+/** Set up the configuration of a HTRSDetector.  The routine is
+    responsible to set up the initial the HTRSDetector configuration
+    which is given in the HTRSDetectorParameters data structure.  It
+    has to take care of allocating the required memory for the pixel
+    array and to create an event file for the output of the measured
+    data.  For some of these tasks it simply calls the init routines
+    of the underlying data structures.
  */
 int initHTRSDetector(HTRSDetector* hd, struct HTRSDetectorParameters* parameters);
 
-/** Clean up the HTRSDetector data structure. 
- * This routine should be called when the HTRSDetector data structure 
- * is not required any more.
- * It takes care of releasing allocated memory and closes open file connections.
- * If applicable it calls clean-up routines of underlying data structures. 
+/** Clean up the HTRSDetector data structure.  This routine should be
+    called when the HTRSDetector data structure is not required any
+    more.  It takes care of releasing allocated memory and closes open
+    file connections.  If applicable it calls clean-up routines of
+    underlying data structures.
  */
 int cleanupHTRSDetector(HTRSDetector* hd);
 
-/** Add a photon impact to the HTRSDetector pixel array.
- * This is the standard routine to be called for the simulation of the HTRSDetector.
- * For a new photon incident on the detector this routine determines the resulting
- * generated charge from the detector response and stores the event in the output event file.
- * Split events are taken into account based on a Gaussian charge cloud shape.
+/** Add a photon impact to the HTRSDetector pixel array.  This is the
+    standard routine to be called for the simulation of the
+    HTRSDetector.  For a new photon incident on the detector this
+    routine determines the resulting generated charge from the
+    detector response and stores the event in the output event file.
+    Split events are taken into account based on a Gaussian charge
+    cloud shape.
  */
 int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact);
 

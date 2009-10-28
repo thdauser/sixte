@@ -1,7 +1,33 @@
 #include "squarepixels.h"
 
 
-int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters) 
+SquarePixels* getSquarePixels(struct SquarePixelsParameters* spp, int* status)
+{
+  SquarePixels* sp=(SquarePixels*)malloc(sizeof(SquarePixels));
+  if (NULL==sp) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Could not allocate memory for SquarePixels "
+		   "data structure!\n", *status);
+    return(sp);
+  }
+  // Set initial values.
+  sp->array=NULL;
+  sp->line2readout=NULL;
+  sp->xwidth=0;
+  sp->ywidth=0;
+  sp->xoffset=0;
+  sp->yoffset=0;
+  sp->xpixelwidth=0.;
+  sp->ypixelwidth=0.;
+
+  *status=initSquarePixels(sp, spp);
+  return(sp);
+}
+
+
+
+int initSquarePixels(SquarePixels* sp, 
+		     struct SquarePixelsParameters* parameters) 
 {
   int status = EXIT_SUCCESS;
 
@@ -17,7 +43,8 @@ int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters
   sp->array = (SquarePixel**)malloc(sp->xwidth*sizeof(SquarePixel*));
   if (NULL==sp->array) {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", status);
+    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
+		   status);
     return(status);
   } else {
     int count;
@@ -25,7 +52,8 @@ int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters
       sp->array[count] = (SquarePixel*)malloc(sp->ywidth*sizeof(SquarePixel));
       if (NULL==sp->array[count]) {
 	status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", status);
+	HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
+		       status);
 	return(status);
       }
     }
@@ -35,7 +63,8 @@ int initSquarePixels(SquarePixels* sp, struct SquarePixelsParameters* parameters
   sp->line2readout = (int*)malloc(sp->ywidth*sizeof(int));
   if (NULL==sp->line2readout) {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", status);
+    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
+		   status);
     return(status);
   }
 
@@ -84,6 +113,16 @@ void cleanupSquarePixels(SquarePixels* sp)
   if (NULL!=sp->line2readout) {
     free(sp->line2readout);
     sp->line2readout=NULL;
+  }
+}
+
+
+
+void freeSquarePixels(SquarePixels* sp)
+{
+  if (NULL!=sp) {
+    cleanupSquarePixels(sp);
+    free(sp);
   }
 }
 

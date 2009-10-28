@@ -2,7 +2,7 @@
 #define EROSITAEVENT_H 1
 
 
-/** WFI-specific event. */
+/** eROSITA specific event. */
 typedef struct {
   double time;
   long pha;
