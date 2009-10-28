@@ -81,17 +81,17 @@ struct HTRSTelStreamParameters {
 
 
 /** Constructor of the HTRSTelStream object. Allocate memory
- * and set up the initial configuration. */
+    and set up the initial configuration. */
 HTRSTelStream* getHTRSTelStream
 (struct HTRSTelStreamParameters* parameters, int* status);
 
 /** Destructor of the HTRSTelStream object. Release the
- * allocated memory. */
+    allocated memory. */
 void freeHTRSTelStream(HTRSTelStream* stream);
 
 /** Start a new TelemetryPacket and insert the packet header at the
- * beginning. */
-void newHTRSTelStreamPacket(HTRSTelStream* stream);
+    beginning. */
+int newHTRSTelStreamPacket(HTRSTelStream* stream);
 
 /** Add a new event to the HTRSTelStream. The function adds HTRSEvent
     objects to the HTRSTelStream. The return values is the error

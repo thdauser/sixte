@@ -3,6 +3,8 @@
 
 TelemetryPacket* getTelemetryPacket(int nbits, int* status)
 {
+  assert(nbits%8 == 0);
+
   TelemetryPacket* packet = (TelemetryPacket*)malloc(sizeof(TelemetryPacket));
   if (NULL==packet) {
     *status=EXIT_FAILURE;
@@ -112,7 +114,9 @@ int writeTelemetryPacket2File(TelemetryPacket* packet, FILE* file)
 {
   // Write the bytes from the internal storage to the file.
   int nbytes = fwrite (packet->data, 1, packet->nbits/8, file);
-  if (nbytes < packet->nbits) {
+  if (nbytes < packet->nbits/8) {
+    HD_ERROR_THROW("Error: Writing TelemetryPacket to binary output file failed!\n", 
+		   EXIT_FAILURE);
     return(EXIT_FAILURE);
   } else {
     return(EXIT_SUCCESS);

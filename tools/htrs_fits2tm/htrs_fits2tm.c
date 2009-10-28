@@ -85,7 +85,7 @@ int htrs_fits2tm_main()
     struct HTRSTelStreamParameters htsp = {
       .n_packet_bits = parameters.n_packet_bits,
       .n_header_bits = parameters.n_header_bits,
-      .n_bin_bits = 3,
+      .n_bin_bits    = parameters.n_bin_bits,
       .n_channels = n_rsp_channels,
       .n_bins     = 256,
       .integration_time = parameters.integration_time,
@@ -111,6 +111,11 @@ int htrs_fits2tm_main()
       if (EXIT_SUCCESS!=status) break;
 
     } // END of loop over all entries in the event file.
+    if (EXIT_SUCCESS!=status) break;
+    
+    // Finalize the HTRSTelStream. Otherwise the current TelemetryPacket will
+    // not be written to the output file and will therefore be lost.
+    status = finalizeHTRSTelStream(htstream);
 
   } while (0); // END of ERROR handling loop
 

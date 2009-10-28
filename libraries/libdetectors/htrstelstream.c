@@ -27,21 +27,30 @@ HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters,
   // Determine the maximum number of counts per spectrum bin.
   // This number is determined by the number of available bits per bin.
   assert(htstream->n_bin_bits <= 8);
-  htstream->max_counts = 0x0001 << (htstream->n_bin_bits-1);
+  htstream->max_counts = 0;
+  int count;
+  for (count=0; count<htstream->n_bin_bits; count++) {
+    htstream->max_counts = (htstream->max_counts<<1) +1;
+  }
 
   // Get a new TelemetryPacket object.
   htstream->tp = getTelemetryPacket(parameters->n_packet_bits, status);
   if(EXIT_SUCCESS!=*status) return(htstream);
   // Start a new TelemetryPacket.
-  newHTRSTelStreamPacket(htstream);
+  *status=newHTRSTelStreamPacket(htstream);
+  if (EXIT_SUCCESS!=*status) return(htstream);
 
   // Allocate memory for the binned spectrum.
-  htstream->spectrum=(int*)malloc(htstream->n_bin_bits*sizeof(int));
+  htstream->spectrum=(int*)malloc(htstream->n_bins*sizeof(int));
   if (NULL==htstream->spectrum) {
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: Could not allocate memory for HTRSTelStream!\n", 
 		   *status);
     return(htstream);
+  }
+  // Clear the spectrum.
+  for (count=0; count<htstream->n_bins; count++) {
+    htstream->spectrum[count] = 0;
   }
 
   // Open the binary output file.
@@ -78,43 +87,101 @@ void freeHTRSTelStream(HTRSTelStream* stream)
 
 int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event)
 {
+  unsigned char* byte_buffer=NULL;
   int status=EXIT_SUCCESS;
 
-  // Check if the event can be added to the existing spectrum, or whether
-  // a new telemetry packet has to be started. In the latter case the old
-  // packet will be written to the binary output file.
-  while (event->time > stream->spectrum_time+stream->integration_time) {
-    // A new spectrum has to be started.
+  do { // Beginning of ERROR Handling loop.
 
-    // Check whether the TelemetryPacket is full. In that case write the
-    // content to the binary output file and start a new TelemetryPacket.
-    if (availableBitsInTelemetryPacket(stream->tp) < 
-	stream->n_bin_bits*stream->n_bins) {
-
-      // Write the content of the packet to the binary output file.
-      status= writeTelemetryPacket2File(stream->tp, stream->output_file);
+    // Check if the event can be added to the existing spectrum, or whether
+    // a new telemetry packet has to be started. In the latter case the old
+    // packet will be written to the binary output file.
+    while (event->time > stream->spectrum_time+stream->integration_time) {
+      // A new spectrum has to be started.
+      
+      // Check whether the TelemetryPacket is full. In that case write the
+      // content to the binary output file and start a new TelemetryPacket.
+      if (availableBitsInTelemetryPacket(stream->tp) < 
+	  stream->n_bin_bits*stream->n_bins) {
+	
+	// Write the content of the packet to the binary output file.
+	status = writeTelemetryPacket2File(stream->tp, stream->output_file);
+	if (EXIT_SUCCESS!=status) break;
+	
+	// Start a new packet.
+	status=newHTRSTelStreamPacket(stream);
+	if (EXIT_SUCCESS!=status) break;
+      }
+      
+      // Add the binned spectrum to the TelemetryPacket.
+      int n_bytes = (stream->n_bins*stream->n_bin_bits)/8;
+      if (0!=(stream->n_bins*stream->n_bin_bits)%8) {
+	n_bytes+=1;
+      }
+      if (NULL==byte_buffer) {
+	byte_buffer=(unsigned char*)malloc(n_bytes*sizeof(unsigned char));
+      }
+      if (NULL==byte_buffer) {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Memory allocation failed for byte buffer in HTRSTelStream!\n",
+		       status);
+	break;
+      }
+      // Clean the byte buffer.
+      int count;
+      for (count=0; count<n_bytes; count++) {
+	byte_buffer[count] = 0;
+      }
+      // Fill the byte buffer with data from the spectrum.
+      int index, modulus;
+      unsigned char byte;
+      for (count=0; count<stream->n_bins; count++) {
+	byte = (unsigned char)stream->spectrum[count];
+	index = (count*stream->n_bin_bits)/8;
+	modulus = (count*stream->n_bin_bits)%8;
+	if (modulus+stream->n_bin_bits<=8) {
+	  byte_buffer[index]   = byte_buffer[index]   | 
+	    (byte<<(8-stream->n_bin_bits-modulus));
+	} else {
+	  byte_buffer[index]   = byte_buffer[index]   | 
+	    (byte>>(stream->n_bin_bits+modulus-8));
+	  byte_buffer[index+1] = byte_buffer[index+1] | 
+	    (byte<<(16-stream->n_bin_bits-modulus));
+	}
+      }
+      // Insert the byte buffer to the TelemtryPacket.
+      status = addData2TelemetryPacket(stream->tp, byte_buffer, 
+				       stream->n_bins*stream->n_bin_bits);
       if (EXIT_SUCCESS!=status) break;
 
-      // Start a new packet.
-      newHTRSTelStreamPacket(stream);
+      // Clear the spectrum.
+      for (count=0; count<stream->n_bins; count++) {
+	stream->spectrum[count] = 0;
+      }
+      
+      // Update the spectrum time.
+      stream->spectrum_time += stream->integration_time;
+    } // END of while loop.
+    if (EXIT_SUCCESS!=status) break;
+
+    // The event can be added to the current spectrum.
+    assert(event->pha>0); assert(event->pha<=stream->n_channels);
+    // Check for buffer overflows.
+    if (stream->spectrum[stream->chans2bins[event->pha-1]]<stream->max_counts) {
+      stream->spectrum[stream->chans2bins[event->pha-1]]++;
+    } else {
+      printf("### Warning: Buffer Overflow!\n");
+      printf("    Maximum number of counts exceeded in bin %d (%d/%d).\n",
+	     stream->chans2bins[event->pha-1],
+	     stream->spectrum[stream->chans2bins[event->pha-1]]+1,
+	     stream->max_counts);
     }
 
-    // TODO Add the binned spectrum to the TelemetryPacket.
+  } while(0); // END of Error Handling loop.
 
-    // Clear the spectrum.
-    int count;
-    for (count=0; count<stream->n_bins; count++) {
-      stream->spectrum[count] = 0;
-    }
 
-    // Update the spectrum time.
-    stream->spectrum_time += stream->integration_time;
-  }
-  if (EXIT_SUCCESS!=status) return(status);
+  // --- Clean up ---
 
-  // The event can be added to the current spectrum.
-  assert(event->pha>0); assert(event->pha<=stream->n_channels);
-  stream->spectrum[stream->chans2bins[event->pha-1]]++;
+  if (NULL!=byte_buffer) free(byte_buffer);
 
   return(status);
 }
@@ -123,20 +190,48 @@ int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event)
 
 int finalizeHTRSTelStream(HTRSTelStream* stream)
 {
-  // TODO
+  // TODO Check whether the TelemetryPacket is full. In that case write the
+  // content to the binary output file and start a new TelemetryPacket.
+
+  // TODO Add the binned spectrum to the TelemetryPacket.
+
+  // TODO Clear the spectrum
+
+  // TODO Update the spectrum time.
 
   return(EXIT_SUCCESS);
 }
 
 
 
-void newHTRSTelStreamPacket(HTRSTelStream* stream)
+int newHTRSTelStreamPacket(HTRSTelStream* stream)
 {
   // Initialize a new TelemetryPacket.
   newTelemetryPacket(stream->tp);
 
-  // TODO Insert the header a the beginning of the new packet.
-
+  // Insert the header a the beginning of the new packet.
+  assert(140==stream->n_header_bits);
+  unsigned char bytes[18];
+  bytes[0]=0x01;
+  bytes[1]=0x23;
+  bytes[2]=0x45;
+  bytes[3]=0x67;
+  bytes[4]=0x89;
+  bytes[5]=0xAB;
+  bytes[6]=0xCD;
+  bytes[7]=0xEF;
+  bytes[8]=0x01;
+  bytes[9]=0x23;
+  bytes[10]=0x45;
+  bytes[11]=0x67;
+  bytes[12]=0x89;
+  bytes[13]=0xAB;
+  bytes[14]=0xCD;
+  bytes[15]=0xEF;
+  bytes[16]=0x01;
+  bytes[17]=0x23;
+  // Insert the byte buffer to the TelemtryPacket.
+  return(addData2TelemetryPacket(stream->tp, bytes, stream->n_header_bits));
 }
 
 
