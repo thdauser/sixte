@@ -121,7 +121,7 @@ int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event)
 
 
 
-int completeHTRSTelStream(HTRSTelStream* stream)
+int finalizeHTRSTelStream(HTRSTelStream* stream)
 {
   // TODO
 

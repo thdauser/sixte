@@ -101,7 +101,7 @@ int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event);
 /** Finalize the HTRSTelStream. This routine add the current spectrum
     to the TelemetryPacket and writes the whole TelemetryPacket to the
     binary output file. */
-int completeHTRSTelStream(HTRSTelStream* stream);
+int finalizeHTRSTelStream(HTRSTelStream* stream);
 
 
 #endif /* HTRSTELSTREAM_H */
