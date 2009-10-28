@@ -331,3 +331,15 @@ int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d 
   //#endif /* GAUSSIAN_CHARGE_CLOUDS */
 }
 
+
+int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
+{
+  *x = (int)(position.x/sp->xpixelwidth + (double)(sp->xwidth/2) +1.)-1;
+  *y = (int)(position.y/sp->ypixelwidth + (double)(sp->ywidth/2) +1.)-1;
+ 
+  if ((*x>=0) && (*x<sp->xwidth) && (*y>=0) && (*y<sp->ywidth)) {
+    return (1); // Valid pixel.
+  } else {
+    return (0); // Invalid pixel.
+  }
+}

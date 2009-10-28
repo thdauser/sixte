@@ -88,9 +88,16 @@ inline void clearLineSquarePixels(SquarePixels* sp, const int line);
 
 /** Determine the split ratios of a photon impact on an array of
     square pixels. */
-int getSquarePixelsSplits(SquarePixels*, GenericDetector*, 
+int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, 
 			  struct Point2d position, 
 			  int* x, int* y, double* fraction);
+
+/** Determine the pixel that is hit by a photon impact. The affected
+    pixel is return by the x and y parameters (pixel index starting at
+    0). The return value is 1, if a valid pixel is hit. Otherwise it
+    is zero. In the latter case the pixel coordinates x and y are
+    undefined. */
+int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y);
 
 
 #endif /* SQUARE_PIXELS_H */

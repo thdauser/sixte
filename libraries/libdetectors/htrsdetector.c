@@ -1,7 +1,8 @@
 #include "htrsdetector.h"
 
 
-int initHTRSDetector(HTRSDetector* hd, struct HTRSDetectorParameters* parameters)
+int initHTRSDetector(HTRSDetector* hd, 
+		     struct HTRSDetectorParameters* parameters)
 {
   int status = EXIT_SUCCESS;
 
@@ -82,25 +83,27 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
     // Determine the affected pixel(s) and their corresponding charge fractions.
     int pixel[2];
     double fraction[2];
-    int nsplits = getHexagonalPixelSplits(&hd->pixels, &hd->generic, impact->position, 
-					  pixel, fraction);
+    int nsplits = getHexagonalPixelSplits(&hd->pixels, &hd->generic, 
+					  impact->position, pixel, fraction);
     // Loop over all split partners.
     int pixel_counter;
     for (pixel_counter=0; pixel_counter<nsplits; pixel_counter++) {
       if (INVALID_PIXEL != pixel[pixel_counter]) {
 	
 	// Check if the pixel is currently active.
-	if (impact->time - hd->pixels.array[pixel[pixel_counter]].last_impact < hd->dead_time) {
-	  // The photon cannot be detected in this pixel as it is still within the
-	  // dead time after the previous event.
+	if (impact->time - hd->pixels.array[pixel[pixel_counter]].last_impact 
+	    < hd->dead_time) {
+	  // The photon cannot be detected in this pixel as it is still within 
+	  // the dead time after the previous event.
 	  continue;
 	}
 
-	// Add the charge created by the photon to the affected detector pixel(s).
+	// Add the charge created by the photon to the affected detector 
+	// pixel(s).
 	HTRSEvent event;
 
-	// Determine the detector channel that corresponds to the charge fraction
-	// created by the incident photon in the regarded pixel.
+	// Determine the detector channel that corresponds to the charge 
+	// fraction created by the incident photon in the regarded pixel.
 	event.pha = getChannel(charge * fraction[pixel_counter], hd->generic.rmf);
 	//                     |        |-> charge fraction due to split events
 	//                     |-> charge created by incident photon
