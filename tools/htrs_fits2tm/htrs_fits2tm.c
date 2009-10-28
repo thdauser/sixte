@@ -69,16 +69,12 @@ int htrs_fits2tm_main()
     // Set up the look-up table that assigns a spectrum bin to each 
     // detector RSP channel.
     int chans2bins[n_rsp_channels];
-    int count;
+    int count, count2;
     for (count=0; count<128; count++) {
-      chans2bins[count*2]   = count;
-      chans2bins[count*2+1] = count;
-      chans2bins[256+count*6]   = count+128;
-      chans2bins[256+count*6+1] = count+128;
-      chans2bins[256+count*6+2] = count+128;
-      chans2bins[256+count*6+3] = count+128;
-      chans2bins[256+count*6+4] = count+128;
-      chans2bins[256+count*6+5] = count+128;
+      chans2bins[count] = count;
+      for (count2=0; count2<7; count2++) {
+	chans2bins[128+count*7+count2] = count+128;
+      }
     }
 
     // Initialize the TelemetryPacket data structure.
