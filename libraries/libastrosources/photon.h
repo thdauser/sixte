@@ -20,8 +20,7 @@
 
 // Counter for the number of entirely generated photons.
 long photon_counter;
-long nbphotons; // TODO RM
-long nlphotons; // TODO RM
+
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.

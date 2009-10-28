@@ -120,7 +120,6 @@ int create_photons(PointSource* ps /**< Source data. */,
     free(*pole);
     *pole = NULL;
 
-    nlphotons--; // TODO RM
   }
   }*/
 void clear_PhotonList(struct PhotonOrderedListEntry** pole)
@@ -130,7 +129,6 @@ void clear_PhotonList(struct PhotonOrderedListEntry** pole)
   while (NULL!=*pole) {
     buffer = (*pole)->next;
     free(*pole);
-    nlphotons--; // TODO RM
     *pole = buffer;
   }
 }
@@ -160,8 +158,6 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
     HD_ERROR_THROW("Error: Could not allocate memory for new photon entry!\n", EXIT_FAILURE);
     return(EXIT_FAILURE);
   }
-
-  nlphotons++; // TODO RM
 
   // Set the values of the new entry:
   new_entry->photon = *ph;
@@ -194,8 +190,6 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
       return(status);
     }
 
-    nbphotons++; // TODO RM
-
     (*ptr)->photon = *ph;
     (*ptr)->sptr = NULL;
     (*ptr)->gptr = NULL;
@@ -225,7 +219,6 @@ int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
       HD_ERROR_THROW("Error: memory allocation for binary tree failed!\n", status);
       return(status);
     }
-    nbphotons++; // TODO RM
     (*ptr)->photon = *ph;
     (*ptr)->sptr = NULL;
     (*ptr)->gptr = NULL;
@@ -257,7 +250,6 @@ int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
       HD_ERROR_THROW("Error: memory allocation for binary tree failed!\n", status);
       return(status);
     }
-    nbphotons++; // TODO RM
     (*next)->photon = *ph;
     (*next)->sptr = NULL;
     (*next)->gptr = NULL;
@@ -275,32 +267,24 @@ int CreateOrderedPhotonList(struct PhotonBinaryTreeEntry** tree_ptr,
 {
   int status=EXIT_SUCCESS;
 
-  printf("inside\n"); // TODO RM
-
   // Check if the current tree entry exists.
   if (NULL != *tree_ptr) {
 
     // Add the entries before the current one to the time-ordered list.
     status = CreateOrderedPhotonList(&(*tree_ptr)->sptr, list_first, list_current);
-    printf("up\n");  // TODO RM
     if (EXIT_SUCCESS != status) return(status);
 
     // Insert the current entry into the time-ordered list at the right position.
     status = insert_Photon2TimeOrderedList(list_first, list_current, &(*tree_ptr)->photon);
-    printf("middle\n");  // TODO RM
     if (EXIT_SUCCESS != status) return(status);
     
     // Add the entries after the current one to the time-ordered list.
     status = CreateOrderedPhotonList(&(*tree_ptr)->gptr, list_first, list_current);
-    printf("down\n");  // TODO RM
     if (EXIT_SUCCESS != status) return(status);
 
     // Delete the binary tree entry, as it is not required any more.
     free(*tree_ptr);
     *tree_ptr=NULL;
-
-    printf("free\n"); // TODO RM
-    nbphotons--; // TODO RM
 
   } // END if current tree entry exists.
 

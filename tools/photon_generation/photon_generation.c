@@ -71,9 +71,6 @@ int photon_generation_main()
   set_toolname("photon_generation");
   set_toolversion("0.01");
 
-  // TODO RM
-  nbphotons=0;
-  nlphotons=0;
 
   do {  // Beginning of ERROR HANDLING Loop.
 
@@ -305,7 +302,6 @@ int photon_generation_main()
     for(time=parameters.t0; 
 	(time<parameters.t0+parameters.timespan)&&(status==EXIT_SUCCESS); time+=dt) {
       headas_chat(0, "\rtime: %.3lf s ", time);
-      printf("\r%ld %ld                         \n", nbphotons, nlphotons); // TODO RM
       fflush(NULL);
 
       // Get the last attitude entry before 'time' (in order to interpolate 
@@ -597,8 +593,6 @@ int photon_generation_main()
 	struct PhotonOrderedListEntry* pl_entry = photon_list->next; // Buffer
 	free(photon_list);
 	photon_list = pl_entry;
-
-	nlphotons--; // TODO RM
 
       } // END of scanning the photon list.
 
