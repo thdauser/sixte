@@ -121,6 +121,15 @@ int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event)
 
 
 
+int completeHTRSTelStream(HTRSTelStream* stream)
+{
+  // TODO
+
+  return(EXIT_SUCCESS);
+}
+
+
+
 void newHTRSTelStreamPacket(HTRSTelStream* stream)
 {
   // Initialize a new TelemetryPacket.
