@@ -635,41 +635,35 @@ int photon_generation_main()
 
 
 
-////////////////////////////
 int photon_generation_getpar(struct Parameters* parameters)
 {
-  char msg[MAXMSG];           // error message buffer
-  int status = EXIT_SUCCESS;  // error status flag
+  char msg[MAXMSG];           // Error message buffer.
+  int status = EXIT_SUCCESS;  // Error status flag.
 
   // Get the filename of the Attitude file (FITS file):
   if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
-    sprintf(msg, "Error reading the filename of the attitude file!\n");
-    HD_ERROR_THROW(msg, status);
+    HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
   }
 
   // Get the filename of the detector redistribution file (FITS file)
   else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
-    sprintf(msg, "Error reading the filename of the detector" 
-	    "redistribution matrix file (RMF)!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the filename of the detector" 
+		   "redistribution matrix file (RMF)!\n", status);
   }
 
   // Get the start time of the photon generation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
-    sprintf(msg, "Error reading the 't0' parameter!\n");
-    HD_ERROR_THROW(msg, status);
+    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
   }
 
   // Get the timespan for the photon generation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
-    sprintf(msg, "Error reading the 'timespan' parameter!\n");
-    HD_ERROR_THROW(msg, status);
+    HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
 
   // Get the diameter of the FOV (in arcmin)
   else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
-    sprintf(msg, "Error reading the diameter of the FOV!\n");
-    HD_ERROR_THROW(msg, status);
+    HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
   }
 
   // Determine the name of the file that contains the input sources (either
