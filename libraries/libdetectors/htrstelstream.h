@@ -90,18 +90,25 @@ HTRSTelStream* getHTRSTelStream
 void freeHTRSTelStream(HTRSTelStream* stream);
 
 /** Start a new TelemetryPacket and insert the packet header at the
-    beginning. */
+    beginning. The return value is the error status. */
 int newHTRSTelStreamPacket(HTRSTelStream* stream);
 
 /** Add a new event to the HTRSTelStream. The function adds HTRSEvent
-    objects to the HTRSTelStream. The return values is the error
+    objects to the HTRSTelStream. The return value is the error
     status. */
 int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event);
 
 /** Finalize the HTRSTelStream. This routine add the current spectrum
     to the TelemetryPacket and writes the whole TelemetryPacket to the
-    binary output file. */
+    binary output file. It does NOT start a new TelemetryPacket. The
+    return value is the error status. */
 int finalizeHTRSTelStream(HTRSTelStream* stream);
+
+/** Add the binned spectrum stored in the HTRSTelStream data structure
+    to the Telemetry packet. After adding the spectrum to the
+    TelemetryPacket the function clears the spectrum to start the next
+    binning period. The return value is the error status. */
+int HTRSTelStreamAddSpec2Packet(HTRSTelStream* stream);
 
 
 #endif /* HTRSTELSTREAM_H */
