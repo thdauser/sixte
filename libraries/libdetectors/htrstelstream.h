@@ -32,6 +32,8 @@ typedef struct {
    * bin is limited. The following variable represents this
    * maximum. */
   int max_counts;
+  /** Number of bit overflows. */
+  int n_overflows;
 
   /** Binary output file. The data added to the HTRSTelemetryStream is
    * written to this binary output file. */
@@ -54,6 +56,11 @@ typedef struct {
    * The array contains n_channels elements. */
   int* chans2bins; 
   
+  /** Total number of generated (maybe incomplete) packets. */
+  int n_packets;
+  /** Number of packets written to binary output file. */
+  int n_written_packets;
+
 } HTRSTelStream;
 
 
@@ -109,6 +116,10 @@ int finalizeHTRSTelStream(HTRSTelStream* stream);
     TelemetryPacket the function clears the spectrum to start the next
     binning period. The return value is the error status. */
 int HTRSTelStreamAddSpec2Packet(HTRSTelStream* stream);
+
+/** Print statistical information about the generated Telemetry of the
+    HTRS instrument. */
+void HTRSTelStreamPrintStatistics(HTRSTelStream* stream);
 
 
 #endif /* HTRSTELSTREAM_H */

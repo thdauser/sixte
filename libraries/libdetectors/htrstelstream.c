@@ -23,11 +23,14 @@ HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters,
   htstream->output_file   = NULL;
   htstream->spectrum      = NULL;
   htstream->chans2bins    = parameters->chans2bins;
+  htstream->max_counts    = 0;
+  htstream->n_overflows   = 0;
+  htstream->n_packets     = 0;
+  htstream->n_written_packets = 0;
 
   // Determine the maximum number of counts per spectrum bin.
   // This number is determined by the number of available bits per bin.
   assert(htstream->n_bin_bits <= 8);
-  htstream->max_counts = 0;
   int count;
   for (count=0; count<htstream->n_bin_bits; count++) {
     htstream->max_counts = (htstream->max_counts<<1) +1;
@@ -113,6 +116,7 @@ int addEvent2HTRSTelStream(HTRSTelStream* stream, HTRSEvent* event)
 	     stream->chans2bins[event->pha-1],
 	     stream->spectrum[stream->chans2bins[event->pha-1]]+1,
 	     stream->max_counts);
+      stream->n_overflows++;
     }
 
   } while(0); // END of Error Handling loop.
@@ -134,6 +138,7 @@ int finalizeHTRSTelStream(HTRSTelStream* stream)
     // Write the content of the packet to the binary output file.
     status = writeTelemetryPacket2File(stream->tp, stream->output_file);
     if (EXIT_SUCCESS!=status) return(status);
+    stream->n_written_packets++;
   }
   
   return(status);
@@ -156,6 +161,7 @@ int HTRSTelStreamAddSpec2Packet(HTRSTelStream* stream)
       // Write the content of the packet to the binary output file.
       status = writeTelemetryPacket2File(stream->tp, stream->output_file);
       if (EXIT_SUCCESS!=status) break;
+      stream->n_written_packets++;
 	
       // Start a new packet.
       status=newHTRSTelStreamPacket(stream);
@@ -225,6 +231,7 @@ int newHTRSTelStreamPacket(HTRSTelStream* stream)
 {
   // Initialize a new TelemetryPacket.
   newTelemetryPacket(stream->tp);
+  stream->n_packets++;
 
   // Insert the header a the beginning of the new packet.
   assert(140==stream->n_header_bits);
@@ -249,6 +256,24 @@ int newHTRSTelStreamPacket(HTRSTelStream* stream)
   bytes[17]=0x23;
   // Insert the byte buffer to the TelemtryPacket.
   return(addData2TelemetryPacket(stream->tp, bytes, stream->n_header_bits));
+}
+
+
+
+void HTRSTelStreamPrintStatistics(HTRSTelStream* stream)
+{
+  headas_printf("\nHTRS Telemetry Stream:\n");
+  headas_printf(" total bits of telemetry packet: %d\n", stream->tp->nbits);
+  headas_printf(" bits reserved for header: %d\n", stream->n_header_bits);
+  headas_printf(" number of spectral bins: %d\n", stream->n_bins);
+  headas_printf(" bits per spectral bin: %d\n", stream->n_bin_bits);
+  headas_printf(" maximum counts per spectral bin: %d\n", stream->max_counts);
+  headas_printf(" number of bit overflows: %d\n", stream->n_overflows);
+  headas_printf(" integration time: %lf\n", stream->integration_time);
+  headas_printf(" packet rate: %lf\n", 1./stream->integration_time);
+  headas_printf(" written vs. total number of packets: %d/%d\n", 
+		stream->n_written_packets, stream->n_packets);
+  headas_printf("\n");
 }
 
 

@@ -113,6 +113,9 @@ int htrs_fits2tm_main()
     // not be written to the output file and will therefore be lost.
     status = finalizeHTRSTelStream(htstream);
 
+    // Print the statistical information about the generated Telemetry Stream.
+    HTRSTelStreamPrintStatistics(htstream);
+
   } while (0); // END of ERROR handling loop
 
 
