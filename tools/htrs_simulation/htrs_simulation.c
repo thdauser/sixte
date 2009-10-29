@@ -66,14 +66,20 @@ int htrs_simulation_main() {
     };
 #endif
 #ifdef HTRS_ARCPIXELS
+    /* // Configuration with 31 pixels.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.26e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
-    double offset_angle[4] = { 0., 0., M_PI/12, 0. };
+    double offset_angles[4] = { 0., 0., M_PI/12, 0. };
+    */
+    // Configuration with 37 pixels.
+    int npixels[4] = { 1, 7, 14, 15 };
+    double radii[4] = { 2.26e-3, 5.3e-3, 8.5e-3, 12.0e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = 4,
 		  .npixels = npixels,
 		  .radius = radii,
-		  .offset_angle = offset_angle },
+		  .offset_angle = offset_angles },
       .generic = { .ccsigma = parameters.ccsigma, 
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
