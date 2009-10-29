@@ -112,6 +112,7 @@ int htrs_simulation_main() {
       if (EXIT_SUCCESS!=status) break;
 
     } // END of scanning the impact list.
+    if (EXIT_SUCCESS!=status) break;
     
   } while(0); // END of the error handling loop.
 

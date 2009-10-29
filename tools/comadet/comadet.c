@@ -66,7 +66,12 @@ int comadet_main() {
       status=getNextImpactListFileRow(&impactlistfile, &impact);
       if(EXIT_SUCCESS!=status) break;
 
+      // Call the photon detection routine of the Coded Mask Detector.
+      status=addImpact2CoMaDetector(detector, &impact);
+      if (EXIT_SUCCESS!=status) break;
+
     } // END of scanning the impact list.
+    if (EXIT_SUCCESS!=status) break;
 
   } while(0);  // END of the error handling loop.
 

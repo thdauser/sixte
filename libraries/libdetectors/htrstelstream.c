@@ -274,6 +274,8 @@ void HTRSTelStreamPrintStatistics(HTRSTelStream* stream)
   headas_printf(" number of spectra: %d\n", stream->n_spectra);
   headas_printf(" integration time: %lf\n", stream->integration_time);
   headas_printf(" packet rate: %lf\n", 1./stream->integration_time);
+  headas_printf(" data rate: %lf Mbit/s\n", 
+		1./stream->integration_time*stream->tp->nbits/1.e6);
   headas_printf(" written vs. total number of packets: %d/%d\n", 
 		stream->n_written_packets, stream->n_packets);
   headas_printf("\n");
