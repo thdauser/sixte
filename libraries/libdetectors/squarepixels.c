@@ -160,8 +160,8 @@ int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d 
   int ye[4] = {0,1,0,-1};
 
   // Calculate pixel indices (integer) of central affected pixel:
-  x[0] = (int)(position.x/sp->xpixelwidth + (double)(sp->xwidth/2) +1.)-1;
-  y[0] = (int)(position.y/sp->ypixelwidth + (double)(sp->ywidth/2) +1.)-1;
+  x[0] = (int)(position.x/sp->xpixelwidth + 0.5*sp->xwidth +1.)-1;
+  y[0] = (int)(position.y/sp->ypixelwidth + 0.5*sp->ywidth +1.)-1;
   
   // If charge cloud size is 0, i.e. no splits are created.
   if (gd->ccsize < 1.e-20) {
@@ -332,10 +332,11 @@ int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d 
 }
 
 
+
 int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 {
-  *x = (int)(position.x/sp->xpixelwidth + (double)(sp->xwidth/2) +1.)-1;
-  *y = (int)(position.y/sp->ypixelwidth + (double)(sp->ywidth/2) +1.)-1;
+  *x = (int)(position.x/sp->xpixelwidth + sp->xwidth*0.5 +1.)-1;
+  *y = (int)(position.y/sp->ypixelwidth + sp->ywidth*0.5 +1.)-1;
  
   if ((*x>=0) && (*x<sp->xwidth) && (*y>=0) && (*y<sp->ywidth)) {
     return (1); // Valid pixel.
@@ -343,3 +344,5 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
     return (0); // Invalid pixel.
   }
 }
+
+

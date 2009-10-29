@@ -2,6 +2,6 @@ impactlist_filename,f,lq,"impacts_1Crab.fits",,,"impact list file (FITS input fi
 eventlist_filename,f,lq,"events_1Crab.fits",,,"event list file (FITS output file)"
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 width,i,lq,139,0,10000,"width of the detector (pixels) "
-pixelwidth,r,lq,1.0,0.0,100.0,"width of one detector pixel (m)"
+pixelwidth,r,lq,0.0013,0.0,100.0,"width of one detector pixel (m)"
 chatter,i,lh,5,,,"chatter: control verbosity of the program"
 history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"
