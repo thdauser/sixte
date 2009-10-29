@@ -56,6 +56,8 @@ typedef struct {
    * The array contains n_channels elements. */
   int* chans2bins; 
   
+  /** Total number of generated spectra. */
+  int n_spectra;
   /** Total number of generated (maybe incomplete) packets. */
   int n_packets;
   /** Number of packets written to binary output file. */

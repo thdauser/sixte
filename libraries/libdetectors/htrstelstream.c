@@ -27,6 +27,7 @@ HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters,
   htstream->n_overflows   = 0;
   htstream->n_packets     = 0;
   htstream->n_written_packets = 0;
+  htstream->n_spectra     = 0;
 
   // Determine the maximum number of counts per spectrum bin.
   // This number is determined by the number of available bits per bin.
@@ -206,14 +207,15 @@ int HTRSTelStreamAddSpec2Packet(HTRSTelStream* stream)
     }
     // Insert the byte buffer to the TelemtryPacket.
     status = addData2TelemetryPacket(stream->tp, byte_buffer, 
-				       stream->n_bins*stream->n_bin_bits);
+				     stream->n_bins*stream->n_bin_bits);
     if (EXIT_SUCCESS!=status) break;
+    stream->n_spectra++;
     
     // Clear the spectrum.
     for (count=0; count<stream->n_bins; count++) {
       stream->spectrum[count] = 0;
     }
-      
+
     // Update the spectrum time.
     stream->spectrum_time += stream->integration_time;
 
@@ -269,6 +271,7 @@ void HTRSTelStreamPrintStatistics(HTRSTelStream* stream)
   headas_printf(" bits per spectral bin: %d\n", stream->n_bin_bits);
   headas_printf(" maximum counts per spectral bin: %d\n", stream->max_counts);
   headas_printf(" number of bit overflows: %d\n", stream->n_overflows);
+  headas_printf(" number of spectra: %d\n", stream->n_spectra);
   headas_printf(" integration time: %lf\n", stream->integration_time);
   headas_printf(" packet rate: %lf\n", 1./stream->integration_time);
   headas_printf(" written vs. total number of packets: %d/%d\n", 
