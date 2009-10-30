@@ -95,6 +95,12 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	    < hd->dead_time) {
 	  // The photon cannot be detected in this pixel as it is still within 
 	  // the dead time after the previous event.
+
+	  // TODO Although the current photon cannot be detected, the dead time
+	  // of the affected pixel is extended due to its interaction with the
+	  // detector.
+	  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
+
 	  continue;
 	}
 
@@ -173,6 +179,14 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  if (EXIT_SUCCESS!=status) return(status);
 
 	} // END Check for thresholds.
+
+      } else {
+	// The new photon impact lies within the dead time of the affected pixel.
+	// TODO Although the current photon cannot be detected, the dead time
+	// of the affected pixel is extended due to its interaction with the
+	// detector.
+	hd->pixels.array[ring][number].last_impact = impact->time;
+
       } // END Check for dead time.
     } // END if valid pixel.
 #endif

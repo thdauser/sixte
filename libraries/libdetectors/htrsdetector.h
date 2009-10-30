@@ -5,10 +5,18 @@
 #include "genericdetector.h"
 
 #ifdef HTRS_HEXPIXELS
+#define HTRS_ANYPIXELS 1
 #include "hexagonalpixels.h"
 #endif
 #ifdef HTRS_ARCPIXELS
+#define HTRS_ANYPIXELS 1
 #include "arcpixels.h"
+#endif
+
+// Check whether any of the possible detector pixel layouts (hexagonal
+// or arc) has been selected. If not, break with an error message.
+#ifndef HTRS_ANYPIXELS
+#error "Error: No pixel type for HTRS detector selected!"
 #endif
 
 #include "eventfile.h"

@@ -53,8 +53,9 @@ int main(int argc, char* argv[])
       };
 
       // Initialization of HexagonalPixels data structure.
-      if(EXIT_SUCCESS!=(status=initHexagonalPixels(&hexagonalPixels[count_pixelwidth], 
-						   &hpparameters))) break;
+      status=initHexagonalPixels(&hexagonalPixels[count_pixelwidth], 
+				 &hpparameters);
+      if (EXIT_SUCCESS!=status) break;
     } // END of loop over different pixel widths.
     if (EXIT_SUCCESS!=status) break;
 #endif
@@ -72,7 +73,7 @@ int main(int argc, char* argv[])
     */
     // Configuration with 37 pixels.
     int npixels[4] = { 1, 7, 14, 15 };
-    double radii[4] = { 2.26e-3, 5.3e-3, 8.5e-3, 12.0e-3 };
+    double radii[4] = { 2.3e-3, 5.44e-3, 8.77e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
