@@ -26,7 +26,8 @@ dist_pfiles_DATA = photon_generation.par
 bin_PROGRAMS = photon_generation
 
 photon_generation_SOURCES = photon_generation.c photon_generation.h
-photon_generation_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+photon_generation_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+photon_generation_LDADD += @top_builddir@/libraries/libdetectors/libdetectors.la
 photon_generation_LDADD += @top_builddir@/libraries/libastrosources/libastrosources.la
 photon_generation_LDADD += @top_builddir@/libraries/libsatellites/libsatellites.la
 

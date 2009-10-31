@@ -116,6 +116,7 @@ AC_CONFIG_FILES([Makefile
 		tools/analyse_xms_events/Makefile
 		tools/pattern_recombination/Makefile
 		tools/comaimg/Makefile
-		tools/comadet/Makefile])
+		tools/comadet/Makefile
+		tools/comarecon/Makefile])
 AC_OUTPUT
 

@@ -32,6 +32,7 @@ htrs_fits2tm
 wfi_simulation
 comaimg
 comadet
+comarecon
 
 # Autotool stuff:
 aclocal.m4
