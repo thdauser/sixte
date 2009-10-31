@@ -71,9 +71,14 @@ int main(int argc, char* argv[])
     double radii[4] = { 2.26e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., M_PI/12, 0. };
     */
-    // Configuration with 37 pixels.
+    /*// Configuration with 37 pixels.
     int npixels[4] = { 1, 7, 14, 15 };
     double radii[4] = { 2.3e-3, 5.44e-3, 8.77e-3, 12.0e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    */
+    // Configuration with 50 pixels.
+    int npixels[4] = { 1, 9, 25, 25 };
+    double radii[4] = { 2.1e-3, 5.47e-3, 8.79e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
