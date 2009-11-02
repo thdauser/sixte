@@ -2,6 +2,7 @@
 #define PATTERN_RECOMBINATION_H 1
 
 #include "sixt.h"
+#include "genericdetector.h"
 #include "wfidetector.h"
 
 #define TOOLSUB pattern_recombination_main
