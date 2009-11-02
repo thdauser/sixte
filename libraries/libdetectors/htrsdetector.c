@@ -6,6 +6,12 @@ int initHTRSDetector(HTRSDetector* hd,
 {
   int status = EXIT_SUCCESS;
 
+  // Set up the initial default HTRS configuration.
+  hd->dead_time = parameters->dead_time;
+  hd->nevents = 0;
+  hd->nsingles = 0;
+  hd->ndoubles = 0;
+
   // Call the initialization routines of the underlying data structures.
   status = initGenericDetector(&hd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
@@ -18,9 +24,6 @@ int initHTRSDetector(HTRSDetector* hd,
   status = initArcPixels(&hd->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
 #endif
-
-  // Set up the HTRS configuration.
-  hd->dead_time = parameters->dead_time;
 
   // Create a new FITS event file and open it.
   status = openNewHTRSEventFile(&hd->eventlist, parameters->eventlist_filename,
@@ -36,15 +39,23 @@ int cleanupHTRSDetector(HTRSDetector* hd)
 {
   int status=EXIT_SUCCESS;
 
-  // Call the cleanup routines of the underlying data structures.
+  if (NULL!=hd) {
+    // Print some statistical data:
+    headas_printf("\nHTRS Detector statistics:\n");
+    headas_printf(" number of events: %ld\n", hd->nevents);
+    headas_printf(" number of single events: %ld\n", hd->nsingles);
+    headas_printf(" number of double events: %ld\n", hd->ndoubles);
+		  
+    // Call the cleanup routines of the underlying data structures.
 #ifdef HTRS_HEXPIXELS
-  cleanupHexagonalPixels(&hd->pixels);
+    cleanupHexagonalPixels(&hd->pixels);
 #endif
 #ifdef HTRS_ARCPIXELS
-  cleanupArcPixels(&hd->pixels);
+    cleanupArcPixels(&hd->pixels);
 #endif
 
-  status = closeHTRSEventFile(&hd->eventlist);
+    status = closeHTRSEventFile(&hd->eventlist);
+  }
 
   return(status);
 }
@@ -82,6 +93,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 #ifdef HTRS_HEXPIXELS
     // Determine the affected pixel(s) and their corresponding charge fractions.
     int pixel[2];
+    int npixels=0; // Number of VALID split partners.
     double fraction[2];
     int nsplits = getHexagonalPixelSplits(&hd->pixels, &hd->generic, 
 					  impact->position, pixel, fraction);
@@ -99,7 +111,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  // TODO Although the current photon cannot be detected, the dead time
 	  // of the affected pixel is extended due to its interaction with the
 	  // detector.
-	  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
+	  //  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
 
 	  continue;
 	}
@@ -135,9 +147,20 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  status = addHTRSEvent2File(&hd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
 
+	  npixels++;
+
 	} // END Check for thresholds.
       } // END if valid pixel
     } // END of loop over split partners
+
+    // Count the number of events for statistical information.
+    if (1==npixels) {
+      hd->nsingles++;
+      hd->nevents++;
+    } else if (2==npixels) {
+      hd->ndoubles++;
+      hd->nevents++;
+    }
 #endif
 
 #ifdef HTRS_ARCPIXELS
@@ -178,6 +201,10 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  status = addHTRSEvent2File(&hd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
 
+	  // Gather statistical data.
+	  hd->nevents++;
+	  hd->nsingles++;
+
 	} // END Check for thresholds.
 
       } else {
@@ -185,7 +212,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	// TODO Although the current photon cannot be detected, the dead time
 	// of the affected pixel is extended due to its interaction with the
 	// detector.
-	hd->pixels.array[ring][number].last_impact = impact->time;
+	//hd->pixels.array[ring][number].last_impact = impact->time;
 
       } // END Check for dead time.
     } // END if valid pixel.

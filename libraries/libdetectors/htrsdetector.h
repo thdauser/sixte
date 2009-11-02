@@ -25,16 +25,16 @@
 
 
 /** Model for the HTRS detector on IXO. This data structure contains
- * the data required for the simulation of the HTRS. It inherits some
- * properties of the GenericDetector and SquarePixels data structures.
- * The HTRSDetector data structure can be initialized by calling the
- * initHTRSDetector() function with a HTRSDetectorParameters data
- * structure containing the desired setup. A new photon Impact can be
- * added to the HTRSDetector array by the function
- * addImpact2HTRSDetector(). Finally after the simulation when the
- * data structure is not required any more, the cleanupHTRSDetector()
- * routine should be called to release allocated memory and close open
- * file connections.
+    the data required for the simulation of the HTRS. It inherits some
+    properties of the GenericDetector and SquarePixels data
+    structures.  The HTRSDetector data structure can be initialized by
+    calling the initHTRSDetector() function with a
+    HTRSDetectorParameters data structure containing the desired
+    setup. A new photon Impact can be added to the HTRSDetector array
+    by the function addImpact2HTRSDetector(). Finally after the
+    simulation when the data structure is not required any more, the
+    cleanupHTRSDetector() routine should be called to release
+    allocated memory and close open file connections.
  */
 typedef struct {
 
@@ -61,6 +61,13 @@ typedef struct {
    * are written to this event file that must have the HTRS-specific
    * format. */
   HTRSEventFile eventlist;
+
+  /** Number of events. */
+  long nevents;
+  /** Number of single events. */
+  long nsingles;
+  /** Number of double split events. */
+  long ndoubles; 
 
 } HTRSDetector;
 
