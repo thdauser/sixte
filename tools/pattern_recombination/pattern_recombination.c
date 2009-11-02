@@ -308,6 +308,7 @@ int pattern_recombination_main() {
 
     // Read the EBOUNDS from the detector response file.
     struct RMF* rmf = loadRMF(parameters.response_filename, &status);
+    if (EXIT_SUCCESS!=status) break;
 
     // Open the INPUT event file:
     status = openWFIEventFile(&eventfile, parameters.eventlist_filename, READONLY);
