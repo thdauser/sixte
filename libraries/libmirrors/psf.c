@@ -1,13 +1,15 @@
 #include "psf.h"
 
 
-// This function determines from the sky position of the source and the photon
-// energy, which PSF data should be used to calculate the photon-detector hitting 
-// point. It returns the corresponding PSF data structure.
-// IMPORTANT: The function assumes that the individual PSF data sets lie on a 
-// regular pattern: energy_{i,j} = energy_{i,k} and angle_{i,j} = angle_{k,j} !
-static inline PSF_Item *get_best_psf_item(
-					  double offaxis_angle, // [rad]
+/** Selected the PSF item from the available ones that matches best
+    the given off-axis angle and photon energy. This function
+    determines from the sky position of the source and the photon
+    energy, which PSF data should be used to calculate the
+    photon-detector hitting point. It returns the corresponding PSF
+    data structure.  IMPORTANT: The function assumes that the
+    individual PSF data sets lie on a regular pattern: energy_{i,j} =
+    energy_{i,k} and angle_{i,j} = angle_{k,j} ! */
+static inline PSF_Item *get_best_psf_item(double offaxis_angle, // [rad]
 					  double energy,        // [rad]
 					  PSF *psf  // PSF (all angles & energies)
 					  )
@@ -38,22 +40,9 @@ static inline PSF_Item *get_best_psf_item(
 
 
 
-/** Calculates the position on the detector, where a photon at given sky 
- * position with specified energy hits the detector according to the PSF 
- * data and a random number generator (randomization over one PSF pixel).
- * Return value is '1', if the photon hits the detector. If it does not 
- * fall onto the detector, the function returns '0'.
- * The output detector position is stored in [m] in the first 2 parameters 
- * of the function. */
-int get_psf_pos(
-		// output: coordinates of the photon on the detector [m]
-		struct Point2d* position,
-		Photon photon,     // incident photon
-		// telescope information (focal length, pointing direction)
+int get_psf_pos(struct Point2d* position, Photon photon, 
 		struct Telescope telescope, 
-		Vignetting* vignetting,
-		PSF* psf
-		)
+		Vignetting* vignetting, PSF* psf)
 {
   // Calculate the off-axis angle
   double offaxis_angle = acos(scalar_product(&telescope.nz, &photon.direction));
@@ -179,18 +168,27 @@ void free_psf(
 /** Add a double value to a list. Before adding the value, check
     whether it is already in the list. In that case it doesn't have to
     be added. The number of list entries is modified appropriately. */
-static void addValue2List(double value, double* list, int* nvalues)
+static void addValue2List(double value, double* list, int* nvalues, int* status)
 {
   // Check whether the value is already in the list.
   int count=0;
   for (count=0; count<*nvalues; count++) {
     if (fabs((list[count]-value)/value) < 1.e-6) return;
   }
-  
-  // The value is not in the list.
-  // TODO realloc memory.
+  // The value is not in the list. So continue with the following code.
 
-  // TODO add value to the list.
+  // Adapt the amount of allocated memory.
+  list = (double*)realloc(list, ((*nvalues)+1)*sizeof(double));
+  if (NULL==list) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: could not allocate memory for list in PSF data structure!\n",
+		   *status);
+    return;
+  }
+  (*nvalues)++; // Now we have one element more in the list.
+
+  // Add the value at the end of the list.
+  list[*nvalues-1] = value;
 }
 
 
@@ -235,7 +233,7 @@ PSF* get_psf(const char* filename, int* status)
     // it's any image extensions and store the energy, off-axis angle,
     // and azimuthal angle.
     int hdu, hdu_type=0;
-    for (hdu=0; hdu++; hdu<nhdus) {
+    for (hdu=0; hdu<nhdus; hdu++) {
       // Move to the right HDU.
       if (fits_movabs_hdu(fptr, hdu+1, &hdu_type, status)) break;
       // Check if the HDU is an image extension.
@@ -256,9 +254,12 @@ PSF* get_psf(const char* filename, int* status)
 	phi    *= M_PI/180.;     // [deg] -> [rad]
 	
 	// Add value to the list of available values.
-	addValue2List(energy, psf->energies, &psf->nenergies);
-	addValue2List(theta , psf->thetas  , &psf->nthetas  );
-	addValue2List(phi   , psf->phis    , &psf->nphis    );
+	addValue2List(energy, psf->energies, &psf->nenergies, status);
+	if (EXIT_SUCCESS!=*status) break;
+	addValue2List(theta , psf->thetas  , &psf->nthetas  , status);
+	if (EXIT_SUCCESS!=*status) break;
+	addValue2List(phi   , psf->phis    , &psf->nphis    , status);
+	if (EXIT_SUCCESS!=*status) break;
 
 	// Increase the number of elements.
 	psf->N_elements++;
@@ -270,6 +271,11 @@ PSF* get_psf(const char* filename, int* status)
 
     // TODO Plot debug information about available energies, off-axis
     // angles, and azimuthal angles.
+
+    // TODO Allocate memory for the 3-dimensional PSF data array.
+
+    // TODO Loop over all HDUs. Read the data and add PSF to the
+    // 3-dimensional array.
 
     // TODO here.
 
