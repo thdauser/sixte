@@ -30,20 +30,25 @@ typedef struct {
   /** Number of PSF_Items in this store (#(offaxis-angles)*#(energies)). */
   int N_elements;
 
-  /** Array of PSF_Items for the different discrete off-axis angles and energies. */
-  PSF_Item *item;
+  /** Array of PSF_Items for the different discrete off-axis angles
+      and energies. */
+  PSF_Item *item; // Obsolete
+
+  /** Array of PSF_Items for different photon energies, off-axis angles, and
+      azimuthal angles. */
+  PSF_Item*** data;
 
   /** Number of different energies PSF images are available for. */
   int nenergies;
-  /** Different energies PSF images are available for. */
+  /** Different energies PSF images are available for ([kev]). */
   double* energies;
   /** Number of different off-axis angles PSF images are available for. */
   int nthetas;
-  /** Different off-axis angles PSF images are available for. */
+  /** Different off-axis angles PSF images are available for ([rad]). */
   double* thetas;
   /** Number of different azimuthal angles PSF images are available for. */
   int nphis;
-  /** Different azimuthal angles PSF images are available for. */
+  /** Different azimuthal angles PSF images are available for ([rad]). */
   double* phis;
 
 } PSF;
@@ -54,8 +59,9 @@ typedef struct {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-// Reads the specified PSF FITS file (containing images) and
-// stores these data in the PSF storage. 
+/** Constructor for the PSF data structure. Reads PSF data from a
+    FITS file with image extensions. The file format is given by OGIP
+    Calibration Memo CAL/GEN/92-027. */
 PSF* get_psf(const char*, int* status);
 
 /** Calculates the position on the detector, where a photon at given sky position 

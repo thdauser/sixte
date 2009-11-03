@@ -176,10 +176,25 @@ void free_psf(
 
 
 
-/** Constructor for the PSF data structure.
- * Reads PSF data from a FITS file with image extensions. 
- * The file format is given by OGIP Calibration Memo 
- * CAL/GEN/92-027. */
+/** Add a double value to a list. Before adding the value, check
+    whether it is already in the list. In that case it doesn't have to
+    be added. The number of list entries is modified appropriately. */
+static void addValue2List(double value, double* list, int* nvalues)
+{
+  // Check whether the value is already in the list.
+  int count=0;
+  for (count=0; count<*nvalues; count++) {
+    if (fabs((list[count]-value)/value) < 1.e-6) return;
+  }
+  
+  // The value is not in the list.
+  // TODO realloc memory.
+
+  // TODO add value to the list.
+}
+
+
+
 PSF* get_psf(const char* filename, int* status)
 {
   PSF* psf;
@@ -211,19 +226,56 @@ PSF* get_psf(const char* filename, int* status)
 
     // Open PSF FITS file
     headas_chat(5, "open PSF FITS file '%s' ...\n", filename);
-    if (fits_open_image(&fptr, filename, READONLY, status)) break;
-    
-    // TODO Loop over all extensions in the FITS file. Check whether
+    if (fits_open_file(&fptr, filename, READONLY, status)) break;
+    // Get the total number of HDUs in the FITS file.
+    int nhdus=0; // Number of HDUs (may also contain table extensions).
+    if (fits_get_num_hdus(fptr, &nhdus, status)) break;
+
+    // Loop over all extensions in the FITS file. Check whether
     // it's any image extensions and store the energy, off-axis angle,
     // and azimuthal angle.
-    
+    int hdu, hdu_type=0;
+    for (hdu=0; hdu++; hdu<nhdus) {
+      // Move to the right HDU.
+      if (fits_movabs_hdu(fptr, hdu+1, &hdu_type, status)) break;
+      // Check if the HDU is an image extension.
+      if (IMAGE_HDU==hdu_type) {
+	// Get the header keywords specifying the energy, off-axis angle,
+	// on azimuthal angle. 
+	double energy=0., theta=0., phi=0.;
+	char comment[MAXMSG];
+	if (fits_read_key(fptr, TDOUBLE, "ENERGY", &energy, comment, 
+			  status)) break; // [eV]
+	if (fits_read_key(fptr, TDOUBLE, "THETA", &theta, comment, 
+			  status)) break; // [arc min]
+	if (fits_read_key(fptr, TDOUBLE, "PHI", &phi, comment, 
+			  status)) break; // [deg]
+	// Convert to appropriate units.
+	energy *= 1.e-3;         // [eV] -> [keV];
+	theta  *= M_PI/180./60.; // [arc min] -> [rad]
+	phi    *= M_PI/180.;     // [deg] -> [rad]
+	
+	// Add value to the list of available values.
+	addValue2List(energy, psf->energies, &psf->nenergies);
+	addValue2List(theta , psf->thetas  , &psf->nthetas  );
+	addValue2List(phi   , psf->phis    , &psf->nphis    );
 
-    // Get the number of HDUs in the FITS file.
-    if (fits_get_num_hdus(fptr, &psf->N_elements, status)) break;
+	// Increase the number of elements.
+	psf->N_elements++;
+      }
+    }
+    if (EXIT_SUCCESS!=status) break;
+
+    // TODO Sort the lists. 
+
+    // TODO Plot debug information about available energies, off-axis
+    // angles, and azimuthal angles.
+
+    // TODO here.
 
     // Allocate memory for all PSF image extensions / PSF_Items in the
     // PSF data structure.
-    psf->item = (PSF_Item *) malloc(psf->N_elements * sizeof(PSF_Item));
+    psf->item = (PSF_Item *)malloc(psf->N_elements * sizeof(PSF_Item));
     if (NULL==psf->item) {   // memory was allocated successfully
       *status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", *status);  
