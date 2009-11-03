@@ -83,7 +83,9 @@ int psfgen_main()
 	break;
       }
       hew = hew/(3600.);  // Rescaling from [arc sec] -> [deg]
-      psf.N_elements = 1;
+      psf.nenergies = 1;
+      psf.nthetas   = 1;
+      psf.nphis     = 1;
 
     } // END of Simple Gauss PSF (type==1)
     
@@ -103,35 +105,49 @@ int psfgen_main()
 
     // --- PSF initialization ---
     
-    int count1, count2;
+    int count1, count2, count3;
+    int xcount;
 
     // Get memory for the PSF data.
-    psf.item = (PSF_Item *) malloc(psf.N_elements * sizeof(PSF_Item));
-    if (psf.item) {   // memory was allocated successfully
-      for (count1=0; count1<psf.N_elements; count1++) {
-	psf.item[count1].naxis1 = psf_width;
-	psf.item[count1].naxis2 = psf_width;
-	psf.item[count1].cdelt1 = psf_pixelwidth;
-	psf.item[count1].cdelt2 = psf_pixelwidth;
+    psf.data = (PSF_Item ***)malloc(psf.nenergies*sizeof(PSF_Item**));
+    if (NULL!=psf.data) {   // Memory was allocated successfully.
+      for (count1=0; count1<psf.nenergies; count1++) {
+	psf.data[count1] = (PSF_Item **)malloc(psf.nthetas*sizeof(PSF_Item*));
+	if (NULL!=psf.data[count1]) {   // Memory was allocated successfully.
+	  for (count2=0; count2<psf.nthetas; count2++) {
+	    psf.data[count1][count2] = (PSF_Item *)malloc(psf.nphis*sizeof(PSF_Item));
+	    if (NULL!=psf.data[count1][count2]) {   // Memory was allocated successfully.
+	      for (count3=0; count3<psf.nphis; count3++) {
+		psf.data[count1][count2][count3].naxis1 = psf_width;
+		psf.data[count1][count2][count3].naxis2 = psf_width;
+		psf.data[count1][count2][count3].cdelt1 = psf_pixelwidth;
+		psf.data[count1][count2][count3].cdelt2 = psf_pixelwidth;
 
-	psf.item[count1].data = (double **) 
-	  malloc(psf.item[count1].naxis1 * sizeof(double **));
-	if (psf.item[count1].data) {
-	  for (count2=0; count2<psf.item[count1].naxis1; count2++) {
-	    psf.item[count1].data[count2] = 
-	      (double *) malloc(psf.item[count1].naxis2 * sizeof(double));
-	    if (!psf.item[count1].data[count2]) {
-	      status = EXIT_FAILURE;
-	      break;
-	    }
+		psf.data[count1][count2][count3].data = (double **) 
+		  malloc(psf.data[count1][count2][count3].naxis1 * sizeof(double **));
+		if (psf.data[count1][count2][count3].data) {
+		  for (xcount=0; xcount<psf.data[count1][count2][count3].naxis1; xcount++) {
+		    psf.data[count1][count2][count3].data[xcount] = 
+		      (double *) malloc(psf.data[count1][count2][count3].naxis2 * sizeof(double));
+		    if (!psf.data[count1][count2][count3].data[xcount]) {
+		      status = EXIT_FAILURE;
+		      break;
+		    }
+		  }
+		  if (EXIT_SUCCESS!=status) break;
+		} else { status = EXIT_FAILURE; }
+	      }
+	      if (EXIT_SUCCESS!=status) break;
+	    } else { status = EXIT_FAILURE; }
 	  }
+	  if (EXIT_SUCCESS!=status) break;
 	} else { status = EXIT_FAILURE; }
       }
+      if (EXIT_SUCCESS!=status) break;
     } else { status = EXIT_FAILURE; }
     // Check if all necessary memory was allocated successfully:
     if (status != EXIT_SUCCESS) {
-      sprintf(msg, "Error: not enough memory to store PSF data!\n");
-      HD_ERROR_THROW(msg, status);  
+      HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
       break;
     }
 
@@ -141,20 +157,28 @@ int psfgen_main()
     // --- PSF data generation ---
 
     // Create simple Gaussian PSF with a given HEW
-    psf.item[0].angle = 0.;
-    psf.item[0].energy = 1.;
+    psf.energies = (double*)malloc(sizeof(double));
+    psf.thetas   = (double*)malloc(sizeof(double));
+    psf.phis     = (double*)malloc(sizeof(double));
+    if ((NULL==psf.energies) || (NULL==psf.thetas) || (NULL==psf.phis)) {
+      HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+      break;
+    }
+    psf.energies[0] = 1.;
+    psf.thetas[0]   = 0.;
+    psf.phis[0]     = 0.;
 
     // Fill the PSF array with a 2D Gaussian distribution.
     double sigma = hew*M_PI/180.  // sigma in detector pixels
       /(2.*sqrt(2.*log(2.))) 
-      /atan(psf.item[0].cdelt1/focal_length);;  
+      /atan(psf.data[0][0][0].cdelt1/focal_length);;  
     headas_chat(5, "PSF Sigma: %.2lf pixel\n", sigma);
     double x, y;
-    for (count1=0; count1<psf.item[0].naxis1; count1++) {
-      for (count2=0; count2<psf.item[0].naxis2; count2++) {
-	x = (double)(count1-psf.item[0].naxis1/2);
-	y = (double)(count2-psf.item[0].naxis2/2);
-	psf.item[0].data[count1][count2] = 
+    for (count1=0; count1<psf.data[0][0][0].naxis1; count1++) {
+      for (count2=0; count2<psf.data[0][0][0].naxis2; count2++) {
+	x = (double)(count1-psf.data[0][0][0].naxis1/2);
+	y = (double)(count2-psf.data[0][0][0].naxis2/2);
+	psf.data[0][0][0].data[count1][count2] = 
 	  (gsl_sf_erf_Q(x/sigma) - gsl_sf_erf_Q((x+1.)/sigma))* 
 	  (gsl_sf_erf_Q(y/sigma) - gsl_sf_erf_Q((y+1.)/sigma));
       }

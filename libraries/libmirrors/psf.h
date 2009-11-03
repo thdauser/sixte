@@ -9,13 +9,15 @@
 #include "vignetting.h"
 
 
+////////////////////////////////////////////////////////////////////////
+// Type Declarations.
+////////////////////////////////////////////////////////////////////////
+
+
 /** Stores the PSF data for one particular off-axis angle 
  * and one particular energy. */
 typedef struct {
   double** data;   /**< pointer to PSF data array [x][y]. */
-
-  double angle;    /**< off-axis angle of this particular PSF [rad]. */
-  double energy;   /**< energy of this particular PSF [keV]. */
 
   int naxis1, naxis2;    /**< Width of the image [pixel]. */
   double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
@@ -27,13 +29,6 @@ typedef struct {
 
 /** Storage for the several PSFs available for a mirror system. */
 typedef struct {
-  /** Number of PSF_Items in this store (#(offaxis-angles)*#(energies)). */
-  int N_elements;
-
-  /** Array of PSF_Items for the different discrete off-axis angles
-      and energies. */
-  PSF_Item *item; // Obsolete
-
   /** Array of PSF_Items for different photon energies, off-axis angles, and
       azimuthal angles. */
   PSF_Item*** data;
