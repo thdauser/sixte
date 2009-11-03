@@ -165,6 +165,11 @@ void free_psf(
       free(psf->item);
       psf->item=NULL;
     }
+
+    if (NULL!=psf->energies) free(psf->energies);
+    if (NULL!=psf->thetas  ) free(psf->thetas  );
+    if (NULL!=psf->phis    ) free(psf->phis    );
+
     free(psf);
   }
 }
@@ -175,10 +180,7 @@ void free_psf(
  * Reads PSF data from a FITS file with image extensions. 
  * The file format is given by OGIP Calibration Memo 
  * CAL/GEN/92-027. */
-PSF* get_psf(
-	     const char* filename,
-	     int* status
-	     )
+PSF* get_psf(const char* filename, int* status)
 {
   PSF* psf;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file
@@ -192,17 +194,30 @@ PSF* get_psf(
 
     // Allocate memory for PSF data structure:
     psf = (PSF*)malloc(sizeof(PSF));
-    if (psf == NULL) {
+    if (NULL==psf) {
       *status=EXIT_FAILURE;
-      sprintf(msg, "Error: memory allocation for PSF structure failed!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("Error: memory allocation for PSF structure failed!\n", *status);
       break;
     }
+
+    // Set default initial values.
+    psf->N_elements = 0;
+    psf->energies = NULL;
+    psf->thetas   = NULL;
+    psf->phis     = NULL;
+    psf->nenergies = 0;
+    psf->nthetas   = 0;
+    psf->nphis     = 0;
 
     // Open PSF FITS file
     headas_chat(5, "open PSF FITS file '%s' ...\n", filename);
     if (fits_open_image(&fptr, filename, READONLY, status)) break;
     
+    // TODO Loop over all extensions in the FITS file. Check whether
+    // it's any image extensions and store the energy, off-axis angle,
+    // and azimuthal angle.
+    
+
     // Get the number of HDUs in the FITS file.
     if (fits_get_num_hdus(fptr, &psf->N_elements, status)) break;
 

@@ -21,6 +21,7 @@ typedef struct {
   double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
   double crpix1, crpix2; /**< [pixel] */
   double crval1, crval2; /**< [rad] */
+  
 } PSF_Item;
 
 
@@ -31,6 +32,20 @@ typedef struct {
 
   /** Array of PSF_Items for the different discrete off-axis angles and energies. */
   PSF_Item *item;
+
+  /** Number of different energies PSF images are available for. */
+  int nenergies;
+  /** Different energies PSF images are available for. */
+  double* energies;
+  /** Number of different off-axis angles PSF images are available for. */
+  int nthetas;
+  /** Different off-axis angles PSF images are available for. */
+  double* thetas;
+  /** Number of different azimuthal angles PSF images are available for. */
+  int nphis;
+  /** Different azimuthal angles PSF images are available for. */
+  double* phis;
+
 } PSF;
 
 
