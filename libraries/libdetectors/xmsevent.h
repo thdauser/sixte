@@ -18,6 +18,7 @@ typedef struct {
    * resolution, array has the value 1. For the outer array with lower energy resolution it
    * has the value 2. */
   int array;
+
 } XMSEvent;
 
 

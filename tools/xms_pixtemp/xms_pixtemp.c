@@ -18,6 +18,9 @@ int xms_pixtemp_main() {
     status = xms_pixtemp_getpar(&parameters);
     if (EXIT_SUCCESS!=status) break;
 
+    // Initialize HEADAS random number generator.
+    HDmtInit(1);
+
     // Open the event file.
     status=openXMSEventFile(&eventfile, parameters.eventlist_filename, READWRITE);
     if (EXIT_SUCCESS!=status) break;
@@ -34,7 +37,8 @@ int xms_pixtemp_main() {
       status=XMSEventFile_getNextRow(&eventfile, &event);
       if(EXIT_SUCCESS!=status) break;
 
-      if ((event.xi == parameters.pixx) && (event.xi == parameters.pixx)) {
+      if ((1==event.array) && // Only events from the inner array.
+	  (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) {
 	printf(" %lf\t%lf\n", event.time, getEnergy(event.pha, rmf));
       }
 
@@ -47,6 +51,9 @@ int xms_pixtemp_main() {
 
   // Close the event file.
   closeXMSEventFile(&eventfile);
+
+  // Release HEADAS random number generator.
+  HDmtFree();
 
   return(status);
 }
