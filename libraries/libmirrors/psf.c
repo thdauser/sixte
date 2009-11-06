@@ -1,40 +1,6 @@
 #include "psf.h"
 
 
-/** Selected the PSF item from the available ones that matches best
-    the given photon energy, off-axis angle, and azimuthal angle. This
-    function determines from the sky position of the source and the
-    photon energy, which PSF data should be used to calculate the
-    photon-detector hitting point. It returns the corresponding PSF
-    data structure.  IMPORTANT: The function assumes that the
-    individual PSF data sets lie on a regular pattern: energy_{i,j} =
-    energy_{i,k} and angle_{i,j} = angle_{k,j} ! */
-//static inline PSF_Item *get_best_psf_item(double energy /**< Energy ([keV]). */,
-//					  double theta /**< Off-axis angle ([rad]). */,
-//					  double phi /**< Azimuthal angle ([rad]). */,
-//					  PSF *psf /**< PSF (all angles & energies). */)
-/*{
-  // In order to find the PSF that matches the required position best, perform a loop
-  // over all available PSFs and remember the best one.
-  int index1=0, index2=0, index3=0;
-  assert(theta >= 0.);
-  assert(phi >= 0.);
-
-  for (index1=0; index1<psf->nenergies-1; index1++) {
-    if (fabs(psf->energies[index1]-energy) < fabs(psf->energies[index1+1]-energy)) break;
-  }
-  for (index2=0; index2<psf->nthetas-1; index2++) {
-    if (fabs(psf->thetas[index2]-theta) < fabs(psf->thetas[index2+1]-theta)) break;
-  }
-  for (index3=0; index3<psf->nphis-1; index3++) {
-    if (fabs(psf->phis[index3]-phi) < fabs(psf->phis[index3+1]-phi)) break;
-  }
-
-  return(&psf->data[index1][index2][index3]);
-}*/
-
-
-
 int get_psf_pos(struct Point2d* position, Photon photon, 
 		struct Telescope telescope, 
 		Vignetting* vignetting, PSF* psf)
@@ -56,7 +22,6 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
   // Determine, which PSF should be used for that particular source 
   // direction and photon energy.
-  //  PSF_Item* psf_item = get_best_psf_item(photon.energy, offaxis_angle, azimuth, psf);
   int index1, index2, index3;
   for (index1=0; index1<psf->nenergies-1; index1++) {
     if (psf->energies[index1+1] > photon.energy) break;
@@ -68,8 +33,31 @@ int get_psf_pos(struct Point2d* position, Photon photon,
     if (psf->phis[index3+1] > phi) break;
   }
 
-  // Get a random position from the best fitting PSF image.
+  // Perform a linear interpolation between the next fitting PSF images.
+  if (index1 < psf->nenergies-1) {
+    if (get_random_number() < (photon.energy-psf->energies[index1])/
+	(psf->energies[index1+1]-psf->energies[index1])) {
+      index1++;
+    }
+  }
+  if (index2 < psf->nthetas-1) {
+    if (get_random_number() < (theta-psf->thetas[index2])/
+	(psf->thetas[index2+1]-psf->thetas[index2])) {
+      index2++;
+    }
+  }
+  if (index3 < psf->nphis-1) {
+    if (get_random_number() < (phi-psf->phis[index3])/
+	(psf->phis[index3+1]-psf->phis[index3])) {
+      index3++;
+    }
+  }
+
+  // Set a pointer to the PSF image used for the determination of the photon
+  // impact position in order to enable faster access.
   PSF_Item* psf_item = &psf->data[index1][index2][index3];
+
+  // Get a random position from the best fitting PSF image.
 
   // Perform a binary search to determine a random position:
   // -> one binary search for each of the 2 coordinates x and y
@@ -121,16 +109,19 @@ int get_psf_pos(struct Point2d* position, Photon photon,
   }
   // Now x1 and y1 have pixel positions [integer pixel].
  
+  // Determine the distance ([m]) of the central reference position from the optical axis
+  // according to the off-axis angle theta:
+  double distance = telescope.focal_length * tan(theta); // TODO *(-1) ???
 
-  // Randomize the [pixel] position (x1,y1), add the shift resulting 
-  // from the off-axis angle difference (between actuall angle and the 
-  // available angle in the PSF_Store), and transform all coordinates to [m]:
-  double x2 = ((double)x1 -psf_item->crpix1 +0.5 +get_random_number())*psf_item->cdelt1 
-    + psf_item->crval1 - tan(theta-psf->thetas[index2])*telescope.focal_length;
-  double y2 = ((double)y1 -psf_item->crpix2 +0.5 +get_random_number())*psf_item->cdelt2 
-    + psf_item->crval2;
+  // Add the relative position obtained from the PSF image (randomized pixel indices x1 and y1).
+  double x2 = distance + 
+    ((double)x1 -psf_item->crpix1 +0.5 +get_random_number())*psf_item->cdelt1 
+    + psf_item->crval1; // [m]
+  double y2 = 
+    ((double)y1 -psf_item->crpix2 +0.5 + get_random_number())*psf_item->cdelt2 
+    + psf_item->crval2; // [m]
 
-  // Rotate the PSF postition [mu m] according to the azimuth angle.
+  // Rotate the postition [m] according to the azimuth angle.
   position->x = cos(phi)*x2 - sin(phi)*y2;
   position->y = sin(phi)*x2 + cos(phi)*y2;
 
@@ -237,7 +228,7 @@ PSF* get_psf(const char* filename, int* status)
   double* data=NULL;     // Input buffer (1D array)
   long count, count2, count3;
   
-  do {  // beginning of ERROR handling loop
+  do {  // Beginning of ERROR handling loop.
 
     // Allocate memory for PSF data structure:
     psf = (PSF*)malloc(sizeof(PSF));
@@ -424,6 +415,7 @@ PSF* get_psf(const char* filename, int* status)
 			  comment, status)) break;
 	if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &(psf->data[index1][index2][index3].crval2), 
 			  comment, status)) break;
+	// TODO Check whether units of PSF image are pixels.
 
 	// Get memory for the PSF_Item data.
 	psf->data[index1][index2][index3].data = (double **)
