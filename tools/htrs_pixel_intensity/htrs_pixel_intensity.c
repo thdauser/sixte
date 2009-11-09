@@ -181,8 +181,10 @@ int main(int argc, char* argv[])
 	   sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	   );
     printf("# radii: %lf %lf %lf %lf\n# pixel:", radii[0], radii[1], radii[2], radii[3]);
+    printf("\n %ld, ", ntotal_photons); // RM
     for (pixel=0; pixel<n_pixels; pixel++) {
-      printf(" %lf,", (double)arc_nphotons[pixel]/ntotal_photons);
+      //      printf(" %lf,", (double)arc_nphotons[pixel]/ntotal_photons);
+      printf(" %ld,", arc_nphotons[pixel]); // RM
     }
     printf("\n");
 #endif
