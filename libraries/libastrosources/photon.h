@@ -57,14 +57,6 @@ struct PhotonBinaryTreeEntry {
 };
 
 
-// Structure representing a bin in the lightcurve.
-struct lightcurve_entry {
-  double t;    // lower time of bin
-  double rate; // source count rate within the time bin
-};
-
-
-
 //////////////////////////////////////////////////////////////////////////
 //   Function declarations
 //////////////////////////////////////////////////////////////////////////

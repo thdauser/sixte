@@ -110,18 +110,6 @@ int create_photons(PointSource* ps /**< Source data. */,
 
 
 
-/*void clear_PhotonList(struct PhotonOrderedListEntry** pole)
-{
-  if ((*pole) != NULL) {
-    // This is not the last entry in the list, so call routine recursively.
-    clear_PhotonList(&((*pole)->next));
-
-    // Free memory and reset pointer to NULL.
-    free(*pole);
-    *pole = NULL;
-
-  }
-  }*/
 void clear_PhotonList(struct PhotonOrderedListEntry** pole)
 {
   struct PhotonOrderedListEntry* buffer;
@@ -177,35 +165,6 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
 
 
 
-/*int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
-{
-  int status = EXIT_SUCCESS;
-
-  if (NULL==*ptr) {
-    // Reached an end of the tree. So create a new entry and insert it here.
-    *ptr = (struct PhotonBinaryTreeEntry*)malloc(sizeof(struct PhotonBinaryTreeEntry));
-    if (NULL==*ptr) { // Check if memory allocation was successfull
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for binary tree failed!\n", status);
-      return(status);
-    }
-
-    (*ptr)->photon = *ph;
-    (*ptr)->sptr = NULL;
-    (*ptr)->gptr = NULL;
-
-  } else {
-    // We have to go deeper into the tree. So decide whether the new photon
-    // is earlier or later than the current entry.
-    if ((*ptr)->photon.time > ph->time) {
-      status=insert_Photon2BinaryTree(&(*ptr)->sptr, ph);
-    } else {
-      status=insert_Photon2BinaryTree(&(*ptr)->gptr, ph);
-    }
-  }
-
-  return(status);
-}*/
 int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
 {
   int status = EXIT_SUCCESS;

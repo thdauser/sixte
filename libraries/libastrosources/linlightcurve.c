@@ -42,7 +42,7 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status)
 LinLightCurve* loadLinLightCurveFromFile(char* filename, double source_rate, int* status)
 {
   LinLightCurve* lc=NULL;
-  fitsfile* fptr;
+  fitsfile* fptr=NULL;
 
   int crate; // Column in the FITS table containing the rates.
   double* rate=NULL; // Input buffer for light curve rates.
@@ -309,7 +309,12 @@ double getPhotonTime(LinLightCurve* lc, double time)
 		-lc->b[k]*(lc->step_width-t));
     // Step 3 in the algorithm.
     if (u <= uk) {
-      if (0. != lc->a[k]) {
+//      if (0. != lc->a[k]) {
+      if ( fabs(lc->a[k]*lc->step_width) > fabs(lc->b[k]*1.e-6) ) { 
+	// Instead of checking if a_k = 0. check, whether its product with the 
+	// interval length is a very small number in comparison to b_k.
+	// If a_k * step_width is much smaller than b_k, the rate in the interval
+	// can be assumed to be approximately constant.
 	return(lc->t0+k*lc->step_width + 
 	       (-lc->b[k]+sqrt(pow(lc->b[k],2.) + pow(lc->a[k]*t,2.) + 
 			       2*lc->a[k]*lc->b[k]*t - 2.*lc->a[k]*log(1.-u)))/lc->a[k]);

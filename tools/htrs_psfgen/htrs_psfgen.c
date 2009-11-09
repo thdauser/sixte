@@ -51,7 +51,7 @@ int main()
     } else { status = EXIT_FAILURE; }
     // Check if all memory was allocated successfully
     if (EXIT_SUCCESS!=status) {
-      HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+      printf("Error: not enough memory to store PSF data!\n");
       break;
     }
 
@@ -62,6 +62,8 @@ int main()
     for(count=0; count<37; count++) {
       psf_parts[count] = 0.;
     }
+
+    // Intensity distribution by Tim Oosterbroek:
     psf_parts[0] = 0.023;
 
     psf_parts[1] = 0.034;
@@ -112,11 +114,11 @@ int main()
     // Determine normalization
     for(count=0; count<psf.item[0].naxis1; count++) {
       for(count2=0; count2<psf.item[0].naxis2; count2++) {
-	position.x = (count-psf.item[0].naxis1/2+0.5)*psf.item[0].cdelt1;
+	position.x = (count -psf.item[0].naxis1/2+0.5)*psf.item[0].cdelt1;
 	position.y = (count2-psf.item[0].naxis2/2+0.5)*psf.item[0].cdelt2;
 	getHexagonalPixel(&hexagonalPixels, position, &pixel);
 	
-	if (0==pixel) {
+	if ((INVALID_PIXEL!=pixel) && (psf_parts[pixel] > 0.)) {
 	  normalization++;
 	}
       }
@@ -124,7 +126,7 @@ int main()
 
     for(count=0; count<psf.item[0].naxis1; count++) {
       for(count2=0; count2<psf.item[0].naxis2; count2++) {
-	position.x = (count-psf.item[0].naxis1/2+0.5)*psf.item[0].cdelt1;
+	position.x = (count -psf.item[0].naxis1/2+0.5)*psf.item[0].cdelt1;
 	position.y = (count2-psf.item[0].naxis2/2+0.5)*psf.item[0].cdelt2;
 	getHexagonalPixel(&hexagonalPixels, position, &pixel);
 	
@@ -148,7 +150,9 @@ int main()
   cleanupHexagonalPixels(&hexagonalPixels);
 
   return(status);
+
 #else
-  return(-1);
-#endif
+  printf("Error: No hexagonal pixels  selected for HTRS!\n");
+  return(EXIT_FAILURE);
+#endif /* HTRS_HEXPIXELS */
 }

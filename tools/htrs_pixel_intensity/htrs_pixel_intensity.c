@@ -66,14 +66,14 @@ int main(int argc, char* argv[])
       arc_nphotons[pixel] = 0;
     }
 
-    /*// Configuration with 31 pixels.
+    // Configuration with 31 pixels.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.26e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
-    double offset_angles[4] = { 0., 0., M_PI/12, 0. };*/
-    // Configuration with 37 pixels.
+    double offset_angles[4] = { 0., 0., M_PI/12, 0. };
+    /*// Configuration with 37 pixels.
     int npixels[4] = { 1, 7, 14, 15 };
     double radii[4] = { 2.3e-3, 5.44e-3, 8.77e-3, 12.0e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };
+    double offset_angles[4] = { 0., 0., 0., 0. };*/
     /*// Configuration with 50 pixels.
     int npixels[4] = { 1, 9, 25, 25 };
     double radii[4] = { 2.1e-3, 5.47e-3, 8.79e-3, 12.0e-3 };
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 
       printf("# pixel width, N_photons, N_detected_photons, "
 	     "fraction of detected photons, sigma/average\n");
-      printf("%lf %ld %ld %lf %lf\t pixel:",
+      printf("%lf %ld %ld %.10lf %lf\t pixel:",
 	     min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width
 	     ntotal_photons,               // Total number of photons
 	     ndetected,                    // Number of detected photons
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
       
     printf("# N_photons, N_detected_photons, "
 	   "fraction of detected photons, sigma/average\n");
-    printf("%ld %ld %lf %lf\n",
+    printf("%ld %ld %.10lf %lf\n",
 	   ntotal_photons,               // Total number of photons
 	   ndetected,                    // Number of detected photons
 	   ndetected*1./ntotal_photons,  // Fraction of detected photons
