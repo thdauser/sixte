@@ -86,7 +86,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
       high = (low+high)/2;
     }
   }
-  if (psf_item->data[low][psf_item->naxis1-1] > rnd) {
+  if (psf_item->data[high][0] > rnd) {
     x1 = low;
   } else {
     x1 = high;
@@ -118,7 +118,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
     ((double)x1 -psf_item->crpix1 +0.5 +get_random_number())*psf_item->cdelt1 
     + psf_item->crval1; // [m]
   double y2 = 
-    ((double)y1 -psf_item->crpix2 +0.5 + get_random_number())*psf_item->cdelt2 
+    ((double)y1 -psf_item->crpix2 +0.5 +get_random_number())*psf_item->cdelt2 
     + psf_item->crval2; // [m]
 
   // Rotate the postition [m] according to the azimuth angle.
@@ -423,7 +423,7 @@ PSF* get_psf(const char* filename, int* status)
 	if (NULL!=psf->data[index1][index2][index3].data) {
 	  for (count=0; count<psf->data[index1][index2][index3].naxis1; count++) {
 	    psf->data[index1][index2][index3].data[count] = (double *)
-	      malloc(psf->data[index1][index2][index3].naxis2 * sizeof(double));
+	      malloc(psf->data[index1][index2][index3].naxis2*sizeof(double));
 	    if (NULL==psf->data[index1][index2][index3].data[count]) {
 	      *status = EXIT_FAILURE;
 	      HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", *status);  
