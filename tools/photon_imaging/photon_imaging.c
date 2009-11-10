@@ -70,14 +70,6 @@ int photon_imaging_main() {
 						   parameters.t0, parameters.timespan, 
 						   &status))) break;
 
-    // Get the PSF:
-    psf = get_psf(parameters.psf_filename, &status);
-    if (status != EXIT_SUCCESS) break;
-
-    // Get the Vignetting:
-    vignetting = get_Vignetting(parameters.vignetting_filename, &status);
-    if (status != EXIT_SUCCESS) break;
-
     // Create a new FITS file for the output of the impact list.
     status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 
 				   parameters.impactlist_template);
@@ -88,6 +80,14 @@ int photon_imaging_main() {
     // Add attitude filename.
     if (fits_update_key(impactlistfile.fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
+
+    // Get the PSF:
+    psf = get_psf(parameters.psf_filename, &status);
+    if (status != EXIT_SUCCESS) break;
+
+    // Get the Vignetting:
+    vignetting = get_Vignetting(parameters.vignetting_filename, &status);
+    if (status != EXIT_SUCCESS) break;
     
     // --- END of Initialization ---
 

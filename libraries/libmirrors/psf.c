@@ -171,18 +171,18 @@ void free_psf(PSF *psf /**< Pointer to the PSF data structure. */)
 /** Add a double value to a list. Before adding the value, check
     whether it is already in the list. In that case it doesn't have to
     be added. The number of list entries is modified appropriately. */
-static void addDValue2List(double value, double* list, int* nvalues, int* status)
+static void addDValue2List(double value, double** list, int* nvalues, int* status)
 {
   // Check whether the value is already in the list.
   int count=0;
   for (count=0; count<*nvalues; count++) {
-    if (fabs((list[count]-value)/value) < 1.e-6) return;
+    if (fabs((*list)[count]-value) <= fabs(value*1.e-6)) return;
   }
   // The value is not in the list. So continue with the following code.
 
   // Adapt the amount of allocated memory.
-  list = (double*)realloc(list, ((*nvalues)+1)*sizeof(double));
-  if (NULL==list) {
+  *list = (double*)realloc(*list, ((*nvalues)+1)*sizeof(double));
+  if (NULL==*list) {
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: could not allocate memory for list in PSF data structure!\n",
 		   *status);
@@ -191,7 +191,7 @@ static void addDValue2List(double value, double* list, int* nvalues, int* status
   (*nvalues)++; // Now we have one element more in the list.
 
   // Add the value at the end of the list.
-  list[*nvalues-1] = value;
+  (*list)[*nvalues-1] = value;
 }
 
 
@@ -207,9 +207,9 @@ static void sortDList(double* list, int nvalues)
     for (index=0; index<nvalues-1-count; index++) {
       if (list[index] > list[index+1]) {
 	// Exchange the 2 elements.
-	buffer = list[index+1];
+	buffer        = list[index+1];
 	list[index+1] = list[index];
-	list[index] = buffer;
+	list[index]   = buffer;
 	// Set the exchanged flag.
 	exchanged=1;
       }
@@ -279,15 +279,15 @@ PSF* get_psf(const char* filename, int* status)
 	phi    *= M_PI/180.;     // [deg] -> [rad]
 	
 	// Add value to the list of available values.
-	addDValue2List(energy, psf->energies, &psf->nenergies, status);
+	addDValue2List(energy, &(psf->energies), &psf->nenergies, status);
 	if (EXIT_SUCCESS!=*status) break;
-	addDValue2List(theta , psf->thetas  , &psf->nthetas  , status);
+	addDValue2List(theta , &(psf->thetas)  , &psf->nthetas  , status);
 	if (EXIT_SUCCESS!=*status) break;
-	addDValue2List(phi   , psf->phis    , &psf->nphis    , status);
+	addDValue2List(phi   , &(psf->phis)    , &psf->nphis    , status);
 	if (EXIT_SUCCESS!=*status) break;
       }
     }
-    if (EXIT_SUCCESS!=status) break;
+    if (EXIT_SUCCESS!=*status) break;
 
     // Sort the lists. 
     sortDList(psf->energies, psf->nenergies);
@@ -369,7 +369,7 @@ PSF* get_psf(const char* filename, int* status)
 	// Find the right indices for this parameter configuration.
 	int index1, index2, index3;
 	for (index1=0; index1<psf->nenergies; index1++) {
-	  if (fabs((energy-psf->energies[index1])/energy) < 1.e-6) break;
+	  if (fabs(energy-psf->energies[index1]) <= fabs(energy*1.e-6)) break;
 	}
 	if (index1==psf->nenergies) {
 	  *status=EXIT_FAILURE;
@@ -378,7 +378,7 @@ PSF* get_psf(const char* filename, int* status)
 	  break;
 	}
 	for (index2=0; index2<psf->nthetas; index2++) {
-	  if (fabs((theta-psf->thetas[index2])/theta) < 1.e-6) break;	
+	  if (fabs(theta-psf->thetas[index2]) <= fabs(theta*1.e-6)) break;	
 	}
 	if (index2==psf->nthetas) {
 	  *status=EXIT_FAILURE;
@@ -387,7 +387,7 @@ PSF* get_psf(const char* filename, int* status)
 	  break;
 	}
 	for (index3=0; index3<psf->nphis; index3++) {
-	  if (fabs((phi-psf->phis[index3])/phi) < 1.e-6) break;
+	  if (fabs(phi-psf->phis[index3]) <= fabs(phi*1.e-6)) break;
 	}
 	if (index3==psf->nphis) {
 	  *status=EXIT_FAILURE;
