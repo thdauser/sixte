@@ -41,7 +41,7 @@ int event_projection_main() {
   AttitudeCatalog* attitudecatalog=NULL;
   eROSITAEventFile eventlistfile;
 
-  // WCS keywords:
+  // WCS keywords for sky coordinates.
   double tcrpxx, tcrvlx, tcdltx;
   double tcrpxy, tcrvly, tcdlty;
 
@@ -66,7 +66,7 @@ int event_projection_main() {
     // Based on the parameters set up the program configuration.
     telescope.focal_length = parameters.focal_length;
     telescope.fov_diameter = parameters.fov_diameter; // [rad]
-    double radpermeter = 1./(tan(1.)*telescope.focal_length);
+    double radpermeter = 1./telescope.focal_length; // For very small angles tan(x) \approx x.
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -88,7 +88,7 @@ int event_projection_main() {
       break;
     }
 
-    // Read and write WCS header keywords.
+    // Read and write WCS header keywords for the sky coordinates.
     char keyword[MAXMSG];
     // The "X" column.
     sprintf(keyword, "TCRVL%d", eventlistfile.cskyx);
@@ -190,9 +190,10 @@ int event_projection_main() {
       // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
-	((double)(event.xi-384/2)+get_random_number())*tcdltx; // in [m]
+	((double)(event.xi-384/2)+get_random_number())*75.e-6; // in [m]
+      //                                                |--> pixel width in [m]
       detector_position.y = 
-	((double)(event.yi-384/2)+get_random_number())*tcdlty; // in [m]
+	((double)(event.yi-384/2)+get_random_number())*75.e-6; // in [m]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.)); // in [m]
 
       // Determine the off-axis angle corresponding to the detector position.
