@@ -66,7 +66,7 @@ int event_projection_main() {
     // Based on the parameters set up the program configuration.
     telescope.focal_length = parameters.focal_length;
     telescope.fov_diameter = parameters.fov_diameter; // [rad]
-    double radperpixel = telescope.fov_diameter/384;
+    double radpermeter = 1./(tan(1.)*telescope.focal_length);
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -153,7 +153,7 @@ int event_projection_main() {
 	// no entry within 10 minutes !!
 	status = EXIT_FAILURE;
 	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", event.time);
-	HD_ERROR_THROW(msg,status);
+	HD_ERROR_THROW(msg, status);
 	break;
       }
 
@@ -190,13 +190,13 @@ int event_projection_main() {
       // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
-	((double)(event.xi-384/2)+get_random_number()); // in [floating point pixel]
+	((double)(event.xi-384/2)+get_random_number())*tcdltx; // in [m]
       detector_position.y = 
-	((double)(event.yi-384/2)+get_random_number()); // in [floating point pixel]
-      double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
+	((double)(event.yi-384/2)+get_random_number())*tcdlty; // in [m]
+      double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.)); // in [m]
 
       // Determine the off-axis angle corresponding to the detector position.
-      double offaxis_angle = d * radperpixel; // [rad]
+      double offaxis_angle = d * radpermeter; // [rad]
 
       // Determine the source position on the sky using the telescope 
       // axis pointing vector and a vector from the point of the intersection 
@@ -205,11 +205,11 @@ int event_projection_main() {
 
       Vector source_position;
       source_position.x = telescope.nz.x 
-	-r*(detector_position.x/d*telescope.nx.x+detector_position.y/d*telescope.ny.x);
+	+r*(detector_position.x/d*telescope.nx.x+detector_position.y/d*telescope.ny.x);
       source_position.y = telescope.nz.y 
-	-r*(detector_position.x/d*telescope.nx.y+detector_position.y/d*telescope.ny.y);
+	+r*(detector_position.x/d*telescope.nx.y+detector_position.y/d*telescope.ny.y);
       source_position.z = telescope.nz.z 
-	-r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
+	+r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
       source_position = normalize_vector(source_position);
 
       // Determine the equatorial coordinates RA and DEC:
