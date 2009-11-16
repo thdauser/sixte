@@ -41,7 +41,7 @@ int event_projection_main() {
   AttitudeCatalog* attitudecatalog=NULL;
   eROSITAEventFile eventlistfile;
 
-  // WCS keywords:
+  // WCS keywords for sky coordinates.
   double tcrpxx, tcrvlx, tcdltx;
   double tcrpxy, tcrvly, tcdlty;
 
@@ -66,7 +66,7 @@ int event_projection_main() {
     // Based on the parameters set up the program configuration.
     telescope.focal_length = parameters.focal_length;
     telescope.fov_diameter = parameters.fov_diameter; // [rad]
-    double radperpixel = telescope.fov_diameter/384;
+    double radpermeter = 1./telescope.focal_length; // For very small angles tan(x) \approx x.
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -88,7 +88,7 @@ int event_projection_main() {
       break;
     }
 
-    // Read and write WCS header keywords.
+    // Read and write WCS header keywords for the sky coordinates.
     char keyword[MAXMSG];
     // The "X" column.
     sprintf(keyword, "TCRVL%d", eventlistfile.cskyx);
@@ -139,7 +139,11 @@ int event_projection_main() {
       if(EXIT_SUCCESS!=status) break;
 
       // Check whether we are finished.
-      if (event.time > parameters.t0+parameters.timespan) break;
+      if (event.time > parameters.t0+parameters.timespan) {
+	headas_printf("### Warning: the event file contains further events that "
+		      "have not been projected!\n");
+	break;
+      }
 
       // Get the last attitude entry before 'event.time'
       // (in order to interpolate the attitude at this time between 
@@ -153,7 +157,7 @@ int event_projection_main() {
 	// no entry within 10 minutes !!
 	status = EXIT_FAILURE;
 	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", event.time);
-	HD_ERROR_THROW(msg,status);
+	HD_ERROR_THROW(msg, status);
 	break;
       }
 
@@ -190,13 +194,14 @@ int event_projection_main() {
       // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
-	((double)(event.xi-384/2)+get_random_number()); // in [floating point pixel]
+	((double)(event.xi-384/2)+get_random_number())*75.e-6; // in [m]
+      //                                                |--> pixel width in [m]
       detector_position.y = 
-	((double)(event.yi-384/2)+get_random_number()); // in [floating point pixel]
-      double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.));
+	((double)(event.yi-384/2)+get_random_number())*75.e-6; // in [m]
+      double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.)); // in [m]
 
       // Determine the off-axis angle corresponding to the detector position.
-      double offaxis_angle = d * radperpixel; // [rad]
+      double offaxis_angle = d * radpermeter; // [rad]
 
       // Determine the source position on the sky using the telescope 
       // axis pointing vector and a vector from the point of the intersection 
@@ -205,11 +210,11 @@ int event_projection_main() {
 
       Vector source_position;
       source_position.x = telescope.nz.x 
-	-r*(detector_position.x/d*telescope.nx.x+detector_position.y/d*telescope.ny.x);
+	+r*(detector_position.x/d*telescope.nx.x+detector_position.y/d*telescope.ny.x);
       source_position.y = telescope.nz.y 
-	-r*(detector_position.x/d*telescope.nx.y+detector_position.y/d*telescope.ny.y);
+	+r*(detector_position.x/d*telescope.nx.y+detector_position.y/d*telescope.ny.y);
       source_position.z = telescope.nz.z 
-	-r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
+	+r*(detector_position.x/d*telescope.nx.z+detector_position.y/d*telescope.ny.z);
       source_position = normalize_vector(source_position);
 
       // Determine the equatorial coordinates RA and DEC:
@@ -291,19 +296,19 @@ int event_projection_getpar(struct Parameters *parameters)
     sprintf(msg, "Error reading the focal length!\n");
     HD_ERROR_THROW(msg,status);
   }
-
-  // get the start time of the simulation
+  
+  // Get the start time of the simulation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
     sprintf(msg, "Error reading the 't0' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // get the timespan for the simulation
+  // Get the timespan for the simulation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     sprintf(msg, "Error reading the 'timespan' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
-
+  
   // convert angles from [arc min] to [rad]
   parameters->fov_diameter = parameters->fov_diameter*M_PI/(60.*180.); 
 

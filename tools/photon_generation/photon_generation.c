@@ -550,7 +550,7 @@ int photon_generation_main()
 	  }
 	}
 	if(fabs(attitudecatalog->entry[attitude_counter].time-time)>600.) { 
-	  // no entry within 10 minutes !!
+	  // No entry within 10 minutes !!
 	  status = EXIT_FAILURE;
 	  sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
 	  HD_ERROR_THROW(msg,status);

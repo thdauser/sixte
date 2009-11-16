@@ -188,7 +188,10 @@ int eroexposure_main() {
 	  pixel_position = unit_vector((x-(rpix1-1.0))*delt1 + rval1,
 				       (y-(rpix2-1.0))*delt2 + rval2);
 				       
-	  // Check if the pixel currently lies within the FOV.
+	  // Check if the pixel lies CLOSE to the FOV.
+	  // If not make a bigger jump.
+	  
+	  // Check if the current pixel lies within the FOV.
 	  if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
 	    // Pixel lies inside the FOV!
 	    long xi=x, yi=y;
