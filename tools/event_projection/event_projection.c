@@ -139,7 +139,11 @@ int event_projection_main() {
       if(EXIT_SUCCESS!=status) break;
 
       // Check whether we are finished.
-      if (event.time > parameters.t0+parameters.timespan) break;
+      if (event.time > parameters.t0+parameters.timespan) {
+	headas_printf("### Warning: the event file contains further events that "
+		      "have not been projected!\n");
+	break;
+      }
 
       // Get the last attitude entry before 'event.time'
       // (in order to interpolate the attitude at this time between 
@@ -292,19 +296,19 @@ int event_projection_getpar(struct Parameters *parameters)
     sprintf(msg, "Error reading the focal length!\n");
     HD_ERROR_THROW(msg,status);
   }
-
-  // get the start time of the simulation
+  
+  // Get the start time of the simulation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
     sprintf(msg, "Error reading the 't0' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
 
-  // get the timespan for the simulation
+  // Get the timespan for the simulation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     sprintf(msg, "Error reading the 'timespan' parameter!\n");
     HD_ERROR_THROW(msg,status);
   }
-
+  
   // convert angles from [arc min] to [rad]
   parameters->fov_diameter = parameters->fov_diameter*M_PI/(60.*180.); 
 
