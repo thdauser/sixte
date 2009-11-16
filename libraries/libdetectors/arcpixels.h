@@ -20,25 +20,26 @@ typedef struct {
 
 /** Array of ArcPixels. */
 typedef struct {
-  /** 2-dimensional pixel array with nrings rows of different lengths 
-   * (each has the length npixels[ring]) .*/
+  /** 2-dimensional pixel array with nrings rows of different lengths
+      (each has the length npixels[ring]) .*/
   ArcPixel** array;
   
   /** Number of pixel rings. */
   int nrings; 
-  /** Number of pixels in each individual ring. 
-   * The array has nrings elements. */
+  /** Number of pixels in each individual ring. The array has nrings
+      elements. */
   int* npixels;
 
-  /** Radii of the individual detector rings. 
-   * The array has nrings elements each specifying the outer radius of the
-   * respective pixel ring. The inner radius of the ring i is given by the radius of the 
-   * ring i-1 (for i>0). */
+  /** Radii of the individual detector rings. The array has nrings
+      elements each specifying the outer radius of the respective
+      pixel ring. The inner radius of the ring i is given by the
+      radius of the ring i-1 (for i>0). */
   double* radius;
-  /** Offset angle of the first pixel in each ring ([rad]).
-   * In general the pixels may not start the 3 o'clock position in the rings, but
-   * the border of pixel with the index 0 may have an angular offset from the 3 o'clock
-   * position. These offsets are measured in counter-clock-wise direction. */
+  /** Offset angle of the first pixel in each ring ([rad]). In
+      general the pixels may not start the 3 o'clock position in the
+      rings, but the border of pixel with the index 0 may have an
+      angular offset from the 3 o'clock position. These offsets are
+      measured in counter-clock-wise direction. */
   double* offset_angle;
 
 } ArcPixels;
@@ -57,9 +58,9 @@ struct ArcPixelsParameters {
 /////////////////////////////////////////////////////////////////////
 
 
-/** Initialization routine for the ArcPixels data structure. 
- * Sets the basic properties and allocates memory for the pixel array.
- * The return value is the error status. */
+/** Initialization routine for the ArcPixels data structure. Sets the
+    basic properties and allocates memory for the pixel array. The
+    return value is the error status. */
 int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app);
 
 /** Clean up the ArcPixels data structure. E.g. release allocated memory. */
@@ -68,14 +69,16 @@ void cleanupArcPixels(ArcPixels* ap);
 /** Clear the array of ArcPixels. */
 inline void clearArcPixels(ArcPixels* ap);
 
-/** Determine the ArcPixel that contains the specified position. 
- * The return value is the absolute pixel index (i.e., within the global
- * numbering of all pixels of this detector) of the affected pixel. */
+/** Determine the ArcPixel that contains the specified position. The
+    return value is the absolute pixel index (i.e., within the global
+    numbering of all pixels of this detector) of the affected
+    pixel. */
 void getArcPixel(ArcPixels* ap, struct Point2d position, int* ring, int* number);
 
-/** Determine the absolute pixel index from a given ring and the pixel 
- * number within this ring. */
+/** Determine the absolute pixel index from a given ring and the pixel
+    number within this ring. */
 int getArcPixelIndex(ArcPixels* ap, int ring, int number);
+
 
 #endif /* ARCPIXELS_H */
 

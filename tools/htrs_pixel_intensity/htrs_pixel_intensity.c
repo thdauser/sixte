@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
   int pixel; // Pixel hit by an incident photon.
 
 #ifdef HTRS_HEXPIXELS
-  const int n_pixels=37;
+  int n_pixels=37;
   int count_pixelwidth;                  // Counter for the different pixel widths.
   const double min_pixelwidth=0.5e-3;    // Minimum pixel width ([m]).
   const double step_pixelwidth=0.125e-3; // Increment step for the pixel width ([m]).
@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
   long hex_nphotons[n_pixelwidths][n_pixels];  // Number of photons per hexagonal pixel.
 #endif
 #ifdef HTRS_ARCPIXELS
-  const int n_pixels=37;
+  int n_pixels=37;
   ArcPixels arcPixels;
   long arc_nphotons[n_pixels]; // Number of photons per arc pixel.
   int ring;
@@ -67,14 +67,17 @@ int main(int argc, char* argv[])
     }
 
     // Configuration with 31 pixels.
+    n_pixels=31;
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.26e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., M_PI/12, 0. };
     /*// Configuration with 37 pixels.
+    n_pixels=37;
     int npixels[4] = { 1, 7, 14, 15 };
     double radii[4] = { 2.3e-3, 5.44e-3, 8.77e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };*/
     /*// Configuration with 50 pixels.
+    n_pixels=50;
     int npixels[4] = { 1, 9, 25, 25 };
     double radii[4] = { 2.1e-3, 5.47e-3, 8.79e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };*/
@@ -181,12 +184,12 @@ int main(int argc, char* argv[])
 	   sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	   );
     printf("# radii: %lf %lf %lf %lf\n# pixel:", radii[0], radii[1], radii[2], radii[3]);
-    printf("\n %ld\n %ld\n ", ntotal_photons, ndetected); // RM
+    printf("\n# %ld\n# %ld\n ", ntotal_photons, ndetected); // RM
     for (pixel=0; pixel<n_pixels; pixel++) {
       //      printf(" %lf,", (double)arc_nphotons[pixel]/ntotal_photons);
       printf(" %ld\n", arc_nphotons[pixel]); // RM
     }
-    printf("\n");
+    //    printf("\n");
 #endif
 
   } while (0); // END of error handling loop.
