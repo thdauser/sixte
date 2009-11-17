@@ -13,7 +13,8 @@ int comarecon_main() {
   struct Parameters parameters;
   
   CoMaEventFile* eventfile=NULL;
-  SquarePixels* pixels=NULL;
+  SquarePixels* detector_pixels=NULL;
+  SquarePixels* sky_pixels=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -30,21 +31,35 @@ int comarecon_main() {
     // Read the program parameters using the PIL library.
     if ((status=comarecon_getpar(&parameters))) break;
     
-    // TODO Open the event file.
+    // Open the event file.
     eventfile = openCoMaEventFile(parameters.eventlist_filename, READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
+
+    // TODO Read the decoding array from the FITS file.
     
+
     // DETECTOR setup.
-    struct SquarePixelsParameters spp = {
+    struct SquarePixelsParameters dspp = {
       .xwidth = parameters.width,
       .ywidth = parameters.width,
       .xpixelwidth = parameters.pixelwidth,
       .ypixelwidth = parameters.pixelwidth 
     };
-    pixels=getSquarePixels(&spp, &status);
+    detector_pixels=getSquarePixels(&dspp, &status);
     if(EXIT_SUCCESS!=status) break;
     // END of DETECTOR CONFIGURATION SETUP    
 
+    // SKY IMAGE setup.
+    struct SquarePixelsParameters sspp = {
+      .xwidth = parameters.width + 2*(parameters.width-1),
+      .ywidth = parameters.width + 2*(parameters.width-1),
+      .xpixelwidth = parameters.pixelwidth, // TODO replace by some [deg] value.
+      .ypixelwidth = parameters.pixelwidth 
+    };
+    sky_pixels=getSquarePixels(&sspp, &status);
+    if(EXIT_SUCCESS!=status) break;
+    // END of SKY IMAGE CONFIGURATION SETUP    
+    
     // --- END of Initialization ---
 
 
@@ -60,10 +75,26 @@ int comarecon_main() {
       status=CoMaEventFile_getNextRow(eventfile, &event);
       if(EXIT_SUCCESS!=status) break;
 
-      // TODO: Add the event to the SquarePixels array.
-      
+      // Add the event to the SquarePixels array.
+      detector_pixels->array[event.xi][event.yi].charge += 1.0;
+
     } // END of scanning the impact list.
     if (EXIT_SUCCESS!=status) break;
+
+    // TODO Perform the image reconstruction algorithm.
+    // (Correlation: S = D * G)
+    /*
+    int skyx, skyy, detx, dety; // Counters.
+    for (skyx=0; skyx < sky_pixels->xwidth // TODO
+	   ; skyx++) {
+      for (detx=0; detx < detector_pixels->xwidth; detx++) {
+
+      }
+    }
+    */
+
+    // TODO Write the reconstructed source function to the output FITS file.
+
 
   } while(0);  // END of the error handling loop.
 
@@ -72,7 +103,7 @@ int comarecon_main() {
   headas_chat(5, "cleaning up ...\n");
 
   // Free the Detector pixels.
-  freeSquarePixels(pixels);
+  freeSquarePixels(detector_pixels);
 
   // Close the FITS files.
   status += closeCoMaEventFile(eventfile);
@@ -94,10 +125,17 @@ int comarecon_getpar(struct Parameters* parameters)
 		   "file!\n", status);
   }
 
-  // Get the filename of the event list file (FITS output file).
+  // Get the filename of the event list file (FITS input file).
   else if ((status = PILGetFname("eventlist_filename", 
 				 parameters->eventlist_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the event list output "
+    HD_ERROR_THROW("Error reading the filename of the event list input "
+		   "file!\n", status);
+  }
+
+  // Get the filename of the image file (FITS output file).
+  else if ((status = PILGetFname("image_filename", 
+				 parameters->image_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the image output "
 		   "file!\n", status);
   }
 

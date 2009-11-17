@@ -17,6 +17,7 @@ struct Parameters {
   char mask_filename[MAXMSG]; // input: coded mask reconstruction file
   char eventlist_filename[MAXMSG];
   char eventlist_template[MAXMSG];
+  char image_filename[MAXMSG]; // output: reconstructed source image
 
   /** Detector width in [pixel]. */
   int width;
