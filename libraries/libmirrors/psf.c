@@ -456,7 +456,8 @@ PSF* get_psf(const char* filename, int* status)
 	long fpixel[2] = {1, 1};   // lower left corner
 	//                |--|--> FITS coordinates start at (1,1)
 	// upper right corner
-	long lpixel[2] = {psf->data[index1][index2][index3].naxis1, psf->data[index1][index2][index3].naxis2};  
+	long lpixel[2] = {psf->data[index1][index2][index3].naxis1, 
+			  psf->data[index1][index2][index3].naxis2};  
 	long inc[2] = {1, 1};
 	
 	if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value, 
@@ -482,13 +483,10 @@ PSF* get_psf(const char* filename, int* status)
 		    psf->thetas[index2]/M_PI*180.*60.,
 		    psf->phis[index3]/M_PI*180.);
 
-
       } // END of check if IMAGE_HDU.
     } // END of loop over all HDUs.
     if (EXIT_SUCCESS!=*status) break;
-
   } while(0);  // END of error handling loop
-
 
   // Close PSF file.
   if (NULL!=fptr) fits_close_file(fptr, status);
@@ -606,14 +604,15 @@ int save_psf_image(PSF* psf, const char *filename, int *status)
 	  // Write the ENERGY, THETA, and PHI for this particular PSF set.
 	  // This information is used to find the appropriate PSF for 
 	  // an incident photon with particular energy and off-axis angle.
-	  if (fits_write_key(fptr, TDOUBLE, "ENERGY", &psf->energies[index1], 
-			     "photon energy for the PSF generation in [keV]", status)) break;
+	  dbuffer = psf->energies[index1]*1000.;
+	  if (fits_write_key(fptr, TDOUBLE, "ENERGY", &dbuffer, 
+			     "photon energy for the PSF generation in [eV]", status)) break;
 	  dbuffer = psf->thetas[index2]*180.*60./M_PI;
 	  if (fits_write_key(fptr, TDOUBLE, "THETA", &dbuffer, 
 			     "off-axis angle in [arc min]", status)) break;
 	  dbuffer = psf->phis[index3]*180./M_PI;
 	  if (fits_write_key(fptr, TDOUBLE, "PHI", &dbuffer, 
-			     "azimuthal angle in [arc min]", status)) break;
+			     "azimuthal angle in [degree]", status)) break;
 
 	  HDpar_stamp(fptr, nhdus, status);
 	  if (EXIT_SUCCESS!=*status) break;
@@ -624,7 +623,8 @@ int save_psf_image(PSF* psf, const char *filename, int *status)
 	  long fpixel[2] = {x0+1, y0+1};  // Lower left corner.
 	  //                   |-----|--> FITS coordinates start at (1,1)
 	  // Upper right corner.
-	  long lpixel[2] = {psf->data[index1][index2][index3].naxis1, psf->data[index1][index2][index3].naxis2}; 
+	  long lpixel[2] = {psf->data[index1][index2][index3].naxis1, 
+			    psf->data[index1][index2][index3].naxis2}; 
 	  fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, sub_psf, status);
       
 	}

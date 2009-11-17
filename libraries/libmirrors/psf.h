@@ -35,7 +35,7 @@ typedef struct {
 
   /** Number of different energies PSF images are available for. */
   int nenergies;
-  /** Different energies PSF images are available for ([kev]). */
+  /** Different energies PSF images are available for ([keV]). */
   double* energies;
   /** Number of different off-axis angles PSF images are available for. */
   int nthetas;
