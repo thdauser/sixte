@@ -174,7 +174,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 void free_SourceImage(SourceImage* si) 
 {
   if(si != NULL) {
-    if(si->naxis1 > 0) {
+    if((si->naxis1 > 0)&&(NULL!=si->pixel)) {
       int count;
       for(count=0; count<si->naxis1; count++) {
 	if(si->pixel[count] != NULL) free(si->pixel[count]);
