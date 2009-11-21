@@ -38,24 +38,38 @@ typedef struct {
 } SourceImageCatalog;
 
 
+struct SourceImageParameters {
+  /** Dimensions of the source image. */
+  int naxis1, naxis2;
+  /** Width of the image pixels [rad]. */
+  double cdelt1, cdelt2;
+};
+
+
 //////////////////////////////////////////////////////////////////
 
 
-/** Constructor for SourceImage objects. */
+/** Constructor for SourceImage objects returning the bare data
+    structure without any memory allocated for the pixels. */
 SourceImage* get_SourceImage();
 
-/** Constructor for SourceImage objects. 
- * Reads a SourceImage from a FITS file and stores it in the 
- * corresponding data structure. */
+/** Constructor for SourceImage objects generating an empty source
+    image with allocated memory for the requested image dimensions. */
+SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status);
+
+/** Constructor for SourceImage objects. Reads a SourceImage from a
+    FITS file and stores it in the corresponding data structure. */
 SourceImage* get_SourceImage_fromFile(char* filename, int* status);
 
-/** Constructor for SourceImage objects. 
- * Reads a SourceImage from a FITS file and stores it in the 
- * corresponding data structure. */
+/** Constructor for SourceImage objects. Reads a SourceImage from a
+    FITS file and stores it in the corresponding data structure. */
 SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status);
 
 /** Destructor for SourceImage objects. */
 void free_SourceImage(SourceImage* si);
+
+/** Store the SourceImage in a FITS file. */
+void saveSourceImage(SourceImage* si, char* filename, int* status);
 
 /** Constructor for the SourceImageCatalog. */
 SourceImageCatalog* get_SourceImageCatalog();
@@ -63,10 +77,9 @@ SourceImageCatalog* get_SourceImageCatalog();
 /** Destructor for the SourceImageCatalog. */
 void free_SourceImageCatalog(SourceImageCatalog* sic);
 
-/** Add new SourceImage object to the SourceImageCatalog.
- * The new image is loaded from the FITS HDU designated by fptr and
- * added to the SourceImageCatalog.
- * The return value is the error status. */
+/** Add new SourceImage object to the SourceImageCatalog. The new
+    image is loaded from the FITS HDU designated by fptr and added to
+    the SourceImageCatalog. The return value is the error status. */
 int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr);
 
 

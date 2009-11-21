@@ -14,7 +14,8 @@ int comarecon_main() {
   
   CoMaEventFile* eventfile=NULL;
   SquarePixels* detector_pixels=NULL;
-  SquarePixels* sky_pixels=NULL;
+  CodedMask* mask=NULL;
+  SourceImage* sky_pixels=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -35,28 +36,29 @@ int comarecon_main() {
     eventfile = openCoMaEventFile(parameters.eventlist_filename, READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    // TODO Read the decoding array from the FITS file.
+    // Load the coded mask from the file.
+    mask = getCodedMaskFromFile(parameters.mask_filename, &status);
+    if(EXIT_SUCCESS!=status) break;
     
-
     // DETECTOR setup.
-    struct SquarePixelsParameters dspp = {
+    struct SquarePixelsParameters spp = {
       .xwidth = parameters.width,
       .ywidth = parameters.width,
       .xpixelwidth = parameters.pixelwidth,
       .ypixelwidth = parameters.pixelwidth 
     };
-    detector_pixels=getSquarePixels(&dspp, &status);
+    detector_pixels=getSquarePixels(&spp, &status);
     if(EXIT_SUCCESS!=status) break;
     // END of DETECTOR CONFIGURATION SETUP    
 
     // SKY IMAGE setup.
-    struct SquarePixelsParameters sspp = {
-      .xwidth = parameters.width + 2*(parameters.width-1),
-      .ywidth = parameters.width + 2*(parameters.width-1),
-      .xpixelwidth = parameters.pixelwidth, // TODO replace by some [deg] value.
-      .ypixelwidth = parameters.pixelwidth 
+    struct SourceImageParameters sip = {
+      .naxis1 = 2*parameters.width -1,
+      .naxis2 = 2*parameters.width -1,
+      .cdelt1 = parameters.pixelwidth, // TODO replace by some [deg] value.
+      .cdelt2 = parameters.pixelwidth 
     };
-    sky_pixels=getSquarePixels(&sspp, &status);
+    sky_pixels=getEmptySourceImage(&sip, &status);
     if(EXIT_SUCCESS!=status) break;
     // END of SKY IMAGE CONFIGURATION SETUP    
     
@@ -81,20 +83,34 @@ int comarecon_main() {
     } // END of scanning the impact list.
     if (EXIT_SUCCESS!=status) break;
 
-    // TODO Perform the image reconstruction algorithm.
-    // (Correlation: S = D * G)
-    /*
-    int skyx, skyy, detx, dety; // Counters.
-    for (skyx=0; skyx < sky_pixels->xwidth // TODO
-	   ; skyx++) {
-      for (detx=0; detx < detector_pixels->xwidth; detx++) {
+    // Perform the image reconstruction algorithm.
+    // We calculate the correlation S = D * A, instead of S = D * G as
+    // proposed by Gottesman and Fenimore 1989, because I currently don't see
+    // the reason to use the proposed decoding function instead of the mask
+    // function itself.
+    int i,j, ishift, jshift, k,l; // Counters.
+    for (i=0; i<sky_pixels->naxis1; i++) {
+      ishift=i-sky_pixels->naxis1/2;
+      for (j=0; j<sky_pixels->naxis2; j++) {
+	jshift=j-sky_pixels->naxis2/2;
+
+	for (k=MAX(0,-ishift); k<detector_pixels->xwidth-1-MAX(0,ishift); k++) {
+	  for (l=MAX(0,-jshift); l<detector_pixels->ywidth-1-MAX(0,jshift); l++) {
+	    sky_pixels->pixel[i][j].rate += 
+	      detector_pixels->array[ishift+k][jshift+l].charge * mask->map[k][l];
+	    // TODO Maybe the indices are wrong and we have to write
+	    // 	  detector_pixels->array[k][l].charge * mask.map[ishift+k][jshift+l];
+	    // instead.
+	  }
+	}
 
       }
     }
-    */
 
-    // TODO Write the reconstructed source function to the output FITS file.
 
+    // Write the reconstructed source function to the output FITS file.
+    saveSourceImage(sky_pixels, parameters.image_filename, &status);
+    if(EXIT_SUCCESS!=status) break;
 
   } while(0);  // END of the error handling loop.
 
@@ -102,8 +118,9 @@ int comarecon_main() {
   // --- cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
-  // Free the Detector pixels.
+  // Free the detector and sky image pixels.
   freeSquarePixels(detector_pixels);
+  free_SourceImage(sky_pixels);
 
   // Close the FITS files.
   status += closeCoMaEventFile(eventfile);

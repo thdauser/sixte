@@ -7,10 +7,14 @@
 #include "comaeventfile.h"
 #include "squarepixels.h"
 #include "codedmask.h"
+#include "sourceimage.h"
 
 
 #define TOOLSUB comarecon_main
 #include "headas_main.c"
+
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+//#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 
 struct Parameters {

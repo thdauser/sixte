@@ -32,7 +32,7 @@ int comaimg_main() {
 
     // --- Initialization ---
 
-    // read parameters using PIL library
+    // Read parameters using PIL library.
     if ((status=comaimg_getpar(&parameters))) break;
 
 
@@ -58,7 +58,7 @@ int comaimg_main() {
 
     // Load the coded mask from the file.
     mask = getCodedMaskFromFile(parameters.mask_filename, &status);
-
+    if(EXIT_SUCCESS!=status) break;
 
     // Create a new FITS file for the output of the impact list.
     status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 

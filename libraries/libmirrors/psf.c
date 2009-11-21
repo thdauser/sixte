@@ -503,7 +503,7 @@ int save_psf_image(PSF* psf, const char *filename, int *status)
 {
   int nhdus=0; // Number of HDUs.
   double *sub_psf=NULL;
-  fitsfile *fptr;
+  fitsfile *fptr=NULL;
 
   do { // ERROR handling loop
 

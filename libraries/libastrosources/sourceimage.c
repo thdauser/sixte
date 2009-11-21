@@ -18,6 +18,57 @@ SourceImage* get_SourceImage()
 
 
 
+SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
+{
+  SourceImage* si=NULL;
+
+  // Check if the requested dimensions are reasonable.
+  if ((sip->naxis1<0) || (sip->naxis2<0)) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: array dimensions for SourceImage pixel array cannot "
+		   "be negative!\n", *status);
+    return(si);
+  }
+
+  // Obtain a bare SourceImage object from the standard constructor.
+  si=get_SourceImage();
+  if (NULL==si) return(si);
+
+  // Allocate memory.
+  si->pixel=(struct SourceImagePixel**)malloc(sip->naxis1*sizeof(struct SourceImagePixel*));
+  if (NULL==si->pixel) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: could not allocate memory to store "
+		   "the SourceImage!\n", *status);
+    return(si);
+  }
+  si->naxis1 = sip->naxis1;
+  int xcount, ycount;
+  for(xcount=0; xcount<si->naxis1; xcount++) {
+    si->pixel[xcount]=(struct SourceImagePixel*)malloc(sip->naxis2*sizeof(struct SourceImagePixel));
+    if (NULL==si->pixel[xcount]) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: could not allocate memory to store "
+		     "the SourceImage!\n", *status);
+      return(si);
+    }
+    // Clear the pixels.
+    for(ycount=0; ycount<si->naxis2; ycount++) {
+      si->pixel[xcount][ycount].rate = 0.;
+      si->pixel[xcount][ycount].t_next_photon = 0.;
+    }
+  }
+  si->naxis2 = sip->naxis2;
+  
+  // Set the properties of the pixel array.
+  si->cdelt1 = sip->cdelt1;
+  si->cdelt2 = sip->cdelt2;
+
+  return(si);
+}
+
+
+
 SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 {
   SourceImage* si=NULL;
@@ -167,6 +218,95 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
   if(input_buffer) free(input_buffer);
 
   return(si);
+}
+
+
+
+void saveSourceImage(SourceImage* si, char* filename, int* status)
+{
+  fitsfile *fptr=NULL;
+  float *image1d=NULL;
+
+  // Print information to STDOUT.
+  char msg[MAXMSG];
+  sprintf(msg, "Store SourceImage in file '%s' ...\n", filename);
+  headas_chat(5, msg);
+ 
+  do { // ERROR handling loop
+
+    // If the specified file already exists, remove the old version.
+    remove(filename);
+
+    // Create a new FITS-file:
+    if (fits_create_file(&fptr, filename, status)) break;
+
+    // Allocate memory for the 1-dimensional image buffer (required for
+    // output to FITS file).
+    image1d = (float*)malloc(si->naxis1*si->naxis2*sizeof(float));
+    if (!image1d) {
+      *status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error allocating memory!\n", *status);
+      break;
+    }
+    // Store the source image in the 1-dimensional buffer to handle it 
+    // to the FITS routine.
+    int x, y;
+    for (x=0; x<si->naxis1; x++) {
+      for (y=0; y<si->naxis2; y++) {
+	image1d[((x)*si->naxis1 +y)] = si->pixel[x][y].rate;
+      }
+    }
+    
+    // Create an image in the FITS-file (primary HDU):
+    long naxes[2] = {(long)(si->naxis1), (long)(si->naxis2)};
+    if (fits_create_img(fptr, FLOAT_IMG, 2, naxes, status)) break;
+    //                                   |-> naxis
+    //    int hdutype;
+    if (fits_movabs_hdu(fptr, 1, NULL, status)) break;
+
+
+    // Write the header keywords for the SourceImage.
+    if (fits_write_key(fptr, TSTRING, "HDUCLAS1", "Image", "", status)) break;
+    if (fits_write_key(fptr, TSTRING, "CTYPE1", "X",
+		       "sky coordinate system", status)) break;
+    if (fits_write_key(fptr, TSTRING, "CTYPE2", "Y",
+		       "sky coordinate system", status)) break;
+      
+    if (fits_write_key(fptr, TSTRING, "CUNIT1", "deg", "", status)) break;
+    if (fits_write_key(fptr, TSTRING, "CUNIT2", "deg", "", status)) break;
+    //double dbuffer = si->naxis1*0.5;
+    //if (fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
+    //                   "X axis reference pixel", status)) break;
+    //    if (fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
+    //		       "Y axis reference pixel", status)) break;
+    //    dbuffer = 0.;
+    //    if (fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
+    //		       "coord of X ref pixel", status)) break;
+    //    if (fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
+    //		       "coord of Y ref pixel", status)) break;
+    if (fits_write_key(fptr, TDOUBLE, "CDELT1", &si->cdelt1, 
+		       "X axis increment", status)) break;
+    if (fits_write_key(fptr, TDOUBLE, "CDELT2", &si->cdelt2, 
+		       "Y axis increment", status)) break;
+    
+    HDpar_stamp(fptr, 1, status);
+    if (EXIT_SUCCESS!=*status) break;
+    // END of writing header keywords.
+
+
+    // Write the image to the file:
+    long fpixel[2] = {1, 1};  // Lower left corner.
+    //                |--|--> FITS coordinates start at (1,1)
+    // Upper right corner.
+    long lpixel[2] = {si->naxis1, si->naxis2}; 
+    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, image1d, status);
+
+  } while (0); // END of ERROR handling loop
+
+  // Close the FITS file.
+  if (NULL!=fptr) fits_close_file(fptr, status);
+
+  if (NULL!=image1d) free(image1d);
 }
 
 
