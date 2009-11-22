@@ -20,7 +20,7 @@
 #define T_LC_TIMMER_KOENIG (-1)
 
 /** Width of the time steps in the light curve generated with the 
- * Timmer & Koenig algorithm. */
+    Timmer & Koenig algorithm. */
 #define TK_LC_STEP_WIDTH (10.0)
 
 // The following macros are used to the store light curve and the PSD 
@@ -35,7 +35,7 @@
 
 
 /** Piece-wise linear light curve giving the average source photon rate 
- * for a particular X-ray source. */
+    for a particular X-ray source. */
 typedef struct {
   /** Number of data points in the light curve. */
   long nvalues;
@@ -46,10 +46,10 @@ typedef struct {
   /** Time of the first light curve data point ([s]). */
   double t0;
 
-  /** Piece-wise linear light curve data points ([photons/s]). 
-   * The value a_k represents the gradient of the light curve between 
-   * the time t_k (= t0 + k*step_width) and t_{k+1} (slope). 
-   * The value b_k represents the contant contribution (intercept) at t_k. */
+  /** Piece-wise linear light curve data points ([photons/s]). The
+      value a_k represents the gradient of the light curve between the
+      time t_k (= t0 + k*step_width) and t_{k+1} (slope).  The value
+      b_k represents the contant contribution (intercept) at t_k. */
   double *a, *b;
 
 } LinLightCurve;

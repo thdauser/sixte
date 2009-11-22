@@ -176,9 +176,9 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
 
   
   // Create light curve data according to the algorithm 
-  // proposed by Timmer & Koenig.
+  // proposed by Timmer & Koenig (1995).
   long count;
-  // First create a PSD.
+  // First create a PSD: S(\omega).
   double* psd = (double*)malloc(lc->nvalues*sizeof(double));
   if (NULL==psd) {
     HD_ERROR_THROW("Error: Could not allocate memory for PSD "
@@ -186,7 +186,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     return(EXIT_FAILURE);
   }
   for (count=0; count<lc->nvalues; count++) {
-    psd[count] = pow((double)count, -2.);
+    psd[count] = pow((double)count, -2.); // TODO: pow((double)count, -1.0) ???
   }
 
   // Create Fourier components.
@@ -196,17 +196,17 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
 		   "components of light curve!\n", EXIT_FAILURE);
     return(EXIT_FAILURE);
   }
-  fcomp[0] = 0.;
   double randr, randi;
+  get_gauss_random_numbers(&randr, &randi);
+  fcomp[0]             = randr*sqrt(psd[0]);    //fcomp[0] = 0.;
+  fcomp[lc->nvalues/2] = randr*sqrt(psd[lc->nvalues/2]);
   for (count=1; count<lc->nvalues/2; count++) {
     get_gauss_random_numbers(&randr, &randi);
     REAL(fcomp, count) = randr*sqrt(psd[count]);
     IMAG(fcomp, count) = randi*sqrt(psd[count]);
   }
-  get_gauss_random_numbers(&randr, &randi);
-  fcomp[lc->nvalues/2] = randr*sqrt(psd[lc->nvalues/2]); // TODO 
 
-  // Perform Fourier transformation.
+  // Perform Fourier (back-)transformation.
   gsl_fft_halfcomplex_radix2_inverse(fcomp, 1, lc->nvalues);
   
   // Calculate mean and variance
