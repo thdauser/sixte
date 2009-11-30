@@ -39,17 +39,17 @@ AC_SEARCH_LIBS(ffopen, [cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
 
 AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
 AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
-AC_SEARCH_LIBS(pilclose_, ape_2.4.0, [], \
+AC_SEARCH_LIBS(pilclose_, [ape_2.5.3 ape_2.4.0], [], \
 			 [AC_MSG_ERROR([No ape library (PIL) found!])], [])
 
 # HEADAS libraries:
-AC_SEARCH_LIBS(headas_chat, [hdio_2.5], [], \
+AC_SEARCH_LIBS(headas_chat, [hdio_2.6 hdio_2.5], [], \
 			 [AC_MSG_ERROR([No hdio library found!])], [])
-AC_SEARCH_LIBS(set_toolname, [hdutils_2.5], [], \
+AC_SEARCH_LIBS(set_toolname, [hdutils_2.6 hdutils_2.5], [], \
 			 [AC_MSG_ERROR([No hdutils library found!])], [])
-AC_SEARCH_LIBS(headas_init, [hdinit_2.5], [], \
+AC_SEARCH_LIBS(headas_init, [hdinit_2.6 hdinit_2.5], [], \
 			 [AC_MSG_ERROR([No hdinit library found!])], [])
-AC_SEARCH_LIBS(ReadRMFMatrix, [hdsp_2.5], [], \
+AC_SEARCH_LIBS(ReadRMFMatrix, [hdsp_2.6 hdsp_2.5], [], \
 			 [AC_MSG_ERROR([No hdsp library found!])], [])
 
 # GSL Libraries:
@@ -59,7 +59,7 @@ AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
 
 # WCS Library:
-AC_SEARCH_LIBS(wcsbth, [wcs-4.3], [], [AC_MSG_ERROR([No WCS library found!])], [])
+AC_SEARCH_LIBS(wcsbth, [wcs-4.3.3 wcs-4.3], [], [AC_MSG_ERROR([No WCS library found!])], [])
 
 
 # Check for header files:
