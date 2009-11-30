@@ -298,15 +298,15 @@ PSF* get_psf(const char* filename, int* status)
     // angles, and azimuthal angles.
     headas_chat(5, "PSF - available energies:\n");
     for (count=0; count<psf->nenergies; count++) {
-      headas_chat(5, " %lf keV\n", psf->energies[count]);
+      headas_chat(5, " %.3lf keV\n", psf->energies[count]);
     }
     headas_chat(5, "PSF - available off-axis angles:\n");
     for (count=0; count<psf->nthetas; count++) {
-      headas_chat(5, " %lf arc min\n", psf->thetas[count]/M_PI*180.*60.);
+      headas_chat(5, " %.3lf arc min\n", psf->thetas[count]/M_PI*180.*60.);
     }
     headas_chat(5, "PSF - available azimuthal angles:\n");
     for (count=0; count<psf->nphis; count++) {
-      headas_chat(5, " %lf deg\n", psf->phis[count]/M_PI*180.);
+      headas_chat(5, " %.3lf deg\n", psf->phis[count]/M_PI*180.);
     }
 
     // Allocate memory for the 3-dimensional PSF data array.
