@@ -297,7 +297,6 @@ int eroexposure_main() {
 
 
 
-
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
 int eroexposure_getpar(struct Parameters *parameters)
