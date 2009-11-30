@@ -15,7 +15,7 @@ int htrs_digital_shaper_main() {
 
   // Period before and after each event that may not contain
   // additional events (in the same pixel) ([s]).
-  double empty_period = 1./parameters.frequency * parameters.nsamplings;
+  double empty_period;
 
   int status = EXIT_SUCCESS;
 
@@ -28,6 +28,10 @@ int htrs_digital_shaper_main() {
     // Read parameters by PIL:
     status = htrs_digital_shaper_getpar(&parameters);
     if (EXIT_SUCCESS!=status) break;
+
+    empty_period = 1./parameters.frequency * parameters.nsamplings;
+    headas_chat(5, "HTRS digital shaper (sampling frequency %.2lf MHz) ...\n",
+		parameters.frequency/1.e6);
 
     // Open the input event file.
     status=openHTRSEventFile(&input_eventfile, parameters.input_eventlist_filename, READWRITE);
