@@ -30,6 +30,7 @@ htrs_psfgen
 htrs_simulation
 htrs_pixel_intensity
 htrs_fits2tm
+htrs_digital_shaper
 wfi_simulation
 comaimg
 comadet

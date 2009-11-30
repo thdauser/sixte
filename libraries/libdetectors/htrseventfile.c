@@ -100,7 +100,6 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
 int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event)
 {
   int status=EXIT_SUCCESS;
-  int anynul=0;
 
   // Move counter to next line.
   hef->generic.row++;
@@ -112,15 +111,35 @@ int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event)
     return(status);
   }
 
+  // Read the new HTRSEvent from the file.
+  status=HTRSEventFile_getRow(hef, event, hef->generic.row);
+
+  return(status);
+}
+
+
+
+int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
+{
+  int status=EXIT_SUCCESS;
+  int anynul=0;
+
+  // Check if there is still a row available.
+  if (row > hef->generic.nrows) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: event list file does not contain the requested line!\n", status);
+    return(status);
+  }
+
   // Read in the data.
   event->time = 0.;
-  if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->ctime, hef->generic.row, 1, 1, 
+  if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->ctime, row, 1, 1, 
 		    &event->time, &event->time, &anynul, &status)) return(status);
   event->pha = 0;
-  if (fits_read_col(hef->generic.fptr, TLONG, hef->cpha, hef->generic.row, 1, 1, 
+  if (fits_read_col(hef->generic.fptr, TLONG, hef->cpha, row, 1, 1, 
 		    &event->pha, &event->pha, &anynul, &status)) return(status);
   event->pixel = 0;
-  if (fits_read_col(hef->generic.fptr, TINT, hef->cpixel, hef->generic.row, 1, 1, 
+  if (fits_read_col(hef->generic.fptr, TINT, hef->cpixel, row, 1, 1, 
 		    &event->pixel, &event->pixel, &anynul, &status)) return(status);
   event->pixel--;
   
@@ -133,5 +152,4 @@ int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event)
 
   return(status);
 }
-
 

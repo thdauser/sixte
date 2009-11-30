@@ -229,7 +229,7 @@ static int getpar(struct Parameters* parameters)
       }
     }
   }
-
+  if (EXIT_SUCCESS!=status) return(status);
   // Set the event list template file:
   strcat(parameters->eventlist_template, "/htrs.eventlist.tpl");
 

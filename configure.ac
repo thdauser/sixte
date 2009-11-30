@@ -114,6 +114,7 @@ AC_CONFIG_FILES([Makefile
 		tools/htrs_psfgen/Makefile
 		tools/htrs_pixel_intensity/Makefile
 		tools/htrs_fits2tm/Makefile
+		tools/htrs_digital_shaper/Makefile
 		tools/analyse_xms_events/Makefile
 		tools/pattern_recombination/Makefile
 		tools/comaimg/Makefile
