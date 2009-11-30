@@ -30,8 +30,9 @@ int htrs_digital_shaper_main() {
     if (EXIT_SUCCESS!=status) break;
 
     empty_period = 1./parameters.frequency * parameters.nsamplings;
-    headas_chat(5, "HTRS digital shaper (sampling frequency %.2lf MHz) ...\n",
+    headas_chat(1, "HTRS digital shaper (sampling frequency %.2lf MHz) ...\n",
 		parameters.frequency/1.e6);
+    headas_chat(1, "minimum time between 2 subsequent events: %lf us\n", empty_period*1.e6);
 
     // Open the input event file.
     status=openHTRSEventFile(&input_eventfile, parameters.input_eventlist_filename, READWRITE);
