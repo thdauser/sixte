@@ -235,6 +235,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   // Set the data (slopes, intercepts, ...) required by the LinLightCurve object.
   setLinLightCurveData(lc, rate);
 
+  /*
   // Plot the light curve to an output file for testing.
   headas_printf("Output of light curve to file 'lightcurve.dat' ...\n");
   FILE* lightcurve_file=fopen("lightcurve.dat", "w+");
@@ -243,6 +244,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     fprintf(lightcurve_file, "%lf %lf\n", count*lc->step_width, rate[count]);
   }
   fclose(lightcurve_file);
+  */
 
   // Release allocated memory
   free(psd);
