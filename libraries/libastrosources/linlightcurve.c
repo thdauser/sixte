@@ -186,7 +186,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     return(EXIT_FAILURE);
   }
   for (count=0; count<lc->nvalues; count++) {
-    psd[count] = pow((double)count, -2.); // TODO: pow((double)count, -1.0) ???
+    psd[count] = pow(((double)count+1.), -2.); // TODO: pow((double)count, -1.0) ???
   }
 
   // Create Fourier components.
