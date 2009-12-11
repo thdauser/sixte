@@ -75,7 +75,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   // Check if the photon is really measured. If the
   // PHA channel returned by the HEAdas RMF function is equal to '-1', 
   // the photon is not detected.
-  // This can happen as the RMF is actually an RSP including, e.g., 
+  // This can happen as the RMF is actually an RSP including, e.g.,
   // the detector quantum efficiency and filter transmission.
   if (-1==channel) {
     return(status); // Break the function (and continue with the next photon).
@@ -110,7 +110,8 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 
 	  // TODO Although the current photon cannot be detected, the dead time
 	  // of the affected pixel is extended due to its interaction with the
-	  // detector.
+	  // detector (activate the following line to implement paralyzable dead 
+	  // time).
 	  //  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
 
 	  continue;
@@ -219,7 +220,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 #endif
 
   } // END if(charge>0.)
-
+ 
   return(status);
 }
 
