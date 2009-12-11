@@ -111,7 +111,7 @@ int loadSpectrum(Spectrum* spectrum, char* filename)
 	status=EXIT_FAILURE;
 	sprintf(msg, "Error: Invalid channel number (%ld) in file '%s'!\n", channel, 
 		filename);
-	HD_ERROR_THROW(msg,status);
+	HD_ERROR_THROW(msg, status);
 	break;
       }
       
@@ -127,9 +127,22 @@ int loadSpectrum(Spectrum* spectrum, char* filename)
       spectrum->rate[row] = sum; 
     }
     
-  } while (0);  // end of error handling loop  
+    // Plot the spectrum to an output file for testing.
+    headas_printf("Output of spectrum to file 'spectrum.dat' ...\n");
+    FILE* spectrum_file=fopen("spectrum.dat", "w+");
+    if (NULL==spectrum_file) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Could not open spectrum output file!\n", status);
+      break;
+    }
+    for (row=0; row<spectrum->NumberChannels; row++) {
+      fprintf(spectrum_file, "%ld %lf\n", row, spectrum->rate[row]);
+    }
+    fclose(spectrum_file);
 
-  // clean up:
+  } while (0);  // END of error handling loop  
+
+  // Clean up:
   if (fptr) fits_close_file(fptr, &status);
   
   return(status);
