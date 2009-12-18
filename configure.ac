@@ -59,7 +59,8 @@ AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
 
 # WCS Library:
-AC_SEARCH_LIBS(wcsbth, [wcs-4.3.3 wcs-4.3], [], [AC_MSG_ERROR([No WCS library found!])], [])
+AC_SEARCH_LIBS(wcsbth, [wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
+		       [AC_MSG_ERROR([No WCS library found!])], [])
 
 
 # Check for header files:
