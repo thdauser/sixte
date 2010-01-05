@@ -34,7 +34,7 @@ LDFLAGS="$LDFLAGS -L$HEADAS/lib -W -Wall -O0 -pg"
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 # -lnsl
 #LIBS+="-lnsl"
-AC_SEARCH_LIBS(ffopen, [cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
+AC_SEARCH_LIBS(ffopen, [cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
 			 [AC_MSG_ERROR([No cfitsio library found!])], [])
 
 AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
