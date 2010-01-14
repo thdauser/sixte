@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
   long hex_nphotons[n_pixelwidths][n_pixels];  // Number of photons per hexagonal pixel.
 #endif
 #ifdef HTRS_ARCPIXELS
-  int n_pixels=37;
+  const int n_pixels=31;
   ArcPixels arcPixels;
   long arc_nphotons[n_pixels]; // Number of photons per arc pixel.
   int ring;
@@ -67,9 +67,8 @@ int main(int argc, char* argv[])
     }
 
     // Configuration with 31 pixels.
-    n_pixels=31;
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.26e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
+    double radii[4] = { 2.3e-3, 5.5e-3, 8.85e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., M_PI/12, 0. };
     /*// Configuration with 37 pixels.
     n_pixels=37;
@@ -184,10 +183,10 @@ int main(int argc, char* argv[])
 	   sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	   );
     printf("# radii: %lf %lf %lf %lf\n# pixel:", radii[0], radii[1], radii[2], radii[3]);
-    printf("\n# %ld\n# %ld\n ", ntotal_photons, ndetected); // RM
+    printf("\n# %ld\n# %ld\n ", ntotal_photons, ndetected);
     for (pixel=0; pixel<n_pixels; pixel++) {
-      //      printf(" %lf,", (double)arc_nphotons[pixel]/ntotal_photons);
-      printf(" %ld\n", arc_nphotons[pixel]); // RM
+      printf(" %ld %lf\n", arc_nphotons[pixel], 
+	     (double)arc_nphotons[pixel]/ntotal_photons);
     }
     //    printf("\n");
 #endif
