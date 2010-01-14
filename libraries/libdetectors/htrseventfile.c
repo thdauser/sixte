@@ -56,6 +56,13 @@ int openNewHTRSEventFile(HTRSEventFile* hef, char* filename, char* template)
     }
   } // END of writing time information to Event File FITS header.
 
+  // Add header information about program parameters.
+  // The second parameter "1" means that the headers are writte
+  // to the first extension.
+  HDpar_stamp(fptr, 1, &status);
+
+  // Close the file. It will be re-opened immediately with the
+  // standard opening routine.
   if (fits_close_file(fptr, &status)) return(status);
 
 
