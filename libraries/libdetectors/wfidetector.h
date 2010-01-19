@@ -9,19 +9,21 @@
 #include "impact.h"
 
 
-/** Model for the WFI detector on IXO.
- * This data structure contains the data required for the simulation of the WFI. 
- * It inherits some properties of the GenericDetector and SquarePixels data structures.
- * The WFI-specific properties are mainly related to the particular readout mode with 
- * 1 or 2 readout lines. (The WFI prototype used for comparison of simulation data with
- * measurements from the laboratory has only 1 readout line.) 
- * The WFIDetector data structure can be initialized by calling the initWFIDetector() function
- * with a WFIDetectorParameters data structure containing the desired setup.
- * A new photon Impact can be added to the WFIDetector array by the function 
- * addImpact2WFIDetector().
- * Finally after the simulation when the data structure is not required any more, the 
- * cleanupWFIDetector() routine should be called to release allocated memory and close open
- * file connections.
+/** Model for the WFI detector on IXO.  This data structure contains
+    the data required for the simulation of the WFI.  It inherits some
+    properties of the GenericDetector and SquarePixels data
+    structures.  The WFI-specific properties are mainly related to the
+    particular readout mode with 1 or 2 readout lines. (The WFI
+    prototype used for comparison of simulation data with measurements
+    from the laboratory has only 1 readout line.)  The WFIDetector
+    data structure can be initialized by calling the initWFIDetector()
+    function with a WFIDetectorParameters data structure containing
+    the desired setup.  A new photon Impact can be added to the
+    WFIDetector array by the function addImpact2WFIDetector().
+    Finally after the simulation when the data structure is not
+    required any more, the cleanupWFIDetector() routine should be
+    called to release allocated memory and close open file
+    connections.
  */
 typedef struct {
 
@@ -52,25 +54,25 @@ typedef struct {
    * Gives the indices of the lines that have been read out recently. */
   int readout_lines[2];
 
-  /** Number of the current frame. 
-   * The currently active readout frame that will be assigned to the events in the 
-   * event file. */
+  /** Number of the current frame. The currently active readout frame
+      that will be assigned to the events in the event file. */
   long frame; 
 
-  /** Output event list. 
-   * The events read out from the detector array are written to this event file that must
-   * have the WFI-specific format. */
+  /** Output event list. The events read out from the detector array
+      are written to this event file that must have the WFI-specific
+      format. */
   WFIEventFile eventlist;
 
 } WFIDetector;
 
 
-/** Parameters of the WFIDetector model.  
- * This data structure contains the parameters for setting up the WFIDetector data structure.  
- * It is used as input for the initWFIDetector() routine.  
- * Besides some generic detector parameters especially the readout
- * mode and the event file for data output have to be defined. 
- * For documentation of the inidividual parameters see WFIDetector. */
+/** Parameters of the WFIDetector model.  This data structure contains
+    the parameters for setting up the WFIDetector data structure.  It
+    is used as input for the initWFIDetector() routine.  Besides some
+    generic detector parameters especially the readout mode and the
+    event file for data output have to be defined.  For documentation
+    of the inidividual parameters see WFIDetector. 
+*/
 struct WFIDetectorParameters {
   struct GenericDetectorParameters generic;
   struct SquarePixelsParameters pixels;

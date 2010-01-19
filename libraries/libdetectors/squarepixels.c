@@ -129,7 +129,7 @@ void freeSquarePixels(SquarePixels* sp)
 
 
 /** Determines the minimum distance value out of an array with 4
- * entries and returns the corresponding index. */
+    entries and returns the corresponding index. */
 static inline int getMinimumDistance(double array[]) 
 {
   int count, index=0;

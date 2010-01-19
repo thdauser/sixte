@@ -41,14 +41,13 @@ typedef struct {
       afterwards. The dimensions of the array are xwidth x ywidth. */
   SquarePixel** array;
 
-  /** Flags for the individual detector lines whether they have to be read out.
-   * If no pixel within a line is affected after a read-out process, the line
-   * can be neglected in the following read-out, as there are no charges to be
-   * detected. 
-   * This array contains an entry for each detector line, which is set to 0,
-   * if no pixel in the line contains charge, and is set to 1, if any pixel
-   * contains charge. 
-   * The length of the array is ywidth. */
+  /** Flags for the individual detector lines whether they have to be
+      read out. If no pixel within a line is affected after a
+      read-out process, the line can be neglected in the following
+      read-out, as there are no charges to be detected.  This array
+      contains an entry for each detector line, which is set to 0, if
+      no pixel in the line contains charge, and is set to 1, if any
+      pixel contains charge. The length of the array is ywidth. */
   int* line2readout;
 
 } SquarePixels;

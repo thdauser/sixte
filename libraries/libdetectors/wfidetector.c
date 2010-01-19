@@ -213,6 +213,9 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 	} // END of check whether  charge > 1.e-6
       } // END of loop over x
     } // END of check whether any pixel in the line has been affected by an impact
+    else { // TODO RM
+      printf("jump, because line2readout == 0\n");
+    }
   } // END of loop over readout lines
 
   return(status);
