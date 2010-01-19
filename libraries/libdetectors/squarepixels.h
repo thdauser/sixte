@@ -5,6 +5,7 @@
 #include "point.h"
 #include "genericdetector.h"
 #include "gaussianchargecloud.h"
+#include "exponentialchargecloud.h"
 
 
 ////////////////////////////////////////////////////////////////////////

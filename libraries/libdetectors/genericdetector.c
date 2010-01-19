@@ -5,9 +5,12 @@ int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* p
 {
   int status = EXIT_SUCCESS;
 
-  // Set the charge cloud dimensions:
+  // Set the charge cloud dimensions.
+  // Gaussian:
   gd->gcc.ccsigma =    parameters->ccsigma;
   gd->gcc.ccsize  = 3.*parameters->ccsigma;
+  // Exponential model for eROSITA according to Konrad Dennerl:
+  gd->ecc.parameter = 0.355;
   
   // Set the event thresholds:
   gd->pha_threshold = parameters->pha_threshold;

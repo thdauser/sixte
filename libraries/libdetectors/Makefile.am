@@ -43,8 +43,8 @@ libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosourc
 
 # Define the headers that will be installed in $(includedir) :
 include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
-		  gaussianchargecloud.h arcpixels.h eventfile.h		\
-		  impactlistfile.h impact.h				\
+		  gaussianchargecloud.h exponentialchargecloud.h	\
+		  arcpixels.h eventfile.h impactlistfile.h impact.h	\
 		  uniformdetectorbackground.h framestoredetector.h	\
 		  erositadetectors.h erositaeventfile.h erositaevent.h	\
 		  wfidetector.h wfieventfile.h wfievent.h		\

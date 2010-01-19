@@ -4,6 +4,7 @@
 #include "sixt.h"
 #include "sixt_random.h"
 #include "gaussianchargecloud.h"
+#include "exponentialchargecloud.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -27,6 +28,9 @@ typedef struct {
 
   /** Properties of Gaussian shaped charge clouds. */
   GaussianChargeCloud gcc;
+
+  /** Properties of exponential charge clouds. */
+  ExponentialChargeCloud ecc;
 
   /** Lower detector PHA threshold [PHA channels].  Events with a
       lower PHA value are dismissed.  If the PHA threshold is set to
