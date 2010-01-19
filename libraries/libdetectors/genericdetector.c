@@ -6,8 +6,8 @@ int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* p
   int status = EXIT_SUCCESS;
 
   // Set the charge cloud dimensions:
-  gd->ccsigma =    parameters->ccsigma;
-  gd->ccsize  = 3.*parameters->ccsigma;
+  gd->gcc.ccsigma =    parameters->ccsigma;
+  gd->gcc.ccsize  = 3.*parameters->ccsigma;
   
   // Set the event thresholds:
   gd->pha_threshold = parameters->pha_threshold;

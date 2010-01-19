@@ -170,8 +170,8 @@ int addImpact2eROSITADetectors(eROSITADetectors* fd, Impact* impact)
     assert(ccdindex<NeROSITATELESCOPES);
 
     // Determine the affected detector pixels.
-    int npixels = getSquarePixelsSplits(&fd->pixels[ccdindex], &fd->generic, impact->position, 
-					x, y, fraction);
+    int npixels = getSquarePixelsGaussianSplits(&fd->pixels[ccdindex], &(fd->generic.gcc), 
+						impact->position, x, y, fraction);
     
     // Add the charge created by the photon to the affected detector pixels.
     int count;

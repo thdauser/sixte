@@ -86,15 +86,15 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
       // Impact position is within the inner pixel array.
       event.array = 1;
       // Determine the affected detector pixels.
-      npixels = getSquarePixelsSplits(&xd->pixels_inner, &xd->generic_inner, impact->position, 
-				      x, y, fraction);
+      npixels = getSquarePixelsGaussianSplits(&xd->pixels_inner, &(xd->generic_inner.gcc), 
+					      impact->position, x, y, fraction);
     } else { 
       // Impact position is either within the outer pixel array or even completely
       // outside the detector.
       event.array = 2;
       // Determine the affected detector pixels.
-      npixels = getSquarePixelsSplits(&xd->pixels_outer, &xd->generic_outer, impact->position, 
-				      x, y, fraction);
+      npixels = getSquarePixelsGaussianSplits(&xd->pixels_outer, &(xd->generic_outer.gcc), 
+					      impact->position, x, y, fraction);
     }
 
     

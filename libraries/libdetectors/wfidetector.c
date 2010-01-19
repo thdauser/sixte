@@ -81,8 +81,8 @@ int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
     double fraction[4];
     
     // Determine the affected detector pixels.
-    int npixels = getSquarePixelsSplits(&wd->pixels, &wd->generic, impact->position, 
-					x, y, fraction);
+    int npixels = getSquarePixelsGaussianSplits(&wd->pixels, &(wd->generic.gcc), 
+						impact->position, x, y, fraction);
     
     // Add the charge created by the photon to the affected detector pixels.
     int count;

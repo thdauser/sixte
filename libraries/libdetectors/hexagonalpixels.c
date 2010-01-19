@@ -1,10 +1,11 @@
 #include "hexagonalpixels.h"
 
 
-/** Determine the line index l of the line (from the band of parallel lines),
- * where   x > y*m + t_l   and   x < y*m + t_(l+1)
- * with x and y the cartesian coordinates of the photon impact position.
- * The zero line k = 0 with t_k = 0 goes through the center of the detector. */
+/** Determine the line index l of the line (from the band of parallel
+    lines), where x > y*m + t_l and x < y*m + t_(l+1) with x and y the
+    cartesian coordinates of the photon impact position.  The zero
+    line k = 0 with t_k = 0 goes through the center of the
+    detector. */
 static inline void getHexagonalPixelLineIndex(struct Point2d position, 
 					      double m, double dt, int* l)
 {
@@ -18,8 +19,8 @@ static inline void getHexagonalPixelLineIndex(struct Point2d position,
 
 
 
-/** Determine the 3 lines that define the sub-triangle of the hexagonal pixel
- * where the impact position is located. */
+/** Determine the 3 lines that define the sub-triangle of the
+    hexagonal pixel where the impact position is located. */
 static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, struct Point2d position,
 						int* l0, int* l1, int* l2)
 {
@@ -30,8 +31,8 @@ static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, struct Poin
 
 
 
-/** Set up the auxiliary array that is used to convert line indices to the corresponding
- * pixel index. The pixel indices start at 0. */
+/** Set up the auxiliary array that is used to convert line indices to
+    the corresponding pixel index. The pixel indices start at 0. */
 static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2, 
 					   HexagonalPixelLineIndexInformation information)
 {
@@ -43,11 +44,12 @@ static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, 
 
 
 
-/** Determine the pixel that corresponds to the 3 given line indices. 
- * The function returns information about the sub-triangle, namely the pixel index 
- * and the orientation within the hexagonal pixel it belongs to.
- * If the indices correspond to an invalid pixel, the return value has the pixelindex -1.
- * The pixel indices start at 0.*/
+/** Determine the pixel that corresponds to the 3 given line indices.
+    The function returns information about the sub-triangle, namely
+    the pixel index and the orientation within the hexagonal pixel it
+    belongs to. If the indices correspond to an invalid pixel, the
+    return value has the pixelindex -1. The pixel indices start at
+    0.*/
 static inline HexagonalPixelLineIndexInformation getLineIndexInformation
 (HexagonalPixels* hp, int l0, int l1, int l2)
 {
@@ -338,7 +340,7 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
 
   //    Split Events.
   // Check if charge cloud size is zero.
-  if (gd->ccsize < 1.e-20) {
+  if (gd->gcc.ccsize < 1.e-20) {
     // Only single events are possible!
     fraction[0] = 1.;
     return(1);
@@ -379,7 +381,7 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
   }
 
   // Check whether this is really a split event:
-  if (distance > gd->ccsize) {
+  if (distance > gd->gcc.ccsize) {
     // Single event!
     fraction[0] = 1.;
     return(1);
@@ -388,7 +390,7 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
     // Double event!
     pixel[1] = getLineIndexInformation(hp, k0, k1, k2).pixelindex;
 
-    double mindistgauss = gaussint(distance/gd->ccsigma);
+    double mindistgauss = gaussint(distance/gd->gcc.ccsigma);
     fraction[0] = 1. - mindistgauss;
     fraction[1] =      mindistgauss;
     

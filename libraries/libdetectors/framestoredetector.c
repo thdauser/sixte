@@ -155,8 +155,8 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
     double fraction[4];
     
     // Determine the affected detector pixels.
-    int npixels = getSquarePixelsSplits(&fd->pixels, &fd->generic, impact->position, 
-					x, y, fraction);
+    int npixels = getSquarePixelsGaussianSplits(&fd->pixels, &(fd->generic.gcc), 
+						impact->position, x, y, fraction);
     
     // Add the charge created by the photon to the affected detector pixels.
     int count;

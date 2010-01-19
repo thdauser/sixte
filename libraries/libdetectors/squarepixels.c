@@ -148,8 +148,9 @@ static inline int getMinimumDistance(double array[])
 
 
 
-int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d position, 
-			  int* x, int* y, double* fraction)
+int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc, 
+				  struct Point2d position, 
+				  int* x, int* y, double* fraction)
 {
   //#ifdef GAUSSIAN_CHARGE_CLOUDS
   int npixels = 0; // Number of affected pixels.
@@ -164,7 +165,7 @@ int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d 
   y[0] = (int)(position.y/sp->ypixelwidth + 0.5*sp->ywidth +1.)-1;
   
   // If charge cloud size is 0, i.e. no splits are created.
-  if (gd->ccsize < 1.e-20) {
+  if (gcc->ccsize < 1.e-20) {
     // Only single events are possible!
     npixels = 1;
     fraction[0] = 1.;
@@ -184,12 +185,12 @@ int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d 
     };
 
     int mindist = getMinimumDistance(distances);
-    if (distances[mindist] < gd->ccsize) {
+    if (distances[mindist] < gcc->ccsize) {
       // Not a single event!
       x[1] = x[0] + xe[mindist];
       y[1] = y[0] + ye[mindist];
 
-      double mindistgauss = gaussint(distances[mindist]/gd->ccsigma);
+      double mindistgauss = gaussint(distances[mindist]/gcc->ccsigma);
 
       double minimum = distances[mindist];
       // search for the next to minimum distance to an edge
@@ -197,7 +198,7 @@ int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d 
       int secmindist = getMinimumDistance(distances);
       distances[mindist] = minimum;
 
-      if (distances[secmindist] < gd->ccsize) {
+      if (distances[secmindist] < gcc->ccsize) {
 	// Quadruple!
 	npixels = 4;
 
@@ -207,7 +208,7 @@ int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, struct Point2d 
 	y[3] = y[1] + ye[secmindist];
 
 	// Calculate the different charge fractions in the 4 affected pixels.
-	double secmindistgauss = gaussint(distances[secmindist]/gd->ccsigma);
+	double secmindistgauss = gaussint(distances[secmindist]/gcc->ccsigma);
 	fraction[0] = (1.-mindistgauss)*(1.-secmindistgauss);
 	fraction[1] =     mindistgauss *(1.-secmindistgauss);
 	fraction[2] = (1.-mindistgauss)*    secmindistgauss ;

@@ -3,6 +3,7 @@
 
 #include "sixt.h"
 #include "sixt_random.h"
+#include "gaussianchargecloud.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -17,23 +18,15 @@
 #define INVALID_PIXEL (-1)   // flags an invalid pixel
 
 
-/** Generic x-ray detector.  Contains common data/specifications that
+/** Generic x-ray detector. Contains common data/specifications that
     are defined for all different kinds of detectors.  The
     GenericDetector data structure is usually included as element of
     more specific detector models like, e.g. WFIDetector or
     FramestoreDetector.*/
 typedef struct {
 
-  /** Sigma value for Gaussian shape charge clouds (given in [m]).
-   * This quantity is used to calculate size/extension of the Gaussian shape 
-   * charge cloud. */
-  double ccsigma;
-  /** Size of the charge cloud (given in [m]). 
-   * Quantity to estimate the extension of a Gaussian shape charge cloud.
-   * The value is defined to be three times ccsigma.
-   * It is assumed that approximately all charge is with in a radius of 
-   * this size (3 sigma) around the center of the charge cloud. */
-  double ccsize; 
+  /** Properties of Gaussian shaped charge clouds. */
+  GaussianChargeCloud gcc;
 
   /** Lower detector PHA threshold [PHA channels].  Events with a
       lower PHA value are dismissed.  If the PHA threshold is set to

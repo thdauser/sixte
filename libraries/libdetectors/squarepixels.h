@@ -4,6 +4,7 @@
 #include "sixt.h"
 #include "point.h"
 #include "genericdetector.h"
+#include "gaussianchargecloud.h"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -85,11 +86,12 @@ inline void clearSquarePixels(SquarePixels*);
     detector x-coordinate. */
 inline void clearLineSquarePixels(SquarePixels* sp, const int line);
 
-/** Determine the split ratios of a photon impact on an array of
-    square pixels. */
-int getSquarePixelsSplits(SquarePixels* sp, GenericDetector* gd, 
-			  struct Point2d position, 
-			  int* x, int* y, double* fraction);
+/** Determine the split ratios among neighboring pixels for a photon
+    impact on an array of square pixels. The charge cloud is assumed
+    to have a Gaussian shape. */
+int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc, 
+				  struct Point2d position, 
+				  int* x, int* y, double* fraction);
 
 /** Determine the pixel that is hit by a photon impact. The affected
     pixel is return by the x and y parameters (pixel index starting at
