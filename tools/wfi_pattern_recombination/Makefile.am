@@ -12,15 +12,15 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = pattern_recombination.par
+dist_pfiles_DATA = wfi_pattern_recombination.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = pattern_recombination
+bin_PROGRAMS = wfi_pattern_recombination
 
-pattern_recombination_SOURCES = pattern_recombination.c pattern_recombination.h
-pattern_recombination_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+wfi_pattern_recombination_SOURCES = wfi_pattern_recombination.c wfi_pattern_recombination.h
+wfi_pattern_recombination_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
 

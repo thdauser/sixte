@@ -1,4 +1,4 @@
-#include "pattern_recombination.h"
+#include "wfi_pattern_recombination.h"
 
 
 int pattern_recombination_getpar(struct Parameters* parameters)
@@ -283,7 +283,7 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 
 
 
-int pattern_recombination_main() {
+int wfi_pattern_recombination_main() {
   struct Parameters parameters;
   WFIEventFile eventfile;
   WFIEventFile patternfile;
@@ -294,7 +294,7 @@ int pattern_recombination_main() {
 
 
   // Register HEATOOL
-  set_toolname("pattern_recombination");
+  set_toolname("wfi_pattern_recombination");
   set_toolversion("0.01");
 
   do { // ERROR handling loop
@@ -356,9 +356,9 @@ int pattern_recombination_main() {
     for (i=0; i<eventfile.columns; i++) {
       ccdarr[i] = (WFIEvent*)malloc(eventfile.rows*sizeof(WFIEvent));
       if (NULL==ccdarr[i]) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation failed!\n", status);
-      break;
+	status = EXIT_FAILURE;
+	HD_ERROR_THROW("Error: memory allocation failed!\n", status);
+	break;
       }
     }
     if (EXIT_SUCCESS!=status) break;
@@ -487,99 +487,3 @@ int pattern_recombination_main() {
 }
 
 
-
-/*
-WFIEvent* pattern_recognition(WFIEvent* evlist, long* nevlist, struct RMF* rmf, 
-			      int columns, int rows)
-{
-  // The pixel number for a combined pattern is the pixel number with
-  // the main energy.
-
-  // Starting values for the emptyevent in the pattern search.
-  WFIEvent emptyevent = {
-    .pha = -1,
-    .xi = -1,
-    .yi = -1,
-    .frame = -1,
-    .patnum = -1,
-    .patid = 0,
-    .pileup = 0
-  };
-
-  // Conservative assumption: we only have singles --> evtmax is really the maximum
-  // number of events; the real number will be smaller.
-  long i, j;
-  for (i=0; i<*nevlist; i++) {
-    evlist[i].patnum = -1;
-  }
-  long evtpos = 0;
-  WFIEvent ccdarr[columns][rows];
-  for (i=0; i<columns; i++) {
-    for (j=0; j<rows; j++) {
-      ccdarr[i][j] = emptyevent;
-    }
-  }
-  long idx = 0;
-
-  // Note: we throw away the last frame time. This makes life much easier in the 2nd
-  // while loop below.
-  long maxframe = evlist[(*nevlist)-1].frame;
-  while (evlist[idx].frame < maxframe) {
-    long idx1 = idx;
-    while (evlist[idx1].frame == evlist[idx].frame) {
-      // Search for index of next frame.
-      idx1++;
-    }
-    
-    WFIEvent photons[ARRAY_LENGTH]; // Photons of one frame.
-    long nphotons = idx1-idx;
-    for (i=0; i<nphotons; i++) {
-      photons[i] = evlist[i+idx]; 
-    }
-
-    // Write current events onto Depfet matrix (the pointer structure):
-    for (i=0; i<nphotons; i++) {
-      ccdarr[photons[i].xi][photons[i].yi] = photons[i];
-      ccdarr[photons[i].xi][photons[i].yi].patnum = 0;
-    }
-    idx = idx1;
-
-    // Find singles and multiples:
-    for (i=0; i<nphotons; i++) {
-      // Combine event at this position:
-      int row    = photons[i].yi;
-      int column = photons[i].xi;
-      // Check event, if it has not yet been dealt with:
-      if (-1 != ccdarr[column][row].patnum) { // Choose only pixels with events.
-	// Initialize maxevent (holding the recombined photon energy at the position
-	// of the event with the maximum photon energy).
-	WFIEvent maxevent = emptyevent;
-	// Becomes a list, containing the events the current pattern is build from.
-	WFIEvent components[ARRAY_LENGTH];
-	long ncomponents = 0;
-
-	WFIEvent event = mark(row, column, rows, columns, ccdarr, &maxevent, 
-			      components, &ncomponents, rmf);
-
-	// Call pattern_id to check for valid patterns and label them.
-	// Not needed for border events and singles.
-	// Here the generated pattern is labeled.
-	WFIEvent labeledevent;
-	if (1 == event.patnum) {
-	  event.patid = 0; // Set single patid.
-	  labeledevent = event;
-	} else { // if (event.patnum < 1000)
-	  labeledevent = pattern_id(components, ncomponents, event);
-	}
-	evlist[evtpos] = labeledevent;
-	evtpos++;
-      } // END choose only pixels with events.
-    } // END of loop over all photons.
-    // NB ccdarr is now empty again as we have dealt with all photons.
-  } // END while() - frame is done
-  
-  *nevlist = evtpos;
-  
-  return(evlist);
-} // END of pattern_recognition()
-*/

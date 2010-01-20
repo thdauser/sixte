@@ -1,11 +1,11 @@
-#ifndef PATTERN_RECOMBINATION_H
-#define PATTERN_RECOMBINATION_H 1
+#ifndef WFI_PATTERN_RECOMBINATION_H
+#define WFI_PATTERN_RECOMBINATION_H 1
 
 #include "sixt.h"
 #include "genericdetector.h"
 #include "wfidetector.h"
 
-#define TOOLSUB pattern_recombination_main
+#define TOOLSUB wfi_pattern_recombination_main
 #include "headas_main.c"
 
 
@@ -28,4 +28,4 @@ struct Parameters{
 //////////////////////////////////////////////////////////////////
 
 
-#endif /* PATTERN_RECOMBINATION_H */
+#endif /* WFI_PATTERN_RECOMBINATION_H */

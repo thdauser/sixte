@@ -16,7 +16,7 @@ analyse_xms_events
 binary_stream
 event_projection
 framestore_simulation
-pattern_recombination
+wfi_pattern_recombination
 photon_generation
 photon_imaging
 psfgen
