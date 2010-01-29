@@ -1,0 +1,6 @@
+eventlist_filename,fre,lq,"events.fits",,,"filename of the input event file (FITS)"
+pattern_filename,f,lq,"pattern.fits",,,"filename of the output pattern file (FITS)"
+response_filename,fre,lq,"/home/schmid/ixo/response/detector_specific_response/ixo_cdf_wfi_default.detector.rsp",,,"filename of the detector response file (FITS) containing the EBOUNDS"
+templatedir,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
+chatter,i,lh,5,,,"chatter: control verbosity of the program"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "
