@@ -85,28 +85,30 @@ LinLightCurve* loadLinLightCurveFromFile(char* lc_filename, double source_rate, 
 int initConstantLinLightCurve(LinLightCurve* lc, double mean_rate, double t0, 
 			      double step_width);
 
-/** Initialization routine generating a light curve according to the algorithm proposed
- * by Timmer & Koenig. 
- * The LinLightCurve object already must exist and the memory must be allocated.
- * The light curve data are generated using the algorithm proposed by Timmer & Koenig (1995),
- * which is a phase and amplitude randomization process. The generated light curve
- * is normalized to fullfill the specified mean count rate and rms. */
+/** Initialization routine generating a light curve according to the
+    algorithm proposed by Timmer & Koenig.  The LinLightCurve object
+    already must exist and the memory must be allocated.  The light
+    curve data are generated using the algorithm proposed by Timmer &
+    Koenig (1995), which is a phase and amplitude randomization
+    process. The generated light curve is normalized to fullfill the
+    specified mean count rate and rms. */
 int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_width, 
 				  double mean_rate, double sigma);
 
-/** Destructor. 
- * Releases the memory allocated for the LinLightCurve object by the constructor. */
+/** Destructor. Releases the memory allocated for the LinLightCurve
+    object by the constructor. */
 void freeLinLightCurve(LinLightCurve*);
 
-/** Determine next photon generation time from current point of time and given
- * light curve. 
- * The time is obtained from a time-varying Poisson arrival process generator
- * proposed by Klein & Roberts (1984). This paper describes a Poisson 
- * generator for piecewise-linear light curves. */
+/** Determine a time for the next photon based on a given light
+    curve. Basically a random time interval is added to the time of
+    the previous photon. The random time interval is obtained from a
+    time-varying Poisson arrival process generator proposed by Klein &
+    Roberts (1984). This paper describes a Poisson generator for
+    piecewise-linear light curves. */
 double getPhotonTime(LinLightCurve*, double time);
 
-/** For given photon rates set the data required for the LinLightCurve object
- * (slopes, intercepts, ...). */
+/** For given photon rates set the data required for the LinLightCurve
+    object (slopes, intercepts, ...). */
 void setLinLightCurveData(LinLightCurve* lc, double* rate);
 
 

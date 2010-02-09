@@ -66,20 +66,11 @@ int main(int argc, char* argv[])
       arc_nphotons[pixel] = 0;
     }
 
-    // Configuration with 31 pixels.
+    // Configuration with 31 pixels optimized for uniform photon
+    // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-    /*// Configuration with 37 pixels.
-    n_pixels=37;
-    int npixels[4] = { 1, 7, 14, 15 };
-    double radii[4] = { 2.3e-3, 5.44e-3, 8.77e-3, 12.0e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };*/
-    /*// Configuration with 50 pixels.
-    n_pixels=50;
-    int npixels[4] = { 1, 9, 25, 25 };
-    double radii[4] = { 2.1e-3, 5.47e-3, 8.79e-3, 12.0e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };*/
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
       .npixels = npixels,
@@ -91,7 +82,6 @@ int main(int argc, char* argv[])
     // END setup of ArcPixels.
 #endif
     
-
     // Open the impact list FITS file.
     status = openImpactListFile(&impactlistfile, argv[1], READONLY);
     if (EXIT_SUCCESS!=status) break;
