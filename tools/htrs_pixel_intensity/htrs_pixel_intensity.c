@@ -68,8 +68,8 @@ int main(int argc, char* argv[])
 
     // Configuration with 31 pixels.
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.5e-3, 5.49e-3, 8.84e-3, 12.0e-3 };
-    double offset_angles[4] = { 0., 0., M_PI/12, 0. };
+    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 12.0e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };
     /*// Configuration with 37 pixels.
     n_pixels=37;
     int npixels[4] = { 1, 7, 14, 15 };
