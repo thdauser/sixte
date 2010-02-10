@@ -325,12 +325,10 @@ double getPhotonTime(LinLightCurve* lc, double time)
 	// interval length is a very small number in comparison to b_k.
 	// If a_k * step_width is much smaller than b_k, the rate in the interval
 	// can be assumed to be approximately constant.
-	printf("constant, u: %lf\t a%ld: %lf\t bk: %lf\n", u, k, lc->a[k], lc->b[k]); // Remove debug
 	return(lc->t0+k*lc->step_width + 
 	       (-lc->b[k]+sqrt(pow(lc->b[k],2.) + pow(lc->a[k]*t,2.) + 
 			       2*lc->a[k]*lc->b[k]*t - 2.*lc->a[k]*log(1.-u)))/lc->a[k]);
       } else { // a_k == 0
-	printf("constant, u: %lf\t b%ld: %lf\n", u, k, lc->b[k]); // Remove debug
 	return(time-log(1.-u)/lc->b[k]);
       }
 
