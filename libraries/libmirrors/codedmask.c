@@ -202,7 +202,7 @@ int getCodedMaskImpactPos(struct Point2d* position, Photon* photon, CodedMask* m
 {
 
   // Get a random number.
-  double rand = get_random_number();
+  double rand = sixt_get_random_number();
 
   if (rand>mask->transparency) {
     // The photon is absorbed by an opaque pixel.
@@ -230,9 +230,9 @@ int getCodedMaskImpactPos(struct Point2d* position, Photon* photon, CodedMask* m
 
   // Determine the impact position in the mask plane.
   position->x = ((double)(mask->transparent_pixels[pixel][0])
-		 -mask->crpix1+0.5+get_random_number())*mask->cdelt1 + mask->crval1;
+		 -mask->crpix1+0.5+sixt_get_random_number())*mask->cdelt1 + mask->crval1;
   position->y = ((double)(mask->transparent_pixels[pixel][1])
-		 -mask->crpix2+0.5+get_random_number())*mask->cdelt2 + mask->crval2;
+		 -mask->crpix2+0.5+sixt_get_random_number())*mask->cdelt2 + mask->crval2;
 
   // Shift the position to obtain the position in the detector plane.
   // The shift is necessary because of the photon's off-axis position.

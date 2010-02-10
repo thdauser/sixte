@@ -12,7 +12,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 		     scalar_product(&telescope.nx, &photon.direction));
 
   // Get a random number to determine a random hitting position
-  double rnd = get_random_number();
+  double rnd = sixt_get_random_number();
   //  if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
   if (rnd > get_Vignetting_Factor(vignetting, photon.energy, theta, phi)) {
     // The photon does not hit the detector at all (e.g. it is absorbed).
@@ -35,19 +35,19 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
   // Perform a linear interpolation between the next fitting PSF images.
   if (index1 < psf->nenergies-1) {
-    if (get_random_number() < (photon.energy-psf->energies[index1])/
+    if (sixt_get_random_number() < (photon.energy-psf->energies[index1])/
 	(psf->energies[index1+1]-psf->energies[index1])) {
       index1++;
     }
   }
   if (index2 < psf->nthetas-1) {
-    if (get_random_number() < (theta-psf->thetas[index2])/
+    if (sixt_get_random_number() < (theta-psf->thetas[index2])/
 	(psf->thetas[index2+1]-psf->thetas[index2])) {
       index2++;
     }
   }
   if (index3 < psf->nphis-1) {
-    if (get_random_number() < (phi-psf->phis[index3])/
+    if (sixt_get_random_number() < (phi-psf->phis[index3])/
 	(psf->phis[index3+1]-psf->phis[index3])) {
       index3++;
     }
@@ -61,7 +61,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
   // Perform a binary search to determine a random position:
   // -> one binary search for each of the 2 coordinates x and y
-  rnd = get_random_number();
+  rnd = sixt_get_random_number();
 
   // This section is only necessary for PSFs that are not normalized to 1,
   // i.e., contain some vignetting effects. According to the OGIP recommmendation 
@@ -115,10 +115,10 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
   // Add the relative position obtained from the PSF image (randomized pixel indices x1 and y1).
   double x2 = distance + 
-    ((double)x1 -psf_item->crpix1 +0.5 +get_random_number())*psf_item->cdelt1 
+    ((double)x1 -psf_item->crpix1 +0.5 +sixt_get_random_number())*psf_item->cdelt1 
     + psf_item->crval1; // [m]
   double y2 = 
-    ((double)y1 -psf_item->crpix2 +0.5 +get_random_number())*psf_item->cdelt2 
+    ((double)y1 -psf_item->crpix2 +0.5 +sixt_get_random_number())*psf_item->cdelt2 
     + psf_item->crval2; // [m]
 
   // Rotate the postition [m] according to the azimuth angle.

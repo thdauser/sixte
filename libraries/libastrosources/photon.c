@@ -4,7 +4,7 @@
 float photon_energy(Spectrum* spectrum, struct RMF* rmf)
 {
   // Get a random PHA channel according to the given PHA distribution.
-  float rand = (float)get_random_number();
+  float rand = (float)sixt_get_random_number();
   long upper = spectrum->NumberChannels-1, lower=0, mid;
   
   if(rand > spectrum->rate[spectrum->NumberChannels-1]) {
@@ -28,8 +28,8 @@ float photon_energy(Spectrum* spectrum, struct RMF* rmf)
 
   // Return an energy chosen randomly out of the determined PHA bin:
   return(rmf->ChannelLowEnergy[lower] + 
-	 get_random_number()*(rmf->ChannelHighEnergy[lower]-
-			      rmf->ChannelLowEnergy[lower]));
+	 sixt_get_random_number()*(rmf->ChannelHighEnergy[lower]-
+				   rmf->ChannelLowEnergy[lower]));
 }
 
 
@@ -96,8 +96,12 @@ int create_photons(PointSource* ps /**< Source data. */,
     }
 
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
-    printf("old time: %lf\t new time: %lf\n", ps->t_last_photon, new_photon.time); // Remove debug
-    assert(new_photon.time>ps->t_last_photon);
+
+    if (!(new_photon.time>ps->t_last_photon)){ // Remove debug
+      printf("old time: %lf\t new time: %lf\n", ps->t_last_photon, new_photon.time);
+    }
+    //assert(new_photon.time>ps->t_last_photon);
+
     ps->t_last_photon = new_photon.time;
 
     // Insert photon to the global photon list:

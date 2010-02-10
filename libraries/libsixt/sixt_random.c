@@ -1,19 +1,17 @@
 #include "sixt_random.h"
 
 
-//////////////////////////////////////////////
-inline double get_random_number()
+inline double sixt_get_random_number()
 {
   // Return a value out of the interval [0,1):
-  return((double)HDmtRand()/ULONG_MAX);
+  return(((double)HDmtRand())/ULONG_MAX);
 }
 
 
 
-//////////////////////////////////////////////
 inline double rndexp(double avgdist)
 {
-  double rand = get_random_number();
+  double rand = sixt_get_random_number();
   if (rand < 1.E-15) {
     rand = 1.E-15;
   }
@@ -22,11 +20,11 @@ inline double rndexp(double avgdist)
 }
 
 
-//////////////////////////////////////////////
+
 inline void get_gauss_random_numbers(double* x, double* y)
 {
-  double sqrt_2rho = sqrt(-log(get_random_number())*2.);
-  double phi = get_random_number()*2.*M_PI;
+  double sqrt_2rho = sqrt(-log(sixt_get_random_number())*2.);
+  double phi = sixt_get_random_number()*2.*M_PI;
 
   *x = sqrt_2rho * cos(phi);
   *y = sqrt_2rho * sin(phi);

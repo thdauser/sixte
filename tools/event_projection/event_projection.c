@@ -194,10 +194,10 @@ int event_projection_main() {
       // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
-	((double)(event.xi-384/2)+get_random_number())*75.e-6; // in [m]
+	((double)(event.xi-384/2)+sixt_get_random_number())*75.e-6; // in [m]
       //                                                |--> pixel width in [m]
       detector_position.y = 
-	((double)(event.yi-384/2)+get_random_number())*75.e-6; // in [m]
+	((double)(event.yi-384/2)+sixt_get_random_number())*75.e-6; // in [m]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.)); // in [m]
 
       // Determine the off-axis angle corresponding to the detector position.

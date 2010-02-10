@@ -301,7 +301,7 @@ double getPhotonTime(LinLightCurve* lc, double time)
   // be applied.
 
   // Step 1 in the algorithm.
-  double u = get_random_number();
+  double u = sixt_get_random_number();
 
   // Determine the respective index k of the light curve.
   long k = (long)((time-lc->t0)/lc->step_width);

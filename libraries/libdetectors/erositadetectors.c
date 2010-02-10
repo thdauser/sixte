@@ -166,7 +166,7 @@ int addImpact2eROSITADetectors(eROSITADetectors* fd, Impact* impact)
     double fraction[4];
 
     // Choose randomly 1 of the 7 CCDs.
-    int ccdindex = (int)(get_random_number()*NeROSITATELESCOPES);
+    int ccdindex = (int)(sixt_get_random_number()*NeROSITATELESCOPES);
     assert(ccdindex<NeROSITATELESCOPES);
 
     // Determine the affected detector pixels.

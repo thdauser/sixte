@@ -1,7 +1,6 @@
 #include "spectrum.h"
 
 
-///////////////////////////////////////////////////////////////////////////////
 int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
 {
   char comment[MAXMSG]; // String buffers.

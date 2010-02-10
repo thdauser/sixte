@@ -132,8 +132,8 @@ float getEnergy(long channel, struct RMF* rmf)
   // Return the mean of the energy that corresponds to the specified PHA channel
   // according to the EBOUNDS table.
   return(rmf->ChannelLowEnergy[channel] +
-	 get_random_number()*(rmf->ChannelHighEnergy[channel]-
-			      rmf->ChannelLowEnergy[channel]));
+	 sixt_get_random_number()*(rmf->ChannelHighEnergy[channel]-
+				   rmf->ChannelLowEnergy[channel]));
 }
 
 

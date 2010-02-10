@@ -7,11 +7,9 @@
 #include "photon_generation.h"
 
 
-//////////////////////////
-/** Determines whether a given angle (in [rad]) lies within the specified 
- * range. 
- * The function returns a "1" if the angle lies within the specified range, 
- * otherwise the return value is "0". */
+/** Determines whether a given angle (in [rad]) lies within the
+    specified range. The function returns a "1" if the angle lies
+    within the specified range, otherwise the return value is "0". */
 int check_angle_range(double angle, double min, double max) 
 {
   while (fabs(angle-min) > M_PI) { min-=2*M_PI; }
@@ -26,7 +24,6 @@ int check_angle_range(double angle, double min, double max)
 
 
 
-//////////////////////////
 int photon_generation_main() 
 {
   // Program parameters.
@@ -92,21 +89,26 @@ int photon_generation_main()
     // angle(x0,source) <= 1/2 * diameter
     const double fov_min_align = cos(telescope.fov_diameter/2.); 
     
-    /** Minimum cos-value for sources close to the FOV (in the direct 
-     *neighborhood). */
+    /** Minimum cos-value for sources close to the FOV (in the direct
+        neighborhood). */
     const double close_fov_min_align = 
       cos(close_mult*telescope.fov_diameter/2.); 
 
-    /** Maximum cos-value (minimum sin-value) for sources within the 
-     * preselection band along the orbit. The width of the preselection band
-     * is chose to be twice the diameter of the FOV. 
-     * (angle(n,source) > 90-bandwidth) */
+    /** Maximum cos-value (minimum sin-value) for sources within the
+        preselection band along the orbit. The width of the
+        preselection band is chose to be twice the diameter of the
+        FOV. (angle(n,source) > 90-bandwidth) */
     const double pre_max_align = sin(2*telescope.fov_diameter);
 
 
     // Initialize HEADAS random number generator.
     HDmtInit(1);
 
+    int i;
+    for(i=0; i<10; i++) {
+      printf("HDmtRand (integer): %ld\t", HDmtRand());
+      printf("HDmtRand (double) : %lf\n", HDmtRand());
+    }
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
@@ -466,12 +468,12 @@ int photon_generation_main()
 		  pixel = &(sic->images[image_counter]->pixel[xcount][ycount]);
 		  
 		  // TODO: needs to be replaced by exponential distribution:
-		  double rnd = get_random_number();
+		  double rnd = sixt_get_random_number();
 		  if (rnd < pixel->rate * dt) {
 		    // Generate a new photon for this pixel
 		    Photon new_photon  = {
 		      .ra=ra, .dec=dec, .direction=pixel_vector,
-		      .time = time + get_random_number()*dt };
+		      .time = time + sixt_get_random_number()*dt };
 		    
 		    // Determine the energy of the new photon according to 
 		    // the default spectrum.

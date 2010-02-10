@@ -50,9 +50,9 @@ int createUniformDetectorBackgroundImpact(UniformDetectorBackground* background,
   
   // Determine the position of the event on the CCD.
   background->nextImpact.position.x = 
-    (2.*get_random_number() -1.) * pixels->xoffset * pixels->xpixelwidth;
+    (2.*sixt_get_random_number() -1.) * pixels->xoffset * pixels->xpixelwidth;
   background->nextImpact.position.y = 
-    (2.*get_random_number() -1.) * pixels->yoffset * pixels->ypixelwidth;
+    (2.*sixt_get_random_number() -1.) * pixels->yoffset * pixels->ypixelwidth;
 
   // Determine the energy of the impact.
   background->nextImpact.energy = photon_energy(&background->spectrum, rmf);
