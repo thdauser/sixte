@@ -103,12 +103,6 @@ int photon_generation_main()
 
     // Initialize HEADAS random number generator.
     HDmtInit(1);
-
-    int i;
-    for(i=0; i<10; i++) {
-      printf("HDmtRand (integer): %ld\t", HDmtRand());
-      printf("HDmtRand (double) : %lf\n", HDmtRand());
-    }
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,

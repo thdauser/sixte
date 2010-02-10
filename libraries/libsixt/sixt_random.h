@@ -4,8 +4,10 @@
 #include "sixt.h"
 
 
-/** This routine creates random numbers using the HEAdas random number
-    generator. The return values lie in the interval [0,1). */
+/** This routine returns a random number created by the HEAdas random
+    number generator. It is basically a wrapper around the HEAdas
+    routine HDmtDrand(). The return values lie in the interval
+    [0,1). */
 inline double sixt_get_random_number();
 
 
