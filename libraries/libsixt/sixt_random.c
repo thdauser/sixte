@@ -3,13 +3,7 @@
 
 inline double sixt_get_random_number()
 {
-  // Annotation:
-  // The function HDmtRand() returns a value of the type 
-  // "unsigned long int".
-
   // Return a value out of the interval [0,1):
-  //  return(((double)HDmtRand())/ULONG_MAX);
-
   return(HDmtDrand());
 }
 

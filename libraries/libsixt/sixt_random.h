@@ -7,7 +7,12 @@
 /** This routine returns a random number created by the HEAdas random
     number generator. It is basically a wrapper around the HEAdas
     routine HDmtDrand(). The return values lie in the interval
-    [0,1). */
+    [0,1). The function requires HDmtInit() to be called once before
+    usage in order to initialize the HEAdas random number
+    generator. When the random number generator is not needed any
+    more, it can be realeased with HDmtFree(). Information can be
+    found in the HEAdas developer's guide or directly in the source
+    files 'headas_rand.h' and 'headas_rand.c'. */
 inline double sixt_get_random_number();
 
 
