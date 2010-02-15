@@ -96,7 +96,12 @@ int create_photons(PointSource* ps /**< Source data. */,
     }
 
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
-    assert(new_photon.time>ps->t_last_photon);
+    //assert(new_photon.time>ps->t_last_photon);
+    if (new_photon.time<ps->t_last_photon) {
+      printf("Error in subsequent photon times: %lf < %lf\n", 
+	     new_photon.time, ps->t_last_photon);
+      exit(-1);
+    }
     ps->t_last_photon = new_photon.time;
 
     // Insert photon to the global photon list:
