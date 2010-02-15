@@ -34,8 +34,35 @@ LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg"
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 # -lnsl
 #LIBS+="-lnsl"
-AC_SEARCH_LIBS(ffopen, [cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
-			 [AC_MSG_ERROR([No cfitsio library found!])], [])
+
+
+#AC_SEARCH_LIBS(ffopen, [cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
+#			 [AC_MSG_ERROR([No cfitsio library found!])], [])
+
+####################################
+
+# cfitsio
+lib_cfitsio="no"
+AC_MSG_CHECKING([for versioned libcfitsio in \$HEADAS])
+my_cfitsio=`ls "${HEADAS}"/lib/libcfitsio*.so 2> /dev/null`
+if ! test -z "$my_cfitsio"
+then
+   my_cfitsio=`basename "$my_cfitsio"`
+   my_cfitsio=`expr "$my_cfitsio" : 'lib\(cfitsio_.*\)\.so'`
+fi
+if ! test -z "$my_cfitsio"
+then
+   AC_MSG_RESULT([yes ($my_cfitsio)])
+else
+   AC_MSG_RESULT([no])
+fi
+AC_SEARCH_LIBS(ffopen, cfitsio $my_cfitsio,
+          [lib_cfitsio=-l$ac_lib],
+          [AC_MSG_ERROR([No cfitsio library found!])],
+          [-lm])
+AC_SUBST(lib_cfitsio)
+
+#################################### 
 
 AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
 AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
