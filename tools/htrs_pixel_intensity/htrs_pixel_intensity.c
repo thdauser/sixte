@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     // Configuration with 31 pixels optimized for uniform photon
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 12.0e-3 };
+    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.3e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
