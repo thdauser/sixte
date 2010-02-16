@@ -25,6 +25,7 @@ int main(int argc, char* argv[])
   ArcPixels arcPixels;
   long arc_nphotons[n_pixels]; // Number of photons per arc pixel.
   int ring;
+  double radius, angle; // Polar coordinates of the impact position.
 #endif
 
   long ntotal_photons;   // Total number of photons.
@@ -111,7 +112,8 @@ int main(int argc, char* argv[])
 
 #ifdef HTRS_ARCPIXELS
       // Determine the ArcPixel that is hit by the photon.
-      getArcPixel(&arcPixels, impact.position, &ring, &pixel);
+      getPolarCoordinates(impact.position, &radius, &angle);
+      getArcPixelFromPolar(&arcPixels, radius, angle, &ring, &pixel);
       // Determine the absolute pixel index (numbering for all pixels of this
       // detector) from the given ring and internal pixel number in this ring.
       arc_nphotons[getArcPixelIndex(&arcPixels, ring, pixel)]++;

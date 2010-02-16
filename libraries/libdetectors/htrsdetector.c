@@ -130,10 +130,9 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	// Check lower threshold (PHA and energy):
 	if ((event.pha>=hd->generic.pha_threshold) && 
 	    (charge*fraction[pixel_counter]>=hd->generic.energy_threshold)) { 
-	
-	  // TODO REMOVE
+
+	  // Check if a valid channel is returned.
 	  assert(event.pha >= 0);
-	  // Maybe: if (event.pha < 0) continue;
 	  
 	  // The impact has generated an event in this pixel,
 	  // so add it to the event file.
@@ -165,11 +164,15 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 #endif
 
 #ifdef HTRS_ARCPIXELS
-    int ring, number;
-    getArcPixel(&hd->pixels, impact->position, &ring, &number);
-    if (INVALID_PIXEL != ring) {
+
+    // The event can be either a single or a double. Therefore we must be 
+    // able to store up to 2 pairs of ring and pixel number.
+    int ring[2], number[2]; 
+    int npixels = getArcPixelSplits(&hd->pixels, &hd->generic, impact->position, 
+				    ring, number);
+    if (INVALID_PIXEL != ring[0]) {
       // Check if the pixel is currently active.
-      if (impact->time-hd->pixels.array[ring][number].last_impact >= hd->dead_time) {
+      if (impact->time-hd->pixels.array[ring[0]][number[0]].last_impact >= hd->dead_time) {
 	// The photon can be detected in this pixel.
 	// The pixel is NOT within the dead time after some previous event.
 
@@ -185,18 +188,16 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	if ((event.pha>=hd->generic.pha_threshold) && 
 	    (charge>=hd->generic.energy_threshold)) { 
 	  
-	  // TODO REMOVE
 	  assert(event.pha >= 0);
-	  // Maybe: if (event.pha < 0) continue;
 	  
 	  // The impact has generated an event in this pixel,
 	  // so add it to the event file.
-	  event.pixel = getArcPixelIndex(&(hd->pixels), ring, number);
+	  event.pixel = getArcPixelIndex(&(hd->pixels), ring[0], number[0]);
 	  event.time = impact->time;
 	  
 	  // Store the time of this impact in the pixel in order to consider the
 	  // dead time.
-	  hd->pixels.array[ring][number].last_impact = impact->time;
+	  hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
 	  
 	  // Add event to event file.
 	  status = addHTRSEvent2File(&hd->eventlist, &event);
@@ -213,9 +214,18 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	// TODO Although the current photon cannot be detected, the dead time
 	// of the affected pixel is extended due to its interaction with the
 	// detector.
-	//hd->pixels.array[ring][number].last_impact = impact->time;
+	//hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
 
       } // END Check for dead time.
+
+      // Count the number of events for statistical information.
+      if (1==npixels) {
+	hd->nsingles++;
+	hd->nevents++;
+      } else if (2==npixels) {
+	hd->ndoubles++;
+	hd->nevents++;
+      }
     } // END if valid pixel.
 #endif
 
