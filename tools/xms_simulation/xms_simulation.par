@@ -1,6 +1,6 @@
 impactlist_filename,fre,lq,"../impacts_1mCrab.fits",,,"impact list file (FITS input file) "
-rmf_filename_inner,fre,lq,"/home/schmid/ixo/response/detector_specific_response/ixo_cdf_tes_none_081117.detector.rsp",,,"detector response file for the inner TES microcalorimeter array (RSP = detector-specific ARF * RMF) (FITS input file) "
-rmf_filename_outer,fre,lq,"/home/schmid/ixo/response/detector_specific_response/ixo_cdf_tes_none_081117.detector.rsp",,,"detector response file for the outer TES microcalorimeter array (RSP = detector-specific ARF * RMF) (FITS input file) "
+rmf_filename_inner,fre,lq,"/home/schmid/ixo/response/ixo_cdf_tes_none_081117.rsp",,,"detector response file for the inner TES microcalorimeter array (RMF or RSP = ARF * RMF) (FITS input file) "
+rmf_filename_outer,fre,lq,"/home/schmid/ixo/response/ixo_cdf_tes_none_081117.rsp",,,"detector response file for the outer TES microcalorimeter array (RMF or RSP = ARF * RMF) (FITS input file) "
 eventlist_filename,f,lq,"events_1mCrab.fits",,,"event list file (FITS output file) "
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 det_width_inner,i,lq,40,0,10000,"width of the inner TES microcalorimeter array (pixels) "
