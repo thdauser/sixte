@@ -132,12 +132,12 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
   if (ring[0] > 0) {
     getArcPixelFromPolar(ap, radius-gd->gcc.ccsize, angle,
 			 &(ring[1]), &(number[1]));
-    if (ring[1]!=ring[0]) return(2);
+    if ((INVALID_PIXEL!=ring[1])&&(ring[1]!=ring[0])) return(2);
   }
   if (ring[0] < ap->nrings-1) {
     getArcPixelFromPolar(ap, radius+gd->gcc.ccsize, angle,
 			 &(ring[1]), &(number[1]));
-    if (ring[1]!=ring[0]) return(2);
+    if ((INVALID_PIXEL!=ring[1])&&(ring[1]!=ring[0])) return(2);
   }
   // Vary polar angle:
   if (ring[0] > 0) {
@@ -145,11 +145,13 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
     // Bigger polar angle:
     getArcPixelFromPolar(ap, radius, angle+2.*delta,
 			 &(ring[1]), &(number[1]));
+    assert(INVALID_PIXEL!=number[1]);
     if (number[1]!=number[0]) return(2);
     // Smaller polar angle:
     getArcPixelFromPolar(ap, radius, angle-2.*delta,
 			 &(ring[1]), &(number[1]));
-    if (number[1]!=number[0]) return(2);    
+    assert(INVALID_PIXEL!=number[1]);
+    if (number[1]!=number[0]) return(2);
   }
   
   // There is no charge splitting. The event is a single.
