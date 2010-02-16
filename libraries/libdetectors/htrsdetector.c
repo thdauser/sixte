@@ -203,10 +203,6 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  status = addHTRSEvent2File(&hd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
 
-	  // Gather statistical data.
-	  hd->nevents++;
-	  hd->nsingles++;
-
 	} // END Check for thresholds.
 
       } else {
