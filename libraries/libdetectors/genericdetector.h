@@ -11,13 +11,17 @@
 #include "heasp.h"
 #endif
 
-// The GNU Scientific Library Errorfunction is used to calculate charge 
-// distribution of split events (assuming a Gaussian shape for the carge cloud).
+/** The GNU Scientific Library Errorfunction is used to calculate
+    charge distribution of split events (assuming a Gaussian shape for
+    the carge cloud). */
 #include <gsl/gsl_sf_erf.h>
 
-
-#define INVALID_PIXEL (-1)   // flags an invalid pixel
-
+/** This value represents an invalid pixel. */
+#define INVALID_PIXEL (-1)
+/** Normalize the RSP such that it only contains the RMF. The ARF has
+    already been taken into account in the generation of the input
+    spectra of the X-ray sources. */
+#define NORMALIZE_RMF (1)
 
 /** Generic x-ray detector. Contains common data/specifications that
     are defined for all different kinds of detectors.  The
@@ -32,24 +36,20 @@ typedef struct {
   /** Properties of exponential charge clouds. */
   ExponentialChargeCloud ecc;
 
-  /** Lower detector PHA threshold [PHA channels].  Events with a
+  /** Lower detector PHA threshold [PHA channels]. Events with a
       lower PHA value are dismissed.  If the PHA threshold is set to
       "-1" the energy threshold is taken into account. */
   long pha_threshold;
-  /** Lower detector energy threshold [keV]. 
-   * Events with a lower energy / pixel charge are dismissed. 
-   * This value is only regarded if the pha_threshold is set to "-1". */
+  /** Lower detector energy threshold [keV]. Events with a lower
+      energy / pixel charge are dismissed. This value is only
+      regarded if the pha_threshold is set to "-1". */
   float energy_threshold; 
 
-  /** Detector response matrix. Includes the RMF and the detector-specific
-   * response elements like filter transmission and quantum efficiency.
-   * So the sum of each line of the response matrix HAS TO BE less
-   * or equal 1 (sum <= 1) !
-   * The RMF can be normalized explicitly to be a real RMF without 
-   * photon loss due response effects by setting the compiler flag 
-   * "-DNORMALIZE_RMF".
-   * The mirror specific elements are treated SEPARATELY in the photon
-   * imaging process. */
+  /** Detector response matrix. The RSP file that is originally loaded
+      may also contain ARF contributions. But as they already have
+      been taken into account in the generation of the input spectra
+      for the X-ray sources, the ARF contributions have to be removed
+      by normalizing the RSP matrix. */
   struct RMF* rmf;
 
 } GenericDetector;

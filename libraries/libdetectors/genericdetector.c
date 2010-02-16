@@ -68,8 +68,8 @@ struct RMF* loadRMF(char* filename, int* status)
       maxsum = sum;
     }
   }
-  if (maxsum > 1.) {
-    headas_printf("### Warning: RSP probably contains mirror ARF "
+  if (fabs(maxsum-1.)>1.e-3) {
+    headas_printf("### Warning: RSP probably contains ARF "
 		  "(row-sum = %lf)! ###\n", maxsum);
   }
 #endif
