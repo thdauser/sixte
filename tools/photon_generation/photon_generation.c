@@ -199,7 +199,9 @@ int photon_generation_main()
     // respective source category.
     if (POINT_SOURCES==sourceCategory) { 
       // Load the point source catalog from the current HDU.
-      status=addPointSourceFile2Catalog(pointsourcefilecatalog, parameters.sources_filename, sources_hdu);
+      status=addPointSourceFile2Catalog(pointsourcefilecatalog, 
+					parameters.sources_filename, 
+					sources_hdu);
       if (status != EXIT_SUCCESS) break;
       
       // Read the header from the LAST Point Source FITS file to obtain
