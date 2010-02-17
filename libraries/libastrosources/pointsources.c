@@ -257,6 +257,7 @@ void free_PointSourceCatalog(PointSourceCatalog* psc)
     for (count=0; count<psc->nsources; count++) {
       if (psc->sources[count].lc != NULL) {
 	freeLinLightCurve(psc->sources[count].lc);
+	psc->sources[count].lc=NULL;
       }
     }
 
