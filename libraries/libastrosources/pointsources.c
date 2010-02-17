@@ -21,11 +21,11 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
     if (psfc->nfiles>0) {
       int count;
       for(count=0; count<psfc->nfiles; count++) {
-	// Call the destructor of the PointSourceFile object.
-	free_PointSourceFile(psfc->files[count]);
-	// Free the pointer to the PointSourceFile object.
-	free(psfc->files[count]);
-	psfc->files[count]=NULL;
+	if(NULL!=psfc->files[count]) {
+	  // Call the destructor of the PointSourceFile object.
+	  free_PointSourceFile(psfc->files[count]);
+	  psfc->files[count]=NULL;
+	}
       }
     }
 
@@ -118,7 +118,7 @@ void free_PointSourceFile(PointSourceFile* psf) {
 
     // Close the FITS file if still open.
     if (NULL!=psf->fptr) {
-      int status;
+      int status=EXIT_SUCCESS;
       fits_close_file(psf->fptr, &status);
     }
 
@@ -341,7 +341,9 @@ int addPointSourceFile2Catalog(PointSourceFileCatalog* psfc,
     psfc->nfiles = 1;
   } else { // The catalog already contains some files.
     // Extend the allocated memory for an additional PointSourceFile.
-    psfc->files = (PointSourceFile**)realloc(psfc->files, (psfc->nfiles+1)*sizeof(PointSourceFile*));
+    psfc->files = 
+      (PointSourceFile**)realloc(psfc->files, 
+				 (psfc->nfiles+1)*sizeof(PointSourceFile*));
     if (NULL==psfc->files) {
       status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: not enough memory to allocate "
