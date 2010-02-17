@@ -36,6 +36,7 @@ int cleanupFramestoreDetector(FramestoreDetector* fd)
 
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&fd->pixels);
+  cleanupGenericDetector(&fd->generic);
   status+=closeeROSITAEventFile(&fd->eventlist);
 
   return(status);

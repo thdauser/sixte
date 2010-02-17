@@ -76,11 +76,21 @@ struct GenericDetectorParameters {
     elements according to the given parameters. */
 int initGenericDetector(GenericDetector*, struct GenericDetectorParameters*);
 
+/** Clean up the GenericDetector data structure. Release the allocated
+    memory. */
+void cleanupGenericDetector(GenericDetector* gd);
+
 /** Load an RMF/RSP matrix and the corresponding EBOUNDS from a
     response file.  If the compiler flag '-DNORMALIZE_RMF' is set, the
     RSP is renormalized to an RMF in such a way that the sum of each
     matrix row/column(?) is 1. */
 struct RMF* loadRMF(char* filename, int* status);
+
+/** Destructor for the RMF data structure. Releases the allocated
+    memory. Warning: As there is no internal destructor for the RMF
+    data structure in the HEASP library, the memory allocated by the
+    function ReadRMFMatrix is not realeased. */
+void freeRMF(struct RMF* rmf);
 
 /** Determines the PHA channel corresponding to a given energy
     according to the EBOUNDS table of the detector response.  The

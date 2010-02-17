@@ -53,6 +53,7 @@ int cleanupHTRSDetector(HTRSDetector* hd)
 #ifdef HTRS_ARCPIXELS
     cleanupArcPixels(&hd->pixels);
 #endif
+    cleanupGenericDetector(&hd->generic);
 
     status = closeHTRSEventFile(&hd->eventlist);
   }

@@ -42,6 +42,7 @@ int cleanupeROSITADetectors(eROSITADetectors* fd)
   for(ccdindex=0; ccdindex<NeROSITATELESCOPES; ccdindex++) {
     cleanupSquarePixels(&fd->pixels[ccdindex]);
   }
+  cleanupGenericDetector(&fd->generic);
   status+=closeeROSITAEventFile(&fd->eventlist);
 
   return(status);
