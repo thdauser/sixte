@@ -252,15 +252,18 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 ////////////////////////////////////////////////////
 void free_PointSourceCatalog(PointSourceCatalog* psc)
 {
-  if (NULL != psc) {
-    int count;
-    for (count=0; count<psc->nsources; count++) {
-      if (psc->sources[count].lc != NULL) {
-	freeLinLightCurve(psc->sources[count].lc);
-	psc->sources[count].lc=NULL;
+  if (NULL!=psc) {
+    if (NULL!=psc->sources) {
+      int count;
+      for (count=0; count<psc->nsources; count++) {
+	if (psc->sources[count].lc != NULL) {
+	  freeLinLightCurve(psc->sources[count].lc);
+	  psc->sources[count].lc=NULL;
+	}
       }
+      free(psc->sources);
+      psc->sources=NULL;
     }
-
     free(psc);
   }
 }
