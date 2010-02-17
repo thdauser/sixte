@@ -34,23 +34,172 @@ LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg"
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 # -lnsl
 #LIBS+="-lnsl"
-AC_SEARCH_LIBS(ffopen, [cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], [], \
-			 [AC_MSG_ERROR([No cfitsio library found!])], [])
+
+
+
+####################################
+# cfitsio
+AC_SEARCH_LIBS(ffopen, 
+	[cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
+	[], [AC_MSG_ERROR([No cfitsio library found!])], [])
+#lib_cfitsio="no"
+#AC_MSG_CHECKING([for versioned libcfitsio in \$HEADAS])
+#my_cfitsio=`ls "${HEADAS}"/lib/libcfitsio*.so 2> /dev/null`
+#if ! test -z "$my_cfitsio"
+#then
+#   my_cfitsio=`basename "$my_cfitsio"`
+#   my_cfitsio=`expr "$my_cfitsio" : 'lib\(cfitsio_.*\)\.so'`
+#fi
+#if ! test -z "$my_cfitsio"
+#then
+#   AC_MSG_RESULT([yes ($my_cfitsio)])
+#else
+#   AC_MSG_RESULT([no])
+#fi
+#AC_SEARCH_LIBS(ffopen, cfitsio $my_cfitsio, [],
+#          [AC_MSG_ERROR([No cfitsio library found!])], [])
+##AC_SEARCH_LIBS(ffopen, cfitsio $my_cfitsio,
+##          [lib_cfitsio=-l$ac_lib],
+##          [AC_MSG_ERROR([No cfitsio library found!])],
+##          [-lm])
+#AC_SUBST(lib_cfitsio)
+#################################### 
 
 AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
 AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
-AC_SEARCH_LIBS(pilclose_, [ape_2.5.3 ape_2.4.0], [], \
-			 [AC_MSG_ERROR([No ape library (PIL) found!])], [])
+
+####################################
+# PIL / APE
+#AC_SEARCH_LIBS(pilclose_, [ape_2.5.3 ape_2.4.0], [], \
+#			 [AC_MSG_ERROR([No ape library (PIL) found!])], [])
+lib_ape="no"
+AC_MSG_CHECKING([for versioned libape in \$HEADAS])
+my_ape=`ls "${HEADAS}"/lib/libape*.so 2> /dev/null`
+if ! test -z "$my_ape"
+then
+   my_ape=`basename "$my_ape"`
+   my_ape=`expr "$my_ape" : 'lib\(ape_.*\)\.so'`
+fi
+if ! test -z "$my_ape"
+then
+   AC_MSG_RESULT([yes ($my_ape)])
+else
+   AC_MSG_RESULT([no])
+fi
+AC_SEARCH_LIBS(pilclose_, ape $my_ape, [],
+          [AC_MSG_ERROR([No ape library found!])], [])
+AC_SUBST(lib_ape)
+#################################### 
 
 # HEADAS libraries:
-AC_SEARCH_LIBS(headas_chat, [hdio_2.6 hdio_2.5], [], \
-			 [AC_MSG_ERROR([No hdio library found!])], [])
-AC_SEARCH_LIBS(set_toolname, [hdutils_2.6 hdutils_2.5], [], \
-			 [AC_MSG_ERROR([No hdutils library found!])], [])
-AC_SEARCH_LIBS(headas_init, [hdinit_2.6 hdinit_2.5], [], \
-			 [AC_MSG_ERROR([No hdinit library found!])], [])
-AC_SEARCH_LIBS(ReadRMFMatrix, [hdsp_2.6 hdsp_2.5], [], \
-			 [AC_MSG_ERROR([No hdsp library found!])], [])
+####################################
+# HDIO
+#AC_SEARCH_LIBS(headas_chat, [hdio_2.6 hdio_2.5], [], \
+#			 [AC_MSG_ERROR([No hdio library found!])], [])
+lib_hdio="no"
+AC_MSG_CHECKING([for versioned hdio in \$HEADAS])
+my_hdio=`ls "${HEADAS}"/lib/libhdio*.so 2> /dev/null`
+if ! test -z "$my_hdio"
+then
+   my_hdio=`basename "$my_hdio"`
+   my_hdio=`expr "$my_hdio" : 'lib\(hdio_.*\)\.so'`
+fi
+if ! test -z "$my_hdio"
+then
+   AC_MSG_RESULT([yes ($my_hdio)])
+else
+   AC_MSG_RESULT([no])
+fi
+AC_SEARCH_LIBS(headas_chat, hdio $my_hdio, [],
+          [AC_MSG_ERROR([No hdio library found!])], [])
+AC_SUBST(lib_hdio)
+####################################
+# HDUTILS
+#AC_SEARCH_LIBS(set_toolname, [hdutils_2.6 hdutils_2.5], [], \
+#			 [AC_MSG_ERROR([No hdutils library found!])], [])
+lib_hdutils="no"
+AC_MSG_CHECKING([for versioned hdutils in \$HEADAS])
+my_hdutils=`ls "${HEADAS}"/lib/libhdutils*.so 2> /dev/null`
+if ! test -z "$my_hdutils"
+then
+   my_hdutils=`basename "$my_hdutils"`
+   my_hdutils=`expr "$my_hdutils" : 'lib\(hdutils_.*\)\.so'`
+fi
+if ! test -z "$my_hdutils"
+then
+   AC_MSG_RESULT([yes ($my_hdutils)])
+else
+   AC_MSG_RESULT([no])
+fi
+AC_SEARCH_LIBS(set_toolname, hdutils $my_hdutils, [],
+          [AC_MSG_ERROR([No hdutils library found!])], [])
+AC_SUBST(lib_hdutils)
+#################################### 
+# HDINIT
+#AC_SEARCH_LIBS(headas_init, [hdinit_2.6 hdinit_2.5], [], \
+#			 [AC_MSG_ERROR([No hdinit library found!])], [])
+lib_hdinit="no"
+AC_MSG_CHECKING([for versioned hdinit in \$HEADAS])
+my_hdinit=`ls "${HEADAS}"/lib/libhdinit*.so 2> /dev/null`
+if ! test -z "$my_hdinit"
+then
+   my_hdinit=`basename "$my_hdinit"`
+   my_hdinit=`expr "$my_hdinit" : 'lib\(hdinit_.*\)\.so'`
+fi
+if ! test -z "$my_hdinit"
+then
+   AC_MSG_RESULT([yes ($my_hdinit)])
+else
+   AC_MSG_RESULT([no])
+fi
+AC_SEARCH_LIBS(headas_init, hdinit $my_hdinit, [],
+          [AC_MSG_ERROR([No hdinit library found!])], [])
+AC_SUBST(lib_hdinit)
+#################################### 
+# HDSP
+#AC_SEARCH_LIBS(ReadRMFMatrix, [hdsp_2.6 hdsp_2.5], [], \
+#			 [AC_MSG_ERROR([No hdsp library found!])], [])
+lib_hdsp="no"
+AC_MSG_CHECKING([for versioned hdsp in \$HEADAS])
+my_hdsp=`ls "${HEADAS}"/lib/libhdsp*.so 2> /dev/null`
+if ! test -z "$my_hdsp"
+then
+   my_hdsp=`basename "$my_hdsp"`
+   my_hdsp=`expr "$my_hdsp" : 'lib\(hdsp_.*\)\.so'`
+fi
+if ! test -z "$my_hdsp"
+then
+   AC_MSG_RESULT([yes ($my_hdsp)])
+else
+   AC_MSG_RESULT([no])
+fi
+AC_SEARCH_LIBS(ReadRMFMatrix, hdsp $my_hdsp, [],
+              [AC_MSG_ERROR([No hdsp library found!])], [])
+AC_SUBST(lib_hdsp)
+#################################### 
+# WCS Library:
+AC_SEARCH_LIBS(wcsbth, [wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
+		       [AC_MSG_ERROR([No WCS library found!])], [])
+#lib_wcs="no"
+#AC_MSG_CHECKING([for versioned wcs in \$HEADAS])
+#my_wcs=`ls "${HEADAS}"/lib/libwcs*.so 2> /dev/null`
+#if ! test -z "$my_wcs"
+#then
+#   my_wcs=`basename "$my_wcs"`
+#   my_wcs=`expr "$my_wcs" : 'lib\(wcs_.*\)\.so'`
+#fi
+#if ! test -z "$my_wcs"
+#then
+#   AC_MSG_RESULT([yes ($my_wcs)])
+#else
+#   AC_MSG_RESULT([no])
+#fi
+#AC_SEARCH_LIBS(wcsbth, wcs $my_wcs,
+#          [],
+#          [AC_MSG_ERROR([No WCS library found!])],
+#          [])
+#AC_SUBST(lib_wcs)
+#################################### 
 
 # GSL Libraries:
 AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \
@@ -58,15 +207,12 @@ AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \
 AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
 
-# WCS Library:
-AC_SEARCH_LIBS(wcsbth, [wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
-		       [AC_MSG_ERROR([No WCS library found!])], [])
-
 
 # Check for header files:
 AC_HEADER_STDC
 AC_CHECK_HEADERS([limit.h math.h malloc.h stdio.h stdlib.h stdarg.h string.h])
-#AC_CHECK_HEADERS([headas.h headas_error.h]) # -> problem: not accepted by preprocessor (but by compiler)!
+#AC_CHECK_HEADERS([headas.h headas_error.h]) 
+# -> problem: not accepted by preprocessor (but by compiler)!
 
 
 # Checks for typedefs, structures, and compiler characteristics.

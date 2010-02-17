@@ -6,6 +6,7 @@ Vignetting* get_Vignetting(char* filename, int* status) {
   Vignetting* vignetting=NULL;
   fitsfile* fptr=NULL;
   float* data_buffer=NULL;
+  int count1, count2, count3; 
 
   do {
 
@@ -20,6 +21,7 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 
 
     // Open the FITS file for reading the vignetting function.
+    headas_chat(5, "open Vignetting FITS file '%s' ...\n", filename);
     if (fits_open_table(&fptr, filename, READONLY, status)) break;
     
     // Determine the column numbers of the individual columns.
@@ -50,33 +52,29 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 		     "the vignetting data!\n", *status);
       break;
     } else {
-      int count;
-      for(count=0; count<vignetting->nenergies; count++) {
-	vignetting->energ_lo[count] = 0.;
-	vignetting->energ_hi[count] = 0.;
+      for(count1=0; count1<vignetting->nenergies; count1++) {
+	vignetting->energ_lo[count1] = 0.;
+	vignetting->energ_hi[count1] = 0.;
       }
-      for(count=0; count<vignetting->ntheta; count++) {
-	vignetting->theta[count] = 0.;
+      for(count1=0; count1<vignetting->ntheta; count1++) {
+	vignetting->theta[count1] = 0.;
       }
-      for(count=0; count<vignetting->nphi; count++) {
-	vignetting->phi[count] = 0.;
+      for(count1=0; count1<vignetting->nphi; count1++) {
+	vignetting->phi[count1] = 0.;
       }
     }
 
     vignetting->vignet = (float***)malloc(vignetting->nenergies*sizeof(float**));
     if (NULL!=vignetting->vignet) {
-      int count;
-      for(count=0; count<vignetting->nenergies; count++) {
-	vignetting->vignet[count] = (float**)malloc(vignetting->ntheta*sizeof(float*));
-	if (NULL!=vignetting->vignet[count]) {
-	  int count2;
+      for(count1=0; count1<vignetting->nenergies; count1++) {
+	vignetting->vignet[count1] = (float**)malloc(vignetting->ntheta*sizeof(float*));
+	if (NULL!=vignetting->vignet[count1]) {
 	  for(count2=0; count2<vignetting->ntheta; count2++) {
-	    vignetting->vignet[count][count2] = 
+	    vignetting->vignet[count1][count2] = 
 	      (float*)malloc(vignetting->nphi*sizeof(float));
-	    if (NULL!=vignetting->vignet[count][count2]) {
-	      int count3;
+	    if (NULL!=vignetting->vignet[count1][count2]) {
 	      for(count3=0; count3<vignetting->nphi; count3++) {
-		vignetting->vignet[count][count2][count3] = 0.;
+		vignetting->vignet[count1][count2][count3] = 0.;
 	      }
 	    } else {
 	      *status=EXIT_FAILURE;
@@ -109,10 +107,10 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 		     "the vignetting data!\n", *status);
       break;
     } else {
-      int count;
-      for(count=0; 
-	  count<vignetting->nenergies*vignetting->ntheta*vignetting->nphi; count++) {
-	data_buffer[count]=0.;
+      for(count1=0; 
+	  count1<vignetting->nenergies*vignetting->ntheta*vignetting->nphi; 
+	  count1++) {
+	data_buffer[count1]=0.;
       }
     }
     // Now all memory is allocated successfully!
@@ -133,28 +131,43 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 		  data_buffer, data_buffer, &anynul, status);
 
     // Determine the minimum and maximum available energy:
-    int count; 
     vignetting->Emin=-1.;
     vignetting->Emax=-1.;
-    for (count=0; count<vignetting->nenergies; count++) {
-      if ((vignetting->energ_lo[count] < vignetting->Emin) || (vignetting->Emin<0.)) {
-	vignetting->Emin = vignetting->energ_lo[count];
+    for (count1=0; count1<vignetting->nenergies; count1++) {
+      if ((vignetting->energ_lo[count1] < vignetting->Emin) || (vignetting->Emin<0.)) {
+	vignetting->Emin = vignetting->energ_lo[count1];
       }
-      if (vignetting->energ_hi[count] > vignetting->Emax) {
-	vignetting->Emax = vignetting->energ_hi[count];
+      if (vignetting->energ_hi[count1] > vignetting->Emax) {
+	vignetting->Emax = vignetting->energ_hi[count1];
       }
     }						
     // Scale from [deg] -> [rad]:
-    for (count=0; count<vignetting->ntheta; count++) {
-      vignetting->theta[count] *= M_PI/180.;
+    for (count1=0; count1<vignetting->ntheta; count1++) {
+      vignetting->theta[count1] *= M_PI/180.;
     }
-    for (count=0; count<vignetting->nphi; count++) {
-      vignetting->phi[count] *= M_PI/180.;
+    for (count1=0; count1<vignetting->nphi; count1++) {
+      vignetting->phi[count1] *= M_PI/180.;
+    }
+
+    // Plot debug information about available energies, off-axis
+    // angles, and azimuthal angles.
+    headas_chat(5, "Vignetting - available energies:\n");
+    for (count1=0; count1<vignetting->nenergies; count1++) {
+      headas_chat(5, " %.3lf keV - %.3lf keV\n", 
+		  vignetting->energ_lo[count1],
+		  vignetting->energ_hi[count1]);
+    }
+    headas_chat(5, "Vignetting - available off-axis angles:\n");
+    for (count1=0; count1<vignetting->ntheta; count1++) {
+      headas_chat(5, " %.3lf arc min\n", vignetting->theta[count1]/M_PI*180.*60.);
+    }
+    headas_chat(5, "Vignetting - available azimuthal angles:\n");
+    for (count1=0; count1<vignetting->nphi; count1++) {
+      headas_chat(5, " %.3lf deg\n", vignetting->phi[count1]/M_PI*180.);
     }
 
     // Transfer the data from the data buffer to the Vignetting data structure:
     if (EXIT_SUCCESS!=*status) break;
-    int count1, count2, count3; 
     for(count1=0; count1<vignetting->nenergies; count1++) {
       for(count2=0; count2<vignetting->ntheta; count2++) {
 	for(count3=0; count3<vignetting->nphi; count3++) {
@@ -162,6 +175,14 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 	    data_buffer[count1+
 			count2*vignetting->nenergies+
 			count3*vignetting->nenergies*vignetting->ntheta];
+
+	  // Output of the vignetting value for this particular parameters.
+	  headas_chat(5, "Vignetting: %.2lf%% for "
+		      "%.1lf keV - %.1lf keV, %.4lf arc min, %.4lf deg, \n", 
+		      vignetting->vignet[count1][count2][count3]*100., 
+		      vignetting->energ_lo[count1], vignetting->energ_hi[count1],
+		      vignetting->theta[count2]/M_PI*180.*60.,
+		      vignetting->phi[count3]/M_PI*180.);
 	}
       }
     }

@@ -275,6 +275,7 @@ void setLinLightCurveData(LinLightCurve* lc, double* rate)
 void freeLinLightCurve(LinLightCurve* lightcurve)
 {
   if (NULL!=lightcurve) {
+    // Free all memory for objects within the light curve object.
     if (NULL!=lightcurve->a) {
       free(lightcurve->a);
       lightcurve->a=NULL;
@@ -284,6 +285,9 @@ void freeLinLightCurve(LinLightCurve* lightcurve)
       lightcurve->b=NULL;
     }
     lightcurve->nvalues=0;
+
+    // Release memory of the light curve object itself.
+    free(lightcurve);
   }
 }
 

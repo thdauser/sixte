@@ -21,12 +21,18 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
     if (psfc->nfiles>0) {
       int count;
       for(count=0; count<psfc->nfiles; count++) {
-	free(psfc->files[count]);
+	if(NULL!=psfc->files[count]) {
+	  // Call the destructor of the PointSourceFile object.
+	  free_PointSourceFile(psfc->files[count]);
+	  psfc->files[count]=NULL;
+	}
       }
     }
 
+    // Free the array of pointers to the PointSourceFile objects.
     if (NULL != psfc->files) {
       free(psfc->files);
+      psfc->files=NULL;
     }
 
     free(psfc);
@@ -93,6 +99,7 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* stat
 
     // Determine the number of rows in the FITS table:
     if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) break;	
+    headas_chat(5, " contains %ld sources\n", psf->nrows);
 
     // Load spectra specified in the FITS header.
     *status = loadSpectra(psf->fptr, &psf->spectrumstore);
@@ -111,7 +118,7 @@ void free_PointSourceFile(PointSourceFile* psf) {
 
     // Close the FITS file if still open.
     if (NULL!=psf->fptr) {
-      int status;
+      int status=EXIT_SUCCESS;
       fits_close_file(psf->fptr, &status);
     }
 
@@ -245,14 +252,18 @@ PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog* psfc,
 ////////////////////////////////////////////////////
 void free_PointSourceCatalog(PointSourceCatalog* psc)
 {
-  if (NULL != psc) {
-    int count;
-    for (count=0; count<psc->nsources; count++) {
-      if (psc->sources[count].lc != NULL) {
-	freeLinLightCurve(psc->sources[count].lc);
+  if (NULL!=psc) {
+    if (NULL!=psc->sources) {
+      int count;
+      for (count=0; count<psc->nsources; count++) {
+	if (psc->sources[count].lc != NULL) {
+	  freeLinLightCurve(psc->sources[count].lc);
+	  psc->sources[count].lc=NULL;
+	}
       }
+      free(psc->sources);
+      psc->sources=NULL;
     }
-
     free(psc);
   }
 }
@@ -330,7 +341,9 @@ int addPointSourceFile2Catalog(PointSourceFileCatalog* psfc,
     psfc->nfiles = 1;
   } else { // The catalog already contains some files.
     // Extend the allocated memory for an additional PointSourceFile.
-    psfc->files = (PointSourceFile**)realloc(psfc->files, (psfc->nfiles+1)*sizeof(PointSourceFile*));
+    psfc->files = 
+      (PointSourceFile**)realloc(psfc->files, 
+				 (psfc->nfiles+1)*sizeof(PointSourceFile*));
     if (NULL==psfc->files) {
       status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: not enough memory to allocate "

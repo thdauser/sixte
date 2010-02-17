@@ -199,7 +199,9 @@ int photon_generation_main()
     // respective source category.
     if (POINT_SOURCES==sourceCategory) { 
       // Load the point source catalog from the current HDU.
-      status=addPointSourceFile2Catalog(pointsourcefilecatalog, parameters.sources_filename, sources_hdu);
+      status=addPointSourceFile2Catalog(pointsourcefilecatalog, 
+					parameters.sources_filename, 
+					sources_hdu);
       if (status != EXIT_SUCCESS) break;
       
       // Read the header from the LAST Point Source FITS file to obtain
@@ -213,6 +215,9 @@ int photon_generation_main()
 	HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
 	break;
       }
+      // Release memory allocated by fits_hdr2str().
+      free(header);
+      header=NULL;
 
       // Use a short time interval for the orbit update:
       dt = 0.01;
@@ -233,6 +238,9 @@ int photon_generation_main()
 	HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
 	break;
       }
+      // Release memory allocated by fits_hdr2str().
+      free(header);
+      header=NULL;
       
       // Use a relatively large \Delta t for the time loop:
       dt = 1.0;
@@ -619,8 +627,8 @@ int photon_generation_main()
   if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
   
   // Point Sources
-  free_PointSourceFileCatalog(pointsourcefilecatalog);
   free_PointSourceCatalog(pointsourcecatalog);
+  free_PointSourceFileCatalog(pointsourcefilecatalog);
 
   // Extended Source Images
   free_SourceImageCatalog(sic);

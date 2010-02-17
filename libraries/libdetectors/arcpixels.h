@@ -63,22 +63,47 @@ struct ArcPixelsParameters {
     return value is the error status. */
 int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app);
 
-/** Clean up the ArcPixels data structure. E.g. release allocated memory. */
+/** Clean up the ArcPixels data structure. E.g. release allocated
+    memory. */
 void cleanupArcPixels(ArcPixels* ap);
 
 /** Clear the array of ArcPixels. */
 inline void clearArcPixels(ArcPixels* ap);
 
-/** Determine the ArcPixel that contains the specified position. The
-    return value is the absolute pixel index (i.e., within the global
-    numbering of all pixels of this detector) of the affected
-    pixel. */
-void getArcPixel(ArcPixels* ap, struct Point2d position, int* ring, int* number);
+/** Determine the ArcPixel affected by a photon impact. The function
+    return value is a number, either 1 or 2, giving the number of
+    affected pixels. The function returns the affected pixel rings and
+    the pixel numbers within these rings (parameters 'ring' and
+    'number', which are both arrays of length 1 or 2 for single and
+    double events respectively). */
+int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
+		      struct Point2d position, 
+		      int* ring, int* number);
+
+/** Determine the ArcPixel that contains the specified position given
+    in polar coordinates. The function returns the affected pixel ring
+    and the pixel number within this ring (parameters 'ring' and
+    'number'). */
+void getArcPixelFromPolar(ArcPixels* ap,
+			  double radius, double angle,
+			  int* ring, int* number);
 
 /** Determine the absolute pixel index from a given ring and the pixel
-    number within this ring. */
+    number within this ring. Currently there are two numbering schemes
+    used for the HTRS: The first is 2-dimensional: each pixel is
+    specified by its ring and its number within this ring. The second
+    is linear: each pixel has a unique number for the whole
+    detector. This function reads the 2-dimensional coordinates in the
+    former system and returns the corresponding unique pixel number in
+    the latter linear system. */
 int getArcPixelIndex(ArcPixels* ap, int ring, int number);
 
+/** Determine the polar coordinates 'radius' and 'angle' for a given
+    position in 2-dimensional carteesian coordinates. The return
+    values are within the following margins: radius [0; infinity),
+    angle[0:2pi). */
+void getPolarCoordinates(struct Point2d position, 
+			 double* radius, double* angle);
 
 #endif /* ARCPIXELS_H */
 

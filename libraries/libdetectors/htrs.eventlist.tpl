@@ -39,3 +39,9 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#	PIXEL           / Event Pixel Number
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX
+	TTYPE#  X               / x-coordinate of photon impact position
+	TFORM#  D               / Format of column X
+	TUNIT#  m               / Unit of column X
+	TTYPE#  Y               / y-coordinate of photon impact position
+	TFORM#  D               / Format of column Y
+	TUNIT#  m               / Unit of column Y

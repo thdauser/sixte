@@ -25,6 +25,7 @@ int main(int argc, char* argv[])
   ArcPixels arcPixels;
   long arc_nphotons[n_pixels]; // Number of photons per arc pixel.
   int ring;
+  double radius, angle; // Polar coordinates of the impact position.
 #endif
 
   long ntotal_photons;   // Total number of photons.
@@ -66,10 +67,14 @@ int main(int argc, char* argv[])
       arc_nphotons[pixel] = 0;
     }
 
-    // Configuration with 31 pixels optimized for uniform photon
+    /*// Configuration with 31 pixels optimized for uniform photon
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 12.0e-3 };
+    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.3e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };*/
+    // Configuration with 31 pixels with each pixel having the same area.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.35e-3, 6.22e-3, 10.25e-3, 14.3e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
@@ -111,7 +116,8 @@ int main(int argc, char* argv[])
 
 #ifdef HTRS_ARCPIXELS
       // Determine the ArcPixel that is hit by the photon.
-      getArcPixel(&arcPixels, impact.position, &ring, &pixel);
+      getPolarCoordinates(impact.position, &radius, &angle);
+      getArcPixelFromPolar(&arcPixels, radius, angle, &ring, &pixel);
       // Determine the absolute pixel index (numbering for all pixels of this
       // detector) from the given ring and internal pixel number in this ring.
       arc_nphotons[getArcPixelIndex(&arcPixels, ring, pixel)]++;
@@ -139,7 +145,7 @@ int main(int argc, char* argv[])
 
       printf("# pixel width, N_photons, N_detected_photons, "
 	     "fraction of detected photons, sigma/average\n");
-      printf("%lf %ld %ld %.10lf %lf\t pixel:",
+      printf("# %lf %ld %ld %.10lf %lf\t pixel:",
 	     min_pixelwidth+count_pixelwidth*step_pixelwidth, // Pixel width
 	     ntotal_photons,               // Total number of photons
 	     ndetected,                    // Number of detected photons
@@ -173,7 +179,7 @@ int main(int argc, char* argv[])
 	   sqrt(mean2-pow(mean,2.))/mean // rms/mean
 	   );
     printf("# radii: %lf %lf %lf %lf\n# pixel:", radii[0], radii[1], radii[2], radii[3]);
-    printf("\n# %ld\n# %ld\n ", ntotal_photons, ndetected);
+    printf("\n# %ld\n# %ld\n", ntotal_photons, ndetected);
     for (pixel=0; pixel<n_pixels; pixel++) {
       printf(" %ld %lf\n", arc_nphotons[pixel], 
 	     (double)arc_nphotons[pixel]/ntotal_photons);

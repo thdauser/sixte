@@ -51,15 +51,15 @@ typedef struct {
 #endif
 
   /** Dead time of a pixel after an event detection. If a new photon
-   * arrives during the dead time after a previous event in the same
-   * pixel, the new photon will not be detected. This is a model for
-   * the physical readout and clearing process of the detector
-   * pixel. */
+      arrives during the dead time after a previous event in the same
+      pixel, the new photon will not be detected. This is a model for
+      the physical readout and clearing process of the detector
+      pixel. */
   double dead_time;
 
-  /** Output event list.  The events read out from the detector array
-   * are written to this event file that must have the HTRS-specific
-   * format. */
+  /** Output event list. The events read out from the detector array
+      are written to this event file that must have the HTRS-specific
+      format. */
   HTRSEventFile eventlist;
 
   /** Number of events. */
@@ -72,11 +72,11 @@ typedef struct {
 } HTRSDetector;
 
 
-/** Parameters of the HTRSDetector model.  This data structure
- * contains the parameters for setting up the HTRSDetector data
- * structure.  It is used as input for the initHTRSDetector() routine.
- * For documentation of the inidividual parameters see HTRSDetector.
- */
+/** Parameters of the HTRSDetector model. This data structure
+    contains the parameters for setting up the HTRSDetector data
+    structure. It is used as input for the initHTRSDetector()
+    routine. For documentation of the inidividual parameters see
+    HTRSDetector. */
 struct HTRSDetectorParameters {
   struct GenericDetectorParameters generic;
 
