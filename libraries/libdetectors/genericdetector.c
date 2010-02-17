@@ -29,6 +29,19 @@ int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* p
 
 
 
+void cleanupGenericDetector(GenericDetector* gd)
+{
+  // Actually one has to release the energy allocated for the internal
+  // objects in the RMF data structure. But unfortunately there exists
+  // no routine with this functionality in the HEASP library.
+
+  if (NULL==gd->rmf) return;
+  //freeRMF(gd->rmf);
+  //gd->rmf=NULL;
+}
+
+
+
 struct RMF* loadRMF(char* filename, int* status) 
 {
   fitsfile* fptr=NULL;
@@ -85,6 +98,17 @@ struct RMF* loadRMF(char* filename, int* status)
   fits_close_file(fptr, status);
   
   return(rmf);
+}
+
+
+
+void freeRMF(struct RMF* rmf) 
+{
+  
+  if (NULL!=rmf) {
+    free(rmf);
+    rmf=NULL;
+  }
 }
 
 

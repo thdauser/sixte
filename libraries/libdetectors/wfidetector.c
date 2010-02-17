@@ -39,6 +39,7 @@ int cleanupWFIDetector(WFIDetector* wd)
 
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&wd->pixels);
+  cleanupGenericDetector(&wd->generic);
   status = closeWFIEventFile(&wd->eventlist);
 
   return(status);
