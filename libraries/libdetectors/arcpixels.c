@@ -26,10 +26,16 @@ int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app)
     HD_ERROR_THROW("Error: memory allocation for ArcPixels failed!\n", status);
     return(status);
   }
+  headas_chat(5, "Initialized ArcPixel structure with %d detector rings:\n",
+	      ap->nrings);
   for (ring=0; ring<ap->nrings; ring++) {
     ap->npixels[ring] = app->npixels[ring];
     ap->radius[ring]  = app->radius[ring];
     ap->offset_angle[ring] = app->offset_angle[ring];
+    headas_chat(5, " ring %d, containing %d pixels, radius %lf mm, "
+		"angle offset %lf degree\n",
+		ring, ap->npixels[ring], ap->radius[ring]*1.e3, 
+		ap->offset_angle[ring]*180./M_PI);
   }
 
   // Get the memory for the pixels:
@@ -126,19 +132,23 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
 
   // The event could be a split event (up to double) but also 
   // may be a single.
-  
   // Check the 4 next-nearest neighbors:
   // Vary radius:
   if (ring[0] > 0) {
     getArcPixelFromPolar(ap, radius-gd->gcc.ccsize, angle,
 			 &(ring[1]), &(number[1]));
-    if ((INVALID_PIXEL!=ring[1])&&(ring[1]!=ring[0])) return(2);
+    if ((INVALID_PIXEL!=ring[1])&&(ring[1]!=ring[0])) {
+      return(2);
+    }
   }
   if (ring[0] < ap->nrings-1) {
     getArcPixelFromPolar(ap, radius+gd->gcc.ccsize, angle,
 			 &(ring[1]), &(number[1]));
-    if ((INVALID_PIXEL!=ring[1])&&(ring[1]!=ring[0])) return(2);
+    if ((INVALID_PIXEL!=ring[1])&&(ring[1]!=ring[0])) {
+      return(2);
+    }
   }
+  /*
   // Vary polar angle:
   if (ring[0] > 0) {
     double delta = asin(gd->gcc.ccsize*0.5/radius);
@@ -146,14 +156,18 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
     getArcPixelFromPolar(ap, radius, angle+2.*delta,
 			 &(ring[1]), &(number[1]));
     assert(INVALID_PIXEL!=number[1]);
-    if (number[1]!=number[0]) return(2);
+    if (number[1]!=number[0]) {
+      return(2);
+    }
     // Smaller polar angle:
     getArcPixelFromPolar(ap, radius, angle-2.*delta,
 			 &(ring[1]), &(number[1]));
     assert(INVALID_PIXEL!=number[1]);
-    if (number[1]!=number[0]) return(2);
+    if (number[1]!=number[0]) {
+      return(2);
+    }
   }
-  
+  */
   // There is no charge splitting. The event is a single.
   return(1);
 }

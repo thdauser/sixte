@@ -18,6 +18,10 @@ int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PIXEL", &hef->cpixel, &status)) 
     return(status);
+  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "X", &hef->cx, &status)) 
+    return(status);
+  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "Y", &hef->cy, &status)) 
+    return(status);
 
   return(status);
 }
@@ -99,6 +103,10 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
   if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, hef->generic.row, 
 		     1, 1, &pixel, &status)) return(status);
 
+  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cx, hef->generic.row, 
+		     1, 1, &event->x, &status)) return(status);
+  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cy, hef->generic.row, 
+		     1, 1, &event->y, &status)) return(status);
   return(status);
 }
 
@@ -149,6 +157,13 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
   if (fits_read_col(hef->generic.fptr, TINT, hef->cpixel, row, 1, 1, 
 		    &event->pixel, &event->pixel, &anynul, &status)) return(status);
   event->pixel--;
+
+  event->x = 0.;
+  if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 1, 1, 
+		    &event->x, &event->x, &anynul, &status)) return(status);
+  event->y = 0.;
+  if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->cy, row, 1, 1, 
+		    &event->y, &event->y, &anynul, &status)) return(status);
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {

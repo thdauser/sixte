@@ -9,6 +9,9 @@ int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* p
   // Gaussian:
   gd->gcc.ccsigma =    parameters->ccsigma;
   gd->gcc.ccsize  = 3.*parameters->ccsigma;
+  headas_chat(5, "Split events: assuming Gaussian Charge Cloud model:\n");
+  headas_chat(5, " charge cloud size: %lf mum (3 sigma)\n", 
+	      gd->gcc.ccsize*1.e6);
   // Exponential model for eROSITA according to Konrad Dennerl:
   gd->ecc.parameter = 0.355;
   

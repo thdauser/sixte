@@ -170,7 +170,8 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
     int ring[2], number[2]; 
     int npixels = getArcPixelSplits(&hd->pixels, &hd->generic, impact->position, 
 				    ring, number);
-    if (INVALID_PIXEL != ring[0]) {
+
+    if ((npixels==1)&&(INVALID_PIXEL != ring[0])) {
       // Check if the pixel is currently active.
       if (impact->time-hd->pixels.array[ring[0]][number[0]].last_impact >= hd->dead_time) {
 	// The photon can be detected in this pixel.
@@ -194,6 +195,10 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  // so add it to the event file.
 	  event.pixel = getArcPixelIndex(&(hd->pixels), ring[0], number[0]);
 	  event.time = impact->time;
+
+	  // Store the exact impact position of the event for closer analysis.
+	  event.x = impact->position.x;
+	  event.y = impact->position.y;
 	  
 	  // Store the time of this impact in the pixel in order to consider the
 	  // dead time.

@@ -4,9 +4,19 @@
 
 /** HTRS-specific event. */
 typedef struct {
-  double time; /**< Detection time. */
-  long pha; /**< PHA channel. */
-  int pixel; /**< Number of the pixel, where the event is detected. Numbering starts at 0. */
+  /** Detection time. */
+  double time; 
+
+  /** PHA channel. */
+  long pha; 
+
+  /** Number of the pixel, where the event is detected. Numbering
+      starts at 0. */
+  int pixel; 
+
+  /** Exact impact position of the photon on the detector. */
+  double x, y; 
+
 } HTRSEvent;
 
 
