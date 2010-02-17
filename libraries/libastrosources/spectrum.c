@@ -12,11 +12,13 @@ int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
     if (fits_read_key(source_fptr, TLONG, "NSPECTRA", &store->nspectra, comment, 
 		      &status)) break;
 
+    // Check if the point source file header specifies any spectra.
     if (store->nspectra<1) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: No spectra specified in point source catalog!\n", status);
       break;
     }
+    headas_chat(5, "load required spectra (%d):\n", store->nspectra);
 
     // Get memory to store the spectra.
     store->spectrum = (Spectrum *)malloc(store->nspectra*sizeof(Spectrum));
@@ -57,7 +59,7 @@ int loadSpectrum(Spectrum* spectrum, char* filename)
   do { // Beginning of ERROR handling loop.
 
     // Fill the spectrum array with data from the FITS file.
-    headas_chat(5, "load spectrum from file '%s' ...\n", filename);
+    headas_chat(5, " load spectrum from file '%s' ...\n", filename);
 
     // First of all open the PHA FITS file:
     if (fits_open_table(&fptr, filename, READONLY, &status)) break;
@@ -161,8 +163,12 @@ void cleanupSpectrum(Spectrum* spectrum)
 
 void freeSpectrumStore(SpectrumStore* store){
   long count;
-  for(count=0; count<store->nspectra; count++) {
-    cleanupSpectrum(&store->spectrum[count]);
+  if (NULL!=store->spectrum) {
+    for(count=0; count<store->nspectra; count++) {
+      cleanupSpectrum(&store->spectrum[count]);
+    }
+    free(store->spectrum);
+    store->spectrum=NULL;
   }
   store->nspectra=0;
 }

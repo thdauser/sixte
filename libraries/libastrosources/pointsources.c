@@ -21,12 +21,18 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog* psfc) {
     if (psfc->nfiles>0) {
       int count;
       for(count=0; count<psfc->nfiles; count++) {
+	// Call the destructor of the PointSourceFile object.
+	free_PointSourceFile(psfc->files[count]);
+	// Free the pointer to the PointSourceFile object.
 	free(psfc->files[count]);
+	psfc->files[count]=NULL;
       }
     }
 
+    // Free the array of pointers to the PointSourceFile objects.
     if (NULL != psfc->files) {
       free(psfc->files);
+      psfc->files=NULL;
     }
 
     free(psfc);
@@ -93,6 +99,7 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* stat
 
     // Determine the number of rows in the FITS table:
     if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) break;	
+    headas_chat(5, " contains %ld sources\n", psf->nrows);
 
     // Load spectra specified in the FITS header.
     *status = loadSpectra(psf->fptr, &psf->spectrumstore);

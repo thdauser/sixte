@@ -621,8 +621,8 @@ int photon_generation_main()
   if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
   
   // Point Sources
-  free_PointSourceFileCatalog(pointsourcefilecatalog);
   free_PointSourceCatalog(pointsourcecatalog);
+  free_PointSourceFileCatalog(pointsourcefilecatalog);
 
   // Extended Source Images
   free_SourceImageCatalog(sic);
