@@ -148,7 +148,6 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
       return(2);
     }
   }
-  /*
   // Vary polar angle:
   if (ring[0] > 0) {
     double delta = asin(gd->gcc.ccsize*0.5/radius);
@@ -167,7 +166,6 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
       return(2);
     }
   }
-  */
   // There is no charge splitting. The event is a single.
   return(1);
 }
