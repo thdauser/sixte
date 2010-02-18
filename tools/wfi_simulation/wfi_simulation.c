@@ -37,7 +37,7 @@ int wfi_simulation_main() {
     if ((status=getpar(&parameters))) break;
     
     // Initialize HEADAS random number generator.
-    HDmtInit(1);
+    HDmtInit(SIXT_HD_RANDOM_SEED);
 
 
     // Open the impact list FITS file.

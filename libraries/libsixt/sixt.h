@@ -24,6 +24,8 @@
 
 #define SIXT_NAN (0./0.) /**< Not a Number. */
 
+/** Seed for the HEAdas random number generator. */
+#define SIXT_HD_RANDOM_SEED 59843
 
 #endif /* SIXT_H */
 

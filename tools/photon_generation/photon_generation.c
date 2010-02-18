@@ -102,7 +102,7 @@ int photon_generation_main()
 
 
     // Initialize HEADAS random number generator.
-    HDmtInit(1);
+    HDmtInit(SIXT_HD_RANDOM_SEED);
     
     // Get the satellite catalog with the orbit and (telescope) attitude data:
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
