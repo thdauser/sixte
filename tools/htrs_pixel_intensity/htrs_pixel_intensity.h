@@ -1,14 +1,14 @@
-#ifndef HTRS_SIMULATION_H
-#define HTRS_SIMULATION_H 1
+#ifndef HTRS_PIXEL_INTENSITY_H
+#define HTRS_PIXEL_INTENSITY_H 1
 
 #include "sixt.h"
-#include "htrsdetector.h"
-#include "eventfile.h"
-#include "point.h"
+#include "hexagonalpixels.h"
+#include "arcpixels.h"
 #include "impact.h"
 #include "impactlistfile.h"
 
-#define TOOLSUB htrs_simulation_main
+
+#define TOOLSUB htrs_pixel_intensity_main
 #include "headas_main.c"
 
 
@@ -17,27 +17,12 @@
 ////////////////////////////////////////////////////////////////////////
 
 struct Parameters {
+
   char impactlist_filename[FILENAME_LENGTH];
-  char rmf_filename[MAXMSG];
-  char eventlist_filename[MAXMSG];
-  char eventlist_template[MAXMSG];
-  double t0;
-  double timespan;
-  
-  double ccsigma;
-  long pha_threshold;
-  float energy_threshold;
 
-  float background_rate; /**< Rate of background events. */
-
-  // HTRS Detector specific parameters:
-#ifdef HTRS_HEXPIXELS
-  double pixelwidth;
-#endif
-#ifdef HTRS_ARCPIXELS
+  /** Width of the spokes of the HTRS mask. */
   double mask_spoke_width;
-#endif 
-  double dead_time;
+
 };
 
 
@@ -49,6 +34,4 @@ struct Parameters {
 // Reads the program parameters using PIL
 static int getpar(struct Parameters* parameters);
 
-
-#endif /* HTRS_SIMULATION_H */
-
+#endif /* HTRS_PIXEL_INTENSITY_H */

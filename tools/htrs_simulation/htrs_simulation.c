@@ -224,7 +224,7 @@ static int getpar(struct Parameters* parameters)
 
 #ifdef HTRS_ARCPIXELS
   // Determine the width of the spokes of the HTRS mask.
-  else if ((status = PILGetReal4("mask_spoke_width", &parameters->mask_spoke_width))) {
+  else if ((status = PILGetReal("mask_spoke_width", &parameters->mask_spoke_width))) {
     HD_ERROR_THROW("Error reading the spoke width of the HTRS mask!\n", status);
   }
 #endif  

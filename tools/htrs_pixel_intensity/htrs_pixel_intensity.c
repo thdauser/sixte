@@ -1,12 +1,11 @@
-#include "sixt.h"
-#include "hexagonalpixels.h"
-#include "arcpixels.h"
-#include "impact.h"
-#include "impactlistfile.h"
+#include "htrs_pixel_intensity.h"
 
 
-int main(int argc, char* argv[])
+int htrs_pixel_intensity_main()
 {
+  // Containing all programm parameters read by PIL
+  struct Parameters parameters; 
+
   ImpactListFile impactlistfile;
   Impact impact;
   int pixel; // Pixel hit by an incident photon.
@@ -32,12 +31,16 @@ int main(int argc, char* argv[])
 
   int status = EXIT_SUCCESS;
 
-  if (argc < 2) {
-    printf("Error: You have to specify an impact list!\n");
-    return(EXIT_FAILURE);
-  }
+  // Register HEATOOL:
+  set_toolname("htrs_pixel_intensity");
+  set_toolversion("0.01");
 
   do { // Error handling loop.
+
+    // --- Initialization ---
+
+    // Read parameters using PIL library:
+    if ((status=getpar(&parameters))) break;
 
 #ifdef HTRS_HEXPIXELS
     // Loop over the different pixel widths.
@@ -81,7 +84,7 @@ int main(int argc, char* argv[])
       .npixels = npixels,
       .radius = radii,
       .offset_angle = offset_angles,
-      .mask_spoke_width = 0.
+      .mask_spoke_width = parameters.mask_spoke_width
     };
     // Initialization of ArcPixels data structure.
     if(EXIT_SUCCESS!=(status=initArcPixels(&arcPixels, &apparameters))) break;
@@ -89,7 +92,9 @@ int main(int argc, char* argv[])
 #endif
     
     // Open the impact list FITS file.
-    status = openImpactListFile(&impactlistfile, argv[1], READONLY);
+    status = openImpactListFile(&impactlistfile,
+				parameters.impactlist_filename, 
+				READONLY);
     if (EXIT_SUCCESS!=status) break;
 
     ntotal_photons=impactlistfile.nrows;
@@ -218,3 +223,23 @@ int main(int argc, char* argv[])
   return(status);
 }
 
+
+
+////////////////////////////////////////////////////////////////
+// This routine reads the program parameters using the PIL.
+static int getpar(struct Parameters* parameters)
+{
+  int status=EXIT_SUCCESS; // Error status.
+
+  // Get the name of the impact list file (FITS file).
+  if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
+    HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
+  }
+
+  // Determine the width of the spokes of the HTRS mask.
+  else if ((status = PILGetReal("mask_spoke_width", &parameters->mask_spoke_width))) {
+    HD_ERROR_THROW("Error reading the spoke width of the HTRS mask!\n", status);
+  }
+
+  return(status);
+}
