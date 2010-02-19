@@ -34,6 +34,9 @@ struct Parameters {
 #ifdef HTRS_HEXPIXELS
   double pixelwidth;
 #endif
+#ifdef HTRS_ARCPIXELS
+  float mask_spoke_width;
+#endif 
   double dead_time;
 };
 

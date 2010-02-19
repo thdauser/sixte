@@ -169,8 +169,8 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
     // The event can be either a single or a double. Therefore we must be 
     // able to store up to 2 pairs of ring and pixel number.
     int ring[2], number[2]; 
-    int npixels = getArcPixelSplits(&hd->pixels, &hd->generic, impact->position, 
-				    ring, number);
+    int npixels = getArcPixelSplits(&hd->pixels, &hd->generic, 
+				    impact->position, ring, number);
 
     if (INVALID_PIXEL != ring[0]) {
       // Check if the pixel is currently active.

@@ -80,7 +80,8 @@ int main(int argc, char* argv[])
       .nrings = 4, 
       .npixels = npixels,
       .radius = radii,
-      .offset_angle = offset_angles
+      .offset_angle = offset_angles,
+      .mask_spoke_width = 0.
     };
     // Initialization of ArcPixels data structure.
     if(EXIT_SUCCESS!=(status=initArcPixels(&arcPixels, &apparameters))) break;
@@ -118,6 +119,13 @@ int main(int argc, char* argv[])
       // Determine the ArcPixel that is hit by the photon.
       getPolarCoordinates(impact.position, &radius, &angle);
       getArcPixelFromPolar(&arcPixels, radius, angle, &ring, &pixel);
+      // Check if the the photon is falling on the mask.
+      if (0.<arcPixels.mask_spoke_width) {
+	if (1==HTRSisPositionOnMask(&arcPixels, ring, pixel,
+				    radius, angle)) {
+	  continue; // The photon is absorbed by the mask.
+	}
+      }
       // Determine the absolute pixel index (numbering for all pixels of this
       // detector) from the given ring and internal pixel number in this ring.
       arc_nphotons[getArcPixelIndex(&arcPixels, ring, pixel)]++;

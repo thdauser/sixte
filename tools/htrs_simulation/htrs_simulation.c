@@ -83,7 +83,8 @@ int htrs_simulation_main() {
       .pixels = { .nrings = 4,
 		  .npixels = npixels,
 		  .radius = radii,
-		  .offset_angle = offset_angles },
+		  .offset_angle = offset_angles,
+		  .mask_spoke_width = parameters.mask_spoke_width },
       .generic = { .ccsigma = parameters.ccsigma, 
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
@@ -220,7 +221,14 @@ static int getpar(struct Parameters* parameters)
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
-  
+
+#ifdef HTRS_ARCPIXELS
+  // Determine the width of the spokes of the HTRS mask.
+  else if ((status = PILGetReal4("mask_spoke_width", &parameters->mask_spoke_width))) {
+    HD_ERROR_THROW("Error reading the spoke width of the HTRS mask!\n", status);
+  }
+#endif  
+
   // Get the name of the FITS template directory.
   // First try to read it from the environment variable.
   // If the variable does not exist, read it from the PIL.
