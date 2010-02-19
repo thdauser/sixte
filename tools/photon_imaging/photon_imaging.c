@@ -49,7 +49,7 @@ int photon_imaging_main() {
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
-    HDmtInit(1);
+    HDmtInit(SIXT_HD_RANDOM_SEED);
 
     // Open the FITS file with the input photon list:
     status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
