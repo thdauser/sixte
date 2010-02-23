@@ -29,10 +29,10 @@ typedef struct {
   /** Number of channels in the PHA spectrum. */
   long NumberChannels;
 
-  /** Relative photon rates of the individual spectral bins.
-   * Array contains the photon rates per PHA channel.
-   * The rates respresent the relative photon rates, i.e., 
-   * the total spectrum is normalized to 1. */
+  /** Relative photon rates of the individual spectral bins. Array
+      contains the photon rates per PHA channel. The rates respresent
+      the relative photon rates, i.e., the total spectrum is
+      normalized to 1. */
   float *rate; 
 } Spectrum;
 
@@ -51,16 +51,18 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
-/** Load spectra from the files specified in a FITS header.
- * The function scans the FITS header of the file given by the file pointer
- * and searches for the NSPECTRA and SPECnnnn keywords. The specified source
- * spectra are then loaded from the PHA files and store in the SpectrumStore. */
+/** Load spectra from the files specified in a FITS header. The
+    function scans the FITS header of the file given by the file
+    pointer and searches for the NSPECTRA and SPECnnnn keywords. The
+    specified source spectra are then loaded from the PHA files and
+    store in the SpectrumStore. */
 int loadSpectra(fitsfile*, SpectrumStore*);
 
-/** Loads the specified PHA file containing a source spectrum.
- * The data are read from the PHA file, the probability density (including normalization) 
- * of the relative photon rates in the individual channels is calculated and
- * stored in the Spectrum data structure. */
+/** Loads the specified PHA file containing a source spectrum. The
+    data are read from the PHA file, the probability density
+    (including normalization) of the relative photon rates in the
+    individual channels is calculated and stored in the Spectrum data
+    structure. */
 int loadSpectrum(Spectrum*, char* filename);
 
 /** Destructor for SpectrumStore. */

@@ -1,6 +1,6 @@
-attitude_filename,fre,lq,"../attitude_steady.fits",,,"attitude file (FITS input file)"
+attitude_filename,fre,lq,"attitude_steady.fits",,,"attitude file (FITS input file)"
 sources_filename,fre,lq,"sources.fits",,,"file with input sources (FITS file)"
-rmf_filename,fre,lq,"../../response/detector_specific_response/ixo_cdf_wfi_default.detector.rsp",,,"file containing energy bounds, e.g, detector redistribution matrix file with EBOUNDS table (RMF) (FITS input file)"
+rmf_filename,fre,lq,"/home/schmid/ixo/wfi/response/ixo_cdf_wfi_default.detector.rsp",,,"file containing energy bounds, e.g, detector redistribution matrix file with EBOUNDS table (RMF) (FITS input file)"
 photonlist_filename,f,lq,"photons_20mCrab.fits",,,"file for the photon list (FITS output file)"
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 t0,r,lq,0.0,,,"t0 - start time (s)"
