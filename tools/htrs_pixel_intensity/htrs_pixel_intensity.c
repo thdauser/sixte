@@ -70,15 +70,16 @@ int htrs_pixel_intensity_main()
       arc_nphotons[pixel] = 0;
     }
 
-    /*// Configuration with 31 pixels optimized for uniform photon
+    // Configuration with 31 pixels optimized for uniform photon
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.3e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };*/
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    /*
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.35e-3, 6.22e-3, 10.25e-3, 14.3e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };
+    double offset_angles[4] = { 0., 0., 0., 0. };*/
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
       .npixels = npixels,
@@ -98,6 +99,8 @@ int htrs_pixel_intensity_main()
     if (EXIT_SUCCESS!=status) break;
 
     ntotal_photons=impactlistfile.nrows;
+    headas_chat(5, " impact list contains %ld rows\n", impactlistfile.nrows);
+    headas_chat(5, "start processing the impact list ...\n");
 
     // Loop over all impacts in the FITS file.
     int pixel;

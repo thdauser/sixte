@@ -55,7 +55,7 @@ int photon_generation_main()
   // Time-ordered photon list containing all created photons in the sky
   struct PhotonOrderedListEntry* photon_list=NULL;  
   // Data structure for the output to the photon list FITS file.
-  PhotonListFile photonlistfile;
+  PhotonListFile photonlistfile={.fptr=NULL};
 
   // Time step for sky scanning loop
   double dt=0.1;
