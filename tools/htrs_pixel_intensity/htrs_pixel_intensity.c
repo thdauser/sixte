@@ -1,12 +1,11 @@
-#include "sixt.h"
-#include "hexagonalpixels.h"
-#include "arcpixels.h"
-#include "impact.h"
-#include "impactlistfile.h"
+#include "htrs_pixel_intensity.h"
 
 
-int main(int argc, char* argv[])
+int htrs_pixel_intensity_main()
 {
+  // Containing all programm parameters read by PIL
+  struct Parameters parameters; 
+
   ImpactListFile impactlistfile;
   Impact impact;
   int pixel; // Pixel hit by an incident photon.
@@ -32,12 +31,16 @@ int main(int argc, char* argv[])
 
   int status = EXIT_SUCCESS;
 
-  if (argc < 2) {
-    printf("Error: You have to specify an impact list!\n");
-    return(EXIT_FAILURE);
-  }
+  // Register HEATOOL:
+  set_toolname("htrs_pixel_intensity");
+  set_toolversion("0.01");
 
   do { // Error handling loop.
+
+    // --- Initialization ---
+
+    // Read parameters using PIL library:
+    if ((status=getpar(&parameters))) break;
 
 #ifdef HTRS_HEXPIXELS
     // Loop over the different pixel widths.
@@ -67,20 +70,22 @@ int main(int argc, char* argv[])
       arc_nphotons[pixel] = 0;
     }
 
-    /*// Configuration with 31 pixels optimized for uniform photon
+    // Configuration with 31 pixels optimized for uniform photon
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.3e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };*/
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    /*
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.35e-3, 6.22e-3, 10.25e-3, 14.3e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };
+    double offset_angles[4] = { 0., 0., 0., 0. };*/
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
       .npixels = npixels,
       .radius = radii,
-      .offset_angle = offset_angles
+      .offset_angle = offset_angles,
+      .mask_spoke_width = parameters.mask_spoke_width
     };
     // Initialization of ArcPixels data structure.
     if(EXIT_SUCCESS!=(status=initArcPixels(&arcPixels, &apparameters))) break;
@@ -88,10 +93,14 @@ int main(int argc, char* argv[])
 #endif
     
     // Open the impact list FITS file.
-    status = openImpactListFile(&impactlistfile, argv[1], READONLY);
+    status = openImpactListFile(&impactlistfile,
+				parameters.impactlist_filename, 
+				READONLY);
     if (EXIT_SUCCESS!=status) break;
 
     ntotal_photons=impactlistfile.nrows;
+    headas_chat(5, " impact list contains %ld rows\n", impactlistfile.nrows);
+    headas_chat(5, "start processing the impact list ...\n");
 
     // Loop over all impacts in the FITS file.
     int pixel;
@@ -118,6 +127,13 @@ int main(int argc, char* argv[])
       // Determine the ArcPixel that is hit by the photon.
       getPolarCoordinates(impact.position, &radius, &angle);
       getArcPixelFromPolar(&arcPixels, radius, angle, &ring, &pixel);
+      // Check if the the photon is falling on the mask.
+      if (0.<arcPixels.mask_spoke_width) {
+	if (1==HTRSisPositionOnMask(&arcPixels, ring, pixel,
+				    radius, angle)) {
+	  continue; // The photon is absorbed by the mask.
+	}
+      }
       // Determine the absolute pixel index (numbering for all pixels of this
       // detector) from the given ring and internal pixel number in this ring.
       arc_nphotons[getArcPixelIndex(&arcPixels, ring, pixel)]++;
@@ -210,3 +226,23 @@ int main(int argc, char* argv[])
   return(status);
 }
 
+
+
+////////////////////////////////////////////////////////////////
+// This routine reads the program parameters using the PIL.
+static int getpar(struct Parameters* parameters)
+{
+  int status=EXIT_SUCCESS; // Error status.
+
+  // Get the name of the impact list file (FITS file).
+  if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
+    HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
+  }
+
+  // Determine the width of the spokes of the HTRS mask.
+  else if ((status = PILGetReal("mask_spoke_width", &parameters->mask_spoke_width))) {
+    HD_ERROR_THROW("Error reading the spoke width of the HTRS mask!\n", status);
+  }
+
+  return(status);
+}

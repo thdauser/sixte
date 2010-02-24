@@ -71,19 +71,12 @@ int htrs_simulation_main() {
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.3e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-    /*// Configuration with 31 pixels.
-    int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.5e-3, 5.49e-3, 8.84e-3, 12.0e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. }; // M_PI/12.*/
-    /*// Configuration with 37 pixels.
-    int npixels[4] = { 1, 7, 14, 15 };
-    double radii[4] = { 2.26e-3, 5.3e-3, 8.5e-3, 12.0e-3 };
-    double offset_angles[4] = { 0., 0., 0., 0. };*/
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = 4,
 		  .npixels = npixels,
 		  .radius = radii,
-		  .offset_angle = offset_angles },
+		  .offset_angle = offset_angles,
+		  .mask_spoke_width = parameters.mask_spoke_width },
       .generic = { .ccsigma = parameters.ccsigma, 
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
@@ -144,7 +137,6 @@ int htrs_simulation_main() {
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
 }
-
 
 
 
@@ -220,7 +212,14 @@ static int getpar(struct Parameters* parameters)
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
-  
+
+#ifdef HTRS_ARCPIXELS
+  // Determine the width of the spokes of the HTRS mask.
+  else if ((status = PILGetReal("mask_spoke_width", &parameters->mask_spoke_width))) {
+    HD_ERROR_THROW("Error reading the spoke width of the HTRS mask!\n", status);
+  }
+#endif  
+
   // Get the name of the FITS template directory.
   // First try to read it from the environment variable.
   // If the variable does not exist, read it from the PIL.

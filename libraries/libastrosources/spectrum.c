@@ -27,9 +27,13 @@ int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
       HD_ERROR_THROW("Not enough memory available to store the source spectra!\n", status);
       break;
     }
+    // Initialize the data structures.
+    long count;
+    for (count=0; count<store->nspectra; count++) {
+      store->spectrum[count].rate = NULL;
+    }
     
     // Load the spectra from the PHA files.
-    long count;
     char filename[MAXMSG], key[MAXMSG];
     for (count=0; (EXIT_SUCCESS==status)&&(count<store->nspectra); count++) {
       // Determine the name of the source file from the FITS header.

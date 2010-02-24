@@ -42,6 +42,10 @@ typedef struct {
       measured in counter-clock-wise direction. */
   double* offset_angle;
 
+  /** Width of the spokes of the mask on the HTRS detector ([m]). If
+      no mask is used, the width has to be set to 0. */
+  double mask_spoke_width;
+
 } ArcPixels;
 
 
@@ -50,6 +54,7 @@ struct ArcPixelsParameters {
   int* npixels;
   double* radius;
   double* offset_angle;
+  double mask_spoke_width;
 };
 
 
@@ -75,7 +80,9 @@ inline void clearArcPixels(ArcPixels* ap);
     affected pixels. The function returns the affected pixel rings and
     the pixel numbers within these rings (parameters 'ring' and
     'number', which are both arrays of length 1 or 2 for single and
-    double events respectively). */
+    double events respectively). If the HTRS detector is operated with
+    a mask on top, this has to be given as a parameter. Otherwise the
+    parameter can also be set to NULL. */
 int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
 		      struct Point2d position, 
 		      int* ring, int* number);
@@ -104,6 +111,13 @@ int getArcPixelIndex(ArcPixels* ap, int ring, int number);
     angle[0:2pi). */
 void getPolarCoordinates(struct Point2d position, 
 			 double* radius, double* angle);
+
+/** Check if the specified impact position lies on the mask of the
+    HTRS detector. If the photon is absorbed by the mask, the return
+    value is 1. Otherwise the function returns 0. */
+int HTRSisPositionOnMask(ArcPixels* ap, int pixel, int number,
+			 double radius, double angle);
+
 
 #endif /* ARCPIXELS_H */
 

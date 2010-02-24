@@ -17,7 +17,7 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-#dist_pfiles_DATA = htrs_pixel_intensity.par
+dist_pfiles_DATA = htrs_pixel_intensity.par
 
 
 ############ BINARIES #################
@@ -26,7 +26,7 @@ pfilesdir = @PFILESDIR@
 # in the 'bin' directory.
 bin_PROGRAMS = htrs_pixel_intensity
 
-htrs_pixel_intensity_SOURCES = htrs_pixel_intensity.c
+htrs_pixel_intensity_SOURCES = htrs_pixel_intensity.c htrs_pixel_intensity.h
 htrs_pixel_intensity_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
 htrs_pixel_intensity_LDADD += @top_builddir@/libraries/libmirrors/libmirrors.la
 

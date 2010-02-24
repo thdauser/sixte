@@ -57,6 +57,9 @@ int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app)
   // Clear the pixels.
   clearArcPixels(ap);
 
+  // Set the mask properties.
+  ap->mask_spoke_width = app->mask_spoke_width;
+
   return(status);
 }
 
@@ -118,6 +121,19 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
 
   // Determine the main impact position.
   getArcPixelFromPolar(ap, radius, angle, &(ring[0]), &(number[0]));
+
+  // Check if the the photon is falling on the mask.
+  if (0. < ap->mask_spoke_width) {
+    if (1==HTRSisPositionOnMask(ap, ring[0], number[0],
+				radius, angle)) {
+      // The photon is absorbed by the mask.
+      ring[0] = INVALID_PIXEL;
+      ring[1] = INVALID_PIXEL;
+      number[0] = INVALID_PIXEL;
+      number[1] = INVALID_PIXEL;
+      return(0); 
+    }
+  }
 
   // If the impact position is not within a valid pixel, return
   // immediately.
@@ -218,5 +234,51 @@ void getPolarCoordinates(struct Point2d position,
   // Determine the azimuthal angle.
   *angle = atan2(position.y, position.x); // Angle is within [-pi:pi].
   if (*angle < 0.) *angle+=2.*M_PI;   // Now the angle is within [0:2pi].
+}
+
+
+
+int HTRSisPositionOnMask(ArcPixels* ap, int ring, int number, 
+			 double radius, double angle)
+{
+  int ring2, number2;
+
+  // Check the 4 next-nearest neighbors:
+  // Vary radius:
+  if (ring > 0) {
+    getArcPixelFromPolar(ap, radius-ap->mask_spoke_width/2, angle,
+			 &ring2, &number2);
+    if ((INVALID_PIXEL!=ring2)&&(ring!=ring2)) {
+      return(1);
+    }
+  }
+  if (ring < ap->nrings-1) {
+    getArcPixelFromPolar(ap, radius+ap->mask_spoke_width/2, angle,
+			 &ring2, &number2);
+    if ((INVALID_PIXEL!=ring2)&&(ring!=ring2)) {
+      return(1);
+    }
+  }
+  // Vary polar angle:
+  if (ring > 0) {
+    double delta = asin(ap->mask_spoke_width/2 * 0.5/radius);
+    // Bigger polar angle:
+    getArcPixelFromPolar(ap, radius, angle+2.*delta,
+			 &ring2, &number2);
+    assert(INVALID_PIXEL!=number2);
+    if (number!=number2) {
+      return(1);
+    }
+    // Smaller polar angle:
+    getArcPixelFromPolar(ap, radius, angle-2.*delta,
+			 &ring2, &number2);
+    assert(INVALID_PIXEL!=number2);
+    if (number!=number2) {
+      return(1);
+    }
+  }
+
+  // The photon is not absorbed by the mask.
+  return(0);
 }
 
