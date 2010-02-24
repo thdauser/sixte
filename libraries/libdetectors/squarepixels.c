@@ -163,6 +163,13 @@ int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc,
   x[0] = (int)(position.x/sp->xpixelwidth + 0.5*sp->xwidth +1.)-1;
   y[0] = (int)(position.y/sp->ypixelwidth + 0.5*sp->ywidth +1.)-1;
   
+  // Check if the main event lies inside the detector.
+  if ((x[0]<0) || (x[0]>=sp->xwidth) || (y[0]<0) || (y[0]>=sp->ywidth)) {
+    x[0] = INVALID_PIXEL;
+    y[0] = INVALID_PIXEL;
+    return(0);
+  }
+
   // If charge cloud size is 0, i.e. no splits are created.
   if (gcc->ccsize < 1.e-20) {
     // Only single events are possible!
@@ -230,9 +237,9 @@ int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc,
     } // END of check for single event
   } // END of check for charge cloud size equals 0.
 
-  // Check whether all pixels lie inside the detector:
+  // Check whether all split partners lie inside the detector:
   int count;
-  for(count=0; count<npixels; count++) {
+  for(count=1; count<npixels; count++) {
     if ((x[count]<0) || (x[count]>=sp->xwidth) ||
 	(y[count]<0) || (y[count]>=sp->ywidth)) {
       x[count] = INVALID_PIXEL;
@@ -266,8 +273,15 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   x[0] = (int)(position.x/sp->xpixelwidth + (double)(sp->xoffset)+1.) -1;
   y[0] = (int)(position.y/sp->ypixelwidth + (double)(sp->yoffset)+1.) -1;
   
+  // Check if the main event lies inside the detector.
+  if ((x[0]<0) || (x[0]>=sp->xwidth) || (y[0]<0) || (y[0]>=sp->ywidth)) {
+    x[0] = INVALID_PIXEL;
+    y[0] = INVALID_PIXEL;
+    return(0);
+  }
+
   // Calculate the distances from the exact event position to the borders of the 
-  // surrounding pixel (in [fraction of a pixel border]):
+  // surrounding pixel (in units [fraction of a pixel border]):
   double distances[4] = { 
     // distance to right pixel edge
     (x[0]-sp->xoffset+1)*1. - position.x/sp->xpixelwidth,
@@ -294,7 +308,12 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   x[3] = x[1] + xe[secmindist];
   y[3] = y[1] + ye[secmindist];
 
-  // Now we know the affected pixels and can determine the charge fractions.
+  // Now we know the affected pixels and can determine the 
+  // charge fractions according to the model exp(-(r/0.355)^2).
+  // Remember that the array distances[] contains the distances
+  // to the pixel borders, whereas here we need the distances from
+  // the pixel center for the parameter r.
+  // The value 0.355 is given by the parameter ecc->parameter.
   fraction[0] = exp(-(pow(0.5-distances[mindist],2.)+pow(0.5-distances[secmindist],2.))/
 		    pow(ecc->parameter,2.));
   fraction[1] = exp(-(pow(0.5+distances[mindist],2.)+pow(0.5-distances[secmindist],2.))/
@@ -311,9 +330,9 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   fraction[3] /= sum;
 
 
-  // --- Check whether all pixels lie inside the detector:
+  // Check whether all split partners lie inside the detector:
   int count;
-  for (count=0; count<npixels; count++) {
+  for (count=1; count<npixels; count++) {
     if ((x[count]<0) || (x[count]>=sp->xwidth) ||
 	(y[count]<0) || (y[count]>=sp->ywidth)) {
       x[count] = INVALID_PIXEL;
@@ -323,7 +342,6 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
 
   // Return the number of affected pixels.
   return(npixels);
-
 }
 
 

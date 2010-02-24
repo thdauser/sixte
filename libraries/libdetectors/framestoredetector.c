@@ -9,6 +9,13 @@ int initFramestoreDetector(FramestoreDetector* fd,
   // Call the initialization routines of the underlying data structures.
   status = initGenericDetector(&fd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
+
+#ifdef EXPONENTIAL_SPLITS
+  headas_chat(5, "exponential split model\n");
+#else
+  headas_chat(5, "Gaussian split model\n");
+#endif
+
   status = initSquarePixels(&fd->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
 
@@ -93,14 +100,16 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	// Determine the detector channel that corresponds to the charge stored
 	// in the detector pixel.
 	event.pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
-
+	
+	// The PHA channel should only be less than zero, when the photon 
+	// is lost, i.e. not detected at all. As the RSP is usually normalized,
+	// i.e. it only contains the RMF, this should never be the case.
+	assert(event.pha >= 0);
+	// Maybe: if (event.pha < 0) continue;
+	
 	// Check lower threshold (PHA and energy):
 	if ((event.pha>=fd->generic.pha_threshold) && 
 	    (fd->pixels.array[x][y].charge>=fd->generic.energy_threshold)) { 
-
-	  // REMOVE TODO
-	  assert(event.pha >= 0);
-	  // Maybe: if (event.pha < 0) continue;
 	
 	  // There is an event in this pixel, so insert it into the eventlist:
 	  event.time = fd->readout_time;
@@ -155,9 +164,14 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
     int x[4], y[4];
     double fraction[4];
     
-    // Determine the affected detector pixels.
+    // Determine the affected detector pixels (including split partners).
+#ifdef EXPONENTIAL_SPLITS
+    int npixels = getSquarePixelsExponentialSplits(&fd->pixels, &(fd->generic.ecc), 
+						   impact->position, x, y, fraction);
+#else
     int npixels = getSquarePixelsGaussianSplits(&fd->pixels, &(fd->generic.gcc), 
 						impact->position, x, y, fraction);
+#endif
     
     // Add the charge created by the photon to the affected detector pixels.
     int count;

@@ -1,11 +1,11 @@
-#ifndef EROSITA_PATTERN_RECOMBINATION_H
-#define EROSITA_PATTERN_RECOMBINATION_H 1
+#ifndef ERO_ONBOARD_PROC_H
+#define ERO_ONBOARD_PROC_H 1
 
 #include "sixt.h"
 #include "genericdetector.h"
 #include "framestoredetector.h"
 
-#define TOOLSUB erosita_pattern_recombination_main
+#define TOOLSUB ero_onboard_proc_main
 #include "headas_main.c"
 
 
@@ -28,4 +28,4 @@ struct Parameters{
 //////////////////////////////////////////////////////////////////
 
 
-#endif /* EROSITA_PATTERN_RECOMBINATION_H */
+#endif /* ERO_ONBOARD_PROC_H */

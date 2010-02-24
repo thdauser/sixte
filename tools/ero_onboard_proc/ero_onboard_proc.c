@@ -1,4 +1,4 @@
-#include "erosita_pattern_recombination.h"
+#include "ero_onboard_proc.h"
 
 /*
 int pattern_recombination_getpar(struct Parameters* parameters)
@@ -282,21 +282,21 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 */
 
 
-int erosita_pattern_recombination_main() {
-  /*
-  struct Parameters parameters;
-  WFIEventFile eventfile;
-  WFIEventFile patternfile;
-  WFIEvent** ccdarr=NULL;
+int ero_onboard_proc_main() {
 
-  char msg[MAXMSG];*/
+  struct Parameters parameters;
+  eROSITAEventFile eventfile;
+  eROSITAEventFile patternfile;
+  eROSITAEvent** ccdarr=NULL;
+
+  char msg[MAXMSG];
   int status = EXIT_SUCCESS;
-  /*
 
   // Register HEATOOL
-  set_toolname("erosita_pattern_recombination");
+  set_toolname("ero_onboard_proc");
   set_toolversion("0.01");
 
+  /*
   do { // ERROR handling loop
 
     // Read parameters by PIL:
