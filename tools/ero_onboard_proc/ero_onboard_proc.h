@@ -15,13 +15,13 @@
 struct Parameters{
   /** Filename of the input eROSITA event file. */
   char eventlist_filename[MAXMSG];
-  /** Filename of the output pattern file. */
-  char pattern_filename[MAXMSG];
-  /** Template for the new pattern  FITS file. */
-  char templatedir[MAXMSG];
 
   /** Filename of the detector response file containing the EBOUNDS table. */
   char response_filename[MAXMSG];
+
+  long pha_threshold;
+  float energy_threshold;
+
 };
 
 
