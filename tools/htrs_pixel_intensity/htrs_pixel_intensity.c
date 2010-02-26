@@ -69,7 +69,6 @@ int htrs_pixel_intensity_main()
     for (pixel=0; pixel<n_pixels; pixel++) {
       arc_nphotons[pixel] = 0;
     }
-
     /*
     // Configuration with 31 pixels optimized for uniform photon
     // distribution among the pixels (for photons at 1 keV).
