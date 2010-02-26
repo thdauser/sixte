@@ -25,7 +25,7 @@ xms_pixtemp
 ero_exposure
 ero_fits2tm
 erosita_simulation
-erosita_pattern_recombination
+ero_onboard_proc
 hexagonal_pixel_intensity
 htrs_psfgen
 htrs_simulation

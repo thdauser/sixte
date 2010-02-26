@@ -37,7 +37,7 @@ typedef struct {
   ExponentialChargeCloud ecc;
 
   /** Lower detector PHA threshold [PHA channels]. Events with a
-      lower PHA value are dismissed.  If the PHA threshold is set to
+      lower PHA value are dismissed. If the PHA threshold is set to
       "-1" the energy threshold is taken into account. */
   long pha_threshold;
   /** Lower detector energy threshold [keV]. Events with a lower
