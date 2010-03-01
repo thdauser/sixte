@@ -6,18 +6,45 @@ int initFramestoreDetector(FramestoreDetector* fd,
 {
   int status = EXIT_SUCCESS;
 
+  fd->pattern_size=NULL;
+
   // Call the initialization routines of the underlying data structures.
+  // Init the generic detector properties like the RMF.
   status = initGenericDetector(&fd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
-
 #ifdef EXPONENTIAL_SPLITS
   headas_chat(5, "exponential split model\n");
 #else
   headas_chat(5, "Gaussian split model\n");
 #endif
-
+  // Get the memory for the pixel array.
   status = initSquarePixels(&fd->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
+  
+  // And allocate the memory for the array containing the split sizes.
+  int x, y;
+  fd->pattern_size = (int**)malloc(parameters->pixels.xwidth*sizeof(int*));
+  if (NULL==fd->pattern_size) {
+    status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: could not allocate memory for array of pattern sizes!\n",
+		   status);
+    return(status);
+  }
+  for(x=0; x<parameters->pixels.xwidth; x++) {
+    fd->pattern_size[x] = NULL;
+  }
+  for(x=0; x<parameters->pixels.xwidth; x++) {
+    fd->pattern_size[x] = (int*)malloc(parameters->pixels.ywidth*sizeof(int));
+    if (NULL==fd->pattern_size[x]) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: could not allocate memory for array of pattern sizes!\n",
+		     status);
+      return(status);
+    } // TODO move clear routine to the right function.
+    for(y=0; y<parameters->pixels.ywidth; y++) {
+      fd->pattern_size[x][y]=0;
+    }
+  }
 
   // Set up the framestore configuration.
   fd->integration_time = parameters->integration_time;
@@ -40,6 +67,17 @@ int initFramestoreDetector(FramestoreDetector* fd,
 int cleanupFramestoreDetector(FramestoreDetector* fd) 
 {
   int status=EXIT_SUCCESS;
+
+  // Release the memory of the array containing the pattern sizes.
+  int x;
+  if (NULL!=fd->pattern_size) {
+    for (x=0; x<fd->pixels.xwidth; x++) {
+      if (NULL!=fd->pattern_size[x]) {
+	free (fd->pattern_size[x]);
+      }
+    }
+    free(fd->pattern_size);
+  }
 
   // Call the cleanup routines of the underlying data structures.
   cleanupSquarePixels(&fd->pixels);
@@ -91,6 +129,21 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 {
   int x, y;
   int status = EXIT_SUCCESS;
+
+  // TODO move clear routine to the right function.
+
+  // Find the (possible) split patterns in the pixel array.
+  const int event_threshold = 1.e-6; // TODO
+  for (x=0; x<fd->pixels.xwidth; x++) {
+    for (y=0; y<fd->pixels.ywidth; y++) {
+      if ((fd->pixels.array[x][y].charge > event_threshold) &&
+	  (0==fd->pattern_size)) {
+	// TODO call marker routine.
+      }
+    } // END of loop over x
+  } // END of loop over y
+  // END of find split patterns.
+
 
   // Read out the entire detector array.
   for (x=0; x<fd->pixels.xwidth; x++) {

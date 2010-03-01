@@ -26,6 +26,12 @@ typedef struct {
   GenericDetector generic;
   SquarePixels pixels;
 
+  /** Array containing the number of pixels each split pattern
+      consists of. The array has the same dimensions as the pixel
+      array and contains for each pixel the number of surrounding
+      neighbors. */
+  int** pattern_size;
+
   /** Integration time of the entire pnCCD (!) detector array. (=
       Span of time between 2 subsequent readouts). */
   double integration_time; 
@@ -61,7 +67,8 @@ struct FramestoreDetectorParameters {
 
 /** Set up the configuration of a FramestoreDetector. The routine
     also calls the init routines of the underlying data structures. */
-int initFramestoreDetector(FramestoreDetector*, struct FramestoreDetectorParameters*);
+int initFramestoreDetector(FramestoreDetector* fd, 
+			   struct FramestoreDetectorParameters* fdp);
 
 /** Clean up the FramestoreDetector data structure. Release allocated
     memory and call clean-up routines of underlying structures. */

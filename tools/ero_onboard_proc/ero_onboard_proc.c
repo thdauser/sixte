@@ -36,8 +36,9 @@ int ero_onboard_proc_getpar(struct Parameters* parameters)
 
 
 /*
-WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr, 
-	      WFIEvent* maxevent, WFIEvent* evtlist, long* nevtlist, struct RMF* rmf) 
+eROSITAEvent mark(int row, int column, int rows, int columns, 
+		  eROSITAEvent** ccdarr, eROSITAEvent* maxevent, 
+		  eROSITAEvent* evtlist, long* nevtlist, struct RMF* rmf) 
 {
   // Return immediately if the pixel is empty.
   if (-1 == ccdarr[column][row].patnum) {
@@ -45,7 +46,7 @@ WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr,
   }
 
   // Remember this event ...
-  WFIEvent myevent = ccdarr[column][row];
+  eROSITAEvent myevent = ccdarr[column][row];
   myevent.patnum = 1;
   
   // ... and mark as deleted.
@@ -57,8 +58,10 @@ WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr,
   }
 
   // Visit neighbours:
-  int visitrow[8]={row-1 , row+1 , row     , row     , row-1   , row-1   , row+1   , row+1   };
-  int visitcol[8]={column, column, column-1, column+1, column-1, column+1, column-1, column+1};
+  int visitrow[8]={row-1 , row+1 , row     , row     , 
+		   row-1   , row-1   , row+1   , row+1   };
+  int visitcol[8]={column, column, column-1, column+1, 
+		   column-1, column+1, column-1, column+1};
 
   int i;
   for (i=0; i<8; i++) {
@@ -68,12 +71,12 @@ WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr,
       myevent.patnum = 1000;
     } else {
       // Normal events:
-      WFIEvent event = mark(visitrow[i], visitcol[i], rows, columns, ccdarr,
-			    maxevent, evtlist, nevtlist, rmf);
+      eROSITAEvent event = mark(visitrow[i], visitcol[i], rows, columns, ccdarr,
+				maxevent, evtlist, nevtlist, rmf);
       if (-1 != event.patnum ) {
-	myevent.pileup += event.pileup; // Remember if pileup occurred in subevent
 	myevent.patnum += event.patnum;
-	myevent.pha = getChannel(getEnergy(myevent.pha, rmf)+getEnergy(event.pha, rmf), rmf);
+	myevent.pha = 
+	  getChannel(getEnergy(myevent.pha, rmf)+getEnergy(event.pha, rmf), rmf);
       }
     }
   } // End of loop over all neighbours
@@ -286,11 +289,11 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 int ero_onboard_proc_main() {
 
   struct Parameters parameters;
-  eROSITAEventFile eventfile;
+  /*  eROSITAEventFile eventfile;
   eROSITAEventFile patternfile;
   eROSITAEvent** ccdarr=NULL;
 
-  char msg[MAXMSG];
+  char msg[MAXMSG]; */
   int status = EXIT_SUCCESS;
 
   // Register HEATOOL
