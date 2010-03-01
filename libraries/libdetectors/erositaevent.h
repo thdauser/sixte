@@ -2,7 +2,9 @@
 #define EROSITAEVENT_H 1
 
 
-/** eROSITA specific event. */
+/** eROSITA specific event. Contains the elements specifying an
+    eROSITA event, i.e., the typcial column entries in the FITS event
+    file. */
 typedef struct {
   double time;
   long pha;
@@ -15,13 +17,14 @@ typedef struct {
   char ccdnr;
 
   /** Information about split events. */
-  int pat_typ, pat_inf;
+  int pat_typ, pat_inf, pat_num;
 
 
   /** Right ascension and declination [degree]. */
   double ra, dec; 
   /** Integer sky pixel coordinates. */
   long sky_xi, sky_yi; 
+
 } eROSITAEvent;
 
 

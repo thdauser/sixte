@@ -26,12 +26,6 @@ typedef struct {
   GenericDetector generic;
   SquarePixels pixels;
 
-  /** Array containing the number of pixels each split pattern
-      consists of. The array has the same dimensions as the pixel
-      array and contains for each pixel the number of surrounding
-      neighbors. */
-  int** pattern_size;
-
   /** Integration time of the entire pnCCD (!) detector array. (=
       Span of time between 2 subsequent readouts). */
   double integration_time; 
