@@ -1,7 +1,7 @@
-#include "erosita_pattern_recombination.h"
+#include "ero_onboard_proc.h"
 
-/*
-int pattern_recombination_getpar(struct Parameters* parameters)
+
+int ero_onboard_proc_getpar(struct Parameters* parameters)
 {
   int status = EXIT_SUCCESS;
 
@@ -9,32 +9,33 @@ int pattern_recombination_getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the name of the input file!\n", status);
   }
 
-  else if ((status = PILGetFname("pattern_filename", parameters->pattern_filename))) {
-    HD_ERROR_THROW("Error reading the name of the output file!\n", status);
-  }
-
   else if ((status = PILGetFname("response_filename", parameters->response_filename))) {
     HD_ERROR_THROW("Error reading the name of the detector response file!\n", status);
   }
+  if (status) return(status);
 
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  else { 
-    char* buffer;
-    if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-      strcpy(parameters->templatedir, buffer);
-    } else {
-      if ((status = PILGetFname("templatedir", parameters->templatedir))) {
-	HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      }
+  // Read the detector thresholds (either integer PHA or float energy):
+  int pha_threshold;
+  if ((status = PILGetInt("pha_threshold", &pha_threshold))) {
+    HD_ERROR_THROW("Error: could not determine detector PHA threshold!\n", status);
+    return(status);
+  } else {
+    parameters->pha_threshold = (long)pha_threshold;
+  }
+  if (parameters->pha_threshold==-1) {
+    if ((status = PILGetReal4("energy_threshold", &parameters->energy_threshold))) {
+      HD_ERROR_THROW("Error: could not determine detector energy threshold!\n", status);
+      return(status);
     }
+  } else {
+    parameters->energy_threshold=0.;
   }
 
   return(status);
 }
 
 
+/*
 WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr, 
 	      WFIEvent* maxevent, WFIEvent* evtlist, long* nevtlist, struct RMF* rmf) 
 {
@@ -84,7 +85,7 @@ WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr,
   return(myevent);
 
 } // End of mark()
-
+*/
 
 
 long min(long* array, long nelements)
@@ -114,7 +115,7 @@ long max(long* array, long nelements)
 }
 
 
-
+/*
 WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 {
   long i;
@@ -282,27 +283,27 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
 */
 
 
-int erosita_pattern_recombination_main() {
-  /*
-  struct Parameters parameters;
-  WFIEventFile eventfile;
-  WFIEventFile patternfile;
-  WFIEvent** ccdarr=NULL;
+int ero_onboard_proc_main() {
 
-  char msg[MAXMSG];*/
+  struct Parameters parameters;
+  eROSITAEventFile eventfile;
+  eROSITAEventFile patternfile;
+  eROSITAEvent** ccdarr=NULL;
+
+  char msg[MAXMSG];
   int status = EXIT_SUCCESS;
-  /*
 
   // Register HEATOOL
-  set_toolname("erosita_pattern_recombination");
+  set_toolname("ero_onboard_proc");
   set_toolversion("0.01");
 
   do { // ERROR handling loop
 
     // Read parameters by PIL:
-    status = pattern_recombination_getpar(&parameters);
+    status = ero_onboard_proc_getpar(&parameters);
     if (EXIT_SUCCESS!=status) break;
 
+  /*
     // Initialize HEADAS random number generator.
     HDmtInit(1);
 
@@ -459,12 +460,13 @@ int erosita_pattern_recombination_main() {
       }
       
     } // END of loop over all events in the event file.
-            
+
+  */            
   } while(0); // End of error handling loop
 
 
   // --- Clean Up ---
-
+  /*
   // Free memory from the CCD array.
   if (NULL!=ccdarr) {
     long i;

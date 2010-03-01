@@ -27,7 +27,7 @@ typedef struct {
 	       * (number of [integer pixels]). */
 
   /** Offset of the detector pixel array in x-direction in [integer
-      pixels].  The physical origin of the detector (at the center of
+      pixels]. The physical origin of the detector (at the center of
       the detector) has the array x-index 'xoffset'. */
   int xoffset; 
   /** Offset of the detector pixel array in y-direction in [integer
@@ -89,10 +89,26 @@ inline void clearLineSquarePixels(SquarePixels* sp, const int line);
 
 /** Determine the split ratios among neighboring pixels for a photon
     impact on an array of square pixels. The charge cloud is assumed
-    to have a Gaussian shape. */
+    to have a Gaussian shape. If the main event lies inside the
+    detector, the function return value is between 1 and 4, although
+    some of the split partners may be invalid pixels nevertheless. If
+    the main event lies outside the detector, the function return
+    value is 0. */
 int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc, 
 				  struct Point2d position, 
 				  int* x, int* y, double* fraction);
+
+/** Determine the split ratios among neighboring pixels for a photon
+    impact on an array of square pixels. The charge distribution is
+    determined by an exponential model proposed by Konrad Dennerl. If
+    the main event lies inside the detector, the function return value
+    is between 1 and 4, although some of the split partners may be
+    invalid pixels nevertheless. If the main event lies outside the
+    detector, the function return value is 0. */
+int getSquarePixelsExponentialSplits(SquarePixels* sp, 
+				     ExponentialChargeCloud* ecc, 
+				     struct Point2d position, 
+				     int* x, int* y, double* fraction);
 
 /** Determine the pixel that is hit by a photon impact. The affected
     pixel is return by the x and y parameters (pixel index starting at

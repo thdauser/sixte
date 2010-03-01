@@ -66,10 +66,17 @@ int htrs_simulation_main() {
     };
 #endif
 #ifdef HTRS_ARCPIXELS
-    // Configuration with 31 pixels optimized for uniform photon
+    /*
+    // Configuration with 31 pixels optimized for uniform PHOTON
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.3e-3 };
+    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.15e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. }; 
+    */
+    // Configuration with 31 pixels optimized for uniform ENERGY
+    // distribution among the pixels (for photons with Crab spectrum).
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.18e-3, 4.14e-3, 7.4e-3, 14.15e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = 4,

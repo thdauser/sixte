@@ -212,11 +212,13 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	} // END Check for thresholds.
 
       } else {
+
+	// Extendible / paralyzable dead time:
 	// The new photon impact lies within the dead time of the affected pixel.
-	// TODO Although the current photon cannot be detected, the dead time
+	// Although the current photon cannot be detected, the dead time
 	// of the affected pixel is extended due to its interaction with the
 	// detector.
-	//hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
+	hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
 
       } // END Check for dead time.
 

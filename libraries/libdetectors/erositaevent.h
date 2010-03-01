@@ -10,12 +10,18 @@ typedef struct {
   int xi, yi; /**< Pixel coordinates starting at 0. */
   long frame;
 
-  /** Number of the CCD.
-   * For eROSITA the CCDs are numbered from 1 to 7. */
+  /** Number of the CCD. For eROSITA the CCDs are numbered from 1 to
+      7. */
   char ccdnr;
 
-  double ra, dec; /**< Right ascension and declination [degree]. */
-  long sky_xi, sky_yi; /**< Integer sky pixel coordinates. */
+  /** Information about split events. */
+  int pat_typ, pat_inf;
+
+
+  /** Right ascension and declination [degree]. */
+  double ra, dec; 
+  /** Integer sky pixel coordinates. */
+  long sky_xi, sky_yi; 
 } eROSITAEvent;
 
 

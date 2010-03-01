@@ -257,6 +257,7 @@ AC_CONFIG_FILES([Makefile
 		tools/psfgen/Makefile
 		tools/ero_fits2tm/Makefile
 		tools/ero_exposure/Makefile
+		tools/ero_onboard_proc/Makefile
 		tools/htrs_simulation/Makefile
 		tools/htrs_psfgen/Makefile
 		tools/htrs_pixel_intensity/Makefile
@@ -264,7 +265,6 @@ AC_CONFIG_FILES([Makefile
 		tools/htrs_digital_shaper/Makefile
 		tools/analyse_xms_events/Makefile
 		tools/wfi_pattern_recombination/Makefile
-		tools/erosita_pattern_recombination/Makefile
 		tools/comaimg/Makefile
 		tools/comadet/Makefile
 		tools/comarecon/Makefile])

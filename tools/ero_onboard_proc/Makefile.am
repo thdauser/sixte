@@ -12,15 +12,15 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = erosita_pattern_recombination.par
+dist_pfiles_DATA = ero_onboard_proc.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = erosita_pattern_recombination
+bin_PROGRAMS = ero_onboard_proc
 
-erosita_pattern_recombination_SOURCES = erosita_pattern_recombination.c erosita_pattern_recombination.h
-erosita_pattern_recombination_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+ero_onboard_proc_SOURCES = ero_onboard_proc.c ero_onboard_proc.h
+ero_onboard_proc_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
 
