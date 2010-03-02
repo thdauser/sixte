@@ -95,6 +95,9 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
   eROSITAEvent list[100]; // List of events belonging to the same pattern.
   int nlist=0, count;     // Number of entries in the list.
 
+  int maxidx, minidx;     // Indices of the maximum and minimum event in the 
+                          // event list.
+
   int status = EXIT_SUCCESS;
 
 
@@ -122,17 +125,16 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 
 	  // Clear the event list.
 	  nlist=0;
+	  maxidx=0;
+	  minidx=0;
 	  
 	  // Call marker routine to check for surrounding pixels.
-	  fdMarkEvents(list, &nlist, fd, x, y);
-	  
-	  // Perform pattern type identification.
-	  for (count=0; count<nlist; count++) {
-	    // TODO
-	    list[count].pat_typ = nlist;
-	  }
+	  fdMarkEvents(list, &nlist, &maxidx, &minidx, fd, x, y);
 
-	  // Store the list in the event file.
+	  // Perform pattern type identification.
+	  fdPatternIdentification(list, nlist, maxidx, minidx);
+
+	  // Store the list in the event FITS file.
 	  for (count=0; count<nlist; count++) {
 	    // Set missing properties.
 	    list[count].time  = fd->readout_time;
@@ -226,6 +228,7 @@ break;
 
 
 void fdMarkEvents(eROSITAEvent* list, int* nlist, 
+		  int* maxidx, int* minidx,
 		  FramestoreDetector* fd, 
 		  int x, int y)
 {
@@ -248,6 +251,13 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
   // Delete the charge of this event from the pixel array.
   fd->pixels.array[x][y].charge = 0.;
 
+  // Check if the new event has the maximum or minium energy in the event list.
+  if (list[*nlist-1].energy <= list[*minidx].energy) {
+    *minidx = *nlist-1;
+  } else if (list[*nlist-1].energy > list[*maxidx].energy) {
+    *maxidx = *nlist-1;
+  }
+
 #ifdef FD_DETECT_PATTERNS
   // Loop over the directly neighboring pixels.
   for (neighbor=0; neighbor<4; neighbor++) {
@@ -264,10 +274,66 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
     if (fd->pixels.array[xi][yi].charge > split_threshold) {
 
       // Call marker routine to check for surrounding pixels.
-      fdMarkEvents(list, nlist, fd, xi, yi);
+      fdMarkEvents(list, nlist, maxidx, minidx, fd, xi, yi);
 
     } // END of check if event is above the split threshold.
+
   } // END of loop over all neighbors.
 #endif
 
+}
+
+
+
+void fdPatternIdentification(eROSITAEvent* list, int nlist, 
+			     int maxidx, int minidx)
+{
+ 
+  // Single events.
+  if (1==nlist) {
+    list[0].pat_inf = 0;
+  }
+
+  // Double events.
+  else if (2==nlist) {
+    // 0i0
+    // 0m0
+    // 000
+    if ((list[maxidx].xi==list[minidx].xi) && 
+	(list[maxidx].yi==list[minidx].yi-1)) {
+      list[maxidx].pat_inf = 15;
+      list[minidx].pat_inf = 12;
+    }
+    // 000
+    // 0mi
+    // 000
+    else if ((list[maxidx].xi==list[minidx].xi-1) && 
+	     (list[maxidx].yi==list[minidx].yi)) {
+      list[maxidx].pat_inf = 15;
+      list[minidx].pat_inf = 16;
+    }
+    // 000
+    // 0m0
+    // 0i0
+    else if ((list[maxidx].xi==list[minidx].xi) && 
+	     (list[maxidx].yi==list[minidx].yi+1)) {
+      list[maxidx].pat_inf = 15;
+      list[minidx].pat_inf = 18;
+    }
+    // 000
+    // im0
+    // 000
+    else if ((list[maxidx].xi==list[minidx].xi+1) && 
+	     (list[maxidx].yi==list[minidx].yi)) {
+      list[maxidx].pat_inf = 15;
+      list[minidx].pat_inf = 14;
+    }
+    // Invalid pattern. (Actually this code should never be executed.)
+    else {
+      printf("Invalid double event!\n");
+      list[maxidx].pat_inf = 0;
+      list[minidx].pat_inf = 0;
+    }
+  } // END of double events.
+  
 }

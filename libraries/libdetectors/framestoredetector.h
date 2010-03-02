@@ -97,8 +97,20 @@ int addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
     around a certain event on the FramestoreDetector in order to find
     neighboring events belonging to the same split pattern. */
 void fdMarkEvents(eROSITAEvent* list, int* nlist, 
+		  int* maxidx, int* minidx,
 		  FramestoreDetector* fd, 
 		  int x, int y);
+
+
+/** Identify split patterns according to the eROSITA definition given
+    in the event file specification. The event list has to consist of
+    all events belonging to the same pattern. The second parameter
+    gives the number of entries in the list, i.e., the number of
+    events involved in the split pattern, and the third and forth
+    parameter give the indeces of the events with maximum and minimum
+    energy value in the list. */
+void fdPatternIdentification(eROSITAEvent* list, int nlist, 
+			     int maxidx, int minidx);
 
 
 #endif /* FRAMESTOREDETECTOR_H */
