@@ -331,8 +331,8 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
     // Invalid pattern. (Actually this code should never be executed.)
     else {
       printf("Invalid double event!\n");
-      list[maxidx].pat_inf = 0;
-      list[minidx].pat_inf = 0;
+      list[maxidx].pat_inf = FD_INVALID_PATTERN;
+      list[minidx].pat_inf = FD_INVALID_PATTERN;
     }
   } // END of double events.
   
@@ -434,15 +434,15 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
       // Invalid pattern. (Actually this code should never be executed.)
       else {
 	printf("Invalid triple event!\n");
-	list[maxidx].pat_inf = 0;
-	list[mididx].pat_inf = 0;
-	list[minidx].pat_inf = 0;      
+	list[maxidx].pat_inf = FD_INVALID_PATTERN;
+	list[mididx].pat_inf = FD_INVALID_PATTERN;
+	list[minidx].pat_inf = FD_INVALID_PATTERN;
       }
 
     } else { // It is not valid triple pattern with the maximum in the corner.
-      list[maxidx].pat_inf = 0;
-      list[mididx].pat_inf = 0;
-      list[minidx].pat_inf = 0;      
+      list[maxidx].pat_inf = FD_INVALID_PATTERN;
+      list[mididx].pat_inf = FD_INVALID_PATTERN;
+      list[minidx].pat_inf = FD_INVALID_PATTERN;
     }
   } // END of triple events.
 
@@ -477,7 +477,7 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
     if (2!=check) {
       // Invalid pattern.
       for (count=0; count<nlist; count++) {
-	list[count].pat_inf = 0;
+	list[count].pat_inf = FD_INVALID_PATTERN;
       }
       return;
     } 
@@ -556,7 +556,7 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
     else {
       printf("Invalid quadruple event!\n");
       for (count=0; count<nlist; count++) {
-	list[count].pat_inf = 0;
+	list[count].pat_inf = FD_INVALID_PATTERN;
       }
     }
 
@@ -566,7 +566,7 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
   else {
     int count;
     for(count=0; count<nlist; count++) {
-      list[count].pat_inf = 0;
+      list[count].pat_inf = FD_INVALID_PATTERN;
     }
   } // END of invalid patterns with more than 4 events.
 

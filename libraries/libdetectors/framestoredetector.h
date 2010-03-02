@@ -21,6 +21,11 @@
 // naming scheme.
 #define FD_DETECT_PATTERNS 1
 
+// Define the value that is assigned to PAT_INF of invalid events.
+// According to the eROSITA event file specification this should be '0',
+// but as '0' is also assigned to singles, we choose '-1' instead.
+#define FD_INVALID_PATTERN (-1)
+
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
