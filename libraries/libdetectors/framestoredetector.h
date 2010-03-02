@@ -14,7 +14,12 @@
 // If this flag is set, the charge cloud distribution in split events
 // is determined by the exponential model proposed by Konrad Dennerl.
 // If not, a Gaussian charge cloud model is assumed.
-#define EXPONENTIAL_SPLITS
+//#define EXPONENTIAL_SPLITS 1
+
+// If this flag is activated, the framestore readout algorithm checks
+// for split events and marks them according to the eROSITA pattern
+// naming scheme.
+#define FD_DETECT_PATTERNS 1
 
 
 /////////////////////////////////////////////////////////////////

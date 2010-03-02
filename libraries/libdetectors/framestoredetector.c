@@ -11,9 +11,9 @@ int initFramestoreDetector(FramestoreDetector* fd,
   status = initGenericDetector(&fd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
 #ifdef EXPONENTIAL_SPLITS
-  headas_chat(5, "exponential split model\n");
+  headas_chat(5, "exponential model (by Konrad Dennerl) for split events\n");
 #else
-  headas_chat(5, "Gaussian split model\n");
+  headas_chat(5, "Gaussian charge cloud model for split events\n");
 #endif
   // Get the memory for the pixel array.
   status = initSquarePixels(&fd->pixels, &parameters->pixels);
@@ -89,7 +89,8 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
 
 inline int readoutFramestoreDetector(FramestoreDetector* fd) 
 {
-  int x, y;          // Counters for the loop over the pixel array.
+  int x, y;               // Counters for the loop over the pixel array.
+  long pha;               // Buffer for PHA values.
 
   eROSITAEvent list[100]; // List of events belonging to the same pattern.
   int nlist=0, count;     // Number of entries in the list.
@@ -107,27 +108,21 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 
 	// Determine the detector channel that corresponds to the charge stored
 	// in the detector pixel.
-	list[0].pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
+	pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
 	
 	// The PHA channel should only be less than zero, when the photon 
 	// is lost, i.e., not detected at all. As the RSP is usually normalized,
 	// i.e., it only contains the RMF, this should never be the case.
-	assert(list[0].pha >= 0);
-	// Maybe: if (event.pha < 0) continue;
+	assert(pha >= 0);
+	// Maybe: if (pha < 0) continue;
 	
 	// Check lower threshold (PHA and energy):
-	if ((list[0].pha>=fd->generic.pha_threshold) && 
+	if ((pha>=fd->generic.pha_threshold) && 
 	    (fd->pixels.array[x][y].charge>=fd->generic.energy_threshold)) { 
-	  
-	  // The event is the first in the list (containing all events
-	  // that belong to the same pattern).
-	  nlist = 1;
-	  list[0].energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
-	  list[0].xi = x;
-	  list[0].yi = y;
-	  // Delete the charge of this event.
-	  fd->pixels.array[x][y].charge = 0.;
 
+	  // Clear the event list.
+	  nlist=0;
+	  
 	  // Call marker routine to check for surrounding pixels.
 	  fdMarkEvents(list, &nlist, fd, x, y);
 	  
@@ -145,7 +140,8 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	    
 	    status=addeROSITAEvent2File(&fd->eventlist, &(list[count]));
 	    if (EXIT_SUCCESS!=status) return(status);
-	  }
+
+	  }// End of storing the event list in the FITS file.
 	  
 	} // End of check if event is above specified threshold.
       } // END of check if pixel contains any charge.
@@ -240,44 +236,38 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
   const int neighbors_x[4] = {0, 0, 1, -1};
   const int neighbors_y[4] = {1, -1, 0, 0};
 
-  int neighbor;
+  int neighbor, xi, yi;
 
+  // Create a new event in the list.
+  assert(*nlist+1 < 100);  
+  list[*nlist].pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
+  list[*nlist].energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
+  list[*nlist].xi  = x;
+  list[*nlist].yi  = y;
+  (*nlist)++;
+  // Delete the charge of this event from the pixel array.
+  fd->pixels.array[x][y].charge = 0.;
+
+#ifdef FD_DETECT_PATTERNS
+  // Loop over the directly neighboring pixels.
   for (neighbor=0; neighbor<4; neighbor++) {
-    assert(*nlist+1 < 100);
+
+    // Coordinates of the neighboring pixel:
+    xi = x+neighbors_x[neighbor];
+    yi = y+neighbors_y[neighbor];
 
     // Check if the neighbor is within the detector dimensions.
-    if ((x+neighbors_x[neighbor]<0) || 
-	(x+neighbors_x[neighbor]>=fd->pixels.xwidth) ||
-	(x+neighbors_x[neighbor]<0) || 
-	(x+neighbors_x[neighbor]>=fd->pixels.xwidth))
+    if ((xi<0) || (xi>=fd->pixels.xwidth) ||
+	(yi<0) || (yi>=fd->pixels.ywidth))
       continue;
 
-    if (fd->pixels.array[x+neighbors_x[neighbor]][y+neighbors_y[neighbor]].charge > 
-	split_threshold) {
-
-      (*nlist)++;
-      printf("nlist: %d (%d, %d)\n", *nlist, 
-	     x+neighbors_x[neighbor],
-	     y+neighbors_y[neighbor]);
-
-      list[*nlist-1].pha = 
-	getChannel(fd->pixels.array[x+neighbors_x[neighbor]][y+neighbors_y[neighbor]].charge, 
-		   fd->generic.rmf);
-      list[*nlist-1].energy = 
-	fd->pixels.array[x+neighbors_x[neighbor]][y+neighbors_y[neighbor]].charge 
-	* 1.e3; // [eV]
-      list[*nlist-1].xi = x+neighbors_x[neighbor];
-      list[*nlist-1].yi = y+neighbors_y[neighbor];
-
-      // Clear the charge from the array.
-      fd->pixels.array[x+neighbors_x[neighbor]][y+neighbors_y[neighbor]].charge = 0.;
+    if (fd->pixels.array[xi][yi].charge > split_threshold) {
 
       // Call marker routine to check for surrounding pixels.
-      fdMarkEvents(list, nlist, fd, 
-		   x+neighbors_x[neighbor], 
-		   y+neighbors_y[neighbor]);
+      fdMarkEvents(list, nlist, fd, xi, yi);
 
     } // END of check if event is above the split threshold.
   } // END of loop over all neighbors.
+#endif
 
 }
