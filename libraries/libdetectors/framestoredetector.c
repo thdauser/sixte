@@ -233,7 +233,7 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
 		  int x, int y)
 {
   // Split threshold. TODO
-  const double split_threshold = 1.e-2;
+  const double split_threshold = fd->generic.energy_threshold * 0.01;
 
   // Possible neighbors (no diagonal neighbors).
   const int neighbors_x[4] = {0, 0, 1, -1};
@@ -285,8 +285,8 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
 
 
 
-void fdPatternIdentification(eROSITAEvent* list, int nlist, 
-			     int maxidx, int minidx)
+void fdPatternIdentification(eROSITAEvent* list, const int nlist, 
+			     const int maxidx, const int minidx)
 {
  
   // Single events.
@@ -297,7 +297,7 @@ void fdPatternIdentification(eROSITAEvent* list, int nlist,
   // Double events.
   else if (2==nlist) {
     // 0i0
-    // 0m0
+    // 0x0
     // 000
     if ((list[maxidx].xi==list[minidx].xi) && 
 	(list[maxidx].yi==list[minidx].yi-1)) {
@@ -305,28 +305,28 @@ void fdPatternIdentification(eROSITAEvent* list, int nlist,
       list[minidx].pat_inf = 12;
     }
     // 000
-    // 0mi
+    // 0xi
     // 000
     else if ((list[maxidx].xi==list[minidx].xi-1) && 
 	     (list[maxidx].yi==list[minidx].yi)) {
-      list[maxidx].pat_inf = 15;
-      list[minidx].pat_inf = 16;
+      list[maxidx].pat_inf = 25;
+      list[minidx].pat_inf = 26;
     }
     // 000
-    // 0m0
+    // 0x0
     // 0i0
     else if ((list[maxidx].xi==list[minidx].xi) && 
 	     (list[maxidx].yi==list[minidx].yi+1)) {
-      list[maxidx].pat_inf = 15;
-      list[minidx].pat_inf = 18;
+      list[maxidx].pat_inf = 35;
+      list[minidx].pat_inf = 38;
     }
     // 000
-    // im0
+    // ix0
     // 000
     else if ((list[maxidx].xi==list[minidx].xi+1) && 
 	     (list[maxidx].yi==list[minidx].yi)) {
-      list[maxidx].pat_inf = 15;
-      list[minidx].pat_inf = 14;
+      list[maxidx].pat_inf = 45;
+      list[minidx].pat_inf = 44;
     }
     // Invalid pattern. (Actually this code should never be executed.)
     else {
@@ -336,4 +336,238 @@ void fdPatternIdentification(eROSITAEvent* list, int nlist,
     }
   } // END of double events.
   
+  // Triple events.
+  else if (3==nlist) {
+
+    // Find the index of the non-maximum and non-minimum split partner.
+    int mididx;
+    for (mididx=0; mididx<nlist; mididx++) {
+      if ((mididx!=maxidx) && (mididx!=minidx)) break;
+    }
+
+    // Check if it is a valid triple split pattern, i.e., around the corner
+    // with the maximum event in the the corner.
+    if ((abs(list[maxidx].xi-list[minidx].xi) + abs(list[maxidx].xi-list[mididx].xi) == 1) &&
+	(abs(list[maxidx].yi-list[minidx].yi) + abs(list[maxidx].yi-list[mididx].yi) == 1)) {
+
+      // Check the orientation of the triple split pattern.
+      // 0i0
+      // 0xm
+      // 000
+      if ((list[maxidx].xi==list[mididx].xi-1) && 
+	  (list[maxidx].yi==list[minidx].yi-1)) {
+	list[maxidx].pat_inf = 55;
+	list[mididx].pat_inf = 56;
+	list[minidx].pat_inf = 52;      
+      }
+
+      // 0m0
+      // 0xi
+      // 000
+      else if ((list[maxidx].xi==list[minidx].xi-1) && 
+	       (list[maxidx].yi==list[mididx].yi-1)) {
+	list[maxidx].pat_inf = 55;
+	list[mididx].pat_inf = 52;
+	list[minidx].pat_inf = 56;      
+      }
+
+      // 000
+      // 0xi
+      // 0m0
+      else if ((list[maxidx].xi==list[minidx].xi-1) && 
+	       (list[maxidx].yi==list[mididx].yi+1)) {
+	list[maxidx].pat_inf = 65;
+	list[mididx].pat_inf = 68;
+	list[minidx].pat_inf = 66;      
+      }
+     
+      // 000
+      // 0xm
+      // 0i0
+      else if ((list[maxidx].xi==list[mididx].xi-1) && 
+	       (list[maxidx].yi==list[minidx].yi+1)) {
+	list[maxidx].pat_inf = 65;
+	list[mididx].pat_inf = 66;
+	list[minidx].pat_inf = 68;      
+      }
+
+      // 000
+      // mx0
+      // 0i0
+      else if ((list[maxidx].xi==list[mididx].xi+1) && 
+	       (list[maxidx].yi==list[minidx].yi+1)) {
+	list[maxidx].pat_inf = 75;
+	list[mididx].pat_inf = 74;
+	list[minidx].pat_inf = 78;      
+      }
+
+      // 000
+      // ix0
+      // 0m0
+      else if ((list[maxidx].xi==list[minidx].xi+1) && 
+	       (list[maxidx].yi==list[mididx].yi+1)) {
+	list[maxidx].pat_inf = 75;
+	list[mididx].pat_inf = 78;
+	list[minidx].pat_inf = 74;      
+      }
+
+      // 0m0
+      // ix0
+      // 000
+      else if ((list[maxidx].xi==list[minidx].xi+1) && 
+	       (list[maxidx].yi==list[mididx].yi-1)) {
+	list[maxidx].pat_inf = 85;
+	list[mididx].pat_inf = 82;
+	list[minidx].pat_inf = 84;      
+      }
+
+      // 0i0
+      // mx0
+      // 000
+      else if ((list[maxidx].xi==list[mididx].xi+1) && 
+	       (list[maxidx].yi==list[minidx].yi-1)) {
+	list[maxidx].pat_inf = 85;
+	list[mididx].pat_inf = 84;
+	list[minidx].pat_inf = 82;      
+      }
+
+      // Invalid pattern. (Actually this code should never be executed.)
+      else {
+	printf("Invalid triple event!\n");
+	list[maxidx].pat_inf = 0;
+	list[mididx].pat_inf = 0;
+	list[minidx].pat_inf = 0;      
+      }
+
+    } else { // It is not valid triple pattern with the maximum in the corner.
+      list[maxidx].pat_inf = 0;
+      list[mididx].pat_inf = 0;
+      list[minidx].pat_inf = 0;      
+    }
+  } // END of triple events.
+
+  // Quadruple events.
+  else if (4==nlist) {
+    int count;
+
+    // Find the 2 events, which are neither the maximum nor the minimum.
+    int mididx[2] = { maxidx, maxidx };
+    for (count=0; count<nlist; count++) {
+      if ((count!=maxidx) && (count!=minidx)) {
+	if (mididx[0] == maxidx) {
+	  mididx[0] = count;
+	} else {
+	  mididx[1] = count;
+	}
+      }
+    }
+
+    // Check if the 4 events form a valid 2x2 matrix with the maximum
+    // and minimum events on opposite corners.
+    int check=0;
+    for (count=0; count<2; count++) {
+      if (((list[mididx[count]].xi == list[maxidx].xi) &&
+	   (list[mididx[count]].yi == list[minidx].yi)) ||
+	  ((list[mididx[count]].yi == list[maxidx].yi) &&
+	   (list[mididx[count]].xi == list[minidx].xi))) {
+	check++;
+      }
+    }
+
+    if (2!=check) {
+      // Invalid pattern.
+      for (count=0; count<nlist; count++) {
+	list[count].pat_inf = 0;
+      }
+      return;
+    } 
+
+    // The pattern is a valid 2x2 matrix.
+    // Check the orientation of the pattern.
+    // 0mi
+    // 0xm
+    // 000
+    if ((list[maxidx].xi == list[minidx].xi-1) &&
+	(list[maxidx].yi == list[minidx].yi-1)) {
+      list[maxidx].pat_inf = 95;
+      list[minidx].pat_inf = 93;
+      
+      if (list[maxidx].xi == list[mididx[0]].xi) {
+	list[mididx[0]].pat_inf = 92;
+	list[mididx[1]].pat_inf = 96;
+      } else {
+	list[mididx[0]].pat_inf = 96;
+	list[mididx[1]].pat_inf = 92;
+      }
+    }
+
+    // 000
+    // 0xm
+    // 0mi
+    else if ((list[maxidx].xi == list[minidx].xi-1) &&
+	     (list[maxidx].yi == list[minidx].yi+1)) {
+      list[maxidx].pat_inf = 105;
+      list[minidx].pat_inf = 109;
+      
+      if (list[maxidx].xi == list[mididx[0]].xi) {
+	list[mididx[0]].pat_inf = 108;
+	list[mididx[1]].pat_inf = 106;
+      } else {
+	list[mididx[0]].pat_inf = 106;
+	list[mididx[1]].pat_inf = 108;
+      }
+    }
+
+    // 000
+    // mx0
+    // im0
+    else if ((list[maxidx].xi == list[minidx].xi+1) &&
+	     (list[maxidx].yi == list[minidx].yi+1)) {
+      list[maxidx].pat_inf = 115;
+      list[minidx].pat_inf = 117;
+      
+      if (list[maxidx].xi == list[mididx[0]].xi) {
+	list[mididx[0]].pat_inf = 118;
+	list[mididx[1]].pat_inf = 114;
+      } else {
+	list[mididx[0]].pat_inf = 114;
+	list[mididx[1]].pat_inf = 118;
+      }
+    }
+
+    // im0
+    // mx0
+    // 000
+    else if ((list[maxidx].xi == list[minidx].xi+1) &&
+	     (list[maxidx].yi == list[minidx].yi-1)) {
+      list[maxidx].pat_inf = 125;
+      list[minidx].pat_inf = 121;
+      
+      if (list[maxidx].xi == list[mididx[0]].xi) {
+	list[mididx[0]].pat_inf = 122;
+	list[mididx[1]].pat_inf = 124;
+      } else {
+	list[mididx[0]].pat_inf = 124;
+	list[mididx[1]].pat_inf = 122;
+      }
+    }
+
+    // Invalid pattern. (Actually this code should never be executed.)
+    else {
+      printf("Invalid quadruple event!\n");
+      for (count=0; count<nlist; count++) {
+	list[count].pat_inf = 0;
+      }
+    }
+
+  } // END of quadruple events.
+
+  // Invalid patterns with more than 4 events.
+  else {
+    int count;
+    for(count=0; count<nlist; count++) {
+      list[count].pat_inf = 0;
+    }
+  } // END of invalid patterns with more than 4 events.
+
 }
