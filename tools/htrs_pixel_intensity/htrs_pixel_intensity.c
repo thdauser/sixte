@@ -74,7 +74,7 @@ int htrs_pixel_intensity_main()
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
     /*    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.15e-3 }; **/
-    double radii[4] = { 2.66e-3, 5.52e-3, 8.84e-3, 14.15e-3 };
+    double radii[4] = { 2.66e-3, 5.53e-3, 8.86e-3, 14.15e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     /*
     // Configuration with 31 pixels with each pixel having the same area.
