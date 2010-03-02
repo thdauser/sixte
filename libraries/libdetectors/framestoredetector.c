@@ -141,7 +141,7 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	    status=addeROSITAEvent2File(&fd->eventlist, &(list[count]));
 	    if (EXIT_SUCCESS!=status) return(status);
 
-	  }// End of storing the event list in the FITS file.
+	  } // End of storing the event list in the FITS file.
 	  
 	} // End of check if event is above specified threshold.
       } // END of check if pixel contains any charge.
