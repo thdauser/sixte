@@ -15,16 +15,20 @@
 
 /** One square detector pixel. */
 typedef struct {
-  float charge; /**< Charge stored in this detector pixel. */
+  /** Charge stored in this detector pixel (actually the photon energy
+      in [keV]). */
+  float charge;
 } SquarePixel;
 
 
 /** Data specific for detectos with an array of square pixels. */
 typedef struct {
-  int xwidth; /**< Width of the detector pixel array in x-direction 
-	       * (number of [integer pixels]). */
-  int ywidth; /**< Width of the detector pixel array in y-direction
-	       * (number of [integer pixels]). */
+  /** Width of the detector pixel array in x-direction (number of
+     [integer pixels]). */
+  int xwidth; 
+  /** Width of the detector pixel array in y-direction (number of
+      [integer pixels]). */
+  int ywidth; 
 
   /** Offset of the detector pixel array in x-direction in [integer
       pixels]. The physical origin of the detector (at the center of

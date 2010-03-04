@@ -110,12 +110,6 @@ CHOPPER         String          / electronic chopper in use
 	TTYPE#	CCDNR		/ 0 for TRoPIC, 1-7 for eROSITA
 	TFORM#	B
 	TUNIT#	
-	TTYPE#	PAT_TYP		/ 
-	TFORM#	I
-	TUNIT#	
-	TTYPE#	PAT_INF		/ 
-	TFORM#	I
-	TUNIT#	
 	TTYPE#  AMP_GAIN        / Gain corrected amplitudes
 	TFORM#  E               / Format of column AMP_GAIN
 	TUNIT#  ADU             / Unit of column AMP_GAIN

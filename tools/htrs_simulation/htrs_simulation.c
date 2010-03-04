@@ -78,6 +78,7 @@ int htrs_simulation_main() {
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.18e-3, 4.14e-3, 7.4e-3, 14.15e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
+    
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = 4,
 		  .npixels = npixels,
