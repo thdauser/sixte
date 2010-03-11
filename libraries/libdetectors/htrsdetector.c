@@ -137,6 +137,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  
 	  // The impact has generated an event in this pixel,
 	  // so add it to the event file.
+	  event.energy = charge * fraction[pixel_counter];
 	  event.pixel = pixel[pixel_counter];
 	  event.time = impact->time;
 	  
@@ -194,6 +195,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  
 	  // The impact has generated an event in this pixel,
 	  // so add it to the event file.
+	  event.energy = charge;
 	  event.pixel = getArcPixelIndex(&(hd->pixels), ring[0], number[0]);
 	  event.time = impact->time;
 

@@ -10,6 +10,9 @@ typedef struct {
   /** PHA channel. */
   long pha; 
 
+  /** Photon energy [keV]. */
+  float energy;
+
   /** Number of the pixel, where the event is detected. Numbering
       starts at 0. */
   int pixel; 
