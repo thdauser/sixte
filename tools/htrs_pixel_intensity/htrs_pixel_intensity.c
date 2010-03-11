@@ -69,19 +69,35 @@ int htrs_pixel_intensity_main()
     for (pixel=0; pixel<n_pixels; pixel++) {
       arc_nphotons[pixel] = 0;
     }
-    
+    // Out-of-focus distance of 12 cm (detector radius of 14.15 mm):
+    /*
     // Configuration with 31 pixels optimized for uniform photon
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
-    /*    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.15e-3 }; **/
-    double radii[4] = { 2.66e-3, 5.53e-3, 8.87e-3, 14.15e-3 };
+    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.15e-3 }; // without mask
+    // double radii[4] = { 2.66e-3, 5.53e-3, 8.87e-3, 14.15e-3 }; // with mask
     double offset_angles[4] = { 0., 0., 0., 0. };
+    */
     /*
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.54e-3, 6.72e-3, 11.08e-3, 14.15e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     */
+    /*
+    // Configuration with 19 pixels.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.64e-3, 10.0e-3, 14.5e-3, 20.0e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    */
+
+    // Out-of-focus distance of 10.45 cm (detector radius of 12 mm):
+
+    // Configuration with 31 pixels with each pixel having the same area.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };
+
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
       .npixels = npixels,

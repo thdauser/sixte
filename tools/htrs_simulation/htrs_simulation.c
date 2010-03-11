@@ -66,19 +66,48 @@ int htrs_simulation_main() {
     };
 #endif
 #ifdef HTRS_ARCPIXELS
+    // Out-of-focus distance 12 cm (detector radius 14.15 mm)
     /*
     // Configuration with 31 pixels optimized for uniform PHOTON
-    // distribution among the pixels (for photons at 1 keV).
+    // distribution among the pixels (for photons at 1 keV) without a mask.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.15e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. }; 
-    */
+    */  
+    /*
     // Configuration with 31 pixels optimized for uniform ENERGY
     // distribution among the pixels (for photons with Crab spectrum).
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.18e-3, 4.14e-3, 7.4e-3, 14.15e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-    
+    */
+    /*
+    // Configuration with 31 pixels with each pixel having the same area.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.54e-3, 6.72e-3, 11.08e-3, 14.15e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    */
+    /*
+    // Configuration with 31 pixels with large mid pixels.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.64e-3, 6.8e-3, 11.5e-3, 14.15e-3 };
+    // double radii[4] = { 2.8e-3, 7.5e-3, 12.0e-3, 14.15e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. }; 
+    */
+    /*
+    // Configuration with 19 pixels (only 3 rings!).
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.64e-3, 10.0e-3, 14.5e-3, 20.0e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. }; 
+    */
+
+    // Out-of-focus distance 10.45 cm (detector radius 12 mm)
+
+    // Configuration with 31 pixels with each pixel having the same area.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.0e-3 };
+    double offset_angles[4] = { 0., 0., 0., 0. };
+
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = 4,
 		  .npixels = npixels,
