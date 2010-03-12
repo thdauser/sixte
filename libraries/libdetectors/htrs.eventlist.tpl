@@ -36,6 +36,9 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  I               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
+	TTYPE#  ENERGY          / Uncorrected Event Energy
+	TFORM#  E               / Format of column ENERGY
+	TUNIT#  keV             / Unit of column ENERGY
 	TTYPE#	PIXEL           / Event Pixel Number
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX

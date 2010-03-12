@@ -16,6 +16,8 @@ int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PHA", &hef->cpha, &status)) 
     return(status);
+  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "ENERGY", &hef->cenergy, &status)) 
+    return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PIXEL", &hef->cpixel, &status)) 
     return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "X", &hef->cx, &status)) 
@@ -99,6 +101,8 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
 		     1, 1, &event->time, &status)) return(status);
   if (fits_write_col(hef->generic.fptr, TLONG, hef->cpha, hef->generic.row, 
 		     1, 1, &event->pha, &status)) return(status);
+  if (fits_write_col(hef->generic.fptr, TFLOAT, hef->cenergy, hef->generic.row, 
+		     1, 1, &event->energy, &status)) return(status);
   int pixel = event->pixel+1;
   if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, hef->generic.row, 
 		     1, 1, &pixel, &status)) return(status);
@@ -153,6 +157,9 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
   event->pha = 0;
   if (fits_read_col(hef->generic.fptr, TLONG, hef->cpha, row, 1, 1, 
 		    &event->pha, &event->pha, &anynul, &status)) return(status);
+  event->energy = 0;
+  if (fits_read_col(hef->generic.fptr, TFLOAT, hef->cenergy, row, 1, 1, 
+		    &event->energy, &event->energy, &anynul, &status)) return(status);
   event->pixel = 0;
   if (fits_read_col(hef->generic.fptr, TINT, hef->cpixel, row, 1, 1, 
 		    &event->pixel, &event->pixel, &anynul, &status)) return(status);

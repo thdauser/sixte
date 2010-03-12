@@ -73,7 +73,7 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
     // For detectors with individual readout lines a more complicated method is required.
     while (time > fd->readout_time) {
       fd->readout_time += fd->integration_time;
-      fd->frame += 2;
+      fd->frame += 1;
     }
 
     // Print the time of the current events (program status
