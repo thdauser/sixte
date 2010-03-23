@@ -102,12 +102,19 @@ int htrs_simulation_main() {
     */
 
     // Out-of-focus distance 10.45 cm (detector radius 12 mm)
-
+    /*
+    // Configuration with 31 pixels with homogenuous photon
+    // distribution at 1 keV
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.32e-3, 4.82e-3, 7.72e-3, 12.e-3 }; // with mask
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    */
+    
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-
+    
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = 4,
 		  .npixels = npixels,
