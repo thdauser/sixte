@@ -13,8 +13,26 @@
 
 /** One single ArcPixel. */
 typedef struct {
-  float charge; /**< Charge stored in this detector pixel. */
-  double last_impact; /**< Time of the last photon impact in this pixel. */
+  /** Charge stored in this detector pixel. The charge from several
+      photon impacts is added up until the pixel has to be cleared,
+      because its output voltage exceeds the input range of the
+      subsequent electronics. Actually the variable contains not the
+      electrical charge but the corresponding energy in [keV]. */
+  float charge; 
+
+  /** Time of the last photon impact in this pixel. This time is
+      required in order to determine for the next photon impact,
+      whether the shaping process of the previous pulse is still in
+      progress. */
+  double last_impact;
+
+  /** End of the next reset time interval. If a reset of a pixel is
+      performed at the time t, this variable is set to the value
+      t+shaping_time+reset_time, such that the variable denotes the
+      end of the reset interval. The pixel is insensitive to incident
+      photons until the end of the reset period. */
+  double reset_until;
+
 } ArcPixel;
 
 

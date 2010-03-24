@@ -38,6 +38,7 @@ struct Parameters {
   double mask_spoke_width;
 #endif 
   double shaping_time;
+  double reset_time;
 };
 
 

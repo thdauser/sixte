@@ -58,6 +58,13 @@ typedef struct {
       detector pixel. */
   double shaping_time;
 
+  /** Time required to reset a HTRS detector pixel. When the output
+      voltage of the pixel exceeds the input range of the subsequent
+      electronics, the collected charge in the pixel has to be
+      deleted, which is called reset. During the time required for the
+      reset, the pixel is insensitive for incident photons. */
+  double reset_time;
+
   /** Output event list. The events read out from the detector array
       are written to this event file that must have the HTRS-specific
       format. */
@@ -89,6 +96,7 @@ struct HTRSDetectorParameters {
 #endif
 
   double shaping_time;
+  double reset_time;
 
   char* eventlist_filename;
   char* eventlist_template;

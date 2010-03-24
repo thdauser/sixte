@@ -61,6 +61,7 @@ int htrs_simulation_main() {
 		   .energy_threshold = parameters.energy_threshold,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
       .shaping_time       = parameters.shaping_time,
+      .reset_time         = parameters.reset_time,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template /* String address!! */
     };
@@ -126,6 +127,7 @@ int htrs_simulation_main() {
 		   .energy_threshold = parameters.energy_threshold,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
       .shaping_time       = parameters.shaping_time,
+      .reset_time         = parameters.reset_time,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template /* String address!! */
     };
@@ -195,9 +197,14 @@ static int getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
   }
 
-  // Get the shaping time for a detector pixel.
+  // Get the shaping time for the pulses.
   else if ((status = PILGetReal("shaping_time", &parameters->shaping_time))) {
-    HD_ERROR_THROW("Error reading the shaping time for the detector pixels!\n", status);
+    HD_ERROR_THROW("Error reading the shaping time for pulses!\n", status);
+  }
+
+  // Get the reset time for a detector pixel.
+  else if ((status = PILGetReal("reset_time", &parameters->reset_time))) {
+    HD_ERROR_THROW("Error reading the reset time for the detector pixels!\n", status);
   }
 
 #ifdef HTRS_HEXPIXELS
