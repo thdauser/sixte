@@ -37,7 +37,7 @@ struct Parameters {
 #ifdef HTRS_ARCPIXELS
   double mask_spoke_width;
 #endif 
-  double dead_time;
+  double shaping_time;
 };
 
 

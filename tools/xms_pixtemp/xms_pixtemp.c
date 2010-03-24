@@ -31,7 +31,7 @@ int xms_pixtemp_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Open the output file.
-    output_file = fopen(parameters.output_filename, "r");
+    output_file = fopen(parameters.output_filename, "w+");
     if (NULL==output_file) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error opening the output file!\n", status);

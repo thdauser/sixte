@@ -1,5 +1,5 @@
 eventlist_filename,fre,lq,"events.fits",,,"filename of the event file (FITS)"
-output_filename,fr,lq,"pixtemp_output.dat",,,"filename of the output file (ASCII)"
+output_filename,f,lq,"pixtemp_output.dat",,,"filename of the output file (ASCII)"
 rsp_filename,fre,lq,"/home/schmid/ixo/response/detector_specific_response/IXO_CDF_tes_none_081117.rsp",,,"detector response file (FITS input file) "
 pixx,i,lq,10,1,40,"x-coordinate of the pixel to be considered"
 pixy,i,lq,10,1,40,"y-coordinate of the pixel to be considered"
