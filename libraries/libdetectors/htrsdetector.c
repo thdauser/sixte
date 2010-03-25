@@ -7,7 +7,7 @@ int initHTRSDetector(HTRSDetector* hd,
   int status = EXIT_SUCCESS;
 
   // Set up the initial default HTRS configuration.
-  hd->dead_time = parameters->dead_time;
+  hd->shaping_time = parameters->shaping_time;
   hd->nevents = 0;
   hd->nsingles = 0;
   hd->ndoubles = 0;
@@ -105,7 +105,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	
 	// Check if the pixel is currently active.
 	if (impact->time - hd->pixels.array[pixel[pixel_counter]].last_impact 
-	    < hd->dead_time) {
+	    < hd->shaping_time) {
 	  // The photon cannot be detected in this pixel as it is still within 
 	  // the dead time after the previous event.
 
@@ -175,7 +175,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 
     if (INVALID_PIXEL != ring[0]) {
       // Check if the pixel is currently active.
-      if (impact->time-hd->pixels.array[ring[0]][number[0]].last_impact >= hd->dead_time) {
+      if (impact->time-hd->pixels.array[ring[0]][number[0]].last_impact >= hd->shaping_time) {
 	// The photon can be detected in this pixel.
 	// The pixel is NOT within the dead time after some previous event.
 

@@ -74,14 +74,14 @@ int htrs_pixel_intensity_main()
     // Configuration with 31 pixels optimized for uniform photon
     // distribution among the pixels (for photons at 1 keV).
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.15e-3 }; // without mask
-    // double radii[4] = { 2.66e-3, 5.53e-3, 8.87e-3, 14.15e-3 }; // with mask
+    //double radii[4] = { 2.64e-3, 5.5e-3, 8.82e-3, 14.15e-3 }; // without mask
+    double radii[4] = { 2.66e-3, 5.53e-3, 8.87e-3, 13.45e-3 }; // with mask
     double offset_angles[4] = { 0., 0., 0., 0. };
     */
     /*
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
-    double radii[4] = { 2.54e-3, 6.72e-3, 11.08e-3, 14.15e-3 };
+    double radii[4] = { 2.42e-3, 6.39e-3, 10.53e-3, 13.45e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
     */
     /*
@@ -92,12 +92,19 @@ int htrs_pixel_intensity_main()
     */
 
     // Out-of-focus distance of 10.45 cm (detector radius of 12 mm):
-
+    /*
+    // Configuration with 31 pixels with homogeneous photon
+    // distribution at 1 keV
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.32e-3, 4.82e-3, 7.72e-3, 12.e-3 }; // with mask
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    */
+    
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-
+    
     struct ArcPixelsParameters apparameters = {
       .nrings = 4, 
       .npixels = npixels,
@@ -206,7 +213,7 @@ int htrs_pixel_intensity_main()
       
     printf("# N_photons, N_detected_photons, "
 	   "fraction of detected photons, sigma/average\n");
-    printf("%ld %ld %.10lf %lf\n",
+    printf("# %ld %ld %.10lf %lf\n",
 	   ntotal_photons,               // Total number of photons
 	   ndetected,                    // Number of detected photons
 	   ndetected*1./ntotal_photons,  // Fraction of detected photons
@@ -215,8 +222,9 @@ int htrs_pixel_intensity_main()
     printf("# radii: %lf %lf %lf %lf\n# pixel:", radii[0], radii[1], radii[2], radii[3]);
     printf("\n# %ld\n# %ld\n", ntotal_photons, ndetected);
     for (pixel=0; pixel<n_pixels; pixel++) {
-      printf(" %ld %lf\n", arc_nphotons[pixel], 
-	     (double)arc_nphotons[pixel]/ntotal_photons);
+      printf(" %ld %lf %lf\n", arc_nphotons[pixel], 
+	     (double)arc_nphotons[pixel]/ntotal_photons,
+	     (double)arc_nphotons[pixel]/ndetected);
     }
     //    printf("\n");
 #endif

@@ -50,12 +50,13 @@ typedef struct {
   ArcPixels pixels;
 #endif
 
-  /** Dead time of a pixel after an event detection. If a new photon
-      arrives during the dead time after a previous event in the same
-      pixel, the new photon will not be detected. This is a model for
-      the physical readout and clearing process of the detector
-      pixel. */
-  double dead_time;
+  /** Shaping time for a pulse. The pixel is insensitive to further
+      photons during that time span after a photon detection. If a new
+      photon arrives during the shaping time after a previous event in
+      the same pixel, the new photon will not be detected. This is a
+      model for the physical readout and clearing process of the
+      detector pixel. */
+  double shaping_time;
 
   /** Output event list. The events read out from the detector array
       are written to this event file that must have the HTRS-specific
@@ -87,7 +88,7 @@ struct HTRSDetectorParameters {
   struct ArcPixelsParameters pixels;
 #endif
 
-  double dead_time;
+  double shaping_time;
 
   char* eventlist_filename;
   char* eventlist_template;

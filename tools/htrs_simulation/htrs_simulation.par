@@ -3,7 +3,7 @@ rmf_filename,fre,lq,"/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.
 eventlist_filename,f,lq,"events_10Crab.fits",,,"event list file (FITS output file) "
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 pixelwidth,r,lq,4.e-3,0.0,1000000.0,"pixel width (m) "
-dead_time,r,lq,300.e-9,0.0,1000000.0,"dead time for the HTRS detector pixels (s) "
+shaping_time,r,lq,300.e-9,0.0,1000000.0,"dead time for the HTRS detector pixels (s) "
 ccsigma,r,lq,0.,0.0,100.0,"sigma of charge cloud distribution (m) "
 pha_threshold,i,lq,-1,-1,1000000,"detector PHA threshold (channel) "
 energy_threshold,r,lq,0.,,,"detector energy threshold (keV) "

@@ -1,5 +1,6 @@
 eventlist_filename,fre,lq,"events.fits",,,"filename of the event file (FITS)"
-rsp_filename,fre,lq,"/home/schmid/ixo/response/detector_specific_response/ixo_cdf_tes_none_081117.detector.rsp",,,"detector response file (FITS input file) "
+output_filename,f,lq,"pixtemp_output.dat",,,"filename of the output file (ASCII)"
+rsp_filename,fre,lq,"/home/schmid/ixo/response/detector_specific_response/IXO_CDF_tes_none_081117.rsp",,,"detector response file (FITS input file) "
 pixx,i,lq,10,1,40,"x-coordinate of the pixel to be considered"
 pixy,i,lq,10,1,40,"y-coordinate of the pixel to be considered"
 chatter,i,lh,5,,,"chatter: control verbosity of the program"

@@ -60,7 +60,7 @@ int htrs_simulation_main() {
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
-      .dead_time          = parameters.dead_time,
+      .shaping_time       = parameters.shaping_time,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template /* String address!! */
     };
@@ -102,12 +102,19 @@ int htrs_simulation_main() {
     */
 
     // Out-of-focus distance 10.45 cm (detector radius 12 mm)
-
+    /*
+    // Configuration with 31 pixels with homogenuous photon
+    // distribution at 1 keV
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.32e-3, 4.82e-3, 7.72e-3, 12.e-3 }; // with mask
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    */
+    
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-
+    
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = 4,
 		  .npixels = npixels,
@@ -118,7 +125,7 @@ int htrs_simulation_main() {
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
-      .dead_time          = parameters.dead_time,
+      .shaping_time       = parameters.shaping_time,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template /* String address!! */
     };
@@ -188,9 +195,9 @@ static int getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the name of the impact list file!\n", status);
   }
 
-  // Get the dead time for a detector pixel.
-  else if ((status = PILGetReal("dead_time", &parameters->dead_time))) {
-    HD_ERROR_THROW("Error reading the dead time for the detector pixels!\n", status);
+  // Get the shaping time for a detector pixel.
+  else if ((status = PILGetReal("shaping_time", &parameters->shaping_time))) {
+    HD_ERROR_THROW("Error reading the shaping time for the detector pixels!\n", status);
   }
 
 #ifdef HTRS_HEXPIXELS

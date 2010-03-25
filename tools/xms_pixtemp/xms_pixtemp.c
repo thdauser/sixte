@@ -4,6 +4,7 @@
 int xms_pixtemp_main() {
   struct Parameters parameters;
   XMSEventFile eventfile;
+  FILE* output_file=NULL;
 
   int status = EXIT_SUCCESS;
 
@@ -29,6 +30,14 @@ int xms_pixtemp_main() {
     struct RMF* rmf = loadRMF(parameters.rsp_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
+    // Open the output file.
+    output_file = fopen(parameters.output_filename, "w+");
+    if (NULL==output_file) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error opening the output file!\n", status);
+      break;
+    }
+
     // Loop over all events in the event file.
     while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventfile.generic))) {
       
@@ -39,7 +48,7 @@ int xms_pixtemp_main() {
 
       if ((1==event.array) && // Only events from the inner array.
 	  (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) {
-	printf(" %lf\t%lf\n", event.time, getEnergy(event.pha, rmf));
+	fprintf(output_file, " %lf\t%lf\n", event.time, getEnergy(event.pha, rmf));
       }
 
     } // End of loop over all events in the event file
@@ -51,6 +60,12 @@ int xms_pixtemp_main() {
 
   // Close the event file.
   closeXMSEventFile(&eventfile);
+
+  // Close the output file.
+  if (NULL!=output_file) {
+    fclose(output_file);
+    output_file=NULL;
+  }
 
   // Release HEADAS random number generator.
   HDmtFree();
@@ -66,6 +81,10 @@ int xms_pixtemp_getpar(struct Parameters* parameters)
 
   if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the input file!\n", status);
+  }
+
+  else if ((status = PILGetFname("output_filename", parameters->output_filename))) {
+    HD_ERROR_THROW("Error reading the name of the output file!\n", status);
   }
 
   else if ((status = PILGetFname("rsp_filename", parameters->rsp_filename))) {
