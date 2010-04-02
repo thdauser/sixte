@@ -6,6 +6,14 @@ int initFramestoreDetector(FramestoreDetector* fd,
 {
   int status = EXIT_SUCCESS;
 
+  // Set up the framestore configuration.
+  fd->integration_time = parameters->integration_time;
+  fd->split_threshold  = parameters->split_threshold;
+  // Set the first readout time such that the first readout is performed 
+  // immediately at the beginning of the simulation.
+  fd->readout_time = parameters->t0;
+  fd->frame = 0;
+  
   // Call the initialization routines of the underlying data structures.
   // Init the generic detector properties like the RMF.
   status = initGenericDetector(&fd->generic, &parameters->generic);
@@ -19,14 +27,6 @@ int initFramestoreDetector(FramestoreDetector* fd,
   status = initSquarePixels(&fd->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
   
-  // Set up the framestore configuration.
-  fd->integration_time = parameters->integration_time;
-
-  // Set the first readout time such that the first readout is performed 
-  // immediately at the beginning of the simulation.
-  fd->readout_time = parameters->t0;
-  fd->frame = 0;
-
   // Create and open new event list file.
   status = openNeweROSITAEventFile(&fd->eventlist, parameters->eventlist_filename,
 				       parameters->eventlist_template);
@@ -92,7 +92,8 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
   int x, y;               // Counters for the loop over the pixel array.
   long pha;               // Buffer for PHA values.
 
-  eROSITAEvent list[100]; // List of events belonging to the same pattern.
+  // List of events belonging to the same pattern.
+  eROSITAEvent list[MAX_N_SPLIT_LIST]; 
   int nlist=0, count;     // Number of entries in the list.
 
   int maxidx, minidx;     // Indices of the maximum and minimum event in the 
@@ -128,8 +129,13 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	  maxidx=0;
 	  minidx=0;
 	  
-	  // Call marker routine to check for surrounding pixels.
+	  // Call marker routine to check the surrounding pixels for 
+	  // events above the split threshold.
 	  fdMarkEvents(list, &nlist, &maxidx, &minidx, fd, x, y);
+
+	  // TODO Determine split threshold from charge of MAXIMUM split partner.
+	  // Maybe insert a new routine here!
+	  printf("MarkEvents: nlist = %d\n", nlist);
 
 	  // Perform pattern type identification.
 	  fdPatternIdentification(list, nlist, maxidx, minidx);
@@ -232,8 +238,13 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
 		  FramestoreDetector* fd, 
 		  int x, int y)
 {
-  // Split threshold. TODO
-  const double split_threshold = fd->generic.energy_threshold * 0.01;
+  // TODO Determine split threshold from charge of MAXIMUM split partner.
+
+  // Split threshold, depending on the charge in the main pixel.
+  const double split_threshold = 
+    fd->pixels.array[x][y].charge * fd->split_threshold;
+
+  printf("split threshold: %lf\n", split_threshold);
 
   // Possible neighbors (no diagonal neighbors).
   const int neighbors_x[4] = {0, 0, 1, -1};
@@ -242,7 +253,7 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
   int neighbor, xi, yi;
 
   // Create a new event in the list.
-  assert(*nlist+1 < 100);  
+  assert(*nlist+1 < MAX_N_SPLIT_LIST);  
   list[*nlist].pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
   list[*nlist].energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
   list[*nlist].xi  = x;
@@ -275,7 +286,6 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
 
       // Call marker routine to check for surrounding pixels.
       fdMarkEvents(list, nlist, maxidx, minidx, fd, xi, yi);
-
     } // END of check if event is above the split threshold.
 
   } // END of loop over all neighbors.
@@ -338,6 +348,9 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
   
   // Triple events.
   else if (3==nlist) {
+
+    printf("nlist = %d\n", nlist);
+
 
     // Find the index of the non-maximum and non-minimum split partner.
     int mididx;
@@ -443,6 +456,10 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
       list[maxidx].pat_inf = FD_INVALID_PATTERN;
       list[mididx].pat_inf = FD_INVALID_PATTERN;
       list[minidx].pat_inf = FD_INVALID_PATTERN;
+      printf("not valid (triple): max (%d,%d)  mid (%d,%d) min (%d,%d)\n",
+	     list[maxidx].xi, list[maxidx].yi, 
+	     list[mididx].xi, list[mididx].yi,
+	     list[minidx].xi, list[minidx].yi);
     }
   } // END of triple events.
 
@@ -571,3 +588,4 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
   } // END of invalid patterns with more than 4 events.
 
 }
+
