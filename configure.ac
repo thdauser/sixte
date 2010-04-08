@@ -40,7 +40,7 @@ AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 ####################################
 # cfitsio
 AC_SEARCH_LIBS(ffopen, 
-	[cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
+	[cfitsio_3.24 cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
 	[], [AC_MSG_ERROR([No cfitsio library found!])], [])
 #lib_cfitsio="no"
 #AC_MSG_CHECKING([for versioned libcfitsio in \$HEADAS])
@@ -178,7 +178,7 @@ AC_SEARCH_LIBS(ReadRMFMatrix, hdsp $my_hdsp, [],
 AC_SUBST(lib_hdsp)
 #################################### 
 # WCS Library:
-AC_SEARCH_LIBS(wcsbth, [wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
+AC_SEARCH_LIBS(wcsbth, [wcs_6.9 wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
 		       [AC_MSG_ERROR([No WCS library found!])], [])
 #lib_wcs="no"
 #AC_MSG_CHECKING([for versioned wcs in \$HEADAS])

@@ -78,7 +78,8 @@ int framestore_simulation_main() {
       .integration_time   = parameters.integration_time,
       .t0                 = parameters.t0,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
-      .eventlist_template = parameters.eventlist_template
+      .eventlist_template = parameters.eventlist_template,
+      .split_threshold    = parameters.split_threshold
     };
     status=initFramestoreDetector(&detector, &fdparameters);
     if(EXIT_SUCCESS!=status) break;
@@ -259,8 +260,13 @@ int getpar(struct Parameters* parameters)
     parameters->energy_threshold=0.;
   }
 
+  if ((status = PILGetReal4("split_threshold", &parameters->split_threshold))) {
+    HD_ERROR_THROW("Error: could not determine split threshold!\n", status);
+    return(status);
+  }
+  
   // Get the name of the detector redistribution file (FITS file)
-  if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
+  else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
     HD_ERROR_THROW("Error reading the name of the detector" 
 		   "redistribution matrix file (RMF)!\n", status);
   }

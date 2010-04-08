@@ -13,9 +13,6 @@
 #define TOOLSUB comarecon_main
 #include "headas_main.c"
 
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-//#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-
 
 struct Parameters {
   char mask_filename[MAXMSG]; // input: coded mask reconstruction file
