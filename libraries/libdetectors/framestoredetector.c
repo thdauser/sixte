@@ -236,8 +236,8 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 
 	  // Check the 3x3 environment for pixels with a charge above the 
 	  // split threshold.
-	  for (x2=MAX(x-1,0); x2<MIN(x+1,fd->pixels.xwidth); x2++) {
-	    for (y2=MAX(y-1,0); y2<MIN(y+1, fd->pixels.ywidth); y2++) {
+	  for (x2=MAX(x-1,0); x2<MIN(x+2,fd->pixels.xwidth); x2++) {
+	    for (y2=MAX(y-1,0); y2<MIN(y+2, fd->pixels.ywidth); y2++) {
 
 	      // Do not regard the central pixel. This has already been 
 	      // added to the list.
@@ -247,7 +247,6 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 		list[nlist].xi = x2;
 		list[nlist].yi = y2;
 		list[nlist].energy = 
-
 		  fd->pixels.array[x2][y2].charge * 1.e3; // [eV]
 		list[nlist].pha = 
 		  getChannel(fd->pixels.array[x2][y2].charge, fd->generic.rmf);
@@ -264,7 +263,13 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 		}
 
 		nlist++;
-	      }
+	      } // TODO:
+	      // else { 
+	      // delete pixel charge (otherwise it might happen, that split
+	      // partners lie below the split threshold, but are above the 
+	      // event threshold and are therefore read out in the next step
+	      // resulting in an invalid pattern (double or triple).
+	      // }
 	    }
 	  }
 
@@ -474,9 +479,9 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
     }
     // Invalid pattern. (Actually this code should never be executed.)
     else {
-      headas_printf("Invalid double event: (%d,%d) and (%d,%d)!\n",
-		    list[maxidx].xi, list[maxidx].yi,
-		    list[minidx].xi, list[minidx].yi);
+      headas_chat(5, "Invalid double event: (%d,%d) and (%d,%d)!\n",
+		  list[maxidx].xi, list[maxidx].yi,
+		  list[minidx].xi, list[minidx].yi);
       list[maxidx].pat_inf = FD_INVALID_PATTERN;
       list[minidx].pat_inf = FD_INVALID_PATTERN;
     }
@@ -589,10 +594,10 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
       list[maxidx].pat_inf = FD_INVALID_PATTERN;
       list[mididx].pat_inf = FD_INVALID_PATTERN;
       list[minidx].pat_inf = FD_INVALID_PATTERN;
-      printf("not valid (triple): max (%d,%d)  mid (%d,%d) min (%d,%d)\n",
-	     list[maxidx].xi, list[maxidx].yi, 
-	     list[mididx].xi, list[mididx].yi,
-	     list[minidx].xi, list[minidx].yi);
+      headas_chat(5, "Invalid triple event: max (%d,%d)  mid (%d,%d) min (%d,%d)\n",
+		  list[maxidx].xi, list[maxidx].yi, 
+		  list[mididx].xi, list[mididx].yi,
+		  list[minidx].xi, list[minidx].yi);
     }
   } // END of triple events.
 
