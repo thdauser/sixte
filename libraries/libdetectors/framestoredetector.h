@@ -119,10 +119,12 @@ int addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
 /** Marker routine for split partners. The routine scans the pixels
     around a certain event on the FramestoreDetector in order to find
     neighboring events belonging to the same split pattern. */
+/* Deprecated
 void fdMarkEvents(eROSITAEvent* list, int* nlist, 
 		  int* maxidx, int* minidx,
 		  FramestoreDetector* fd, 
 		  int x, int y);
+*/
 
 
 /** Identify split patterns according to the eROSITA definition given

@@ -27,5 +27,12 @@
 /** Seed for the HEAdas random number generator. */
 #define SIXT_HD_RANDOM_SEED 59843
 
+
+/** Macro returning the maximum of 2 values. */
+#define MAX(a, b) ( (a)>(b) ? (a) : (b) )
+/** Macro returning the minimum of 2 values. */
+#define MIN(a, b) ( (a)<(b) ? (a) : (b) )
+
+
 #endif /* SIXT_H */
 
