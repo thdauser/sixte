@@ -50,13 +50,17 @@ typedef struct {
   ArcPixels pixels;
 #endif
 
-  /** Shaping time for a pulse. The pixel is insensitive to further
-      photons during that time span after a photon detection. If a new
-      photon arrives during the shaping time after a previous event in
-      the same pixel, the new photon will not be detected. This is a
-      model for the physical readout and clearing process of the
-      detector pixel. */
-  double shaping_time;
+  /** Slow shaping time for a pulse. If a new photon arrives during
+      the slow shaping time after a previous event in the same pixel,
+      the energy of the new photon cannot be determined with the
+      nominal accuracy. */
+  double slow_shaping_time;
+
+  /** Fast shaping time for a pulse. If a new photon arrives during
+      the fast shaping time after a previous event in the same pixel,
+      the new photon cannot be distinguished from the previous
+      photon. */
+  double fast_shaping_time;
 
   /** Time required to reset a HTRS detector pixel. When the output
       voltage of the pixel exceeds the input range of the subsequent
@@ -95,7 +99,8 @@ struct HTRSDetectorParameters {
   struct ArcPixelsParameters pixels;
 #endif
 
-  double shaping_time;
+  double slow_shaping_time;
+  double fast_shaping_time;
   double reset_time;
 
   char* eventlist_filename;

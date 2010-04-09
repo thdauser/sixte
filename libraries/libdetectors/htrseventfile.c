@@ -99,22 +99,9 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
   hef->generic.row++;
   hef->generic.nrows++;
 
-  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->ctime, hef->generic.row, 
-		     1, 1, &event->time, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TLONG, hef->cpha, hef->generic.row, 
-		     1, 1, &event->pha, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TFLOAT, hef->cenergy, hef->generic.row, 
-		     1, 1, &event->energy, &status)) return(status);
-  int pixel = event->pixel+1;
-  if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, hef->generic.row, 
-		     1, 1, &pixel, &status)) return(status);
+  // Write the event data to the newly created row.
+  status=HTRSEventFile_writeRow(hef, event, hef->generic.row);
 
-  if (fits_write_col(hef->generic.fptr, TINT, hef->cgrade, hef->generic.row, 
-		     1, 1, &event->grade, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cx, hef->generic.row, 
-		     1, 1, &event->x, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cy, hef->generic.row, 
-		     1, 1, &event->y, &status)) return(status);
   return(status);
 }
 
@@ -185,6 +172,31 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
     HD_ERROR_THROW("Error: reading from event list failed!\n", status);
     return(status);
   }
+
+  return(status);
+}
+
+
+
+int HTRSEventFile_writeRow(HTRSEventFile* hef, HTRSEvent* event, long row) {
+  int status=EXIT_SUCCESS;
+
+  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->ctime, row, 
+		     1, 1, &event->time, &status)) return(status);
+  if (fits_write_col(hef->generic.fptr, TLONG, hef->cpha, row, 
+		     1, 1, &event->pha, &status)) return(status);
+  if (fits_write_col(hef->generic.fptr, TFLOAT, hef->cenergy, row, 
+		     1, 1, &event->energy, &status)) return(status);
+  int pixel = event->pixel+1;
+  if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, row, 
+		     1, 1, &pixel, &status)) return(status);
+
+  if (fits_write_col(hef->generic.fptr, TINT, hef->cgrade, row, 
+		     1, 1, &event->grade, &status)) return(status);
+  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 
+		     1, 1, &event->x, &status)) return(status);
+  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cy, row, 
+		     1, 1, &event->y, &status)) return(status);
 
   return(status);
 }

@@ -31,7 +31,6 @@ int analyse_xms_events_main() {
       status=XMSEventFile_getNextRow(&eventfile, &event);
       if(EXIT_SUCCESS!=status) break;
 
-
       // Check the events before and after the current one within the specified 
       // time spans.
       XMSEvent eventbuffer;
@@ -70,7 +69,6 @@ int analyse_xms_events_main() {
       } else {
 	event.grade = 1000; // Worse
       }
-
 
       // Write the event information to the event file.
       status = XMSEventFile_writeRow(&eventfile, &event, eventfile.generic.row);

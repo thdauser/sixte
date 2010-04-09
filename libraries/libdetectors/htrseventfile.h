@@ -64,6 +64,11 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row);
     value is the error status. */
 int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event);
 
+/** Write the specified column in the HTRSEventFile. The data to be
+    written is given by the HTRSEvent. The row already must
+    exist. Otherwise an error is returned. */
+int HTRSEventFile_writeRow(HTRSEventFile*, HTRSEvent*, long row);
+
 
 #endif /* HTRSEVENTFILE */
 
