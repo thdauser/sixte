@@ -20,6 +20,8 @@ int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PIXEL", &hef->cpixel, &status)) 
     return(status);
+  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "GRADE", &hef->cgrade, &status)) 
+    return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "X", &hef->cx, &status)) 
     return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "Y", &hef->cy, &status)) 
@@ -107,6 +109,8 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
   if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, hef->generic.row, 
 		     1, 1, &pixel, &status)) return(status);
 
+  if (fits_write_col(hef->generic.fptr, TINT, hef->cgrade, hef->generic.row, 
+		     1, 1, &event->grade, &status)) return(status);
   if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cx, hef->generic.row, 
 		     1, 1, &event->x, &status)) return(status);
   if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cy, hef->generic.row, 
@@ -165,6 +169,9 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
 		    &event->pixel, &event->pixel, &anynul, &status)) return(status);
   event->pixel--;
 
+  event->grade = 0;
+  if (fits_read_col(hef->generic.fptr, TINT, hef->cgrade, row, 1, 1, 
+		    &event->grade, &event->grade, &anynul, &status)) return(status);
   event->x = 0.;
   if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 1, 1, 
 		    &event->x, &event->x, &anynul, &status)) return(status);
