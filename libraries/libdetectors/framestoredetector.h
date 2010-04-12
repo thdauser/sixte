@@ -14,7 +14,7 @@
 // If this flag is set, the charge cloud distribution in split events
 // is determined by the exponential model proposed by Konrad Dennerl.
 // If not, a Gaussian charge cloud model is assumed.
-#define EXPONENTIAL_SPLITS 1
+//#define EXPONENTIAL_SPLITS 1
 
 // If this flag is activated, the framestore readout algorithm checks
 // for split events and marks them according to the eROSITA pattern
@@ -25,6 +25,9 @@
 // According to the eROSITA event file specification this should be '0',
 // but as '0' is also assigned to singles, we choose '-1' instead.
 #define FD_INVALID_PATTERN (-1)
+
+// Maximum number of split pixels per readout frame.
+#define MAX_N_SPLIT_LIST (1000)
 
 
 /////////////////////////////////////////////////////////////////
@@ -50,6 +53,19 @@ typedef struct {
   /** Event list FITS file for the eROSITA-specific events. */
   eROSITAEventFile eventlist; 
 
+  /** The split threshold gives the fraction of the energy of the
+      initially detected event which is used as threshold for the
+      search of split partners in the surrounding pixels. According to
+      the readout strategy proposed by Konrad Dennerl each frame is
+      analysed with a particular fixed event threshold given in keV or
+      PHA. If a pixel with a charge above this event threshold is
+      found, the neighboring pixels are investigated with a lower
+      so-called split threshold, which is a particular percentage of
+      the charge in the initially detected pixel. Therefore the value
+      of the variable "split_threshold" is a fraction between 0 and
+      1. */
+  float split_threshold;
+
 } FramestoreDetector;
 
 
@@ -59,6 +75,8 @@ struct FramestoreDetectorParameters {
 
   double integration_time;
   double t0;
+  float split_threshold;
+
   char* eventlist_filename;
   char* eventlist_template;  
 };
@@ -101,10 +119,12 @@ int addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
 /** Marker routine for split partners. The routine scans the pixels
     around a certain event on the FramestoreDetector in order to find
     neighboring events belonging to the same split pattern. */
+/* Deprecated
 void fdMarkEvents(eROSITAEvent* list, int* nlist, 
 		  int* maxidx, int* minidx,
 		  FramestoreDetector* fd, 
 		  int x, int y);
+*/
 
 
 /** Identify split patterns according to the eROSITA definition given

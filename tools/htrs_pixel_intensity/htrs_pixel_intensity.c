@@ -21,6 +21,7 @@ int htrs_pixel_intensity_main()
 #endif
 #ifdef HTRS_ARCPIXELS
   const int n_pixels=31;
+  int nrings = 4;
   ArcPixels arcPixels;
   long arc_nphotons[n_pixels]; // Number of photons per arc pixel.
   int ring;
@@ -99,14 +100,21 @@ int htrs_pixel_intensity_main()
     double radii[4] = { 2.32e-3, 4.82e-3, 7.72e-3, 12.e-3 }; // with mask
     double offset_angles[4] = { 0., 0., 0., 0. };
     */
-    
+    /*
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-    
+    */
+
+    // Configuration with only 4 pixels.
+    nrings = 1;
+    int npixels[1]  = { 4 };
+    double radii[1] = { 12.e-3 };
+    double offset_angles[1] = { 0. };
+
     struct ArcPixelsParameters apparameters = {
-      .nrings = 4, 
+      .nrings  = nrings, 
       .npixels = npixels,
       .radius = radii,
       .offset_angle = offset_angles,

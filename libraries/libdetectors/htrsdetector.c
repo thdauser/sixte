@@ -7,7 +7,9 @@ int initHTRSDetector(HTRSDetector* hd,
   int status = EXIT_SUCCESS;
 
   // Set up the initial default HTRS configuration.
-  hd->shaping_time = parameters->shaping_time;
+  hd->slow_shaping_time = parameters->slow_shaping_time;
+  hd->fast_shaping_time = parameters->fast_shaping_time;
+  hd->reset_time        = parameters->reset_time;
   hd->nevents = 0;
   hd->nsingles = 0;
   hd->ndoubles = 0;
@@ -83,7 +85,8 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   }
   assert(channel>=0);
 
-  // Get the corresponding created charge.
+  // Get the corresponding created charge (actually the corresponding
+  // energy in [keV]).
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
@@ -107,7 +110,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	if (impact->time - hd->pixels.array[pixel[pixel_counter]].last_impact 
 	    < hd->shaping_time) {
 	  // The photon cannot be detected in this pixel as it is still within 
-	  // the dead time after the previous event.
+	  // the shaping time after the previous event.
 
 	  // TODO Although the current photon cannot be detected, the dead time
 	  // of the affected pixel is extended due to its interaction with the
@@ -142,7 +145,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  event.time = impact->time;
 	  
 	  // Store the time of this impact in the pixel in order to consider the
-	  // dead time.
+	  // shaping time.
 	  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
 
 	  // Add event to event file.
@@ -174,13 +177,16 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 				    impact->position, ring, number);
 
     if (INVALID_PIXEL != ring[0]) {
-      // Check if the pixel is currently active.
-      if (impact->time-hd->pixels.array[ring[0]][number[0]].last_impact >= hd->shaping_time) {
+      // Check if the pixel is currently active or whether it is in
+      // a clearing (reset) phase.
+      if (impact->time > hd->pixels.array[ring[0]][number[0]].reset_until) {
 	// The photon can be detected in this pixel.
-	// The pixel is NOT within the dead time after some previous event.
+	// The pixel is NOT within the clearing (reset) time.
 
-	// Add the charge created by the photon to the affected detector pixel(s).
-	HTRSEvent event;
+	// Create a new event data structure. Set the event grade
+	// to zero by default. An analysis of the event grade will
+	// be performed later.
+	HTRSEvent event = { .grade = 0 };
 	
 	// Determine the detector channel that corresponds to the charge fraction
 	// created by the incident photon in the regarded pixel.
@@ -203,26 +209,26 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	  event.x = impact->position.x;
 	  event.y = impact->position.y;
 	  
+	  // Add the newly generated charge to the pixel.
+	  hd->pixels.array[ring[0]][number[0]].charge += charge;
 	  // Store the time of this impact in the pixel in order to consider the
-	  // dead time.
+	  // shaping time (OBSOLETE).
 	  hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
-	  
-	  // Add event to event file.
+	  // Check if the pixel has to be resetted (clear the charge).
+	  // The reset threshold 350 keV.
+	  if (hd->pixels.array[ring[0]][number[0]].charge > 350.) { 
+	    hd->pixels.array[ring[0]][number[0]].charge = 0.;
+	    hd->pixels.array[ring[0]][number[0]].reset_until = 
+	      impact->time + hd->slow_shaping_time + hd->reset_time;
+	  }
+
+	  // Add event to the event file.
 	  status = addHTRSEvent2File(&hd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
 
 	} // END Check for thresholds.
 
-      } else {
-
-	// Extendible / paralyzable dead time:
-	// The new photon impact lies within the dead time of the affected pixel.
-	// Although the current photon cannot be detected, the dead time
-	// of the affected pixel is extended due to its interaction with the
-	// detector.
-	hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
-
-      } // END Check for dead time.
+      } // END Check for reset (clear) time.
 
       // Count the number of events for statistical information.
       if (1==npixels) {

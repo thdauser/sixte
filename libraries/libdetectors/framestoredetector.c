@@ -6,6 +6,14 @@ int initFramestoreDetector(FramestoreDetector* fd,
 {
   int status = EXIT_SUCCESS;
 
+  // Set up the framestore configuration.
+  fd->integration_time = parameters->integration_time;
+  fd->split_threshold  = parameters->split_threshold;
+  // Set the first readout time such that the first readout is performed 
+  // immediately at the beginning of the simulation.
+  fd->readout_time = parameters->t0;
+  fd->frame = 0;
+  
   // Call the initialization routines of the underlying data structures.
   // Init the generic detector properties like the RMF.
   status = initGenericDetector(&fd->generic, &parameters->generic);
@@ -19,17 +27,10 @@ int initFramestoreDetector(FramestoreDetector* fd,
   status = initSquarePixels(&fd->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
   
-  // Set up the framestore configuration.
-  fd->integration_time = parameters->integration_time;
-
-  // Set the first readout time such that the first readout is performed 
-  // immediately at the beginning of the simulation.
-  fd->readout_time = parameters->t0;
-  fd->frame = 0;
-
   // Create and open new event list file.
-  status = openNeweROSITAEventFile(&fd->eventlist, parameters->eventlist_filename,
-				       parameters->eventlist_template);
+  status = openNeweROSITAEventFile(&fd->eventlist, 
+				   parameters->eventlist_filename,
+				   parameters->eventlist_template);
   if (EXIT_SUCCESS!=status) return(status);
 
   return(status);
@@ -86,17 +87,45 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
 }
 
 
+/* Deprecated 
+float fdGetPixelCharge(FramestoreDetector* fd, int x, int y) 
+{
+  // Check if the pixel coordinates lie within the valid array.
+  if ((x<0) || (x >= fd->pixels.xwidth) || 
+      (y<0) || (y >= fd->pixels.ywidth)) {
+    return (0.);
+  } else {
+    return (fd->pixels.array[x][y].charge);
+  }
+}
+*/
+
+
+float fdMaximumCharge(float* charges, int nlist)
+{
+  int count;
+  float maximum=0.;
+  for(count=0; count<nlist; count++) {
+    if (charges[count]>maximum) {
+      maximum = charges[count];
+    }
+  }
+  return(maximum);
+}
+
+
 
 inline int readoutFramestoreDetector(FramestoreDetector* fd) 
 {
-  int x, y;               // Counters for the loop over the pixel array.
-  long pha;               // Buffer for PHA values.
+  int x, y;   // Counters for the loop over the pixel array.
+  int x2, y2;
+  long pha;   // Buffer for PHA values.
 
-  eROSITAEvent list[100]; // List of events belonging to the same pattern.
-  int nlist=0, count;     // Number of entries in the list.
-
-  int maxidx, minidx;     // Indices of the maximum and minimum event in the 
-                          // event list.
+  // List of events belonging to the same pattern.
+  eROSITAEvent list[MAX_N_SPLIT_LIST]; 
+  int nlist=0, count; // Number of entries in the list.
+  int maxidx, minidx; // Indices of the maximum and minimum event in the 
+                      // event list.
 
   int status = EXIT_SUCCESS;
 
@@ -105,16 +134,17 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
   for (x=0; x<fd->pixels.xwidth; x++) {
     for (y=0; y<fd->pixels.ywidth; y++) {
       
-      // Check if the pixel contains any charge. If there is no charge in it at
-      // all, there is no use to determine the PHA channel.
+      // Check if the pixel contains any charge. If there is no charge 
+      // in it at all, there is no use to determine the PHA channel.
       if (fd->pixels.array[x][y].charge > 1.e-6) {
 
-	// Determine the detector channel that corresponds to the charge stored
-	// in the detector pixel.
+	// Determine the detector channel that corresponds to the 
+	// charge stored in the detector pixel.
 	pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
 	
 	// The PHA channel should only be less than zero, when the photon 
-	// is lost, i.e., not detected at all. As the RSP is usually normalized,
+	// is lost, i.e., not detected at all. As the RSP is usually 
+	// normalized,
 	// i.e., it only contains the RMF, this should never be the case.
 	assert(pha >= 0);
 	// Maybe: if (pha < 0) continue;
@@ -123,16 +153,129 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	if ((pha>=fd->generic.pha_threshold) && 
 	    (fd->pixels.array[x][y].charge>=fd->generic.energy_threshold)) { 
 
+	  /* Deprecated routine to detect split patterns. The routine
+	     checks not only the surrounding 3x3 environment of pixels
+	     but is recursively called in order to identify larger invalid
+	     patterns. 
 	  // Clear the event list.
 	  nlist=0;
 	  maxidx=0;
 	  minidx=0;
 	  
-	  // Call marker routine to check for surrounding pixels.
+	  // Call marker routine to check the surrounding pixels for 
+	  // events above the split threshold.
 	  fdMarkEvents(list, &nlist, &maxidx, &minidx, fd, x, y);
+
+	  // TODO Determine split threshold from charge of MAXIMUM split partner.
+	  // Maybe insert a new routine here!
+	  printf("MarkEvents: nlist = %d\n", nlist);
 
 	  // Perform pattern type identification.
 	  fdPatternIdentification(list, nlist, maxidx, minidx);
+	  */
+	  
+	  // Add the central pixel to the list.
+	  nlist = 1;
+	  maxidx= 0;
+	  minidx= 0;
+	  list[0].xi = x;
+	  list[0].yi = y;
+	  list[0].energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
+	  list[0].pha    = pha;
+
+	  // Delete the pixel charge after it has been read out.
+	  fd->pixels.array[x][y].charge = 0.;
+
+	  // Check the surrounding pixels (according to the method 
+	  // proposed by Konrad Dennerl for the on-board processor).
+	  float neighbor_charges[4] = { 0., 0., 0., 0. };
+	  float combined_neighbor_charges[4] = { 0., 0., 0., 0. };
+	  /*
+	    fdGetPixelCharge(fd, x+1, y) + fdGetPixelCharge(fd, x, y+1),
+	    fdGetPixelCharge(fd, x-1, y) + fdGetPixelCharge(fd, x, y+1),
+	    fdGetPixelCharge(fd, x-1, y) + fdGetPixelCharge(fd, x, y-1),
+	    fdGetPixelCharge(fd, x+1, y) + fdGetPixelCharge(fd, x, y-1)	    
+	    };*/
+	  // Right:
+	  if (x+1<fd->pixels.xwidth) {
+	    neighbor_charges[0] = fd->pixels.array[x+1][y].charge;
+	  }
+	  // Left:
+	  if (x-1>=0) {
+	    neighbor_charges[1] = fd->pixels.array[x-1][y].charge;
+	  }
+	  // Top:
+	  if (y+1<fd->pixels.ywidth) {
+	    neighbor_charges[2] = fd->pixels.array[x][y+1].charge;
+	  }
+	  // Bottom:
+	  if (y-1>=0) {
+	    neighbor_charges[3] = fd->pixels.array[x][y-1].charge;
+	  }
+	  // Calculate the quantities c_rt, c_tl, c_lb, and c_br:
+	  // c_rt:
+	  combined_neighbor_charges[0] = 
+	    neighbor_charges[0] + neighbor_charges[2];
+	  // c_tl:
+	  combined_neighbor_charges[1] = 
+	    neighbor_charges[2] + neighbor_charges[1];
+	  // c_lb:
+	  combined_neighbor_charges[2] = 
+	    neighbor_charges[1] + neighbor_charges[3];
+	  // c_br:
+	  combined_neighbor_charges[3] = 
+	    neighbor_charges[3] + neighbor_charges[0];
+
+	  // Determine the split threshold as the sum of the charge of the 
+	  // central pixel and the maximum surrounding charge times the 
+	  // selected threshold fraction.
+	  float split_threshold = 
+	    (fdMaximumCharge(combined_neighbor_charges, 4) + list[0].energy*1.e-3) *
+	    //                                               [eV] -> [keV]
+	    fd->split_threshold;
+
+	  // Check the 3x3 environment for pixels with a charge above the 
+	  // split threshold.
+	  for (x2=MAX(x-1,0); x2<MIN(x+2,fd->pixels.xwidth); x2++) {
+	    for (y2=MAX(y-1,0); y2<MIN(y+2, fd->pixels.ywidth); y2++) {
+
+	      // Do not regard the central pixel. This has already been 
+	      // added to the list.
+	      if ((x==x2)&&(y==y2)) continue;
+
+	      if (fd->pixels.array[x2][y2].charge > split_threshold) {
+		list[nlist].xi = x2;
+		list[nlist].yi = y2;
+		list[nlist].energy = 
+		  fd->pixels.array[x2][y2].charge * 1.e3; // [eV]
+		list[nlist].pha = 
+		  getChannel(fd->pixels.array[x2][y2].charge, fd->generic.rmf);
+
+		// Delete the pixel charge after it has been read out.
+		fd->pixels.array[x2][y2].charge = 0.;
+
+		// Check if the new event has the maximum or minium 
+		// energy in the split list.
+		if (list[nlist].energy <= list[minidx].energy) {
+		  minidx = nlist;
+		} else if (list[nlist].energy > list[maxidx].energy) {
+		  maxidx = nlist;
+		}
+
+		nlist++;
+	      } // TODO:
+	      // else { 
+	      // delete pixel charge (otherwise it might happen, that split
+	      // partners lie below the split threshold, but are above the 
+	      // event threshold and are therefore read out in the next step
+	      // resulting in an invalid pattern (double or triple).
+	      // }
+	    }
+	  }
+
+	  // Perform the pattern type identification.
+	  fdPatternIdentification(list, nlist, maxidx, minidx);
+
 
 	  // Store the list in the event FITS file.
 	  for (count=0; count<nlist; count++) {
@@ -226,14 +369,19 @@ break;
 */
 
 
-
+/* Deprecated
 void fdMarkEvents(eROSITAEvent* list, int* nlist, 
 		  int* maxidx, int* minidx,
 		  FramestoreDetector* fd, 
 		  int x, int y)
 {
-  // Split threshold. TODO
-  const double split_threshold = fd->generic.energy_threshold * 0.01;
+  // TODO Determine split threshold from charge of MAXIMUM split partner.
+
+  // Split threshold, depending on the charge in the main pixel.
+  const double split_threshold = 
+    fd->pixels.array[x][y].charge * fd->split_threshold;
+
+  printf("split threshold: %lf\n", split_threshold);
 
   // Possible neighbors (no diagonal neighbors).
   const int neighbors_x[4] = {0, 0, 1, -1};
@@ -242,8 +390,9 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
   int neighbor, xi, yi;
 
   // Create a new event in the list.
-  assert(*nlist+1 < 100);  
-  list[*nlist].pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
+  assert(*nlist+1 < MAX_N_SPLIT_LIST);  
+  list[*nlist].pha = getChannel(fd->pixels.array[x][y].charge, 
+				fd->generic.rmf);
   list[*nlist].energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
   list[*nlist].xi  = x;
   list[*nlist].yi  = y;
@@ -251,7 +400,8 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
   // Delete the charge of this event from the pixel array.
   fd->pixels.array[x][y].charge = 0.;
 
-  // Check if the new event has the maximum or minium energy in the event list.
+  // Check if the new event has the maximum or minium energy in the 
+  // event list.
   if (list[*nlist-1].energy <= list[*minidx].energy) {
     *minidx = *nlist-1;
   } else if (list[*nlist-1].energy > list[*maxidx].energy) {
@@ -275,14 +425,13 @@ void fdMarkEvents(eROSITAEvent* list, int* nlist,
 
       // Call marker routine to check for surrounding pixels.
       fdMarkEvents(list, nlist, maxidx, minidx, fd, xi, yi);
-
     } // END of check if event is above the split threshold.
 
   } // END of loop over all neighbors.
 #endif
 
 }
-
+*/
 
 
 void fdPatternIdentification(eROSITAEvent* list, const int nlist, 
@@ -330,7 +479,9 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
     }
     // Invalid pattern. (Actually this code should never be executed.)
     else {
-      printf("Invalid double event!\n");
+      headas_chat(5, "Invalid double event: (%d,%d) and (%d,%d)!\n",
+		  list[maxidx].xi, list[maxidx].yi,
+		  list[minidx].xi, list[minidx].yi);
       list[maxidx].pat_inf = FD_INVALID_PATTERN;
       list[minidx].pat_inf = FD_INVALID_PATTERN;
     }
@@ -433,7 +584,7 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
 
       // Invalid pattern. (Actually this code should never be executed.)
       else {
-	printf("Invalid triple event!\n");
+	headas_printf("Invalid triple event!\n");
 	list[maxidx].pat_inf = FD_INVALID_PATTERN;
 	list[mididx].pat_inf = FD_INVALID_PATTERN;
 	list[minidx].pat_inf = FD_INVALID_PATTERN;
@@ -443,6 +594,10 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
       list[maxidx].pat_inf = FD_INVALID_PATTERN;
       list[mididx].pat_inf = FD_INVALID_PATTERN;
       list[minidx].pat_inf = FD_INVALID_PATTERN;
+      headas_chat(5, "Invalid triple event: max (%d,%d)  mid (%d,%d) min (%d,%d)\n",
+		  list[maxidx].xi, list[maxidx].yi, 
+		  list[mididx].xi, list[mididx].yi,
+		  list[minidx].xi, list[minidx].yi);
     }
   } // END of triple events.
 
@@ -554,7 +709,7 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
 
     // Invalid pattern. (Actually this code should never be executed.)
     else {
-      printf("Invalid quadruple event!\n");
+      headas_printf("Invalid quadruple event!\n");
       for (count=0; count<nlist; count++) {
 	list[count].pat_inf = FD_INVALID_PATTERN;
       }
@@ -571,3 +726,4 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
   } // END of invalid patterns with more than 4 events.
 
 }
+

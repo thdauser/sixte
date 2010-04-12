@@ -72,6 +72,7 @@ inline void clearArcPixels(ArcPixels* ap)
     for (pixel=0; pixel<ap->npixels[ring]; pixel++) {
       ap->array[ring][pixel].charge = 0.;
       ap->array[ring][pixel].last_impact = -1.e20;
+      ap->array[ring][pixel].reset_until = 0.;
     }
   }
 }
@@ -165,7 +166,7 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
     }
   }
   // Vary polar angle:
-  if (ring[0] > 0) {
+  if (ap->npixels[ring[0]] > 1) {
     double delta = asin(gd->gcc.ccsize*0.5/radius);
     // Bigger polar angle:
     getArcPixelFromPolar(ap, radius, angle+2.*delta,
@@ -260,7 +261,7 @@ int HTRSisPositionOnMask(ArcPixels* ap, int ring, int number,
     }
   }
   // Vary polar angle:
-  if (ring > 0) {
+  if (ap->npixels[ring] > 1) {
     double delta = asin(ap->mask_spoke_width/2 * 0.5/radius);
     // Bigger polar angle:
     getArcPixelFromPolar(ap, radius, angle+2.*delta,

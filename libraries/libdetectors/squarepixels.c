@@ -303,6 +303,7 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   distances[mindist] = -1.;
   int secmindist = getMinimumDistance(distances);
   distances[mindist] = minimum;
+  // Pixel coordinates of the 3rd and 4th split partner.
   x[2] = x[0] + xe[secmindist];
   y[2] = y[0] + ye[secmindist];
   x[3] = x[1] + xe[secmindist];
@@ -328,7 +329,12 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   fraction[1] /= sum;
   fraction[2] /= sum;
   fraction[3] /= sum;
-
+  /*
+  printf("fractions (\%) %.5lf %.5lf %.5lf %.5lf\n", 
+	 fraction[0]*100.,
+	 fraction[1]*100., 
+	 fraction[2]*100., 
+	 fraction[3]*100.);*/
 
   // Check whether all split partners lie inside the detector:
   int count;

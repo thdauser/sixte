@@ -14,7 +14,7 @@ typedef struct {
   /* Column numbers of the individual HTRS-specific event list entries.
    * The numbers start at 1. The number 0 means, that there 
    * is no corresponding column in the table. */
-  int ctime, cpha, cenergy, cpixel, cx, cy;
+  int ctime, cpha, cenergy, cpixel, cgrade, cx, cy;
 
 } HTRSEventFile;
 
@@ -63,6 +63,11 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row);
     starts at 0. The return value is the error status. The return
     value is the error status. */
 int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event);
+
+/** Write the specified column in the HTRSEventFile. The data to be
+    written is given by the HTRSEvent. The row already must
+    exist. Otherwise an error is returned. */
+int HTRSEventFile_writeRow(HTRSEventFile*, HTRSEvent*, long row);
 
 
 #endif /* HTRSEVENTFILE */

@@ -37,6 +37,7 @@ struct Parameters {
 
   long pha_threshold;
   float energy_threshold;
+  float split_threshold;
 
   char background_filename[MAXMSG]; /**< Filename of the detector background spectrum. */
   float background_rate; /**< Rate of background events. */
