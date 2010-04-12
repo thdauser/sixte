@@ -129,15 +129,20 @@ int initHTRSDetector(HTRSDetector* hd, struct HTRSDetectorParameters* parameters
  */
 int cleanupHTRSDetector(HTRSDetector* hd);
 
-/** Add a photon impact to the HTRSDetector pixel array.  This is the
+/** Add a photon impact to the HTRSDetector pixel array. This is the
     standard routine to be called for the simulation of the
-    HTRSDetector.  For a new photon incident on the detector this
+    HTRSDetector. For a new photon incident on the detector this
     routine determines the resulting generated charge from the
     detector response and stores the event in the output event file.
     Split events are taken into account based on a Gaussian charge
     cloud shape.
  */
 int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact);
+
+
+/** Assign event grades to the events in the event list of the HTRS
+    detector. */
+int HTRSassignEventGrades(HTRSDetector detector);
 
 
 #endif /* HTRSDETECTOR_H */
