@@ -39,12 +39,12 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  ENERGY          / Uncorrected Event Energy
 	TFORM#  E               / Format of column ENERGY
 	TUNIT#  keV             / Unit of column ENERGY
-	TTYPE#	PIXEL           / Event Pixel Number	
+	TTYPE#  PIXEL           / Event Pixel Number
 	TFORM#  I               / Format of column PIXEL
 	TUNIT#  pixel           / Unit of column PIXEL
-	TTYPE#  GRADE           / Event Grade (0 high res, 1 only time, 2 not disting.)
-	TFORM#	I		/ 
-	TUNIT#			/ 
+	TTYPE#  GRADE           / Event Grade
+	TFORM#  I               / Format
+	TUNIT#  grade           / Grade
 	TTYPE#  X               / x-coordinate of photon impact position
 	TFORM#  D               / Format of column X
 	TUNIT#  m               / Unit of column X
