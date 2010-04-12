@@ -174,7 +174,7 @@ int htrs_simulation_main() {
     if (EXIT_SUCCESS!=status) break;
 
 
-    // ---
+    // Assign event grades to the detected events.
     status=HTRSassignEventGrades(detector);
     if (EXIT_SUCCESS!=status) break;
     

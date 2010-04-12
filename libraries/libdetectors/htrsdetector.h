@@ -139,9 +139,9 @@ int cleanupHTRSDetector(HTRSDetector* hd);
  */
 int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact);
 
-
 /** Assign event grades to the events in the event list of the HTRS
-    detector. */
+    detector. The different event grades are determined with respect
+    to the required shaping times of the readout electronics. */
 int HTRSassignEventGrades(HTRSDetector detector);
 
 

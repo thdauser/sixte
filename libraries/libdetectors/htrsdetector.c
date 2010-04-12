@@ -289,7 +289,7 @@ int HTRSassignEventGrades(HTRSDetector detector)
     while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
       status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
       if (EXIT_SUCCESS!=status) break;
-      if (eventbuffer.time - event.time > detector.fast_shaping_time) break;
+      if (eventbuffer.time - event.time > detector.slow_shaping_time) break;
       if (event.pixel == eventbuffer.pixel) {
 	nafter_slow++;
 	if (eventbuffer.time - event.time < detector.fast_shaping_time) {
