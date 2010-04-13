@@ -24,7 +24,10 @@ typedef struct {
 
       - 1: nominal time but no energy resolution 
 
-      - 2: event cannot be distinguished from the previous event
+      - 2: event is measured, but there is at least one subsequent
+	   event that cannot be distinguished from this event.
+
+      - 3: event cannot be distinguished from the previous event
   */
   int grade;
 

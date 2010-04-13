@@ -123,6 +123,10 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
   // Determine the main impact position.
   getArcPixelFromPolar(ap, radius, angle, &(ring[0]), &(number[0]));
 
+  // If the impact position is not within a valid pixel, return
+  // immediately.
+  if (INVALID_PIXEL==ring[0]) return(0);
+
   // Check if the the photon is falling on the mask.
   if (0. < ap->mask_spoke_width) {
     if (1==HTRSisPositionOnMask(ap, ring[0], number[0],
@@ -135,10 +139,6 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
       return(0); 
     }
   }
-
-  // If the impact position is not within a valid pixel, return
-  // immediately.
-  if (INVALID_PIXEL==ring[0]) return(0);
 
   // Check if charge cloud size is zero. If this is the case,
   // the event must be a single.

@@ -247,3 +247,89 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 }
 
 
+
+int HTRSassignEventGrades(HTRSDetector detector)
+{
+  int status = EXIT_SUCCESS;
+
+  // Assign the right event grades to all events in the event list.
+  HTRSEvent event, eventbuffer; // Event buffer.
+  long row;
+  int nbefore_slow, nbefore_fast, nafter_slow, nafter_fast;
+  // Reset the event file row counter to the first line in the file.
+  detector.eventlist.generic.row = 0;
+  // Loop over all events in the event file.
+  while((EXIT_SUCCESS==status) && (0==EventFileEOF(&detector.eventlist.generic))) {
+    
+    // Read the next event from the FITS file.
+    status=HTRSEventFile_getNextRow(&detector.eventlist, &event);
+    if(EXIT_SUCCESS!=status) break;
+    
+    // Former events:
+    nbefore_slow=0; nbefore_fast=0;
+    row = detector.eventlist.generic.row - 1;
+    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+      status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
+      if (EXIT_SUCCESS!=status) break;
+      if (event.time - eventbuffer.time > detector.slow_shaping_time) break;
+      if (event.pixel == eventbuffer.pixel) {
+	nbefore_slow++;
+	if (event.time - eventbuffer.time < detector.fast_shaping_time) {
+	  nbefore_fast++;
+	}
+	// Avoid too many unnecessary loop runs.
+	break;
+      }
+      row--;
+    }
+    if (EXIT_SUCCESS!=status) break;
+    // Subsequent events:
+    nafter_slow=0; nafter_fast=0;
+    row = detector.eventlist.generic.row + 1;
+    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+      status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
+      if (EXIT_SUCCESS!=status) break;
+      if (eventbuffer.time - event.time > detector.slow_shaping_time) break;
+      if (event.pixel == eventbuffer.pixel) {
+	nafter_slow++;
+	if (eventbuffer.time - event.time < detector.fast_shaping_time) {
+	  nafter_fast++;
+	}
+	// Avoid too many unnecessary loop runs.
+	break; 
+      }
+      row++;
+    }
+    if (EXIT_SUCCESS!=status) break;
+    
+    // Determine the grade of the event.
+    if (nbefore_fast > 0) {
+      // Event is not measured at all, because it cannot be distinguished 
+      // from the previous event.
+      event.grade = 3;
+    } else if (nafter_fast > 0) {
+      // Event is measured, but there is at least one subsequent event
+      // that cannot be distinguished from this event.
+      event.grade = 2;
+    } else if (nbefore_slow + nafter_slow > 0) {
+      // The event is detected as an individual event, but the energy 
+      // cannot be measured with the nominal accuracy, because other
+      // events are too close.
+      event.grade = 1;
+    } else {
+      // The event is measured with the full nominal energy (and time) 
+      // accuracy.
+      event.grade = 0;
+    }
+
+    // Write the event information to the event file.
+    status = HTRSEventFile_writeRow(&detector.eventlist, &event, 
+				    detector.eventlist.generic.row);
+    if (EXIT_SUCCESS!=status) break;
+    
+  } // END of loop over all events in the event list.
+
+  return(status);
+}
+
+
