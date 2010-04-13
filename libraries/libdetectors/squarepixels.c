@@ -81,6 +81,7 @@ inline void clearLineSquarePixels(SquarePixels* sp, const int line)
   int x;
   for (x=0; x<sp->xwidth; x++) {
     sp->array[x][line].charge = 0.;
+    sp->array[x][line].valid_flag = 0;
   }
   sp->line2readout[line] = 0;
 }
@@ -363,5 +364,40 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
     return (0); // Invalid pixel.
   }
 }
+
+
+
+void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits)
+{
+  int valid_flag = 1;
+
+  // First check the affected pixels and the surrounding pixels 
+  // whether there are already any events.
+  int split;
+  int xcount, ycount;
+  for (split=0; split<nsplits; split++) {
+    if (x[split] != INVALID_PIXEL) {
+      for (xcount=MAX(x[split]-1,0); xcount<MIN(x[split]+2,sp->xwidth); xcount++) {
+	for (ycount=MAX(y[split]-1,0); ycount<MIN(y[split]+2,sp->ywidth); ycount++) {
+	  if (0 != sp->array[xcount][ycount].valid_flag) {
+	    valid_flag = -1;
+	    break;
+	  }
+	}
+	if (-1 == valid_flag) break;
+      }
+    }
+    if (-1 == valid_flag) break;
+  }
+
+  // Update the affected pixels with the appropriate valid flag.
+  for (split=0; split<nsplits; split++) {
+    if (x[split] != INVALID_PIXEL) {
+      sp->array[x[split]][y[split]].valid_flag = valid_flag;
+    }
+  }
+
+}
+
 
 

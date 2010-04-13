@@ -82,9 +82,15 @@ int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
     double fraction[4];
     
     // Determine the affected detector pixels.
-    int npixels = getSquarePixelsGaussianSplits(&wd->pixels, &(wd->generic.gcc), 
-						impact->position, x, y, fraction);
+    int npixels = 
+      getSquarePixelsGaussianSplits(&wd->pixels, &(wd->generic.gcc), 
+				    impact->position, x, y, fraction);
     
+    // Set the valid flag for the affected pixel in order to 
+    // keep a record, whether the pattern has been generated
+    // by a single photon.
+    SPupdateValidFlag(&wd->pixels, x, y, npixels);
+  
     // Add the charge created by the photon to the affected detector pixels.
     int count;
     for (count=0; count<npixels; count++) {
@@ -207,6 +213,8 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 	    event.patnum = 0;
 	    event.patid = -1;
 	    event.pileup = 0;
+	    event.f_valid = 
+	      wd->pixels.array[x][wd->readout_lines[lineindex]].valid_flag;
 	    
 	    status = addWFIEvent2File(&wd->eventlist, &event);
 	    if (EXIT_SUCCESS!=status) return(status);
