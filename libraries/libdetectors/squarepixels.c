@@ -381,13 +381,14 @@ void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits)
 	for (ycount=MAX(y[split]-1,0); ycount<MIN(y[split]+2,sp->ywidth); ycount++) {
 	  if (0 != sp->array[xcount][ycount].valid_flag) {
 	    valid_flag = -1;
-	    break;
+
+	    if (sp->array[xcount][ycount].valid_flag > 0) {
+	      SPsetInvalidFlag(sp, xcount, ycount);
+	    }
 	  }
 	}
-	if (-1 == valid_flag) break;
       }
     }
-    if (-1 == valid_flag) break;
   }
 
   // Update the affected pixels with the appropriate valid flag.
@@ -396,8 +397,21 @@ void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits)
       sp->array[x[split]][y[split]].valid_flag = valid_flag;
     }
   }
-
 }
 
 
+
+void SPsetInvalidFlag(SquarePixels* sp, int x, int y) 
+{
+  sp->array[x][y].valid_flag = -1;
+
+  int xcount, ycount;
+  for (xcount=MAX(x-1,0); xcount<MIN(x+2,sp->xwidth); xcount++) {
+    for (ycount=MAX(y-1,0); ycount<MIN(y+2,sp->ywidth); ycount++) {
+      if (sp->array[xcount][ycount].valid_flag > 0) {
+	SPsetInvalidFlag(sp, xcount, ycount);
+      }
+    }
+  }
+}
 

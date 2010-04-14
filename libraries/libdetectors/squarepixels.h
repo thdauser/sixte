@@ -131,6 +131,10 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y);
 /** Update the valid flag for a newly created event pattern. */
 void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits);
 
+/** Set the valid flag of a particular pixel to INVALID (-1) and also
+    do this for all surrounding neighbors with a valid flag > 0. */
+void SPsetInvalidFlag(SquarePixels* sp, int x, int y);
+
 
 #endif /* SQUARE_PIXELS_H */
 
