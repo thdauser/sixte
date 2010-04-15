@@ -29,6 +29,8 @@ int openWFIEventFile(WFIEventFile* wef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(wef->generic.fptr, CASEINSEN, "PILEUP", &wef->cpileup, &status)) 
     return(status);
+  if(fits_get_colnum(wef->generic.fptr, CASEINSEN, "F_VALID", &wef->cf_valid, &status)) 
+    return(status);
 
   // Read the header keywords:
   char comment[MAXMSG];
@@ -126,6 +128,8 @@ int addWFIEvent2File(WFIEventFile* wef, WFIEvent* event)
 		     1, 1, &event->patid, &status)) return(status);
   if (fits_write_col(wef->generic.fptr, TLONG, wef->cpileup, wef->generic.row, 
 		     1, 1, &event->pileup, &status)) return(status);
+  if (fits_write_col(wef->generic.fptr, TINT, wef->cf_valid, wef->generic.row, 
+		     1, 1, &event->f_valid, &status)) return(status);
 
   return(status);
 }
@@ -172,6 +176,9 @@ int WFIEventFile_getNextRow(WFIEventFile* ef, WFIEvent* event)
   event->pileup = 0;
   if (fits_read_col(ef->generic.fptr, TLONG, ef->cpileup, ef->generic.row, 1, 1, 
 		    &event->pileup, &event->pileup, &anynul, &status)) return(status);
+  event->f_valid = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->cf_valid, ef->generic.row, 1, 1, 
+		    &event->f_valid, &event->f_valid, &anynul, &status)) return(status);
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
