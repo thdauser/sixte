@@ -105,7 +105,8 @@ inline void clearLineSquarePixels(SquarePixels* sp, const int line);
     some of the split partners may be invalid pixels nevertheless. If
     the main event lies outside the detector, the function return
     value is 0. */
-int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc, 
+int getSquarePixelsGaussianSplits(SquarePixels* sp, 
+				  GaussianChargeCloud* gcc, 
 				  struct Point2d position, 
 				  int* x, int* y, double* fraction);
 

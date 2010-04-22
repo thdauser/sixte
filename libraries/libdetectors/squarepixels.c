@@ -381,7 +381,6 @@ void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits)
 	for (ycount=MAX(y[split]-1,0); ycount<MIN(y[split]+2,sp->ywidth); ycount++) {
 	  if (0 != sp->array[xcount][ycount].valid_flag) {
 	    valid_flag = -1;
-
 	    if (sp->array[xcount][ycount].valid_flag > 0) {
 	      SPsetInvalidFlag(sp, xcount, ycount);
 	    }

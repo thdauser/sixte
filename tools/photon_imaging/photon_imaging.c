@@ -22,9 +22,11 @@ int photon_imaging_main() {
   double refxcrvl, refycrvl; 
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-  PSF* psf=NULL; /**< PSF (Point Spread Function) data (for different off-axis angles 
-		  * and energies). */
-  Vignetting* vignetting=NULL; /**< Mirror vignetting data. */
+  /** PSF (Point Spread Function) data (for different off-axis angles
+      and energies). */
+  PSF* psf=NULL; 
+  /** Mirror vignetting data. */
+  Vignetting* vignetting=NULL; 
 
   char msg[MAXMSG];             // error output buffer
   int status=EXIT_SUCCESS;      // error status
@@ -102,7 +104,8 @@ int photon_imaging_main() {
     long attitude_counter=0;  // counter for AttitudeCatalog
 
     // SCAN PHOTON LIST    
-    for(photonlistfile.row=0; (photonlistfile.row<photonlistfile.nrows)&&(EXIT_SUCCESS==status); 
+    for(photonlistfile.row=0; 
+	(photonlistfile.row<photonlistfile.nrows)&&(EXIT_SUCCESS==status); 
 	photonlistfile.row++) {
       
       // Read an entry from the photon list:
@@ -155,7 +158,6 @@ int photon_imaging_main() {
 					 attitudecatalog->entry[attitude_counter+1].nz, 
 					 attitudecatalog->entry[attitude_counter+1].time, 
 					 photon.time));
-
 
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
@@ -223,7 +225,6 @@ int photon_imaging_main() {
   } while(0);  // END of the error handling loop.
 
 
-
   // --- cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
@@ -242,7 +243,6 @@ int photon_imaging_main() {
 
   return(status);
 }
-
 
 
 
