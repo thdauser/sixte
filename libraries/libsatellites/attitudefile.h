@@ -6,6 +6,10 @@
 #define N_ATTITUDE_FIELDS 6  // number of fields in the attitude table
 
 
+////////////////////////////////////////////////////////////////////////
+// Type Declarations.
+////////////////////////////////////////////////////////////////////////
+
 /** Data structure describing an attitude file. */
 typedef struct {
   fitsfile* fptr; /**< File pointer to the FITS file. */
@@ -30,8 +34,9 @@ typedef struct {
 } AttitudeFileEntry;
 
 
-
-///////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////////
 
 
 /** Reads a line of data from the attitude table in a FITS file. 
@@ -46,7 +51,7 @@ AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* sta
 
 /////////////////////
 // Old routines: 
-// writes a row of attitude data in to the FITS file
+// Writes a row of attitude data in to the FITS file.
 int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], 
 			double time, double view_ra, double view_dec, 
 			double rollangle, double aspangle, int fitsstatus);

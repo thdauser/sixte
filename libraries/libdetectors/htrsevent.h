@@ -28,6 +28,9 @@ typedef struct {
 	   event that cannot be distinguished from this event.
 
       - 3: event cannot be distinguished from the previous event
+      
+      - 4: event is lost during a pixel reset.
+
   */
   int grade;
 

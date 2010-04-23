@@ -26,12 +26,14 @@ typedef struct {
       progress. */
   double last_impact;
 
-  /** End of the next reset time interval. If a reset of a pixel is
-      performed at the time t, this variable is set to the value
-      t+shaping_time+reset_time, such that the variable denotes the
-      end of the reset interval. The pixel is insensitive to incident
-      photons until the end of the reset period. */
-  double reset_until;
+  /** Start time of the next reset time interval. If a reset of a
+      pixel has to be performed after an event at the time t, this
+      variable is set to the value t+shaping_time, such that the
+      variable denotes the beginning of the reset interval. The pixel
+      is insensitive to incident photons until the end of the reset
+      period. Photons falling on the pixel during that time are marked
+      with the corresponding event grade. */
+  double reset_from;
 
 } ArcPixel;
 

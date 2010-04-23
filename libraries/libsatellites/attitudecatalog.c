@@ -1,7 +1,9 @@
 #include "attitudecatalog.h"
 
 
-AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, double timespan,
+AttitudeCatalog* get_AttitudeCatalog(const char* filename, 
+				     double t0, 
+				     double timespan,
 				     int* status)
 {
   AttitudeCatalog* ac=NULL;
@@ -15,8 +17,12 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, double tim
     // them in the AttitudeCatalog.
 
     // Open the attitude file:
+    headas_chat(5, "open attitude catalog file '%s' ...\n",
+		filename);
     af = open_AttitudeFile(filename, READONLY, status);
     if (NULL==af) break;
+    headas_chat(5, " attitude catalog contains %ld entries\n", 
+		af->nrows);
 
     // Get memory for the AttitudeCatalog:
     ac = (AttitudeCatalog*)malloc(sizeof(AttitudeCatalog));
@@ -37,7 +43,7 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, double tim
     
     // Read all lines from attitude file subsequently.
     AttitudeFileEntry afe;
-    for (af->row=0, entry=0; !*status; af->row++) {
+    for (af->row=0, entry=0; EXIT_SUCCESS==(*status); af->row++) {
       
       afe = read_AttitudeFileEntry(af, status);
       if (EXIT_SUCCESS!=*status) break;
@@ -58,7 +64,8 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, double tim
 	afe.rollang = afe.rollang*M_PI/180.;
 
 	// Telescope pointing direction nz:
-	ac->entry[entry].nz = unit_vector(afe.viewra*M_PI/180., afe.viewdec*M_PI/180.);
+	ac->entry[entry].nz = 
+	  unit_vector(afe.viewra*M_PI/180., afe.viewdec*M_PI/180.);
 
 	entry++;
       }
@@ -81,7 +88,7 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, double tim
     // AttitudeEntry elements.
     Vector dnz = 
       vector_difference(ac->entry[1].nz, ac->entry[0].nz);
-    if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { 
+    if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { // 1.e-3
       // Change of the telescope axis is too small to be significant.
       Vector ny = {0., 1., 0.};
       ac->entry[0].nx=vector_product(ac->entry[0].nz, ny); // TODO
@@ -97,11 +104,12 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, double tim
 
       Vector dnz = 
 	vector_difference(ac->entry[entry].nz, ac->entry[entry-1].nz);
-      if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { 
+      if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { // 1.e-3
 	// Change of the telescope axis is too small to be significant.
 	Vector ny = {0., 1., 0.};
 	ac->entry[entry].nx=vector_product(ac->entry[entry].nz, ny); // TODO
       } else {
+	printf("here");
 	ac->entry[entry].nx=
 	  normalize_vector(vector_difference(ac->entry[entry].nz,
 					     ac->entry[entry-1].nz));

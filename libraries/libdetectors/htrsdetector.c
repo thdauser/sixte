@@ -177,58 +177,61 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 				    impact->position, ring, number);
 
     if (INVALID_PIXEL != ring[0]) {
+
+      // Create a new event data structure.
+      HTRSEvent event = { .grade = 0 };
+
       // Check if the pixel is currently active or whether it is in
       // a clearing (reset) phase.
-      if (impact->time > hd->pixels.array[ring[0]][number[0]].reset_until) {
+      if (impact->time < 
+	  hd->pixels.array[ring[0]][number[0]].reset_from + hd->reset_time) {
+	event.grade = 4;
+      } else {
 	// The photon can be detected in this pixel.
 	// The pixel is NOT within the clearing (reset) time.
+	event.grade = 0;
+      }
 
-	// Create a new event data structure. Set the event grade
-	// to zero by default. An analysis of the event grade will
-	// be performed later.
-	HTRSEvent event = { .grade = 0 };
 	
-	// Determine the detector channel that corresponds to the charge fraction
-	// created by the incident photon in the regarded pixel.
-	event.pha = getChannel(charge, hd->generic.rmf);
-	//                     |-> charge created by incident photon
+      // Determine the detector channel that corresponds to the charge fraction
+      // created by the incident photon in the regarded pixel.
+      event.pha = getChannel(charge, hd->generic.rmf);
+      //                     |-> charge created by incident photon
+      
+      // Check lower thresholds (PHA and energy):
+      if ((event.pha>=hd->generic.pha_threshold) && 
+	  (charge>=hd->generic.energy_threshold)) { 
 	
-	// Check lower thresholds (PHA and energy):
-	if ((event.pha>=hd->generic.pha_threshold) && 
-	    (charge>=hd->generic.energy_threshold)) { 
+	assert(event.pha >= 0);
+	
+	// The impact has generated an event in this pixel,
+	// so add it to the event file.
+	event.energy = charge;
+	event.pixel = getArcPixelIndex(&(hd->pixels), ring[0], number[0]);
+	event.time = impact->time;
+	
+	// Store the exact impact position of the event for closer analysis.
+	event.x = impact->position.x;
+	event.y = impact->position.y;
 	  
-	  assert(event.pha >= 0);
-	  
-	  // The impact has generated an event in this pixel,
-	  // so add it to the event file.
-	  event.energy = charge;
-	  event.pixel = getArcPixelIndex(&(hd->pixels), ring[0], number[0]);
-	  event.time = impact->time;
-
-	  // Store the exact impact position of the event for closer analysis.
-	  event.x = impact->position.x;
-	  event.y = impact->position.y;
-	  
-	  // Add the newly generated charge to the pixel.
-	  hd->pixels.array[ring[0]][number[0]].charge += charge;
-	  // Store the time of this impact in the pixel in order to consider the
-	  // shaping time (OBSOLETE).
-	  hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
-	  // Check if the pixel has to be resetted (clear the charge).
-	  // The reset threshold 350 keV.
-	  if (hd->pixels.array[ring[0]][number[0]].charge > 350.) { 
-	    hd->pixels.array[ring[0]][number[0]].charge = 0.;
-	    hd->pixels.array[ring[0]][number[0]].reset_until = 
-	      impact->time + hd->slow_shaping_time + hd->reset_time;
-	  }
-
-	  // Add event to the event file.
-	  status = addHTRSEvent2File(&hd->eventlist, &event);
-	  if (EXIT_SUCCESS!=status) return(status);
-
-	} // END Check for thresholds.
-
-      } // END Check for reset (clear) time.
+	// Add the newly generated charge to the pixel.
+	hd->pixels.array[ring[0]][number[0]].charge += charge;
+	// Store the time of this impact in the pixel in order to consider the
+	// shaping time (OBSOLETE).
+	hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
+	// Check if the pixel has to be resetted (clear the charge).
+	// The reset threshold 350 keV.
+	if (hd->pixels.array[ring[0]][number[0]].charge > 350.) { 
+	  hd->pixels.array[ring[0]][number[0]].charge = 0.;
+	  hd->pixels.array[ring[0]][number[0]].reset_from = 
+	    impact->time + hd->slow_shaping_time;
+	}
+	
+	// Add event to the event file.
+	status = addHTRSEvent2File(&hd->eventlist, &event);
+	if (EXIT_SUCCESS!=status) return(status);
+	
+      } // END Check for thresholds.
 
       // Count the number of events for statistical information.
       if (1==npixels) {
@@ -264,7 +267,12 @@ int HTRSassignEventGrades(HTRSDetector detector)
     // Read the next event from the FITS file.
     status=HTRSEventFile_getNextRow(&detector.eventlist, &event);
     if(EXIT_SUCCESS!=status) break;
-    
+
+    // Check if the event has happend during a reset interval.
+    // In that case a further analysis of the event grade is 
+    // not necessary.
+    if (4==event.grade) continue;
+
     // Former events:
     nbefore_slow=0; nbefore_fast=0;
     row = detector.eventlist.generic.row - 1;

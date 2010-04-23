@@ -48,8 +48,16 @@ void create_attitudetbl_parameter(char *ftype[N_ATTITUDE_FIELDS],
 
 
 
-// writes a row of attitude data in to the FITS file
-int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], double time, double view_ra, double view_dec, double rollangle, double aspangle, int fitsstatus)
+// Writes a row of attitude data in to the FITS file.
+int add_attitudetbl_row(fitsfile *fptr, 
+			long row, 
+			char valtime[], 
+			double time, 
+			double view_ra, 
+			double view_dec, 
+			double rollangle, 
+			double aspangle, 
+			int fitsstatus)
 {
   int status = fitsstatus;
 
@@ -66,39 +74,6 @@ int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], double time, d
 
 
 
-
-/*
-int get_atttbl_row(fitsfile *fptr, long row, char valtime[], double *time, 
-		   double *view_ra, double *view_dec, double *rollangle, int *status)
-{
-  int anynul = 0;
-  
-  // TODO implement valtime
-  valtime = "";
-
-  // time
-  *time=0.;
-  fits_read_col(fptr, TDOUBLE, 2, row+1, 1, 1, time, time, &anynul, status);
-
-  // right ascension of telescope direction
-  *view_ra=0.;
-  fits_read_col(fptr, TDOUBLE, 3, row+1, 1, 1, view_ra, view_ra, &anynul, status);
-
-  // declination of telescope direction
-  *view_dec=0.;
-  fits_read_col(fptr, TDOUBLE, 4, row+1, 1, 1, view_dec, view_dec, &anynul, status);
-  
-  // roll angle
-  *rollangle=0.;
-  fits_read_col(fptr, TDOUBLE, 5, row+1, 1, 1, rollangle, rollangle, &anynul, status);
-
-  return(anynul);
-}
-*/
-
-
-
-////////////////////////////////////////
 AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status)
 {
   AttitudeFileEntry afe = { .time = 0. };
@@ -122,8 +97,6 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status)
 
 
 
-
-///////////////////////////////
 AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* status)
 {
   AttitudeFile* af=NULL;

@@ -235,7 +235,6 @@ float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi
     factor = 0.; // Do nothing
     /*    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
 	  return(0.); */
-    headas_chat(1, "### Warning: vignetting can only be determined for phi=0!\n");
   }
 
   if ((energy<vi->Emin) || (energy>vi->Emax)) {
