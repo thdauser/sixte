@@ -1,7 +1,6 @@
 #include "vignetting.h"
 
 
-/////////////////////////////////////////////////////////////
 Vignetting* get_Vignetting(char* filename, int* status) {
   Vignetting* vignetting=NULL;
   fitsfile* fptr=NULL;
@@ -201,7 +200,6 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 
 
 
-//////////////////////////////////////////////
 void free_Vignetting(Vignetting* vi) {
   if (NULL!=vi) {
     if (NULL!=vi->energ_lo) free(vi->energ_lo);
@@ -229,7 +227,6 @@ void free_Vignetting(Vignetting* vi) {
 
 
 
-///////////////////////////////////////////////////////////////////////////////
 float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi) {
   float factor=0.;
 
@@ -238,6 +235,7 @@ float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi
     factor = 0.; // Do nothing
     /*    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
 	  return(0.); */
+    headas_chat(1, "### Warning: vignetting can only be determined for phi=0!\n");
   }
 
   if ((energy<vi->Emin) || (energy>vi->Emax)) {
