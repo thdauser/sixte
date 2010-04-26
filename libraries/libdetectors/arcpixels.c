@@ -32,8 +32,8 @@ int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app)
     ap->npixels[ring] = app->npixels[ring];
     ap->radius[ring]  = app->radius[ring];
     ap->offset_angle[ring] = app->offset_angle[ring];
-    headas_chat(5, " ring %d, containing %d pixels, radius %lf mm, "
-		"angle offset %lf degree\n",
+    headas_chat(5, " ring %d, containing %d pixels, radius %.3lf mm, "
+		"angle offset %.2lf degree\n",
 		ring, ap->npixels[ring], ap->radius[ring]*1.e3, 
 		ap->offset_angle[ring]*180./M_PI);
   }
@@ -72,7 +72,7 @@ inline void clearArcPixels(ArcPixels* ap)
     for (pixel=0; pixel<ap->npixels[ring]; pixel++) {
       ap->array[ring][pixel].charge = 0.;
       ap->array[ring][pixel].last_impact = -1.e20;
-      ap->array[ring][pixel].reset_until = 0.;
+      ap->array[ring][pixel].reset_from = 0.;
     }
   }
 }

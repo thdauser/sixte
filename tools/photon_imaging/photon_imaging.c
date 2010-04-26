@@ -100,17 +100,16 @@ int photon_imaging_main() {
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start imaging process ...\n");
 
-    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    long attitude_counter=0;  // counter for AttitudeCatalog
-
     // SCAN PHOTON LIST    
+    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
+    int anynul = 0;
+    Photon photon;
+    long attitude_counter=0; // Counter for the AttitudeCatalog.
     for(photonlistfile.row=0; 
 	(photonlistfile.row<photonlistfile.nrows)&&(EXIT_SUCCESS==status); 
 	photonlistfile.row++) {
       
       // Read an entry from the photon list:
-      int anynul = 0;
-      Photon photon;
       photon.time = 0.;
       photon.energy = 0.;
       photon.ra = 0.;
@@ -124,6 +123,9 @@ int photon_imaging_main() {
       fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
 		    photonlistfile.row+1, 1, 1, &photon.dec, &photon.dec, &anynul, &status);
       if (status!=EXIT_SUCCESS) break;
+
+      // Check whether we are still within the requested time interval.
+      if (photon.time > parameters.t0 + parameters.timespan) break;
 
       // Rescale from [deg] -> [rad]
       photon.ra  = photon.ra *M_PI/180.;
@@ -158,6 +160,14 @@ int photon_imaging_main() {
 					 attitudecatalog->entry[attitude_counter+1].nz, 
 					 attitudecatalog->entry[attitude_counter+1].time, 
 					 photon.time));
+
+      /*      printf("%.10lf %e %e %e %e %e %e\n", 
+	     photon.time, 
+	     telescope.nz.x-1., telescope.nz.y, telescope.nz.z,
+	     attitudecatalog->entry[attitude_counter].nz.x-1.,
+	     attitudecatalog->entry[attitude_counter].nz.y,
+	     attitudecatalog->entry[attitude_counter].nz.z
+	     ); */
 
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
@@ -207,8 +217,10 @@ int photon_imaging_main() {
 	  if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
 	      tan(telescope.fov_diameter)*telescope.focal_length) {
 	    
-	    // Insert the impact position with the photon data into the impact list:
-	    fits_insert_rows(impactlistfile.fptr, impactlistfile.row++, 1, &status);
+	    // Insert the impact position with the photon data into the 
+	    // impact list:
+	    fits_insert_rows(impactlistfile.fptr, 
+			     impactlistfile.row++, 1, &status);
 	    fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.ctime, 
 			   impactlistfile.row, 1, 1, &photon.time, &status);
 	    fits_write_col(impactlistfile.fptr, TFLOAT, impactlistfile.cenergy, 
@@ -258,7 +270,8 @@ int photon_imaging_getpar(
 
 
   // Get the filename of the input photon list (FITS file)
-  if ((status = PILGetFname("photonlist_filename", parameters->photonlist_filename))) {
+  if ((status = PILGetFname("photonlist_filename", 
+			    parameters->photonlist_filename))) {
     sprintf(msg, "Error reading the filename of the photon list!\n");
     HD_ERROR_THROW(msg,status);
   }

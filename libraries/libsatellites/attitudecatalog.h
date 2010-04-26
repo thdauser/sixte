@@ -39,13 +39,13 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////
 
 
-/** Constructor for the AttitudeCatalog. 
- * Load data from the specified file for the time interval from t0 to t0+timespan. */
+/** Constructor for the AttitudeCatalog. Load data from the specified
+    file for the time interval from t0 to t0+timespan. */
 AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, double timespan, 
 				     int* status);
-/** Constructor for the AttitudeCatalog. 
- * Load the entire attitude catalog from the specified file (not only within a 
- * certain interval). */
+/** Constructor for the AttitudeCatalog. Load the entire attitude
+    catalog from the specified file (not only within a certain
+    interval). */
 AttitudeCatalog* getEntireAttitudeCatalog(const char* filename, int* status);
 
 /** Destructor for the AttitudeCatalog. */
