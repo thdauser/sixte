@@ -7,7 +7,7 @@
 #include "linlightcurve.h"
 
 
-// Maximum number of sources in the preselected source catalog:
+/** Maximum number of sources in the preselected source catalog. */
 #define MAX_N_POINTSOURCES 1000000
 
 
@@ -113,8 +113,15 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog*);
 
 /** Constructor returning a pointer to an empty PointSourceFile object. */
 PointSourceFile* get_PointSourceFile();
-/** Enhanced constructor specifying a source file and the right HDU number to be loaded. */
+
+/** Enhanced constructor specifying a source file and the right HDU
+    number to be loaded. */
 PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* status);
+
+/** Enhanced constructor for opening a PointSourceFile with the
+    fitsfile pointer already pointing to the right HDU. */
+PointSourceFile* get_PointSourceFile_fromHDU(fitsfile* fptr, int* status);
+
 /** Destructor. */
 void free_PointSourceFile(PointSourceFile*);
 

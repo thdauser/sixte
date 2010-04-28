@@ -18,18 +18,19 @@ typedef struct {
   double time;
   /** Telescope pointing direction. */
   Vector nz;
-  /** Defines the detector x-direction.
-   * The x-axis doesn't necessarily have to point in the direction of the telescope
-   * motion, but can be distorted by the roll-angle. */
+  /** Defines the detector x-direction. The x-axis doesn't
+     necessarily have to point in the direction of the telescope
+     motion, but can be distorted by the roll-angle. */
   Vector nx;
 } AttitudeEntry;
 
-/** Catalog containing the attitude information for an X-ray telescope. */
+/** Catalog containing the attitude information for an X-ray
+    telescope. */
 typedef struct {
   /** Number of AttituideEntry elements in the AttitudeCatalog. */
   long nentries;
-  /** Individual AttitudeEntry elements giving the attitude of the telescope
-   * at a particular point of time. */
+  /** Individual AttitudeEntry elements giving the attitude of the
+      telescope at a particular point of time. */
   AttitudeEntry* entry;
 } AttitudeCatalog;
 

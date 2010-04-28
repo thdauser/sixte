@@ -474,6 +474,81 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 
 
 
+int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
+{
+  int status=EXIT_SUCCESS;
+
+  // Set to initial default value.
+  *sc=INVALID_SOURCE;
+
+  do { // Error handling loop 
+
+    // Determine the number of HDUs in the FITS file and the current HDU.
+    int n_hdus=0, hdu=0;
+    if (fits_get_num_hdus(fptr, &n_hdus, &status)) break;
+    fits_get_hdu_num(fptr, &hdu);
+    // Determine the type of the first HDU (which should be IMAGE_HDU in 
+    // any case).
+    int hdu_type=0;
+    if (fits_get_hdu_type(fptr, &hdu_type, &status)) break;
+    headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", 
+		hdu, n_hdus, hdu_type);
+      
+    // Check whether the first (IMAGE) HDU is empty.
+    // For this purpose check the header keyword NAXIS.
+    int hdu_naxis=0;
+    char comment[MAXMSG];
+    if (fits_read_key(fptr, TINT, "NAXIS", &hdu_naxis, comment, 
+		      &status)) break;
+    headas_chat(5, " NAXIS: %d", hdu_naxis);
+      
+    if (0<hdu_naxis) {
+      // The first (IMAGE) extension is not empty. So the source category 
+      // is SOURCE_IMAGE.
+      // Load the source image data from the HDU.
+      headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from current"
+		  " HDU ...\n");
+      *sc = SOURCE_IMAGES;
+      
+    } else {
+      // The primary extension is empty, so move to the next extension.
+      headas_chat(5, " --> empty\n move to next HDU ...\n");
+      while (hdu<n_hdus) {
+	if (fits_movrel_hdu(fptr, 1, &hdu_type, &status)) break;
+	hdu++;
+	headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", 
+		    hdu, n_hdus, hdu_type);
+
+	if (IMAGE_HDU==hdu_type) {
+	  headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from "
+		      "current HDU ...\n");
+	  *sc = SOURCE_IMAGES;
+
+	} else { // Assume BINARY_TBL (=2).
+	  headas_chat(5, " --> source type: POINT_SOURCES\n load data from "
+		      "current HDU ...\n");
+	  *sc = POINT_SOURCES;
+
+	}
+      } // END of loop over the remaining HDUs after the primary extension.
+      if (EXIT_SUCCESS!=status) break;
+
+    } // END of check whether primary extension is empty.
+
+  } while(0); // END of error handling loop.
+
+  if (INVALID_SOURCE==*sc) {
+    status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Could not find valid source data in input file!\n",
+		   status);
+    return(status);
+  }
+
+  return(status);
+}
+
+
+
 int photon_generation_main() 
 {
   // Program parameters.
@@ -484,10 +559,9 @@ int photon_generation_main()
   // TODO Source category.
   SourceCategory sourceCategory=INVALID_SOURCE;
   // Data structures for point sources:
-  PointSourceFileCatalog* pointsourcefilecatalog=NULL;
-  PointSourceCatalog* pointsourcecatalog=NULL;
+  PointSourceFile* psf=NULL;
   // X-ray Cluster image:
-  SourceImageCatalog* sic = NULL;
+  SourceImage* si=NULL;
   // WCS keywords from the input source file:
   struct wcsprm *wcs=NULL;
   // Number of WCS keyword sets.
@@ -537,89 +611,15 @@ int photon_generation_main()
 		parameters.sources_filename);
     if (fits_open_file(&sources_fptr, parameters.sources_filename, READONLY, 
 		       &status)) break;
-    // Determine the number of HDUs in the FITS file and the current HDU.
-    int sources_n_hdus=0, sources_hdu=0;
-    if (fits_get_num_hdus(sources_fptr, &sources_n_hdus, &status)) break;
-    fits_get_hdu_num(sources_fptr, &sources_hdu);
-    // Determine the type of the first HDU (which should be IMAGE_HDU in 
-    // any case).
-    int sources_hdu_type=0;
-    if (fits_get_hdu_type(sources_fptr, &sources_hdu_type, &status)) break;
-    headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", sources_hdu, 
-		sources_n_hdus, sources_hdu_type);
-      
-    // Check whether the first (IMAGE) HDU is empty.
-    // For this purpose check the header keyword NAXIS.
-    int sources_hdu_naxis=0;
-    char comment[MAXMSG];
-    if (fits_read_key(sources_fptr, TINT, "NAXIS", &sources_hdu_naxis, comment, 
-		      &status)) break;
-    headas_chat(5, " NAXIS: %d", sources_hdu_naxis);
-      
-    if (0<sources_hdu_naxis) {
-      // The first (IMAGE) extension is not empty. So the source category 
-      // is SOURCE_IMAGE.
-      // Load the source image data from the HDU.
-      headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from current"
-		  " HDU ...\n");
-      sourceCategory = SOURCE_IMAGES;
-      
-    } else {
-      // The primary extension is empty, so move to the next extension.
-      headas_chat(5, " --> empty\n move to next HDU ...\n");
-      while (sources_hdu<sources_n_hdus) {
-	if (fits_movrel_hdu(sources_fptr, 1, &sources_hdu_type, &status)) break;
-	sources_hdu++;
-	headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", sources_hdu, 
-		    sources_n_hdus, sources_hdu_type);
-
-	if (IMAGE_HDU==sources_hdu_type) {
-	  headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from "
-		      "current HDU ...\n");
-	  sourceCategory = SOURCE_IMAGES;
-
-	} else { // Assume BINARY_TBL (=2).
-	  headas_chat(5, " --> source type: POINT_SOURCES\n load data from "
-		      "current HDU ...\n");
-	  sourceCategory = POINT_SOURCES;
-
-	}
-      } // END of loop over the remaining HDUs after the primary extension.
-      if (EXIT_SUCCESS!=status) break;
-
-    } // END of check whether primary extension is empty.
-
-    if (INVALID_SOURCE==sourceCategory) {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Could not find valid source data in input file!\n",
-		     status);
-      break;
-    }
-
-
-    // Get new objects for the PointSourceFileCatalog and the 
-    // SourceImageCatalog.
-    pointsourcefilecatalog = get_PointSourceFileCatalog();
-    if (NULL==pointsourcefilecatalog) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: allocation of PointSourceFileCatalog failed!\n",
-		     status);
-      break;
-    }
-    sic = get_SourceImageCatalog();
-    if (NULL==sic) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: allocation of SourceImageCatalog failed!\n", status);
-      break;
-    }
+    // Get the source type.
+    status=getFirstSourceHDU(sources_fptr, &sourceCategory);
+    if(EXIT_SUCCESS!=status) break;
 
     // Load the X-ray source data using the appropriate routines for the 
     // respective source category.
     if (POINT_SOURCES==sourceCategory) { 
       // Load the point source catalog from the current HDU.
-      status=addPointSourceFile2Catalog(pointsourcefilecatalog, 
-					parameters.sources_filename, 
-					sources_hdu);
+      psf=get_PointSourceFile_fromHDU(sources_fptr, &status);
       if (status != EXIT_SUCCESS) break;
       
       // Read the header from the LAST Point Source FITS file to obtain
@@ -638,8 +638,9 @@ int photon_generation_main()
       header=NULL;
 
     } else if (SOURCE_IMAGES==sourceCategory) {
+
       // Read the cluster images from the current FITS HDU.
-      status=addSourceImage2Catalog(sic, sources_fptr);
+      si=get_SourceImage_fromHDU(sources_fptr, &status);
       if(EXIT_SUCCESS!=status) break;
 
       // Read the header from the LAST source image FITS file to obtain
@@ -700,7 +701,7 @@ int photon_generation_main()
     if (POINT_SOURCES==sourceCategory) {
 
       status=createPhotonsFromPointSources(&photonlistfile,
-					   pointsourcefilecatalog->files[0],
+					   psf,
 					   attitudecatalog,
 					   telescope,
 					   rmf,
@@ -710,7 +711,7 @@ int photon_generation_main()
 
     } else if (SOURCE_IMAGES==sourceCategory) {
       status=createPhotonsFromSourceImage(&photonlistfile,
-					  sic->images[0],
+					  si,
 					  attitudecatalog,
 					  telescope,
 					  rmf,
@@ -736,14 +737,15 @@ int photon_generation_main()
   // Attitude Catalog
   free_AttitudeCatalog(attitudecatalog);
 
+  // Close the Source file.
   if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
-  
-  // Point Sources
-  free_PointSourceCatalog(pointsourcecatalog);
-  free_PointSourceFileCatalog(pointsourcefilecatalog);
 
-  // Extended Source Images
-  free_SourceImageCatalog(sic);
+  // PointSourceFile.
+  free_PointSourceFile(psf);
+
+  // Extended Source Images.
+  free_SourceImage(si);
+  si=NULL;
   
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);

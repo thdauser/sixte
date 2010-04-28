@@ -112,7 +112,44 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* stat
 
 
 
-///////////////////////////////////////////////////////////
+PointSourceFile* get_PointSourceFile_fromHDU(fitsfile* fptr, int* status) 
+{
+  PointSourceFile* psf = NULL;
+
+  do { // Beginning of ERROR handling loop.
+    
+    // Call the generic constructor.
+    psf=get_PointSourceFile();
+    if (NULL==psf) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for PointSourceFile failed!\n", *status);
+      break;
+    }
+    psf->fptr = fptr;
+
+    // Determine the column numbers of the right ascension, declination,
+    // photon rate, and spectrum columns in the FITS table
+    if (fits_get_colnum(psf->fptr, CASEINSEN, "RA", &psf->cra, status)) break;
+    if (fits_get_colnum(psf->fptr, CASEINSEN, "DEC", &psf->cdec, status)) break;
+    if (fits_get_colnum(psf->fptr, CASEINSEN, "PPS", &psf->crate, status)) break;
+    if (fits_get_colnum(psf->fptr, CASEINSEN, "SPECTRUM", &psf->cspectrum, status)) break;
+    if (fits_get_colnum(psf->fptr, CASEINSEN, "LIGHTCUR", &psf->clightcurve, status)) break;
+
+    // Determine the number of rows in the FITS table:
+    if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) break;	
+    headas_chat(5, " contains %ld sources\n", psf->nrows);
+
+    // Load spectra specified in the FITS header.
+    *status = loadSpectra(psf->fptr, &psf->spectrumstore);
+    if (EXIT_SUCCESS!=*status) break;
+
+  } while (0); // END of ERROR handling loop.
+
+  return(psf);
+}
+
+
+
 void free_PointSourceFile(PointSourceFile* psf) {
   if (NULL!=psf) {
 
