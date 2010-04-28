@@ -23,13 +23,14 @@ struct Parameters {
   double t0;
   double timespan;
   
-  double ccsigma;
+  double ccsigma; /* Sigma of the charge cloud. Has to be maybe changed due to the king profile for XMM */
   long pha_threshold;
   float energy_threshold;
 
   float background_rate; /**< Rate of background events. */
 
-  // HTRS Detector specific parameters:
-  double pixelwidth;
+  double pixelwidth; /**< Width of one detector pixel in [m]. */
   double dead_time;
 };
+
+#endif /* PNCCD_SIMULATION_H */
