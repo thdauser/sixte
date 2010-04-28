@@ -24,6 +24,456 @@ int check_angle_range(double angle, double min, double max)
 
 
 
+/** Insert photons from a photon list into a given photon list
+    file. If the file already exists, the photons are inserted at the
+    right positions in the file. Photons outside the FoV are
+    neglected. */
+int insertValidPhotonsIntoFile(PhotonListFile* plf,
+			       struct PhotonOrderedListEntry** photon_list,  
+			       AttitudeCatalog* ac,
+			       struct Telescope telescope,
+			       double t0, double timespan)
+{
+  char msg[MAXMSG]; // Error message buffer.
+  int status=EXIT_SUCCESS;
+  // Counter for attitude catalog.
+  long attitude_counter;
+  // Buffer for time-ordered photon list.
+  struct PhotonOrderedListEntry* pl_entry;
+
+
+  // Minimum cos-value for sources inside the FoV:
+  // angle(telescope.nz,source) <= 1/2 * diameter
+  const double fov_min_align = cos(telescope.fov_diameter/2.); 
+
+
+  // SCAN PHOTON LIST to store the photons in a FITS file.
+  while (NULL!=(*photon_list)) {
+    // If all photons up to the actual time have been treated, break the loop.
+    if ((*photon_list)->photon.time > t0+timespan) {
+      break;
+    }
+
+    // Get the last orbit entry before the time '(*photon_list)->photon.time'
+    // (in order to interpolate the position and velocity at this time between 
+    // the neighboring calculated orbit positions):
+    for( ; attitude_counter<ac->nentries-1; attitude_counter++) {
+      if(ac->entry[attitude_counter+1].time>(*photon_list)->photon.time) {
+	break;
+      }
+    }
+    if(fabs(ac->entry[attitude_counter].time-(*photon_list)->photon.time)>600.) { 
+      // No entry within 10 minutes !!
+      status = EXIT_FAILURE;
+      sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", 
+	      (*photon_list)->photon.time);
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+    // Check whether the photon is inside the FoV:
+    // First determine telescope pointing direction at the time of 
+    // the photon arrival.
+    telescope.nz = interpolate_vec(ac->entry[attitude_counter].nz, 
+				   ac->entry[attitude_counter].time, 
+				   ac->entry[attitude_counter+1].nz, 
+				   ac->entry[attitude_counter+1].time, 
+				   (*photon_list)->photon.time);
+    normalize_vector_fast(&telescope.nz);
+
+    // Compare the photon direction to the unit vector specifiing the 
+    // direction of the telescope axis:
+    if (check_fov(&(*photon_list)->photon.direction,
+		  &telescope.nz, fov_min_align)==0) {
+      // Photon is inside the FOV!
+
+      // Add the photon to the photon list file:
+      // Rescale from [rad] -> [deg]:
+      double ra  = (*photon_list)->photon.ra *180./M_PI;
+      double dec = (*photon_list)->photon.dec*180./M_PI;
+      fits_insert_rows(plf->fptr, plf->row++, 1, &status);
+      fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
+		     plf->row, 1, 1, &(*photon_list)->photon.time, &status);
+      fits_write_col(plf->fptr, TFLOAT, plf->cenergy, 
+		     plf->row, 1, 1, &(*photon_list)->photon.energy, &status);
+      fits_write_col(plf->fptr, TDOUBLE, plf->cra, 
+		     plf->row, 1, 1, &ra, &status);
+      fits_write_col(plf->fptr, TDOUBLE, plf->cdec, 
+		     plf->row, 1, 1, &dec, &status);
+      plf->nrows++;
+    } // END of: photon is inside the FOV?
+
+    // Move to the next entry in the photon list and clear the current entry.
+    pl_entry = (*photon_list)->next; // Buffer
+    free(*photon_list);
+    *photon_list = pl_entry;
+
+  } // END of scanning the photon list.
+
+  return(status);
+}
+
+
+
+/* Generate photons for a catalog of point sources and a given
+   telescope attitude. The photons lying in the FoV are inserted into
+   the given photon list file using the function
+   insertValidPhotonsIntoFile(). */
+int createPhotonsFromPointSources(PhotonListFile* plf,
+				  PointSourceFile* psf,
+				  AttitudeCatalog* ac,
+				  struct Telescope telescope,
+				  struct RMF* rmf,
+				  double t0, double timespan)
+{
+  char msg[MAXMSG]; // Error message buffer.
+  int status = EXIT_SUCCESS;
+
+
+  // Defines the mathematical meaning of 'close' in the context that for 
+  // sources 'close to the FOV' the simulation creates a light curve.
+  const double close_mult = 1.5; 
+  // Minimum cos-value for point sources close to the FOV (in the direct
+  // neighborhood).
+  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+  // Maximum cos-value (minimum sin-value) for sources within the
+  // preselection band along the orbit. The width of the
+  // preselection band is chosen to be twice the diameter of the
+  // FoV. (angle(n,source) > 90-bandwidth)
+  const double pre_max_align = sin(2*telescope.fov_diameter);
+
+
+  // Counter for the current attitude values.
+  long attitude_counter=0;
+  // Normalized vector perpendicular to the orbital plane,
+  // used for a preselection of point sources out of the
+  // entire catalog.
+  Vector preselection_vector;
+  // Pointer source catalog.
+  PointSourceCatalog* psc=NULL;
+  // Normalized vector pointing in the direction of the source.
+  Vector source_vector;
+  // Counter for the different sources in the catalog.
+  long source_counter;
+  // Time-ordered photon list containing all created photons in the sky.
+  struct PhotonOrderedListEntry* photon_list=NULL;  
+  // Current time and time step.
+  double time, dt = 0.1;
+  // First run of the loop.
+  int first = 1;
+
+  // Loop over the given time interval.
+  for (time=t0; time<t0+timespan; time+=dt) {
+    headas_chat(0, "\rtime: %.3lf s ", time);
+    fflush(NULL);
+
+    // Get the last attitude entry before 'time' (in order to interpolate 
+    // the attitude at this time between the neighboring calculated values):
+    for( ; attitude_counter<ac->nentries-1; attitude_counter++) {
+      if(ac->entry[attitude_counter+1].time>time) {
+	break;
+      }
+    }
+    if(fabs(ac->entry[attitude_counter].time-time)>600.) { 
+      // There is no entry within 10 minutes !!
+      status = EXIT_FAILURE;
+      sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+    // First determine telescope pointing direction at the current time.
+    // TODO: replace this calculation by proper attitude interpolation.
+    telescope.nz = interpolate_vec(ac->entry[attitude_counter].nz, 
+				   ac->entry[attitude_counter].time, 
+				   ac->entry[attitude_counter+1].nz, 
+				   ac->entry[attitude_counter+1].time, 
+				   time);
+    normalize_vector_fast(&telescope.nz);
+
+    // PRESELECTION of Point sources:
+    // Preselection of sources from the comprehensive catalog to 
+    // improve the performance of the simulation:
+    if ((1==first)||
+	(fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
+	 sin(0.5*telescope.fov_diameter))) {
+
+      // Release old PointSourceCatalog:
+      free_PointSourceCatalog(psc);
+      psc = NULL;
+
+      // Preselect sources from the entire source catalog according to the 
+      // satellite's direction of motion.
+      // Calculate normalized vector perpendicular to the orbit plane:
+      preselection_vector = 
+	normalize_vector(vector_product(ac->entry[attitude_counter].nz,
+					ac->entry[attitude_counter].nx));
+      psc=getPointSourceCatalog(psf, preselection_vector, pre_max_align, &status);
+      if((EXIT_SUCCESS!=status)||(NULL==psc)) break;
+
+    } // END of preselection
+
+    // CREATE PHOTONS for all POINT sources CLOSE TO the FOV
+    for (source_counter=0; source_counter<psc->nsources; source_counter++) {
+      // Check whether the source is inside the FOV:
+      // Compare the source direction to the unit vector specifiing the 
+      // direction of the telescope:
+      source_vector = 
+	unit_vector(psc->sources[source_counter].ra, 
+		    psc->sources[source_counter].dec);
+      if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
+	    
+	// The source is inside the FOV  => create photons:
+	if ((status=create_photons(&(psc->sources[source_counter]), 
+				   time, dt, &photon_list, rmf))
+	    !=EXIT_SUCCESS) break; 
+	    
+      } // END of check if source is close to the FoV
+    } // End of loop over all sources in the catalog.
+    if (EXIT_SUCCESS!=status) break;
+    // END of photon generation.
+
+    // Check the photon list and insert all photons inside the FoV
+    // into the PhotonListFile.
+    status=insertValidPhotonsIntoFile(plf,
+				      &photon_list,  
+				      ac,
+				      telescope,
+				      t0, timespan);
+    if (EXIT_SUCCESS!=status) break;
+
+    first = 0;
+  } // END of the loop over the time interval.
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Clear photon list
+  clear_PhotonList(&photon_list);
+
+  return(status);
+}
+
+
+
+/* Generate photons for a source image and a given telescope
+   attitude. The photons lying in the FoV are inserted into the given
+   photon list file using the function
+   insertValidPhotonsIntoFile(). */
+int createPhotonsFromSourceImage(PhotonListFile* plf,
+				 SourceImage* si,
+				 AttitudeCatalog* ac,
+				 struct Telescope telescope,
+				 struct RMF* rmf,
+				 double t0, double timespan)
+{
+  char msg[MAXMSG]; // Error message buffer.
+  int status = EXIT_SUCCESS;
+
+  // Counter for the current attitude values.
+  long attitude_counter=0;
+  // Normalized vector pointing in the direction of the reference pixel.
+  Vector refpixel_vector;
+  // Normalized vector pointing in the direction of the source.
+  Vector source_vector;
+  // Counters for loops over all pixels of the SourceImage.
+  int xcount, ycount;
+  // Right ascension and declination of the individual pixels.
+  double ra, dec; 
+  // Buffer for currently chosen pixel.
+  struct SourceImagePixel* pixel; 
+  // Time-ordered photon binary tree.
+  struct PhotonBinaryTreeEntry* photon_tree=NULL;
+  // Time-ordered photon list containing all created photons in the sky.
+  struct PhotonOrderedListEntry* photon_list=NULL;
+  // Current time and time step.
+  double time, dt = 1.0;
+
+
+  // Defines the mathematical meaning of 'close' in the context that for 
+  // sources 'close to the FOV' the simulation creates a light curve.
+  const double close_mult = 1.5; 
+  // Minimum cos-value for point sources close to the FOV (in the direct
+  // neighborhood).
+  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+
+
+  // Loop over the given time interval.
+  for (time=t0; time<t0+timespan; time+=dt) {
+    headas_chat(0, "\rtime: %.3lf s ", time);
+    fflush(NULL);
+
+    // Get the last attitude entry before 'time' (in order to interpolate 
+    // the attitude at this time between the neighboring calculated values):
+    for( ; attitude_counter<ac->nentries-1; attitude_counter++) {
+      if(ac->entry[attitude_counter+1].time>time) {
+	break;
+      }
+    }
+    if(fabs(ac->entry[attitude_counter].time-time)>600.) { 
+      // There is no entry within 10 minutes !!
+      status = EXIT_FAILURE;
+      sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
+      HD_ERROR_THROW(msg,status);
+      break;
+    }
+
+    // First determine telescope pointing direction at the current time.
+    // TODO: replace this calculation by proper attitude interpolation.
+    telescope.nz = interpolate_vec(ac->entry[attitude_counter].nz, 
+				   ac->entry[attitude_counter].time, 
+				   ac->entry[attitude_counter+1].nz, 
+				   ac->entry[attitude_counter+1].time, 
+				   time);
+    normalize_vector_fast(&telescope.nz);
+
+    // Create photons from the extended source image (clusters) and 
+    // insert them to the photon list.
+
+    // Vector in the direction of the reference pixel.
+    refpixel_vector = unit_vector(si->crval1, si->crval2);
+
+    // Check whether the the current telescope axis points to a direction 
+    // close to the specified cluster image field (3°).
+    if (check_fov(&refpixel_vector, &telescope.nz, cos(3.*M_PI/180.) )==0) {
+      // Vector in the direction of the 1st image coordinate (right ascension).
+      Vector k = {0., 0., 0.};
+      // Vector in the direction of the 2nd image coordinate (declination).
+      Vector l = {0., 0., 0.};
+
+      // Determine a local coordinate system for the cluster image.
+      if (fabs(refpixel_vector.z-1.) < 1.e-6) {
+	// The reference pixel lies at the north pole.
+	k.y = 1.;
+	l.x = -1.;
+      } else if (fabs(refpixel_vector.z+1) < 1.e-6) {
+	// The reference pixel lies at the south pole.
+	k.y = 1.;
+	l.x = 1.;
+      } else {
+	// The reference pixel is neither at the north nor at the south pole.
+	k.x = -sin(si->crval1);
+	k.y =  cos(si->crval1);
+	    
+	l.x = -sin(si->crval2) * cos(si->crval1);
+	l.y = -sin(si->crval2) * sin(si->crval1);
+	l.z =  cos(si->crval2);
+      } // END reference pixel is at none of the poles.
+	    
+	    
+      // Loop over all pixels of the the image:
+      for(xcount=0; xcount<si->naxis1; xcount++) {
+	for(ycount=0; ycount<si->naxis2; ycount++) {
+		
+	  // Check whether the pixel lies CLOSE TO the FOV:
+		
+	  // Vector in the direction of the current pixel.
+	  source_vector.x = refpixel_vector.x + 
+	    (xcount - si->crpix1 + 1.)*si->cdelt1 * k.x +
+	    (ycount - si->crpix2 + 1.)*si->cdelt2 * l.x;
+	  source_vector.y = refpixel_vector.y + 
+	    (xcount - si->crpix1 + 1.)*si->cdelt1 * k.y +
+	    (ycount - si->crpix2 + 1.)*si->cdelt2 * l.y;
+	  source_vector.z = refpixel_vector.z + 
+	    (xcount - si->crpix1 + 1.)*si->cdelt1 * k.z +
+	    (ycount - si->crpix2 + 1.)*si->cdelt2 * l.z;
+	  normalize_vector_fast(&source_vector);
+		
+	  if (check_fov(&source_vector, &telescope.nz, close_fov_min_align)==0) {
+	    
+	    // --- Generate Photons from the pixel.
+
+	    // Determine the right ascension and declination of the pixel.
+	    calculate_ra_dec(source_vector, &ra, &dec);
+
+	    // Current pixel.
+	    pixel = &(si->pixel[xcount][ycount]);
+		  
+	    // TODO: needs to be replaced by exponential distribution:
+	    double rnd = sixt_get_random_number();
+	    if (rnd < pixel->rate * dt) {
+	      // Generate a new photon for this pixel
+	      Photon new_photon  = {
+		.ra=ra, .dec=dec, .direction=source_vector,
+		.time = time + sixt_get_random_number()*dt };
+		    
+	      // Determine the energy of the new photon according to 
+	      // the default spectrum.
+	      new_photon.energy = 
+		photon_energy(si->spectrumstore.spectrum, rmf);
+
+	      // Add the photon to the binary tree.
+	      if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
+		  !=EXIT_SUCCESS) break;
+	    }
+	    /*
+	      if (pixel->t_next_photon < time) {
+	      pixel->t_next_photon = time;
+	      }
+	      
+	      while (pixel->t_next_photon <= time + dt) {
+	      
+	      // Determine photon arrival time.
+	      pixel->t_next_photon += rndexp(1./(double)pixel->rate);
+	      
+	      Photon new_photon = { // Buffer for the new photon.
+	      .ra=ra, .dec=dec, .direction=pixel_vector,
+	      .time = pixel->t_next_photon };
+	      
+	      // Determine the energy of the new photon according to 
+	      // the default spectrum.
+	      new_photon.energy = photon_energy(spectrum_store.spectrum, rmf);
+	      
+	      // Add the photon to the binary tree.
+	      if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
+	      !=EXIT_SUCCESS) break;
+	      
+	      }		  
+	    */
+	    // END of photon generation from the SourceImagePixel.
+		
+	  } else { // END of check whether pixel is close to the FOV.
+	    // The source image pixel is far away from the telescope axis.
+	    // Therefore we don't have to consider the directly neighboring 
+	    // pixels and do a bigger step than to the nearest pixel.
+	    ycount+=10;
+	  }
+	}
+	if (EXIT_SUCCESS!=status) break;
+      } // END of loop over all pixel of the image.
+      if (EXIT_SUCCESS!=status) break;
+    } // END of check whether telescope axis points to the direction of the cluster field.
+
+    // If a binary tree with photon entries is present, insert its entries to the 
+    // time-ordered photon list.
+    if (NULL!=photon_tree) {
+      struct PhotonOrderedListEntry* photon_list_current = photon_list;
+      if (EXIT_SUCCESS!=(status=CreateOrderedPhotonList(&photon_tree, &photon_list, 
+							&photon_list_current))) break;
+    }
+
+    if (EXIT_SUCCESS!=status) break;
+    // END of photon generation.
+
+
+    // Check the photon list and insert all photons inside the FoV
+    // into the PhotonListFile.
+    status=insertValidPhotonsIntoFile(plf,
+				      &photon_list,  
+				      ac,
+				      telescope,
+				      t0, timespan);
+    if (EXIT_SUCCESS!=status) break;
+
+  } // END of time loop.
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Clear photon list
+  clear_PhotonList(&photon_list);
+
+  return(status);
+}
+
+
+
 int photon_generation_main() 
 {
   // Program parameters.
@@ -50,17 +500,9 @@ int photon_generation_main()
   // RMF & EBOUNDS
   struct RMF* rmf=NULL;
 
-  // Time-ordered photon binary tree.
-  struct PhotonBinaryTreeEntry* photon_tree=NULL;
-  // Time-ordered photon list containing all created photons in the sky
-  struct PhotonOrderedListEntry* photon_list=NULL;  
   // Data structure for the output to the photon list FITS file.
   PhotonListFile photonlistfile={.fptr=NULL};
 
-  // Time step for sky scanning loop
-  double dt=0.1;
-
-  char msg[MAXMSG];           // error message buffer
   int status = EXIT_SUCCESS;  // error status flag
 
 
@@ -76,30 +518,6 @@ int photon_generation_main()
     if((status=photon_generation_getpar(&parameters))) break;
     
     telescope.fov_diameter = parameters.fov_diameter; // in [rad]
-
-
-    // Defines the mathematical meaning of 'close' in the context that for 
-    // sources 'close to the FOV' the simulation creates a light curve.
-    const double close_mult = 1.5; 
-  
-    // Calculate the minimum cos-value for sources inside the FOV and 
-    // in the preselection band respectively:
-    
-    // minimum cos-value for sources inside the FOV 
-    // angle(x0,source) <= 1/2 * diameter
-    const double fov_min_align = cos(telescope.fov_diameter/2.); 
-    
-    /** Minimum cos-value for sources close to the FOV (in the direct
-        neighborhood). */
-    const double close_fov_min_align = 
-      cos(close_mult*telescope.fov_diameter/2.); 
-
-    /** Maximum cos-value (minimum sin-value) for sources within the
-        preselection band along the orbit. The width of the
-        preselection band is chose to be twice the diameter of the
-        FOV. (angle(n,source) > 90-bandwidth) */
-    const double pre_max_align = sin(2*telescope.fov_diameter);
-
 
     // Initialize HEADAS random number generator.
     HDmtInit(SIXT_HD_RANDOM_SEED);
@@ -219,9 +637,6 @@ int photon_generation_main()
       free(header);
       header=NULL;
 
-      // Use a short time interval for the orbit update:
-      dt = 0.01;
-      
     } else if (SOURCE_IMAGES==sourceCategory) {
       // Read the cluster images from the current FITS HDU.
       status=addSourceImage2Catalog(sic, sources_fptr);
@@ -242,9 +657,6 @@ int photon_generation_main()
       free(header);
       header=NULL;
       
-      // Use a relatively large \Delta t for the time loop:
-      dt = 1.0;
-
     } // END of different source categories.
 
     if (0==nwcs) {
@@ -282,329 +694,32 @@ int photon_generation_main()
 
 
     // --- Beginning of Photon generation process ---
-
-    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    double time; // current time
-
-    long attitude_counter=0; // counter for orbit readout loop
-    long last_attitude_counter=0; // stores attitude_counter of former repetition, 
-                                  // so the searching loop
-                                  // doesn't have to start at 0 every time.
-
-    // normalized vector perpendicular to the orbital plane
-    Vector preselection_vector;
-
-
-    // Beginning of actual simulation (after loading required data):
+    // Start the actual photon generation (after loading required data):
     headas_chat(5, "start photon generation process ...\n");
 
+    if (POINT_SOURCES==sourceCategory) {
 
-    // Time loop:
-    // Timesteps are typically a fraction (e.g. 1/10) of the time, the satellite 
-    // takes to slew over the entire FOV.
-    int first = 1;  // first run of the loop
-    for(time=parameters.t0; 
-	(time<parameters.t0+parameters.timespan)&&(status==EXIT_SUCCESS); time+=dt) {
-      headas_chat(0, "\rtime: %.3lf s ", time);
-      fflush(NULL);
+      status=createPhotonsFromPointSources(&photonlistfile,
+					   pointsourcefilecatalog->files[0],
+					   attitudecatalog,
+					   telescope,
+					   rmf,
+					   parameters.t0, 
+					   parameters.timespan);
+      if (EXIT_SUCCESS!=status) break;
 
-      // Get the last attitude entry before 'time' (in order to interpolate 
-      // the attitude at this time between the neighboring calculated values):
-      for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
-	if(attitudecatalog->entry[attitude_counter+1].time>time) {
-	  break;
-	}
-      }
-      if(fabs(attitudecatalog->entry[attitude_counter].time-time)>600.) { 
-	// no entry within 10 minutes !!
-	status = EXIT_FAILURE;
-	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
-	HD_ERROR_THROW(msg,status);
-	break;
-      }
+    } else if (SOURCE_IMAGES==sourceCategory) {
+      status=createPhotonsFromSourceImage(&photonlistfile,
+					  sic->images[0],
+					  attitudecatalog,
+					  telescope,
+					  rmf,
+					  parameters.t0, 
+					  parameters.timespan);
+      if (EXIT_SUCCESS!=status) break;
 
-
-      // First determine telescope pointing direction at the current time.
-      // TODO: replace this calculation by proper attitude interpolation.
-      telescope.nz = interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-				     attitudecatalog->entry[attitude_counter].time, 
-				     attitudecatalog->entry[attitude_counter+1].nz, 
-				     attitudecatalog->entry[attitude_counter+1].time, 
-				     time);
-      normalize_vector_fast(&telescope.nz);
-
-
-      
-      if (POINT_SOURCES==sourceCategory) {
-
-	// PRESELECTION of Point sources
-	// Preselection of sources from the comprehensive catalog to 
-	// improve the performance of the simulation:
-	if ((1==first)||
-	    (fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
-	     sin(0.5*telescope.fov_diameter))) {
-
-	  // Release old PointSourceCatalog:
-	  free_PointSourceCatalog(pointsourcecatalog);
-	  pointsourcecatalog = NULL;
-
-	  // Preselect sources from the entire source catalog according to the 
-	  // satellite's direction of motion.
-	  // Calculate normalized vector perpendicular to the orbit plane:
-	  preselection_vector = normalize_vector(vector_product(normalize_vector(
-	      attitudecatalog->entry[attitude_counter].nz),
-	      normalize_vector(attitudecatalog->entry[attitude_counter].nx)));
-
-	  pointsourcecatalog=get_PointSourceCatalog(pointsourcefilecatalog, 
-						    preselection_vector, 
-						    pre_max_align,
-						    &status);
-	  if((EXIT_SUCCESS!=status)||(NULL==pointsourcecatalog)) break;
-	}
-	// END of preselection
-
-
-	// CREATE PHOTONS for all POINT sources CLOSE TO the FOV
-	long source_counter;
-	for (source_counter=0; source_counter<pointsourcecatalog->nsources; 
-	     source_counter++) {
-	  // Check whether the source is inside the FOV:
-	  	  
-	  // Compare the source direction to the unit vector specifiing the 
-	  // direction of the telescope:
-	  Vector source_vector = 
-	    unit_vector(pointsourcecatalog->sources[source_counter].ra, 
-			pointsourcecatalog->sources[source_counter].dec);
-	  if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
-	    
-	    // The source is inside the FOV  => create photons:
-	    if ((status=create_photons(&(pointsourcecatalog->sources[source_counter]), 
-				       time, dt, &photon_list, rmf))
-		!=EXIT_SUCCESS) break; 
-	    
-	  }
-	}
-
-      } else if (SOURCE_IMAGES==sourceCategory) {
-
-	// Create photons from the extended sources (clusters) and insert them
-	// to the photon list.
-	int image_counter;
-	for (image_counter=0; image_counter<sic->nimages; image_counter++) {
-
-	  // Vector in the direction of the reference pixel.
-	  Vector refpixel_vector = 
-	    unit_vector(sic->images[image_counter]->crval1, 
-			sic->images[image_counter]->crval2);
-
-	  // Check whether the the current telescope axis points to a direction 
-	  // close to the specified cluster image field (3°).
-	  if (check_fov(&refpixel_vector, &telescope.nz, cos(3.*M_PI/180.) )==0) {
-	    // Vector in the direction of the 1st image coordinate (right ascension).
-	    Vector k = {0., 0., 0.};
-	    // Vector in the direction of the 2nd image coordinate (declination).
-	    Vector l = {0., 0., 0.};
-
-	    // Determine a local coordinate system for the cluster image.
-	    if (fabs(refpixel_vector.z-1.) < 1.e-6) {
-	      // The reference pixel lies at the north pole.
-	      k.y = 1.;
-	      l.x = -1.;
-	    } else if (fabs(refpixel_vector.z+1) < 1.e-6) {
-	      // The reference pixel lies at the south pole.
-	      k.y = 1.;
-	      l.x = 1.;
-	    } else {
-	      // The reference pixel is neither at the north nor at the south pole.
-	      k.x = -sin(sic->images[image_counter]->crval1);
-	      k.y =  cos(sic->images[image_counter]->crval1);
-	    
-	      l.x = -sin(sic->images[image_counter]->crval2) * 
-		cos(sic->images[image_counter]->crval1);
-	      l.y = -sin(sic->images[image_counter]->crval2) *
-		sin(sic->images[image_counter]->crval1);
-	      l.z =  cos(sic->images[image_counter]->crval2);
-	    } // END reference pixel is at none of the poles.
-	    
-	    
-	    // Loop over all pixels of the the image:
-	    int xcount, ycount;
-	    Vector pixel_vector; // Vector in the direction of the current pixel.
-	    double ra, dec; // Right ascension and declination of the individual pixels.
-	    struct SourceImagePixel* pixel; // Currently chosen pixel.
-	    for(xcount=0; 
-		(xcount<sic->images[image_counter]->naxis1)&&(EXIT_SUCCESS==status);
-		xcount++) {
-	      for(ycount=0; 
-		  (ycount<sic->images[image_counter]->naxis2)&&(EXIT_SUCCESS==status); 
-		  ycount++) {
-		
-		// Check whether the pixel lies CLOSE TO the FOV:
-		
-		// Vector in the direction of the current pixel.
-		pixel_vector.x = refpixel_vector.x + 
-		  (xcount - sic->images[image_counter]->crpix1 + 1.)
-		  *sic->images[image_counter]->cdelt1 * k.x +
-		  (ycount - sic->images[image_counter]->crpix2 + 1.)
-		  *sic->images[image_counter]->cdelt2 * l.x;
-		pixel_vector.y = refpixel_vector.y + 
-		  (xcount - sic->images[image_counter]->crpix1 + 1.)
-		  *sic->images[image_counter]->cdelt1 * k.y +
-		  (ycount - sic->images[image_counter]->crpix2 + 1.)
-		  *sic->images[image_counter]->cdelt2 * l.y;
-		pixel_vector.z = refpixel_vector.z + 
-		  (xcount - sic->images[image_counter]->crpix1 + 1.)
-		  *sic->images[image_counter]->cdelt1 * k.z +
-		  (ycount - sic->images[image_counter]->crpix2 + 1.)
-		  *sic->images[image_counter]->cdelt2 * l.z;
-		normalize_vector_fast(&pixel_vector);
-		
-		if (check_fov(&pixel_vector, &telescope.nz, close_fov_min_align)==0) {
-		  
-		  // --- Generate Photons from the pixel.
-
-		  // Determine the right ascension and declination of the pixel.
-		  calculate_ra_dec(pixel_vector, &ra, &dec);
-
-		  // Current pixel.
-		  pixel = &(sic->images[image_counter]->pixel[xcount][ycount]);
-		  
-		  // TODO: needs to be replaced by exponential distribution:
-		  double rnd = sixt_get_random_number();
-		  if (rnd < pixel->rate * dt) {
-		    // Generate a new photon for this pixel
-		    Photon new_photon  = {
-		      .ra=ra, .dec=dec, .direction=pixel_vector,
-		      .time = time + sixt_get_random_number()*dt };
-		    
-		    // Determine the energy of the new photon according to 
-		    // the default spectrum.
-		    new_photon.energy = 
-		      photon_energy(sic->images[image_counter]->spectrumstore.spectrum, rmf);
-
-		    // Add the photon to the binary tree.
-		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
-			!=EXIT_SUCCESS) break;
-		  }
-		  /*
-		  if (pixel->t_next_photon < time) {
-		    pixel->t_next_photon = time;
-		  }
-		  
-		  while (pixel->t_next_photon <= time + dt) {
-
-		    // Determine photon arrival time.
-		    pixel->t_next_photon += rndexp(1./(double)pixel->rate);
-
-		    Photon new_photon = { // Buffer for the new photon.
-		      .ra=ra, .dec=dec, .direction=pixel_vector,
-		      .time = pixel->t_next_photon };
-
-		    // Determine the energy of the new photon according to 
-		    // the default spectrum.
-		    new_photon.energy = photon_energy(spectrum_store.spectrum, rmf);
-		    
-		    // Add the photon to the binary tree.
-		    if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
-			!=EXIT_SUCCESS) break;
-
-		  }		  
-		  */
-		  // END of photon generation from the SourceImagePixel.
-		
-		} else { // END of check whether pixel is close to the FOV.
-		  // The source image pixel is far away from the telescope axis.
-		  // Therefore we don't have to consider the directly neighboring 
-		  // pixels and do a bigger step than to the nearest pixel.
-		  ycount+=10;
-		}
-	      }
-	    } // END of loop over all pixel of the image.
-	  } // END of check whether telescope axis points to the direction of the cluster field.
-	} // END of loop over different extend source images in the catalog.
-      } // END of decision which source category.
-
-
-
-      // If a binary tree with photon entries is present, insert its entries to the 
-      // time-ordered photon list.
-      if (NULL!=photon_tree) {
-	struct PhotonOrderedListEntry* photon_list_current = photon_list;
-	if (EXIT_SUCCESS!=(status=CreateOrderedPhotonList(&photon_tree, &photon_list, 
-							  &photon_list_current))) break;
-      }
-
-
-      // SCAN PHOTON LIST to store the photons in a FITS file.
-      attitude_counter = last_attitude_counter; 
-      // Because we are now searching for events in the time interval [time-dt,time].
-      while ((photon_list != NULL) && (status == EXIT_SUCCESS)) {
-	// If all photons up to the actual time have been treated, break the loop.
-	if ((photon_list->photon.time > time + dt)||
-	    (photon_list->photon.time > parameters.t0+parameters.timespan)) {
-	  break;
-	}
-
-	// Get the last orbit entry before the time 'photon_list->photon.time'
-	// (in order to interpolate the position and velocity at this time  between 
-	// the neighboring calculated orbit positions):
-	for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
-	  if(attitudecatalog->entry[attitude_counter+1].time>photon_list->photon.time) {
-	    break;
-	  }
-	}
-	if(fabs(attitudecatalog->entry[attitude_counter].time-time)>600.) { 
-	  // No entry within 10 minutes !!
-	  status = EXIT_FAILURE;
-	  sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
-	  HD_ERROR_THROW(msg,status);
-	  break;
-	}
-
-	// Check whether the photon is inside the FOV:
-	// First determine telescope pointing direction at the current time.
-	telescope.nz = interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-				       attitudecatalog->entry[attitude_counter].time, 
-				       attitudecatalog->entry[attitude_counter+1].nz, 
-				       attitudecatalog->entry[attitude_counter+1].time, 
-				       photon_list->photon.time);
-	normalize_vector_fast(&telescope.nz);
-
-
-	// Compare the photon direction to the unit vector specifiing the 
-	// direction of the telescope axis:
-	if (check_fov(&photon_list->photon.direction,
-		      &telescope.nz, fov_min_align)==0) {
-	  // Photon is inside the FOV!
-
-	  // Add the photon to the photon list file:
-	  // Rescale from [rad] -> [deg]:
-	  double ra  = photon_list->photon.ra *180./M_PI; // TODO: photon.ra should already be rad
-	  double dec = photon_list->photon.dec*180./M_PI;
-	  fits_insert_rows(photonlistfile.fptr, photonlistfile.row++, 1, &status);
-	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.ctime, 
-			 photonlistfile.row, 1, 1, &photon_list->photon.time, &status);
-	  fits_write_col(photonlistfile.fptr, TFLOAT, photonlistfile.cenergy, 
-			 photonlistfile.row, 1, 1, &photon_list->photon.energy, &status);
-	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cra, 
-			 photonlistfile.row, 1, 1, &ra, &status);
-	  fits_write_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
-			 photonlistfile.row, 1, 1, &dec, &status);
-	  photonlistfile.nrows++;
-	} // END of: photon is inside the FOV?
-
-	// Move to the next entry in the photon list and clear the current entry.
-	struct PhotonOrderedListEntry* pl_entry = photon_list->next; // Buffer
-	free(photon_list);
-	photon_list = pl_entry;
-
-      } // END of scanning the photon list.
-
-      last_attitude_counter = attitude_counter;
-      first = 0;
-    } // END of outer time loop.
-
-    // --- End of photon creation process ---
+    }
+    // --- End of photon generation ---
 
   } while(0); // END of ERROR HANDLING Loop.
 
@@ -617,9 +732,6 @@ int photon_generation_main()
 
   // Release HEADAS random number generator:
   HDmtFree();
-
-  // Clear photon list
-  clear_PhotonList(&photon_list);
 
   // Attitude Catalog
   free_AttitudeCatalog(attitudecatalog);
