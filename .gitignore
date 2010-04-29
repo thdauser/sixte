@@ -3,6 +3,8 @@
 *.a
 *.la
 *.lo
+*.swp
+*.swo
 configure
 Makefile
 Makefile.in
@@ -10,6 +12,10 @@ doc
 .deps
 .libs
 sixt*.tar.gz
+pull.err
+pull.log
+pull_n_push.sh
+get_updates.sh
 
 # Binaries:
 analyse_xms_events
