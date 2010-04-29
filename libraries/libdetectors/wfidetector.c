@@ -168,7 +168,9 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time)
     // Clear the previously read out lines.
     int lineindex;
     for(lineindex=0; lineindex<wd->readout_directions; lineindex++) {
-      clearLineSquarePixels(&wd->pixels, wd->readout_lines[lineindex]);
+      if (wd->pixels.line2readout[wd->readout_lines[lineindex]]>0) {    
+	clearLineSquarePixels(&wd->pixels, wd->readout_lines[lineindex]);
+      }
     }
   }
   

@@ -287,7 +287,7 @@ int photon_generation_main()
     double time; // current time
 
     long attitude_counter=0; // counter for orbit readout loop
-    long last_attitude_counter=0; // stores sat_counter of former repetition, 
+    long last_attitude_counter=0; // stores attitude_counter of former repetition, 
                                   // so the searching loop
                                   // doesn't have to start at 0 every time.
 
