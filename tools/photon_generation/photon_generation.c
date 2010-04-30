@@ -38,11 +38,27 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
   // Buffer for time-ordered photon list.
   struct PhotonOrderedListEntry* pl_entry;
 
+  // Check if the photon list contains any photons.
+  if (NULL==(*photon_list)) return(status);
 
   // Minimum cos-value for sources inside the FoV:
   // angle(telescope.nz,source) <= 1/2 * diameter
   const double fov_min_align = cos(telescope.fov_diameter/2.); 
 
+  // Move the photon file pointer to the right entry for inserting
+  // the photons from the list.
+  double time=0.;
+  int anynul = 0;
+  while (plf->row>0) {
+    // Read the time from the file.
+    fits_read_col(plf->fptr, TDOUBLE, plf->ctime, 
+		  plf->row+1, 1, 1, &time, &time, &anynul, &status);
+    if (status!=EXIT_SUCCESS) return(status);;
+
+    if ((*photon_list)->photon.time >= time) break;
+    
+    plf->row--;
+  }
 
   // SCAN PHOTON LIST to store the photons in a FITS file.
   while (NULL!=(*photon_list)) {
@@ -68,6 +84,18 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
       // Rescale from [rad] -> [deg]:
       double ra  = (*photon_list)->photon.ra *180./M_PI;
       double dec = (*photon_list)->photon.dec*180./M_PI;
+      // Determine the right position to insert the photon:
+      while (plf->row<plf->nrows) {
+	// Read the time from the file.
+	fits_read_col(plf->fptr, TDOUBLE, plf->ctime, 
+		      plf->row+1, 1, 1, &time, &time, &anynul, &status);
+	if (status!=EXIT_SUCCESS) return(status);;
+
+	if ((*photon_list)->photon.time < time) break;
+	
+	plf->row++;
+      }
+      // Insert a new line with the photon data:
       fits_insert_rows(plf->fptr, plf->row++, 1, &status);
       fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
 		     plf->row, 1, 1, &(*photon_list)->photon.time, &status);
@@ -598,6 +626,7 @@ int photon_generation_main()
       headas_chat(1, "### Warning: source file contains no appropriate WCS header keywords!\n");
     }
 
+    // TODO HERE
     // Generate new photon list FITS file for output of generated photons.
     status = openNewPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
 				   parameters.photonlist_template);
