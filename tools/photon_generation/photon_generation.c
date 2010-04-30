@@ -518,7 +518,7 @@ int photon_generation_main()
   
   // FITS file containing the input sources.
   fitsfile* sources_fptr=NULL;
-  // TODO Source category.
+  // Source category.
   SourceCategory sourceCategory=INVALID_SOURCE;
   // Data structures for point sources:
   PointSourceFile* psf=NULL;
@@ -626,32 +626,42 @@ int photon_generation_main()
       headas_chat(1, "### Warning: source file contains no appropriate WCS header keywords!\n");
     }
 
-    // TODO HERE
-    // Generate new photon list FITS file for output of generated photons.
-    status = openNewPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
-				   parameters.photonlist_template);
-    if (EXIT_SUCCESS!=status) break;
+    // Check, whether a new photon list file should be generated,
+    // whether an existing file should be opened for inserting 
+    // the newly generated photons.
+    if (1==parameters.overwrite_photonlist) {
+      // Generate new photon list FITS file for output of generated photons.
+      status = openNewPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
+				     parameters.photonlist_template);
+      if (EXIT_SUCCESS!=status) break;
 
-    // Add important HEADER keywords to the photon list.
-    if (fits_update_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
-			parameters.attitude_filename,
-			"name of the attitude FITS file", &status)) break;
-    // WCS keywords.
-    if (nwcs > 0) { 
-      // If WCS keywords have been read from the source catalog / images file,
-      // store them also in the photon list.
-      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcs->crval[0],
-			  "", &status)) break;
-      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcs->crval[1],
-			  "", &status)) break;
+      // Add important HEADER keywords to the photon list.
+      if (fits_update_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
+			  parameters.attitude_filename,
+			  "name of the attitude FITS file", &status)) break;
+      // WCS keywords.
+      if (nwcs > 0) { 
+	// If WCS keywords have been read from the source catalog / images file,
+	// store them also in the photon list.
+	if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcs->crval[0],
+			    "", &status)) break;
+	if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcs->crval[1],
+			    "", &status)) break;
+      } else {
+	// Otherwise, if no WCS keywords are specified so far, use the RA=0 and 
+	// DEC=0 as default values.
+	double wcsbuffer=0.;
+	if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcsbuffer,
+			    "", &status)) break;
+	if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcsbuffer,
+			    "", &status)) break;
+      }
     } else {
-      // Otherwise, if no WCS keywords are specified so far, use the RA=0 and 
-      // DEC=0 as default values.
-      double wcsbuffer=0.;
-      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFXCRVL", &wcsbuffer,
-			  "", &status)) break;
-      if (fits_update_key(photonlistfile.fptr, TDOUBLE, "REFYCRVL", &wcsbuffer,
-			  "", &status)) break;
+      // Open an existing photon list file for inserting the newly
+      // generated photons.
+      status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
+				  READWRITE);
+      if (EXIT_SUCCESS!=status) break;
     }
     // --- End of Initialization ---
 
@@ -761,6 +771,14 @@ int photon_generation_getpar(struct Parameters* parameters)
 	    "the photon list!\n");
     HD_ERROR_THROW(msg, status);
   }
+
+  // Determine whether an existing photon list file should be
+  // overwritten or not.
+  else if ((status = PILGetInt("overwrite_photonlist", 
+			       &parameters->overwrite_photonlist))) {
+    HD_ERROR_THROW("Error reading the overwrite parameter!\n", status);
+  }
+
   if (EXIT_SUCCESS!=status) return(status);
 
   // Get the name of the FITS template directory.
