@@ -32,6 +32,8 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
       HD_ERROR_THROW(msg, *status);
       break;
     }
+    ac->nentries = 0;
+    ac->current_entry = 0;
     ac->entry = (AttitudeEntry*)malloc(af->nrows*sizeof(AttitudeEntry));
     if (NULL==ac->entry) {
       *status = EXIT_FAILURE;
@@ -39,7 +41,7 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
       HD_ERROR_THROW(msg, *status);
       break;
     }
-
+    
     
     // Read all lines from attitude file subsequently.
     AttitudeFileEntry afe;
@@ -157,6 +159,8 @@ AttitudeCatalog* getEntireAttitudeCatalog(const char* filename, int* status)
 		     *status);
       break;
     }
+    ac->nentries = 0;
+    ac->current_entry = 0;
     ac->entry = (AttitudeEntry*)malloc(af->nrows*sizeof(AttitudeEntry));
     if (NULL==ac->entry) {
       *status = EXIT_FAILURE;
@@ -247,6 +251,51 @@ void free_AttitudeCatalog(AttitudeCatalog* ac)
     }
     free(ac);
   }
+}
+
+
+
+Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status)
+{
+  Vector nz = { .x = 0., .y = 0., .z = 0. };
+  char msg[MAXMSG]; // Error message buffer.
+
+  // Check if the requested time lies within the current time bin.
+  while (time < ac->entry[ac->current_entry].time) {
+    // Check if the beginning of the AttitudeCatalog is reached.
+    if (ac->current_entry <= 0) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      HD_ERROR_THROW(msg, *status);
+      return(nz);
+    }
+    // If not, go one step back.
+    ac->current_entry--;
+  }
+
+  while (time > ac->entry[ac->current_entry+1].time) {
+    // Check if the end of the AttitudeCatalog is reached.
+    if (ac->current_entry >= ac->nentries-2) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      HD_ERROR_THROW(msg, *status);
+      return(nz);
+    }
+    // If not, go one step back.
+    ac->current_entry++;
+  }
+    
+  // The requested time lies within the current time bin.
+  // Interpolation:
+  // TODO: replace this calculation by proper attitude interpolation.
+  nz = interpolate_vec(ac->entry[ac->current_entry].nz, 
+		       ac->entry[ac->current_entry].time, 
+		       ac->entry[ac->current_entry].nz, 
+		       ac->entry[ac->current_entry].time, 
+		       time);
+  normalize_vector_fast(&nz);
+
+  return(nz);
 }
 
 

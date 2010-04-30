@@ -34,10 +34,7 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
 			       struct Telescope telescope,
 			       double t0, double timespan)
 {
-  char msg[MAXMSG]; // Error message buffer.
   int status=EXIT_SUCCESS;
-  // Counter for attitude catalog.
-  long attitude_counter;
   // Buffer for time-ordered photon list.
   struct PhotonOrderedListEntry* pl_entry;
 
@@ -54,32 +51,12 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
       break;
     }
 
-    // Get the last orbit entry before the time '(*photon_list)->photon.time'
-    // (in order to interpolate the position and velocity at this time between 
-    // the neighboring calculated orbit positions):
-    for( ; attitude_counter<ac->nentries-1; attitude_counter++) {
-      if(ac->entry[attitude_counter+1].time>(*photon_list)->photon.time) {
-	break;
-      }
-    }
-    if(fabs(ac->entry[attitude_counter].time-(*photon_list)->photon.time)>600.) { 
-      // No entry within 10 minutes !!
-      status = EXIT_FAILURE;
-      sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", 
-	      (*photon_list)->photon.time);
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
     // Check whether the photon is inside the FoV:
     // First determine telescope pointing direction at the time of 
     // the photon arrival.
-    telescope.nz = interpolate_vec(ac->entry[attitude_counter].nz, 
-				   ac->entry[attitude_counter].time, 
-				   ac->entry[attitude_counter+1].nz, 
-				   ac->entry[attitude_counter+1].time, 
-				   (*photon_list)->photon.time);
-    normalize_vector_fast(&telescope.nz);
+    telescope.nz = getTelescopePointing(ac, (*photon_list)->photon.time,
+					&status);
+    if (EXIT_SUCCESS!=status) break;
 
     // Compare the photon direction to the unit vector specifiing the 
     // direction of the telescope axis:
@@ -126,7 +103,6 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 				  struct RMF* rmf,
 				  double t0, double timespan)
 {
-  char msg[MAXMSG]; // Error message buffer.
   int status = EXIT_SUCCESS;
 
 
@@ -143,8 +119,6 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   const double pre_max_align = sin(2*telescope.fov_diameter);
 
 
-  // Counter for the current attitude values.
-  long attitude_counter=0;
   // Normalized vector perpendicular to the orbital plane,
   // used for a preselection of point sources out of the
   // entire catalog.
@@ -167,29 +141,10 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     headas_chat(0, "\rtime: %.3lf s ", time);
     fflush(NULL);
 
-    // Get the last attitude entry before 'time' (in order to interpolate 
-    // the attitude at this time between the neighboring calculated values):
-    for( ; attitude_counter<ac->nentries-1; attitude_counter++) {
-      if(ac->entry[attitude_counter+1].time>time) {
-	break;
-      }
-    }
-    if(fabs(ac->entry[attitude_counter].time-time)>600.) { 
-      // There is no entry within 10 minutes !!
-      status = EXIT_FAILURE;
-      sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
     // First determine telescope pointing direction at the current time.
-    // TODO: replace this calculation by proper attitude interpolation.
-    telescope.nz = interpolate_vec(ac->entry[attitude_counter].nz, 
-				   ac->entry[attitude_counter].time, 
-				   ac->entry[attitude_counter+1].nz, 
-				   ac->entry[attitude_counter+1].time, 
-				   time);
-    normalize_vector_fast(&telescope.nz);
+    telescope.nz = getTelescopePointing(ac, time, &status);
+    if (EXIT_SUCCESS!=status) break;
+
 
     // PRESELECTION of Point sources:
     // Preselection of sources from the comprehensive catalog to 
@@ -206,8 +161,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
       // satellite's direction of motion.
       // Calculate normalized vector perpendicular to the orbit plane:
       preselection_vector = 
-	normalize_vector(vector_product(ac->entry[attitude_counter].nz,
-					ac->entry[attitude_counter].nx));
+	normalize_vector(vector_product(telescope.nz,
+					ac->entry[ac->current_entry].nx));
       psc=getPointSourceCatalog(psf, preselection_vector, pre_max_align, &status);
       if((EXIT_SUCCESS!=status)||(NULL==psc)) break;
 
@@ -265,11 +220,8 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 				 struct RMF* rmf,
 				 double t0, double timespan)
 {
-  char msg[MAXMSG]; // Error message buffer.
   int status = EXIT_SUCCESS;
 
-  // Counter for the current attitude values.
-  long attitude_counter=0;
   // Normalized vector pointing in the direction of the reference pixel.
   Vector refpixel_vector;
   // Normalized vector pointing in the direction of the source.
@@ -301,29 +253,9 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
     headas_chat(0, "\rtime: %.3lf s ", time);
     fflush(NULL);
 
-    // Get the last attitude entry before 'time' (in order to interpolate 
-    // the attitude at this time between the neighboring calculated values):
-    for( ; attitude_counter<ac->nentries-1; attitude_counter++) {
-      if(ac->entry[attitude_counter+1].time>time) {
-	break;
-      }
-    }
-    if(fabs(ac->entry[attitude_counter].time-time)>600.) { 
-      // There is no entry within 10 minutes !!
-      status = EXIT_FAILURE;
-      sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
     // First determine telescope pointing direction at the current time.
-    // TODO: replace this calculation by proper attitude interpolation.
-    telescope.nz = interpolate_vec(ac->entry[attitude_counter].nz, 
-				   ac->entry[attitude_counter].time, 
-				   ac->entry[attitude_counter+1].nz, 
-				   ac->entry[attitude_counter+1].time, 
-				   time);
-    normalize_vector_fast(&telescope.nz);
+    telescope.nz = getTelescopePointing(ac, time, &status);
+    if (EXIT_SUCCESS!=status) break;
 
     // Create photons from the extended source image (clusters) and 
     // insert them to the photon list.
@@ -474,6 +406,8 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 
 
 
+/** Determine the first HDU in an X-ray source FITS file, determine
+    the Source category, and set the file pointer to this HDU. */
 int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
 {
   int status=EXIT_SUCCESS;
