@@ -267,7 +267,10 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
   struct PhotonOrderedListEntry* photon_list=NULL;
   // Current time and time step.
   double time, dt = 1.0;
-
+  // Buffer for random numbers.
+  double rnd;
+  // Buffer for new photons.
+  Photon new_photon;
 
   // Defines the mathematical meaning of 'close' in the context that for 
   // sources 'close to the FOV' the simulation creates a light curve.
@@ -349,13 +352,14 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 	    pixel = &(si->pixel[xcount][ycount]);
 		  
 	    // TODO: needs to be replaced by exponential distribution:
-	    double rnd = sixt_get_random_number();
+	    rnd = sixt_get_random_number();
 	    if (rnd < pixel->rate * dt) {
 	      // Generate a new photon for this pixel
-	      Photon new_photon  = {
-		.ra=ra, .dec=dec, .direction=source_vector,
-		.time = time + sixt_get_random_number()*dt };
-		    
+	      new_photon.ra=ra; 
+	      new_photon.dec=dec;
+	      new_photon.direction=source_vector;
+	      new_photon.time = time + sixt_get_random_number()*dt;
+	      
 	      // Determine the energy of the new photon according to 
 	      // the default spectrum.
 	      new_photon.energy = 
