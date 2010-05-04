@@ -7,7 +7,7 @@
 #include "linlightcurve.h"
 
 
-// Maximum number of sources in the preselected source catalog:
+/** Maximum number of sources in the preselected source catalog. */
 #define MAX_N_POINTSOURCES 1000000
 
 
@@ -25,10 +25,11 @@ typedef struct {
    * Positive values can be used to designate a particular FITS file containing 
    * a light curve. */
   long lc_type;
-  /** Pointer to object with Piece-wise linear light curve for this X-ray source. */
+  /** Pointer to object with Piece-wise linear light curve for this
+      X-ray source. */
   LinLightCurve* lc; 
 
-  /** Index of the source spectrum within the SpectrumStore.  This
+  /** Index of the source spectrum within the SpectrumStore. This
       number represents the index of the source spectrum within the
       SpectrumStore of the PointSourceCatalog. Warning: the
       spectrum_index starts at 1 (not at 0). */
@@ -40,6 +41,7 @@ typedef struct {
   double t_last_photon; 
 
 } PointSource;
+
 
 /** Contains all PointSources from one and the same FITS file. This
     data structure is generated from the sources sorted out of the
@@ -111,8 +113,15 @@ void free_PointSourceFileCatalog(PointSourceFileCatalog*);
 
 /** Constructor returning a pointer to an empty PointSourceFile object. */
 PointSourceFile* get_PointSourceFile();
-/** Enhanced constructor specifying a source file and the right HDU number to be loaded. */
+
+/** Enhanced constructor specifying a source file and the right HDU
+    number to be loaded. */
 PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* status);
+
+/** Enhanced constructor for opening a PointSourceFile with the
+    fitsfile pointer already pointing to the right HDU. */
+PointSourceFile* get_PointSourceFile_fromHDU(fitsfile* fptr, int* status);
+
 /** Destructor. */
 void free_PointSourceFile(PointSourceFile*);
 
@@ -125,6 +134,17 @@ void free_PointSourceFile(PointSourceFile*);
     assigned. */
 PointSourceCatalog* get_PointSourceCatalog(PointSourceFileCatalog*, Vector normal_vector, 
 					   const double max_align, int* status);
+
+/** Selects point sources along the path of the telescope axis over
+    the sky and returns a PointSourceCatalog containing the individual
+    PointSource objects. The selection is done based on a normal
+    vector perpendicular to the scan plane and the cos(sin?)-value of
+    the maximum angle between the source direction and the scan
+    plane. To each selected source a spectrum and a light curve are
+    assigned. */
+PointSourceCatalog* getPointSourceCatalog(PointSourceFile* psf, Vector normal_vector, 
+					  const double max_align, int* status);
+
 /** Destructor. */
 void free_PointSourceCatalog(PointSourceCatalog* psc);
 

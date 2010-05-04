@@ -33,6 +33,7 @@ struct Parameters {
   char sources_filename[MAXMSG];
   char photonlist_filename[MAXMSG];
   char photonlist_template[MAXMSG];
+  int overwrite_photonlist;
 
   double t0, timespan;
   double fov_diameter;
