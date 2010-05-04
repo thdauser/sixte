@@ -290,8 +290,8 @@ Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status)
   // TODO: replace this calculation by proper attitude interpolation.
   nz = interpolate_vec(ac->entry[ac->current_entry].nz, 
 		       ac->entry[ac->current_entry].time, 
-		       ac->entry[ac->current_entry].nz, 
-		       ac->entry[ac->current_entry].time, 
+		       ac->entry[ac->current_entry+1].nz, 
+		       ac->entry[ac->current_entry+1].time, 
 		       time);
   normalize_vector_fast(&nz);
 

@@ -48,11 +48,11 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
   // Move the photon file pointer to the right entry for inserting
   // the photons from the list.
   double time=0.;
-  int anynul = 0;
+  int anynul=0;
   while (plf->row>0) {
     // Read the time from the file.
     fits_read_col(plf->fptr, TDOUBLE, plf->ctime, 
-		  plf->row+1, 1, 1, &time, &time, &anynul, &status);
+		  plf->row, 1, 1, &time, &time, &anynul, &status);
     if (status!=EXIT_SUCCESS) return(status);;
 
     if ((*photon_list)->photon.time >= time) break;
@@ -62,7 +62,8 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
 
   // SCAN PHOTON LIST to store the photons in a FITS file.
   while (NULL!=(*photon_list)) {
-    // If all photons up to the actual time have been treated, break the loop.
+    // If all photons up to the actual time have been 
+    // treated, break the loop.
     if ((*photon_list)->photon.time > t0+timespan) {
       break;
     }
