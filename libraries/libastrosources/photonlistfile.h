@@ -26,14 +26,16 @@ typedef struct {
 //////////////////////////////////////////////////////////////////////////
 
 
-/** Create new photon list FITS file according to a given template and
-    return the PhotonListFile object for the open file. */
+/** Open an existing photon list FITS file and return the
+    corresponding PhotonListFile object. The access_mode parameter can
+    be either READONLY or READWRITE. */
 int openPhotonListFile(PhotonListFile* plf, char* filename, int access_mode);
 
 
-/** Open an existing photon list FITS file and return the
-    corresponding PhotonListFile object. */
+/** Create new photon list FITS file according to a given template and
+    return the PhotonListFile object for the open file.  */
 int openNewPhotonListFile(PhotonListFile* plf, char* filename, char* template);
+
 
 /** Close open PhotonListFile (FITS file). */
 int closePhotonListFile(PhotonListFile*) ;
