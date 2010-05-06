@@ -11,6 +11,7 @@
 #include "telescope.h"
 #include "attitudecatalog.h"
 #include "check_fov.h"
+#include "vignetting.h"
 
 #define TOOLSUB eroexposure_main
 #include "headas_main.c"
@@ -19,6 +20,7 @@
 /* Program parameters */
 struct Parameters {
   char attitude_filename[FILENAME_LENGTH];    // filename of the attitude file
+  char vignetting_filename[FILENAME_LENGTH];  // filename of the vignetting file
   char exposuremap_filename[FILENAME_LENGTH]; // output: exposure map
   
   double t0;
@@ -41,12 +43,16 @@ int eroexposure_getpar(struct Parameters *parameters);
 int eroexposure_main() {
   struct Parameters parameters; // Program parameters.
   
-  AttitudeCatalog* attitudecatalog=NULL;
-  struct Telescope telescope; // Telescope data (like FOV diameter or focal length).
+  AttitudeCatalog* ac=NULL;
+  // Telescope data (like FOV diameter or focal length).
+  struct Telescope telescope; 
+  // Mirror vignetting data.
+  Vignetting* vignetting=NULL; 
   
   float** expoMap=NULL;       // Array for the calculation of the exposure map.
   float*  expoMap1d=NULL;     // 1d exposure map for storing in FITS image.
   long x, y;                  // Counters.
+  long x1, x2, y1, y2;        
   fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
 
   // WCS parameters.
@@ -61,7 +67,6 @@ int eroexposure_main() {
   Vector pixel_position;
 
   int status=EXIT_SUCCESS;    // Error status.
-  char msg[MAXMSG];           // Error output buffer.
 
 
   // Register HEATOOL:
@@ -126,20 +131,25 @@ int eroexposure_main() {
     HDmtInit(1);
 
     // Get the satellite catalog with the telescope attitude data:
-    if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
-						   parameters.t0, parameters.timespan, 
-						   &status))) break;
-    // --- END of Initialization ---
+    if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
+				      parameters.t0, parameters.timespan, 
+				      &status))) break;
 
+    // Get the Vignetting data:
+    vignetting = get_Vignetting(parameters.vignetting_filename, &status);
+    if (status != EXIT_SUCCESS) break;
+
+    // --- END of Initialization ---
 
 
     // --- Beginning of Exposure Map calculation
     headas_chat(5, "calculate the exposure map ...\n");
 
-    // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
     double time;
-    long attitude_counter=0; // Counter for entries in the AttitudeCatalog.
+    // Buffer for off-axis angle:
+    double theta;
 
+    // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
     for (time=parameters.t0; (time<parameters.t0+parameters.timespan)&&(EXIT_SUCCESS==status);
 	 time+=parameters.dt) {
       
@@ -147,28 +157,10 @@ int eroexposure_main() {
       headas_printf("\rtime: %.1lf s ", time);
       fflush(NULL);
 
-      // Get the last attitude entry before 'time', in order to interpolate 
-      // the attitude at this time between the neighboring calculated values):
-      for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
-	if(attitudecatalog->entry[attitude_counter+1].time > time) {
-	  break;
-	}
-      }
-      if(fabs(attitudecatalog->entry[attitude_counter].time-time)>600.) { 
-	// No entry within 1 minute !!
-	status = EXIT_FAILURE;
-	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", time);
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
-
       // Determine the telescope pointing direction at the current time.
-      telescope.nz = 
-	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-					 attitudecatalog->entry[attitude_counter].time, 
-					 attitudecatalog->entry[attitude_counter+1].nz, 
-					 attitudecatalog->entry[attitude_counter+1].time, 
-					 time));
+      telescope.nz = getTelescopePointing(ac, time, &status);
+      if (EXIT_SUCCESS!=status) break;
+
       // Calculate the RA and DEC of the pointing direction.
       calculate_ra_dec(telescope.nz, &telescope_ra, &telescope_dec);
 
@@ -181,8 +173,8 @@ int eroexposure_main() {
 
       // 2d Loop over the exposure map in order to determine all pixels that
       // are currently within the FOV.
-      double x1 = 0; double x2 = parameters.ra_bins-1;
-      double y1 = 0; double y2 = parameters.dec_bins-1;
+      x1 = 0; x2 = parameters.ra_bins-1;
+      y1 = 0; y2 = parameters.dec_bins-1;
       for (x=x1; x<=x2; x++) {
 	for (y=y1; y<=y2; y++) {
 	  pixel_position = unit_vector((x-(rpix1-1.0))*delt1 + rval1,
@@ -194,14 +186,24 @@ int eroexposure_main() {
 	  // Check if the current pixel lies within the FOV.
 	  if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
 	    // Pixel lies inside the FOV!
-	    long xi=x, yi=y;
 	    /*
+	    long xi=x, yi=y;
 	    while (xi<                   0) xi+=parameters.ra_bins;
 	    while (xi>= parameters.ra_bins) xi-=parameters.ra_bins;
 	    while (yi<                   0) yi+=parameters.dec_bins;
 	    while (yi>=parameters.dec_bins) yi-=parameters.dec_bins;
-	    */
 	    expoMap[xi][yi] += parameters.dt;
+	    */
+
+	    // Calculate the off-axis angle ([rad])
+	    theta = acos(scalar_product(&telescope.nz, &pixel_position));
+
+	    // Add the exposure time step weighted with the vignetting
+	    // factor for this particular off-axis angle at 1 keV.
+	    // The azimuthal angle is neglected (TODO).
+	    expoMap[x][y] += 
+	      parameters.dt * 
+	      get_Vignetting_Factor(vignetting, 1., theta, 0.);
 	  }
 	}
       }
@@ -274,8 +276,9 @@ int eroexposure_main() {
   // Close the exposure map FITS file.
   if(NULL!=fptr) fits_close_file(fptr, &status);
 
-  // Release memory of AttitudeCatalog.
-  free_AttitudeCatalog(attitudecatalog);
+  // Release memory.
+  free_AttitudeCatalog(ac);
+  free_Vignetting(vignetting);
 
   // Release memory of exposure map.
   if (NULL!=expoMap) {
@@ -309,6 +312,11 @@ int eroexposure_getpar(struct Parameters *parameters)
     HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
   }
   
+  // Get the filename of the vignetting data file (FITS file)
+  else if ((status = PILGetFname("vignetting_filename", parameters->vignetting_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the vignetting file!\n", status);
+  }
+
   // Get the filename of the output exposure map (FITS file)
   else if ((status = PILGetFname("exposuremap_filename", parameters->exposuremap_filename))) {
     HD_ERROR_THROW("Error reading the filename of the exposure map!\n", status);

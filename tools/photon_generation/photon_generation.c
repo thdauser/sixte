@@ -296,7 +296,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
     refpixel_vector = unit_vector(si->crval1, si->crval2);
 
     // Check whether the the current telescope axis points to a direction 
-    // close to the specified cluster image field (3°).
+    // close to the specified cluster image field (3°). (TODO: flexible value)
     if (check_fov(&refpixel_vector, &telescope.nz, cos(3.*M_PI/180.) )==0) {
       // Vector in the direction of the 1st image coordinate (right ascension).
       Vector k = {0., 0., 0.};
@@ -313,7 +313,8 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 	k.y = 1.;
 	l.x = 1.;
       } else {
-	// The reference pixel is neither at the north nor at the south pole.
+	// The reference pixel is neither at the north
+	// nor at the south pole.
 	k.x = -sin(si->crval1);
 	k.y =  cos(si->crval1);
 	    
@@ -341,11 +342,13 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 	    (ycount - si->crpix2 + 1.)*si->cdelt2 * l.z;
 	  normalize_vector_fast(&source_vector);
 		
-	  if (check_fov(&source_vector, &telescope.nz, close_fov_min_align)==0) {
+	  if (check_fov(&source_vector, &telescope.nz, 
+			close_fov_min_align)==0) {
 	    
-	    // --- Generate Photons from the pixel.
+	    // Generate Photons for this pixel.
 
-	    // Determine the right ascension and declination of the pixel.
+	    // Determine the right ascension and
+	    // declination of the pixel.
 	    calculate_ra_dec(source_vector, &ra, &dec);
 
 	    // Current pixel.
@@ -802,7 +805,7 @@ int photon_generation_getpar(struct Parameters* parameters)
   strcat(parameters->photonlist_template, "/photonlist.tpl");
 
   // Convert angles from [arc min] to [rad].
-  parameters->fov_diameter = parameters->fov_diameter*M_PI/(180.*60.);
+  parameters->fov_diameter *= M_PI/(180.*60.);
 
   return(status);
 }

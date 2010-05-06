@@ -111,7 +111,6 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
 	Vector ny = {0., 1., 0.};
 	ac->entry[entry].nx=vector_product(ac->entry[entry].nz, ny); // TODO
       } else {
-	printf("here");
 	ac->entry[entry].nx=
 	  normalize_vector(vector_difference(ac->entry[entry].nz,
 					     ac->entry[entry-1].nz));

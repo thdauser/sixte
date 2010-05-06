@@ -12,7 +12,7 @@
 int photon_imaging_main() {
   struct Parameters parameters;
 
-  AttitudeCatalog* attitudecatalog=NULL;
+  AttitudeCatalog* ac=NULL;
 
   PhotonListFile photonlistfile;
   ImpactListFile impactlistfile;
@@ -25,11 +25,10 @@ int photon_imaging_main() {
   /** PSF (Point Spread Function) data (for different off-axis angles
       and energies). */
   PSF* psf=NULL; 
-  /** Mirror vignetting data. */
+  // Mirror vignetting data.
   Vignetting* vignetting=NULL; 
 
-  char msg[MAXMSG];             // error output buffer
-  int status=EXIT_SUCCESS;      // error status
+  int status=EXIT_SUCCESS; // Error status
 
 
   // Register HEATOOL:
@@ -68,9 +67,9 @@ int photon_imaging_main() {
     if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, 
 		      comment, &status)) break;
-    if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
-						   parameters.t0, parameters.timespan, 
-						   &status))) break;
+    if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
+				      parameters.t0, parameters.timespan, 
+				      &status))) break;
 
     // Create a new FITS file for the output of the impact list.
     status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 
@@ -104,10 +103,14 @@ int photon_imaging_main() {
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
     int anynul = 0;
     Photon photon;
-    long attitude_counter=0; // Counter for the AttitudeCatalog.
-    for(photonlistfile.row=0; 
-	(photonlistfile.row<photonlistfile.nrows)&&(EXIT_SUCCESS==status); 
+    // Buffer for impact position:
+    struct Point2d position;
+    // Buffer for scalar product:
+    double scp;
+    for(photonlistfile.row=0; photonlistfile.row<photonlistfile.nrows; 
 	photonlistfile.row++) {
+
+      if (EXIT_SUCCESS!=status) break;
       
       // Read an entry from the photon list:
       photon.time = 0.;
@@ -133,41 +136,10 @@ int photon_imaging_main() {
       // Determine a unit vector pointing in the direction of the photon.
       photon.direction = unit_vector(photon.ra, photon.dec);
 
-
-      // Get the last attitude entry before 'photon.time'
-      // (in order to interpolate the attitude at this time between 
-      // the neighboring calculated values):
-      for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
-	if(attitudecatalog->entry[attitude_counter+1].time>photon.time) {
-	  break;
-	}
-      }
-      if(fabs(attitudecatalog->entry[attitude_counter].time-photon.time)>600.) { 
-	// no entry within 10 minutes !!
-	status = EXIT_FAILURE;
-	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", photon.time);
-	HD_ERROR_THROW(msg,status);
-	break;
-      }
-
-
-      // Check whether the photon is inside the FOV:
+      // Check whether the photon is inside the FOV.
       // First determine telescope pointing direction at the current time.
-      // TODO: replace this calculation by proper attitude interpolation.
-      telescope.nz = 
-	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-					 attitudecatalog->entry[attitude_counter].time, 
-					 attitudecatalog->entry[attitude_counter+1].nz, 
-					 attitudecatalog->entry[attitude_counter+1].time, 
-					 photon.time));
-
-      /*      printf("%.10lf %e %e %e %e %e %e\n", 
-	     photon.time, 
-	     telescope.nz.x-1., telescope.nz.y, telescope.nz.z,
-	     attitudecatalog->entry[attitude_counter].nz.x-1.,
-	     attitudecatalog->entry[attitude_counter].nz.y,
-	     attitudecatalog->entry[attitude_counter].nz.z
-	     ); */
+      telescope.nz = getTelescopePointing(ac, photon.time, &status);
+      if (EXIT_SUCCESS!=status) break;
 
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
@@ -185,15 +157,15 @@ int photon_imaging_main() {
 	// Determine the current nx: perpendicular to telescope axis nz
 	// and in the direction of the satellite motion.
 	telescope.nx = 
-	  normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nx, 
-					   attitudecatalog->entry[attitude_counter].time, 
-					   attitudecatalog->entry[attitude_counter+1].nx, 
-					   attitudecatalog->entry[attitude_counter+1].time, 
+	  normalize_vector(interpolate_vec(ac->entry[ac->current_entry].nx, 
+					   ac->entry[ac->current_entry].time, 
+					   ac->entry[ac->current_entry+1].nx, 
+					   ac->entry[ac->current_entry+1].time, 
 					   photon.time));
 	
 	// Remove the component along the vertical direction nz 
 	// (nx must be perpendicular to nz!):
-	double scp = scalar_product(&telescope.nz, &telescope.nx);
+	scp = scalar_product(&telescope.nz, &telescope.nx);
 	telescope.nx.x -= scp*telescope.nz.x;
 	telescope.nx.y -= scp*telescope.nz.y;
 	telescope.nx.z -= scp*telescope.nz.z;
@@ -205,7 +177,6 @@ int photon_imaging_main() {
 	telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
 	
 	// Determine the photon impact position on the detector (in [m]):
-	struct Point2d position;  
 
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
@@ -247,7 +218,7 @@ int photon_imaging_main() {
   status += closeImpactListFile(&impactlistfile);
   status += closePhotonListFile(&photonlistfile);
 
-  free_AttitudeCatalog(attitudecatalog);
+  free_AttitudeCatalog(ac);
   free_psf(psf);
   free_Vignetting(vignetting);
 
@@ -260,63 +231,51 @@ int photon_imaging_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int photon_imaging_getpar(
-			  struct Parameters* parameters,
-			  struct Telescope *telescope
-			  )
+int photon_imaging_getpar(struct Parameters* parameters,
+			  struct Telescope *telescope)
 {
-  char msg[MAXMSG];             // error output buffer
-  int status=EXIT_SUCCESS;      // error status
+  int status=EXIT_SUCCESS; // error status
 
 
   // Get the filename of the input photon list (FITS file)
   if ((status = PILGetFname("photonlist_filename", 
 			    parameters->photonlist_filename))) {
-    sprintf(msg, "Error reading the filename of the photon list!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the filename of the photon list!\n", status);
   }
   
   // Get the filename of the PSF data file (FITS file)
   else if ((status = PILGetFname("psf_filename", parameters->psf_filename))) {
-    sprintf(msg, "Error reading the filename of the PSF file!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the filename of the PSF file!\n", status);
   }
 
   // Get the filename of the vignetting data file (FITS file)
   else if ((status = PILGetFname("vignetting_filename", parameters->vignetting_filename))) {
-    sprintf(msg, "Error reading the filename of the vignetting file!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the filename of the vignetting file!\n", status);
   }
 
-
-  // get the filename of the PSF data file (FITS file)
+  // Get the filename of the impact list output file (FITS file)
   else if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
-    sprintf(msg, "Error reading the filename of the impact list output file!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the filename of the impact list output file!\n", status);
   }
 
-  // get the start time of the simulation
+  // Get the start time of the simulation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
-    sprintf(msg, "Error reading the 't0' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
   }
 
-  // get the timespan for the simulation
+  // Get the timespan for the simulation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
-    sprintf(msg, "Error reading the 'timespan' parameter!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
 
-  // read the diameter of the FOV (in arcmin)
+  // Read the diameter of the FOV (in arcmin)
   else if ((status = PILGetReal("fov_diameter", &telescope->fov_diameter))) {
-    sprintf(msg, "Error reading the diameter of the FOV!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
   }
 
-  // read the focal length [m]
+  // Read the focal length [m]
   else if ((status = PILGetReal("focal_length", &telescope->focal_length))) {
-    sprintf(msg, "Error reading the focal length!\n");
-    HD_ERROR_THROW(msg,status);
+    HD_ERROR_THROW("Error reading the focal length!\n", status);
   }
   if (EXIT_SUCCESS!=status) return(status);
 
@@ -328,8 +287,7 @@ int photon_imaging_getpar(
     strcpy(parameters->impactlist_template, buffer);
   } else {
     if ((status = PILGetFname("fits_templates", parameters->impactlist_template))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      
+      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);      
     }
   }
   // Set the impact list template file:
