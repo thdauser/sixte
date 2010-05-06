@@ -11,15 +11,6 @@ int get_psf_pos(struct Point2d* position, Photon photon,
   double phi = atan2(scalar_product(&telescope.ny, &photon.direction), 
 		     scalar_product(&telescope.nx, &photon.direction));
 
-  /*
-  printf("%e  %lf\t%e %e %e\t%e %e %e\t%e %e %e\n", 
-	 theta, phi,
-	 telescope.nx.x, telescope.nx.y-1., telescope.nx.z,
-	 telescope.ny.x, telescope.ny.y, telescope.ny.z-1.,
-	 telescope.nz.x-1., telescope.nz.y, telescope.nz.z
-	 ); 
-  */
-
   // Get a random number to determine a random hitting position
   double rnd = sixt_get_random_number();
   //  if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
