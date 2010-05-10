@@ -101,8 +101,8 @@ int photon_imaging_main() {
 
     // SCAN PHOTON LIST    
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    int anynul = 0;
-    Photon photon;
+    int anynul=0;
+    Photon photon={.time=0.};
     // Buffer for impact position:
     struct Point2d position;
     // Buffer for scalar product:
@@ -211,7 +211,7 @@ int photon_imaging_main() {
   // --- cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
-  // release HEADAS random number generator
+  // Release HEADAS random number generator.
   HDmtFree();
 
   // Close the FITS files.

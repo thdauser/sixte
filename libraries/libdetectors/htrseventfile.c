@@ -137,7 +137,8 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
   // Check if there is still a row available.
   if (row > hef->generic.nrows) {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: event list file does not contain the requested line!\n", status);
+    HD_ERROR_THROW("Error: event list file does not contain the requested line!\n", 
+		   status);
     return(status);
   }
 

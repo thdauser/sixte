@@ -300,7 +300,7 @@ int getpar(struct Parameters* parameters)
       }
     }
   }
-
+  if (EXIT_SUCCESS!=status) return(status);
   // Set the event list template file for eROSITA:
   strcat(parameters->eventlist_template, "/erosita.eventlist.tpl");
 

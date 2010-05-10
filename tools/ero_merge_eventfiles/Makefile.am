@@ -12,15 +12,15 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = ero_onboard_proc.par
+dist_pfiles_DATA = ero_merge_eventfiles.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = ero_onboard_proc
+bin_PROGRAMS = ero_merge_eventfiles
 
-ero_onboard_proc_SOURCES = ero_onboard_proc.c ero_onboard_proc.h
-ero_onboard_proc_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+ero_merge_eventfiles_SOURCES = ero_merge_eventfiles.c ero_merge_eventfiles.h
+ero_merge_eventfiles_LDADD   = @top_builddir@/libraries/libdetectors/libdetectors.la
 
