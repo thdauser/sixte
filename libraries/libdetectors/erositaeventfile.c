@@ -156,7 +156,6 @@ int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
 int eROSITAEventFile_getNextRow(eROSITAEventFile* eef, eROSITAEvent* event)
 {
   int status=EXIT_SUCCESS;
-  int anynul = 0;
 
   // Move counter to next line.
   eef->generic.row++;
@@ -168,50 +167,71 @@ int eROSITAEventFile_getNextRow(eROSITAEventFile* eef, eROSITAEvent* event)
     return(status);
   }
 
+  // Read the new HTRSEvent from the file.
+  status=eROSITAEventFile_getRow(eef, event, eef->generic.row);
+
+  return(status);
+}
+
+
+
+int eROSITAEventFile_getRow(eROSITAEventFile* eef, eROSITAEvent* event, long row)
+{
+  int status=EXIT_SUCCESS;
+  int anynul = 0;
+
+  // Check if there is still a row available.
+  if (row > eef->generic.nrows) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: event list file does not contain the requested line!\n", 
+		   status);
+    return(status);
+  }
+
   // Read in the data.
   event->time = 0.;
-  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->ctime, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->ctime, row, 1, 1, 
 		    &event->time, &event->time, &anynul, &status)) return(status);
   event->pha = 0;
-  if (fits_read_col(eef->generic.fptr, TLONG, eef->cpha, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cpha, row, 1, 1, 
 		    &event->pha, &event->pha, &anynul, &status)) return(status);
   event->energy = 0.;
-  if (fits_read_col(eef->generic.fptr, TFLOAT, eef->cenergy, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TFLOAT, eef->cenergy, row, 1, 1, 
 		    &event->energy, &event->energy, &anynul, &status)) return(status);
 
   event->xi = 0;
-  if (fits_read_col(eef->generic.fptr, TINT, eef->crawx, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TINT, eef->crawx, row, 1, 1, 
 		    &event->xi, &event->xi, &anynul, &status)) return(status);
   event->xi--;
   event->yi = 0;
-  if (fits_read_col(eef->generic.fptr, TINT, eef->crawy, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TINT, eef->crawy, row, 1, 1, 
 		    &event->yi, &event->yi, &anynul, &status)) return(status);
   event->yi--;
 
   event->frame = 0;
-  if (fits_read_col(eef->generic.fptr, TLONG, eef->cframe, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cframe, row, 1, 1, 
 		    &event->frame, &event->frame, &anynul, &status)) return(status);
   event->ccdnr = 0;
-  if (fits_read_col(eef->generic.fptr, TBYTE, eef->cccdnr, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TBYTE, eef->cccdnr, row, 1, 1, 
 		    &event->ccdnr, &event->ccdnr, &anynul, &status)) return(status);
   event->pat_typ = 0;
-  if (fits_read_col(eef->generic.fptr, TBYTE, eef->cpat_typ, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TBYTE, eef->cpat_typ, row, 1, 1, 
 		    &event->pat_typ, &event->pat_typ, &anynul, &status)) return(status);
   event->pat_inf = 0;
-  if (fits_read_col(eef->generic.fptr, TBYTE, eef->cpat_inf, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TBYTE, eef->cpat_inf, row, 1, 1, 
 		    &event->pat_inf, &event->pat_inf, &anynul, &status)) return(status);
 
   event->ra = SIXT_NAN;
-  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cra, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cra, row, 1, 1, 
 		    &event->ra, &event->ra, &anynul, &status)) return(status);
   event->dec = SIXT_NAN;
-  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cdec, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cdec, row, 1, 1, 
 		    &event->dec, &event->dec, &anynul, &status)) return(status);
   event->sky_xi = 0;
-  if (fits_read_col(eef->generic.fptr, TLONG, eef->cskyx, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cskyx, row, 1, 1, 
 		    &event->sky_xi, &event->sky_xi, &anynul, &status)) return(status);
   event->sky_yi = 0;
-  if (fits_read_col(eef->generic.fptr, TLONG, eef->cskyy, eef->generic.row, 1, 1, 
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cskyy, row, 1, 1, 
 		    &event->sky_yi, &event->sky_yi, &anynul, &status)) return(status);
 
   

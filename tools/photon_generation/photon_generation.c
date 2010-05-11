@@ -114,6 +114,8 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
     free(*photon_list);
     *photon_list = pl_entry;
 
+    if (status!=EXIT_SUCCESS) break;
+
   } // END of scanning the photon list.
 
   return(status);
@@ -786,7 +788,6 @@ int photon_generation_getpar(struct Parameters* parameters)
 			       &parameters->overwrite_photonlist))) {
     HD_ERROR_THROW("Error reading the overwrite parameter!\n", status);
   }
-
   if (EXIT_SUCCESS!=status) return(status);
 
   // Get the name of the FITS template directory.
@@ -801,6 +802,7 @@ int photon_generation_getpar(struct Parameters* parameters)
       
     }
   }
+  if (EXIT_SUCCESS!=status) return(status);
   // Set the photon list template file:
   strcat(parameters->photonlist_template, "/photonlist.tpl");
 

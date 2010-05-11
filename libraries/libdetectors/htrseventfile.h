@@ -26,8 +26,7 @@ typedef struct {
     from opening the FITS file the function also determines the number
     of rows in the FITS table and initializes the HTRSEventFile data
     structure. The access_mode parameter can be either READONLY or
-    READWRITE.
- */
+    READWRITE. */
 int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode);
 
 /** Create and open a new FITS event file for the HTRS detector from a
@@ -35,8 +34,7 @@ int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode);
     deleted and replaced by an empty one.  Apart from opening the FITS
     file the function also initializes the HTRSEventFile data
     structure by calling openHTRSEventFile(). The access_mode
-    parameter is always READWRITE.
- */
+    parameter is always READWRITE. */
 int openNewHTRSEventFile(HTRSEventFile* hef, char* filename, char* template);
 
 /** Close an open HTRS event list FITS file. */
