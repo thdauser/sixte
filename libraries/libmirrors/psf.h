@@ -14,8 +14,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-/** Stores the PSF data for one particular off-axis angle 
- * and one particular energy. */
+/** Stores the PSF data for one particular off-axis angle and one
+    particular energy. */
 typedef struct {
   double** data;   /**< pointer to PSF data array [x][y]. */
 
@@ -29,8 +29,8 @@ typedef struct {
 
 /** Storage for the several PSFs available for a mirror system. */
 typedef struct {
-  /** Array of PSF_Items for different photon energies, off-axis angles, and
-      azimuthal angles. */
+  /** Array of PSF_Items for different photon energies, off-axis
+      angles, and azimuthal angles. */
   PSF_Item*** data;
 
   /** Number of different energies PSF images are available for. */
