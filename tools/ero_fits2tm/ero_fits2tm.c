@@ -6,6 +6,7 @@
 
 
 #include "sixt.h"
+#include "sixt_string.h"
 #include "erositaevent.h"
 #include "erositaeventfile.h"
 
@@ -21,18 +22,6 @@
 struct Parameters {
   char eventlist_filename[FILENAME_LENGTH];
 };
-
-
-///////////////////////////////////////////////////
-// Convert a squence of chars into captial letters. 
-// The squence has to be terminated by a '\0' mark.
-void strtoupper(char string[]) {
-  int count=0;
-  while (string[count] != '\0') {
-    string[count] = toupper(string[count]);
-    count++;
-  };
-}
 
 
 

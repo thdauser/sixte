@@ -15,10 +15,12 @@
 #include "headas_error.h"
 
 
-/** Category of input sources: 1=Point sources, 2=Extended Source Images */
+/** Category of input sources: 1=Point sources, 2=Extended Sources,
+    3=Source Image. */
 typedef enum {
   INVALID_SOURCE   =0,
   POINT_SOURCES    =1,
+  EXTENDED_SOURCES =2,
   SOURCE_IMAGES    =3
 } SourceCategory;
 

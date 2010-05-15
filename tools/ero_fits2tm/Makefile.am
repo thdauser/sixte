@@ -4,7 +4,6 @@
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
-#AM_CFLAGS += -I@top_srcdir@/src # REMOVE THIS LINE !!
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -25,5 +24,6 @@ dist_pfiles_DATA = ero_fits2tm.par
 bin_PROGRAMS = ero_fits2tm
 
 ero_fits2tm_SOURCES = ero_fits2tm.c
-ero_fits2tm_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+ero_fits2tm_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+ero_fits2tm_LDADD += @top_builddir@/libraries/libdetectors/libdetectors.la
 

@@ -9,11 +9,11 @@ AM_CFLAGS += -Wall
 lib_LTLIBRARIES = libsixt.la
 
 # Sources:
-libsixt_la_SOURCES = sixt_random.c vector.c
+libsixt_la_SOURCES = sixt_random.c sixt_string.c vector.c
 
 
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = sixt.h sixt_random.h point.h vector.h
+include_HEADERS = sixt.h sixt_random.h sixt_string.h point.h vector.h
 

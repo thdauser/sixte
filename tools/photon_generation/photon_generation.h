@@ -11,7 +11,10 @@
 #include <wcs.h>
 #include <wcshdr.h>
 
+#include "sixt_string.h"
 #include "sourceimage.h"
+#include "pointsources.h"
+#include "extendedsources.h"
 #include "vector.h"
 #include "spectrum.h"
 #include "photon.h"
