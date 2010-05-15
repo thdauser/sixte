@@ -21,8 +21,8 @@ dist_pfiles_DATA = photon_generation.par
 
 ############ BINARIES #################
 
-# The following line lists the programs that should be created and stored
-# in the 'bin' directory.
+# The following line lists the programs that should be created and
+# stored in the 'bin' directory.
 bin_PROGRAMS = photon_generation
 
 photon_generation_SOURCES = photon_generation.c photon_generation.h

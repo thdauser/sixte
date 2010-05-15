@@ -240,6 +240,123 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 
 
 
+/* Generate photons for a catalog of point sources and a given
+   telescope attitude. The photons lying in the FoV are inserted into
+   the given photon list file using the function
+   insertValidPhotonsIntoFile(). */
+int createPhotonsFromExtendedSources(PhotonListFile* plf,
+				     ExtendedSourceFile* esf,
+				     AttitudeCatalog* ac,
+				     struct Telescope telescope,
+				     struct RMF* rmf,
+				     double t0, double timespan)
+{
+  int status = EXIT_SUCCESS;
+
+  /*
+  // Defines the mathematical meaning of 'close' in the context that for 
+  // sources 'close to the FOV' the simulation creates a light curve.
+  const double close_mult = 1.5; 
+  // Minimum cos-value for point sources close to the FOV (in the direct
+  // neighborhood).
+  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+  // Maximum cos-value (minimum sin-value) for sources within the
+  // preselection band along the orbit. The width of the
+  // preselection band is chosen to be twice the diameter of the
+  // FoV. (angle(n,source) > 90-bandwidth)
+  const double pre_max_align = sin(2*telescope.fov_diameter);
+
+
+  // Normalized vector perpendicular to the orbital plane,
+  // used for a preselection of point sources out of the
+  // entire catalog.
+  Vector preselection_vector;
+  // Pointer source catalog.
+  PointSourceCatalog* psc=NULL;
+  // Normalized vector pointing in the direction of the source.
+  Vector source_vector;
+  // Counter for the different sources in the catalog.
+  long source_counter;
+  // Time-ordered photon list containing all created photons in the sky.
+  struct PhotonOrderedListEntry* photon_list=NULL;  
+  // Current time and time step.
+  double time, dt = 0.1;
+  // First run of the loop.
+  int first = 1;
+
+  // Loop over the given time interval.
+  for (time=t0; time<t0+timespan; time+=dt) {
+    headas_chat(0, "\rtime: %.3lf s ", time);
+    fflush(NULL);
+
+    // First determine telescope pointing direction at the current time.
+    telescope.nz = getTelescopePointing(ac, time, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+
+    // PRESELECTION of Point sources:
+    // Preselection of sources from the comprehensive catalog to 
+    // improve the performance of the simulation:
+    if ((1==first)||
+	(fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
+	 sin(0.5*telescope.fov_diameter))) {
+
+      // Release old PointSourceCatalog:
+      free_PointSourceCatalog(psc);
+      psc = NULL;
+
+      // Preselect sources from the entire source catalog according to the 
+      // satellite's direction of motion.
+      // Calculate normalized vector perpendicular to the orbit plane:
+      preselection_vector = 
+	normalize_vector(vector_product(telescope.nz,
+					ac->entry[ac->current_entry].nx));
+      psc=getPointSourceCatalog(psf, preselection_vector, pre_max_align, &status);
+      if((EXIT_SUCCESS!=status)||(NULL==psc)) break;
+
+    } // END of preselection
+
+    // CREATE PHOTONS for all POINT sources CLOSE TO the FOV
+    for (source_counter=0; source_counter<psc->nsources; source_counter++) {
+      // Check whether the source is inside the FOV:
+      // Compare the source direction to the unit vector specifiing the 
+      // direction of the telescope:
+      source_vector = 
+	unit_vector(psc->sources[source_counter].ra, 
+		    psc->sources[source_counter].dec);
+      if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
+	    
+	// The source is inside the FOV  => create photons:
+	if ((status=create_photons(&(psc->sources[source_counter]), 
+				   time, dt, &photon_list, rmf))
+	    !=EXIT_SUCCESS) break; 
+	    
+      } // END of check if source is close to the FoV
+    } // End of loop over all sources in the catalog.
+    if (EXIT_SUCCESS!=status) break;
+    // END of photon generation.
+
+    // Check the photon list and insert all photons inside the FoV
+    // into the PhotonListFile.
+    status=insertValidPhotonsIntoFile(plf,
+				      &photon_list,  
+				      ac,
+				      telescope,
+				      t0, timespan);
+    if (EXIT_SUCCESS!=status) break;
+
+    first = 0;
+  } // END of the loop over the time interval.
+  if (EXIT_SUCCESS!=status) return(status);
+  
+  // Clear photon list
+  clear_PhotonList(&photon_list);
+  */
+  return(status);
+}
+
+
+
 /* Generate photons for a source image and a given telescope
    attitude. The photons lying in the FoV are inserted into the given
    photon list file using the function
@@ -496,10 +613,31 @@ int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
 		      "current HDU ...\n");
 	  *sc = SOURCE_IMAGES;
 
-	} else { // Assume BINARY_TBL (=2).
-	  headas_chat(5, " --> source type: POINT_SOURCES\n load data from "
-		      "current HDU ...\n");
-	  *sc = POINT_SOURCES;
+	} else { 
+	  // Assume BINARY_TBL (=2).
+
+	  // Check whether it is a point or extended source catalog.
+	  // Header keyword SOURCETP must be either 'POINT' or 'EXTENDED'.
+	  char comment[MAXMSG];  // String buffer.
+	  char sourcetp[MAXMSG]; // String buffer for the source type.
+	  if (fits_read_key(fptr, TSTRING, "REFXCRVL", sourcetp, 
+			    comment, &status)) break;    
+	  // Convert string to upper case. 
+	  strtoupper(sourcetp);
+	  // Check for the different possible source types.
+	  if (1==strcmp(sourcetp, "POINT")) {
+	    headas_chat(5, " --> source type: POINT_SOURCES\n load data from "
+			"current HDU ...\n");
+	    *sc = POINT_SOURCES;
+
+	  } else if (1==strcmp(sourcetp, "EXTENDED")) {
+	    headas_chat(5, " --> source type: EXTENDED_SOURCES\n load data from "
+			"current HDU ...\n");
+	    *sc = EXTENDED_SOURCES;
+
+	  } else {
+	    *sc = INVALID_SOURCE;
+	  }
 
 	}
       } // END of loop over the remaining HDUs after the primary extension.
@@ -530,8 +668,10 @@ int photon_generation_main()
   fitsfile* sources_fptr=NULL;
   // Source category.
   SourceCategory sourceCategory=INVALID_SOURCE;
-  // Data structures for point sources:
+  // Data structure for point sources:
   PointSourceFile* psf=NULL;
+  // Data structure for extended sources:
+  ExtendedSourceFile* esf=NULL;
   // X-ray Cluster image:
   SourceImage* si=NULL;
   // WCS keywords from the input source file:
@@ -594,7 +734,27 @@ int photon_generation_main()
       psf=get_PointSourceFile_fromHDU(sources_fptr, &status);
       if (status != EXIT_SUCCESS) break;
       
-      // Read the header from the LAST Point Source FITS file to obtain
+      // Read the header from the Point Source FITS file to obtain
+      // the WCS keywords.
+      char* header; // Buffer string for the FITS header.
+      int nkeyrec, nreject;
+      if (fits_hdr2str(sources_fptr, 1, NULL, 0, &header, &nkeyrec, &status)) break;
+      // Determine the WCS header keywords from the header string.
+      if ((wcsbth(header, nkeyrec, 0, 3, WCSHDR_PIXLIST, NULL, &nreject, &nwcs, &wcs))) {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: could not read WCS keywords from FITS header!\n", status);
+	break;
+      }
+      // Release memory allocated by fits_hdr2str().
+      free(header);
+      header=NULL;
+
+    } else if (EXTENDED_SOURCES==sourceCategory) { 
+      // Load the point source catalog from the current HDU.
+      esf=get_ExtendedSourceFile_fromHDU(sources_fptr, &status);
+      if (status != EXIT_SUCCESS) break;
+      
+      // Read the header from the Extended Source FITS file to obtain
       // the WCS keywords.
       char* header; // Buffer string for the FITS header.
       int nkeyrec, nreject;
@@ -690,6 +850,17 @@ int photon_generation_main()
 					   rmf,
 					   parameters.t0, 
 					   parameters.timespan);
+      if (EXIT_SUCCESS!=status) break;
+
+    } else if (EXTENDED_SOURCES==sourceCategory) {
+
+      status=createPhotonsFromExtendedSources(&photonlistfile,
+					      esf,
+					      attitudecatalog,
+					      telescope,
+					      rmf,
+					      parameters.t0, 
+					      parameters.timespan);
       if (EXIT_SUCCESS!=status) break;
 
     } else if (SOURCE_IMAGES==sourceCategory) {

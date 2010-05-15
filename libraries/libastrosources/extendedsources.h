@@ -108,7 +108,7 @@ typedef struct {
   /** SpectrumStore containing the spectra that are used in this
       PointSourceCatalog. */
   SpectrumStore spectrumstore;
-} PointSourceFile;
+} ExtendedSourceFile;
 
 
 /////////////////////////////////////////////////////////////////
