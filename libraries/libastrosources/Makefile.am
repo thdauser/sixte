@@ -18,14 +18,17 @@ dist_fitstemplates_DATA  = photonlist.tpl
 lib_LTLIBRARIES = libastrosources.la
 
 # Sources:
-libastrosources_la_SOURCES = pointsources.c sourceimage.c photon.c spectrum.c \
-			     fits_pha.c check_fov.c photonlistfile.c linlightcurve.c
+libastrosources_la_SOURCES = pointsources.c extendedsources.c		\
+			     sourceimage.c photon.c spectrum.c		\
+			     fits_pha.c check_fov.c photonlistfile.c	\
+			     linlightcurve.c
 libastrosources_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 
 
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = astrosources.h pointsources.h sourceimage.h photon.h spectrum.h \
-		  fits_pha.h check_fov.h photonlistfile.h linlightcurve.h
+include_HEADERS = astrosources.h pointsources.h extendedsources.h	\
+		  sourceimage.h photon.h spectrum.h fits_pha.h		\
+		  check_fov.h photonlistfile.h linlightcurve.h
 

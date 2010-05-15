@@ -18,7 +18,9 @@
 
 /** Contains all data to specify the properties of a point source. */
 typedef struct {
-  float ra, dec; /**< Right ascension and declination of the source [rad]. */
+
+  /** Right ascension and declination of the source [rad]. */
+  float ra, dec; 
 
   /** Average photon rate [photons/s]. */
   float rate; 
@@ -42,8 +44,8 @@ typedef struct {
       SpectrumStore of the PointSourceCatalog. Warning: the
       spectrum_index starts at 1 (not at 0). */
   long spectrum_index; 
-
-  Spectrum *spectrum; /**< Pointer to source spectrum. */
+  /** Pointer to source spectrum. */
+  Spectrum *spectrum; 
 
   /** Time of last photon created for this source. */
   double t_last_photon; 
@@ -53,15 +55,17 @@ typedef struct {
 
 /** Contains all PointSources from one and the same FITS file. This
     data structure is generated from the sources sorted out of the
-    PointSourceFile objects in the PointSourceFileCatalog. */
+    PointSourceFile. */
 typedef struct {
+
   /** Number of PointSource objects contained in the PointSourceCatalog. */
   long nsources;
+
   /** Array containing the individual PointSource objects. Length of
       the array is nsources. */
   PointSource* sources;
-} PointSourceCatalog;
 
+} PointSourceCatalog;
 
 
 /** PointSourceFile containing information about X-ray point sources.
@@ -69,22 +73,22 @@ typedef struct {
     FITS file contains a binary table with information about the
     different point sources: the position of the source, the reference
     photon rate of this source obtained from the spectral model and
-    the telescope-specific effective area, the number of the spectral
-    model, and the number of the light curve model. The different
-    spectral models are defined in the FITS header: the number of
-    models is given by the keyword "NSPECTRA" and the filenames of the
-    individual PHA files corresponding to the spectral models by
-    "SPECnnnn" with nnnn an integer number with 4 digits starting from
-    0. The specification of the light curve models is similar: in the
-    FITS header different light curve FITS files can be specified with
-    the keywords "LCnnnnnn" with nnnnnn an integer number with 6
-    digits starting from 1. The column "lightcur" in the binary table
-    can have integer values from -1 up to the maximum number of
-    nnnnnn. The value -1 means that a red-noise light curve generated
-    with the algorithm of Timmer & Koenig (1995) will be assigned to
-    the source. The number 0 means that the source has a constant
-    photon rate. For positive numbers the corresponding light curve
-    model given in the FITS header will be assigned to the source. */
+    the instrument ARF, the number of the spectral model, and the
+    number of the light curve model. The different spectral models are
+    defined in the FITS header: the number of models is given by the
+    keyword "NSPECTRA" and the filenames of the individual PHA files
+    corresponding to the spectral models by "SPECnnnn" with nnnn an
+    integer number with 4 digits starting from 0. The specification of
+    the light curve models is similar: in the FITS header different
+    light curve FITS files can be specified with the keywords
+    "LCnnnnnn" with nnnnnn an integer number with 6 digits starting
+    from 1. The column "lightcur" in the binary table can have integer
+    values from -1 up to the maximum number of nnnnnn. The value -1
+    means that a red-noise light curve generated with the algorithm of
+    Timmer & Koenig (1995) will be assigned to the source. The number
+    0 means that the source has a constant photon rate. For positive
+    numbers the corresponding light curve model given in the FITS
+    header will be assigned to the source. */
 typedef struct {
   fitsfile* fptr;
 
