@@ -617,20 +617,20 @@ int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
 	  // Assume BINARY_TBL (=2).
 
 	  // Check whether it is a point or extended source catalog.
-	  // Header keyword SOURCETP must be either 'POINT' or 'EXTENDED'.
-	  char comment[MAXMSG];  // String buffer.
-	  char sourcetp[MAXMSG]; // String buffer for the source type.
-	  if (fits_read_key(fptr, TSTRING, "REFXCRVL", sourcetp, 
+	  // Header keyword SRCTYPE must be either 'POINT' or 'EXTENDED'.
+	  char comment[MAXMSG]; // String buffer.
+	  char srctype[MAXMSG]; // String buffer for the source type.
+	  if (fits_read_key(fptr, TSTRING, "SRCTYPE", srctype, 
 			    comment, &status)) break;    
 	  // Convert string to upper case. 
-	  strtoupper(sourcetp);
+	  strtoupper(srctype);
 	  // Check for the different possible source types.
-	  if (1==strcmp(sourcetp, "POINT")) {
+	  if (1==strcmp(srctype, "POINT")) {
 	    headas_chat(5, " --> source type: POINT_SOURCES\n load data from "
 			"current HDU ...\n");
 	    *sc = POINT_SOURCES;
 
-	  } else if (1==strcmp(sourcetp, "EXTENDED")) {
+	  } else if (1==strcmp(srctype, "EXTENDED")) {
 	    headas_chat(5, " --> source type: EXTENDED_SOURCES\n load data from "
 			"current HDU ...\n");
 	    *sc = EXTENDED_SOURCES;
