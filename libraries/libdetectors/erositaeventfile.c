@@ -135,12 +135,12 @@ int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
 		     1, 1, &event->pat_inf, &status)) return(status);
 
   // Set RA, DEC, X, and Y to default values.
-  event->ra = SIXT_NAN;
-  if (fits_write_col(eef->generic.fptr, TDOUBLE, eef->cra, eef->generic.row, 
-		     1, 1, &event->ra, &status)) return(status);
-  event->dec = SIXT_NAN;
-  if (fits_write_col(eef->generic.fptr, TDOUBLE, eef->cdec, eef->generic.row, 
-		     1, 1, &event->dec, &status)) return(status);
+  long ra = 0;
+  if (fits_write_col(eef->generic.fptr, TLONG, eef->cra, eef->generic.row, 
+		     1, 1, &ra, &status)) return(status);
+  long dec = 0;
+  if (fits_write_col(eef->generic.fptr, TLONG, eef->cdec, eef->generic.row, 
+		     1, 1, &dec, &status)) return(status);
   event->sky_xi = 0;
   if (fits_write_col(eef->generic.fptr, TLONG, eef->cskyx, eef->generic.row, 
 		     1, 1, &event->sky_xi, &status)) return(status);
@@ -221,12 +221,14 @@ int eROSITAEventFile_getRow(eROSITAEventFile* eef, eROSITAEvent* event, long row
   if (fits_read_col(eef->generic.fptr, TBYTE, eef->cpat_inf, row, 1, 1, 
 		    &event->pat_inf, &event->pat_inf, &anynul, &status)) return(status);
 
-  event->ra = SIXT_NAN;
-  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cra, row, 1, 1, 
+  long ra = 0;
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cra, row, 1, 1, 
 		    &event->ra, &event->ra, &anynul, &status)) return(status);
-  event->dec = SIXT_NAN;
-  if (fits_read_col(eef->generic.fptr, TDOUBLE, eef->cdec, row, 1, 1, 
+  event->ra = ra * 1.e-6;
+  long dec = 0;
+  if (fits_read_col(eef->generic.fptr, TLONG, eef->cdec, row, 1, 1, 
 		    &event->dec, &event->dec, &anynul, &status)) return(status);
+  event->dec = dec * 1.e-6;
   event->sky_xi = 0;
   if (fits_read_col(eef->generic.fptr, TLONG, eef->cskyx, row, 1, 1, 
 		    &event->sky_xi, &event->sky_xi, &anynul, &status)) return(status);

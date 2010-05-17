@@ -38,7 +38,7 @@ int event_projection_getpar(struct Parameters *parameters);
 int event_projection_main() {
   struct Parameters parameters;   // Program parameters
 
-  AttitudeCatalog* attitudecatalog=NULL;
+  AttitudeCatalog* ac=NULL;
   eROSITAEventFile eventlistfile;
 
   // WCS keywords for sky coordinates.
@@ -47,8 +47,7 @@ int event_projection_main() {
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
 
-  char msg[MAXMSG];           // error output buffer
-  int status=EXIT_SUCCESS;    // error status
+  int status=EXIT_SUCCESS;    // Error status
 
 
   // Register HEATOOL:
@@ -114,9 +113,9 @@ int event_projection_main() {
 			comment, &status)) break;
 
     // Get the satellite catalog with the telescope attitude data:
-    if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
-						   parameters.t0, parameters.timespan, 
-						   &status))) break;
+    if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
+				      parameters.t0, parameters.timespan, 
+				      &status))) break;
 						       
     // --- END of Initialization ---
 
@@ -127,10 +126,7 @@ int event_projection_main() {
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start sky imaging process ...\n");
 
-    // LOOP over all event in the FITS table
-    long attitude_counter=0; // Counter for entries in the AttitudeCatalog.
-
-    // SCAN EVENT LIST
+    // LOOP over all event in the FITS table.
     eROSITAEvent event;
     while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventlistfile.generic))) {
       
@@ -145,38 +141,17 @@ int event_projection_main() {
 	break;
       }
 
-      // Get the last attitude entry before 'event.time'
-      // (in order to interpolate the attitude at this time between 
-      // the neighboring calculated values):
-      for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
-	if(attitudecatalog->entry[attitude_counter+1].time>event.time) {
-	  break;
-	}
-      }
-      if(fabs(attitudecatalog->entry[attitude_counter].time-event.time)>60.) { 
-	// no entry within 10 minutes !!
-	status = EXIT_FAILURE;
-	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", event.time);
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
-
       // Determine the Position of the source on the sky:
-
       // First determine telescope pointing direction at the current time.
-      telescope.nz = 
-	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-					 attitudecatalog->entry[attitude_counter].time, 
-					 attitudecatalog->entry[attitude_counter+1].nz, 
-					 attitudecatalog->entry[attitude_counter+1].time, 
-					 event.time));
+      telescope.nz = getTelescopePointing(ac, event.time,
+					  &status);
       // Determine the current nx: perpendicular to telescope axis nz
       // and in the direction of the satellite motion.
       telescope.nx = 
-	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nx, 
-					 attitudecatalog->entry[attitude_counter].time, 
-					 attitudecatalog->entry[attitude_counter+1].nx, 
-					 attitudecatalog->entry[attitude_counter+1].time, 
+	normalize_vector(interpolate_vec(ac->entry[ac->current_entry].nx, 
+					 ac->entry[ac->current_entry].time, 
+					 ac->entry[ac->current_entry+1].nx, 
+					 ac->entry[ac->current_entry+1].time, 
 					 event.time));
       // Remove the component along the vertical direction nz 
       // (nx must be perpendicular to nz!):
@@ -240,10 +215,12 @@ int event_projection_main() {
       }
 
       // Store the data in the Event List FITS file.
-      fits_write_col(eventlistfile.generic.fptr, TDOUBLE, eventlistfile.cra,
-		     eventlistfile.generic.row, 1, 1, &event.ra, &status);
-      fits_write_col(eventlistfile.generic.fptr, TDOUBLE, eventlistfile.cdec, 
-		     eventlistfile.generic.row, 1, 1, &event.dec, &status);
+      long ra = (long)(event.ra/1.e-6);
+      fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cra,
+		     eventlistfile.generic.row, 1, 1, &ra, &status);
+      long dec = (long)(event.dec/1.e-6);
+      fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cdec, 
+		     eventlistfile.generic.row, 1, 1, &dec, &status);
       fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cskyx, 
 		     eventlistfile.generic.row, 1, 1, &event.sky_xi, &status);
       fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cskyy, 
@@ -263,7 +240,7 @@ int event_projection_main() {
   closeeROSITAEventFile(&eventlistfile);
 
   // Release memory of AttitudeCatalog
-  free_AttitudeCatalog(attitudecatalog);
+  free_AttitudeCatalog(ac);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);
