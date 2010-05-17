@@ -17,7 +17,7 @@ typedef struct {
   char ccdnr;
 
   /** Information about split events. */
-  int pat_typ, pat_inf, pat_num;
+  int pat_typ, pat_inf;
 
 
   /** Right ascension and declination [degree]. */

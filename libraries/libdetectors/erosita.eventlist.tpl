@@ -44,6 +44,10 @@ OFCODE          String          / Code name of the Offset map
 GAINCAME        String          / Code name of the CAMEX amplification
 TIMEDEL         Real            / Length of exposure entry interval [s]
 CHOPPER         String          / electronic chopper in use
+NXDIM           384
+NYDIM           384
+PIXLEN_X        75.0
+PIXLEN_Y        75.0
 #Column definitions
 	TTYPE#  FRAME           / Frame number
 	TFORM#  J               / Format of column FRAME
@@ -74,11 +78,11 @@ CHOPPER         String          / electronic chopper in use
 	TCRVL#	0.
 	TCDLT#  7.5e-5
 	TTYPE#	RA              / Right Ascension (J2000)
-	TFORM#  D               / Format of column RA
-	TUNIT#  deg             / Unit of column RA
+	TFORM#  J               / Format of column RA
+	TUNIT#  1e-6 deg        / Unit of column RA
 	TTYPE#	DEC             / Declination (J2000)
-	TFORM#  D               / Format of column DEC
-	TUNIT#  deg             / Unit of column DEC
+	TFORM#  J               / Format of column DEC
+	TUNIT#  1e-6 deg        / Unit of column DEC
 	TTYPE#  X               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column X
 	TUNIT#  pixel           / Unit of column X
@@ -101,18 +105,6 @@ CHOPPER         String          / electronic chopper in use
 	TTYPE#  PAT_INF         / Pattern Information
 	TFORM#  B               / Format of column PAT_INF
 	TUNIT#  pattern info    / Unit of column PAT_INF
-	TTYPE#  PAT_IND         / Pattern index
-	TFORM#  I               / Format of column PAT_IND
-	TUNIT#  pattern index   / Unit of column PAT_IND
-	TTYPE#	PAT_SEQ
-	TFORM#	B
-	TUNIT#	
 	TTYPE#	CCDNR		/ 0 for TRoPIC, 1-7 for eROSITA
 	TFORM#	B
 	TUNIT#	
-	TTYPE#  AMP_GAIN        / Gain corrected amplitudes
-	TFORM#  E               / Format of column AMP_GAIN
-	TUNIT#  ADU             / Unit of column AMP_GAIN
-	TTYPE#  AMP_COR         / Gain+CTI corrected amplitudes
-	TFORM#  E               / Format of column AMP_GAIN
-	TUNIT#  ADU             / Unit of column AMP_GAIN

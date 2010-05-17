@@ -11,6 +11,7 @@
 #include "vector.h"
 #include "sixt_random.h"
 #include "pointsources.h"
+#include "extendedsources.h"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -62,11 +63,23 @@ struct PhotonBinaryTreeEntry {
 //////////////////////////////////////////////////////////////////////////
 
 
-// Creates photons according to a particular rate specified by the given 
-// light curve and adds them to the time ordered photon list.
-// The return value is the value of the error status variable.
-int create_photons(PointSource* ps, double time, double dt,
-		   struct PhotonOrderedListEntry** pl, struct RMF*);
+/** Create photons for a particular PointSource. Take into account
+    the particular rate specified by the light curve and add the
+    photons to the time ordered photon list. The return value is the
+    value of the error status variable. */
+int create_PointSourcePhotons(PointSource* ps, 
+			      double time, double dt,
+			      struct PhotonOrderedListEntry** pl, 
+			      struct RMF*);
+
+/** Create photons for a particular ExtendedSource. Take into account
+    the particular rate specified by the light curve and add the
+    photons to the time ordered photon list. The return value is the
+    value of the error status variable. */
+int create_ExtendedSourcePhotons(ExtendedSource* es, 
+				 double time, double dt,
+				 struct PhotonOrderedListEntry** pl, 
+				 struct RMF*);
 
 /** Create random photon energy. The routine randomly determines a
     photon energy according to the given source spectrum.  The
