@@ -34,12 +34,12 @@ float photon_energy(Spectrum* spectrum, struct RMF* rmf)
 
 
 
-int create_photons(PointSource* ps /**< Source data. */,
-		   double time /**< Current time. */, 
-		   double dt /**< Time interval for photon generation. */,       
-		   /** Address of pointer to time-ordered photon list.*/
-		   struct PhotonOrderedListEntry** list_first,
-		   struct RMF* rmf)
+int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
+			      double time /**< Current time. */, 
+			      double dt /**< Time interval for photon generation. */,       
+			      /** Address of pointer to time-ordered photon list.*/
+			      struct PhotonOrderedListEntry** list_first,
+			      struct RMF* rmf)
 {
   // Second pointer to photon list, that can be moved along the list,   
   // without loosing the first entry.
@@ -58,7 +58,7 @@ int create_photons(PointSource* ps /**< Source data. */,
   while (ps->t_last_photon < time+dt) {
     new_photon.ra = ps->ra;
     new_photon.dec = ps->dec; 
-    new_photon.direction = unit_vector(ps->ra, ps->dec); // REMOVE
+    new_photon.direction = unit_vector(new_photon.ra, new_photon.dec); // REMOVE
 
     // Determine the energy of the new photon
     new_photon.energy = photon_energy(ps->spectrum, rmf);
@@ -98,6 +98,128 @@ int create_photons(PointSource* ps /**< Source data. */,
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
     assert(new_photon.time>=ps->t_last_photon);
     ps->t_last_photon = new_photon.time;
+
+    // Insert photon to the global photon list:
+    if ((status=insert_Photon2TimeOrderedList(list_first, &list_current, &new_photon)) 
+	!= EXIT_SUCCESS) break;  
+    
+  } // END of loop 'while(t_last_photon < time+dt)'
+
+  return(status);
+}
+
+
+
+int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
+				 double time /**< Current time. */, 
+				 double dt /**< Time interval for photon generation. */,       
+				 /** Address of pointer to time-ordered photon list.*/
+				 struct PhotonOrderedListEntry** list_first,
+				 struct RMF* rmf)
+{
+  // Second pointer to photon list, that can be moved along the list,   
+  // without loosing the first entry.
+  struct PhotonOrderedListEntry* list_current = *list_first;
+
+  int status=EXIT_SUCCESS;
+
+  // If there is no photon time stored so far, set the current time.
+  if (es->t_last_photon < 0.) {
+    es->t_last_photon = time;
+  }
+
+
+  // Create photons and insert them into the given time-ordered list:
+  Photon new_photon; // Buffer for new Photon.
+  Vector center_direction; // Center of the extended source.
+  Vector a1, a2; // Normalized vectors perpendicular to the source vector / center direction.
+  Vector b; // Auxiliary vector.
+  double alpha, radius;
+  while (es->t_last_photon < time+dt) {
+
+    // Determine the photon direction of origin.
+    // Center of the extended source:
+    center_direction = unit_vector(es->ra, es->dec);
+
+    // Determine auxiliary vector b.
+    if (center_direction.x > center_direction.y) {
+      b.y = 1.;
+      if (center_direction.x > center_direction.z) {
+	b.x = 0.;
+	b.z = 1.;
+      } else {
+	b.x = 1.;
+	b.z = 0.;
+      }
+    } else {
+      b.x = 1.;
+      if (center_direction.y > center_direction.z) {
+	b.y = 0.;
+	b.z = 1.;
+      } else {
+	b.y = 1.;
+	b.z = 0.;
+      }
+    }
+    
+    // Determine the two vectors perpendicular to the source direction
+    // spanning the local reference coordinate system for the source
+    // extension.
+    a1 = normalize_vector(vector_product(b , center_direction));
+    a2 = normalize_vector(vector_product(a1, center_direction));
+    
+    // Determine an azimuthal angle and an radius [rad]:
+    alpha  = sixt_get_random_number()*2*M_PI;
+    radius = sixt_get_random_number()*es->radius;
+    
+    // Photon direction is composition of these vectors:
+    new_photon.direction.x = center_direction.x + 
+      radius*(cos(alpha)*a1.x + sin(alpha)*a2.x);
+    new_photon.direction.y = center_direction.y + 
+      radius*(cos(alpha)*a1.y + sin(alpha)*a2.y);
+    new_photon.direction.z = center_direction.z + 
+      radius*(cos(alpha)*a1.z + sin(alpha)*a2.z);
+    normalize_vector_fast(&new_photon.direction);
+    calculate_ra_dec(new_photon.direction, &new_photon.ra, &new_photon.dec);
+
+    // Determine the energy of the new photon
+    new_photon.energy = photon_energy(es->spectrum, rmf);
+
+    // Determine the impact time of the photon according to the light
+    // curve of the source.
+    if (NULL==es->lc) {
+      if (T_LC_CONSTANT==es->lc_type) {
+	es->lc = getLinLightCurve(1, &status);
+	if (EXIT_SUCCESS!=status) break;
+	status = initConstantLinLightCurve(es->lc, es->rate, time, 1.e6);
+	if (EXIT_SUCCESS!=status) break;
+      } else if (T_LC_TIMMER_KOENIG==es->lc_type) {
+	es->lc = getLinLightCurve(131072, &status);
+	if (EXIT_SUCCESS!=status) break;
+	status = initTimmerKoenigLinLightCurve(es->lc, time, TK_LC_STEP_WIDTH, es->rate,
+					       es->rate/3.);
+	if (EXIT_SUCCESS!=status) break;
+      } else {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Unknown light curve type!\n", EXIT_FAILURE);
+	break;
+      }
+    }
+
+    if (time > es->lc->t0 + es->lc->nvalues*es->lc->step_width) {
+      if (T_LC_CONSTANT==es->lc_type) {
+	status = initConstantLinLightCurve(es->lc, es->rate, time, 1.e6);
+	if (EXIT_SUCCESS!=status) break;
+      } else if (T_LC_TIMMER_KOENIG==es->lc_type) {
+	status = initTimmerKoenigLinLightCurve(es->lc, time, TK_LC_STEP_WIDTH, es->rate,
+					       es->rate/3.);
+	if (EXIT_SUCCESS!=status) break;
+      }
+    }
+
+    new_photon.time = getPhotonTime(es->lc, es->t_last_photon);
+    assert(new_photon.time>=es->t_last_photon);
+    es->t_last_photon = new_photon.time;
 
     // Insert photon to the global photon list:
     if ((status=insert_Photon2TimeOrderedList(list_first, &list_current, &new_photon)) 

@@ -163,7 +163,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   // Time-ordered photon list containing all created photons in the sky.
   struct PhotonOrderedListEntry* photon_list=NULL;  
   // Current time and time step.
-  double time, dt = 0.1;
+  double time;
+  const double dt = 0.1;
   // First run of the loop.
   int first = 1;
 
@@ -210,8 +211,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
       if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
 	    
 	// The source is inside the FOV  => create photons:
-	if ((status=create_photons(&(psc->sources[source_counter]), 
-				   time, dt, &photon_list, rmf))
+	if ((status=create_PointSourcePhotons(&(psc->sources[source_counter]), 
+					      time, dt, &photon_list, rmf))
 	    !=EXIT_SUCCESS) break; 
 	    
       } // END of check if source is close to the FoV
@@ -253,7 +254,6 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
 {
   int status = EXIT_SUCCESS;
 
-  /*
   // Defines the mathematical meaning of 'close' in the context that for 
   // sources 'close to the FOV' the simulation creates a light curve.
   const double close_mult = 1.5; 
@@ -266,13 +266,13 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   // FoV. (angle(n,source) > 90-bandwidth)
   const double pre_max_align = sin(2*telescope.fov_diameter);
 
-
+  
   // Normalized vector perpendicular to the orbital plane,
   // used for a preselection of point sources out of the
   // entire catalog.
   Vector preselection_vector;
   // Pointer source catalog.
-  PointSourceCatalog* psc=NULL;
+  ExtendedSourceCatalog* esc=NULL;
   // Normalized vector pointing in the direction of the source.
   Vector source_vector;
   // Counter for the different sources in the catalog.
@@ -280,7 +280,8 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   // Time-ordered photon list containing all created photons in the sky.
   struct PhotonOrderedListEntry* photon_list=NULL;  
   // Current time and time step.
-  double time, dt = 0.1;
+  double time;
+  const double dt = 0.1;
   // First run of the loop.
   int first = 1;
 
@@ -300,10 +301,10 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
     if ((1==first)||
 	(fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
 	 sin(0.5*telescope.fov_diameter))) {
-
+      
       // Release old PointSourceCatalog:
-      free_PointSourceCatalog(psc);
-      psc = NULL;
+      free_ExtendedSourceCatalog(esc);
+      esc = NULL;
 
       // Preselect sources from the entire source catalog according to the 
       // satellite's direction of motion.
@@ -311,25 +312,26 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
       preselection_vector = 
 	normalize_vector(vector_product(telescope.nz,
 					ac->entry[ac->current_entry].nx));
-      psc=getPointSourceCatalog(psf, preselection_vector, pre_max_align, &status);
-      if((EXIT_SUCCESS!=status)||(NULL==psc)) break;
-
+      esc=getExtendedSourceCatalog(esf, preselection_vector, pre_max_align, &status);
+      if((EXIT_SUCCESS!=status)||(NULL==esc)) break;
+      
     } // END of preselection
 
-    // CREATE PHOTONS for all POINT sources CLOSE TO the FOV
-    for (source_counter=0; source_counter<psc->nsources; source_counter++) {
+    
+    // CREATE PHOTONS for all EXTENDED sources CLOSE TO the FOV
+    for (source_counter=0; source_counter<esc->nsources; source_counter++) {
       // Check whether the source is inside the FOV:
-      // Compare the source direction to the unit vector specifiing the 
+      // Compare the source direction to the unit vector specifying the 
       // direction of the telescope:
       source_vector = 
-	unit_vector(psc->sources[source_counter].ra, 
-		    psc->sources[source_counter].dec);
+	unit_vector(esc->sources[source_counter].ra, 
+		    esc->sources[source_counter].dec);
       if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
 	    
 	// The source is inside the FOV  => create photons:
-	if ((status=create_photons(&(psc->sources[source_counter]), 
-				   time, dt, &photon_list, rmf))
-	    !=EXIT_SUCCESS) break; 
+	if ((status=create_ExtendedSourcePhotons(&(esc->sources[source_counter]), 
+						 time, dt, &photon_list, rmf))
+	    !=EXIT_SUCCESS) break;
 	    
       } // END of check if source is close to the FoV
     } // End of loop over all sources in the catalog.
@@ -344,14 +346,14 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
 				      telescope,
 				      t0, timespan);
     if (EXIT_SUCCESS!=status) break;
-
+    
     first = 0;
   } // END of the loop over the time interval.
   if (EXIT_SUCCESS!=status) return(status);
   
   // Clear photon list
   clear_PhotonList(&photon_list);
-  */
+  
   return(status);
 }
 
@@ -385,7 +387,8 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
   // Time-ordered photon list containing all created photons in the sky.
   struct PhotonOrderedListEntry* photon_list=NULL;
   // Current time and time step.
-  double time, dt = 1.0;
+  double time;
+  const double dt = 1.0;
   // Buffer for random numbers.
   double rnd;
   // Buffer for new photons.
