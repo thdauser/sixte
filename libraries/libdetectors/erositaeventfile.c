@@ -167,7 +167,7 @@ int eROSITAEventFile_getNextRow(eROSITAEventFile* eef, eROSITAEvent* event)
     return(status);
   }
 
-  // Read the new HTRSEvent from the file.
+  // Read the new eROSITAEvent from the file.
   status=eROSITAEventFile_getRow(eef, event, eef->generic.row);
 
   return(status);

@@ -1,8 +1,13 @@
-
 #ifndef PHOTONLISTFILE_H
 #define PHOTONLISTFILE_H 1
 
 #include "sixt.h"
+#include "photon.h"
+
+
+////////////////////////////////////////////////////////////////////////
+// Type declarations.
+////////////////////////////////////////////////////////////////////////
 
 
 typedef struct {
@@ -23,7 +28,9 @@ typedef struct {
 } PhotonListFile;
 
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+// Function declarations.
+////////////////////////////////////////////////////////////////////////
 
 
 /** Open an existing photon list FITS file and return the
@@ -39,6 +46,20 @@ int openNewPhotonListFile(PhotonListFile* plf, char* filename, char* template);
 
 /** Close open PhotonListFile (FITS file). */
 int closePhotonListFile(PhotonListFile*) ;
+
+/** Read the next Photon from the PhotonListFile. This routine
+    increases the internal counter of the PhotonListFile data
+    structure. The return value is the error status. */
+int PhotonListFile_getNextRow(PhotonListFile* plf, Photon* ph);
+
+/** Read a specific row from the PhotonListFile. This routine does NOT
+    increase the internal counter of the PhotonListFile data
+    structure. The return value of the function is the error
+    status. */
+int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row);
+
+/** Append a new photon to the to PhotonListFile. */
+int addPhoton2File(PhotonListFile* plf, Photon* ph);
 
 
 #endif /* PHOTONLISTFILE_H */

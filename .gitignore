@@ -33,6 +33,7 @@ ero_fits2tm
 erosita_simulation
 ero_merge_eventfiles
 ero_split_photonfile
+ero_merge_photonfiles
 hexagonal_pixel_intensity
 htrs_psfgen
 htrs_simulation
