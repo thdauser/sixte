@@ -628,12 +628,12 @@ int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
 	  // Convert string to upper case. 
 	  strtoupper(srctype);
 	  // Check for the different possible source types.
-	  if (1==strcmp(srctype, "POINT")) {
+	  if (0==strcmp(srctype, "POINT")) {
 	    headas_chat(5, " --> source type: POINT_SOURCES\n load data from "
 			"current HDU ...\n");
 	    *sc = POINT_SOURCES;
 
-	  } else if (1==strcmp(srctype, "EXTENDED")) {
+	  } else if (0==strcmp(srctype, "EXTENDED")) {
 	    headas_chat(5, " --> source type: EXTENDED_SOURCES\n load data from "
 			"current HDU ...\n");
 	    *sc = EXTENDED_SOURCES;
