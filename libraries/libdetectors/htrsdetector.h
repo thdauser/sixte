@@ -24,6 +24,11 @@
 #include "impact.h"
 
 
+////////////////////////////////////////////////////////////////////////
+// Type declarations.
+////////////////////////////////////////////////////////////////////////
+
+
 /** Model for the HTRS detector on IXO. This data structure contains
     the data required for the simulation of the HTRS. It inherits some
     properties of the GenericDetector and SquarePixels data
@@ -34,8 +39,7 @@
     by the function addImpact2HTRSDetector(). Finally after the
     simulation when the data structure is not required any more, the
     cleanupHTRSDetector() routine should be called to release
-    allocated memory and close open file connections.
- */
+    allocated memory and close open file connections. */
 typedef struct {
 
   /** Generic Detector properties like, e.g., the detector response. */
@@ -108,7 +112,9 @@ struct HTRSDetectorParameters {
 };
 
 
-////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+// Function declarations.
+////////////////////////////////////////////////////////////////////////
 
 
 /** Set up the configuration of a HTRSDetector.  The routine is
@@ -117,16 +123,14 @@ struct HTRSDetectorParameters {
     has to take care of allocating the required memory for the pixel
     array and to create an event file for the output of the measured
     data.  For some of these tasks it simply calls the init routines
-    of the underlying data structures.
- */
+    of the underlying data structures. */
 int initHTRSDetector(HTRSDetector* hd, struct HTRSDetectorParameters* parameters);
 
 /** Clean up the HTRSDetector data structure.  This routine should be
     called when the HTRSDetector data structure is not required any
     more.  It takes care of releasing allocated memory and closes open
     file connections.  If applicable it calls clean-up routines of
-    underlying data structures.
- */
+    underlying data structures. */
 int cleanupHTRSDetector(HTRSDetector* hd);
 
 /** Add a photon impact to the HTRSDetector pixel array. This is the
@@ -135,14 +139,13 @@ int cleanupHTRSDetector(HTRSDetector* hd);
     routine determines the resulting generated charge from the
     detector response and stores the event in the output event file.
     Split events are taken into account based on a Gaussian charge
-    cloud shape.
- */
+    cloud shape. */
 int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact);
 
 /** Assign event grades to the events in the event list of the HTRS
     detector. The different event grades are determined with respect
     to the required shaping times of the readout electronics. */
-int HTRSassignEventGrades(HTRSDetector detector);
+int HTRSassignEventGrades1(HTRSDetector detector);
 
 
 #endif /* HTRSDETECTOR_H */

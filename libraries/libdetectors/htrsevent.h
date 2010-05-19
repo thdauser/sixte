@@ -32,7 +32,7 @@ typedef struct {
       - 4: event is lost during a pixel reset.
 
   */
-  int grade;
+  int grade1;
 
   /** Exact impact position of the photon on the detector. */
   double x, y; 
