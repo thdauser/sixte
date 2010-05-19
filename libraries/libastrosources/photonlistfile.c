@@ -86,3 +86,88 @@ int closePhotonListFile(PhotonListFile* plf)
 }
 
 
+
+int PhotonListFile_getNextRow(PhotonListFile* plf, Photon* ph)
+{
+  int status=EXIT_SUCCESS;
+
+  // Move counter to next line.
+  plf->row++;
+
+  // Check if there is still a row available.
+  if (plf->row > plf->nrows) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: photon list file contains no further entries!\n", status);
+    return(status);
+  }
+
+  // Read the new Photon from the file.
+  status=PhotonListFile_getRow(plf, ph, plf->row);
+
+  return(status);
+}
+
+
+
+int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
+{
+  int status=EXIT_SUCCESS;
+  int anynul = 0;
+
+  // Check if there is still a row available.
+  if (row > plf->nrows) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: photon list file does not contain the requested line!\n", 
+		   status);
+    return(status);
+  }
+
+  // Read in the data.
+  ph->time = 0.;
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->ctime, plf->row+1, 1, 1, 
+		    &ph->time, &ph->time, &anynul, &status)) return(status);
+  ph->energy = 0.;
+  if (fits_read_col(plf->fptr, TFLOAT, plf->cenergy, plf->row+1, 1, 1, 
+		    &ph->energy, &ph->energy, &anynul, &status)) return(status);
+  ph->ra = 0.;
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->cra, plf->row+1, 1, 1, 
+		    &ph->ra, &ph->ra, &anynul, &status)) return(status);
+  ph->dec = 0.;
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, plf->row+1, 1, 1, 
+		    &ph->dec, &ph->dec, &anynul, &status)) return(status);
+
+  
+  // Check if an error occurred during the reading process.
+  if (0!=anynul) {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: reading from event list failed!\n", status);
+    return(status);
+  }
+
+  return(status);
+}
+
+
+
+int addPhoton2File(PhotonListFile* plf, Photon* ph)
+{
+  int status=EXIT_SUCCESS;
+
+  // Insert a new, empty row to the table:
+  if (fits_insert_rows(plf->fptr, plf->row, 1, &status)) return(status);
+  plf->row++;
+  plf->nrows++;
+
+  if (fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
+		     plf->row, 1, 1, &ph->time, &status)) return(status);
+  if (fits_write_col(plf->fptr, TFLOAT, plf->cenergy, 
+		     plf->row, 1, 1, &ph->energy, &status)) return(status);
+  if (fits_write_col(plf->fptr, TDOUBLE, plf->cra, 
+		     plf->row, 1, 1, &ph->ra, &status)) return(status);
+  if (fits_write_col(plf->fptr, TDOUBLE, plf->cdec, 
+		     plf->row, 1, 1, &ph->dec, &status)) return(status);
+
+  return(status);
+}
+
+

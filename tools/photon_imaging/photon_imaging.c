@@ -101,30 +101,17 @@ int photon_imaging_main() {
 
     // SCAN PHOTON LIST    
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    int anynul=0;
     Photon photon={.time=0.};
     // Buffer for impact position:
     struct Point2d position;
     // Buffer for scalar product:
     double scp;
-    for(photonlistfile.row=0; photonlistfile.row<photonlistfile.nrows; 
-	photonlistfile.row++) {
+    while (photonlistfile.row<photonlistfile.nrows) {
 
       if (EXIT_SUCCESS!=status) break;
       
       // Read an entry from the photon list:
-      photon.time = 0.;
-      photon.energy = 0.;
-      photon.ra = 0.;
-      photon.dec = 0.;
-      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.ctime, 
-		    photonlistfile.row+1, 1, 1, &photon.time, &photon.time, &anynul, &status);
-      fits_read_col(photonlistfile.fptr, TFLOAT, photonlistfile.cenergy, 
-		    photonlistfile.row+1, 1, 1, &photon.energy, &photon.energy, &anynul, &status);
-      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cra, 
-		    photonlistfile.row+1, 1, 1, &photon.ra, &photon.ra, &anynul, &status);
-      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
-		    photonlistfile.row+1, 1, 1, &photon.dec, &photon.dec, &anynul, &status);
+      status = PhotonListFile_getNextRow(&photonlistfile, &photon);
       if (status!=EXIT_SUCCESS) break;
 
       // Check whether we are still within the requested time interval.

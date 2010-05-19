@@ -83,8 +83,8 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
 
       // Add the photon to the photon list file:
       // Rescale from [rad] -> [deg]:
-      double ra  = (*photon_list)->photon.ra *180./M_PI;
-      double dec = (*photon_list)->photon.dec*180./M_PI;
+      (*photon_list)->photon.ra *= 180./M_PI;
+      (*photon_list)->photon.dec*= 180./M_PI;
       // Determine the right position to insert the photon:
       while (plf->row<plf->nrows) {
 	// Read the time from the file.
@@ -97,16 +97,8 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
 	plf->row++;
       }
       // Insert a new line with the photon data:
-      fits_insert_rows(plf->fptr, plf->row++, 1, &status);
-      fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
-		     plf->row, 1, 1, &(*photon_list)->photon.time, &status);
-      fits_write_col(plf->fptr, TFLOAT, plf->cenergy, 
-		     plf->row, 1, 1, &(*photon_list)->photon.energy, &status);
-      fits_write_col(plf->fptr, TDOUBLE, plf->cra, 
-		     plf->row, 1, 1, &ra, &status);
-      fits_write_col(plf->fptr, TDOUBLE, plf->cdec, 
-		     plf->row, 1, 1, &dec, &status);
-      plf->nrows++;
+      status = addPhoton2File(plf, &(*photon_list)->photon);
+      if (EXIT_SUCCESS!=status) break;
     } // END of: photon is inside the FOV?
 
     // Move to the next entry in the photon list and clear the current entry.
@@ -115,7 +107,6 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
     *photon_list = pl_entry;
 
     if (status!=EXIT_SUCCESS) break;
-
   } // END of scanning the photon list.
 
   return(status);
