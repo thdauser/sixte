@@ -179,17 +179,19 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
     if (INVALID_PIXEL != ring[0]) {
 
       // Create a new event data structure.
-      HTRSEvent event = { .grade1 = 0 };
+      HTRSEvent event = { .grade1 = 0, .pileup = 0 };
 
       // Check if the pixel is currently active or whether it is in
       // a clearing (reset) phase.
       if (impact->time < 
 	  hd->pixels.array[ring[0]][number[0]].reset_from + hd->reset_time) {
 	event.grade1 = 4;
+	event.grade2 = -1;
       } else {
 	// The photon can be detected in this pixel.
 	// The pixel is NOT within the clearing (reset) time.
 	event.grade1 = 0;
+	event.grade2 = 0;
       }
 
 	
@@ -337,6 +339,99 @@ int HTRSassignEventGrades1(HTRSDetector detector)
     
   } // END of loop over all events in the event list.
 
+  return(status);
+}
+
+
+
+int HTRSassignEventGrades2(HTRSDetector detector)
+{
+  int status = EXIT_SUCCESS;
+  
+  // Assign the right event grades to all events in the event list.
+  HTRSEvent event, eventbuffer; // Event buffer.
+  long row;
+  int nbefore_only_slow, nbefore_fast, nafter_only_slow, nafter_fast;
+  // Reset the event file row counter to the first line in the file.
+  detector.eventlist.generic.row = 0;
+  // Loop over all events in the event file.
+  while((EXIT_SUCCESS==status) && (0==EventFileEOF(&detector.eventlist.generic))) {
+    
+    // Read the next event from the FITS file.
+    status=HTRSEventFile_getNextRow(&detector.eventlist, &event);
+    if(EXIT_SUCCESS!=status) break;
+
+    // Check if the event has happend during a reset interval.
+    // In that case a further analysis of the event grade is 
+    // not necessary.
+    if (-1==event.grade2) continue;
+
+    // Former events:
+    nbefore_only_slow=0; nbefore_fast=0;
+    row = detector.eventlist.generic.row - 1;
+    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+      status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
+      if (EXIT_SUCCESS!=status) break;
+      if (event.time - eventbuffer.time > detector.slow_shaping_time) break;
+      if (event.pixel == eventbuffer.pixel) {
+	if (event.time - eventbuffer.time < detector.fast_shaping_time) {
+	  nbefore_fast++;
+	} else {
+	  nbefore_only_slow++;
+	  // Avoid too many unnecessary loop runs.
+	  break;
+	}
+      }
+      row--;
+    }
+    if (EXIT_SUCCESS!=status) break;
+    // Subsequent events:
+    nafter_only_slow=0; nafter_fast=0;
+    row = detector.eventlist.generic.row + 1;
+    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+      status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
+      if (EXIT_SUCCESS!=status) break;
+      if (eventbuffer.time - event.time > detector.slow_shaping_time) break;
+      if (event.pixel == eventbuffer.pixel) {
+	if (eventbuffer.time - event.time < detector.fast_shaping_time) {
+	  nafter_fast++;
+	} else {
+	  nafter_only_slow++;
+	  // Avoid too many unnecessary loop runs.
+	  break; 
+	}
+      }
+      row++;
+    }
+    if (EXIT_SUCCESS!=status) break;
+    
+    // Determine the grade of the event.
+    if (nbefore_fast > 0) {
+      // Event is not measured at all, because it cannot be distinguished 
+      // from the previous event.
+      event.grade2 = -2;
+    } else if ((nbefore_only_slow>0)||(nafter_only_slow>0)) {
+      // Event is detected as event with degraded energy information.
+      event.grade2 = 1;
+    } else {
+      // Event is detected as nominal event.
+      event.grade2 = 0;
+    }
+
+    // Check for pile-up.
+    if ((nbefore_fast>0)||(nafter_fast>0)) {
+      event.pileup = 1;
+    } else {
+      event.pileup = 0;
+    }
+    
+    // Write the event information to the event file.
+    status = HTRSEventFile_writeRow(&detector.eventlist, &event, 
+				    detector.eventlist.generic.row);
+    if (EXIT_SUCCESS!=status) break;
+    
+  } // END of loop over all events in the event list.
+  
   return(status);
 }
 
