@@ -20,16 +20,20 @@ typedef struct {
   /** Event grade. This gives information about the energy and time
       resolution of the event. There are the following event grades:
 
-      - 0: nominal time and energy resolution 
+      -  0: nominal time and energy resolution 
 
-      - 1: nominal time but no energy resolution 
+      - 11: nominal time but degraded energy resolution due to 
+            subsequent events
 
-      - 2: event is measured, but there is at least one subsequent
-	   event that cannot be distinguished from this event.
+      - 12: nominal time but degraded energy resolution due to
+            previous events
 
-      - 3: event cannot be distinguished from the previous event
+      - 21: event is measured, but there is at least one subsequent
+ 	    event that cannot be distinguished from this event.
+
+      - 22: event cannot be distinguished from the previous event
       
-      - 4: event is lost during a pixel reset.
+      - 40: event is lost during a pixel reset.
 
   */
   int grade1;

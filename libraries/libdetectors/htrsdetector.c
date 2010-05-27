@@ -185,7 +185,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
       // a clearing (reset) phase.
       if (impact->time < 
 	  hd->pixels.array[ring[0]][number[0]].reset_from + hd->reset_time) {
-	event.grade1 = 4;
+	event.grade1 = 40;
 	event.grade2 = -1;
       } else {
 	// The photon can be detected in this pixel.
@@ -273,7 +273,7 @@ int HTRSassignEventGrades1(HTRSDetector detector)
     // Check if the event has happend during a reset interval.
     // In that case a further analysis of the event grade is 
     // not necessary.
-    if (4==event.grade1) continue;
+    if (40==event.grade1) continue;
 
     // Former events:
     nbefore_slow=0; nbefore_fast=0;
@@ -316,16 +316,20 @@ int HTRSassignEventGrades1(HTRSDetector detector)
     if (nbefore_fast > 0) {
       // Event is not measured at all, because it cannot be distinguished 
       // from the previous event.
-      event.grade1 = 3;
+      event.grade1 = 22;
     } else if (nafter_fast > 0) {
       // Event is measured, but there is at least one subsequent event
       // that cannot be distinguished from this event.
-      event.grade1 = 2;
-    } else if (nbefore_slow + nafter_slow > 0) {
+      event.grade1 = 21;
+    } else if (nbefore_slow > 0) {
       // The event is detected as an individual event, but the energy 
-      // cannot be measured with the nominal accuracy, because other
-      // events are too close.
-      event.grade1 = 1;
+      // cannot be measured with the nominal accuracy, because another
+      // previous event is too close.
+      event.grade1 = 12; 
+    } else if (nafter_slow > 0) {
+      // Subsequent events destroy the accurate energy information. 
+      // Therefore the event is detected with degraded accuracy.
+      event.grade1 = 11;
     } else {
       // The event is measured with the full nominal energy (and time) 
       // accuracy.
