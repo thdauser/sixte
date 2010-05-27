@@ -96,6 +96,9 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
     }
 
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
+    if (new_photon.time < ps->t_last_photon) {
+      printf("a=%lf b=%lf\n", ps->lc->a[0], ps->lc->b[0]);
+    }
     assert(new_photon.time>=ps->t_last_photon);
     ps->t_last_photon = new_photon.time;
 

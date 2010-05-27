@@ -259,6 +259,7 @@ AC_CONFIG_FILES([Makefile
 		tools/ero_exposure/Makefile
 		tools/ero_merge_eventfiles/Makefile
 		tools/ero_split_photonfile/Makefile
+		tools/ero_merge_photonfiles/Makefile
 		tools/htrs_simulation/Makefile
 		tools/htrs_psfgen/Makefile
 		tools/htrs_pixel_intensity/Makefile

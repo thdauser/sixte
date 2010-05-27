@@ -1,3 +1,4 @@
+n_inputfiles,i,lq,2,1,100,"number of input files "
 input_prefix,s,lq,"events_",,,"filename prefix of the input event files (FITS)"
 output_filename,f,lq,"events.fits",,,"filename of the output event file (FITS)"
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "

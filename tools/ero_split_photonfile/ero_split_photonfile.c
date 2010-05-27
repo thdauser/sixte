@@ -109,42 +109,20 @@ int ero_split_photonfile_main() {
 
     // Copy photon list entries.
     Photon photon={.time=0.};
-    int anynul=0;
     int rnd_file;
-    for(inputfile.row=0; inputfile.row<inputfile.nrows; 
-	inputfile.row++) {
+    while (inputfile.row<inputfile.nrows) {
 
       if (EXIT_SUCCESS!=status) break;
       
       // Read an entry from the photon list:
-      photon.time = 0.;
-      photon.energy = 0.;
-      photon.ra = 0.;
-      photon.dec = 0.;
-      fits_read_col(inputfile.fptr, TDOUBLE, inputfile.ctime, 
-		    inputfile.row+1, 1, 1, &photon.time, &photon.time, &anynul, &status);
-      fits_read_col(inputfile.fptr, TFLOAT, inputfile.cenergy, 
-		    inputfile.row+1, 1, 1, &photon.energy, &photon.energy, &anynul, &status);
-      fits_read_col(inputfile.fptr, TDOUBLE, inputfile.cra, 
-		    inputfile.row+1, 1, 1, &photon.ra, &photon.ra, &anynul, &status);
-      fits_read_col(inputfile.fptr, TDOUBLE, inputfile.cdec, 
-		    inputfile.row+1, 1, 1, &photon.dec, &photon.dec, &anynul, &status);
+      status = PhotonListFile_getNextRow(&inputfile, &photon);
       if (status!=EXIT_SUCCESS) break;
       
       // Get a random file index [0-6].
       rnd_file = (int)(sixt_get_random_number()*7.);
       
       // Append the photon to the randomly chosen file.
-      fits_insert_rows(outputfiles[rnd_file].fptr, outputfiles[rnd_file].row++, 1, &status);
-      fits_write_col(outputfiles[rnd_file].fptr, TDOUBLE, outputfiles[rnd_file].ctime, 
-		     outputfiles[rnd_file].row, 1, 1, &photon.time, &status);
-      fits_write_col(outputfiles[rnd_file].fptr, TFLOAT, outputfiles[rnd_file].cenergy, 
-		     outputfiles[rnd_file].row, 1, 1, &photon.energy, &status);
-      fits_write_col(outputfiles[rnd_file].fptr, TDOUBLE, outputfiles[rnd_file].cra, 
-		     outputfiles[rnd_file].row, 1, 1, &photon.ra, &status);
-      fits_write_col(outputfiles[rnd_file].fptr, TDOUBLE, outputfiles[rnd_file].cdec, 
-		     outputfiles[rnd_file].row, 1, 1, &photon.dec, &status);
-      outputfiles[rnd_file].nrows++;
+      status = addPhoton2File(&outputfiles[rnd_file], &photon);
       if (status!=EXIT_SUCCESS) break;
     }
     if (EXIT_SUCCESS!=status) break;
