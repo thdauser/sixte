@@ -19,6 +19,10 @@
 struct SourceListEntry {
   /* Location of the source in 3-dimensional space. */
   Vector location;
+
+  /* Line number of the X-ray source in the FITS file. The line
+     numbering starts at 0 for the first line. */
+  long line;
 };
 
 

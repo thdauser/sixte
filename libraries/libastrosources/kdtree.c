@@ -14,9 +14,9 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
 
   // Check if there is only one element in the source list.
   if (1==nelements) {
-    node->location = list[0].location;
-    node->left  = NULL;
-    node->right = NULL;
+    node->source = list[0];
+    node->left   = NULL;
+    node->right  = NULL;
     return(node);
   }
 
@@ -25,7 +25,7 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
   quicksortSourceList(list, 0, nelements-1, axis);
 
   // Fill the newly created node with data.
-  node->location = list[median].location;
+  node->source = list[median];
 
   // Set right and left pointers of node.
   if (median>0) {
@@ -61,7 +61,7 @@ int addNode2SourceList(kdNode* node, SourceList** list, long* nelements)
   }
 
   // Add the new Source to the list.
-  (*list)[(*nelements)-1].location = node->location;
+  (*list)[(*nelements)-1] = node->source;
 
   return(EXIT_SUCCESS);
 }
@@ -77,9 +77,9 @@ int kdTreeRangeSearch(kdNode* node, int depth,
   // Calculate the distance (squared) between the node and the 
   // reference point.
   double distance2 = 
-    pow(node->location.x-ref->x, 2.) +
-    pow(node->location.y-ref->y, 2.) +
-    pow(node->location.z-ref->z, 2.);
+    pow(node->source.location.x-ref->x, 2.) +
+    pow(node->source.location.y-ref->y, 2.) +
+    pow(node->source.location.z-ref->z, 2.);
 
   // Check if the current node lies within the search radius.
   if (distance2 <= radius2) {
@@ -97,7 +97,7 @@ int kdTreeRangeSearch(kdNode* node, int depth,
   kdNode* far;
   double distance2edge = 
     getVectorDimensionValue(ref, axis) -
-    getVectorDimensionValue(&node->location, axis);
+    getVectorDimensionValue(&node->source.location, axis);
   if (distance2edge < 0.) {
     near = node->left;
     far  = node->right;

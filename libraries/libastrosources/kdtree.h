@@ -19,8 +19,8 @@
 /** Node in the kdTree containing the X-ray sources in 3-dimensional
     space. */
 struct structkdNode {
-  /* Location of the node point in 3-dimensional space. */
-  Vector location;
+  /** Data structure representing the X-ray source. */
+  struct SourceListEntry source;
 
   struct structkdNode* left; /**< Pointer to node on the left. */
   struct structkdNode* right; /**< Pointer to node on the right. */

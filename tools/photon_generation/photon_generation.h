@@ -14,6 +14,8 @@
 #include "sixt_string.h"
 #include "sourceimage.h"
 #include "pointsources.h"
+#include "pointsourcefile.h"
+#include "pointsourcecatalog.h"
 #include "extendedsources.h"
 #include "vector.h"
 #include "spectrum.h"
