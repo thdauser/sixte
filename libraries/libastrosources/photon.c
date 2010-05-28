@@ -48,7 +48,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
   int status=EXIT_SUCCESS;
 
   // If there is no photon time stored so far, set the current time.
-  if (ps->t_last_photon < 0.) {
+  if (ps->t_last_photon <= 0.) {
     ps->t_last_photon = time;
   }
 
@@ -56,7 +56,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
   // Create photons and insert them into the given time-ordered list:
   Photon new_photon; // Buffer for new Photon.
   while (ps->t_last_photon < time+dt) {
-    new_photon.ra = ps->ra;
+    new_photon.ra  = ps->ra;
     new_photon.dec = ps->dec; 
     new_photon.direction = unit_vector(new_photon.ra, new_photon.dec); // REMOVE
 
@@ -68,43 +68,67 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
     if (NULL==ps->lc) {
       if (T_LC_CONSTANT==ps->lc_type) {
 	ps->lc = getLinLightCurve(1, &status);
-	if (EXIT_SUCCESS!=status) break;
-	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
-	if (EXIT_SUCCESS!=status) break;
+	if (EXIT_SUCCESS!=status) return(status);
+	/*
+	status = initConstantLinLightCurve(ps->lc, time, 1.e6, ps->rate);
+	if (EXIT_SUCCESS!=status) return(status);
+	*/
       } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	ps->lc = getLinLightCurve(131072, &status);
-	if (EXIT_SUCCESS!=status) break;
+	ps->lc = getLinLightCurve(4096, &status);
+	if (EXIT_SUCCESS!=status) return(status);
+	/*
 	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
 					       ps->rate/3.);
-	if (EXIT_SUCCESS!=status) break;
+	if (EXIT_SUCCESS!=status) return(status);
+	*/
       } else {
 	status=EXIT_FAILURE;
 	HD_ERROR_THROW("Error: Unknown light curve type!\n", EXIT_FAILURE);
-	break;
+	return(status);
       }
     }
 
-    if (time > ps->lc->t0 + ps->lc->nvalues*ps->lc->step_width) {
-      if (T_LC_CONSTANT==ps->lc_type) {
-	status = initConstantLinLightCurve(ps->lc, ps->rate, time, 1.e6);
-	if (EXIT_SUCCESS!=status) break;
-      } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
-					       ps->rate/3.);
-	if (EXIT_SUCCESS!=status) break;
-      }
-    }
 
+    // Determine the arrival time of the new photon with the
+    // appropriate random number generator.
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
-    if (new_photon.time < ps->t_last_photon) {
-      printf("a=%lf b=%lf\n", ps->lc->a[0], ps->lc->b[0]);
+
+    // If the new time is negative, the light curve did not cover the
+    // appropriate interval or is empty.
+    if (new_photon.time < 0.) {
+      // The current point of time is not covered by the light curve.
+      // Therefore we have to generate a new one.
+      if (T_LC_CONSTANT==ps->lc_type) {
+	status = initConstantLinLightCurve(ps->lc, 
+					   ps->t_last_photon, 1.e9, 
+					   ps->rate);
+	if (EXIT_SUCCESS!=status) return(status);
+      } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
+	status = initTimmerKoenigLinLightCurve(ps->lc, ps->t_last_photon, 
+					       TK_LC_STEP_WIDTH, 
+					       ps->rate, ps->rate/3.);
+	if (EXIT_SUCCESS!=status) return(status);
+      }
+      // Repeat the determination of the photon arrival time,
+      // now with the proper light curve.
+      new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
+    } 
+    // END if (new_photon.time < 0.)
+    
+    if (new_photon.time < ps->t_last_photon) { // RM
+      printf("last photon=%lf new photon=%lf LC end=%lf\n", 
+	     ps->t_last_photon, new_photon.time,
+	     ps->lc->t0 + ps->lc->nvalues*ps->lc->step_width);
     }
+    
+    assert(new_photon.time>=0.);
     assert(new_photon.time>=ps->t_last_photon);
     ps->t_last_photon = new_photon.time;
 
     // Insert photon to the global photon list:
-    if ((status=insert_Photon2TimeOrderedList(list_first, &list_current, &new_photon)) 
-	!= EXIT_SUCCESS) break;  
+    status=insert_Photon2TimeOrderedList(list_first, &list_current, 
+					 &new_photon);
+    if (EXIT_SUCCESS!=status) return(status);  
     
   } // END of loop 'while(t_last_photon < time+dt)'
 
@@ -131,13 +155,16 @@ int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
     es->t_last_photon = time;
   }
 
-
-  // Create photons and insert them into the given time-ordered list:
-  Photon new_photon; // Buffer for new Photon.
-  Vector center_direction; // Center of the extended source.
-  Vector a1, a2; // Normalized vectors perpendicular to the source vector / center direction.
+  // Buffer for new Photon.
+  Photon new_photon;
+  // Center of the extended source.
+  Vector center_direction; 
+  // Normalized vectors perpendicular to the source vector / 
+  // center direction.
+  Vector a1, a2; 
   Vector b; // Auxiliary vector.
   double alpha, radius;
+  // Create photons and insert them into the given time-ordered list:
   while (es->t_last_photon < time+dt) {
 
     // Determine the photon direction of origin.
@@ -194,13 +221,13 @@ int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
       if (T_LC_CONSTANT==es->lc_type) {
 	es->lc = getLinLightCurve(1, &status);
 	if (EXIT_SUCCESS!=status) break;
-	status = initConstantLinLightCurve(es->lc, es->rate, time, 1.e6);
+	status = initConstantLinLightCurve(es->lc, time, 1.e6, es->rate);
 	if (EXIT_SUCCESS!=status) break;
       } else if (T_LC_TIMMER_KOENIG==es->lc_type) {
 	es->lc = getLinLightCurve(131072, &status);
 	if (EXIT_SUCCESS!=status) break;
-	status = initTimmerKoenigLinLightCurve(es->lc, time, TK_LC_STEP_WIDTH, es->rate,
-					       es->rate/3.);
+	status = initTimmerKoenigLinLightCurve(es->lc, time, TK_LC_STEP_WIDTH, 
+					       es->rate, es->rate/3.);
 	if (EXIT_SUCCESS!=status) break;
       } else {
 	status=EXIT_FAILURE;
@@ -211,7 +238,7 @@ int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
 
     if (time > es->lc->t0 + es->lc->nvalues*es->lc->step_width) {
       if (T_LC_CONSTANT==es->lc_type) {
-	status = initConstantLinLightCurve(es->lc, es->rate, time, 1.e6);
+	status = initConstantLinLightCurve(es->lc, time, 1.e6, es->rate);
 	if (EXIT_SUCCESS!=status) break;
       } else if (T_LC_TIMMER_KOENIG==es->lc_type) {
 	status = initTimmerKoenigLinLightCurve(es->lc, time, TK_LC_STEP_WIDTH, es->rate,
@@ -374,5 +401,6 @@ int CreateOrderedPhotonList(struct PhotonBinaryTreeEntry** tree_ptr,
 
   return(status);
 }
+
 						       
 

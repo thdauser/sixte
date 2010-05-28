@@ -4,7 +4,7 @@ rmf_filename,fre,lq,"/home/schmid/ixo/wfi/response/ixo_cdf_wfi_default.detector.
 photonlist_filename,f,lq,"photons_20mCrab.fits",,,"file for the photon list (FITS output file)"
 overwrite_photonlist,i,q,1,0,1,"overwrite existing photon list file "
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
-t0,r,lq,0.0,,,"t0 - start time (s)"
+t0,r,lq,0.0,0.0,,"t0 - start time (s)"
 timespan,r,lq,500.0,0.0,1000000000.0,"time interval for the measurement simulation (s)"
 bandwidth,r,lh,90.0,0.0,600.0,"(half) width of the preselection band (arc minutes)"
 fov_diameter,r,lq,61.2,0.0,600.0,"diameter of the FOV (arc minutes)"

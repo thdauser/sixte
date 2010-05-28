@@ -690,8 +690,67 @@ int photon_generation_main()
   set_toolname("photon_generation");
   set_toolversion("0.01");
 
+  /*
+  // RM ->
+  SourceList* list = (SourceList*)malloc(5*sizeof(SourceList));
+  list[0].location.x = 5.;
+  list[1].location.x = 3.;
+  list[2].location.x = 2.;
+  list[3].location.x = 6.;
+  list[4].location.x = 5.;
+  list[0].location.y = 10.;
+  list[1].location.y = -4.;
+  list[2].location.y = 2.;
+  list[3].location.y = 4.;
+  list[4].location.y = 3.5;
+  list[0].location.z = 0.;
+  list[1].location.z = 2.;
+  list[2].location.z = -1.;
+  list[3].location.z = 2.;
+  list[4].location.z = 1.;
+  
+  //  quicksortSourceList(list,0,4,0);
+  long count;
+  //  for(count=0; count<5; count++) {
+  //    printf("%lf %lf %lf\n", 
+  //	   list[count].location.x,
+  //	   list[count].location.y,
+  //	   list[count].location.z);
+  //  }
 
-  do {  // Beginning of ERROR HANDLING Loop.
+  kdNode* tree = kdTreeBuild(list, 5, 0);
+  //  printf("leftleft: %lf %lf %lf\n", tree->left->left->location.x,
+  //	 tree->left->left->location.y, tree->left->left->location.z);
+  //  printf("left: %lf %lf %lf\n", tree->left->location.x,
+  //	 tree->left->location.y, tree->left->location.z);
+  //  printf("leftright: %d\n", tree->left->right);
+  //
+  //  printf("node: %lf %lf %lf\n", tree->location.x,
+  //	 tree->location.y, tree->location.z);
+  //
+  ////  printf("rightleft: %ld\n", tree->right->left);
+  //  printf("rightleft: %lf %lf %lf\n", tree->right->left->location.x,
+  //  	 tree->right->left->location.y, tree->right->left->location.z);
+  //  printf("right: %lf %lf %lf\n", tree->right->location.x,
+  //	 tree->right->location.y, tree->right->location.z);
+  //  printf("rightright: %d\n", tree->right->right);
+
+  SourceList* found = NULL;
+  long nelements   = 0;
+  Vector ref       = { .x=0., .y=0., .z=0. };
+  printf("status = %d\n", 
+	 kdTreeRangeSearch(tree, 0, &ref, 25., &found, &nelements));
+  
+  for (count=0; count<nelements; count++) {
+    printf("%ld/%ld: %lf %lf %lf\n", count+1, nelements,
+	   found[count].location.x, found[count].location.y, found[count].location.z);
+  }
+
+  exit(0);
+  // <- RM
+  */
+
+  do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
 
