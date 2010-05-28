@@ -1,72 +1,30 @@
 #include "pointsourcefile.h"
 
 
-PointSourceFile* get_PointSourceFile() {
-  PointSourceFile* psf = (PointSourceFile*)malloc(sizeof(PointSourceFile));
-
-  if (NULL!=psf) {
-    psf->fptr = NULL;
-    psf->cra = 0;
-    psf->cdec = 0;
-    psf->crate = 0;
-    psf->cspectrum = 0;
-    psf->clightcurve = 0;
-  }
-
-  return(psf);
-}
-
-
-
 PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* status) 
 {
-  PointSourceFile* psf = NULL;
-  char msg[MAXMSG];      // error output buffer
+  fitsfile* fptr;
+  char msg[MAXMSG]; // Error output buffer.
+  
+  // OPEN the specified FITS file and store basic information.
+  headas_chat(5, "open point-source catalog in file '%s' ...\n", filename);
 
-  do { // Beginning of ERROR handling loop.
+  // Open the source catalog (FITS-file):
+  if(fits_open_file(&fptr, filename, READONLY, status)) return(NULL);;
+  int hdutype; // Type of the HDU
+  if(fits_movabs_hdu(fptr, hdu, &hdutype, status)) return(NULL);;
+  // Image HDU results in an error message:
+  if (IMAGE_HDU==hdutype) {
+    *status=EXIT_FAILURE;
+    sprintf(msg, "Error: FITS extension in source catalog file '%s' is "
+	    "not a table but an image (HDU number: %d)!\n", filename, hdu);
+    HD_ERROR_THROW(msg, *status);
+    return(NULL);;
+  }
+
+  // Set up the PointSourceFile structure by using the standard routine.
+  PointSourceFile* psf = get_PointSourceFile_fromHDU(fptr, status);
     
-    // Call the generic constructor.
-    psf=get_PointSourceFile();
-    if (NULL==psf) {
-      *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for PointSourceFile failed!\n", *status);
-      break;
-    }
-
-    // OPEN the specified FITS file and store basic information.
-    headas_chat(5, "open point-source catalog in file '%s' ...\n", filename);
-
-    // Open the source catalog (FITS-file):
-    if(fits_open_file(&psf->fptr, filename, READONLY, status)) break;
-    int hdutype; // Type of the HDU
-    if(fits_movabs_hdu(psf->fptr, hdu, &hdutype, status)) break;
-    // Image HDU results in an error message:
-    if (IMAGE_HDU==hdutype) {
-      *status=EXIT_FAILURE;
-      sprintf(msg, "Error: FITS extension in source catalog file '%s' is "
-	      "not a table but an image (HDU number: %d)!\n", filename, hdu);
-      HD_ERROR_THROW(msg, *status);
-      break;
-    }
-
-    // Determine the column numbers of the right ascension, declination,
-    // photon rate, and spectrum columns in the FITS table
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "RA", &psf->cra, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "DEC", &psf->cdec, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "PPS", &psf->crate, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "SPECTRUM", &psf->cspectrum, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "LIGHTCUR", &psf->clightcurve, status)) break;
-
-    // Determine the number of rows in the FITS table:
-    if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) break;	
-    headas_chat(5, " contains %ld sources\n", psf->nrows);
-
-    // Load spectra specified in the FITS header.
-    *status = loadSpectra(psf->fptr, &psf->spectrumstore);
-    if (EXIT_SUCCESS!=*status) break;
-
-  } while (0); // END of ERROR handling loop.
-
   return(psf);
 }
 
@@ -74,36 +32,42 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* stat
 
 PointSourceFile* get_PointSourceFile_fromHDU(fitsfile* fptr, int* status) 
 {
-  PointSourceFile* psf = NULL;
 
-  do { // Beginning of ERROR handling loop.
-    
-    // Call the generic constructor.
-    psf=get_PointSourceFile();
-    if (NULL==psf) {
-      *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for PointSourceFile failed!\n", *status);
-      break;
-    }
-    psf->fptr = fptr;
+  // Allocate memory for the PointSourceFile data structure.
+  PointSourceFile* psf = (PointSourceFile*)malloc(sizeof(PointSourceFile));
+  if (NULL==psf) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Could not allocate memory for PointSourceFile!\n",
+		   *status);
+    return(psf);
+  }
 
-    // Determine the column numbers of the right ascension, declination,
-    // photon rate, and spectrum columns in the FITS table
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "RA", &psf->cra, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "DEC", &psf->cdec, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "PPS", &psf->crate, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "SPECTRUM", &psf->cspectrum, status)) break;
-    if (fits_get_colnum(psf->fptr, CASEINSEN, "LIGHTCUR", &psf->clightcurve, status)) break;
+  // Set default values.
+  psf->fptr = fptr;
+  psf->cra = 0;
+  psf->cdec = 0;
+  psf->crate = 0;
+  psf->cspectrum = 0;
+  psf->clightcurve = 0;
+  
+  // Determine the number of rows in the FITS table:
+  if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) return(psf);	
+  headas_chat(5, " contains %ld sources\n", psf->nrows);
 
-    // Determine the number of rows in the FITS table:
-    if (fits_get_num_rows(psf->fptr, &psf->nrows, status)) break;	
-    headas_chat(5, " contains %ld sources\n", psf->nrows);
+  // Determine the column numbers of the right ascension, declination,
+  // photon rate, and spectrum columns in the FITS table
+  if (fits_get_colnum(psf->fptr, CASEINSEN, "RA", &psf->cra, status)) return(psf);
+  if (fits_get_colnum(psf->fptr, CASEINSEN, "DEC", &psf->cdec, status)) return(psf);
+  if (fits_get_colnum(psf->fptr, CASEINSEN, "PPS", &psf->crate, status)) return(psf);
+  if (fits_get_colnum(psf->fptr, CASEINSEN, "SPECTRUM", &psf->cspectrum, status)) 
+    return(psf);
+  if (fits_get_colnum(psf->fptr, CASEINSEN, "LIGHTCUR", &psf->clightcurve, status)) 
+    return(psf);
 
-    // Load spectra specified in the FITS header.
-    *status = loadSpectra(psf->fptr, &psf->spectrumstore);
-    if (EXIT_SUCCESS!=*status) break;
 
-  } while (0); // END of ERROR handling loop.
+  // Load spectra specified in the FITS header.
+  *status = loadSpectra(psf->fptr, &psf->spectrumstore);
+  if (EXIT_SUCCESS!=*status) return(psf);
 
   return(psf);
 }

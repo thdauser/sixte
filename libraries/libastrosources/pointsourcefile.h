@@ -55,15 +55,12 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
-/** Constructor returning a pointer to an empty PointSourceFile object. */
-PointSourceFile* get_PointSourceFile();
-
-/** Enhanced constructor specifying a source file and the right HDU
-    number to be loaded. */
+/** Constructor specifying a source file and the right HDU number to
+    be loaded. */
 PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* status);
 
-/** Enhanced constructor for opening a PointSourceFile with the
-    fitsfile pointer already pointing to the right HDU. */
+/** Constructor for opening a PointSourceFile with the fitsfile
+    pointer already pointing to the right HDU. */
 PointSourceFile* get_PointSourceFile_fromHDU(fitsfile* fptr, int* status);
 
 /** Destructor. */
