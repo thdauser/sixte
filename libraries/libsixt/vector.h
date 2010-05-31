@@ -50,5 +50,9 @@ void calculate_ra_dec(Vector v, /**< Direction. Does not have to be normalized. 
 		      double* ra, /**< Right ascension. Unit: [rad], Interval: [-pi;pi]. */ 
 		      double* dec /**< Declination. Unit: [rad], Interval: [-pi/2;pi/2]. */);
 
+/** Returns the value of the k-th dimension of a vector (k=0 ->
+    x-value, k=1 -> y-value, k=2 -> z-value). */
+double getVectorDimensionValue(Vector* vec, int dimension);
+
 
 #endif /* VECTOR_H */

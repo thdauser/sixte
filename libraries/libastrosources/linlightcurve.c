@@ -31,6 +31,16 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status)
 		   EXIT_FAILURE);
     return(NULL);
   }
+
+  // Set initial values:
+  lc->step_width = 0.;
+  lc->t0         = 0.;
+  // Clear the newly generated arrays.
+  long count;
+  for (count=0; count<nvalues; count++) {
+    lc->a[count] = 0.;
+    lc->b[count] = 0.;
+  }
   // Set the number of data points in the light curve.
   lc->nvalues = nvalues;  
 
@@ -130,8 +140,9 @@ LinLightCurve* loadLinLightCurveFromFile(char* filename, double source_rate, int
 
 
 
-int initConstantLinLightCurve(LinLightCurve* lc, double mean_rate, double t0,
-			      double step_width)
+int initConstantLinLightCurve(LinLightCurve* lc, 
+			      double t0, double step_width, 
+			      double mean_rate)
 {
   if (NULL==lc) { 
     // The LinLightCurve object already must exist.
@@ -295,8 +306,13 @@ void freeLinLightCurve(LinLightCurve* lightcurve)
 
 double getPhotonTime(LinLightCurve* lc, double time)
 {
-  if (1>lc->nvalues) {
+  if ((1>lc->nvalues)||(lc->step_width<=0.)) {
     // Invalid LinLightCurve!
+    return(-1.);
+  }
+
+  if (time<lc->t0) {
+    printf("option 2\n");
     return(-1.);
   }
 
@@ -344,7 +360,8 @@ double getPhotonTime(LinLightCurve* lc, double time)
     }
   }
 
-  // The range of the light curve was exceeded.
+  // The range of the light curve has been exceeded.
+  printf("option 3\n");
   return(-1.);
 }
 

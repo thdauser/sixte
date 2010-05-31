@@ -129,3 +129,16 @@ void calculate_ra_dec(Vector v, double* ra, double* dec)
   *ra = atan2(v.y, v.x);
 }
 
+
+
+double getVectorDimensionValue(Vector* vec, int dimension) 
+{
+  if (0==dimension) {
+    return(vec->x);
+  } else if (1==dimension) {
+    return(vec->y);
+  } else {
+    return(vec->z);
+  }
+}
+

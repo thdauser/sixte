@@ -1,6 +1,6 @@
 eventlist_filename,fre,lq,"events.fits",,,"event list file (FITS input file) "
 attitude_filename,fre,lq,"attitude_equator_scan.fits",,,"attitude file (FITS input file) "
-t0,r,lq,0.0,,,"t0 - start time (s) "
+t0,r,lq,0.0,0.0,,"t0 - start time (s) "
 timespan,r,lq,15724800.0,0.0,1000000000.0,"time interval for the measurement simulation (s) "
 fov_diameter,r,lh,61.2,0.0,600.0,"diameter of the FOV (arc minutes) "
 focal_length,r,lh,1.6,0.0,100.0,"focal length of the mirror system (m) "

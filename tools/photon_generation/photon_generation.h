@@ -14,6 +14,8 @@
 #include "sixt_string.h"
 #include "sourceimage.h"
 #include "pointsources.h"
+#include "pointsourcefile.h"
+#include "pointsourcecatalog.h"
 #include "extendedsources.h"
 #include "vector.h"
 #include "spectrum.h"
@@ -24,7 +26,8 @@
 #include "attitudecatalog.h"
 #include "genericdetector.h"
 #include "check_fov.h"
-
+#include "kdtree.h"
+#include "sourcelist.h"
 
 #define TOOLSUB photon_generation_main
 #include "headas_main.c"
