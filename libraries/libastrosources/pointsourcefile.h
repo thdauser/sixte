@@ -74,9 +74,9 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row,
 			     PointSource* ps, int* status);
 
 /** Read a SourceList from a given PointSourceFile. */
-SourceList* readSourceListFromPointSourceFileHDU(fitsfile* file, 
-						 long* nelements, 
-						 int* status);
+SourceList* getSourceListFromPointSourceFileHDU(fitsfile* file, 
+						long* nelements, 
+						int* status);
 
 
 #endif /* POINTSOURCEFILE_H */

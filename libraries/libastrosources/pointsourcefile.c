@@ -100,12 +100,10 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row,
   // Set default values.
   ps->ra = 0.;
   ps->dec = 0.;
-
   ps->rate = 0.;
   ps->lc_type = T_LC_CONSTANT;
   ps->lc = NULL;
   ps->t_last_photon = 0.;
-
   ps->spectrum_index = 0;
   ps->spectrum = NULL;
 
@@ -137,9 +135,9 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row,
 
 
 
-SourceList* readSourceListFromPointSourceFileHDU(fitsfile* fptr, 
-						 long* nelements, 
-						 int* status)
+SourceList* getSourceListFromPointSourceFileHDU(fitsfile* fptr, 
+						long* nelements, 
+						int* status)
 {
   // Use the initialization routine to set up the PointSourceFile data structure.
   PointSourceFile* psf = get_PointSourceFile_fromHDU(fptr, status);
