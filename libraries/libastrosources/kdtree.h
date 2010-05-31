@@ -48,5 +48,8 @@ int kdTreeRangeSearch(kdNode* node, int depth,
 		      Vector* ref, double radius2, 
 		      SourceList** list, long *nelements);
 
+/** Destructor. */
+void freeKDTree(kdNode* tree);
+
 
 #endif /* KDTREE_H */

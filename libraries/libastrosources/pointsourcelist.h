@@ -45,5 +45,6 @@ PointSourceList* selectFoVPointSourceList(kdNode* tree,
 					  const double max_align,
 					  int* status);
 
+void clearPointSourceList(PointSourceList* psl);
 
 #endif /* POINTSOURCELIST_H */

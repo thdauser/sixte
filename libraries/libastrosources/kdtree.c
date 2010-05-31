@@ -12,6 +12,9 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
     return(node);
   };
 
+  // Check if the list is empty.
+  if (0==nelements) return(NULL);
+
   // Check if there is only one element in the source list.
   if (1==nelements) {
     node->source = list[0];
@@ -52,7 +55,7 @@ int addNode2SourceList(kdNode* node, SourceList** list, long* nelements)
   // Check if new memory has to be allocated.
   (*nelements)++;
   if (1 == (*nelements % 1000)) {
-    *list = (SourceList*)realloc(*list, ((*nelements/1000)+1)*sizeof(SourceList));
+    *list = (SourceList*)realloc(*list, ((*nelements/1000)+1)*1000*sizeof(SourceList));
     if (NULL==*list) {
       HD_ERROR_THROW("Error: Could not allocate memory for SourceList!\n",
 		     EXIT_FAILURE);
@@ -131,4 +134,12 @@ int kdTreeRangeSearch(kdNode* node, int depth,
 
 
 
+void freeKDTree(kdNode* tree)
+{
+  if (NULL!=tree) {
+    freeKDTree(tree->left);
+    freeKDTree(tree->right);
+    free(tree);
+  }
+}
 

@@ -82,8 +82,33 @@ PointSourceList* selectFoVPointSourceList(kdNode* tree,
 
   }
   // END of loop over all sources in the SourceList.
-  
+
+  freeSourceList(sl);
+
   return(psl);
+}
+
+
+
+void clearPointSourceList(PointSourceList* psl)
+{
+  if (NULL!=psl) {
+    if (NULL!=psl->sources) {
+
+      // Free the light curves of the individual sources.
+      long count;
+      for (count=0; count<psl->nsources; count++) {
+	if (psl->sources[count].lc != NULL) {
+	  freeLinLightCurve(psl->sources[count].lc);
+	  psl->sources[count].lc=NULL;
+	}
+      }
+
+      free(psl->sources);
+      psl->nsources = 0;
+    }
+    free(psl);
+  }
 }
 
 

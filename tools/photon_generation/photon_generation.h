@@ -16,6 +16,7 @@
 #include "pointsources.h"
 #include "pointsourcefile.h"
 #include "pointsourcecatalog.h"
+#include "pointsourcelist.h"
 #include "extendedsources.h"
 #include "vector.h"
 #include "spectrum.h"
