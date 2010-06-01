@@ -3,9 +3,6 @@
 int initpnCCDDetector(pnCCDDetector* pn,
 		struct pnCCDDetectorParameters* parameters)
 {
-
-	// TODO: make the pnCCDDetector structure
-
 	int status = EXIT_SUCCESS;
 
 	// Call the initialistation routines of the underlying data structures.
@@ -32,7 +29,7 @@ int initpnCCDDetector(pnCCDDetector* pn,
 	// !!NOTE: Should be ok for us
 
 	// Create and open new event list file
-	// TODO write openNEwpnCCDEventFile 
+	// TODO write openNewpnCCDEventFile 
 
 	status = openNewpnCCDEventFile(pn->eventlist, parameters->eventlist_filename, parameters->eventlist_template);
 	if (EXIT_SUCCESS!=status) return(status);
