@@ -1,5 +1,27 @@
 #include "pnccdeventfile.h"
 
+
+int openpnCCDEventFile(pnCCDEventfile* pef, char* filename, int access_mode)
+{
+	int status = EXIT_SUCCESS;
+
+	// Open the EventFile
+	// TODO: openEventFile has to be written (or maybe not...)
+	status = openEventFile(&pef->generic, filename, access_mode);
+	if (EXIT_SUCCESS!=status) return(status);
+
+	// Determine the pnCCD-specific elements of the event list
+	// Determine the individual column numbers:
+	if(fits_get_colnum(pef->generic.fptr, CASEINSEN, "TIME", &pef->ctime, &status)) return(status);
+	// !!! NOTE: get the colnums of all the elements of the event list
+
+	//TODO: Determine what parameters are needed for the pnCCD Eventfile
+
+	return(status);
+}
+	
+
+
 int openNewpnCCDEventFile(pnCCDEventFile* pef, char* filename, char* template)
 {
 	int status=EXIT_SUCCESS;
@@ -49,3 +71,79 @@ int openNewpnCCDEventFile(pnCCDEventFile* pef, char* filename, char* template)
   return(status);
 }
 
+
+
+int closepnCCDEventFile(pnCCDEventFile* pef)
+{
+	return(closeEventFile(&pef->generic));
+}
+
+
+
+//TODO: Check if the pnCCDEvent structure exists
+int addpnCCDEvent2File(pnCCDEventFile* pef, pnCCDEvent* event)
+{
+	int status=EXIT_SUCCESS;
+
+	// Insert a new, empty row to the table:
+	if (fits_insert_rows(pef->generic.fptr, pef->generic.row, 1, &status)) return(status);
+	pef->generic.row++;
+	pef->generic.nrows++;
+
+	if (fits_write_col(pef->generic.fptr, TDOUBLE, pef->ctime, pef->generic.row, 1, 1, &event->time, &status)) return(status);
+
+	//TODO: analog to the get_colnum function above the parameters has to be
+	//			defined
+
+	return(status);
+}
+
+int pnCCDEventFile_getNextRow(pnCCDEventFile* pef, pnCCDEvent* event)
+{
+	int status=EXIT_SUCCESS;
+
+	// Move counter to next line
+	pef->generic.row++;
+
+	// Check if there is still a row available.
+	if (pef->generic.row > pef->generic.nrows) {
+		status = EXIT_FAILURE;
+		HD_ERROR_THROW("Error: event list file contains no further enries!\n", status);
+		return(status);
+	}
+
+	// Read the new pnCCDEvent from the file
+	status=pnCCDEventFile_getRow(pef, event, pef->generic.row);
+
+	return(status);
+}
+
+
+
+int pnCCDEventFile_getRow(pnCCDEventFile* pef, pnCCDEvent* event, long row)
+{
+	int status=EXIT_SUCCESS;
+	int anynul = 0;
+
+	// Check if there is still a row available
+	if (rwo > pef->generic.nrows) {
+		status = EXIT_FAILURE;
+		HD_ERROR_THROW("Error: Event list file does not contain the requested line!\n", status);
+		return(status);
+	}
+
+	// Read in the data 
+	event->time = 0.;
+	if (fits_read_col(pef->generic.fptr, TDOUBLE, pef->ctime, row, 1, 1,
+				&event->time, &event->time, &anynul, &status)) return(status);
+
+	// TODO: Analog to the TODOs above, define parameters
+
+	if (0!=anynul) {
+		status = EXIT_FAILURE;
+		HD_ERROR_THROW("Error: reading from event list failed!\n", status);
+		return(status);
+	}
+
+	return(status);
+}
