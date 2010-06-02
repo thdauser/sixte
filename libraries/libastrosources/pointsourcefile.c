@@ -100,12 +100,10 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row,
   // Set default values.
   ps->ra = 0.;
   ps->dec = 0.;
-
   ps->rate = 0.;
   ps->lc_type = T_LC_CONSTANT;
   ps->lc = NULL;
   ps->t_last_photon = 0.;
-
   ps->spectrum_index = 0;
   ps->spectrum = NULL;
 
@@ -137,13 +135,13 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row,
 
 
 
-SourceList* readSourceListFromPointSourceFileHDU(fitsfile* fptr, 
-						 long* nelements, 
-						 int* status)
+SourceList* getSourceListFromPointSourceFileHDU(fitsfile* fptr, 
+						long* nelements, 
+						int* status)
 {
   // Use the initialization routine to set up the PointSourceFile data structure.
   PointSourceFile* psf = get_PointSourceFile_fromHDU(fptr, status);
-  if (EXIT_SUCCESS!=status) return(NULL);
+  if (EXIT_SUCCESS!=*status) return(NULL);
 
   // Allocate memory for the SourceList.
   SourceList* sl = (SourceList*)malloc(psf->nrows*sizeof(struct SourceListEntry));
@@ -161,7 +159,7 @@ SourceList* readSourceListFromPointSourceFileHDU(fitsfile* fptr,
   for(row=0; row<psf->nrows; row++) {
     // Read a PointSource from the file.
     get_PointSourceTable_Row(psf, row, &ps, status);
-    if (EXIT_SUCCESS!=status) return(NULL);    
+    if (EXIT_SUCCESS!=*status) return(NULL);    
 
     // Create an entry in the SourceList.
     sl[row].location = unit_vector(ps.ra, ps.dec);
@@ -170,6 +168,11 @@ SourceList* readSourceListFromPointSourceFileHDU(fitsfile* fptr,
 
   // Return the number of elements in the SourceList to the calling function.
   *nelements = psf->nrows;
+
+  // Free the memory of the PointSourceFile but keep the fitsfile pointer
+  // open.
+  psf->fptr = NULL;
+  free_PointSourceFile(psf);
 
   return(sl);
 }

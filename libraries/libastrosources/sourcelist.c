@@ -48,4 +48,10 @@ void quicksortSourceList(SourceList* list, long left, long right, int axis)
 
 
 
+void freeSourceList(SourceList* list)
+{
+  if (NULL!=list) {
+    free(list);
+  }
+}
 

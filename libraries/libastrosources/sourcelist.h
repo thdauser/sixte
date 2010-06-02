@@ -40,5 +40,7 @@ typedef struct SourceListEntry SourceList;
     algorithm. */
 void quicksortSourceList(SourceList* list, long left, long right, int axis);
 
+void freeSourceList(SourceList* list);
+
 
 #endif /* SOURCELIST_H */

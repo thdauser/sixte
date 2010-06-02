@@ -19,10 +19,11 @@ lib_LTLIBRARIES = libastrosources.la
 
 # Sources:
 libastrosources_la_SOURCES = pointsources.c pointsourcefile.c		\
-			     pointsourcecatalog.c extendedsources.c	\
-			     sourceimage.c photon.c spectrum.c		\
-			     fits_pha.c check_fov.c photonlistfile.c	\
-			     linlightcurve.c kdtree.c sourcelist.c
+			     pointsourcelist.c pointsourcecatalog.c	\
+			     extendedsources.c sourceimage.c photon.c	\
+			     spectrum.c fits_pha.c check_fov.c		\
+			     photonlistfile.c linlightcurve.c kdtree.c	\
+			     sourcelist.c
 libastrosources_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 
 
@@ -30,8 +31,8 @@ libastrosources_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 
 # Define the headers that will be installed in $(includedir) :
 include_HEADERS = astrosources.h pointsources.h pointsourcefile.h	\
-		  pointsourcecatalog.h extendedsources.h sourceimage.h	\
-		  photon.h spectrum.h fits_pha.h check_fov.h		\
-		  photonlistfile.h linlightcurve.h kdtree.h		\
-		  sourcelist.h
+		  pointsourcelist.c pointsourcecatalog.h		\
+		  extendedsources.h sourceimage.h photon.h spectrum.h	\
+		  fits_pha.h check_fov.h photonlistfile.h		\
+		  linlightcurve.h kdtree.h sourcelist.h
 

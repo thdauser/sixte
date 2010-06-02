@@ -236,6 +236,103 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
    telescope attitude. The photons lying in the FoV are inserted into
    the given photon list file using the function
    insertValidPhotonsIntoFile(). */
+int createPhotonsFromPointSources2(PhotonListFile* plf,
+				   kdNode* kdtree,
+				   PointSourceFile* psf,
+				   AttitudeCatalog* ac,
+				   struct Telescope telescope,
+				   struct RMF* rmf,
+				   double t0, double timespan)
+{
+  int status = EXIT_SUCCESS;
+
+  // Defines the mathematical meaning of 'close' in the context that for 
+  // sources 'close to the FOV' the simulation creates a light curve.
+  const double close_mult = 1.5; 
+  // Minimum cos-value for point sources close to the FOV (in the direct
+  // neighborhood).
+  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+
+  // Time-ordered photon list containing all created photons in the sky.
+  struct PhotonOrderedListEntry* photon_list=NULL;
+  // List of PointSources within the FoV.
+  PointSourceList* psl=NULL;
+  /*  // Normalized vector pointing in the direction of the source.
+  Vector source_vector;
+  */
+  // Current time and time step.
+  double time;
+  const double dt=0.1;
+
+  // Loop over the given time interval.
+  for (time=t0; time<t0+timespan; time+=dt) {
+    headas_chat(0, "\rtime: %.3lf s ", time);
+    fflush(NULL);
+
+    // First determine telescope pointing direction at the current time.
+    telescope.nz = getTelescopePointing(ac, time, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Select all PointSources CLOSE to the FoV from the kd-tree.
+    psl = selectFoVPointSourceList(kdtree, psf, &telescope.nz,
+				   close_fov_min_align, &status);
+    if(EXIT_SUCCESS!=status) return(status);
+
+    // CREATE PHOTONS for all these PointSources.
+    long source_counter;
+    for (source_counter=0; source_counter<psl->nsources; source_counter++) {
+
+      /*
+      // Check whether the source is close to the FOV:
+      // Compare the source direction to the unit vector specifiing the 
+      // direction of the telescope:
+      source_vector = 
+	unit_vector(psc->sources[source_counter].ra, 
+		    psc->sources[source_counter].dec);
+      if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
+      */
+    
+      // Create photons:
+      if ((status=create_PointSourcePhotons(&(psl->sources[source_counter]), 
+					    time, dt, &photon_list, rmf))
+	  !=EXIT_SUCCESS) break; 
+
+      /*
+      } // END of check if source is close to the FoV
+      */
+    } 
+    // End of loop over all sources in the PointSourceList.
+
+    // Clear the PointSourceList.
+    clearPointSourceList(psl);
+
+    if (EXIT_SUCCESS!=status) break;
+    // END of photon generation.
+
+    // Check the photon list and insert all photons inside the FoV
+    // into the PhotonListFile.
+    status=insertValidPhotonsIntoFile(plf,
+				      &photon_list,  
+				      ac,
+				      telescope,
+				      t0, timespan);
+    if (EXIT_SUCCESS!=status) break;
+  } 
+  // END of the loop over the time interval.
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Clear photon list.
+  clear_PhotonList(&photon_list);
+
+  return(status);
+}
+
+
+
+/* Generate photons for a catalog of point sources and a given
+   telescope attitude. The photons lying in the FoV are inserted into
+   the given photon list file using the function
+   insertValidPhotonsIntoFile(). */
 int createPhotonsFromExtendedSources(PhotonListFile* plf,
 				     ExtendedSourceFile* esf,
 				     AttitudeCatalog* ac,
@@ -685,6 +782,8 @@ int photon_generation_main()
 
   int status = EXIT_SUCCESS;  // error status flag
 
+  // KD
+  kdNode* kdtree = NULL;
 
   // Register HEATOOL
   set_toolname("photon_generation");
@@ -770,7 +869,6 @@ int photon_generation_main()
     rmf = loadRMF(parameters.rmf_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
-
     // Open the source file to check the contents.
     headas_chat(5, "open FITS file '%s' searching for X-ray sources ...\n",
 		parameters.sources_filename);
@@ -786,6 +884,18 @@ int photon_generation_main()
       // Load the point source catalog from the current HDU.
       psf=get_PointSourceFile_fromHDU(sources_fptr, &status);
       if (status != EXIT_SUCCESS) break;
+
+      // KD
+      // Build a kd-tree with all sources in the PointSourceFile.
+      long nelements=0;
+      SourceList* sl = 
+	getSourceListFromPointSourceFileHDU(sources_fptr, &nelements, &status);
+      if (EXIT_SUCCESS!=status) break;
+      kdtree = kdTreeBuild(sl, nelements, 0);
+      if (NULL==kdtree) break;
+      freeSourceList(sl);
+      sl=NULL;
+
       
       // Read the header from the Point Source FITS file to obtain
       // the WCS keywords.
@@ -895,14 +1005,27 @@ int photon_generation_main()
     headas_chat(5, "start photon generation process ...\n");
 
     if (POINT_SOURCES==sourceCategory) {
-
+      /*
+      printf("Linear Search with preselection\n");
       status=createPhotonsFromPointSources(&photonlistfile,
-					   psf,
-					   attitudecatalog,
-					   telescope,
-					   rmf,
-					   parameters.t0, 
-					   parameters.timespan);
+      					   psf,
+      					   attitudecatalog,
+      					   telescope,
+      					   rmf,
+      					   parameters.t0, 
+      					   parameters.timespan);
+      */
+      // KD
+      
+      printf("KD-Tree\n");
+      status=createPhotonsFromPointSources2(&photonlistfile,
+					    kdtree, psf,
+					    attitudecatalog,
+					    telescope,
+					    rmf,
+					    parameters.t0, 
+					    parameters.timespan);
+      
       if (EXIT_SUCCESS!=status) break;
 
     } else if (EXTENDED_SOURCES==sourceCategory) {
@@ -945,10 +1068,12 @@ int photon_generation_main()
   free_AttitudeCatalog(attitudecatalog);
 
   // Close the Source file.
-  if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
+  //  if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
 
   // PointSourceFile.
   free_PointSourceFile(psf);
+
+  freeKDTree(kdtree);
 
   // Extended Source Images.
   free_SourceImage(si);
