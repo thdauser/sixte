@@ -1,5 +1,6 @@
 #include "pnccddetectors.h"
 
+
 int initpnCCDDetector(pnCCDDetector* pn,
 		struct pnCCDDetectorParameters* parameters)
 {
