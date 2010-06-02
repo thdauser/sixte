@@ -783,7 +783,7 @@ int photon_generation_main()
   int status = EXIT_SUCCESS;  // error status flag
 
   // KD
-  kdNode* kdtree;
+  kdNode* kdtree = NULL;
 
   // Register HEATOOL
   set_toolname("photon_generation");
@@ -1005,16 +1005,19 @@ int photon_generation_main()
     headas_chat(5, "start photon generation process ...\n");
 
     if (POINT_SOURCES==sourceCategory) {
-
-      //      status=createPhotonsFromPointSources(&photonlistfile,
-      //					   psf,
-      //					   attitudecatalog,
-      //					   telescope,
-      //					   rmf,
-      //					   parameters.t0, 
-      //					   parameters.timespan);
-
+      /*
+      printf("Linear Search with preselection\n");
+      status=createPhotonsFromPointSources(&photonlistfile,
+      					   psf,
+      					   attitudecatalog,
+      					   telescope,
+      					   rmf,
+      					   parameters.t0, 
+      					   parameters.timespan);
+      */
       // KD
+      
+      printf("KD-Tree\n");
       status=createPhotonsFromPointSources2(&photonlistfile,
 					    kdtree, psf,
 					    attitudecatalog,
@@ -1022,7 +1025,7 @@ int photon_generation_main()
 					    rmf,
 					    parameters.t0, 
 					    parameters.timespan);
-
+      
       if (EXIT_SUCCESS!=status) break;
 
     } else if (EXTENDED_SOURCES==sourceCategory) {
