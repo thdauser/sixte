@@ -55,15 +55,15 @@ kdNode* buildKDNode(PointSource* list, long nelements, int depth)
 
 
 
-LinkedPointSourceList kdTreeRangeSearch(kdNode* node, int depth,
-					Vector* ref, double radius2, 
-					int* status)
+void kdTreeRangeSearch(kdNode* node, int depth,
+		       Vector* ref, double radius2, 
+		       double time, double dt, 
+		       struct PhotonOrderedListEntry** pl,
+		       struct RMF* rmf,
+		       int* status)
 {
-  LinkedPointSourceList lpsl=NULL;
-  LinkedPointSourceListEntry** entry=&lpsl;
-
   // Check if the kd-Tree exists.
-  if (NULL==node) return(lpsl);
+  if (NULL==node) return;
 
   // Calculate the distance (squared) between the node and the 
   // reference point.
@@ -75,24 +75,11 @@ LinkedPointSourceList kdTreeRangeSearch(kdNode* node, int depth,
 
   // Check if the current node lies within the search radius.
   if (distance2 <= radius2) {
-    *entry = (LinkedPointSourceListEntry*)malloc(sizeof(LinkedPointSourceListEntry));
-    if (NULL==*entry) {
-      *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Memory allocation for LinkedPointSourceList failed!\n",
-		     *status);
-      return(lpsl);
-    }
-    // Check if this is the first entry in the list.
-    if (NULL==lpsl) {
-      lpsl = (*entry);
-    }
-    (*entry)->source = &node->source;
-    (*entry)->next   = NULL;
-    entry = &(*entry)->next;
+    create_PointSourcePhotons(&node->source, time, dt, pl, rmf);
   }
 
   // Check if we are at a leaf.
-  if ((NULL==node->left) && (NULL==node->right)) return(lpsl);
+  if ((NULL==node->left) && (NULL==node->right)) return;
 
   int axis = depth % 3;
 
@@ -113,8 +100,8 @@ LinkedPointSourceList kdTreeRangeSearch(kdNode* node, int depth,
   // Descent into near tree if it exists, and then check
   // against current node.
   if (NULL!=near) {
-    *entry = kdTreeRangeSearch(near, depth+1, ref, radius2,
-			       status);
+    kdTreeRangeSearch(near, depth+1, ref, radius2,
+		      time, dt, pl, rmf, status);
   } 
   // END of (NULL!=near)
 
@@ -125,17 +112,14 @@ LinkedPointSourceList kdTreeRangeSearch(kdNode* node, int depth,
   if (NULL!=far) {
     if (distance2edge*distance2edge < radius2) {
       // Move to the end of the linked list.
-      while(NULL!=*entry) {
-	entry = &(*entry)->next;
-      }
       // Append newly found entries.
-      *entry = kdTreeRangeSearch(far, depth+1, ref, radius2,
-				 status);
+      kdTreeRangeSearch(far, depth+1, ref, radius2,
+			time, dt, pl, rmf, status);
     }
   }
   // END of (NULL!=far)
 
-  return(lpsl);
+  return;
 }
 
 

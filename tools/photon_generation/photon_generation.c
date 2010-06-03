@@ -178,41 +178,15 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 
     } // END of preselection
     
-#ifdef POINTSOURCE_KDTREE
-    // Determine all source CLOSE TO the FoV.
-    LinkedPointSourceList lpsl = 
-      getFoVPointSources(psc, &telescope.nz, close_fov_min_align, 
-			 &status);
-    LinkedPointSourceListEntry* buffer = lpsl;
- 
-    // Create Photons for these sources.
-    while (NULL!=buffer) {
 
-      status=create_PointSourcePhotons(buffer->source, time, dt, &photon_list, rmf);
-      if(EXIT_SUCCESS!=status) break; 
-	    
-      buffer = lpsl->next;
-      free(lpsl);
-      lpsl = buffer;
-    } 
-    // End of loop over all sources close to the FoV.
+    // Determine all source CLOSE TO the FoV and generate
+    // photons for these sources.
+    getFoVPointSources(psc, &telescope.nz, close_fov_min_align,
+		       time, dt, &photon_list, rmf,
+		       &status);
     if (EXIT_SUCCESS!=status) break;
     // END of photon generation.
-#else
-    long count;
-    Vector source_direction;
-    for (count=0; count<psc->psl->nsources; count++) {
-      // Check if the Source is close to / within the FoV.
-      source_direction = unit_vector(psc->psl->sources[count].ra,
-				     psc->psl->sources[count].dec);
-      if(fabs(scalar_product(&source_direction, &telescope.nz)) > close_fov_min_align) {
-	status=create_PointSourcePhotons(&psc->psl->sources[count],
-					 time, dt, &photon_list, rmf);
-	if (EXIT_SUCCESS!=status) break;
-      }
-      // END of check if source is close to the FoV.
-    }
-#endif
+
 
     // Check the photon list and insert all photons inside the FoV
     // into the PhotonListFile.

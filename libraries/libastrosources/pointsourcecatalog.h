@@ -7,7 +7,7 @@
 #include "kdtree.h"
 #include "pointsourcelist.h"
 #include "vector.h"
-
+#include "photon.h"
 
 //#define POINTSOURCE_KDTREE 1
 
@@ -41,9 +41,12 @@ PointSourceCatalog openPointSourceCatalog(char* filename, int hdu, int* status);
 void preselectPointSources(PointSourceCatalog* psc, Vector normal, 
 			   double max_align, int* status);
 
-LinkedPointSourceList getFoVPointSources(PointSourceCatalog* psc,
-					 Vector* ref, double min_align, 
-					 int* status);
+void getFoVPointSources(PointSourceCatalog* psc,
+			Vector* ref, double min_align, 
+			double time, double dt, 
+			struct PhotonOrderedListEntry** list_first,
+			struct RMF* rmf,
+			int* status);
 
 void clearPointSourceCatalog(PointSourceCatalog* psc);
 

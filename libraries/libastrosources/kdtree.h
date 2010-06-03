@@ -5,6 +5,8 @@
 #include "vector.h"
 #include "pointsources.h"
 #include "pointsourcelist.h"
+#include "photon.h"
+
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -47,9 +49,12 @@ kdNode* buildKDNode(PointSource* list, long nelements, int depth);
     sources are appended at the end of the SourceList and the number
     of the returned X-ray sources is stored in the nelements
     parameter. The function return value is the error status. */
-LinkedPointSourceList kdTreeRangeSearch(kdNode* node, int depth,
-					Vector* ref, double radius2, 
-					int* status);
+void kdTreeRangeSearch(kdNode* node, int depth,
+		       Vector* ref, double radius2, 
+		       double time, double dt, 
+		       struct PhotonOrderedListEntry** list_first,
+		       struct RMF* rmf,
+		       int* status);
 
 /** Destructor. */
 void freeKDTree(kdNode* tree);

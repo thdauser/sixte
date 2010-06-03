@@ -164,44 +164,34 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
 
 
 
-LinkedPointSourceList getFoVPointSources(PointSourceCatalog* psc,
-					 Vector* ref, double min_align, 
-					 int* status)
+void getFoVPointSources(PointSourceCatalog* psc,
+			Vector* ref, double min_align, 
+			double time, double dt, 
+			struct PhotonOrderedListEntry** pl,
+			struct RMF* rmf,
+			int* status)
 {
 #ifdef POINTSOURCE_KDTREE
-  return(kdTreeRangeSearch(psc->kdtree, 0, ref, pow(min_align,2.), status));
+  kdTreeRangeSearch(psc->kdtree, 0, ref, pow(min_align,2.), 
+		    time, dt, pl, rmf, status);
 #else
 
-  LinkedPointSourceList lpsl=NULL;
-  LinkedPointSourceListEntry** entry=&lpsl;
-
-  // Loop over all sources in the preselected catalog.
   long count;
   Vector source_direction;
-  for(count=0; count<psc->psl->nsources; count++) {
-    // Check if the source is close to the FoV.
+  for (count=0; count<psc->psl->nsources; count++) {
+    // Check if the Source is close to / within the FoV.
     source_direction = unit_vector(psc->psl->sources[count].ra,
 				   psc->psl->sources[count].dec);
     if(fabs(scalar_product(&source_direction, ref)) > min_align) {
-      // Add the source to the LinkedPointSourceList.
-      *entry = (LinkedPointSourceListEntry*)malloc(sizeof(LinkedPointSourceListEntry));
-      if (NULL==*entry) {
-	*status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Memory allocation for LinkedPointSourceList failed!\n",
-		       *status);
-	return(lpsl);
-      }
-      // Check if this is the first entry in the list.
-      if (NULL==lpsl) {
-	lpsl = (*entry);
-      }
-      (*entry)->source = &psc->psl->sources[count];
-      entry = &(*entry)->next;
+      *status=create_PointSourcePhotons(&psc->psl->sources[count],
+					time, dt, pl, rmf);
+      if (EXIT_SUCCESS!=*status) return;
     }
-    // End of check whether the source is within / close to the FoV.
+    // END of check if source is close to the FoV.
   }
+  // END of loop over all sources in the preselected 
+  // PointSourceList.
 
-  return(lpsl);
 #endif
 }
 
