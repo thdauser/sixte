@@ -119,14 +119,13 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
    the given photon list file using the function
    insertValidPhotonsIntoFile(). */
 int createPhotonsFromPointSources(PhotonListFile* plf,
-				  PointSourceFile* psf,
+				  PointSourceCatalog* psc,
 				  AttitudeCatalog* ac,
 				  struct Telescope telescope,
 				  struct RMF* rmf,
 				  double t0, double timespan)
 {
   int status = EXIT_SUCCESS;
-
 
   // Defines the mathematical meaning of 'close' in the context that for 
   // sources 'close to the FOV' the simulation creates a light curve.
@@ -140,22 +139,15 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   // FoV. (angle(n,source) > 90-bandwidth)
   const double pre_max_align = sin(2*telescope.fov_diameter);
 
-
   // Normalized vector perpendicular to the orbital plane,
   // used for a preselection of point sources out of the
   // entire catalog.
   Vector preselection_vector;
-  // Pointer source catalog.
-  PointSourceCatalog* psc=NULL;
-  // Normalized vector pointing in the direction of the source.
-  Vector source_vector;
-  // Counter for the different sources in the catalog.
-  long source_counter;
   // Time-ordered photon list containing all created photons in the sky.
   struct PhotonOrderedListEntry* photon_list=NULL;  
   // Current time and time step.
   double time;
-  const double dt = 0.1;
+  const double dt = 1.0;
   // First run of the loop.
   int first = 1;
 
@@ -168,17 +160,12 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     telescope.nz = getTelescopePointing(ac, time, &status);
     if (EXIT_SUCCESS!=status) break;
 
-
-    // PRESELECTION of Point sources:
+    // PRESELECTION of PointSources.
     // Preselection of sources from the comprehensive catalog to 
     // improve the performance of the simulation:
     if ((1==first)||
 	(fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
 	 sin(0.5*telescope.fov_diameter))) {
-
-      // Release old PointSourceCatalog:
-      free_PointSourceCatalog(psc);
-      psc = NULL;
 
       // Preselect sources from the entire source catalog according to the 
       // satellite's direction of motion.
@@ -186,30 +173,46 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
       preselection_vector = 
 	normalize_vector(vector_product(telescope.nz,
 					ac->entry[ac->current_entry].nx));
-      psc=getPointSourceCatalog(psf, preselection_vector, pre_max_align, &status);
+      preselectPointSources(psc, preselection_vector, pre_max_align, &status);
       if((EXIT_SUCCESS!=status)||(NULL==psc)) break;
 
     } // END of preselection
+    
+#ifdef POINTSOURCE_KDTREE
+    // Determine all source CLOSE TO the FoV.
+    LinkedPointSourceList lpsl = 
+      getFoVPointSources(psc, &telescope.nz, close_fov_min_align, 
+			 &status);
+    LinkedPointSourceListEntry* buffer = lpsl;
+ 
+    // Create Photons for these sources.
+    while (NULL!=buffer) {
 
-    // CREATE PHOTONS for all POINT sources CLOSE TO the FOV
-    for (source_counter=0; source_counter<psc->nsources; source_counter++) {
-      // Check whether the source is inside the FOV:
-      // Compare the source direction to the unit vector specifiing the 
-      // direction of the telescope:
-      source_vector = 
-	unit_vector(psc->sources[source_counter].ra, 
-		    psc->sources[source_counter].dec);
-      if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
+      status=create_PointSourcePhotons(buffer->source, time, dt, &photon_list, rmf);
+      if(EXIT_SUCCESS!=status) break; 
 	    
-	// The source is inside the FOV  => create photons:
-	if ((status=create_PointSourcePhotons(&(psc->sources[source_counter]), 
-					      time, dt, &photon_list, rmf))
-	    !=EXIT_SUCCESS) break; 
-	    
-      } // END of check if source is close to the FoV
-    } // End of loop over all sources in the catalog.
+      buffer = lpsl->next;
+      free(lpsl);
+      lpsl = buffer;
+    } 
+    // End of loop over all sources close to the FoV.
     if (EXIT_SUCCESS!=status) break;
     // END of photon generation.
+#else
+    long count;
+    Vector source_direction;
+    for (count=0; count<psc->psl->nsources; count++) {
+      // Check if the Source is close to / within the FoV.
+      source_direction = unit_vector(psc->psl->sources[count].ra,
+				     psc->psl->sources[count].dec);
+      if(fabs(scalar_product(&source_direction, &telescope.nz)) > close_fov_min_align) {
+	status=create_PointSourcePhotons(&psc->psl->sources[count],
+					 time, dt, &photon_list, rmf);
+	if (EXIT_SUCCESS!=status) break;
+      }
+      // END of check if source is close to the FoV.
+    }
+#endif
 
     // Check the photon list and insert all photons inside the FoV
     // into the PhotonListFile.
@@ -221,7 +224,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     if (EXIT_SUCCESS!=status) break;
 
     first = 0;
-  } // END of the loop over the time interval.
+  } 
+  // END of the loop over the time interval.
   if (EXIT_SUCCESS!=status) return(status);
 
   // Clear photon list
@@ -235,7 +239,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 /* Generate photons for a catalog of point sources and a given
    telescope attitude. The photons lying in the FoV are inserted into
    the given photon list file using the function
-   insertValidPhotonsIntoFile(). */
+   insertValidPhotonsIntoFile().
 int createPhotonsFromPointSources2(PhotonListFile* plf,
 				   kdNode* kdtree,
 				   PointSourceFile* psf,
@@ -257,9 +261,6 @@ int createPhotonsFromPointSources2(PhotonListFile* plf,
   struct PhotonOrderedListEntry* photon_list=NULL;
   // List of PointSources within the FoV.
   PointSourceList* psl=NULL;
-  /*  // Normalized vector pointing in the direction of the source.
-  Vector source_vector;
-  */
   // Current time and time step.
   double time;
   const double dt=0.1;
@@ -282,7 +283,6 @@ int createPhotonsFromPointSources2(PhotonListFile* plf,
     long source_counter;
     for (source_counter=0; source_counter<psl->nsources; source_counter++) {
 
-      /*
       // Check whether the source is close to the FOV:
       // Compare the source direction to the unit vector specifiing the 
       // direction of the telescope:
@@ -290,16 +290,13 @@ int createPhotonsFromPointSources2(PhotonListFile* plf,
 	unit_vector(psc->sources[source_counter].ra, 
 		    psc->sources[source_counter].dec);
       if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
-      */
     
       // Create photons:
       if ((status=create_PointSourcePhotons(&(psl->sources[source_counter]), 
 					    time, dt, &photon_list, rmf))
 	  !=EXIT_SUCCESS) break; 
 
-      /*
       } // END of check if source is close to the FoV
-      */
     } 
     // End of loop over all sources in the PointSourceList.
 
@@ -326,7 +323,7 @@ int createPhotonsFromPointSources2(PhotonListFile* plf,
 
   return(status);
 }
-
+*/
 
 
 /* Generate photons for a catalog of point sources and a given
@@ -653,8 +650,9 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 
 
 /** Determine the first HDU in an X-ray source FITS file, determine
-    the Source category, and set the file pointer to this HDU. */
-int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
+    the Source category and HDU number, and set the file pointer to
+    this HDU. */
+int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc, int* hdu)
 {
   int status=EXIT_SUCCESS;
 
@@ -664,15 +662,16 @@ int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
   do { // Error handling loop 
 
     // Determine the number of HDUs in the FITS file and the current HDU.
-    int n_hdus=0, hdu=0;
+    int n_hdus=0;
+    *hdu=0;
     if (fits_get_num_hdus(fptr, &n_hdus, &status)) break;
-    fits_get_hdu_num(fptr, &hdu);
+    fits_get_hdu_num(fptr, hdu);
     // Determine the type of the first HDU (which should be IMAGE_HDU in 
     // any case).
     int hdu_type=0;
     if (fits_get_hdu_type(fptr, &hdu_type, &status)) break;
     headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", 
-		hdu, n_hdus, hdu_type);
+		*hdu, n_hdus, hdu_type);
       
     // Check whether the first (IMAGE) HDU is empty.
     // For this purpose check the header keyword NAXIS.
@@ -693,11 +692,11 @@ int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc)
     } else {
       // The primary extension is empty, so move to the next extension.
       headas_chat(5, " --> empty\n move to next HDU ...\n");
-      while (hdu<n_hdus) {
+      while (*hdu<n_hdus) {
 	if (fits_movrel_hdu(fptr, 1, &hdu_type, &status)) break;
-	hdu++;
+	(*hdu)++;
 	headas_chat(5, " checking HDU %d/%d (HDU type %d) ...\n", 
-		    hdu, n_hdus, hdu_type);
+		    *hdu, n_hdus, hdu_type);
 
 	if (IMAGE_HDU==hdu_type) {
 	  headas_chat(5, " --> source type: SOURCE_IMAGES\n load data from "
@@ -760,7 +759,7 @@ int photon_generation_main()
   // Source category.
   SourceCategory sourceCategory=INVALID_SOURCE;
   // Data structure for point sources:
-  PointSourceFile* psf=NULL;
+  PointSourceCatalog psc;
   // Data structure for extended sources:
   ExtendedSourceFile* esf=NULL;
   // X-ray Cluster image:
@@ -874,29 +873,19 @@ int photon_generation_main()
 		parameters.sources_filename);
     if (fits_open_file(&sources_fptr, parameters.sources_filename, READONLY, 
 		       &status)) break;
-    // Get the source type.
-    status=getFirstSourceHDU(sources_fptr, &sourceCategory);
+    // Get the source type and the HDU of the FITS file extension containing
+    // the source data.
+    int hdu=0;
+    status=getFirstSourceHDU(sources_fptr, &sourceCategory, &hdu);
     if(EXIT_SUCCESS!=status) break;
 
     // Load the X-ray source data using the appropriate routines for the 
     // respective source category.
     if (POINT_SOURCES==sourceCategory) { 
       // Load the point source catalog from the current HDU.
-      psf=get_PointSourceFile_fromHDU(sources_fptr, &status);
+      psc=openPointSourceCatalog(parameters.sources_filename, hdu, &status);
       if (status != EXIT_SUCCESS) break;
 
-      // KD
-      // Build a kd-tree with all sources in the PointSourceFile.
-      long nelements=0;
-      SourceList* sl = 
-	getSourceListFromPointSourceFileHDU(sources_fptr, &nelements, &status);
-      if (EXIT_SUCCESS!=status) break;
-      kdtree = kdTreeBuild(sl, nelements, 0);
-      if (NULL==kdtree) break;
-      freeSourceList(sl);
-      sl=NULL;
-
-      
       // Read the header from the Point Source FITS file to obtain
       // the WCS keywords.
       char* header; // Buffer string for the FITS header.
@@ -1005,27 +994,14 @@ int photon_generation_main()
     headas_chat(5, "start photon generation process ...\n");
 
     if (POINT_SOURCES==sourceCategory) {
-      /*
-      printf("Linear Search with preselection\n");
+
       status=createPhotonsFromPointSources(&photonlistfile,
-      					   psf,
+      					   &psc,
       					   attitudecatalog,
       					   telescope,
       					   rmf,
       					   parameters.t0, 
       					   parameters.timespan);
-      */
-      // KD
-      
-      printf("KD-Tree\n");
-      status=createPhotonsFromPointSources2(&photonlistfile,
-					    kdtree, psf,
-					    attitudecatalog,
-					    telescope,
-					    rmf,
-					    parameters.t0, 
-					    parameters.timespan);
-      
       if (EXIT_SUCCESS!=status) break;
 
     } else if (EXTENDED_SOURCES==sourceCategory) {
@@ -1068,10 +1044,10 @@ int photon_generation_main()
   free_AttitudeCatalog(attitudecatalog);
 
   // Close the Source file.
-  //  if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
+  if (NULL!=sources_fptr) fits_close_file(sources_fptr, &status);
 
   // PointSourceFile.
-  free_PointSourceFile(psf);
+  clearPointSourceCatalog(&psc);
 
   freeKDTree(kdtree);
 

@@ -3,7 +3,8 @@
 
 #include "sixt.h"
 #include "vector.h"
-#include "sourcelist.h"
+#include "pointsources.h"
+#include "pointsourcelist.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -20,12 +21,14 @@
     space. */
 struct structkdNode {
   /** Data structure representing the X-ray source. */
-  struct SourceListEntry source;
+  PointSource source;
 
   struct structkdNode* left; /**< Pointer to node on the left. */
   struct structkdNode* right; /**< Pointer to node on the right. */
 };
 typedef struct structkdNode kdNode;
+
+typedef kdNode* kdTree;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -33,10 +36,10 @@ typedef struct structkdNode kdNode;
 ////////////////////////////////////////////////////////////////////////
 
 
-/** Build up the kdTree from the given list of sources. As the
-    function concept is based on recursive function calls, we also
-    have to hand over the current depth of the recursion. */
-kdNode* kdTreeBuild(SourceList* list, long nelements, int depth);
+/** Build up the kdTree from the given list of sources. */
+kdTree buildKDTree(PointSource* list, long nelements);
+
+kdNode* buildKDNode(PointSource* list, long nelements, int depth);
 
 /** Perform a range search on the given kbTree, i.e., return all X-ray
     sources lying within a certain radius around the reference
@@ -44,9 +47,9 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth);
     sources are appended at the end of the SourceList and the number
     of the returned X-ray sources is stored in the nelements
     parameter. The function return value is the error status. */
-int kdTreeRangeSearch(kdNode* node, int depth,
-		      Vector* ref, double radius2, 
-		      SourceList** list, long *nelements);
+LinkedPointSourceList kdTreeRangeSearch(kdNode* node, int depth,
+					Vector* ref, double radius2, 
+					int* status);
 
 /** Destructor. */
 void freeKDTree(kdNode* tree);

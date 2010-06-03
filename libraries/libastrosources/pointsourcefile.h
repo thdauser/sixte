@@ -47,6 +47,7 @@ typedef struct {
   /** SpectrumStore containing the spectra that are used in this
       PointSourceCatalog. */
   SpectrumStore spectrumstore;
+
 } PointSourceFile;
 
 
@@ -62,6 +63,8 @@ PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* stat
 /** Constructor for opening a PointSourceFile with the fitsfile
     pointer already pointing to the right HDU. */
 PointSourceFile* get_PointSourceFile_fromHDU(fitsfile* fptr, int* status);
+
+PointSourceFile* openPointSourceFile(char* filename, int hdu, int* status);
 
 /** Destructor. */
 void free_PointSourceFile(PointSourceFile*);

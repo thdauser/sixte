@@ -1,9 +1,17 @@
 #include "kdtree.h"
 
 
-kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
+kdTree buildKDTree(PointSource* list, long nelements)
 {
+  // Check if the list is empty.
+  if (0==nelements) return(NULL);
 
+  return(buildKDNode(list, nelements, 0));
+}
+
+
+kdNode* buildKDNode(PointSource* list, long nelements, int depth)
+{
   // Get a new empty node.
   kdNode* node = (kdNode*)malloc(sizeof(kdNode));
   if (NULL==node) {
@@ -11,9 +19,6 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
 		   EXIT_FAILURE);
     return(node);
   };
-
-  // Check if the list is empty.
-  if (0==nelements) return(NULL);
 
   // Check if there is only one element in the source list.
   if (1==nelements) {
@@ -25,20 +30,20 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
 
   long median = nelements/2;
   int axis = depth % 3;
-  quicksortSourceList(list, 0, nelements-1, axis);
+  quicksortPointSources(list, 0, nelements-1, axis);
 
   // Fill the newly created node with data.
   node->source = list[median];
 
   // Set right and left pointers of node.
   if (median>0) {
-    node->left = kdTreeBuild(list, median, depth+1);
+    node->left = buildKDNode(list, median, depth+1);
   } else {
     node->left = NULL;
   }
 
   if (median<nelements-1) {
-    node->right = kdTreeBuild(&list[median+1], 
+    node->right = buildKDNode(&list[median+1], 
 			      nelements-median-1, 
 			      depth+1);
   } else {
@@ -50,48 +55,44 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
 
 
 
-int addNode2SourceList(kdNode* node, SourceList** list, long* nelements)
+LinkedPointSourceList kdTreeRangeSearch(kdNode* node, int depth,
+					Vector* ref, double radius2, 
+					int* status)
 {
-  // Check if new memory has to be allocated.
-  (*nelements)++;
-  if (1 == (*nelements % 1000)) {
-    *list = (SourceList*)realloc(*list, ((*nelements/1000)+1)*1000*sizeof(SourceList));
-    if (NULL==*list) {
-      HD_ERROR_THROW("Error: Could not allocate memory for SourceList!\n",
-		     EXIT_FAILURE);
-      return(EXIT_FAILURE);
-    }
-  }
+  LinkedPointSourceList lpsl=NULL;
+  LinkedPointSourceListEntry** entry=&lpsl;
 
-  // Add the new Source to the list.
-  (*list)[(*nelements)-1] = node->source;
-
-  return(EXIT_SUCCESS);
-}
-
-
-
-int kdTreeRangeSearch(kdNode* node, int depth,
-		      Vector* ref, double radius2, 
-		      SourceList** list, long *nelements)
-{
-  int status = EXIT_SUCCESS;
+  // Check if the kd-Tree exists.
+  if (NULL==node) return(lpsl);
 
   // Calculate the distance (squared) between the node and the 
   // reference point.
+  Vector location = unit_vector(node->source.ra, node->source.dec);
   double distance2 = 
-    pow(node->source.location.x-ref->x, 2.) +
-    pow(node->source.location.y-ref->y, 2.) +
-    pow(node->source.location.z-ref->z, 2.);
+    pow(location.x-ref->x, 2.) +
+    pow(location.y-ref->y, 2.) +
+    pow(location.z-ref->z, 2.);
 
   // Check if the current node lies within the search radius.
   if (distance2 <= radius2) {
-    status = addNode2SourceList(node, list, nelements);
-    if (EXIT_SUCCESS!=status) return(status);
+    *entry = (LinkedPointSourceListEntry*)malloc(sizeof(LinkedPointSourceListEntry));
+    if (NULL==*entry) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Memory allocation for LinkedPointSourceList failed!\n",
+		     *status);
+      return(lpsl);
+    }
+    // Check if this is the first entry in the list.
+    if (NULL==lpsl) {
+      lpsl = (*entry);
+    }
+    (*entry)->source = &node->source;
+    (*entry)->next   = NULL;
+    entry = &(*entry)->next;
   }
 
   // Check if we are at a leaf.
-  if ((NULL==node->left) && (NULL==node->right)) return(status);
+  if ((NULL==node->left) && (NULL==node->right)) return(lpsl);
 
   int axis = depth % 3;
 
@@ -100,7 +101,7 @@ int kdTreeRangeSearch(kdNode* node, int depth,
   kdNode* far;
   double distance2edge = 
     getVectorDimensionValue(ref, axis) -
-    getVectorDimensionValue(&node->source.location, axis);
+    getVectorDimensionValue(&location, axis);
   if (distance2edge < 0.) {
     near = node->left;
     far  = node->right;
@@ -112,8 +113,8 @@ int kdTreeRangeSearch(kdNode* node, int depth,
   // Descent into near tree if it exists, and then check
   // against current node.
   if (NULL!=near) {
-    kdTreeRangeSearch(near, depth+1, ref, radius2,
-		      list, nelements);
+    *entry = kdTreeRangeSearch(near, depth+1, ref, radius2,
+			       status);
   } 
   // END of (NULL!=near)
 
@@ -123,13 +124,18 @@ int kdTreeRangeSearch(kdNode* node, int depth,
   // overlap there.
   if (NULL!=far) {
     if (distance2edge*distance2edge < radius2) {
-      kdTreeRangeSearch(far, depth+1, ref, radius2,
-			list, nelements);
+      // Move to the end of the linked list.
+      while(NULL!=*entry) {
+	entry = &(*entry)->next;
+      }
+      // Append newly found entries.
+      *entry = kdTreeRangeSearch(far, depth+1, ref, radius2,
+				 status);
     }
   }
   // END of (NULL!=far)
 
-  return(status);
+  return(lpsl);
 }
 
 

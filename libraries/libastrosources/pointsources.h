@@ -5,7 +5,6 @@
 #include "spectrum.h"
 #include "vector.h"
 #include "linlightcurve.h"
-#include "sourcelist.h"
 
 
 /** Maximum number of sources in the preselected source catalog. */
@@ -57,6 +56,12 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 // Function Declarations.
 /////////////////////////////////////////////////////////////////
+
+
+/** Sort the PointSourceList with the specified number of entries with
+    respect to the requested coordinate axis using a quick sort
+    algorithm. */
+void quicksortPointSources(PointSource* list, long left, long right, int axis);
 
 
 #endif /* POINTSOURCES_H */

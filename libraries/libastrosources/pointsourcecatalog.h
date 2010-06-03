@@ -4,7 +4,12 @@
 #include "sixt.h"
 #include "pointsources.h"
 #include "pointsourcefile.h"
+#include "kdtree.h"
+#include "pointsourcelist.h"
 #include "vector.h"
+
+
+//#define POINTSOURCE_KDTREE 1
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -12,17 +17,16 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-/** Contains all PointSources from one and the same FITS file. This
-    data structure is generated from the sources sorted out of the
-    PointSourceFile. */
+/** ...  */
 typedef struct {
 
-  /** Number of PointSource objects contained in the PointSourceCatalog. */
-  long nsources;
+  PointSourceFile* file;
 
-  /** Array containing the individual PointSource objects. Length of
-      the array is nsources. */
-  PointSource* sources;
+#ifdef POINTSOURCE_KDTREE
+  kdTree kdtree;
+#else 
+  PointSourceList* psl;
+#endif
 
 } PointSourceCatalog;
 
@@ -32,6 +36,19 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
+PointSourceCatalog openPointSourceCatalog(char* filename, int hdu, int* status);
+
+void preselectPointSources(PointSourceCatalog* psc, Vector normal, 
+			   double max_align, int* status);
+
+LinkedPointSourceList getFoVPointSources(PointSourceCatalog* psc,
+					 Vector* ref, double min_align, 
+					 int* status);
+
+void clearPointSourceCatalog(PointSourceCatalog* psc);
+
+
+// OBSOLETE
 /** Selects point sources along the path of the telescope axis over
     the sky and returns a PointSourceCatalog containing the individual
     PointSource objects. The selection is done based on a normal
@@ -44,6 +61,7 @@ PointSourceCatalog* getPointSourceCatalog(PointSourceFile* psf,
 					  const double max_align, 
 					  int* status);
 
+// OBSOLETE
 /** Destructor. */
 void free_PointSourceCatalog(PointSourceCatalog* psc);
 
