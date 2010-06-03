@@ -59,23 +59,18 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
 
   // Read all sources from the FITS file.
   long row;
-  PointSource ps; // Input buffer.
-  // Unit vector pointing in the direction of the source.
-  Vector source_direction;
+  PointSource* ps=psl->sources; // Pointer to the last entry in PointSourceList.
 
   for (row=0; row<psc->file->nrows; row++) {
-
+    
     // Read the PointSource from the FITS table.
-    get_PointSourceTable_Row(psc->file, row, &ps, status);
+    get_PointSourceTable_Row(psc->file, row, ps, status);
     if (EXIT_SUCCESS!=*status) return;
-
-    // Get a unit vector pointing in the direction of the source:
-    source_direction = unit_vector(ps.ra, ps.dec);
 
     // Check, whether the PointSource is within the preselection 
     // band.
-    if(fabs(scalar_product(&source_direction, &normal)) < max_align) {
-      if(psl->nsources+1 > MAX_N_POINTSOURCES) {
+    if(fabs(scalar_product(&ps->location, &normal)) < max_align) {
+      if(psl->nsources+1 >= MAX_N_POINTSOURCES) {
 	// Too many sources in the PointSourceCatalog !
 	*status=EXIT_FAILURE;
 	char msg[MAXMSG];  // Error output buffer.
@@ -85,55 +80,46 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
 	return;
       }
 
-      // Add the current source to the selected catalog:
-      psl->sources[psl->nsources].rate = ps.rate;
-      
-      // Save the source direction in the source catalog-array:
-      psl->sources[psl->nsources].ra  = ps.ra;
-      psl->sources[psl->nsources].dec = ps.dec;
-
-      // Set the light curve type to the value specified in the source catalog.
-      psl->sources[psl->nsources].lc_type = ps.lc_type;
       // If the light curve type is a value > 0 meaning that the particular
       // light curve for this source is given in a FITS file, load that file
       // and assign the pointer to the light curve.
-      if (0<ps.lc_type) {
+      if (0<ps->lc_type) {
 	// Try and find out the name of the FITS file containing the light curve.
 	char lc_filename[MAXMSG], key[MAXMSG], comment[MAXMSG]; // Buffers
-	sprintf(key, "LC%06ld", ps.lc_type);
+	sprintf(key, "LC%06ld", ps->lc_type);
 	if (fits_read_key(psc->file->fptr, TSTRING, key, 
 			  lc_filename, comment, status)) return;
 	// Then load the file data and store the light curve.
-	psl->sources[psl->nsources].lc = 
-	  loadLinLightCurveFromFile(lc_filename, ps.rate, status);
+	ps->lc = loadLinLightCurveFromFile(lc_filename, ps->rate, 
+					   status);
 	if (EXIT_SUCCESS!=*status) return;
 	// So far there was no photon created for this source.
-	psl->sources[psl->nsources].t_last_photon = 0.;
+	ps->t_last_photon = 0.;
 	
       } else {
 	// No particular light curve has been assigned to this source.
 	// Set light curve pointer to NULL.
-	psl->sources[psl->nsources].lc = NULL;
+	ps->lc = NULL;
 	// So far there was no photon created for this source.
-	psl->sources[psl->nsources].t_last_photon = 0.;
+	ps->t_last_photon = 0.;
 	  
       } 
       // END of assigning a light curve to the source.
 	  
       // Source spectrum.
-      if ((ps.spectrum_index<1) || 
-	  (ps.spectrum_index>psc->file->spectrumstore.nspectra)) {
+      if ((ps->spectrum_index<1) || 
+	  (ps->spectrum_index>psc->file->spectrumstore.nspectra)) {
 	headas_chat(0, "\n### Warning: no source spectrum specified for point source!\n"
 		    "     Using default spectrum instead.\n");
-	psl->sources[psl->nsources].spectrum = &psc->file->spectrumstore.spectrum[0];
+	ps->spectrum = &psc->file->spectrumstore.spectrum[0];
       } else {
-	psl->sources[psl->nsources].spectrum = 
-	  &psc->file->spectrumstore.spectrum[ps.spectrum_index-1];
+	ps->spectrum = &psc->file->spectrumstore.spectrum[ps->spectrum_index-1];
       } 
       // END of assigning a spectrum to the source.
       
       // Increase number of sources in the selected catalog
       psl->nsources++;
+      ps = &psl->sources[psl->nsources];
     } 
     // END of check whether this sources lies within the preselection band.
   }
@@ -177,12 +163,11 @@ void getFoVPointSources(PointSourceCatalog* psc,
 #else
 
   long count;
-  Vector source_direction;
   for (count=0; count<psc->psl->nsources; count++) {
     // Check if the Source is close to / within the FoV.
-    source_direction = unit_vector(psc->psl->sources[count].ra,
-				   psc->psl->sources[count].dec);
-    if(fabs(scalar_product(&source_direction, ref)) > min_align) {
+    if(fabs(scalar_product(&psc->psl->sources[count].location, ref)) 
+       > min_align) {
+
       *status=create_PointSourcePhotons(&psc->psl->sources[count],
 					time, dt, pl, rmf);
       if (EXIT_SUCCESS!=*status) return;

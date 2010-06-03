@@ -22,6 +22,9 @@ typedef struct {
   /** Right ascension and declination of the source [rad]. */
   float ra, dec; 
 
+  /** Unit vector pointing in the direction of the source. */
+  Vector location;
+
   /** Average photon rate [photons/s]. */
   float rate; 
   /** Type of the light curve particular for this PointSource. There

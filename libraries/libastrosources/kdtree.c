@@ -67,11 +67,10 @@ void kdTreeRangeSearch(kdNode* node, int depth,
 
   // Calculate the distance (squared) between the node and the 
   // reference point.
-  Vector location = unit_vector(node->source.ra, node->source.dec);
   double distance2 = 
-    pow(location.x-ref->x, 2.) +
-    pow(location.y-ref->y, 2.) +
-    pow(location.z-ref->z, 2.);
+    pow(node->source.location.x-ref->x, 2.) +
+    pow(node->source.location.y-ref->y, 2.) +
+    pow(node->source.location.z-ref->z, 2.);
 
   // Check if the current node lies within the search radius.
   if (distance2 <= radius2) {
@@ -88,7 +87,7 @@ void kdTreeRangeSearch(kdNode* node, int depth,
   kdNode* far;
   double distance2edge = 
     getVectorDimensionValue(ref, axis) -
-    getVectorDimensionValue(&location, axis);
+    getVectorDimensionValue(&node->source.location, axis);
   if (distance2edge < 0.) {
     near = node->left;
     far  = node->right;

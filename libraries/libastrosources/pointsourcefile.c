@@ -160,6 +160,9 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row,
   // Set default values.
   ps->ra = 0.;
   ps->dec = 0.;
+  ps->location.x=0.;
+  ps->location.y=0.;
+  ps->location.z=0.;
   ps->rate = 0.;
   ps->lc_type = T_LC_CONSTANT;
   ps->lc = NULL;
@@ -177,6 +180,8 @@ int get_PointSourceTable_Row(PointSourceFile* psf, long row,
   fits_read_col(psf->fptr, TFLOAT, psf->cdec, row+1, 1, 1, &ps->dec, &ps->dec, 
 		&anynul, status);
   ps->dec *= M_PI/180.; // rescale from [deg]->[rad]
+
+  ps->location = unit_vector(ps->ra, ps->dec);
 
   // Photon Rate:
   fits_read_col(psf->fptr, TFLOAT, psf->crate, row+1, 1, 1, &ps->rate, &ps->rate, 
