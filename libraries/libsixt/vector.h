@@ -21,7 +21,8 @@ typedef struct {
     declination. Angles have to be given in [rad]. */
 Vector unit_vector(const double ra, const double dec);
 
-/** Returns a normalized vector of length 1.0 with the same direction as the original vector).*/
+/** Returns a normalized vector of length 1.0 with the same direction
+    as the original vector).*/
 Vector normalize_vector(Vector);
 /** Faster than normalize_vector. Deals with pointer instead of
     handling structures at function call. */

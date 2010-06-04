@@ -26,6 +26,8 @@ float photon_energy(Spectrum* spectrum, struct RMF* rmf)
     lower = upper;
   }
 
+  if ((lower<0)||(lower>=4096)) printf("lower: %ld\n", lower);
+
   // Return an energy chosen randomly out of the determined PHA bin:
   return(rmf->ChannelLowEnergy[lower] + 
 	 sixt_get_random_number()*(rmf->ChannelHighEnergy[lower]-
@@ -48,7 +50,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
   int status=EXIT_SUCCESS;
 
   // If there is no photon time stored so far, set the current time.
-  if (ps->t_last_photon <= 0.) {
+  if (ps->t_last_photon <= time) {
     ps->t_last_photon = time;
   }
 

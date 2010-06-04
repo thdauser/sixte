@@ -2,10 +2,8 @@
 #define POINTSOURCELIST_H 1
 
 #include "sixt.h"
-#include "sourcelist.h"
 #include "pointsources.h"
 #include "pointsourcefile.h"
-#include "kdtree.h"
 
 
 #ifndef HEASP_H
@@ -22,16 +20,19 @@
 /** Contains all PointSources within a certain region (usually the
     FoV). */
 typedef struct {
-
-  /** Number of PointSource objects contained in the
-      PointSourceList. */
-  long nsources;
-
-  /** Array containing the individual PointSource objects. Length of
-      the array is nsources. */
   PointSource* sources;
-
+  long nsources;
 } PointSourceList;
+
+
+/** Linked Point Source List. */
+struct structLinkedPointSourceListEntry {
+  PointSource* source;
+  struct structLinkedPointSourceListEntry* next;
+};
+
+typedef struct structLinkedPointSourceListEntry LinkedPointSourceListEntry;
+typedef LinkedPointSourceListEntry* LinkedPointSourceList;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -39,12 +40,7 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////
 
 
-PointSourceList* selectFoVPointSourceList(kdNode* tree, 
-					  PointSourceFile* psf,
-					  Vector* telescope_direction,
-					  const double max_align,
-					  int* status);
+void freePointSourceList(PointSourceList* psl);
 
-void clearPointSourceList(PointSourceList* psl);
 
 #endif /* POINTSOURCELIST_H */

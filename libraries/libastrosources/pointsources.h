@@ -5,7 +5,6 @@
 #include "spectrum.h"
 #include "vector.h"
 #include "linlightcurve.h"
-#include "sourcelist.h"
 
 
 /** Maximum number of sources in the preselected source catalog. */
@@ -22,6 +21,9 @@ typedef struct {
 
   /** Right ascension and declination of the source [rad]. */
   float ra, dec; 
+
+  /** Unit vector pointing in the direction of the source. */
+  Vector location;
 
   /** Average photon rate [photons/s]. */
   float rate; 
@@ -57,6 +59,12 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 // Function Declarations.
 /////////////////////////////////////////////////////////////////
+
+
+/** Sort the PointSourceList with the specified number of entries with
+    respect to the requested coordinate axis using a quick sort
+    algorithm. */
+void quicksortPointSources(PointSource* list, long left, long right, int axis);
 
 
 #endif /* POINTSOURCES_H */

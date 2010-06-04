@@ -1,9 +1,17 @@
 #include "kdtree.h"
 
 
-kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
+kdTree buildKDTree(PointSource* list, long nelements)
 {
+  // Check if the list is empty.
+  if (0==nelements) return(NULL);
 
+  return(buildKDNode(list, nelements, 0));
+}
+
+
+kdNode* buildKDNode(PointSource* list, long nelements, int depth)
+{
   // Get a new empty node.
   kdNode* node = (kdNode*)malloc(sizeof(kdNode));
   if (NULL==node) {
@@ -11,9 +19,6 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
 		   EXIT_FAILURE);
     return(node);
   };
-
-  // Check if the list is empty.
-  if (0==nelements) return(NULL);
 
   // Check if there is only one element in the source list.
   if (1==nelements) {
@@ -25,20 +30,20 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
 
   long median = nelements/2;
   int axis = depth % 3;
-  quicksortSourceList(list, 0, nelements-1, axis);
+  quicksortPointSources(list, 0, nelements-1, axis);
 
   // Fill the newly created node with data.
   node->source = list[median];
 
   // Set right and left pointers of node.
   if (median>0) {
-    node->left = kdTreeBuild(list, median, depth+1);
+    node->left = buildKDNode(list, median, depth+1);
   } else {
     node->left = NULL;
   }
 
   if (median<nelements-1) {
-    node->right = kdTreeBuild(&list[median+1], 
+    node->right = buildKDNode(&list[median+1], 
 			      nelements-median-1, 
 			      depth+1);
   } else {
@@ -50,32 +55,15 @@ kdNode* kdTreeBuild(SourceList* list, long nelements, int depth)
 
 
 
-int addNode2SourceList(kdNode* node, SourceList** list, long* nelements)
+void kdTreeRangeSearch(kdNode* node, int depth,
+		       Vector* ref, double radius2, 
+		       double time, double dt, 
+		       struct PhotonOrderedListEntry** pl,
+		       struct RMF* rmf,
+		       int* status)
 {
-  // Check if new memory has to be allocated.
-  (*nelements)++;
-  if (1 == (*nelements % 1000)) {
-    *list = (SourceList*)realloc(*list, ((*nelements/1000)+1)*1000*sizeof(SourceList));
-    if (NULL==*list) {
-      HD_ERROR_THROW("Error: Could not allocate memory for SourceList!\n",
-		     EXIT_FAILURE);
-      return(EXIT_FAILURE);
-    }
-  }
-
-  // Add the new Source to the list.
-  (*list)[(*nelements)-1] = node->source;
-
-  return(EXIT_SUCCESS);
-}
-
-
-
-int kdTreeRangeSearch(kdNode* node, int depth,
-		      Vector* ref, double radius2, 
-		      SourceList** list, long *nelements)
-{
-  int status = EXIT_SUCCESS;
+  // Check if the kd-Tree exists.
+  if (NULL==node) return;
 
   // Calculate the distance (squared) between the node and the 
   // reference point.
@@ -86,12 +74,11 @@ int kdTreeRangeSearch(kdNode* node, int depth,
 
   // Check if the current node lies within the search radius.
   if (distance2 <= radius2) {
-    status = addNode2SourceList(node, list, nelements);
-    if (EXIT_SUCCESS!=status) return(status);
+    create_PointSourcePhotons(&node->source, time, dt, pl, rmf);
   }
 
   // Check if we are at a leaf.
-  if ((NULL==node->left) && (NULL==node->right)) return(status);
+  if ((NULL==node->left) && (NULL==node->right)) return;
 
   int axis = depth % 3;
 
@@ -113,7 +100,7 @@ int kdTreeRangeSearch(kdNode* node, int depth,
   // against current node.
   if (NULL!=near) {
     kdTreeRangeSearch(near, depth+1, ref, radius2,
-		      list, nelements);
+		      time, dt, pl, rmf, status);
   } 
   // END of (NULL!=near)
 
@@ -123,13 +110,15 @@ int kdTreeRangeSearch(kdNode* node, int depth,
   // overlap there.
   if (NULL!=far) {
     if (distance2edge*distance2edge < radius2) {
+      // Move to the end of the linked list.
+      // Append newly found entries.
       kdTreeRangeSearch(far, depth+1, ref, radius2,
-			list, nelements);
+			time, dt, pl, rmf, status);
     }
   }
   // END of (NULL!=far)
 
-  return(status);
+  return;
 }
 
 

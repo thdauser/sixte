@@ -28,7 +28,6 @@
 #include "genericdetector.h"
 #include "check_fov.h"
 #include "kdtree.h"
-#include "sourcelist.h"
 
 #define TOOLSUB photon_generation_main
 #include "headas_main.c"
