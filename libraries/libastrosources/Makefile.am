@@ -22,8 +22,7 @@ libastrosources_la_SOURCES = pointsources.c pointsourcefile.c		\
 			     pointsourcelist.c pointsourcecatalog.c	\
 			     extendedsources.c sourceimage.c photon.c	\
 			     spectrum.c fits_pha.c check_fov.c		\
-			     photonlistfile.c linlightcurve.c kdtree.c	\
-			     sourcelist.c
+			     photonlistfile.c linlightcurve.c kdtree.c
 libastrosources_la_LIBADD = @top_builddir@/libraries/libsixt/libsixt.la
 
 
@@ -34,5 +33,5 @@ include_HEADERS = astrosources.h pointsources.h pointsourcefile.h	\
 		  pointsourcelist.c pointsourcecatalog.h		\
 		  extendedsources.h sourceimage.h photon.h spectrum.h	\
 		  fits_pha.h check_fov.h photonlistfile.h		\
-		  linlightcurve.h kdtree.h sourcelist.h
+		  linlightcurve.h kdtree.h
 

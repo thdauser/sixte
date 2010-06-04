@@ -3,7 +3,6 @@
 
 #include "sixt.h"
 #include "vector.h"
-#include "sourcelist.h"
 #include "pointsources.h"
 
 
@@ -56,14 +55,6 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
-/** Constructor specifying a source file and the right HDU number to
-    be loaded. */
-PointSourceFile* get_PointSourceFile_fromFile(char* filename, int hdu, int* status);
-
-/** Constructor for opening a PointSourceFile with the fitsfile
-    pointer already pointing to the right HDU. */
-PointSourceFile* get_PointSourceFile_fromHDU(fitsfile* fptr, int* status);
-
 PointSourceFile* openPointSourceFile(char* filename, int hdu, int* status);
 
 /** Destructor. */
@@ -75,11 +66,6 @@ void free_PointSourceFile(PointSourceFile*);
     [rad]. */
 int get_PointSourceTable_Row(PointSourceFile* psf, long row, 
 			     PointSource* ps, int* status);
-
-/** Read a SourceList with all sources from a given PointSourceFile. */
-SourceList* getSourceListFromPointSourceFileHDU(fitsfile* file, 
-						long* nelements, 
-						int* status);
 
 
 #endif /* POINTSOURCEFILE_H */

@@ -4,8 +4,8 @@
 #include "sixt.h"
 #include "pointsources.h"
 #include "pointsourcefile.h"
-#include "kdtree.h"
 #include "pointsourcelist.h"
+#include "kdtree.h"
 #include "vector.h"
 #include "photon.h"
 
@@ -36,37 +36,26 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
+/** Open a PointSourceCatalog from a FITS file with a specific HDU. */
 PointSourceCatalog openPointSourceCatalog(char* filename, int hdu, int* status);
 
+/** Preselect PointSources along the path of the telescope axis among
+    all exisiting point sources in order to avoid numerical effort by
+    scanning all sources at each step. */
 void preselectPointSources(PointSourceCatalog* psc, Vector normal, 
 			   double max_align, int* status);
 
-void getFoVPointSources(PointSourceCatalog* psc,
-			Vector* ref, double min_align, 
-			double time, double dt, 
-			struct PhotonOrderedListEntry** list_first,
-			struct RMF* rmf,
-			int* status);
+/** Determine the PointSources within / close to the FoV and generate
+    photons for them. */
+void generateFoVPointSourcePhotons(PointSourceCatalog* psc,
+				   Vector* ref, double min_align, 
+				   double time, double dt, 
+				   struct PhotonOrderedListEntry** list_first,
+				   struct RMF* rmf,
+				   int* status);
 
+/** Clear the PointSourceCatalog. */
 void clearPointSourceCatalog(PointSourceCatalog* psc);
-
-
-// OBSOLETE
-/** Selects point sources along the path of the telescope axis over
-    the sky and returns a PointSourceCatalog containing the individual
-    PointSource objects. The selection is done based on a normal
-    vector perpendicular to the scan plane and the cos(sin?)-value of
-    the maximum angle between the source direction and the scan
-    plane. To each selected source a spectrum and a light curve are
-    assigned. */
-PointSourceCatalog* getPointSourceCatalog(PointSourceFile* psf, 
-					  Vector normal_vector, 
-					  const double max_align, 
-					  int* status);
-
-// OBSOLETE
-/** Destructor. */
-void free_PointSourceCatalog(PointSourceCatalog* psc);
 
 
 #endif /* POINTSOURCECATALOG_H */

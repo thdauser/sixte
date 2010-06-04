@@ -42,14 +42,5 @@ typedef LinkedPointSourceListEntry* LinkedPointSourceList;
 
 void freePointSourceList(PointSourceList* psl);
 
-/*
-PointSourceList* selectFoVPointSourceList(kdNode* tree, 
-					  PointSourceFile* psf,
-					  Vector* telescope_direction,
-					  const double max_align,
-					  int* status);
-
-void clearPointSourceList(PointSourceList* psl);
-*/
 
 #endif /* POINTSOURCELIST_H */

@@ -181,9 +181,9 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 
     // Determine all source CLOSE TO the FoV and generate
     // photons for these sources.
-    getFoVPointSources(psc, &telescope.nz, close_fov_min_align,
-		       time, dt, &photon_list, rmf,
-		       &status);
+    generateFoVPointSourcePhotons(psc, &telescope.nz, close_fov_min_align,
+				  time, dt, &photon_list, rmf,
+				  &status);
     if (EXIT_SUCCESS!=status) break;
     // END of photon generation.
 

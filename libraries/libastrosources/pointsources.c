@@ -48,3 +48,4 @@ void quicksortPointSources(PointSource* list, long left, long right, int axis)
     quicksortPointSources(list, pivotNewIndex+1, right, axis);
   }
 }
+
