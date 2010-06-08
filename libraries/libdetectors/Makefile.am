@@ -32,7 +32,7 @@ libdetectors_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 			  htrsdetector.c htrseventfile.c		\
 			  hexagonalpixels.c arcpixels.c			\
 			  telemetrypacket.c htrstelstream.c		\
-			  comadetector.c comaeventfile.c
+			  comadetector.c comaeventfile.c timingccd.c
 
 libdetectors_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
 libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosources.la

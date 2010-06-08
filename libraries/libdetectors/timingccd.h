@@ -34,6 +34,9 @@
 /////////////////////////////////////////////////////////////////
 
 
+/** This data structure can be used for CCD detectors with square
+    pixel arrays, which are operated in timing mode, i.e. with
+    continuous readout. */
 typedef struct {
   GenericDetector generic;
   SquarePixels pixels;
