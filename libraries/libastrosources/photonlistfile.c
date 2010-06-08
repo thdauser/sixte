@@ -124,16 +124,16 @@ int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
 
   // Read in the data.
   ph->time = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->ctime, plf->row+1, 1, 1, 
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->ctime, plf->row, 1, 1, 
 		    &ph->time, &ph->time, &anynul, &status)) return(status);
   ph->energy = 0.;
-  if (fits_read_col(plf->fptr, TFLOAT, plf->cenergy, plf->row+1, 1, 1, 
+  if (fits_read_col(plf->fptr, TFLOAT, plf->cenergy, plf->row, 1, 1, 
 		    &ph->energy, &ph->energy, &anynul, &status)) return(status);
   ph->ra = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->cra, plf->row+1, 1, 1, 
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->cra, plf->row, 1, 1, 
 		    &ph->ra, &ph->ra, &anynul, &status)) return(status);
   ph->dec = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, plf->row+1, 1, 1, 
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, plf->row, 1, 1, 
 		    &ph->dec, &ph->dec, &anynul, &status)) return(status);
 
   

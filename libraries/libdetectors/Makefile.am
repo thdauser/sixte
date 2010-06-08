@@ -50,4 +50,4 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  xmsdetector.h xmseventfile.h xmsevent.h		\
 		  htrsdetector.h htrseventfile.h htrsevent.h		\
 		  telemetrypacket.h htrstelstream.h comadetector.h	\
-		  comaeventfile.h comaevent.h
+		  comaeventfile.h comaevent.h timingccd.h
