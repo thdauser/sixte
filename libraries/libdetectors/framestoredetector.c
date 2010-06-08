@@ -477,11 +477,13 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
       list[maxidx].pat_inf = 45;
       list[minidx].pat_inf = 44;
     }
-    // Invalid pattern. (Actually this code should never be executed.)
+    // Invalid pattern. (Actually this code should only be executed
+    // for diagonal double events.)
     else {
+      /*
       headas_chat(5, "Invalid double event: (%d,%d) and (%d,%d)!\n",
 		  list[maxidx].xi, list[maxidx].yi,
-		  list[minidx].xi, list[minidx].yi);
+		  list[minidx].xi, list[minidx].yi);*/
       list[maxidx].pat_inf = FD_INVALID_PATTERN;
       list[minidx].pat_inf = FD_INVALID_PATTERN;
     }
@@ -594,10 +596,12 @@ void fdPatternIdentification(eROSITAEvent* list, const int nlist,
       list[maxidx].pat_inf = FD_INVALID_PATTERN;
       list[mididx].pat_inf = FD_INVALID_PATTERN;
       list[minidx].pat_inf = FD_INVALID_PATTERN;
+      /*
       headas_chat(5, "Invalid triple event: max (%d,%d)  mid (%d,%d) min (%d,%d)\n",
 		  list[maxidx].xi, list[maxidx].yi, 
 		  list[mididx].xi, list[mididx].yi,
 		  list[minidx].xi, list[minidx].yi);
+      */
     }
   } // END of triple events.
 

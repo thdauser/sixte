@@ -94,18 +94,18 @@ int initFramestoreDetector(FramestoreDetector* fd,
 
 /** Clean up the FramestoreDetector data structure. Release allocated
     memory and call clean-up routines of underlying structures. */
-int cleanupFramestoreDetector(FramestoreDetector*);
+int cleanupFramestoreDetector(FramestoreDetector* fd);
 
 /** This routine is called for readout of the FramestoreDetector. The
     routine itself checks, whether a readout is necessary according to
-    the current * time and readout time. If it's time to do a readout,
-    the routine initiates the * readout process by calling
+    the current time and readout time. If it's time to do a readout,
+    the routine initiates the readout process by calling
     readoutFramestoreDetector(). */
-int checkReadoutFramestoreDetector(FramestoreDetector*, double time);
+int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time);
 
 /** Read out the FramestoreDetector. The measured events are stored
     in an event list FITS file. */
-inline int readoutFramestoreDetector(FramestoreDetector*);
+inline int readoutFramestoreDetector(FramestoreDetector* fd);
 
 /** Add a new photon impact to the FramestoreDetector pixels.  The
     generated charge is determined according to the detector response.
@@ -113,19 +113,7 @@ inline int readoutFramestoreDetector(FramestoreDetector*);
     according to a Gaussian charge cloud model.  The new charge is
     added to the charge already contained in the detector pixel, so
     pileup effects are taken into account. */
-int addImpact2FramestoreDetector(FramestoreDetector*, Impact*);
-
-
-/** Marker routine for split partners. The routine scans the pixels
-    around a certain event on the FramestoreDetector in order to find
-    neighboring events belonging to the same split pattern. */
-/* Deprecated
-void fdMarkEvents(eROSITAEvent* list, int* nlist, 
-		  int* maxidx, int* minidx,
-		  FramestoreDetector* fd, 
-		  int x, int y);
-*/
-
+int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact);
 
 /** Identify split patterns according to the eROSITA definition given
     in the event file specification. The event list has to consist of

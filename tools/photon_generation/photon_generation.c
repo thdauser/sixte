@@ -147,7 +147,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   struct PhotonOrderedListEntry* photon_list=NULL;  
   // Current time and time step.
   double time;
-  const double dt = 1.0;
+  const double dt = 0.1;
   // First run of the loop.
   int first = 1;
 
