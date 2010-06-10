@@ -26,8 +26,6 @@ float photon_energy(Spectrum* spectrum, struct RMF* rmf)
     lower = upper;
   }
 
-  if ((lower<0)||(lower>=4096)) printf("lower: %ld\n", lower);
-
   // Return an energy chosen randomly out of the determined PHA bin:
   return(rmf->ChannelLowEnergy[lower] + 
 	 sixt_get_random_number()*(rmf->ChannelHighEnergy[lower]-
@@ -76,7 +74,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
 	if (EXIT_SUCCESS!=status) return(status);
 	*/
       } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	ps->lc = getLinLightCurve(4096, &status);
+	ps->lc = getLinLightCurve(16384, &status);
 	if (EXIT_SUCCESS!=status) return(status);
 	/*
 	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
