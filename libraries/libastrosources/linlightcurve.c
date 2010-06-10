@@ -184,7 +184,6 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   // Set basic properties of the light curve.
   lc->t0 = t0;
   lc->step_width = step_width;
-
   
   // Create light curve data according to the algorithm 
   // proposed by Timmer & Koenig (1995).
@@ -197,7 +196,8 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     return(EXIT_FAILURE);
   }
   for (count=0; count<lc->nvalues; count++) {
-    psd[count] = pow(((double)count+1.), -2.); // TODO: pow((double)count, -1.0) ???
+    // Use a powerlaw index (beta) of 1 (for red noise).
+    psd[count] = pow(((double)count+1.), -1.);
   }
 
   // Create Fourier components.
@@ -209,12 +209,12 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   }
   double randr, randi;
   get_gauss_random_numbers(&randr, &randi);
-  fcomp[0]             = randr*sqrt(psd[0]);    //fcomp[0] = 0.;
-  fcomp[lc->nvalues/2] = randr*sqrt(psd[lc->nvalues/2]);
+  fcomp[0]             = randr*sqrt(0.5*psd[0]);    //fcomp[0] = 0.;
+  fcomp[lc->nvalues/2] = randi*sqrt(0.5*psd[lc->nvalues/2]);
   for (count=1; count<lc->nvalues/2; count++) {
     get_gauss_random_numbers(&randr, &randi);
-    REAL(fcomp, count) = randr*sqrt(psd[count]);
-    IMAG(fcomp, count) = randi*sqrt(psd[count]);
+    REAL(fcomp, count) = randr*sqrt(0.5*psd[count]);
+    IMAG(fcomp, count) = randi*sqrt(0.5*psd[count]);
   }
 
   // Perform Fourier (back-)transformation.
@@ -233,7 +233,8 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   // Determine the normalized rates from the FFT.
   double* rate = (double*)malloc(lc->nvalues*sizeof(double));
   if (NULL==rate) {
-    HD_ERROR_THROW("Error: Could not allocate memory for PSD (light curve generation)!\n",
+    HD_ERROR_THROW("Error: Could not allocate memory for Timmer & "
+		   "Koenig light curve (light curve generation)!\n",
 		   EXIT_FAILURE);
     return(EXIT_FAILURE);
   }
@@ -246,16 +247,18 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   // Set the data (slopes, intercepts, ...) required by the LinLightCurve object.
   setLinLightCurveData(lc, rate);
 
-  /*
+#ifdef TK_LC_PRINT_LIGHT_CURVE
   // Plot the light curve to an output file for testing.
   headas_printf("Output of light curve to file 'lightcurve.dat' ...\n");
-  FILE* lightcurve_file=fopen("lightcurve.dat", "w+");
+  FILE* lightcurve_file=fopen("lightcurve.dat", "a+");
   if (NULL==lightcurve_file) return(EXIT_FAILURE);
   for (count=0; count<lc->nvalues; count++) {
-    fprintf(lightcurve_file, "%lf %lf\n", count*lc->step_width, rate[count]);
+    fprintf(lightcurve_file, "%lf %lf\n", 
+	    lc->t0+count*lc->step_width, 
+	    rate[count]);
   }
   fclose(lightcurve_file);
-  */
+#endif
 
   // Release allocated memory
   free(psd);
@@ -312,7 +315,6 @@ double getPhotonTime(LinLightCurve* lc, double time)
   }
 
   if (time<lc->t0) {
-    printf("option 2\n");
     return(-1.);
   }
 
@@ -361,7 +363,6 @@ double getPhotonTime(LinLightCurve* lc, double time)
   }
 
   // The range of the light curve has been exceeded.
-  printf("option 3\n");
   return(-1.);
 }
 
