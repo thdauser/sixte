@@ -171,6 +171,9 @@ int initConstantLinLightCurve(LinLightCurve* lc,
 int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_width,
 				  double mean_rate, double sigma)
 {
+  // Create light curve data according to the algorithm 
+  // proposed by Timmer & Koenig (1995).
+
   if (NULL==lc) { 
     // The LinLightCurve object already must exist.
     return(EXIT_FAILURE);
@@ -185,9 +188,6 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   lc->t0 = t0;
   lc->step_width = step_width;
   
-  // Create light curve data according to the algorithm 
-  // proposed by Timmer & Koenig (1995).
-  long count;
   // First create a PSD: S(\omega).
   double* psd = (double*)malloc(lc->nvalues*sizeof(double));
   if (NULL==psd) {
@@ -195,10 +195,36 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
 		   "(light curve generation)!\n", EXIT_FAILURE);
     return(EXIT_FAILURE);
   }
+
+  // Fill the PSD with data.
+  long count;
+#ifdef TK_LC_POWERLAW
   for (count=0; count<lc->nvalues; count++) {
     // Use a powerlaw index (beta) of 1 (for red noise).
     psd[count] = pow(((double)count+1.), -1.);
   }
+#endif
+#ifdef TK_LC_LORENTZ
+  // Soft Intermediate State Cyg X-1 
+  // (according to Moritz Boeck, 10.06.2010)
+  const double norm = 0.001083116;
+  const double index = -1.;
+  const double cutoff = 30.;
+  const double rms = 0.02537187;
+  const double Q = 0.3860634;
+  const double f0 = 3.245546/sqrt(1.+1./(4.*Q*Q));
+  double f;
+  psd[0] = 0.;
+  for (count=1; count<lc->nvalues; count++) {
+    // f_k = k / (N * delta t)
+    f = count/(lc->nvalues*lc->step_width);
+    psd[count] = 
+      // cutoffpl2
+      norm * pow(f,index) * exp(-f/cutoff) +
+      // lorentzmb
+      2.*pow(rms,2.)*Q*f0/(M_PI/2.+atan(2.*Q)) * 1/(f0*f0+4.*Q*Q*pow(f-f0,2.));
+  }
+#endif
 
   // Create Fourier components.
   double* fcomp = (double*)malloc(lc->nvalues*sizeof(double));
@@ -209,7 +235,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   }
   double randr, randi;
   get_gauss_random_numbers(&randr, &randi);
-  fcomp[0]             = randr*sqrt(0.5*psd[0]);    //fcomp[0] = 0.;
+  fcomp[0]             = randr*sqrt(0.5*psd[0]);
   fcomp[lc->nvalues/2] = randi*sqrt(0.5*psd[lc->nvalues/2]);
   for (count=1; count<lc->nvalues/2; count++) {
     get_gauss_random_numbers(&randr, &randi);
@@ -218,8 +244,8 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   }
 
   // Perform Fourier (back-)transformation.
-  gsl_fft_halfcomplex_radix2_inverse(fcomp, 1, lc->nvalues);
-  
+  gsl_fft_halfcomplex_radix2_backward(fcomp, 1, lc->nvalues);
+
   // Calculate mean and variance
   double mean=0., variance=0.;
   for (count=0; count<lc->nvalues; count++) {
@@ -239,7 +265,12 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
     return(EXIT_FAILURE);
   }
   for (count=0; count<lc->nvalues; count++) {
+#ifdef TK_LC_POWERLAW
     rate[count] = (fcomp[count]-mean) *sigma/sqrt(variance) + mean_rate;
+#else
+    // TODO Normalization.
+    rate[count] = (fcomp[count]-mean) *sigma/sqrt(variance) + mean_rate; // * mean_rate/mean;
+#endif
     // Avoid negative photon rates (no physical meaning):
     if (rate[count]<0.) { rate[count] = 0.; }
   }

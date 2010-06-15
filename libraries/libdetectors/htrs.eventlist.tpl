@@ -2,7 +2,7 @@
 XTENSION        BINTABLE        / Binary table extension
 EXTNAME         EVENTS          / Extension name
 ORIGIN          REMEIS          / Origin of FITS File
-CREATOR         String          / Program that created this FITS file
+CREATOR         FAU		/ Program that created this FITS file
 MISSION         String          / Mission name
 TELESCOP        IXO             / Telescope name
 INSTRUME        HTRS            / Instrument name

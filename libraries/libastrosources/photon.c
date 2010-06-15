@@ -74,7 +74,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
 	if (EXIT_SUCCESS!=status) return(status);
 	*/
       } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	ps->lc = getLinLightCurve(16384, &status);
+	ps->lc = getLinLightCurve(TK_LC_LENGTH, &status);
 	if (EXIT_SUCCESS!=status) return(status);
 	/*
 	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
