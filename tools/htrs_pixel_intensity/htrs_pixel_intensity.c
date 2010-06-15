@@ -161,7 +161,7 @@ int htrs_pixel_intensity_main()
       getPolarCoordinates(impact.position, &radius, &angle);
       getArcPixelFromPolar(&arcPixels, radius, angle, &ring, &pixel);
       // Check if the the photon is falling on the mask.
-      if (0.<arcPixels.mask_spoke_width) {
+      if ((0.<arcPixels.mask_spoke_width) && (INVALID_PIXEL!=ring)) {
 	if (1==HTRSisPositionOnMask(&arcPixels, ring, pixel,
 				    radius, angle)) {
 	  continue; // The photon is absorbed by the mask.
