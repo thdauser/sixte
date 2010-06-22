@@ -13,9 +13,9 @@ int initpnCCDDetector(pnCCDDetector* pn,
 	// CCDindex can be used for the initialization of the 12 single CCDs 
 	// of the pnCCD (at the current stage just one CCD is initialized, due 
 	// to the fact, that the timing mode works wirh just one CCD (64x200)
-	int ccdindex;
-	for(ccdindex=0; ccdindex<NumberofCCDs; ccdindex++) {
-		status = initSquarePixels(&pn->pixels[ccdindex], &parameters->pixels);
+	int ccdnum;
+	for(ccdnum=0; ccdnum<NumberofCCDs; ccdnum++) {
+		status = initSquarePixels(&pn->pixels[ccdnum], &parameters->pixels);
 		if (EXIT_SUCCESS!=status) return(status);
 	}
 
@@ -43,9 +43,9 @@ int cleanuppnCCDDetector(pnCCDDetector* pn)
 	int status=EXIT_SUCCESS;
 
 	// Call the cleanup routines of the underlying data structures
-	int ccdindex;
-	for(ccdindex=0; ccdindex<NumberofCCDs; ccdindex++) {
-		cleanupSquarePixels(&pn->pixels[ccdindex]);
+	int ccdnum;
+	for(ccdnum=0; ccdnum<NumberofCCDs; ccdnum++) {
+		cleanupSquarePixels(&pn->pixels[ccdnum]);
 	}
 	cleanupGenericDetector(&pn->generic);
 	// TODO write closepnCCDEventFile
@@ -60,25 +60,34 @@ int checkReadoutpnCCDDetector(pnCCDDetector* pn, double time)
 
 	// Check, if the detector integration time was exceeded.
 	// In that case, read out the detector.
-	if (time > pn->readout_time) {
+	// TODO read the frame time out of the pnccd_simulation Parameter file.
+	if (time > pn->frame_time) {
+		// We are checking if the time exceeds the frame time
+		// Full frame mode:
+		//									Check if time is in the integration time
+		// TODO Add frame_time to pnCCDDetector structure
+		// !!! NOTE: Full frame modulo
+		// !!! 		   Timing mode frame time 6 ms
+		
 		// The detector should be read out now!!
 
 		//Readout the detector and create eventlist entries for the actual time
-		status = readoutpnCCDDetector(pn);
+		// TODO switch between different readout modes 
+		status = readoutpnCCDDetectorTiming(pn);
 		// TODO: Write readoutpnCCDDetector!!!
 		if (EXIT_SUCCESS!=status) return(status);
 
 		// Clear the detector array
-		int ccdindex;
-		for(ccdindex=0; ccdindex<NumberofCCDs; ccdindex++) {
-			clearSquarePixels(&pn->pixels[ccdindex]);
+		int ccdnum;
+		for(ccdnum=0; ccdnum<NumberofCCDs; ccdnum++) {
+			clearSquarePixels(&pn->pixels[ccdnum]);
 		}
 
 		// !!! NOTE: Is this ok for us? Why should this only be
 		// !!! 		 valid for the eROSITA Detectors?
 		// !!!		 Maybe ask Christian
 		while (time > pn->readout_time) {
-			pn->readout_time += pn->inegration_time;
+			pn->readout_time += pn->integration_time;
 			pn->frame += 1;
 		}
 
@@ -90,11 +99,16 @@ int checkReadoutpnCCDDetector(pnCCDDetector* pn, double time)
 	return(status);
 }
 
-inline int readoutpnCCDDetector(pnCCDDetector* pn)
+inline int readoutpnCCDDetectorTiming(pnCCDDetector* pn)
 {
-	int ccdindex;
+	int ccdnum; // !!! NOTE: Change ccdindex to ccdnum !!! 
 	int status = EXIT_SUCCESS;
 	
+	// IDEA: extend the detector to 64*2000 pixels
+	//       check how many macro lines are already read out
+	//       shift in y-direction
+	// 			 add Impact to detector and calculate how many
+	// 			 pixels are shifted 
 	// TODO: together with Michi implement the readout modes
 	// read out just one CCD at the moment (CCD0 of Quadrant 1)
 	// TODO: first implement the timing mode, afterwards the full frame mode
@@ -156,7 +170,7 @@ int addImpact2pnCCDDdetector(pnCCDDetector* pn, Impact* impact)
 		int count;
 		for (count=0; count<npixels; count++) {
 			if (x[count] != INVALID_PIXEL) {
-				pn->pixels[ccdindex].array[x[count]][y[count]].charge += 
+				pn->pixels[ccdnum].array[x[count]][y[count]].charge += 
 					charge * fraction[count];
 			}
 		}
