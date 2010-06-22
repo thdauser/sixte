@@ -61,20 +61,32 @@ int checkReadoutpnCCDDetector(pnCCDDetector* pn, double time)
 	// Check, if the detector integration time was exceeded.
 	// In that case, read out the detector.
 	// TODO read the frame time out of the pnccd_simulation Parameter file.
-	if (time > pn->frame_time) {
-		// We are checking if the time exceeds the frame time
-		// Full frame mode:
-		//									Check if time is in the integration time
-		// TODO Add frame_time to pnCCDDetector structure
-		// !!! NOTE: Full frame modulo
-		// !!! 		   Timing mode frame time 6 ms
-		
-		// The detector should be read out now!!
+	switch(readout_mode)
+	{
+		case Timing:
+			{
+				status = readoutpnCCDDetectorTiming(pn);
+				// !!! 		   Timing mode frame time 6 ms
+			}
+		case FULL_FRAME:
+			{
 
-		//Readout the detector and create eventlist entries for the actual time
-		// TODO switch between different readout modes 
-		status = readoutpnCCDDetectorTiming(pn);
-		// TODO: Write readoutpnCCDDetector!!!
+				// We are checking if the time exceeds the int time
+				// Full frame mode:
+				// Check if time is in the integration time
+				// TODO Add frame_time to pnCCDDetector structure
+				// !!! NOTE: Full frame modulo
+				if (time > pn->int_time) {
+					double time_in_frame = 0;
+					time_in_frame = time % pn->frame_time;
+					int pixel_shift = 0;
+					pixel_shift = time_in_frame / pn->row_read_time;
+					status = readoutpnCCDDetectorFullFrame(pn);
+					// TODO: Write readoutpnCCDDetectorFullFrame!!!
+					// The detector should be read out now!!
+				}
+			}
+	}
 		if (EXIT_SUCCESS!=status) return(status);
 
 		// Clear the detector array
