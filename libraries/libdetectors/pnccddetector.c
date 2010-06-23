@@ -61,7 +61,7 @@ int checkReadoutpnCCDDetector(pnCCDDetector* pn, double time)
 	// Check, if the detector integration time was exceeded.
 	// In that case, read out the detector.
 	// TODO read the frame time out of the pnccd_simulation Parameter file.
-	switch(readout_mode)
+	switch(pn->readout_mode)
 	{
 		case Timing:
 			{
@@ -71,20 +71,32 @@ int checkReadoutpnCCDDetector(pnCCDDetector* pn, double time)
 		case FULL_FRAME:
 			{
 
-				// We are checking if the time exceeds the int time
 				// Full frame mode:
-				// Check if time is in the integration time
-				// TODO Add frame_time to pnCCDDetector structure
-				// !!! NOTE: Full frame modulo
-				if (time > pn->int_time) {
+				// We are checking if the time exceeds the readout time
+				// Readout time is the 
+				// integration time + frame_time * number of frames
+				// ***************************************************
+				// Check in which frame we are (have we skipped some frames 
+				// since the last impact?? )
+				// TODO: Set initial value of pn->readout_time to frame_time 
+				// and start with 0!!! 
+				if (time > pn->readout_time) {
+					// calculate the time in the frame and check if it is 
+					//during the readout 
+					// if yes, we have to shift the pixels
 					double time_in_frame = 0;
 					time_in_frame = time % pn->frame_time;
-					int pixel_shift = 0;
-					pixel_shift = time_in_frame / pn->row_read_time;
+					skipped_frames = time / pn->frame_time;
+					assert(time_in_frame < pn->frame_time);
+					if (time_in_frame > pn->int_time) {
+						int pixel_shift = 0;
+						pixel_shift = time_in_frame / pn->row_read_time;
+					}
+					// A readout has to be performed in any case
 					status = readoutpnCCDDetectorFullFrame(pn);
 					// TODO: Write readoutpnCCDDetectorFullFrame!!!
 					// The detector should be read out now!!
-				}
+					pn->readout_time += pn->frame_time * skipped_frames;
 			}
 	}
 		if (EXIT_SUCCESS!=status) return(status);
@@ -112,6 +124,23 @@ int checkReadoutpnCCDDetector(pnCCDDetector* pn, double time)
 }
 
 inline int readoutpnCCDDetectorTiming(pnCCDDetector* pn)
+{
+	int ccdnum; // !!! NOTE: Change ccdindex to ccdnum !!! 
+	int status = EXIT_SUCCESS;
+	
+	// IDEA: extend the detector to 64*2000 pixels
+	//       check how many macro lines are already read out
+	//       shift in y-direction
+	// 			 add Impact to detector and calculate how many
+	// 			 pixels are shifted 
+	// TODO: together with Michi implement the readout modes
+	// read out just one CCD at the moment (CCD0 of Quadrant 1)
+	// TODO: first implement the timing mode, afterwards the full frame mode
+
+	return(status);
+}
+
+inline int readoutpnCCDDetectorFullFrame(pnCCDDetector* pn)
 {
 	int ccdnum; // !!! NOTE: Change ccdindex to ccdnum !!! 
 	int status = EXIT_SUCCESS;

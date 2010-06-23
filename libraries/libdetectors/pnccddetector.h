@@ -21,11 +21,16 @@ typedef struct {
 	GenericDetector generic;
 	SquarePixels pixels[NumberofCCDs];
 	
+	/** Readout mode of the pnCCD */
+	int readout_mode;
 	/** Integration time */
 	double integration time;
 
 	/** Readout time */
 	double readout_time;
+
+	/** Frame time */
+	double frame_time;
 
 	/** Number of the current frame */
 	long frame;
