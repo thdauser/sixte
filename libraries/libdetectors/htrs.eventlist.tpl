@@ -42,15 +42,9 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  PIXEL           / Event Pixel Number
 	TFORM#  I               / Format of column PIXEL
 	TUNIT#  pixel           / Unit of column PIXEL
-	TTYPE#  GRADE1          / Event Grade
+	TTYPE#  GRADE           / Event Grade
 	TFORM#  I               / Format
 	TUNIT#  grade           / Grade
-	TTYPE#  GRADE2          / Event Grade
-	TFORM#  I               / Format
-	TUNIT#  grade           / Grade
-	TTYPE#  PILEUP          / Event Grade
-	TFORM#  I               / Format
-	TUNIT#                  / Grade
 	TTYPE#  X               / x-coordinate of photon impact position
 	TFORM#  D               / Format of column X
 	TUNIT#  m               / Unit of column X

@@ -14,7 +14,7 @@ typedef struct {
   /* Column numbers of the individual HTRS-specific event list entries.
    * The numbers start at 1. The number 0 means, that there 
    * is no corresponding column in the table. */
-  int ctime, cpha, cenergy, cpixel, cgrade1, cgrade2, cpileup, cx, cy;
+  int ctime, cpha, cenergy, cpixel, cgrade, cx, cy;
 
 } HTRSEventFile;
 
