@@ -20,11 +20,7 @@ int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PIXEL", &hef->cpixel, &status)) 
     return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "GRADE1", &hef->cgrade1, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "GRADE2", &hef->cgrade2, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PILEUP", &hef->cpileup, &status)) 
+  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "GRADE", &hef->cgrade, &status)) 
     return(status);
   if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "X", &hef->cx, &status)) 
     return(status);
@@ -161,15 +157,9 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
 		    &event->pixel, &event->pixel, &anynul, &status)) return(status);
   event->pixel--;
 
-  event->grade1 = 0;
-  if (fits_read_col(hef->generic.fptr, TINT, hef->cgrade1, row, 1, 1, 
-		    &event->grade1, &event->grade1, &anynul, &status)) return(status);
-  event->grade2 = 0;
-  if (fits_read_col(hef->generic.fptr, TINT, hef->cgrade2, row, 1, 1, 
-		    &event->grade2, &event->grade2, &anynul, &status)) return(status);
-  event->pileup = 0;
-  if (fits_read_col(hef->generic.fptr, TINT, hef->cpileup, row, 1, 1, 
-		    &event->pileup, &event->pileup, &anynul, &status)) return(status);
+  event->grade = 0;
+  if (fits_read_col(hef->generic.fptr, TINT, hef->cgrade, row, 1, 1, 
+		    &event->grade, &event->grade, &anynul, &status)) return(status);
 
   event->x = 0.;
   if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 1, 1, 
@@ -203,12 +193,8 @@ int HTRSEventFile_writeRow(HTRSEventFile* hef, HTRSEvent* event, long row) {
   if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, row, 
 		     1, 1, &pixel, &status)) return(status);
 
-  if (fits_write_col(hef->generic.fptr, TINT, hef->cgrade1, row, 
-		     1, 1, &event->grade1, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TINT, hef->cgrade2, row, 
-		     1, 1, &event->grade2, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TINT, hef->cpileup, row, 
-		     1, 1, &event->pileup, &status)) return(status);
+  if (fits_write_col(hef->generic.fptr, TINT, hef->cgrade, row, 
+		     1, 1, &event->grade, &status)) return(status);
 
   if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 
 		     1, 1, &event->x, &status)) return(status);

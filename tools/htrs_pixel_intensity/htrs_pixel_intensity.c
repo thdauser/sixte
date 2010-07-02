@@ -100,7 +100,7 @@ int htrs_pixel_intensity_main()
     double radii[4] = { 2.32e-3, 4.82e-3, 7.72e-3, 12.e-3 }; // with mask
     double offset_angles[4] = { 0., 0., 0., 0. };
     */
-    
+        
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.e-3 };
@@ -112,6 +112,14 @@ int htrs_pixel_intensity_main()
     int npixels[1]  = { 4 };
     double radii[1] = { 12.e-3 };
     double offset_angles[1] = { 0. };
+    */
+    /*
+    // Configuration with 31 pixels optimized for uniform photon
+    // distribution among the pixels (for photons at 1 keV) at 11.3 cm 
+    // out-of-focus distance.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.49e-3, 5.21e-3, 8.35e-3, 12.e-3 }; // with mask
+    double offset_angles[4] = { 0., 0., 0., 0. };
     */
     struct ArcPixelsParameters apparameters = {
       .nrings  = nrings, 

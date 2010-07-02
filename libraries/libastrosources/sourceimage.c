@@ -35,7 +35,8 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
   if (NULL==si) return(si);
 
   // Allocate memory.
-  si->pixel=(struct SourceImagePixel**)malloc(sip->naxis1*sizeof(struct SourceImagePixel*));
+  si->pixel=(struct SourceImagePixel**)
+    malloc(sip->naxis1*sizeof(struct SourceImagePixel*));
   if (NULL==si->pixel) {
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: could not allocate memory to store "
@@ -45,7 +46,8 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
   si->naxis1 = sip->naxis1;
   int xcount, ycount;
   for(xcount=0; xcount<si->naxis1; xcount++) {
-    si->pixel[xcount]=(struct SourceImagePixel*)malloc(sip->naxis2*sizeof(struct SourceImagePixel));
+    si->pixel[xcount]=(struct SourceImagePixel*)
+      malloc(sip->naxis2*sizeof(struct SourceImagePixel));
     if (NULL==si->pixel[xcount]) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: could not allocate memory to store "
@@ -99,8 +101,11 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 {
   SourceImage* si=NULL;
   float* input_buffer=NULL;
+  char msg[MAXMSG];
 
   do { // Beginning of ERROR handling loop
+
+    headas_chat(5, "load SourceImage from FITS file HDU ...\n");
 
     // Get an empty SourceImage using the standard Constructor without 
     // any arguments:
@@ -115,25 +120,33 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     // Determine the width of the image.
     long naxes[2];
     if (fits_get_img_size(fptr, 2, naxes, status)) break;
-    if (naxes[0] != naxes[1]) {
-      *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: SourcImage must be square!\n", *status); // TODO: really??
-      break;
-    } else {
-      si->naxis1 = (int)naxes[0];
-      si->naxis2 = (int)naxes[1];
-    }
+    si->naxis1 = (int)naxes[0];
+    si->naxis2 = (int)naxes[1];
+
+    sprintf(msg, " NAXIS1: %d, NAXIS2: %d\n", si->naxis1, si->naxis2);
+    headas_chat(5, msg);
 
     // Determine the width of one image pixel.
     char comment[MAXMSG]; // buffer
     if (fits_read_key(fptr, TDOUBLE, "CDELT1", &si->cdelt1, comment, status)) break;
     if (fits_read_key(fptr, TDOUBLE, "CDELT2", &si->cdelt2, comment, status)) break;
 
+    sprintf(msg, " CDELT1: %lf, CDELT2: %lf (degree)\n", si->cdelt1, si->cdelt2);
+    headas_chat(5, msg);
+
     // Determine the WCS coordinates of the image.
     if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &si->crpix1, comment, status)) break;
     if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &si->crpix2, comment, status)) break;
+
+    sprintf(msg, " CRPIX1: %lf, CRPIX2: %lf\n", si->crpix1, si->crpix2);
+    headas_chat(5, msg);
+
     if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &si->crval1, comment, status)) break;
     if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &si->crval2, comment, status)) break;
+
+    sprintf(msg, " CRVAL1: %lf, CRVAL2: %lf (degree)\n", si->crval1, si->crval2);
+    headas_chat(5, msg);
+
 
     // Convert from [deg] to [rad]
     si->cdelt1 *= M_PI/180.;
@@ -204,7 +217,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     int x, y;
     for(x=0; x<si->naxis1; x++) {
       for(y=0; y<si->naxis2; y++) {
-	si->pixel[x][y].rate = input_buffer[x+ si->naxis2*y]; // [photons/s]
+	si->pixel[x][y].rate = input_buffer[x+ si->naxis1*y]; // [photons/s]
 	si->pixel[x][y].t_next_photon = 0.;
       }
     }
@@ -253,7 +266,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
     int x, y;
     for (x=0; x<si->naxis1; x++) {
       for (y=0; y<si->naxis2; y++) {
-	image1d[((x)*si->naxis1 +y)] = si->pixel[x][y].rate;
+	image1d[(x+ si->naxis1*y)] = si->pixel[x][y].rate;
       }
     }
     
@@ -267,26 +280,30 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
 
     // Write the header keywords for the SourceImage.
     if (fits_write_key(fptr, TSTRING, "HDUCLAS1", "Image", "", status)) break;
-    if (fits_write_key(fptr, TSTRING, "CTYPE1", "X",
+    if (fits_write_key(fptr, TSTRING, "CTYPE1", "RA---TAN",
 		       "sky coordinate system", status)) break;
-    if (fits_write_key(fptr, TSTRING, "CTYPE2", "Y",
+    if (fits_write_key(fptr, TSTRING, "CTYPE2", "DEC--TAN",
 		       "sky coordinate system", status)) break;
       
-    if (fits_write_key(fptr, TSTRING, "CUNIT1", "deg", "", status)) break;
-    if (fits_write_key(fptr, TSTRING, "CUNIT2", "deg", "", status)) break;
-    //double dbuffer = si->naxis1*0.5;
-    //if (fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
-    //                   "X axis reference pixel", status)) break;
-    //    if (fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
-    //		       "Y axis reference pixel", status)) break;
-    //    dbuffer = 0.;
-    //    if (fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
-    //		       "coord of X ref pixel", status)) break;
-    //    if (fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
-    //		       "coord of Y ref pixel", status)) break;
-    if (fits_write_key(fptr, TDOUBLE, "CDELT1", &si->cdelt1, 
+    if (fits_write_key(fptr, TSTRING, "CUNIT1", "degree", "", status)) break;
+    if (fits_write_key(fptr, TSTRING, "CUNIT2", "degree", "", status)) break;
+    if (fits_write_key(fptr, TDOUBLE, "CRPIX1", &si->crpix1, 
+                       "X axis reference pixel", status)) break;
+    if (fits_write_key(fptr, TDOUBLE, "CRPIX2", &si->crpix2, 
+    		       "Y axis reference pixel", status)) break;
+
+    double dbuffer;
+    dbuffer = si->crval1 *180./M_PI;
+    if (fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
+		       "coord of X ref pixel", status)) break;
+    dbuffer = si->crval2 *180./M_PI;
+    if (fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
+    		       "coord of Y ref pixel", status)) break;
+    dbuffer = si->cdelt1 *180./M_PI;
+    if (fits_write_key(fptr, TDOUBLE, "CDELT1", &dbuffer, 
 		       "X axis increment", status)) break;
-    if (fits_write_key(fptr, TDOUBLE, "CDELT2", &si->cdelt2, 
+    dbuffer = si->cdelt2 *180./M_PI;
+    if (fits_write_key(fptr, TDOUBLE, "CDELT2", &dbuffer, 
 		       "Y axis increment", status)) break;
     
     HDpar_stamp(fptr, 1, status);

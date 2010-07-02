@@ -20,40 +20,18 @@ typedef struct {
   /** Event grade. This gives information about the energy and time
       resolution of the event. There are the following event grades:
 
-      -  0: nominal time and energy resolution 
+      -  0: event is measured with the slow shaper
 
-      - 11: nominal time but degraded energy resolution due to 
-            subsequent events
+      -  1: event is measured with the fast shaper
 
-      - 12: nominal time but degraded energy resolution due to
-            previous events
-
-      - 21: event is measured, but there is at least one subsequent
- 	    event that cannot be distinguished from this event.
-
-      - 22: event cannot be distinguished from the previous event
-      
-      - 40: event is lost during a pixel reset.
-
-  */
-  int grade1;
-
-  /** Event grade. This gives information about the energy and time
-      resolution of the event. There are the following event grades:
-
-      -  0: nominal time and energy resolution 
-
-      -  1: degraded energy information
+      -  2: event is mixed up with another event (pile-up) because they
+            cannot be distinguished even with the fast shaper
 
       - -1: lost during reset
 
   */
-  int grade2;
+  int grade;
   
-  /** Pile-up flag. If there is another event within the fast shaping
-      time, both events cannot be distinguished from each other. In
-      that case the pile-up flag is set to 1, otherwise it is 0. */
-  int pileup;
 
   /** Exact impact position of the photon on the detector. */
   double x, y; 

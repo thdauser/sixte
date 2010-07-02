@@ -125,6 +125,14 @@ int htrs_simulation_main() {
     double radii[1] = { 12.0e-3 };
     double offset_angles[1] = { 0. };
     */
+    /*
+    // Configuration with 31 pixels optimized for uniform photon
+    // distribution among the pixels (for photons at 1 keV) at 11.3 cm 
+    // out-of-focus distance.
+    int npixels[4] = { 1, 6, 12, 12 };
+    double radii[4] = { 2.49e-3, 5.21e-3, 8.35e-3, 12.e-3 }; // with mask
+    double offset_angles[4] = { 0., 0., 0., 0. };
+    */
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = nrings,
 		  .npixels = npixels,
@@ -175,9 +183,7 @@ int htrs_simulation_main() {
 
 
     // Assign event grades to the detected events.
-    status=HTRSassignEventGrades1(detector);
-    if (EXIT_SUCCESS!=status) break;
-    status=HTRSassignEventGrades2(detector);
+    status=HTRSassignEventGrades(detector);
     if (EXIT_SUCCESS!=status) break;
     
   } while(0); // END of the error handling loop.
