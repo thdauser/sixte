@@ -93,6 +93,19 @@ int framestore_simulation_main() {
     sprintf(keyword, "TCRVL%d", detector.eventlist.cskyy);
     if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
 			&refycrvl, "", &status)) break;
+
+    sprintf(keyword, "TCDLT%d", detector.eventlist.crawx);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+			&parameters.pixelwidth, "", &status)) break;
+    char msg[MAXMSG];
+    sprintf(msg, " update %s to %e\n", keyword, parameters.pixelwidth);
+    headas_chat(5, msg);
+    sprintf(keyword, "TCDLT%d", detector.eventlist.crawy);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+			&parameters.pixelwidth, "", &status)) break;
+    sprintf(msg, " update %s to %e\n", keyword, parameters.pixelwidth);
+    headas_chat(5, msg);
+
     if (fits_update_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
 			attitude_filename, "name of the attitude FITS file", 
 			&status)) break;

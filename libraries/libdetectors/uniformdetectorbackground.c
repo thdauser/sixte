@@ -16,6 +16,8 @@ int initUniformDetectorBackground(UniformDetectorBackground* background,
 
   } else { // No background spectrum specified.
     // Set the background event rate to the default value of 0.
+    background->spectrum.NumberChannels=0;
+    background->spectrum.rate=NULL;
     background->rate = 0.;
     headas_chat(0, "### Warning: no detector background spectrum specified!\n");
   }
