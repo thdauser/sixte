@@ -42,10 +42,6 @@ int ero_merge_eventfiles_main() {
   int filecounter;
   // Output (merged) event file.
   eROSITAEventFile outputfile;
-  // Buffer for the events.
-  eROSITAEvent event;
-  // Current frame number.
-  long frame;
 
   int status = EXIT_SUCCESS;
 
@@ -81,6 +77,7 @@ int ero_merge_eventfiles_main() {
     // Copy header keywords.
     // Read the keywords from the first event file (for telescope 0)
     // and write them to the common (merged) event file.
+    headas_chat(5, "Copy header keywords ...\n");
     struct HKeys {
       char attitude[MAXMSG];
       
@@ -148,13 +145,19 @@ int ero_merge_eventfiles_main() {
 
 
     // Transfer all events from the input files to the output file.
+    headas_chat(5, "Merge events to 1 file ...\n");
     long ntotal_lines=0;
     for (filecounter=0; filecounter<7; filecounter++) {
       inputfiles[filecounter].generic.row = 1;
       ntotal_lines += inputfiles[filecounter].generic.nrows;
     }
+    headas_chat(5, "Total number of events %ld\n", ntotal_lines);
+
+    // Buffer for the events.
+    eROSITAEvent event;
+    // Current frame number.
+    long frame=0, min_next_frame=0;
     filecounter=0;
-    frame=0;
     int eof[7] = { 0, 0, 0, 0, 0, 0, 0 };
     int sum_eof= 0;
     // Repeat this loop as long as at least one the input event files contains
@@ -171,7 +174,8 @@ int ero_merge_eventfiles_main() {
 	filecounter++;
 	if (filecounter>=7) {
 	  filecounter=0;
-	  frame++;
+	  assert(min_next_frame>frame);
+	  frame=min_next_frame;
 	}
       } else {
 	// Read the current event from this file.
@@ -181,11 +185,15 @@ int ero_merge_eventfiles_main() {
 	if (status!=EXIT_SUCCESS) break;
 	
 	if (event.frame > frame) {
+	  if ((min_next_frame==frame) || (event.frame < min_next_frame)) {
+	    min_next_frame = event.frame;
+	  }
 	  // Move to next file.
 	  filecounter++;
 	  if (filecounter>=7) {
 	    filecounter=0;
-	    frame++;
+	    assert(min_next_frame>frame);
+	    frame=min_next_frame;
 	  }
 	} else {
 	  // Add the event to the output file
@@ -194,10 +202,10 @@ int ero_merge_eventfiles_main() {
 	  inputfiles[filecounter].generic.row++;
 
 	  // Status output.
-	  if (0==outputfile.generic.nrows%100) {
-	    headas_printf("\revent %d/%d (%.3lf%%) ", 
+	  if (0==outputfile.generic.nrows%1000) {
+	    headas_printf("\revent %d/%d (%.1lf%%) ", 
 			  outputfile.generic.nrows, ntotal_lines,
-			  (double)outputfile.generic.nrows/ntotal_lines);
+			  outputfile.generic.nrows*100./ntotal_lines);
 	    fflush(NULL);
 	  }
 	}
