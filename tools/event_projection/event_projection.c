@@ -44,6 +44,8 @@ int event_projection_main() {
   // WCS keywords for sky coordinates.
   double tcrpxx, tcrvlx, tcdltx;
   double tcrpxy, tcrvly, tcdlty;
+  // WCS keywords for detector coordinates.
+  double det_tcdltx, det_tcdlty;
 
   struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
 
@@ -87,7 +89,7 @@ int event_projection_main() {
       break;
     }
 
-    // Read and write WCS header keywords for the sky coordinates.
+    // Read WCS header keywords for the sky coordinates.
     char keyword[MAXMSG];
     // The "X" column.
     sprintf(keyword, "TCRVL%d", eventlistfile.cskyx);
@@ -96,10 +98,9 @@ int event_projection_main() {
     sprintf(keyword, "TCDLT%d", eventlistfile.cskyx);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdltx, 
 		      comment, &status)) break;
-    tcrpxx=0.;
     sprintf(keyword, "TCRPX%d", eventlistfile.cskyx);
-    if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxx, 
-			comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxx, 
+		      comment, &status)) break;
     // The "Y" column.
     sprintf(keyword, "TCRVL%d", eventlistfile.cskyy);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrvly, 
@@ -107,10 +108,21 @@ int event_projection_main() {
     sprintf(keyword, "TCDLT%d", eventlistfile.cskyy);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcdlty,
 		      comment, &status)) break;
-    tcrpxy=0.;
     sprintf(keyword, "TCRPX%d", eventlistfile.cskyy);
-    if (fits_update_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxy,
-			comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &tcrpxy,
+		      comment, &status)) break;
+
+    // Read WCS header keywords for the detector coordinates.
+    sprintf(keyword, "TCDLT%d", eventlistfile.crawx);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &det_tcdltx, 
+		      comment, &status)) break;
+    sprintf(keyword, "TCDLT%d", eventlistfile.crawy);
+    if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &det_tcdlty,
+		      comment, &status)) break;
+    char msg[MAXMSG];
+    sprintf(msg, "pixelwidth: %.3lf mum x %.3lf mum\n",
+	    det_tcdltx*1.e6, det_tcdlty*1.e6);
+    headas_chat(5, msg);
 
     // Get the satellite catalog with the telescope attitude data:
     if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
@@ -126,7 +138,7 @@ int event_projection_main() {
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start sky imaging process ...\n");
 
-    // LOOP over all event in the FITS table.
+    // LOOP over all events in the FITS table.
     eROSITAEvent event;
     while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventlistfile.generic))) {
       
@@ -169,10 +181,10 @@ int event_projection_main() {
       // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
-	((double)(event.xi-384/2)+sixt_get_random_number())*75.e-6; // in [m]
-      //                                                |--> pixel width in [m]
+	((double)(event.xi-384/2)+sixt_get_random_number())*det_tcdltx; // in [m]
+      //                                                    |--> pixel width in [m]
       detector_position.y = 
-	((double)(event.yi-384/2)+sixt_get_random_number())*75.e-6; // in [m]
+	((double)(event.yi-384/2)+sixt_get_random_number())*det_tcdlty; // in [m]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.)); // in [m]
 
       // Determine the off-axis angle corresponding to the detector position.
@@ -205,16 +217,21 @@ int event_projection_main() {
 
 
       // Determine the pixel coordinates in the sky image:
-      event.sky_xi = (int)((event.ra -tcrvlx)/tcdltx+tcrpxx);
-      if ((event.ra -tcrvlx)<0.) {
-	event.sky_xi--;
+      double dbuffer = (event.ra -tcrvlx)/tcdltx+tcrpxx;
+      if (dbuffer>=0.) {
+	event.sky_xi = (int)dbuffer;
+      } else {
+	event.sky_xi = ((int)dbuffer) -1;
       }
-      event.sky_yi = (int)((event.dec-tcrvly)/tcdlty+tcrpxy);
-      if ((event.dec-tcrvly)<0.) {
-	event.sky_yi--;
+      dbuffer = (event.dec-tcrvly)/tcdlty+tcrpxy;
+      if (dbuffer>=0.) {
+	event.sky_yi = (int)dbuffer;
+      } else {
+	event.sky_yi = ((int)dbuffer) -1;
       }
 
       // Store the data in the Event List FITS file.
+      // TODO: long cast over 0!
       long ra = (long)(event.ra/1.e-6);
       fits_write_col(eventlistfile.generic.fptr, TLONG, eventlistfile.cra,
 		     eventlistfile.generic.row, 1, 1, &ra, &status);
@@ -253,8 +270,8 @@ int event_projection_main() {
 // This routine reads the program parameters using the PIL.
 int event_projection_getpar(struct Parameters *parameters)
 {
-  char msg[MAXMSG];             // error output buffer
-  int status=EXIT_SUCCESS;      // error status
+  char msg[MAXMSG];        // error output buffer
+  int status=EXIT_SUCCESS; // error status
 
   // Get the filename of the input event list (FITS file)
   if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {

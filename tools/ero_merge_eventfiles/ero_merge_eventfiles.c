@@ -42,10 +42,6 @@ int ero_merge_eventfiles_main() {
   int filecounter;
   // Output (merged) event file.
   eROSITAEventFile outputfile;
-  // Buffer for the events.
-  eROSITAEvent event;
-  // Current frame number.
-  long frame;
 
   int status = EXIT_SUCCESS;
 
@@ -81,20 +77,26 @@ int ero_merge_eventfiles_main() {
     // Copy header keywords.
     // Read the keywords from the first event file (for telescope 0)
     // and write them to the common (merged) event file.
+    headas_chat(5, "Copy header keywords ...\n");
     struct HKeys {
       char attitude[MAXMSG];
       
+      // Sky WCS keywords.
       double tcrvlx, tcdltx, tcrpxx;
       double tcrvly, tcdlty, tcrpxy;
+      // Detector WCS keywords.
+      double tcdltrawx, tcdltrawy;
+
     } hkeys;
     // Read from the first input event file and write to the output file.
     char comment[MAXMSG];
     char keyword[MAXMSG];
+    // Attitude.
     if (fits_read_key(inputfiles[0].generic.fptr, TSTRING, "ATTITUDE", 
 		      hkeys.attitude, comment, &status)) break;
     if (fits_update_key(outputfile.generic.fptr, TSTRING, "ATTITUDE", 
 			hkeys.attitude, comment, &status)) break;
-    // The "X" column.
+    // The sky "X" column.
     sprintf(keyword, "TCRVL%d", inputfiles[0].cskyx);
     if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, keyword, &hkeys.tcrvlx, 
 		      comment, &status)) break; 
@@ -110,7 +112,7 @@ int ero_merge_eventfiles_main() {
 		      comment, &status)) break;
     if (fits_update_key(outputfile.generic.fptr, TDOUBLE, keyword, &hkeys.tcrpxx, 
 			comment, &status)) break;
-    // The "Y" column.
+    // The sky "Y" column.
     sprintf(keyword, "TCRVL%d", inputfiles[0].cskyy);
     if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, keyword, &hkeys.tcrvly, 
 		      comment, &status)) break;
@@ -126,15 +128,36 @@ int ero_merge_eventfiles_main() {
 		      comment, &status)) break;
     if (fits_update_key(outputfile.generic.fptr, TDOUBLE, keyword, &hkeys.tcrpxy,
 			comment, &status)) break;
+
+    // Detector coordinates.
+    sprintf(keyword, "TCDLT%d", inputfiles[0].crawx);
+    if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, keyword, &hkeys.tcdltrawx,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TDOUBLE, keyword, &hkeys.tcdltrawx,
+			comment, &status)) break;
+
+    sprintf(keyword, "TCDLT%d", inputfiles[0].crawy);
+    if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, keyword, &hkeys.tcdltrawy,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TDOUBLE, keyword, &hkeys.tcdltrawy,
+			comment, &status)) break;
     // END of copying header keywords.
 
 
     // Transfer all events from the input files to the output file.
+    headas_chat(5, "Merge events to 1 file ...\n");
+    long ntotal_lines=0;
     for (filecounter=0; filecounter<7; filecounter++) {
       inputfiles[filecounter].generic.row = 1;
+      ntotal_lines += inputfiles[filecounter].generic.nrows;
     }
+    headas_chat(5, "Total number of events %ld\n", ntotal_lines);
+
+    // Buffer for the events.
+    eROSITAEvent event;
+    // Current frame number.
+    long frame=0, min_next_frame=0;
     filecounter=0;
-    frame=0;
     int eof[7] = { 0, 0, 0, 0, 0, 0, 0 };
     int sum_eof= 0;
     // Repeat this loop as long as at least one the input event files contains
@@ -151,7 +174,8 @@ int ero_merge_eventfiles_main() {
 	filecounter++;
 	if (filecounter>=7) {
 	  filecounter=0;
-	  frame++;
+	  assert(min_next_frame>frame);
+	  frame=min_next_frame;
 	}
       } else {
 	// Read the current event from this file.
@@ -161,23 +185,34 @@ int ero_merge_eventfiles_main() {
 	if (status!=EXIT_SUCCESS) break;
 	
 	if (event.frame > frame) {
+	  if ((min_next_frame==frame) || (event.frame < min_next_frame)) {
+	    min_next_frame = event.frame;
+	  }
 	  // Move to next file.
 	  filecounter++;
 	  if (filecounter>=7) {
 	    filecounter=0;
-	    frame++;
+	    assert(min_next_frame>frame);
+	    frame=min_next_frame;
 	  }
 	} else {
 	  // Add the event to the output file
 	  status=addeROSITAEvent2File(&outputfile, &event);
 	  if (status!=EXIT_SUCCESS) break;
 	  inputfiles[filecounter].generic.row++;
+
+	  // Status output.
+	  if (0==outputfile.generic.nrows%1000) {
+	    headas_printf("\revent %d/%d (%.1lf%%) ", 
+			  outputfile.generic.nrows, ntotal_lines,
+			  outputfile.generic.nrows*100./ntotal_lines);
+	    fflush(NULL);
+	  }
 	}
       }
     }
     if (status!=EXIT_SUCCESS) break;
     // END of event transfer loop.
-
         
   } while(0); // End of error handling loop
 

@@ -9,7 +9,8 @@ typedef struct {
   double time;
   long pha;
   float energy; /**< Event energy [eV] */
-  int xi, yi; /**< Pixel coordinates starting at 0. */
+  /** RAWX and RAWY  pixel coordinates, starting at 0. */
+  int xi, yi; 
   long frame;
 
   /** Number of the CCD. For eROSITA the CCDs are numbered from 1 to
