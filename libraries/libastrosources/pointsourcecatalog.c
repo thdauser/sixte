@@ -71,7 +71,7 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
     // band.
     if(fabs(scalar_product(&ps->location, &normal)) < max_align) {
       if(psl->nsources+1 >= MAX_N_POINTSOURCES) {
-	// Too many sources in the PointSourceCatalog !
+	// Too many sources in the PointSourceCatalog!
 	*status=EXIT_FAILURE;
 	char msg[MAXMSG];  // Error output buffer.
 	sprintf(msg, "Error: too many sources (%ld) in the PointSourceCatalog!\n", 
@@ -158,8 +158,13 @@ void generateFoVPointSourcePhotons(PointSourceCatalog* psc,
 				   int* status)
 {
 #ifdef POINTSOURCE_KDTREE
-  kdTreeRangeSearch(psc->kdtree, 0, ref, pow(min_align,2.), 
+  kdnfound=0; // RM
+  kdnchecked=0;
+  kdTreeRangeSearch(psc->kdtree, 0, ref, min_align, 
 		    time, dt, pl, rmf, status);
+  // RM
+  //  printf("=> %ld/%ld/%ld\n", kdnfound, kdnchecked, kdnelements);
+
 #else
 
   long count;

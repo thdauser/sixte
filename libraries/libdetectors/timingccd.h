@@ -9,25 +9,32 @@
 #include "squarepixels.h"
 
 
-/*
-// If this flag is set, the charge cloud distribution in split events
-// is determined by the exponential model proposed by Konrad Dennerl.
-// If not, a Gaussian charge cloud model is assumed.
-#define EXPONENTIAL_SPLITS 1
+// In XMM-Newton EPIC pn timing mode all pixels in RAWY direction are
+// collapsed to an linear image in RAWX direction. The time resolution 
+// is 0.03 ms (pn, 64x200) or 1.75 ms (MOS, 100x600).
 
-// If this flag is activated, the framestore readout algorithm checks
-// for split events and marks them according to the eROSITA pattern
-// naming scheme.
-#define FD_DETECT_PATTERNS 1
+
+// If this flag is set, the charge cloud distribution in split events
+// is determined by the exponential model proposed by Konrad Dennerl 
+// for the eROSITA camera.
+// If not, a Gaussian charge cloud model is assumed.
+#define TIMING_CCD_EXPONENTIAL_SPLITS 1
+
+// If this flag is activated, the readout algorithm checks for split 
+// events and marks them according to the XMM-Newton pattern naming 
+// scheme.
+#define TIMING_CCD_DETECT_PATTERNS 1
 
 // Define the value that is assigned to PAT_INF of invalid events.
 // According to the eROSITA event file specification this should be '0',
 // but as '0' is also assigned to singles, we choose '-1' instead.
-#define FD_INVALID_PATTERN (-1)
+#define TIMING_CCD_INVALID_PATTERN (-1)
 
+/*
 // Maximum number of split pixels per readout frame.
 #define MAX_N_SPLIT_LIST (1000)
 */
+
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -41,7 +48,7 @@ typedef struct {
   GenericDetector generic;
   SquarePixels pixels;
 
-  /** Integration time for one read-out step (one detector line). */
+  /** Integration time for one detector line. */
   double step_time; 
 
   /** Current time. */

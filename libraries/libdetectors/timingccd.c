@@ -240,22 +240,23 @@ inline int readoutTimingccd(Timingccd* fd)
 
   return(status);
 }
+*/
 
 
-
-int addImpact2Timingccd(Timingccd* fd, Impact* impact)
+int addImpact2Timingccd(TimingCCD* tc, Impact* impact)
 {
   int status=EXIT_SUCCESS;
 
   // Before adding the new impact to the detector check whether
   // a readout has to be performed in advance.
-  status=checkReadoutTimingccd(fd, impact->time);
+  // TODO
+//  status=checkReadoutTimingCCD(tc, impact->time);
 
   // Determine a detector channel (PHA channel) according to the RMF.
   // The channel is obtained from the RMF using the corresponding
   // HEAdas routine which is based on drawing a random number.
   long channel;
-  ReturnChannel(fd->generic.rmf, impact->energy, 1, &channel);
+  ReturnChannel(tc->generic.rmf, impact->energy, 1, &channel);
 
   // Check if the photon is really measured. If the
   // PHA channel returned by the HEAdas RMF function is '-1', 
@@ -271,18 +272,18 @@ int addImpact2Timingccd(Timingccd* fd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, fd->generic.rmf);
+  float charge = getEnergy(channel, tc->generic.rmf);
   
   if (charge > 0.) {
     int x[4], y[4];
     double fraction[4];
     
     // Determine the affected detector pixels (including split partners).
-#ifdef EXPONENTIAL_SPLITS
-    int npixels = getSquarePixelsExponentialSplits(&fd->pixels, &(fd->generic.ecc), 
+#ifdef TIMING_CCD_EXPONENTIAL_SPLITS
+    int npixels = getSquarePixelsExponentialSplits(&tc->pixels, &(tc->generic.ecc), 
 						   impact->position, x, y, fraction);
 #else
-    int npixels = getSquarePixelsGaussianSplits(&fd->pixels, &(fd->generic.gcc), 
+    int npixels = getSquarePixelsGaussianSplits(&tc->pixels, &(tc->generic.gcc), 
 						impact->position, x, y, fraction);
 #endif
     
@@ -290,7 +291,7 @@ int addImpact2Timingccd(Timingccd* fd, Impact* impact)
     int count;
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
-	fd->pixels.array[x[count]][y[count]].charge += 
+	tc->pixels.array[x[count]][y[count]].charge += 
 	  charge * fraction[count];
 	  // |      |-> charge fraction due to split events
 	  // |-> charge created by incident photon
@@ -302,4 +303,4 @@ int addImpact2Timingccd(Timingccd* fd, Impact* impact)
 }
 
 
-*/
+

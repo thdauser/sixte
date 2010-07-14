@@ -129,7 +129,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 
   // Defines the mathematical meaning of 'close' in the context that for 
   // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.5; 
+  const double close_mult = 1.3; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
@@ -179,7 +179,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     } // END of preselection
     
 
-    // Determine all source CLOSE TO the FoV and generate
+    // Determine all sources CLOSE TO the FoV and generate
     // photons for these sources.
     generateFoVPointSourcePhotons(psc, &telescope.nz, close_fov_min_align,
 				  time, dt, &photon_list, rmf,
@@ -208,96 +208,6 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   return(status);
 }
 
-
-
-/* Generate photons for a catalog of point sources and a given
-   telescope attitude. The photons lying in the FoV are inserted into
-   the given photon list file using the function
-   insertValidPhotonsIntoFile().
-int createPhotonsFromPointSources2(PhotonListFile* plf,
-				   kdNode* kdtree,
-				   PointSourceFile* psf,
-				   AttitudeCatalog* ac,
-				   struct Telescope telescope,
-				   struct RMF* rmf,
-				   double t0, double timespan)
-{
-  int status = EXIT_SUCCESS;
-
-  // Defines the mathematical meaning of 'close' in the context that for 
-  // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.5; 
-  // Minimum cos-value for point sources close to the FOV (in the direct
-  // neighborhood).
-  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
-
-  // Time-ordered photon list containing all created photons in the sky.
-  struct PhotonOrderedListEntry* photon_list=NULL;
-  // List of PointSources within the FoV.
-  PointSourceList* psl=NULL;
-  // Current time and time step.
-  double time;
-  const double dt=0.1;
-
-  // Loop over the given time interval.
-  for (time=t0; time<t0+timespan; time+=dt) {
-    headas_chat(0, "\rtime: %.3lf s ", time);
-    fflush(NULL);
-
-    // First determine telescope pointing direction at the current time.
-    telescope.nz = getTelescopePointing(ac, time, &status);
-    if (EXIT_SUCCESS!=status) break;
-
-    // Select all PointSources CLOSE to the FoV from the kd-tree.
-    psl = selectFoVPointSourceList(kdtree, psf, &telescope.nz,
-				   close_fov_min_align, &status);
-    if(EXIT_SUCCESS!=status) return(status);
-
-    // CREATE PHOTONS for all these PointSources.
-    long source_counter;
-    for (source_counter=0; source_counter<psl->nsources; source_counter++) {
-
-      // Check whether the source is close to the FOV:
-      // Compare the source direction to the unit vector specifiing the 
-      // direction of the telescope:
-      source_vector = 
-	unit_vector(psc->sources[source_counter].ra, 
-		    psc->sources[source_counter].dec);
-      if (check_fov(&source_vector, &telescope.nz, close_fov_min_align) == 0) {
-    
-      // Create photons:
-      if ((status=create_PointSourcePhotons(&(psl->sources[source_counter]), 
-					    time, dt, &photon_list, rmf))
-	  !=EXIT_SUCCESS) break; 
-
-      } // END of check if source is close to the FoV
-    } 
-    // End of loop over all sources in the PointSourceList.
-
-    // Clear the PointSourceList.
-    clearPointSourceList(psl);
-
-    if (EXIT_SUCCESS!=status) break;
-    // END of photon generation.
-
-    // Check the photon list and insert all photons inside the FoV
-    // into the PhotonListFile.
-    status=insertValidPhotonsIntoFile(plf,
-				      &photon_list,  
-				      ac,
-				      telescope,
-				      t0, timespan);
-    if (EXIT_SUCCESS!=status) break;
-  } 
-  // END of the loop over the time interval.
-  if (EXIT_SUCCESS!=status) return(status);
-
-  // Clear photon list.
-  clear_PhotonList(&photon_list);
-
-  return(status);
-}
-*/
 
 
 /* Generate photons for a catalog of point sources and a given
@@ -755,15 +665,14 @@ int photon_generation_main()
 
   int status = EXIT_SUCCESS;  // error status flag
 
-  // KD
-  kdNode* kdtree = NULL;
-
   // Register HEATOOL
   set_toolname("photon_generation");
   set_toolversion("0.01");
 
   /*
   // RM ->
+  kdNode* kdtree = NULL;
+
   SourceList* list = (SourceList*)malloc(5*sizeof(SourceList));
   list[0].location.x = 5.;
   list[1].location.x = 3.;
@@ -817,6 +726,8 @@ int photon_generation_main()
     printf("%ld/%ld: %lf %lf %lf\n", count+1, nelements,
 	   found[count].location.x, found[count].location.y, found[count].location.z);
   }
+
+  freeKDTree(kdtree);
 
   exit(0);
   // <- RM
@@ -1022,8 +933,6 @@ int photon_generation_main()
 
   // PointSourceFile.
   clearPointSourceCatalog(&psc);
-
-  freeKDTree(kdtree);
 
   // Extended Source Images.
   free_SourceImage(si);
