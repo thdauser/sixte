@@ -18,6 +18,9 @@
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
 
+long kdnelements;// Zahl der Elemente im KDTree.
+long kdnfound;   // Zahl der gefundenen Einträge.
+long kdnchecked; // Zahl der überprüften Einträge.
 
 /** Node in the kdTree containing the X-ray sources in 3-dimensional
     space. */
@@ -45,12 +48,14 @@ kdNode* buildKDNode(PointSource* list, long nelements, int depth);
 
 /** Perform a range search on the given kbTree, i.e., return all X-ray
     sources lying within a certain radius around the reference
-    point. Note that the square of the search radius is required! New
-    sources are appended at the end of the SourceList and the number
-    of the returned X-ray sources is stored in the nelements
-    parameter. The function return value is the error status. */
+    point. This region is defined by the minimum cosine value for the
+    scalar product of the source direction and the reference
+    vector. New sources are appended at the end of the SourceList and
+    the number of the returned X-ray sources is stored in the
+    nelements parameter. The function return value is the error
+    status. */
 void kdTreeRangeSearch(kdNode* node, int depth,
-		       Vector* ref, double radius2, 
+		       Vector* ref, double min_align, 
 		       double time, double dt, 
 		       struct PhotonOrderedListEntry** list_first,
 		       struct RMF* rmf,

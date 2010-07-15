@@ -3,11 +3,15 @@
 
 kdTree buildKDTree(PointSource* list, long nelements)
 {
+  //printf("Build KDTree with %ld elements\n", nelements);
+  kdnelements=nelements;
+
   // Check if the list is empty.
   if (0==nelements) return(NULL);
 
   return(buildKDNode(list, nelements, 0));
 }
+
 
 
 kdNode* buildKDNode(PointSource* list, long nelements, int depth)
@@ -56,7 +60,7 @@ kdNode* buildKDNode(PointSource* list, long nelements, int depth)
 
 
 void kdTreeRangeSearch(kdNode* node, int depth,
-		       Vector* ref, double radius2, 
+		       Vector* ref, double min_align, 
 		       double time, double dt, 
 		       struct PhotonOrderedListEntry** pl,
 		       struct RMF* rmf,
@@ -65,20 +69,18 @@ void kdTreeRangeSearch(kdNode* node, int depth,
   // Check if the kd-Tree exists.
   if (NULL==node) return;
 
-  // Calculate the distance (squared) between the node and the 
-  // reference point.
-  double distance2 = 
-    pow(node->source.location.x-ref->x, 2.) +
-    pow(node->source.location.y-ref->y, 2.) +
-    pow(node->source.location.z-ref->z, 2.);
-
   // Check if the current node lies within the search radius.
-  if (distance2 <= radius2) {
+  kdnchecked++; // RM
+  if (fabs(scalar_product(&node->source.location, ref)) > min_align) {
+    //printf("%d ", depth); // RM
+    kdnfound++;
     create_PointSourcePhotons(&node->source, time, dt, pl, rmf);
   }
 
   // Check if we are at a leaf.
-  if ((NULL==node->left) && (NULL==node->right)) return;
+  if ((NULL==node->left) && (NULL==node->right)) {
+    return;
+  }
 
   int axis = depth % 3;
 
@@ -96,10 +98,10 @@ void kdTreeRangeSearch(kdNode* node, int depth,
     near = node->right;
   }
 
-  // Descent into near tree if it exists, and then check
+  // Descend into near tree if it exists, and then check
   // against current node.
   if (NULL!=near) {
-    kdTreeRangeSearch(near, depth+1, ref, radius2,
+    kdTreeRangeSearch(near, depth+1, ref, min_align,
 		      time, dt, pl, rmf, status);
   } 
   // END of (NULL!=near)
@@ -109,10 +111,10 @@ void kdTreeRangeSearch(kdNode* node, int depth,
   // of the reference point is such that we can have an
   // overlap there.
   if (NULL!=far) {
-    if (distance2edge*distance2edge < radius2) {
+    if (cos(distance2edge) > min_align) {
       // Move to the end of the linked list.
       // Append newly found entries.
-      kdTreeRangeSearch(far, depth+1, ref, radius2,
+      kdTreeRangeSearch(far, depth+1, ref, min_align,
 			time, dt, pl, rmf, status);
     }
   }

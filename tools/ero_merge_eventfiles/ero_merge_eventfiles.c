@@ -169,6 +169,7 @@ int ero_merge_eventfiles_main() {
 	if (0==eof[filecounter]) {
 	  eof[filecounter]=1;
 	  sum_eof++;
+	  if (7==sum_eof) break;
 	}
 	// Increase the file counter.
 	filecounter++;

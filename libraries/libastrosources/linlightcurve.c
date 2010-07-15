@@ -189,7 +189,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   lc->step_width = step_width;
   
   // First create a PSD: S(\omega).
-  double* psd = (double*)malloc(lc->nvalues*sizeof(double));
+  double* psd = (double*)malloc(lc->nvalues/2*sizeof(double));
   if (NULL==psd) {
     HD_ERROR_THROW("Error: Could not allocate memory for PSD "
 		   "(light curve generation)!\n", EXIT_FAILURE);
@@ -199,7 +199,7 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   // Fill the PSD with data.
   long count;
 #ifdef TK_LC_POWERLAW
-  for (count=0; count<lc->nvalues; count++) {
+  for (count=0; count<lc->nvalues/2; count++) {
     // Use a powerlaw index (beta) of 1 (for red noise).
     psd[count] = pow(((double)count+1.), -1.);
   }
@@ -214,10 +214,9 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   const double Q = 0.3860634;
   const double f0 = 3.245546/sqrt(1.+1./(4.*Q*Q));
   double f;
-  psd[0] = 0.;
-  for (count=1; count<lc->nvalues; count++) {
+  for (count=0; count<lc->nvalues/2; count++) {
     // f_k = k / (N * delta t)
-    f = count/(lc->nvalues*lc->step_width);
+    f = (count+1)/(lc->nvalues*lc->step_width);
     psd[count] = 
       // cutoffpl2
       norm * pow(f,index) * exp(-f/cutoff) +
@@ -235,12 +234,12 @@ int initTimmerKoenigLinLightCurve(LinLightCurve* lc, double t0, double step_widt
   }
   double randr, randi;
   get_gauss_random_numbers(&randr, &randi);
-  fcomp[0]             = randr*sqrt(0.5*psd[0]);
-  fcomp[lc->nvalues/2] = randi*sqrt(0.5*psd[lc->nvalues/2]);
-  for (count=1; count<lc->nvalues/2; count++) {
+  fcomp[0]             = 0.;
+  fcomp[lc->nvalues/2] = randi*sqrt(0.5*psd[lc->nvalues/2-1]);
+  for (count=0; count<lc->nvalues/2-1; count++) {
     get_gauss_random_numbers(&randr, &randi);
-    REAL(fcomp, count) = randr*sqrt(0.5*psd[count]);
-    IMAG(fcomp, count) = randi*sqrt(0.5*psd[count]);
+    REAL(fcomp, count+1) = randr*sqrt(0.5*psd[count]);
+    IMAG(fcomp, count+1) = randi*sqrt(0.5*psd[count]);
   }
 
   // Perform Fourier (back-)transformation.
