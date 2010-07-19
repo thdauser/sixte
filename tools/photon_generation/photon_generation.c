@@ -164,7 +164,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     // Preselection of sources from the comprehensive catalog to 
     // improve the performance of the simulation:
     if ((1==first)||
-	(fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
+	(fabs(scalar_product(&preselection_vector, &telescope.nz)) >= 
 	 sin(0.5*telescope.fov_diameter))) {
 
       // Preselect sources from the entire source catalog according to the 
@@ -497,9 +497,12 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 	  }
 	}
 	if (EXIT_SUCCESS!=status) break;
-      } // END of loop over all pixel of the image.
+      } 
+      // END of loop over all pixels of the image.
       if (EXIT_SUCCESS!=status) break;
-    } // END of check whether telescope axis points to the direction of the cluster field.
+    }
+    // END of check whether telescope axis points into the direction of 
+    // the cluster field.
 
     // If a binary tree with photon entries is present, insert its entries to the 
     // time-ordered photon list.
@@ -522,8 +525,9 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 				      t0, timespan);
     if (EXIT_SUCCESS!=status) break;
 
-  } // END of time loop.
+  } 
   if (EXIT_SUCCESS!=status) return(status);
+  // END of time loop.
 
   // Clear photon list
   clear_PhotonList(&photon_list);

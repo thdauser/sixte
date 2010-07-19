@@ -8,7 +8,7 @@
 
 
 /** Maximum number of sources in the preselected source catalog. */
-#define MAX_N_POINTSOURCES 5000000
+#define MAX_N_POINTSOURCES 2000000
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -16,7 +16,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-/** Contains all data to specify the properties of a point source. */
+/** Contains all data to specify the properties of a point source. The
+    size of the data structure is 60 bytes (the size of the Vector for
+    the source position is 24 bytes). */
 typedef struct {
 
   /** Right ascension and declination of the source [rad]. */
@@ -38,7 +40,7 @@ typedef struct {
       Positive values can be used to designate a particular FITS file
       containing a light curve. */
   long lc_type;
-  /** Pointer to object with Piece-wise linear light curve for this
+  /** Pointer to object with piece-wise linear light curve for this
       X-ray source. */
   LinLightCurve* lc; 
 
@@ -65,6 +67,9 @@ typedef struct {
     respect to the requested coordinate axis using a quick sort
     algorithm. */
 void quicksortPointSources(PointSource* list, long left, long right, int axis);
+
+/** Destructor. */
+void freePointSource(PointSource ps);
 
 
 #endif /* POINTSOURCES_H */

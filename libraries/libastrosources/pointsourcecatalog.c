@@ -73,7 +73,7 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
       if(psl->nsources+1 >= MAX_N_POINTSOURCES) {
 	// Too many sources in the PointSourceCatalog!
 	*status=EXIT_FAILURE;
-	char msg[MAXMSG];  // Error output buffer.
+	char msg[MAXMSG]; // Error output buffer.
 	sprintf(msg, "Error: too many sources (%ld) in the PointSourceCatalog!\n", 
 		psl->nsources+1);
 	HD_ERROR_THROW(msg, *status);
@@ -126,6 +126,12 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
   // END of reading all sources from the FITS file.
 
 #ifdef POINTSOURCE_KDTREE
+  // TODO RM
+  printf("\npreselection with %ld sources ...\n", psl->nsources);
+
+  // Destroy the old KDTree.
+  freeKDTree(psc->kdtree);
+
   // Build a kdTree from the preselected PointSourceList.
   psc->kdtree = buildKDTree(psl->sources, psl->nsources);
   if (NULL==psc->kdtree) {
