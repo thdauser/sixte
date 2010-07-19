@@ -72,7 +72,6 @@ void kdTreeRangeSearch(kdNode* node, int depth,
   // Check if the current node lies within the search radius.
   kdnchecked++; // RM
   if (fabs(scalar_product(&node->source.location, ref)) > min_align) {
-    //printf("%d ", depth); // RM
     kdnfound++;
     create_PointSourcePhotons(&node->source, time, dt, pl, rmf);
   }
@@ -130,6 +129,7 @@ void freeKDTree(kdNode* tree)
   if (NULL!=tree) {
     freeKDTree(tree->left);
     freeKDTree(tree->right);
+    freePointSource(tree->source);
     free(tree);
   }
 }

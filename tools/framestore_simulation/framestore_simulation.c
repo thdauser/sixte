@@ -87,6 +87,7 @@ int framestore_simulation_main() {
 
     // Add important additional HEADER keywords to the event list.
     char keyword[MAXMSG];
+    char msg[MAXMSG];
     sprintf(keyword, "TCRVL%d", detector.eventlist.cskyx);
     if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
 			&refxcrvl, "", &status)) break;
@@ -97,9 +98,9 @@ int framestore_simulation_main() {
     sprintf(keyword, "TCDLT%d", detector.eventlist.crawx);
     if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
 			&parameters.pixelwidth, "", &status)) break;
-    char msg[MAXMSG];
     sprintf(msg, " update %s to %e\n", keyword, parameters.pixelwidth);
     headas_chat(5, msg);
+
     sprintf(keyword, "TCDLT%d", detector.eventlist.crawy);
     if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
 			&parameters.pixelwidth, "", &status)) break;

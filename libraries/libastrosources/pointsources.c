@@ -49,3 +49,11 @@ void quicksortPointSources(PointSource* list, long left, long right, int axis)
   }
 }
 
+
+
+void freePointSource(PointSource ps)
+{
+  freeLinLightCurve(ps.lc);
+}
+
+
