@@ -85,6 +85,16 @@ int framestore_simulation_main() {
     if(EXIT_SUCCESS!=status) break;
     // END of DETECTOR CONFIGURATION SETUP    
 
+    // Update Header keywords.
+    if (fits_update_key(detector.eventlist.generic.fptr, TINT, "NXDIM", 
+			&parameters.width, "", &status)) break;
+    if (fits_update_key(detector.eventlist.generic.fptr, TINT, "NYDIM", 
+			&parameters.width, "", &status)) break;
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, "PIXLEN_X", 
+			&parameters.pixelwidth, "", &status)) break;
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, "PIXLEN_Y", 
+			&parameters.pixelwidth, "", &status)) break;
+
     // Add important additional HEADER keywords to the event list.
     char keyword[MAXMSG];
     char msg[MAXMSG];
@@ -94,6 +104,7 @@ int framestore_simulation_main() {
     sprintf(keyword, "TCRVL%d", detector.eventlist.cskyy);
     if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
 			&refycrvl, "", &status)) break;
+
 
     sprintf(keyword, "TCDLT%d", detector.eventlist.crawx);
     if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
@@ -107,10 +118,19 @@ int framestore_simulation_main() {
     sprintf(msg, " update %s to %e\n", keyword, parameters.pixelwidth);
     headas_chat(5, msg);
 
-    if (fits_update_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
-			attitude_filename, "name of the attitude FITS file", 
-			&status)) break;
 
+    double buffer=parameters.width*0.5 + 0.5;
+    sprintf(keyword, "TCRPX%d", detector.eventlist.crawx);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+			&buffer, "", &status)) break;
+    sprintf(msg, " update %s to %e\n", keyword, buffer);
+    headas_chat(5, msg);
+
+    sprintf(keyword, "TCRPX%d", detector.eventlist.crawy);
+    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+			&buffer, "", &status)) break;
+    sprintf(msg, " update %s to %e\n", keyword, buffer);
+    headas_chat(5, msg);
 
     // Setup detector BACKGROUND data structure.
     struct UniformDetectorBackgroundParameters bkgdparameters = {

@@ -89,6 +89,14 @@ int event_projection_main() {
       break;
     }
 
+    // Detector width:
+    int nxdim, nydim;
+    if (fits_read_key(eventlistfile.generic.fptr, TINT, "NXDIM", 
+		      &nxdim, comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TINT, "NYDIM", 
+		      &nydim, comment, &status)) break;
+    headas_chat(5, "NXDIM: %d, NYDIM: %d\n", nxdim, nydim);
+
     // Read WCS header keywords for the sky coordinates.
     char keyword[MAXMSG];
     // The "X" column.
@@ -119,10 +127,8 @@ int event_projection_main() {
     sprintf(keyword, "TCDLT%d", eventlistfile.crawy);
     if (fits_read_key(eventlistfile.generic.fptr, TDOUBLE, keyword, &det_tcdlty,
 		      comment, &status)) break;
-    char msg[MAXMSG];
-    sprintf(msg, "pixelwidth: %.3lf mum x %.3lf mum\n",
-	    det_tcdltx*1.e6, det_tcdlty*1.e6);
-    headas_chat(5, msg);
+    headas_chat(5, "pixelwidth: %.3lf mum x %.3lf mum\n",
+		det_tcdltx*1.e6, det_tcdlty*1.e6);
 
     // Get the satellite catalog with the telescope attitude data:
     if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
@@ -181,10 +187,10 @@ int event_projection_main() {
       // Exact position on the detector:
       struct Point2d detector_position;
       detector_position.x = 
-	((double)(event.xi-384/2)+sixt_get_random_number())*det_tcdltx; // in [m]
-      //                                                    |--> pixel width in [m]
+	((double)(event.xi-nxdim/2)+sixt_get_random_number())*det_tcdltx;   // in [m]
+      //                                                      |--> pixel width in [m]
       detector_position.y = 
-	((double)(event.yi-384/2)+sixt_get_random_number())*det_tcdlty; // in [m]
+	((double)(event.yi-nydim/2)+sixt_get_random_number())*det_tcdlty;       // in [m]
       double d = sqrt(pow(detector_position.x,2.)+pow(detector_position.y,2.)); // in [m]
 
       // Determine the off-axis angle corresponding to the detector position.

@@ -8,7 +8,7 @@
 
 
 /** Maximum number of sources in the preselected source catalog. */
-#define MAX_N_POINTSOURCES 2000000
+#define MAX_N_POINTSOURCES 10000000 // 10 million
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ typedef struct {
 
   /** Index of the source spectrum within the SpectrumStore. This
       number represents the index of the source spectrum within the
-      SpectrumStore of the PointSourceCatalog. Warning: the
+      SpectrumStore of the PointSourceCatalog. Note: the
       spectrum_index starts at 1 (not at 0). */
   long spectrum_index; 
   /** Pointer to source spectrum. */
