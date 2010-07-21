@@ -1,6 +1,6 @@
 n_inputfiles,i,lq,2,1,100,"number of input files "
-input_prefix,s,lq,"events_",,,"filename prefix of the input event files (FITS)"
-output_filename,f,lq,"events.fits",,,"filename of the output event file (FITS)"
+input_prefix,s,lq,"photons_",,,"filename prefix of the input photon files (FITS)"
+output_filename,f,lq,"photons.fits",,,"filename of the output photon file (FITS)"
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 chatter,i,lh,5,,,"chatter: control verbosity of the program"
 history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "
