@@ -100,7 +100,7 @@ Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
   // Calculate cosine of angle between x1 and x2 (v1 and v2) [rad].
   double cosine_value = scalar_product(&x1, &x2);
 
-  if (fabs(cosine_value) > cos(0.1/3600*M_PI/180.)) { 
+  if (fabs(cosine_value) < cos(0.1/3600*M_PI/180.)) { 
     // The misalignment between the 2 vectors is more than 1 arcsec.
     // This is important to check for the subsequent algorithm, 
     // because the vectors should not be aligned parallel or 
@@ -127,6 +127,7 @@ Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
     r.x = x1.x + phase*(x2.x-x1.x);
     r.y = x1.y + phase*(x2.y-x1.y);
     r.z = x1.z + phase*(x2.z-x1.z);
+    r = normalize_vector(r);
   }
 
   return(r);
