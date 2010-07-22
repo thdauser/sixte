@@ -135,9 +135,10 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
   // Maximum cos-value (minimum sin-value) for sources within the
   // preselection band along the orbit. The width of the
-  // preselection band is chosen to be twice the diameter of the
-  // FoV. (angle(n,source) > 90-bandwidth)
-  const double pre_max_align = sin(2*telescope.fov_diameter);
+  // preselection band is chosen to be some particular factor times
+  // the diameter of the FoV. (angle(n,source) > 90-bandwidth)
+  const double preselection_factor = 3.;
+  const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
 
   // Normalized vector perpendicular to the orbital plane,
   // used for a preselection of point sources out of the
@@ -165,7 +166,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     // improve the performance of the simulation:
     if ((1==first)||
 	(fabs(scalar_product(&preselection_vector, &telescope.nz)) >= 
-	 sin(0.5*telescope.fov_diameter))) {
+	 sin((preselection_factor-0.6)*telescope.fov_diameter))) {
+      // Use 0.6*FoV instead of 0.5*FoV in order to have some margin.
 
       // Preselect sources from the entire source catalog according to the 
       // satellite's direction of motion.
@@ -231,9 +233,10 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
   // Maximum cos-value (minimum sin-value) for sources within the
   // preselection band along the orbit. The width of the
-  // preselection band is chosen to be twice the diameter of the
-  // FoV. (angle(n,source) > 90-bandwidth)
-  const double pre_max_align = sin(2*telescope.fov_diameter);
+  // preselection band is chosen to be a particular factor times the
+  // diameter of the FoV. (angle(n,source) > 90-bandwidth)
+  const double preselection_factor = 3.;
+  const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
 
   
   // Normalized vector perpendicular to the orbital plane,
@@ -269,8 +272,9 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
     // improve the performance of the simulation:
     if ((1==first)||
 	(fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
-	 sin(0.5*telescope.fov_diameter))) {
-      
+	 sin((preselection_factor-0.6)*telescope.fov_diameter))) {
+      // Use 0.6*FoV instead of 0.5*FoV in order to have some margin.
+
       // Release old PointSourceCatalog:
       free_ExtendedSourceCatalog(esc);
       esc = NULL;
