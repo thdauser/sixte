@@ -91,27 +91,42 @@ Vector interpolate_vec(Vector v1, double t1,
 
 
 /////////////////////////////////////////////////////////////////
-Vector interpolate_vec2(Vector v1, double t1, Vector v2, double t2, double time)
+Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
 {
-  Vector r; // r(time)
-  Vector x1 = normalize_vector(v1); // use as first base vector
+  Vector x1 = normalize_vector(v1); // Use as first base vector.
   Vector x2 = normalize_vector(v2);
+  Vector r; // Return value. 
 
-  double alpha = acos(scalar_product(&x1, &x2)); // angle between v1 and v2 [rad]
+  // Calculate cosine of angle between x1 and x2 (v1 and v2) [rad].
+  double cosine_value = scalar_product(&x1, &x2);
 
-  if (alpha > 0.1/3600*M_PI/180.) { // Greater than 0.1 arcsec.
-    Vector d = {.x=v2.x-cos(alpha)*v1.x, 
-		.y=v2.y-cos(alpha)*v1.y, 
-		.z=v2.z-cos(alpha)*v1.z};
-    x2 = normalize_vector(d); // second base vector
+  if (fabs(cosine_value) > cos(0.1/3600*M_PI/180.)) { 
+    // The misalignment between the 2 vectors is more than 1 arcsec.
+    // This is important to check for the subsequent algorithm, 
+    // because the vectors should not be aligned parallel or 
+    // anti-parallel.
+
+    // Angle between x1 and x2:
+    double phi = acos(cosine_value); 
+
+    // Calculate the second base vector spanning the plane of 
+    // the circle.
+    Vector d = { .x=x2.x-cos(phi)*x1.x, 
+		 .y=x2.y-cos(phi)*x1.y, 
+		 .z=x2.z-cos(phi)*x1.z };
+    x2 = normalize_vector(d); 
     
-    double dalpha = alpha*(time-t1)/(t2-t1); // angle-difference
+    // Determine the angle corresponding to the phase.
+    r.x = cos(phase*phi)*x1.x + sin(phase*phi)*x2.x;
+    r.y = cos(phase*phi)*x1.y + sin(phase*phi)*x2.y;
+    r.z = cos(phase*phi)*x1.z + sin(phase*phi)*x2.z;
 
-    r.x = cos(dalpha)*x1.x + sin(dalpha)*x2.x;
-    r.y = cos(dalpha)*x1.y + sin(dalpha)*x2.y;
-    r.z = cos(dalpha)*x1.z + sin(dalpha)*x2.z;			      
-  } else { // Quasi no motion at all.
-    r = v1;
+  } else { 
+    // There is quasi no motion at all, so perform a linear
+    // interpolation.
+    r.x = x1.x + phase*(x2.x-x1.x);
+    r.y = x1.y + phase*(x2.y-x1.y);
+    r.z = x1.z + phase*(x2.z-x1.z);
   }
 
   return(r);

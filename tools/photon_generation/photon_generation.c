@@ -175,8 +175,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 					ac->entry[ac->current_entry].nx));
       preselectPointSources(psc, preselection_vector, pre_max_align, &status);
       if((EXIT_SUCCESS!=status)||(NULL==psc)) break;
-
-    } // END of preselection
+    } 
+    // END of source preselection.
     
 
     // Determine all sources CLOSE TO the FoV and generate
@@ -197,7 +197,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 				      t0, timespan);
     if (EXIT_SUCCESS!=status) break;
 
-    first = 0;
+    first=0;
   } 
   // END of the loop over the time interval.
   if (EXIT_SUCCESS!=status) return(status);

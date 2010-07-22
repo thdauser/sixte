@@ -28,10 +28,10 @@ Vector normalize_vector(Vector);
     handling structures at function call. */
 inline void normalize_vector_fast(Vector* v);
 
-// calculates the scalar product of two vectors
+/** Calculates the scalar product of two vectors. */
 inline double scalar_product(Vector* const, Vector* const);
 
-// calculates the vector product of two vectors
+/** Calculates the vector product of two vectors. */
 Vector vector_product(Vector, Vector);
 
 /** Calculates the difference between two vectors. */
@@ -41,7 +41,12 @@ Vector vector_difference(Vector x2, Vector x1);
     the specified time and returns the interpolated vector. */
 Vector interpolate_vec(Vector v1, double t1, Vector v2, 
 		       double t2, double time);
-Vector interpolate_vec2(Vector v1, double t1, Vector v2, double t2, double time);
+
+/** Interpolate between 2 vectors assuming that they discribe a great
+    circle on the unit sphere. The parameter 'phase' should have a
+    value in the interval [0,1]. The return value is a normalized
+    vector. */
+Vector interpolateCircleVector(Vector v1, Vector v2, double phase);
 
 /** Function determines the equatorial coordinates of right ascension
     and declination for a given vector pointing in a specific
