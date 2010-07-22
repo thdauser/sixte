@@ -286,13 +286,11 @@ Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status)
     
   // The requested time lies within the current time bin.
   // Interpolation:
-  // TODO: replace this calculation by proper attitude interpolation.
-  nz = interpolate_vec(ac->entry[ac->current_entry].nz, 
-		       ac->entry[ac->current_entry].time, 
-		       ac->entry[ac->current_entry+1].nz, 
-		       ac->entry[ac->current_entry+1].time, 
-		       time);
-  normalize_vector_fast(&nz);
+  nz = interpolateCircleVector(ac->entry[ac->current_entry].nz, 
+			       ac->entry[ac->current_entry+1].nz, 
+			       (time-ac->entry[ac->current_entry].time)/
+			       (ac->entry[ac->current_entry+1].time-
+				ac->entry[ac->current_entry].time));
 
   return(nz);
 }

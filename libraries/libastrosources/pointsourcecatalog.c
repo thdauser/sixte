@@ -133,11 +133,15 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
   freeKDTree(psc->kdtree);
 
   // Build a kdTree from the preselected PointSourceList.
-  psc->kdtree = buildKDTree(psl->sources, psl->nsources);
-  if (NULL==psc->kdtree) {
-    *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Building kd-Tree failed!\n", *status);
-    return;
+  if (psl->nsources>0) {
+    psc->kdtree = buildKDTree(psl->sources, psl->nsources);
+    if (NULL==psc->kdtree) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Building kd-Tree failed!\n", *status);
+      return;
+    }
+  } else {
+    psc->kdtree=NULL;
   }
 
   // Release the memory of the PointSourceList.

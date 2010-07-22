@@ -132,6 +132,12 @@ int framestore_simulation_main() {
     sprintf(msg, " update %s to %e\n", keyword, buffer);
     headas_chat(5, msg);
 
+    // Store the filename of the attitude file in the FITS header.
+    if (fits_update_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
+			attitude_filename, "name of the attitude FITS file", 
+			&status)) break;
+
+
     // Setup detector BACKGROUND data structure.
     struct UniformDetectorBackgroundParameters bkgdparameters = {
       .rate              = parameters.background_rate,
