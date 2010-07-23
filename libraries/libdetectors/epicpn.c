@@ -1,22 +1,22 @@
-#include "timingccd.h"
+#include "epicpn.h"
 
 
-int initTimingccd(TimingCCD* tc, struct TimingCCDParameters* parameters)
+int initEPICpn(EPICpn* ep, struct EPICpnParameters* parameters)
 {
   int status = EXIT_SUCCESS;
 
   // Set up the initial CCD configuration.
-  tc->step_time = parameters->step_time;
+  ep->step_time = parameters->step_time;
   // Set the first readout time such that the first readout is performed 
   // immediately at the beginning of the simulation.
-  tc->time = parameters->t0;
+  ep->time = parameters->t0;
   
   // Call the initialization routines of the underlying data structures.
   // Init the generic detector properties like the RMF.
-  status = initGenericDetector(&tc->generic, &parameters->generic);
+  status = initGenericDetector(&ep->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
   // Get the memory for the pixel array.
-  status = initSquarePixels(&tc->pixels, &parameters->pixels);
+  status = initSquarePixels(&ep->pixels, &parameters->pixels);
   if (EXIT_SUCCESS!=status) return(status);
   
   return(status);
@@ -24,13 +24,13 @@ int initTimingccd(TimingCCD* tc, struct TimingCCDParameters* parameters)
 
 
 
-int cleanupTimingCCD(TimingCCD* tc) 
+int cleanupEPICpn(EPICpn* ep) 
 {
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  cleanupSquarePixels(&tc->pixels);
-  cleanupGenericDetector(&tc->generic);
+  cleanupSquarePixels(&ep->pixels);
+  cleanupGenericDetector(&ep->generic);
 
   return(status);
 }
@@ -243,20 +243,20 @@ inline int readoutTimingccd(Timingccd* fd)
 */
 
 
-int addImpact2Timingccd(TimingCCD* tc, Impact* impact)
+int addImpact2EPICpn(EPICpn* ep, Impact* impact)
 {
   int status=EXIT_SUCCESS;
 
   // Before adding the new impact to the detector check whether
   // a readout has to be performed in advance.
   // TODO
-//  status=checkReadoutTimingCCD(tc, impact->time);
+//  status=checkReadoutTimingCCD(ep, impact->time);
 
   // Determine a detector channel (PHA channel) according to the RMF.
   // The channel is obtained from the RMF using the corresponding
   // HEAdas routine which is based on drawing a random number.
   long channel;
-  ReturnChannel(tc->generic.rmf, impact->energy, 1, &channel);
+  ReturnChannel(ep->generic.rmf, impact->energy, 1, &channel);
 
   // Check if the photon is really measured. If the
   // PHA channel returned by the HEAdas RMF function is '-1', 
@@ -272,18 +272,18 @@ int addImpact2Timingccd(TimingCCD* tc, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, tc->generic.rmf);
+  float charge = getEnergy(channel, ep->generic.rmf);
   
   if (charge > 0.) {
     int x[4], y[4];
     double fraction[4];
     
     // Determine the affected detector pixels (including split partners).
-#ifdef TIMING_CCD_EXPONENTIAL_SPLITS
-    int npixels = getSquarePixelsExponentialSplits(&tc->pixels, &(tc->generic.ecc), 
+#ifdef EPICpn_EXPONENTIAL_SPLITS
+    int npixels = getSquarePixelsExponentialSplits(&ep->pixels, &(ep->generic.ecc), 
 						   impact->position, x, y, fraction);
 #else
-    int npixels = getSquarePixelsGaussianSplits(&tc->pixels, &(tc->generic.gcc), 
+    int npixels = getSquarePixelsGaussianSplits(&ep->pixels, &(ep->generic.gcc), 
 						impact->position, x, y, fraction);
 #endif
     
@@ -291,7 +291,7 @@ int addImpact2Timingccd(TimingCCD* tc, Impact* impact)
     int count;
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
-	tc->pixels.array[x[count]][y[count]].charge += 
+	ep->pixels.array[x[count]][y[count]].charge += 
 	  charge * fraction[count];
 	  // |      |-> charge fraction due to split events
 	  // |-> charge created by incident photon
