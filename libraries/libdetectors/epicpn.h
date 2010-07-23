@@ -1,5 +1,5 @@
-#ifndef TIMINGCCD_H
-#define TIMINGCCD_H 1
+#ifndef EPICPN_H
+#define EPICPN_H 1
 
 
 #include "sixt.h"
@@ -9,7 +9,7 @@
 #include "squarepixels.h"
 
 
-// In XMM-Newton EPIC pn timing mode all pixels in RAWY direction are
+// In XMM-Newton EPIC-pn timing mode all pixels in RAWY direction are
 // collapsed to an linear image in RAWX direction. The time resolution 
 // is 0.03 ms (pn, 64x200) or 1.75 ms (MOS, 100x600).
 
@@ -18,17 +18,17 @@
 // is determined by the exponential model proposed by Konrad Dennerl 
 // for the eROSITA camera.
 // If not, a Gaussian charge cloud model is assumed.
-#define TIMING_CCD_EXPONENTIAL_SPLITS 1
+#define EPICpn_EXPONENTIAL_SPLITS 1
 
 // If this flag is activated, the readout algorithm checks for split 
 // events and marks them according to the XMM-Newton pattern naming 
 // scheme.
-#define TIMING_CCD_DETECT_PATTERNS 1
+#define EPICpn_DETECT_PATTERNS 1
 
 // Define the value that is assigned to PAT_INF of invalid events.
 // According to the eROSITA event file specification this should be '0',
 // but as '0' is also assigned to singles, we choose '-1' instead.
-#define TIMING_CCD_INVALID_PATTERN (-1)
+#define EPICpn_INVALID_PATTERN (-1)
 
 /*
 // Maximum number of split pixels per readout frame.
@@ -41,9 +41,7 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** This data structure can be used for CCD detectors with square
-    pixel arrays, which are operated in timing mode, i.e. with
-    continuous readout. */
+/** This data structure can be used for EPIC-pn like detectors. */
 typedef struct {
   GenericDetector generic;
   SquarePixels pixels;
@@ -54,10 +52,10 @@ typedef struct {
   /** Current time. */
   double time; 
 
-} TimingCCD;
+} EPICpn;
 
 
-struct TimingCCDParameters {
+struct EPICpnParameters {
   struct GenericDetectorParameters generic;
   struct SquarePixelsParameters pixels;
 
@@ -71,33 +69,33 @@ struct TimingCCDParameters {
 /////////////////////////////////////////////////////////////////
 
 
-/** Set up the configuration of a TimingCCD. The routine also calls
+/** Set up the configuration of the EPIC-pn. The routine also calls
     the init routines of the underlying data structures. */
-int initTimingCCD(TimingCCD* tc, struct TimingCCDParameters* tcp);
+int initEPICpn(EPICpn* ep, struct EPICpnParameters* epp);
 
-/** Clean up the TimingCCD data structure. Release allocated
-    memory and call clean-up routines of underlying structures. */
-int cleanupTimingCCD(TimingCCD* tc);
+/** Clean up the EPICpn data structure. Release allocated memory and
+    call clean-up routines of underlying structures. */
+int cleanupEPICpn(EPICpn* ep);
 
-/** This routine is called for readout of the TimingCCD. The routine
+/** This routine is called for readout of the EPIC-pn. The routine
     itself checks, whether a readout is necessary according to the
     current time and step_time. If it's time to do a readout, the
     routine initiates the readout process by calling
-    readoutTimingCCD(). */
-int checkReadoutTimingCCD(TimingCCD* tc, double time);
+    readoutEPICpn(). */
+int checkReadoutEPICpn(EPICpn* ep, double time);
 
-/** Read out the TimingCCD. The measured events are stored
+/** Read out the EPIC-pn. The measured events are stored
     in an event list FITS file. */
-inline int readoutTimingCCD(TimingCCD* tc);
+inline int readoutEPICpn(EPICpn* ep);
 
-/** Add a new photon impact to the TimingCCD pixels. The generated
+/** Add a new photon impact to the EPIC-pn pixels. The generated
     charge is determined according to the detector response. If the
     charge cloud size is set, split events are calculated according to
     a Gaussian charge cloud model. The new charge is added to the
     charge already contained in the detector pixel, so pileup effects
     are taken into account. */
-int addImpact2TimingCCD(TimingCCD* tc, Impact* impact);
+int addImpact2EPICpn(EPICpn* ep, Impact* impact);
 
 
-#endif /* TIMINGCCD_H */
+#endif /* EPICPN_H */
 
