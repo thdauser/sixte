@@ -8,7 +8,7 @@
 
 
 /** Maximum number of sources in the preselected source catalog. */
-#define MAX_N_POINTSOURCES 10000000 // 10 million
+#define MAX_N_POINTSOURCES 20000000 // 10 million
 
 
 ////////////////////////////////////////////////////////////////////////
