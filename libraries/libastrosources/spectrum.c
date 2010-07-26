@@ -126,21 +126,6 @@ int loadSpectrum(Spectrum* spectrum, char* filename)
     }
     if (status != EXIT_SUCCESS) break;
 
-    /*
-    // Plot the spectrum to an output file for testing.
-    headas_printf("Output of spectrum to file 'spectrum.dat' ...\n");
-    FILE* spectrum_file=fopen("spectrum.dat", "w+");
-    if (NULL==spectrum_file) {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Could not open spectrum output file!\n", status);
-      break;
-    }
-    for (row=0; row<spectrum->NumberChannels; row++) {
-      fprintf(spectrum_file, "%ld %lf\n", row, spectrum->rate[row]);
-    }
-    fclose(spectrum_file);
-    */
-
     // Normalize spectrum to 1, i.e., create probability distribution function:
     for (row=0; row<spectrum->NumberChannels; row++) {
       sum += spectrum->rate[row] / normalization;
