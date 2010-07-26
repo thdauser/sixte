@@ -2,19 +2,34 @@
 #define SOURCEIMAGE_H 1
 
 #include "sixt.h"
+#include "sixt_random.h"
 #include "spectrum.h"
 
 
 /** One pixel in the extended SourceImage. */
+/*
 struct SourceImagePixel {
-  float rate; /**< Photon rate in this pixel */
-  double t_next_photon; /**< Time of next photon emitted from this Pixel. */
+  float rate; //< Photon rate in this pixel
 };
-
+*/
 
 /** Object containing the extended source image from one FITS image extension. */
 typedef struct {
-  struct SourceImagePixel** pixel;
+  /** Pixel probability distribution. */
+  float** pixel;
+
+  /** If this flag is set (1), the SourceImage pixels contain a
+      normalized probability distribution. If not (0), the pixels
+      contain a real image. */
+  int accumulated;
+
+  /** Total photon rate of the entire SourceImage. This is the sum of
+      the pixels read from the FITS file. In the computer memory the
+      image is normalized to 1. */
+  float total_rate;
+
+  /** Time of the last photon emitted from this SourceImage. */
+  double t_last_photon;
 
   int naxis1, naxis2;    /**< Width of the image [pixel]. */
   double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
@@ -26,6 +41,7 @@ typedef struct {
 
   /** SpectrumStore containing the source spectra used for this image of the sky. */
   SpectrumStore spectrumstore;
+
 } SourceImage;
 
 
@@ -35,6 +51,7 @@ typedef struct {
   int nimages;
   /** Catalog of ClusterImage elements. */
   SourceImage** images; /* nimages */
+
 } SourceImageCatalog;
 
 
@@ -81,6 +98,10 @@ void free_SourceImageCatalog(SourceImageCatalog* sic);
     image is loaded from the FITS HDU designated by fptr and added to
     the SourceImageCatalog. The return value is the error status. */
 int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr);
+
+/** Determine a random pixel according to the probability distribution
+    given by the SourceImage. */
+void getRandomSourceImagePixel(SourceImage* si, int* x, int* y);
 
 
 #endif /* SOURCEIMAGE_H */

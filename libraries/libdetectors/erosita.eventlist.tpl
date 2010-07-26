@@ -105,6 +105,9 @@ PIXLEN_Y        75.0
 	TTYPE#  PAT_INF         / Pattern Information
 	TFORM#  B               / Format of column PAT_INF
 	TUNIT#  pattern info    / Unit of column PAT_INF
+	TTYPE#  MAX_PIX         / 
+	TFORM#  I               /
+	TUNIT#                  / 
 	TTYPE#	CCDNR		/ 0 for TRoPIC, 1-7 for eROSITA
 	TFORM#	B
 	TUNIT#	

@@ -128,8 +128,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   int status = EXIT_SUCCESS;
 
   // Defines the mathematical meaning of 'close' in the context that for 
-  // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.3; 
+  // sources 'close to the FOV' the simulation generates photons.
+  const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
@@ -137,7 +137,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   // preselection band along the orbit. The width of the
   // preselection band is chosen to be some particular factor times
   // the diameter of the FoV. (angle(n,source) > 90-bandwidth)
-  const double preselection_factor = 3.;
+  const double preselection_factor = 2.5;
   const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
 
   // Normalized vector perpendicular to the orbital plane,
@@ -184,8 +184,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     // Determine all sources CLOSE TO the FoV and generate
     // photons for these sources.
     generateFoVPointSourcePhotons(psc, &telescope.nz, close_fov_min_align,
-				  time, dt, &photon_list, rmf,
-				  &status);
+				  time, dt, &photon_list, rmf, &status);
     if (EXIT_SUCCESS!=status) break;
     // END of photon generation.
 
@@ -226,8 +225,8 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   int status = EXIT_SUCCESS;
 
   // Defines the mathematical meaning of 'close' in the context that for 
-  // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.5; 
+  // sources 'close to the FOV' the simulation generates photons.
+  const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
@@ -235,7 +234,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   // preselection band along the orbit. The width of the
   // preselection band is chosen to be a particular factor times the
   // diameter of the FoV. (angle(n,source) > 90-bandwidth)
-  const double preselection_factor = 3.;
+  const double preselection_factor = 2.5;
   const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
 
   
@@ -275,7 +274,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
 	 sin((preselection_factor-0.6)*telescope.fov_diameter))) {
       // Use 0.6*FoV instead of 0.5*FoV in order to have some margin.
 
-      // Release old PointSourceCatalog:
+      // Release old catalog:
       free_ExtendedSourceCatalog(esc);
       esc = NULL;
 
@@ -349,27 +348,26 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
   Vector refpixel_vector;
   // Normalized vector pointing in the direction of the source.
   Vector source_vector;
-  // Counters for loops over all pixels of the SourceImage.
-  int xcount, ycount;
   // Right ascension and declination of the individual pixels.
   double ra, dec; 
-  // Buffer for currently chosen pixel.
-  struct SourceImagePixel* pixel; 
-  // Time-ordered photon binary tree.
-  struct PhotonBinaryTreeEntry* photon_tree=NULL;
   // Time-ordered photon list containing all created photons in the sky.
   struct PhotonOrderedListEntry* photon_list=NULL;
+  // Second pointer to photon list, that can be moved along the list,   
+  // without loosing the first entry.
+  struct PhotonOrderedListEntry* list_current=photon_list;
   // Current time and time step.
   double time;
   const double dt = 1.0;
-  // Buffer for random numbers.
-  double rnd;
+  // Pixel coordinates (integer).
+  int x, y;
+  // Real image coordinates (floating point) with pixel randomization [rad].
+  float x_value, y_value;
   // Buffer for new photons.
   Photon new_photon;
 
   // Defines the mathematical meaning of 'close' in the context that for 
-  // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.5; 
+  // sources 'close to the FOV' the simulation generates photons.
+  const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
@@ -386,6 +384,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 
     // Create photons from the extended source image (clusters) and 
     // insert them to the photon list.
+    list_current=photon_list;
 
     // Vector in the direction of the reference pixel.
     refpixel_vector = unit_vector(si->crval1, si->crval2);
@@ -393,6 +392,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
     // Check whether the the current telescope axis points to a direction 
     // close to the specified cluster image field (3°). (TODO: flexible value)
     if (check_fov(&refpixel_vector, &telescope.nz, cos(3.*M_PI/180.) )==0) {
+
       // Vector in the direction of the 1st image coordinate (right ascension).
       Vector k = {0., 0., 0.};
       // Vector in the direction of the 2nd image coordinate (declination).
@@ -416,109 +416,68 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 	l.x = -sin(si->crval2) * cos(si->crval1);
 	l.y = -sin(si->crval2) * sin(si->crval1);
 	l.z =  cos(si->crval2);
-      } // END reference pixel is at none of the poles.
-	    
-	    
-      // Loop over all pixels of the the image:
-      for(xcount=0; xcount<si->naxis1; xcount++) {
-	for(ycount=0; ycount<si->naxis2; ycount++) {
-		
-	  // Check whether the pixel lies CLOSE TO the FOV:
-		
-	  // Vector in the direction of the current pixel.
-	  source_vector.x = refpixel_vector.x + 
-	    (xcount - si->crpix1 + 1.)*si->cdelt1 * k.x +
-	    (ycount - si->crpix2 + 1.)*si->cdelt2 * l.x;
-	  source_vector.y = refpixel_vector.y + 
-	    (xcount - si->crpix1 + 1.)*si->cdelt1 * k.y +
-	    (ycount - si->crpix2 + 1.)*si->cdelt2 * l.y;
-	  source_vector.z = refpixel_vector.z + 
-	    (xcount - si->crpix1 + 1.)*si->cdelt1 * k.z +
-	    (ycount - si->crpix2 + 1.)*si->cdelt2 * l.z;
-	  normalize_vector_fast(&source_vector);
-		
-	  if (check_fov(&source_vector, &telescope.nz, 
-			close_fov_min_align)==0) {
-	    
-	    // Generate Photons for this pixel.
-
-	    // Determine the right ascension and
-	    // declination of the pixel.
-	    calculate_ra_dec(source_vector, &ra, &dec);
-
-	    // Current pixel.
-	    pixel = &(si->pixel[xcount][ycount]);
-		  
-	    // TODO: needs to be replaced by exponential distribution:
-	    rnd = sixt_get_random_number();
-	    if (rnd < pixel->rate * dt) {
-	      // Generate a new photon for this pixel
-	      new_photon.ra=ra; 
-	      new_photon.dec=dec;
-	      new_photon.direction=source_vector;
-	      new_photon.time = time + sixt_get_random_number()*dt;
-	      
-	      // Determine the energy of the new photon according to 
-	      // the default spectrum.
-	      new_photon.energy = 
-		photon_energy(si->spectrumstore.spectrum, rmf);
-
-	      // Add the photon to the binary tree.
-	      if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
-		  !=EXIT_SUCCESS) break;
-	    }
-	    /*
-	      if (pixel->t_next_photon < time) {
-	      pixel->t_next_photon = time;
-	      }
-	      
-	      while (pixel->t_next_photon <= time + dt) {
-	      
-	      // Determine photon arrival time.
-	      pixel->t_next_photon += rndexp(1./(double)pixel->rate);
-	      
-	      Photon new_photon = { // Buffer for the new photon.
-	      .ra=ra, .dec=dec, .direction=pixel_vector,
-	      .time = pixel->t_next_photon };
-	      
-	      // Determine the energy of the new photon according to 
-	      // the default spectrum.
-	      new_photon.energy = photon_energy(spectrum_store.spectrum, rmf);
-	      
-	      // Add the photon to the binary tree.
-	      if ((status=insert_Photon2BinaryTree(&photon_tree, &new_photon))
-	      !=EXIT_SUCCESS) break;
-	      
-	      }		  
-	    */
-	    // END of photon generation from the SourceImagePixel.
-		
-	  } else { // END of check whether pixel is close to the FOV.
-	    // The source image pixel is far away from the telescope axis.
-	    // Therefore we don't have to consider the directly neighboring 
-	    // pixels and do a bigger step than to the nearest pixel.
-	    ycount+=10;
-	  }
-	}
-	if (EXIT_SUCCESS!=status) break;
       } 
-      // END of loop over all pixels of the image.
-      if (EXIT_SUCCESS!=status) break;
+      // END reference pixel is at none of the poles.
+
+      // If there is no photon time stored so far, set the current time.
+      if (si->t_last_photon <= time) {
+	si->t_last_photon = time;
+      }
+
+      // Create photons and insert them into the given time-ordered list.
+      while (si->t_last_photon < time+dt) {
+
+	// Determine the arrival time of the new photon with the
+	// appropriate random number generator.
+	do {
+	  new_photon.time = si->t_last_photon + rndexp(1./si->total_rate);
+	  assert(new_photon.time>=si->t_last_photon);
+	} while (new_photon.time==si->t_last_photon);
+	si->t_last_photon = new_photon.time;
+	
+	// Determine a random pixel.
+	getRandomSourceImagePixel(si, &x, &y);
+
+	// Vector in the direction of the current pixel.
+	x_value = (x - si->crpix1 + 0.5 + sixt_get_random_number())*si->cdelt1;
+	y_value = (y - si->crpix2 + 0.5 + sixt_get_random_number())*si->cdelt2;
+	source_vector.x = 
+	  refpixel_vector.x + x_value*k.x + y_value*l.x;
+	source_vector.y = 
+	  refpixel_vector.y + x_value*k.y + y_value*l.y;
+	source_vector.z = 
+	  refpixel_vector.z + x_value*k.z + y_value*l.z;
+	normalize_vector_fast(&source_vector);
+	
+	// Check if the pixel is within the telescope's FoV.
+	if (check_fov(&source_vector, &telescope.nz, 
+		      close_fov_min_align)==0) {
+	    
+	  // Determine the right ascension and
+	  // declination of the pixel.
+	  calculate_ra_dec(source_vector, &ra, &dec);
+
+	  // Set the photon direction of origin.
+	  new_photon.ra=ra;
+	  new_photon.dec=dec;
+	  new_photon.direction=source_vector;
+	  
+	  // Determine the energy of the new photon according to 
+	  // the default spectrum.
+	  new_photon.energy = 
+	    photon_energy(si->spectrumstore.spectrum, rmf);
+
+	  // Insert photon to the global photon list:
+	  status=insert_Photon2TimeOrderedList(&photon_list, &list_current, 
+					       &new_photon);
+	  if (EXIT_SUCCESS!=status) return(status);  
+	}
+	// END of check whether pixel lies in the FoV.
+      }
+      // END of loop over time interval dt.
     }
     // END of check whether telescope axis points into the direction of 
     // the cluster field.
-
-    // If a binary tree with photon entries is present, insert its entries to the 
-    // time-ordered photon list.
-    if (NULL!=photon_tree) {
-      struct PhotonOrderedListEntry* photon_list_current = photon_list;
-      if (EXIT_SUCCESS!=(status=CreateOrderedPhotonList(&photon_tree, &photon_list, 
-							&photon_list_current))) break;
-    }
-
-    if (EXIT_SUCCESS!=status) break;
-    // END of photon generation.
-
 
     // Check the photon list and insert all photons inside the FoV
     // into the PhotonListFile.

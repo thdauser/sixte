@@ -30,6 +30,8 @@ int openeROSITAEventFile(eROSITAEventFile* eef, char* filename, int access_mode)
     return(status);
   if(fits_get_colnum(eef->generic.fptr, CASEINSEN, "PAT_INF", &eef->cpat_inf, &status)) 
     return(status);
+  if(fits_get_colnum(eef->generic.fptr, CASEINSEN, "MAX_PIX", &eef->cmax_pix, &status)) 
+    return(status);
 
   if(fits_get_colnum(eef->generic.fptr, CASEINSEN, "RA", &eef->cra, &status)) 
     return(status);
@@ -133,6 +135,8 @@ int addeROSITAEvent2File(eROSITAEventFile* eef, eROSITAEvent* event)
 		     1, 1, &event->pat_typ, &status)) return(status);
   if (fits_write_col(eef->generic.fptr, TBYTE, eef->cpat_inf, eef->generic.row, 
 		     1, 1, &event->pat_inf, &status)) return(status);
+  if (fits_write_col(eef->generic.fptr, TBYTE, eef->cmax_pix, eef->generic.row, 
+		     1, 1, &event->max_pix, &status)) return(status);
 
   // Set RA, DEC, X, and Y to default values.
   long ra = 0;
@@ -220,6 +224,9 @@ int eROSITAEventFile_getRow(eROSITAEventFile* eef, eROSITAEvent* event, long row
   event->pat_inf = 0;
   if (fits_read_col(eef->generic.fptr, TBYTE, eef->cpat_inf, row, 1, 1, 
 		    &event->pat_inf, &event->pat_inf, &anynul, &status)) return(status);
+  event->max_pix = 0;
+  if (fits_read_col(eef->generic.fptr, TBYTE, eef->cmax_pix, row, 1, 1, 
+		    &event->max_pix, &event->max_pix, &anynul, &status)) return(status);
 
   long ra = 0;
   if (fits_read_col(eef->generic.fptr, TLONG, eef->cra, row, 1, 1, 

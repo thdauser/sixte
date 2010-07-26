@@ -11,11 +11,13 @@ inline double sixt_get_random_number()
 
 inline double rndexp(double avgdist)
 {
+  assert(avgdist>0.);
+
   double rand = sixt_get_random_number();
   if (rand < 1.E-15) {
     rand = 1.E-15;
   }
-  
+
   return(-log(rand)*avgdist);
 }
 

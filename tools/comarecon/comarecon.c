@@ -96,7 +96,7 @@ int comarecon_main() {
 
 	for (k=MAX(0,-ishift); k<detector_pixels->xwidth-1-MAX(0,ishift); k++) {
 	  for (l=MAX(0,-jshift); l<detector_pixels->ywidth-1-MAX(0,jshift); l++) {
-	    sky_pixels->pixel[i][j].rate += 
+	    sky_pixels->pixel[i][j] += 
 	      detector_pixels->array[ishift+k][jshift+l].charge * mask->map[k][l];
 	    // TODO Maybe the indices are wrong and we have to write
 	    // 	  detector_pixels->array[k][l].charge * mask.map[ishift+k][jshift+l];
