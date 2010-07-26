@@ -197,6 +197,9 @@ int ero_merge_eventfiles_main() {
 	    frame=min_next_frame;
 	  }
 	} else {
+	  // Assign the right CCD number to the event.
+	  event.ccdnr = filecounter+1;
+
 	  // Add the event to the output file
 	  status=addeROSITAEvent2File(&outputfile, &event);
 	  if (status!=EXIT_SUCCESS) break;
