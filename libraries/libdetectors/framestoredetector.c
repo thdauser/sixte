@@ -87,20 +87,6 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
 }
 
 
-/* Deprecated 
-float fdGetPixelCharge(FramestoreDetector* fd, int x, int y) 
-{
-  // Check if the pixel coordinates lie within the valid array.
-  if ((x<0) || (x >= fd->pixels.xwidth) || 
-      (y<0) || (y >= fd->pixels.ywidth)) {
-    return (0.);
-  } else {
-    return (fd->pixels.array[x][y].charge);
-  }
-}
-*/
-
-
 float fdMaximumCharge(float* charges, int nlist)
 {
   int count;
@@ -112,7 +98,6 @@ float fdMaximumCharge(float* charges, int nlist)
   }
   return(maximum);
 }
-
 
 
 inline int readoutFramestoreDetector(FramestoreDetector* fd) 
@@ -153,27 +138,6 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	if ((pha>=fd->generic.pha_threshold) && 
 	    (fd->pixels.array[x][y].charge>=fd->generic.energy_threshold)) { 
 
-	  /* Deprecated routine to detect split patterns. The routine
-	     checks not only the surrounding 3x3 environment of pixels
-	     but is recursively called in order to identify larger invalid
-	     patterns. 
-	  // Clear the event list.
-	  nlist=0;
-	  maxidx=0;
-	  minidx=0;
-	  
-	  // Call marker routine to check the surrounding pixels for 
-	  // events above the split threshold.
-	  fdMarkEvents(list, &nlist, &maxidx, &minidx, fd, x, y);
-
-	  // TODO Determine split threshold from charge of MAXIMUM split partner.
-	  // Maybe insert a new routine here!
-	  printf("MarkEvents: nlist = %d\n", nlist);
-
-	  // Perform pattern type identification.
-	  fdPatternIdentification(list, nlist, maxidx, minidx);
-	  */
-	  
 	  // Add the central pixel to the list.
 	  nlist = 1;
 	  maxidx= 0;
@@ -190,12 +154,6 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	  // proposed by Konrad Dennerl for the on-board processor).
 	  float neighbor_charges[4] = { 0., 0., 0., 0. };
 	  float combined_neighbor_charges[4] = { 0., 0., 0., 0. };
-	  /*
-	    fdGetPixelCharge(fd, x+1, y) + fdGetPixelCharge(fd, x, y+1),
-	    fdGetPixelCharge(fd, x-1, y) + fdGetPixelCharge(fd, x, y+1),
-	    fdGetPixelCharge(fd, x-1, y) + fdGetPixelCharge(fd, x, y-1),
-	    fdGetPixelCharge(fd, x+1, y) + fdGetPixelCharge(fd, x, y-1)	    
-	    };*/
 	  // Right:
 	  if (x+1<fd->pixels.xwidth) {
 	    neighbor_charges[0] = fd->pixels.array[x+1][y].charge;
@@ -263,40 +221,42 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 		}
 
 		nlist++;
-	      } // TODO:
-	      // else { 
-	      // delete pixel charge (otherwise it might happen, that split
-	      // partners lie below the split threshold, but are above the 
-	      // event threshold and are therefore read out in the next step
-	      // resulting in an invalid pattern (double or triple).
-	      // }
+	      } 
 	    }
 	  }
 
 	  // Perform the pattern type identification.
 	  fdPatternIdentification(list, nlist, maxidx, minidx);
 
-
 	  // Store the list in the event FITS file.
 	  for (count=0; count<nlist; count++) {
 	    // Set missing properties.
 	    list[count].time  = fd->readout_time;
 	    list[count].frame = fd->frame;
+
+	    if (count==maxidx) {
+	      list[count].max_pix = 1;
+	    } else {
+	      list[count].max_pix = 0;
+	    }
 	    
 	    status=addeROSITAEvent2File(&fd->eventlist, &(list[count]));
 	    if (EXIT_SUCCESS!=status) return(status);
 
-	  } // End of storing the event list in the FITS file.
-	  
-	} // End of check if event is above specified threshold.
-      } // END of check if pixel contains any charge.
-    } // END of loop over x
-  } // END of loop over y
+	  } 
+	  // End of storing the event list in the FITS file.
+	} 
+	// End of check if event is above specified threshold.
+      } 
+      // END of check if pixel contains any charge.
+    } 
+    // END of loop over x
+  } 
+  // END of loop over y
   // END of find split patterns.
 
   return(status);
 }
-
 
 
 int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
@@ -356,82 +316,6 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
 
   return(status);
 }
-
-
-
-/*
-// Consistency check for size of charge cloud:
-if (detector->ccsize > detector->pixelwidth) {
-status=EXIT_FAILURE;
-HD_ERROR_THROW("Error: charge cloud size greater than pixel width!\n", status);
-break;
-}
-*/
-
-
-/* Deprecated
-void fdMarkEvents(eROSITAEvent* list, int* nlist, 
-		  int* maxidx, int* minidx,
-		  FramestoreDetector* fd, 
-		  int x, int y)
-{
-  // TODO Determine split threshold from charge of MAXIMUM split partner.
-
-  // Split threshold, depending on the charge in the main pixel.
-  const double split_threshold = 
-    fd->pixels.array[x][y].charge * fd->split_threshold;
-
-  printf("split threshold: %lf\n", split_threshold);
-
-  // Possible neighbors (no diagonal neighbors).
-  const int neighbors_x[4] = {0, 0, 1, -1};
-  const int neighbors_y[4] = {1, -1, 0, 0};
-
-  int neighbor, xi, yi;
-
-  // Create a new event in the list.
-  assert(*nlist+1 < MAX_N_SPLIT_LIST);  
-  list[*nlist].pha = getChannel(fd->pixels.array[x][y].charge, 
-				fd->generic.rmf);
-  list[*nlist].energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
-  list[*nlist].xi  = x;
-  list[*nlist].yi  = y;
-  (*nlist)++;
-  // Delete the charge of this event from the pixel array.
-  fd->pixels.array[x][y].charge = 0.;
-
-  // Check if the new event has the maximum or minium energy in the 
-  // event list.
-  if (list[*nlist-1].energy <= list[*minidx].energy) {
-    *minidx = *nlist-1;
-  } else if (list[*nlist-1].energy > list[*maxidx].energy) {
-    *maxidx = *nlist-1;
-  }
-
-#ifdef FD_DETECT_PATTERNS
-  // Loop over the directly neighboring pixels.
-  for (neighbor=0; neighbor<4; neighbor++) {
-
-    // Coordinates of the neighboring pixel:
-    xi = x+neighbors_x[neighbor];
-    yi = y+neighbors_y[neighbor];
-
-    // Check if the neighbor is within the detector dimensions.
-    if ((xi<0) || (xi>=fd->pixels.xwidth) ||
-	(yi<0) || (yi>=fd->pixels.ywidth))
-      continue;
-
-    if (fd->pixels.array[xi][yi].charge > split_threshold) {
-
-      // Call marker routine to check for surrounding pixels.
-      fdMarkEvents(list, nlist, maxidx, minidx, fd, xi, yi);
-    } // END of check if event is above the split threshold.
-
-  } // END of loop over all neighbors.
-#endif
-
-}
-*/
 
 
 void fdPatternIdentification(eROSITAEvent* list, const int nlist, 

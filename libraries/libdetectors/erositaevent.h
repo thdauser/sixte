@@ -19,7 +19,9 @@ typedef struct {
 
   /** Information about split events. */
   int pat_typ, pat_inf;
-
+  /** Flag for pixel containing the maximum amount of charge in a
+      split pattern. */
+  int max_pix;
 
   /** Right ascension and declination [degree]. */
   double ra, dec; 

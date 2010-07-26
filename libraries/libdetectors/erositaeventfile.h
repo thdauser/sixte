@@ -18,7 +18,7 @@ typedef struct {
       entries. The numbers start at 1. The number 0 means, that there
       is no corresponding column in the table. */
   int ctime, cpha, cenergy, crawx, crawy, cframe, cccdnr;
-  int cpat_typ, cpat_inf;
+  int cpat_typ, cpat_inf, cmax_pix;
   int cra, cdec, cskyx, cskyy;
 
 } eROSITAEventFile;
