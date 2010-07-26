@@ -146,8 +146,11 @@ int loadSpectrum(Spectrum* spectrum, char* filename)
       sum += spectrum->rate[row] / normalization;
       spectrum->rate[row] = sum; 
     }
+    // Set the last bin explicitly to one in order to avoid 
+    // numercial problem due to a value slightly below 1.
+    spectrum->rate[spectrum->NumberChannels-1] = 1.;
     
-  } while (0);  // END of error handling loop  
+  } while (0); // END of error handling loop  
 
   // Clean up:
   if (fptr) fits_close_file(fptr, &status);

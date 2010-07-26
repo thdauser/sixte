@@ -9,7 +9,12 @@
 #include "vector.h"
 #include "photon.h"
 
+
+/** Use kdTree algorithm to sort the point soucres. */
 #define POINTSOURCE_KDTREE 1
+
+/** Maximum number of sources in the preselected source catalog. */
+#define MAX_N_POINTSOURCES 15000000 // 15 million
 
 
 /////////////////////////////////////////////////////////////////

@@ -11,6 +11,9 @@ SourceImage* get_SourceImage()
     si->naxis1=0;
     si->naxis2=0;
     si->pixel=NULL;
+    si->accumulated=0;
+    si->total_rate=0.;
+    si->t_last_photon=0.;
   }
 
   return(si);
@@ -35,8 +38,7 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
   if (NULL==si) return(si);
 
   // Allocate memory.
-  si->pixel=(struct SourceImagePixel**)
-    malloc(sip->naxis1*sizeof(struct SourceImagePixel*));
+  si->pixel=(float**)malloc(sip->naxis1*sizeof(float*));
   if (NULL==si->pixel) {
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: could not allocate memory to store "
@@ -46,8 +48,7 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
   si->naxis1 = sip->naxis1;
   int xcount, ycount;
   for(xcount=0; xcount<si->naxis1; xcount++) {
-    si->pixel[xcount]=(struct SourceImagePixel*)
-      malloc(sip->naxis2*sizeof(struct SourceImagePixel));
+    si->pixel[xcount]=(float*)malloc(sip->naxis2*sizeof(float));
     if (NULL==si->pixel[xcount]) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: could not allocate memory to store "
@@ -56,8 +57,7 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
     }
     // Clear the pixels.
     for(ycount=0; ycount<si->naxis2; ycount++) {
-      si->pixel[xcount][ycount].rate = 0.;
-      si->pixel[xcount][ycount].t_next_photon = 0.;
+      si->pixel[xcount][ycount] = 0.;
     }
   }
   si->naxis2 = sip->naxis2;
@@ -167,13 +167,11 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 
 
     // Allocate memory for the pixels of the image:
-    si->pixel = (struct SourceImagePixel**)
-      malloc(si->naxis1*sizeof(struct SourceImagePixel*));
+    si->pixel = (float**)malloc(si->naxis1*sizeof(float*));
     if (si->pixel!=NULL) {
       int count;
       for(count=0; (count<si->naxis1)&&(*status==EXIT_SUCCESS); count++) {
-	si->pixel[count] = (struct SourceImagePixel*)
-	  malloc(si->naxis2*sizeof(struct SourceImagePixel));
+	si->pixel[count] = (float*)malloc(si->naxis2*sizeof(float));
 	if(si->pixel[count]==NULL) {
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory for storing the "
@@ -211,23 +209,34 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 
     
     // Transfer the image from the 1D input buffer to the 2D pixel array in
-    // the data structure and apply the correct factors to convert the pixel
-    // information (surface brightness) into real count rate for eROSITA
-    // (assuming a Raymond-Smith spectrum for the clusters).
+    // the data structure and generate a probability distribution function,
+    // i.e., sum up the pixels.
+    si->total_rate = 0.;
     int x, y;
     for(x=0; x<si->naxis1; x++) {
       for(y=0; y<si->naxis2; y++) {
-	si->pixel[x][y].rate = input_buffer[x+ si->naxis1*y]; // [photons/s]
-	si->pixel[x][y].t_next_photon = 0.;
+	si->total_rate += input_buffer[x+ si->naxis1*y]; // [photons/s]
+	si->pixel[x][y] = si->total_rate;
       }
     }
+
+    // Normalization of the SourceImage such that the sum
+    // of all pixel values is 1 and create a probability 
+    // distribution.
+    for(x=0; x<si->naxis1; x++) {
+      for(y=0; y<si->naxis2; y++) {
+	si->pixel[x][y] *= 1./si->total_rate;
+      }
+    }
+    // Set accumulation flag.
+    si->accumulated = 1;
 
   } while(0); // END of Error handling loop
 
 
-  // --- clean up ---
+  // --- Clean Up ---
 
-  // free the input buffer
+  // Free the input buffer.
   if(input_buffer) free(input_buffer);
 
   return(si);
@@ -261,12 +270,20 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
       HD_ERROR_THROW("Error allocating memory!\n", *status);
       break;
     }
+
+    if (1==si->accumulated) {
+      // TODO Convert the probability distribution in the SourceImage
+      // to a probability density.
+      printf("Error: You  must update the function saveSourceImage()!\n");
+      exit(0);
+    }
+
     // Store the source image in the 1-dimensional buffer to handle it 
     // to the FITS routine.
     int x, y;
     for (x=0; x<si->naxis1; x++) {
       for (y=0; y<si->naxis2; y++) {
-	image1d[(x+ si->naxis1*y)] = si->pixel[x][y].rate;
+	image1d[(x+ si->naxis1*y)] = si->pixel[x][y];
       }
     }
     
@@ -412,4 +429,39 @@ int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr)
   return(status);
 }
 
+
+
+void getRandomSourceImagePixel(SourceImage* si, int* x, int* y) 
+{
+  double rnd = sixt_get_random_number();
+
+  // Perform a binary search to obtain the x-coordinate.
+  int high = si->naxis1-1;
+  int low = 0;
+  int mid;
+  int ymax = si->naxis2-1;
+  while (high > low) {
+    mid = (low+high)/2;
+    if (si->pixel[mid][ymax] < rnd) {
+      low = mid+1;
+    } else {
+      high = mid;
+    }
+  }
+  *x = low;
+
+  // Search for the y coordinate:
+  high = si->naxis2-1;
+  low = 0;
+  while (high > low) {
+    mid = (low+high)/2;
+    if (si->pixel[*x][mid] < rnd) {
+      low = mid+1;
+    } else {
+      high = mid;
+    }
+  }
+  *y = low;
+  // Now x and y have pixel positions [integer pixel].
+}
 

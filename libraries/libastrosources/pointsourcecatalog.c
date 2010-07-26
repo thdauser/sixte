@@ -172,9 +172,6 @@ void generateFoVPointSourcePhotons(PointSourceCatalog* psc,
   kdnchecked=0;
   kdTreeRangeSearch(psc->kdtree, 0, ref, min_align, 
 		    time, dt, pl, rmf, status);
-  // RM
-  //  printf("=> %ld/%ld/%ld\n", kdnfound, kdnchecked, kdnelements);
-
 #else
 
   long count;

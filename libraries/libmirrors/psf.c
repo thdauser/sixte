@@ -79,41 +79,38 @@ int get_psf_pos(struct Point2d* position, Photon photon,
   // Perform a binary search to obtain the x-coordinate.
   int high = psf_item->naxis1-1;
   int low = 0;
-  while (high-low > 1) {
-    if (psf_item->data[(low+high)/2][0] < rnd) {
-      low = (low+high)/2;
+  int mid;
+  int ymax = psf_item->naxis2-1;
+  while (high > low) {
+    mid = (low+high)/2;
+    if (psf_item->data[mid][ymax] < rnd) {
+      low = mid+1;
     } else {
-      high = (low+high)/2;
+      high = mid;
     }
   }
-  if (psf_item->data[high][0] > rnd) {
-    x1 = low;
-  } else {
-    x1 = high;
-  }
-    
+  x1 = low;
+
   // Search for the y coordinate:
   high = psf_item->naxis2-1;
   low = 0;
   while (high-low > 1) {
-    if (psf_item->data[x1][(low+high)/2] < rnd) {
-      low = (low+high)/2;
+    mid = (low+high)/2;
+    if (psf_item->data[x1][mid] < rnd) {
+      low = mid+1;
     } else {
-      high = (low+high)/2;
+      high = mid;
     }
   }
-  if (psf_item->data[x1][low] < rnd) {
-    y1 = high;
-  } else {
-    y1 = low;
-  }
+  y1 = low;
   // Now x1 and y1 have pixel positions [integer pixel].
  
   // Determine the distance ([m]) of the central reference position from the optical axis
   // according to the off-axis angle theta:
   double distance = telescope.focal_length * tan(theta); // TODO *(-1) ???
 
-  // Add the relative position obtained from the PSF image (randomized pixel indices x1 and y1).
+  // Add the relative position obtained from the PSF image (randomized pixel 
+  // indices x1 and y1).
   double x2 = distance + 
     ((double)x1 -psf_item->crpix1 +0.5 +sixt_get_random_number())*psf_item->cdelt1 
     + psf_item->crval1; // [m]

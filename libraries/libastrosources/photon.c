@@ -69,18 +69,9 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
       if (T_LC_CONSTANT==ps->lc_type) {
 	ps->lc = getLinLightCurve(1, &status);
 	if (EXIT_SUCCESS!=status) return(status);
-	/*
-	status = initConstantLinLightCurve(ps->lc, time, 1.e6, ps->rate);
-	if (EXIT_SUCCESS!=status) return(status);
-	*/
       } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
 	ps->lc = getLinLightCurve(TK_LC_LENGTH, &status);
 	if (EXIT_SUCCESS!=status) return(status);
-	/*
-	status = initTimmerKoenigLinLightCurve(ps->lc, time, TK_LC_STEP_WIDTH, ps->rate,
-					       ps->rate/3.);
-	if (EXIT_SUCCESS!=status) return(status);
-	*/
       } else {
 	status=EXIT_FAILURE;
 	HD_ERROR_THROW("Error: Unknown light curve type!\n", EXIT_FAILURE);
@@ -88,9 +79,10 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
       }
     }
 
-
     // Determine the arrival time of the new photon with the
-    // appropriate random number generator.
+    // appropriate random number generator. If the light curve
+    // is not initialized, the function returns a negative time 
+    // (-1).
     new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
 
     // If the new time is negative, the light curve did not cover the
@@ -114,13 +106,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
       new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
     } 
     // END if (new_photon.time < 0.)
-    
-    if (new_photon.time < ps->t_last_photon) { // RM
-      printf("last photon=%lf new photon=%lf LC end=%lf\n", 
-	     ps->t_last_photon, new_photon.time,
-	     ps->lc->t0 + ps->lc->nvalues*ps->lc->step_width);
-    }
-    
+        
     assert(new_photon.time>=0.);
     assert(new_photon.time>=ps->t_last_photon);
     ps->t_last_photon = new_photon.time;
@@ -283,7 +269,7 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
   struct PhotonOrderedListEntry** iterator = current;
 
   // Find the right entry where to insert the new photon.
-  while ((NULL!=*iterator) && ((*iterator)->photon.time < ph->time)) {
+  while ((NULL!=*iterator) && ((*iterator)->photon.time <= ph->time)) {
     iterator = &((*iterator)->next);
   }
   // Now '*iterator' points to the entry before which the new photon has to be inserted.

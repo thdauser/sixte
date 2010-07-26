@@ -121,7 +121,9 @@ void freeLinLightCurve(LinLightCurve*);
     the previous photon. The random time interval is obtained from a
     time-varying Poisson arrival process generator proposed by Klein &
     Roberts (1984). This paper describes a Poisson generator for
-    piecewise-linear light curves. */
+    piecewise-linear light curves. If the light curve is not
+    determined (time step == 0), the function returns a negative time
+    (-1). */
 double getPhotonTime(LinLightCurve*, double time);
 
 /** For given photon rates set the data required for the LinLightCurve
