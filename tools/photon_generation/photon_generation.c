@@ -128,8 +128,8 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   int status = EXIT_SUCCESS;
 
   // Defines the mathematical meaning of 'close' in the context that for 
-  // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.3; 
+  // sources 'close to the FOV' the simulation generates photons.
+  const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
@@ -225,8 +225,8 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   int status = EXIT_SUCCESS;
 
   // Defines the mathematical meaning of 'close' in the context that for 
-  // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.5; 
+  // sources 'close to the FOV' the simulation generates photons.
+  const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
@@ -366,8 +366,8 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
   Photon new_photon;
 
   // Defines the mathematical meaning of 'close' in the context that for 
-  // sources 'close to the FOV' the simulation creates a light curve.
-  const double close_mult = 1.5; 
+  // sources 'close to the FOV' the simulation generates photons.
+  const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
