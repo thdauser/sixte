@@ -9,6 +9,7 @@ int initFramestoreDetector(FramestoreDetector* fd,
   // Set up the framestore configuration.
   fd->integration_time = parameters->integration_time;
   fd->split_threshold  = parameters->split_threshold;
+  fd->make_splits      = parameters->make_splits;
   // Set the first readout time such that the first readout is performed 
   // immediately at the beginning of the simulation.
   fd->readout_time = parameters->t0;
@@ -87,7 +88,7 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
 }
 
 
-float fdMaximumCharge(float* charges, int nlist)
+static float fdMaximumCharge(float* charges, int nlist)
 {
   int count;
   float maximum=0.;
@@ -134,11 +135,11 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	assert(pha >= 0);
 	// Maybe: if (pha < 0) continue;
 	
-	// Check lower threshold (PHA and energy):
+	// Check event threshold (PHA and energy):
 	if ((pha>=fd->generic.pha_threshold) && 
 	    (fd->pixels.array[x][y].charge>=fd->generic.energy_threshold)) { 
 
-	  // Add the central pixel to the list.
+	  // Add the central/main pixel to the list.
 	  nlist = 1;
 	  maxidx= 0;
 	  minidx= 0;
@@ -150,101 +151,116 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	  // Delete the pixel charge after it has been read out.
 	  fd->pixels.array[x][y].charge = 0.;
 
-	  // Check the surrounding pixels (according to the method 
-	  // proposed by Konrad Dennerl for the on-board processor).
-	  float neighbor_charges[4] = { 0., 0., 0., 0. };
-	  float combined_neighbor_charges[4] = { 0., 0., 0., 0. };
-	  // Right:
-	  if (x+1<fd->pixels.xwidth) {
-	    neighbor_charges[0] = fd->pixels.array[x+1][y].charge;
-	  }
-	  // Left:
-	  if (x-1>=0) {
-	    neighbor_charges[1] = fd->pixels.array[x-1][y].charge;
-	  }
-	  // Top:
-	  if (y+1<fd->pixels.ywidth) {
-	    neighbor_charges[2] = fd->pixels.array[x][y+1].charge;
-	  }
-	  // Bottom:
-	  if (y-1>=0) {
-	    neighbor_charges[3] = fd->pixels.array[x][y-1].charge;
-	  }
-	  // Calculate the quantities c_rt, c_tl, c_lb, and c_br:
-	  // c_rt:
-	  combined_neighbor_charges[0] = 
-	    neighbor_charges[0] + neighbor_charges[2];
-	  // c_tl:
-	  combined_neighbor_charges[1] = 
-	    neighbor_charges[2] + neighbor_charges[1];
-	  // c_lb:
-	  combined_neighbor_charges[2] = 
-	    neighbor_charges[1] + neighbor_charges[3];
-	  // c_br:
-	  combined_neighbor_charges[3] = 
-	    neighbor_charges[3] + neighbor_charges[0];
-
-	  // Determine the split threshold as the sum of the charge of the 
-	  // central pixel and the maximum surrounding charge times the 
-	  // selected threshold fraction.
-	  float split_threshold = 
-	    (fdMaximumCharge(combined_neighbor_charges, 4) + list[0].energy*1.e-3) *
-	    //                                               [eV] -> [keV]
-	    fd->split_threshold;
-
-	  // Check the 3x3 environment for pixels with a charge above the 
-	  // split threshold.
-	  for (x2=MAX(x-1,0); x2<MIN(x+2,fd->pixels.xwidth); x2++) {
-	    for (y2=MAX(y-1,0); y2<MIN(y+2, fd->pixels.ywidth); y2++) {
-
-	      // Do not regard the central pixel. This has already been 
-	      // added to the list.
-	      if ((x==x2)&&(y==y2)) continue;
-
-	      if (fd->pixels.array[x2][y2].charge > split_threshold) {
-		list[nlist].xi = x2;
-		list[nlist].yi = y2;
-		list[nlist].energy = 
-		  fd->pixels.array[x2][y2].charge * 1.e3; // [eV]
-		list[nlist].pha = 
-		  getChannel(fd->pixels.array[x2][y2].charge, fd->generic.rmf);
-
-		// Delete the pixel charge after it has been read out.
-		fd->pixels.array[x2][y2].charge = 0.;
-
-		// Check if the new event has the maximum or minium 
-		// energy in the split list.
-		if (list[nlist].energy <= list[minidx].energy) {
-		  minidx = nlist;
-		} else if (list[nlist].energy > list[maxidx].energy) {
-		  maxidx = nlist;
-		}
-
-		nlist++;
-	      } 
+	  if (1==fd->make_splits) {
+	    // Check the surrounding pixels (according to the method 
+	    // proposed by Konrad Dennerl for the on-board processor).
+	    float neighbor_charges[4] = { 0., 0., 0., 0. };
+	    float combined_neighbor_charges[4] = { 0., 0., 0., 0. };
+	    // Right:
+	    if (x+1<fd->pixels.xwidth) {
+	      neighbor_charges[0] = fd->pixels.array[x+1][y].charge;
 	    }
-	  }
-
-	  // Perform the pattern type identification.
-	  fdPatternIdentification(list, nlist, maxidx, minidx);
-
-	  // Store the list in the event FITS file.
-	  for (count=0; count<nlist; count++) {
-	    // Set missing properties.
-	    list[count].time  = fd->readout_time;
-	    list[count].frame = fd->frame;
-
-	    if (count==maxidx) {
-	      list[count].max_pix = 1;
-	    } else {
-	      list[count].max_pix = 0;
+	    // Left:
+	    if (x-1>=0) {
+	      neighbor_charges[1] = fd->pixels.array[x-1][y].charge;
 	    }
+	    // Top:
+	    if (y+1<fd->pixels.ywidth) {
+	      neighbor_charges[2] = fd->pixels.array[x][y+1].charge;
+	    }
+	    // Bottom:
+	    if (y-1>=0) {
+	      neighbor_charges[3] = fd->pixels.array[x][y-1].charge;
+	    }
+	    // Calculate the quantities c_rt, c_tl, c_lb, and c_br:
+	    // c_rt:
+	    combined_neighbor_charges[0] = 
+	      neighbor_charges[0] + neighbor_charges[2];
+	    // c_tl:
+	    combined_neighbor_charges[1] = 
+	      neighbor_charges[2] + neighbor_charges[1];
+	    // c_lb:
+	    combined_neighbor_charges[2] = 
+	      neighbor_charges[1] + neighbor_charges[3];
+	    // c_br:
+	    combined_neighbor_charges[3] = 
+	      neighbor_charges[3] + neighbor_charges[0];
+
+	    // Determine the split threshold as the sum of the charge of the 
+	    // central pixel and the maximum surrounding charge times the 
+	    // selected threshold fraction.
+	    float split_threshold = 
+	      (fdMaximumCharge(combined_neighbor_charges, 4) + list[0].energy*1.e-3) *
+	      //                                               [eV] -> [keV]
+	      fd->split_threshold;
+
+	    // Check the 3x3 environment for pixels with a charge above the 
+	    // split threshold.
+	    for (x2=MAX(x-1,0); x2<MIN(x+2,fd->pixels.xwidth); x2++) {
+	      for (y2=MAX(y-1,0); y2<MIN(y+2, fd->pixels.ywidth); y2++) {
+
+		// Do not regard the central pixel. This has already been 
+		// added to the list.
+		if ((x==x2)&&(y==y2)) continue;
+		
+		if (fd->pixels.array[x2][y2].charge > split_threshold) {
+		  list[nlist].xi = x2;
+		  list[nlist].yi = y2;
+		  list[nlist].energy = 
+		    fd->pixels.array[x2][y2].charge * 1.e3; // [eV]
+		  list[nlist].pha = 
+		    getChannel(fd->pixels.array[x2][y2].charge, fd->generic.rmf);
+
+		  // Delete the pixel charge after it has been read out.
+		  fd->pixels.array[x2][y2].charge = 0.;
+
+		  // Check if the new event has the maximum or minium 
+		  // energy in the split list.
+		  if (list[nlist].energy <= list[minidx].energy) {
+		    minidx = nlist;
+		  } else if (list[nlist].energy > list[maxidx].energy) {
+		    maxidx = nlist;
+		  }
+		  
+		  nlist++;
+		} 
+	      }
+	    }
+
+	    // Perform the pattern type identification.
+	    fdPatternIdentification(list, nlist, maxidx, minidx);
+
+	    // Store the list in the event FITS file.
+	    for (count=0; count<nlist; count++) {
+	      // Set missing properties.
+	      list[count].time  = fd->readout_time;
+	      list[count].frame = fd->frame;
+
+	      if (count==maxidx) {
+		list[count].max_pix = 1;
+	      } else {
+		list[count].max_pix = 0;
+	      }
 	    
-	    status=addeROSITAEvent2File(&fd->eventlist, &(list[count]));
-	    if (EXIT_SUCCESS!=status) return(status);
+	      status=addeROSITAEvent2File(&fd->eventlist, &(list[count]));
+	      if (EXIT_SUCCESS!=status) return(status);
+	    } 
+	    // End of storing the event list in the FITS file.
 
-	  } 
-	  // End of storing the event list in the FITS file.
+	  } else {
+	    // The make_splits flag is set to zero, i.e., no split events
+	    // are generated. Therefore we also don't need to check for
+	    // split patterns.
+
+	    // Set missing properties.
+	    list[0].time  = fd->readout_time;
+	    list[0].frame = fd->frame;
+	    list[0].max_pix = 1;
+	    
+	    status=addeROSITAEvent2File(&fd->eventlist, &(list[0]));
+	    if (EXIT_SUCCESS!=status) return(status);
+	  }
+	  // End of checking for split generation (make_splits)
 	} 
 	// End of check if event is above specified threshold.
       } 
@@ -290,29 +306,45 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
   float charge = getEnergy(channel, fd->generic.rmf);
   
   if (charge > 0.) {
-    int x[4], y[4];
-    double fraction[4];
+
+    // Check if split events should be generated or not.
+    if (1==fd->make_splits) {
+      int x[4], y[4];
+      double fraction[4];
     
-    // Determine the affected detector pixels (including split partners).
+      // Determine the affected detector pixels (including split partners).
 #ifdef EXPONENTIAL_SPLITS
-    int npixels = getSquarePixelsExponentialSplits(&fd->pixels, &(fd->generic.ecc), 
-						   impact->position, x, y, fraction);
+      int npixels = getSquarePixelsExponentialSplits(&fd->pixels, &(fd->generic.ecc), 
+						     impact->position, x, y, fraction);
 #else
-    int npixels = getSquarePixelsGaussianSplits(&fd->pixels, &(fd->generic.gcc), 
-						impact->position, x, y, fraction);
+      int npixels = getSquarePixelsGaussianSplits(&fd->pixels, &(fd->generic.gcc), 
+						  impact->position, x, y, fraction);
 #endif
     
-    // Add the charge created by the photon to the affected detector pixels.
-    int count;
-    for (count=0; count<npixels; count++) {
-      if (x[count] != INVALID_PIXEL) {
-	fd->pixels.array[x[count]][y[count]].charge += 
-	  charge * fraction[count];
-	  // |      |-> charge fraction due to split events
-	  // |-> charge created by incident photon
+      // Add the charge created by the photon to the affected detector pixels.
+      int count;
+      for (count=0; count<npixels; count++) {
+	if (x[count] != INVALID_PIXEL) {
+	  fd->pixels.array[x[count]][y[count]].charge += 
+	    charge * fraction[count];
+	  //   |      |-> charge fraction due to split events
+	  //   |-> charge created by incident photon
+	}
+      }
+
+    } else {
+      // There should be not generation of split events.
+      
+      // Determine the affected detector pixel.
+      int x, y;
+      if (1==getSquarePixel(&fd->pixels, impact->position, &x, &y)) {
+	// Add the charge created by the photon to the affected detector pixel.
+	fd->pixels.array[x][y].charge += charge;
       }
     }
-  } // END if(charge>0.)
+    // END of checking for split generation.
+  }
+  // END if(charge>0.)
 
   return(status);
 }

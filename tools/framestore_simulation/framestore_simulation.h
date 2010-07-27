@@ -38,6 +38,8 @@ struct Parameters {
   long pha_threshold;
   float energy_threshold;
   float split_threshold;
+  /* Flag for generating split events. */
+  int make_splits;
 
   char background_filename[MAXMSG]; /**< Filename of the detector background spectrum. */
   float background_rate; /**< Rate of background events. */
