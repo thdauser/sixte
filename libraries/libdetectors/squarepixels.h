@@ -123,7 +123,7 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp,
 				     int* x, int* y, double* fraction);
 
 /** Determine the pixel that is hit by a photon impact. The affected
-    pixel is return by the x and y parameters (pixel index starting at
+    pixel is returned by the x and y parameters (pixel index starting at
     0). The return value is 1, if a valid pixel is hit. Otherwise it
     is zero. In the latter case the pixel coordinates x and y are
     undefined. */

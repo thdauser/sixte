@@ -79,7 +79,8 @@ int framestore_simulation_main() {
       .t0                 = parameters.t0,
       .eventlist_filename = parameters.eventlist_filename /* String address!! */,
       .eventlist_template = parameters.eventlist_template,
-      .split_threshold    = parameters.split_threshold
+      .split_threshold    = parameters.split_threshold,
+      .make_splits        = parameters.make_splits
     };
     status=initFramestoreDetector(&detector, &fdparameters);
     if(EXIT_SUCCESS!=status) break;
@@ -279,6 +280,11 @@ int getpar(struct Parameters* parameters)
   // [m]
   else if ((status = PILGetReal("ccsigma", &parameters->ccsigma))) {
     HD_ERROR_THROW("Error reading the charge cloud sigma!\n", status);
+  }
+
+  // Check if split events should be simulated.
+  else if ((status = PILGetInt("make_splits", &parameters->make_splits))) {
+    HD_ERROR_THROW("Error reading the flag for the generation of split events!\n", status);
   }
   if (status) return(status);
 

@@ -66,6 +66,9 @@ typedef struct {
       1. */
   float split_threshold;
 
+  /** Flag, whether split events are simulated or not. */
+  int make_splits;
+
 } FramestoreDetector;
 
 
@@ -76,6 +79,7 @@ struct FramestoreDetectorParameters {
   double integration_time;
   double t0;
   float split_threshold;
+  int make_splits;
 
   char* eventlist_filename;
   char* eventlist_template;  
