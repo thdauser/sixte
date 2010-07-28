@@ -99,7 +99,8 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
       // Insert a new line with the photon data:
       status = addPhoton2File(plf, &(*photon_list)->photon);
       if (EXIT_SUCCESS!=status) break;
-    } // END of: photon is inside the FOV?
+    } 
+    // END of: photon is inside the FOV?
 
     // Move to the next entry in the photon list and clear the current entry.
     pl_entry = (*photon_list)->next; // Buffer
@@ -107,7 +108,8 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
     *photon_list = pl_entry;
 
     if (status!=EXIT_SUCCESS) break;
-  } // END of scanning the photon list.
+  } 
+  // END of scanning the photon list.
 
   return(status);
 }
