@@ -16,7 +16,7 @@ struct SourceImagePixel {
 /** Object containing the extended source image from one FITS image extension. */
 typedef struct {
   /** Pixel probability distribution. */
-  float** pixel;
+  double** pixel;
 
   /** If this flag is set (1), the SourceImage pixels contain a
       normalized probability distribution. If not (0), the pixels

@@ -38,7 +38,7 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
   if (NULL==si) return(si);
 
   // Allocate memory.
-  si->pixel=(float**)malloc(sip->naxis1*sizeof(float*));
+  si->pixel=(double**)malloc(sip->naxis1*sizeof(double*));
   if (NULL==si->pixel) {
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: could not allocate memory to store "
@@ -48,7 +48,7 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
   si->naxis1 = sip->naxis1;
   int xcount, ycount;
   for(xcount=0; xcount<si->naxis1; xcount++) {
-    si->pixel[xcount]=(float*)malloc(sip->naxis2*sizeof(float));
+    si->pixel[xcount]=(double*)malloc(sip->naxis2*sizeof(double));
     if (NULL==si->pixel[xcount]) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: could not allocate memory to store "
@@ -100,7 +100,7 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 {
   SourceImage* si=NULL;
-  float* input_buffer=NULL;
+  double* input_buffer=NULL;
   char msg[MAXMSG];
 
   do { // Beginning of ERROR handling loop
@@ -167,11 +167,11 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 
 
     // Allocate memory for the pixels of the image:
-    si->pixel = (float**)malloc(si->naxis1*sizeof(float*));
+    si->pixel = (double**)malloc(si->naxis1*sizeof(double*));
     if (si->pixel!=NULL) {
       int count;
       for(count=0; (count<si->naxis1)&&(*status==EXIT_SUCCESS); count++) {
-	si->pixel[count] = (float*)malloc(si->naxis2*sizeof(float));
+	si->pixel[count] = (double*)malloc(si->naxis2*sizeof(double));
 	if(si->pixel[count]==NULL) {
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory for storing the "
@@ -187,7 +187,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     } 
     
     // Allocate memory for input buffer (1D array):
-    input_buffer=(float*)malloc(si->naxis1*si->naxis2*sizeof(float));
+    input_buffer=(double*)malloc(si->naxis1*si->naxis2*sizeof(double));
     if(input_buffer==NULL) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: could not allocate memory for storing the "
@@ -204,7 +204,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     //                |--|--> FITS coordinates start at (1,1)
     long lpixel[2] = {si->naxis1, si->naxis2}; // upper right corner
     long inc[2] = {1, 1};
-    if (fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value, 
+    if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value, 
 			 input_buffer, &anynul, status)) break;
 
     
@@ -247,7 +247,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 void saveSourceImage(SourceImage* si, char* filename, int* status)
 {
   fitsfile *fptr=NULL;
-  float *image1d=NULL;
+  double *image1d=NULL;
 
   // Print information to STDOUT.
   char msg[MAXMSG];
@@ -264,7 +264,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
 
     // Allocate memory for the 1-dimensional image buffer (required for
     // output to FITS file).
-    image1d = (float*)malloc(si->naxis1*si->naxis2*sizeof(float));
+    image1d = (double*)malloc(si->naxis1*si->naxis2*sizeof(double));
     if (!image1d) {
       *status = EXIT_FAILURE;
       HD_ERROR_THROW("Error allocating memory!\n", *status);
@@ -289,7 +289,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
     
     // Create an image in the FITS-file (primary HDU):
     long naxes[2] = {(long)(si->naxis1), (long)(si->naxis2)};
-    if (fits_create_img(fptr, FLOAT_IMG, 2, naxes, status)) break;
+    if (fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status)) break;
     //                                   |-> naxis
     //    int hdutype;
     if (fits_movabs_hdu(fptr, 1, NULL, status)) break;
@@ -333,7 +333,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
     //                |--|--> FITS coordinates start at (1,1)
     // Upper right corner.
     long lpixel[2] = {si->naxis1, si->naxis2}; 
-    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, image1d, status);
+    fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, image1d, status);
 
   } while (0); // END of ERROR handling loop
 
