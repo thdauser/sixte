@@ -75,14 +75,14 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
 					&status);
     if (EXIT_SUCCESS!=status) break;
 
-    // Compare the photon direction to the unit vector specifiing the 
+    // Compare the photon direction to the unit vector specifying the 
     // direction of the telescope axis:
     if (check_fov(&(*photon_list)->photon.direction,
 		  &telescope.nz, fov_min_align)==0) {
       // Photon is inside the FOV!
 
       // Add the photon to the photon list file:
-      // Rescale from [rad] -> [deg]:
+      // Convert from [rad] -> [deg]:
       (*photon_list)->photon.ra *= 180./M_PI;
       (*photon_list)->photon.dec*= 180./M_PI;
       // Determine the right position to insert the photon:

@@ -67,8 +67,8 @@ struct RMF* loadRMF(char* filename, int* status)
 
 #ifdef NORMALIZE_RMF
   // Normalize the RMF:
-  headas_printf("### Warning: RSP/RMF is explicitly normalized! ###\n");
-  headas_printf("### ARF contributions must be contained in the input spectrum!\n");
+  headas_printf("### Warning: RSP/RMF is explicitly normalized!                 ###\n");
+  headas_printf("### ARF contributions must be contained in the input spectrum! ###\n");
   NormalizeRMF(rmf);
 #else
   // Check if the RSP file contains matrix rows with a sum of more than 1.
