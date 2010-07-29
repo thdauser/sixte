@@ -6,13 +6,6 @@
 #include "spectrum.h"
 
 
-/** One pixel in the extended SourceImage. */
-/*
-struct SourceImagePixel {
-  float rate; //< Photon rate in this pixel
-};
-*/
-
 /** Object containing the extended source image from one FITS image extension. */
 typedef struct {
   /** Pixel probability distribution. */
@@ -26,7 +19,7 @@ typedef struct {
   /** Total photon rate of the entire SourceImage. This is the sum of
       the pixels read from the FITS file. In the computer memory the
       image is normalized to 1. */
-  float total_rate;
+  double total_rate;
 
   /** Time of the last photon emitted from this SourceImage. */
   double t_last_photon;
