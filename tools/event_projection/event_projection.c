@@ -89,14 +89,6 @@ int event_projection_main() {
       break;
     }
 
-    // Detector width:
-    int nxdim, nydim;
-    if (fits_read_key(eventlistfile.generic.fptr, TINT, "NXDIM", 
-		      &nxdim, comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TINT, "NYDIM", 
-		      &nydim, comment, &status)) break;
-    headas_chat(5, "NXDIM: %d, NYDIM: %d\n", nxdim, nydim);
-
     // Read WCS header keywords for the sky coordinates.
     char keyword[MAXMSG];
     // The "X" column.
@@ -129,6 +121,13 @@ int event_projection_main() {
 		      comment, &status)) break;
     headas_chat(5, "pixelwidth: %.3lf mum x %.3lf mum\n",
 		det_tcdltx*1.e6, det_tcdlty*1.e6);
+    // Detector width:
+    int nxdim, nydim;
+    if (fits_read_key(eventlistfile.generic.fptr, TINT, "NXDIM", 
+		      &nxdim, comment, &status)) break;
+    if (fits_read_key(eventlistfile.generic.fptr, TINT, "NYDIM", 
+		      &nydim, comment, &status)) break;
+    headas_chat(5, "NXDIM: %d, NYDIM: %d\n", nxdim, nydim);
 
     // Get the satellite catalog with the telescope attitude data:
     if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,

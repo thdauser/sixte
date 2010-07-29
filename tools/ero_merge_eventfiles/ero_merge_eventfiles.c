@@ -85,8 +85,10 @@ int ero_merge_eventfiles_main() {
       double tcrvlx, tcdltx, tcrpxx;
       double tcrvly, tcdlty, tcrpxy;
       // Detector WCS keywords.
+      double tcrpxrawx, tcrpxrawy;
       double tcdltrawx, tcdltrawy;
-
+      double pixlen_x, pixlen_y;
+      int nxdim, nydim;
     } hkeys;
     // Read from the first input event file and write to the output file.
     char comment[MAXMSG];
@@ -140,6 +142,36 @@ int ero_merge_eventfiles_main() {
     if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, keyword, &hkeys.tcdltrawy,
 		      comment, &status)) break;
     if (fits_update_key(outputfile.generic.fptr, TDOUBLE, keyword, &hkeys.tcdltrawy,
+			comment, &status)) break;
+
+    sprintf(keyword, "TCRPX%d", inputfiles[0].crawx);
+    if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, keyword, &hkeys.tcrpxrawx,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TDOUBLE, keyword, &hkeys.tcrpxrawx,
+			comment, &status)) break;
+
+    sprintf(keyword, "TCRPX%d", inputfiles[0].crawy);
+    if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, keyword, &hkeys.tcrpxrawy,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TDOUBLE, keyword, &hkeys.tcrpxrawy,
+			comment, &status)) break;
+
+    if (fits_read_key(inputfiles[0].generic.fptr, TINT, "NXDIM", &hkeys.nxdim,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TINT, "NXDIM", &hkeys.nxdim,
+			comment, &status)) break;
+    if (fits_read_key(inputfiles[0].generic.fptr, TINT, "NYDIM", &hkeys.nydim,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TINT, "NYDIM", &hkeys.nydim,
+			comment, &status)) break;
+
+    if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, "PIXLEN_X", &hkeys.pixlen_x,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TDOUBLE, "PIXLEN_X", &hkeys.pixlen_x,
+			comment, &status)) break;
+    if (fits_read_key(inputfiles[0].generic.fptr, TDOUBLE, "PIXLEN_Y", &hkeys.pixlen_y,
+		      comment, &status)) break;
+    if (fits_update_key(outputfile.generic.fptr, TDOUBLE, "PIXLEN_Y", &hkeys.pixlen_y,
 			comment, &status)) break;
     // END of copying header keywords.
 
