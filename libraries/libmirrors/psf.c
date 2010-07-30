@@ -34,6 +34,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
   }
 
   // Perform a linear interpolation between the next fitting PSF images.
+  // (Randomly choose one of the neighboring data sets.)
   if (index1 < psf->nenergies-1) {
     if (sixt_get_random_number() < (photon.energy-psf->energies[index1])/
 	(psf->energies[index1+1]-psf->energies[index1])) {
@@ -94,7 +95,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
   // Search for the y coordinate:
   high = psf_item->naxis2-1;
   low = 0;
-  while (high-low > 1) {
+  while (high > low) {
     mid = (low+high)/2;
     if (psf_item->data[x1][mid] < rnd) {
       low = mid+1;

@@ -18,7 +18,7 @@
 /** Stores the PSF data for one particular off-axis angle and one
     particular energy. */
 typedef struct {
-  double** data;   /**< pointer to PSF data array [x][y]. */
+  double** data;   /**< Pointer to the PSF data array [x][y]. */
 
   int naxis1, naxis2;    /**< Width of the image [pixel]. */
   double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
@@ -50,9 +50,9 @@ typedef struct {
 } PSF;
 
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 // Function declarations
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 
 
 /** Constructor for the PSF data structure. Reads PSF data from a FITS
