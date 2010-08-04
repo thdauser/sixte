@@ -13,7 +13,6 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
   // Get a random number to determine a random hitting position
   double rnd = sixt_get_random_number();
-  //  if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
   if (rnd > get_Vignetting_Factor(vignetting, photon.energy, theta, phi)) {
     // The photon does not hit the detector at all (e.g. it is absorbed).
     return(0);
@@ -105,7 +104,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
   }
   y1 = low;
   // Now x1 and y1 have pixel positions [integer pixel].
- 
+
   // Determine the distance ([m]) of the central reference position from the optical axis
   // according to the off-axis angle theta:
   double distance = telescope.focal_length * tan(theta); // TODO *(-1) ???
@@ -119,7 +118,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
     ((double)y1 -psf_item->crpix2 +0.5 +sixt_get_random_number())*psf_item->cdelt2 
     + psf_item->crval2; // [m]
 
-  // Rotate the postition [m] according to the azimuth angle.
+  // Rotate the postition [m] according to the azimuthal angle.
   position->x = cos(phi)*x2 - sin(phi)*y2;
   position->y = sin(phi)*x2 + cos(phi)*y2;
 
@@ -128,7 +127,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
 
 
-void free_psf(PSF *psf /**< Pointer to the PSF data structure. */)
+void free_psf(PSF *psf)
 {
   if (NULL!=psf) {
     if (NULL!=psf->data) {

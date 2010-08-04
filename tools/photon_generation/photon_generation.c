@@ -82,9 +82,6 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
       // Photon is inside the FOV!
 
       // Add the photon to the photon list file:
-      // Convert from [rad] -> [deg]:
-      (*photon_list)->photon.ra *= 180./M_PI;
-      (*photon_list)->photon.dec*= 180./M_PI;
       // Determine the right position to insert the photon:
       while (plf->row<plf->nrows) {
 	// Read the time from the file.

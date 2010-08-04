@@ -48,9 +48,11 @@ int photon_imaging_main() {
     // (angle(x0,source) <= 1/2 * diameter)
     const double fov_min_align = cos(telescope.fov_diameter/2.); 
     
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
-    HDmtInit(SIXT_HD_RANDOM_SEED);
+    // Initialize HEADAS random number generator. Add the telescope number
+    // to the standard seed in order to avoid getting the same random number
+    // sequence for all the 7 telescopes. This results in problems due to
+    // event correlation.
+    HDmtInit(SIXT_HD_RANDOM_SEED+parameters.telescope);
 
     // Open the FITS file with the input photon list:
     status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
@@ -117,12 +119,6 @@ int photon_imaging_main() {
       // Check whether we are still within the requested time interval.
       if (photon.time > parameters.t0 + parameters.timespan) break;
 
-      // Rescale from [deg] -> [rad]
-      photon.ra  = photon.ra *M_PI/180.;
-      photon.dec = photon.dec*M_PI/180.;
-      // Determine a unit vector pointing in the direction of the photon.
-      photon.direction = unit_vector(photon.ra, photon.dec);
-
       // Check whether the photon is inside the FOV.
       // First determine telescope pointing direction at the current time.
       telescope.nz = getTelescopePointing(ac, photon.time, &status);
@@ -133,15 +129,15 @@ int photon_imaging_main() {
       if (check_fov(&photon.direction, &telescope.nz, fov_min_align)==0) {
 	// Photon is inside the FOV!
 	
-	// Determine telescope data like direction etc. (attitude).
-	// The telescope coordinate system consists of a nx, ny, and nz axis.
-	// The nz axis is perpendicular to the detector plane and pointing along
-	// the telescope direction. The nx axis is align along the detector 
-	// x-direction, which is identical to the detector COLUMN.
-	// The ny axis ix pointing along the y-direction of the detector,
-	// which is also referred to as ROW.
+	// Determine telescope data like pointing direction (attitude) etc.
+	// The telescope coordinate system consists of an x-, y-, and z-axis.
+	// The z-axis is perpendicular to the detector plane and pointing along
+	// the telescope direction. The x-axis is aligned along the detector 
+	// x-direction, which is identical to the detector RAWX/COLUMN.
+	// The y-axis is pointing along the y-direction of the detector,
+	// which is also referred to as RAWY/ROW.
 
-	// Determine the current nx: perpendicular to telescope axis nz
+	// Determine the vector nx: perpendicular to telescope x-axis
 	// and in the direction of the satellite motion.
 	telescope.nx = 
 	  normalize_vector(interpolate_vec(ac->entry[ac->current_entry].nx, 
@@ -160,7 +156,7 @@ int photon_imaging_main() {
 
 
 	// The third axis of the coordinate system ny is perpendicular 
-	// to telescope axis nz and nx:
+	// to the telescope axis nz and nx:
 	telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
 	
 	// Determine the photon impact position on the detector (in [m]):
@@ -192,7 +188,7 @@ int photon_imaging_main() {
 	} // END get_psf_pos(...)
       } // End of FOV check.
     } // END of scanning LOOP over the photon list.
-  } while(0);  // END of the error handling loop.
+  } while(0); // END of the error handling loop.
 
 
   // --- cleaning up ---
@@ -221,8 +217,7 @@ int photon_imaging_main() {
 int photon_imaging_getpar(struct Parameters* parameters,
 			  struct Telescope *telescope)
 {
-  int status=EXIT_SUCCESS; // error status
-
+  int status=EXIT_SUCCESS; // Error status.
 
   // Get the filename of the input photon list (FITS file)
   if ((status = PILGetFname("photonlist_filename", 
@@ -263,6 +258,11 @@ int photon_imaging_getpar(struct Parameters* parameters,
   // Read the focal length [m]
   else if ((status = PILGetReal("focal_length", &telescope->focal_length))) {
     HD_ERROR_THROW("Error reading the focal length!\n", status);
+  }
+
+  // Read the telescope number (0 for TRoPIC, 1-7 for eROSITA).
+  else if ((status = PILGetInt("telescope", &parameters->telescope))) {
+    HD_ERROR_THROW("Error reading the telescope number!\n", status);
   }
   if (EXIT_SUCCESS!=status) return(status);
 

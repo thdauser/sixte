@@ -33,7 +33,8 @@ typedef struct {
   double time;  /**< Real time, when the photon is falling on the detector (in [s]). */
   float energy; /**< Photon energy in [keV]. */
 
-  double ra, dec; /**< Right ascension and declination of photon position [rad]. */
+  /** Right ascension and declination of photon position [rad]. */
+  double ra, dec; 
 
   // REMOVE (obsolete)
   Vector direction; // direction from which the photon originates 

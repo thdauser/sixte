@@ -28,6 +28,9 @@ struct Parameters {
   char impactlist_filename[MAXMSG]; // output: impact list
   char impactlist_template[MAXMSG];
 
+  /** Telescope number */
+  int telescope;
+
   double t0;        // starting time of the simulation
   double timespan;  // time span of the simulation
 };

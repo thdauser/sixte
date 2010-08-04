@@ -120,7 +120,9 @@ int ero_split_photonfile_main() {
       
       // Get a random file index [0-6].
       rnd_file = (int)(sixt_get_random_number()*7.);
-      
+      assert(rnd_file>=0);
+      assert(rnd_file<=6);
+
       // Append the photon to the randomly chosen file.
       status = addPhoton2File(&outputfiles[rnd_file], &photon);
       if (status!=EXIT_SUCCESS) break;

@@ -136,13 +136,19 @@ int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
   if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, plf->row, 1, 1, 
 		    &ph->dec, &ph->dec, &anynul, &status)) return(status);
 
-  
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: reading from event list failed!\n", status);
     return(status);
   }
+
+  // Convert from [deg] to [rad].
+  ph->ra  *= M_PI/180.;
+  ph->dec *= M_PI/180.;
+  
+  // Determine the unit vector pointing in the direction of the photon.
+  ph->direction = unit_vector(ph->ra, ph->dec);
 
   return(status);
 }
@@ -152,6 +158,10 @@ int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
 int addPhoton2File(PhotonListFile* plf, Photon* ph)
 {
   int status=EXIT_SUCCESS;
+
+  // Convert from [rad] -> [deg]:
+  double ra  = ph->ra  * 180./M_PI;
+  double dec = ph->dec * 180./M_PI;
 
   // Insert a new, empty row to the table:
   if (fits_insert_rows(plf->fptr, plf->row, 1, &status)) return(status);
@@ -163,9 +173,9 @@ int addPhoton2File(PhotonListFile* plf, Photon* ph)
   if (fits_write_col(plf->fptr, TFLOAT, plf->cenergy, 
 		     plf->row, 1, 1, &ph->energy, &status)) return(status);
   if (fits_write_col(plf->fptr, TDOUBLE, plf->cra, 
-		     plf->row, 1, 1, &ph->ra, &status)) return(status);
+		     plf->row, 1, 1, &ra, &status)) return(status);
   if (fits_write_col(plf->fptr, TDOUBLE, plf->cdec, 
-		     plf->row, 1, 1, &ph->dec, &status)) return(status);
+		     plf->row, 1, 1, &dec, &status)) return(status);
 
   return(status);
 }
