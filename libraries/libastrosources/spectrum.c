@@ -1,18 +1,48 @@
 #include "spectrum.h"
 
 
-int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
+int loadSpectra(fitsfile* fptr, SpectrumStore* store)
 {
   char comment[MAXMSG]; // String buffers.
   int status=EXIT_SUCCESS;
 
+  // Flag whether the spectral name have to be read from the header (1) 
+  // or from a binary extension (0).
+  int fheader=0; 
+  // Number of the current HDU. This has to be determined before shifting
+  // the FITS file pointer to the spectrum binary table extension, such 
+  // that the original HDU can be restored afterwards.
+  int original_hdu=-1;
+
   do { // Beginning of Error Handling Loop.
 
     // Try to find out the number of SPECTRA from the FITS header of the source file.
-    if (fits_read_key(source_fptr, TLONG, "NSPECTRA", &store->nspectra, comment, 
-		      &status)) break;
+    // First set an error mark on the FITS error stack in order to be able 
+    // to delete error messages, if the keyword "NSPECTRA" does not exist.
+    fits_write_errmark();
+    fits_read_key(fptr, TLONG, "NSPECTRA", &store->nspectra, comment, 
+		  &status);
+    if (0==status) {
+      // The filenames of the spectra are stored in the header.
+      fheader=1;
 
-    // Check if the point source file header specifies any spectra.
+    } else if (KEY_NO_EXIST==status) { //((VALUE_UNDEFINED==status)||
+      // The keyword "NSPECTRA" does not exist.
+      fheader=0;
+      // Clear the error message that the header keyword "NSPECTRA" does not exist.
+      fits_clear_errmsg();
+      fits_clear_errmark();
+
+      // Get Number of lines in the binary table extension.
+      if (fits_get_hdu_num(fptr, &original_hdu)) break;
+      if (fits_movnam_hdu(fptr, BINARY_TBL, "SPECTRA", 0, &status)) break;
+      if (fits_get_num_rows(fptr, &store->nspectra, &status)) break;
+
+    } else { // Other error.
+      break;
+    }
+
+    // Check if the point source file specifies any spectra.
     if (store->nspectra<1) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: No spectra specified in point source catalog!\n", status);
@@ -36,9 +66,17 @@ int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
     // Load the spectra from the PHA files.
     char filename[MAXMSG], key[MAXMSG];
     for (count=0; (EXIT_SUCCESS==status)&&(count<store->nspectra); count++) {
-      // Determine the name of the source file from the FITS header.
-      sprintf(key, "SPEC%04ld", count+1);
-      if (fits_read_key(source_fptr, TSTRING, key, filename, comment, &status)) break;
+
+      // If keywords are stored in header or in binary table extension.
+      if (1==fheader) {
+	// Determine the name of the source file from the FITS header.
+	sprintf(key, "SPEC%04ld", count+1);
+	if (fits_read_key(fptr, TSTRING, key, filename, comment, &status)) break;
+      } else {
+	// Determine the name of the source file from the binary table extension.
+	int anynul;
+	if (fits_read_col(fptr, TSTRING, 1, count+1, 1, 1, "", key, &anynul, &status)) break;
+      }
 
       // Load the spectrum from the named PHA file and add it to the SpectrumStore.
       status = loadSpectrum(&store->spectrum[count], filename);
@@ -47,6 +85,12 @@ int loadSpectra(fitsfile* source_fptr, SpectrumStore* store)
     if (EXIT_SUCCESS!=status) break;
 
   } while(0); // End of Error Handling Loop.
+
+  // Restore the original HDU.
+  if (original_hdu>=0) {
+    int type, status;
+    if (fits_movabs_hdu(fptr, original_hdu, &type, &status)) return(status);
+  }
 
   return(status);
 }
