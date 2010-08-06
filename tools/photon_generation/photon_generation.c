@@ -136,7 +136,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   // preselection band along the orbit. The width of the
   // preselection band is chosen to be some particular factor times
   // the diameter of the FoV. (angle(n,source) > 90-bandwidth)
-  const double preselection_factor = 2.5;
+  const double preselection_factor = 3.;
   const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
 
   // Normalized vector perpendicular to the orbital plane,
@@ -233,7 +233,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   // preselection band along the orbit. The width of the
   // preselection band is chosen to be a particular factor times the
   // diameter of the FoV. (angle(n,source) > 90-bandwidth)
-  const double preselection_factor = 2.5;
+  const double preselection_factor = 3.;
   const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
 
   
