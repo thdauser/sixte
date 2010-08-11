@@ -47,6 +47,9 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
 
   int status=EXIT_SUCCESS;
 
+  // Check if the photon rate of the source is positive.
+  if (ps->rate<=0.) return(status);
+
   // If there is no photon time stored so far, set the current time.
   if (ps->t_last_photon <= time) {
     ps->t_last_photon = time;
