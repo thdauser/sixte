@@ -190,9 +190,11 @@ int loadSpectrum(Spectrum* spectrum, char* filename)
 
 void cleanupSpectrum(Spectrum* spectrum)
 {
-  if (NULL!=spectrum->rate) {
-    free(spectrum->rate);
-    spectrum->rate=NULL;
+  if (NULL!=spectrum) {
+    if (NULL!=spectrum->rate) {
+      free(spectrum->rate);
+      spectrum->rate=NULL;
+    }
   }
 }
 

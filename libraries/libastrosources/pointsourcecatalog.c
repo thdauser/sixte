@@ -176,7 +176,7 @@ void generateFoVPointSourcePhotons(PointSourceCatalog* psc,
 
   long count;
   for (count=0; count<psc->psl->nsources; count++) {
-    // Check if the Source is close to / within the FoV.
+    // Check if the source is close to / within the FoV.
     if(fabs(scalar_product(&psc->psl->sources[count].location, ref)) 
        > min_align) {
 

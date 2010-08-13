@@ -82,7 +82,7 @@ LinLightCurve* getLinLightCurve(long nvalues, int* status);
     LinLightCurve object. The memory for the LinLightCurve object is
     allocated by calling the standard constructor with the parameters
     (light curve length etc.) given in the FITS file. After reading
-    the light curve from the file it is scaled with the specifiec
+    the light curve from the file it is scaled with the specified
     source photon rate. A rate of 1. in the input light curve (column
     "RATE") means that this light curve bin after multiplication with
     the value of source_rate gives the full source photon rate given
