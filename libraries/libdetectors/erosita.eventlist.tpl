@@ -80,9 +80,11 @@ PIXLEN_Y        75.0
 	TTYPE#	RA              / Right Ascension (J2000)
 	TFORM#  J               / Format of column RA
 	TUNIT#  1e-6 deg        / Unit of column RA
+	TSCAL#  1e-6
 	TTYPE#	DEC             / Declination (J2000)
 	TFORM#  J               / Format of column DEC
 	TUNIT#  1e-6 deg        / Unit of column DEC
+	TSCAL#  1e-6
 	TTYPE#  X               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column X
 	TUNIT#  pixel           / Unit of column X

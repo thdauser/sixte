@@ -113,7 +113,7 @@ LinLightCurve* loadLinLightCurveFromFile(char* filename, double source_rate, int
       rate[row]=0.;
       if (fits_read_col(fptr, TDOUBLE, crate, row+1, 1, 1, &(rate[row]), &(rate[row]), 
 			&anynul, status)) break;
-      if (0.>=rate[row]) {
+      if (0.>rate[row]) {
 	*status=EXIT_FAILURE;	
 	HD_ERROR_THROW("Error: Rate in light curve must be greater than zero!\n", *status);
 	break;
