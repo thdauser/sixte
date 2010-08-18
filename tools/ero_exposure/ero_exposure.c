@@ -238,7 +238,7 @@ int eroexposure_main() {
 
     // Write WCS keywords to the FITS header of the newly created image.
     double buffer;
-    if (fits_update_key(fptr, TSTRING, "CTYPE1", "RA", "", &status)) break;   
+    if (fits_update_key(fptr, TSTRING, "CTYPE1", "RA---CAR", "", &status)) break;   
     if (fits_update_key(fptr, TSTRING, "CUNIT1", "deg", "", &status)) break;   
     buffer = rval1 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CRVAL1", &buffer, "", &status)) break;
@@ -247,7 +247,7 @@ int eroexposure_main() {
     buffer = delt1 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CDELT1", &buffer, "", &status)) break;
 
-    if (fits_update_key(fptr, TSTRING, "CTYPE2", "DEC", "", &status)) break;   
+    if (fits_update_key(fptr, TSTRING, "CTYPE2", "DEC--CAR", "", &status)) break;   
     if (fits_update_key(fptr, TSTRING, "CUNIT2", "deg", "", &status)) break;   
     buffer = rval2 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CRVAL2", &buffer, "", &status)) break;

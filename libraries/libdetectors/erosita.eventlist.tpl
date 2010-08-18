@@ -79,16 +79,16 @@ PIXLEN_Y        75.0
 	TCDLT#  7.5e-5
 	TTYPE#	RA              / Right Ascension (J2000)
 	TFORM#  J               / Format of column RA
-	TUNIT#  1e-6 deg        / Unit of column RA
+	TUNIT#  deg             / Unit of column RA
 	TSCAL#  1e-6
 	TTYPE#	DEC             / Declination (J2000)
 	TFORM#  J               / Format of column DEC
-	TUNIT#  1e-6 deg        / Unit of column DEC
+	TUNIT#  deg             / Unit of column DEC
 	TSCAL#  1e-6
 	TTYPE#  X               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column X
 	TUNIT#  pixel           / Unit of column X
-	TCTYP#	RA---TAN
+	TCTYP#	RA---CAR        / Plate carrée (cylindrical perspective)
 	TCUNI#	deg		/ WCS physical unit of X axis
 	TCRPX#	0.5		/ WCS X axis reference pixel
 	TCRVL#	0.		/ WCS coord. at X axis ref. pixel
@@ -96,7 +96,7 @@ PIXLEN_Y        75.0
 	TTYPE#  Y               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column Y
 	TUNIT#  pixel           / Unit of column Y
-	TCTYP#	DEC--TAN
+	TCTYP#	DEC--CAR        / Plate carrée (cylindrical perspective)
 	TCUNI#	deg		/ WCS physical unit of Y axis
 	TCRPX#	0.5		/ WCS Y axis reference pixel
 	TCRVL#	0.		/ WCS coord. at Y axis ref. pixel
