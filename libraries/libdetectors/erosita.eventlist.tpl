@@ -61,45 +61,45 @@ PIXLEN_Y        75.0
 	TTYPE#	ENERGY          / Calibrated event energy
 	TFORM#  E               / Format of column RAWX
 	TUNIT#  eV              / Unit of column RAWX
-	TTYPE#	RAWX            / Event X Position
+	TTYPE#  RAWX            / Event X Position
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX
-	TCTYP#	RAWX
-	TCUNI#	m
-	TCRPX#	192.5
-	TCRVL#	0.
+	TCTYP#  RAWX
+	TCUNI#  m
+	TCRPX#  192.5
+	TCRVL#  0.
 	TCDLT#  7.5e-5
-	TTYPE#	RAWY            / Event Y Position
+	TTYPE#  RAWY            / Event Y Position
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
-	TCTYP#	RAWY
-	TCUNI#	m
-	TCRPX#	192.5
-	TCRVL#	0.
+	TCTYP#  RAWY
+	TCUNI#  m
+	TCRPX#  192.5
+	TCRVL#  0.
 	TCDLT#  7.5e-5
-	TTYPE#	RA              / Right Ascension (J2000)
+	TTYPE#  RA              / Right Ascension (J2000)
 	TFORM#  J               / Format of column RA
 	TUNIT#  deg             / Unit of column RA
 	TSCAL#  1e-6
-	TTYPE#	DEC             / Declination (J2000)
+	TTYPE#  DEC             / Declination (J2000)
 	TFORM#  J               / Format of column DEC
 	TUNIT#  deg             / Unit of column DEC
 	TSCAL#  1e-6
 	TTYPE#  X               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column X
 	TUNIT#  pixel           / Unit of column X
-	TCTYP#	RA---CAR        / Plate carrée (cylindrical perspective)
-	TCUNI#	deg		/ WCS physical unit of X axis
-	TCRPX#	0.5		/ WCS X axis reference pixel
-	TCRVL#	0.		/ WCS coord. at X axis ref. pixel
+	TCTYP#  RA---CAR        / Plate carree (cylindrical perspective)
+	TCUNI#  deg		/ WCS physical unit of X axis
+	TCRPX#  0.5		/ WCS X axis reference pixel
+	TCRVL#  0.		/ WCS coord. at X axis ref. pixel
 	TCDLT#  1.38889e-05	/ WCS X increment at ref. pixel
 	TTYPE#  Y               / sky coordinates (pixel size 0.05'')
 	TFORM#  J               / Format of column Y
 	TUNIT#  pixel           / Unit of column Y
-	TCTYP#	DEC--CAR        / Plate carrée (cylindrical perspective)
-	TCUNI#	deg		/ WCS physical unit of Y axis
-	TCRPX#	0.5		/ WCS Y axis reference pixel
-	TCRVL#	0.		/ WCS coord. at Y axis ref. pixel
+	TCTYP#  DEC--CAR        / Plate carree (cylindrical perspective)
+	TCUNI#  deg		/ WCS physical unit of Y axis
+	TCRPX#  0.5		/ WCS Y axis reference pixel
+	TCRVL#  0.		/ WCS coord. at Y axis ref. pixel
 	TCDLT#  1.38889e-05	/ WCS Y increment at ref. pixel
 	TTYPE#  PAT_TYP         / Pattern Type
 	TFORM#  I		/ Format of column PAT_TYP
@@ -110,6 +110,6 @@ PIXLEN_Y        75.0
 	TTYPE#  MAX_PIX         / 
 	TFORM#  I               /
 	TUNIT#                  / 
-	TTYPE#	CCDNR		/ 0 for TRoPIC, 1-7 for eROSITA
-	TFORM#	B
+	TTYPE#  CCDNR		/ 0 for TRoPIC, 1-7 for eROSITA
+	TFORM#  B
 	TUNIT#	

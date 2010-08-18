@@ -16,7 +16,10 @@ int framestore_simulation_main() {
   FramestoreDetector detector;
 
   // Data structure to model the detector background.
-  UniformDetectorBackground background;
+  UniformDetectorBackground background = { 
+    .spectrum = { .NumberChannels=0,
+		  .rate=NULL }
+  };
 
   ImpactListFile impactlistfile;
   // WCS reference values for the position of the orginial input data.

@@ -19,7 +19,7 @@ int initFramestoreDetector(FramestoreDetector* fd,
   // Init the generic detector properties like the RMF.
   status = initGenericDetector(&fd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
-#ifdef EXPONENTIAL_SPLITS
+#ifdef FD_EXPONENTIAL_SPLITS
   headas_chat(5, "exponential model (by Konrad Dennerl) for split events\n");
 #else
   headas_chat(5, "Gaussian charge cloud model for split events\n");
@@ -313,7 +313,7 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
       double fraction[4];
     
       // Determine the affected detector pixels (including split partners).
-#ifdef EXPONENTIAL_SPLITS
+#ifdef FD_EXPONENTIAL_SPLITS
       int npixels = getSquarePixelsExponentialSplits(&fd->pixels, &(fd->generic.ecc), 
 						     impact->position, x, y, fraction);
 #else
