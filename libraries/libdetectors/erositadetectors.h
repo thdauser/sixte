@@ -1,3 +1,8 @@
+//        WARNING  
+// This data structure is obsolete !!
+// For the simulation of the eROSITA detectors the FramestoreDetector 
+// data structure should be used!
+
 #ifndef EROSITADETECTORS_H
 #define EROSITADETECTORS_H 1
 

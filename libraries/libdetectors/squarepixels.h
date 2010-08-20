@@ -136,6 +136,10 @@ void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits);
     do this for all surrounding neighbors with a valid flag > 0. */
 void SPsetInvalidFlag(SquarePixels* sp, int x, int y);
 
+/** Add a charge [keV] (!) to a pixel in the SquarePixel array. Check
+    if the pixel is a valid pixel. If not simply do nothing. */
+inline void SPaddCharge(SquarePixels* sp, int x, int y, float charge);
+
 
 #endif /* SQUARE_PIXELS_H */
 

@@ -10,6 +10,9 @@
 ////////////////////////////////////
 /** Main procedure. */
 int erosita_simulation_main() {
+  printf("This program is obsolete!\n");
+  return(EXIT_FAILURE);
+
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
   // Detector data structure (containing the pixel array, its width, ...).

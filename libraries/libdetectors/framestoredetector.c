@@ -116,7 +116,7 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
   int status = EXIT_SUCCESS;
 
 
-  // Find the events in the pixel array.
+  // Find the events above the event threshold in the pixel array.
   for (x=0; x<fd->pixels.xwidth; x++) {
     for (y=0; y<fd->pixels.ywidth; y++) {
       
@@ -269,7 +269,7 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
     // END of loop over x
   } 
   // END of loop over y
-  // END of find split patterns.
+  // END of finding split patterns.
 
   return(status);
 }
@@ -324,12 +324,9 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
       // Add the charge created by the photon to the affected detector pixels.
       int count;
       for (count=0; count<npixels; count++) {
-	if (x[count] != INVALID_PIXEL) {
-	  fd->pixels.array[x[count]][y[count]].charge += 
-	    charge * fraction[count];
-	  //   |      |-> charge fraction due to split events
-	  //   |-> charge created by incident photon
-	}
+	SPaddCharge(&fd->pixels, x[count], y[count], charge*fraction[count]);
+	  //    charge created by incident photon   <--|      |
+	  //    charge fraction due to split events <---------|
       }
 
     } else {
@@ -339,7 +336,7 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
       int x, y;
       if (1==getSquarePixel(&fd->pixels, impact->position, &x, &y)) {
 	// Add the charge created by the photon to the affected detector pixel.
-	fd->pixels.array[x][y].charge += charge;
+	SPaddCharge(&fd->pixels, x, y, charge);
       }
     }
     // END of checking for split generation.

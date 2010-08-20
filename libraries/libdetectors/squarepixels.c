@@ -414,3 +414,17 @@ void SPsetInvalidFlag(SquarePixels* sp, int x, int y)
   }
 }
 
+
+inline void SPaddCharge(SquarePixels* sp, int x, int y, float charge) {
+  if ((x >= 0) && (x < sp->xwidth) && (y >= 0) && (y < sp->ywidth)) {
+    // Add the charge [keV] to the pixel.
+    sp->array[x][y].charge += charge;
+
+    // Set the read-out flag for this line. That means that the line has
+    // been affected by an event since the last read-out cycle. Some kinds
+    // of detector models require this information to determine, whether 
+    // it is necessary to read out the line in the next cycle.
+    sp->line2readout[y] = 1;
+  }
+}
+

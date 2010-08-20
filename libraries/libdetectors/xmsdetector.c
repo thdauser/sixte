@@ -139,10 +139,14 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
 	  // Add event to event file.
 	  status = addXMSEvent2File(&xd->eventlist, &event);
 	  if (EXIT_SUCCESS!=status) return(status);
-	} // END Check for thresholds.
-      }// END if valid pixel
-    } // END of loop over all affected pixels.
-  } // END if(charge>0.)
+	} 
+	// END Check for thresholds.
+      }
+      // END if valid pixel
+    } 
+    // END of loop over all affected pixels.
+  } 
+  // END if(charge>0.)
 
   return(status);
 }

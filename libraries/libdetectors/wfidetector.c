@@ -94,19 +94,12 @@ int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
     // Add the charge created by the photon to the affected detector pixels.
     int count;
     for (count=0; count<npixels; count++) {
-      if (x[count] != INVALID_PIXEL) {
-	wd->pixels.array[x[count]][y[count]].charge += 
-	  charge * fraction[count] * 
-	  // |      |-> charge fraction due to split events
-	  // |-> charge created by incident photon
-	  WFIDetectorIsSensitive(y[count], wd, impact->time);
-	  // |-> "1" if pixel can measure charge, "0" else
-	
-	// Set the read-out flag for this line. That means that the line has
-	// been affected by an event since the last read-out cycle. So it
-	// has to be read out in the next one again.
-	wd->pixels.line2readout[y[count]] = 1;
-      }
+      SPaddCharge(&wd->pixels, x[count], y[count], 
+		  charge * fraction[count] * 
+		  // |      |-> charge fraction due to split events
+		  // |-> charge created by incident photon
+		  WFIDetectorIsSensitive(y[count], wd, impact->time));
+		  // |-> "1" if pixel can measure charge, "0" else
     }
   } // END if(charge>0.)
 
@@ -203,7 +196,7 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 	      (wd->pixels.array[x][wd->readout_lines[lineindex]].charge>=
 	       wd->generic.energy_threshold)) { 
 	    
-	    // TODOO REMOVE
+	    // TODO REMOVE
 	    assert(event.pha >= 0);
 	    // Maybe: if (event.pha < 0) continue;
 	    
