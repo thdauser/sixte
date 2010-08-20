@@ -35,7 +35,7 @@ void freeCoMaDetector(CoMaDetector* det)
 {
   if (NULL!=det) {
     // Call the clean-up routines of the underlying data structures.
-    destroySquarePixels(det->pixels);
+    destroySquarePixels(&det->pixels);
     closeCoMaEventFile(det->eventfile);
     // Free the allocated memory.
     free(det);

@@ -243,7 +243,7 @@ int framestore_simulation_main() {
   status += closeImpactListFile(&impactlistfile);
 
   // Release memory of detector.
-  status+=destroyFramestoreDetector(fd);
+  status+=destroyFramestoreDetector(&fd);
 
   // Release memory of background data structure.
   status+=cleanupUniformDetectorBackground(&background);

@@ -36,8 +36,8 @@ int cleanupXMSDetector(XMSDetector* xd)
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  destroySquarePixels(xd->pixels_inner);
-  destroySquarePixels(xd->pixels_outer);
+  destroySquarePixels(&xd->pixels_inner);
+  destroySquarePixels(&xd->pixels_outer);
   cleanupGenericDetector(&xd->generic_inner);
   cleanupGenericDetector(&xd->generic_outer);
   status = closeXMSEventFile(&xd->eventlist);
