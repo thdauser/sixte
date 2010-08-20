@@ -13,7 +13,7 @@ int framestore_simulation_main() {
   struct Parameters parameters; // Containing all programm parameters read by PIL
 
   // Detector data structure (containing the pixel array, its width, ...).
-  FramestoreDetector detector;
+  FramestoreDetector* fd;
 
   // Data structure to model the detector background.
   UniformDetectorBackground background = { 
@@ -85,59 +85,59 @@ int framestore_simulation_main() {
       .split_threshold    = parameters.split_threshold,
       .make_splits        = parameters.make_splits
     };
-    status=initFramestoreDetector(&detector, &fdparameters);
+    fd=newFramestoreDetector(&fdparameters, &status);
     if(EXIT_SUCCESS!=status) break;
     // END of DETECTOR CONFIGURATION SETUP    
 
     // Update Header keywords.
-    if (fits_update_key(detector.eventlist.generic.fptr, TINT, "NXDIM", 
+    if (fits_update_key(fd->eventlist.generic.fptr, TINT, "NXDIM", 
 			&parameters.width, "", &status)) break;
-    if (fits_update_key(detector.eventlist.generic.fptr, TINT, "NYDIM", 
+    if (fits_update_key(fd->eventlist.generic.fptr, TINT, "NYDIM", 
 			&parameters.width, "", &status)) break;
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, "PIXLEN_X", 
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, "PIXLEN_X", 
 			&parameters.pixelwidth, "", &status)) break;
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, "PIXLEN_Y", 
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, "PIXLEN_Y", 
 			&parameters.pixelwidth, "", &status)) break;
 
     // Add important additional HEADER keywords to the event list.
     char keyword[MAXMSG];
     char msg[MAXMSG];
-    sprintf(keyword, "TCRVL%d", detector.eventlist.cskyx);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+    sprintf(keyword, "TCRVL%d", fd->eventlist.cskyx);
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, keyword, 
 			&refxcrvl, "", &status)) break;
-    sprintf(keyword, "TCRVL%d", detector.eventlist.cskyy);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+    sprintf(keyword, "TCRVL%d", fd->eventlist.cskyy);
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, keyword, 
 			&refycrvl, "", &status)) break;
 
 
-    sprintf(keyword, "TCDLT%d", detector.eventlist.crawx);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+    sprintf(keyword, "TCDLT%d", fd->eventlist.crawx);
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, keyword, 
 			&parameters.pixelwidth, "", &status)) break;
     sprintf(msg, " update %s to %e\n", keyword, parameters.pixelwidth);
     headas_chat(5, msg);
 
-    sprintf(keyword, "TCDLT%d", detector.eventlist.crawy);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+    sprintf(keyword, "TCDLT%d", fd->eventlist.crawy);
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, keyword, 
 			&parameters.pixelwidth, "", &status)) break;
     sprintf(msg, " update %s to %e\n", keyword, parameters.pixelwidth);
     headas_chat(5, msg);
 
 
     double buffer=parameters.width*0.5 + 0.5;
-    sprintf(keyword, "TCRPX%d", detector.eventlist.crawx);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+    sprintf(keyword, "TCRPX%d", fd->eventlist.crawx);
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, keyword, 
 			&buffer, "", &status)) break;
     sprintf(msg, " update %s to %e\n", keyword, buffer);
     headas_chat(5, msg);
 
-    sprintf(keyword, "TCRPX%d", detector.eventlist.crawy);
-    if (fits_update_key(detector.eventlist.generic.fptr, TDOUBLE, keyword, 
+    sprintf(keyword, "TCRPX%d", fd->eventlist.crawy);
+    if (fits_update_key(fd->eventlist.generic.fptr, TDOUBLE, keyword, 
 			&buffer, "", &status)) break;
     sprintf(msg, " update %s to %e\n", keyword, buffer);
     headas_chat(5, msg);
 
     // Store the filename of the attitude file in the FITS header.
-    if (fits_update_key(detector.eventlist.generic.fptr, TSTRING, "ATTITUDE", 
+    if (fits_update_key(fd->eventlist.generic.fptr, TSTRING, "ATTITUDE", 
 			attitude_filename, "name of the attitude FITS file", 
 			&status)) break;
 
@@ -182,11 +182,11 @@ int framestore_simulation_main() {
 	  // Fill up the time in the 60s after the last photon impact with background events.
 	  while (background.nextImpact.time-former_impact_time<60.) {
 	  // Add the background event to the CCD array.
-	    status=addImpact2FramestoreDetector(&detector, &background.nextImpact);
+	    status=addImpact2FramestoreDetector(fd, &background.nextImpact);
 	    if(EXIT_SUCCESS!=status) break;
 	    // Create a new background event.
-	    createUniformDetectorBackgroundImpact(&background, &detector.pixels, 
-						  detector.generic.rmf);
+	    createUniformDetectorBackgroundImpact(&background, &fd->pixels, 
+						  fd->generic.rmf);
 	  }
 	  if(EXIT_SUCCESS!=status) break;
 	  // Jump to the next interval where cosmic photons arrive at the detector.
@@ -201,11 +201,11 @@ int framestore_simulation_main() {
 	// the last background event and the current photon arrival time.
 	while (background.nextImpact.time < impact.time) {
 	  // Add the background event to the CCD array.
-	  status=addImpact2FramestoreDetector(&detector, &background.nextImpact);
+	  status=addImpact2FramestoreDetector(fd, &background.nextImpact);
 	  if(EXIT_SUCCESS!=status) break;
 	  // Create a new background event.
-	  createUniformDetectorBackgroundImpact(&background, &detector.pixels, 
-						detector.generic.rmf);
+	  createUniformDetectorBackgroundImpact(&background, &fd->pixels, 
+						fd->generic.rmf);
 	}
 	if(EXIT_SUCCESS!=status) break;
       }	// END of inserting background events.
@@ -215,7 +215,7 @@ int framestore_simulation_main() {
       // Before generating and adding the charge to the detector the routine also 
       // checks, whether the integration time is exceeded and performs the readout 
       // in that case. 
-      status=addImpact2FramestoreDetector(&detector, &impact);
+      status=addImpact2FramestoreDetector(fd, &impact);
       if(EXIT_SUCCESS!=status) break;
 
       // Save the time of the current impact (necessary for background generation).
@@ -225,7 +225,7 @@ int framestore_simulation_main() {
 
     // Perform a final readout of the FramestoreDetector.
     // Otherwise the last stored charges may be lost.
-    status=readoutFramestoreDetector(&detector);
+    status=readoutFramestoreDetector(fd);
     if(EXIT_SUCCESS!=status) break;
 
   } while(0); // END of the error handling loop.
@@ -243,7 +243,7 @@ int framestore_simulation_main() {
   status += closeImpactListFile(&impactlistfile);
 
   // Release memory of detector.
-  status+=cleanupFramestoreDetector(&detector);
+  status+=destroyFramestoreDetector(fd);
 
   // Release memory of background data structure.
   status+=cleanupUniformDetectorBackground(&background);
@@ -258,7 +258,7 @@ int framestore_simulation_main() {
 // This routine reads the program parameters using the PIL.
 int getpar(struct Parameters* parameters)
 {
-  int status=EXIT_SUCCESS; // error status
+  int status=EXIT_SUCCESS; // Error status
 
   // Get the name of the impact list file (FITS file)
   if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {

@@ -1,10 +1,16 @@
 #include "framestoredetector.h"
 
 
-int initFramestoreDetector(FramestoreDetector* fd, 
-			   struct FramestoreDetectorParameters* parameters)
+FramestoreDetector* newFramestoreDetector(struct FramestoreDetectorParameters* parameters, 
+					  int *status)
 {
-  int status = EXIT_SUCCESS;
+  FramestoreDetector* fd = (FramestoreDetector*)malloc(sizeof(FramestoreDetector));
+  if (NULL==fd) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: memory allocation for FramestoreDetector failed!\n", 
+		   *status);
+    return(fd);
+  }
 
   // Set up the framestore configuration.
   fd->integration_time = parameters->integration_time;
@@ -17,29 +23,29 @@ int initFramestoreDetector(FramestoreDetector* fd,
   
   // Call the initialization routines of the underlying data structures.
   // Init the generic detector properties like the RMF.
-  status = initGenericDetector(&fd->generic, &parameters->generic);
-  if (EXIT_SUCCESS!=status) return(status);
+  *status = initGenericDetector(&fd->generic, &parameters->generic);
+  if (EXIT_SUCCESS!=*status) return(fd);
 #ifdef FD_EXPONENTIAL_SPLITS
   headas_chat(5, "exponential model (by Konrad Dennerl) for split events\n");
 #else
   headas_chat(5, "Gaussian charge cloud model for split events\n");
 #endif
   // Get the memory for the pixel array.
-  status = initSquarePixels(&fd->pixels, &parameters->pixels);
-  if (EXIT_SUCCESS!=status) return(status);
+  *status = initSquarePixels(&fd->pixels, &parameters->pixels);
+  if (EXIT_SUCCESS!=*status) return(fd);
   
   // Create and open new event list file.
-  status = openNeweROSITAEventFile(&fd->eventlist, 
-				   parameters->eventlist_filename,
-				   parameters->eventlist_template);
-  if (EXIT_SUCCESS!=status) return(status);
+  *status = openNeweROSITAEventFile(&fd->eventlist, 
+				    parameters->eventlist_filename,
+				    parameters->eventlist_template);
+  if (EXIT_SUCCESS!=*status) return(fd);
 
-  return(status);
+  return(fd);
 }
 
 
 
-int cleanupFramestoreDetector(FramestoreDetector* fd) 
+int destroyFramestoreDetector(FramestoreDetector* fd) 
 {
   int status=EXIT_SUCCESS;
 
@@ -108,7 +114,7 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
   long pha;   // Buffer for PHA values.
 
   // List of events belonging to the same pattern.
-  eROSITAEvent list[MAX_N_SPLIT_LIST]; 
+  eROSITAEvent list[FD_MAX_N_SPLIT_LIST]; 
   int nlist=0, count; // Number of entries in the list.
   int maxidx, minidx; // Indices of the maximum and minimum event in the 
                       // event list.

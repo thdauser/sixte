@@ -16,18 +16,13 @@
 // If not, a Gaussian charge cloud model is assumed.
 #define FD_EXPONENTIAL_SPLITS 1
 
-// If this flag is activated, the framestore readout algorithm checks
-// for split events and marks them according to the eROSITA pattern
-// naming scheme.
-#define FD_DETECT_PATTERNS 1
-
 // Define the value that is assigned to PAT_INF of invalid events.
 // According to the eROSITA event file specification this should be '0',
 // but as '0' is also assigned to singles, we choose '-1' instead.
 #define FD_INVALID_PATTERN (-1)
 
 // Maximum number of split pixels per readout frame.
-#define MAX_N_SPLIT_LIST (1000)
+#define FD_MAX_N_SPLIT_LIST (1000)
 
 
 /////////////////////////////////////////////////////////////////
@@ -92,13 +87,13 @@ struct FramestoreDetectorParameters {
 
 
 /** Set up the configuration of a FramestoreDetector. The routine
-    also calls the init routines of the underlying data structures. */
-int initFramestoreDetector(FramestoreDetector* fd, 
-			   struct FramestoreDetectorParameters* fdp);
+    calls the init routines of the underlying data structures. */
+FramestoreDetector* newFramestoreDetector(struct FramestoreDetectorParameters* fdp,
+					  int* status);
 
-/** Clean up the FramestoreDetector data structure. Release allocated
-    memory and call clean-up routines of underlying structures. */
-int cleanupFramestoreDetector(FramestoreDetector* fd);
+/** Destroy the FramestoreDetector data structure. Release allocated
+    memory and call destructor routines of underlying structures. */
+int destroyFramestoreDetector(FramestoreDetector* fd);
 
 /** This routine is called for readout of the FramestoreDetector. The
     routine itself checks, whether a readout is necessary according to
