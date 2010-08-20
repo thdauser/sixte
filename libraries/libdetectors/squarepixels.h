@@ -77,19 +77,12 @@ struct SquarePixelsParameters {
 /////////////////////////////////////////////////////////////////////
 
 
-/** Initialization routine for the SquarePixels data structure. Sets
-    the basic properties and allocates memory for the pixel array. */
-int initSquarePixels(SquarePixels*, struct SquarePixelsParameters*);
-
 /** Constructor for the SquarePixels data structure. */
-SquarePixels* getSquarePixels(struct SquarePixelsParameters* spp, int* status);
+SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* status);
 
-/** Clean up the SquarePixels data structure. E.g. release allocated
-    memory. */
-void cleanupSquarePixels(SquarePixels* sp);
-
-/** Destructor for the SquarePixels data structure. */
-void freeSquarePixels(SquarePixels* sp);
+/** Destructor of the SquarePixels data structure. E.g. release
+    allocated memory. */
+void destroySquarePixels(SquarePixels* sp);
 
 /** Clear the array of SquarePixels. */
 inline void clearSquarePixels(SquarePixels*);

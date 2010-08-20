@@ -250,7 +250,6 @@ AC_CONFIG_FILES([Makefile
 		tools/photon_imaging/Makefile
 		tools/wfi_simulation/Makefile
 		tools/framestore_simulation/Makefile
-		tools/erosita_simulation/Makefile
 		tools/xms_simulation/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/event_projection/Makefile

@@ -31,7 +31,7 @@ FramestoreDetector* newFramestoreDetector(struct FramestoreDetectorParameters* p
   headas_chat(5, "Gaussian charge cloud model for split events\n");
 #endif
   // Get the memory for the pixel array.
-  *status = initSquarePixels(&fd->pixels, &parameters->pixels);
+  fd->pixels = newSquarePixels(&parameters->pixels, status);
   if (EXIT_SUCCESS!=*status) return(fd);
   
   // Create and open new event list file.
@@ -49,10 +49,13 @@ int destroyFramestoreDetector(FramestoreDetector* fd)
 {
   int status=EXIT_SUCCESS;
 
-  // Call the cleanup routines of the underlying data structures.
-  cleanupSquarePixels(&fd->pixels);
-  cleanupGenericDetector(&fd->generic);
-  status+=closeeROSITAEventFile(&fd->eventlist);
+  if(NULL!=fd) {
+    // Call the cleanup routines of the underlying data structures.
+    destroySquarePixels(fd->pixels);
+    cleanupGenericDetector(&fd->generic);
+    status+=closeeROSITAEventFile(&fd->eventlist);
+    free(fd);
+  }
 
   return(status);
 }
@@ -73,7 +76,7 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time)
     if (EXIT_SUCCESS!=status) return(status);
 
     // Clear the detector array.
-    clearSquarePixels(&fd->pixels);
+    clearSquarePixels(fd->pixels);
 
     // Update the detector frame time to the next frame until the current
     // time is within the detector->readout interval.
@@ -123,16 +126,16 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 
 
   // Find the events above the event threshold in the pixel array.
-  for (x=0; x<fd->pixels.xwidth; x++) {
-    for (y=0; y<fd->pixels.ywidth; y++) {
+  for (x=0; x<fd->pixels->xwidth; x++) {
+    for (y=0; y<fd->pixels->ywidth; y++) {
       
       // Check if the pixel contains any charge. If there is no charge 
       // in it at all, there is no use to determine the PHA channel.
-      if (fd->pixels.array[x][y].charge > 1.e-6) {
+      if (fd->pixels->array[x][y].charge > 1.e-6) {
 
 	// Determine the detector channel that corresponds to the 
 	// charge stored in the detector pixel.
-	pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
+	pha = getChannel(fd->pixels->array[x][y].charge, fd->generic.rmf);
 	
 	// The PHA channel should only be less than zero, when the photon 
 	// is lost, i.e., not detected at all. As the RSP is usually 
@@ -143,7 +146,7 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	
 	// Check event threshold (PHA and energy):
 	if ((pha>=fd->generic.pha_threshold) && 
-	    (fd->pixels.array[x][y].charge>=fd->generic.energy_threshold)) { 
+	    (fd->pixels->array[x][y].charge>=fd->generic.energy_threshold)) { 
 
 	  // Add the central/main pixel to the list.
 	  nlist = 1;
@@ -151,11 +154,11 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	  minidx= 0;
 	  list[0].xi = x;
 	  list[0].yi = y;
-	  list[0].energy = fd->pixels.array[x][y].charge * 1.e3; // [eV]
+	  list[0].energy = fd->pixels->array[x][y].charge * 1.e3; // [eV]
 	  list[0].pha    = pha;
 
 	  // Delete the pixel charge after it has been read out.
-	  fd->pixels.array[x][y].charge = 0.;
+	  fd->pixels->array[x][y].charge = 0.;
 
 	  if (1==fd->make_splits) {
 	    // Check the surrounding pixels (according to the method 
@@ -163,20 +166,20 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 	    float neighbor_charges[4] = { 0., 0., 0., 0. };
 	    float combined_neighbor_charges[4] = { 0., 0., 0., 0. };
 	    // Right:
-	    if (x+1<fd->pixels.xwidth) {
-	      neighbor_charges[0] = fd->pixels.array[x+1][y].charge;
+	    if (x+1<fd->pixels->xwidth) {
+	      neighbor_charges[0] = fd->pixels->array[x+1][y].charge;
 	    }
 	    // Left:
 	    if (x-1>=0) {
-	      neighbor_charges[1] = fd->pixels.array[x-1][y].charge;
+	      neighbor_charges[1] = fd->pixels->array[x-1][y].charge;
 	    }
 	    // Top:
-	    if (y+1<fd->pixels.ywidth) {
-	      neighbor_charges[2] = fd->pixels.array[x][y+1].charge;
+	    if (y+1<fd->pixels->ywidth) {
+	      neighbor_charges[2] = fd->pixels->array[x][y+1].charge;
 	    }
 	    // Bottom:
 	    if (y-1>=0) {
-	      neighbor_charges[3] = fd->pixels.array[x][y-1].charge;
+	      neighbor_charges[3] = fd->pixels->array[x][y-1].charge;
 	    }
 	    // Calculate the quantities c_rt, c_tl, c_lb, and c_br:
 	    // c_rt:
@@ -202,23 +205,23 @@ inline int readoutFramestoreDetector(FramestoreDetector* fd)
 
 	    // Check the 3x3 environment for pixels with a charge above the 
 	    // split threshold.
-	    for (x2=MAX(x-1,0); x2<MIN(x+2,fd->pixels.xwidth); x2++) {
-	      for (y2=MAX(y-1,0); y2<MIN(y+2, fd->pixels.ywidth); y2++) {
+	    for (x2=MAX(x-1,0); x2<MIN(x+2,fd->pixels->xwidth); x2++) {
+	      for (y2=MAX(y-1,0); y2<MIN(y+2, fd->pixels->ywidth); y2++) {
 
 		// Do not regard the central pixel. This has already been 
 		// added to the list.
 		if ((x==x2)&&(y==y2)) continue;
 		
-		if (fd->pixels.array[x2][y2].charge > split_threshold) {
+		if (fd->pixels->array[x2][y2].charge > split_threshold) {
 		  list[nlist].xi = x2;
 		  list[nlist].yi = y2;
 		  list[nlist].energy = 
-		    fd->pixels.array[x2][y2].charge * 1.e3; // [eV]
+		    fd->pixels->array[x2][y2].charge * 1.e3; // [eV]
 		  list[nlist].pha = 
-		    getChannel(fd->pixels.array[x2][y2].charge, fd->generic.rmf);
+		    getChannel(fd->pixels->array[x2][y2].charge, fd->generic.rmf);
 
 		  // Delete the pixel charge after it has been read out.
-		  fd->pixels.array[x2][y2].charge = 0.;
+		  fd->pixels->array[x2][y2].charge = 0.;
 
 		  // Check if the new event has the maximum or minium 
 		  // energy in the split list.
@@ -320,17 +323,17 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
     
       // Determine the affected detector pixels (including split partners).
 #ifdef FD_EXPONENTIAL_SPLITS
-      int npixels = getSquarePixelsExponentialSplits(&fd->pixels, &(fd->generic.ecc), 
+      int npixels = getSquarePixelsExponentialSplits(fd->pixels, &(fd->generic.ecc), 
 						     impact->position, x, y, fraction);
 #else
-      int npixels = getSquarePixelsGaussianSplits(&fd->pixels, &(fd->generic.gcc), 
+      int npixels = getSquarePixelsGaussianSplits(fd->pixels, &(fd->generic.gcc), 
 						  impact->position, x, y, fraction);
 #endif
     
       // Add the charge created by the photon to the affected detector pixels.
       int count;
       for (count=0; count<npixels; count++) {
-	SPaddCharge(&fd->pixels, x[count], y[count], charge*fraction[count]);
+	SPaddCharge(fd->pixels, x[count], y[count], charge*fraction[count]);
 	  //    charge created by incident photon   <--|      |
 	  //    charge fraction due to split events <---------|
       }
@@ -340,9 +343,9 @@ int addImpact2FramestoreDetector(FramestoreDetector* fd, Impact* impact)
       
       // Determine the affected detector pixel.
       int x, y;
-      if (1==getSquarePixel(&fd->pixels, impact->position, &x, &y)) {
+      if (1==getSquarePixel(fd->pixels, impact->position, &x, &y)) {
 	// Add the charge created by the photon to the affected detector pixel.
-	SPaddCharge(&fd->pixels, x, y, charge);
+	SPaddCharge(fd->pixels, x, y, charge);
       }
     }
     // END of checking for split generation.

@@ -32,7 +32,7 @@
 
 typedef struct {
   GenericDetector generic;
-  SquarePixels pixels;
+  SquarePixels* pixels;
 
   /** Integration time of the entire pnCCD (!) detector array. (=
       Span of time between 2 subsequent readouts). */

@@ -12,7 +12,7 @@ int initeROSITADetectors(eROSITADetectors* fd,
   
   int ccdindex;
   for(ccdindex=0; ccdindex<NeROSITATELESCOPES; ccdindex++) {
-    status = initSquarePixels(&fd->pixels[ccdindex], &parameters->pixels);
+    fd->pixels[ccdindex] = newSquarePixels(&parameters->pixels, &status);
     if (EXIT_SUCCESS!=status) return(status);
   }
 

@@ -17,7 +17,7 @@ CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
   det->eventfile = NULL;
 
   // Call the initialization routines of the underlying data structures.
-  det->pixels = getSquarePixels(&parameters->pixels, status);
+  det->pixels = newSquarePixels(&parameters->pixels, status);
   if (EXIT_SUCCESS!=*status) return(det);
 
   // Create and open new event list file.
@@ -35,7 +35,7 @@ void freeCoMaDetector(CoMaDetector* det)
 {
   if (NULL!=det) {
     // Call the clean-up routines of the underlying data structures.
-    freeSquarePixels(det->pixels);
+    destroySquarePixels(det->pixels);
     closeCoMaEventFile(det->eventfile);
     // Free the allocated memory.
     free(det);

@@ -30,11 +30,6 @@
 // but as '0' is also assigned to singles, we choose '-1' instead.
 #define EPICpn_INVALID_PATTERN (-1)
 
-/*
-// Maximum number of split pixels per readout frame.
-#define MAX_N_SPLIT_LIST (1000)
-*/
-
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -44,7 +39,7 @@
 /** This data structure can be used for EPIC-pn like detectors. */
 typedef struct {
   GenericDetector generic;
-  SquarePixels pixels;
+  SquarePixels* pixels;
 
   /** Integration time for one detector line. */
   double step_time; 

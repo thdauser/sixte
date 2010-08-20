@@ -29,7 +29,7 @@ typedef struct {
   /** Generic Detector properties like, e.g., the detector response. */
   GenericDetector generic;
   /** Array of square pixels. */
-  SquarePixels pixels;
+  SquarePixels* pixels;
 
 
   /** Number of readout directions. In the current implementation

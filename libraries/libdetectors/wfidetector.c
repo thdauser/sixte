@@ -8,7 +8,7 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
   // Call the initialization routines of the underlying data structures.
   status = initGenericDetector(&wd->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
-  status = initSquarePixels(&wd->pixels, &parameters->pixels);
+  wd->pixels = newSquarePixels(&parameters->pixels, &status);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the WFI configuration.
@@ -20,7 +20,7 @@ int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
   // immediately at the beginning of the simulation.
   wd->readout_time = parameters->t0 - wd->line_readout_time;
   wd->readout_lines[0] = 0;
-  wd->readout_lines[1] = wd->pixels.ywidth-1;
+  wd->readout_lines[1] = wd->pixels->ywidth-1;
   wd->frame = -1;
 
   // Create a new event list FITS file and open it.
@@ -38,7 +38,7 @@ int cleanupWFIDetector(WFIDetector* wd)
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  cleanupSquarePixels(&wd->pixels);
+  destroySquarePixels(wd->pixels);
   cleanupGenericDetector(&wd->generic);
   status = closeWFIEventFile(&wd->eventlist);
 
@@ -83,18 +83,18 @@ int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
     
     // Determine the affected detector pixels.
     int npixels = 
-      getSquarePixelsGaussianSplits(&wd->pixels, &(wd->generic.gcc), 
+      getSquarePixelsGaussianSplits(wd->pixels, &(wd->generic.gcc), 
 				    impact->position, x, y, fraction);
     
     // Set the valid flag for the affected pixel in order to 
     // keep a record, whether the pattern has been generated
     // by a single photon.
-    SPupdateValidFlag(&wd->pixels, x, y, npixels);
+    SPupdateValidFlag(wd->pixels, x, y, npixels);
   
     // Add the charge created by the photon to the affected detector pixels.
     int count;
     for (count=0; count<npixels; count++) {
-      SPaddCharge(&wd->pixels, x[count], y[count], 
+      SPaddCharge(wd->pixels, x[count], y[count], 
 		  charge * fraction[count] * 
 		  // |      |-> charge fraction due to split events
 		  // |-> charge created by incident photon
@@ -132,9 +132,9 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time)
       // Start new detector frame:
       wd->frame++; 
       wd->readout_lines[0] = 
-	(1==wd->readout_directions)?(wd->pixels.ywidth-1):(wd->pixels.yoffset-1);
+	(1==wd->readout_directions)?(wd->pixels->ywidth-1):(wd->pixels->yoffset-1);
       wd->readout_lines[1] = 
-	(1==wd->readout_directions)?(-1):(wd->pixels.yoffset);
+	(1==wd->readout_directions)?(-1):(wd->pixels->yoffset);
 
       // Print the time of the current events in order (program status
       // information for the user).
@@ -161,8 +161,8 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time)
     // Clear the previously read out lines.
     int lineindex;
     for(lineindex=0; lineindex<wd->readout_directions; lineindex++) {
-      if (wd->pixels.line2readout[wd->readout_lines[lineindex]]>0) {    
-	clearLineSquarePixels(&wd->pixels, wd->readout_lines[lineindex]);
+      if (wd->pixels->line2readout[wd->readout_lines[lineindex]]>0) {    
+	clearLineSquarePixels(wd->pixels, wd->readout_lines[lineindex]);
       }
     }
   }
@@ -181,19 +181,19 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
   for (lineindex=0; lineindex<wd->readout_directions; lineindex++) {
     // Check whether any pixel in this line has been affected by an event since
     // the last read-out cycle. If not, the line can be neglected.
-    if (1==wd->pixels.line2readout[wd->readout_lines[lineindex]]) {
-      for (x=0; x<wd->pixels.xwidth; x++) {
-	if (wd->pixels.array[x][wd->readout_lines[lineindex]].charge > 1.e-6) {
+    if (1==wd->pixels->line2readout[wd->readout_lines[lineindex]]) {
+      for (x=0; x<wd->pixels->xwidth; x++) {
+	if (wd->pixels->array[x][wd->readout_lines[lineindex]].charge > 1.e-6) {
 	  // Determine the detector channel that corresponds to the charge stored
 	  // in the detector pixel.
 	  WFIEvent event = {
-	    .pha = getChannel(wd->pixels.array[x][wd->readout_lines[lineindex]].charge, 
+	    .pha = getChannel(wd->pixels->array[x][wd->readout_lines[lineindex]].charge, 
 			      wd->generic.rmf)
 	  };
 
 	  // Check lower threshold (PHA and energy):
 	  if ((event.pha>=wd->generic.pha_threshold) && 
-	      (wd->pixels.array[x][wd->readout_lines[lineindex]].charge>=
+	      (wd->pixels->array[x][wd->readout_lines[lineindex]].charge>=
 	       wd->generic.energy_threshold)) { 
 	    
 	    // TODO REMOVE
@@ -209,7 +209,7 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 	    event.patid = -1;
 	    event.pileup = 0;
 	    event.f_valid = 
-	      wd->pixels.array[x][wd->readout_lines[lineindex]].valid_flag;
+	      wd->pixels->array[x][wd->readout_lines[lineindex]].valid_flag;
 	    
 	    status = addWFIEvent2File(&wd->eventlist, &event);
 	    if (EXIT_SUCCESS!=status) return(status);

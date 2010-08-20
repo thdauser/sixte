@@ -185,7 +185,7 @@ int framestore_simulation_main() {
 	    status=addImpact2FramestoreDetector(fd, &background.nextImpact);
 	    if(EXIT_SUCCESS!=status) break;
 	    // Create a new background event.
-	    createUniformDetectorBackgroundImpact(&background, &fd->pixels, 
+	    createUniformDetectorBackgroundImpact(&background, fd->pixels, 
 						  fd->generic.rmf);
 	  }
 	  if(EXIT_SUCCESS!=status) break;
@@ -204,7 +204,7 @@ int framestore_simulation_main() {
 	  status=addImpact2FramestoreDetector(fd, &background.nextImpact);
 	  if(EXIT_SUCCESS!=status) break;
 	  // Create a new background event.
-	  createUniformDetectorBackgroundImpact(&background, &fd->pixels, 
+	  createUniformDetectorBackgroundImpact(&background, fd->pixels, 
 						fd->generic.rmf);
 	}
 	if(EXIT_SUCCESS!=status) break;

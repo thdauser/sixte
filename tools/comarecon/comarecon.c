@@ -47,7 +47,7 @@ int comarecon_main() {
       .xpixelwidth = parameters.pixelwidth,
       .ypixelwidth = parameters.pixelwidth 
     };
-    detector_pixels=getSquarePixels(&spp, &status);
+    detector_pixels=newSquarePixels(&spp, &status);
     if(EXIT_SUCCESS!=status) break;
     // END of DETECTOR CONFIGURATION SETUP    
 
@@ -119,7 +119,7 @@ int comarecon_main() {
   headas_chat(5, "cleaning up ...\n");
 
   // Free the detector and sky image pixels.
-  freeSquarePixels(detector_pixels);
+  destroySquarePixels(detector_pixels);
   free_SourceImage(sky_pixels);
 
   // Close the FITS files.

@@ -1,7 +1,7 @@
 #include "squarepixels.h"
 
 
-SquarePixels* getSquarePixels(struct SquarePixelsParameters* spp, int* status)
+SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* status)
 {
   SquarePixels* sp=(SquarePixels*)malloc(sizeof(SquarePixels));
   if (NULL==sp) {
@@ -13,48 +13,31 @@ SquarePixels* getSquarePixels(struct SquarePixelsParameters* spp, int* status)
   // Set initial values.
   sp->array=NULL;
   sp->line2readout=NULL;
-  sp->xwidth=0;
-  sp->ywidth=0;
-  sp->xoffset=0;
-  sp->yoffset=0;
-  sp->xpixelwidth=0.;
-  sp->ypixelwidth=0.;
-
-  *status=initSquarePixels(sp, spp);
-  return(sp);
-}
-
-
-
-int initSquarePixels(SquarePixels* sp, 
-		     struct SquarePixelsParameters* parameters) 
-{
-  int status = EXIT_SUCCESS;
 
   // Set the array dimensions:
-  sp->xwidth = parameters->xwidth;
-  sp->ywidth = parameters->ywidth;
-  sp->xoffset = parameters->xwidth/2;
-  sp->yoffset = parameters->ywidth/2;
-  sp->xpixelwidth = parameters->xpixelwidth;
-  sp->ypixelwidth = parameters->ypixelwidth;
+  sp->xwidth = spp->xwidth;
+  sp->ywidth = spp->ywidth;
+  sp->xoffset = spp->xwidth/2;
+  sp->yoffset = spp->ywidth/2;
+  sp->xpixelwidth = spp->xpixelwidth;
+  sp->ypixelwidth = spp->ypixelwidth;
 
   // Get the memory for the pixels:
   sp->array = (SquarePixel**)malloc(sp->xwidth*sizeof(SquarePixel*));
   if (NULL==sp->array) {
-    status = EXIT_FAILURE;
+    *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
-		   status);
-    return(status);
+		   *status);
+    return(sp);
   } else {
     int count;
     for(count=0; count<sp->xwidth; count++) {
       sp->array[count] = (SquarePixel*)malloc(sp->ywidth*sizeof(SquarePixel));
       if (NULL==sp->array[count]) {
-	status = EXIT_FAILURE;
+	*status = EXIT_FAILURE;
 	HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
-		       status);
-	return(status);
+		       *status);
+	return(sp);
       }
     }
   }
@@ -62,16 +45,16 @@ int initSquarePixels(SquarePixels* sp,
   // Get the memory for the read-out flags of the individual detector lines.
   sp->line2readout = (int*)malloc(sp->ywidth*sizeof(int));
   if (NULL==sp->line2readout) {
-    status = EXIT_FAILURE;
+    *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
-		   status);
-    return(status);
+		   *status);
+    return(sp);
   }
 
   // Clear the pixels.
   clearSquarePixels(sp);
 
-  return(status);
+  return(sp);
 }
 
 
@@ -98,31 +81,25 @@ inline void clearSquarePixels(SquarePixels* sp)
 
 
 
-void cleanupSquarePixels(SquarePixels* sp) 
-{
-  if (NULL!=sp->array) {
-    int count;
-    for (count=0; count<sp->xwidth; count++) {
-      if (NULL!=sp->array[count]) {
-	free(sp->array[count]);
-      }
-    }
-    free(sp->array);
-    sp->array=NULL;
-  }
-  
-  if (NULL!=sp->line2readout) {
-    free(sp->line2readout);
-    sp->line2readout=NULL;
-  }
-}
-
-
-
-void freeSquarePixels(SquarePixels* sp)
+void destroySquarePixels(SquarePixels* sp) 
 {
   if (NULL!=sp) {
-    cleanupSquarePixels(sp);
+    if (NULL!=sp->array) {
+      int count;
+      for (count=0; count<sp->xwidth; count++) {
+	if (NULL!=sp->array[count]) {
+	  free(sp->array[count]);
+	}
+      }
+      free(sp->array);
+      sp->array=NULL;
+    }
+  
+    if (NULL!=sp->line2readout) {
+      free(sp->line2readout);
+      sp->line2readout=NULL;
+    }
+
     free(sp);
   }
 }

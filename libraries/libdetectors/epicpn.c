@@ -16,7 +16,7 @@ int initEPICpn(EPICpn* ep, struct EPICpnParameters* parameters)
   status = initGenericDetector(&ep->generic, &parameters->generic);
   if (EXIT_SUCCESS!=status) return(status);
   // Get the memory for the pixel array.
-  status = initSquarePixels(&ep->pixels, &parameters->pixels);
+  ep->pixels = newSquarePixels(&parameters->pixels, &status);
   if (EXIT_SUCCESS!=status) return(status);
   
   return(status);
@@ -29,7 +29,7 @@ int cleanupEPICpn(EPICpn* ep)
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  cleanupSquarePixels(&ep->pixels);
+  destroySquarePixels(ep->pixels);
   cleanupGenericDetector(&ep->generic);
 
   return(status);
@@ -280,10 +280,10 @@ int addImpact2EPICpn(EPICpn* ep, Impact* impact)
     
     // Determine the affected detector pixels (including split partners).
 #ifdef EPICpn_EXPONENTIAL_SPLITS
-    int npixels = getSquarePixelsExponentialSplits(&ep->pixels, &(ep->generic.ecc), 
+    int npixels = getSquarePixelsExponentialSplits(ep->pixels, &(ep->generic.ecc), 
 						   impact->position, x, y, fraction);
 #else
-    int npixels = getSquarePixelsGaussianSplits(&ep->pixels, &(ep->generic.gcc), 
+    int npixels = getSquarePixelsGaussianSplits(ep->pixels, &(ep->generic.gcc), 
 						impact->position, x, y, fraction);
 #endif
     
@@ -291,7 +291,7 @@ int addImpact2EPICpn(EPICpn* ep, Impact* impact)
     int count;
     for (count=0; count<npixels; count++) {
       if (x[count] != INVALID_PIXEL) {
-	ep->pixels.array[x[count]][y[count]].charge += 
+	ep->pixels->array[x[count]][y[count]].charge += 
 	  charge * fraction[count];
 	  // |      |-> charge fraction due to split events
 	  // |-> charge created by incident photon

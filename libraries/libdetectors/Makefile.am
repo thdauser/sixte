@@ -26,13 +26,13 @@ lib_LTLIBRARIES = libdetectors.la
 # Sources:
 libdetectors_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 			  impactlistfile.c uniformdetectorbackground.c	\
-			  framestoredetector.c erositadetectors.c	\
-			  erositaeventfile.c wfidetector.c		\
-			  wfieventfile.c xmsdetector.c xmseventfile.c	\
-			  htrsdetector.c htrseventfile.c		\
-			  hexagonalpixels.c arcpixels.c			\
-			  telemetrypacket.c htrstelstream.c		\
-			  comadetector.c comaeventfile.c epicpn.c
+			  framestoredetector.c erositaeventfile.c	\
+			  wfidetector.c wfieventfile.c xmsdetector.c	\
+			  xmseventfile.c htrsdetector.c			\
+			  htrseventfile.c hexagonalpixels.c		\
+			  arcpixels.c telemetrypacket.c			\
+			  htrstelstream.c comadetector.c		\
+			  comaeventfile.c epicpn.c
 
 libdetectors_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
 libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosources.la
@@ -45,9 +45,9 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  gaussianchargecloud.h exponentialchargecloud.h	\
 		  arcpixels.h eventfile.h impactlistfile.h impact.h	\
 		  uniformdetectorbackground.h framestoredetector.h	\
-		  erositadetectors.h erositaeventfile.h erositaevent.h	\
-		  wfidetector.h wfieventfile.h wfievent.h		\
-		  xmsdetector.h xmseventfile.h xmsevent.h		\
-		  htrsdetector.h htrseventfile.h htrsevent.h		\
-		  telemetrypacket.h htrstelstream.h comadetector.h	\
-		  comaeventfile.h comaevent.h epicpn.h
+		  erositaeventfile.h erositaevent.h wfidetector.h	\
+		  wfieventfile.h wfievent.h xmsdetector.h		\
+		  xmseventfile.h xmsevent.h htrsdetector.h		\
+		  htrseventfile.h htrsevent.h telemetrypacket.h		\
+		  htrstelstream.h comadetector.h comaeventfile.h	\
+		  comaevent.h epicpn.h

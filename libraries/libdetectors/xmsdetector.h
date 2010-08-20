@@ -35,7 +35,8 @@ typedef struct {
   /** Array of square pixels. There are two SquarePixels data
       structures, one for the inner and one for the outer array of TES
       pixels. */
-  SquarePixels pixels_inner, pixels_outer;
+  SquarePixels* pixels_inner;
+  SquarePixels* pixels_outer;
 
   /** Output event list. The events read out from the detector array
       are written to this event file that must have the XMS-specific

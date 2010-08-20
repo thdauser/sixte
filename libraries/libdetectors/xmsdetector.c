@@ -9,13 +9,13 @@ int initXMSDetector(XMSDetector* xd, struct XMSDetectorParameters* parameters)
   // Inner TES pixel array:
   status = initGenericDetector(&xd->generic_inner, &parameters->generic_inner);
   if (EXIT_SUCCESS!=status) return(status);
-  status = initSquarePixels(&xd->pixels_inner, &parameters->pixels_inner);
+  xd->pixels_inner = newSquarePixels(&parameters->pixels_inner, &status);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Outer TES pixel array:
   status = initGenericDetector(&xd->generic_outer, &parameters->generic_outer);
   if (EXIT_SUCCESS!=status) return(status);
-  status = initSquarePixels(&xd->pixels_outer, &parameters->pixels_outer);
+  xd->pixels_outer = newSquarePixels(&parameters->pixels_outer, &status);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Set up the XMS configuration.
@@ -36,8 +36,8 @@ int cleanupXMSDetector(XMSDetector* xd)
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  cleanupSquarePixels(&xd->pixels_inner);
-  cleanupSquarePixels(&xd->pixels_outer);
+  destroySquarePixels(xd->pixels_inner);
+  destroySquarePixels(xd->pixels_outer);
   cleanupGenericDetector(&xd->generic_inner);
   cleanupGenericDetector(&xd->generic_outer);
   status = closeXMSEventFile(&xd->eventlist);
@@ -81,21 +81,21 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
     // microcalorimeter array.
     XMSEvent event={ .grade=0 };
     int npixels;
-    if ((impact->position.x > -xd->pixels_inner.xoffset*xd->pixels_inner.xpixelwidth) &&
-	(impact->position.x <  xd->pixels_inner.xoffset*xd->pixels_inner.xpixelwidth) &&
-	(impact->position.y > -xd->pixels_inner.yoffset*xd->pixels_inner.ypixelwidth) &&
-	(impact->position.y <  xd->pixels_inner.yoffset*xd->pixels_inner.ypixelwidth)) {
+    if ((impact->position.x > -xd->pixels_inner->xoffset*xd->pixels_inner->xpixelwidth) &&
+	(impact->position.x <  xd->pixels_inner->xoffset*xd->pixels_inner->xpixelwidth) &&
+	(impact->position.y > -xd->pixels_inner->yoffset*xd->pixels_inner->ypixelwidth) &&
+	(impact->position.y <  xd->pixels_inner->yoffset*xd->pixels_inner->ypixelwidth)) {
       // Impact position is within the inner pixel array.
       event.array = 1;
       // Determine the affected detector pixels.
-      npixels = getSquarePixelsGaussianSplits(&xd->pixels_inner, &(xd->generic_inner.gcc), 
+      npixels = getSquarePixelsGaussianSplits(xd->pixels_inner, &(xd->generic_inner.gcc), 
 					      impact->position, x, y, fraction);
     } else { 
       // Impact position is either within the outer pixel array or even completely
       // outside the detector.
       event.array = 2;
       // Determine the affected detector pixels.
-      npixels = getSquarePixelsGaussianSplits(&xd->pixels_outer, &(xd->generic_outer.gcc), 
+      npixels = getSquarePixelsGaussianSplits(xd->pixels_outer, &(xd->generic_outer.gcc), 
 					      impact->position, x, y, fraction);
     }
 
