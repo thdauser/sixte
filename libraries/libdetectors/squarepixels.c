@@ -81,26 +81,26 @@ inline void clearSquarePixels(SquarePixels* sp)
 
 
 
-void destroySquarePixels(SquarePixels* sp) 
+void destroySquarePixels(SquarePixels** sp) 
 {
-  if (NULL!=sp) {
-    if (NULL!=sp->array) {
+  if (NULL!=*sp) {
+    if (NULL!=(*sp)->array) {
       int count;
-      for (count=0; count<sp->xwidth; count++) {
-	if (NULL!=sp->array[count]) {
-	  free(sp->array[count]);
+      for (count=0; count<(*sp)->xwidth; count++) {
+	if (NULL!=(*sp)->array[count]) {
+	  free((*sp)->array[count]);
 	}
       }
-      free(sp->array);
-      sp->array=NULL;
+      free((*sp)->array);
+      (*sp)->array=NULL;
     }
   
-    if (NULL!=sp->line2readout) {
-      free(sp->line2readout);
-      sp->line2readout=NULL;
+    if (NULL!=(*sp)->line2readout) {
+      free((*sp)->line2readout);
+      (*sp)->line2readout=NULL;
     }
 
-    free(sp);
+    free(*sp);
   }
 }
 

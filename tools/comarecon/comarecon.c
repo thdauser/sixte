@@ -115,11 +115,11 @@ int comarecon_main() {
   } while(0);  // END of the error handling loop.
 
 
-  // --- cleaning up ---
+  // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
   // Free the detector and sky image pixels.
-  destroySquarePixels(detector_pixels);
+  destroySquarePixels(&detector_pixels);
   free_SourceImage(sky_pixels);
 
   // Close the FITS files.

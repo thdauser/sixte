@@ -93,7 +93,7 @@ FramestoreDetector* newFramestoreDetector(struct FramestoreDetectorParameters* f
 
 /** Destroy the FramestoreDetector data structure. Release allocated
     memory and call destructor routines of underlying structures. */
-int destroyFramestoreDetector(FramestoreDetector* fd);
+int destroyFramestoreDetector(FramestoreDetector** fd);
 
 /** This routine is called for readout of the FramestoreDetector. The
     routine itself checks, whether a readout is necessary according to

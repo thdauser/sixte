@@ -45,16 +45,17 @@ FramestoreDetector* newFramestoreDetector(struct FramestoreDetectorParameters* p
 
 
 
-int destroyFramestoreDetector(FramestoreDetector* fd) 
+int destroyFramestoreDetector(FramestoreDetector** fd) 
 {
   int status=EXIT_SUCCESS;
 
-  if(NULL!=fd) {
+  if(NULL!=*fd) {
     // Call the cleanup routines of the underlying data structures.
-    destroySquarePixels(fd->pixels);
-    cleanupGenericDetector(&fd->generic);
-    status+=closeeROSITAEventFile(&fd->eventlist);
-    free(fd);
+    destroySquarePixels(&(*fd)->pixels);
+    cleanupGenericDetector(&(*fd)->generic);
+    status+=closeeROSITAEventFile(&(*fd)->eventlist);
+    free(*fd);
+    *fd=NULL;
   }
 
   return(status);

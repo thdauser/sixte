@@ -29,7 +29,7 @@ int cleanupEPICpn(EPICpn* ep)
   int status=EXIT_SUCCESS;
 
   // Call the cleanup routines of the underlying data structures.
-  destroySquarePixels(ep->pixels);
+  destroySquarePixels(&ep->pixels);
   cleanupGenericDetector(&ep->generic);
 
   return(status);

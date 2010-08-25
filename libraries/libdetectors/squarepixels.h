@@ -82,7 +82,7 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* status);
 
 /** Destructor of the SquarePixels data structure. E.g. release
     allocated memory. */
-void destroySquarePixels(SquarePixels* sp);
+void destroySquarePixels(SquarePixels** sp);
 
 /** Clear the array of SquarePixels. */
 inline void clearSquarePixels(SquarePixels*);
