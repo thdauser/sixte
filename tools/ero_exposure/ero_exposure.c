@@ -4,6 +4,8 @@
 #error "Do not compile outside Autotools!"
 #endif
 
+//#include <omp.h>
+
 #include "sixt.h"
 #include "vector.h"
 #include "point.h"
@@ -38,6 +40,83 @@ struct Parameters {
 int eroexposure_getpar(struct Parameters *parameters);
 
 
+struct ImageParameters {
+  // WCS parameters.
+  // Reference pixels.
+  double rpix1, rpix2;
+  // [rad] values of reference pixels.
+  double rval1, rval2;
+  // CDELT1 and CDELT2 WCS-values in [rad].
+  double delt1, delt2; 
+
+  long ra_bins, dec_bins;
+};
+  
+
+inline int timestep(float** expoMap, 
+		    struct ImageParameters* params,
+		    double time, double dt,
+		    AttitudeCatalog* ac, 
+		    Vignetting* vignetting,
+		    double field_align, double fov_align)
+{
+  double telescope_ra, telescope_dec;
+  Vector telescope_nz, pixel_position;
+
+  int status = EXIT_SUCCESS;
+
+  // Determine the telescope pointing direction at the current time.
+  telescope_nz = getTelescopePointing(ac, time, &status);
+  if (EXIT_SUCCESS!=status) return(status);
+
+  // Calculate the RA and DEC of the pointing direction.
+  calculate_ra_dec(telescope_nz, &telescope_ra, &telescope_dec);
+
+  // Check if the specified field of the sky might be within the FOV.
+  // Otherwise break this run and continue at the beginning of the loop 
+  // with the next time step.
+  pixel_position = unit_vector((params->ra_bins /2-(params->rpix1-0.5))*params->delt1 + 
+			       params->rval1,
+			       (params->dec_bins/2-(params->rpix2-0.5))*params->delt2 + 
+			       params->rval2);
+  if (check_fov(&pixel_position, &telescope_nz, field_align)!=0) return(status);
+
+  // 2d Loop over the exposure map in order to determine all pixels that
+  // are currently within the FOV.
+  long x, y;                  // Counters.
+  long x1, x2, y1, y2;        
+  x1 = 0; x2 = params->ra_bins -1;
+  y1 = 0; y2 = params->dec_bins-1;
+  // Buffer for off-axis angle:
+  double theta;
+  for (x=x1; x<=x2; x++) {
+    for (y=y1; y<=y2; y++) {
+      pixel_position = unit_vector((x-(params->rpix1-1.0))*params->delt1 + params->rval1,
+				   (y-(params->rpix2-1.0))*params->delt2 + params->rval2);
+	    
+      // Check if the pixel lies CLOSE to the FOV.
+      // If not make a bigger jump.
+	  
+      // Check if the current pixel lies within the FOV.
+      if (check_fov(&pixel_position, &telescope_nz, fov_align)==0) {
+	// Pixel lies inside the FOV!
+	
+	// Calculate the off-axis angle ([rad])
+	theta = acos(scalar_product(&telescope_nz, &pixel_position));
+	
+	// Add the exposure time step weighted with the vignetting
+	// factor for this particular off-axis angle at 1 keV.
+	// The azimuthal angle is neglected (TODO).
+	expoMap[x][y] += 
+	  dt* get_Vignetting_Factor(vignetting, 1., theta, 0.);
+      }
+    }
+  }
+
+  return(status);
+}
+
+
 ////////////////////////////////////
 /** Main procedure. */
 int eroexposure_main() {
@@ -51,20 +130,9 @@ int eroexposure_main() {
   
   float** expoMap=NULL;       // Array for the calculation of the exposure map.
   float*  expoMap1d=NULL;     // 1d exposure map for storing in FITS image.
+  struct ImageParameters imgParams;
   long x, y;                  // Counters.
-  long x1, x2, y1, y2;        
   fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
-
-  // WCS parameters.
-  // Reference pixels.
-  double rpix1, rpix2;
-  // [rad] values of reference pixels.
-  double rval1, rval2;
-  // CDELT1 and CDELT2 WCS-values in [rad].
-  double delt1, delt2; 
-
-  double telescope_ra, telescope_dec;
-  Vector pixel_position;
 
   int status=EXIT_SUCCESS;    // Error status.
 
@@ -80,14 +148,17 @@ int eroexposure_main() {
     // Read the program parameters using PIL library.
     if ((status=eroexposure_getpar(&parameters))) break;
 
+    imgParams.ra_bins  = parameters.ra_bins;
+    imgParams.dec_bins = parameters.dec_bins;
+
     // Get memory for the exposure map.
-    expoMap = (float**)malloc(parameters.ra_bins*sizeof(float*));
+    expoMap = (float**)malloc(imgParams.ra_bins*sizeof(float*));
     if (NULL!=expoMap) {
-      for (x=0; x<parameters.ra_bins; x++) {
-	expoMap[x] = (float*)malloc(parameters.dec_bins*sizeof(float));
+      for (x=0; x<imgParams.ra_bins; x++) {
+	expoMap[x] = (float*)malloc(imgParams.dec_bins*sizeof(float));
 	if (NULL!=expoMap[x]) {
 	  // Clear the exposure map.
-	  for (y=0; y<parameters.dec_bins; y++) {
+	  for (y=0; y<imgParams.dec_bins; y++) {
 	    expoMap[x][y] = 0.;
 	  }
 	} else {
@@ -104,12 +175,12 @@ int eroexposure_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Determine the WCS parameters.
-    delt1 = (parameters.ra2 -parameters.ra1 )/parameters.ra_bins;
-    delt2 = (parameters.dec2-parameters.dec1)/parameters.dec_bins;
-    rpix1 = (parameters.ra_bins /2)+ 0.5;
-    rpix2 = (parameters.dec_bins/2)+ 0.5;
-    rval1 = (parameters.ra1 + (parameters.ra_bins /2)*delt1);
-    rval2 = (parameters.dec1+ (parameters.dec_bins/2)*delt2);
+    imgParams.delt1 = (parameters.ra2 -parameters.ra1 )/parameters.ra_bins;
+    imgParams.delt2 = (parameters.dec2-parameters.dec1)/parameters.dec_bins;
+    imgParams.rpix1 = (parameters.ra_bins /2)+ 0.5;
+    imgParams.rpix2 = (parameters.dec_bins/2)+ 0.5;
+    imgParams.rval1 = (parameters.ra1 + (imgParams.ra_bins /2)*imgParams.delt1);
+    imgParams.rval2 = (parameters.dec1+ (imgParams.dec_bins/2)*imgParams.delt2);
     
     // Set up the telescope configuration.
     telescope.fov_diameter = parameters.fov_diameter; // [rad]
@@ -145,69 +216,25 @@ int eroexposure_main() {
     // --- Beginning of Exposure Map calculation
     headas_chat(5, "calculate the exposure map ...\n");
 
-    double time;
-    // Buffer for off-axis angle:
-    double theta;
-
-    // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
-    for (time=parameters.t0; (time<parameters.t0+parameters.timespan)&&(EXIT_SUCCESS==status);
-	 time+=parameters.dt) {
+    //#pragma omp parallel
+    //    {
+      // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
+      double time;
+      //#pragma omp for private(status)
+      for (time=parameters.t0; time<parameters.t0+parameters.timespan;
+	   time+=parameters.dt) {
       
-      // Print the current time (program status information for the user).
-      headas_printf("\rtime: %.1lf s ", time);
-      fflush(NULL);
+	// Print the current time (program status information for the user).
+	//headas_printf("\rtime: %.1lf s ", time);
+	//fflush(NULL);
 
-      // Determine the telescope pointing direction at the current time.
-      telescope.nz = getTelescopePointing(ac, time, &status);
-      if (EXIT_SUCCESS!=status) break;
-
-      // Calculate the RA and DEC of the pointing direction.
-      calculate_ra_dec(telescope.nz, &telescope_ra, &telescope_dec);
-
-      // Check if the specified field of the sky might be within the FOV.
-      // Otherwise break this run and continue at the beginning of the loop 
-      // with the next time step.
-      pixel_position = unit_vector((parameters.ra_bins/2-(rpix1-1.0))*delt1 + rval1,
-				   (parameters.dec_bins/2-(rpix2-1.0))*delt2 + rval2);
-      if (check_fov(&pixel_position, &telescope.nz, field_min_align)!=0) continue;
-
-      // 2d Loop over the exposure map in order to determine all pixels that
-      // are currently within the FOV.
-      x1 = 0; x2 = parameters.ra_bins-1;
-      y1 = 0; y2 = parameters.dec_bins-1;
-      for (x=x1; x<=x2; x++) {
-	for (y=y1; y<=y2; y++) {
-	  pixel_position = unit_vector((x-(rpix1-1.0))*delt1 + rval1,
-				       (y-(rpix2-1.0))*delt2 + rval2);
-				       
-	  // Check if the pixel lies CLOSE to the FOV.
-	  // If not make a bigger jump.
-	  
-	  // Check if the current pixel lies within the FOV.
-	  if (check_fov(&pixel_position, &telescope.nz, fov_min_align)==0) {
-	    // Pixel lies inside the FOV!
-	    /*
-	    long xi=x, yi=y;
-	    while (xi<                   0) xi+=parameters.ra_bins;
-	    while (xi>= parameters.ra_bins) xi-=parameters.ra_bins;
-	    while (yi<                   0) yi+=parameters.dec_bins;
-	    while (yi>=parameters.dec_bins) yi-=parameters.dec_bins;
-	    expoMap[xi][yi] += parameters.dt;
-	    */
-
-	    // Calculate the off-axis angle ([rad])
-	    theta = acos(scalar_product(&telescope.nz, &pixel_position));
-
-	    // Add the exposure time step weighted with the vignetting
-	    // factor for this particular off-axis angle at 1 keV.
-	    // The azimuthal angle is neglected (TODO).
-	    expoMap[x][y] += 
-	      parameters.dt * 
-	      get_Vignetting_Factor(vignetting, 1., theta, 0.);
-	  }
-	}
-      }
-    } // END of scanning-LOOP over the specified time interval.
+	status=timestep(expoMap, &imgParams, time, parameters.dt,
+			ac, vignetting, field_min_align, fov_min_align);
+	if (status != EXIT_SUCCESS) break;
+      } 
+      if (status != EXIT_SUCCESS) break;
+      // END of LOOP over the specified time interval.
+      //    }
     // END of generating the exposure map.
 
 
@@ -240,20 +267,20 @@ int eroexposure_main() {
     double buffer;
     if (fits_update_key(fptr, TSTRING, "CTYPE1", "RA---CAR", "", &status)) break;   
     if (fits_update_key(fptr, TSTRING, "CUNIT1", "deg", "", &status)) break;   
-    buffer = rval1 * 180./M_PI;
+    buffer = imgParams.rval1 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CRVAL1", &buffer, "", &status)) break;
-    buffer = rpix1;
+    buffer = imgParams.rpix1;
     if (fits_update_key(fptr, TDOUBLE, "CRPIX1", &buffer, "", &status)) break;
-    buffer = delt1 * 180./M_PI;
+    buffer = imgParams.delt1 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CDELT1", &buffer, "", &status)) break;
 
     if (fits_update_key(fptr, TSTRING, "CTYPE2", "DEC--CAR", "", &status)) break;   
     if (fits_update_key(fptr, TSTRING, "CUNIT2", "deg", "", &status)) break;   
-    buffer = rval2 * 180./M_PI;
+    buffer = imgParams.rval2 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CRVAL2", &buffer, "", &status)) break;
-    buffer = rpix2;
+    buffer = imgParams.rpix2;
     if (fits_update_key(fptr, TDOUBLE, "CRPIX2", &buffer, "", &status)) break;
-    buffer = delt2  * 180./M_PI;
+    buffer = imgParams.delt2  * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CDELT2", &buffer, "", &status)) break;
 
 
@@ -261,7 +288,7 @@ int eroexposure_main() {
     long fpixel[2] = {1, 1};  // Lower left corner.
     //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
-    long lpixel[2] = {parameters.ra_bins, parameters.dec_bins}; 
+    long lpixel[2] = {imgParams.ra_bins, imgParams.dec_bins}; 
     fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expoMap1d, &status);
 
   } while(0);  // END of the error handling loop.
