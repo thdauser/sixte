@@ -28,7 +28,7 @@ libdetectors_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 			  impactlistfile.c uniformdetectorbackground.c	\
 			  framestoredetector.c erositaeventfile.c	\
 			  wfidetector.c wfieventfile.c xmsdetector.c	\
-			  xmseventfile.c htrsdetector.c			\
+			  xmseventfile.c htrsdetector.c gendet.c	\
 			  htrseventfile.c hexagonalpixels.c		\
 			  arcpixels.c telemetrypacket.c			\
 			  htrstelstream.c comadetector.c		\
@@ -46,7 +46,7 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  arcpixels.h eventfile.h impactlistfile.h impact.h	\
 		  uniformdetectorbackground.h framestoredetector.h	\
 		  erositaeventfile.h erositaevent.h wfidetector.h	\
-		  wfieventfile.h wfievent.h xmsdetector.h		\
+		  wfieventfile.h wfievent.h xmsdetector.h gendet.h	\
 		  xmseventfile.h xmsevent.h htrsdetector.h		\
 		  htrseventfile.h htrsevent.h telemetrypacket.h		\
 		  htrstelstream.h comadetector.h comaeventfile.h	\
