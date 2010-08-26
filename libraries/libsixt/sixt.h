@@ -19,6 +19,9 @@
 #include "headas_error.h"
 #include "headas_rand.h"
 
+#include "sixt_random.h"
+#include "sixt_string.h"
+
 
 #define FILENAME_LENGTH 512 /**< Maximum length of a filename. */
 #define MAXMSG 512 /**< Maximum length of a message string. */

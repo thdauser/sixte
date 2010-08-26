@@ -1,4 +1,16 @@
 <?xml version="1.0"?>
 <detector type="eroframestore">
+
     <dimensions xwidth="384" ywidth="384"/>
+
+    <wcs xrpix="192.5" yrpix="192.5"
+	 xrval="0."    yrval="0."
+	 xdelt="75.e-6" ydelt="75.e-6"/>
+
+    <response filename="/home/schmid/erosita/rsp/erosita_iv_7telonaxis_ff.rsp"/>
+
+    <threshold type="lower" unit="keV" value="150.e-3"/>
+    <threshold type="upper" unit="keV" value="12."/>
+
+    <readout mode="time"></readout>
 </detector>
