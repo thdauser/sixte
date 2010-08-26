@@ -59,8 +59,7 @@ int framestore_simulation_main() {
 		      attitude_filename, comment, &status)) break;
 
 
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
+    // Initialize HEADAS random number generator.
     HDmtInit(SIXT_HD_RANDOM_SEED);
 
 

@@ -1,12 +1,12 @@
 #include "gendetline.h"
 
 
-GenDetLine* newGenDetLine(int xwidth, int* status)
+GenDetLine* newGenDetLine(const int xwidth, int* const status)
 {
   GenDetLine* line=NULL;
 
   // Check if the requested line length is positive.
-  if (line <= 0) {
+  if (xwidth <= 0) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: Invalid line length for GenDetLine!\n", *status);
     return(line);
@@ -52,7 +52,7 @@ void destroyGenDetLine(GenDetLine** line)
 }
 
 
-void clearGenDetLine(GenDetLine* line)
+void clearGenDetLine(GenDetLine* const line)
 {
   // Check if the line contains any charge. If not the clearing
   // is not necessary.

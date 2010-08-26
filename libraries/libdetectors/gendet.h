@@ -20,6 +20,9 @@
     detector are defined in a detector specific XML file. */
 typedef struct {
 
+  /** Detector dimensions. Width and height [pixels]. */
+  int xwidth, ywidth;
+
   /** Array of pointers to pixel lines. */
   GenDetLine** line;
 
@@ -39,11 +42,11 @@ typedef struct {
 
 
 /** Constructor. Allocates memory for a new GenDet data structure. */
-GenDet* newGenDet(int* status);
+GenDet* newGenDet(const char* const filename, int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */
-void destroyGenDet(GenDet** gendet);
+void destroyGenDet(GenDet** det);
 
 
 #endif /* GENDET_H */

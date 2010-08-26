@@ -34,7 +34,7 @@ typedef struct {
 
 /** Constructor. Returns a pointer to the newly allocated and cleared
     GenDetLine data structure. */
-GenDetLine* newGenDetLine(int xwidth, int* status);
+GenDetLine* newGenDetLine(const int xwidth, int* const status);
 
 /** Destructor. Releases the allocated memory and sets the pointer to
     the GenDetLine data structure to NULL. */
@@ -43,7 +43,7 @@ void destroyGenDetLine(GenDetLine** line);
 /** Clear all pixels in the GenDetLine. If the anycharge flag of the
     GenDetLine is set to 0, the clearing will be skipped, because in
     this cause all of the pixels should already be set to 0 charge. */
-void clearGenDetLine(GenDetLine* line);
+void clearGenDetLine(GenDetLine* const line);
 
 
 #endif /* GENDETLINE_H */

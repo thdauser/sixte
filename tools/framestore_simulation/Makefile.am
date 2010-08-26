@@ -25,5 +25,7 @@ dist_pfiles_DATA = framestore_simulation.par
 bin_PROGRAMS = framestore_simulation
 
 framestore_simulation_SOURCES = framestore_simulation.c framestore_simulation.h
-framestore_simulation_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
+framestore_simulation_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+framestore_simulation_LDADD+= @top_builddir@/libraries/libdetectors/libdetectors.la
+framestore_simulation_LDADD+= @top_builddir@/libraries/libastrosources/libastrosources.la
 
