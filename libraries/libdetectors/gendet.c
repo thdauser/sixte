@@ -186,6 +186,8 @@ void destroyGenDet(GenDet** det)
 
 static void parseGenDetXML(GenDet* const det, const char* const filename, int* const status)
 {
+  headas_chat(5, "read detector setup from XML file '%s' ...\n", filename);
+
   // Open the specified file.
   FILE* xmlfile = fopen(filename, "r");
   if (NULL==xmlfile) {
@@ -360,12 +362,13 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, int* c
   int line   = getGenDetAffectedLine  (det, impact->position.y);
   int column = getGenDetAffectedColumn(det, impact->position.x);
 
+  printf("%e %d\n", impact->position.x, column);
+  printf("%e %d\n", impact->position.y, line);
+
   // Check if the returned values are valid line and column indices.
   if ((0>column) || (0>line)) {
     return;
   }
 
-  printf("%lf %d\n", impact->position.x, column);
-  printf("%lf %d\n", impact->position.y, line);
 }
 

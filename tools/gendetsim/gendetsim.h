@@ -4,6 +4,7 @@
 
 #include "sixt.h"
 #include "gendet.h"
+#include "impact.h"
 
 #define TOOLSUB gendetsim_main
 #include "headas_main.c"

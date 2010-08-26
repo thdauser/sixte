@@ -47,6 +47,13 @@ int gendetsim_main() {
 
     headas_chat(5, "start detection process ...\n");
 
+    Impact impact = { .position = { .x = 0.0144,
+				    .y = 0. },
+		      .time = 0.,
+		      .energy = 0. };
+
+    addGenDetPhotonImpact(det, &impact, &status);
+
   } while(0); // END of the error handling loop.
 
   // --- END of Detection process ---
