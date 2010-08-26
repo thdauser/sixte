@@ -38,6 +38,7 @@ int gendetsim_main() {
 
     // Initialize the detector data structure.
     det = newGenDet(parameters.xml_filename, &status);
+    if (EXIT_SUCCESS!=status) break;
 
     // --- END of Initialization ---
 
@@ -52,7 +53,7 @@ int gendetsim_main() {
 
 
   // --- Cleaning up ---
-  headas_chat(5, "\ncleaning up ...\n");
+  headas_chat(5, "cleaning up ...\n");
 
   // Release HEADAS random number generator.
   HDmtFree();

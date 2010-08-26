@@ -65,6 +65,12 @@ AC_SEARCH_LIBS(ffopen,
 #AC_SUBST(lib_cfitsio)
 #################################### 
 
+####################################
+# expat
+AC_SEARCH_LIBS(XML_Parse, [expat], 
+	[], [AC_MSG_ERROR([No expat library found!])], [])
+
+
 AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
 AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
 

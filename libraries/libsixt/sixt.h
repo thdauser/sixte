@@ -11,6 +11,7 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#include <expat.h>
 
 #include "fitsio.h"
 #include "pil.h"

@@ -2,6 +2,7 @@
 #define GENDET_H 1
 
 #include "sixt.h"
+#include "sixt_string.h"
 #include "gendetline.h"
 
 #ifndef HEASP_H

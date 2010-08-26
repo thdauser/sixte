@@ -18,6 +18,10 @@ dist_fitstemplates_DATA += htrs.eventlist.tpl
 dist_fitstemplates_DATA += impactlist.tpl
 dist_fitstemplates_DATA += coma.eventlist.tpl
 
+# Directory where to install the XML files.
+xmldir = $(pkgdatadir)/xml
+dist_xml_DATA  = eroframestore.xml 
+
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
