@@ -12,5 +12,16 @@
     <threshold type="lower" unit="keV" value="150.e-3"/>
     <threshold type="upper" unit="keV" value="12."/>
 
-    <readout mode="time"></readout>
+    <readout mode="time">
+      <wait time="0.05"/>
+
+      <readoutline lineindex="0" readoutindex="0"/>
+      <lineshift/>
+      <wait time="1.e-6"/>
+
+      <readoutline lineindex="0" readoutindex="1"/>
+      <lineshift/>
+      <wait time="1.e-6"/>
+
+    </readout>
 </detector>

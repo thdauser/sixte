@@ -5,6 +5,7 @@
 #include "gendetline.h"
 #include "genericdetector.h"
 #include "impact.h"
+#include "clocklist.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -50,13 +51,14 @@ typedef struct {
       for the X-ray sources, the ARF contributions have to be removed
       by normalizing the RSP matrix. */
   struct RMF* rmf;
-  /** Filename of the detector response matrix. */
-  char rmf_filename[MAXMSG];
 
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or
       by a timing clock (GENDET_TIME_TRIGGERED). */
   int readout_trigger;
+
+  /** List of clock operations for time-triggered detectors. */
+  ClockList* clocklist;
 
 } GenDet;
 

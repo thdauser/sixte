@@ -124,6 +124,12 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
   long maximum=0, minimum=1000000;
   long nmaxidx=0, nminidx=0;
   long amaxidx[ARRAY_LENGTH], aminidx[ARRAY_LENGTH];
+  // Initialize with 0 values.
+  for(nmaxidx=0; nmaxidx<ARRAY_LENGTH; nmaxidx++) {
+    amaxidx[nmaxidx]=0;
+    aminidx[nmaxidx]=0;
+  }
+  nmaxidx=0;
   for (i=0; i<ncomponents; i++) {
     if (components[i].pha > maximum) maximum = components[i].pha;
     if (components[i].pha < minimum) minimum = components[i].pha;

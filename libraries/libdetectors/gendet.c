@@ -16,6 +16,7 @@ static void GenDetXMLElementEnd(void *data, const char *el);
 struct XMLData {
   GenDet* det;
   int depth;
+  int status;
 };
 
 
@@ -43,11 +44,10 @@ static int getAffectedIndex(const double x, const float rpix,
 // Code
 ////////////////////////////////////////////////////////////////////
 
-GenDet* newGenDet(const char* const filename, int* const status) {
-  GenDet* det=NULL;
-
+GenDet* newGenDet(const char* const filename, int* const status) 
+{
   // Allocate memory.
-  det=(GenDet*)malloc(sizeof(GenDet));
+  GenDet* det=(GenDet*)malloc(sizeof(GenDet));
   if (NULL==det) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: Memory allocation for GenDet failed!\n", *status);
@@ -57,92 +57,15 @@ GenDet* newGenDet(const char* const filename, int* const status) {
   // Initialize all pointers with NULL.
   det->line=NULL;
   det->rmf =NULL;
+  det->clocklist=NULL;
 
-  // Set initial values before parsing the parameters from the XML file.
-  det->xwidth=-1;
-  det->ywidth=-1;
-  det->xrpix =-1.;
-  det->yrpix =-1.;
-  det->xrval =-1.;
-  det->yrval =-1.;
-  det->xdelt =-1.;
-  det->ydelt =-1.;
-  strcpy(det->rmf_filename, "");
-  det->readout_trigger = 0;
+  // Get empty ClockList.
+  det->clocklist = newClockList(status);
+  if (EXIT_SUCCESS!=*status) return(det);
 
   // Read in the XML definition of the detector.
   parseGenDetXML(det, filename, status);
   if (EXIT_SUCCESS!=*status) return(det);
-
-  // Check if all required parameters have been read successfully from 
-  // the XML file.
-  if (-1==det->xwidth) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x-width of GenDet pixel array!\n", 
-		   *status);
-    return(det);    
-  }  
-  if (-1==det->ywidth) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y-width of GenDet pixel array!\n", 
-		   *status);
-    return(det);    
-  }
-
-  if (0>det->xrpix) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x reference pixel of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-  if (0>det->yrpix) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y reference pixel of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-
-  if (0>det->xrval) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x reference value of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-  if (0>det->yrval) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y reference value of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-
-  if (0>det->xdelt) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x pixel width of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-  if (0>det->ydelt) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y pixel width of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-  
-  if (0==strlen(det->rmf_filename)) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for response file of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-
-  if (0==det->readout_trigger) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for the readout trigger of GenDet!\n", 
-		   *status);
-    return(det);    
-  }
-  // END of checking, if all detector parameters have successfully been 
-  // read from the XML file.
     
   // Allocate memory for the pixels.
   det->line=(GenDetLine**)malloc(det->ywidth*sizeof(GenDetLine*));
@@ -156,10 +79,6 @@ GenDet* newGenDet(const char* const filename, int* const status) {
     det->line[i] = newGenDetLine(det->xwidth, status);
     if (EXIT_SUCCESS!=*status) return(det);
   }
-
-  // Load the detector response file.
-  det->rmf = loadRMF(det->rmf_filename, status);
-  if (EXIT_SUCCESS!=*status) return(det);
 
   return(det);
 }
@@ -199,6 +118,17 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     return;
   }
 
+  // Set initial values before parsing the parameters from the XML file.
+  det->xwidth=-1;
+  det->ywidth=-1;
+  det->xrpix =-1.;
+  det->yrpix =-1.;
+  det->xrval =-1.;
+  det->yrval =-1.;
+  det->xdelt =-1.;
+  det->ydelt =-1.;
+  det->readout_trigger = 0;
+
   // Parse the XML data from the file using the expat library.
 
   // Get an XML_Parser object.
@@ -212,7 +142,8 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   // Set data that is passed to the handler functions.
   struct XMLData xmldata = {
     .depth = 0,
-    .det   = det
+    .det   = det,
+    .status = EXIT_SUCCESS
   };
   XML_SetUserData(parser, &xmldata);
 
@@ -243,10 +174,81 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
       HD_ERROR_THROW(msg, *status);
       return;
     }
+    if (EXIT_SUCCESS!=xmldata.status) return;
   } while (!done);
   XML_ParserFree(parser);
 
-  // Close the file handler.
+  // Check if all required parameters have been read successfully from 
+  // the XML file.
+  if (-1==det->xwidth) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for x-width of GenDet pixel array!\n", 
+		   *status);
+    return;    
+  }  
+  if (-1==det->ywidth) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for y-width of GenDet pixel array!\n", 
+		   *status);
+    return;    
+  }
+
+  if (0>det->xrpix) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for x reference pixel of GenDet!\n", 
+		   *status);
+    return;    
+  }
+  if (0>det->yrpix) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for y reference pixel of GenDet!\n", 
+		   *status);
+    return;    
+  }
+
+  if (0>det->xrval) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for x reference value of GenDet!\n", 
+		   *status);
+    return;    
+  }
+  if (0>det->yrval) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for y reference value of GenDet!\n", 
+		   *status);
+    return;    
+  }
+
+  if (0>det->xdelt) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for x pixel width of GenDet!\n", 
+		   *status);
+    return;    
+  }
+  if (0>det->ydelt) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for y pixel width of GenDet!\n", 
+		   *status);
+    return;    
+  }
+  
+  if (NULL==det->rmf) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for response file of GenDet!\n", 
+		   *status);
+    return;    
+  }
+
+  if (0==det->readout_trigger) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for the readout trigger of GenDet!\n", 
+		   *status);
+    return;    
+  }
+  // END of checking, if all detector parameters have successfully been 
+  // read from the XML file.
+
+  // Close the file handler to the XML file.
   fclose(xmlfile);
 }
 
@@ -259,62 +261,118 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
   char Uattribute[MAXMSG]; // Upper case version of XML attribute
   char Uvalue[MAXMSG];     // Upper case version of XML attribute value
 
+  // Some buffer variables for the attribute values.
+  int lineindex   =-1;
+  int readoutindex=-1;
+
+  // Check if an error has occurred previously.
+  if (EXIT_SUCCESS!=xmldata->status) return;
+
   // Convert the element to an upper case string.
   strcpy(Uelement, el);
   strtoupper(Uelement);
 
-  // Loop over the different attributes.
-  int i;
-  for (i=0; attr[i]; i+=2) {
-
-    // Convert the attribute to an upper case string.
-    strcpy(Uattribute, attr[i]);
-    strtoupper(Uattribute);
-
-    // Check the XML element name.
-    if (!strcmp(Uelement, "DIMENSIONS")) {
-      if (!strcmp(Uattribute, "XWIDTH")) {
-	xmldata->det->xwidth = atoi(attr[i+1]);
-      } else if (!strcmp(Uattribute, "YWIDTH")) {
-	xmldata->det->ywidth = atoi(attr[i+1]);
-      }
-    }
-
-    else if (!strcmp(Uelement, "WCS")) {
-      if (!strcmp(Uattribute, "XRPIX")) {
-	xmldata->det->xrpix = (float)atof(attr[i+1]);
-      } else if (!strcmp(Uattribute, "YRPIX")) {
-	xmldata->det->yrpix = (float)atof(attr[i+1]);
-      } else if (!strcmp(Uattribute, "XRVAL")) {
-	xmldata->det->xrval = (float)atof(attr[i+1]);
-      } else if (!strcmp(Uattribute, "YRVAL")) {
-	xmldata->det->yrval = (float)atof(attr[i+1]);
-      } else if (!strcmp(Uattribute, "XDELT")) {
-	xmldata->det->xdelt = (float)atof(attr[i+1]);
-      } else if (!strcmp(Uattribute, "YDELT")) {
-	xmldata->det->ydelt = (float)atof(attr[i+1]);
-      }
-    }
+  // Elements without attributes.
+  if (!strcmp(Uelement, "LINESHIFT")) {
+    CLLineShift* cllineshift = newCLLineShift(&xmldata->status);
+    append2ClockList(xmldata->det->clocklist, CL_LINESHIFT, 
+		     cllineshift, &xmldata->status);
     
-    else if (!strcmp(Uelement, "RESPONSE")) {
-      if (!strcmp(Uattribute, "FILENAME")) {
-	strcpy(xmldata->det->rmf_filename, attr[i+1]);
-      }
-    }
+  } else { // Elements with attributes.
 
-    else if (!strcmp(Uelement, "READOUT")) {
-      if (!strcmp(Uattribute, "MODE")) {
-	strcpy(Uvalue, attr[i+1]);
-	strtoupper(Uvalue);
-	if (!strcmp(Uvalue, "TIME")) {
-	  xmldata->det->readout_trigger = GENDET_TIME_TRIGGERED;
-	} else if (!strcmp(Uvalue, "EVENT")) {
-	  xmldata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
+    // Loop over the different attributes.
+    int i;
+    for (i=0; attr[i]; i+=2) {
+      
+      // Convert the attribute to an upper case string.
+      strcpy(Uattribute, attr[i]);
+      strtoupper(Uattribute);
+
+      // Check the XML element name.
+      if (!strcmp(Uelement, "DIMENSIONS")) {
+	if (!strcmp(Uattribute, "XWIDTH")) {
+	  xmldata->det->xwidth = atoi(attr[i+1]);
+	} else if (!strcmp(Uattribute, "YWIDTH")) {
+	  xmldata->det->ywidth = atoi(attr[i+1]);
 	}
       }
-    }
-  } 
-  // END of loop over different attributes.
+      
+      else if (!strcmp(Uelement, "WCS")) {
+	if (!strcmp(Uattribute, "XRPIX")) {
+	  xmldata->det->xrpix = (float)atof(attr[i+1]);
+	} else if (!strcmp(Uattribute, "YRPIX")) {
+	  xmldata->det->yrpix = (float)atof(attr[i+1]);
+	} else if (!strcmp(Uattribute, "XRVAL")) {
+	xmldata->det->xrval = (float)atof(attr[i+1]);
+	} else if (!strcmp(Uattribute, "YRVAL")) {
+	xmldata->det->yrval = (float)atof(attr[i+1]);
+	} else if (!strcmp(Uattribute, "XDELT")) {
+	  xmldata->det->xdelt = (float)atof(attr[i+1]);
+	} else if (!strcmp(Uattribute, "YDELT")) {
+	  xmldata->det->ydelt = (float)atof(attr[i+1]);
+	}
+      }
+      
+      else if (!strcmp(Uelement, "RESPONSE")) {
+	if (!strcmp(Uattribute, "FILENAME")) {
+	  // Load the detector response file.
+	  char buffer[MAXMSG];
+	  strcpy(buffer, attr[i+1]);
+	  xmldata->det->rmf = loadRMF(buffer, &xmldata->status);
+	}
+      }
+      
+      else if (!strcmp(Uelement, "READOUT")) {
+	if (!strcmp(Uattribute, "MODE")) {
+	  strcpy(Uvalue, attr[i+1]);
+	  strtoupper(Uvalue);
+	  if (!strcmp(Uvalue, "TIME")) {
+	    xmldata->det->readout_trigger = GENDET_TIME_TRIGGERED;
+	  } else if (!strcmp(Uvalue, "EVENT")) {
+	    xmldata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
+	  }
+	}
+      }
+      
+      else if (!strcmp(Uelement, "WAIT")) {
+	if (!strcmp(Uattribute, "TIME")) {
+	  CLWait* clwait = newCLWait(atof(attr[i+1]), &xmldata->status);
+	  append2ClockList(xmldata->det->clocklist, CL_WAIT, 
+			   clwait, &xmldata->status);
+	}
+      }
+      
+      else if (!strcmp(Uelement, "READOUTLINE")) {
+	if (!strcmp(Uattribute, "LINEINDEX")) {
+	  lineindex = atoi(attr[i+1]);
+	  if (lineindex<0) {
+	    xmldata->status=EXIT_FAILURE;
+	    HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
+	    return;
+	  }
+	} else if (!strcmp(Uattribute, "READOUTINDEX")) {
+	  readoutindex = atoi(attr[i+1]);
+	  if (readoutindex<0) {
+	    xmldata->status=EXIT_FAILURE;
+	    HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
+	    return;
+	  }
+	  readoutindex = atoi(attr[i+1]);
+	}
+	if ((lineindex>=0) && (readoutindex>=0)) {
+	  CLReadoutLine* clreadoutline = newCLReadoutLine(lineindex,
+							  readoutindex,
+							  &xmldata->status);
+	  append2ClockList(xmldata->det->clocklist, CL_READOUTLINE, 
+			   clreadoutline, &xmldata->status);
+	}
+      }
+      
+      if (EXIT_SUCCESS!=xmldata->status) return;
+    } 
+    // END of loop over different attributes.
+  }
+  // END of elements with attributes.
 }
 
 
@@ -323,7 +381,8 @@ static void GenDetXMLElementEnd(void *data, const char *el)
 {
   struct XMLData* xmldata = (struct XMLData*)data;
 
-  xmldata->depth--;
+  // Check if an error has occurred previously.
+  if (EXIT_SUCCESS!=xmldata->status) return;
 
   return;
 }
