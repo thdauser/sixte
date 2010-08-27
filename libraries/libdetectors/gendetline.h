@@ -45,5 +45,17 @@ void destroyGenDetLine(GenDetLine** line);
     this cause all of the pixels should already be set to 0 charge. */
 void clearGenDetLine(GenDetLine* const line);
 
+/** Add the charges in line 1 to line 0. The line must have the same
+    width. */
+void addGenDetLine(GenDetLine* const line0, GenDetLine* const line1);
+
+/** Switch the 2 specified lines. */
+void switchGenDetLines(GenDetLine** const line0, GenDetLine** const line1);
+
+/** Read-out a charge from the specified line. As long as there are
+    any charges, the return value is 1. If the line contains no more
+    charges, the function return value is 0. */
+int readoutGenDetLine(GenDetLine* const line, float* charge, int* x);
+
 
 #endif /* GENDETLINE_H */

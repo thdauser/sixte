@@ -3,6 +3,8 @@
 
 #include "sixt.h"
 #include "gendetline.h"
+#include "genevent.h"
+#include "geneventfile.h"
 #include "genericdetector.h"
 #include "impact.h"
 #include "clocklist.h"
@@ -17,10 +19,10 @@
 // Constants
 /////////////////////////////////////////////////////////////////
 
-
-#define GENDET_TIME_TRIGGERED  1
-#define GENDET_EVENT_TRIGGERED 2
-
+typedef enum {
+  GENDET_TIME_TRIGGERED  = 1,
+  GENDET_EVENT_TRIGGERED = 2
+} ReadoutTrigger;
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -55,10 +57,13 @@ typedef struct {
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or
       by a timing clock (GENDET_TIME_TRIGGERED). */
-  int readout_trigger;
+  ReadoutTrigger readout_trigger;
 
   /** List of clock operations for time-triggered detectors. */
   ClockList* clocklist;
+
+  /** Event file for the output of the detected events. */
+  GenEventFile* eventfile;
 
 } GenDet;
 
@@ -73,10 +78,25 @@ GenDet* newGenDet(const char* const filename, int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */
-void destroyGenDet(GenDet** det);
+void destroyGenDet(GenDet** det, int* const status);
 
 /** Add a new photon impact to the detector. */
 void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, int* const status);
+
+/** Operate the time-triggered elements of the GenDet detector up to
+    the specified point of time. */
+void operateGenDetClock(GenDet* const det, const double time, int* const status);
+
+/** Shift the lines of the GenDet detector pixel array by one line
+    into the direction of the read-out node in line 0. The charges in
+    line 1 are added to the charges in line 0, such that the content
+    of line 0 is not lost. */
+void GenDetLineShift(GenDet* const det);
+
+/** Read-out a particular line of the GenDet pixel array and store the
+    charges in the output event file. */
+void GenDetReadoutLine(GenDet* const det, const int lineindex, const int readoutindex, 
+		       const double time, int* const status);
 
 
 #endif /* GENDET_H */

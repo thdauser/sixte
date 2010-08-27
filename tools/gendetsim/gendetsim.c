@@ -66,7 +66,7 @@ int gendetsim_main() {
   HDmtFree();
 
   // Destroy the detector data structure.
-  destroyGenDet(&det);
+  destroyGenDet(&det, &status);
   
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);

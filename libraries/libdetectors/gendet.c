@@ -85,9 +85,10 @@ GenDet* newGenDet(const char* const filename, int* const status)
 
 
 
-void destroyGenDet(GenDet** det)
+void destroyGenDet(GenDet** det, int* const status)
 {
   if (NULL!=*det) {
+    // Destroy the pixel array.
     if (NULL!=(*det)->line) {
       int i;
       for (i=0; i<(*det)->ywidth; i++) {
@@ -95,6 +96,9 @@ void destroyGenDet(GenDet** det)
       }
       free((*det)->line);
     }
+
+    // Close the event file.
+    destroyGenEventFile(&(*det)->eventfile, status);
 
     free(*det);
     *det=NULL;
@@ -381,6 +385,8 @@ static void GenDetXMLElementEnd(void *data, const char *el)
 {
   struct XMLData* xmldata = (struct XMLData*)data;
 
+  (void)el; // Unused parameter.
+
   // Check if an error has occurred previously.
   if (EXIT_SUCCESS!=xmldata->status) return;
 
@@ -417,6 +423,11 @@ static int getAffectedIndex(const double x, const float rpix,
 
 void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, int* const status)
 {
+
+  // Call the detector operating clock routine.
+  operateGenDetClock(det, impact->time, status);
+  if (EXIT_SUCCESS!=status) return;
+
   // Determine the affected detector line and column.
   int line   = getGenDetAffectedLine  (det, impact->position.y);
   int column = getGenDetAffectedColumn(det, impact->position.x);
@@ -430,4 +441,84 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, int* c
   }
 
 }
+
+
+
+void operateGenDetClock(GenDet* const det, const double time, int* const status)
+{
+  // Check if the detector operation setup is time-triggered.
+  if (GENDET_TIME_TRIGGERED!=det->readout_trigger) return;
+
+  // Get the next element from the clock list.
+  CLType type;
+  void* element=NULL;
+  CLReadoutLine* clreadoutline=NULL;
+  do {
+    getClockListElement(det->clocklist, time, &type, &element);
+    switch (type) {
+    case CL_NONE:
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Clock list is empty!\n", *status);
+      return;
+    case CL_WAIT:
+      break;
+    case CL_LINESHIFT:
+      GenDetLineShift(det);
+      break;
+    case CL_READOUTLINE:
+      clreadoutline = (CLReadoutLine*)element;
+      GenDetReadoutLine(det, clreadoutline->lineindex, clreadoutline->readoutindex, 
+			det->clocklist->time, status);
+      break;
+    }
+    if(EXIT_SUCCESS!=*status) return;
+  } while(type!=CL_WAIT);
+}
+
+
+
+void GenDetLineShift(GenDet* const det)
+{
+  // TODO Apply the Charge Transfer Efficiency.
+
+  // Check if the detector contains more than 1 line.
+  if (2>det->ywidth) return;
+
+  // Add the charges in line 1 to line 0.
+  addGenDetLine(det->line[0], det->line[1]);
+
+  // Clear the charges in line 1, as they are now contained in line 0.
+  clearGenDetLine(det->line[1]);
+
+  // Switch the other lines in increasing order such that the cleared 
+  // original line 1 will end up as the last line.
+  int i;
+  for (i=1; i<det->ywidth-1; i++) {
+    switchGenDetLines(&det->line[i], &det->line[i+1]);
+  }
+}
+
+
+void GenDetReadoutLine(GenDet* const det, const int lineindex, 
+		       const int readoutindex, 
+		       const double time, int* const status)
+{
+  // Event data structure.
+  GenEvent event;
+  float charge;
+
+  while (readoutGenDetLine(det->line[lineindex], &charge, &event.rawx)) {
+    // TODO Apply the threshold.
+
+    // TODO Apply the detector response.
+
+    // Store the additional information.
+    event.rawy = readoutindex;
+    event.time = time; // Time of detection.
+
+    // Store the event in the output event file.
+    addGenEvent2File(det->eventfile, &event, status);
+  }
+}
+
 

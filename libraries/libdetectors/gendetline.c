@@ -64,3 +64,47 @@ void clearGenDetLine(GenDetLine* const line)
     line->anycharge=0;
   }
 }
+
+
+void addGenDetLine(GenDetLine* const line0, GenDetLine* const line1)
+{
+  // Add the charges.
+  int i;
+  for(i=0; i<line1->xwidth; i++) {
+    line0->charge[i] += line1->charge[i];
+  }
+  // Set the anycharge flag.
+  if (0==line0->anycharge) {
+    line0->anycharge = line1->anycharge;
+  }
+}
+
+
+void switchGenDetLines(GenDetLine** const line0, GenDetLine** const line1)
+{
+  GenDetLine* buffer = *line0;
+  *line0 = *line1;
+  *line1 = buffer;
+}
+
+
+int readoutGenDetLine(GenDetLine* const line, float* charge, int* x)
+{
+  if (0==line->anycharge) {
+    return(0);
+  } else {
+    int i;
+    for (i=0; i<line->xwidth; i++) {
+      if (line->charge[i]>0.) {
+	// Return the pixel charge.
+	*x = i;
+	*charge = line->charge[i];
+	// Delete the charge in the pixel array.
+	line->charge[i] = 0.;
+	return(1);
+      }
+    }
+    return(0);
+  }
+}
+

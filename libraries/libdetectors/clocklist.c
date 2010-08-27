@@ -17,6 +17,8 @@ ClockList* newClockList(int* const status)
   list->type=NULL;
   list->list=NULL;
   list->nelements=0;
+  list->element  =0;
+  list->time     =0.;
 
   return(list);
 }
@@ -79,6 +81,48 @@ void append2ClockList(ClockList* const list, const CLType type,
   // Setup the values of the last, newly appended element.
   list->type[list->nelements-1] = type;
   list->list[list->nelements-1] = element;
+}
+
+
+
+static inline void moveClockList2NextElement(ClockList* const list)
+{
+  list->element++;
+  if (list->element>=list->nelements) {
+    list->element=0;
+  }
+}
+
+
+
+void getClockListElement(ClockList* const list, const double time,
+			 CLType* type, void** element)
+{
+  // Check if the list contains any elements.
+  if (0==list->nelements) {
+    type=CL_NONE;
+    return;
+  }
+
+  // If the current element is of the type CL_WAIT, we have to check
+  // whether the time specified in the parameter list exceeds the waiting
+  // period. In that case move to the next element.
+  while (CL_WAIT==list->type[list->element]) {
+    CLWait* clwait = (CLWait*)list->list[list->element];
+    if (list->time+clwait->time >= time) {
+      *type   =CL_WAIT;
+      *element=list->list[list->element];
+      return;
+    } else {
+      moveClockList2NextElement(list);
+      list->time+=clwait->time;
+    }
+  }
+  
+  // The current element is NOT of type CL_WAIT.
+  *type   =list->type[list->element];
+  *element=list->list[list->element];
+  moveClockList2NextElement(list);
 }
 
 

@@ -15,6 +15,7 @@
 
 
 typedef enum {
+  CL_NONE        = 0,
   CL_WAIT        = 1,
   CL_LINESHIFT   = 2,
   CL_READOUTLINE = 3
@@ -38,6 +39,12 @@ typedef struct {
 
   /** Array of ClockList elements. */
   void** list;
+
+  /** Current element. Index starts at 0. */
+  int element;
+
+  /** Current time. */
+  double time;
 
 } ClockList;
 
@@ -72,7 +79,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
-/** Constructor. Allocates memory for a new ClockList data
+/** Constructor. Allocates memory for a new empty ClockList data
     structure. */
 ClockList* newClockList(int* const status);
 
@@ -80,19 +87,31 @@ ClockList* newClockList(int* const status);
     to the ClockList data structure to NULL. */
 void destroyClockList(ClockList** list);
 
+
+
 /** Append a new element at the end of the ClockList. */
 void append2ClockList(ClockList* const list, const CLType type, 
 		      void* const element, int* const status);
+
+/** Get the next ClockList element. If the specified list is empty,
+    the return type is CL_NONE. If the detector currently is in a wait
+    status, a CL_WAIT type is returned. */
+void getClockListElement(ClockList* const list, const double time,
+			 CLType* type, void** element);
+
+
 
 /** Constructor for CLWait. */
 CLWait* newCLWait(const double time, int* const status);
 /** Destructor for CLWait. */
 void destroyCLWait(CLWait** clwait);
 
+
 /** Constructor for CLLineShift. */
 CLLineShift* newCLLineShift(int* const status);
 /** Destructor for CLLineShift. */
 void destroyCLLineShift(CLLineShift** cllineshift);
+
 
 /** Constructor for CLReadoutLine. */
 CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex, 
