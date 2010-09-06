@@ -17,6 +17,7 @@
 
 struct Parameters {
   char xml_filename[MAXMSG];
+  char event_filename[MAXMSG];
 };
 
 

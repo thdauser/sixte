@@ -108,3 +108,14 @@ int readoutGenDetLine(GenDetLine* const line, float* charge, int* x)
   }
 }
 
+
+inline void addGenDetCharge2Pixel(GenDetLine* const line, 
+				  const int column, 
+				  float energy)
+{
+  line->charge[column] += energy;
+  line->anycharge       = 1;
+}
+
+
+

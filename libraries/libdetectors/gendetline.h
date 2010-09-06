@@ -57,5 +57,11 @@ void switchGenDetLines(GenDetLine** const line0, GenDetLine** const line1);
     charges, the function return value is 0. */
 int readoutGenDetLine(GenDetLine* const line, float* charge, int* x);
 
+/** Add a charge (photon energy [keV]) to a particular pixel in the
+    specified GenDetLine. The routine sets the anycharge flag of the
+    affected line. */
+inline void addGenDetCharge2Pixel(GenDetLine* const line, const int column, 
+				  float energy);
+
 
 #endif /* GENDETLINE_H */

@@ -64,6 +64,8 @@ typedef struct {
 
   /** Event file for the output of the detected events. */
   GenEventFile* eventfile;
+  /** File name of the template for the event list FITS file. */
+  char eventfile_template[MAXMSG];
 
 } GenDet;
 
@@ -79,6 +81,10 @@ GenDet* newGenDet(const char* const filename, int* const status);
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */
 void destroyGenDet(GenDet** det, int* const status);
+
+/** Set the output event list file. */
+void GenDetSetEventFile(GenDet* const det, const char* const filename, 
+			int* const status);
 
 /** Add a new photon impact to the detector. */
 void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, int* const status);

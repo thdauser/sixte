@@ -8,6 +8,7 @@
 	 xdelt="75.e-6" ydelt="75.e-6"/>
 
     <response filename="/home/schmid/erosita/rsp/erosita_iv_7telonaxis_ff.rsp"/>
+    <eventfile template="geneventfile.tpl"/>
 
     <threshold type="lower" unit="keV" value="150.e-3"/>
     <threshold type="upper" unit="keV" value="12."/>

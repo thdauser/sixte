@@ -54,6 +54,8 @@ GenEventFile* openNewGenEventFile(const char* const filename,
   // Create a new event list FITS file from the template file.
   char buffer[MAXMSG];
   sprintf(buffer, "%s(%s)", filename, template);
+  headas_chat(5, "create new event list file '%s' from template '%s' ...\n", 
+	      filename, template);
   if (fits_create_file(&file->fptr, buffer, status)) return(file);
 
   // Set the time-keyword in the Event List Header.
@@ -80,6 +82,10 @@ GenEventFile* openNewGenEventFile(const char* const filename,
   // to the first extension.
   HDpar_stamp(file->fptr, 1, status);
 
+  // Move to the right (second) HDU with the binary table extension.
+  int hdutype;
+  if (fits_movabs_hdu(file->fptr, 2, &hdutype, status)) return(file);
+
   // Determine the column numbers.
   if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
     return(file);
@@ -99,6 +105,13 @@ GenEventFile* openNewGenEventFile(const char* const filename,
 void addGenEvent2File(GenEventFile* const file, GenEvent* const event, 
 		      int* const status)
 {
+  // Check if the event file has been opened.
+  if (NULL==file) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: no event file opened!\n", *status);
+    return;
+  }
+
   // Insert a new, empty row to the table:
   if (fits_insert_rows(file->fptr, file->row, 1, status)) return;
   file->row++;

@@ -40,6 +40,10 @@ int gendetsim_main() {
     det = newGenDet(parameters.xml_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
+    // Set the output event file.
+    GenDetSetEventFile(det, parameters.event_filename, &status);
+    if (EXIT_SUCCESS!=status) break;
+
     // --- END of Initialization ---
 
 
@@ -50,9 +54,16 @@ int gendetsim_main() {
     Impact impact = { .position = { .x = 0.0144,
 				    .y = 0. },
 		      .time = 0.,
-		      .energy = 0. };
+		      .energy = 1. };
 
     addGenDetPhotonImpact(det, &impact, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    
+    // Finalize the GenDet. Perform the time-triggered operations 
+    // without adding any new charges.
+    operateGenDetClock(det, 10., &status);
+    if (EXIT_SUCCESS!=status) break;
 
   } while(0); // END of the error handling loop.
 
@@ -80,9 +91,14 @@ int getpar(struct Parameters* const parameters)
 {
   int status=EXIT_SUCCESS; // Error status
 
-  // Get the name of the impact list file (FITS file)
+  // Get the name of the detector XML description file (FITS file).
   if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
     HD_ERROR_THROW("Error reading the name of the detector definition XML file!\n", status);
+  }
+
+  // Get the name of the output event list file (FITS file).
+  else if ((status = PILGetFname("event_filename", parameters->event_filename))) {
+    HD_ERROR_THROW("Error reading the name of the output event list file!\n", status);
   }
 
   return(status);

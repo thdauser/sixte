@@ -1,3 +1,4 @@
 xml_filename,fre,lq,"eroframestore.xml",,,"XML file with detector definition "
+event_filename,f,lq,"events.fits",,,"output event list file "
 chatter,i,lh,5,,,"chatter: control verbosity of the program "
 history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

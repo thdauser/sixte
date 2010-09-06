@@ -41,8 +41,9 @@ static int getAffectedIndex(const double x, const float rpix,
 
 
 ////////////////////////////////////////////////////////////////////
-// Code
+// Program Code
 ////////////////////////////////////////////////////////////////////
+
 
 GenDet* newGenDet(const char* const filename, int* const status) 
 {
@@ -58,6 +59,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->line=NULL;
   det->rmf =NULL;
   det->clocklist=NULL;
+  det->eventfile=NULL;
 
   // Get empty ClockList.
   det->clocklist = newClockList(status);
@@ -133,6 +135,9 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->ydelt =-1.;
   det->readout_trigger = 0;
 
+  // Set string variables to empty strings.
+  strcpy(det->eventfile_template, "");
+
   // Parse the XML data from the file using the expat library.
 
   // Get an XML_Parser object.
@@ -154,9 +159,9 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   // Set the handler functions.
   XML_SetElementHandler(parser, GenDetXMLElementStart, GenDetXMLElementEnd);
 
-  int done =0;
+  int done=0;
   int len; // Number of chars in buffer.
-  const int buffer_size=10;
+  const int buffer_size=200;
   // Input buffer with an additional byte at the end for the 
   // termination of the string.
   char buffer[buffer_size+1];
@@ -166,7 +171,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     len = fread(buffer, 1, buffer_size, xmlfile);
     buffer[len]='\0'; // Terminate the string.
     done = feof(xmlfile);
-    //    printf("%s", buffer);//RM
     if (!XML_Parse(parser, buffer, len, done)) {
       // Parse error.
       *status=EXIT_FAILURE;
@@ -178,7 +182,11 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
       HD_ERROR_THROW(msg, *status);
       return;
     }
-    if (EXIT_SUCCESS!=xmldata.status) return;
+    // Check for errors.
+    if (EXIT_SUCCESS!=xmldata.status) {
+      *status = xmldata.status;
+      return;
+    }
   } while (!done);
   XML_ParserFree(parser);
 
@@ -247,8 +255,15 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for the readout trigger of GenDet!\n", 
 		   *status);
+    return;
+  }
+
+  if (0==strlen(det->eventfile_template)) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No event file template specified!\n", *status);
     return;    
   }
+
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
 
@@ -326,6 +341,12 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
 	}
       }
       
+      else if (!strcmp(Uelement, "EVENTFILE")) {
+	if (!strcmp(Uattribute, "TEMPLATE")) {
+	  strcpy(xmldata->det->eventfile_template, attr[i+1]);
+	}
+      }
+
       else if (!strcmp(Uelement, "READOUT")) {
 	if (!strcmp(Uattribute, "MODE")) {
 	  strcpy(Uvalue, attr[i+1]);
@@ -421,25 +442,30 @@ static int getAffectedIndex(const double x, const float rpix,
 
 
 
-void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, int* const status)
+void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
+			   int* const status)
 {
 
   // Call the detector operating clock routine.
   operateGenDetClock(det, impact->time, status);
-  if (EXIT_SUCCESS!=status) return;
+  if (EXIT_SUCCESS!=*status) return;
 
   // Determine the affected detector line and column.
   int line   = getGenDetAffectedLine  (det, impact->position.y);
   int column = getGenDetAffectedColumn(det, impact->position.x);
-
-  printf("%e %d\n", impact->position.x, column);
-  printf("%e %d\n", impact->position.y, line);
 
   // Check if the returned values are valid line and column indices.
   if ((0>column) || (0>line)) {
     return;
   }
 
+  // TODO Determine Split events.
+
+  // Add the charge (photon energy) to the affected pixel.
+  addGenDetCharge2Pixel(det->line[line], column, impact->energy);
+
+  // TODO Call the event trigger routine.
+  
 }
 
 
@@ -479,6 +505,8 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
 
 void GenDetLineShift(GenDet* const det)
 {
+  headas_chat(5, "lineshift\n");
+
   // TODO Apply the Charge Transfer Efficiency.
 
   // Check if the detector contains more than 1 line.
@@ -503,6 +531,8 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 		       const int readoutindex, 
 		       const double time, int* const status)
 {
+  headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
+
   // Event data structure.
   GenEvent event;
   float charge;
@@ -519,6 +549,44 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     // Store the event in the output event file.
     addGenEvent2File(det->eventfile, &event, status);
   }
+
+  // Clear the read-out line.
+}
+
+
+
+void GenDetSetEventFile(GenDet* const det, const char* const filename, 
+			int* const status)
+{
+  // Check if there already is an open event file.
+  if (NULL!=det->eventfile) {
+    // Close the file
+    destroyGenEventFile(&det->eventfile, status);
+  }
+
+  // Filename of the template file.
+  char template[MAXMSG];
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
+  char* buffer;
+  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(template, buffer);
+  } else {
+    //      if ((status = PILGetFname("fits_templates", parameters->eventlist_template))) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Could not read environment variable 'SIXT_FITS_TEMPLATES'!\n", 
+		   *status);
+    return;
+    //      }
+  }
+
+  // Append the filename of the template file itself.
+  strcat(template, "/");
+  strcat(template, det->eventfile_template);
+
+  // Open a new event file from the specified template.
+  det->eventfile = openNewGenEventFile(filename, template, status);
 }
 
 

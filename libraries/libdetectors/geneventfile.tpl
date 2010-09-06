@@ -1,8 +1,7 @@
-################################################################################
 XTENSION        BINTABLE        / Binary table extension
 EXTNAME         EVENTS          / Extension name
 ORIGIN          REMEIS          / Origin of FITS File
-CREATOR         FAU		/ Program that created this FITS file
+CREATOR         FAU             / Program that created this FITS file
 MISSION         String          / Mission name
 TELESCOP        String          / Telescope name
 INSTRUME        String          / Instrument name
@@ -23,7 +22,7 @@ TEND            Real            / End time of the observation
 MJDREF          54101           / Modified Julian Date of time origin
 TIMEZERO        0.0             / Time correction
 TIMEUNIT        s               / Time unit
-TIMTSYS         TT              / Time system (Terrestial Time)
+TIMESYS         TT              / Time system (Terrestial Time)
 RA_PNT          Real            / actual pointing RA
 DEC_PNT         Real            / actual pointing DEC
 RADECSYS        FK5             / Stellar reference frame
