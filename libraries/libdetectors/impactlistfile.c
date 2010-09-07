@@ -149,6 +149,18 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
 void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact, 
 			   int* const status)
 {
+  // Check if the file has been opened.
+  if (NULL==file) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: no ImpactListFile opened!\n", *status);
+    return;
+  }
+  if (NULL==file->fptr) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: no ImpactListFile opened!\n", *status);
+    return;
+  }
+
   // Move counter to next line.
   file->row++;
 

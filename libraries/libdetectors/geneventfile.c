@@ -111,6 +111,11 @@ void addGenEvent2File(GenEventFile* const file, GenEvent* const event,
     HD_ERROR_THROW("Error: no event file opened!\n", *status);
     return;
   }
+  if (NULL==file->fptr) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: no event file opened!\n", *status);
+    return;
+  }
 
   // Insert a new, empty row to the table:
   if (fits_insert_rows(file->fptr, file->row, 1, status)) return;

@@ -1,4 +1,4 @@
-impactlist_filename,fre,lq,"impacts.fits",,,"impact list file (FITS input file) "
+impact_filename,fre,lq,"impacts.fits",,,"impact list file (FITS input file) "
 event_filename,f,lq,"events.fits",,,"event list file (FITS output file) "
 xml_filename,fre,lq,"eroframestore.xml",,,"XML file with detector definition "
 t0,r,lq,0.0,0.0,,"t0 - start time (s) "

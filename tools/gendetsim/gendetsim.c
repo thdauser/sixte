@@ -30,7 +30,7 @@ int gendetsim_main() {
 
     // --- Initialization ---
 
-    headas_chat(5, "initialization ...\n");
+    headas_chat(3, "initialization ...\n");
 
     // Initialize HEADAS random number generator.
     HDmtInit(SIXT_HD_RANDOM_SEED);
@@ -56,7 +56,7 @@ int gendetsim_main() {
 
     // --- Beginning of Detection Process ---
 
-    headas_chat(5, "start detection process ...\n");
+    headas_chat(3, "start detection process ...\n");
 
     // Loop over all impacts in the FITS file.
     Impact impact;
@@ -87,7 +87,7 @@ int gendetsim_main() {
 
 
   // --- Cleaning up ---
-  headas_chat(5, "cleaning up ...\n");
+  headas_chat(3, "cleaning up ...\n");
 
   // Release HEADAS random number generator.
   HDmtFree();
@@ -95,7 +95,7 @@ int gendetsim_main() {
   // Destroy the detector data structure.
   destroyGenDet(&det, &status);
   
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
+  if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
 }
 

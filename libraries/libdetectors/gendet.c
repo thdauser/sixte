@@ -542,6 +542,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     // TODO Apply the threshold.
 
     // TODO Apply the detector response.
+    event.pha = 100; // RM
 
     // Store the additional information.
     event.rawy = readoutindex;
@@ -551,7 +552,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     addGenEvent2File(det->eventfile, &event, status);
   }
 
-  // Clear the read-out line.
+  // TODO Clear the read-out line.
 }
 
 
