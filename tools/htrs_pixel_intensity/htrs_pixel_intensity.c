@@ -6,7 +6,7 @@ int htrs_pixel_intensity_main()
   // Containing all programm parameters read by PIL
   struct Parameters parameters; 
 
-  ImpactListFile impactlistfile;
+  ImpactListFile* impactlistfile=NULL;
   Impact impact;
   int pixel; // Pixel hit by an incident photon.
 
@@ -134,20 +134,19 @@ int htrs_pixel_intensity_main()
 #endif
     
     // Open the impact list FITS file.
-    status = openImpactListFile(&impactlistfile,
-				parameters.impactlist_filename, 
-				READONLY);
+    impactlistfile = openImpactListFile(parameters.impactlist_filename, 
+					READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    ntotal_photons=impactlistfile.nrows;
-    headas_chat(5, " impact list contains %ld rows\n", impactlistfile.nrows);
+    ntotal_photons=impactlistfile->nrows;
+    headas_chat(5, " impact list contains %ld rows\n", impactlistfile->nrows);
     headas_chat(5, "start processing the impact list ...\n");
 
     // Loop over all impacts in the FITS file.
     int pixel;
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(&impactlistfile))) {
+    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-      status=getNextImpactListFileRow(&impactlistfile, &impact);
+      status=getNextImpactListFileRow(impactlistfile, &impact);
       if (EXIT_SUCCESS!=status) break;
 
 #ifdef HTRS_HEXPIXELS
@@ -251,7 +250,7 @@ int htrs_pixel_intensity_main()
   // --- Clean up ---
 
   // Close the impact list file.
-  status += closeImpactListFile(&impactlistfile);
+  destroyImpactListFile(&impactlistfile, &status);
 
 #ifdef HTRS_HEXPIXELS
   // Loop over the different pixel widths.

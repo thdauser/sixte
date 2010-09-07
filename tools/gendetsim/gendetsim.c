@@ -16,6 +16,8 @@ int gendetsim_main() {
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;
 
+  ImpactListFile* impactlistfile=NULL;
+
   int status=EXIT_SUCCESS; // Error status.
 
 
@@ -62,7 +64,7 @@ int gendetsim_main() {
     
     // Finalize the GenDet. Perform the time-triggered operations 
     // without adding any new charges.
-    operateGenDetClock(det, 10., &status);
+    operateGenDetClock(det, parameters.t0+parameters.timespan, &status);
     if (EXIT_SUCCESS!=status) break;
 
   } while(0); // END of the error handling loop.
@@ -91,14 +93,29 @@ int getpar(struct Parameters* const parameters)
 {
   int status=EXIT_SUCCESS; // Error status
 
-  // Get the name of the detector XML description file (FITS file).
-  if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
-    HD_ERROR_THROW("Error reading the name of the detector definition XML file!\n", status);
+  // Get the name of the input impact list file (FITS file).
+  if ((status = PILGetFname("impact_filename", parameters->impact_filename))) {
+    HD_ERROR_THROW("Error reading the name of the input impact list file!\n", status);
   }
 
   // Get the name of the output event list file (FITS file).
   else if ((status = PILGetFname("event_filename", parameters->event_filename))) {
     HD_ERROR_THROW("Error reading the name of the output event list file!\n", status);
+  }
+
+  // Get the name of the detector XML description file (FITS file).
+  else if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
+    HD_ERROR_THROW("Error reading the name of the detector definition XML file!\n", status);
+  }
+
+  // Get the start time t0.
+  else if ((status = PILGetReal("t0", &parameters->t0))) {
+    HD_ERROR_THROW("Error reading the start time t0!\n", status);
+  }
+
+  // Get the time interval.
+  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
+    HD_ERROR_THROW("Error reading the simulated timespan!\n", status);
   }
 
   return(status);

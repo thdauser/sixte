@@ -15,7 +15,7 @@ int comaimg_main() {
   AttitudeCatalog* attitudecatalog=NULL;
   struct Telescope telescope; // Telescope data.
   PhotonListFile photonlistfile;
-  ImpactListFile impactlistfile;
+  ImpactListFile* impactlistfile=NULL;
   double refxcrvl=0., refycrvl=0.;
   CodedMask* mask=NULL;
 
@@ -61,14 +61,15 @@ int comaimg_main() {
     if(EXIT_SUCCESS!=status) break;
 
     // Create a new FITS file for the output of the impact list.
-    status = openNewImpactListFile(&impactlistfile, parameters.impactlist_filename, 
-				   parameters.impactlist_template);
+    impactlistfile = openNewImpactListFile(parameters.impactlist_filename, 
+					   parameters.impactlist_template,
+					   &status);
     if (EXIT_SUCCESS!=status) break;
     // Write WCS header keywords.
-    if (fits_update_key(impactlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status)) break;
-    if (fits_update_key(impactlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status)) break;
+    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status)) break;
+    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status)) break;
     // Add attitude filename.
-    if (fits_update_key(impactlistfile.fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+    if (fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
     
     // --- END of Initialization ---
@@ -181,16 +182,16 @@ int comaimg_main() {
 	  //    tan(telescope.fov_diameter)*telescope.focal_length) {
 	    
 	  // Insert the impact position with the photon data into the impact list:
-	  fits_insert_rows(impactlistfile.fptr, impactlistfile.row++, 1, &status);
-	  fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.ctime, 
-			 impactlistfile.row, 1, 1, &photon.time, &status);
-	  fits_write_col(impactlistfile.fptr, TFLOAT, impactlistfile.cenergy, 
-			 impactlistfile.row, 1, 1, &photon.energy, &status);
-	  fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cx, 
-			 impactlistfile.row, 1, 1, &position.x, &status);
-	  fits_write_col(impactlistfile.fptr, TDOUBLE, impactlistfile.cy, 
-			 impactlistfile.row, 1, 1, &position.y, &status);
-	  impactlistfile.nrows++;
+	  fits_insert_rows(impactlistfile->fptr, impactlistfile->row++, 1, &status);
+	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->ctime, 
+			 impactlistfile->row, 1, 1, &photon.time, &status);
+	  fits_write_col(impactlistfile->fptr, TFLOAT, impactlistfile->cenergy, 
+			 impactlistfile->row, 1, 1, &photon.energy, &status);
+	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cx, 
+			 impactlistfile->row, 1, 1, &position.x, &status);
+	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cy, 
+			 impactlistfile->row, 1, 1, &position.y, &status);
+	  impactlistfile->nrows++;
 	  //}
 	} // END get_psf_pos(...)
       } // End of FOV check.
@@ -206,7 +207,7 @@ int comaimg_main() {
   HDmtFree();
 
   // Close the FITS files.
-  status += closeImpactListFile(&impactlistfile);
+  destroyImpactListFile(&impactlistfile, &status);
   status += closePhotonListFile(&photonlistfile);
 
   free_AttitudeCatalog(attitudecatalog);

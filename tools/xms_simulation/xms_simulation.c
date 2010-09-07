@@ -21,7 +21,7 @@ int xms_simulation_main() {
   // Before the first usage it has to be initialized.
   XMSDetector detector;
 
-  ImpactListFile impactlistfile;
+  ImpactListFile* impactlistfile=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -44,8 +44,8 @@ int xms_simulation_main() {
 
 
     // Open the impact list FITS file.
-    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename, 
-				READONLY);
+    impactlistfile = openImpactListFile(parameters.impactlist_filename, 
+					READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
@@ -84,9 +84,9 @@ int xms_simulation_main() {
     Impact impact; // Buffer to store the impacts read from the FITS file.
 
     // Loop over all impacts in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(&impactlistfile))) {
+    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-      status=getNextImpactListFileRow(&impactlistfile, &impact);
+      status=getNextImpactListFileRow(impactlistfile, &impact);
       if (EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
@@ -114,7 +114,7 @@ int xms_simulation_main() {
   HDmtFree();
 
   // Close the FITS files.
-  status += closeImpactListFile(&impactlistfile);
+  destroyImpactListFile(&impactlistfile, &status);
 
   // Release memory of detector.
   status+=cleanupXMSDetector(&detector);

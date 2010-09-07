@@ -21,7 +21,7 @@ int framestore_simulation_main() {
 		  .rate=NULL }
   };
 
-  ImpactListFile impactlistfile;
+  ImpactListFile* impactlistfile=NULL;
   // WCS reference values for the position of the orginial input data.
   // These data are needed for the eROSITA image reconstruction algorithm
   // in order to determine the right WCS header keywords for, e.g., cluster images.
@@ -45,17 +45,18 @@ int framestore_simulation_main() {
     if ((status=getpar(&parameters))) break;
 
     // Open the FITS file with the input impact list:
-    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename,
-				READONLY);
+    impactlistfile = openImpactListFile(parameters.impactlist_filename,
+					READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
+
     // Determine the WCS keywords.
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFXCRVL", &refxcrvl, 
+    if (fits_read_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", &refxcrvl, 
 		      comment, &status)) break;    
-    if (fits_read_key(impactlistfile.fptr, TDOUBLE, "REFYCRVL", &refycrvl, 
+    if (fits_read_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", &refycrvl, 
 		      comment, &status)) break;    
     // Determine the name of the attitude file from the FITS header.
-    if (fits_read_key(impactlistfile.fptr, TSTRING, "ATTITUDE", 
+    if (fits_read_key(impactlistfile->fptr, TSTRING, "ATTITUDE", 
 		      attitude_filename, comment, &status)) break;
 
 
@@ -162,9 +163,9 @@ int framestore_simulation_main() {
     double former_impact_time=-1000.; // Time of the last impact.
 
     // Loop over all impacts in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(&impactlistfile))) {
+    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-      status=getNextImpactListFileRow(&impactlistfile, &impact);
+      status=getNextImpactListFileRow(impactlistfile, &impact);
       if(EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
@@ -239,7 +240,7 @@ int framestore_simulation_main() {
   HDmtFree();
 
   // Close the FITS files.
-  status += closeImpactListFile(&impactlistfile);
+  destroyImpactListFile(&impactlistfile, &status);
 
   // Release memory of detector.
   status+=destroyFramestoreDetector(&fd);

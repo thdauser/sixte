@@ -54,7 +54,7 @@ GenEventFile* openNewGenEventFile(const char* const filename,
   // Create a new event list FITS file from the template file.
   char buffer[MAXMSG];
   sprintf(buffer, "%s(%s)", filename, template);
-  headas_chat(5, "create new event list file '%s' from template '%s' ...\n", 
+  headas_chat(4, "create new event list file '%s' from template '%s' ...\n", 
 	      filename, template);
   if (fits_create_file(&file->fptr, buffer, status)) return(file);
 

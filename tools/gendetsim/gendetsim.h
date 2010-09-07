@@ -5,6 +5,7 @@
 #include "sixt.h"
 #include "gendet.h"
 #include "impact.h"
+#include "impactlistfile.h"
 
 #define TOOLSUB gendetsim_main
 #include "headas_main.c"
@@ -18,6 +19,9 @@
 struct Parameters {
   char xml_filename[MAXMSG];
   char event_filename[MAXMSG];
+  char impact_filename[MAXMSG];
+
+  double t0, timespan;
 };
 
 

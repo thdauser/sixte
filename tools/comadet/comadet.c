@@ -12,7 +12,7 @@
 int comadet_main() {
   struct Parameters parameters;
   
-  ImpactListFile impactlistfile;
+  ImpactListFile* impactlistfile=NULL;
   CoMaDetector* detector=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
@@ -32,8 +32,8 @@ int comadet_main() {
     if ((status=comadet_getpar(&parameters))) break;
     
     // Open the impact list FITS file.
-    status = openImpactListFile(&impactlistfile, parameters.impactlist_filename,
-				READONLY);
+    impactlistfile = openImpactListFile(parameters.impactlist_filename,
+					READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
     
     // DETECTOR setup.
@@ -61,9 +61,9 @@ int comadet_main() {
     Impact impact;
 
     // Loop over all impacts in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(&impactlistfile))) {
+    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-      status=getNextImpactListFileRow(&impactlistfile, &impact);
+      status=getNextImpactListFileRow(impactlistfile, &impact);
       if(EXIT_SUCCESS!=status) break;
 
       // Call the photon detection routine of the Coded Mask Detector.
@@ -83,7 +83,7 @@ int comadet_main() {
   freeCoMaDetector(detector);
 
   // Close the FITS files.
-  status += closeImpactListFile(&impactlistfile);
+  destroyImpactListFile(&impactlistfile, &status);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);

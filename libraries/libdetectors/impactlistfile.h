@@ -6,6 +6,11 @@
 #include "point.h"
 
 
+/////////////////////////////////////////////////////////////////
+// Type Declarations.
+/////////////////////////////////////////////////////////////////
+
+
 typedef struct {
   /** Pointer to the FITS file. */
   fitsfile* fptr;
@@ -13,9 +18,9 @@ typedef struct {
   /** Total number of rows in the FITS file. */
   long nrows;
 
-  /** Number of the current row in the FITS file. 
-   * Numbering starts at 1 for the first line. 
-   * If row is equal to 0, no row has been read or written so far. */
+  /** Number of the current row in the FITS file. The numbering
+      starts at 1 for the first line. If row is equal to 0, no row
+      has been read or written so far. */
   long row;
 
   /** Column numbers in the FITS binary table. */
@@ -24,19 +29,29 @@ typedef struct {
 } ImpactListFile;
 
 
-//////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
 
 
-/** Create new impact list FITS file according to a given template and
- * return the ImpactListFile object for the open file. */
-int openImpactListFile(ImpactListFile* plf, char* filename, int access_mode);
+/** Constructor. Returns a pointer to an empty ImpactListFile data
+    structure. */
+ImpactListFile* newImpactListFile(int* const status);
 
-/** Open an existing photon list FITS file and return the corresponding 
- * ImpactListFile object. */
-int openNewImpactListFile(ImpactListFile* plf, char* filename, char* template);
+/** Destructor. */
+void destroyImpactListFile(ImpactListFile** file, int* const status);
 
-/** Close open ImpactListFile (FITS file). */
-int closeImpactListFile(ImpactListFile*) ;
+/** Open an existing ImpactListFile. */
+ImpactListFile* openImpactListFile(const char* const filename,
+				   const int mode, int* const status);
+
+/** Create and open a new ImpactListFile. The new file is generated
+    according to the specified template. */
+ImpactListFile* openNewImpactListFile(const char* const filename,
+				      const char* const template,
+				      int* const status);
+
+// Old:
 
 /** Reads the next row from the impact list FITS file. The function increases the internal
  * row counter of the ImpactListFile data structure. E.g. if 'row==0' at the beginning of
