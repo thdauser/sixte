@@ -146,49 +146,52 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
 
 
 
-int getNextImpactListFileRow(ImpactListFile* ilf, Impact* impact) 
+void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact, 
+			   int* const status)
 {
-  int status = EXIT_SUCCESS;
-  int anynul = 0;
-
   // Move counter to next line.
-  ilf->row++;
+  file->row++;
 
   // Check if there is still a row available.
-  if (ilf->row > ilf->nrows) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: impact list file contains no further entries!\n", status);
-    return(status);
+  if (file->row > file->nrows) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: ImpactListFile contains no further entries!\n", *status);
+    return;
   }
 
   // Read in the data.
+  int anynul = 0;
   impact->time = 0.;
-  if (0<ilf->ctime) fits_read_col(ilf->fptr, TDOUBLE, ilf->ctime, ilf->row, 1, 1, 
-				  &impact->time, &impact->time, &anynul, &status);
+  if (0<file->ctime) 
+    if (fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
+		      &impact->time, &impact->time, &anynul, status)) return;
   impact->energy = 0.;
-  if (0<ilf->cenergy) fits_read_col(ilf->fptr, TFLOAT, ilf->cenergy, ilf->row, 1, 1, 
-				    &impact->energy, &impact->energy, &anynul, &status);
+  if (0<file->cenergy) 
+    if (fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
+		      &impact->energy, &impact->energy, &anynul, status)) return;
   impact->position.x = 0.;
-  if (0<ilf->cx) fits_read_col(ilf->fptr, TDOUBLE, ilf->cx, ilf->row, 1, 1, 
-			       &impact->position.x, &impact->position.x, &anynul, &status);
+  if (0<file->cx) 
+    if (fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
+		      &impact->position.x, &impact->position.x, &anynul, status)) return;
   impact->position.y = 0.;
-  if (0<ilf->cy) fits_read_col(ilf->fptr, TDOUBLE, ilf->cy, ilf->row, 1, 1, 
-			       &impact->position.y, &impact->position.y, &anynul, &status);
+  if (0<file->cy) 
+    if (fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
+		      &impact->position.y, &impact->position.y, &anynul, status)) return;
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: reading from impact list failed!\n", status);
-    return(status);
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: reading from ImpactListFile failed!\n", *status);
+    return;
   }
 
-  return(status);
+  return;
 }
 
 
 
-int ImpactListFile_EOF(ImpactListFile* ilf) {
-  if (ilf->row >= ilf->nrows) {
+int ImpactListFile_EOF(ImpactListFile* file) {
+  if (file->row >= file->nrows) {
     return(1);
   } else {
     return(0);

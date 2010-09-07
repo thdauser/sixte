@@ -146,7 +146,7 @@ int htrs_pixel_intensity_main()
     int pixel;
     while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-      status=getNextImpactListFileRow(impactlistfile, &impact);
+      getNextImpactFromFile(impactlistfile, &impact, &status);
       if (EXIT_SUCCESS!=status) break;
 
 #ifdef HTRS_HEXPIXELS

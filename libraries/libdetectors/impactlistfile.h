@@ -51,18 +51,18 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
 				      const char* const template,
 				      int* const status);
 
-// Old:
+/** Return the next impact from the file. Increments the internal row
+    counter by 1 (e.g. if 'row==0' at the beginning of the function
+    call, the first row from the FITS table is read and the counter is
+    increased to 'row==1'). */
+void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact, 
+			   int* const status);
 
-/** Reads the next row from the impact list FITS file. The function increases the internal
- * row counter of the ImpactListFile data structure. E.g. if 'row==0' at the beginning of
- * the function call, the first row from the FITS table is read and the counter is 
- * increased to 'row==1'. */
-int getNextImpactListFileRow(ImpactListFile*, Impact*);
-
-/** Checks whether the end of the impact list is reached. 
- * If the internal pointer of the ImpactListFile data structure points to the last line
- * in the file, i.e. this is the formerly read line, or has an even higher value, the 
- * function return value is 1, otherwise it is 0. */
+/** Checks whether the end of the ImpactListFile is reached. If the
+    internal pointer of the ImpactListFile data structure points to
+    the last line in the file, i.e. this is the formerly read line, or
+    has an even higher value, the function return value is 1,
+    otherwise it is 0. */
 int ImpactListFile_EOF(ImpactListFile*);
 
 

@@ -80,7 +80,7 @@ int wfi_simulation_main() {
     // Loop over all impacts in the FITS file.
     while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-      status=getNextImpactListFileRow(impactlistfile, &impact);
+      getNextImpactFromFile(impactlistfile, &impact, &status);
       if (EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:

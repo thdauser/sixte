@@ -38,6 +38,11 @@ int gendetsim_main() {
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
 
+    // Open the FITS file with the input impact list:
+    impactlistfile = openImpactListFile(parameters.impact_filename,
+					READONLY, &status);
+    if (EXIT_SUCCESS!=status) break;
+
     // Initialize the detector data structure.
     det = newGenDet(parameters.xml_filename, &status);
     if (EXIT_SUCCESS!=status) break;
@@ -53,14 +58,23 @@ int gendetsim_main() {
 
     headas_chat(5, "start detection process ...\n");
 
-    Impact impact = { .position = { .x = 0.0144,
-				    .y = 0. },
-		      .time = 0.,
-		      .energy = 1. };
+    // Loop over all impacts in the FITS file.
+    Impact impact;
+    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-    addGenDetPhotonImpact(det, &impact, &status);
+      getNextImpactFromFile(impactlistfile, &impact, &status);
+      if(EXIT_SUCCESS!=status) break;
+
+      // Check whether the event lies in the specified time interval:
+      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) 
+	continue;
+
+      addGenDetPhotonImpact(det, &impact, &status);
+      if (EXIT_SUCCESS!=status) break;
+
+    };
     if (EXIT_SUCCESS!=status) break;
-
+    // END of loop over all impacts in the FITS file.
     
     // Finalize the GenDet. Perform the time-triggered operations 
     // without adding any new charges.

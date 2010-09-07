@@ -63,7 +63,7 @@ int comadet_main() {
     // Loop over all impacts in the FITS file.
     while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
 
-      status=getNextImpactListFileRow(impactlistfile, &impact);
+      getNextImpactFromFile(impactlistfile, &impact, &status);
       if(EXIT_SUCCESS!=status) break;
 
       // Call the photon detection routine of the Coded Mask Detector.
