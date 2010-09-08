@@ -4,6 +4,7 @@
 #include "sixt.h"
 #include "gendetline.h"
 #include "genpixgrid.h"
+#include "gensplit.h"
 #include "genevent.h"
 #include "geneventfile.h"
 #include "genericdetector.h"
@@ -37,17 +38,8 @@ typedef enum {
     detector are defined in a detector specific XML file. */
 typedef struct {
 
+  /** Detector pixel dimensions. */
   GenPixGrid* pixgrid;
-
-  /** Detector dimensions. Width and height [pixels]. */
-  //  int xwidth, ywidth;
-
-  /** Reference pixel. */
-  //  float xrpix, yrpix;
-  /** Reference value [m]. */
-  //  float xrval, yrval;
-  /** Pixel width [m]. */
-  //  float xdelt, ydelt;
 
   /** Array of pointers to pixel lines. */
   GenDetLine** line;
@@ -66,6 +58,9 @@ typedef struct {
   /** Lower and upper PHA threshold. These thresholds are applied
       after converting the pixel charge to a PHA value. */
   long lo_PHA_threshold, up_PHA_threshold;
+
+  /** Split model. */
+  GenSplit* split;
 
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or
@@ -93,7 +88,7 @@ GenDet* newGenDet(const char* const filename, int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */
-void destroyGenDet(GenDet** det, int* const status);
+void destroyGenDet(GenDet** const det, int* const status);
 
 /** Set the output event list file. */
 void GenDetSetEventFile(GenDet* const det, const char* const filename, 

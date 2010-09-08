@@ -4,6 +4,7 @@
 // Static function declarations
 ////////////////////////////////////////////////////////////////////
 
+
 /** Parse the GenDet definition from an XML file. */
 static void parseGenDetXML(GenDet* const det, const char* const filename, int* const status);
 
@@ -18,26 +19,6 @@ struct XMLData {
   int depth;
   int status;
 };
-
-
-/** Return the index of the detector line affected by the specified
-    y-value. If the y-value is outside the line region, the return
-    value is -1. */
-static int getGenDetAffectedLine(GenDet* const det, const double y);
-
-/** Return the index of the detector column affected by the specified
-    x-value. If the x-value is outside the line region, the return
-    value is -1. */
-static int getGenDetAffectedColumn(GenDet* const det, const double x);
-
-/** Return the index of the bin affected by the specified
-    x-position. The bin grid is defined by the following WCS compliant
-    values: reference pixel (rpix), reference value (rval), and pixel
-    delta (delt). If the specified x-value is outside the bins, the
-    function return value is -1. */
-static int getAffectedIndex(const double x, const float rpix, 
-			    const float rval, const float delt, 
-			    const int width);
 
 
 ////////////////////////////////////////////////////////////////////
@@ -57,6 +38,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
 
   // Initialize all pointers with NULL.
   det->pixgrid=NULL;
+  det->split  =NULL;
   det->line=NULL;
   det->rmf =NULL;
   det->clocklist=NULL;
@@ -68,6 +50,10 @@ GenDet* newGenDet(const char* const filename, int* const status)
 
   // Get empty ClockList.
   det->clocklist = newClockList(status);
+  if (EXIT_SUCCESS!=*status) return(det);
+
+  // Get empty split model.
+  det->split = newGenSplit(status);
   if (EXIT_SUCCESS!=*status) return(det);
 
   // Read in the XML definition of the detector.
@@ -92,7 +78,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
 
 
 
-void destroyGenDet(GenDet** det, int* const status)
+void destroyGenDet(GenDet** const det, int* const status)
 {
   if (NULL!=*det) {
     // Destroy the pixel array.
@@ -109,6 +95,9 @@ void destroyGenDet(GenDet** det, int* const status)
 
     // Destroy the GenPixGrid.
     destroyGenPixGrid(&(*det)->pixgrid);
+
+    // Destroy the split model.
+    destroyGenSplit(&(*det)->split);
 
     // Close the event file.
     destroyGenEventFile(&(*det)->eventfile, status);
@@ -279,6 +268,14 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     return;    
   }
 
+  if (GS_NONE!=det->split->type) {
+    if (det->split->par1<=0.) {
+      *status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: No valid split model parameters!\n", *status);
+      return;    
+    }
+  }
+
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
 
@@ -357,6 +354,22 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
 	}
       }
       
+      else if (!strcmp(Uelement, "SPLIT")) {
+	if (!strcmp(Uattribute, "TYPE")) {
+	  strcpy(Uvalue, attr[i+1]);
+	  strtoupper(Uvalue);
+	  if (!strcmp(Uvalue, "NONE")) {
+	    xmldata->det->split->type = GS_NONE;
+	  } else if (!strcmp(Uvalue, "GAUSS")) {
+	    xmldata->det->split->type = GS_GAUSS;
+	  } else if (!strcmp(Uvalue, "EXPONENTIAL")) {
+	    xmldata->det->split->type = GS_EXPONENTIAL;
+	  }
+	} else if (!strcmp(Uattribute, "PAR1")) {
+	  xmldata->det->split->par1 = atof(attr[i+1]);
+	}
+      }
+
       else if (!strcmp(Uelement, "EVENTFILE")) {
 	if (!strcmp(Uattribute, "TEMPLATE")) {
 	  strcpy(xmldata->det->eventfile_template, attr[i+1]);
@@ -456,34 +469,6 @@ static void GenDetXMLElementEnd(void *data, const char *el)
 
 
 
-static int getGenDetAffectedLine(GenDet* const det, const double y)
-{
-  return(getAffectedIndex(y, det->pixgrid->yrpix, det->pixgrid->yrval, 
-			  det->pixgrid->ydelt, det->pixgrid->ywidth));
-}
-
-
-
-static int getGenDetAffectedColumn(GenDet* const det, const double x)
-{
-  return(getAffectedIndex(x, det->pixgrid->xrpix, det->pixgrid->xrval, 
-			  det->pixgrid->xdelt, det->pixgrid->xwidth));
-}
-
-
-
-static int getAffectedIndex(const double x, const float rpix, 
-			    const float rval, const float delt, 
-			    const int width)
-{
-  int index = ((int)((x+ (rpix-0.5)*delt -rval)/delt +1.))-1;
-  //                  avoid (int)(-0.5) = 0     <-----|----|
-  if (index>=width) index=-1;
-  return(index);
-}
-
-
-
 void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
 			   int* const status)
 {
@@ -515,22 +500,9 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
   // to the EBOUNDS table.
   float charge = getEnergy(channel, det->rmf);
 
-  // Determine the affected detector line and column.
-  int line   = getGenDetAffectedLine  (det, impact->position.y);
-  int column = getGenDetAffectedColumn(det, impact->position.x);
 
-  // Check if the returned values are valid line and column indices.
-  if ((0>column) || (0>line)) {
-    return;
-  }
-
-  // TODO Determine Split events.
-
-  // Add the charge (photon energy) to the affected pixel.
-  addGenDetCharge2Pixel(det->line[line], column, charge);
-
-  // TODO Call the event trigger routine.
-  
+  // Create split events.
+  makeGenSplitEvents(det->split, &impact->position, charge, det->pixgrid, det->line);
 }
 
 

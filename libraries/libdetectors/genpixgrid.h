@@ -34,7 +34,7 @@ typedef struct {
 GenPixGrid* newGenPixGrid(int* const status);
 
 /** Destructor. */
-void destroyGenPixGrid(GenPixGrid** grid);
+void destroyGenPixGrid(GenPixGrid** const grid);
 
 
 #endif /* GENPIXGRID_H */

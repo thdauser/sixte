@@ -6,6 +6,8 @@
 <wcs xrpix="512.5" yrpix="512.5" xrval="0." yrval="0." xdelt="100.e-6" ydelt="100.e-6"/>
 
 <response filename="/home/schmid/ixo/wfi/response/ixo_wfi_default_20103103.rsp"/>
+<split type="GAUSS" par1="11.e-6"/>
+
 <eventfile template="geneventfile.tpl"/>
 
 <lo_keV_threshold value="150.e-3"/>

@@ -22,7 +22,6 @@ typedef enum {
 } CLType;
 
 
-
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
 /////////////////////////////////////////////////////////////////
@@ -85,7 +84,7 @@ ClockList* newClockList(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the ClockList data structure to NULL. */
-void destroyClockList(ClockList** list);
+void destroyClockList(ClockList** const list);
 
 
 
@@ -97,27 +96,27 @@ void append2ClockList(ClockList* const list, const CLType type,
     the return type is CL_NONE. If the detector currently is in a wait
     status, a CL_WAIT type is returned. */
 void getClockListElement(ClockList* const list, const double time,
-			 CLType* type, void** element);
+			 CLType* type, void** const element);
 
 
 
 /** Constructor for CLWait. */
 CLWait* newCLWait(const double time, int* const status);
 /** Destructor for CLWait. */
-void destroyCLWait(CLWait** clwait);
+void destroyCLWait(CLWait** const clwait);
 
 
 /** Constructor for CLLineShift. */
 CLLineShift* newCLLineShift(int* const status);
 /** Destructor for CLLineShift. */
-void destroyCLLineShift(CLLineShift** cllineshift);
+void destroyCLLineShift(CLLineShift** const cllineshift);
 
 
 /** Constructor for CLReadoutLine. */
 CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex, 
 				int* const status);
 /** Destructor for CLReadoutLine. */
-void destroyCLReadoutLine(CLReadoutLine** clreadoutline);
+void destroyCLReadoutLine(CLReadoutLine** const clreadoutline);
 
 
 #endif /* CLOCKLIST_H */

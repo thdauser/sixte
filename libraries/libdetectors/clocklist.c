@@ -25,7 +25,7 @@ ClockList* newClockList(int* const status)
 
 
 
-void destroyClockList(ClockList** list)
+void destroyClockList(ClockList** const list)
 {
   if (NULL!=(*list)) {
     if ( (NULL!=(*list)->list) && (NULL!=(*list)->type) && (0<(*list)->nelements) ) {
@@ -96,7 +96,7 @@ static inline void moveClockList2NextElement(ClockList* const list)
 
 
 void getClockListElement(ClockList* const list, const double time,
-			 CLType* type, void** element)
+			 CLType* type, void** const element)
 {
   // Check if the list contains any elements.
   if (0==list->nelements) {
@@ -146,7 +146,7 @@ CLWait* newCLWait(const double time, int* const status) {
 
 
 
-void destroyCLWait(CLWait** clwait)
+void destroyCLWait(CLWait** const clwait)
 {
   if (NULL!=(*clwait)) {
     free(*clwait);
@@ -172,7 +172,7 @@ CLLineShift* newCLLineShift(int* const status) {
 
 
 
-void destroyCLLineShift(CLLineShift** cllineshift)
+void destroyCLLineShift(CLLineShift** const cllineshift)
 {
   if (NULL!=(*cllineshift)) {
     free(*cllineshift);
@@ -205,7 +205,7 @@ CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
 
 
 
-void destroyCLReadoutLine(CLReadoutLine** clreadoutline)
+void destroyCLReadoutLine(CLReadoutLine** const clreadoutline)
 {
   if (NULL!=(*clreadoutline)) {
     free(*clreadoutline);

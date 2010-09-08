@@ -2,6 +2,7 @@
 #define GENDETLINE_H 1
 
 #include "sixt.h"
+#include "genpixgrid.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -38,7 +39,7 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status);
 
 /** Destructor. Releases the allocated memory and sets the pointer to
     the GenDetLine data structure to NULL. */
-void destroyGenDetLine(GenDetLine** line);
+void destroyGenDetLine(GenDetLine** const line);
 
 /** Clear all pixels in the GenDetLine. If the anycharge flag of the
     GenDetLine is set to 0, the clearing will be skipped, because in
@@ -62,6 +63,16 @@ int readoutGenDetLine(GenDetLine* const line, float* charge, int* x);
     affected line. */
 inline void addGenDetCharge2Pixel(GenDetLine* const line, const int column, 
 				  float energy);
+
+/** Return the index of the detector line affected by the specified
+    y-value. If the y-value is outside the line region, the return
+    value is -1. */
+inline int getGenDetAffectedLine(const GenPixGrid* const grid, const double y);
+
+/** Return the index of the detector column affected by the specified
+    x-value. If the x-value is outside the line region, the return
+    value is -1. */
+inline int getGenDetAffectedColumn(const GenPixGrid* const grid, const double x);
 
 
 #endif /* GENDETLINE_H */

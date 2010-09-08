@@ -18,7 +18,7 @@ GenPixGrid* newGenPixGrid(int* const status)
 
 
 
-void destroyGenPixGrid(GenPixGrid** grid)
+void destroyGenPixGrid(GenPixGrid** const grid)
 {
   if (NULL!=*grid) {
     free(*grid);
