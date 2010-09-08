@@ -113,7 +113,7 @@ void freeRMF(struct RMF* rmf)
 
 
 
-long getChannel(float energy, struct RMF* rmf)
+long getChannel(const float energy, const struct RMF* const rmf)
 {
   // Check if the charge is outside the range of the energy bins defined
   // in the EBOUNDS table. In that case the return value of this function is '-1'.
@@ -128,19 +128,13 @@ long getChannel(float energy, struct RMF* rmf)
   long min, max, row;
   min = 0;
   max = rmf->NumberChannels-1;
-  while (max-min > 1) {
-    row = (long)(0.5*(min+max));
+  while (max > min) {
+    row = (min+max)/2;
     if (rmf->ChannelHighEnergy[row] < energy) {
-      min = row;
+      min = row+1;
     } else {
       max = row;
     }
-  }
-  // Take the final decision wheter max or min is right:
-  if (rmf->ChannelLowEnergy[max] < energy) {
-    row = max;
-  } else {
-    row = min;
   }
   
   // Return the PHA channel.

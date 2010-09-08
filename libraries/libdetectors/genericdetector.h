@@ -23,6 +23,12 @@
     spectra of the X-ray sources. */
 #define NORMALIZE_RMF (1)
 
+
+/////////////////////////////////////////////////////////////////
+// Type Declarations.
+/////////////////////////////////////////////////////////////////
+
+
 /** Generic x-ray detector. Contains common data/specifications that
     are defined for all different kinds of detectors.  The
     GenericDetector data structure is usually included as element of
@@ -68,7 +74,9 @@ struct GenericDetectorParameters {
 };
 
 
-////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
 
 
 /** Set up the initial configuraton for the GenericDetector data
@@ -95,9 +103,11 @@ void freeRMF(struct RMF* rmf);
 /** Determines the PHA channel corresponding to a given energy
     according to the EBOUNDS table of the detector response.  The
     routine performs a binary search to obtain the PHA channel the
-    specified energy lies in. The energy has to be given in the same
-    unit as the EBOUNDS are.  That is usually [keV]. */
-long getChannel(float energy, struct RMF* rmf);
+    specified energy lies within. The energy has to be given in the
+    same unit as the EBOUNDS are, which usually is [keV]. Note that
+    the routine is NOT doing an RMF randomization of the measured
+    channel. */
+long getChannel(const float energy, const struct RMF* const rmf);
 
 /** Determine the charge corresponding to a particular PHA channel
     according to the EBOUNDS table.  The input channel must have the

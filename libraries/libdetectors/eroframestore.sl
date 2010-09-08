@@ -2,8 +2,8 @@
 ()=printf("<wcs xrpix=\"192.5\" yrpix=\"192.5\" xrval=\"0.\" yrval=\"0.\" xdelt=\"75.e-6\" ydelt=\"75.e-6\"/>\n\n");
 ()=printf("<response filename=\"/home/schmid/erosita/rsp/erosita_iv_7telonaxis_ff.rsp\"/>\n");
 ()=printf("<eventfile template=\"geneventfile.tpl\"/>\n\n");
-()=printf("<threshold type=\"lower\" unit=\"keV\" value=\"150.e-3\"/>\n");
-()=printf("<threshold type=\"upper\" unit=\"keV\" value=\"12.\"/>\n\n");
+()=printf("<lo_keV_threshold value=\"150.e-3\"/>\n");
+()=printf("<up_keV_threshold value=\"12.\"/>\n\n");
 
 ()=printf("<readout mode=\"time\">\n");
 ()=printf("\t<wait time=\"0.05\"/>\n\n");

@@ -134,9 +134,13 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->xdelt =-1.;
   det->ydelt =-1.;
   det->readout_trigger = 0;
-
+  det->lo_PHA_threshold = -1;
+  det->up_PHA_threshold = -1;
+  det->lo_keV_threshold = -1.;
+  det->up_keV_threshold = -1.;
   // Set string variables to empty strings.
   strcpy(det->eventfile_template, "");
+
 
   // Parse the XML data from the file using the expat library.
 
@@ -281,8 +285,9 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
   char Uvalue[MAXMSG];     // Upper case version of XML attribute value
 
   // Some buffer variables for the attribute values.
+  // Readoutline:
   int lineindex   =-1;
-  int readoutindex=-1;
+  int readoutindex=-1;  
 
   // Check if an error has occurred previously.
   if (EXIT_SUCCESS!=xmldata->status) return;
@@ -392,6 +397,30 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
 			   clreadoutline, &xmldata->status);
 	}
       }
+
+      else if (!strcmp(Uelement, "LO_KEV_THRESHOLD")) {
+	if (!strcmp(Uattribute, "VALUE")) {
+	  xmldata->det->lo_keV_threshold = atof(attr[i+1]);
+	}
+      }
+
+      else if (!strcmp(Uelement, "UP_KEV_THRESHOLD")) {
+	if (!strcmp(Uattribute, "VALUE")) {
+	  xmldata->det->up_keV_threshold = atof(attr[i+1]);
+	}
+      }
+
+      else if (!strcmp(Uelement, "LO_PHA_THRESHOLD")) {
+	if (!strcmp(Uattribute, "VALUE")) {
+	  xmldata->det->lo_PHA_threshold = atoi(attr[i+1]);
+	}
+      }
+
+      else if (!strcmp(Uelement, "UP_PHA_THRESHOLD")) {
+	if (!strcmp(Uattribute, "VALUE")) {
+	  xmldata->det->up_PHA_threshold = atoi(attr[i+1]);
+	}
+      }
       
       if (EXIT_SUCCESS!=xmldata->status) return;
     } 
@@ -450,6 +479,29 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
   operateGenDetClock(det, impact->time, status);
   if (EXIT_SUCCESS!=*status) return;
 
+  // Determine the measured detector channel (PHA channel) according 
+  // to the RMF.
+  // The channel is obtained from the RMF using the corresponding
+  // HEAdas routine which is based on drawing a random number.
+  long channel;
+  ReturnChannel(det->rmf, impact->energy, 1, &channel);
+
+  // Check if the photon is really measured. If the
+  // PHA channel returned by the HEAdas RMF function is '-1', 
+  // the photon is not detected.
+  // This can happen, if the RMF actually is an RSP, i.e. it 
+  // includes ARF contributions, e.g., 
+  // the detector quantum efficiency and filter transmission.
+  if (0>channel) {
+    return; // Break the function (photon is not detected).
+  }
+
+  // Get the corresponding created charge.
+  // NOTE: In this simulation the charge is represented by the nominal
+  // photon energy [keV] which corresponds to the PHA channel according 
+  // to the EBOUNDS table.
+  float charge = getEnergy(channel, det->rmf);
+
   // Determine the affected detector line and column.
   int line   = getGenDetAffectedLine  (det, impact->position.y);
   int column = getGenDetAffectedColumn(det, impact->position.x);
@@ -462,7 +514,7 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
   // TODO Determine Split events.
 
   // Add the charge (photon energy) to the affected pixel.
-  addGenDetCharge2Pixel(det->line[line], column, impact->energy);
+  addGenDetCharge2Pixel(det->line[line], column, charge);
 
   // TODO Call the event trigger routine.
   
@@ -539,10 +591,25 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
   float charge;
 
   while (readoutGenDetLine(det->line[lineindex], &charge, &event.rawx)) {
-    // TODO Apply the threshold.
 
-    // TODO Apply the detector response.
-    event.pha = 100; // RM
+    // Apply the charge thresholds.
+    if (det->lo_keV_threshold >= 0.) {
+      if (charge<det->lo_keV_threshold) continue;
+    }
+    if (det->up_keV_threshold >= 0.) {
+      if (charge>det->up_keV_threshold) continue;
+    }
+
+    // Apply the detector response.
+    event.pha = getChannel(charge, det->rmf);
+
+    // Apply the PHA thresholds.
+    if (det->lo_PHA_threshold >= 0) {
+      if (event.pha<det->lo_PHA_threshold) continue;
+    }
+    if (det->up_PHA_threshold >= 0) {
+      if (event.pha>det->up_PHA_threshold) continue;
+    }
 
     // Store the additional information.
     event.rawy = readoutindex;
@@ -552,7 +619,8 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     addGenEvent2File(det->eventfile, &event, status);
   }
 
-  // TODO Clear the read-out line.
+  // Clear the read-out line.
+  clearGenDetLine(det->line[lineindex]);
 }
 
 

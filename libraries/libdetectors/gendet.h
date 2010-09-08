@@ -19,10 +19,12 @@
 // Constants
 /////////////////////////////////////////////////////////////////
 
+
 typedef enum {
   GENDET_TIME_TRIGGERED  = 1,
   GENDET_EVENT_TRIGGERED = 2
 } ReadoutTrigger;
+
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -53,6 +55,14 @@ typedef struct {
       for the X-ray sources, the ARF contributions have to be removed
       by normalizing the RSP matrix. */
   struct RMF* rmf;
+
+  /** Lower and upper threshold in units of [keV]. These thresholds
+      are applied before converting the pixel charge to a PHA
+      value. */
+  float lo_keV_threshold, up_keV_threshold;
+  /** Lower and upper PHA threshold. These thresholds are applied
+      after converting the pixel charge to a PHA value. */
+  long lo_PHA_threshold, up_PHA_threshold;
 
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or
@@ -100,7 +110,8 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
 void GenDetLineShift(GenDet* const det);
 
 /** Read-out a particular line of the GenDet pixel array and store the
-    charges in the output event file. */
+    charges in the output event file. After read-out the charges
+    in the pixels are deleted. */
 void GenDetReadoutLine(GenDet* const det, const int lineindex, const int readoutindex, 
 		       const double time, int* const status);
 
