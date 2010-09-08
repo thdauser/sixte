@@ -56,10 +56,15 @@ GenDet* newGenDet(const char* const filename, int* const status)
   }
 
   // Initialize all pointers with NULL.
+  det->pixgrid=NULL;
   det->line=NULL;
   det->rmf =NULL;
   det->clocklist=NULL;
   det->eventfile=NULL;
+
+  // Get empty GenPixGrid.
+  det->pixgrid = newGenPixGrid(status);
+  if (EXIT_SUCCESS!=*status) return(det);
 
   // Get empty ClockList.
   det->clocklist = newClockList(status);
@@ -70,15 +75,15 @@ GenDet* newGenDet(const char* const filename, int* const status)
   if (EXIT_SUCCESS!=*status) return(det);
     
   // Allocate memory for the pixels.
-  det->line=(GenDetLine**)malloc(det->ywidth*sizeof(GenDetLine*));
+  det->line=(GenDetLine**)malloc(det->pixgrid->ywidth*sizeof(GenDetLine*));
   if (NULL==det->line) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: Memory allocation for GenDet failed!\n", *status);
     return(det);
   }
   int i;
-  for (i=0; i<det->ywidth; i++) {
-    det->line[i] = newGenDetLine(det->xwidth, status);
+  for (i=0; i<det->pixgrid->ywidth; i++) {
+    det->line[i] = newGenDetLine(det->pixgrid->xwidth, status);
     if (EXIT_SUCCESS!=*status) return(det);
   }
 
@@ -93,11 +98,17 @@ void destroyGenDet(GenDet** det, int* const status)
     // Destroy the pixel array.
     if (NULL!=(*det)->line) {
       int i;
-      for (i=0; i<(*det)->ywidth; i++) {
+      for (i=0; i<(*det)->pixgrid->ywidth; i++) {
 	destroyGenDetLine(&(*det)->line[i]);
       }
       free((*det)->line);
     }
+
+    // Destroy the ClockList.
+    destroyClockList(&(*det)->clocklist);
+
+    // Destroy the GenPixGrid.
+    destroyGenPixGrid(&(*det)->pixgrid);
 
     // Close the event file.
     destroyGenEventFile(&(*det)->eventfile, status);
@@ -125,14 +136,14 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   }
 
   // Set initial values before parsing the parameters from the XML file.
-  det->xwidth=-1;
-  det->ywidth=-1;
-  det->xrpix =-1.;
-  det->yrpix =-1.;
-  det->xrval =-1.;
-  det->yrval =-1.;
-  det->xdelt =-1.;
-  det->ydelt =-1.;
+  det->pixgrid->xwidth=-1;
+  det->pixgrid->ywidth=-1;
+  det->pixgrid->xrpix =-1.;
+  det->pixgrid->yrpix =-1.;
+  det->pixgrid->xrval =-1.;
+  det->pixgrid->yrval =-1.;
+  det->pixgrid->xdelt =-1.;
+  det->pixgrid->ydelt =-1.;
   det->readout_trigger = 0;
   det->lo_PHA_threshold = -1;
   det->up_PHA_threshold = -1;
@@ -196,52 +207,52 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
   // Check if all required parameters have been read successfully from 
   // the XML file.
-  if (-1==det->xwidth) {
+  if (-1==det->pixgrid->xwidth) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for x-width of GenDet pixel array!\n", 
 		   *status);
     return;    
   }  
-  if (-1==det->ywidth) {
+  if (-1==det->pixgrid->ywidth) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for y-width of GenDet pixel array!\n", 
 		   *status);
     return;    
   }
 
-  if (0>det->xrpix) {
+  if (0>det->pixgrid->xrpix) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for x reference pixel of GenDet!\n", 
 		   *status);
     return;    
   }
-  if (0>det->yrpix) {
+  if (0>det->pixgrid->yrpix) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for y reference pixel of GenDet!\n", 
 		   *status);
     return;    
   }
 
-  if (0>det->xrval) {
+  if (0>det->pixgrid->xrval) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for x reference value of GenDet!\n", 
 		   *status);
     return;    
   }
-  if (0>det->yrval) {
+  if (0>det->pixgrid->yrval) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for y reference value of GenDet!\n", 
 		   *status);
     return;    
   }
 
-  if (0>det->xdelt) {
+  if (0>det->pixgrid->xdelt) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for x pixel width of GenDet!\n", 
 		   *status);
     return;    
   }
-  if (0>det->ydelt) {
+  if (0>det->pixgrid->ydelt) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for y pixel width of GenDet!\n", 
 		   *status);
@@ -315,25 +326,25 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
       // Check the XML element name.
       if (!strcmp(Uelement, "DIMENSIONS")) {
 	if (!strcmp(Uattribute, "XWIDTH")) {
-	  xmldata->det->xwidth = atoi(attr[i+1]);
+	  xmldata->det->pixgrid->xwidth = atoi(attr[i+1]);
 	} else if (!strcmp(Uattribute, "YWIDTH")) {
-	  xmldata->det->ywidth = atoi(attr[i+1]);
+	  xmldata->det->pixgrid->ywidth = atoi(attr[i+1]);
 	}
       }
       
       else if (!strcmp(Uelement, "WCS")) {
 	if (!strcmp(Uattribute, "XRPIX")) {
-	  xmldata->det->xrpix = (float)atof(attr[i+1]);
+	  xmldata->det->pixgrid->xrpix = (float)atof(attr[i+1]);
 	} else if (!strcmp(Uattribute, "YRPIX")) {
-	  xmldata->det->yrpix = (float)atof(attr[i+1]);
+	  xmldata->det->pixgrid->yrpix = (float)atof(attr[i+1]);
 	} else if (!strcmp(Uattribute, "XRVAL")) {
-	xmldata->det->xrval = (float)atof(attr[i+1]);
+	xmldata->det->pixgrid->xrval = (float)atof(attr[i+1]);
 	} else if (!strcmp(Uattribute, "YRVAL")) {
-	xmldata->det->yrval = (float)atof(attr[i+1]);
+	xmldata->det->pixgrid->yrval = (float)atof(attr[i+1]);
 	} else if (!strcmp(Uattribute, "XDELT")) {
-	  xmldata->det->xdelt = (float)atof(attr[i+1]);
+	  xmldata->det->pixgrid->xdelt = (float)atof(attr[i+1]);
 	} else if (!strcmp(Uattribute, "YDELT")) {
-	  xmldata->det->ydelt = (float)atof(attr[i+1]);
+	  xmldata->det->pixgrid->ydelt = (float)atof(attr[i+1]);
 	}
       }
       
@@ -447,14 +458,16 @@ static void GenDetXMLElementEnd(void *data, const char *el)
 
 static int getGenDetAffectedLine(GenDet* const det, const double y)
 {
-  return(getAffectedIndex(y, det->yrpix, det->yrval, det->ydelt, det->ywidth));
+  return(getAffectedIndex(y, det->pixgrid->yrpix, det->pixgrid->yrval, 
+			  det->pixgrid->ydelt, det->pixgrid->ywidth));
 }
 
 
 
 static int getGenDetAffectedColumn(GenDet* const det, const double x)
 {
-  return(getAffectedIndex(x, det->xrpix, det->xrval, det->xdelt, det->xwidth));
+  return(getAffectedIndex(x, det->pixgrid->xrpix, det->pixgrid->xrval, 
+			  det->pixgrid->xdelt, det->pixgrid->xwidth));
 }
 
 
@@ -562,7 +575,7 @@ void GenDetLineShift(GenDet* const det)
   // TODO Apply the Charge Transfer Efficiency.
 
   // Check if the detector contains more than 1 line.
-  if (2>det->ywidth) return;
+  if (2>det->pixgrid->ywidth) return;
 
   // Add the charges in line 1 to line 0.
   addGenDetLine(det->line[0], det->line[1]);
@@ -573,7 +586,7 @@ void GenDetLineShift(GenDet* const det)
   // Switch the other lines in increasing order such that the cleared 
   // original line 1 will end up as the last line.
   int i;
-  for (i=1; i<det->ywidth-1; i++) {
+  for (i=1; i<det->pixgrid->ywidth-1; i++) {
     switchGenDetLines(&det->line[i], &det->line[i+1]);
   }
 }

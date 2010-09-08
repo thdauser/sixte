@@ -3,6 +3,7 @@
 
 #include "sixt.h"
 #include "gendetline.h"
+#include "genpixgrid.h"
 #include "genevent.h"
 #include "geneventfile.h"
 #include "genericdetector.h"
@@ -36,15 +37,17 @@ typedef enum {
     detector are defined in a detector specific XML file. */
 typedef struct {
 
+  GenPixGrid* pixgrid;
+
   /** Detector dimensions. Width and height [pixels]. */
-  int xwidth, ywidth;
+  //  int xwidth, ywidth;
 
   /** Reference pixel. */
-  float xrpix, yrpix;
+  //  float xrpix, yrpix;
   /** Reference value [m]. */
-  float xrval, yrval;
+  //  float xrval, yrval;
   /** Pixel width [m]. */
-  float xdelt, ydelt;
+  //  float xdelt, ydelt;
 
   /** Array of pointers to pixel lines. */
   GenDetLine** line;
