@@ -5,6 +5,7 @@
 #include "genpixgrid.h"
 #include "gendetline.h"
 #include "point.h"
+#include "genericdetector.h"
 
 
 /////////////////////////////////////////////////////////////////

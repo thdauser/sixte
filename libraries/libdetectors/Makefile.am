@@ -22,6 +22,7 @@ dist_fitstemplates_DATA += geneventfile.tpl
 # Directory where to install the XML files.
 xmldir = $(pkgdatadir)/xml
 dist_xml_DATA  = eroframestore.xml 
+dist_xml_DATA += wfi.full.xml
 
 ########### LIBRARIES #################
 

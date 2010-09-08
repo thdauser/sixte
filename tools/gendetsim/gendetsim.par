@@ -1,6 +1,6 @@
 impact_filename,fre,lq,"impacts.fits",,,"impact list file (FITS input file) "
 event_filename,f,lq,"events.fits",,,"event list file (FITS output file) "
-xml_filename,fre,lq,"eroframestore.xml",,,"XML file with detector definition "
+xml_filename,fre,lq,"/home/schmid/share/sixt/xml/eroframestore.xml",,,"XML file with detector definition "
 t0,r,lq,0.0,0.0,,"t0 - start time (s) "
 timespan,r,lq,15724800.0,0.0,1000000000.0,"time interval (s) "
 chatter,i,lh,5,,,"chatter: control verbosity of the program "
