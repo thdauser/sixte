@@ -3,7 +3,8 @@ variable file = fopen(filename, "w+");
 
 ()=fprintf(file, "<?xml version=\"1.0\"?>\n<detector type=\"eroframestore\">\n\n<dimensions xwidth=\"384\" ywidth=\"384\"/>\n\n");
 ()=fprintf(file, "<wcs xrpix=\"192.5\" yrpix=\"192.5\" xrval=\"0.\" yrval=\"0.\" xdelt=\"75.e-6\" ydelt=\"75.e-6\"/>\n\n");
-()=fprintf(file, "<response filename=\"/home/schmid/erosita/rsp/erosita_iv_7telonaxis_ff.rsp\"/>\n");
+()=fprintf(file, "<response filename=\"/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp\"/>\n");
+()=fprintf(file, "<split type=\"exponential\" par1=\"0.355\"/>\n\n");
 ()=fprintf(file, "<eventfile template=\"geneventfile.tpl\"/>\n\n");
 ()=fprintf(file, "<lo_keV_threshold value=\"150.e-3\"/>\n");
 ()=fprintf(file, "<up_keV_threshold value=\"12.\"/>\n\n");

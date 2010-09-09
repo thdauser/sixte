@@ -307,12 +307,6 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   fraction[1] /= sum;
   fraction[2] /= sum;
   fraction[3] /= sum;
-  /*
-  printf("fractions (\%) %.5lf %.5lf %.5lf %.5lf\n", 
-	 fraction[0]*100.,
-	 fraction[1]*100., 
-	 fraction[2]*100., 
-	 fraction[3]*100.);*/
 
   // Check whether all split partners lie inside the detector:
   int count;
