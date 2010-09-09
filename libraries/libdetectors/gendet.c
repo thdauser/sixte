@@ -125,15 +125,16 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   }
 
   // Set initial values before parsing the parameters from the XML file.
-  det->pixgrid->xwidth=-1;
-  det->pixgrid->ywidth=-1;
-  det->pixgrid->xrpix =-1.;
-  det->pixgrid->yrpix =-1.;
-  det->pixgrid->xrval =-1.;
-  det->pixgrid->yrval =-1.;
-  det->pixgrid->xdelt =-1.;
-  det->pixgrid->ydelt =-1.;
+  det->pixgrid->xwidth =-1;
+  det->pixgrid->ywidth =-1;
+  det->pixgrid->xrpix  =-1.;
+  det->pixgrid->yrpix  =-1.;
+  det->pixgrid->xrval  =-1.;
+  det->pixgrid->yrval  =-1.;
+  det->pixgrid->xdelt  =-1.;
+  det->pixgrid->ydelt  =-1.;
   det->readout_trigger = 0;
+  det->cte             = 1.;
   det->lo_PHA_threshold = -1;
   det->up_PHA_threshold = -1;
   det->lo_keV_threshold = -1.;
@@ -354,6 +355,12 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
 	}
       }
       
+      else if (!strcmp(Uelement, "CTE")) {
+	if (!strcmp(Uattribute, "VALUE")) {
+	  xmldata->det->cte = (float)atof(attr[i+1]);
+	}
+      }
+	
       else if (!strcmp(Uelement, "SPLIT")) {
 	if (!strcmp(Uattribute, "TYPE")) {
 	  strcpy(Uvalue, attr[i+1]);
@@ -424,25 +431,25 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
 
       else if (!strcmp(Uelement, "LO_KEV_THRESHOLD")) {
 	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->lo_keV_threshold = atof(attr[i+1]);
+	  xmldata->det->lo_keV_threshold = (float)atof(attr[i+1]);
 	}
       }
 
       else if (!strcmp(Uelement, "UP_KEV_THRESHOLD")) {
 	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->up_keV_threshold = atof(attr[i+1]);
+	  xmldata->det->up_keV_threshold = (float)atof(attr[i+1]);
 	}
       }
 
       else if (!strcmp(Uelement, "LO_PHA_THRESHOLD")) {
 	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->lo_PHA_threshold = atoi(attr[i+1]);
+	  xmldata->det->lo_PHA_threshold = (long)atoi(attr[i+1]);
 	}
       }
 
       else if (!strcmp(Uelement, "UP_PHA_THRESHOLD")) {
 	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->up_PHA_threshold = atoi(attr[i+1]);
+	  xmldata->det->up_PHA_threshold = (long)atoi(attr[i+1]);
 	}
       }
       
@@ -542,12 +549,23 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
 
 void GenDetLineShift(GenDet* const det)
 {
+  int ii;
   headas_chat(5, "lineshift\n");
-
-  // TODO Apply the Charge Transfer Efficiency.
 
   // Check if the detector contains more than 1 line.
   if (2>det->pixgrid->ywidth) return;
+
+  // Apply the Charge Transfer Efficiency.
+  if (det->cte!=1.) {
+    int jj;
+    for (ii=1; ii<det->pixgrid->ywidth; ii++) {
+      if (0!=det->line[ii]->anycharge) {
+	for (jj=0; jj<det->line[ii]->xwidth; jj++) {
+	  det->line[ii]->charge[jj] *= det->cte;
+	}
+      }
+    }
+  }
 
   // Add the charges in line 1 to line 0.
   addGenDetLine(det->line[0], det->line[1]);
@@ -556,10 +574,9 @@ void GenDetLineShift(GenDet* const det)
   clearGenDetLine(det->line[1]);
 
   // Switch the other lines in increasing order such that the cleared 
-  // original line 1 will end up as the last line.
-  int i;
-  for (i=1; i<det->pixgrid->ywidth-1; i++) {
-    switchGenDetLines(&det->line[i], &det->line[i+1]);
+  // original line number 1 will end up as the last line.
+  for (ii=1; ii<det->pixgrid->ywidth-1; ii++) {
+    switchGenDetLines(&det->line[ii], &det->line[ii+1]);
   }
 }
 

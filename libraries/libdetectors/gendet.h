@@ -70,6 +70,11 @@ typedef struct {
   /** List of clock operations for time-triggered detectors. */
   ClockList* clocklist;
 
+  /** Charge transfer efficiency (CTE). In a line shift of the pixel
+      array the charges in the shifted pixels are multiplied by this
+      value in order to account for losses due to the shift. */
+  float cte;
+
   /** Event file for the output of the detected events. */
   GenEventFile* eventfile;
   /** File name of the template for the event list FITS file. */
@@ -104,7 +109,9 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
 /** Shift the lines of the GenDet detector pixel array by one line
     into the direction of the read-out node in line 0. The charges in
     line 1 are added to the charges in line 0, such that the content
-    of line 0 is not lost. */
+    of line 0 is not lost. The charges of all shifted pixels are
+    multiplied with the CTE factor in order to account for possible
+    losses. */
 void GenDetLineShift(GenDet* const det);
 
 /** Read-out a particular line of the GenDet pixel array and store the
