@@ -67,9 +67,9 @@ GenDet* newGenDet(const char* const filename, int* const status)
     HD_ERROR_THROW("Error: Memory allocation for GenDet failed!\n", *status);
     return(det);
   }
-  int i;
-  for (i=0; i<det->pixgrid->ywidth; i++) {
-    det->line[i] = newGenDetLine(det->pixgrid->xwidth, status);
+  int ii;
+  for (ii=0; ii<det->pixgrid->ywidth; ii++) {
+    det->line[ii] = newGenDetLine(det->pixgrid->xwidth, status);
     if (EXIT_SUCCESS!=*status) return(det);
   }
 
@@ -282,6 +282,16 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
   // Close the file handler to the XML file.
   fclose(xmlfile);
+
+  // If any thresholds have been specified in terms of PHA value,
+  // Set the corresponding charge threshold to the [keV] values
+  // according to the RMF.
+  if (det->lo_PHA_threshold>-1) {
+    det->lo_keV_threshold = getEnergy(det->lo_PHA_threshold, det->rmf, -1);
+  }
+  if (det->up_PHA_threshold>-1) {
+    det->up_keV_threshold = getEnergy(det->up_PHA_threshold, det->rmf,  1);
+  }
 }
 
 
@@ -505,8 +515,8 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy [keV] which corresponds to the PHA channel according 
   // to the EBOUNDS table.
-  float charge = getEnergy(channel, det->rmf);
-
+  float charge = getEnergy(channel, det->rmf, 0);
+  assert(charge>=0.);
 
   // Create split events.
   makeGenSplitEvents(det->split, &impact->position, charge, det->pixgrid, det->line);

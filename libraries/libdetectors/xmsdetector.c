@@ -71,7 +71,7 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, xd->generic_inner.rmf);
+  float charge = getEnergy(channel, xd->generic_inner.rmf, 0);
   
   if (charge > 0.) {
     int x[4], y[4];

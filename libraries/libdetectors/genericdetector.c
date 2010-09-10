@@ -143,7 +143,7 @@ long getChannel(const float energy, const struct RMF* const rmf)
 
 
 
-float getEnergy(long channel, struct RMF* rmf)
+float getEnergy(long channel, struct RMF* rmf, const int boundary)
 {
   // Subtract the channel offset (EBOUNDS may either start at 0 or at 1).
   channel -= rmf->FirstChannel;
@@ -151,16 +151,22 @@ float getEnergy(long channel, struct RMF* rmf)
     return(-1.);
   }
 
-  // Return the mean of the energy that corresponds to the specified PHA channel
-  // according to the EBOUNDS table.
-  return(rmf->ChannelLowEnergy[channel] +
-	 sixt_get_random_number()*(rmf->ChannelHighEnergy[channel]-
-				   rmf->ChannelLowEnergy[channel]));
+  // Return the lower/randomized mean/upper energy value corresponding 
+  // to the specified PHA channel according to the EBOUNDS table.
+  if (0==boundary) {
+    return(rmf->ChannelLowEnergy[channel] +
+	   sixt_get_random_number()*(rmf->ChannelHighEnergy[channel]-
+				     rmf->ChannelLowEnergy[channel]));
+  } else if (-1==boundary) {
+    return(rmf->ChannelLowEnergy[channel]);
+  } else {
+    return(rmf->ChannelHighEnergy[channel]);
+  }
 }
 
 
 
-inline double gaussint(double x) 
+inline double gaussint(const double x) 
 {
   return(gsl_sf_erf_Q(x));
 }

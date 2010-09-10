@@ -114,13 +114,15 @@ long getChannel(const float energy, const struct RMF* const rmf);
     same offset as in the EBOUNDS table. I.e. if the first channel in
     the EBOUNDS has the number 1, the numbering starts at 1. If the
     first channel has the number 0, the numbering starts at 0.  The
-    returned energy is given in the same units as the EBOUNDS. That is
-    usually [keV]. */
-float getEnergy(long channel, struct RMF* rmf);
+    returned energy is given in the same units as the EBOUNDS,
+    (usually [keV]). The boundary flag determines, whether the lower
+    (-1), randomized mean (0), or upper (else) boundary of the energy
+    bin are returned. */
+float getEnergy(long channel, struct RMF* rmf, const int boundary);
 
 /** Calculates the Gaussian integral using the GSL complementary error
     function. */
-inline double gaussint(double x);
+inline double gaussint(const double x);
 
 
 #endif /* GENERICDETECTOR_H */

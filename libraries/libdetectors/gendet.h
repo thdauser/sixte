@@ -51,12 +51,14 @@ typedef struct {
       by normalizing the RSP matrix. */
   struct RMF* rmf;
 
-  /** Lower and upper threshold in units of [keV]. These thresholds
-      are applied before converting the pixel charge to a PHA
-      value. */
+  /** Lower and upper primary event threshold in units of [keV]. These
+      thresholds are applied before converting the pixel charge to a
+      PHA value. Pixel charges below this threshold will be discarded,
+      unless they are direct neighbors of another charge above this
+      threshold. */
   float lo_keV_threshold, up_keV_threshold;
-  /** Lower and upper PHA threshold. These thresholds are applied
-      after converting the pixel charge to a PHA value. */
+  /** Lower and upper primary event PHA threshold. These thresholds
+      are applied after converting the pixel charge to a PHA value. */
   long lo_PHA_threshold, up_PHA_threshold;
 
   /** Split model. */
