@@ -3,6 +3,7 @@
 
 #include "sixt.h"
 #include "genevent.h"
+#include "genpileupflag.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -22,7 +23,7 @@ typedef struct {
 
   /** Pile-up flag. If a pixel is affected by energy or pattern
       pile-up, this flag is set to 1. Otherwise its value is 0. */
-  int* pileup;
+  GenPileupFlag* pileup;
 
   /** This flag specifies if the line contains any charges (value
       1). If not (value 0), the read-out does not have to be

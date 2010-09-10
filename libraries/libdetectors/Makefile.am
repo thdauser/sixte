@@ -55,7 +55,8 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  erositaeventfile.h erositaevent.h wfidetector.h	\
 		  wfieventfile.h wfievent.h xmsdetector.h gendet.h	\
 		  genpixgrid.h gensplit.h gendetline.h clocklist.h	\
-		  genevent.h geneventfile.h xmseventfile.h xmsevent.h	\
-		  htrsdetector.h htrseventfile.h htrsevent.h		\
-		  telemetrypacket.h htrstelstream.h comadetector.h	\
-		  comaeventfile.h comaevent.h epicpn.h
+		  genevent.h geneventfile.h genpileupflag.h		\
+		  xmseventfile.h xmsevent.h htrsdetector.h		\
+		  htrseventfile.h htrsevent.h telemetrypacket.h		\
+		  htrstelstream.h comadetector.h comaeventfile.h	\
+		  comaevent.h epicpn.h

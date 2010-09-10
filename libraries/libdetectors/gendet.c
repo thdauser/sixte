@@ -285,7 +285,9 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
   // If any thresholds have been specified in terms of PHA value,
   // Set the corresponding charge threshold to the [keV] values
-  // according to the RMF.
+  // according to the RMF. If a charge threshold is given in addition,
+  // the value is overwritten by the charge corresponding to the PHA 
+  // specification. I.e., the PHA thresholds have a higher priority.
   if (det->lo_PHA_threshold>-1) {
     det->lo_keV_threshold = getEnergy(det->lo_PHA_threshold, det->rmf, -1);
   }
@@ -625,9 +627,6 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     // Store the additional information.
     event.rawy = readoutindex;
     event.time = time; // Time of detection.
-
-    // TODO Take into account the pixel-up flag.
-    event.pileup=0;
 
     // Store the event in the output event file.
     addGenEvent2File(det->eventfile, &event, status);
