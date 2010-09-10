@@ -21,6 +21,7 @@ GenEventFile* newGenEventFile(int* const status)
   file->cpha =0;
   file->crawx=0;
   file->crawy=0;
+  file->cpileup=0;
 
   return(file);
 }
@@ -91,11 +92,14 @@ GenEventFile* openNewGenEventFile(const char* const filename,
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status)) 
     return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "CHARGE", &file->ccharge, status)) 
+    return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status)) 
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status)) 
     return(file);
-
+  if(fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status)) 
+    return(file);
 
   return(file);
 }
@@ -127,10 +131,14 @@ void addGenEvent2File(GenEventFile* const file, GenEvent* const event,
 		     1, 1, &event->time, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cpha, file->row, 
 		     1, 1, &event->pha, status)) return;
+  if (fits_write_col(file->fptr, TFLOAT, file->ccharge, file->row, 
+		     1, 1, &event->charge, status)) return;
   if (fits_write_col(file->fptr, TINT, file->crawx, file->row, 
 		     1, 1, &event->rawx, status)) return;
   if (fits_write_col(file->fptr, TINT, file->crawy, file->row, 
 		     1, 1, &event->rawy, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->cpileup, file->row, 
+		     1, 1, &event->pileup, status)) return;
 
 }
 

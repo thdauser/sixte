@@ -2,6 +2,7 @@
 #define GENDETLINE_H 1
 
 #include "sixt.h"
+#include "genevent.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -18,6 +19,10 @@ typedef struct {
 
   /** Charges contained in the individual pixels of this line. */
   float* charge;
+
+  /** Pile-up flag. If a pixel is affected by energy or pattern
+      pile-up, this flag is set to 1. Otherwise its value is 0. */
+  int* pileup;
 
   /** This flag specifies if the line contains any charges (value
       1). If not (value 0), the read-out does not have to be
@@ -54,8 +59,11 @@ void switchGenDetLines(GenDetLine** const line0, GenDetLine** const line1);
 
 /** Read-out a charge from the specified line. As long as there are
     any charges, the return value is 1. If the line contains no more
-    charges, the function return value is 0. */
-int readoutGenDetLine(GenDetLine* const line, float* charge, int* x);
+    charges, the function return value is 0. The function sets the
+    RAWX, CHARGE, and PILEUP values of the specified event data
+    structure. Other values are not modified. After reading out the
+    charge from the detector pixel, the pixel is cleared. */
+int readoutGenDetLine(GenDetLine* const line, GenEvent* const event);
 
 /** Add a charge (photon energy [keV]) to a particular pixel in the
     specified GenDetLine. The routine sets the anycharge flag of the

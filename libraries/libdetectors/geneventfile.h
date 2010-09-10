@@ -22,7 +22,7 @@ typedef struct {
   long row;
 
   /** Column numbers. */
-  int ctime, cpha, crawx, crawy;
+  int ctime, cpha, ccharge, crawx, crawy, cpileup;
   
 } GenEventFile;
 

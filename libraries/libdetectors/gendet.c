@@ -590,20 +590,19 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 
   // Event data structure.
   GenEvent event;
-  float charge;
 
-  while (readoutGenDetLine(det->line[lineindex], &charge, &event.rawx)) {
+  while (readoutGenDetLine(det->line[lineindex], &event)) {
 
     // Apply the charge thresholds.
     if (det->lo_keV_threshold >= 0.) {
-      if (charge<det->lo_keV_threshold) continue;
+      if (event.charge<det->lo_keV_threshold) continue;
     }
     if (det->up_keV_threshold >= 0.) {
-      if (charge>det->up_keV_threshold) continue;
+      if (event.charge>det->up_keV_threshold) continue;
     }
 
     // Apply the detector response.
-    event.pha = getChannel(charge, det->rmf);
+    event.pha = getChannel(event.charge, det->rmf);
 
     // Apply the PHA thresholds.
     if (det->lo_PHA_threshold >= 0) {
@@ -617,12 +616,12 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     event.rawy = readoutindex;
     event.time = time; // Time of detection.
 
+    // TODO Take into account the pixel-up flag.
+    event.pileup=0;
+
     // Store the event in the output event file.
     addGenEvent2File(det->eventfile, &event, status);
   }
-
-  // Clear the read-out line.
-  clearGenDetLine(det->line[lineindex]);
 }
 
 

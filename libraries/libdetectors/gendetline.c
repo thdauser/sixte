@@ -18,12 +18,23 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
     HD_ERROR_THROW("Error: Memory allocation for GenDetLine failed!\n", *status);
     return(line);
   }
-  
-  // Allocate memory for the pixels.
+
+  // Set all pointers to NULL.
+  line->charge=NULL;
+  line->pileup=NULL;
+
   line->xwidth=0;
   line->anycharge=0;
+  // Allocate memory for the pixels.
   line->charge = (float*)malloc(xwidth*sizeof(float));
   if (NULL==line->charge) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Memory allocation for GenDetLine failed!\n", *status);
+    return(line);
+  }
+  // Allocate memory for the pile-up flag for each pixel.
+  line->pileup = (int*)malloc(xwidth*sizeof(int));
+  if (NULL==line->pileup) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: Memory allocation for GenDetLine failed!\n", *status);
     return(line);
@@ -46,6 +57,9 @@ void destroyGenDetLine(GenDetLine** const line)
     if (NULL!=(*line)->charge) {
       free((*line)->charge);
     }
+    if (NULL!=(*line)->pileup) {
+      free((*line)->pileup);
+    }
     free(*line);
     *line=NULL;
   }
@@ -60,6 +74,7 @@ void clearGenDetLine(GenDetLine* const line)
     int i;
     for(i=0; i<line->xwidth; i++) {
       line->charge[i] = 0.;
+      line->pileup[i] = 0;
     }
     line->anycharge=0;
   }
@@ -77,6 +92,8 @@ void addGenDetLine(GenDetLine* const line0, GenDetLine* const line1)
   if (0==line0->anycharge) {
     line0->anycharge = line1->anycharge;
   }
+
+  // TODO Update the pile-up flags.
 }
 
 
@@ -88,7 +105,7 @@ void switchGenDetLines(GenDetLine** const line0, GenDetLine** const line1)
 }
 
 
-int readoutGenDetLine(GenDetLine* const line, float* charge, int* x)
+int readoutGenDetLine(GenDetLine* const line, GenEvent* const event)
 {
   if (0==line->anycharge) {
     return(0);
@@ -97,10 +114,12 @@ int readoutGenDetLine(GenDetLine* const line, float* charge, int* x)
     for (i=0; i<line->xwidth; i++) {
       if (line->charge[i]>0.) {
 	// Return the pixel charge.
-	*x = i;
-	*charge = line->charge[i];
+	event->rawx = i;
+	event->charge = line->charge[i];
+	event->pileup = line->pileup[i];
 	// Delete the charge in the pixel array.
 	line->charge[i] = 0.;
+	line->pileup[i] = 0;
 	return(1);
       }
     }
@@ -116,10 +135,6 @@ inline void addGenDetCharge2Pixel(GenDetLine* const line,
   line->charge[column] += energy;
   line->anycharge       = 1;
 }
-
-
-
-
 
 
 

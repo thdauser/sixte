@@ -33,11 +33,17 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TFORM#  D               / Format of column TIME
 	TUNIT#  s               / Unit of column TIME
 	TTYPE#  PHA             / Uncorrected Event Energy
-	TFORM#  I               / Format of column PHA
+	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
+	TTYPE#  CHARGE          / Pixel charge
+	TFORM#  E               / Format of column CHARGE
+	TUNIT#  keV             / Unit of column CHARGE
 	TTYPE#  RAWX            / Raw x-coordinate of pixel
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX
 	TTYPE#  RAWY            / Raw y-coordinate of pixel
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
+	TTYPE#  PILEUP          / Pile-up flag
+	TFORM#  I               / Format of column PILEUP
+	TUNIT#                  / Unit of column PILEUP
