@@ -16,9 +16,12 @@ ClockList* newClockList(int* const status)
   // Initialize all pointers with NULL.
   list->type=NULL;
   list->list=NULL;
+
+  // Set the initial values.
   list->nelements=0;
   list->element  =0;
   list->time     =0.;
+  list->frame    =0;
 
   return(list);
 }
@@ -88,8 +91,13 @@ void append2ClockList(ClockList* const list, const CLType type,
 static inline void moveClockList2NextElement(ClockList* const list)
 {
   list->element++;
+
+  // Check if the end of the list is reached.
   if (list->element>=list->nelements) {
+    // Start from the beginning.
     list->element=0;
+    // Start a new frame.
+    list->frame++;
   }
 }
 

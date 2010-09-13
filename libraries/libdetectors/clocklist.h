@@ -45,6 +45,9 @@ typedef struct {
   /** Current time. */
   double time;
 
+  /** Current frame number. */
+  long frame;
+
 } ClockList;
 
 
