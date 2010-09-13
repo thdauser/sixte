@@ -23,7 +23,8 @@ typedef struct {
 
   /** Column numbers. */
   int ctime, cpha, ccharge, crawx, crawy, cframe, cpileup;
-  
+  int cpat_type, cpat_id, cpat_alig;
+
 } GenEventFile;
 
 

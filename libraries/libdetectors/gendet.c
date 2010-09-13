@@ -601,7 +601,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
   // Event data structure.
-  GenEvent event;
+  GenEvent event = {.time = 0.};
 
   while (readoutGenDetLine(det->line[lineindex], &event)) {
 
@@ -617,6 +617,8 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     event.pha = getChannel(event.charge, det->rmf);
 
     // Apply the PHA thresholds.
+    // TODO Acutally this can be removed: If a PHA channel threshold 
+    // is specified, the charge threshold is set according to this value.
     if (det->lo_PHA_threshold >= 0) {
       if (event.pha<det->lo_PHA_threshold) continue;
     }
@@ -628,6 +630,9 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     event.rawy  = readoutindex;
     event.time  = det->clocklist->time;  // Time of detection.
     event.frame = det->clocklist->frame; // Frame of detection.
+    event.pat_type = 0;
+    event.pat_id   = 0;
+    event.pat_alig = 0;
 
     // Store the event in the output event file.
     addGenEvent2File(det->eventfile, &event, status);

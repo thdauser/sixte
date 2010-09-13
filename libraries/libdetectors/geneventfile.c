@@ -23,6 +23,9 @@ GenEventFile* newGenEventFile(int* const status)
   file->crawy=0;
   file->cframe =0;
   file->cpileup=0;
+  file->cpat_type=0;
+  file->cpat_id  =0;
+  file->cpat_alig=0;
 
   return(file);
 }
@@ -127,6 +130,12 @@ GenEventFile* openGenEventFile(const char* const filename,
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status)) 
     return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "PAT_TYPE", &file->cpat_type, status)) 
+    return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "PAT_ID", &file->cpat_id, status)) 
+    return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "PAT_ALIG", &file->cpat_alig, status)) 
+    return(file);
 
   return(file);
 }
@@ -168,7 +177,12 @@ void addGenEvent2File(GenEventFile* const file, GenEvent* const event,
 		     1, 1, &event->frame, status)) return;
   if (fits_write_col(file->fptr, TINT, file->cpileup, file->row, 
 		     1, 1, &event->pileup, status)) return;
-
+  if (fits_write_col(file->fptr, TINT, file->cpat_type, file->row, 
+		     1, 1, &event->pat_type, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->cpat_id, file->row, 
+		     1, 1, &event->pat_id, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->cpat_alig, file->row, 
+		     1, 1, &event->pat_alig, status)) return;
 }
 
 
@@ -226,6 +240,18 @@ void getGenEventFromFile(const GenEventFile* const file,
   if (0<file->cpileup) 
     if (fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
 		      &event->pileup, &event->pileup, &anynul, status)) return;
+  event->pat_type = 0;
+  if (0<file->cpat_type) 
+    if (fits_read_col(file->fptr, TINT, file->cpat_type, row, 1, 1, 
+		      &event->pat_type, &event->pat_type, &anynul, status)) return;
+  event->pat_id = 0;
+  if (0<file->cpat_id) 
+    if (fits_read_col(file->fptr, TINT, file->cpat_id, row, 1, 1, 
+		      &event->pat_id, &event->pat_id, &anynul, status)) return;
+  event->pat_alig = 0;
+  if (0<file->cpat_alig) 
+    if (fits_read_col(file->fptr, TINT, file->cpat_alig, row, 1, 1, 
+		      &event->pat_alig, &event->pat_alig, &anynul, status)) return;
 
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
@@ -257,5 +283,11 @@ void updateGenEventFromFile(const GenEventFile* const file,
 		     1, 1, &event->frame, status)) return;
   if (fits_write_col(file->fptr, TINT, file->cpileup, row, 
 		     1, 1, &event->pileup, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->cpat_type, row, 
+		     1, 1, &event->pat_type, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->cpat_id, row, 
+		     1, 1, &event->pat_id, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->cpat_alig, row, 
+		     1, 1, &event->pat_alig, status)) return;
 }
 
