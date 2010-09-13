@@ -97,8 +97,9 @@ GenDet* newGenDet(const char* const filename, int* const status);
     to the GenDet data structure to NULL. */
 void destroyGenDet(GenDet** const det, int* const status);
 
-/** Set the output event list file. */
-void GenDetSetEventFile(GenDet* const det, const char* const filename, 
+/** Set the output event list file. The output file is newly generated
+    from a given FITS template. */
+void GenDetNewEventFile(GenDet* const det, const char* const filename, 
 			int* const status);
 
 /** Add a new photon impact to the detector. */

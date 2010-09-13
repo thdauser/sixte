@@ -48,7 +48,7 @@ int gendetsim_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Set the output event file.
-    GenDetSetEventFile(det, parameters.event_filename, &status);
+    GenDetNewEventFile(det, parameters.event_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // --- END of Initialization ---
@@ -94,6 +94,9 @@ int gendetsim_main() {
 
   // Destroy the detector data structure.
   destroyGenDet(&det, &status);
+
+  // Close the impact list FITS file.
+  destroyImpactListFile(&impactlistfile, &status);
   
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);

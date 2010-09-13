@@ -82,10 +82,34 @@ GenEventFile* openNewGenEventFile(const char* const filename,
   // The second parameter "1" means that the headers are written
   // to the first extension.
   HDpar_stamp(file->fptr, 1, status);
+  if (EXIT_SUCCESS!=*status) return(file);
 
-  // Move to the right (second) HDU with the binary table extension.
-  int hdutype;
-  if (fits_movabs_hdu(file->fptr, 2, &hdutype, status)) return(file);
+  // Close the file.
+  destroyGenEventFile(&file, status);
+  if (EXIT_SUCCESS!=*status) return(file);
+  file->fptr=NULL;
+
+  // Re-open the file.
+  file = openGenEventFile(filename, READWRITE, status);
+  if (EXIT_SUCCESS!=*status) return(file);
+  
+  return(file);
+}
+
+
+
+GenEventFile* openGenEventFile(const char* const filename,
+			       const int mode, int* const status)
+{
+  GenEventFile* file = newGenEventFile(status);
+  if (EXIT_SUCCESS!=*status) return(file);
+
+  headas_chat(4, "open event list file '%s' ...\n", filename);
+  if (fits_open_table(&file->fptr, filename, mode, status)) return(file);
+
+  // Determine the row numbers.
+  file->row=0;
+  fits_get_num_rows(file->fptr, &file->nrows, status);
 
   // Determine the column numbers.
   if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
@@ -140,5 +164,87 @@ void addGenEvent2File(GenEventFile* const file, GenEvent* const event,
   if (fits_write_col(file->fptr, TINT, file->cpileup, file->row, 
 		     1, 1, &event->pileup, status)) return;
 
+}
+
+
+
+void getGenEventFromFile(const GenEventFile* const file,
+			 const int row, GenEvent* const event,
+			 int* const status)
+{
+  // Check if the file has been opened.
+  if (NULL==file) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: no GenEventFile opened!\n", *status);
+    return;
+  }
+  if (NULL==file->fptr) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: no GenEventFile opened!\n", *status);
+    return;
+  }
+
+  // Check if there is still a row available.
+  if (row > file->nrows) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: GenEventFile contains no further entries!\n", *status);
+    return;
+  }
+
+  // Read in the data.
+  int anynul = 0;
+  event->time = 0.;
+  if (0<file->ctime) 
+    if (fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
+		      &event->time, &event->time, &anynul, status)) return;
+  event->pha = 0;
+  if (0<file->cpha) 
+    if (fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
+		      &event->pha, &event->pha, &anynul, status)) return;
+  event->charge = 0.;
+  if (0<file->ccharge) 
+    if (fits_read_col(file->fptr, TFLOAT, file->ccharge, row, 1, 1, 
+		      &event->charge, &event->charge, &anynul, status)) return;
+  event->rawx = 0;
+  if (0<file->crawx) 
+    if (fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
+		      &event->rawx, &event->rawx, &anynul, status)) return;
+  event->rawy = 0;
+  if (0<file->crawy) 
+    if (fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
+		      &event->rawy, &event->rawy, &anynul, status)) return;
+  event->pileup = 0;
+  if (0<file->cpileup) 
+    if (fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
+		      &event->pileup, &event->pileup, &anynul, status)) return;
+
+  // Check if an error occurred during the reading process.
+  if (0!=anynul) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: reading from ImpactListFile failed!\n", *status);
+    return;
+  }
+
+  return;
+}
+
+
+
+void updateGenEventFromFile(const GenEventFile* const file,
+			    const int row, GenEvent* const event,
+			    int* const status)
+{
+  if (fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
+		     1, 1, &event->time, status)) return;
+  if (fits_write_col(file->fptr, TLONG, file->cpha, row, 
+		     1, 1, &event->pha, status)) return;
+  if (fits_write_col(file->fptr, TFLOAT, file->ccharge, row, 
+		     1, 1, &event->charge, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->crawx, row, 
+		     1, 1, &event->rawx, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->crawy, row, 
+		     1, 1, &event->rawy, status)) return;
+  if (fits_write_col(file->fptr, TINT, file->cpileup, row, 
+		     1, 1, &event->pileup, status)) return;
 }
 

@@ -273,6 +273,7 @@ AC_CONFIG_FILES([Makefile
 		tools/analyse_xms_events/Makefile
 		tools/wfi_pattern_recombination/Makefile
 		tools/gendetsim/Makefile
+		tools/genpat/Makefile
 		tools/comaimg/Makefile
 		tools/comadet/Makefile
 		tools/comarecon/Makefile])

@@ -126,20 +126,15 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   // The second parameter "1" means that the headers are written
   // to the first extension.
   HDpar_stamp(file->fptr, 1, status);
+  if (EXIT_SUCCESS!=*status) return(file);
 
-  // Move to the right (second) HDU with the binary table extension.
-  int hdutype;
-  if (fits_movabs_hdu(file->fptr, 2, &hdutype, status)) return(file);
-
-  // Determine the column numbers.
-  if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "ENERGY", &file->cenergy, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "X", &file->cx, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "Y", &file->cy, status)) 
-    return(file);
+  // Close the new ImpactListFile.
+  destroyImpactListFile(&file, status);
+  if (EXIT_SUCCESS!=*status) return(file);
+  
+  // Re-open the file.
+  file = openImpactListFile(filename, READWRITE, status);
+  if (EXIT_SUCCESS!=*status) return(file);
 
   return(file);
 }

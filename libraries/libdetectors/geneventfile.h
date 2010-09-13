@@ -45,9 +45,25 @@ GenEventFile* openNewGenEventFile(const char* const filename,
 				  const char* const template,
 				  int* const status);
 
+/** Open an existing GenEventFile. */
+GenEventFile* openGenEventFile(const char* const filename,
+			       const int mode, int* const status);
+
 /** Append a new event to the event file. */
 void addGenEvent2File(GenEventFile* const file, GenEvent* const event, 
 		      int* const status);
+
+/** Read the GenEvent at the specified row from the event file. The
+    numbering for the rows starts at 1 for the first line. */
+void getGenEventFromFile(const GenEventFile* const file,
+			 const int row, GenEvent* const event,
+			 int* const status);
+
+/** Update the GenEvent at the specified row in the event file. The
+    numbering for the rows starts at 1 for the first line. */
+void updateGenEventFromFile(const GenEventFile* const file,
+			    const int row, GenEvent* const event,
+			    int* const status);
 
 
 #endif /* GENEVENTFILE_H */

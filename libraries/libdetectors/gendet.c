@@ -635,7 +635,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 
 
 
-void GenDetSetEventFile(GenDet* const det, const char* const filename, 
+void GenDetNewEventFile(GenDet* const det, const char* const filename, 
 			int* const status)
 {
   // Check if there already is an open event file.

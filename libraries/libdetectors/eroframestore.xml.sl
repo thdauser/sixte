@@ -15,7 +15,8 @@ variable file = fopen(filename, "w+");
 
 variable ii;
 for(ii=0; ii<384; ii++) {
-  ()=fprintf(file, "\t<readoutline lineindex=\"0\" readoutindex=\"" + string(ii) + "\"/><lineshift/><wait time=\"1.e-6\"/>\n");
+  ()=fprintf(file, "\t<readoutline lineindex=\"0\" readoutindex=\"" + string(ii) + "\"/><lineshift/>\n");
+  ()=fprintf(file, "<wait time=\"1.e-6\"/>\n");
 }
 
 ()=fprintf(file, "</readout>\n");
