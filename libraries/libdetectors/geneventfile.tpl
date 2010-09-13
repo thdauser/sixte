@@ -44,6 +44,9 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  RAWY            / Raw y-coordinate of pixel
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
+	TTYPE#  FRAME           / Frame counter
+	TFORM#  J               / Format of column FRAME
+	TUNIT#                  / Unit of column FRAME
 	TTYPE#  PILEUP          / Pile-up flag
 	TFORM#  I               / Format of column PILEUP
 	TUNIT#                  / Unit of column PILEUP

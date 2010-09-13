@@ -120,8 +120,8 @@ void GenDetLineShift(GenDet* const det);
 /** Read-out a particular line of the GenDet pixel array and store the
     charges in the output event file. After read-out the charges
     in the pixels are deleted. */
-void GenDetReadoutLine(GenDet* const det, const int lineindex, const int readoutindex, 
-		       const double time, int* const status);
+void GenDetReadoutLine(GenDet* const det, const int lineindex, 
+		       const int readoutindex, int* const status);
 
 
 #endif /* GENDET_H */

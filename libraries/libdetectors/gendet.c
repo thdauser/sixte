@@ -549,8 +549,9 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
       break;
     case CL_READOUTLINE:
       clreadoutline = (CLReadoutLine*)element;
-      GenDetReadoutLine(det, clreadoutline->lineindex, clreadoutline->readoutindex, 
-			det->clocklist->time, status);
+      GenDetReadoutLine(det, clreadoutline->lineindex, 
+			clreadoutline->readoutindex, 
+			status);
       break;
     }
     if(EXIT_SUCCESS!=*status) return;
@@ -595,8 +596,7 @@ void GenDetLineShift(GenDet* const det)
 
 
 void GenDetReadoutLine(GenDet* const det, const int lineindex, 
-		       const int readoutindex, 
-		       const double time, int* const status)
+		       const int readoutindex, int* const status)
 {
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
@@ -625,8 +625,9 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     }
 
     // Store the additional information.
-    event.rawy = readoutindex;
-    event.time = time; // Time of detection.
+    event.rawy  = readoutindex;
+    event.time  = det->clocklist->time;  // Time of detection.
+    event.frame = det->clocklist->frame; // Frame of detection.
 
     // Store the event in the output event file.
     addGenEvent2File(det->eventfile, &event, status);
