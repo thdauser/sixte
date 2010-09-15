@@ -1,7 +1,7 @@
 #include "sixt_random.h"
 
 
-inline double sixt_get_random_number()
+double sixt_get_random_number()
 {
   // Return a value out of the interval [0,1):
   return(HDmtDrand());
@@ -9,7 +9,7 @@ inline double sixt_get_random_number()
 
 
 
-inline double rndexp(double avgdist)
+double rndexp(const double avgdist)
 {
   assert(avgdist>0.);
 
@@ -23,7 +23,7 @@ inline double rndexp(double avgdist)
 
 
 
-inline void get_gauss_random_numbers(double* x, double* y)
+void get_gauss_random_numbers(double* const x, double* const y)
 {
   double sqrt_2rho = sqrt(-log(sixt_get_random_number())*2.);
   double phi = sixt_get_random_number()*2.*M_PI;

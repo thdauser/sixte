@@ -3,7 +3,6 @@ AM_CFLAGS += -I@top_srcdir@/libraries/libsixt
 AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror 
-#AM_CFLAGS += -DNORMALIZE_RMF # explicitly normalize the RSP to an RMF
 
 
 ########### LIBRARIES #################
@@ -12,8 +11,8 @@ AM_CFLAGS += -Wall
 lib_LTLIBRARIES = libsatellites.la
 
 # Sources:
-libsatellites_la_SOURCES = attitudecatalog.c attitudefile.c
 libsatellites_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
+libsatellites_la_SOURCES = attitudecatalog.c attitudefile.c
 
 
 ############ HEADERS #################

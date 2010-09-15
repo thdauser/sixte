@@ -13,20 +13,20 @@
     more, it can be realeased with HDmtFree(). Information can be
     found in the HEAdas developer's guide or directly in the source
     files 'headas_rand.h' and 'headas_rand.c'. */
-inline double sixt_get_random_number();
+double sixt_get_random_number();
 
 
 /** Returns a random value on the basis of an exponential distribution
     with a given average distance. In the simulation this function is
     used to calculate the temporal differences between individual
     photons from a source. The photons have Poisson statistics. */
-inline double rndexp(double avg);
+double rndexp(const double avg);
 
 
 /** Determine 2 (!) Gaussian distributed random numbers using the
     Box-Muller method (Gould & Tobochnik, p. 432). The standard
     deviation of the random numbers is 1. */
-inline void get_gauss_random_numbers(double* x, double* y);
+void get_gauss_random_numbers(double* const x, double* const y);
 
 
 #endif /* SIXT_RANDOM_H */

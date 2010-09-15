@@ -135,9 +135,9 @@ int readoutGenDetLine(GenDetLine* const line, GenEvent* const event)
 }
 
 
-inline void addGenDetCharge2Pixel(GenDetLine* const line, 
-				  const int column, 
-				  float energy)
+void addGenDetCharge2Pixel(GenDetLine* const line, 
+			   const int column, 
+			   float energy)
 {
   line->charge[column] += energy;
   line->anycharge       = 1;

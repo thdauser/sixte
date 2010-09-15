@@ -104,7 +104,7 @@ int checkReadoutFramestoreDetector(FramestoreDetector* fd, double time);
 
 /** Read out the FramestoreDetector. The measured events are stored
     in an event list FITS file. */
-inline int readoutFramestoreDetector(FramestoreDetector* fd);
+int readoutFramestoreDetector(FramestoreDetector* fd);
 
 /** Add a new photon impact to the FramestoreDetector pixels.  The
     generated charge is determined according to the detector response.

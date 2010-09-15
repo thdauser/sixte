@@ -235,7 +235,6 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   // diameter of the FoV. (angle(n,source) > 90-bandwidth)
   const double preselection_factor = 3.;
   const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
-
   
   // Normalized vector perpendicular to the orbital plane,
   // used for a preselection of point sources out of the

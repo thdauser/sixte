@@ -27,7 +27,8 @@ AM_PROG_LIBTOOL
 # "-g" to create debugging information (seems to be used automatically by autotools)
 # "-Werror" for the compiler to treat warnings as errors
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
-CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -W -Wall -O0 -DHTRS_ARCPIXELS -pg"
+# "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
+CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -std=c99 -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS -pg"
 LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg"
 
 # Check for libraries:  (objdump -R/-T libncurses...)

@@ -69,7 +69,7 @@ int readoutGenDetLine(GenDetLine* const line, GenEvent* const event);
 /** Add a charge (photon energy [keV]) to a particular pixel in the
     specified GenDetLine. The routine sets the anycharge flag of the
     affected line. */
-inline void addGenDetCharge2Pixel(GenDetLine* const line, const int column, 
-				  float energy);
+void addGenDetCharge2Pixel(GenDetLine* const line, const int column, 
+			   float energy);
 
 #endif /* GENDETLINE_H */

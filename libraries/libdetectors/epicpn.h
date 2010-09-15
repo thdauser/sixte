@@ -81,7 +81,7 @@ int checkReadoutEPICpn(EPICpn* ep, double time);
 
 /** Read out the EPIC-pn. The measured events are stored
     in an event list FITS file. */
-inline int readoutEPICpn(EPICpn* ep);
+//int readoutEPICpn(EPICpn* ep);
 
 /** Add a new photon impact to the EPIC-pn pixels. The generated
     charge is determined according to the detector response. If the

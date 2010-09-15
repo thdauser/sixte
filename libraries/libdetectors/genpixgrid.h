@@ -39,12 +39,12 @@ void destroyGenPixGrid(GenPixGrid** const grid);
 /** Return the index of the detector line affected by the specified
     y-value. If the y-value is outside the line region, the return
     value is -1. */
-inline int getGenDetAffectedLine(const GenPixGrid* const grid, const double y);
+int getGenDetAffectedLine(const GenPixGrid* const grid, const double y);
 
 /** Return the index of the detector column affected by the specified
     x-value. If the x-value is outside the line region, the return
     value is -1. */
-inline int getGenDetAffectedColumn(const GenPixGrid* const grid, const double x);
+int getGenDetAffectedColumn(const GenPixGrid* const grid, const double x);
 
 
 #endif /* GENPIXGRID_H */

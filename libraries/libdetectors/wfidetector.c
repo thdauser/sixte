@@ -1,6 +1,37 @@
 #include "wfidetector.h"
 
 
+////////////////////////////////////////////////////////////////////
+// Static function declarations
+////////////////////////////////////////////////////////////////////
+
+
+/** Check the detector sensitivity in the given detector line at the
+    specified time. This routine checks, whether the WFIDetector is
+    sensitive in line 'y' at the given time. According to the
+    currently implemented readout strategy the WFIDetector is
+    insensitive to new photons in an interval immediately after the
+    line readout. This interval is called 'line_clear_time'. This
+    function checks whether the designated line was just read out and
+    the time lies within the clear time.  It returns 1 if the detector
+    is sensitive in the line 'y' at the specified time. Otherwise the
+    return value is '0'. */
+static inline int WFIDetectorIsSensitive(int y, WFIDetector*, double time);
+
+/** Read out the charge from the currently active readout lines (one
+    or two) of the WFI detector. This function implements the
+    different readout modes of the WFIDetector model. According to
+    the chosen number of readout lines it performs the readout of the
+    currently active detector lines. The events read from the
+    detector pixels are stored in the output even file. */
+static inline int readoutLinesWFIDetector(WFIDetector*);
+
+
+////////////////////////////////////////////////////////////////////
+// Program Code
+////////////////////////////////////////////////////////////////////
+
+
 int initWFIDetector(WFIDetector* wd, struct WFIDetectorParameters* parameters)
 {
   int status = EXIT_SUCCESS;
@@ -172,7 +203,7 @@ int checkReadoutWFIDetector(WFIDetector* wd, double time)
 
 
 
-inline int readoutLinesWFIDetector(WFIDetector* wd)
+static inline int readoutLinesWFIDetector(WFIDetector* wd)
 {
   int x, lineindex;
   int status=EXIT_SUCCESS;
@@ -224,7 +255,7 @@ inline int readoutLinesWFIDetector(WFIDetector* wd)
 
 
 
-inline int WFIDetectorIsSensitive(int y, WFIDetector* wd, double time)
+static inline int WFIDetectorIsSensitive(int y, WFIDetector* wd, double time)
 {
   if ((y==wd->readout_lines[0])||
       ((2==wd->readout_directions)&&(y==wd->readout_lines[1]))) {

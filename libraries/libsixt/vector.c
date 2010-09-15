@@ -1,7 +1,6 @@
 #include "vector.h"
 
 
-/////////////////////////////////////////////////////
 Vector unit_vector(const double ra, const double dec)
 {
   Vector x;
@@ -16,7 +15,6 @@ Vector unit_vector(const double ra, const double dec)
 
 
 
-/////////////////////////////////////////////////////
 Vector normalize_vector(Vector x) {
   double l;  // length of the vector x
   Vector y;  // normalized vector
@@ -30,7 +28,7 @@ Vector normalize_vector(Vector x) {
   return(y);
 }
 /////////////////////////////////////////////////////
-inline void normalize_vector_fast(Vector* v) {
+void normalize_vector_fast(Vector* v) {
   double l;  // length of the vector x
   l = sqrt(pow(v->x,2.0)+pow(v->y,2.0)+pow(v->z,2.0));
 
@@ -42,7 +40,7 @@ inline void normalize_vector_fast(Vector* v) {
 
 
 /** Calculates the scalar product of two vector structures.*/
-inline double scalar_product(Vector* const x, Vector* const y)
+double scalar_product(const Vector* const x, const Vector* const y)
 {
   return(x->x * y->x + x->y * y->y + x->z * y->z);
 }
@@ -62,7 +60,6 @@ Vector vector_product(Vector x, Vector y) {
 
 
 
-////////////////////////////////////////////////////////////////
 Vector vector_difference(Vector x2, Vector x1) {
   Vector z;  // return vector
 
@@ -75,7 +72,6 @@ Vector vector_difference(Vector x2, Vector x1) {
 
  
 
-/////////////////////////////////////////////////////////////////
 Vector interpolate_vec(Vector v1, double t1, 
 		       Vector v2, double t2, 
 		       double time) {
@@ -90,7 +86,6 @@ Vector interpolate_vec(Vector v1, double t1,
 
 
 
-/////////////////////////////////////////////////////////////////
 Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
 {
   Vector x1 = normalize_vector(v1); // Use as first base vector.
@@ -135,7 +130,6 @@ Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
 
 
 
-/////////////////////////////////////////////////////////////////
 void calculate_ra_dec(Vector v, double* ra, double* dec)
 {
   // Determine the declination:

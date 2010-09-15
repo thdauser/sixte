@@ -103,9 +103,6 @@ int initHexagonalPixels(HexagonalPixels*, struct HexagonalPixelsParameters*);
 /** Clean up the HexagonalPixels data structure. E.g. release allocated memory. */
 void cleanupHexagonalPixels(HexagonalPixels*);
 
-/** Clear the array of HexagonalPixels. */
-inline void clearHexagonalPixels(HexagonalPixels*);
-
 /** Determine the Hexagonal pixel that contains the specified position. */
 void getHexagonalPixel(HexagonalPixels*, struct Point2d position, int* pixel);
 

@@ -143,7 +143,7 @@ long getChannel(const float energy, const struct RMF* const rmf)
 
 
 
-float getEnergy(long channel, struct RMF* rmf, const int boundary)
+float getEnergy(long channel, const struct RMF* const rmf, const int boundary)
 {
   // Subtract the channel offset (EBOUNDS may either start at 0 or at 1).
   channel -= rmf->FirstChannel;
@@ -166,7 +166,7 @@ float getEnergy(long channel, struct RMF* rmf, const int boundary)
 
 
 
-inline double gaussint(const double x) 
+double gaussint(const double x) 
 {
   return(gsl_sf_erf_Q(x));
 }

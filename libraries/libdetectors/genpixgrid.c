@@ -60,14 +60,14 @@ static inline int getAffectedIndex(const double x, const float rpix,
 
 
 
-inline int getGenDetAffectedLine(const GenPixGrid* const grid, const double y)
+int getGenDetAffectedLine(const GenPixGrid* const grid, const double y)
 {
   return(getAffectedIndex(y, grid->yrpix, grid->yrval, grid->ydelt, grid->ywidth));
 }
 
 
 
-inline int getGenDetAffectedColumn(const GenPixGrid* const grid, const double x)
+int getGenDetAffectedColumn(const GenPixGrid* const grid, const double x)
 {
   return(getAffectedIndex(x, grid->xrpix, grid->xrval, grid->xdelt, grid->xwidth));
 }

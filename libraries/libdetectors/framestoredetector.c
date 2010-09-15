@@ -111,7 +111,7 @@ static float fdMaximumCharge(float* charges, int nlist)
 }
 
 
-inline int readoutFramestoreDetector(FramestoreDetector* fd) 
+int readoutFramestoreDetector(FramestoreDetector* fd) 
 {
   int x, y;   // Counters for the loop over the pixel array.
   int x2, y2;

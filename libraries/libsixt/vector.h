@@ -1,12 +1,7 @@
 #ifndef VECTOR_H
 #define VECTOR_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <malloc.h>
-#include <assert.h>
-
+#include "sixt.h"
 
 /** 3-dimensional vector. Data structure with three double-valued
     components. */
@@ -26,10 +21,10 @@ Vector unit_vector(const double ra, const double dec);
 Vector normalize_vector(Vector);
 /** Faster than normalize_vector. Deals with pointer instead of
     handling structures at function call. */
-inline void normalize_vector_fast(Vector* v);
+void normalize_vector_fast(Vector* v);
 
 /** Calculates the scalar product of two vectors. */
-inline double scalar_product(Vector* const, Vector* const);
+double scalar_product(const Vector* const v1, const Vector* const v2);
 
 /** Calculates the vector product of two vectors. */
 Vector vector_product(Vector, Vector);

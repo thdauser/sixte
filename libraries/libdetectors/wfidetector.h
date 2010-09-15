@@ -113,14 +113,6 @@ int cleanupWFIDetector(WFIDetector*);
     readout. */
 int checkReadoutWFIDetector(WFIDetector*, double time);
 
-/** Read out the charge from the currently active readout lines (one
-    or two) of the WFI detector. This function implements the
-    different readout modes of the WFIDetector model. According to
-    the chosen number of readout lines it performs the readout of the
-    currently active detector lines. The events read from the
-    detector pixels are stored in the output even file. */
-inline int readoutLinesWFIDetector(WFIDetector*);
-
 /** Add a photon impact to the WFIDetector pixel array. This is the
     standard routine to be called for the simulation of the
     WFIDetector. For a new photon incident on the detector this
@@ -132,18 +124,6 @@ inline int readoutLinesWFIDetector(WFIDetector*);
     detector readout are called and the events are stored in the
     output event file. */
 int addImpact2WFIDetector(WFIDetector*, Impact*);
-
-/** Check the detector sensitivity in the given detector line at the
-    specified time. This routine checks, whether the WFIDetector is
-    sensitive in line 'y' at the given time. According to the
-    currently implemented readout strategy the WFIDetector is
-    insensitive to new photons in an interval immediately after the
-    line readout. This interval is called 'line_clear_time'. This
-    function checks whether the designated line was just read out and
-    the time lies within the clear time.  It returns 1 if the detector
-    is sensitive in the line 'y' at the specified time. Otherwise the
-    return value is '0'. */
-inline int WFIDetectorIsSensitive(int y, WFIDetector*, double time);
 
 
 #endif /* WFIDETECTOR_H */

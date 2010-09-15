@@ -187,9 +187,12 @@ int photon_imaging_main() {
 			   impactlistfile->row, 1, 1, &position.y, &status);
 	    impactlistfile->nrows++;
 	  }
-	} // END get_psf_pos(...)
-      } // End of FOV check.
-    } // END of scanning LOOP over the photon list.
+	} 
+	// END get_psf_pos(...)
+      } 
+      // End of FOV check.
+    } 
+    // END of scanning LOOP over the photon list.
   } while(0); // END of the error handling loop.
 
 

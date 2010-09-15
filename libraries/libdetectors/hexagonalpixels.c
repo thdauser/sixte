@@ -1,11 +1,49 @@
 #include "hexagonalpixels.h"
 
 
+////////////////////////////////////////////////////////////////////
+// Static function declarations
+////////////////////////////////////////////////////////////////////
+
+
+/** Clear the array of HexagonalPixels. */
+static void clearHexagonalPixels(HexagonalPixels*);
+
+
 /** Determine the line index l of the line (from the band of parallel
     lines), where x > y*m + t_l and x < y*m + t_(l+1) with x and y the
     cartesian coordinates of the photon impact position.  The zero
     line k = 0 with t_k = 0 goes through the center of the
     detector. */
+static inline void getHexagonalPixelLineIndex(struct Point2d position, 
+					      double m, double dt, int* l);
+
+/** Determine the 3 lines that define the sub-triangle of the
+    hexagonal pixel where the impact position is located. */
+static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, 
+						struct Point2d position,
+						int* l0, int* l1, int* l2);
+
+/** Set up the auxiliary array that is used to convert line indices to
+    the corresponding pixel index. The pixel indices start at 0. */
+static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2, 
+					   HexagonalPixelLineIndexInformation information);
+
+/** Determine the pixel that corresponds to the 3 given line indices.
+    The function returns information about the sub-triangle, namely
+    the pixel index and the orientation within the hexagonal pixel it
+    belongs to. If the indices correspond to an invalid pixel, the
+    return value has the pixelindex -1. The pixel indices start at
+    0.*/
+static inline HexagonalPixelLineIndexInformation getLineIndexInformation
+(HexagonalPixels* hp, int l0, int l1, int l2);
+
+
+////////////////////////////////////////////////////////////////////
+// Program Code
+////////////////////////////////////////////////////////////////////
+
+
 static inline void getHexagonalPixelLineIndex(struct Point2d position, 
 					      double m, double dt, int* l)
 {
@@ -19,8 +57,6 @@ static inline void getHexagonalPixelLineIndex(struct Point2d position,
 
 
 
-/** Determine the 3 lines that define the sub-triangle of the
-    hexagonal pixel where the impact position is located. */
 static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, struct Point2d position,
 						int* l0, int* l1, int* l2)
 {
@@ -31,8 +67,6 @@ static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, struct Poin
 
 
 
-/** Set up the auxiliary array that is used to convert line indices to
-    the corresponding pixel index. The pixel indices start at 0. */
 static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2, 
 					   HexagonalPixelLineIndexInformation information)
 {
@@ -44,12 +78,6 @@ static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, 
 
 
 
-/** Determine the pixel that corresponds to the 3 given line indices.
-    The function returns information about the sub-triangle, namely
-    the pixel index and the orientation within the hexagonal pixel it
-    belongs to. If the indices correspond to an invalid pixel, the
-    return value has the pixelindex -1. The pixel indices start at
-    0.*/
 static inline HexagonalPixelLineIndexInformation getLineIndexInformation
 (HexagonalPixels* hp, int l0, int l1, int l2)
 {
@@ -289,7 +317,7 @@ void cleanupHexagonalPixels(HexagonalPixels* hp)
 
 
 
-inline void clearHexagonalPixels(HexagonalPixels* hp)
+static inline void clearHexagonalPixels(HexagonalPixels* hp)
 {
   int x;
   for (x=0; x<hp->npixels; x++) {

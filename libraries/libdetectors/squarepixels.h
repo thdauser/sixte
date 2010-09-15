@@ -78,18 +78,18 @@ struct SquarePixelsParameters {
 
 
 /** Constructor for the SquarePixels data structure. */
-SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* status);
+SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const status);
 
 /** Destructor of the SquarePixels data structure. E.g. release
     allocated memory. */
-void destroySquarePixels(SquarePixels** sp);
+void destroySquarePixels(SquarePixels** const sp);
 
 /** Clear the array of SquarePixels. */
-inline void clearSquarePixels(SquarePixels*);
+void clearSquarePixels(SquarePixels* const sp);
 
 /** Clear on line of Pixels. A line is defined to have constant
     detector x-coordinate. */
-inline void clearLineSquarePixels(SquarePixels* sp, const int line);
+void clearLineSquarePixels(SquarePixels* const sp, const int line);
 
 /** Determine the split ratios among neighboring pixels for a photon
     impact on an array of square pixels. The charge cloud is assumed
@@ -131,7 +131,7 @@ void SPsetInvalidFlag(SquarePixels* sp, int x, int y);
 
 /** Add a charge [keV] (!) to a pixel in the SquarePixel array. Check
     if the pixel is a valid pixel. If not simply do nothing. */
-inline void SPaddCharge(SquarePixels* sp, int x, int y, float charge);
+void SPaddCharge(SquarePixels* sp, int x, int y, float charge);
 
 
 #endif /* SQUARE_PIXELS_H */

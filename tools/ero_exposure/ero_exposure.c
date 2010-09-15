@@ -53,12 +53,21 @@ struct ImageParameters {
 };
   
 
-inline int timestep(float** expoMap, 
-		    struct ImageParameters* params,
-		    double time, double dt,
-		    AttitudeCatalog* ac, 
-		    Vignetting* vignetting,
-		    double field_align, double fov_align)
+/*
+static inline int timestep(float** expoMap, 
+			   struct ImageParameters* params,
+			   double time, double dt,
+			   AttitudeCatalog* ac, 
+			   Vignetting* vignetting,
+			   double field_align, double fov_align);
+*/
+
+static inline int timestep(float** expoMap, 
+			   struct ImageParameters* params,
+			   double time, double dt,
+			   AttitudeCatalog* ac, 
+			   Vignetting* vignetting,
+			   double field_align, double fov_align)
 {
   double telescope_ra, telescope_dec;
   Vector telescope_nz, pixel_position;

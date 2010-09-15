@@ -1,6 +1,20 @@
 #include "arcpixels.h"
 
 
+////////////////////////////////////////////////////////////////////
+// Static function declarations
+////////////////////////////////////////////////////////////////////
+
+
+/** Clear the array of ArcPixels. */
+static inline void clearArcPixels(ArcPixels* ap);
+
+
+////////////////////////////////////////////////////////////////////
+// Program Code
+////////////////////////////////////////////////////////////////////
+
+
 int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app)
 {
   int ring;  // Counter for the individual detector rings.
@@ -65,7 +79,7 @@ int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app)
 
 
 
-inline void clearArcPixels(ArcPixels* ap) 
+static inline void clearArcPixels(ArcPixels* ap) 
 {
   int ring, pixel;
   for (ring=0; ring<ap->nrings; ring++) {

@@ -92,9 +92,6 @@ int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app);
     memory. */
 void cleanupArcPixels(ArcPixels* ap);
 
-/** Clear the array of ArcPixels. */
-inline void clearArcPixels(ArcPixels* ap);
-
 /** Determine the ArcPixel affected by a photon impact. The function
     return value is a number, either 1 or 2, giving the number of
     affected pixels. The function returns the affected pixel rings and

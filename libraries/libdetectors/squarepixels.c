@@ -1,7 +1,7 @@
 #include "squarepixels.h"
 
 
-SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* status)
+SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const status)
 {
   SquarePixels* sp=(SquarePixels*)malloc(sizeof(SquarePixels));
   if (NULL==sp) {
@@ -59,7 +59,7 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* status)
 
 
 
-inline void clearLineSquarePixels(SquarePixels* sp, const int line) 
+void clearLineSquarePixels(SquarePixels* const sp, const int line) 
 {
   int x;
   for (x=0; x<sp->xwidth; x++) {
@@ -71,7 +71,7 @@ inline void clearLineSquarePixels(SquarePixels* sp, const int line)
 
 
 
-inline void clearSquarePixels(SquarePixels* sp) 
+void clearSquarePixels(SquarePixels* const sp) 
 {
   int line;
   for (line=0; line<sp->ywidth; line++) {
@@ -81,7 +81,7 @@ inline void clearSquarePixels(SquarePixels* sp)
 
 
 
-void destroySquarePixels(SquarePixels** sp) 
+void destroySquarePixels(SquarePixels** const sp) 
 {
   if (NULL!=*sp) {
     if (NULL!=(*sp)->array) {
@@ -386,7 +386,8 @@ void SPsetInvalidFlag(SquarePixels* sp, int x, int y)
 }
 
 
-inline void SPaddCharge(SquarePixels* sp, int x, int y, float charge) {
+
+void SPaddCharge(SquarePixels* sp, int x, int y, float charge) {
   if ((x >= 0) && (x < sp->xwidth) && (y >= 0) && (y < sp->ywidth)) {
     // Add the charge [keV] to the pixel.
     sp->array[x][y].charge += charge;

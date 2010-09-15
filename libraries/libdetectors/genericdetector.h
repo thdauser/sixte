@@ -118,11 +118,11 @@ long getChannel(const float energy, const struct RMF* const rmf);
     (usually [keV]). The boundary flag determines, whether the lower
     (-1), randomized mean (0), or upper (else) boundary of the energy
     bin are returned. */
-float getEnergy(long channel, struct RMF* rmf, const int boundary);
+float getEnergy(long channel, const struct RMF* const rmf, const int boundary);
 
 /** Calculates the Gaussian integral using the GSL complementary error
     function. */
-inline double gaussint(const double x);
+double gaussint(const double x);
 
 
 #endif /* GENERICDETECTOR_H */
