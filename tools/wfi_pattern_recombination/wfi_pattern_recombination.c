@@ -198,7 +198,7 @@ WFIEvent pattern_id(WFIEvent* components, long ncomponents, WFIEvent event)
       } // Else use setting found above.
 
       // Search for position of element with minimum energy with respect to event
-      // with maximum energy. Then find position  of third element.
+      // with maximum energy. Then find position of third element.
       if ((event.yi-1 == components[minidx].yi) && (event.xi == components[minidx].xi)) {
 	if ((event.xi-1 == components[mididx].xi) && (event.yi == components[mididx].yi))
 	  event.patid = 5;
