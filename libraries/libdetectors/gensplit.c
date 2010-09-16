@@ -8,7 +8,7 @@
 
 /** Determines the minimum distance value out of an array with 4
     entries and returns the corresponding index. */
-static inline int getMinimumDistance(double array[]);
+static inline int getMinimumDistance(const double array[]);
 
 /** Set the pile-up flag of the specified pixel and all surrounding
     pixels containing a positive charge by recursive function
@@ -265,7 +265,8 @@ void makeGenSplitEvents(const GenSplit* const split,
 
   // Add charge to all valid pixels of the split event.
   for(ii=0; ii<npixels; ii++) {
-    if ((x[ii]>=0) || (y[ii]>=0)) {
+    if ((x[ii]>=0) && (x[ii]<grid->xwidth) &&
+	(y[ii]>=0) && (y[ii]<grid->ywidth)) {
       addGenDetCharge2Pixel(detline[y[ii]], x[ii], charge*fraction[ii]);
     }
   }
@@ -285,7 +286,7 @@ void makeGenSplitEvents(const GenSplit* const split,
 
 /** Determines the minimum distance value out of an array with 4
     entries and returns the corresponding index. */
-static inline int getMinimumDistance(double array[]) 
+static inline int getMinimumDistance(const double array[]) 
 {
   int count, index=0;
   double minimum=array[0];

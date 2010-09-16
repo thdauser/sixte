@@ -8,6 +8,7 @@ variable file = fopen(filename, "w+");
 ()=fprintf(file, "<split type=\"exponential\" par1=\"0.355\"/>\n\n");
 ()=fprintf(file, "<lo_keV_threshold value=\"150.e-3\"/>\n");
 ()=fprintf(file, "<up_keV_threshold value=\"12.\"/>\n\n");
+()=fprintf(file, "<split_threshold_fraction value=\"0.01\"/>\n\n");
 ()=fprintf(file, "<eventfile template=\"geneventfile.tpl\"/>\n\n");
 
 ()=fprintf(file, "<readout mode=\"time\">\n");

@@ -139,6 +139,7 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->up_PHA_threshold = -1;
   det->lo_keV_threshold = -1.;
   det->up_keV_threshold = -1.;
+  det->split_threshold_fraction = 1.;
   // Set string variables to empty strings.
   strcpy(det->eventfile_template, "");
 
@@ -485,6 +486,12 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    xmldata->det->up_PHA_threshold = (long)atoi(attr[i+1]);
 	  }
 	}
+
+	else if (!strcmp(Uelement, "SPLIT_THRESHOLD_FRACTION")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->split_threshold_fraction = (float)atof(attr[i+1]);
+	  }
+	}
       
 	if (EXIT_SUCCESS!=xmldata->status) return;
       } 
@@ -638,16 +645,6 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 
     // Apply the detector response.
     event.pha = getChannel(event.charge, det->rmf);
-
-    // Apply the PHA thresholds.
-    // TODO Acutally this can be removed: If a PHA channel threshold 
-    // is specified, the charge threshold is set according to this value.
-    if (det->lo_PHA_threshold >= 0) {
-      if (event.pha<det->lo_PHA_threshold) continue;
-    }
-    if (det->up_PHA_threshold >= 0) {
-      if (event.pha>det->up_PHA_threshold) continue;
-    }
 
     // Store the additional information.
     event.rawy  = readoutindex;

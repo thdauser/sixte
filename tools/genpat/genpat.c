@@ -35,11 +35,6 @@ void addGenPat2List(GenDet* const det, GenEvent** const pixels,
 		    const int x, const int y, 
 		    GenEvent* const list, int* const nlist)
 {
-  // TODO Get the event and split threshold from the PIL or XML file.
-
-  // Split threshold relative to the charge of the primary event.
-  const float split_threshold=0.01;
-
   // Add the event to the list.
   list[*nlist] = pixels[x][y];
   (*nlist)++;
@@ -54,7 +49,7 @@ void addGenPat2List(GenDet* const det, GenEvent** const pixels,
   int ymax = MIN(det->pixgrid->ywidth-1, y+1);
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
-      if (pixels[ii][jj].charge > split_threshold*list[0].charge) {
+      if (pixels[ii][jj].charge > list[0].charge*det->split_threshold_fraction) {
 	addGenPat2List(det, pixels, ii, jj, list, nlist);
       }
     }

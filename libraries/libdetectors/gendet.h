@@ -60,6 +60,10 @@ typedef struct {
   /** Lower and upper primary event PHA threshold. These thresholds
       are applied after converting the pixel charge to a PHA value. */
   long lo_PHA_threshold, up_PHA_threshold;
+  /** Split threshold given as a fraction of the charge in the main
+      pixel. This value is used in the pattern recognition
+      algorithm. */
+  float split_threshold_fraction;
 
   /** Split model. */
   GenSplit* split;
