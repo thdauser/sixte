@@ -91,7 +91,6 @@ GenEventFile* openNewGenEventFile(const char* const filename,
   // Close the file.
   destroyGenEventFile(&file, status);
   if (EXIT_SUCCESS!=*status) return(file);
-  file->fptr=NULL;
 
   // Re-open the file.
   file = openGenEventFile(filename, READWRITE, status);
