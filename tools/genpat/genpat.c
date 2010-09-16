@@ -98,10 +98,10 @@ void GenPatId(GenDet* const det, GenEvent** const pixels,
 	case 4: 
 
 	  // Determine maxidx, minidx; or better: idx[0]..idx[3].
-	  idx[0] = 0;
-	  for (kk=1; kk<nlist; kk++) {
-	    for (ll=kk-1; ll>=0; ll++) {
-	      if (list[ll].charge<list[kk].charge) {
+	  for (kk=0; kk<nlist; kk++) {
+	    idx[kk]=kk;
+	    for (ll=kk-1; ll>=0; ll--) {
+	      if (list[idx[ll]].charge<list[kk].charge) {
 		idx[ll+1] = idx[ll];
 		idx[ll]   = kk;
 	      } else {
@@ -110,15 +110,13 @@ void GenPatId(GenDet* const det, GenEvent** const pixels,
 	    }
 	  }
 
-	  
 	  // The maximum charge in the central pixel.
 	  list[idx[0]].pat_id = 5; 
 
 	  // Determine the pattern type and alignment (orientation).
 	  int pat_type=0, pat_alig=0;
-	  
 	  switch (nlist) {
-	  case 2:
+	  case 2: // Doubles.
 	    if (list[idx[1]].rawx==list[idx[0]].rawx) {
 	      if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
 		pat_type = 2;
@@ -148,7 +146,7 @@ void GenPatId(GenDet* const det, GenEvent** const pixels,
 	    }
 	    break;
 
-	  case 3: // Triples
+	  case 3: // Triples.
 	    if (list[idx[1]].rawx==list[idx[0]].rawx) {
 	      if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
 		list[idx[1]].pat_id = 2;
@@ -239,7 +237,7 @@ void GenPatId(GenDet* const det, GenEvent** const pixels,
 	    }
 	    break;
 
-	  case 4: // Quadruples
+	  case 4: // Quadruples.
 
 	    if ((((list[idx[1]].rawy == list[idx[3]].rawy) &&
 		  (list[idx[1]].rawx == list[idx[0]].rawx)) ||
@@ -318,13 +316,13 @@ void GenPatId(GenDet* const det, GenEvent** const pixels,
 	  // Set the pattern type and alignment (orientation).
 	  if (pat_type > 0) { 
 	    // Valid pattern!
-	    for (kk=1; kk<nlist; kk++) {
+	    for (kk=0; kk<nlist; kk++) {
 	      list[kk].pat_type = pat_type;
 	      list[kk].pat_alig = pat_alig;
 	    }
 	  } else if (-1==pat_type) {
 	    // Invalid pattern!
-	    for (kk=1; kk<nlist; kk++) {
+	    for (kk=0; kk<nlist; kk++) {
 	      list[kk].pat_type = -1;
 	      list[kk].pat_id   =  0;
 	      list[kk].pat_alig =  0;
@@ -489,6 +487,9 @@ int genpat_main() {
 	
 	// Delete the old events in the pixel array.
 	clearGenPatPixels(det, pixels);
+
+	// Update the frame counter.
+	frame = event.frame;
       }
 
       if (0==last_loop) {
