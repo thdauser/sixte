@@ -1,0 +1,585 @@
+<?xml version="1.0"?>
+<detector type="EPIC-pn">
+
+<dimensions xwidth="64" ywidth="200"/>
+
+<wcs xrpix="32.5" yrpix="190.5" xrval="0." yrval="0." xdelt="150.e-6" ydelt="150.e-6"/>
+
+<cte value="1"/>
+
+<!-- TODO -->
+<response filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
+<split type="gauss" par1="11.e-6"/>
+
+<!-- TODO -->
+<threshold_readout_lo_keV value="0."/>
+<threshold_readout_up_keV value="12."/>
+
+<threshold_event_lo_keV value="150.e-3"/>
+<threshold_split_lo_fraction value="0.01"/>
+
+<eventfile template="geneventfile.tpl"/>
+
+<readout mode="time">
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<wait time="0.72e-6"/><clearline index="0"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="0"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="1"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="2"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="3"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="4"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="5"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="6"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="7"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="8"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="9"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="10"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="11"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="12"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="13"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="14"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="15"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="16"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="17"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="18"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="19"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="20"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="21"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="22"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="23"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="24"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="25"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="26"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="27"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="28"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="29"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="30"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="31"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="32"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="33"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="34"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="35"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="36"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="37"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="38"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="39"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="40"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="41"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="42"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="43"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="44"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="45"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="46"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="47"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="48"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="49"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="50"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="51"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="52"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="53"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="54"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="55"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="56"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="57"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="58"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="59"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="60"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="61"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="62"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="63"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="64"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="65"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="66"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="67"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="68"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="69"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="70"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="71"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="72"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="73"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="74"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="75"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="76"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="77"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="78"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="79"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="80"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="81"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="82"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="83"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="84"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="85"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="86"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="87"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="88"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="89"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="90"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="91"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="92"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="93"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="94"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="95"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="96"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="97"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="98"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="99"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="100"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="101"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="102"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="103"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="104"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="105"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="106"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="107"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="108"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="109"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="110"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="111"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="112"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="113"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="114"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="115"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="116"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="117"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="118"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="119"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="120"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="121"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="122"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="123"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="124"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="125"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="126"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="127"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="128"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="129"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="130"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="131"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="132"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="133"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="134"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="135"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="136"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="137"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="138"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="139"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="140"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="141"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="142"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="143"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="144"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="145"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="146"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="147"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="148"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="149"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="150"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="151"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="152"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="153"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="154"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="155"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="156"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="157"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="158"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="159"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="160"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="161"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="162"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="163"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="164"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="165"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="166"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="167"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="168"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="169"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="170"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="171"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="172"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="173"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="174"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="175"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="176"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="177"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="178"/><wait time="23.04.e-6"/><lineshift/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<readoutline lineindex="0" readoutindex="179"/><wait time="23.04.e-6"/><lineshift/>
+</readout>
+</detector>

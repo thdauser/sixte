@@ -221,3 +221,34 @@ void destroyCLReadoutLine(CLReadoutLine** const clreadoutline)
   }
 }
 
+
+
+CLClearLine* newCLClearLine(const int lineindex, int* const status)
+{
+  headas_chat(5, "new CLClearLine element (lineindex=%d)\n", 
+	      lineindex);
+
+  // Allocate memory.
+  CLClearLine* clclearline = (CLClearLine*)malloc(sizeof(CLClearLine));
+  if (NULL==clclearline) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Memory allocation for CLClearLine element failed!\n", *status);
+    return(clclearline);
+  }
+  
+  // Initialize.
+  clclearline->lineindex    = lineindex;
+
+  return(clclearline);
+}
+
+
+
+void destroyCLClearLine(CLClearLine** const clclearline)
+{
+  if (NULL!=(*clclearline)) {
+    free(*clclearline);
+    *clclearline=NULL;
+  }
+}
+

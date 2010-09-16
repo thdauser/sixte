@@ -18,7 +18,8 @@ typedef enum {
   CL_NONE        = 0,
   CL_WAIT        = 1,
   CL_LINESHIFT   = 2,
-  CL_READOUTLINE = 3
+  CL_READOUTLINE = 3,
+  CL_CLEARLINE   = 4
 } CLType;
 
 
@@ -66,7 +67,8 @@ typedef struct {
 
 /** ClockList element for readout line. */
 typedef struct {
-  /** Detector line to be read out. Usually this is the 0th line. */
+  /** Detector line to be read out. In CCDs usually this is the 0th
+      line. */
   int lineindex;
   
   /** Y-index assigned to the read-out line. Due to the line shifts in
@@ -74,6 +76,14 @@ typedef struct {
       lineidx. */
   int readoutindex;
 } CLReadoutLine;
+
+
+/** ClockList element for clearing a detector line. */
+typedef struct {
+  /** Detector line to be cleared. In CCDs usually this is the 0th
+      line. */
+  int lineindex;
+} CLClearLine;
 
 
 /////////////////////////////////////////////////////////////////
@@ -120,6 +130,12 @@ CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
 				int* const status);
 /** Destructor for CLReadoutLine. */
 void destroyCLReadoutLine(CLReadoutLine** const clreadoutline);
+
+
+/** Constructor for CLClearLine. */
+CLClearLine* newCLClearLine(const int lineindex, int* const status);
+/** Destructor for CLClearLine. */
+void destroyCLClearLine(CLClearLine** const clclearline);
 
 
 #endif /* CLOCKLIST_H */

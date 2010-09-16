@@ -134,5 +134,8 @@ void GenDetLineShift(GenDet* const det);
 void GenDetReadoutLine(GenDet* const det, const int lineindex, 
 		       const int readoutindex, int* const status);
 
+/** Clear a particular line of the GenDet pixel array. */
+void GenDetClearLine(GenDet* const det, const int lineindex);
+
 
 #endif /* GENDET_H */

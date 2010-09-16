@@ -464,6 +464,15 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	  }
 	}
 	
+	else if (!strcmp(Uelement, "CLEARLINE")) {
+	  if (!strcmp(Uattribute, "LINEINDEX")) {
+	    CLClearLine* clclearline = newCLClearLine(atoi(attr[i+1]), 
+						      &xmldata->status);
+	    append2ClockList(xmldata->det->clocklist, CL_CLEARLINE, 
+			     clclearline, &xmldata->status);
+	  }
+	}
+
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_lo_keV = (float)atof(attr[i+1]);
@@ -571,8 +580,9 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
   // Get the next element from the clock list.
   CLType type;
   void* element=NULL;
-  CLReadoutLine* clreadoutline=NULL;
   do {
+    CLReadoutLine* clreadoutline=NULL;
+    CLClearLine*   clclearline  =NULL;
     getClockListElement(det->clocklist, time, &type, &element);
     switch (type) {
     case CL_NONE:
@@ -589,6 +599,10 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
       GenDetReadoutLine(det, clreadoutline->lineindex, 
 			clreadoutline->readoutindex, 
 			status);
+      break;
+    case CL_CLEARLINE:
+      clclearline = (CLClearLine*)element;
+      GenDetClearLine(det, clclearline->lineindex);
       break;
     }
     if(EXIT_SUCCESS!=*status) return;
@@ -663,6 +677,12 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     // Store the event in the output event file.
     addGenEvent2File(det->eventfile, &event, status);
   }
+}
+
+
+
+void GenDetClearLine(GenDet* const det, const int lineindex) {
+  clearGenDetLine(det->line[lineindex]);
 }
 
 

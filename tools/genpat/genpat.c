@@ -31,9 +31,9 @@ static inline void clearGenPatPixels(GenDet* const det,
 
 
 			     
-void addGenPat2List(GenDet* const det, GenEvent** const pixels, 
-		    const int x, const int y, 
-		    GenEvent* const list, int* const nlist)
+static void addGenPat2List(GenDet* const det, GenEvent** const pixels, 
+			   const int x, const int y, 
+			   GenEvent* const list, int* const nlist)
 {
   // Add the event to the list.
   list[*nlist] = pixels[x][y];
@@ -59,8 +59,8 @@ void addGenPat2List(GenDet* const det, GenEvent** const pixels,
 
 
 
-void GenPatId(GenDet* const det, GenEvent** const pixels, 
-	      GenEventFile* const file, int* const status)
+static void GenPatId(GenDet* const det, GenEvent** const pixels, 
+		     GenEventFile* const file, int* const status)
 {
   GenEvent list[1000];
   int nlist;
