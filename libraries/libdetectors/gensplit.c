@@ -235,7 +235,6 @@ void makeGenSplitEvents(const GenSplit* const split,
   }
 
 
-
   // Manage the pile-up flags for the new charges.
   // Search for surrounding pixels already containing charges.
   int xmin = x[0];
@@ -264,7 +263,6 @@ void makeGenSplitEvents(const GenSplit* const split,
   // END of loop over all surrounding pixels.
 
 
-
   // Add charge to all valid pixels of the split event.
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) || (y[ii]>=0)) {
@@ -273,13 +271,11 @@ void makeGenSplitEvents(const GenSplit* const split,
   }
 
 
-
   // If necessary set the pile-up flag for the generated pattern.
   if (GP_PILEUP==pileup) {
     setGenPileupFlag(detline, grid, x[0], y[0]);
   }
   
-
 
   // TODO Call the event trigger routine.
 

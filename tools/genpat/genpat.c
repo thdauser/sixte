@@ -35,6 +35,8 @@ void addGenPat2List(GenDet* const det, GenEvent** const pixels,
 		    const int x, const int y, 
 		    GenEvent* const list, int* const nlist)
 {
+  // TODO Get the event and split threshold from the PIL or XML file.
+
   // Split threshold relative to the charge of the primary event.
   const float split_threshold=0.01;
 
@@ -303,7 +305,6 @@ void GenPatId(GenDet* const det, GenEvent** const pixels,
 
 	    } else {
 	      pat_type = -1;
-	      assert(0==1);
 	    }
 	    break;
 
