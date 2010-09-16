@@ -298,17 +298,38 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
 
 
-static void GenDetXMLElementStart(void *data, const char *el, const char **attr) 
+static void getAttribute(const char** attr, const char* const key, char* const value)
+{
+  char Uattribute[MAXMSG]; // Upper case version of XML attribute
+  char Ukey[MAXMSG];       // Upper case version of search expression
+
+  // Convert the search expression to an upper case string.
+  strcpy(Ukey, key);
+  strtoupper(Ukey);
+
+  int i;
+  for (i=0; attr[i]; i+=2) {  
+    // Convert the attribute to an upper case string.
+    strcpy(Uattribute, attr[i]);
+    strtoupper(Uattribute);
+    if (!strcmp(Uattribute, Ukey)) {
+      strcpy(value, attr[i+1]);
+      return;
+    }
+  }
+  // Keyword was not found
+  strcpy(value, "");
+  return;
+}
+
+
+
+static void GenDetXMLElementStart(void* data, const char* el, const char** attr) 
 {
   struct XMLData* xmldata = (struct XMLData*)data;
   char Uelement[MAXMSG];   // Upper case version of XML element
   char Uattribute[MAXMSG]; // Upper case version of XML attribute
   char Uvalue[MAXMSG];     // Upper case version of XML attribute value
-
-  // Some buffer variables for the attribute values.
-  // Readoutline:
-  int lineindex   =-1;
-  int readoutindex=-1;  
 
   // Check if an error has occurred previously.
   if (EXIT_SUCCESS!=xmldata->status) return;
@@ -323,151 +344,153 @@ static void GenDetXMLElementStart(void *data, const char *el, const char **attr)
     append2ClockList(xmldata->det->clocklist, CL_LINESHIFT, 
 		     cllineshift, &xmldata->status);
     
-  } else { // Elements with attributes.
+  } else { 
+    
+    // Elements with attributes.
 
-    // Loop over the different attributes.
-    int i;
-    for (i=0; attr[i]; i+=2) {
-      
-      // Convert the attribute to an upper case string.
-      strcpy(Uattribute, attr[i]);
-      strtoupper(Uattribute);
-
-      // Check the XML element name.
-      if (!strcmp(Uelement, "DIMENSIONS")) {
-	if (!strcmp(Uattribute, "XWIDTH")) {
-	  xmldata->det->pixgrid->xwidth = atoi(attr[i+1]);
-	} else if (!strcmp(Uattribute, "YWIDTH")) {
-	  xmldata->det->pixgrid->ywidth = atoi(attr[i+1]);
-	}
+    if (!strcmp(Uelement, "READOUTLINE")) {
+      char buffer[MAXMSG]; // String buffer.
+      getAttribute(attr, "LINEINDEX", buffer);
+      int lineindex    = atoi(buffer);
+      if (lineindex<0) {
+	xmldata->status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
+	return;
       }
-      
-      else if (!strcmp(Uelement, "WCS")) {
-	if (!strcmp(Uattribute, "XRPIX")) {
-	  xmldata->det->pixgrid->xrpix = (float)atof(attr[i+1]);
-	} else if (!strcmp(Uattribute, "YRPIX")) {
-	  xmldata->det->pixgrid->yrpix = (float)atof(attr[i+1]);
-	} else if (!strcmp(Uattribute, "XRVAL")) {
-	xmldata->det->pixgrid->xrval = (float)atof(attr[i+1]);
-	} else if (!strcmp(Uattribute, "YRVAL")) {
-	xmldata->det->pixgrid->yrval = (float)atof(attr[i+1]);
-	} else if (!strcmp(Uattribute, "XDELT")) {
-	  xmldata->det->pixgrid->xdelt = (float)atof(attr[i+1]);
-	} else if (!strcmp(Uattribute, "YDELT")) {
-	  xmldata->det->pixgrid->ydelt = (float)atof(attr[i+1]);
-	}
+      getAttribute(attr, "READOUTINDEX", buffer);
+      int readoutindex = atoi(buffer);
+      if (readoutindex<0) {
+	xmldata->status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
+	return;
       }
-      
-      else if (!strcmp(Uelement, "RESPONSE")) {
-	if (!strcmp(Uattribute, "FILENAME")) {
-	  // Load the detector response file.
-	  char buffer[MAXMSG];
-	  strcpy(buffer, attr[i+1]);
-	  xmldata->det->rmf = loadRMF(buffer, &xmldata->status);
-	}
-      }
-      
-      else if (!strcmp(Uelement, "CTE")) {
-	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->cte = (float)atof(attr[i+1]);
-	}
-      }
+      CLReadoutLine* clreadoutline = newCLReadoutLine(lineindex,
+						      readoutindex,
+						      &xmldata->status);
+      append2ClockList(xmldata->det->clocklist, CL_READOUTLINE, 
+		       clreadoutline, &xmldata->status);
 	
-      else if (!strcmp(Uelement, "SPLIT")) {
-	if (!strcmp(Uattribute, "TYPE")) {
-	  strcpy(Uvalue, attr[i+1]);
-	  strtoupper(Uvalue);
-	  if (!strcmp(Uvalue, "NONE")) {
-	    xmldata->det->split->type = GS_NONE;
-	  } else if (!strcmp(Uvalue, "GAUSS")) {
-	    xmldata->det->split->type = GS_GAUSS;
-	  } else if (!strcmp(Uvalue, "EXPONENTIAL")) {
-	    xmldata->det->split->type = GS_EXPONENTIAL;
-	  }
-	} else if (!strcmp(Uattribute, "PAR1")) {
-	  xmldata->det->split->par1 = atof(attr[i+1]);
-	}
-      }
+    } else { // Elements with independent attributes.
 
-      else if (!strcmp(Uelement, "EVENTFILE")) {
-	if (!strcmp(Uattribute, "TEMPLATE")) {
-	  strcpy(xmldata->det->eventfile_template, attr[i+1]);
-	}
-      }
-
-      else if (!strcmp(Uelement, "READOUT")) {
-	if (!strcmp(Uattribute, "MODE")) {
-	  strcpy(Uvalue, attr[i+1]);
-	  strtoupper(Uvalue);
-	  if (!strcmp(Uvalue, "TIME")) {
-	    xmldata->det->readout_trigger = GENDET_TIME_TRIGGERED;
-	  } else if (!strcmp(Uvalue, "EVENT")) {
-	    xmldata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
-	  }
-	}
-      }
+      // Loop over the different attributes.
+      int i;
+      for (i=0; attr[i]; i+=2) {
       
-      else if (!strcmp(Uelement, "WAIT")) {
-	if (!strcmp(Uattribute, "TIME")) {
-	  CLWait* clwait = newCLWait(atof(attr[i+1]), &xmldata->status);
-	  append2ClockList(xmldata->det->clocklist, CL_WAIT, 
-			   clwait, &xmldata->status);
-	}
-      }
-      
-      else if (!strcmp(Uelement, "READOUTLINE")) {
-	if (!strcmp(Uattribute, "LINEINDEX")) {
-	  lineindex = atoi(attr[i+1]);
-	  if (lineindex<0) {
-	    xmldata->status=EXIT_FAILURE;
-	    HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
-	    return;
+	// Convert the attribute to an upper case string.
+	strcpy(Uattribute, attr[i]);
+	strtoupper(Uattribute);
+
+	// Check the XML element name.
+	if (!strcmp(Uelement, "DIMENSIONS")) {
+	  if (!strcmp(Uattribute, "XWIDTH")) {
+	    xmldata->det->pixgrid->xwidth = atoi(attr[i+1]);
+	  } else if (!strcmp(Uattribute, "YWIDTH")) {
+	    xmldata->det->pixgrid->ywidth = atoi(attr[i+1]);
 	  }
-	} else if (!strcmp(Uattribute, "READOUTINDEX")) {
-	  readoutindex = atoi(attr[i+1]);
-	  if (readoutindex<0) {
-	    xmldata->status=EXIT_FAILURE;
-	    HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
-	    return;
-	  }
-	  readoutindex = atoi(attr[i+1]);
 	}
-	if ((lineindex>=0) && (readoutindex>=0)) {
-	  CLReadoutLine* clreadoutline = newCLReadoutLine(lineindex,
-							  readoutindex,
-							  &xmldata->status);
-	  append2ClockList(xmldata->det->clocklist, CL_READOUTLINE, 
-			   clreadoutline, &xmldata->status);
-	}
-      }
-
-      else if (!strcmp(Uelement, "LO_KEV_THRESHOLD")) {
-	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->lo_keV_threshold = (float)atof(attr[i+1]);
-	}
-      }
-
-      else if (!strcmp(Uelement, "UP_KEV_THRESHOLD")) {
-	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->up_keV_threshold = (float)atof(attr[i+1]);
-	}
-      }
-
-      else if (!strcmp(Uelement, "LO_PHA_THRESHOLD")) {
-	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->lo_PHA_threshold = (long)atoi(attr[i+1]);
-	}
-      }
-
-      else if (!strcmp(Uelement, "UP_PHA_THRESHOLD")) {
-	if (!strcmp(Uattribute, "VALUE")) {
-	  xmldata->det->up_PHA_threshold = (long)atoi(attr[i+1]);
-	}
-      }
       
-      if (EXIT_SUCCESS!=xmldata->status) return;
-    } 
-    // END of loop over different attributes.
+	else if (!strcmp(Uelement, "WCS")) {
+	  if (!strcmp(Uattribute, "XRPIX")) {
+	    xmldata->det->pixgrid->xrpix = (float)atof(attr[i+1]);
+	  } else if (!strcmp(Uattribute, "YRPIX")) {
+	    xmldata->det->pixgrid->yrpix = (float)atof(attr[i+1]);
+	  } else if (!strcmp(Uattribute, "XRVAL")) {
+	    xmldata->det->pixgrid->xrval = (float)atof(attr[i+1]);
+	  } else if (!strcmp(Uattribute, "YRVAL")) {
+	    xmldata->det->pixgrid->yrval = (float)atof(attr[i+1]);
+	  } else if (!strcmp(Uattribute, "XDELT")) {
+	    xmldata->det->pixgrid->xdelt = (float)atof(attr[i+1]);
+	  } else if (!strcmp(Uattribute, "YDELT")) {
+	    xmldata->det->pixgrid->ydelt = (float)atof(attr[i+1]);
+	  }
+	}
+	
+	else if (!strcmp(Uelement, "RESPONSE")) {
+	  if (!strcmp(Uattribute, "FILENAME")) {
+	    // Load the detector response file.
+	    char buffer[MAXMSG];
+	    strcpy(buffer, attr[i+1]);
+	    xmldata->det->rmf = loadRMF(buffer, &xmldata->status);
+	  }
+	}
+      
+	else if (!strcmp(Uelement, "CTE")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->cte = (float)atof(attr[i+1]);
+	  }
+	}
+	
+	else if (!strcmp(Uelement, "SPLIT")) {
+	  if (!strcmp(Uattribute, "TYPE")) {
+	    strcpy(Uvalue, attr[i+1]);
+	    strtoupper(Uvalue);
+	    if (!strcmp(Uvalue, "NONE")) {
+	      xmldata->det->split->type = GS_NONE;
+	    } else if (!strcmp(Uvalue, "GAUSS")) {
+	      xmldata->det->split->type = GS_GAUSS;
+	    } else if (!strcmp(Uvalue, "EXPONENTIAL")) {
+	      xmldata->det->split->type = GS_EXPONENTIAL;
+	    }
+	  } else if (!strcmp(Uattribute, "PAR1")) {
+	    xmldata->det->split->par1 = atof(attr[i+1]);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "EVENTFILE")) {
+	  if (!strcmp(Uattribute, "TEMPLATE")) {
+	    strcpy(xmldata->det->eventfile_template, attr[i+1]);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "READOUT")) {
+	  if (!strcmp(Uattribute, "MODE")) {
+	    strcpy(Uvalue, attr[i+1]);
+	    strtoupper(Uvalue);
+	    if (!strcmp(Uvalue, "TIME")) {
+	      xmldata->det->readout_trigger = GENDET_TIME_TRIGGERED;
+	    } else if (!strcmp(Uvalue, "EVENT")) {
+	      xmldata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
+	    }
+	  }
+	}
+      
+	else if (!strcmp(Uelement, "WAIT")) {
+	  if (!strcmp(Uattribute, "TIME")) {
+	    CLWait* clwait = newCLWait(atof(attr[i+1]), &xmldata->status);
+	    append2ClockList(xmldata->det->clocklist, CL_WAIT, 
+			     clwait, &xmldata->status);
+	  }
+	}
+	
+	else if (!strcmp(Uelement, "LO_KEV_THRESHOLD")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->lo_keV_threshold = (float)atof(attr[i+1]);
+	  }
+	}
+	
+	else if (!strcmp(Uelement, "UP_KEV_THRESHOLD")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->up_keV_threshold = (float)atof(attr[i+1]);
+	  }
+	}
+	
+	else if (!strcmp(Uelement, "LO_PHA_THRESHOLD")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->lo_PHA_threshold = (long)atoi(attr[i+1]);
+	  }
+	}
+	
+	else if (!strcmp(Uelement, "UP_PHA_THRESHOLD")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->up_PHA_threshold = (long)atoi(attr[i+1]);
+	  }
+	}
+      
+	if (EXIT_SUCCESS!=xmldata->status) return;
+      } 
+      // END of loop over different attributes.
+    }
+    // END of elements with independent attributes
   }
   // END of elements with attributes.
 }
