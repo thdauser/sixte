@@ -49,7 +49,7 @@ void addGenPat2List(GenDet* const det, GenEvent** const pixels,
   int ymax = MIN(det->pixgrid->ywidth-1, y+1);
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
-      if (pixels[ii][jj].charge > list[0].charge*det->split_threshold_fraction) {
+      if (pixels[ii][jj].charge > list[0].charge*det->threshold_split_lo_fraction) {
 	addGenPat2List(det, pixels, ii, jj, list, nlist);
       }
     }
@@ -70,8 +70,8 @@ void GenPatId(GenDet* const det, GenEvent** const pixels,
   int ii, jj;
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
-      if (pixels[ii][jj].charge > det->lo_keV_threshold) {
-	// Found an event above the primary threshold.
+      if (pixels[ii][jj].charge >= det->threshold_event_lo_keV) {
+	// Found an event above the primary event threshold.
 	
 	// Add the event to the temporary event list and
 	// Check the surrounding pixels.

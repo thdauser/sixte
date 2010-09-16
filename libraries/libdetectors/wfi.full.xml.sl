@@ -7,7 +7,7 @@ variable file = fopen(filename, "w+");
 ()=fprintf(file, "<response filename=\"/home/schmid/ixo/wfi/response/ixo_cdf_wfi_default.rsp\"/>\n");
 ()=fprintf(file, "<split type=\"GAUSS\" par1=\"11.e-6\"/>\n\n");
 ()=fprintf(file, "<eventfile template=\"geneventfile.tpl\"/>\n\n");
-()=fprintf(file, "<lo_keV_threshold value=\"150.e-3\"/>\n");
+()=fprintf(file, "<threshold_readout_lo_keV value=\"150.e-3\"/>\n");
 
 ()=fprintf(file, "<readout mode=\"time\">\n");
 

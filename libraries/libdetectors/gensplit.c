@@ -17,6 +17,7 @@ static void setGenPileupFlag(GenDetLine** const line,
 			     const GenPixGrid* const grid,
 			     const int x, const int y);
 
+
 ////////////////////////////////////////////////////////////////////
 // Program Code
 ////////////////////////////////////////////////////////////////////
@@ -28,7 +29,8 @@ GenSplit* newGenSplit(int* const status)
   GenSplit* split=(GenSplit*)malloc(sizeof(GenSplit));
   if (NULL==split) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenSplit failed!\n", *status);
+    HD_ERROR_THROW("Error: Memory allocation for GenSplit failed!\n", 
+		   *status);
     return(split);
   }
 
@@ -284,8 +286,6 @@ void makeGenSplitEvents(const GenSplit* const split,
 
 
 
-/** Determines the minimum distance value out of an array with 4
-    entries and returns the corresponding index. */
 static inline int getMinimumDistance(const double array[]) 
 {
   int count, index=0;

@@ -135,11 +135,12 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->pixgrid->ydelt  =-1.;
   det->readout_trigger = 0;
   det->cte             = 1.;
-  det->lo_PHA_threshold = -1;
-  det->up_PHA_threshold = -1;
-  det->lo_keV_threshold = -1.;
-  det->up_keV_threshold = -1.;
-  det->split_threshold_fraction = 1.;
+  det->threshold_readout_lo_PHA = -1;
+  det->threshold_readout_up_PHA = -1;
+  det->threshold_readout_lo_keV =  0.;
+  det->threshold_readout_up_keV = -1.;
+  det->threshold_event_lo_keV   =  0.;
+  det->threshold_split_lo_fraction = 1.;
   // Set string variables to empty strings.
   strcpy(det->eventfile_template, "");
 
@@ -285,15 +286,15 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   fclose(xmlfile);
 
   // If any thresholds have been specified in terms of PHA value,
-  // Set the corresponding charge threshold to the [keV] values
+  // set the corresponding charge threshold to the [keV] values
   // according to the RMF. If a charge threshold is given in addition,
-  // the value is overwritten by the charge corresponding to the PHA 
+  // its value is overwritten by the charge corresponding to the PHA 
   // specification. I.e., the PHA thresholds have a higher priority.
-  if (det->lo_PHA_threshold>-1) {
-    det->lo_keV_threshold = getEnergy(det->lo_PHA_threshold, det->rmf, -1);
+  if (det->threshold_readout_lo_PHA>-1) {
+    det->threshold_readout_lo_keV = getEnergy(det->threshold_readout_lo_PHA, det->rmf, -1);
   }
-  if (det->up_PHA_threshold>-1) {
-    det->up_keV_threshold = getEnergy(det->up_PHA_threshold, det->rmf,  1);
+  if (det->threshold_readout_up_PHA>-1) {
+    det->threshold_readout_up_keV = getEnergy(det->threshold_readout_up_PHA, det->rmf,  1);
   }
 }
 
@@ -463,33 +464,39 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	  }
 	}
 	
-	else if (!strcmp(Uelement, "LO_KEV_THRESHOLD")) {
+	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->lo_keV_threshold = (float)atof(attr[i+1]);
+	    xmldata->det->threshold_readout_lo_keV = (float)atof(attr[i+1]);
 	  }
 	}
 	
-	else if (!strcmp(Uelement, "UP_KEV_THRESHOLD")) {
+	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->up_keV_threshold = (float)atof(attr[i+1]);
+	    xmldata->det->threshold_readout_up_keV = (float)atof(attr[i+1]);
 	  }
 	}
 	
-	else if (!strcmp(Uelement, "LO_PHA_THRESHOLD")) {
+	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_PHA")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->lo_PHA_threshold = (long)atoi(attr[i+1]);
+	    xmldata->det->threshold_readout_lo_PHA = (long)atoi(attr[i+1]);
 	  }
 	}
 	
-	else if (!strcmp(Uelement, "UP_PHA_THRESHOLD")) {
+	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_PHA")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->up_PHA_threshold = (long)atoi(attr[i+1]);
+	    xmldata->det->threshold_readout_up_PHA = (long)atoi(attr[i+1]);
 	  }
 	}
 
-	else if (!strcmp(Uelement, "SPLIT_THRESHOLD_FRACTION")) {
+	else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->split_threshold_fraction = (float)atof(attr[i+1]);
+	    xmldata->det->threshold_event_lo_keV = (float)atof(attr[i+1]);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->threshold_split_lo_fraction = (float)atof(attr[i+1]);
 	  }
 	}
       
@@ -636,11 +643,10 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
   while (readoutGenDetLine(det->line[lineindex], &event)) {
 
     // Apply the charge thresholds.
-    if (det->lo_keV_threshold >= 0.) {
-      if (event.charge<det->lo_keV_threshold) continue;
-    }
-    if (det->up_keV_threshold >= 0.) {
-      if (event.charge>det->up_keV_threshold) continue;
+    if (event.charge<det->threshold_readout_lo_keV) continue;
+
+    if (det->threshold_readout_up_keV >= 0.) {
+      if (event.charge>det->threshold_readout_up_keV) continue;
     }
 
     // Apply the detector response.

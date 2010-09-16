@@ -51,19 +51,26 @@ typedef struct {
       by normalizing the RSP matrix. */
   struct RMF* rmf;
 
-  /** Lower and upper primary event threshold in units of [keV]. These
-      thresholds are applied before converting the pixel charge to a
-      PHA value. Pixel charges below this threshold will be discarded,
-      unless they are direct neighbors of another charge above this
-      threshold. */
-  float lo_keV_threshold, up_keV_threshold;
-  /** Lower and upper primary event PHA threshold. These thresholds
-      are applied after converting the pixel charge to a PHA value. */
-  long lo_PHA_threshold, up_PHA_threshold;
-  /** Split threshold given as a fraction of the charge in the main
+  /** Lower and upper readout threshold in units of [keV]. These
+      thresholds are applied in the read-out routine before converting
+      the pixel charge to a PHA value. Pixel charges below this
+      threshold will be discarded. */
+  float threshold_readout_lo_keV, threshold_readout_up_keV;
+  /** Lower and upper readout threshold in units of [PHA
+      channel]. These thresholds are converted to the corresponding
+      charge values [keV] according to the EBOUNDS table in the
+      detector response file. */
+  long threshold_readout_lo_PHA, threshold_readout_up_PHA;
+
+  /** Lower primary event threshold given in unit of [keV]. This value
+      is used in the pattern recognition algorithm to find pixels with
+      a sufficient charge for a separate event. */
+  float threshold_event_lo_keV;
+
+  /** Lower split threshold given as a fraction of the charge in the main
       pixel. This value is used in the pattern recognition
       algorithm. */
-  float split_threshold_fraction;
+  float threshold_split_lo_fraction;
 
   /** Split model. */
   GenSplit* split;
