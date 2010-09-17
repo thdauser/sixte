@@ -6,7 +6,7 @@ variable file = fopen(filename, "w+");
 ()=fprintf(file, "<cte value=\"1\"/>\n\n");
 ()=fprintf(file, "<!-- TODO -->\n");
 ()=fprintf(file, "<response filename=\"/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp\"/>\n");
-()=fprintf(file, "<split type=\"gauss\" par1=\"11.e-6\"/>\n\n");
+()=fprintf(file, "<!-- <split type=\"gauss\" par1=\"11.e-6\"/> -->\n\n");
 ()=fprintf(file, "<!-- TODO -->\n");
 ()=fprintf(file, "<threshold_readout_lo_keV value=\"0.\"/>\n");
 ()=fprintf(file, "<threshold_readout_up_keV value=\"12.\"/>\n\n");
@@ -18,17 +18,23 @@ variable file = fopen(filename, "w+");
 
 variable ii;
 for(ii=0; ii<200; ii++) {
-  ()=fprintf(file, "\t<wait time=\"0.72e-6\"/>");
+  ()=fprintf(file, "\t");
   ()=fprintf(file, "<clearline lineindex=\"0\"/>");
-  ()=fprintf(file, "<lineshift/>\n");
+  ()=fprintf(file, "<lineshift/>");
+  ()=fprintf(file, "<wait time=\"0.72e-6\"/>");
+  ()=fprintf(file, "\n");
 }
 
 for(ii=0; ii<180; ii++) {
   ()=fprintf(file, "\t<!-- TODO Calculate the event time according to Kuster (1999) -->\n");
-  ()=fprintf(file, "\t<readoutline lineindex=\"0\" readoutindex=\"" + string(ii) + "\"/>");
-  ()=fprintf(file, "<wait time=\"23.04.e-6\"/>");
-  ()=fprintf(file, "<lineshift/>\n");
+  ()=fprintf(file, "\t");
+  ()=fprintf(file, "<readoutline lineindex=\"0\" readoutindex=\"" + string(ii) + "\"/>");
+  ()=fprintf(file, "<lineshift/>");
+  ()=fprintf(file, "<wait time=\"0.72e-6\"/>");
+  ()=fprintf(file, "\n");
 }
+
+()=fprintf(file, "\t<wait time=\"4147.2e-6\"/>");
 
 ()=fprintf(file, "</readout>\n");
 ()=fprintf(file, "</detector>\n");
