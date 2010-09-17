@@ -18,8 +18,8 @@
 
 struct Parameters {
   char xml_filename[MAXMSG];
-  char input_event_filename[MAXMSG];
-  char output_event_filename[MAXMSG];
+  char input_eventlist_filename[MAXMSG];
+  char output_eventlist_filename[MAXMSG];
 };
 
 

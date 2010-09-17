@@ -39,7 +39,7 @@ int gendetsim_main() {
     if ((status=getpar(&parameters))) break;
 
     // Open the FITS file with the input impact list:
-    impactlistfile = openImpactListFile(parameters.impact_filename,
+    impactlistfile = openImpactListFile(parameters.impactlist_filename,
 					READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
@@ -48,7 +48,7 @@ int gendetsim_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Set the output event file.
-    GenDetNewEventFile(det, parameters.event_filename, &status);
+    GenDetNewEventFile(det, parameters.eventlist_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // --- END of Initialization ---
@@ -111,12 +111,12 @@ int getpar(struct Parameters* const parameters)
   int status=EXIT_SUCCESS; // Error status
 
   // Get the name of the input impact list file (FITS file).
-  if ((status = PILGetFname("impact_filename", parameters->impact_filename))) {
+  if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the input impact list file!\n", status);
   }
 
   // Get the name of the output event list file (FITS file).
-  else if ((status = PILGetFname("event_filename", parameters->event_filename))) {
+  else if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the output event list file!\n", status);
   }
 

@@ -394,7 +394,7 @@ int genpat_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Set the input event file.
-    det->eventfile=openGenEventFile(parameters.input_event_filename, 
+    det->eventfile=openGenEventFile(parameters.input_eventlist_filename, 
 				    READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
@@ -416,7 +416,7 @@ int genpat_main() {
     strcat(template, "/");
     strcat(template, det->eventfile_template);
     // Open a new event file from the specified template.
-    file = openNewGenEventFile(parameters.output_event_filename, template, &status);
+    file = openNewGenEventFile(parameters.output_eventlist_filename, template, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Allocate memory for the pixel array.
@@ -538,12 +538,14 @@ int getpar(struct Parameters* const parameters)
   int status=EXIT_SUCCESS; // Error status
 
   // Get the name of the input event list file (FITS file).
-  if ((status = PILGetFname("input_event_filename", parameters->input_event_filename))) {
+  if ((status = PILGetFname("input_eventlist_filename", 
+			    parameters->input_eventlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the input event list file!\n", status);
   }
 
   // Get the name of the output event list file (FITS file).
-  else if ((status = PILGetFname("output_event_filename", parameters->output_event_filename))) {
+  else if ((status = PILGetFname("output_eventlist_filename", 
+				 parameters->output_eventlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the output event list file!\n", status);
   }
 

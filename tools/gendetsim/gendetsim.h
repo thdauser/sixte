@@ -18,8 +18,8 @@
 
 struct Parameters {
   char xml_filename[MAXMSG];
-  char event_filename[MAXMSG];
-  char impact_filename[MAXMSG];
+  char eventlist_filename[MAXMSG];
+  char impactlist_filename[MAXMSG];
 
   double t0, timespan;
 };
