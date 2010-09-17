@@ -24,6 +24,7 @@ xmldir = $(pkgdatadir)/xml
 dist_xml_DATA  = eroframestore.xml 
 dist_xml_DATA += wfi.full.xml
 dist_xml_DATA += epicpn.burst.xml
+dist_xml_DATA += epicpn.timing.xml
 
 ########### LIBRARIES #################
 

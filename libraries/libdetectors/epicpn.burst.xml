@@ -581,5 +581,5 @@
 	<readoutline lineindex="0" readoutindex="178"/><lineshift/><wait time="0.72e-6"/>
 	<!-- TODO Calculate the event time according to Kuster (1999) -->
 	<readoutline lineindex="0" readoutindex="179"/><lineshift/><wait time="0.72e-6"/>
-	<wait time="4147.2e-6"/></readout>
+</readout>
 </detector>

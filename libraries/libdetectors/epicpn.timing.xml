@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<detector type="EPIC-pn">
+
+<dimensions xwidth="64" ywidth="200"/>
+
+<wcs xrpix="32.5" yrpix="100.5" xrval="0." yrval="0." xdelt="150.e-6" ydelt="150.e-6"/>
+
+<cte value="1"/>
+
+<!-- TODO -->
+<response filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
+<!-- <split type="gauss" par1="11.e-6"/> -->
+
+<!-- TODO -->
+<threshold_readout_lo_keV value="0."/>
+<threshold_readout_up_keV value="12."/>
+
+<threshold_event_lo_keV value="150.e-3"/>
+<threshold_split_lo_fraction value="0.01"/>
+
+<eventfile template="geneventfile.tpl"/>
+
+<readout mode="time">
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="0"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="1"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="2"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="3"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="4"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="5"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="6"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="7"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="8"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="9"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="10"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="11"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="12"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="13"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="14"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="15"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="16"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="17"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="18"/>
+	<!-- TODO Calculate the event time according to Kuster (1999) -->
+	<lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><lineshift/><wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="19"/>
+</readout>
+</detector>
