@@ -38,6 +38,7 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
   // Add the event to the list.
   list[*nlist] = pixels[x][y];
   (*nlist)++;
+  assert(*nlist<1000);
   // Delete the pixel, such that it is not used twice.
   pixels[x][y].charge = 0.;
 
@@ -70,7 +71,7 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
   int ii, jj;
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
-      if (pixels[ii][jj].charge >= det->threshold_event_lo_keV) {
+      if (pixels[ii][jj].charge > det->threshold_event_lo_keV) {
 	// Found an event above the primary event threshold.
 	
 	// Add the event to the temporary event list and
@@ -343,7 +344,7 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	// Store the split pattern information in the output event file.
 	for (kk=0; kk<nlist; kk++) {
 	  addGenEvent2File(file, &list[kk], status);
-
+	  assert(file->nrows<10000000);
 	}
 	// END of adding the split data to the output event file.
       }

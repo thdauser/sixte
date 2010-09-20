@@ -139,7 +139,7 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->threshold_readout_up_PHA = -1;
   det->threshold_readout_lo_keV =  0.;
   det->threshold_readout_up_keV = -1.;
-  det->threshold_event_lo_keV   =  0.;
+  det->threshold_event_lo_keV   = -1.;
   det->threshold_split_lo_fraction = 1.;
   // Set string variables to empty strings.
   strcpy(det->eventfile_template, "");
@@ -279,6 +279,12 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     }
   }
 
+  if (0>det->threshold_event_lo_keV) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No lower event threshold specified!\n", *status);
+    return;
+  }
+
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
 
@@ -292,9 +298,13 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   // specification. I.e., the PHA thresholds have a higher priority.
   if (det->threshold_readout_lo_PHA>-1) {
     det->threshold_readout_lo_keV = getEnergy(det->threshold_readout_lo_PHA, det->rmf, -1);
+    headas_chat(3, "set lower readout threshold to %.3lf keV (PHA %ld)\n", 
+		det->threshold_readout_lo_keV, det->threshold_readout_lo_PHA);
   }
   if (det->threshold_readout_up_PHA>-1) {
     det->threshold_readout_up_keV = getEnergy(det->threshold_readout_up_PHA, det->rmf,  1);
+    headas_chat(3, "set upper readout threshold to %.3lf keV (PHA %ld)\n", 
+		det->threshold_readout_up_keV, det->threshold_readout_up_PHA);
   }
 }
 
@@ -476,36 +486,48 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_lo_keV = (float)atof(attr[i+1]);
+	    headas_chat(3, "lower readout threshold: %.3lf keV\n", 
+			xmldata->det->threshold_readout_lo_keV);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_up_keV = (float)atof(attr[i+1]);
+	    headas_chat(3, "upper readout threshold: %.3lf keV\n", 
+			xmldata->det->threshold_readout_lo_keV);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_PHA")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_lo_PHA = (long)atoi(attr[i+1]);
+	    headas_chat(3, "lower readout threshold: %ld PHA\n", 
+			xmldata->det->threshold_readout_lo_keV);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_PHA")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_up_PHA = (long)atoi(attr[i+1]);
+	    headas_chat(3, "upper readout threshold: %ld PHA\n", 
+			xmldata->det->threshold_readout_lo_keV);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_event_lo_keV = (float)atof(attr[i+1]);
+	    headas_chat(3, "lower event threshold: %.3lf keV\n", 
+			xmldata->det->threshold_event_lo_keV);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_split_lo_fraction = (float)atof(attr[i+1]);
+	    headas_chat(3, "lower split threshold: %.1lf %%\n", 
+			xmldata->det->threshold_split_lo_fraction*100.);
 	  }
 	}
       
@@ -657,10 +679,10 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
   while (readoutGenDetLine(det->line[lineindex], &event)) {
 
     // Apply the charge thresholds.
-    if (event.charge<det->threshold_readout_lo_keV) continue;
+    if (event.charge<=det->threshold_readout_lo_keV) continue;
 
     if (det->threshold_readout_up_keV >= 0.) {
-      if (event.charge>det->threshold_readout_up_keV) continue;
+      if (event.charge>=det->threshold_readout_up_keV) continue;
     }
 
     // Apply the detector response.

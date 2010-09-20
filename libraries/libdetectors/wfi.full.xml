@@ -11,6 +11,7 @@
 <eventfile template="geneventfile.tpl"/>
 
 <threshold_readout_lo_keV value="150.e-3"/>
+<threshold_event_lo_keV value="150.e-3"/>
 <readout mode="time">
 	<wait time="2.e-6"/>
 	<readoutline lineindex="511" readoutindex="511"/>
