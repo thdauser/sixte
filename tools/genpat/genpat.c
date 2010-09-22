@@ -75,13 +75,25 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	// Found an event above the primary event threshold.
 	
 	// Add the event to the temporary event list and
-	// Check the surrounding pixels.
+	// check the surrounding pixels.
 	nlist=0;
 	addGenPat2List(det, pixels, ii, jj, list, &nlist);
 	// Now 'list' contains all events contributing to this pattern.
 
+	// Check if the pattern lies at the borders of the detectors.
+	// In that case it is flagged as border pattern and will be
+	// treated as invalid.
+	int border=0;
+	int kk;
+	for (kk=0; kk<nlist; kk++) {
+	  if ((0==list[kk].rawx) || (det->pixgrid->xwidth-1==list[kk].rawx) ||
+	      (0==list[kk].rawy) || (det->pixgrid->ywidth-1==list[kk].rawy)) {
+	    border=1;
+	  }
+	}
+
 	// Determine the pattern type and orientation.
-	int kk, ll;
+	int ll;
 	// Indices of maximum charged pixels in descending order.
 	int idx[4] = { 0, 0, 0, 0 };
 	switch (nlist) {
@@ -340,6 +352,16 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	  break;
 	}
 	// END of outer switch(nlist): how many split partners?
+
+	// Invalid border pattern!
+	if (1==border) {
+	  for (kk=0; kk<nlist; kk++) {
+	    list[kk].pat_type = -1;
+	    list[kk].pat_id   =  0;
+	    list[kk].pat_alig =  0;
+	  }
+	}
+	// END of invalid border pattern.
 
 	// Store the split pattern information in the output event file.
 	for (kk=0; kk<nlist; kk++) {
