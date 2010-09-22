@@ -6,6 +6,7 @@ int initpnCCDDetector(pnCCDDetector* pn,
 {
 	int status = EXIT_SUCCESS;
 
+	// Maybe set step time (see Christians epicpn.c)
 	// Call the initialistation routines of the underlying data structures.
 	status = initGenericDetector(&pn->generic, &parameters->generic);
 	if (EXIT_SUCCESS!=status) return(status);

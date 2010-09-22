@@ -24,10 +24,11 @@ int pnccd_simulation_main() {
 	set_toolname("pnccd_simulation");
 	set_toolversion("0.01");
 
+	if (status = getpar(&parameters)) return(status);
 
 	return(status);
 }
 
-int getpar(struct Parameters* parameters) {
+static int getpar(struct Parameters* parameters) {
 
 	int status=EXIT_SUCCESS; // error status
