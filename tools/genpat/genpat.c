@@ -344,7 +344,6 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	// Store the split pattern information in the output event file.
 	for (kk=0; kk<nlist; kk++) {
 	  addGenEvent2File(file, &list[kk], status);
-	  assert(file->nrows<10000000);
 	}
 	// END of adding the split data to the output event file.
       }
