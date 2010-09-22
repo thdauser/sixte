@@ -96,272 +96,245 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	int ll;
 	// Indices of maximum charged pixels in descending order.
 	int idx[4] = { 0, 0, 0, 0 };
+	// Determine maxidx, minidx; or better: idx[0]..idx[3].
+	for (kk=0; kk<nlist; kk++) {
+	  idx[kk]=kk;
+	  for (ll=kk-1; ll>=0; ll--) {
+	    if (list[idx[ll]].charge<list[kk].charge) {
+	      idx[ll+1] = idx[ll];
+	      idx[ll]   = kk;
+	    } else {
+	      break;
+	    }
+	  }
+	}
+
+	// The maximum charge is in the central pixel.
+	list[idx[0]].pat_id = 5; 
+
+	// Determine the pattern type and alignment (orientation).
+	int pat_type=0, pat_alig=0;
 	switch (nlist) {
 	case 1:  // Single event.
-	  list[0].pat_type = 1;
-	  list[0].pat_id   = 5;
-	  list[0].pat_alig = 0;
+	  pat_type = 1;
+	  pat_alig = 0;
 	  break;
-
-	case 2: // Double, Triple, or Quadruple.
-	case 3:
-	case 4: 
-
-	  // Determine maxidx, minidx; or better: idx[0]..idx[3].
-	  for (kk=0; kk<nlist; kk++) {
-	    idx[kk]=kk;
-	    for (ll=kk-1; ll>=0; ll--) {
-	      if (list[idx[ll]].charge<list[kk].charge) {
-		idx[ll+1] = idx[ll];
-		idx[ll]   = kk;
-	      } else {
-		break;
-	      }
+	  
+	case 2: // Double event.
+	  if (list[idx[1]].rawx==list[idx[0]].rawx) {
+	    if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
+	      pat_type = 2;
+	      list[idx[1]].pat_id = 2;
+	      pat_alig = 1;
+	    } else if (list[idx[1]].rawy==list[idx[0]].rawy-1) {
+	      pat_type = 2;
+	      list[idx[1]].pat_id = 8;
+	      pat_alig = 5;
+	    } else {
+	      pat_type = -1;
 	    }
-	  }
-
-	  // The maximum charge in the central pixel.
-	  list[idx[0]].pat_id = 5; 
-
-	  // Determine the pattern type and alignment (orientation).
-	  int pat_type=0, pat_alig=0;
-	  switch (nlist) {
-	  case 2: // Doubles.
-	    if (list[idx[1]].rawx==list[idx[0]].rawx) {
-	      if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
-		pat_type = 2;
-		list[idx[1]].pat_id = 2;
-		pat_alig = 1;
-	      } else if (list[idx[1]].rawy==list[idx[0]].rawy-1) {
-		pat_type = 2;
-		list[idx[1]].pat_id = 8;
-		pat_alig = 5;
-	      } else {
-		pat_type = -1;
-	      }
-	    } else if (list[idx[1]].rawy==list[idx[0]].rawy) {
-	      if (list[idx[1]].rawx==list[idx[0]].rawx+1) {
-		pat_type = 2;
-		list[idx[1]].pat_id = 6;
-		pat_alig = 3;
-	      } else if (list[idx[1]].rawx==list[idx[0]].rawx-1) {
-		pat_type = 2;
-		list[idx[1]].pat_id = 4;
+	  } else if (list[idx[1]].rawy==list[idx[0]].rawy) {
+	    if (list[idx[1]].rawx==list[idx[0]].rawx+1) {
+	      pat_type = 2;
+	      list[idx[1]].pat_id = 6;
+	      pat_alig = 3;
+	    } else if (list[idx[1]].rawx==list[idx[0]].rawx-1) {
+	      pat_type = 2;
+	      list[idx[1]].pat_id = 4;
 		pat_alig = 7;
-	      } else {
-		pat_type = -1;
-	      }
 	    } else {
 	      pat_type = -1;
-	    }
-	    break;
-
-	  case 3: // Triples.
-	    if (list[idx[1]].rawx==list[idx[0]].rawx) {
-	      if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
-		list[idx[1]].pat_id = 2;
-		
-		if (list[idx[2]].rawy==list[idx[0]].rawy) {
-		  if (list[idx[2]].rawx==list[idx[0]].rawx+1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 6;
-		    pat_alig            = 1;
-		  } else if (list[idx[2]].rawx==list[idx[0]].rawx-1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 4;
-		    pat_alig            = 8;
-		  } else {
-		    pat_type = -1;
-		  }
-		} else {
-		  pat_type = -1;
-		}
-
-	      } else if (list[idx[1]].rawy==list[idx[0]].rawy-1) {
-		list[idx[1]].pat_id = 8;
-
-		if (list[idx[2]].rawy==list[idx[0]].rawy) {
-		  if (list[idx[2]].rawx==list[idx[0]].rawx+1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 6;
-		    pat_alig            = 4;
-		  } else if (list[idx[2]].rawx==list[idx[0]].rawx-1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 4;
-		    pat_alig            = 5;
-		  } else {
-		    pat_type = -1;
-		  }
-		} else {
-		  pat_type = -1;
-		}
-	      } else {
-		pat_type = -1;
-	      }
-	    } // END of RAWX(maximum) == RAWX(second largest event).
-
-	    else if (list[idx[1]].rawy==list[idx[0]].rawy) {
-	      if (list[idx[1]].rawx==list[idx[0]].rawx+1) {
-		list[idx[1]].pat_id = 6;
-		
-		if (list[idx[2]].rawx==list[idx[0]].rawx) {
-		  if (list[idx[2]].rawy==list[idx[0]].rawy+1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 2;
-		    pat_alig            = 2;
-		  } else if (list[idx[2]].rawy==list[idx[0]].rawy-1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 8;
-		    pat_alig            = 3;
-		  } else {
-		    pat_type = -1;
-		  }
-		} else {
-		  pat_type = -1;
-		}
-
-	      } else if (list[idx[1]].rawx==list[idx[0]].rawx-1) {
-		list[idx[1]].pat_id = 4;
-
-		if (list[idx[2]].rawx==list[idx[0]].rawx) {
-		  if (list[idx[2]].rawy==list[idx[0]].rawy+1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 2;
-		    pat_alig            = 7;
-		  } else if (list[idx[2]].rawy==list[idx[0]].rawy-1) {
-		    pat_type            = 3;
-		    list[idx[2]].pat_id = 8;
-		    pat_alig            = 6;
-		  } else {
-		    pat_type = -1;
-		  }
-		} else {
-		  pat_type = -1;
-		}
-	      } else {
-		pat_type = -1;
-	      }
-	    } // END of RAWY(maximum) == RAWY(second largest event).
-	    else {
-	      pat_type = -1;
-	    }
-	    break;
-
-	  case 4: // Quadruples.
-
-	    if ((((list[idx[1]].rawy == list[idx[3]].rawy) &&
-		  (list[idx[1]].rawx == list[idx[0]].rawx)) ||
-		 ((list[idx[1]].rawy == list[idx[0]].rawy) &&
-		  (list[idx[1]].rawx == list[idx[3]].rawx))) && 
-		
-		(((list[idx[2]].rawy == list[idx[3]].rawy) &&
-		  (list[idx[2]].rawx == list[idx[0]].rawx)) ||
-		 ((list[idx[2]].rawy == list[idx[0]].rawy) &&
-		  (list[idx[2]].rawx == list[idx[3]].rawx)))) {
-	      pat_type = 4;
-
-	      // Check the location of the minimum event.
-	      if (list[idx[3]].rawx==list[idx[0]].rawx+1) {
-		if (list[idx[3]].rawy==list[idx[0]].rawy+1) {
-		  list[idx[3]].pat_id = 3;
-		  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		    list[idx[1]].pat_id = 2;
-		    list[idx[2]].pat_id = 6;
-		    pat_alig            = 1;
-		  } else {
-		    list[idx[1]].pat_id = 6;
-		    list[idx[2]].pat_id = 2;
-		    pat_alig            = 2;
-		  }
-		} else if (list[idx[3]].rawy==list[idx[0]].rawy-1) {
-		  list[idx[3]].pat_id = 9;
-		  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		    list[idx[1]].pat_id = 8;
-		    list[idx[2]].pat_id = 6;
-		    pat_alig            = 4;
-		  } else {
-		    list[idx[1]].pat_id = 6;
-		    list[idx[2]].pat_id = 8;
-		    pat_alig            = 3;
-		  }
-		}
-	      } else if (list[idx[3]].rawx==list[idx[0]].rawx-1) {
-		if (list[idx[3]].rawy==list[idx[0]].rawy+1) {
-		  list[idx[3]].pat_id = 1;
-		  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		    list[idx[1]].pat_id = 2;
-		    list[idx[2]].pat_id = 4;
-		    pat_alig            = 8;
-		  } else {
-		    list[idx[1]].pat_id = 4;
-		    list[idx[2]].pat_id = 2;
-		    pat_alig            = 7;
-		  }
-		} else if (list[idx[3]].rawy==list[idx[0]].rawy-1) {
-		  list[idx[3]].pat_id = 7;
-		  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		    list[idx[1]].pat_id = 8;
-		    list[idx[2]].pat_id = 4;
-		    pat_alig            = 5;
-		  } else {
-		    list[idx[1]].pat_id = 4;
-		    list[idx[2]].pat_id = 8;
-		    pat_alig            = 6;
-		  }
-		}
-	      } else { assert(0==1); }
-
-	    } else {
-	      pat_type = -1;
-	    }
-	    break;
-
-	  default:
-	    pat_type=-1;
-	    break;
-	  }
-	  // END of inner switch(nlist).
-
-	  // Set the pattern type and alignment (orientation).
-	  if (pat_type > 0) { 
-	    // Valid pattern!
-	    for (kk=0; kk<nlist; kk++) {
-	      list[kk].pat_type = pat_type;
-	      list[kk].pat_alig = pat_alig;
-	    }
-	  } else if (-1==pat_type) {
-	    // Invalid pattern!
-	    for (kk=0; kk<nlist; kk++) {
-	      list[kk].pat_type = -1;
-	      list[kk].pat_id   =  0;
-	      list[kk].pat_alig =  0;
 	    }
 	  } else {
-	    *status=EXIT_FAILURE;
-	    HD_ERROR_THROW("Error: Could not determine pattern type!\n", *status);
-	    return;
-	  }
-	  break; // END of double, triple, or quadruple.
-
-	default: // Invalid pattern with more than 4 split partners.
-	  for (kk=0; kk<nlist; kk++) {
-	    list[kk].pat_type = -1;
-	    list[kk].pat_id   =  0;
-	    list[kk].pat_alig =  0;
+	    pat_type = -1;
 	  }
 	  break;
-	}
-	// END of outer switch(nlist): how many split partners?
+	  
+	case 3: // Triple event.
+	  if (list[idx[1]].rawx==list[idx[0]].rawx) {
+	    if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
+	      list[idx[1]].pat_id = 2;
+	      
+	      if (list[idx[2]].rawy==list[idx[0]].rawy) {
+		if (list[idx[2]].rawx==list[idx[0]].rawx+1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 6;
+		  pat_alig            = 1;
+		} else if (list[idx[2]].rawx==list[idx[0]].rawx-1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 4;
+		  pat_alig            = 8;
+		} else {
+		  pat_type = -1;
+		}
+	      } else {
+		pat_type = -1;
+	      }
+	      
+	    } else if (list[idx[1]].rawy==list[idx[0]].rawy-1) {
+	      list[idx[1]].pat_id = 8;
+	      
+	      if (list[idx[2]].rawy==list[idx[0]].rawy) {
+		if (list[idx[2]].rawx==list[idx[0]].rawx+1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 6;
+		  pat_alig            = 4;
+		} else if (list[idx[2]].rawx==list[idx[0]].rawx-1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 4;
+		  pat_alig            = 5;
+		} else {
+		    pat_type = -1;
+		}
+	      } else {
+		pat_type = -1;
+	      }
+	    } else {
+	      pat_type = -1;
+	    }
+	  } // END of RAWX(maximum) == RAWX(second largest event).
 
-	// Invalid border pattern!
-	if (1==border) {
+	  else if (list[idx[1]].rawy==list[idx[0]].rawy) {
+	    if (list[idx[1]].rawx==list[idx[0]].rawx+1) {
+	      list[idx[1]].pat_id = 6;
+	      
+	      if (list[idx[2]].rawx==list[idx[0]].rawx) {
+		if (list[idx[2]].rawy==list[idx[0]].rawy+1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 2;
+		  pat_alig            = 2;
+		} else if (list[idx[2]].rawy==list[idx[0]].rawy-1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 8;
+		  pat_alig            = 3;
+		} else {
+		  pat_type = -1;
+		}
+		} else {
+		pat_type = -1;
+	      }
+	      
+	    } else if (list[idx[1]].rawx==list[idx[0]].rawx-1) {
+	      list[idx[1]].pat_id = 4;
+	      
+	      if (list[idx[2]].rawx==list[idx[0]].rawx) {
+		if (list[idx[2]].rawy==list[idx[0]].rawy+1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 2;
+		  pat_alig            = 7;
+		} else if (list[idx[2]].rawy==list[idx[0]].rawy-1) {
+		  pat_type            = 3;
+		  list[idx[2]].pat_id = 8;
+		  pat_alig            = 6;
+		} else {
+		  pat_type = -1;
+		}
+	      } else {
+		pat_type = -1;
+	      }
+	    } else {
+	      pat_type = -1;
+	    }
+	  } // END of RAWY(maximum) == RAWY(second largest event).
+	  else {
+	    pat_type = -1;
+	  }
+	  break;
+
+	case 4: // Quadruple event.
+	  
+	  if ((((list[idx[1]].rawy == list[idx[3]].rawy) &&
+		(list[idx[1]].rawx == list[idx[0]].rawx)) ||
+	       ((list[idx[1]].rawy == list[idx[0]].rawy) &&
+		(list[idx[1]].rawx == list[idx[3]].rawx))) && 
+	      
+	      (((list[idx[2]].rawy == list[idx[3]].rawy) &&
+		(list[idx[2]].rawx == list[idx[0]].rawx)) ||
+	       ((list[idx[2]].rawy == list[idx[0]].rawy) &&
+		(list[idx[2]].rawx == list[idx[3]].rawx)))) {
+	    pat_type = 4;
+	    
+	    // Check the location of the minimum event.
+	    if (list[idx[3]].rawx==list[idx[0]].rawx+1) {
+	      if (list[idx[3]].rawy==list[idx[0]].rawy+1) {
+		list[idx[3]].pat_id = 3;
+		if (list[idx[1]].rawx==list[idx[0]].rawx) {
+		  list[idx[1]].pat_id = 2;
+		  list[idx[2]].pat_id = 6;
+		  pat_alig            = 1;
+		} else {
+		  list[idx[1]].pat_id = 6;
+		  list[idx[2]].pat_id = 2;
+		  pat_alig            = 2;
+		}
+	      } else if (list[idx[3]].rawy==list[idx[0]].rawy-1) {
+		list[idx[3]].pat_id = 9;
+		if (list[idx[1]].rawx==list[idx[0]].rawx) {
+		  list[idx[1]].pat_id = 8;
+		  list[idx[2]].pat_id = 6;
+		  pat_alig            = 4;
+		} else {
+		  list[idx[1]].pat_id = 6;
+		  list[idx[2]].pat_id = 8;
+		  pat_alig            = 3;
+		}
+	      }
+	    } else if (list[idx[3]].rawx==list[idx[0]].rawx-1) {
+	      if (list[idx[3]].rawy==list[idx[0]].rawy+1) {
+		list[idx[3]].pat_id = 1;
+		if (list[idx[1]].rawx==list[idx[0]].rawx) {
+		  list[idx[1]].pat_id = 2;
+		  list[idx[2]].pat_id = 4;
+		  pat_alig            = 8;
+		} else {
+		  list[idx[1]].pat_id = 4;
+		  list[idx[2]].pat_id = 2;
+		  pat_alig            = 7;
+		}
+	      } else if (list[idx[3]].rawy==list[idx[0]].rawy-1) {
+		list[idx[3]].pat_id = 7;
+		if (list[idx[1]].rawx==list[idx[0]].rawx) {
+		  list[idx[1]].pat_id = 8;
+		  list[idx[2]].pat_id = 4;
+		  pat_alig            = 5;
+		} else {
+		  list[idx[1]].pat_id = 4;
+		  list[idx[2]].pat_id = 8;
+		    pat_alig            = 6;
+		}
+	      }
+	    } else { assert(0==1); }
+	    
+	  } else {
+	    pat_type = -1;
+	  }
+	  break;
+	  
+	default:
+	  pat_type=-1;
+	  break;
+	}
+	// END of switch(nlist).
+
+	// Set the pattern type and alignment (orientation).
+	if ((pat_type > 0) && (0==border)) { 
+	  // Valid pattern!
+	  for (kk=0; kk<nlist; kk++) {
+	    list[kk].pat_type = pat_type;
+	    list[kk].pat_alig = pat_alig;
+	  }
+	} else if ((-1==pat_type) || (1==border)) {
+	  // Invalid pattern!
 	  for (kk=0; kk<nlist; kk++) {
 	    list[kk].pat_type = -1;
 	    list[kk].pat_id   =  0;
 	    list[kk].pat_alig =  0;
 	  }
+	} else {
+	  *status=EXIT_FAILURE;
+	  HD_ERROR_THROW("Error: Could not determine pattern type!\n", *status);
+	  return;
 	}
-	// END of invalid border pattern.
 
 	// Store the split pattern information in the output event file.
 	for (kk=0; kk<nlist; kk++) {
