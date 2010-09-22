@@ -96,7 +96,7 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	// Determine the pattern type and orientation.
 	int ll;
 	// Indices of maximum charged pixels in descending order.
-	int idx[4] = { 0, 0, 0, 0 };
+	int idx[1000] = { 0, 0, 0, 0 };
 	// Determine maxidx, minidx; or better: idx[0]..idx[3].
 	for (kk=0; kk<nlist; kk++) {
 	  idx[kk]=kk;
@@ -301,7 +301,7 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 		} else {
 		  list[idx[1]].pat_id = 4;
 		  list[idx[2]].pat_id = 8;
-		    pat_alig            = 6;
+		  pat_alig            = 6;
 		}
 	      }
 	    } else { assert(0==1); }
@@ -482,6 +482,8 @@ int genpat_main() {
 
 	// Update the frame counter.
 	frame = event.frame;
+	headas_printf("\rframe: %ld ", frame);
+	fflush(NULL);
       }
 
       if (0==last_loop) {
@@ -491,6 +493,7 @@ int genpat_main() {
     };
     if (EXIT_SUCCESS!=status) break;
     // END of loop over all events in the FITS file.
+    headas_printf("\n");
 
   } while(0); // END of the error handling loop.
 
