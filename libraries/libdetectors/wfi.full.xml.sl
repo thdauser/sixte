@@ -9,6 +9,7 @@ variable file = fopen(filename, "w+");
 ()=fprintf(file, "<eventfile template=\"geneventfile.tpl\"/>\n\n");
 ()=fprintf(file, "<threshold_readout_lo_keV value=\"150.e-3\"/>\n");
 ()=fprintf(file, "<threshold_event_lo_keV value=\"150.e-3\"/>\n");
+()=fprintf(file, "<threshold_split_lo_keV value=\"150.e-3\"/>\n");
 
 ()=fprintf(file, "<readout mode=\"time\">\n");
 

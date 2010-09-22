@@ -50,7 +50,8 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
   int ymax = MIN(det->pixgrid->ywidth-1, y+1);
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
-      if (pixels[ii][jj].charge > list[0].charge*det->threshold_split_lo_fraction) {
+      if ((pixels[ii][jj].charge > list[0].charge*det->threshold_split_lo_fraction) &&
+	  (pixels[ii][jj].charge > det->threshold_split_lo_keV)) {
 	addGenPat2List(det, pixels, ii, jj, list, nlist);
       }
     }

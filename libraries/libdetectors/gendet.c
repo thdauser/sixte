@@ -140,7 +140,8 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->threshold_readout_lo_keV =  0.;
   det->threshold_readout_up_keV = -1.;
   det->threshold_event_lo_keV   = -1.;
-  det->threshold_split_lo_fraction = 1.;
+  det->threshold_split_lo_keV   =  0.;
+  det->threshold_split_lo_fraction = 0.;
   // Set string variables to empty strings.
   strcpy(det->eventfile_template, "");
 
@@ -495,7 +496,7 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_up_keV = (float)atof(attr[i+1]);
 	    headas_chat(3, "upper readout threshold: %.3lf keV\n", 
-			xmldata->det->threshold_readout_lo_keV);
+			xmldata->det->threshold_readout_up_keV);
 	  }
 	}
 	
@@ -503,7 +504,7 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_lo_PHA = (long)atoi(attr[i+1]);
 	    headas_chat(3, "lower readout threshold: %ld PHA\n", 
-			xmldata->det->threshold_readout_lo_keV);
+			xmldata->det->threshold_readout_lo_PHA);
 	  }
 	}
 	
@@ -511,7 +512,7 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->threshold_readout_up_PHA = (long)atoi(attr[i+1]);
 	    headas_chat(3, "upper readout threshold: %ld PHA\n", 
-			xmldata->det->threshold_readout_lo_keV);
+			xmldata->det->threshold_readout_up_PHA);
 	  }
 	}
 
@@ -520,6 +521,14 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    xmldata->det->threshold_event_lo_keV = (float)atof(attr[i+1]);
 	    headas_chat(3, "lower event threshold: %.3lf keV\n", 
 			xmldata->det->threshold_event_lo_keV);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_KEV")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->threshold_split_lo_keV = (float)atof(attr[i+1]);
+	    headas_chat(3, "lower split threshold: %.3lf keV\n", 
+			xmldata->det->threshold_split_lo_keV);
 	  }
 	}
 
