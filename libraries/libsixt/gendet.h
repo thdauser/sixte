@@ -70,8 +70,8 @@ typedef struct {
   /** Lower split threshold given in units of [keV]. This value is
       used in the pattern recognition algorithm. */
   float threshold_split_lo_keV;
-  /** Lower split threshold given as a fraction of the charge in the main
-      pixel. This value is used in the pattern recognition
+  /** Lower split threshold given as a fraction of the charge in the
+      main pixel. This value is used in the pattern recognition
       algorithm. */
   float threshold_split_lo_fraction;
 
@@ -117,11 +117,13 @@ void GenDetNewEventFile(GenDet* const det, const char* const filename,
 			int* const status);
 
 /** Add a new photon impact to the detector. */
-void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, int* const status);
+void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
+			   int* const status);
 
 /** Operate the time-triggered elements of the GenDet detector up to
     the specified point of time. */
-void operateGenDetClock(GenDet* const det, const double time, int* const status);
+void operateGenDetClock(GenDet* const det, const double time, 
+			int* const status);
 
 /** Shift the lines of the GenDet detector pixel array by one line
     into the direction of the read-out node in line 0. The charges in

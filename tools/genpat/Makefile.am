@@ -3,7 +3,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -25,5 +24,4 @@ bin_PROGRAMS = genpat
 
 genpat_SOURCES = genpat.c genpat.h
 genpat_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
-genpat_LDADD+= @top_builddir@/libraries/libdetectors/libdetectors.la
 

@@ -3,8 +3,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
-AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -25,5 +23,5 @@ dist_pfiles_DATA = erosita_simulation.par
 bin_PROGRAMS = erosita_simulation
 
 erosita_simulation_SOURCES = erosita_simulation.c erosita_simulation.h
-erosita_simulation_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
+erosita_simulation_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
 

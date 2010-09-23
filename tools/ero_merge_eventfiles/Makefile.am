@@ -1,7 +1,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -22,5 +21,5 @@ dist_pfiles_DATA = ero_merge_eventfiles.par
 bin_PROGRAMS = ero_merge_eventfiles
 
 ero_merge_eventfiles_SOURCES = ero_merge_eventfiles.c ero_merge_eventfiles.h
-ero_merge_eventfiles_LDADD   = @top_builddir@/libraries/libdetectors/libdetectors.la
+ero_merge_eventfiles_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
 
