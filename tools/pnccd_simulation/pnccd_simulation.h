@@ -38,6 +38,13 @@ struct Parameters {
 	int ywidth;
   double pixelwidth; /**< Width of one detector pixel in [m]. */
   double dead_time;
+	
+	// Readout
+	char readout_mode[MAXMSG];
+	int readout_directions;
+	double readout_time;
+	double clear_time;
+
 };
 
 #endif /* PNCCD_SIMULATION_H */
