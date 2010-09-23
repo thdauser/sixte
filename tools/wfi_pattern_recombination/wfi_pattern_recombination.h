@@ -9,7 +9,7 @@
 #include "headas_main.c"
 
 
-#define ARRAY_LENGTH 1000
+#define ARRAY_LENGTH 10000
 
 
 struct Parameters{
