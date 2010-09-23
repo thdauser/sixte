@@ -16,19 +16,26 @@
 ////////////////////////////////////////////////////////////////////////
 
 struct Parameters {
+	// Names of the used files
   char impactlist_filename[FILENAME_LENGTH];
   char rmf_filename[MAXMSG];
   char eventlist_filename[MAXMSG];
   char eventlist_template[MAXMSG];
+	// Times needed for the simulation
   double t0;
   double timespan;
   
+	// Detector parameters
   double ccsigma; /* Sigma of the charge cloud. Has to be maybe changed due to the king profile for XMM */
   long pha_threshold;
   float energy_threshold;
 
+	// Source/Detector parameter
   float background_rate; /**< Rate of background events. */
 
+	// Detector
+	int xwidth;
+	int ywidth;
   double pixelwidth; /**< Width of one detector pixel in [m]. */
   double dead_time;
 };
