@@ -1,7 +1,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -22,5 +21,5 @@ dist_pfiles_DATA = wfi_pattern_recombination.par
 bin_PROGRAMS = wfi_pattern_recombination
 
 wfi_pattern_recombination_SOURCES = wfi_pattern_recombination.c wfi_pattern_recombination.h
-wfi_pattern_recombination_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+wfi_pattern_recombination_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
 

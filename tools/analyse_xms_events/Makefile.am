@@ -3,7 +3,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -24,5 +23,5 @@ dist_pfiles_DATA = analyse_xms_events.par
 bin_PROGRAMS = analyse_xms_events
 
 analyse_xms_events_SOURCES = analyse_xms_events.c analyse_xms_events.h
-analyse_xms_events_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
+analyse_xms_events_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
 

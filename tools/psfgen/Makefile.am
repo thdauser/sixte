@@ -3,8 +3,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -25,7 +23,6 @@ dist_pfiles_DATA = psfgen.par
 bin_PROGRAMS = psfgen
 
 psfgen_SOURCES = psfgen.c
-psfgen_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
-psfgen_LDADD += @top_builddir@/libraries/libastrosources/libastrosources.la
+psfgen_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
 
 

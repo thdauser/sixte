@@ -1,7 +1,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -22,5 +21,5 @@ dist_pfiles_DATA = comadet.par
 bin_PROGRAMS = comadet
 
 comadet_SOURCES = comadet.c comadet.h
-comadet_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
+comadet_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
 

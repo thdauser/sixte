@@ -1,7 +1,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
+AM_CFLAGS += -I@top_srcdir@/libraries/libsixt
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -22,5 +21,5 @@ dist_pfiles_DATA = ero_split_photonfile.par
 bin_PROGRAMS = ero_split_photonfile
 
 ero_split_photonfile_SOURCES = ero_split_photonfile.c ero_split_photonfile.h
-ero_split_photonfile_LDADD   = @top_builddir@/libraries/libastrosources/libastrosources.la
+ero_split_photonfile_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
 

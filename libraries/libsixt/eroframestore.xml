@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<detector type="eROSITA">
+<instrument type="eROSITA">
 
 <telescope>
 <focallength value="1.6"/>
@@ -7,7 +7,7 @@
 <psf filename="/home/schmid/erosita/psf/erosita.psf.7.5mum.fits"/>
 </telescope>
 
-<instrument type="framestoreCCD">
+<detector type="framestoreCCD">
 <dimensions xwidth="384" ywidth="384"/>
 <wcs xrpix="192.5" yrpix="192.5" xrval="0." yrval="0." xdelt="75.e-6" ydelt="75.e-6"/>
 <cte value="1"/>
@@ -407,5 +407,5 @@
 	<readoutline lineindex="0" readoutindex="382"/><lineshift/><wait time="1.e-6"/>
 	<readoutline lineindex="0" readoutindex="383"/><lineshift/><wait time="1.e-6"/>
 </readout>
-</instrument>
 </detector>
+</instrument>

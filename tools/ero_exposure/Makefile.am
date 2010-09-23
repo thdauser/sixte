@@ -1,8 +1,6 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
-AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall #-fopenmp
 #AM_CFLAGS += -Wall -Werror
 
@@ -23,6 +21,5 @@ dist_pfiles_DATA = ero_exposure.par
 bin_PROGRAMS = ero_exposure
 
 ero_exposure_SOURCES = ero_exposure.c
-ero_exposure_LDADD = @top_builddir@/libraries/libdetectors/libdetectors.la
-ero_exposure_LDADD+= @top_builddir@/libraries/libastrosources/libastrosources.la
+ero_exposure_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
 

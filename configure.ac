@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 AC_INIT([sixt], [0.01], [christian.schmid@sternwarte.uni-erlangen.de])
-AC_CONFIG_SRCDIR([libraries/libdetectors/wfidetector.c])
+AC_CONFIG_SRCDIR([libraries/libsixt/wfidetector.c])
 # The following line tells 'configure' to create a header file 'config.h'
 # that is filled with definitions from this script.
 # The 'config.h' contains for example the name of the package and can be
@@ -248,8 +248,6 @@ AC_SUBST([PFILESDIR])
 AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		libraries/libsixt/Makefile
-		libraries/libdetectors/Makefile
-		libraries/libastrosources/Makefile
 		tools/Makefile
 		tools/photon_generation/Makefile
 		tools/photon_imaging/Makefile

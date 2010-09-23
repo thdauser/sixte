@@ -2,7 +2,7 @@ variable filename = "eroframestore.xml";
 variable file = fopen(filename, "w+");
 
 ()=fprintf(file, "<?xml version=\"1.0\"?>\n");
-()=fprintf(file, "<detector type=\"eROSITA\">\n\n");
+()=fprintf(file, "<instrument type=\"eROSITA\">\n\n");
 
 ()=fprintf(file, "<telescope>\n");
 ()=fprintf(file, "<focallength value=\"1.6\"/>\n");
@@ -10,7 +10,7 @@ variable file = fopen(filename, "w+");
 ()=fprintf(file, "<psf filename=\"/home/schmid/erosita/psf/erosita.psf.7.5mum.fits\"/>\n");
 ()=fprintf(file, "</telescope>\n\n");
 
-()=fprintf(file, "<instrument type=\"framestoreCCD\">\n");
+()=fprintf(file, "<detector type=\"framestoreCCD\">\n");
 ()=fprintf(file, "<dimensions xwidth=\"384\" ywidth=\"384\"/>\n");
 ()=fprintf(file, "<wcs xrpix=\"192.5\" yrpix=\"192.5\" xrval=\"0.\" yrval=\"0.\" xdelt=\"75.e-6\" ydelt=\"75.e-6\"/>\n");
 ()=fprintf(file, "<cte value=\"1\"/>\n");
@@ -32,8 +32,8 @@ for(ii=0; ii<384; ii++) {
 }
 
 ()=fprintf(file, "</readout>\n");
-()=fprintf(file, "</instrument>\n");
 ()=fprintf(file, "</detector>\n");
+()=fprintf(file, "</instrument>\n");
 
 fclose(file);
 
