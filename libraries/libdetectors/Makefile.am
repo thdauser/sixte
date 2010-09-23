@@ -42,7 +42,9 @@ libdetectors_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 			  geneventfile.c clocklist.c htrseventfile.c	\
 			  hexagonalpixels.c arcpixels.c			\
 			  telemetrypacket.c htrstelstream.c		\
-			  comadetector.c comaeventfile.c epicpn.c
+			  comadetector.c comaeventfile.c epicpn.c	\
+			  psf.c vignetting.c codedmask.c		\
+			  attitudecatalog.c attitudefile.c
 
 libdetectors_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
 libdetectors_la_LIBADD += @top_builddir@/libraries/libastrosources/libastrosources.la
@@ -62,4 +64,5 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  xmseventfile.h xmsevent.h htrsdetector.h		\
 		  htrseventfile.h htrsevent.h telemetrypacket.h		\
 		  htrstelstream.h comadetector.h comaeventfile.h	\
-		  comaevent.h epicpn.h
+		  comaevent.h epicpn.h psf.h vignetting.h codedmask.h	\
+		  attitudecatalog.h attitudefile.h telescope.h

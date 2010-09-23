@@ -249,8 +249,6 @@ AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		libraries/libsixt/Makefile
 		libraries/libdetectors/Makefile
-		libraries/libmirrors/Makefile
-		libraries/libsatellites/Makefile
 		libraries/libastrosources/Makefile
 		tools/Makefile
 		tools/photon_generation/Makefile

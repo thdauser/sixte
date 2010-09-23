@@ -12,10 +12,10 @@ lib_LTLIBRARIES = libsatellites.la
 
 # Sources:
 libsatellites_la_LIBADD  = @top_builddir@/libraries/libsixt/libsixt.la
-libsatellites_la_SOURCES = attitudecatalog.c attitudefile.c
+libsatellites_la_SOURCES = 
 
 
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir) :
-include_HEADERS = attitudecatalog.h attitudefile.h telescope.h
+include_HEADERS = 
