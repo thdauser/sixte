@@ -7,7 +7,9 @@ variable file = fopen(filename, "w+");
 ()=fprintf(file, "<response filename=\"/home/schmid/ixo/wfi/response/labor_new_nocompt_6enc.rsp\"/>\n");
 ()=fprintf(file, "<split type=\"GAUSS\" par1=\"11.e-6\"/>\n\n");
 ()=fprintf(file, "<eventfile template=\"geneventfile.tpl\"/>\n\n");
-()=fprintf(file, "<threshold_readout_lo_keV value=\"150.e-3\"/>\n");
+()=fprintf(file, "<threshold_readout_lo_keV value=\"0.\"/>\n");
+()=fprintf(file, "<threshold_event_lo_keV value=\"150.e-3\"/>\n");
+()=fprintf(file, "<threshold_split_lo_keV value=\"150.e-3\"/>\n");
 
 ()=fprintf(file, "<readout mode=\"time\">\n");
 

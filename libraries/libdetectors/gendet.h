@@ -67,6 +67,9 @@ typedef struct {
       a sufficient charge for a separate event. */
   float threshold_event_lo_keV;
 
+  /** Lower split threshold given in units of [keV]. This value is
+      used in the pattern recognition algorithm. */
+  float threshold_split_lo_keV;
   /** Lower split threshold given as a fraction of the charge in the main
       pixel. This value is used in the pattern recognition
       algorithm. */

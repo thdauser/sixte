@@ -48,7 +48,7 @@ ROWS            1024
 	TUNIT#  pixel           / Unit of column RAWX
 	TCTYP#	RAWX
 	TCUNI#	m
-	TCRPX#	511.5
+	TCRPX#	512.5
 	TCRVL#	0.
 	TCDLT#  1.0e-4
 	TTYPE#	ROW             / Event Y Position
@@ -56,7 +56,7 @@ ROWS            1024
 	TUNIT#  pixel           / Unit of column RAWY
 	TCTYP#	RAWY
 	TCUNI#	m
-	TCRPX#	511.5
+	TCRPX#	512.5
 	TCRVL#	0.
 	TCDLT#  1.0e-4
 	TTYPE#  FRAME           / Frame number of event

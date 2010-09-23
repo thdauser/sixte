@@ -67,3 +67,5 @@ ROWS            64
 	TFORM#  I               / Format of column PATID
 	TTYPE#  PILEUP          / Has energy pileup occurred? Needed for patternrecog.
 	TFORM#  J               / Format of column PILEUP
+	TTYPE#  F_VALID         / Is the event valid or piled-up
+	TFORM#  I               / 
