@@ -5,7 +5,6 @@
 AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
-AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
@@ -29,5 +28,4 @@ photon_generation_SOURCES = photon_generation.c photon_generation.h
 photon_generation_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
 photon_generation_LDADD += @top_builddir@/libraries/libdetectors/libdetectors.la
 photon_generation_LDADD += @top_builddir@/libraries/libastrosources/libastrosources.la
-photon_generation_LDADD += @top_builddir@/libraries/libsatellites/libsatellites.la
 

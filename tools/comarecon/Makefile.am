@@ -1,9 +1,7 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -I@top_srcdir@/libraries/libmirrors
 AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
-AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
 AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
@@ -25,8 +23,6 @@ dist_pfiles_DATA = comarecon.par
 bin_PROGRAMS = comarecon
 
 comarecon_SOURCES = comarecon.c comarecon.h
-comarecon_LDADD  = @top_builddir@/libraries/libmirrors/libmirrors.la
-comarecon_LDADD += @top_builddir@/libraries/libastrosources/libastrosources.la
-comarecon_LDADD += @top_builddir@/libraries/libsatellites/libsatellites.la
+comarecon_LDADD  = @top_builddir@/libraries/libastrosources/libastrosources.la
 comarecon_LDADD += @top_builddir@/libraries/libdetectors/libdetectors.la
 

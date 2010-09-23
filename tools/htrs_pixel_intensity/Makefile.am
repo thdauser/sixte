@@ -4,8 +4,6 @@
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -I@top_srcdir@/libraries/libdetectors
-AM_CFLAGS += -I@top_srcdir@/libraries/libmirrors
-AM_CFLAGS += -I@top_srcdir@/libraries/libsatellites
 AM_CFLAGS += -I@top_srcdir@/libraries/libastrosources
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
@@ -28,5 +26,4 @@ bin_PROGRAMS = htrs_pixel_intensity
 
 htrs_pixel_intensity_SOURCES = htrs_pixel_intensity.c htrs_pixel_intensity.h
 htrs_pixel_intensity_LDADD  = @top_builddir@/libraries/libdetectors/libdetectors.la
-htrs_pixel_intensity_LDADD += @top_builddir@/libraries/libmirrors/libmirrors.la
 
