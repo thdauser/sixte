@@ -127,39 +127,40 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
 
 
-void free_psf(PSF *psf)
+void free_psf(PSF** const psf)
 {
-  if (NULL!=psf) {
-    if (NULL!=psf->data) {
+  if (NULL!=*psf) {
+    if (NULL!=(*psf)->data) {
       int count1, count2, count3, xcount;
-      for (count1=0; count1<psf->nenergies; count1++) {
-	if (NULL!=psf->data[count1]) {
-	  for (count2=0; count2<psf->nthetas; count2++) {
-	    if (NULL!=psf->data[count1][count2]) {
-	      for (count3=0; count3<psf->nphis; count3++) {
-		if (NULL!=psf->data[count1][count2][count3].data) {
-		  for (xcount=0; xcount<psf->data[count1][count2][count3].naxis1; xcount++) {
-		    if (NULL!=psf->data[count1][count2][count3].data[xcount]) {
-		      free(psf->data[count1][count2][count3].data[xcount]);
+      for (count1=0; count1<(*psf)->nenergies; count1++) {
+	if (NULL!=(*psf)->data[count1]) {
+	  for (count2=0; count2<(*psf)->nthetas; count2++) {
+	    if (NULL!=(*psf)->data[count1][count2]) {
+	      for (count3=0; count3<(*psf)->nphis; count3++) {
+		if (NULL!=(*psf)->data[count1][count2][count3].data) {
+		  for (xcount=0; xcount<(*psf)->data[count1][count2][count3].naxis1; xcount++) {
+		    if (NULL!=(*psf)->data[count1][count2][count3].data[xcount]) {
+		      free((*psf)->data[count1][count2][count3].data[xcount]);
 		    }
 		  }
-		  free(psf->data[count1][count2][count3].data);
+		  free((*psf)->data[count1][count2][count3].data);
 		}
 	      }
-	      free(psf->data[count1][count2]);
+	      free((*psf)->data[count1][count2]);
 	    }
 	  }
-	  free(psf->data[count1]);
+	  free((*psf)->data[count1]);
 	}
       }
-      free(psf->data);
+      free((*psf)->data);
     }
 
-    if (NULL!=psf->energies) free(psf->energies);
-    if (NULL!=psf->thetas  ) free(psf->thetas  );
-    if (NULL!=psf->phis    ) free(psf->phis    );
+    if (NULL!=(*psf)->energies) free((*psf)->energies);
+    if (NULL!=(*psf)->thetas  ) free((*psf)->thetas  );
+    if (NULL!=(*psf)->phis    ) free((*psf)->phis    );
 
-    free(psf);
+    free(*psf);
+    *psf=NULL;
   }
 }
 
@@ -168,7 +169,8 @@ void free_psf(PSF *psf)
 /** Add a double value to a list. Before adding the value, check
     whether it is already in the list. In that case it doesn't have to
     be added. The number of list entries is modified appropriately. */
-static void addDValue2List(double value, double** list, int* nvalues, int* status)
+static void addDValue2List(double value, double** list, int* nvalues, 
+			   int* const status)
 {
   // Check whether the value is already in the list.
   int count=0;
@@ -218,7 +220,7 @@ static void sortDList(double* list, int nvalues)
 
 
 
-PSF* get_psf(const char* filename, int* status)
+PSF* get_psf(const char* filename, int* const status)
 {
   PSF* psf;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file

@@ -256,7 +256,6 @@ AC_CONFIG_FILES([Makefile
 		tools/xms_simulation/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/event_projection/Makefile
-		tools/psfgen/Makefile
 		tools/ero_fits2tm/Makefile
 		tools/ero_exposure/Makefile
 		tools/ero_merge_eventfiles/Makefile

@@ -1,7 +1,7 @@
 #include "vignetting.h"
 
 
-Vignetting* get_Vignetting(char* filename, int* status) {
+Vignetting* get_Vignetting(const char* const filename, int* const status) {
   Vignetting* vignetting=NULL;
   fitsfile* fptr=NULL;
   float* data_buffer=NULL;
@@ -200,34 +200,36 @@ Vignetting* get_Vignetting(char* filename, int* status) {
 
 
 
-void free_Vignetting(Vignetting* vi) {
-  if (NULL!=vi) {
-    if (NULL!=vi->energ_lo) free(vi->energ_lo);
-    if (NULL!=vi->energ_hi) free(vi->energ_hi);
-    if (NULL!=vi->theta)    free(vi->theta);
-    if (NULL!=vi->phi)      free(vi->phi);
+void free_Vignetting(Vignetting** const vi) {
+  if (NULL!=*vi) {
+    if (NULL!=(*vi)->energ_lo) free((*vi)->energ_lo);
+    if (NULL!=(*vi)->energ_hi) free((*vi)->energ_hi);
+    if (NULL!=(*vi)->theta)    free((*vi)->theta);
+    if (NULL!=(*vi)->phi)      free((*vi)->phi);
     
-    if (NULL!=vi->vignet) {
+    if (NULL!=(*vi)->vignet) {
       int count1, count2;
-      for (count1=0; count1<vi->nenergies; count1++) {
-	if (NULL!=vi->vignet[count1]) {
-	  for (count2=0; count2<vi->ntheta; count2++) {
-	    if (NULL!=vi->vignet[count1][count2]) {
-	      free(vi->vignet[count1][count2]);
+      for (count1=0; count1<(*vi)->nenergies; count1++) {
+	if (NULL!=(*vi)->vignet[count1]) {
+	  for (count2=0; count2<(*vi)->ntheta; count2++) {
+	    if (NULL!=(*vi)->vignet[count1][count2]) {
+	      free((*vi)->vignet[count1][count2]);
 	    }
 	  }
-	  free(vi->vignet[count1]);
+	  free((*vi)->vignet[count1]);
 	}
       }
-      free(vi->vignet);
+      free((*vi)->vignet);
     }
+    free((*vi));
+    *vi=NULL;
   }
-  free(vi);
 }
 
 
 
-float get_Vignetting_Factor(Vignetting* vi, float energy, float theta, float phi) {
+float get_Vignetting_Factor(const Vignetting* const vi, const float energy, 
+			    const float theta, const float phi) {
   float factor=0.;
 
   // At the moment this routine can only handle the case with phi = 0.

@@ -5,6 +5,7 @@
 <focallength value="1.6"/>
 <fov diameter="1.02"/>
 <psf filename="/home/schmid/erosita/psf/erosita.psf.7.5mum.fits"/>
+<vignetting filename="/home/schmid/erosita/vignetting/erosita.vignetting.fits"/>
 </telescope>
 
 <detector type="framestoreCCD">

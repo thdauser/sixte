@@ -21,12 +21,11 @@ int photon_imaging_main() {
   // in order to determine the right WCS header keywords for, e.g., cluster images.
   double refxcrvl, refycrvl; 
 
-  struct Telescope telescope; // Telescope data (like FOV diameter or focal length)
-  /** PSF (Point Spread Function) data (for different off-axis angles
-      and energies). */
-  PSF* psf=NULL; 
-  // Mirror vignetting data.
-  Vignetting* vignetting=NULL; 
+  // Detector data structure including telescope information like the PSF,
+  // vignetting function, focal length, and FOV diameter.
+  GenDet* det=NULL;
+
+  struct Telescope telescope;
 
   int status=EXIT_SUCCESS; // Error status
 
@@ -41,12 +40,18 @@ int photon_imaging_main() {
     // --- Initialization ---
 
     // read parameters using PIL library
-    if ((status=photon_imaging_getpar(&parameters, &telescope))) break;
+    if ((status=photon_imaging_getpar(&parameters))) break;
 
+    telescope.fov_diameter = det->fov_diameter;
+    telescope.focal_length = det->focal_length;
+
+    // Initialize the detector data structure.
+    det = newGenDet(parameters.xml_filename, &status);
+    if (EXIT_SUCCESS!=status) break;
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align = cos(telescope.fov_diameter/2.); 
+    const double fov_min_align = cos(det->fov_diameter/2.); 
     
     // Initialize HEADAS random number generator. Add the telescope number
     // to the standard seed in order to avoid getting the same random number
@@ -85,14 +90,6 @@ int photon_imaging_main() {
     // Add attitude filename.
     if (fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
-
-    // Get the PSF:
-    psf = get_psf(parameters.psf_filename, &status);
-    if (status != EXIT_SUCCESS) break;
-
-    // Get the Vignetting:
-    vignetting = get_Vignetting(parameters.vignetting_filename, &status);
-    if (status != EXIT_SUCCESS) break;
     
     // --- END of Initialization ---
 
@@ -166,12 +163,12 @@ int photon_imaging_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
-	if (get_psf_pos(&position, photon, telescope, vignetting, psf)) {
+	if (get_psf_pos(&position, photon, telescope, det->vignetting, det->psf)) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)
 	  if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
-	      tan(telescope.fov_diameter)*telescope.focal_length) {
+	      tan(det->fov_diameter)*det->focal_length) {
 	    
 	    // Insert the impact position with the photon data into the 
 	    // impact list:
@@ -207,8 +204,7 @@ int photon_imaging_main() {
   status += closePhotonListFile(&photonlistfile);
 
   free_AttitudeCatalog(ac);
-  free_psf(psf);
-  free_Vignetting(vignetting);
+  destroyGenDet(&det, &status);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
 
@@ -219,8 +215,7 @@ int photon_imaging_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int photon_imaging_getpar(struct Parameters* parameters,
-			  struct Telescope *telescope)
+int photon_imaging_getpar(struct Parameters* parameters)
 {
   int status=EXIT_SUCCESS; // Error status.
 
@@ -230,14 +225,9 @@ int photon_imaging_getpar(struct Parameters* parameters,
     HD_ERROR_THROW("Error reading the filename of the photon list!\n", status);
   }
   
-  // Get the filename of the PSF data file (FITS file)
-  else if ((status = PILGetFname("psf_filename", parameters->psf_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the PSF file!\n", status);
-  }
-
-  // Get the filename of the vignetting data file (FITS file)
-  else if ((status = PILGetFname("vignetting_filename", parameters->vignetting_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the vignetting file!\n", status);
+  // Get the filename of the XML detector description.
+  else if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the XML detector description!\n", status);
   }
 
   // Get the filename of the impact list output file (FITS file)
@@ -253,16 +243,6 @@ int photon_imaging_getpar(struct Parameters* parameters,
   // Get the timespan for the simulation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
-  }
-
-  // Read the diameter of the FOV (in arcmin)
-  else if ((status = PILGetReal("fov_diameter", &telescope->fov_diameter))) {
-    HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
-  }
-
-  // Read the focal length [m]
-  else if ((status = PILGetReal("focal_length", &telescope->focal_length))) {
-    HD_ERROR_THROW("Error reading the focal length!\n", status);
   }
 
   // Read the telescope number (0 for TRoPIC, 1-7 for eROSITA).
@@ -284,9 +264,6 @@ int photon_imaging_getpar(struct Parameters* parameters,
   }
   // Set the impact list template file:
   strcat(parameters->impactlist_template, "/impactlist.tpl");
-
-  // Convert angles from [arc min] to [rad].
-  telescope->fov_diameter = telescope->fov_diameter*M_PI/(60.*180.); 
 
   return(status);
 }

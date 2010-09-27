@@ -10,6 +10,8 @@
 #include "genericdetector.h"
 #include "impact.h"
 #include "clocklist.h"
+#include "psf.h"
+#include "vignetting.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -18,7 +20,7 @@
 
 
 /////////////////////////////////////////////////////////////////
-// Constants
+// Constants.
 /////////////////////////////////////////////////////////////////
 
 
@@ -50,6 +52,17 @@ typedef struct {
       for the X-ray sources, the ARF contributions have to be removed
       by normalizing the RSP matrix. */
   struct RMF* rmf;
+
+  /** Telescope PSF. */
+  PSF* psf;
+  /** Telescope vignetting function. */
+  Vignetting* vignetting;
+  /** Focal length of the X-ray telescope [m]. */
+  float focal_length;
+  /** Diameter of the FoV [rad]. In the XML file the diameter is given
+      in [deg], but it is converted to [rad] when parsing the XML
+      file. */
+  float fov_diameter;
 
   /** Lower and upper readout threshold in units of [keV]. These
       thresholds are applied in the read-out routine before converting

@@ -41,8 +41,10 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->split  =NULL;
   det->line=NULL;
   det->rmf =NULL;
-  det->clocklist=NULL;
-  det->eventfile=NULL;
+  det->psf =NULL;
+  det->vignetting=NULL;
+  det->clocklist =NULL;
+  det->eventfile =NULL;
 
   // Get empty GenPixGrid.
   det->pixgrid = newGenPixGrid(status);
@@ -102,6 +104,12 @@ void destroyGenDet(GenDet** const det, int* const status)
     // Close the event file.
     destroyGenEventFile(&(*det)->eventfile, status);
 
+    // Free the PSF.
+    free_psf(&(*det)->psf);
+    
+    // Free the vignetting Function.
+    free_Vignetting(&(*det)->vignetting);
+
     free(*det);
     *det=NULL;
   }
@@ -135,13 +143,15 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->pixgrid->ydelt  =-1.;
   det->readout_trigger = 0;
   det->cte             = 1.;
-  det->threshold_readout_lo_PHA = -1;
-  det->threshold_readout_up_PHA = -1;
-  det->threshold_readout_lo_keV =  0.;
-  det->threshold_readout_up_keV = -1.;
-  det->threshold_event_lo_keV   = -1.;
-  det->threshold_split_lo_keV   =  0.;
-  det->threshold_split_lo_fraction = 0.;
+  det->threshold_readout_lo_PHA    = -1;
+  det->threshold_readout_up_PHA    = -1;
+  det->threshold_readout_lo_keV    =  0.;
+  det->threshold_readout_up_keV    = -1.;
+  det->threshold_event_lo_keV      = -1.;
+  det->threshold_split_lo_keV      =  0.;
+  det->threshold_split_lo_fraction =  0.;
+  det->fov_diameter = 0.;
+  det->focal_length = 0.;
   // Set string variables to empty strings.
   strcpy(det->eventfile_template, "");
 
@@ -255,6 +265,31 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   if (NULL==det->rmf) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for response file of GenDet!\n", 
+		   *status);
+    return;    
+  }
+
+  if (NULL==det->psf) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for PSF!\n", 
+		   *status);
+    return;    
+  }
+  if (NULL==det->vignetting) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for Vignetting!\n", 
+		   *status);
+    return;    
+  }
+  if (0.>det->focal_length) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for the focal length of the telescope!\n", 
+		   *status);
+    return;    
+  }
+  if (0.>det->fov_diameter) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for the diameter of the telescope FoV!\n", 
 		   *status);
     return;    
   }
@@ -427,6 +462,36 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	  }
 	}
       
+	else if (!strcmp(Uelement, "PSF")) {
+	  if (!strcmp(Uattribute, "FILENAME")) {
+	    // Load the PSF.
+	    char buffer[MAXMSG];
+	    strcpy(buffer, attr[i+1]);
+	    xmldata->det->psf = get_psf(buffer, &xmldata->status);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "VIGNETTING")) {
+	  if (!strcmp(Uattribute, "FILENAME")) {
+	    // Load the Vignetting function.
+	    char buffer[MAXMSG];
+	    strcpy(buffer, attr[i+1]);
+	    xmldata->det->vignetting = get_Vignetting(buffer, &xmldata->status);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "FOCALLENGTH")) {
+	  if (!strcmp(Uattribute, "VALUE")) {
+	    xmldata->det->focal_length = (float)atof(attr[i+1]);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "FOV")) {
+	  if (!strcmp(Uattribute, "DIAMETER")) {
+	    xmldata->det->fov_diameter = (float)(atof(attr[i+1])*M_PI/180.);
+	  }
+	}
+
 	else if (!strcmp(Uelement, "CTE")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
 	    xmldata->det->cte = (float)atof(attr[i+1]);

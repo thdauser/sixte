@@ -8,6 +8,7 @@ variable file = fopen(filename, "w+");
 ()=fprintf(file, "<focallength value=\"1.6\"/>\n");
 ()=fprintf(file, "<fov diameter=\"1.02\"/>\n");
 ()=fprintf(file, "<psf filename=\"/home/schmid/erosita/psf/erosita.psf.7.5mum.fits\"/>\n");
+()=fprintf(file, "<vignetting filename=\"/home/schmid/erosita/vignetting/erosita.vignetting.fits\"/>\n");
 ()=fprintf(file, "</telescope>\n\n");
 
 ()=fprintf(file, "<detector type=\"framestoreCCD\">\n");

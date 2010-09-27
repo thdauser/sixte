@@ -58,7 +58,7 @@ typedef struct {
 /** Constructor for the PSF data structure. Reads PSF data from a FITS
     file with one or several image extensions. The file format is
     given by OGIP Calibration Memo CAL/GEN/92-027. */
-PSF* get_psf(const char* filename, int* status);
+PSF* get_psf(const char* filename, int* const status);
 
 /** Calculates the position on the detector, where a photon at given
     sky position with specified energy hits the detector according to
@@ -79,8 +79,8 @@ int get_psf_pos(/** Output: coordinates of the photon on the detector ([m]). */
 		/** PSF with data for different photon energies and off-axis angles. */
 		PSF* psf);
 
-/** Releases the memory of the PSF storage. */
-void free_psf(PSF* psf);
+/** Release the memory of the PSF storage. */
+void free_psf(PSF** const psf);
 
 // Save the data contained in the PSF storage to images in a FITS file
 // according to the OGIP standards.

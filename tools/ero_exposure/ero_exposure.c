@@ -314,7 +314,7 @@ int eroexposure_main() {
 
   // Release memory.
   free_AttitudeCatalog(ac);
-  free_Vignetting(vignetting);
+  free_Vignetting(&vignetting);
 
   // Release memory of exposure map.
   if (NULL!=expoMap) {
