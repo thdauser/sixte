@@ -216,7 +216,7 @@ int eroexposure_main() {
 				      &status))) break;
 
     // Get the Vignetting data:
-    vignetting = get_Vignetting(parameters.vignetting_filename, &status);
+    vignetting = newVignetting(parameters.vignetting_filename, &status);
     if (status != EXIT_SUCCESS) break;
 
     // --- END of Initialization ---
@@ -289,7 +289,7 @@ int eroexposure_main() {
     if (fits_update_key(fptr, TDOUBLE, "CRVAL2", &buffer, "", &status)) break;
     buffer = imgParams.rpix2;
     if (fits_update_key(fptr, TDOUBLE, "CRPIX2", &buffer, "", &status)) break;
-    buffer = imgParams.delt2  * 180./M_PI;
+    buffer = imgParams.delt2 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CDELT2", &buffer, "", &status)) break;
 
 
@@ -314,7 +314,7 @@ int eroexposure_main() {
 
   // Release memory.
   free_AttitudeCatalog(ac);
-  free_Vignetting(&vignetting);
+  destroyVignetting(&vignetting);
 
   // Release memory of exposure map.
   if (NULL!=expoMap) {

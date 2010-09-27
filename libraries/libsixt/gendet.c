@@ -105,10 +105,10 @@ void destroyGenDet(GenDet** const det, int* const status)
     destroyGenEventFile(&(*det)->eventfile, status);
 
     // Free the PSF.
-    free_psf(&(*det)->psf);
+    destroyPSF(&(*det)->psf);
     
     // Free the vignetting Function.
-    free_Vignetting(&(*det)->vignetting);
+    destroyVignetting(&(*det)->vignetting);
 
     free(*det);
     *det=NULL;
@@ -467,7 +467,7 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    // Load the PSF.
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
-	    xmldata->det->psf = get_psf(buffer, &xmldata->status);
+	    xmldata->det->psf = newPSF(buffer, &xmldata->status);
 	  }
 	}
 
@@ -476,7 +476,7 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    // Load the Vignetting function.
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
-	    xmldata->det->vignetting = get_Vignetting(buffer, &xmldata->status);
+	    xmldata->det->vignetting = newVignetting(buffer, &xmldata->status);
 	  }
 	}
 

@@ -1,7 +1,7 @@
 #include "vignetting.h"
 
 
-Vignetting* get_Vignetting(const char* const filename, int* const status) {
+Vignetting* newVignetting(const char* const filename, int* const status) {
   Vignetting* vignetting=NULL;
   fitsfile* fptr=NULL;
   float* data_buffer=NULL;
@@ -200,7 +200,7 @@ Vignetting* get_Vignetting(const char* const filename, int* const status) {
 
 
 
-void free_Vignetting(Vignetting** const vi) {
+void destroyVignetting(Vignetting** const vi) {
   if (NULL!=*vi) {
     if (NULL!=(*vi)->energ_lo) free((*vi)->energ_lo);
     if (NULL!=(*vi)->energ_hi) free((*vi)->energ_hi);

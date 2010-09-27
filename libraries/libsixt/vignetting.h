@@ -34,12 +34,10 @@ typedef struct {
 /** Constructor of the Vignetting data structure. Loads the
     vignetting function from a given FITS file. The format of the
     FITS file is defined by OGIP Memo CAL/GEN/92-021. */
-Vignetting* get_Vignetting(const char* const filename, int* const status);
-
+Vignetting* newVignetting(const char* const filename, int* const status);
 
 /** Destructor for Vignetting data structure. */
-void free_Vignetting(Vignetting** const vi);
-
+void destroyVignetting(Vignetting** const vi);
 
 /** Determine the Vignetting factor for given photon energy, off-axis
     angle, and azimuth angle. The energy has to be given in [keV],

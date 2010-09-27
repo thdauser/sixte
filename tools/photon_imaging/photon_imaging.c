@@ -42,12 +42,12 @@ int photon_imaging_main() {
     // read parameters using PIL library
     if ((status=photon_imaging_getpar(&parameters))) break;
 
-    telescope.fov_diameter = det->fov_diameter;
-    telescope.focal_length = det->focal_length;
-
     // Initialize the detector data structure.
     det = newGenDet(parameters.xml_filename, &status);
     if (EXIT_SUCCESS!=status) break;
+
+    telescope.fov_diameter = det->fov_diameter;
+    telescope.focal_length = det->focal_length;
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)

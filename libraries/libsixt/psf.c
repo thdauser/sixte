@@ -127,7 +127,7 @@ int get_psf_pos(struct Point2d* position, Photon photon,
 
 
 
-void free_psf(PSF** const psf)
+void destroyPSF(PSF** const psf)
 {
   if (NULL!=*psf) {
     if (NULL!=(*psf)->data) {
@@ -220,7 +220,7 @@ static void sortDList(double* list, int nvalues)
 
 
 
-PSF* get_psf(const char* filename, int* const status)
+PSF* newPSF(const char* filename, int* const status)
 {
   PSF* psf;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file
