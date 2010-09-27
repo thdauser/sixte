@@ -141,6 +141,8 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->pixgrid->yrval  =-1.;
   det->pixgrid->xdelt  =-1.;
   det->pixgrid->ydelt  =-1.;
+  det->pixgrid->xborder= 0.;
+  det->pixgrid->yborder= 0.;
   det->readout_trigger = 0;
   det->cte             = 1.;
   det->threshold_readout_lo_PHA    = -1;
@@ -262,6 +264,19 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     return;    
   }
   
+  if (0.>det->pixgrid->xborder) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Invalid specification found for x-border of pixels!\n", 
+		   *status);
+    return;    
+  }
+  if (0.>det->pixgrid->yborder) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Invalid specification found for y-border of pixels!\n", 
+		   *status);
+    return;    
+  }
+
   if (NULL==det->rmf) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for response file of GenDet!\n", 
@@ -281,13 +296,13 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 		   *status);
     return;    
   }
-  if (0.>det->focal_length) {
+  if (0.>=det->focal_length) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for the focal length of the telescope!\n", 
 		   *status);
     return;    
   }
-  if (0.>det->fov_diameter) {
+  if (0.>=det->fov_diameter) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for the diameter of the telescope FoV!\n", 
 		   *status);
@@ -453,6 +468,14 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	  }
 	}
 	
+	else if (!strcmp(Uelement, "PIXELBORDER")) {
+	  if (!strcmp(Uattribute, "X")) {
+	    xmldata->det->pixgrid->xborder = (float)atof(attr[i+1]);
+	  } else if (!strcmp(Uattribute, "Y")) {
+	    xmldata->det->pixgrid->yborder = (float)atof(attr[i+1]);
+	  }
+	}
+
 	else if (!strcmp(Uelement, "RESPONSE")) {
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the detector response file.

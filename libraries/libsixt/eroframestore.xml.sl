@@ -13,6 +13,7 @@ variable file = fopen(filename, "w+");
 
 ()=fprintf(file, "<detector type=\"framestoreCCD\">\n");
 ()=fprintf(file, "<dimensions xwidth=\"384\" ywidth=\"384\"/>\n");
+()=fprintf(file, "<pixelborder x=\"0.\" y=\"0.\"/>\n");
 ()=fprintf(file, "<wcs xrpix=\"192.5\" yrpix=\"192.5\" xrval=\"0.\" yrval=\"0.\" xdelt=\"75.e-6\" ydelt=\"75.e-6\"/>\n");
 ()=fprintf(file, "<cte value=\"1\"/>\n");
 ()=fprintf(file, "<response filename=\"/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp\"/>\n");

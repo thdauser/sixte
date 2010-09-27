@@ -19,8 +19,13 @@ typedef struct {
   float xrpix, yrpix;
   /** Reference value [m]. */
   float xrval, yrval;
-  /** Pixel width [m]. */
+  /** Pixel width [m]. The pixel width includes (2 times) the pixel border. */
   float xdelt, ydelt;
+  /** Pixel border [m]. In this area along the corner the pixel is
+      insensitive to incident photons. If a photon hits this border
+      area, the return value of getGenDetAffectedLine() or
+      getGenDetAffectedColumn() is -1. */
+  float xborder, yborder;
 
 } GenPixGrid;
 
