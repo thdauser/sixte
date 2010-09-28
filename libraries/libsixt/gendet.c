@@ -1,24 +1,47 @@
 #include "gendet.h"
 
 ////////////////////////////////////////////////////////////////////
+// Static data type declarations
+////////////////////////////////////////////////////////////////////
+
+
+/** Data structure given to the XML handler to transfer data. */
+struct XMLData {
+  GenDet* det;
+  int status;
+};
+
+/** Buffer for XML code read from the file and expanded in order to
+    handle loops. */
+struct XMLBuffer {
+  char* text;
+  unsigned long maxlength;
+};
+
+
+////////////////////////////////////////////////////////////////////
 // Static function declarations
 ////////////////////////////////////////////////////////////////////
 
 
 /** Parse the GenDet definition from an XML file. */
-static void parseGenDetXML(GenDet* const det, const char* const filename, int* const status);
+static void parseGenDetXML(GenDet* const det, const char* const filename, 
+			   int* const status);
 
 /** Handler for the start of an XML element. */
-static void GenDetXMLElementStart(void *data, const char *el, const char **attr);
+static void GenDetXMLElementStart(void *data, const char *el, 
+				  const char **attr);
 /** Handler for the end of an XML element. */
 static void GenDetXMLElementEnd(void *data, const char *el);
 
-/** Data structure given to the XML handler to transfer data. */
-struct XMLData {
-  GenDet* det;
-  int depth;
-  int status;
-};
+/** Add a string to the XML buffer. If the buffer size is to small,
+    allocate additional memory. */
+static void addString2XMLBuffer(struct XMLBuffer* const buffer, 
+				const char* const string,
+				int* const status);
+
+/** Clear the XMLBuffer. Release the memory from the string buffer. */
+static void clearXMLBuffer(struct XMLBuffer* const buffer);
 
 
 ////////////////////////////////////////////////////////////////////
@@ -117,20 +140,64 @@ void destroyGenDet(GenDet** const det, int* const status)
 
 
 
+static void addString2XMLBuffer(struct XMLBuffer* const buffer, 
+				const char* const string,
+				int* const status)
+{
+  // Check if a valid buffer is specified.
+  if (NULL==buffer) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: NULL pointer XMLBuffer!\n", *status);
+    return;
+  }
+    
+  // Check if the buffer is empty.
+  if (NULL==buffer->text) {
+    // Allocate memory for the first chunk of bytes.
+    buffer->text=(char*)malloc(1025*sizeof(char));
+    if (NULL==buffer->text) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
+      return;
+    }
+    buffer->text[0]='\0';
+    buffer->maxlength=1024;
+  }
+
+  // Check if the buffer contains sufficient memory to add the new string.
+  if (strlen(buffer->text)+strlen(string)>=buffer->maxlength) {
+    // Allocate memory for the first chunk of bytes.
+    buffer->text=(char*)realloc(buffer->text, (buffer->maxlength+1025)*sizeof(char));
+    if (NULL==buffer->text) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
+      return;
+    }
+    buffer->maxlength+=1024;
+  }
+
+  // Append the new string to the existing buffer.
+  strcat(buffer->text, string);
+}
+
+
+
+static void clearXMLBuffer(struct XMLBuffer* const buffer)
+{
+  if (NULL!=buffer) {
+    if (NULL!=buffer->text) {
+      free(buffer->text);
+      buffer->text=NULL;
+      buffer->maxlength=0;
+    }
+  }
+}
+
+
+
 static void parseGenDetXML(GenDet* const det, const char* const filename, int* const status)
 {
   headas_chat(5, "read detector setup from XML file '%s' ...\n", filename);
-
-  // Open the specified file.
-  FILE* xmlfile = fopen(filename, "r");
-  if (NULL==xmlfile) {
-    *status = EXIT_FAILURE;
-    char msg[MAXMSG];
-    sprintf(msg, "Error: Failed opening GenDet definition XML "
-	    "file '%s' for read access!\n", filename);
-    HD_ERROR_THROW(msg, *status);
-    return;
-  }
 
   // Set initial values before parsing the parameters from the XML file.
   det->pixgrid->xwidth =-1;
@@ -158,8 +225,45 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   strcpy(det->eventfile_template, "");
 
 
-  // Parse the XML data from the file using the expat library.
 
+  // Read the XML data from the file.
+  // Open the specified file.
+  FILE* xmlfile = fopen(filename, "r");
+  if (NULL==xmlfile) {
+    *status = EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: Failed opening GenDet definition XML "
+	    "file '%s' for read access!\n", filename);
+    HD_ERROR_THROW(msg, *status);
+    return;
+  }
+
+  // The data is read from the XML file and stored in xmlbuffer
+  // without any modifications.
+  struct XMLBuffer xmlbuffer = {.text=NULL, .maxlength=0 };
+
+  // Input buffer with an additional byte at the end for the 
+  // termination of the string.
+  const int buffer_size=256;
+  char buffer[buffer_size+1];
+  // Number of chars in buffer.
+  int len;
+
+  // Read all data from the file.
+  do {
+    // Get a piece of input into the buffer.
+    len = fread(buffer, 1, buffer_size, xmlfile);
+    buffer[len]='\0'; // Terminate the string.
+    addString2XMLBuffer(&xmlbuffer, buffer, status);
+    if (EXIT_SUCCESS!=*status) return;
+  } while (!feof(xmlfile));
+
+  // Close the file handler to the XML file.
+  fclose(xmlfile);
+
+
+
+  // Parse XML code in the xmlbuffer using the expat library.
   // Get an XML_Parser object.
   XML_Parser parser = XML_ParserCreate(NULL);
   if (NULL==parser) {
@@ -170,7 +274,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
   // Set data that is passed to the handler functions.
   struct XMLData xmldata = {
-    .depth = 0,
     .det   = det,
     .status = EXIT_SUCCESS
   };
@@ -179,36 +282,29 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   // Set the handler functions.
   XML_SetElementHandler(parser, GenDetXMLElementStart, GenDetXMLElementEnd);
 
-  int done=0;
-  int len; // Number of chars in buffer.
-  const int buffer_size=200;
-  // Input buffer with an additional byte at the end for the 
-  // termination of the string.
-  char buffer[buffer_size+1];
-
-  do {
-    // Get a piece of input into the buffer.
-    len = fread(buffer, 1, buffer_size, xmlfile);
-    buffer[len]='\0'; // Terminate the string.
-    done = feof(xmlfile);
-    if (!XML_Parse(parser, buffer, len, done)) {
-      // Parse error.
-      *status=EXIT_FAILURE;
-      char msg[MAXMSG];
-      sprintf(msg, "Error: Parsing XML file '%s' failed at line %d:\n%s\n", 
-	      filename,
-	      (int)XML_GetCurrentLineNumber(parser),
-	      XML_ErrorString(XML_GetErrorCode(parser)));
-      HD_ERROR_THROW(msg, *status);
-      return;
-    }
-    // Check for errors.
-    if (EXIT_SUCCESS!=xmldata.status) {
-      *status = xmldata.status;
-      return;
-    }
-  } while (!done);
+  // Parse all the data in the string buffer.
+  const int done=1;
+  if (!XML_Parse(parser, xmlbuffer.text, strlen(xmlbuffer.text), done)) {
+    // Parse error.
+    *status=EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: Parsing XML file '%s' failed:\n%s\n", 
+	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
+    printf("%s", xmlbuffer.text);
+    HD_ERROR_THROW(msg, *status);
+    return;
+  }
+  // Check for errors.
+  if (EXIT_SUCCESS!=xmldata.status) {
+    *status = xmldata.status;
+    return;
+  }
   XML_ParserFree(parser);
+
+  // Remove the xmldata string buffer.
+  clearXMLBuffer(&xmlbuffer);
+
+
 
   // Check if all required parameters have been read successfully from 
   // the XML file.
@@ -338,9 +434,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
-
-  // Close the file handler to the XML file.
-  fclose(xmlfile);
 
   // If any thresholds have been specified in terms of PHA value,
   // set the corresponding charge threshold to the [keV] values
