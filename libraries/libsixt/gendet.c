@@ -20,11 +20,14 @@ struct XMLBuffer {
 
 /** Data structure given to the XML Pre-Parser. */
 struct XMLPreParseData {
-  /** Flag if the processed buffer contains any loop. */
-  int any_loop;
   /** Current loop depth. */
   int loop_depth;
-
+  /** Start, end, and increment of the outermost loop. */
+  int loop_start, loop_end, loop_increment;
+  /** Loop counter variable. This variable can be used in the XML text
+      as $[NAME]. */
+  char loop_variable[MAXMSG];
+  
   /** Output buffer for processed XML data. */
   struct XMLBuffer* output_buffer;
   /** Buffer for XML code inside the loop. */
@@ -187,26 +190,26 @@ static void addString2XMLBuffer(struct XMLBuffer* const buffer,
   // Check if the buffer is empty.
   if (NULL==buffer->text) {
     // Allocate memory for the first chunk of bytes.
-    buffer->text=(char*)malloc(1025*sizeof(char));
+    buffer->text=(char*)malloc((MAXMSG+1)*sizeof(char));
     if (NULL==buffer->text) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
       return;
     }
     buffer->text[0]='\0';
-    buffer->maxlength=1024;
+    buffer->maxlength=MAXMSG;
   }
 
   // Check if the buffer contains sufficient memory to add the new string.
   if (strlen(buffer->text)+strlen(string)>=buffer->maxlength) {
     // Allocate memory for the first chunk of bytes.
-    buffer->text=(char*)realloc(buffer->text, (buffer->maxlength+1025)*sizeof(char));
+    buffer->text=(char*)realloc(buffer->text, (buffer->maxlength+MAXMSG+1)*sizeof(char));
     if (NULL==buffer->text) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
       return;
     }
-    buffer->maxlength+=1024;
+    buffer->maxlength+=MAXMSG;
   }
 
   // Append the new string to the existing buffer.
@@ -1028,8 +1031,10 @@ static void expandXML(struct XMLBuffer* const buffer, int* const status)
 
   // Set data that is passed to the handler functions.
   struct XMLPreParseData data = {
-    .any_loop   = 0,
     .loop_depth = 0,
+    .loop_start = 0,
+    .loop_end   = 0,
+    .loop_increment = 0,
     .output_buffer = newXMLBuffer(status),
     .loop_buffer   = newXMLBuffer(status),
     .status = EXIT_SUCCESS
@@ -1041,6 +1046,7 @@ static void expandXML(struct XMLBuffer* const buffer, int* const status)
 
   // Parse all the data in the string buffer.
   const int done=1;
+  // TODO Repeat the following steps until the XML code is completely expanded.
   if (!XML_Parse(parser, buffer->text, strlen(buffer->text), done)) {
     // Parse error.
     *status=EXIT_FAILURE;
@@ -1056,14 +1062,18 @@ static void expandXML(struct XMLBuffer* const buffer, int* const status)
     *status = data.status;
     return;
   }
-  XML_ParserFree(parser);
-
 
   // Copy the output XML buffer and release allocated memory.
   copyXMLBuffer(buffer, data.output_buffer, status);
   if (EXIT_SUCCESS!=*status) return;
   destroyXMLBuffer(&data.output_buffer);
   destroyXMLBuffer(&data.loop_buffer);
+
+
+  XML_ParserFree(parser);
+
+  
+  // TODO Replace arithmetic +/- expressions.
 }
 
 
@@ -1073,29 +1083,95 @@ static void expandXMLElementStart(void* data, const char* el,
 {
   struct XMLPreParseData* mydata = (struct XMLPreParseData*)data;
 
-  char buffer[1024];
-  if (sprintf(buffer, "<%s", el) >= 1024) {
+  // Pointer to the right output buffer (either mydata->output_buffer 
+  // or mydata->loop_buffer).
+  struct XMLBuffer* output=mydata->output_buffer;
+
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG]; // Upper case version of XML element
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+
+  // Check if the element is a loop tag.
+  if (!strcmp(Uelement, "LOOP")) {
+
+    // Check if this is the outermost loop.
+    if (0==mydata->loop_depth) {
+      // Read the loop parameters.
+      mydata->loop_start    =0;
+      mydata->loop_end      =0;
+      mydata->loop_increment=0;
+      mydata->loop_variable[0]='\0';
+
+      int ii=0;
+      while (attr[ii]) {
+	char Uattribute[MAXMSG];
+	char Uvalue[MAXMSG];
+	strcpy(Uattribute, attr[ii]);
+	strtoupper(Uattribute);
+	strcpy(Uvalue, attr[ii+1]);
+	strtoupper(Uvalue);
+
+	if (!strcmp(Uattribute, "START")) {
+	  mydata->loop_start = atoi(attr[ii+1]);
+	} else if (!strcmp(Uattribute, "END")) {
+	  mydata->loop_end = atoi(attr[ii+1]);
+	} else if (!strcmp(Uattribute, "INCREMENT")) {
+	  mydata->loop_increment = atoi(attr[ii+1]);
+	} else if (!strcmp(Uattribute, "VARIABLE")) {
+	  strcpy(mydata->loop_variable, Uvalue);
+	}
+
+	ii+=2;
+      }
+      // END of loop over all attributes.
+      
+      // Check if parameters are set to valid values.
+      if ((mydata->loop_end-mydata->loop_start)*mydata->loop_increment<=0) {
+	mydata->status = EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Invalid XML loop parameters!\n", mydata->status);
+	return;
+      } else if (0==strlen(mydata->loop_variable)) {
+	mydata->status = EXIT_FAILURE;
+	HD_ERROR_THROW("Error: No variable specified for XML loop!\n", mydata->status);
+	return;
+      }
+    }
+    // END of check if this is the outermost loop.
+
+    mydata->loop_depth++;
+    return;
+  }
+  
+  // If we are inside a loop, print to the loop buffer.
+  if (mydata->loop_depth>0) {
+    output=mydata->loop_buffer;
+  }
+
+  // Print the start tag to the right buffer.
+  char buffer[MAXMSG];
+  if (sprintf(buffer, "<%s", el) >= MAXMSG) {
     mydata->status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: XML element string too long!\n", EXIT_FAILURE);
     return;
   }
-  addString2XMLBuffer(mydata->output_buffer, buffer, &mydata->status);
+  addString2XMLBuffer(output, buffer, &mydata->status);
   if (EXIT_SUCCESS!=mydata->status) return;
 
   int ii=0;
   while(attr[ii]) {
-    if (sprintf(buffer, " %s=\"%s\"", attr[ii], attr[ii+1]) >= 1024) {
+    if (sprintf(buffer, " %s=\"%s\"", attr[ii], attr[ii+1]) >= MAXMSG) {
       mydata->status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: XML element string too long!\n", EXIT_FAILURE);
       return;
     }
-    addString2XMLBuffer(mydata->output_buffer, buffer, &mydata->status);
+    addString2XMLBuffer(output, buffer, &mydata->status);
     if (EXIT_SUCCESS!=mydata->status) return;
     
     ii+=2;
   }
 
-  addString2XMLBuffer(mydata->output_buffer, ">", &mydata->status);
+  addString2XMLBuffer(output, ">", &mydata->status);
   if (EXIT_SUCCESS!=mydata->status) return;
 }
 
@@ -1104,14 +1180,52 @@ static void expandXMLElementStart(void* data, const char* el,
 static void expandXMLElementEnd(void* data, const char* el)
 {
   struct XMLPreParseData* mydata = (struct XMLPreParseData*)data;
+
+  // Pointer to the right output buffer (either mydata->output_buffer 
+  // or mydata->loop_buffer).
+  struct XMLBuffer* output=mydata->output_buffer;
+
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG]; // Upper case version of XML element
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+
+  // Check if the element is a loop end tag.
+  if (!strcmp(Uelement, "LOOP")) {
+
+    // Check if the outer loop is finished.
+    // In that case add the loop buffer n-times to the output buffer.
+    if (1==mydata->loop_depth) {
+      int ii;
+      for (ii=mydata->loop_start; ii<=mydata->loop_end; ii+=mydata->loop_increment) {
+	// TODO Replace $variables by data.
+	addString2XMLBuffer(mydata->output_buffer, mydata->loop_buffer->text, 
+			    &mydata->status);
+	if (EXIT_SUCCESS!=mydata->status) return;
+      }
+      // Clear the loop buffer.
+      destroyXMLBuffer(&mydata->loop_buffer);
+      mydata->loop_buffer=newXMLBuffer(&mydata->status);
+      if (EXIT_SUCCESS!=mydata->status) return;
+    }
+
+    mydata->loop_depth--;
+    return;
+  }
   
-  char buffer[1024];
-  if (sprintf(buffer, "</%s>", el) >= 1024) {
+  // If we are inside a loop, print to the loop buffer.
+  if (mydata->loop_depth>0) {
+    output=mydata->loop_buffer;
+  }
+
+  // Print the end tag to the right buffer.
+  char buffer[MAXMSG];
+  if (sprintf(buffer, "</%s>", el) >= MAXMSG) {
     mydata->status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: XML string element too long!\n", EXIT_FAILURE);
     return;
   }
-  addString2XMLBuffer(mydata->output_buffer, buffer, &mydata->status);
+  addString2XMLBuffer(output, buffer, &mydata->status);
   if (EXIT_SUCCESS!=mydata->status) return;
 }
 

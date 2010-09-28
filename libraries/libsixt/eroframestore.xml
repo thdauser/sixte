@@ -410,4 +410,5 @@
 	<readoutline lineindex="0" readoutindex="383"/><lineshift/><wait time="1.e-6"/>
 </readout>
 </detector>
+<loop start="0" end="2" increment="1"><wait time="100."/></loop>
 </instrument>
