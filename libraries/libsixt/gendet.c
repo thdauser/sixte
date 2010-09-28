@@ -6,7 +6,7 @@
 
 
 /** Data structure given to the XML handler to transfer data. */
-struct XMLData {
+struct XMLParseData {
   GenDet* det;
   int status;
 };
@@ -16,6 +16,21 @@ struct XMLData {
 struct XMLBuffer {
   char* text;
   unsigned long maxlength;
+};
+
+/** Data structure given to the XML Pre-Parser. */
+struct XMLPreParseData {
+  /** Flag if the processed buffer contains any loop. */
+  int any_loop;
+  /** Current loop depth. */
+  int loop_depth;
+
+  /** Output buffer for processed XML data. */
+  struct XMLBuffer* output_buffer;
+  /** Buffer for XML code inside the loop. */
+  struct XMLBuffer* loop_buffer;
+  
+  int status;
 };
 
 
@@ -29,19 +44,37 @@ static void parseGenDetXML(GenDet* const det, const char* const filename,
 			   int* const status);
 
 /** Handler for the start of an XML element. */
-static void GenDetXMLElementStart(void *data, const char *el, 
-				  const char **attr);
+static void GenDetXMLElementStart(void* data, const char* el, 
+				  const char** attr);
 /** Handler for the end of an XML element. */
-static void GenDetXMLElementEnd(void *data, const char *el);
+static void GenDetXMLElementEnd(void* data, const char* el);
 
-/** Add a string to the XML buffer. If the buffer size is to small,
+/** Add a string to the XMLBuffer. If the buffer size is to small,
     allocate additional memory. */
 static void addString2XMLBuffer(struct XMLBuffer* const buffer, 
 				const char* const string,
 				int* const status);
 
-/** Clear the XMLBuffer. Release the memory from the string buffer. */
-static void clearXMLBuffer(struct XMLBuffer* const buffer);
+/** Copy an XMLBuffer string from the source to the destination. */
+static void copyXMLBuffer(struct XMLBuffer* const destination,
+			  struct XMLBuffer* const source,
+			  int* const status);
+
+/** Constructor of XMLBuffer. */
+static struct XMLBuffer* newXMLBuffer(int* const status);
+
+/** Destructor of XMLBuffer. Release the memory from the string
+    buffer. */
+static void destroyXMLBuffer(struct XMLBuffer** const buffer);
+
+/** Expand the loops and arithmetic operations in the GenDet XML
+    description. */
+static void expandXML(struct XMLBuffer* const buffer, int* const status);
+/** Handler for the start of an XML element. */
+static void expandXMLElementStart(void* data, const char* el, 
+				  const char** attr);
+/** Handler for the end of an XML element. */
+static void expandXMLElementEnd(void* data, const char* el);
 
 
 ////////////////////////////////////////////////////////////////////
@@ -182,14 +215,51 @@ static void addString2XMLBuffer(struct XMLBuffer* const buffer,
 
 
 
-static void clearXMLBuffer(struct XMLBuffer* const buffer)
+static void copyXMLBuffer(struct XMLBuffer* const destination,
+			  struct XMLBuffer* const source,
+			  int* const status)
 {
-  if (NULL!=buffer) {
-    if (NULL!=buffer->text) {
-      free(buffer->text);
-      buffer->text=NULL;
-      buffer->maxlength=0;
+  // Adapt memory size.
+  destination->text = (char*)realloc(destination->text,
+				     (source->maxlength+1)*sizeof(char));
+  if (NULL==destination->text) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
+    return;
+  }
+  destination->maxlength=source->maxlength;
+
+  // Copy content.
+  strcpy(destination->text, source->text);
+}
+
+
+
+static struct XMLBuffer* newXMLBuffer(int* const status)
+{
+  struct XMLBuffer* buffer=(struct XMLBuffer*)malloc(sizeof(struct XMLBuffer));
+  if (NULL==buffer) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Memory allocation for XMLBuffer failed!\n", *status);
+    return(buffer);
+  }
+
+  buffer->text=NULL;
+  buffer->maxlength=0;
+
+  return(buffer);
+}
+
+
+
+static void destroyXMLBuffer(struct XMLBuffer** const buffer)
+{
+  if (NULL!=*buffer) {
+    if (NULL!=(*buffer)->text) {
+      free((*buffer)->text);
     }
+    free(*buffer);
+    *buffer=NULL;
   }
 }
 
@@ -240,7 +310,8 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
   // The data is read from the XML file and stored in xmlbuffer
   // without any modifications.
-  struct XMLBuffer xmlbuffer = {.text=NULL, .maxlength=0 };
+  struct XMLBuffer* xmlbuffer = newXMLBuffer(status);
+  if (EXIT_SUCCESS!=*status) return;
 
   // Input buffer with an additional byte at the end for the 
   // termination of the string.
@@ -254,12 +325,19 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     // Get a piece of input into the buffer.
     len = fread(buffer, 1, buffer_size, xmlfile);
     buffer[len]='\0'; // Terminate the string.
-    addString2XMLBuffer(&xmlbuffer, buffer, status);
+    addString2XMLBuffer(xmlbuffer, buffer, status);
     if (EXIT_SUCCESS!=*status) return;
   } while (!feof(xmlfile));
 
   // Close the file handler to the XML file.
   fclose(xmlfile);
+
+
+
+  // Expand the loops and arithmetic operations in the GenDet XML
+  // description.
+  expandXML(xmlbuffer, status);
+  if (EXIT_SUCCESS!=*status) return;
 
 
 
@@ -273,36 +351,38 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   }
 
   // Set data that is passed to the handler functions.
-  struct XMLData xmldata = {
+  struct XMLParseData xmlparsedata = {
     .det   = det,
     .status = EXIT_SUCCESS
   };
-  XML_SetUserData(parser, &xmldata);
+  XML_SetUserData(parser, &xmlparsedata);
 
   // Set the handler functions.
   XML_SetElementHandler(parser, GenDetXMLElementStart, GenDetXMLElementEnd);
 
   // Parse all the data in the string buffer.
   const int done=1;
-  if (!XML_Parse(parser, xmlbuffer.text, strlen(xmlbuffer.text), done)) {
+  if (!XML_Parse(parser, xmlbuffer->text, strlen(xmlbuffer->text), done)) {
     // Parse error.
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
     sprintf(msg, "Error: Parsing XML file '%s' failed:\n%s\n", 
 	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
-    printf("%s", xmlbuffer.text);
+    printf("%s", xmlbuffer->text);
     HD_ERROR_THROW(msg, *status);
     return;
   }
   // Check for errors.
-  if (EXIT_SUCCESS!=xmldata.status) {
-    *status = xmldata.status;
+  if (EXIT_SUCCESS!=xmlparsedata.status) {
+    *status = xmlparsedata.status;
     return;
   }
   XML_ParserFree(parser);
 
-  // Remove the xmldata string buffer.
-  clearXMLBuffer(&xmlbuffer);
+
+
+  // Remove the XML string buffer.
+  destroyXMLBuffer(&xmlbuffer);
 
 
 
@@ -480,15 +560,15 @@ static void getAttribute(const char** attr, const char* const key, char* const v
 
 
 
-static void GenDetXMLElementStart(void* data, const char* el, const char** attr) 
+static void GenDetXMLElementStart(void* parsedata, const char* el, const char** attr) 
 {
-  struct XMLData* xmldata = (struct XMLData*)data;
+  struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
   char Uelement[MAXMSG];   // Upper case version of XML element
   char Uattribute[MAXMSG]; // Upper case version of XML attribute
   char Uvalue[MAXMSG];     // Upper case version of XML attribute value
 
   // Check if an error has occurred previously.
-  if (EXIT_SUCCESS!=xmldata->status) return;
+  if (EXIT_SUCCESS!=xmlparsedata->status) return;
 
   // Convert the element to an upper case string.
   strcpy(Uelement, el);
@@ -496,9 +576,9 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 
   // Elements without attributes.
   if (!strcmp(Uelement, "LINESHIFT")) {
-    CLLineShift* cllineshift = newCLLineShift(&xmldata->status);
-    append2ClockList(xmldata->det->clocklist, CL_LINESHIFT, 
-		     cllineshift, &xmldata->status);
+    CLLineShift* cllineshift = newCLLineShift(&xmlparsedata->status);
+    append2ClockList(xmlparsedata->det->clocklist, CL_LINESHIFT, 
+		     cllineshift, &xmlparsedata->status);
     
   } else { 
     
@@ -509,22 +589,22 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
       getAttribute(attr, "LINEINDEX", buffer);
       int lineindex    = atoi(buffer);
       if (lineindex<0) {
-	xmldata->status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
+	xmlparsedata->status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmlparsedata->status);
 	return;
       }
       getAttribute(attr, "READOUTINDEX", buffer);
       int readoutindex = atoi(buffer);
       if (readoutindex<0) {
-	xmldata->status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmldata->status);
+	xmlparsedata->status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmlparsedata->status);
 	return;
       }
       CLReadoutLine* clreadoutline = newCLReadoutLine(lineindex,
 						      readoutindex,
-						      &xmldata->status);
-      append2ClockList(xmldata->det->clocklist, CL_READOUTLINE, 
-		       clreadoutline, &xmldata->status);
+						      &xmlparsedata->status);
+      append2ClockList(xmlparsedata->det->clocklist, CL_READOUTLINE, 
+		       clreadoutline, &xmlparsedata->status);
 	
     } else { // Elements with independent attributes.
 
@@ -539,33 +619,33 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	// Check the XML element name.
 	if (!strcmp(Uelement, "DIMENSIONS")) {
 	  if (!strcmp(Uattribute, "XWIDTH")) {
-	    xmldata->det->pixgrid->xwidth = atoi(attr[i+1]);
+	    xmlparsedata->det->pixgrid->xwidth = atoi(attr[i+1]);
 	  } else if (!strcmp(Uattribute, "YWIDTH")) {
-	    xmldata->det->pixgrid->ywidth = atoi(attr[i+1]);
+	    xmlparsedata->det->pixgrid->ywidth = atoi(attr[i+1]);
 	  }
 	}
       
 	else if (!strcmp(Uelement, "WCS")) {
 	  if (!strcmp(Uattribute, "XRPIX")) {
-	    xmldata->det->pixgrid->xrpix = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->xrpix = (float)atof(attr[i+1]);
 	  } else if (!strcmp(Uattribute, "YRPIX")) {
-	    xmldata->det->pixgrid->yrpix = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->yrpix = (float)atof(attr[i+1]);
 	  } else if (!strcmp(Uattribute, "XRVAL")) {
-	    xmldata->det->pixgrid->xrval = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->xrval = (float)atof(attr[i+1]);
 	  } else if (!strcmp(Uattribute, "YRVAL")) {
-	    xmldata->det->pixgrid->yrval = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->yrval = (float)atof(attr[i+1]);
 	  } else if (!strcmp(Uattribute, "XDELT")) {
-	    xmldata->det->pixgrid->xdelt = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->xdelt = (float)atof(attr[i+1]);
 	  } else if (!strcmp(Uattribute, "YDELT")) {
-	    xmldata->det->pixgrid->ydelt = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->ydelt = (float)atof(attr[i+1]);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "PIXELBORDER")) {
 	  if (!strcmp(Uattribute, "X")) {
-	    xmldata->det->pixgrid->xborder = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->xborder = (float)atof(attr[i+1]);
 	  } else if (!strcmp(Uattribute, "Y")) {
-	    xmldata->det->pixgrid->yborder = (float)atof(attr[i+1]);
+	    xmlparsedata->det->pixgrid->yborder = (float)atof(attr[i+1]);
 	  }
 	}
 
@@ -574,7 +654,7 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    // Load the detector response file.
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
-	    xmldata->det->rmf = loadRMF(buffer, &xmldata->status);
+	    xmlparsedata->det->rmf = loadRMF(buffer, &xmlparsedata->status);
 	  }
 	}
       
@@ -583,7 +663,7 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    // Load the PSF.
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
-	    xmldata->det->psf = newPSF(buffer, &xmldata->status);
+	    xmlparsedata->det->psf = newPSF(buffer, &xmlparsedata->status);
 	  }
 	}
 
@@ -592,25 +672,25 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    // Load the Vignetting function.
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
-	    xmldata->det->vignetting = newVignetting(buffer, &xmldata->status);
+	    xmlparsedata->det->vignetting = newVignetting(buffer, &xmlparsedata->status);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "FOCALLENGTH")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->focal_length = (float)atof(attr[i+1]);
+	    xmlparsedata->det->focal_length = (float)atof(attr[i+1]);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "FOV")) {
 	  if (!strcmp(Uattribute, "DIAMETER")) {
-	    xmldata->det->fov_diameter = (float)(atof(attr[i+1])*M_PI/180.);
+	    xmlparsedata->det->fov_diameter = (float)(atof(attr[i+1])*M_PI/180.);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "CTE")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->cte = (float)atof(attr[i+1]);
+	    xmlparsedata->det->cte = (float)atof(attr[i+1]);
 	  }
 	}
 	
@@ -619,20 +699,20 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    strcpy(Uvalue, attr[i+1]);
 	    strtoupper(Uvalue);
 	    if (!strcmp(Uvalue, "NONE")) {
-	      xmldata->det->split->type = GS_NONE;
+	      xmlparsedata->det->split->type = GS_NONE;
 	    } else if (!strcmp(Uvalue, "GAUSS")) {
-	      xmldata->det->split->type = GS_GAUSS;
+	      xmlparsedata->det->split->type = GS_GAUSS;
 	    } else if (!strcmp(Uvalue, "EXPONENTIAL")) {
-	      xmldata->det->split->type = GS_EXPONENTIAL;
+	      xmlparsedata->det->split->type = GS_EXPONENTIAL;
 	    }
 	  } else if (!strcmp(Uattribute, "PAR1")) {
-	    xmldata->det->split->par1 = atof(attr[i+1]);
+	    xmlparsedata->det->split->par1 = atof(attr[i+1]);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "EVENTFILE")) {
 	  if (!strcmp(Uattribute, "TEMPLATE")) {
-	    strcpy(xmldata->det->eventfile_template, attr[i+1]);
+	    strcpy(xmlparsedata->det->eventfile_template, attr[i+1]);
 	  }
 	}
 
@@ -641,87 +721,87 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 	    strcpy(Uvalue, attr[i+1]);
 	    strtoupper(Uvalue);
 	    if (!strcmp(Uvalue, "TIME")) {
-	      xmldata->det->readout_trigger = GENDET_TIME_TRIGGERED;
+	      xmlparsedata->det->readout_trigger = GENDET_TIME_TRIGGERED;
 	    } else if (!strcmp(Uvalue, "EVENT")) {
-	      xmldata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
+	      xmlparsedata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
 	    }
 	  }
 	}
       
 	else if (!strcmp(Uelement, "WAIT")) {
 	  if (!strcmp(Uattribute, "TIME")) {
-	    CLWait* clwait = newCLWait(atof(attr[i+1]), &xmldata->status);
-	    append2ClockList(xmldata->det->clocklist, CL_WAIT, 
-			     clwait, &xmldata->status);
+	    CLWait* clwait = newCLWait(atof(attr[i+1]), &xmlparsedata->status);
+	    append2ClockList(xmlparsedata->det->clocklist, CL_WAIT, 
+			     clwait, &xmlparsedata->status);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "CLEARLINE")) {
 	  if (!strcmp(Uattribute, "LINEINDEX")) {
 	    CLClearLine* clclearline = newCLClearLine(atoi(attr[i+1]), 
-						      &xmldata->status);
-	    append2ClockList(xmldata->det->clocklist, CL_CLEARLINE, 
-			     clclearline, &xmldata->status);
+						      &xmlparsedata->status);
+	    append2ClockList(xmlparsedata->det->clocklist, CL_CLEARLINE, 
+			     clclearline, &xmlparsedata->status);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->threshold_readout_lo_keV = (float)atof(attr[i+1]);
+	    xmlparsedata->det->threshold_readout_lo_keV = (float)atof(attr[i+1]);
 	    headas_chat(3, "lower readout threshold: %.3lf keV\n", 
-			xmldata->det->threshold_readout_lo_keV);
+			xmlparsedata->det->threshold_readout_lo_keV);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->threshold_readout_up_keV = (float)atof(attr[i+1]);
+	    xmlparsedata->det->threshold_readout_up_keV = (float)atof(attr[i+1]);
 	    headas_chat(3, "upper readout threshold: %.3lf keV\n", 
-			xmldata->det->threshold_readout_up_keV);
+			xmlparsedata->det->threshold_readout_up_keV);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_PHA")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->threshold_readout_lo_PHA = (long)atoi(attr[i+1]);
+	    xmlparsedata->det->threshold_readout_lo_PHA = (long)atoi(attr[i+1]);
 	    headas_chat(3, "lower readout threshold: %ld PHA\n", 
-			xmldata->det->threshold_readout_lo_PHA);
+			xmlparsedata->det->threshold_readout_lo_PHA);
 	  }
 	}
 	
 	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_PHA")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->threshold_readout_up_PHA = (long)atoi(attr[i+1]);
+	    xmlparsedata->det->threshold_readout_up_PHA = (long)atoi(attr[i+1]);
 	    headas_chat(3, "upper readout threshold: %ld PHA\n", 
-			xmldata->det->threshold_readout_up_PHA);
+			xmlparsedata->det->threshold_readout_up_PHA);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->threshold_event_lo_keV = (float)atof(attr[i+1]);
+	    xmlparsedata->det->threshold_event_lo_keV = (float)atof(attr[i+1]);
 	    headas_chat(3, "lower event threshold: %.3lf keV\n", 
-			xmldata->det->threshold_event_lo_keV);
+			xmlparsedata->det->threshold_event_lo_keV);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_KEV")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->threshold_split_lo_keV = (float)atof(attr[i+1]);
+	    xmlparsedata->det->threshold_split_lo_keV = (float)atof(attr[i+1]);
 	    headas_chat(3, "lower split threshold: %.3lf keV\n", 
-			xmldata->det->threshold_split_lo_keV);
+			xmlparsedata->det->threshold_split_lo_keV);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
 	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmldata->det->threshold_split_lo_fraction = (float)atof(attr[i+1]);
+	    xmlparsedata->det->threshold_split_lo_fraction = (float)atof(attr[i+1]);
 	    headas_chat(3, "lower split threshold: %.1lf %%\n", 
-			xmldata->det->threshold_split_lo_fraction*100.);
+			xmlparsedata->det->threshold_split_lo_fraction*100.);
 	  }
 	}
       
-	if (EXIT_SUCCESS!=xmldata->status) return;
+	if (EXIT_SUCCESS!=xmlparsedata->status) return;
       } 
       // END of loop over different attributes.
     }
@@ -732,14 +812,14 @@ static void GenDetXMLElementStart(void* data, const char* el, const char** attr)
 
 
 
-static void GenDetXMLElementEnd(void *data, const char *el) 
+static void GenDetXMLElementEnd(void* parsedata, const char* el) 
 {
-  struct XMLData* xmldata = (struct XMLData*)data;
+  struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
 
   (void)el; // Unused parameter.
 
   // Check if an error has occurred previously.
-  if (EXIT_SUCCESS!=xmldata->status) return;
+  if (EXIT_SUCCESS!=xmlparsedata->status) return;
 
   return;
 }
@@ -931,6 +1011,108 @@ void GenDetNewEventFile(GenDet* const det, const char* const filename,
 
   // Open a new event file from the specified template.
   det->eventfile = openNewGenEventFile(filename, template, status);
+}
+
+
+
+static void expandXML(struct XMLBuffer* const buffer, int* const status)
+{
+  // Parse XML code in the xmlbuffer using the expat library.
+  // Get an XML_Parser object.
+  XML_Parser parser = XML_ParserCreate(NULL);
+  if (NULL==parser) {
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Could not allocate memory for XML parser!\n", *status);
+    return;
+  }
+
+  // Set data that is passed to the handler functions.
+  struct XMLPreParseData data = {
+    .any_loop   = 0,
+    .loop_depth = 0,
+    .output_buffer = newXMLBuffer(status),
+    .loop_buffer   = newXMLBuffer(status),
+    .status = EXIT_SUCCESS
+  };
+  XML_SetUserData(parser, &data);
+
+  // Set the handler functions.
+  XML_SetElementHandler(parser, expandXMLElementStart, expandXMLElementEnd);
+
+  // Parse all the data in the string buffer.
+  const int done=1;
+  if (!XML_Parse(parser, buffer->text, strlen(buffer->text), done)) {
+    // Parse error.
+    *status=EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: Parsing XML code failed:\n%s\n", 
+	    XML_ErrorString(XML_GetErrorCode(parser)));
+    printf("%s", buffer->text);
+    HD_ERROR_THROW(msg, *status);
+    return;
+  }
+  // Check for errors.
+  if (EXIT_SUCCESS!=data.status) {
+    *status = data.status;
+    return;
+  }
+  XML_ParserFree(parser);
+
+
+  // Copy the output XML buffer and release allocated memory.
+  copyXMLBuffer(buffer, data.output_buffer, status);
+  if (EXIT_SUCCESS!=*status) return;
+  destroyXMLBuffer(&data.output_buffer);
+  destroyXMLBuffer(&data.loop_buffer);
+}
+
+
+
+static void expandXMLElementStart(void* data, const char* el, 
+				  const char** attr)
+{
+  struct XMLPreParseData* mydata = (struct XMLPreParseData*)data;
+
+  char buffer[1024];
+  if (sprintf(buffer, "<%s", el) >= 1024) {
+    mydata->status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: XML element string too long!\n", EXIT_FAILURE);
+    return;
+  }
+  addString2XMLBuffer(mydata->output_buffer, buffer, &mydata->status);
+  if (EXIT_SUCCESS!=mydata->status) return;
+
+  int ii=0;
+  while(attr[ii]) {
+    if (sprintf(buffer, " %s=\"%s\"", attr[ii], attr[ii+1]) >= 1024) {
+      mydata->status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: XML element string too long!\n", EXIT_FAILURE);
+      return;
+    }
+    addString2XMLBuffer(mydata->output_buffer, buffer, &mydata->status);
+    if (EXIT_SUCCESS!=mydata->status) return;
+    
+    ii+=2;
+  }
+
+  addString2XMLBuffer(mydata->output_buffer, ">", &mydata->status);
+  if (EXIT_SUCCESS!=mydata->status) return;
+}
+
+
+
+static void expandXMLElementEnd(void* data, const char* el)
+{
+  struct XMLPreParseData* mydata = (struct XMLPreParseData*)data;
+  
+  char buffer[1024];
+  if (sprintf(buffer, "</%s>", el) >= 1024) {
+    mydata->status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: XML string element too long!\n", EXIT_FAILURE);
+    return;
+  }
+  addString2XMLBuffer(mydata->output_buffer, buffer, &mydata->status);
+  if (EXIT_SUCCESS!=mydata->status) return;
 }
 
 
