@@ -20,6 +20,11 @@ int gendetsim_main() {
 
   int status=EXIT_SUCCESS; // Error status.
 
+  /*
+  char test[]="512-12";
+  int a = atoi(test);
+  printf("\n%d\n", a);
+  */
 
   // Register HEATOOL:
   set_toolname("gendetsim");
