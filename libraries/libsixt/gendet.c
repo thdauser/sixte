@@ -20,6 +20,11 @@ struct XMLBuffer {
 
 /** Data structure given to the XML Pre-Parser. */
 struct XMLPreParseData {
+
+  /** Flag if the preprocessed XMLBuffer contained any further loops
+      to be expanded. */
+  int further_loops;
+
   /** Current loop depth. */
   int loop_depth;
   /** Start, end, and increment of the outermost loop. */
@@ -337,8 +342,11 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
 
 
-  // Expand the loops and arithmetic operations in the GenDet XML
-  // description.
+  // Before acutally parsing the XML code, expand the loops and 
+  // arithmetic operations in the GenDet XML description.
+  // The expansion algorithm repeatetly scans the XML code and
+  // searches for loop tags. It replaces the loop tags by repeating
+  // the contained XML code.
   expandXML(xmlbuffer, status);
   if (EXIT_SUCCESS!=*status) return;
 
@@ -1020,59 +1028,64 @@ void GenDetNewEventFile(GenDet* const det, const char* const filename,
 
 static void expandXML(struct XMLBuffer* const buffer, int* const status)
 {
-  // Parse XML code in the xmlbuffer using the expat library.
-  // Get an XML_Parser object.
-  XML_Parser parser = XML_ParserCreate(NULL);
-  if (NULL==parser) {
-    *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not allocate memory for XML parser!\n", *status);
-    return;
-  }
-
-  // Set data that is passed to the handler functions.
-  struct XMLPreParseData data = {
-    .loop_depth = 0,
-    .loop_start = 0,
-    .loop_end   = 0,
-    .loop_increment = 0,
-    .output_buffer = newXMLBuffer(status),
-    .loop_buffer   = newXMLBuffer(status),
-    .status = EXIT_SUCCESS
-  };
-  XML_SetUserData(parser, &data);
-
-  // Set the handler functions.
-  XML_SetElementHandler(parser, expandXMLElementStart, expandXMLElementEnd);
-
-  // Parse all the data in the string buffer.
-  const int done=1;
-  // TODO Repeat the following steps until the XML code is completely expanded.
-  if (!XML_Parse(parser, buffer->text, strlen(buffer->text), done)) {
-    // Parse error.
-    *status=EXIT_FAILURE;
-    char msg[MAXMSG];
-    sprintf(msg, "Error: Parsing XML code failed:\n%s\n", 
-	    XML_ErrorString(XML_GetErrorCode(parser)));
-    printf("%s", buffer->text);
-    HD_ERROR_THROW(msg, *status);
-    return;
-  }
-  // Check for errors.
-  if (EXIT_SUCCESS!=data.status) {
-    *status = data.status;
-    return;
-  }
-
-  // Copy the output XML buffer and release allocated memory.
-  copyXMLBuffer(buffer, data.output_buffer, status);
-  if (EXIT_SUCCESS!=*status) return;
-  destroyXMLBuffer(&data.output_buffer);
-  destroyXMLBuffer(&data.loop_buffer);
-
-
-  XML_ParserFree(parser);
-
+  struct XMLPreParseData data;
   
+  do {
+
+    // Parse XML code in the xmlbuffer using the expat library.
+    // Get an XML_Parser object.
+    XML_Parser parser = XML_ParserCreate(NULL);
+    if (NULL==parser) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Could not allocate memory for XML parser!\n", *status);
+      return;
+    }
+
+    // Set data that is passed to the handler functions.
+    XML_SetUserData(parser, &data);
+
+    // Set the handler functions.
+    XML_SetElementHandler(parser, expandXMLElementStart, expandXMLElementEnd);
+
+    // Set initial values.
+    data.further_loops = 0;
+    data.loop_depth = 0;
+    data.loop_start = 0;
+    data.loop_end   = 0;
+    data.loop_increment = 0;
+    data.output_buffer = newXMLBuffer(status);
+    data.loop_buffer   = newXMLBuffer(status);
+    data.status = EXIT_SUCCESS;
+
+    // Process all the data in the string buffer.
+    const int done=1;
+    if (!XML_Parse(parser, buffer->text, strlen(buffer->text), done)) {
+      // Parse error.
+      *status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "Error: Parsing XML code failed:\n%s\n", 
+	      XML_ErrorString(XML_GetErrorCode(parser)));
+      printf("%s", buffer->text);
+      HD_ERROR_THROW(msg, *status);
+      return;
+    }
+    // Check for errors.
+    if (EXIT_SUCCESS!=data.status) {
+      *status = data.status;
+      return;
+    }
+
+    // Copy the output XMLBuffer to the input XMLBuffer ...
+    copyXMLBuffer(buffer, data.output_buffer, status);
+    if (EXIT_SUCCESS!=*status) return;
+    // ... and release allocated memory.
+    destroyXMLBuffer(&data.output_buffer);
+    destroyXMLBuffer(&data.loop_buffer);
+
+    XML_ParserFree(parser);
+
+  } while (data.further_loops>0);
+
   // TODO Replace arithmetic +/- expressions.
 }
 
@@ -1131,17 +1144,19 @@ static void expandXMLElementStart(void* data, const char* el,
 	mydata->status = EXIT_FAILURE;
 	HD_ERROR_THROW("Error: Invalid XML loop parameters!\n", mydata->status);
 	return;
-      } else if (0==strlen(mydata->loop_variable)) {
-	mydata->status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: No variable specified for XML loop!\n", mydata->status);
-	return;
       }
-    }
-    // END of check if this is the outermost loop.
+      mydata->loop_depth++;
+      return;
 
-    mydata->loop_depth++;
-    return;
+    } else {
+      // Inner loop.
+      mydata->further_loops = 1;
+      mydata->loop_depth++;
+    }
+    // END of check if this is the outermost loop or an inner loop.
   }
+  // END of check for loop tag.
+
   
   // If we are inside a loop, print to the loop buffer.
   if (mydata->loop_depth>0) {
@@ -1207,10 +1222,15 @@ static void expandXMLElementEnd(void* data, const char* el)
       destroyXMLBuffer(&mydata->loop_buffer);
       mydata->loop_buffer=newXMLBuffer(&mydata->status);
       if (EXIT_SUCCESS!=mydata->status) return;
-    }
+      
+      // Now we are outside of any loop.
+      mydata->loop_depth--;
+      return;
 
-    mydata->loop_depth--;
-    return;
+    } else {
+      // We are still inside some outer loop.
+      mydata->loop_depth--;
+    }
   }
   
   // If we are inside a loop, print to the loop buffer.
