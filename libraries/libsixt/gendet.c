@@ -57,6 +57,24 @@ static void GenDetXMLElementStart(void* data, const char* el,
 /** Handler for the end of an XML element. */
 static void GenDetXMLElementEnd(void* data, const char* el);
 
+
+/** Expand the loops and arithmetic operations in the GenDet XML
+    description. */
+static void expandXML(struct XMLBuffer* const buffer, int* const status);
+/** Handler for the start of an XML element. */
+static void expandXMLElementStart(void* data, const char* el, 
+				  const char** attr);
+/** Handler for the end of an XML element. */
+static void expandXMLElementEnd(void* data, const char* el);
+
+
+/** Constructor of XMLBuffer. */
+static struct XMLBuffer* newXMLBuffer(int* const status);
+
+/** Destructor of XMLBuffer. Release the memory from the string
+    buffer. */
+static void destroyXMLBuffer(struct XMLBuffer** const buffer);
+
 /** Add a string to the XMLBuffer. If the buffer size is to small,
     allocate additional memory. */
 static void addString2XMLBuffer(struct XMLBuffer* const buffer, 
@@ -68,21 +86,12 @@ static void copyXMLBuffer(struct XMLBuffer* const destination,
 			  struct XMLBuffer* const source,
 			  int* const status);
 
-/** Constructor of XMLBuffer. */
-static struct XMLBuffer* newXMLBuffer(int* const status);
-
-/** Destructor of XMLBuffer. Release the memory from the string
-    buffer. */
-static void destroyXMLBuffer(struct XMLBuffer** const buffer);
-
-/** Expand the loops and arithmetic operations in the GenDet XML
-    description. */
-static void expandXML(struct XMLBuffer* const buffer, int* const status);
-/** Handler for the start of an XML element. */
-static void expandXMLElementStart(void* data, const char* el, 
-				  const char** attr);
-/** Handler for the end of an XML element. */
-static void expandXMLElementEnd(void* data, const char* el);
+/** Replace all occurences of the string 'old' in the XMLBuffer text
+    by the string 'new'. */
+static void replaceInXMLBuffer(struct XMLBuffer* buffer, 
+			       const char* const old,
+			       const char* const new, 
+			       int* const status);
 
 
 ////////////////////////////////////////////////////////////////////
@@ -1132,7 +1141,7 @@ static void expandXMLElementStart(void* data, const char* el,
 	} else if (!strcmp(Uattribute, "INCREMENT")) {
 	  mydata->loop_increment = atoi(attr[ii+1]);
 	} else if (!strcmp(Uattribute, "VARIABLE")) {
-	  strcpy(mydata->loop_variable, Uvalue);
+	  strcpy(mydata->loop_variable, attr[ii+1]);
 	}
 
 	ii+=2;
@@ -1213,10 +1222,29 @@ static void expandXMLElementEnd(void* data, const char* el)
     if (1==mydata->loop_depth) {
       int ii;
       for (ii=mydata->loop_start; ii<=mydata->loop_end; ii+=mydata->loop_increment) {
-	// TODO Replace $variables by data.
-	addString2XMLBuffer(mydata->output_buffer, mydata->loop_buffer->text, 
+	// Copy loop buffer to separate XMLBuffer before replacing the
+	// variables, since they have to be preserved for the following loop
+	// repetitions.
+	struct XMLBuffer* replacedBuffer=newXMLBuffer(&mydata->status);
+	if (EXIT_SUCCESS!=mydata->status) return;
+	copyXMLBuffer(replacedBuffer, mydata->loop_buffer, &mydata->status);
+	if (EXIT_SUCCESS!=mydata->status) return;
+
+	// Replace $variables by integer values.
+	if (strlen(replacedBuffer->text)>0) {
+	  char stringvalue[MAXMSG];
+	  sprintf(stringvalue, "%d", ii);
+	  replaceInXMLBuffer(replacedBuffer, mydata->loop_variable,
+			     stringvalue, &mydata->status);
+	  if (EXIT_SUCCESS!=mydata->status) return;
+	}
+
+	// Add the loop content to the output buffer.
+	addString2XMLBuffer(mydata->output_buffer, replacedBuffer->text, 
 			    &mydata->status);
 	if (EXIT_SUCCESS!=mydata->status) return;
+
+	destroyXMLBuffer(&replacedBuffer);
       }
       // Clear the loop buffer.
       destroyXMLBuffer(&mydata->loop_buffer);
@@ -1247,6 +1275,46 @@ static void expandXMLElementEnd(void* data, const char* el)
   }
   addString2XMLBuffer(output, buffer, &mydata->status);
   if (EXIT_SUCCESS!=mydata->status) return;
+}
+
+
+
+static void replaceInXMLBuffer(struct XMLBuffer* buffer, 
+			       const char* const old,
+			       const char* const new, 
+			       int* const status)
+{
+  // Pointer to the first occurence of the old string in the buffer text.
+  char* occurence; 
+  // Length of the old string.
+  int len_old = strlen(old);
+
+  if ((0==strlen(old)) || (0==strlen(buffer->text))) return;
+
+  while (NULL!=(occurence=strstr(buffer->text, old))) {
+    // Get the length of the tail.
+    int len_tail = strlen(occurence)-len_old;
+
+    // String tail after the first occurence of the old string in the buffer text.
+    char* tail=(char*)malloc((1+len_tail)*sizeof(char));
+    if (NULL==tail) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Memory allocation for string buffer in XML "
+		     "pre-parsing failed!\n", *status);
+      return;
+    }
+    // Copy the tail of the string without the old string to the buffer.
+    strcpy(tail, &occurence[len_old]);
+    // Truncate the buffer string directly before the occurence of the old string.
+    occurence[0] = '\0';
+    // Append the new string to the truncated buffer string.
+    addString2XMLBuffer(buffer, new, status);
+    // Append the tail after the newly inserted new string.
+    addString2XMLBuffer(buffer, tail, status);
+
+    // Release memory of the tail buffer.
+    free(tail);
+  }
 }
 
 
