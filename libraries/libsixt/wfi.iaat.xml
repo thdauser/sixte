@@ -1,146 +1,27 @@
 <?xml version="1.0"?>
+<instrument>
+<telescope>
+<focallength value="20"/>
+<fov diameter="1.0"/>
+<psf filename="/home/schmid/ixo/wfi/wfi.labor64.psf.uniform.fits"/>
+<vignetting filename="/home/schmid/ixo/ixo.vignetting.fits"/>
+</telescope>
+
 <detector type="wfi" mode="fullframe">
-
 <dimensions xwidth="64" ywidth="64"/>
-
 <wcs xrpix="32.5" yrpix="32.5" xrval="0." yrval="0." xdelt="75.e-6" ydelt="75.e-6"/>
-
 <response filename="/home/schmid/ixo/wfi/response/labor_new_nocompt_6enc.rsp"/>
 <split type="GAUSS" par1="11.e-6"/>
-
 <eventfile template="geneventfile.tpl"/>
 
 <threshold_readout_lo_keV value="0."/>
 <threshold_event_lo_keV value="150.e-3"/>
 <threshold_split_lo_keV value="150.e-3"/>
 <readout mode="time">
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="0" readoutindex="0"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="1" readoutindex="1"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="2" readoutindex="2"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="3" readoutindex="3"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="4" readoutindex="4"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="5" readoutindex="5"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="6" readoutindex="6"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="7" readoutindex="7"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="8" readoutindex="8"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="9" readoutindex="9"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="10" readoutindex="10"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="11" readoutindex="11"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="12" readoutindex="12"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="13" readoutindex="13"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="14" readoutindex="14"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="15" readoutindex="15"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="16" readoutindex="16"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="17" readoutindex="17"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="18" readoutindex="18"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="19" readoutindex="19"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="20" readoutindex="20"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="21" readoutindex="21"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="22" readoutindex="22"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="23" readoutindex="23"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="24" readoutindex="24"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="25" readoutindex="25"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="26" readoutindex="26"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="27" readoutindex="27"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="28" readoutindex="28"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="29" readoutindex="29"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="30" readoutindex="30"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="31" readoutindex="31"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="32" readoutindex="32"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="33" readoutindex="33"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="34" readoutindex="34"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="35" readoutindex="35"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="36" readoutindex="36"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="37" readoutindex="37"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="38" readoutindex="38"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="39" readoutindex="39"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="40" readoutindex="40"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="41" readoutindex="41"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="42" readoutindex="42"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="43" readoutindex="43"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="44" readoutindex="44"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="45" readoutindex="45"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="46" readoutindex="46"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="47" readoutindex="47"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="48" readoutindex="48"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="49" readoutindex="49"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="50" readoutindex="50"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="51" readoutindex="51"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="52" readoutindex="52"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="53" readoutindex="53"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="54" readoutindex="54"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="55" readoutindex="55"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="56" readoutindex="56"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="57" readoutindex="57"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="58" readoutindex="58"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="59" readoutindex="59"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="60" readoutindex="60"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="61" readoutindex="61"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="62" readoutindex="62"/>
-	<wait time="33.825e-6"/>
-	<readoutline lineindex="63" readoutindex="63"/>
+  <loop start="0" end="63" increment="1" variable="$i">
+    <wait time="33.825e-6"/>
+    <readoutline lineindex="$i" readoutindex="$i"/>
+  </loop>
 </readout>
 </detector>
+</instrument>
