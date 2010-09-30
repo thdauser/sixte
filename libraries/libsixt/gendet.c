@@ -88,10 +88,15 @@ static void copyXMLBuffer(struct XMLBuffer* const destination,
 
 /** Replace all occurences of the string 'old' in the XMLBuffer text
     by the string 'new'. */
-static void replaceInXMLBuffer(struct XMLBuffer* buffer, 
+static void replaceInXMLBuffer(struct XMLBuffer* const buffer, 
 			       const char* const old,
 			       const char* const new, 
 			       int* const status);
+
+/** Execute and replace arithmetic operations in the XMLBuffer
+    text. */
+static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
+					 int* const status);
 
 
 ////////////////////////////////////////////////////////////////////
@@ -1095,7 +1100,8 @@ static void expandXML(struct XMLBuffer* const buffer, int* const status)
 
   } while (data.further_loops>0);
 
-  // TODO Replace arithmetic +/- expressions.
+  // Replace arithmetic +/- expressions.
+  execArithmeticOpsInXMLBuffer(buffer, status);
 }
 
 
@@ -1221,7 +1227,10 @@ static void expandXMLElementEnd(void* data, const char* el)
     // In that case add the loop buffer n-times to the output buffer.
     if (1==mydata->loop_depth) {
       int ii;
-      for (ii=mydata->loop_start; ii<=mydata->loop_end; ii+=mydata->loop_increment) {
+      for (ii=mydata->loop_start; 
+	   ((ii<=mydata->loop_end)&&(mydata->loop_increment>0)) ||
+	     ((ii>=mydata->loop_end)&&(mydata->loop_increment<0)); 
+	   ii+=mydata->loop_increment) {
 	// Copy loop buffer to separate XMLBuffer before replacing the
 	// variables, since they have to be preserved for the following loop
 	// repetitions.
@@ -1279,7 +1288,7 @@ static void expandXMLElementEnd(void* data, const char* el)
 
 
 
-static void replaceInXMLBuffer(struct XMLBuffer* buffer, 
+static void replaceInXMLBuffer(struct XMLBuffer* const buffer, 
 			       const char* const old,
 			       const char* const new, 
 			       int* const status)
@@ -1315,6 +1324,107 @@ static void replaceInXMLBuffer(struct XMLBuffer* buffer,
     // Release memory of the tail buffer.
     free(tail);
   }
+}
+
+
+
+static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
+					 int* const status)
+{
+  char* occurrence=buffer->text;
+
+  // Loop while a "+" or "-" sign is found in the buffer text.
+  while (NULL!=(occurrence=strpbrk(occurrence, "+-"))) {
+
+    // 1. Determine the first term.
+    char* start = occurrence-1;
+    // Scan forward until reaching a non-digit.
+    while (strpbrk(start, "0123456789")==start) {
+      start--;
+    }
+    start++;
+
+    // Check if there really is a numeric term in front of the "+" or "-" sign.
+    // If not (e.g. "e-4") continue with the next loop iteration.
+    if (start==occurrence) {
+      occurrence++;
+      continue;
+    }
+
+    // Store the first value in a separate string.
+    char svalue[MAXMSG];
+    int ii;
+    for (ii=0; start+ii<occurrence; ii++) {
+      svalue[ii] = start[ii];
+    }
+    svalue[ii] = '\0';
+    
+    // Convert the string to an integer value.
+    int ivalue1 = atoi(svalue);
+
+
+    // 2. Determine the second term.
+    char* end = occurrence+1;
+    // Scan backward until reaching a non-digit.
+    while (strpbrk(end, "0123456789")==end) {
+      end++;
+    }
+    end--;
+
+    // Check if there really is a numeric term behind of the "+" or "-" sign.
+    // If not continue with the next loop iteration.
+    if (end==occurrence) {
+      occurrence++;
+      continue;
+    }
+
+    // Store the second value in a separate string.
+    for (ii=0; occurrence+ii<end; ii++) {
+      svalue[ii] = occurrence[1+ii];
+    }
+    svalue[ii] = '\0';
+
+    // Convert the string to an integer value.
+    int ivalue2 = atoi(svalue);
+
+
+    // Perform the arithmetic operation.
+    int result=0;
+    if (occurrence[0]=='+') {
+      result = ivalue1 + ivalue2;
+    } else if (occurrence[0]=='-') {
+      result = ivalue1 - ivalue2;
+    }
+
+
+    // Store the result at the right position in the XMLBuffer text.
+    // Determine the new sub-string.
+    sprintf(svalue, "%d", result);
+
+    // Get the length of the tail.
+    int len_tail = strlen(end)-1;
+
+    // String tail after the first occurrence of the old string in the buffer text.
+    char* tail=(char*)malloc((1+len_tail)*sizeof(char));
+    if (NULL==tail) {
+      *status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: Memory allocation for string buffer in XML "
+		     "pre-parsing failed!\n", *status);
+      return;
+    }
+    // Copy the tail of the string without the old string to the buffer.
+    strcpy(tail, &end[1]);
+    // Truncate the buffer string directly before the occurrence of the old string.
+    start[0] = '\0';
+    // Append the new string to the truncated buffer string.
+    addString2XMLBuffer(buffer, svalue, status);
+    // Append the tail after the newly inserted new string.
+    addString2XMLBuffer(buffer, tail, status);
+
+    // Release memory of the tail buffer.
+    free(tail);
+  }
+  // END of loop over all occurrences of "+" or "-" signs.
 }
 
 

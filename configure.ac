@@ -251,6 +251,7 @@ AC_CONFIG_FILES([Makefile
 		tools/Makefile
 		tools/photon_generation/Makefile
 		tools/photon_imaging/Makefile
+		tools/psfgen/Makefile
 		tools/wfi_simulation/Makefile
 		tools/framestore_simulation/Makefile
 		tools/xms_simulation/Makefile
