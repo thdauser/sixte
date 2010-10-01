@@ -19,7 +19,7 @@
 
 typedef struct {
 	GenericDetector generic;
-	SquarePixels pixels[NumberofCCDs];
+	SquarePixels* pixels;
 	
 	/** Readout mode of the pnCCD */
 	int readout_mode;

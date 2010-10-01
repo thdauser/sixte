@@ -16,6 +16,8 @@ pull.err
 pull.log
 pull_n_push.sh
 get_updates.sh
+pnSim.png
+pnSimGraph
 
 # Binaries:
 analyse_xms_events

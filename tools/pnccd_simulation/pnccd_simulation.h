@@ -47,4 +47,7 @@ struct Parameters {
 
 };
 
+// Reads the program parameters using PIL
+static int getpar(struct Parameters* parameters);
+
 #endif /* PNCCD_SIMULATION_H */

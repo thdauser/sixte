@@ -16,7 +16,7 @@ int pnccd_simulation_main() {
 
 	// Background structure
 
-	ImpactListFile impactlistfile;
+	ImpactListFile* impactlistfile=NULL;
 
 	int status=EXIT_SUCCESS; // Error status
 
