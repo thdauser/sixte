@@ -15,10 +15,12 @@ int initpnCCDDetector(pnCCDDetector* pn,
 	// of the pnCCD (at the current stage just one CCD is initialized, due 
 	// to the fact, that the timing mode works wirh just one CCD (64x200)
 	int ccdnum;
-	for(ccdnum=0; ccdnum<NumberofCCDs; ccdnum++) {
-		status = initSquarePixels(&pn->pixels[ccdnum], &parameters->pixels);
-		if (EXIT_SUCCESS!=status) return(status);
-	}
+	//for(ccdnum=0; ccdnum<NumberofCCDs; ccdnum++) {
+	//	status = initSquarePixels(&pn->pixels[ccdnum], &parameters->pixels);
+	//	if (EXIT_SUCCESS!=status) return(status);
+	//}
+	pn->pixels = newSquarePixels(&paramters->pixels, &status);
+	if (EXIT_SUCCESS!=status) return(status);
 
 	// Set up the pnCCD configuration
 	pn->integration time = parameters->integration_time;
@@ -44,10 +46,7 @@ int cleanuppnCCDDetector(pnCCDDetector* pn)
 	int status=EXIT_SUCCESS;
 
 	// Call the cleanup routines of the underlying data structures
-	int ccdnum;
-	for(ccdnum=0; ccdnum<NumberofCCDs; ccdnum++) {
-		cleanupSquarePixels(&pn->pixels[ccdnum]);
-	}
+	destroySquarePixels(&pn->pixels);
 	cleanupGenericDetector(&pn->generic);
 	// TODO write closepnCCDEventFile
 	status+=closepnCCDEventFile(&pn->eventlist);
