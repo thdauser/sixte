@@ -1,7 +1,8 @@
 #include "vignetting.h"
 
 
-Vignetting* newVignetting(const char* const filename, int* const status) {
+Vignetting* newVignetting(const char* const filename, int* const status) 
+{
   Vignetting* vignetting=NULL;
   fitsfile* fptr=NULL;
   float* data_buffer=NULL;
@@ -229,21 +230,27 @@ void destroyVignetting(Vignetting** const vi) {
 
 
 float get_Vignetting_Factor(const Vignetting* const vi, const float energy, 
-			    const float theta, const float phi) {
-  float factor=0.;
+			    const float theta, const float phi) 
+{
+  // Check if any vignetting is specified. If not, return a default value of 1.
+  if (NULL==vi) return(1.);
 
+  (void)phi;
+  
+  /*
   // At the moment this routine can only handle the case with phi = 0.
   if (phi!=0.) {
-    factor = 0.; // Do nothing
-    /*    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
-	  return(0.); */
+    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
+    return(0.);
   }
+  */
 
   if ((energy<vi->Emin) || (energy>vi->Emax)) {
-    factor = -1.; // Energy is out of range!
+    return(-1.); // Energy is out of range!
   } else {
     // Find the right energy bin:
     int count;
+    float factor=0.;
     for(count=0; count<vi->nenergies; count++) {
       if ((energy>vi->energ_lo[count]) && (energy<=vi->energ_hi[count])) {
 	// Find the best fitting theta:
@@ -259,8 +266,7 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
       }
     } // Loop to find the right energy bin.
     assert (count<vi->nenergies);
+    return(factor);
   }
-
-  return(factor);
 }
 

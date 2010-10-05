@@ -495,12 +495,12 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   //		   *status);
   //    return;    
   //  }
-  if (NULL==det->vignetting) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for Vignetting!\n", 
-		   *status);
-    return;    
-  }
+  //  if (NULL==det->vignetting) {
+  //    *status = EXIT_FAILURE;
+  //    HD_ERROR_THROW("Error: No specification found for Vignetting!\n", 
+  //		   *status);
+  //    return;    
+  //  }
   if (0.>=det->focal_length) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for the focal length of the telescope!\n", 

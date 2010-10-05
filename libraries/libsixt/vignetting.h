@@ -27,7 +27,7 @@ typedef struct {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Function declarations
+// Function declarations.
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -40,8 +40,9 @@ Vignetting* newVignetting(const char* const filename, int* const status);
 void destroyVignetting(Vignetting** const vi);
 
 /** Determine the Vignetting factor for given photon energy, off-axis
-    angle, and azimuth angle. The energy has to be given in [keV],
-    the angles in [rad]. */
+    angle, and azimuth angle. The energy has to be given in [keV], the
+    angles in [rad]. If the pointer to the Vignetting data structure
+    is NULL, a default value of 1. will be returned. */
 /* TODO: So far the azimuth angle is neglected! */
 float get_Vignetting_Factor(const Vignetting* const vi, 
 			    const float energy, 
