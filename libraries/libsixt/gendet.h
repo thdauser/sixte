@@ -12,6 +12,7 @@
 #include "clocklist.h"
 #include "psf.h"
 #include "vignetting.h"
+#include "codedmask.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -63,6 +64,10 @@ typedef struct {
       in [deg], but it is converted to [rad] when parsing the XML
       file. */
   float fov_diameter;
+  /** If the telescope is a coded mask telescope and not an imaging
+      telescope, we have to specify the coded mask pattern file
+      instead of the PSF. */
+  CodedMask* coded_mask;
 
   /** Lower and upper readout threshold in units of [keV]. These
       thresholds are applied in the read-out routine before converting

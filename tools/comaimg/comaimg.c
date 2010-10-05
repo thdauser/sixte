@@ -172,7 +172,7 @@ int comaimg_main() {
 			 impactlistfile->row, 1, 1, &position.y, &status);
 	  impactlistfile->nrows++;
 	  //}
-	} // END get_psf_pos(...)
+	} // END getCodedMaskImpactPos(...)
       } // End of FOV check.
     } // END of scanning LOOP over the photon list.
 
@@ -190,7 +190,7 @@ int comaimg_main() {
   status += closePhotonListFile(&photonlistfile);
 
   free_AttitudeCatalog(attitudecatalog);
-  freeCodedMask(mask);
+  destroyCodedMask(&mask);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);

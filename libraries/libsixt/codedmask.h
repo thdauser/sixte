@@ -53,15 +53,15 @@ typedef struct {
 /** Basic Constructor. This constructor generates an empty CodedMask
     object. It does not allocate any memory for the mask data. This
     has to be done separately. */
-CodedMask* getCodedMask(int* status);
+CodedMask* getCodedMask(int* const status);
 
 /** Advanced Constructor. The constructor obtains a new CodedMask
     object from the basic constructor loads a coded mask from the
     specified file, and stores it in the newly q created object. */
-CodedMask* getCodedMaskFromFile(char* filename, int* status);
+CodedMask* getCodedMaskFromFile(const char* const filename, int* const status);
 
 /** Destructor. */
-void freeCodedMask(CodedMask* mask);
+void destroyCodedMask(CodedMask** const mask);
 
 /** Determine the impact position of a photon on the detector plane
     according to the coded mask aperture. The function return value

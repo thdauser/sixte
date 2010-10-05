@@ -121,6 +121,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->rmf =NULL;
   det->psf =NULL;
   det->vignetting=NULL;
+  det->coded_mask=NULL;
   det->clocklist =NULL;
   det->eventfile =NULL;
 
@@ -184,7 +185,10 @@ void destroyGenDet(GenDet** const det, int* const status)
 
     // Free the PSF.
     destroyPSF(&(*det)->psf);
-    
+
+    // Free the CodedMask.
+    destroyCodedMask(&(*det)->coded_mask);
+
     // Free the vignetting Function.
     destroyVignetting(&(*det)->vignetting);
 
@@ -689,6 +693,15 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
 	    xmlparsedata->det->psf = newPSF(buffer, &xmlparsedata->status);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "CODEDMASK")) {
+	  if (!strcmp(Uattribute, "FILENAME")) {
+	    // Load the CodedMask.
+	    char buffer[MAXMSG];
+	    strcpy(buffer, attr[i+1]);
+	    xmlparsedata->det->coded_mask = getCodedMaskFromFile(buffer, &xmlparsedata->status);
 	  }
 	}
 

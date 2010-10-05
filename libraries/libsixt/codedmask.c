@@ -1,7 +1,7 @@
 #include "codedmask.h"
 
 
-CodedMask* getCodedMask(int* status)
+CodedMask* getCodedMask(int* const status)
 {
   CodedMask* mask=(CodedMask*)malloc(sizeof(CodedMask));
   if (NULL==mask) {
@@ -30,34 +30,35 @@ CodedMask* getCodedMask(int* status)
 
 
 
-void freeCodedMask(CodedMask* mask)
+void destroyCodedMask(CodedMask** const mask)
 {
-  if (NULL!=mask) {
-    if (NULL!=mask->map) {
+  if (NULL!=(*mask)) {
+    if (NULL!=(*mask)->map) {
       int count;
-      for(count=0; count<mask->naxis1; count++) {
-	if (NULL!=mask->map[count]) {
-	  free(mask->map[count]);
+      for(count=0; count<(*mask)->naxis1; count++) {
+	if (NULL!=(*mask)->map[count]) {
+	  free((*mask)->map[count]);
 	}
       }
-      free(mask->map);
+      free((*mask)->map);
     }
-    if (NULL!=mask->transparent_pixels) {
+    if (NULL!=(*mask)->transparent_pixels) {
       int count;
-      for(count=0; count<mask->n_transparent_pixels; count++) {
-	if (NULL!=mask->transparent_pixels[count]) {
-	  free(mask->transparent_pixels[count]);
+      for(count=0; count<(*mask)->n_transparent_pixels; count++) {
+	if (NULL!=(*mask)->transparent_pixels[count]) {
+	  free((*mask)->transparent_pixels[count]);
 	}
       }
-      free(mask->transparent_pixels);
+      free((*mask)->transparent_pixels);
     }
-    free(mask);
+    free(*mask);
+    *mask=NULL;
   }
 }
 
 
 
-CodedMask* getCodedMaskFromFile(char* filename, int* status)
+CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 {
   // Obtain a new (empty) CodedMask object using the basic constructor.
   CodedMask* mask = getCodedMask(status);
@@ -202,6 +203,9 @@ int getCodedMaskImpactPos(struct Point2d* const position,
 			  const CodedMask* const mask, 
 			  const struct Telescope* const telescope)
 {
+  // Check if a CodedMask is specified. If not, break the function.
+  if (NULL==mask) return(0);
+
   // Get a random number.
   double rand = sixt_get_random_number();
 
