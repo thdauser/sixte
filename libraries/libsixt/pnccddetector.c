@@ -23,7 +23,11 @@ int initpnCCDDetector(pnCCDDetector* pn,
 	if (EXIT_SUCCESS!=status) return(status);
 
 	// Set up the pnCCD configuration
-	pn->integration time = parameters->integration_time;
+	pn->integration_time = parameters->integration_time;
+	if(pn->readout_mode == "TIMING" && pn->integration_time > 1) {
+		printf("That should not be the case!!\n");
+		break;
+	}
 	// !!NOTE: Depends on the mode!!!
 
 	// Set the first readout time such that the first readout is performed
@@ -63,12 +67,16 @@ int checkReadoutpnCCDDetector(pnCCDDetector* pn, double time)
 	// TODO read the frame time out of the pnccd_simulation Parameter file.
 	switch(pn->readout_mode)
 	{
-		case Timing:
+		case "Timing":
 			{
-				status = readoutpnCCDDetectorTiming(pn);
-				// !!! 		   Timing mode frame time 6 ms
+				if (time > pn->readout_time) {
+					status = readoutpnCCDDetectorTiming(pn);
+					if (EXIT_SUCCESS!=status) return(status);
+					// !!! 		   Timing mode frame time 6 ms
+					// Clear the detector array
+					clearSquarePixels(&pn->pixels);
 			}
-		case FULL_FRAME:
+		case "FULL_FRAME":
 			{
 
 				// Full frame mode:
@@ -161,7 +169,16 @@ inline int readoutpnCCDDetectorFullFrame(pnCCDDetector* pn)
 int addImpact2pnCCDDdetector(pnCCDDetector* pn, Impact* impact)
 {
 	int status = EXIT_SUCCESS;
+	double time_per_row = 0;
+	int pixel_offset = 0;
 
+	switch(pn->readout_mode) {
+		case "TIMING":
+			{
+				if(time < pn->readout_time){
+					pixel_offset = time/time_per_row;
+				}
+					
 	// Check if there has to be a read out before adding the new Impact 
 	// to the detector
 	// !!! Note: in timing mode the charge is continously shifted 
