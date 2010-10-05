@@ -52,11 +52,16 @@ int comarecon_main() {
     // END of DETECTOR CONFIGURATION SETUP    
 
     // SKY IMAGE setup.
+    float delta = atan(parameters.pixelwidth/parameters.mask_distance);
     struct SourceImageParameters sip = {
       .naxis1 = 2*parameters.width -1,
       .naxis2 = 2*parameters.width -1,
-      .cdelt1 = parameters.pixelwidth, // TODO replace by some [deg] value.
-      .cdelt2 = parameters.pixelwidth 
+      .cdelt1 = delta,
+      .cdelt2 = delta,
+      .crval1 = 0.,
+      .crval2 = 0.,
+      .crpix1 = parameters.width*1.,
+      .crpix2 = parameters.width*1.
     };
     sky_pixels=getEmptySourceImage(&sip, &status);
     if(EXIT_SUCCESS!=status) break;
@@ -164,6 +169,12 @@ int comarecon_getpar(struct Parameters* parameters)
   // Read the width of one detector pixel in [m].
   else if ((status = PILGetReal("pixelwidth", &parameters->pixelwidth))) {
     HD_ERROR_THROW("Error reading the width detector pixels!\n", status);
+  }
+
+  // Read the distance between the coded mask and the detector plane [m].
+  else if ((status = PILGetReal("mask_distance", &parameters->mask_distance))) {
+    HD_ERROR_THROW("Error reading the distance between the mask and the detector plane!\n", 
+		   status);
   }
   if (EXIT_SUCCESS!=status) return(status);
 

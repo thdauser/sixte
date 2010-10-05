@@ -197,10 +197,11 @@ CodedMask* getCodedMaskFromFile(char* filename, int* status)
 
 
 
-int getCodedMaskImpactPos(struct Point2d* position, Photon* photon, CodedMask* mask, 
-			  struct Telescope* telescope)
+int getCodedMaskImpactPos(struct Point2d* const position, 
+			  const Photon* const photon, 
+			  const CodedMask* const mask, 
+			  const struct Telescope* const telescope)
 {
-
   // Get a random number.
   double rand = sixt_get_random_number();
 
@@ -209,10 +210,10 @@ int getCodedMaskImpactPos(struct Point2d* position, Photon* photon, CodedMask* m
     return(0);
   }
 
-  // The photon passes through a tranparent pixel. So we have to 
+  // The photon passes through a transparent pixel. So we have to 
   // determine its impact position on the detector plane using
   // geometrical considerations.
-  // First determine the pixel where the photon passes.
+  // First determine the pixel the photon passes through.
   int pixel = (int)(rand/mask->transparency * mask->n_transparent_pixels);
   // Now pixel points to an arbitrary pixel in the list of transparent pixels.
 

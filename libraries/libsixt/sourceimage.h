@@ -6,6 +6,11 @@
 #include "spectrum.h"
 
 
+/////////////////////////////////////////////////////////////////
+// Type Declarations.
+/////////////////////////////////////////////////////////////////
+
+
 /** Object containing the extended source image from one FITS image extension. */
 typedef struct {
   /** Pixel probability distribution. */
@@ -24,13 +29,13 @@ typedef struct {
   /** Time of the last photon emitted from this SourceImage. */
   double t_last_photon;
 
-  int naxis1, naxis2;    /**< Width of the image [pixel]. */
-  double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
-  double crpix1, crpix2; /**< [pixel] */
-  double crval1, crval2; /**< [rad] */
+  int naxis1, naxis2;   /**< Width of the image [pixel]. */
+  float cdelt1, cdelt2; /**< Width of one pixel [rad]. */
+  float crpix1, crpix2; /**< [pixel] */
+  float crval1, crval2; /**< [rad] */
 
-  double minra, maxra;   /**< Maximum right ascension covered by the image [rad]. */
-  double mindec, maxdec; /**< Maximum declination covered by the image [rad]. */
+  float minra, maxra;   /**< Maximum right ascension covered by the image [rad]. */
+  float mindec, maxdec; /**< Maximum declination covered by the image [rad]. */
 
   /** SpectrumStore containing the source spectra used for this image of the sky. */
   SpectrumStore spectrumstore;
@@ -52,11 +57,16 @@ struct SourceImageParameters {
   /** Dimensions of the source image. */
   int naxis1, naxis2;
   /** Width of the image pixels [rad]. */
-  double cdelt1, cdelt2;
+  float cdelt1, cdelt2;
+  /** WCS parameters. */
+  float crpix1, crpix2;
+  float crval1, crval2;
 };
 
 
-//////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
 
 
 /** Constructor for SourceImage objects returning the bare data
