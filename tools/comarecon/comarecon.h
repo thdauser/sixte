@@ -24,6 +24,8 @@ struct Parameters {
   int width;
   /** Width of one detector pixel in [m]. */
   double pixelwidth;
+  // Distance between the coded mask and the detector plane ([m]).
+  double mask_distance;  
 };
 
 

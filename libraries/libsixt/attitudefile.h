@@ -39,12 +39,13 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////
 
 
-/** Reads a line of data from the attitude table in a FITS file. 
- * The routine does NOT increment the row counter of the AttitudeFile object. */
+/** Reads a line of data from the attitude table in a FITS file. The
+    routine does NOT increment the row counter of the AttitudeFile
+    object. */
 AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status);
 
-/** Opens an existing attitude file. 
- * The access_mode parameter can be either READONLY or READWRITE. */
+/** Opens an existing attitude file. The access_mode parameter can be
+    either READONLY or READWRITE. */
 AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* status);
 
 
@@ -56,7 +57,7 @@ int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[],
 			double time, double view_ra, double view_dec, 
 			double rollangle, double aspangle, int fitsstatus);
 
-// creates the necessary parameters to generate the table in the attitude FITS file
+// Creates the necessary parameters to generate the table in the attitude FITS file.
 void create_attitudetbl_parameter(char *ftype[N_ATTITUDE_FIELDS], 
 				  char *fform[N_ATTITUDE_FIELDS], 
 				  char *funit[N_ATTITUDE_FIELDS]);

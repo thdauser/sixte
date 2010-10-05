@@ -8,12 +8,25 @@ SourceImage* get_SourceImage()
   // Allocate memory:
   si = (SourceImage*)malloc(sizeof(SourceImage));
   if(si!=NULL) {
+    si->pixel=NULL;
+
     si->naxis1=0;
     si->naxis2=0;
-    si->pixel=NULL;
     si->accumulated=0;
-    si->total_rate=0.;
+    si->total_rate =0.;
     si->t_last_photon=0.;
+
+    si->cdelt1 = 0.;
+    si->cdelt2 = 0.;
+    si->crpix1 = 0.;
+    si->crpix2 = 0.;
+    si->crval1 = 0.;
+    si->crval2 = 0.;
+
+    si->minra  = 0.;
+    si->maxra  = 0.;
+    si->mindec = 0.;
+    si->maxdec = 0.;
   }
 
   return(si);
@@ -65,6 +78,10 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
   // Set the properties of the pixel array.
   si->cdelt1 = sip->cdelt1;
   si->cdelt2 = sip->cdelt2;
+  si->crval1 = sip->crval1;
+  si->crval2 = sip->crval2;
+  si->crpix1 = sip->crpix1;
+  si->crpix2 = sip->crpix2;
 
   return(si);
 }
@@ -128,24 +145,24 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 
     // Determine the width of one image pixel.
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(fptr, TDOUBLE, "CDELT1", &si->cdelt1, comment, status)) break;
-    if (fits_read_key(fptr, TDOUBLE, "CDELT2", &si->cdelt2, comment, status)) break;
+    if (fits_read_key(fptr, TFLOAT, "CDELT1", &si->cdelt1, comment, status)) break;
+    if (fits_read_key(fptr, TFLOAT, "CDELT2", &si->cdelt2, comment, status)) break;
 
     sprintf(msg, " CDELT1: %lf, CDELT2: %lf (degree)\n", si->cdelt1, si->cdelt2);
     headas_chat(5, msg);
 
     // Determine the WCS coordinates of the image.
-    if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &si->crpix1, comment, status)) break;
-    if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &si->crpix2, comment, status)) break;
+    if (fits_read_key(fptr, TFLOAT, "CRPIX1", &si->crpix1, comment, status)) break;
+    if (fits_read_key(fptr, TFLOAT, "CRPIX2", &si->crpix2, comment, status)) break;
 
     sprintf(msg, " CRPIX1: %lf, CRPIX2: %lf\n", si->crpix1, si->crpix2);
     headas_chat(5, msg);
 
-    if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &si->crval1, comment, status)) break;
-    if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &si->crval2, comment, status)) break;
+    if (fits_read_key(fptr, TFLOAT, "CRVAL1", &si->crval1, comment, status)) break;
+    if (fits_read_key(fptr, TFLOAT, "CRVAL2", &si->crval2, comment, status)) break;
 
     sprintf(msg, " CRVAL1: %lf, CRVAL2: %lf (degree)\n", si->crval1, si->crval2);
-    headas_chat(5, msg);
+    headas_chat(3, msg);
 
 
     // Convert from [deg] to [rad]
@@ -304,23 +321,23 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
       
     if (fits_write_key(fptr, TSTRING, "CUNIT1", "degree", "", status)) break;
     if (fits_write_key(fptr, TSTRING, "CUNIT2", "degree", "", status)) break;
-    if (fits_write_key(fptr, TDOUBLE, "CRPIX1", &si->crpix1, 
+    if (fits_write_key(fptr, TFLOAT, "CRPIX1", &si->crpix1, 
                        "X axis reference pixel", status)) break;
-    if (fits_write_key(fptr, TDOUBLE, "CRPIX2", &si->crpix2, 
+    if (fits_write_key(fptr, TFLOAT, "CRPIX2", &si->crpix2, 
     		       "Y axis reference pixel", status)) break;
 
-    double dbuffer;
-    dbuffer = si->crval1 *180./M_PI;
-    if (fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
+    float fbuffer;
+    fbuffer = si->crval1 *180./M_PI;
+    if (fits_write_key(fptr, TFLOAT, "CRVAL1", &fbuffer, 
 		       "coord of X ref pixel", status)) break;
-    dbuffer = si->crval2 *180./M_PI;
-    if (fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
+    fbuffer = si->crval2 *180./M_PI;
+    if (fits_write_key(fptr, TFLOAT, "CRVAL2", &fbuffer, 
     		       "coord of Y ref pixel", status)) break;
-    dbuffer = si->cdelt1 *180./M_PI;
-    if (fits_write_key(fptr, TDOUBLE, "CDELT1", &dbuffer, 
+    fbuffer = si->cdelt1 *180./M_PI;
+    if (fits_write_key(fptr, TFLOAT, "CDELT1", &fbuffer, 
 		       "X axis increment", status)) break;
-    dbuffer = si->cdelt2 *180./M_PI;
-    if (fits_write_key(fptr, TDOUBLE, "CDELT2", &dbuffer, 
+    fbuffer = si->cdelt2 *180./M_PI;
+    if (fits_write_key(fptr, TFLOAT, "CDELT2", &fbuffer, 
 		       "Y axis increment", status)) break;
     
     HDpar_stamp(fptr, 1, status);

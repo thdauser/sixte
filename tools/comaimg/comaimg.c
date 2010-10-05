@@ -20,7 +20,6 @@ int comaimg_main() {
   CodedMask* mask=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
-  char msg[MAXMSG];
 
 
   // Register HEATOOL:
@@ -35,6 +34,7 @@ int comaimg_main() {
     // Read parameters using PIL library.
     if ((status=comaimg_getpar(&parameters))) break;
 
+    telescope.focal_length = parameters.mask_distance;
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
@@ -106,34 +106,13 @@ int comaimg_main() {
       // Determine a unit vector pointing in the direction of the photon.
       photon.direction = unit_vector(photon.ra, photon.dec);
 
-
-      // Get the last attitude entry before 'photon.time'
-      // (in order to interpolate the attitude at this time between 
-      // the neighboring calculated values):
-      for( ; attitude_counter<attitudecatalog->nentries-1; attitude_counter++) {
-	if(attitudecatalog->entry[attitude_counter+1].time>photon.time) {
-	  break;
-	}
-      }
-      if(fabs(attitudecatalog->entry[attitude_counter].time-photon.time)>600.) { 
-	// no entry within 10 minutes !!
-	status = EXIT_FAILURE;
-	sprintf(msg, "Error: no adequate orbit entry for time %lf!\n", photon.time);
-	HD_ERROR_THROW(msg,status);
-	break;
-      }
-
    
-      // Check whether the photon is inside the FOV:
-      // First determine telescope pointing direction at the current time.
-      // TODO: replace this calculation by proper attitude interpolation.
-      telescope.nz = 
-	normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nz, 
-					 attitudecatalog->entry[attitude_counter].time, 
-					 attitudecatalog->entry[attitude_counter+1].nz, 
-					 attitudecatalog->entry[attitude_counter+1].time, 
-					 photon.time));
+      // Determine telescope pointing direction at the current time.
+      telescope.nz = getTelescopePointing(attitudecatalog, photon.time, &status);
+      if (EXIT_SUCCESS!=status) break;
 
+
+      // Check whether the photon is inside the FOV:
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
       if (check_fov(&photon.direction, &telescope.nz, fov_min_align)==0) {
@@ -200,7 +179,7 @@ int comaimg_main() {
   } while(0);  // END of the error handling loop.
 
 
-  // --- cleaning up ---
+  // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
   // release HEADAS random number generator
