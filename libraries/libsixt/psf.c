@@ -1,10 +1,15 @@
 #include "psf.h"
 
 
-int get_psf_pos(struct Point2d* position, Photon photon, 
-		struct Telescope telescope, 
-		Vignetting* vignetting, PSF* psf)
+int get_psf_pos(struct Point2d* const position, 
+		const Photon photon, 
+		const struct Telescope telescope, 
+		const Vignetting* const vignetting, 
+		const PSF* const psf)
 {
+  // Check if there is PSF specified. If not, break the function.
+  if (NULL==psf) return(0);
+  
   // Calculate the off-axis angle ([rad])
   double theta = acos(scalar_product(&telescope.nz, &photon.direction));
   // and the azimuthal angle ([rad]) of the source position.

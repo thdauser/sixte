@@ -51,7 +51,7 @@ typedef struct {
 
 
 ////////////////////////////////////////////////////////////////////////
-// Function declarations
+// Function declarations.
 ////////////////////////////////////////////////////////////////////////
 
 
@@ -62,22 +62,22 @@ PSF* newPSF(const char* filename, int* const status);
 
 /** Calculates the position on the detector, where a photon at given
     sky position with specified energy hits the detector according to
-    the PSF data.  * The exact position is determined with a random
-    number generator * (randomization over one PSF pixel).  * Return
+    the PSF data. The exact position is determined with a random
+    number generator * (randomization over one PSF pixel). Return
     value is '1', if the photon hits the detector. If it does not fall
-    onto the * detector, the function returns '0'.  The output
-    detector position is stored * in [m] in the first 2 parameters of
-    the function. */
+    onto the detector, the function returns '0'. The output detector
+    position is stored in [m] in the first 2 parameters of the
+    function. */
 int get_psf_pos(/** Output: coordinates of the photon on the detector ([m]). */
-		struct Point2d* position, 
+		struct Point2d* const position, 
 		/** Incident photon. */
-		Photon, 
+		const Photon photon, 
 		/** Telescope information (focal length, pointing directions. */
-		struct Telescope telescope, 
+		const struct Telescope telescope, 
 		/** Vignetting function. */
-		Vignetting* vignetting, 
+		const Vignetting* const vignetting, 
 		/** PSF with data for different photon energies and off-axis angles. */
-		PSF* psf);
+		const PSF* const psf);
 
 /** Release the memory of the PSF storage. */
 void destroyPSF(PSF** const psf);

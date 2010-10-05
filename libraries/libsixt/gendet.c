@@ -485,12 +485,12 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     return;    
   }
 
-  if (NULL==det->psf) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for PSF!\n", 
-		   *status);
-    return;    
-  }
+  //  if (NULL==det->psf) {
+  //    *status = EXIT_FAILURE;
+  //    HD_ERROR_THROW("Error: No specification found for PSF!\n", 
+  //		   *status);
+  //    return;    
+  //  }
   if (NULL==det->vignetting) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for Vignetting!\n", 
