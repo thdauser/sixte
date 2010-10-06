@@ -10,7 +10,7 @@
 <detector type="CCD">
 <dimensions xwidth="139" ywidth="139"/>
 <pixelborder x="0." y="0."/>
-<wcs xrpix="69." yrpix="69." xrval="0." yrval="0." xdelt="0.0013" ydelt="0.0013"/>
+<wcs xrpix="70." yrpix="70." xrval="0." yrval="0." xdelt="0.0013" ydelt="0.0013"/>
 <response filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
 <threshold_readout_lo_keV value="0."/>
 <threshold_readout_up_keV value="12."/>
