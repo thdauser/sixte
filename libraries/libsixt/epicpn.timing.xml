@@ -19,9 +19,10 @@
   <loop start="0" end="19" increment="1">
     <!-- TODO Calculate the event time according to Kuster (1999) -->
     <loop start="0" end="9" increment="1">
+      <wait time="0.5e-6"/>
       <lineshift/>
     </loop>
-    <wait time="29.52e-6"/><readoutline lineindex="0" readoutindex="0"/>
+    <wait time="24.52e-6"/><readoutline lineindex="0" readoutindex="0"/>
   </loop>
 </readout>
 </detector>

@@ -19,9 +19,9 @@
 <threshold_split_lo_keV value="150.e-3"/>
 <readout mode="time">
   <loop start="511" end="0" increment="-1" variable="$i">
-	<wait time="2.e-6"/>
-	<readoutline lineindex="$i" readoutindex="$i"/>
-	<readoutline lineindex="1023-$i" readoutindex="1023-$i"/>
+    <wait time="2.e-6"/>
+    <readoutline lineindex="$i" readoutindex="$i"/>
+    <readoutline lineindex="1023-$i" readoutindex="1023-$i"/>
   </loop>
 </readout>
 </detector>
