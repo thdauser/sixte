@@ -33,12 +33,12 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  TIME            / Time of event
 	TFORM#  D               / Format of column TIME
 	TUNIT#  s               / Unit of column TIME
-	TTYPE#  ENERGY          / Uncorrected Event Energy
+	TTYPE#  CHARGE          / Uncorrected Event Energy
 	TFORM#  E               / Format of column PHA
 	TUNIT#  keV             / Unit of column PHA
-	TTYPE#	X               / Event Pixel Number
+	TTYPE#	RAWX            / Event Pixel Number
 	TFORM#  I               / Format of column X
 	TUNIT#  pixel           / Unit of column X
-	TTYPE#	Y               / Event Pixel Number
+	TTYPE#	RAWY            / Event Pixel Number
 	TFORM#  I               / Format of column Y
 	TUNIT#  pixel           / Unit of column Y

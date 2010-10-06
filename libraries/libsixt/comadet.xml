@@ -17,7 +17,7 @@
 <eventfile template="geneventfile.tpl"/>
 
 <readout mode="time">
-  <wait time="0.05"/>
+  <wait time="0.001"/>
   <loop start="0" end="138" increment="1" variable="$i">
     <readoutline lineindex="$i" readoutindex="$i"/>
   </loop>

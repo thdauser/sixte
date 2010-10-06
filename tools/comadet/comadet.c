@@ -16,7 +16,6 @@ int comadet_main() {
   CoMaDetector* detector=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
-  //  char msg[MAXMSG];
 
 
   // Register HEATOOL:

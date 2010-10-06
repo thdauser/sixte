@@ -312,7 +312,7 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->threshold_readout_up_PHA    = -1;
   det->threshold_readout_lo_keV    =  0.;
   det->threshold_readout_up_keV    = -1.;
-  det->threshold_event_lo_keV      = -1.;
+  det->threshold_event_lo_keV      =  0.;
   det->threshold_split_lo_keV      =  0.;
   det->threshold_split_lo_fraction =  0.;
   det->fov_diameter = 0.;
@@ -535,11 +535,11 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     }
   }
 
-  if (0>det->threshold_event_lo_keV) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No lower event threshold specified!\n", *status);
-    return;
-  }
+  //  if (0>det->threshold_event_lo_keV) {
+  //    *status = EXIT_FAILURE;
+  //    HD_ERROR_THROW("Error: No lower event threshold specified!\n", *status);
+  //    return;
+  //  }
 
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.

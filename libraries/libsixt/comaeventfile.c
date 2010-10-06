@@ -20,12 +20,12 @@ CoMaEventFile* openCoMaEventFile(char* filename, int access_mode, int* status)
   // REQUIRED columns:
   if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "TIME", &ef->ctime, status)) 
     return(ef);
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "ENERGY", &ef->cenergy, 
+  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "CHARGE", &ef->ccharge, 
 		     status)) 
     return(ef);
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "X", &ef->cxi, status)) 
+  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWX", &ef->crawx, status)) 
     return(ef);
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "Y", &ef->cyi, status)) 
+  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWY", &ef->crawy, status)) 
     return(ef);
 
   return(ef);
@@ -92,12 +92,12 @@ int addCoMaEvent2File(CoMaEventFile* ef, CoMaEvent* event)
 
   if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 
 		     1, 1, &event->time, &status)) return(status);
-  if (fits_write_col(ef->generic.fptr, TFLOAT, ef->cenergy, ef->generic.row, 
-		     1, 1, &event->energy, &status)) return(status);
-  if (fits_write_col(ef->generic.fptr, TINT, ef->cxi, ef->generic.row, 
-		     1, 1, &event->xi, &status)) return(status);
-  if (fits_write_col(ef->generic.fptr, TINT, ef->cyi, ef->generic.row, 
-		     1, 1, &event->yi, &status)) return(status);
+  if (fits_write_col(ef->generic.fptr, TFLOAT, ef->ccharge, ef->generic.row, 
+		     1, 1, &event->charge, &status)) return(status);
+  if (fits_write_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 
+		     1, 1, &event->rawx, &status)) return(status);
+  if (fits_write_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 
+		     1, 1, &event->rawy, &status)) return(status);
 
   return(status);
 }
@@ -125,16 +125,16 @@ int CoMaEventFile_getNextRow(CoMaEventFile* ef, CoMaEvent* event)
   if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 1, 
 		    1, &event->time, &event->time, &anynul, &status)) 
     return(status);
-  event->energy = 0.;
-  if (fits_read_col(ef->generic.fptr, TLONG, ef->cenergy, ef->generic.row, 1, 
-		    1, &event->energy, &event->energy, &anynul, &status)) 
+  event->charge = 0.;
+  if (fits_read_col(ef->generic.fptr, TLONG, ef->ccharge, ef->generic.row, 1, 
+		    1, &event->charge, &event->charge, &anynul, &status)) 
     return(status);
-  event->xi = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->cxi, ef->generic.row, 1, 1, 
-		    &event->xi, &event->xi, &anynul, &status)) return(status);
-  event->yi = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->cyi, ef->generic.row, 1, 1, 
-		    &event->yi, &event->yi, &anynul, &status)) return(status);
+  event->rawx = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1, 
+		    &event->rawx, &event->rawx, &anynul, &status)) return(status);
+  event->rawy = 0;
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1, 
+		    &event->rawy, &event->rawy, &anynul, &status)) return(status);
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {

@@ -52,9 +52,9 @@ int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
   int x, y; // Detector RAWX and RAWY.
   if (getSquarePixel(det->pixels, impact->position, &x, &y)>0) {
     CoMaEvent event = { .time   = impact->time,
-			.energy = impact->energy,
-			.xi     = x,
-			.yi     = y };
+			.charge = impact->energy,
+			.rawx   = x,
+			.rawy   = y };
 
     // Add event to event file.
     status = addCoMaEvent2File(det->eventfile, &event);

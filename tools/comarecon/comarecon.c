@@ -83,7 +83,7 @@ int comarecon_main() {
       if(EXIT_SUCCESS!=status) break;
 
       // Add the event to the SquarePixels array.
-      detector_pixels->array[event.xi][event.yi].charge += 1.0;
+      detector_pixels->array[event.rawx][event.rawy].charge += 1.0;
 
     } // END of scanning the impact list.
     if (EXIT_SUCCESS!=status) break;

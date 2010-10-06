@@ -5,8 +5,10 @@
 /** Coded Mask specific event. */
 typedef struct {
   double time;
-  float energy; /**< Event energy [keV] */
-  int xi, yi; /**< Pixel coordinates starting at 0. */
+  /** Pixel charge represented by the photon energy [keV]. */
+  float charge; 
+  /** Pixel coordinates starting at 0. */
+  int rawx, rawy;
 } CoMaEvent;
 
 

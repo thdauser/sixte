@@ -25,6 +25,7 @@ dist_xml_DATA += wfi.full.xml
 dist_xml_DATA += wfi.iaat.xml
 dist_xml_DATA += epicpn.burst.xml
 dist_xml_DATA += epicpn.timing.xml
+dist_xml_DATA += comadet.xml
 
 ########### LIBRARIES #################
 

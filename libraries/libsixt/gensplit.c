@@ -87,6 +87,9 @@ void makeGenSplitEvents(const GenSplit* const split,
       return;
     }
     
+    // The single pixel receives the total photon energy.
+    fraction[0] = 1.;
+    
   } else if (GS_GAUSS==split->type) {  
     // Gaussian split model.
 
