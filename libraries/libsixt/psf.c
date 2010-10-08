@@ -419,7 +419,7 @@ PSF* newPSF(const char* filename, int* const status)
 			  comment, status)) break;
 	if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &(psf->data[index1][index2][index3].crval2), 
 			  comment, status)) break;
-	// TODO Check whether units of PSF image are pixels.
+	// TODO Check whether units of PSF image are given in [m].
 
 	// Get memory for the PSF_Item data.
 	psf->data[index1][index2][index3].data = (double **)

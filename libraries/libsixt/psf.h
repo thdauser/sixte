@@ -20,10 +20,13 @@
 typedef struct {
   double** data;   /**< Pointer to the PSF data array [x][y]. */
 
-  int naxis1, naxis2;    /**< Width of the image [pixel]. */
-  double cdelt1, cdelt2; /**< Width of one pixel [rad]. */
+  /** Width of the image [pixel]. */
+  int naxis1, naxis2;   
+  /** Width of one pixel [m]. */
+  double cdelt1, cdelt2;
   double crpix1, crpix2; /**< [pixel] */
-  double crval1, crval2; /**< [rad] */
+  /** Coordinate value of reference pixel [m]. */
+  double crval1, crval2; 
   
 } PSF_Item;
 
