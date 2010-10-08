@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<instrument>
+<telescope>
+<focallength value="12"/>
+<fov diameter="0.167"/>
+<psf filename="gravitas.psf.fits"/>
+</telescope>
+
+<detector type="gravitas" mode="fullframe">
+<dimensions xwidth="96" ywidth="96"/>
+<wcs xrpix="48.5" yrpix="48.5" xrval="0." yrval="0." xdelt="370.e-6" ydelt="370.e-6"/>
+<response filename="gravitas_12mFL_7tel_v1.rsp"/>
+<split type="GAUSS" par1="11.e-6"/>
+<eventfile template="geneventfile.tpl"/>
+
+<threshold_readout_lo_keV value="0."/>
+<threshold_event_lo_keV value="150.e-3"/>
+<threshold_split_lo_keV value="150.e-3"/>
+<readout mode="time">
+  <loop start="0" end="44" increment="4" variable="$i">
+    <wait time="4.0e-6"/>
+    <readoutline lineindex="47-$i" readoutindex="47-$i"/>
+    <readoutline lineindex="46-$i" readoutindex="46-$i"/>
+    <readoutline lineindex="45-$i" readoutindex="45-$i"/>
+    <readoutline lineindex="44-$i" readoutindex="44-$i"/>
+    <readoutline lineindex="48+$i" readoutindex="48+$i"/>    
+    <readoutline lineindex="49+$i" readoutindex="49+$i"/>    
+    <readoutline lineindex="50+$i" readoutindex="50+$i"/>    
+    <readoutline lineindex="51+$i" readoutindex="51+$i"/>    
+  </loop>
+</readout>
+</detector>
+</instrument>
