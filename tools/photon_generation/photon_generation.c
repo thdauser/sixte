@@ -622,9 +622,10 @@ int photon_generation_main()
   AttitudeCatalog* attitudecatalog=NULL;
   // Telescope data (like FOV diameter or focal length)
   struct Telescope telescope; 
-  // RMF & EBOUNDS
-  struct RMF* rmf=NULL;
-
+  // Detector data structure containing information about 
+  // the RMF & EBOUNDS.
+  GenDet* det=NULL;
+  
   // Data structure for the output to the photon list FITS file.
   PhotonListFile photonlistfile={.fptr=NULL};
 
@@ -634,69 +635,6 @@ int photon_generation_main()
   set_toolname("photon_generation");
   set_toolversion("0.01");
 
-  /*
-  // RM ->
-  kdNode* kdtree = NULL;
-
-  SourceList* list = (SourceList*)malloc(5*sizeof(SourceList));
-  list[0].location.x = 5.;
-  list[1].location.x = 3.;
-  list[2].location.x = 2.;
-  list[3].location.x = 6.;
-  list[4].location.x = 5.;
-  list[0].location.y = 10.;
-  list[1].location.y = -4.;
-  list[2].location.y = 2.;
-  list[3].location.y = 4.;
-  list[4].location.y = 3.5;
-  list[0].location.z = 0.;
-  list[1].location.z = 2.;
-  list[2].location.z = -1.;
-  list[3].location.z = 2.;
-  list[4].location.z = 1.;
-  
-  //  quicksortSourceList(list,0,4,0);
-  long count;
-  //  for(count=0; count<5; count++) {
-  //    printf("%lf %lf %lf\n", 
-  //	   list[count].location.x,
-  //	   list[count].location.y,
-  //	   list[count].location.z);
-  //  }
-
-  kdNode* tree = kdTreeBuild(list, 5, 0);
-  //  printf("leftleft: %lf %lf %lf\n", tree->left->left->location.x,
-  //	 tree->left->left->location.y, tree->left->left->location.z);
-  //  printf("left: %lf %lf %lf\n", tree->left->location.x,
-  //	 tree->left->location.y, tree->left->location.z);
-  //  printf("leftright: %d\n", tree->left->right);
-  //
-  //  printf("node: %lf %lf %lf\n", tree->location.x,
-  //	 tree->location.y, tree->location.z);
-  //
-  ////  printf("rightleft: %ld\n", tree->right->left);
-  //  printf("rightleft: %lf %lf %lf\n", tree->right->left->location.x,
-  //  	 tree->right->left->location.y, tree->right->left->location.z);
-  //  printf("right: %lf %lf %lf\n", tree->right->location.x,
-  //	 tree->right->location.y, tree->right->location.z);
-  //  printf("rightright: %d\n", tree->right->right);
-
-  SourceList* found = NULL;
-  long nelements   = 0;
-  Vector ref       = { .x=0., .y=0., .z=0. };
-  printf("status = %d\n", 
-	 kdTreeRangeSearch(tree, 0, &ref, 25., &found, &nelements));
-  
-  for (count=0; count<nelements; count++) {
-    printf("%ld/%ld: %lf %lf %lf\n", count+1, nelements,
-	   found[count].location.x, found[count].location.y, found[count].location.z);
-  }
-
-  freeKDTree(kdtree);
-
-  exit(0);
-  // <- RM
-  */
 
   do { // Beginning of ERROR HANDLING Loop.
 
@@ -704,7 +642,12 @@ int photon_generation_main()
 
     if((status=photon_generation_getpar(&parameters))) break;
     
-    telescope.fov_diameter = parameters.fov_diameter; // in [rad]
+    // Initialize the detector data structure.
+    det = newGenDet(parameters.xml_filename, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    telescope.fov_diameter = det->fov_diameter; // in [rad]
+    telescope.focal_length = det->focal_length;
 
     // Initialize HEADAS random number generator.
     HDmtInit(SIXT_HD_RANDOM_SEED);
@@ -713,10 +656,6 @@ int photon_generation_main()
     if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
 						   parameters.t0, parameters.timespan, 
 						   &status))) break;
-
-    // Read RMF and EBOUNDS from the given file.
-    rmf = loadRMF(parameters.rmf_filename, &status);
-    if (EXIT_SUCCESS!=status) break;
 
     // Open the source file to check the contents.
     headas_chat(5, "open FITS file '%s' searching for X-ray sources ...\n",
@@ -849,7 +788,7 @@ int photon_generation_main()
       					   &psc,
       					   attitudecatalog,
       					   telescope,
-      					   rmf,
+      					   det->rmf,
       					   parameters.t0, 
       					   parameters.timespan);
       if (EXIT_SUCCESS!=status) break;
@@ -860,7 +799,7 @@ int photon_generation_main()
 					      esf,
 					      attitudecatalog,
 					      telescope,
-					      rmf,
+					      det->rmf,
 					      parameters.t0, 
 					      parameters.timespan);
       if (EXIT_SUCCESS!=status) break;
@@ -870,7 +809,7 @@ int photon_generation_main()
 					  si,
 					  attitudecatalog,
 					  telescope,
-					  rmf,
+					  det->rmf,
 					  parameters.t0, 
 					  parameters.timespan);
       if (EXIT_SUCCESS!=status) break;
@@ -914,15 +853,15 @@ int photon_generation_getpar(struct Parameters* parameters)
   char msg[MAXMSG];           // Error message buffer.
   int status = EXIT_SUCCESS;  // Error status flag.
 
-  // Get the filename of the Attitude file (FITS file):
-  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
+  // Get the filename of the detector XML definition file.
+  if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the detector " 
+		   "XML definition file!\n", status);
   }
 
-  // Get the filename of the detector redistribution file (FITS file)
-  else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the detector" 
-		   "redistribution matrix file (RMF)!\n", status);
+  // Get the filename of the Attitude file (FITS file).
+  else if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
   }
 
   // Get the start time of the photon generation
@@ -933,11 +872,6 @@ int photon_generation_getpar(struct Parameters* parameters)
   // Get the timespan for the photon generation
   else if ((status = PILGetReal("timespan", &parameters->timespan))) {
     HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
-  }
-
-  // Get the diameter of the FOV (in arcmin)
-  else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
-    HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
   }
 
   // Determine the name of the file that contains the input sources (either
@@ -978,9 +912,6 @@ int photon_generation_getpar(struct Parameters* parameters)
   if (EXIT_SUCCESS!=status) return(status);
   // Set the photon list template file:
   strcat(parameters->photonlist_template, "/photonlist.tpl");
-
-  // Convert angles from [arc min] to [rad].
-  parameters->fov_diameter *= M_PI/(180.*60.);
 
   return(status);
 }

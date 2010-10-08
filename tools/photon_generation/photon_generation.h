@@ -28,21 +28,21 @@
 #include "genericdetector.h"
 #include "check_fov.h"
 #include "kdtree.h"
+#include "gendet.h"
 
 #define TOOLSUB photon_generation_main
 #include "headas_main.c"
 
 
 struct Parameters {
+  char xml_filename[MAXMSG];
   char attitude_filename[MAXMSG];
-  char rmf_filename[MAXMSG];
   char sources_filename[MAXMSG];
   char photonlist_filename[MAXMSG];
   char photonlist_template[MAXMSG];
   int overwrite_photonlist;
 
   double t0, timespan;
-  double fov_diameter;
 };
 
 
