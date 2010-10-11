@@ -7,7 +7,8 @@
 #include "gensplit.h"
 #include "genevent.h"
 #include "geneventfile.h"
-#include "genericdetector.h"
+#include "rmf.h"
+#include "arf.h"
 #include "impact.h"
 #include "clocklist.h"
 #include "psf.h"
@@ -47,12 +48,15 @@ typedef struct {
   /** Array of pointers to pixel lines. */
   GenDetLine** line;
 
-  /** Detector response matrix. The RSP file that is originally loaded
-      may also contain ARF contributions. But as they already have
+  /** Detector response matrix. The RMF file that is originally loaded
+      may also contain ARF contributions. But as these already have
       been taken into account in the generation of the input spectra
       for the X-ray sources, the ARF contributions have to be removed
       by normalizing the RSP matrix. */
   struct RMF* rmf;
+
+  /** Detector and telescope ARF containing the effective area. */
+  struct ARF* arf;
 
   /** Telescope PSF. */
   PSF* psf;

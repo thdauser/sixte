@@ -64,6 +64,7 @@ int xms_simulation_main() {
       .generic_inner = { .ccsigma = parameters.ccsigma_inner, 
 			 .pha_threshold = parameters.pha_threshold_inner,
 			 .energy_threshold = parameters.energy_threshold_inner,
+			 .arf_filename = NULL,
 			 .rmf_filename = parameters.rmf_filename_inner /* String address!! */ },
       .generic_outer = { .ccsigma = parameters.ccsigma_outer, 
 			 .pha_threshold = parameters.pha_threshold_outer,

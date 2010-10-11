@@ -48,7 +48,7 @@ int xms_pixtemp_main() {
 
       if ((1==event.array) && // Only events from the inner array.
 	  (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) {
-	fprintf(output_file, " %lf\t%lf\n", event.time, getEnergy(event.pha, rmf, 0));
+	fprintf(output_file, " %lf\t%lf\n", event.time, getEBOUNDSEnergy(event.pha, rmf, 0));
       }
 
     } // End of loop over all events in the event file

@@ -57,6 +57,7 @@ int wfi_simulation_main() {
       .generic = { .ccsigma = parameters.ccsigma, 
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
+		   .arf_filename = NULL,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
       .readout_directions = parameters.readout_directions,
       .line_readout_time  = parameters.line_readout_time,

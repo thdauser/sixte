@@ -43,7 +43,8 @@ int cleanupUniformDetectorBackground(UniformDetectorBackground* background)
 
 
 int createUniformDetectorBackgroundImpact(UniformDetectorBackground* background, 
-					  SquarePixels* pixels, struct RMF* rmf)
+					  SquarePixels* pixels, 
+					  const struct ARF* const arf)
 {
   // If no background is used, return without doing anything.
   if (0.==background->rate) return(EXIT_SUCCESS);
@@ -57,7 +58,7 @@ int createUniformDetectorBackgroundImpact(UniformDetectorBackground* background,
     (2.*sixt_get_random_number() -1.) * pixels->yoffset * pixels->ypixelwidth;
 
   // Determine the energy of the impact.
-  background->nextImpact.energy = photon_energy(&background->spectrum, rmf);
+  background->nextImpact.energy = photon_energy(&background->spectrum, arf);
 
   // Determine the time of the background event (impact).
   background->nextImpact.time += rndexp(1./(background->rate));;

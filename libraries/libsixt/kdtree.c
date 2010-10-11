@@ -63,7 +63,7 @@ void kdTreeRangeSearch(kdNode* node, int depth,
 		       Vector* ref, double min_align, 
 		       double time, double dt, 
 		       struct PhotonOrderedListEntry** pl,
-		       struct RMF* rmf,
+		       const struct ARF* const arf,
 		       int* status)
 {
   // Check if the kd-Tree exists.
@@ -73,7 +73,7 @@ void kdTreeRangeSearch(kdNode* node, int depth,
   kdnchecked++; // RM
   if (fabs(scalar_product(&node->source.location, ref)) > min_align) {
     kdnfound++;
-    create_PointSourcePhotons(&node->source, time, dt, pl, rmf);
+    create_PointSourcePhotons(&node->source, time, dt, pl, arf);
   }
 
   // Check if we are at a leaf.
@@ -101,7 +101,7 @@ void kdTreeRangeSearch(kdNode* node, int depth,
   // against current node.
   if (NULL!=near) {
     kdTreeRangeSearch(near, depth+1, ref, min_align,
-		      time, dt, pl, rmf, status);
+		      time, dt, pl, arf, status);
   } 
   // END of (NULL!=near)
 
@@ -114,7 +114,7 @@ void kdTreeRangeSearch(kdNode* node, int depth,
       // Move to the end of the linked list.
       // Append newly found entries.
       kdTreeRangeSearch(far, depth+1, ref, min_align,
-			time, dt, pl, rmf, status);
+			time, dt, pl, arf, status);
     }
   }
   // END of (NULL!=far)

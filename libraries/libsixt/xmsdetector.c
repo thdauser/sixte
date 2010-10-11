@@ -71,7 +71,7 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, xd->generic_inner.rmf, 0);
+  float charge = getEBOUNDSEnergy(channel, xd->generic_inner.rmf, 0);
   
   if (charge > 0.) {
     int x[4], y[4];
@@ -110,13 +110,13 @@ int addImpact2XMSDetector(XMSDetector* xd, Impact* impact)
 	// Determine the detector channel that corresponds to the charge fraction
 	// created by the incident photon in the regarded pixel.
 	if (1 == event.array) {
-	  event.pha = getChannel(charge * fraction[count], xd->generic_inner.rmf);
+	  event.pha = getEBOUNDSChannel(charge * fraction[count], xd->generic_inner.rmf);
 	  //                     |        |-> charge fraction due to split events
 	  //                     |-> charge created by incident photon
 	  pha_threshold = xd->generic_inner.pha_threshold;
 	  energy_threshold = xd->generic_inner.energy_threshold;
 	} else {
-	  event.pha = getChannel(charge * fraction[count], xd->generic_outer.rmf);
+	  event.pha = getEBOUNDSChannel(charge * fraction[count], xd->generic_outer.rmf);
 	  //                     |        |-> charge fraction due to split events
 	  //                     |-> charge created by incident photon
 	  pha_threshold = xd->generic_outer.pha_threshold;

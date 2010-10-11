@@ -49,7 +49,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     pointsourcecatalog.c extendedsources.c		\
 		     sourceimage.c photon.c spectrum.c fits_pha.c	\
 		     check_fov.c photonlistfile.c linlightcurve.c	\
-		     kdtree.c
+		     kdtree.c rmf.c arf.c
 
 
 ############ HEADERS #################
@@ -73,5 +73,5 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  pointsourcelist.c pointsourcecatalog.h		\
 		  extendedsources.h sourceimage.h photon.h spectrum.h	\
 		  fits_pha.h check_fov.h photonlistfile.h		\
-		  linlightcurve.h kdtree.h
+		  linlightcurve.h kdtree.h rmf.h arf.h
 

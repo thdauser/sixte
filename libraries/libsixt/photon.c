@@ -1,7 +1,8 @@
 #include "photon.h"
 
 
-float photon_energy(Spectrum* spectrum, struct RMF* rmf)
+float photon_energy(const Spectrum* const spectrum, 
+		    const struct ARF* const arf)
 {
   // Get a random PHA channel according to the given PHA distribution.
   float rand = (float)sixt_get_random_number();
@@ -27,9 +28,9 @@ float photon_energy(Spectrum* spectrum, struct RMF* rmf)
   }
 
   // Return an energy chosen randomly out of the determined PHA bin:
-  return(rmf->ChannelLowEnergy[lower] + 
-	 sixt_get_random_number()*(rmf->ChannelHighEnergy[lower]-
-				   rmf->ChannelLowEnergy[lower]));
+  return(arf->LowEnergy[lower] + 
+	 sixt_get_random_number()*(arf->HighEnergy[lower]-
+				   arf->LowEnergy[lower]));
 }
 
 
@@ -39,7 +40,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
 			      double dt /**< Time interval for photon generation. */,       
 			      /** Address of pointer to time-ordered photon list.*/
 			      struct PhotonOrderedListEntry** list_first,
-			      struct RMF* rmf)
+			      const struct ARF* const arf)
 {
   // Second pointer to photon list, that can be moved along the list,   
   // without loosing the first entry.
@@ -64,7 +65,7 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
     new_photon.direction = unit_vector(new_photon.ra, new_photon.dec); // REMOVE
 
     // Determine the energy of the new photon
-    new_photon.energy = photon_energy(ps->spectrum, rmf);
+    new_photon.energy = photon_energy(ps->spectrum, arf);
 
     // Determine the impact time of the photon according to the light
     // curve of the source.
@@ -131,7 +132,7 @@ int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
 				 double dt /**< Time interval for photon generation. */,       
 				 /** Address of pointer to time-ordered photon list.*/
 				 struct PhotonOrderedListEntry** list_first,
-				 struct RMF* rmf)
+				 const struct ARF* const arf)
 {
   // Second pointer to photon list, that can be moved along the list,   
   // without loosing the first entry.
@@ -202,7 +203,7 @@ int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
     calculate_ra_dec(new_photon.direction, &new_photon.ra, &new_photon.dec);
 
     // Determine the energy of the new photon
-    new_photon.energy = photon_energy(es->spectrum, rmf);
+    new_photon.energy = photon_energy(es->spectrum, arf);
 
     // Determine the impact time of the photon according to the light
     // curve of the source.

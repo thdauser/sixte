@@ -111,7 +111,7 @@ inline int readoutTimingccd(Timingccd* fd)
 
 	// Determine the detector channel that corresponds to the 
 	// charge stored in the detector pixel.
-	pha = getChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
+	pha = getEBOUNDSChannel(fd->pixels.array[x][y].charge, fd->generic.rmf);
 	
 	// The PHA channel should only be less than zero, when the photon 
 	// is lost, i.e., not detected at all. As the RSP is usually 
@@ -193,7 +193,7 @@ inline int readoutTimingccd(Timingccd* fd)
 		list[nlist].energy = 
 		  fd->pixels.array[x2][y2].charge * 1.e3; // [eV]
 		list[nlist].pha = 
-		  getChannel(fd->pixels.array[x2][y2].charge, fd->generic.rmf);
+		  getEBOUNDSChannel(fd->pixels.array[x2][y2].charge, fd->generic.rmf);
 
 		// Delete the pixel charge after it has been read out.
 		fd->pixels.array[x2][y2].charge = 0.;
@@ -272,7 +272,7 @@ int addImpact2EPICpn(EPICpn* ep, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, ep->generic.rmf, 0);
+  float charge = getEBOUNDSEnergy(channel, ep->generic.rmf, 0);
   
   if (charge > 0.) {
     int x[4], y[4];

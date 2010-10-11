@@ -37,7 +37,7 @@ typedef kdNode* kdTree;
 
 
 ////////////////////////////////////////////////////////////////////////
-//   Function declarations
+//   Function declarations.
 ////////////////////////////////////////////////////////////////////////
 
 
@@ -58,7 +58,7 @@ void kdTreeRangeSearch(kdNode* node, int depth,
 		       Vector* ref, double min_align, 
 		       double time, double dt, 
 		       struct PhotonOrderedListEntry** list_first,
-		       struct RMF* rmf,
+		       const struct ARF* const arf,
 		       int* status);
 
 /** Destructor. */

@@ -5,11 +5,9 @@
 #include "sixt_random.h"
 #include "gaussianchargecloud.h"
 #include "exponentialchargecloud.h"
+#include "rmf.h"
+#include "arf.h"
 
-#ifndef HEASP_H
-#define HEASP_H 1
-#include "heasp.h"
-#endif
 
 /** The GNU Scientific Library Errorfunction is used to calculate
     charge distribution of split events (assuming a Gaussian shape for
@@ -18,10 +16,6 @@
 
 /** This value represents an invalid pixel. */
 #define INVALID_PIXEL (-1)
-/** Normalize the RSP such that it only contains the RMF. The ARF has
-    already been taken into account in the generation of the input
-    spectra of the X-ray sources. */
-#define NORMALIZE_RMF (1)
 
 
 /////////////////////////////////////////////////////////////////
@@ -55,8 +49,11 @@ typedef struct {
       may also contain ARF contributions. But as they already have
       been taken into account in the generation of the input spectra
       for the X-ray sources, the ARF contributions have to be removed
-      by normalizing the RSP matrix. */
+      by normalizing the RSP matrix to obtain an RMF. */
   struct RMF* rmf;
+
+  /** Detector ARF. */
+  struct ARF* arf;
 
 } GenericDetector;
 
@@ -71,6 +68,7 @@ struct GenericDetectorParameters {
   float energy_threshold;
 
   char* rmf_filename;
+  char* arf_filename;
 };
 
 
@@ -87,38 +85,6 @@ int initGenericDetector(GenericDetector*, struct GenericDetectorParameters*);
 /** Clean up the GenericDetector data structure. Release the allocated
     memory. */
 void cleanupGenericDetector(GenericDetector* gd);
-
-/** Load an RMF/RSP matrix and the corresponding EBOUNDS from a
-    response file.  If the compiler flag '-DNORMALIZE_RMF' is set, the
-    RSP is renormalized to an RMF in such a way that the sum of each
-    matrix row/column(?) is 1. */
-struct RMF* loadRMF(char* filename, int* status);
-
-/** Destructor for the RMF data structure. Releases the allocated
-    memory. Warning: As there is no internal destructor for the RMF
-    data structure in the HEASP library, the memory allocated by the
-    function ReadRMFMatrix is not realeased. */
-void freeRMF(struct RMF* rmf);
-
-/** Determines the PHA channel corresponding to a given energy
-    according to the EBOUNDS table of the detector response.  The
-    routine performs a binary search to obtain the PHA channel the
-    specified energy lies within. The energy has to be given in the
-    same unit as the EBOUNDS are, which usually is [keV]. Note that
-    the routine is NOT doing an RMF randomization of the measured
-    channel. */
-long getChannel(const float energy, const struct RMF* const rmf);
-
-/** Determine the charge corresponding to a particular PHA channel
-    according to the EBOUNDS table.  The input channel must have the
-    same offset as in the EBOUNDS table. I.e. if the first channel in
-    the EBOUNDS has the number 1, the numbering starts at 1. If the
-    first channel has the number 0, the numbering starts at 0.  The
-    returned energy is given in the same units as the EBOUNDS,
-    (usually [keV]). The boundary flag determines, whether the lower
-    (-1), randomized mean (0), or upper (else) boundary of the energy
-    bin are returned. */
-float getEnergy(long channel, const struct RMF* const rmf, const int boundary);
 
 /** Calculates the Gaussian integral using the GSL complementary error
     function. */

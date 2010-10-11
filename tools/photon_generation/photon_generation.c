@@ -121,7 +121,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 				  PointSourceCatalog* psc,
 				  AttitudeCatalog* ac,
 				  struct Telescope telescope,
-				  struct RMF* rmf,
+				  const struct ARF* const arf,
 				  double t0, double timespan)
 {
   int status = EXIT_SUCCESS;
@@ -183,7 +183,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     // Determine all sources CLOSE TO the FoV and generate
     // photons for these sources.
     generateFoVPointSourcePhotons(psc, &telescope.nz, close_fov_min_align,
-				  time, dt, &photon_list, rmf, &status);
+				  time, dt, &photon_list, arf, &status);
     if (EXIT_SUCCESS!=status) break;
     // END of photon generation.
 
@@ -218,7 +218,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
 				     ExtendedSourceFile* esf,
 				     AttitudeCatalog* ac,
 				     struct Telescope telescope,
-				     struct RMF* rmf,
+				     const struct ARF* const arf,
 				     double t0, double timespan)
 {
   int status = EXIT_SUCCESS;
@@ -300,7 +300,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
 	    
 	// The source is inside the FOV  => create photons:
 	if ((status=create_ExtendedSourcePhotons(&(esc->sources[source_counter]), 
-						 time, dt, &photon_list, rmf))
+						 time, dt, &photon_list, arf))
 	    !=EXIT_SUCCESS) break;
 	    
       } // END of check if source is close to the FoV
@@ -337,7 +337,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 				 SourceImage* si,
 				 AttitudeCatalog* ac,
 				 struct Telescope telescope,
-				 struct RMF* rmf,
+				 const struct ARF* arf,
 				 double t0, double timespan)
 {
   int status = EXIT_SUCCESS;
@@ -463,7 +463,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 	  // Determine the energy of the new photon according to 
 	  // the default spectrum.
 	  new_photon.energy = 
-	    photon_energy(si->spectrumstore.spectrum, rmf);
+	    photon_energy(si->spectrumstore.spectrum, arf);
 
 	  // Insert photon to the global photon list:
 	  status=insert_Photon2TimeOrderedList(&photon_list, &list_current, 
@@ -623,7 +623,7 @@ int photon_generation_main()
   // Telescope data (like FOV diameter or focal length)
   struct Telescope telescope; 
   // Detector data structure containing information about 
-  // the RMF & EBOUNDS.
+  // the ARF energy bins.
   GenDet* det=NULL;
   
   // Data structure for the output to the photon list FITS file.
@@ -788,7 +788,7 @@ int photon_generation_main()
       					   &psc,
       					   attitudecatalog,
       					   telescope,
-      					   det->rmf,
+      					   det->arf,
       					   parameters.t0, 
       					   parameters.timespan);
       if (EXIT_SUCCESS!=status) break;
@@ -799,7 +799,7 @@ int photon_generation_main()
 					      esf,
 					      attitudecatalog,
 					      telescope,
-					      det->rmf,
+					      det->arf,
 					      parameters.t0, 
 					      parameters.timespan);
       if (EXIT_SUCCESS!=status) break;
@@ -809,7 +809,7 @@ int photon_generation_main()
 					  si,
 					  attitudecatalog,
 					  telescope,
-					  det->rmf,
+					  det->arf,
 					  parameters.t0, 
 					  parameters.timespan);
       if (EXIT_SUCCESS!=status) break;

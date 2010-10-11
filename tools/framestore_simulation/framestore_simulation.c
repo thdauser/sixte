@@ -76,7 +76,8 @@ int framestore_simulation_main() {
       { .ccsigma          = parameters.ccsigma, 
 	.pha_threshold    = parameters.pha_threshold,
 	.energy_threshold = parameters.energy_threshold,
-	.rmf_filename     = parameters.rmf_filename /* String address!! */ 
+	.rmf_filename     = parameters.rmf_filename, /* String address!! */ 
+	.arf_filename     = parameters.arf_filename  /* String address!! */ 
       },
       .integration_time   = parameters.integration_time,
       .t0                 = parameters.t0,
@@ -186,7 +187,7 @@ int framestore_simulation_main() {
 	    if(EXIT_SUCCESS!=status) break;
 	    // Create a new background event.
 	    createUniformDetectorBackgroundImpact(&background, fd->pixels, 
-						  fd->generic.rmf);
+						  fd->generic.arf);
 	  }
 	  if(EXIT_SUCCESS!=status) break;
 	  // Jump to the next interval where cosmic photons arrive at the detector.
@@ -205,7 +206,7 @@ int framestore_simulation_main() {
 	  if(EXIT_SUCCESS!=status) break;
 	  // Create a new background event.
 	  createUniformDetectorBackgroundImpact(&background, fd->pixels, 
-						fd->generic.rmf);
+						fd->generic.arf);
 	}
 	if(EXIT_SUCCESS!=status) break;
       }	// END of inserting background events.
@@ -314,10 +315,14 @@ int getpar(struct Parameters* parameters)
     return(status);
   }
   
-  // Get the name of the detector redistribution file (FITS file)
+  // Get the name of the detector RMF (FITS file)
   else if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
-    HD_ERROR_THROW("Error reading the name of the detector" 
-		   "redistribution matrix file (RMF)!\n", status);
+    HD_ERROR_THROW("Error reading the name of the detector RMF!\n", status);
+  }
+
+  // Get the name of the detector ARF (FITS file)
+  else if ((status = PILGetFname("arf_filename", parameters->arf_filename))) {
+    HD_ERROR_THROW("Error reading the name of the detector ARF!\n", status);
   }
 
   // Get the background count rate

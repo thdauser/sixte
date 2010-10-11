@@ -9,6 +9,7 @@
 #include "impact.h"
 #include "impactlistfile.h"
 #include "uniformdetectorbackground.h"
+#include "arf.h"
 
 #define TOOLSUB framestore_simulation_main
 #include "headas_main.c"
@@ -22,6 +23,7 @@
 struct Parameters {
   char impactlist_filename[MAXMSG];
   char rmf_filename[MAXMSG];
+  char arf_filename[MAXMSG];
   char eventlist_filename[MAXMSG];
   char eventlist_template[MAXMSG];
   double t0;

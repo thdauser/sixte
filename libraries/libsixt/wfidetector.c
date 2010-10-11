@@ -106,7 +106,7 @@ int addImpact2WFIDetector(WFIDetector* wd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, wd->generic.rmf, 0);
+  float charge = getEBOUNDSEnergy(channel, wd->generic.rmf, 0);
   
   if (charge > 0.) {
     int x[4], y[4];
@@ -218,8 +218,8 @@ static inline int readoutLinesWFIDetector(WFIDetector* wd)
 	  // Determine the detector channel that corresponds to the charge stored
 	  // in the detector pixel.
 	  WFIEvent event = {
-	    .pha = getChannel(wd->pixels->array[x][wd->readout_lines[lineindex]].charge, 
-			      wd->generic.rmf)
+	    .pha = getEBOUNDSChannel(wd->pixels->array[x][wd->readout_lines[lineindex]].charge, 
+				     wd->generic.rmf)
 	  };
 
 	  // Check lower threshold (PHA and energy):

@@ -6,7 +6,7 @@
 <wcs xrpix="32.5" yrpix="190.5" xrval="0." yrval="0." xdelt="150.e-6" ydelt="150.e-6"/>
 <cte value="1"/>
 <!-- TODO -->
-<response filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
+<rmf filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
 <!-- <split type="gauss" par1="11.e-6"/> -->
 <!-- TODO -->
 <threshold_readout_lo_keV value="0."/>

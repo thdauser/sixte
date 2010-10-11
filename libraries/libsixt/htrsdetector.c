@@ -90,7 +90,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEnergy(channel, hd->generic.rmf, 0);
+  float charge = getEBOUNDSEnergy(channel, hd->generic.rmf, 0);
   
   if (charge > 0.) {
 
@@ -127,7 +127,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 
 	// Determine the detector channel that corresponds to the charge 
 	// fraction created by the incident photon in the regarded pixel.
-	event.pha = getChannel(charge * fraction[pixel_counter], hd->generic.rmf);
+	event.pha = getEBOUNDSChannel(charge * fraction[pixel_counter], hd->generic.rmf);
 	//                     |        |-> charge fraction due to split events
 	//                     |-> charge created by incident photon
       
@@ -195,7 +195,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	
       // Determine the detector channel that corresponds to the charge fraction
       // created by the incident photon in the regarded pixel.
-      event.pha = getChannel(charge, hd->generic.rmf);
+      event.pha = getEBOUNDSChannel(charge, hd->generic.rmf);
       //                     |-> charge created by incident photon
       
       // Check lower thresholds (PHA and energy):

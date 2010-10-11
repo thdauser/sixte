@@ -25,7 +25,7 @@
 #include "astrosources.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
-#include "genericdetector.h"
+#include "arf.h"
 #include "check_fov.h"
 #include "kdtree.h"
 #include "gendet.h"

@@ -119,6 +119,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->split  =NULL;
   det->line=NULL;
   det->rmf =NULL;
+  det->arf =NULL;
   det->psf =NULL;
   det->vignetting=NULL;
   det->coded_mask=NULL;
@@ -484,7 +485,14 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 
   if (NULL==det->rmf) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for response file of GenDet!\n", 
+    HD_ERROR_THROW("Error: No specification found for response file (RMF/RSP)!\n", 
+		   *status);
+    return;    
+  }
+
+  if (NULL==det->arf) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No specification found for ARF!\n", 
 		   *status);
     return;    
   }
@@ -550,12 +558,14 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   // its value is overwritten by the charge corresponding to the PHA 
   // specification. I.e., the PHA thresholds have a higher priority.
   if (det->threshold_readout_lo_PHA>-1) {
-    det->threshold_readout_lo_keV = getEnergy(det->threshold_readout_lo_PHA, det->rmf, -1);
+    det->threshold_readout_lo_keV = 
+      getEBOUNDSEnergy(det->threshold_readout_lo_PHA, det->rmf, -1);
     headas_chat(3, "set lower readout threshold to %.3lf keV (PHA %ld)\n", 
 		det->threshold_readout_lo_keV, det->threshold_readout_lo_PHA);
   }
   if (det->threshold_readout_up_PHA>-1) {
-    det->threshold_readout_up_keV = getEnergy(det->threshold_readout_up_PHA, det->rmf,  1);
+    det->threshold_readout_up_keV = 
+      getEBOUNDSEnergy(det->threshold_readout_up_PHA, det->rmf,  1);
     headas_chat(3, "set upper readout threshold to %.3lf keV (PHA %ld)\n", 
 		det->threshold_readout_up_keV, det->threshold_readout_up_PHA);
   }
@@ -678,12 +688,21 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	  }
 	}
 
-	else if (!strcmp(Uelement, "RESPONSE")) {
+	else if (!strcmp(Uelement, "RMF")) {
 	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the detector response file.
+	    // Load the detector response file (RSP/RMF).
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
 	    xmlparsedata->det->rmf = loadRMF(buffer, &xmlparsedata->status);
+	  }
+	}
+
+	else if (!strcmp(Uelement, "ARF")) {
+	  if (!strcmp(Uattribute, "FILENAME")) {
+	    // Load the detector ARF.
+	    char buffer[MAXMSG];
+	    strcpy(buffer, attr[i+1]);
+	    xmlparsedata->det->arf = loadARF(buffer, &xmlparsedata->status);
 	  }
 	}
       
@@ -893,7 +912,7 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy [keV] which corresponds to the PHA channel according 
   // to the EBOUNDS table.
-  float charge = getEnergy(channel, det->rmf, 0);
+  float charge = getEBOUNDSEnergy(channel, det->rmf, 0);
   assert(charge>=0.);
 
   // Create split events.
@@ -994,7 +1013,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     }
 
     // Apply the detector response.
-    event.pha = getChannel(event.charge, det->rmf);
+    event.pha = getEBOUNDSChannel(event.charge, det->rmf);
 
     // Store the additional information.
     event.rawy  = readoutindex;

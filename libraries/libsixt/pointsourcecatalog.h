@@ -56,7 +56,7 @@ void generateFoVPointSourcePhotons(PointSourceCatalog* psc,
 				   Vector* ref, double min_align, 
 				   double time, double dt, 
 				   struct PhotonOrderedListEntry** list_first,
-				   struct RMF* rmf,
+				   const struct ARF* const arf,
 				   int* status);
 
 /** Clear the PointSourceCatalog. */

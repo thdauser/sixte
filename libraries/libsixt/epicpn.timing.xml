@@ -6,7 +6,7 @@
 <wcs xrpix="32.5" yrpix="100.5" xrval="0." yrval="0." xdelt="150.e-6" ydelt="150.e-6"/>
 <cte value="1"/>
 <!-- TODO -->
-<response filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
+<rmf filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
 <!-- <split type="gauss" par1="11.e-6"/> -->
 <!-- TODO -->
 <threshold_readout_lo_keV value="0."/>
@@ -22,8 +22,8 @@
       <wait time="0.72e-6"/>
       <lineshift/>
     </loop>
-		<wait time="22.3e-6"/><readoutline lineindex="0" readoutindex="0"/>
-		<!-- shift and readout time are taken from the PhD Thesis of M. Kirsch (2000 -->
+    <wait time="22.3e-6"/><readoutline lineindex="0" readoutindex="0"/>
+    <!-- shift and readout time are taken from the PhD Thesis of M. Kirsch (2000 -->
   </loop>
 </readout>
 </detector>

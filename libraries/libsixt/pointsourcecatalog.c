@@ -164,14 +164,14 @@ void generateFoVPointSourcePhotons(PointSourceCatalog* psc,
 				   Vector* ref, double min_align, 
 				   double time, double dt, 
 				   struct PhotonOrderedListEntry** pl,
-				   struct RMF* rmf,
+				   const struct ARF* const arf,
 				   int* status)
 {
 #ifdef POINTSOURCE_KDTREE
   kdnfound=0; // RM
   kdnchecked=0;
   kdTreeRangeSearch(psc->kdtree, 0, ref, min_align, 
-		    time, dt, pl, rmf, status);
+		    time, dt, pl, arf, status);
 #else
 
   long count;
@@ -181,7 +181,7 @@ void generateFoVPointSourcePhotons(PointSourceCatalog* psc,
        > min_align) {
 
       *status=create_PointSourcePhotons(&psc->psl->sources[count],
-					time, dt, pl, rmf);
+					time, dt, pl, arf);
       if (EXIT_SUCCESS!=*status) return;
     }
     // END of check if source is close to the FoV.
