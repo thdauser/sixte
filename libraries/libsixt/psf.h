@@ -76,7 +76,8 @@ PSF* newPSF(const char* const filename, const float focal_length,
     not fall onto the detector, the function returns '0'. The output
     detector position is stored in [m] in the first 2 parameters of
     the function. */
-int get_psf_pos(/** Output: coordinates of the photon on the detector ([m]). */
+int get_psf_pos(/** Output: coordinates of the photon on the detector
+		    ([m]). */
 		struct Point2d* const position, 
 		/** Incident photon. */
 		const Photon photon, 
@@ -94,9 +95,11 @@ int get_psf_pos(/** Output: coordinates of the photon on the detector ([m]). */
 /** Release the memory of the PSF storage. */
 void destroyPSF(PSF** const psf);
 
-// Save the data contained in the PSF storage to images in a FITS file
-// according to the OGIP standards.
-int save_psf_image(PSF* psf, const char* filename, int* status);
+/** Save the data contained in the PSF data struct to one or several
+    image extensions in a FITS file following the OGIP standards for
+    2-dimensional PSFs. */
+int savePSFImage(const PSF* const psf, const char* const filename, 
+		 int* const status);
 
 
 #endif /* PSF_H */

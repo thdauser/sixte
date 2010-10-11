@@ -282,7 +282,7 @@ int psfgen_main()
     // Create FITS file and store the PSF data (for all off-axis angles and 
     // energies in the same file).
     remove(psf_filename);
-    save_psf_image(psf, psf_filename, &status);
+    savePSFImage(psf, psf_filename, &status);
 
   } while (0); // END of outer Error handling loop
 

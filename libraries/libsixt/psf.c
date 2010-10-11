@@ -541,7 +541,7 @@ PSF* newPSF(const char* const filename, const float focal_length,
 
 
 
-int save_psf_image(PSF* psf, const char *filename, int *status)
+int savePSFImage(const PSF* const psf, const char* const filename, int* const status)
 {
   int nhdus=0; // Number of HDUs.
   double *sub_psf=NULL;
@@ -552,8 +552,9 @@ int save_psf_image(PSF* psf, const char *filename, int *status)
     // Create a new FITS-file:
     if (fits_create_file(&fptr, filename, status)) break;
 
-    // Loop over the different PSFs in the storage:
-    int index1, index2, index3; // Counters for energies, off-axis angles, and azimuthal angles.
+    // Loop over the different PSFs in the storage.
+    // Counters for energies, off-axis angles, and azimuthal angles.
+    int index1, index2, index3; 
     for (index1=0; index1<psf->nenergies; index1++) {
       for (index2=0; index2<psf->nthetas; index2++) {
 	for (index3=0; index3<psf->nphis; index3++) {
@@ -614,8 +615,8 @@ int save_psf_image(PSF* psf, const char *filename, int *status)
 	  if (fits_write_key(fptr, TSTRING, "HDUCLAS4", "NET",
 			     "", status)) break;
       
-	  if (fits_write_key(fptr, TSTRING, "CUNIT1", "pixel", "", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "CUNIT2", "pixel", "", status)) break;
+	  if (fits_write_key(fptr, TSTRING, "CUNIT1", "m", "", status)) break;
+	  if (fits_write_key(fptr, TSTRING, "CUNIT2", "m", "", status)) break;
 	  double dbuffer = psf->data[index1][index2][index3].naxis1*0.5;
 	  if (fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
 			     "X axis reference pixel", status)) break;
@@ -626,11 +627,13 @@ int save_psf_image(PSF* psf, const char *filename, int *status)
 			     "coord of X ref pixel", status)) break;
 	  if (fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
 			     "coord of Y ref pixel", status)) break;
-	  if (fits_write_key(fptr, TDOUBLE, "CDELT1", &psf->data[index1][index2][index3].cdelt1, 
+	  if (fits_write_key(fptr, TDOUBLE, "CDELT1", 
+			     &psf->data[index1][index2][index3].cdelt1, // [m]
 			     "X axis increment", status)) break;
-	  if (fits_write_key(fptr, TDOUBLE, "CDELT2", &psf->data[index1][index2][index3].cdelt2, 
+	  if (fits_write_key(fptr, TDOUBLE, "CDELT2", 
+			     &psf->data[index1][index2][index3].cdelt2, // [m]
 			     "Y axis increment", status)) break;
-      
+	  
 	  dbuffer = 0.0;
 	  if (fits_write_key(fptr, TDOUBLE, "BACKGRND", &dbuffer, 
 			     "background count rate per pixel", status)) break;
