@@ -1,10 +1,3 @@
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
-
 #include "sixt.h"
 
 // GNU scientific library: error function (calculation of gaussian integral)
@@ -22,16 +15,21 @@
 int psfgen_main()
 {
   PSF* psf=NULL;
-  char psf_filename[FILENAME_LENGTH];   // output file (FITS file)
-  double focal_length; // in [m]
-  double hew;          // HEW of on-axis Gaussian [deg]
+  // Output file (FITS file)
+  char psf_filename[FILENAME_LENGTH];
+  double focal_length; // [m]
+  // HEW of on-axis Gaussian [deg].
+  double hew;          
+  // Number of pixels along one edge of the (square) PSF image.
   int psf_width;
   double psf_pixelwidth;
-	double rc;
-	double alpha;
+  double rc;
+  double alpha;
 
-  char msg[MAXMSG];         // buffer for error output messages
-  int status=EXIT_SUCCESS;  // error report status
+  // Buffer for error output messages.
+  char msg[MAXMSG];        
+  // Error status.
+  int status=EXIT_SUCCESS;  
 
 
   // HEATOOLs: register program
@@ -79,7 +77,7 @@ int psfgen_main()
       HD_ERROR_THROW(msg,status);
       break;
     }
-    if (type == 1) {  // Simple Gauss PSF
+    if (type == 1) {  // Simple Gaussian PSF
       if ((status = PILGetReal("hew", &hew))) {
 	sprintf(msg, "Error reading the HEW!\n");
 	HD_ERROR_THROW(msg,status);
@@ -92,70 +90,65 @@ int psfgen_main()
 
     } // END of Simple Gauss PSF (type==1)
     
-    else if (type == 2) { // HTRS hexagonal PSF
-
-    } // END of HTRS hexagonal PSF (type==2)
-
-		else if (type == 3) { // King profile for pn Camera
-			double rc_a, rc_b, rc_c, rc_d = 0.;
-			double alpha_x, alpha_y, alpha_z, alpha_w = 0.;
-
-			if ((status = PILGetReal("rc_a", &rc_a))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-			if ((status = PILGetReal("rc_b", &rc_b))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-			if ((status = PILGetReal("rc_c", &rc_c))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-			if ((status = PILGetReal("rc_d", &rc_d))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-			if ((status = PILGetReal("alpha_x", &alpha_x))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-			if ((status = PILGetReal("alpha_y", &alpha_y))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-			if ((status = PILGetReal("alpha_z", &alpha_z))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-			if ((status = PILGetReal("alpha_w", &alpha_w))) {
-				sprintf(msg, "Error reading the King parameter file!\n");
-				HD_ERROR_THROW(msg,status);
-				break;
-			}
-
-			double Energy = 1.5;
-			double Theta = 0.;
-
-			rc = rc_a + rc_b*Energy + rc_c*Theta + rc_d*Energy*Theta;
-			alpha = alpha_x + alpha_y*Energy + alpha_z*Theta + alpha_w*Energy*Theta; 
-			printf("rc is %f and alpha is %f\n", rc, alpha);
- 
-			psf->nenergies = 1;
+    else if (type == 3) { // King profile for pn Camera
+      double rc_a, rc_b, rc_c, rc_d = 0.;
+      double alpha_x, alpha_y, alpha_z, alpha_w = 0.;
+      
+      if ((status = PILGetReal("rc_a", &rc_a))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("rc_b", &rc_b))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("rc_c", &rc_c))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("rc_d", &rc_d))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("alpha_x", &alpha_x))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("alpha_y", &alpha_y))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("alpha_z", &alpha_z))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("alpha_w", &alpha_w))) {
+	sprintf(msg, "Error reading the King parameter file!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      
+      double Energy = 1.5;
+      double Theta = 0.;
+      
+      rc = rc_a + rc_b*Energy + rc_c*Theta + rc_d*Energy*Theta;
+      alpha = alpha_x + alpha_y*Energy + alpha_z*Theta + alpha_w*Energy*Theta; 
+      printf("rc is %f and alpha is %f\n", rc, alpha);
+      
+      psf->nenergies = 1;
       psf->nthetas   = 1;
       psf->nphis     = 1;
-
-
-		} // End of type 3, King profile
+      
+    } // End of type 3, King profile
 			
-			else { // invalid PSF type
+    else { // invalid PSF type
       status = EXIT_FAILURE;
       sprintf(msg, "Error: Invalid PSF type!\n");
       HD_ERROR_THROW(msg,status);
@@ -185,12 +178,12 @@ int psfgen_main()
 		psf->data[count1][count2][count3].cdelt1 = psf_pixelwidth;
 		psf->data[count1][count2][count3].cdelt2 = psf_pixelwidth;
 
-		psf->data[count1][count2][count3].data = (double **) 
-		  malloc(psf->data[count1][count2][count3].naxis1 * sizeof(double **));
+		psf->data[count1][count2][count3].data = (double**) 
+		  malloc(psf->data[count1][count2][count3].naxis1 * sizeof(double**));
 		if (psf->data[count1][count2][count3].data) {
 		  for (xcount=0; xcount<psf->data[count1][count2][count3].naxis1; xcount++) {
 		    psf->data[count1][count2][count3].data[xcount] = 
-		      (double *) malloc(psf->data[count1][count2][count3].naxis2 * sizeof(double));
+		      (double*)malloc(psf->data[count1][count2][count3].naxis2 * sizeof(double));
 		    if (!psf->data[count1][count2][count3].data[xcount]) {
 		      status = EXIT_FAILURE;
 		      break;
@@ -207,7 +200,7 @@ int psfgen_main()
       }
       if (EXIT_SUCCESS!=status) break;
     } else { status = EXIT_FAILURE; }
-    // Check if all necessary memory was allocated successfully:
+    // Check if all necessary memory has been allocated successfully:
     if (status != EXIT_SUCCESS) {
       HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
       break;
@@ -218,74 +211,70 @@ int psfgen_main()
 
     // --- PSF data generation ---
 
-		if (type == 1) {
-			// Create simple Gaussian PSF with a given HEW
-			psf->energies = (double*)malloc(sizeof(double));
-			psf->thetas   = (double*)malloc(sizeof(double));
-			psf->phis     = (double*)malloc(sizeof(double));
-			if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
-				HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
-				break;
-			}
-			psf->energies[0] = 1.;
-			psf->thetas[0]   = 0.;
-			psf->phis[0]     = 0.;
+    if (type == 1) {
+      // Create a simple Gaussian PSF with a given HEW.
+      psf->energies = (double*)malloc(sizeof(double));
+      psf->thetas   = (double*)malloc(sizeof(double));
+      psf->phis     = (double*)malloc(sizeof(double));
+      if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
+	HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+	break;
+      }
+      psf->energies[0] = 1.;
+      psf->thetas[0]   = 0.;
+      psf->phis[0]     = 0.;
 
-			// Fill the PSF array with a 2D Gaussian distribution.
-			double sigma = hew*M_PI/180.  // sigma in detector pixels
-				/(2.*sqrt(2.*log(2.))) 
-				/atan(psf->data[0][0][0].cdelt1/focal_length);;  
-			headas_chat(5, "PSF Sigma: %.2lf pixel\n", sigma);
-			double x, y;
-			for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
-				for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
-					x = (double)(count1-psf->data[0][0][0].naxis1/2);
-					y = (double)(count2-psf->data[0][0][0].naxis2/2);
-					psf->data[0][0][0].data[count1][count2] = 
-						(gsl_sf_erf_Q(x/sigma) - gsl_sf_erf_Q((x+1.)/sigma))* 
-						(gsl_sf_erf_Q(y/sigma) - gsl_sf_erf_Q((y+1.)/sigma));
-				}
-			}
-		}
-		else if (type == 3) {
-			// Create a PSF with the King Profile with rc, the King core radius and alpha, the King slope
-			psf->energies = (double*)malloc(sizeof(double));
-			psf->thetas   = (double*)malloc(sizeof(double));
-			psf->phis     = (double*)malloc(sizeof(double));
-			if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
-				HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
-				break;
-			}
-			psf->energies[0] = 1.;
-			psf->thetas[0]   = 0.;
-			psf->phis[0]     = 0.;
-			
-			double x, y = 0.;
-			double norm = 0.;
-			for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
-				for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
-					x = (double)(count1-psf->data[0][0][0].naxis1/2);
-					y = (double)(count2-psf->data[0][0][0].naxis2/2);
-					psf->data[0][0][0].data[count1][count2] =
-						1/(pow(1+pow(sqrt(pow(x,2)+pow(y,2))/(rc/4.1),2),alpha));//*1/(pow(1+pow(y/rc,2),alpha));
-					norm = norm + psf->data[0][0][0].data[count1][count2];
-
-				}
-			}
-			printf("The norm is %f\n", norm);
-			for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
-				for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
-						psf->data[0][0][0].data[count1][count2] /= norm;
-				}
-			}
-
-		}
-		else {
-			status = EXIT_FAILURE;
-      sprintf(msg, "Error: Invalid PSF type!\n");
-      HD_ERROR_THROW(msg,status);
-      break;
-		}
+      // Fill the PSF array with a 2D Gaussian distribution.
+      // Determine sigma in unit of [detector pixels].
+      double sigma = 
+	hew*M_PI/180.          // [rad]
+	/(2.*sqrt(2.*log(2.))) // HEW -> sigma
+	/atan(psf->data[0][0][0].cdelt1/focal_length); // [rad] -> [detector pixels]
+      headas_chat(5, "PSF Sigma: %.2lf pixel\n", sigma);
+      double x, y;
+      for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
+	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
+	  x = (double)(count1-psf->data[0][0][0].naxis1/2);
+	  y = (double)(count2-psf->data[0][0][0].naxis2/2);
+	  psf->data[0][0][0].data[count1][count2] = 
+	    (gsl_sf_erf_Q(x/sigma) - gsl_sf_erf_Q((x+1.)/sigma))* 
+	    (gsl_sf_erf_Q(y/sigma) - gsl_sf_erf_Q((y+1.)/sigma));
+	}
+      }
+    }
+    else if (type == 3) {
+      // Create a PSF with the King Profile with rc, the King core radius and alpha, the King slope
+      psf->energies = (double*)malloc(sizeof(double));
+      psf->thetas   = (double*)malloc(sizeof(double));
+      psf->phis     = (double*)malloc(sizeof(double));
+      if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
+	HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+	break;
+      }
+      psf->energies[0] = 1.;
+      psf->thetas[0]   = 0.;
+      psf->phis[0]     = 0.;
+      
+      double x, y = 0.;
+      double norm = 0.;
+      for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
+	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
+	  x = (double)(count1-psf->data[0][0][0].naxis1/2);
+	  y = (double)(count2-psf->data[0][0][0].naxis2/2);
+	  psf->data[0][0][0].data[count1][count2] =
+	    1/(pow(1+pow(sqrt(pow(x,2)+pow(y,2))/(rc/4.1),2),alpha));//*1/(pow(1+pow(y/rc,2),alpha));
+	  norm = norm + psf->data[0][0][0].data[count1][count2];
+	  
+	}
+      }
+      printf("The norm is %f\n", norm);
+      for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
+	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
+	  psf->data[0][0][0].data[count1][count2] /= norm;
+	}
+      }
+    }
+    // END of which PSF type.
 
     // --- END of PSF data generation ---
 
