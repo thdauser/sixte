@@ -174,7 +174,9 @@ void destroyPSF(PSF** const psf)
 /** Add a double value to a list. Before adding the value, check
     whether it is already in the list. In that case it doesn't have to
     be added. The number of list entries is modified appropriately. */
-static void addDValue2List(double value, double** list, int* nvalues, 
+static void addDValue2List(const double value, 
+			   double** const list, 
+			   int* const nvalues, 
 			   int* const status)
 {
   // Check whether the value is already in the list.
@@ -200,12 +202,14 @@ static void addDValue2List(double value, double** list, int* nvalues,
 
 
 
-/** Sort a list of double values with nvalues elements. Apply Bubble Sort algorithm. */
-static void sortDList(double* list, int nvalues)
+/** Sort a list of double values with nvalues elements. Apply Bubble
+    Sort algorithm. */
+static void sortDList(double* const list, const int nvalues)
 {
   int count, index;
   double buffer;
-  int exchanged; // Flag if 2 elements have been exchanged during one loop cycle.
+  // Flag if 2 elements have been exchanged during one loop cycle.
+  int exchanged; 
   for (count=0; count<nvalues-1; count++) {
     exchanged=0;
     for (index=0; index<nvalues-1-count; index++) {
@@ -218,16 +222,17 @@ static void sortDList(double* list, int nvalues)
 	exchanged=1;
       }
     }
-    // In this loop run no elements have been exchanged, so we can break the loop here.
+    // In this loop run no elements have been exchanged, so we can
+    // break the loop here.
     if (0==exchanged) break;
   }  
 }
 
 
 
-PSF* newPSF(const char* filename, int* const status)
+PSF* newPSF(const char* const filename, int* const status)
 {
-  PSF* psf;
+  PSF* psf=NULL;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file
   double* data=NULL;     // Input buffer (1D array)
   long count, count2, count3;
@@ -480,6 +485,14 @@ PSF* newPSF(const char* filename, int* const status)
 	  }
 	}
 
+	// Explicitly normalize the PSF such that the sum over all
+	// pixels values in the whole image is 1.
+	for (count=0; count<psf->data[index1][index2][index3].naxis1; count++) {
+	  for (count2=0; count2<psf->data[index1][index2][index3].naxis2; count2++) {
+	    psf->data[index1][index2][index3].data[count][count2]*=1./sum;
+	  }
+	}
+
 	// Plot normalization of PSF for current off-axis angle and energy
 	headas_chat(5, "PSF: images %.2lf%% of incident photons for "
 		    "%.1lf keV, %.4lf arc min, %.4lf deg, \n", sum * 100., 
@@ -487,8 +500,10 @@ PSF* newPSF(const char* filename, int* const status)
 		    psf->thetas[index2]/M_PI*180.*60.,
 		    psf->phis[index3]/M_PI*180.);
 
-      } // END of check if IMAGE_HDU.
-    } // END of loop over all HDUs.
+      } 
+      // END of check if IMAGE_HDU.
+    } 
+    // END of loop over all HDUs.
     if (EXIT_SUCCESS!=*status) break;
   } while(0);  // END of error handling loop
 

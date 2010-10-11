@@ -61,7 +61,7 @@ typedef struct {
 /** Constructor for the PSF data structure. Reads PSF data from a FITS
     file with one or several image extensions. The file format is
     given by OGIP Calibration Memo CAL/GEN/92-027. */
-PSF* newPSF(const char* filename, int* const status);
+PSF* newPSF(const char* const filename, int* const status);
 
 /** Calculates the position on the detector, where a photon at given
     sky position with specified energy hits the detector according to
