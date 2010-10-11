@@ -34,7 +34,7 @@ int comaimg_main() {
     // Read parameters using PIL library.
     if ((status=comaimg_getpar(&parameters))) break;
 
-    telescope.focal_length = parameters.mask_distance;
+    float focal_length = parameters.mask_distance;
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
@@ -153,7 +153,7 @@ int comaimg_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
-	if (1==getCodedMaskImpactPos(&position, &photon, mask, &telescope)) {
+	if (1==getCodedMaskImpactPos(&position, &photon, mask, &telescope, focal_length)) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)

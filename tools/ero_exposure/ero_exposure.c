@@ -53,14 +53,6 @@ struct ImageParameters {
 };
   
 
-/*
-static inline int timestep(float** expoMap, 
-			   struct ImageParameters* params,
-			   double time, double dt,
-			   AttitudeCatalog* ac, 
-			   Vignetting* vignetting,
-			   double field_align, double fov_align);
-*/
 
 static inline int timestep(float** expoMap, 
 			   struct ImageParameters* params,
@@ -132,8 +124,6 @@ int eroexposure_main() {
   struct Parameters parameters; // Program parameters.
   
   AttitudeCatalog* ac=NULL;
-  // Telescope data (like FOV diameter or focal length).
-  struct Telescope telescope; 
   // Mirror vignetting data.
   Vignetting* vignetting=NULL; 
   
@@ -192,10 +182,10 @@ int eroexposure_main() {
     imgParams.rval2 = (parameters.dec1+ (imgParams.dec_bins/2)*imgParams.delt2);
     
     // Set up the telescope configuration.
-    telescope.fov_diameter = parameters.fov_diameter; // [rad]
+    float fov_diameter = parameters.fov_diameter; // [rad]
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align = cos(telescope.fov_diameter/2.); 
+    const double fov_min_align = cos(fov_diameter/2.); 
     double field_min_align;
     if ((parameters.ra2-parameters.ra1 > M_PI/6.) || 
 	(parameters.dec2-parameters.dec1 > M_PI/6.)) {
@@ -203,7 +193,7 @@ int eroexposure_main() {
     } else {
       field_min_align = cos((sqrt(pow(parameters.ra2-parameters.ra1, 2.) +
 				  pow(parameters.dec2-parameters.dec1, 2.)) +
-			     telescope.fov_diameter)/2.);
+			     fov_diameter)/2.);
     }
 
     // Initialize HEADAS random number generator and GSL generator for 

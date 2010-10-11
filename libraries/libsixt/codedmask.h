@@ -70,7 +70,8 @@ void destroyCodedMask(CodedMask** const mask);
 int getCodedMaskImpactPos(struct Point2d* const position, 
 			  const Photon* const photon, 
 			  const CodedMask* const mask, 
-			  const struct Telescope* const telescope);
+			  const struct Telescope* const telescope,
+			  const float focal_length);
 
 
 #endif /* CODEDMASK_H */

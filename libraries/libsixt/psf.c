@@ -4,6 +4,7 @@
 int get_psf_pos(struct Point2d* const position, 
 		const Photon photon, 
 		const struct Telescope telescope, 
+		const float focal_length,
 		const Vignetting* const vignetting, 
 		const PSF* const psf)
 {
@@ -112,7 +113,7 @@ int get_psf_pos(struct Point2d* const position,
 
   // Determine the distance ([m]) of the central reference position from the optical axis
   // according to the off-axis angle theta:
-  double distance = telescope.focal_length * tan(theta); // TODO *(-1) ???
+  double distance = focal_length * tan(theta); // TODO *(-1) ???
 
   // Add the relative position obtained from the PSF image (randomized pixel 
   // indices x1 and y1).
@@ -230,7 +231,8 @@ static void sortDList(double* const list, const int nvalues)
 
 
 
-PSF* newPSF(const char* const filename, int* const status)
+PSF* newPSF(const char* const filename, const float focal_length, 
+	    int* const status)
 {
   PSF* psf=NULL;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file
@@ -424,7 +426,28 @@ PSF* newPSF(const char* const filename, int* const status)
 			  comment, status)) break;
 	if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &(psf->data[index1][index2][index3].crval2), 
 			  comment, status)) break;
-	// TODO Check whether units of PSF image are given in [m].
+
+	// Check whether units of PSF image are given in [m].
+	char cunit1[MAXMSG], cunit2[MAXMSG];
+	if (fits_read_key(fptr, TSTRING, "CUNIT1", cunit1, comment, status)) break;
+	if (fits_read_key(fptr, TSTRING, "CUNIT2", cunit2, comment, status)) break;
+
+	if ((!strcmp(cunit1, "arcsec")) && (!strcmp(cunit2, "arcsec"))) {
+	  // Convert from [arcsec] -> [m]
+	  float scaling = tan(1./3600.*M_PI/180.) * focal_length; // [m/arcsec]
+	  psf->data[index1][index2][index3].cdelt1 *= scaling;
+	  psf->data[index1][index2][index3].cdelt2 *= scaling;
+	  psf->data[index1][index2][index3].crval1 *= scaling;
+	  psf->data[index1][index2][index3].crval2 *= scaling;
+
+	} else if ((strcmp(cunit1, "m")) || (strcmp(cunit2, "m"))) {
+	  // Neither [arcsec] nor [m]
+	  *status = EXIT_FAILURE;
+	  HD_ERROR_THROW("Error: PSF pixel width must be given either in [m] "
+			 "or in [arcsec]!\n", *status);
+	  break;
+	}
+
 
 	// Get memory for the PSF_Item data.
 	psf->data[index1][index2][index3].data = (double **)

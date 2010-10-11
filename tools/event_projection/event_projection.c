@@ -65,9 +65,8 @@ int event_projection_main() {
     if ((status=event_projection_getpar(&parameters))) break;
 
     // Based on the parameters set up the program configuration.
-    telescope.focal_length = parameters.focal_length;
-    telescope.fov_diameter = parameters.fov_diameter; // [rad]
-    double radpermeter = 1./telescope.focal_length; // For very small angles tan(x) \approx x.
+    float focal_length = parameters.focal_length;
+    float radpermeter = 1./focal_length; // For very small angles tan(x) \approx x.
 
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.

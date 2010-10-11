@@ -4,9 +4,6 @@
 #include "vector.h"
 
 struct Telescope {
-  double fov_diameter;    // diameter of the FOV (in [rad])
-  double focal_length;    // focal length of the telescope
-
   double time;
   Vector r;              // position vector of the satellite
   Vector v;              // velocity vector of the satellite

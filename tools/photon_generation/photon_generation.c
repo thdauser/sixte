@@ -32,6 +32,7 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
 			       struct PhotonOrderedListEntry** photon_list,  
 			       AttitudeCatalog* ac,
 			       struct Telescope telescope,
+			       const float fov_diameter,
 			       double t0, double timespan)
 {
   int status=EXIT_SUCCESS;
@@ -43,7 +44,7 @@ int insertValidPhotonsIntoFile(PhotonListFile* plf,
 
   // Minimum cos-value for sources inside the FoV:
   // angle(telescope.nz,source) <= 1/2 * diameter
-  const double fov_min_align = cos(telescope.fov_diameter/2.); 
+  const double fov_min_align = cos(fov_diameter/2.); 
 
   // Move the photon file pointer to the right entry for inserting
   // the photons from the list.
@@ -121,6 +122,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 				  PointSourceCatalog* psc,
 				  AttitudeCatalog* ac,
 				  struct Telescope telescope,
+				  const float fov_diameter,
 				  const struct ARF* const arf,
 				  double t0, double timespan)
 {
@@ -131,13 +133,13 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
   const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
-  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+  const double close_fov_min_align = cos(close_mult*fov_diameter/2.); 
   // Maximum cos-value (minimum sin-value) for sources within the
   // preselection band along the orbit. The width of the
   // preselection band is chosen to be some particular factor times
   // the diameter of the FoV. (angle(n,source) > 90-bandwidth)
   const double preselection_factor = 3.;
-  const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
+  const double pre_max_align = sin(preselection_factor*fov_diameter);
 
   // Normalized vector perpendicular to the orbital plane,
   // used for a preselection of point sources out of the
@@ -165,7 +167,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
     // improve the performance of the simulation:
     if ((1==first)||
 	(fabs(scalar_product(&preselection_vector, &telescope.nz)) >= 
-	 sin((preselection_factor-0.6)*telescope.fov_diameter))) {
+	 sin((preselection_factor-0.6)*fov_diameter))) {
       // Use 0.6*FoV instead of 0.5*FoV in order to have some margin.
 
       // Preselect sources from the entire source catalog according to the 
@@ -194,6 +196,7 @@ int createPhotonsFromPointSources(PhotonListFile* plf,
 				      &photon_list,  
 				      ac,
 				      telescope,
+				      fov_diameter,
 				      t0, timespan);
     if (EXIT_SUCCESS!=status) break;
 
@@ -218,6 +221,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
 				     ExtendedSourceFile* esf,
 				     AttitudeCatalog* ac,
 				     struct Telescope telescope,
+				     const float fov_diameter,
 				     const struct ARF* const arf,
 				     double t0, double timespan)
 {
@@ -228,13 +232,13 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
   const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
-  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+  const double close_fov_min_align = cos(close_mult*fov_diameter/2.); 
   // Maximum cos-value (minimum sin-value) for sources within the
   // preselection band along the orbit. The width of the
   // preselection band is chosen to be a particular factor times the
   // diameter of the FoV. (angle(n,source) > 90-bandwidth)
   const double preselection_factor = 3.;
-  const double pre_max_align = sin(preselection_factor*telescope.fov_diameter);
+  const double pre_max_align = sin(preselection_factor*fov_diameter);
   
   // Normalized vector perpendicular to the orbital plane,
   // used for a preselection of point sources out of the
@@ -269,7 +273,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
     // improve the performance of the simulation:
     if ((1==first)||
 	(fabs(scalar_product(&preselection_vector, &telescope.nz)) > 
-	 sin((preselection_factor-0.6)*telescope.fov_diameter))) {
+	 sin((preselection_factor-0.6)*fov_diameter))) {
       // Use 0.6*FoV instead of 0.5*FoV in order to have some margin.
 
       // Release old catalog:
@@ -314,6 +318,7 @@ int createPhotonsFromExtendedSources(PhotonListFile* plf,
 				      &photon_list,  
 				      ac,
 				      telescope,
+				      fov_diameter,
 				      t0, timespan);
     if (EXIT_SUCCESS!=status) break;
     
@@ -337,6 +342,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 				 SourceImage* si,
 				 AttitudeCatalog* ac,
 				 struct Telescope telescope,
+				 const float fov_diameter,
 				 const struct ARF* arf,
 				 double t0, double timespan)
 {
@@ -368,7 +374,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
   const double close_mult = 1.2; 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
-  const double close_fov_min_align = cos(close_mult*telescope.fov_diameter/2.); 
+  const double close_fov_min_align = cos(close_mult*fov_diameter/2.); 
 
 
   // Loop over the given time interval.
@@ -483,6 +489,7 @@ int createPhotonsFromSourceImage(PhotonListFile* plf,
 				      &photon_list,  
 				      ac,
 				      telescope,
+				      fov_diameter,
 				      t0, timespan);
     if (EXIT_SUCCESS!=status) break;
 
@@ -646,8 +653,7 @@ int photon_generation_main()
     det = newGenDet(parameters.xml_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    telescope.fov_diameter = det->fov_diameter; // in [rad]
-    telescope.focal_length = det->focal_length;
+    float fov_diameter = det->fov_diameter; // in [rad]
 
     // Initialize HEADAS random number generator.
     HDmtInit(SIXT_HD_RANDOM_SEED);
@@ -788,6 +794,7 @@ int photon_generation_main()
       					   &psc,
       					   attitudecatalog,
       					   telescope,
+					   fov_diameter,
       					   det->arf,
       					   parameters.t0, 
       					   parameters.timespan);
@@ -799,6 +806,7 @@ int photon_generation_main()
 					      esf,
 					      attitudecatalog,
 					      telescope,
+					      fov_diameter,
 					      det->arf,
 					      parameters.t0, 
 					      parameters.timespan);
@@ -809,6 +817,7 @@ int photon_generation_main()
 					  si,
 					  attitudecatalog,
 					  telescope,
+					  fov_diameter,
 					  det->arf,
 					  parameters.t0, 
 					  parameters.timespan);

@@ -497,18 +497,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     return;    
   }
 
-  //  if (NULL==det->psf) {
-  //    *status = EXIT_FAILURE;
-  //    HD_ERROR_THROW("Error: No specification found for PSF!\n", 
-  //		   *status);
-  //    return;    
-  //  }
-  //  if (NULL==det->vignetting) {
-  //    *status = EXIT_FAILURE;
-  //    HD_ERROR_THROW("Error: No specification found for Vignetting!\n", 
-  //		   *status);
-  //    return;    
-  //  }
   if (0.>=det->focal_length) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No specification found for the focal length of the telescope!\n", 
@@ -707,11 +695,21 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	}
       
 	else if (!strcmp(Uelement, "PSF")) {
+	  // The focal length must be specified before load the PSF.
+	  // Check if this is the case.
+	  if (xmlparsedata->det->focal_length<=0.) {
+	    xmlparsedata->status=EXIT_FAILURE;
+	    HD_ERROR_THROW("Error: Telescope focal length must be specified "
+			   "before loading the PSF!\n", xmlparsedata->status);
+	    return;
+	  }
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the PSF.
 	    char buffer[MAXMSG];
 	    strcpy(buffer, attr[i+1]);
-	    xmlparsedata->det->psf = newPSF(buffer, &xmlparsedata->status);
+	    xmlparsedata->det->psf = newPSF(buffer,
+					    xmlparsedata->det->focal_length,
+					    &xmlparsedata->status);
 	  }
 	}
 

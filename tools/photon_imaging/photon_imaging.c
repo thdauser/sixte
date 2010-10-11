@@ -46,9 +46,6 @@ int photon_imaging_main() {
     det = newGenDet(parameters.xml_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    telescope.fov_diameter = det->fov_diameter;
-    telescope.focal_length = det->focal_length;
-
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
     const double fov_min_align = cos(det->fov_diameter/2.); 
@@ -163,7 +160,8 @@ int photon_imaging_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
-	if (get_psf_pos(&position, photon, telescope, det->vignetting, det->psf)) {
+	if (get_psf_pos(&position, photon, telescope, det->focal_length, 
+			det->vignetting, det->psf)) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)

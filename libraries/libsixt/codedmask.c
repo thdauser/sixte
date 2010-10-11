@@ -201,7 +201,8 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 int getCodedMaskImpactPos(struct Point2d* const position, 
 			  const Photon* const photon, 
 			  const CodedMask* const mask, 
-			  const struct Telescope* const telescope)
+			  const struct Telescope* const telescope,
+			  const float focal_length)
 {
   // Check if a CodedMask is specified. If not, break the function.
   if (NULL==mask) return(0);
@@ -241,8 +242,8 @@ int getCodedMaskImpactPos(struct Point2d* const position,
 
   // Shift the position to obtain the position in the detector plane.
   // The shift is necessary because of the photon's off-axis position.
-  position->x -= cos(alpha) * radius * telescope->focal_length;
-  position->y -= sin(alpha) * radius * telescope->focal_length;
+  position->x -= cos(alpha) * radius * focal_length;
+  position->y -= sin(alpha) * radius * focal_length;
 
   return(1);
 }
