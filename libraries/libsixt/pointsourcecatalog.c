@@ -6,14 +6,16 @@ PointSourceCatalog openPointSourceCatalog(char* filename, int hdu, int* status)
   PointSourceCatalog psc;
   
   // Set default initial values.
+  psc.file   = NULL;
 #ifdef POINTSOURCE_KDTREE
   psc.kdtree = NULL;
 #else
-  psc.psl = NULL;
+  psc.psl    = NULL;
 #endif
 
   // Open the PointSourceFile.
   psc.file = openPointSourceFile(filename, hdu, status);
+  if (EXIT_SUCCESS!=status) return(psc);
 
   return(psc);
 }
@@ -131,6 +133,7 @@ void preselectPointSources(PointSourceCatalog* psc, Vector normal,
 
   // Destroy the old KDTree.
   freeKDTree(psc->kdtree);
+  psc->kdtree=NULL;
 
   // Build a kdTree from the preselected PointSourceList.
   if (psl->nsources>0) {

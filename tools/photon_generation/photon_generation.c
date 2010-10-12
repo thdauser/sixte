@@ -851,6 +851,8 @@ int photon_generation_main()
   free_SourceImage(si);
   si=NULL;
   
+  destroyGenDet(&det, &status);
+
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);
 }

@@ -428,7 +428,7 @@ PSF* newPSF(const char* const filename, const float focal_length,
 			  comment, status)) break;
 
 	// Check whether units of PSF image are given in [m].
-	char cunit1[MAXMSG], cunit2[MAXMSG];
+	char cunit1[MAXMSG]="", cunit2[MAXMSG]="";
 	if (fits_read_key(fptr, TSTRING, "CUNIT1", cunit1, comment, status)) break;
 	if (fits_read_key(fptr, TSTRING, "CUNIT2", cunit2, comment, status)) break;
 
@@ -518,7 +518,8 @@ PSF* newPSF(const char* const filename, const float focal_length,
 
 	// Plot normalization of PSF for current off-axis angle and energy
 	headas_chat(5, "PSF: images %.2lf%% of incident photons for "
-		    "%.1lf keV, %.4lf arc min, %.4lf deg, \n", sum * 100., 
+		    "%.1lf keV, %.4lf arc min, %.4lf deg, \n", 
+		    sum/sum * 100., 
 		    psf->energies[index1], 
 		    psf->thetas[index2]/M_PI*180.*60.,
 		    psf->phis[index3]/M_PI*180.);

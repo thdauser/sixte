@@ -207,7 +207,7 @@ static void addString2XMLBuffer(struct XMLBuffer* const buffer,
   // Check if a valid buffer is specified.
   if (NULL==buffer) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: NULL pointer XMLBuffer!\n", *status);
+    HD_ERROR_THROW("Error: NULL pointer to XMLBuffer!\n", *status);
     return;
   }
     
@@ -226,14 +226,15 @@ static void addString2XMLBuffer(struct XMLBuffer* const buffer,
 
   // Check if the buffer contains sufficient memory to add the new string.
   if (strlen(buffer->text)+strlen(string)>=buffer->maxlength) {
-    // Allocate memory for the first chunk of bytes.
-    buffer->text=(char*)realloc(buffer->text, (buffer->maxlength+MAXMSG+1)*sizeof(char));
+    // Allocate the missing memory.
+    int new_length = strlen(buffer->text) + strlen(string);
+    buffer->text=(char*)realloc(buffer->text, (new_length+1)*sizeof(char));
     if (NULL==buffer->text) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
       return;
     }
-    buffer->maxlength+=MAXMSG;
+    buffer->maxlength=new_length;
   }
 
   // Append the new string to the existing buffer.

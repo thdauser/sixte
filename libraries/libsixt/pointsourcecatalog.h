@@ -22,7 +22,7 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** ...  */
+/** Catalog containing X-ray point sources.  */
 typedef struct {
 
   PointSourceFile* file;
