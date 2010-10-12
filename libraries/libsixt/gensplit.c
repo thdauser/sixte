@@ -2,7 +2,7 @@
 
 
 ////////////////////////////////////////////////////////////////////
-// Static function declarations
+// Static function declarations.
 ////////////////////////////////////////////////////////////////////
 
 
@@ -19,7 +19,7 @@ static void setGenPileupFlag(GenDetLine** const line,
 
 
 ////////////////////////////////////////////////////////////////////
-// Program Code
+// Program Code.
 ////////////////////////////////////////////////////////////////////
 
 
@@ -254,10 +254,17 @@ void makeGenSplitEvents(const GenSplit* const split,
     xmax = MAX(xmax, x[ii]);
     ymax = MAX(ymax, y[ii]);
   }
+#ifdef ENERGY_PILEUP_ONLY
+  xmin = MAX(0, xmin);
+  ymin = MAX(0, ymin);
+  xmax = MIN(grid->xwidth-1, xmax);
+  ymax = MIN(grid->ywidth-1, ymax);
+#else 
   xmin = MAX(0, xmin-1);
   ymin = MAX(0, ymin-1);
   xmax = MIN(grid->xwidth-1, xmax+1);
   ymax = MIN(grid->ywidth-1, ymax+1);
+#endif
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
       if (detline[jj]->charge[ii]>0.) {
