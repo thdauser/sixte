@@ -82,20 +82,20 @@ long getEBOUNDSChannel(const float energy, const struct RMF* const rmf)
   
   // Perform a binary search to obtain the detector PHA channel 
   // that corresponds to the given detector charge.
-  long min, max, row;
+  long min, max, mid;
   min = 0;
   max = rmf->NumberChannels-1;
   while (max > min) {
-    row = (min+max)/2;
-    if (rmf->ChannelHighEnergy[row] < energy) {
-      min = row+1;
+    mid = (min+max)/2;
+    if (rmf->ChannelHighEnergy[mid] < energy) {
+      min = mid+1;
     } else {
-      max = row;
+      max = mid;
     }
   }
   
   // Return the PHA channel.
-  return(row + rmf->FirstChannel);
+  return(min + rmf->FirstChannel);
 }
 
 
