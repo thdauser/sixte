@@ -13,18 +13,14 @@ float photon_energy(const Spectrum* const spectrum,
 	   spectrum->rate[spectrum->NumberChannels-1], rand);
   }
 
-  // Determine the energy of the photon.
-  while (upper-lower>1) {
-    mid = (long)((lower+upper)/2);
+  // Determine the energy of the photon (using binary search).
+  while (upper>lower) {
+    mid = (lower+upper)/2;
     if (spectrum->rate[mid] < rand) {
-      lower = mid;
+      lower = mid+1;
     } else {
       upper = mid;
     }
-  }
-    
-  if (spectrum->rate[lower] < rand) {
-    lower = upper;
   }
 
   // Return an energy chosen randomly out of the determined PHA bin:
