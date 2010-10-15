@@ -11,7 +11,7 @@
 <wcs xrpix="48.5" yrpix="48.5" xrval="0." yrval="0." xdelt="370.e-6" ydelt="370.e-6"/>
 <arf filename="gravitas.arf"/>
 <rmf filename="gravitas.rmf"/>
-<!--<split type="GAUSS" par1="11.e-6"/>-->
+<split type="GAUSS" par1="11.e-6"/>
 <eventfile template="geneventfile.tpl"/>
 
 <threshold_readout_lo_keV value="0."/>

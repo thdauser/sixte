@@ -259,12 +259,6 @@ void makeGenSplitEvents(const GenSplit* const split,
   ymin = MAX(0, ymin);
   xmax = MIN(grid->xwidth-1, xmax);
   ymax = MIN(grid->ywidth-1, ymax);
-#else 
-  xmin = MAX(0, xmin-1);
-  ymin = MAX(0, ymin-1);
-  xmax = MIN(grid->xwidth-1, xmax+1);
-  ymax = MIN(grid->ywidth-1, ymax+1);
-#endif
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
       if (detline[jj]->charge[ii]>0.) {
@@ -272,6 +266,21 @@ void makeGenSplitEvents(const GenSplit* const split,
       }
     }
   }
+#else
+
+  for (ii=MAX(0, xmin-1); ii<=MIN(grid->xwidth-1, xmax+1); ii++) {
+    for (jj=MAX(0, ymin-1); jj<=MIN(grid->ywidth-1, ymax+1); jj++) {
+      if (detline[jj]->charge[ii]>0.) {
+#ifdef ENERGY_SIMPLE_PATTERN
+	if (((ii==xmin-1)||(ii==xmax+1)) && ((jj==ymin-1)||(jj==ymax+1))) {
+	  continue;
+	}
+#endif
+	pileup = GP_PILEUP;
+      }
+    }
+  }
+#endif
   // END of loop over all surrounding pixels.
 
 
