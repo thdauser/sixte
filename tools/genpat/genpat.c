@@ -1,9 +1,3 @@
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
 #include "genpat.h"
 
 
@@ -394,6 +388,7 @@ int genpat_main() {
 				    READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
+
     // Create and open the output event file.
     // Filename of the template file.
     char template[MAXMSG];
@@ -414,8 +409,17 @@ int genpat_main() {
     // Open a new event file from the specified template.
     file = openNewGenEventFile(parameters.output_eventlist_filename, template, &status);
     if (EXIT_SUCCESS!=status) break;
+    // Copy header keywords from the input to the output event file.
+    char comment[MAXMSG]; // Buffer.
+    long n_detected_photons=0; // Total number of detected photons.
+    if (fits_read_key(det->eventfile->fptr, TLONG, "NDETECTD", 
+		      &n_detected_photons, comment, &status)) break;
+    if (fits_update_key(det->eventfile->fptr, TLONG, "NDETECTD", 
+			&n_detected_photons, "number of detected photons", 
+			&status)) break;
 
-    // Allocate memory for the pixel array.
+
+    // Allocate memory for the pixel array used for the pattern identification.
     pixels=(GenEvent**)malloc(det->pixgrid->xwidth*sizeof(GenEvent*));
     if (NULL==pixels) {
       status = EXIT_FAILURE;

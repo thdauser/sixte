@@ -118,12 +118,6 @@ typedef struct {
   /** File name of the template for the event list FITS file. */
   char eventfile_template[MAXMSG];
 
-  /** Total number of detected photons. Here only the number of
-      photons absorbed by valid pixels inside the detector is
-      counted. Split events created by one photon are counted only
-      once. */
-  long n_detected_photons;
-
 } GenDet;
 
 
@@ -144,9 +138,10 @@ void destroyGenDet(GenDet** const det, int* const status);
 void GenDetNewEventFile(GenDet* const det, const char* const filename, 
 			int* const status);
 
-/** Add a new photon impact to the detector. */
-void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
-			   int* const status);
+/** Add a new photon impact to the detector. The function return value
+    is the number of affected valid detector pixels. */
+int addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
+			  int* const status);
 
 /** Operate the time-triggered elements of the GenDet detector up to
     the specified point of time. */

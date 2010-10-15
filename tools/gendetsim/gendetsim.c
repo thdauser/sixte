@@ -15,16 +15,15 @@ int gendetsim_main() {
   struct Parameters parameters; 
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;
-
+  // Input impact list.
   ImpactListFile* impactlistfile=NULL;
+  // Total number of detected photons. Only the number of
+  // photons absorbed by valid pixels inside the detector is
+  // counted. Split events created by one photon are counted only
+  // once.
+  long n_detected_photons=0;
 
   int status=EXIT_SUCCESS; // Error status.
-
-  /*
-  char test[]="512-12";
-  int a = atoi(test);
-  printf("\n%d\n", a);
-  */
 
   // Register HEATOOL:
   set_toolname("gendetsim");
@@ -74,7 +73,12 @@ int gendetsim_main() {
       if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) 
 	continue;
 
-      addGenDetPhotonImpact(det, &impact, &status);
+      // Add the impact to the detector array. If it is absorbed
+      // by at least one valid pixel, increase the counter for
+      // the number of detected photons.
+      if (addGenDetPhotonImpact(det, &impact, &status) > 0) {
+	n_detected_photons++;
+      }
       if (EXIT_SUCCESS!=status) break;
 
     };
@@ -85,6 +89,13 @@ int gendetsim_main() {
     // without adding any new charges.
     operateGenDetClock(det, parameters.t0+parameters.timespan, &status);
     if (EXIT_SUCCESS!=status) break;
+
+    // Store the number of detected photons in the FITS header of
+    // the output event file.
+    if (fits_update_key(det->eventfile->fptr, TLONG, "NDETECTD", 
+			&n_detected_photons, 
+			"number of detected photons", &status))
+      break;
 
   } while(0); // END of the error handling loop.
 
