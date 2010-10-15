@@ -55,11 +55,11 @@ void destroyGenSplit(GenSplit** const split)
 
 
 
-void makeGenSplitEvents(const GenSplit* const split,
-			const struct Point2d* const position,
-			const float charge,
-			const GenPixGrid* const grid,
-			GenDetLine** const detline)
+int makeGenSplitEvents(const GenSplit* const split,
+		       const struct Point2d* const position,
+		       const float charge,
+		       const GenPixGrid* const grid,
+		       GenDetLine** const detline)
 {
   // Number of affected pixels.
   int npixels=0;
@@ -84,7 +84,7 @@ void makeGenSplitEvents(const GenSplit* const split,
 
     // Check if the returned values are valid line and column indices.
     if ((x[0]<0) || (y[0]<0)) {
-      return;
+      return(0);
     }
     
     // The single pixel receives the total photon energy.
@@ -102,7 +102,7 @@ void makeGenSplitEvents(const GenSplit* const split,
   
     // Check if the impact position lies inside the detector pixel array.
     if ((0>x[0]) || (0>y[0])) {
-      return;
+      return(0);
     }
 
     // Calculate the distances from the impact center position to the 
@@ -179,7 +179,7 @@ void makeGenSplitEvents(const GenSplit* const split,
   
     // Check if the impact position lies inside the detector pixel array.
     if ((0>x[0]) || (0>y[0])) {
-      return;
+      return(0);
     }
 
     // Calculate the distances from the impact center position to the 
@@ -285,10 +285,12 @@ void makeGenSplitEvents(const GenSplit* const split,
 
 
   // Add charge to all valid pixels of the split event.
+  int nvalidpixels=0;
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) && (x[ii]<grid->xwidth) &&
 	(y[ii]>=0) && (y[ii]<grid->ywidth)) {
       addGenDetCharge2Pixel(detline[y[ii]], x[ii], charge*fraction[ii]);
+      nvalidpixels++;
     }
   }
 
@@ -301,6 +303,9 @@ void makeGenSplitEvents(const GenSplit* const split,
 
   // TODO Call the event trigger routine.
 
+
+  // Return the number of affected pixels.
+  return(nvalidpixels);
 }
 
 

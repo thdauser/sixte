@@ -126,6 +126,9 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->clocklist =NULL;
   det->eventfile =NULL;
 
+  // Set initial values.
+  det->n_detected_photons=0;
+
   // Get empty GenPixGrid.
   det->pixgrid = newGenPixGrid(status);
   if (EXIT_SUCCESS!=*status) return(det);
@@ -181,6 +184,11 @@ void destroyGenDet(GenDet** const det, int* const status)
     // Destroy the split model.
     destroyGenSplit(&(*det)->split);
 
+    // Before closing the event file, store the number
+    // of detected photons in the FITS header.
+    if (fits_update_key((*det)->eventfile->fptr, TLONG, "NDETECTD", 
+			&(*det)->n_detected_photons, 
+			"number of detected photons", status)) 
     // Close the event file.
     destroyGenEventFile(&(*det)->eventfile, status);
 
@@ -882,10 +890,10 @@ static void GenDetXMLElementEnd(void* parsedata, const char* el)
 
 
 
-void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
+void addGenDetPhotonImpact(GenDet* const det, 
+			   const Impact* const impact, 
 			   int* const status)
 {
-
   // Call the detector operating clock routine.
   operateGenDetClock(det, impact->time, status);
   if (EXIT_SUCCESS!=*status) return;
@@ -915,7 +923,12 @@ void addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
   assert(charge>=0.);
 
   // Create split events.
-  makeGenSplitEvents(det->split, &impact->position, charge, det->pixgrid, det->line);
+  if (makeGenSplitEvents(det->split, &impact->position, charge, 
+			 det->pixgrid, det->line)>0) {
+    // If the photon impact has affected at least one valid pixel 
+    // inside the detector array, increase the photon counter.
+    det->n_detected_photons++;
+  }
 }
 
 

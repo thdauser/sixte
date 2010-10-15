@@ -118,6 +118,12 @@ typedef struct {
   /** File name of the template for the event list FITS file. */
   char eventfile_template[MAXMSG];
 
+  /** Total number of detected photons. Here only the number of
+      photons absorbed by valid pixels inside the detector is
+      counted. Split events created by one photon are counted only
+      once. */
+  long n_detected_photons;
+
 } GenDet;
 
 

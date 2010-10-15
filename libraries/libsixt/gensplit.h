@@ -59,12 +59,14 @@ GenSplit* newGenSplit(int* const status);
 void destroyGenSplit(GenSplit** const split);
 
 /** Determine split events for a particular photon impact and add the
-    fractional charges to the affected pixels. */
-void makeGenSplitEvents(const GenSplit* const split,
-			const struct Point2d* const impact,
-			const float charge,
-			const GenPixGrid* const grid,
-			GenDetLine** const line);
+    fractional charges to the affected pixels. The function return
+    value is the number of valid affected pixels inside the detector,
+    where charge has been added to. */
+int makeGenSplitEvents(const GenSplit* const split,
+		       const struct Point2d* const impact,
+		       const float charge,
+		       const GenPixGrid* const grid,
+		       GenDetLine** const line);
 
 
 #endif /* GENSPLIT_H */
