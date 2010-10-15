@@ -93,9 +93,8 @@ int gendetsim_main() {
     // Store the number of detected photons in the FITS header of
     // the output event file.
     if (fits_update_key(det->eventfile->fptr, TLONG, "NDETECTD", 
-			&n_detected_photons, 
-			"number of detected photons", &status))
-      break;
+			&n_detected_photons, "number of detected photons", 
+			&status)) break;
 
   } while(0); // END of the error handling loop.
 

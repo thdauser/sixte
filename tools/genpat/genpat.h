@@ -23,6 +23,22 @@ struct Parameters {
 };
 
 
+struct PatternStatistics {
+  long nsingles;
+  long ndoubles;
+  long ntriples;
+  long nquadruples;
+  long nvalids;
+  long ninvalids;
+  /** Number of patterns flagged as pile-up. */
+  long npileup;
+  /** Number of valid patterns flagged as pile-up. */
+  long npileup_valid;
+  /** Number of invalid patterns flagged as pile-up. */
+  long npileup_invalid;
+};
+
+
 ////////////////////////////////////////////////////////////////////////
 // Function declarations.
 ////////////////////////////////////////////////////////////////////////

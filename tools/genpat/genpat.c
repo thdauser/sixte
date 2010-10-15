@@ -56,7 +56,9 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
 
 
 static void GenPatId(GenDet* const det, GenEvent** const pixels, 
-		     GenEventFile* const file, int* const status)
+		     GenEventFile* const file, 
+		     struct PatternStatistics* const patstat,
+		     int* const status)
 {
   GenEvent list[1000];
   int nlist;
@@ -336,6 +338,46 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	  addGenEvent2File(file, &list[kk], status);
 	}
 	// END of adding the split data to the output event file.
+
+	// Store the information about the pattern type in the
+	// statistics data structure.
+	switch(pat_type) {
+	case -1:
+	  patstat->ninvalids++;
+	  break;
+	case 1:
+	  patstat->nsingles++;
+	  break;
+	case 2:
+	  patstat->ndoubles++;
+	  break;
+	case 3:
+	  patstat->ntriples++;
+	  break;
+	case 4:
+	  patstat->nquadruples++;
+	  break;
+	default:
+	  *status=EXIT_FAILURE;
+	  HD_ERROR_THROW("Error: Invalid Pattern Type!\n", *status);
+	  return;
+	}
+
+	// Check if it's a valid pattern.
+	if (pat_type > 0) {
+	  patstat->nvalids++;
+	}
+
+	// Check for pile-up.
+	if (list[0].pileup > 0) {
+	  patstat->npileup++;
+	  if (pat_type>0) {
+	    patstat->npileup_valid++;
+	  } else {
+	    patstat->npileup_invalid++;
+	  }
+	}
+	// END of gathering statistical data about the pattern type.
       }
       // END of found an event above the primary threshold.
     }
@@ -355,9 +397,22 @@ int genpat_main() {
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;
   // Output event file. 
-  GenEventFile* file=NULL;
+  GenEventFile* output_file=NULL;
   // Detector pixel array.
   GenEvent** pixels=NULL;
+  // Pattern statistics. Count the numbers of the individual pattern types
+  // and store this information in the output event file.
+  struct PatternStatistics patstat={
+    .nsingles=0,
+    .ndoubles=0,
+    .ntriples=0,
+    .nquadruples=0,
+    .nvalids=0,
+    .ninvalids=0,
+    .npileup=0,
+    .npileup_valid=0,
+    .npileup_invalid=0
+  };
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -407,14 +462,14 @@ int genpat_main() {
     strcat(template, "/");
     strcat(template, det->eventfile_template);
     // Open a new event file from the specified template.
-    file = openNewGenEventFile(parameters.output_eventlist_filename, template, &status);
+    output_file = openNewGenEventFile(parameters.output_eventlist_filename, template, &status);
     if (EXIT_SUCCESS!=status) break;
     // Copy header keywords from the input to the output event file.
     char comment[MAXMSG]; // Buffer.
     long n_detected_photons=0; // Total number of detected photons.
     if (fits_read_key(det->eventfile->fptr, TLONG, "NDETECTD", 
 		      &n_detected_photons, comment, &status)) break;
-    if (fits_update_key(det->eventfile->fptr, TLONG, "NDETECTD", 
+    if (fits_update_key(output_file->fptr, TLONG, "NDETECTD", 
 			&n_detected_photons, "number of detected photons", 
 			&status)) break;
 
@@ -479,7 +534,7 @@ int genpat_main() {
 
 	// Run the pattern identification and store the pattern 
 	// information in the event file.
-	GenPatId(det, pixels, file, &status);
+	GenPatId(det, pixels, output_file, &patstat, &status);
 	
 	// Delete the old events in the pixel array.
 	clearGenPatPixels(det, pixels);
@@ -498,6 +553,37 @@ int genpat_main() {
     if (EXIT_SUCCESS!=status) break;
     // END of loop over all events in the FITS file.
     headas_printf("\n");
+
+    // Store the pattern statistics in the FITS header.
+    if (fits_update_key(output_file->fptr, TLONG, "NSINGLES", 
+			&patstat.nsingles, "number of single patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NDOUBLES", 
+			&patstat.ndoubles, "number of double patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NTRIPLES", 
+			&patstat.ntriples, "number of triple patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NQUADRUP", 
+			&patstat.nquadruples, "number of quadruple patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NVALIDS", 
+			&patstat.nvalids, "number of valid patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NINVALID", 
+			&patstat.ninvalids, "number of invalid patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NPILEUP", 
+			&patstat.npileup, "number of pile-up patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NPILEUPV", 
+			&patstat.npileup_valid, 
+			"number of valid patterns marked as pile-up", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NPILEUPI", 
+			&patstat.npileup_invalid, 
+			"number of invalid patterns marked as pile-up", 
+			&status)) break;
 
   } while(0); // END of the error handling loop.
 
@@ -526,7 +612,7 @@ int genpat_main() {
   destroyGenDet(&det, &status);
   
   // Close the output eventfile.
-  destroyGenEventFile(&file, &status);
+  destroyGenEventFile(&output_file, &status);
   
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
