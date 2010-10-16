@@ -37,6 +37,27 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
   pixels[x][y].charge = 0.;
 
   // Check the surrounding pixels.
+#ifdef ENERGY_SIMPLE_PATTERN
+  // Simple Pattern check: not NOT check diagonal pixels.
+  int ii;
+  int min = MAX(0, x-1);
+  int max = MIN(det->pixgrid->xwidth-1, x+1);
+  for (ii=min; ii<=max; ii++) {
+    if ((pixels[ii][y].charge > list[0].charge*det->threshold_split_lo_fraction) &&
+	(pixels[ii][y].charge > det->threshold_split_lo_keV)) {
+      addGenPat2List(det, pixels, ii, y, list, nlist);
+    }
+  }
+  min = MAX(0, y-1);
+  max = MIN(det->pixgrid->ywidth-1, y+1);
+  for (ii=min; ii<=max; ii++) {
+    if ((pixels[x][ii].charge > list[0].charge*det->threshold_split_lo_fraction) &&
+	(pixels[x][ii].charge > det->threshold_split_lo_keV)) {
+      addGenPat2List(det, pixels, x, ii, list, nlist);
+    }
+  }
+#else 
+  // Check also the diagonal pixels.
   int ii, jj;
   int xmin = MAX(0, x-1);
   int xmax = MIN(det->pixgrid->xwidth-1, x+1);
@@ -51,6 +72,8 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
     }
   }
   // END of loop over surrounding pixels.
+#endif // NOT simple pattern: add diagonal pixels.
+
 }
 
 
