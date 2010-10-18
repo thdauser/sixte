@@ -271,7 +271,9 @@ int makeGenSplitEvents(const GenSplit* const split,
   for (ii=MAX(0, xmin-1); ii<=MIN(grid->xwidth-1, xmax+1); ii++) {
     for (jj=MAX(0, ymin-1); jj<=MIN(grid->ywidth-1, ymax+1); jj++) {
       if (detline[jj]->charge[ii]>0.) {
-#ifdef ENERGY_SIMPLE_PATTERN
+#ifndef DIAGONAL_PATTERN_PILEUP
+	// The diagonal pixels are included in the pattern 
+	// pile-up search.
 	if (((ii==xmin-1)||(ii==xmax+1)) && ((jj==ymin-1)||(jj==ymax+1))) {
 	  continue;
 	}

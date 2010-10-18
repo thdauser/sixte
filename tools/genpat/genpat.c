@@ -37,8 +37,24 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
   pixels[x][y].charge = 0.;
 
   // Check the surrounding pixels.
-#ifdef ENERGY_SIMPLE_PATTERN
-  // Simple Pattern check: not NOT check diagonal pixels.
+#ifdef DIAGONAL_PATTERN_PILEUP
+  // Check the diagonal pixels for pattern pile-up.
+  int ii, jj;
+  int xmin = MAX(0, x-1);
+  int xmax = MIN(det->pixgrid->xwidth-1, x+1);
+  int ymin = MAX(0, y-1);
+  int ymax = MIN(det->pixgrid->ywidth-1, y+1);
+  for (ii=xmin; ii<=xmax; ii++) {
+    for (jj=ymin; jj<=ymax; jj++) {
+      if ((pixels[ii][jj].charge > list[0].charge*det->threshold_split_lo_fraction) &&
+	  (pixels[ii][jj].charge > det->threshold_split_lo_keV)) {
+	addGenPat2List(det, pixels, ii, jj, list, nlist);
+      }
+    }
+  }
+  // END of loop over surrounding pixels.
+#else
+  // Simple Pattern check: do NOT check diagonal pixels.
   int ii;
   int min = MAX(0, x-1);
   int max = MIN(det->pixgrid->xwidth-1, x+1);
@@ -56,24 +72,7 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
       addGenPat2List(det, pixels, x, ii, list, nlist);
     }
   }
-#else 
-  // Check also the diagonal pixels.
-  int ii, jj;
-  int xmin = MAX(0, x-1);
-  int xmax = MIN(det->pixgrid->xwidth-1, x+1);
-  int ymin = MAX(0, y-1);
-  int ymax = MIN(det->pixgrid->ywidth-1, y+1);
-  for (ii=xmin; ii<=xmax; ii++) {
-    for (jj=ymin; jj<=ymax; jj++) {
-      if ((pixels[ii][jj].charge > list[0].charge*det->threshold_split_lo_fraction) &&
-	  (pixels[ii][jj].charge > det->threshold_split_lo_keV)) {
-	addGenPat2List(det, pixels, ii, jj, list, nlist);
-      }
-    }
-  }
-  // END of loop over surrounding pixels.
-#endif // NOT simple pattern: add diagonal pixels.
-
+#endif // END of neglect diagonal pixels.
 }
 
 

@@ -3,7 +3,7 @@
 <telescope>
 <focallength value="12"/>
 <fov diameter="0.167"/>
-<psf filename="gravitas.psf.fits"/>
+<psf filename="gravitas.psf20arcsec.fits"/>
 </telescope>
 
 <detector type="gravitas" mode="fullframe">

@@ -11,8 +11,8 @@
 // Check only for energy pile-up and ignore pattern pile-up.
 //#define ENERGY_PILEUP_ONLY 1
 
-// Check for energy pile-up and simplified pattern pile-up.
-#define ENERGY_SIMPLE_PATTERN 1
+// Check for pattern pile-up in diagonal pixels.
+#define DIAGONAL_PATTERN_PILEUP 1
 
 
 /////////////////////////////////////////////////////////////////

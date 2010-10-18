@@ -13,7 +13,8 @@
 <pixelborder x="0." y="0."/>
 <wcs xrpix="192.5" yrpix="192.5" xrval="0." yrval="0." xdelt="75.e-6" ydelt="75.e-6"/>
 <cte value="1"/>
-<rmf filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
+<arf filename="/home/schmid/erosita/rsp/erosita_iv_7telonaxis_ff.arf"/>
+<rmf filename="/home/schmid/erosita/rsp/erosita_iv_7telonaxis_ff.rmf"/>
 <split type="exponential" par1="0.355"/>
 <threshold_readout_lo_keV value="0."/>
 <threshold_readout_up_keV value="12."/>
