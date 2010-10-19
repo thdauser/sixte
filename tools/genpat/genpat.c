@@ -398,6 +398,9 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	  } else {
 	    patstat->npileup_invalid++;
 	  }
+	  if (1==pat_type) {
+	    patstat->npileup_singles++;
+	  }
 	}
 	// END of gathering statistical data about the pattern type.
       }
@@ -432,6 +435,7 @@ int genpat_main() {
     .nvalids=0,
     .ninvalids=0,
     .npileup=0,
+    .npileup_singles=0,
     .npileup_valid=0,
     .npileup_invalid=0
   };
@@ -597,6 +601,10 @@ int genpat_main() {
 			&status)) break;
     if (fits_update_key(output_file->fptr, TLONG, "NPILEUP", 
 			&patstat.npileup, "number of pile-up patterns", 
+			&status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "NPILEUPS", 
+			&patstat.npileup_singles, 
+			"number of singles marked as pile-up", 
 			&status)) break;
     if (fits_update_key(output_file->fptr, TLONG, "NPILEUPV", 
 			&patstat.npileup_valid, 

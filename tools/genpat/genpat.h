@@ -32,6 +32,7 @@ struct PatternStatistics {
   long ninvalids;
   /** Number of patterns flagged as pile-up. */
   long npileup;
+  long npileup_singles;
   /** Number of valid patterns flagged as pile-up. */
   long npileup_valid;
   /** Number of invalid patterns flagged as pile-up. */
