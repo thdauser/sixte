@@ -95,6 +95,9 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	
 	// Add the event to the temporary event list and
 	// check the surrounding pixels.
+	// The function addGetPat2List deletes the charge in
+	// the processed pixel such that it is not taken into
+	// account later again.
 	nlist=0;
 	addGenPat2List(det, pixels, ii, jj, list, &nlist);
 	// Now 'list' contains all events contributing to this pattern.
@@ -356,9 +359,16 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	}
 
 	// Store the split pattern information in the output event file.
+#ifdef ONLY_VALID_PATTERNS
+	// Only store valid pattern types in the output file.
+	if ((pat_type>0) && (0==border)) {
+#endif
 	for (kk=0; kk<nlist; kk++) {
 	  addGenEvent2File(file, &list[kk], status);
 	}
+#ifdef ONLY_VALID_PATTERNS
+	}
+#endif
 	// END of adding the split data to the output event file.
 
 	// Store the information about the pattern type in the
