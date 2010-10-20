@@ -74,7 +74,7 @@ WFIEvent mark(int row, int column, int rows, int columns, WFIEvent** ccdarr,
 	myevent.pileup += event.pileup; // Remember if pileup occurred in subevent
 	myevent.patnum += event.patnum;
 	myevent.pha = getEBOUNDSChannel(getEBOUNDSEnergy(myevent.pha, rmf, 0)+
-				 getEBOUNDSEnergy(event.pha, rmf, 0), rmf);
+					getEBOUNDSEnergy(event.pha, rmf, 0), rmf);
       }
     }
   } // End of loop over all neighbours

@@ -15,6 +15,11 @@
 // the recombined patterns.
 #define ONLY_VALID_PATTERNS 1
 
+// Store only the main pixel event of a split pattern with the 
+// maximum charge in the output event file. Recombine the PHA value 
+// of the original photon.
+#define ONLY_MAIN_EVENT 1
+
 
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.

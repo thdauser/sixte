@@ -118,7 +118,8 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	int ll;
 	// Indices of maximum charged pixels in descending order.
 	int idx[1000] = { 0, 0, 0, 0 };
-	// Determine maxidx, minidx; or better: idx[0]..idx[3].
+	// Determine indices with maximum charge event at the
+	// first position and the weakest partner at the end: idx[0]..idx[3].
 	for (kk=0; kk<nlist; kk++) {
 	  idx[kk]=kk;
 	  for (ll=kk-1; ll>=0; ll--) {
@@ -363,9 +364,24 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	// Only store valid pattern types in the output file.
 	if ((pat_type>0) && (0==border)) {
 #endif
-	for (kk=0; kk<nlist; kk++) {
-	  addGenEvent2File(file, &list[kk], status);
-	}
+
+#ifdef ONLY_MAIN_EVENT
+	  // Store only the main pixel event with the maximum charge
+	  // in the output file.
+	  // Recombine the PHA values of the individual events.
+	  float energy = 0.;
+	  for (kk=0; kk<nlist; kk++) {
+	    energy += getEBOUNDSEnergy(list[kk].pha, det->rmf, 0);
+	  }
+	  list[idx[0]].charge = energy;
+	  list[idx[0]].pha    = getEBOUNDSChannel(energy, det->rmf);
+	  addGenEvent2File(file, &list[idx[0]], status);
+#else
+	  for (kk=0; kk<nlist; kk++) {
+	    addGenEvent2File(file, &list[kk], status);
+	  }
+#endif
+
 #ifdef ONLY_VALID_PATTERNS
 	}
 #endif
