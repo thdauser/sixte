@@ -13,15 +13,15 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = photon_generation.par
+dist_pfiles_DATA = phogen.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and
 # stored in the 'bin' directory.
-bin_PROGRAMS = photon_generation
+bin_PROGRAMS = phogen
 
-photon_generation_SOURCES = photon_generation.c photon_generation.h
-photon_generation_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+phogen_SOURCES = phogen.c phogen.h
+phogen_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
 

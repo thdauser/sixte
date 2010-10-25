@@ -249,7 +249,7 @@ AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		libraries/libsixt/Makefile
 		tools/Makefile
-		tools/photon_generation/Makefile
+		tools/phogen/Makefile
 		tools/photon_imaging/Makefile
 		tools/psfgen/Makefile
 		tools/wfi_simulation/Makefile
