@@ -1082,6 +1082,13 @@ void GenDetNewEventFile(GenDet* const det, const char* const filename,
   if (fits_update_key(det->eventfile->fptr, TLONG, "DETCHANS",
 		      &det->rmf->NumberChannels, "number of EBOUNDS channels",
 		      status)) return;
+  if (fits_update_key(det->eventfile->fptr, TLONG, "TLMIN1",
+  		      &det->rmf->FirstChannel, "first channel of EBOUNDS",
+  		      status)) return;
+  long tlmax1 = det->rmf->FirstChannel + det->rmf->NumberChannels - 1;
+  if (fits_update_key(det->eventfile->fptr, TLONG, "TLMAX1",
+  		      &tlmax1, "last channel of EBOUNDS",
+  		      status)) return;
 }
 
 

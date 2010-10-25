@@ -535,6 +535,20 @@ int genpat_main() {
     if (fits_update_key(output_file->fptr, TLONG, "DETCHANS", 
 			&detchans, comment, &status)) break;
 
+    // First EBOUNDS channel.
+    long tlmin1=0; 
+    if (fits_read_key(det->eventfile->fptr, TLONG, "TLMIN1", 
+		      &tlmin1, comment, &status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "TLMIN1", 
+			&tlmin1, comment, &status)) break;    
+
+    // Last EBOUNDS channel.
+    long tlmax1=0; 
+    if (fits_read_key(det->eventfile->fptr, TLONG, "TLMAX1", 
+		      &tlmax1, comment, &status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "TLMAX1", 
+			&tlmax1, comment, &status)) break;    
+
     // Number of pixels in x-direction.
     long nxdim=0; 
     if (fits_read_key(det->eventfile->fptr, TINT, "NXDIM", 
