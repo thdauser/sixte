@@ -1,10 +1,4 @@
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
-#include "photon_imaging.h"
+#include "phoimg.h"
 
 
 ////////////////////////////////////

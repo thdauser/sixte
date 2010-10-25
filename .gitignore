@@ -25,8 +25,8 @@ binary_stream
 event_projection
 framestore_simulation
 wfi_pattern_recombination
-photon_generation
-photon_imaging
+phogen
+phoimg
 psfgen
 xms_simulation
 xms_pixtemp

@@ -13,14 +13,14 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = photon_imaging.par
+dist_pfiles_DATA = phoimg.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = photon_imaging
+bin_PROGRAMS = phoimg
 
-photon_imaging_SOURCES = photon_imaging.c photon_imaging.h
-photon_imaging_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+phoimg_SOURCES = phoimg.c phoimg.h
+phoimg_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
