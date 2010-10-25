@@ -1071,6 +1071,17 @@ void GenDetNewEventFile(GenDet* const det, const char* const filename,
 
   // Open a new event file from the specified template.
   det->eventfile = openNewGenEventFile(filename, template, status);
+
+  // Insert the header keywords describing the detector.
+  if (fits_update_key(det->eventfile->fptr, TINT, "NXDIM", 
+		      &det->pixgrid->xwidth, "number of pixels in x-direction", 
+		      status)) return;
+  if (fits_update_key(det->eventfile->fptr, TINT, "NYDIM", 
+		      &det->pixgrid->ywidth, "number of pixels in y-direction", 
+		      status)) return;
+  if (fits_update_key(det->eventfile->fptr, TLONG, "DETCHANS",
+		      &det->rmf->NumberChannels, "number of EBOUNDS channels",
+		      status)) return;
 }
 
 

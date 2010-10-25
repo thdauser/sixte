@@ -516,14 +516,39 @@ int genpat_main() {
     // Open a new event file from the specified template.
     output_file = openNewGenEventFile(parameters.output_eventlist_filename, template, &status);
     if (EXIT_SUCCESS!=status) break;
+
     // Copy header keywords from the input to the output event file.
     char comment[MAXMSG]; // Buffer.
-    long n_detected_photons=0; // Total number of detected photons.
+
+    // Total number of detected photons.
+    long n_detected_photons=0; 
     if (fits_read_key(det->eventfile->fptr, TLONG, "NDETECTD", 
 		      &n_detected_photons, comment, &status)) break;
     if (fits_update_key(output_file->fptr, TLONG, "NDETECTD", 
 			&n_detected_photons, "number of detected photons", 
 			&status)) break;
+
+    // Number of EBOUNDS channels (DETCHANS).
+    long detchans=0; 
+    if (fits_read_key(det->eventfile->fptr, TLONG, "DETCHANS", 
+		      &detchans, comment, &status)) break;
+    if (fits_update_key(output_file->fptr, TLONG, "DETCHANS", 
+			&detchans, comment, &status)) break;
+
+    // Number of pixels in x-direction.
+    long nxdim=0; 
+    if (fits_read_key(det->eventfile->fptr, TINT, "NXDIM", 
+		      &nxdim, comment, &status)) break;
+    if (fits_update_key(output_file->fptr, TINT, "NXDIM", 
+			&nxdim, comment, &status)) break;
+
+    // Number of pixels in y-direction.
+    long nydim=0; 
+    if (fits_read_key(det->eventfile->fptr, TINT, "NYDIM", 
+		      &nydim, comment, &status)) break;
+    if (fits_update_key(output_file->fptr, TINT, "NYDIM", 
+			&nydim, comment, &status)) break;    
+    // END of copying header keywords.
 
 
     // Allocate memory for the pixel array used for the pattern identification.
