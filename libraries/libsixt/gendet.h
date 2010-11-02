@@ -117,6 +117,8 @@ typedef struct {
   GenEventFile* eventfile;
   /** File name of the template for the event list FITS file. */
   char eventfile_template[MAXMSG];
+  /** File name of the template for the pattern FITS file. */
+  char patternfile_template[MAXMSG];
 
 } GenDet;
 

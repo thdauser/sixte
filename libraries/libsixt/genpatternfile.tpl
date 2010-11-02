@@ -50,3 +50,9 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  PILEUP          / Pile-up flag
 	TFORM#  I               / Format of column PILEUP
 	TUNIT#                  / Unit of column PILEUP
+	TTYPE#  PAT_TYPE        / Pattern type
+	TFORM#  I               / Format of column PAT_TYPE
+	TUNIT#                  / Unit of column PAT_TYPE
+	TTYPE#  PHAS            / PHA values of surrounding 3x3 matrix
+	TFORM#  9I              / Format of column PHAS
+	TUNIT#                  / Unit of column PHAS

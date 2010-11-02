@@ -4,8 +4,8 @@
 
 #include "sixt.h"
 #include "gendet.h"
-#include "genevent.h"
-#include "geneventfile.h"
+#include "genpattern.h"
+#include "genpatternfile.h"
 
 #define TOOLSUB genpat_main
 #include "headas_main.c"
@@ -15,11 +15,6 @@
 // the recombined patterns.
 #define ONLY_VALID_PATTERNS 1
 
-// Store only the main pixel event of a split pattern with the 
-// maximum charge in the output event file. Recombine the PHA value 
-// of the original photon.
-#define ONLY_MAIN_EVENT 1
-
 
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
@@ -28,8 +23,8 @@
 
 struct Parameters {
   char xml_filename[MAXMSG];
-  char input_eventlist_filename[MAXMSG];
-  char output_eventlist_filename[MAXMSG];
+  char eventlist_filename[MAXMSG];
+  char patternlist_filename[MAXMSG];
 };
 
 

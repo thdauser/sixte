@@ -4,16 +4,13 @@
 static inline void clearGenPatPixels(GenDet* const det, 
 				     GenEvent** const pixels) 
 {
-  GenEvent empty_event = { .time=0. };
+  GenEvent empty_event = {.frame=0};
   assert(0==empty_event.rawx);
   assert(0==empty_event.rawy);
   assert(0==empty_event.pileup);
   assert(0==empty_event.pha);
   assert(0.==empty_event.charge);
   assert(0==empty_event.frame);
-  assert(0==empty_event.pat_type);
-  assert(0==empty_event.pat_id);
-  assert(0==empty_event.pat_alig);
 
   int ii, jj;
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
@@ -25,9 +22,11 @@ static inline void clearGenPatPixels(GenDet* const det,
 
 
 			     
-static void addGenPat2List(GenDet* const det, GenEvent** const pixels, 
+static void addGenPat2List(GenDet* const det, 
+			   GenEvent** const pixels, 
 			   const int x, const int y, 
-			   GenEvent* const list, int* const nlist)
+			   GenEvent* const list, 
+			   int* const nlist)
 {
   // Add the event to the list.
   list[*nlist] = pixels[x][y];
@@ -77,8 +76,9 @@ static void addGenPat2List(GenDet* const det, GenEvent** const pixels,
 
 
 
-static void GenPatId(GenDet* const det, GenEvent** const pixels, 
-		     GenEventFile* const file, 
+static void GenPatId(GenDet* const det, 
+		     GenEvent** const pixels, 
+		     GenPatternFile* const file, 
 		     struct PatternStatistics* const patstat,
 		     int* const status)
 {
@@ -117,8 +117,10 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	// Determine the pattern type and orientation.
 	int ll;
 	// Indices of maximum charged pixels in descending order.
-	int idx[1000] = { 0, 0, 0, 0 };
-	// Determine indices with maximum charge event at the
+	int idx[1000] = {};
+	assert(idx[0]==0);
+	assert(idx[999]==0);
+	// Determine indices with maximum event charge at the
 	// first position and the weakest partner at the end: idx[0]..idx[3].
 	for (kk=0; kk<nlist; kk++) {
 	  idx[kk]=kk;
@@ -132,39 +134,25 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	  }
 	}
 
-	// The maximum charge is in the central pixel.
-	list[idx[0]].pat_id = 5; 
-
 	// Determine the pattern type and alignment (orientation).
-	int pat_type=0, pat_alig=0;
+	int pat_type=0;
 	switch (nlist) {
-	case 1:  // Single event.
+	case 1: // Single event.
 	  pat_type = 1;
-	  pat_alig = 0;
 	  break;
 	  
 	case 2: // Double event.
 	  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-	    if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
+	    if ((list[idx[1]].rawy==list[idx[0]].rawy+1) ||
+		(list[idx[1]].rawy==list[idx[0]].rawy-1)) {
 	      pat_type = 2;
-	      list[idx[1]].pat_id = 2;
-	      pat_alig = 1;
-	    } else if (list[idx[1]].rawy==list[idx[0]].rawy-1) {
-	      pat_type = 2;
-	      list[idx[1]].pat_id = 8;
-	      pat_alig = 5;
 	    } else {
 	      pat_type = -1;
 	    }
 	  } else if (list[idx[1]].rawy==list[idx[0]].rawy) {
-	    if (list[idx[1]].rawx==list[idx[0]].rawx+1) {
+	    if ((list[idx[1]].rawx==list[idx[0]].rawx+1) ||
+		(list[idx[1]].rawx==list[idx[0]].rawx-1)) {
 	      pat_type = 2;
-	      list[idx[1]].pat_id = 6;
-	      pat_alig = 3;
-	    } else if (list[idx[1]].rawx==list[idx[0]].rawx-1) {
-	      pat_type = 2;
-	      list[idx[1]].pat_id = 4;
-		pat_alig = 7;
 	    } else {
 	      pat_type = -1;
 	    }
@@ -175,86 +163,26 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	  
 	case 3: // Triple event.
 	  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-	    if (list[idx[1]].rawy==list[idx[0]].rawy+1) {
-	      list[idx[1]].pat_id = 2;
-	      
-	      if (list[idx[2]].rawy==list[idx[0]].rawy) {
-		if (list[idx[2]].rawx==list[idx[0]].rawx+1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 6;
-		  pat_alig            = 1;
-		} else if (list[idx[2]].rawx==list[idx[0]].rawx-1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 4;
-		  pat_alig            = 8;
-		} else {
-		  pat_type = -1;
-		}
-	      } else {
-		pat_type = -1;
-	      }
-	      
-	    } else if (list[idx[1]].rawy==list[idx[0]].rawy-1) {
-	      list[idx[1]].pat_id = 8;
-	      
-	      if (list[idx[2]].rawy==list[idx[0]].rawy) {
-		if (list[idx[2]].rawx==list[idx[0]].rawx+1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 6;
-		  pat_alig            = 4;
-		} else if (list[idx[2]].rawx==list[idx[0]].rawx-1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 4;
-		  pat_alig            = 5;
-		} else {
-		    pat_type = -1;
-		}
-	      } else {
-		pat_type = -1;
-	      }
+	    if (((list[idx[1]].rawy==list[idx[0]].rawy+1) ||
+		 (list[idx[1]].rawy==list[idx[0]].rawy-1)) &&
+
+		((list[idx[2]].rawy==list[idx[0]].rawy) &&
+		 ((list[idx[2]].rawx==list[idx[0]].rawx+1) ||
+		  (list[idx[2]].rawx==list[idx[0]].rawx-1)))) {
+		  pat_type = 3;
 	    } else {
 	      pat_type = -1;
 	    }
 	  } // END of RAWX(maximum) == RAWX(second largest event).
 
 	  else if (list[idx[1]].rawy==list[idx[0]].rawy) {
-	    if (list[idx[1]].rawx==list[idx[0]].rawx+1) {
-	      list[idx[1]].pat_id = 6;
-	      
-	      if (list[idx[2]].rawx==list[idx[0]].rawx) {
-		if (list[idx[2]].rawy==list[idx[0]].rawy+1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 2;
-		  pat_alig            = 2;
-		} else if (list[idx[2]].rawy==list[idx[0]].rawy-1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 8;
-		  pat_alig            = 3;
-		} else {
-		  pat_type = -1;
-		}
-		} else {
-		pat_type = -1;
-	      }
-	      
-	    } else if (list[idx[1]].rawx==list[idx[0]].rawx-1) {
-	      list[idx[1]].pat_id = 4;
-	      
-	      if (list[idx[2]].rawx==list[idx[0]].rawx) {
-		if (list[idx[2]].rawy==list[idx[0]].rawy+1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 2;
-		  pat_alig            = 7;
-		} else if (list[idx[2]].rawy==list[idx[0]].rawy-1) {
-		  pat_type            = 3;
-		  list[idx[2]].pat_id = 8;
-		  pat_alig            = 6;
-		} else {
-		  pat_type = -1;
-		}
-	      } else {
-		pat_type = -1;
-	      }
+	    if (((list[idx[1]].rawx==list[idx[0]].rawx+1) ||
+		 (list[idx[1]].rawx==list[idx[0]].rawx-1)) &&
+
+		((list[idx[2]].rawx==list[idx[0]].rawx) &&
+		 ((list[idx[2]].rawy==list[idx[0]].rawy+1) ||
+		  (list[idx[2]].rawy==list[idx[0]].rawy-1)))) {
+		  pat_type = 3;
 	    } else {
 	      pat_type = -1;
 	    }
@@ -276,58 +204,6 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	       ((list[idx[2]].rawy == list[idx[0]].rawy) &&
 		(list[idx[2]].rawx == list[idx[3]].rawx)))) {
 	    pat_type = 4;
-	    
-	    // Check the location of the minimum event.
-	    if (list[idx[3]].rawx==list[idx[0]].rawx+1) {
-	      if (list[idx[3]].rawy==list[idx[0]].rawy+1) {
-		list[idx[3]].pat_id = 3;
-		if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		  list[idx[1]].pat_id = 2;
-		  list[idx[2]].pat_id = 6;
-		  pat_alig            = 1;
-		} else {
-		  list[idx[1]].pat_id = 6;
-		  list[idx[2]].pat_id = 2;
-		  pat_alig            = 2;
-		}
-	      } else if (list[idx[3]].rawy==list[idx[0]].rawy-1) {
-		list[idx[3]].pat_id = 9;
-		if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		  list[idx[1]].pat_id = 8;
-		  list[idx[2]].pat_id = 6;
-		  pat_alig            = 4;
-		} else {
-		  list[idx[1]].pat_id = 6;
-		  list[idx[2]].pat_id = 8;
-		  pat_alig            = 3;
-		}
-	      }
-	    } else if (list[idx[3]].rawx==list[idx[0]].rawx-1) {
-	      if (list[idx[3]].rawy==list[idx[0]].rawy+1) {
-		list[idx[3]].pat_id = 1;
-		if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		  list[idx[1]].pat_id = 2;
-		  list[idx[2]].pat_id = 4;
-		  pat_alig            = 8;
-		} else {
-		  list[idx[1]].pat_id = 4;
-		  list[idx[2]].pat_id = 2;
-		  pat_alig            = 7;
-		}
-	      } else if (list[idx[3]].rawy==list[idx[0]].rawy-1) {
-		list[idx[3]].pat_id = 7;
-		if (list[idx[1]].rawx==list[idx[0]].rawx) {
-		  list[idx[1]].pat_id = 8;
-		  list[idx[2]].pat_id = 4;
-		  pat_alig            = 5;
-		} else {
-		  list[idx[1]].pat_id = 4;
-		  list[idx[2]].pat_id = 8;
-		  pat_alig            = 6;
-		}
-	      }
-	    } else { assert(0==1); }
-	    
 	  } else {
 	    pat_type = -1;
 	  }
@@ -339,53 +215,61 @@ static void GenPatId(GenDet* const det, GenEvent** const pixels,
 	}
 	// END of switch(nlist).
 
-	// Set the pattern type and alignment (orientation).
+	// Store the pattern in the output file.
 	if ((pat_type > 0) && (0==border)) { 
-	  // Valid pattern!
+	  // This is a valid pattern: combine the individual pixel
+	  // events and store only one pattern.
+	  GenPattern pattern = {.pat_type=0};
+
+	  // Set the event data from the central main event.
+	  pattern.event    = list[0];
+	  pattern.pat_type = pat_type;
+
+	  // Recombine the PHA values of the individual events.
+	  float charge = 0.;
 	  for (kk=0; kk<nlist; kk++) {
-	    list[kk].pat_type = pat_type;
-	    list[kk].pat_alig = pat_alig;
+	    charge += list[kk].charge;
+	  }	  
+	  pattern.event.pha = getEBOUNDSChannel(charge, det->rmf);
+
+	  // Store the PHA values of the pixels above the threshold in  the 
+	  // 3x3 matrix around the central pixel.
+	  for (kk=0; kk<9; kk++) {
+	    pattern.phas[kk] = 0;
 	  }
+	  for (kk=0; kk<nlist; kk++) {
+	    pattern.phas[(list[kk].rawx-list[0].rawx+1) +
+			 (3*(list[kk].rawy-list[0].rawy+1))] = list[kk].pha;
+	  }
+
+	  // Store the pattern in the output file.
+	  addGenPattern2File(file, &pattern, status);	  
+
 	} else if ((-1==pat_type) || (1==border)) {
-	  // Invalid pattern!
+#ifndef ONLY_VALID_PATTERNS
+
+	  // This is an INvalid pattern: store each individual event as 
+	  // a single pattern with patternID = -1.
+
+	  // Transfer PHA of the current pixel.
 	  for (kk=0; kk<nlist; kk++) {
-	    list[kk].pat_type = -1;
-	    list[kk].pat_id   =  0;
-	    list[kk].pat_alig =  0;
+	    GenPattern pattern = {.pat_type=0};
+	  
+	    pattern.event    = list[kk];
+	    pattern.phas[4]  = list[kk].pha;
+	    pattern.pat_type = -1;
+
+	    // Store the pattern in the output file.
+	    addGenPattern2File(file, &pattern, status);	  
 	  }
+#endif
 	} else {
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: Could not determine pattern type!\n", *status);
 	  return;
 	}
+	// END of adding the pattern data to the output file.
 
-	// Store the split pattern information in the output event file.
-#ifdef ONLY_VALID_PATTERNS
-	// Only store valid pattern types in the output file.
-	if ((pat_type>0) && (0==border)) {
-#endif
-
-#ifdef ONLY_MAIN_EVENT
-	  // Store only the main pixel event with the maximum charge
-	  // in the output file.
-	  // Recombine the PHA values of the individual events.
-	  float energy = 0.;
-	  for (kk=0; kk<nlist; kk++) {
-	    energy += getEBOUNDSEnergy(list[kk].pha, det->rmf, 0);
-	  }
-	  list[idx[0]].charge = energy;
-	  list[idx[0]].pha    = getEBOUNDSChannel(energy, det->rmf);
-	  addGenEvent2File(file, &list[idx[0]], status);
-#else
-	  for (kk=0; kk<nlist; kk++) {
-	    addGenEvent2File(file, &list[kk], status);
-	  }
-#endif
-
-#ifdef ONLY_VALID_PATTERNS
-	}
-#endif
-	// END of adding the split data to the output event file.
 
 	// Store the information about the pattern type in the
 	// statistics data structure.
@@ -448,7 +332,7 @@ int genpat_main() {
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;
   // Output event file. 
-  GenEventFile* output_file=NULL;
+  GenPatternFile* output_file=NULL;
   // Detector pixel array.
   GenEvent** pixels=NULL;
   // Pattern statistics. Count the numbers of the individual pattern types
@@ -491,7 +375,7 @@ int genpat_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Set the input event file.
-    det->eventfile=openGenEventFile(parameters.input_eventlist_filename, 
+    det->eventfile=openGenEventFile(parameters.eventlist_filename, 
 				    READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
@@ -512,9 +396,9 @@ int genpat_main() {
     }
     // Append the filename of the template file itself.
     strcat(template, "/");
-    strcat(template, det->eventfile_template);
+    strcat(template, det->patternfile_template);
     // Open a new event file from the specified template.
-    output_file = openNewGenEventFile(parameters.output_eventlist_filename, template, &status);
+    output_file = openNewGenPatternFile(parameters.patternlist_filename, template, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Copy header keywords from the input to the output event file.
@@ -524,7 +408,7 @@ int genpat_main() {
     long n_detected_photons=0; 
     if (fits_read_key(det->eventfile->fptr, TLONG, "NDETECTD", 
 		      &n_detected_photons, comment, &status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NDETECTD", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NDETECTD", 
 			&n_detected_photons, "number of detected photons", 
 			&status)) break;
 
@@ -532,35 +416,35 @@ int genpat_main() {
     long detchans=0; 
     if (fits_read_key(det->eventfile->fptr, TLONG, "DETCHANS", 
 		      &detchans, comment, &status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "DETCHANS", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "DETCHANS", 
 			&detchans, comment, &status)) break;
 
     // First EBOUNDS channel.
     long tlmin1=0; 
     if (fits_read_key(det->eventfile->fptr, TLONG, "TLMIN1", 
 		      &tlmin1, comment, &status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "TLMIN1", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "TLMIN1", 
 			&tlmin1, comment, &status)) break;    
 
     // Last EBOUNDS channel.
     long tlmax1=0; 
     if (fits_read_key(det->eventfile->fptr, TLONG, "TLMAX1", 
 		      &tlmax1, comment, &status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "TLMAX1", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "TLMAX1", 
 			&tlmax1, comment, &status)) break;    
 
     // Number of pixels in x-direction.
     long nxdim=0; 
     if (fits_read_key(det->eventfile->fptr, TINT, "NXDIM", 
 		      &nxdim, comment, &status)) break;
-    if (fits_update_key(output_file->fptr, TINT, "NXDIM", 
+    if (fits_update_key(output_file->geneventfile->fptr, TINT, "NXDIM", 
 			&nxdim, comment, &status)) break;
 
     // Number of pixels in y-direction.
     long nydim=0; 
     if (fits_read_key(det->eventfile->fptr, TINT, "NYDIM", 
 		      &nydim, comment, &status)) break;
-    if (fits_update_key(output_file->fptr, TINT, "NYDIM", 
+    if (fits_update_key(output_file->geneventfile->fptr, TINT, "NYDIM", 
 			&nydim, comment, &status)) break;    
     // END of copying header keywords.
 
@@ -646,36 +530,36 @@ int genpat_main() {
     headas_printf("\n");
 
     // Store the pattern statistics in the FITS header.
-    if (fits_update_key(output_file->fptr, TLONG, "NSINGLES", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NSINGLES", 
 			&patstat.nsingles, "number of single patterns", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NDOUBLES", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NDOUBLES", 
 			&patstat.ndoubles, "number of double patterns", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NTRIPLES", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NTRIPLES", 
 			&patstat.ntriples, "number of triple patterns", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NQUADRUP", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NQUADRUP", 
 			&patstat.nquadruples, "number of quadruple patterns", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NVALIDS", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NVALIDS", 
 			&patstat.nvalids, "number of valid patterns", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NINVALID", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NINVALID", 
 			&patstat.ninvalids, "number of invalid patterns", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NPILEUP", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUP", 
 			&patstat.npileup, "number of pile-up patterns", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NPILEUPS", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPS", 
 			&patstat.npileup_singles, 
 			"number of singles marked as pile-up", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NPILEUPV", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPV", 
 			&patstat.npileup_valid, 
 			"number of valid patterns marked as pile-up", 
 			&status)) break;
-    if (fits_update_key(output_file->fptr, TLONG, "NPILEUPI", 
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPI", 
 			&patstat.npileup_invalid, 
 			"number of invalid patterns marked as pile-up", 
 			&status)) break;
@@ -707,7 +591,7 @@ int genpat_main() {
   destroyGenDet(&det, &status);
   
   // Close the output eventfile.
-  destroyGenEventFile(&output_file, &status);
+  destroyGenPatternFile(&output_file, &status);
   
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
@@ -722,15 +606,15 @@ int getpar(struct Parameters* const parameters)
   int status=EXIT_SUCCESS; // Error status
 
   // Get the name of the input event list file (FITS file).
-  if ((status = PILGetFname("input_eventlist_filename", 
-			    parameters->input_eventlist_filename))) {
+  if ((status = PILGetFname("eventlist_filename", 
+			    parameters->eventlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the input event list file!\n", status);
   }
 
   // Get the name of the output event list file (FITS file).
-  else if ((status = PILGetFname("output_eventlist_filename", 
-				 parameters->output_eventlist_filename))) {
-    HD_ERROR_THROW("Error reading the name of the output event list file!\n", status);
+  else if ((status = PILGetFname("patternlist_filename", 
+				 parameters->patternlist_filename))) {
+    HD_ERROR_THROW("Error reading the name of the output pattern list file!\n", status);
   }
 
   // Get the name of the detector XML description file (FITS file).

@@ -321,7 +321,7 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->focal_length = 0.;
   // Set string variables to empty strings.
   strcpy(det->eventfile_template, "");
-
+  strcpy(det->patternfile_template, "");
 
 
   // Read the XML data from the file.
@@ -521,6 +521,12 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   if (0==strlen(det->eventfile_template)) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: No event file template specified!\n", *status);
+    return;    
+  }
+
+  if (0==strlen(det->patternfile_template)) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error: No pattern file template specified!\n", *status);
     return;    
   }
 
@@ -772,6 +778,12 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	  }
 	}
 
+	else if (!strcmp(Uelement, "PATTERNFILE")) {
+	  if (!strcmp(Uattribute, "TEMPLATE")) {
+	    strcpy(xmlparsedata->det->patternfile_template, attr[i+1]);
+	  }
+	}
+
 	else if (!strcmp(Uelement, "READOUT")) {
 	  if (!strcmp(Uattribute, "MODE")) {
 	    strcpy(Uvalue, attr[i+1]);
@@ -1004,7 +1016,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
   // Event data structure.
-  GenEvent event = {.time = 0.};
+  GenEvent event = {.time=0.};
 
   while (readoutGenDetLine(det->line[lineindex], &event)) {
 
@@ -1022,9 +1034,6 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
     event.rawy  = readoutindex;
     event.time  = det->clocklist->time;  // Time of detection.
     event.frame = det->clocklist->frame; // Frame of detection.
-    event.pat_type = 0;
-    event.pat_id   = 0;
-    event.pat_alig = 0;
 
     // Store the event in the output event file.
     addGenEvent2File(det->eventfile, &event, status);
@@ -1057,12 +1066,10 @@ void GenDetNewEventFile(GenDet* const det, const char* const filename,
   if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
     strcpy(template, buffer);
   } else {
-    //      if ((status = PILGetFname("fits_templates", parameters->eventlist_template))) {
     *status=EXIT_FAILURE;
     HD_ERROR_THROW("Error: Could not read environment variable 'SIXT_FITS_TEMPLATES'!\n", 
 		   *status);
     return;
-    //      }
   }
 
   // Append the filename of the template file itself.
