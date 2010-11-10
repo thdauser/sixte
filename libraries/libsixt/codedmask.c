@@ -141,7 +141,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
     mask->n_transparent_pixels=0;
     for(x=0; x<mask->naxis1; x++) {
       for(y=0; y<mask->naxis2; y++) {
-	mask->map[x][y] = input_buffer[x+ mask->naxis2*y];
+	mask->map[x][y] = input_buffer[x+ mask->naxis1*y];
 	
 	// Check if the pixel is transparent or opaque.
 	if (TRANSPARENT==mask->map[x][y]) {

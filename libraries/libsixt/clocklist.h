@@ -3,14 +3,9 @@
 
 #include "sixt.h"
 
-#ifndef HEASP_H
-#define HEASP_H 1
-#include "heasp.h"
-#endif
-
 
 /////////////////////////////////////////////////////////////////
-// Constants
+// Constants.
 /////////////////////////////////////////////////////////////////
 
 
@@ -105,11 +100,13 @@ void destroyClockList(ClockList** const list);
 void append2ClockList(ClockList* const list, const CLType type, 
 		      void* const element, int* const status);
 
-/** Get the next ClockList element. If the specified list is empty,
-    the return type is CL_NONE. If the detector currently is in a wait
-    status, a CL_WAIT type is returned. */
+/** Get the next ClockList element. If the specified list is empty, an
+    error is returned via the error status. If the detector currently
+    is in a wait status, a CL_NONE type is returned. The CL_WAIT type
+    is return, if a wait period has been finished. */
 void getClockListElement(ClockList* const list, const double time,
-			 CLType* type, void** const element);
+			 CLType* const type, void** const element,
+			 int* const status);
 
 
 

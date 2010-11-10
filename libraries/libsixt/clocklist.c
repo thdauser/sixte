@@ -104,35 +104,41 @@ static inline void moveClockList2NextElement(ClockList* const list)
 
 
 void getClockListElement(ClockList* const list, const double time,
-			 CLType* type, void** const element)
+			 CLType* const type, void** const element,
+			 int* const status)
 {
   // Check if the list contains any elements.
   if (0==list->nelements) {
-    type=CL_NONE;
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: Clock list is empty!\n", *status);
     return;
   }
 
   // If the current element is of the type CL_WAIT, we have to check
   // whether the time specified in the parameter list exceeds the waiting
   // period. In that case move to the next element.
-  while (CL_WAIT==list->type[list->element]) {
+  if (CL_WAIT==list->type[list->element]) {
     CLWait* clwait = (CLWait*)list->list[list->element];
     if (list->time+clwait->time >= time) {
-      *type   =CL_WAIT;
-      *element=list->list[list->element];
+      // The wait period still last.
+      *type   =CL_NONE;
+      *element=NULL;
       return;
     } else {
+      // The wait period is finished.
+      *type   =CL_WAIT;
+      *element=list->list[list->element];
+      // Move to the next element in the ClockList.
       moveClockList2NextElement(list);
       list->time+=clwait->time;
     }
+    
+  } else { // The current element is NOT of type CL_WAIT.
+    *type   =list->type[list->element];
+    *element=list->list[list->element];
+    moveClockList2NextElement(list);
   }
-  
-  // The current element is NOT of type CL_WAIT.
-  *type   =list->type[list->element];
-  *element=list->list[list->element];
-  moveClockList2NextElement(list);
 }
-
 
 
 CLWait* newCLWait(const double time, int* const status) {
@@ -145,8 +151,10 @@ CLWait* newCLWait(const double time, int* const status) {
     HD_ERROR_THROW("Error: Memory allocation for CLWait element failed!\n", *status);
     return(clwait);
   }
-  
-  // Initialize.
+
+  // Initialize pointers with NULL.
+
+  // Set parameters.
   clwait->time = time;
 
   return(clwait);

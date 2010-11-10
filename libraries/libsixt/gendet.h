@@ -2,18 +2,19 @@
 #define GENDET_H 1
 
 #include "sixt.h"
+#include "arf.h"
+#include "badpixmap.h"
+#include "clocklist.h"
+#include "codedmask.h"
 #include "gendetline.h"
 #include "genpixgrid.h"
 #include "gensplit.h"
 #include "genevent.h"
 #include "geneventfile.h"
-#include "rmf.h"
-#include "arf.h"
 #include "impact.h"
-#include "clocklist.h"
 #include "psf.h"
+#include "rmf.h"
 #include "vignetting.h"
-#include "codedmask.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -113,6 +114,9 @@ typedef struct {
       value in order to account for losses due to the shift. */
   float cte;
 
+  /** Bad pixel map. */
+  BadPixMap* badpixmap;
+
   /** Event file for the output of the detected events. */
   GenEventFile* eventfile;
   /** File name of the template for the event list FITS file. */
@@ -166,6 +170,11 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 
 /** Clear a particular line of the GenDet pixel array. */
 void GenDetClearLine(GenDet* const det, const int lineindex);
+
+/** This function is called if a bad pixel is encountered and has to
+    be applied to the detector pixel array. The parameter 'value' has
+    to be added to the bad pixel at 'x' and 'y'. */
+void encounterGenDetBadPix(void* const data, const int x, const int y, const float value);
 
 
 #endif /* GENDET_H */

@@ -118,12 +118,13 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->pixgrid=NULL;
   det->split  =NULL;
   det->line=NULL;
-  det->rmf =NULL;
-  det->arf =NULL;
   det->psf =NULL;
   det->vignetting=NULL;
   det->coded_mask=NULL;
+  det->arf =NULL;
+  det->rmf =NULL;
   det->clocklist =NULL;
+  det->badpixmap =NULL;
   det->eventfile =NULL;
 
   // Get empty GenPixGrid.
@@ -181,16 +182,19 @@ void destroyGenDet(GenDet** const det, int* const status)
     // Destroy the split model.
     destroyGenSplit(&(*det)->split);
 
+    // Destroy the BadPixMap.
+    destroyBadPixMap(&(*det)->badpixmap);
+
     // Close the event file.
     destroyGenEventFile(&(*det)->eventfile, status);
 
-    // Free the PSF.
+    // Destroy the PSF.
     destroyPSF(&(*det)->psf);
 
-    // Free the CodedMask.
+    // Destroy the CodedMask.
     destroyCodedMask(&(*det)->coded_mask);
 
-    // Free the vignetting Function.
+    // Destroy the vignetting Function.
     destroyVignetting(&(*det)->vignetting);
 
     free(*det);
@@ -537,13 +541,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
       return;    
     }
   }
-
-  //  if (0>det->threshold_event_lo_keV) {
-  //    *status = EXIT_FAILURE;
-  //    HD_ERROR_THROW("Error: No lower event threshold specified!\n", *status);
-  //    return;
-  //  }
-
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
 
@@ -756,6 +753,15 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	  }
 	}
 	
+	else if (!strcmp(Uelement, "BADPIXMAP")) {
+	  if (!strcmp(Uattribute, "FILENAME")) {
+	    // Load the detector bad pixel map.
+	    char buffer[MAXMSG];
+	    strcpy(buffer, attr[i+1]);
+	    xmlparsedata->det->badpixmap = loadBadPixMap(buffer, &xmlparsedata->status);
+	  }
+	}
+
 	else if (!strcmp(Uelement, "SPLIT")) {
 	  if (!strcmp(Uattribute, "TYPE")) {
 	    strcpy(Uvalue, attr[i+1]);
@@ -947,13 +953,24 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
   do {
     CLReadoutLine* clreadoutline=NULL;
     CLClearLine*   clclearline  =NULL;
-    getClockListElement(det->clocklist, time, &type, &element);
+    CLWait* clwait              =NULL;
+
+    getClockListElement(det->clocklist, time, &type, &element, status);
+    if (EXIT_SUCCESS!=*status) return;
+
     switch (type) {
     case CL_NONE:
-      *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Clock list is empty!\n", *status);
-      return;
+      // No operation has to be performed. The clock list is
+      // currently in a wait status.
+      break;
     case CL_WAIT:
+      // A waiting period is finished.
+      clwait = (CLWait*)element;
+      // Apply the bad pixel map (if available) with the bad pixel values weighted 
+      // by the waiting time.
+      if (NULL!=det->badpixmap) {
+	applyBadPixMap(det->badpixmap, clwait->time, encounterGenDetBadPix, det->line);
+      }
       break;
     case CL_LINESHIFT:
       GenDetLineShift(det);
@@ -970,7 +987,7 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
       break;
     }
     if(EXIT_SUCCESS!=*status) return;
-  } while(type!=CL_WAIT);
+  } while(type!=CL_NONE);
 }
 
 
@@ -1487,4 +1504,19 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
   // END of loop over all occurrences of "+" or "-" signs.
 }
 
+
+
+void encounterGenDetBadPix(void* const data, const int x, const int y, const float value) {
+  // Array of pointers to pixel lines.
+  GenDetLine** line = (GenDetLine**)data;
+
+  // Check if the bad pixel type.
+  if (value < 0.) { // The pixel is a cold one.
+    // Delete the charge in the pixel.
+    line[y]->charge[x] = 0.;
+  } else if (value > 0.) { // The pixel is a hot one.
+    // Add additional charge to the pixel.
+    addGenDetCharge2Pixel(line[y], x, value);
+  }
+}
 
