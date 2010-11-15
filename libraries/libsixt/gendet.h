@@ -7,6 +7,7 @@
 #include "clocklist.h"
 #include "codedmask.h"
 #include "gendetline.h"
+#include "genpatidentifier.h"
 #include "genpixgrid.h"
 #include "gensplit.h"
 #include "genevent.h"
@@ -55,7 +56,6 @@ typedef struct {
       for the X-ray sources, the ARF contributions have to be removed
       by normalizing the RSP matrix. */
   struct RMF* rmf;
-
   /** Detector and telescope ARF containing the effective area. */
   struct ARF* arf;
 
@@ -100,6 +100,10 @@ typedef struct {
 
   /** Split model. */
   GenSplit* split;
+
+  /** Pattern Identification data structure containing the different
+      event grades. */
+  GenPatIdentifier* pattern_identifier;
 
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or

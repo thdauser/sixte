@@ -44,6 +44,8 @@ void destroyGenPatIdentifier(GenPatIdentifier** const ident)
 void addGenPatGrade(GenPatIdentifier* const ident, 
 		    const int code, const int grade)
 {
+  if (NULL==ident) return;
+
   if ((code>=0) && (code<256)) {
     ident->grade[code] = grade;
   }
@@ -55,6 +57,8 @@ int getGenPatGrade(GenPatIdentifier* const ident,
 		   const int border,
 		   const int large) 
 {
+  if (NULL==ident) return(0);
+
   // Check if the pattern codes is within the possible range 0..255.
   if ((code<0) || (code>255)) {
     return(ident->invalid);
