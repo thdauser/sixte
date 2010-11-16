@@ -29,15 +29,15 @@ struct Parameters {
 
 
 struct PatternStatistics {
-  long nsingles;
-  long ndoubles;
-  long ntriples;
-  long nquadruples;
+  long ngrade1;
+  long ngrade2;
+  long ngrade3;
+  long ngrade4;
   long nvalids;
   long ninvalids;
   /** Number of patterns flagged as pile-up. */
   long npileup;
-  long npileup_singles;
+  long npileup_grade1;
   /** Number of valid patterns flagged as pile-up. */
   long npileup_valid;
   /** Number of invalid patterns flagged as pile-up. */

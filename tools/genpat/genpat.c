@@ -1,8 +1,7 @@
 #include "genpat.h"
 
 
-static inline void clearGenPatPixels(GenDet* const det, 
-				     GenEvent** const pixels) 
+static inline GenEvent emptyEvent() 
 {
   GenEvent empty_event = {.frame=0};
   assert(0==empty_event.rawx);
@@ -12,63 +11,73 @@ static inline void clearGenPatPixels(GenDet* const det,
   assert(0.==empty_event.charge);
   assert(0==empty_event.frame);
 
+  return(empty_event);
+}
+
+
+static inline void clearGenPatPixels(GenDet* const det, 
+				     GenEvent** const pixels) 
+{
   int ii, jj;
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
-      pixels[ii][jj] = empty_event;
+      pixels[ii][jj] = emptyEvent();
     }
   }
 }
 
 
 			     
-static void addGenPat2List(GenDet* const det, 
+static void add2GenPatList(GenDet* const det, 
 			   GenEvent** const pixels, 
 			   const int x, const int y, 
-			   GenEvent* const list, 
+			   const float split_threshold,
+			   GenEvent** const list, 
 			   int* const nlist)
 {
+  // Check if the pixel is already contained in the list.
+  int ii; 
+  for (ii=0; ii<*nlist; ii++) {
+    if (list[ii]==&pixels[x][y]) {
+      // The pixel is already contained in the list.
+      return;
+    }
+  }
+
   // Add the event to the list.
-  list[*nlist] = pixels[x][y];
+  list[*nlist] = &pixels[x][y];
   (*nlist)++;
   assert(*nlist<1000);
-  // Delete the pixel, such that it is not used twice.
-  pixels[x][y].charge = 0.;
 
   // Check the surrounding pixels.
 #ifdef DIAGONAL_PATTERN_PILEUP
   // Check the diagonal pixels for pattern pile-up.
-  int ii, jj;
+  int jj;
   int xmin = MAX(0, x-1);
   int xmax = MIN(det->pixgrid->xwidth-1, x+1);
   int ymin = MAX(0, y-1);
   int ymax = MIN(det->pixgrid->ywidth-1, y+1);
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
-      if ((pixels[ii][jj].charge > list[0].charge*det->threshold_split_lo_fraction) &&
-	  (pixels[ii][jj].charge > det->threshold_split_lo_keV)) {
-	addGenPat2List(det, pixels, ii, jj, list, nlist);
+      if (pixels[ii][jj].charge > split_threshold) {
+	add2GenPatList(det, pixels, ii, jj, split_threshold, list, nlist);
       }
     }
   }
-  // END of loop over surrounding pixels.
 #else
   // Simple Pattern check: do NOT check diagonal pixels.
-  int ii;
   int min = MAX(0, x-1);
   int max = MIN(det->pixgrid->xwidth-1, x+1);
   for (ii=min; ii<=max; ii++) {
-    if ((pixels[ii][y].charge > list[0].charge*det->threshold_split_lo_fraction) &&
-	(pixels[ii][y].charge > det->threshold_split_lo_keV)) {
-      addGenPat2List(det, pixels, ii, y, list, nlist);
+    if (pixels[ii][y].charge > split_threshold) {
+      add2GenPatList(det, pixels, ii, y, split_threshold, list, nlist);
     }
   }
   min = MAX(0, y-1);
   max = MIN(det->pixgrid->ywidth-1, y+1);
   for (ii=min; ii<=max; ii++) {
-    if ((pixels[x][ii].charge > list[0].charge*det->threshold_split_lo_fraction) &&
-	(pixels[x][ii].charge > det->threshold_split_lo_keV)) {
-      addGenPat2List(det, pixels, x, ii, list, nlist);
+    if (pixels[x][ii].charge > split_threshold) {
+      add2GenPatList(det, pixels, x, ii, split_threshold, list, nlist);
     }
   }
 #endif // END of neglect diagonal pixels.
@@ -76,13 +85,69 @@ static void addGenPat2List(GenDet* const det,
 
 
 
-static void GenPatId(GenDet* const det, 
-		     GenEvent** const pixels, 
-		     GenPatternFile* const file, 
-		     struct PatternStatistics* const patstat,
-		     int* const status)
+static void findMaxCharge(GenDet* const det,
+			  GenEvent** const pixels,
+			  int* const x, 
+			  int* const y)
 {
-  GenEvent list[1000];
+  int xn = *x;
+  int yn = *y;
+
+#ifdef DIAGONAL_PATTERN_PILEUP
+  // Check the diagonal pixels for pattern pile-up.
+  int ii, jj;
+  int xmin = MAX(0, *x-1);
+  int xmax = MIN(det->pixgrid->xwidth-1, *x+1);
+  int ymin = MAX(0, *y-1);
+  int ymax = MIN(det->pixgrid->ywidth-1, *y+1);
+  for (ii=xmin; ii<=xmax; ii++) {
+    for (jj=ymin; jj<=ymax; jj++) {
+      if (pixels[ii][jj].charge > pixels[xn][yn].charge) {
+	xn = ii;
+	yn = jj;
+      }
+    }
+  }
+#else
+  // Simple Pattern check: do NOT check diagonal pixels.
+  int ii;
+  int min = MAX(0, *x-1);
+  int max = MIN(det->pixgrid->xwidth-1, *x+1);
+  for (ii=min; ii<=max; ii++) {
+    if (pixels[ii][*y].charge > pixels[xn][yn].charge) {
+      xn = ii;
+      yn = *y;
+    }
+  }
+  min = MAX(0, *y-1);
+  max = MIN(det->pixgrid->ywidth-1, *y+1);
+  for (ii=min; ii<=max; ii++) {
+    if (pixels[*x][ii].charge > pixeks[xn][yn].charge) {
+      xn = *x;
+      yn = ii;
+    }
+  }
+#endif
+
+  // If there is a pixel in the neigborhood with a bigger charge than
+  // the current maximum, perform an iterative function call.
+  if ((xn!=*x) || (yn!=*y)) {
+    findMaxCharge(det, pixels, &xn, &yn);
+    // Return the new maximum.
+    *x = xn;
+    *y = yn;
+  }
+}
+
+
+
+static void GenPatIdentification(GenDet* const det, 
+				 GenEvent** const pixels, 
+				 GenPatternFile* const file, 
+				 struct PatternStatistics* const patstat,
+				 int* const status)
+{
+  GenEvent* list[1000];
   int nlist;
 
   // Loop over all pixels, searching charges/PHA values above 
@@ -92,224 +157,156 @@ static void GenPatId(GenDet* const det,
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
       if (pixels[ii][jj].charge > det->threshold_event_lo_keV) {
 	// Found an event above the primary event threshold.
+
+	// Find the local charge maximum.
+	int maxx, maxy;
+	findMaxCharge(det, pixels, &maxx, &maxy);
 	
-	// Add the event to the temporary event list and
-	// check the surrounding pixels.
-	// The function addGetPat2List deletes the charge in
-	// the processed pixel such that it is not taken into
-	// account later again.
+	// Create a temporary event list of all pixels in the
+	// neighborhood above the split threshold.
+	float split_threshold;
+	if (det->threshold_split_lo_fraction > 0) {
+	  split_threshold = det->threshold_split_lo_fraction*pixels[maxx][maxy].charge;
+	} else {
+	  split_threshold = det->threshold_split_lo_keV;
+	}
 	nlist=0;
-	addGenPat2List(det, pixels, ii, jj, list, &nlist);
+	add2GenPatList(det, pixels, maxx, maxy, split_threshold, list, &nlist);
 	// Now 'list' contains all events contributing to this pattern.
 
 	// Check if the pattern lies at the borders of the detectors.
 	// In that case it is flagged as border pattern and will be
 	// treated as invalid.
-	int border=0;
 	int kk;
+	int border=0;
 	for (kk=0; kk<nlist; kk++) {
-	  if ((0==list[kk].rawx) || (det->pixgrid->xwidth-1==list[kk].rawx) ||
-	      (0==list[kk].rawy) || (det->pixgrid->ywidth-1==list[kk].rawy)) {
+	  if ((0==list[kk]->rawx) || (det->pixgrid->xwidth-1==list[kk]->rawx) ||
+	      (0==list[kk]->rawy) || (det->pixgrid->ywidth-1==list[kk]->rawy)) {
 	    border=1;
+	    break;
 	  }
 	}
 
-	// Determine the pattern type and orientation.
-	int ll;
-	// Indices of maximum charged pixels in descending order.
-	int idx[1000] = {};
-	assert(idx[0]==0);
-	assert(idx[999]==0);
-	// Determine indices with maximum event charge at the
-	// first position and the weakest partner at the end: idx[0]..idx[3].
+	// Check if the pattern covers a larger area than a 3x3 matrix.
+	int large=0;
+	for (kk=1; kk<nlist; kk++) {
+	  if ((abs(list[kk]->rawx-list[0]->rawx)>1) ||
+	      (abs(list[kk]->rawy-list[0]->rawy)>1)) {
+	    large = 1;
+	    break;
+	  }
+	}
+
+	// Determine the pattern code.
+	float total_charge = pixels[maxx][maxy].charge;
+	int pattern_code = 0;
+	for (kk=1; kk<nlist; kk++) {
+	  if (list[kk]->rawy == maxy-1) {
+	    if (list[kk]->rawx == maxx-1) {
+	      pattern_code += 1;
+	      total_charge += list[kk]->charge;
+	    } else if (list[kk]->rawx == maxx) {
+	      pattern_code += 2;
+	      total_charge += list[kk]->charge;
+	    } else if (list[kk]->rawx == maxx+1) {
+	      pattern_code += 4;
+	      total_charge += list[kk]->charge;
+	    }
+	  } else if (list[kk]->rawy == maxy) {
+	    if (list[kk]->rawx == maxx-1) {
+	      pattern_code += 8;
+	      total_charge += list[kk]->charge;
+	    } else if (list[kk]->rawx == maxx+1) {
+	      pattern_code += 16;
+	      total_charge += list[kk]->charge;
+	    }
+	  } else if (list[kk]->rawy == maxy+1) {
+	    if (list[kk]->rawx == maxx-1) {
+	      pattern_code += 32;
+	      total_charge += list[kk]->charge;
+	    } else if (list[kk]->rawx == maxx) {
+	      pattern_code += 64;
+	      total_charge += list[kk]->charge;
+	    } else if (list[kk]->rawx == maxx+1) {
+	      pattern_code += 128;
+	      total_charge += list[kk]->charge;
+	    }
+	  }
+	}
+	// END of determine the pattern code.
+
+	// Determine the pattern grade.
+	GenPattern pattern = {
+	  .pat_type = getGenPatGrade(det->pattern_identifier,
+				     pattern_code, border, large),
+	  .event = pixels[maxx][maxy]
+	};
+
+	// Combine the PHA values of the individual events.
+	pattern.event.pha = getEBOUNDSChannel(total_charge, det->rmf);
+
+	// Store the PHA values of the pixels above the threshold in  the 
+	// 3x3 matrix around the central pixel.
+	for (kk=0; kk<9; kk++) {
+	  pattern.phas[kk] = 0;
+	}
 	for (kk=0; kk<nlist; kk++) {
-	  idx[kk]=kk;
-	  for (ll=kk-1; ll>=0; ll--) {
-	    if (list[idx[ll]].charge<list[kk].charge) {
-	      idx[ll+1] = idx[ll];
-	      idx[ll]   = kk;
-	    } else {
-	      break;
-	    }
+	  if ((abs(list[kk]->rawx-maxx)<2) && (abs(list[kk]->rawy-maxy)<2)) {
+	    pattern.phas[(list[kk]->rawx-maxx+1) + (3*(list[kk]->rawy-maxy+1))] = 
+	      list[kk]->pha;
 	  }
 	}
 
-	// Determine the pattern type and alignment (orientation).
-	int pat_type=0;
-	switch (nlist) {
-	case 1: // Single event.
-	  pat_type = 1;
-	  break;
-	  
-	case 2: // Double event.
-	  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-	    if ((list[idx[1]].rawy==list[idx[0]].rawy+1) ||
-		(list[idx[1]].rawy==list[idx[0]].rawy-1)) {
-	      pat_type = 2;
-	    } else {
-	      pat_type = -1;
-	    }
-	  } else if (list[idx[1]].rawy==list[idx[0]].rawy) {
-	    if ((list[idx[1]].rawx==list[idx[0]].rawx+1) ||
-		(list[idx[1]].rawx==list[idx[0]].rawx-1)) {
-	      pat_type = 2;
-	    } else {
-	      pat_type = -1;
-	    }
-	  } else {
-	    pat_type = -1;
-	  }
-	  break;
-	  
-	case 3: // Triple event.
-	  if (list[idx[1]].rawx==list[idx[0]].rawx) {
-	    if (((list[idx[1]].rawy==list[idx[0]].rawy+1) ||
-		 (list[idx[1]].rawy==list[idx[0]].rawy-1)) &&
-
-		((list[idx[2]].rawy==list[idx[0]].rawy) &&
-		 ((list[idx[2]].rawx==list[idx[0]].rawx+1) ||
-		  (list[idx[2]].rawx==list[idx[0]].rawx-1)))) {
-		  pat_type = 3;
-	    } else {
-	      pat_type = -1;
-	    }
-	  } // END of RAWX(maximum) == RAWX(second largest event).
-
-	  else if (list[idx[1]].rawy==list[idx[0]].rawy) {
-	    if (((list[idx[1]].rawx==list[idx[0]].rawx+1) ||
-		 (list[idx[1]].rawx==list[idx[0]].rawx-1)) &&
-
-		((list[idx[2]].rawx==list[idx[0]].rawx) &&
-		 ((list[idx[2]].rawy==list[idx[0]].rawy+1) ||
-		  (list[idx[2]].rawy==list[idx[0]].rawy-1)))) {
-		  pat_type = 3;
-	    } else {
-	      pat_type = -1;
-	    }
-	  } // END of RAWY(maximum) == RAWY(second largest event).
-	  else {
-	    pat_type = -1;
-	  }
-	  break;
-
-	case 4: // Quadruple event.
-	  
-	  if ((((list[idx[1]].rawy == list[idx[3]].rawy) &&
-		(list[idx[1]].rawx == list[idx[0]].rawx)) ||
-	       ((list[idx[1]].rawy == list[idx[0]].rawy) &&
-		(list[idx[1]].rawx == list[idx[3]].rawx))) && 
-	      
-	      (((list[idx[2]].rawy == list[idx[3]].rawy) &&
-		(list[idx[2]].rawx == list[idx[0]].rawx)) ||
-	       ((list[idx[2]].rawy == list[idx[0]].rawy) &&
-		(list[idx[2]].rawx == list[idx[3]].rawx)))) {
-	    pat_type = 4;
-	  } else {
-	    pat_type = -1;
-	  }
-	  break;
-	  
-	default:
-	  pat_type=-1;
-	  break;
-	}
-	// END of switch(nlist).
-
+	
 	// Store the pattern in the output file.
-	if ((pat_type > 0) && (0==border)) { 
-	  // This is a valid pattern: combine the individual pixel
-	  // events and store only one pattern.
-	  GenPattern pattern = {.pat_type=0};
-
-	  // Set the event data from the central main event.
-	  pattern.event    = list[0];
-	  pattern.pat_type = pat_type;
-
-	  // Recombine the PHA values of the individual events.
-	  float charge = 0.;
-	  for (kk=0; kk<nlist; kk++) {
-	    charge += list[kk].charge;
-	  }	  
-	  pattern.event.pha = getEBOUNDSChannel(charge, det->rmf);
-
-	  // Store the PHA values of the pixels above the threshold in  the 
-	  // 3x3 matrix around the central pixel.
-	  for (kk=0; kk<9; kk++) {
-	    pattern.phas[kk] = 0;
-	  }
-	  for (kk=0; kk<nlist; kk++) {
-	    pattern.phas[(list[kk].rawx-list[0].rawx+1) +
-			 (3*(list[kk].rawy-list[0].rawy+1))] = list[kk].pha;
-	  }
-
-	  // Store the pattern in the output file.
-	  addGenPattern2File(file, &pattern, status);	  
-
-	} else if ((-1==pat_type) || (1==border)) {
-#ifndef ONLY_VALID_PATTERNS
-
-	  // This is an INvalid pattern: store each individual event as 
-	  // a single pattern with patternID = -1.
-
-	  // Transfer PHA of the current pixel.
-	  for (kk=0; kk<nlist; kk++) {
-	    GenPattern pattern = {.pat_type=0};
-	  
-	    pattern.event    = list[kk];
-	    pattern.phas[4]  = list[kk].pha;
-	    pattern.pat_type = -1;
-
-	    // Store the pattern in the output file.
-	    addGenPattern2File(file, &pattern, status);	  
-	  }
+#ifdef ONLY_VALID_PATTERNS
+	if (pattern.pat_type != det->pattern_identifier->invalid) {
 #endif
-	} else {
-	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: Could not determine pattern type!\n", *status);
-	  return;
+	  addGenPattern2File(file, &pattern, status);	  
+#ifdef ONLY_VALID_PATTERNS
 	}
-	// END of adding the pattern data to the output file.
+#endif
+	// END of storing the pattern data in the output file.
 
 
-	// Store the information about the pattern type in the
+	// Store the information about the pattern grade in the
 	// statistics data structure.
-	switch(pat_type) {
-	case -1:
+	if (pattern.pat_type==det->pattern_identifier->invalid) {
 	  patstat->ninvalids++;
 	  break;
-	case 1:
-	  patstat->nsingles++;
+	} else if (pattern.pat_type==1) {
+	  patstat->ngrade1++;
 	  break;
-	case 2:
-	  patstat->ndoubles++;
+	} else if (pattern.pat_type==2) {
+	  patstat->ngrade2++;
 	  break;
-	case 3:
-	  patstat->ntriples++;
+	} else if (pattern.pat_type==3) {
+	  patstat->ngrade3++;
 	  break;
-	case 4:
-	  patstat->nquadruples++;
+	} else if (pattern.pat_type==4) {
+	  patstat->ngrade4++;
 	  break;
-	default:
+	} else {
 	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: Invalid Pattern Type!\n", *status);
+	  HD_ERROR_THROW("Error: Unknown Pattern Type!\n", *status);
 	  return;
 	}
 
 	// Check if it's a valid pattern.
-	if (pat_type > 0) {
+	if (pattern.pat_type != det->pattern_identifier->invalid) {
 	  patstat->nvalids++;
 	}
 
 	// Check for pile-up.
-	if (list[0].pileup > 0) {
+	if (pattern.event.pileup > 0) {
 	  patstat->npileup++;
-	  if (pat_type>0) {
+	  if (pattern.pat_type != det->pattern_identifier->invalid) {
 	    patstat->npileup_valid++;
 	  } else {
 	    patstat->npileup_invalid++;
 	  }
-	  if (1==pat_type) {
-	    patstat->npileup_singles++;
+	  if (1==pattern.pat_type) {
+	    patstat->npileup_grade1++;
 	  }
 	}
 	// END of gathering statistical data about the pattern type.
@@ -338,14 +335,14 @@ int genpat_main() {
   // Pattern statistics. Count the numbers of the individual pattern types
   // and store this information in the output event file.
   struct PatternStatistics patstat={
-    .nsingles=0,
-    .ndoubles=0,
-    .ntriples=0,
-    .nquadruples=0,
+    .ngrade1=0,
+    .ngrade2=0,
+    .ngrade3=0,
+    .ngrade4=0,
     .nvalids=0,
     .ninvalids=0,
     .npileup=0,
-    .npileup_singles=0,
+    .npileup_grade1=0,
     .npileup_valid=0,
     .npileup_invalid=0
   };
@@ -509,7 +506,7 @@ int genpat_main() {
 
 	// Run the pattern identification and store the pattern 
 	// information in the event file.
-	GenPatId(det, pixels, output_file, &patstat, &status);
+	GenPatIdentification(det, pixels, output_file, &patstat, &status);
 	
 	// Delete the old events in the pixel array.
 	clearGenPatPixels(det, pixels);
@@ -531,16 +528,16 @@ int genpat_main() {
 
     // Store the pattern statistics in the FITS header.
     if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NSINGLES", 
-			&patstat.nsingles, "number of single patterns", 
+			&patstat.ngrade1, "number of single patterns", 
 			&status)) break;
     if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NDOUBLES", 
-			&patstat.ndoubles, "number of double patterns", 
+			&patstat.ngrade2, "number of double patterns", 
 			&status)) break;
     if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NTRIPLES", 
-			&patstat.ntriples, "number of triple patterns", 
+			&patstat.ngrade3, "number of triple patterns", 
 			&status)) break;
     if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NQUADRUP", 
-			&patstat.nquadruples, "number of quadruple patterns", 
+			&patstat.ngrade4, "number of quadruple patterns", 
 			&status)) break;
     if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NVALIDS", 
 			&patstat.nvalids, "number of valid patterns", 
@@ -552,7 +549,7 @@ int genpat_main() {
 			&patstat.npileup, "number of pile-up patterns", 
 			&status)) break;
     if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPS", 
-			&patstat.npileup_singles, 
+			&patstat.npileup_grade1, 
 			"number of singles marked as pile-up", 
 			&status)) break;
     if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPV", 
