@@ -404,7 +404,7 @@ int genpat_main() {
     // Append the filename of the template file itself.
     strcat(template, "/");
     strcat(template, det->patternfile_template);
-    // Open a new event file from the specified template.
+    // Open a new pattern file from the specified template.
     output_file = openNewGenPatternFile(parameters.patternlist_filename, template, &status);
     if (EXIT_SUCCESS!=status) break;
 

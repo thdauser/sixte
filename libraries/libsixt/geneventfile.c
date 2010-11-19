@@ -29,12 +29,11 @@ GenEventFile* newGenEventFile(int* const status)
 
 
 
-void destroyGenEventFile(GenEventFile** file, int* const status)
+void destroyGenEventFile(GenEventFile** const file, int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
       fits_close_file((*file)->fptr, status);
-      (*file)->fptr=NULL;
     }
     free(*file);
     *file=NULL;

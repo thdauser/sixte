@@ -17,14 +17,14 @@ GenPatternFile* newGenPatternFile(int* const status)
   // Initialize.
   file->cpat_type=0;
   file->cphas    =0;
-  file->geneventfile=newGenEventFile(status);
+  //  file->geneventfile=newGenEventFile(status);
 
   return(file);
 }
 
 
 
-void destroyGenPatternFile(GenPatternFile** file, 
+void destroyGenPatternFile(GenPatternFile** const file, 
 			   int* const status)
 {
   if (NULL!=*file) {
