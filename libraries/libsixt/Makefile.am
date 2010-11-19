@@ -28,6 +28,7 @@ dist_xml_DATA += epicpn.burst.xml
 dist_xml_DATA += epicpn.timing.xml
 dist_xml_DATA += comadet.xml
 dist_xml_DATA += gravitas.xml
+dist_xml_DATA += aciss3.xml
 
 ########### LIBRARIES #################
 
@@ -57,7 +58,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 
 ############ HEADERS #################
 
-# Define the headers that will be installed in $(includedir) :
+# Define the headers that will be installed in $(includedir):
 include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  gaussianchargecloud.h exponentialchargecloud.h	\
 		  arcpixels.h eventfile.h impactlistfile.h impact.h	\
@@ -74,7 +75,7 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  vignetting.h codedmask.h attitudecatalog.h		\
 		  attitudefile.h telescope.h sixt.h sixt_random.h	\
 		  sixt_string.h point.h vector.h astrosources.h		\
-		  pointsources.h pointsourcefile.h pointsourcelist.c	\
+		  pointsources.h pointsourcefile.h pointsourcelist.h	\
 		  pointsourcecatalog.h extendedsources.h sourceimage.h	\
 		  photon.h spectrum.h fits_pha.h check_fov.h		\
 		  photonlistfile.h linlightcurve.h kdtree.h rmf.h	\
