@@ -74,7 +74,7 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  attitudecatalog.h attitudefile.h telescope.h sixt.h	\
 		  sixt_random.h sixt_string.h point.h vector.h		\
 		  astrosources.h pointsources.h pointsourcefile.h	\
-		  pointsourcelist.c pointsourcecatalog.h		\
+		  pointsourcelist.h pointsourcecatalog.h		\
 		  extendedsources.h sourceimage.h photon.h spectrum.h	\
 		  fits_pha.h check_fov.h photonlistfile.h		\
 		  linlightcurve.h kdtree.h rmf.h arf.h
