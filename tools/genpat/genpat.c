@@ -159,7 +159,7 @@ static void GenPatIdentification(GenDet* const det,
 	// Found an event above the primary event threshold.
 
 	// Find the local charge maximum.
-	int maxx, maxy;
+	int maxx=ii, maxy=jj;
 	findMaxCharge(det, pixels, &maxx, &maxy);
 	
 	// Create a temporary event list of all pixels in the
@@ -370,6 +370,16 @@ int genpat_main() {
     // Initialize the detector data structure.
     det = newGenDet(parameters.xml_filename, &status);
     if (EXIT_SUCCESS!=status) break;
+
+    // Check if the detector data structure contains
+    // a pattern identifier. Otherwise it is not reasonable
+    // to run the pattern identification algorithm.
+    if (NULL==det->pattern_identifier) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: no event grading specified in detector XML definition file!\n",
+		     status);
+      break;
+    }
 
     // Set the input event file.
     det->eventfile=openGenEventFile(parameters.eventlist_filename, 
