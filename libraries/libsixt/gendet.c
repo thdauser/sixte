@@ -126,7 +126,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->clocklist =NULL;
   det->badpixmap =NULL;
   det->eventfile =NULL;
-  det->pattern_identifier=NULL;
+  det->grading=NULL;
 
   // Get empty GenPixGrid.
   det->pixgrid = newGenPixGrid(status);
@@ -187,7 +187,7 @@ void destroyGenDet(GenDet** const det, int* const status)
     destroyBadPixMap(&(*det)->badpixmap);
 
     // Destroy the pattern identifier.
-    destroyGenPatIdentifier(&(*det)->pattern_identifier);
+    destroyGenEventGrading(&(*det)->grading);
 
     // Close the event file.
     destroyGenEventFile(&(*det)->eventfile, status);
@@ -650,9 +650,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
       getAttribute(attr, "LARGEINVALID", buffer);
       int largeinvalid  = atoi(buffer);
       
-      xmlparsedata->det->pattern_identifier = 
-	newGenPatIdentifier(invalid, borderinvalid, largeinvalid,
-			    &xmlparsedata->status);
+      xmlparsedata->det->grading = 
+	newGenEventGrading(invalid, borderinvalid, largeinvalid,
+			   &xmlparsedata->status);
 
     } else if (!strcmp(Uelement, "GRADE")) {
       char buffer[MAXMSG]; // String buffer.
@@ -661,7 +661,7 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
       getAttribute(attr, "GRADE", buffer);
       int grade = atoi(buffer);
       
-      addGenPatGrade(xmlparsedata->det->pattern_identifier, code, grade);
+      addGenPatGrade(xmlparsedata->det->grading, code, grade);
 
     }
 

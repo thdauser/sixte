@@ -7,7 +7,7 @@
 #include "clocklist.h"
 #include "codedmask.h"
 #include "gendetline.h"
-#include "genpatidentifier.h"
+#include "geneventgrading.h"
 #include "genpixgrid.h"
 #include "gensplit.h"
 #include "genevent.h"
@@ -103,7 +103,7 @@ typedef struct {
 
   /** Pattern Identification data structure containing the different
       event grades. */
-  GenPatIdentifier* pattern_identifier;
+  GenEventGrading* grading;
 
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or

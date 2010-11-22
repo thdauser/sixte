@@ -292,7 +292,7 @@ static void GenPatIdentification(GenDet* const det,
 
 	// Determine the pattern grade.
 	GenPattern pattern = {
-	  .pat_type = getGenPatGrade(det->pattern_identifier,
+	  .pat_type = getGenPatGrade(det->grading,
 				     pattern_code, border, large),
 	  .event = pixels[maxx][maxy]
 	};
@@ -315,7 +315,7 @@ static void GenPatIdentification(GenDet* const det,
 	
 	// Store the pattern in the output file.
 #ifdef ONLY_VALID_PATTERNS
-	if (pattern.pat_type != det->pattern_identifier->invalid) {
+	if (pattern.pat_type != det->grading->invalid) {
 #endif
 	  addGenPattern2File(file, &pattern, status);	  
 #ifdef ONLY_VALID_PATTERNS
@@ -326,7 +326,7 @@ static void GenPatIdentification(GenDet* const det,
 
 	// Store the information about the pattern in the
 	// statistics data structure.
-	if (pattern.pat_type==det->pattern_identifier->invalid) {
+	if (pattern.pat_type==det->grading->invalid) {
 	  // Invalid pattern.
 	  patstat->ninvalids++;
 	  if (pattern.event.pileup > 0) {
@@ -411,7 +411,7 @@ int genpat_main() {
     // Check if the detector data structure contains
     // a pattern identifier. Otherwise it is not reasonable
     // to run the pattern identification algorithm.
-    if (NULL==det->pattern_identifier) {
+    if (NULL==det->grading) {
       status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: no event grading specified in detector XML definition file!\n",
 		     status);

@@ -1,5 +1,5 @@
-#ifndef GENPATIDENTIFIER_H 
-#define GENPATIDENTIFIER_H 1
+#ifndef GENEVENTGRADING_H 
+#define GENEVENTGRADING_H 1
 
 #include "sixt.h"
 
@@ -35,7 +35,7 @@ typedef struct {
       declared as invalid. */
   int largeinvalid;
 
-} GenPatIdentifier;
+} GenEventGrading;
 
 
 /////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
-/** Constructor. Allocates memory for a new empty GenPatIdentifier
+/** Constructor. Allocates memory for a new empty GenEventGrading
     data structure. The first parameter gives the default event grade
     for all events that are not contained in the map and are therefore
     regarded as invalid. The second parameter is a flag, whether
@@ -51,27 +51,27 @@ typedef struct {
     invalid, since charge information might have been lost. The third
     parameter is a flag, whether patterns larger than a 3x3 matrix are
     declared as invalid. */
-GenPatIdentifier* newGenPatIdentifier(const int invalid,
-				      const int borderinvalid,
-				      const int largeinvalid,
-				      int* const status);
+GenEventGrading* newGenEventGrading(const int invalid,
+				    const int borderinvalid,
+				    const int largeinvalid,
+				    int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
-    to the GenPatIdentifier data structure to NULL. */
-void destroyGenPatIdentifier(GenPatIdentifier** const ident);
+    to the GenEventGrading data structure to NULL. */
+void destroyGenEventGrading(GenEventGrading** const ident);
 
-/** Add a new grade to the GenPatIdentifier list. */
-void addGenPatGrade(GenPatIdentifier* const ident,
+/** Add a new grade to the GenEventGrading list. */
+void addGenPatGrade(GenEventGrading* const ident,
 		    const int code, const int grade);
 
 /** Determine the event grade of a pattern with the particular
     code. The 3rd and 4th parameter indicate, whether the pattern
     touches the border of the detector pixel array and whether the
     pattern is larger than a 3x3 matrix. */
-int getGenPatGrade(GenPatIdentifier* const ident,
+int getGenPatGrade(GenEventGrading* const ident,
 		   const int code, 
 		   const int border,
 		   const int large);
 
 
-#endif /* GENPATIDENTIFIER_H */
+#endif /* GENEVENTGRADING_H */

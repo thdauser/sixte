@@ -43,7 +43,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     xmseventfile.c htrsdetector.c gendet.c		\
 		     genpixgrid.c gensplit.c gendetline.c		\
 		     geneventfile.c genpatternfile.c clocklist.c	\
-		     badpixmap.c genpatidentifier.c htrseventfile.c	\
+		     badpixmap.c geneventgrading.c htrseventfile.c	\
 		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
 		     htrstelstream.c comadetector.c comaeventfile.c	\
 		     epicpn.c psf.c vignetting.c codedmask.c		\
@@ -68,7 +68,7 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  genpixgrid.h gensplit.h gendetline.h clocklist.h	\
 		  genevent.h genpattern.h geneventfile.h		\
 		  genpatternfile.h genpileupflag.h badpixmap.h		\
-		  genpatidentifier.h xmseventfile.h xmsevent.h		\
+		  geneventgrading.h xmseventfile.h xmsevent.h		\
 		  htrsdetector.h htrseventfile.h htrsevent.h		\
 		  telemetrypacket.h htrstelstream.h comadetector.h	\
 		  comaeventfile.h comaevent.h epicpn.h psf.h		\

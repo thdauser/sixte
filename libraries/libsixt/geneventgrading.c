@@ -1,17 +1,17 @@
-#include "genpatidentifier.h"
+#include "geneventgrading.h"
 
 
-GenPatIdentifier* newGenPatIdentifier(const int invalid,
-				      const int borderinvalid,
-				      const int largeinvalid,
-				      int* const status)
+GenEventGrading* newGenEventGrading(const int invalid,
+				    const int borderinvalid,
+				    const int largeinvalid,
+				    int* const status)
 {
-  headas_chat(5, "initialize empty GenPatIdentifier object ...\n");
+  headas_chat(5, "initialize empty GenEventGrading object ...\n");
 
-  GenPatIdentifier* ident = (GenPatIdentifier*)malloc(sizeof(GenPatIdentifier));
+  GenEventGrading* ident = (GenEventGrading*)malloc(sizeof(GenEventGrading));
   if (NULL==ident) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenPatIdentifier failed!\n", *status);
+    HD_ERROR_THROW("Error: Memory allocation for GenEventGrading failed!\n", *status);
     return(ident);
   }
 
@@ -31,7 +31,7 @@ GenPatIdentifier* newGenPatIdentifier(const int invalid,
 
 
 
-void destroyGenPatIdentifier(GenPatIdentifier** const ident) 
+void destroyGenEventGrading(GenEventGrading** const ident) 
 {
   if (NULL!=(*ident)) {
     free(*ident);
@@ -41,7 +41,7 @@ void destroyGenPatIdentifier(GenPatIdentifier** const ident)
 
 
 
-void addGenPatGrade(GenPatIdentifier* const ident, 
+void addGenPatGrade(GenEventGrading* const ident, 
 		    const int code, const int grade)
 {
   if (NULL==ident) return;
@@ -52,7 +52,7 @@ void addGenPatGrade(GenPatIdentifier* const ident,
 }
 
 
-int getGenPatGrade(GenPatIdentifier* const ident,
+int getGenPatGrade(GenEventGrading* const ident,
 		   const int code, 
 		   const int border,
 		   const int large) 
