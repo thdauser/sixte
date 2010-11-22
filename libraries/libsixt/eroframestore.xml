@@ -34,22 +34,22 @@
 </readout>
 
 <eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
-  <grade code="0" grade="1"/>
+  <grade code="0" grade="0"/>
 
-  <grade code="2" grade="2"/>
+  <grade code="2" grade="1"/>
   <grade code="8" grade="2"/>
-  <grade code="16" grade="2"/>
-  <grade code="64" grade="2"/>
+  <grade code="16" grade="3"/>
+  <grade code="64" grade="4"/>
 
-  <grade code="10" grade="3"/>
-  <grade code="18" grade="3"/>
-  <grade code="72" grade="3"/>
-  <grade code="80" grade="3"/>
+  <grade code="10" grade="5"/>
+  <grade code="18" grade="6"/>
+  <grade code="72" grade="7"/>
+  <grade code="80" grade="8"/>
 
-  <grade code="11" grade="4"/>
-  <grade code="22" grade="4"/>
-  <grade code="104" grade="4"/>
-  <grade code="208" grade="4"/>
+  <grade code="11" grade="9"/>
+  <grade code="22" grade="10"/>
+  <grade code="104" grade="11"/>
+  <grade code="208" grade="12"/>
 </eventgrading>
 
 </detector>
