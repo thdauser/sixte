@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     
   /* Read the file int-by-int from the mmap
    */
-  for (i = 1; i <=NUMINTS; ++i) {
+  for (i = 0; i <NUMINTS; ++i) {
     printf("%d: %d\n", i, map[i]);
   }
 

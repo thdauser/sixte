@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     
   /* Now write int's to the file as if it were memory (an array of ints).
    */
-  for (i = 1; i <=NUMINTS; ++i) {
+  for (i=0; i<NUMINTS; ++i) {
     map[i] = 2 * i; 
   }
 
