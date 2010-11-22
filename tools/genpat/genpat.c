@@ -337,6 +337,13 @@ static void GenPatIdentification(GenDet* const det,
 	  }
 	}
 	// END of gathering statistical data about the pattern type.
+
+	// Delete the events belonging to the pattern from the pixel array
+	// in order to prevent them being used another time.
+	for (kk=0; kk<nlist; kk++) {
+	  *(list[kk]) = emptyEvent();
+	}
+
       }
       // END of found an event above the primary threshold.
     }
