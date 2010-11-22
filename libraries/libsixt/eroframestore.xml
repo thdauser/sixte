@@ -32,5 +32,25 @@
     <wait time="1.e-6"/>
   </loop>
 </readout>
+
+<eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
+  <grade code="0" grade="1"/>
+
+  <grade code="2" grade="2"/>
+  <grade code="8" grade="2"/>
+  <grade code="16" grade="2"/>
+  <grade code="64" grade="2"/>
+
+  <grade code="10" grade="3"/>
+  <grade code="18" grade="3"/>
+  <grade code="72" grade="3"/>
+  <grade code="80" grade="3"/>
+
+  <grade code="11" grade="4"/>
+  <grade code="22" grade="4"/>
+  <grade code="104" grade="4"/>
+  <grade code="208" grade="4"/>
+</eventgrading>
+
 </detector>
 </instrument>
