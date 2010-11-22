@@ -71,20 +71,22 @@ void clearGenDetLine(GenDetLine* const line)
   // Check if the line contains any charge. If not the clearing
   // is not necessary.
   if (1==line->anycharge) {
-    int i;
-    for(i=0; i<line->xwidth; i++) {
-      line->charge[i] = 0.;
-      line->pileup[i] = GP_NONE;
+    int ii;
+#pragma omp for
+    for(ii=0; ii<line->xwidth; ii++) {
+      line->charge[ii] = 0.;
+      line->pileup[ii] = GP_NONE;
     }
     line->anycharge=0;
   }
 }
 
 
-void addGenDetLine(GenDetLine* const line0, GenDetLine* const line1)
+void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1)
 {
   // Add the charges.
   int ii;
+#pragma omp for
   for(ii=0; ii<line1->xwidth; ii++) {
     line0->charge[ii] += line1->charge[ii];
 
@@ -97,14 +99,6 @@ void addGenDetLine(GenDetLine* const line0, GenDetLine* const line1)
   if (0==line0->anycharge) {
     line0->anycharge = line1->anycharge;
   }
-}
-
-
-void switchGenDetLines(GenDetLine** const line0, GenDetLine** const line1)
-{
-  GenDetLine* buffer = *line0;
-  *line0 = *line1;
-  *line1 = buffer;
 }
 
 

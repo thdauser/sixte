@@ -52,11 +52,9 @@ void destroyGenDetLine(GenDetLine** const line);
 void clearGenDetLine(GenDetLine* const line);
 
 /** Add the charges in line 1 to line 0. The line must have the same
-    width. */
-void addGenDetLine(GenDetLine* const line0, GenDetLine* const line1);
-
-/** Switch the 2 specified lines. */
-void switchGenDetLines(GenDetLine** const line0, GenDetLine** const line1);
+    width. The line 1 is not modified, i.e. the contained charges
+    remain in there and have to be cleared separately. */
+void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1);
 
 /** Read-out a charge from the specified line. As long as there are
     any charges, the return value is 1. If the line contains no more

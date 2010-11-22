@@ -12,8 +12,10 @@ static inline void clearGenPatPixels(GenDet* const det,
   assert(0.==empty_event.charge);
   assert(0==empty_event.frame);
 
-  int ii, jj;
+  int ii;
+#pragma omp for
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
+    int jj;
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
       pixels[ii][jj] = empty_event;
     }

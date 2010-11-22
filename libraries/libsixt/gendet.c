@@ -981,19 +981,22 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
 
 void GenDetLineShift(GenDet* const det)
 {
-  int ii;
   headas_chat(5, "lineshift\n");
 
   // Check if the detector contains more than 1 line.
   if (2>det->pixgrid->ywidth) return;
 
   // Apply the Charge Transfer Efficiency.
+  int ii;
   if (det->cte!=1.) {
-    int jj;
+#pragma omp for 
     for (ii=1; ii<det->pixgrid->ywidth; ii++) {
       if (0!=det->line[ii]->anycharge) {
+	int jj;
 	for (jj=0; jj<det->line[ii]->xwidth; jj++) {
 	  det->line[ii]->charge[jj] *= det->cte;
+	  // TODO RM
+	  printf("ii=%d jj=%d\n", ii, jj);
 	}
       }
     }
@@ -1005,11 +1008,13 @@ void GenDetLineShift(GenDet* const det)
   // Clear the charges in line 1, as they are now contained in line 0.
   clearGenDetLine(det->line[1]);
 
-  // Switch the other lines in increasing order such that the cleared 
-  // original line number 1 will end up as the last line.
+  // Shift the other lines in increasing order and put the newly cleared 
+  // original line number 1 at the end as the last line.
+  GenDetLine* buffer = det->line[1];
   for (ii=1; ii<det->pixgrid->ywidth-1; ii++) {
-    switchGenDetLines(&det->line[ii], &det->line[ii+1]);
+    det->line[ii] = det->line[ii+1];
   }
+  det->line[det->pixgrid->ywidth-1] = buffer;
 }
 
 
