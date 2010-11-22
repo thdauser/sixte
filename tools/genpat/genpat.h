@@ -29,19 +29,20 @@ struct Parameters {
 
 
 struct PatternStatistics {
-  long ngrade1;
-  long ngrade2;
-  long ngrade3;
-  long ngrade4;
+  /** Number of valid patterns. */
   long nvalids;
-  long ninvalids;
-  /** Number of patterns flagged as pile-up. */
-  long npileup;
-  long npileup_grade1;
   /** Number of valid patterns flagged as pile-up. */
-  long npileup_valid;
+  long npvalids;
+
+  /** Number of invalid patterns. */
+  long ninvalids;
   /** Number of invalid patterns flagged as pile-up. */
-  long npileup_invalid;
+  long npinvalids;
+
+  /** Number of patterns with a particular grade. */
+  long ngrade[256];
+  /** NUmber of patterns with a particular grade flagged as pile-up. */
+  long npgrade[256];
 };
 
 

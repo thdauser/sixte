@@ -1,6 +1,56 @@
 #include "genpat.h"
 
 
+static struct PatternStatistics emptyPatternStatistics()
+{
+  struct PatternStatistics stat = {
+    .nvalids=0,
+    .npvalids=0,
+    .ninvalids=0,
+    .npinvalids=0
+  };
+  int ii;
+  for (ii=0; ii<256; ii++) {
+    stat.ngrade[ii]=0;
+    stat.npgrade[ii]=0;
+  }
+
+  return(stat);
+}
+
+
+static void writePatternStatistics2FITSHeader(struct PatternStatistics stat, 
+					      fitsfile* const fptr, 
+					      int* const status)
+{
+  // Valids.
+  if (fits_update_key(fptr, TLONG, "NVALID", &stat.nvalids, 
+		      "number of valid patterns", status)) return;
+  if (fits_update_key(fptr, TLONG, "NPVALID", &stat.npvalids, 
+		      "number of piled up valid patterns", status)) return;
+  // Invalids.
+  if (fits_update_key(fptr, TLONG, "NINVALID", &stat.ninvalids, 
+		      "number of invalid patterns", status)) return;
+  if (fits_update_key(fptr, TLONG, "NPINVALI", &stat.npinvalids, 
+		      "number of piled up invalid patterns", status)) return;
+
+  // The different grades.
+  int ii;
+  for (ii=0; ii<256; ii++) {
+    char keyword[MAXMSG];
+    char comment[MAXMSG];
+    sprintf(keyword, "NGRAD%d", ii);
+    sprintf(comment, "number of patterns with grade %d", ii);
+    if (fits_update_key(fptr, TLONG, keyword, &stat.ngrade[ii], 
+			comment, status)) return;
+    sprintf(keyword, "NPGRA%d", ii);
+    sprintf(comment, "number of piled up patterns with grade %d", ii);
+    if (fits_update_key(fptr, TLONG, keyword, &stat.npgrade[ii], 
+			comment, status)) return;    
+  }
+}
+
+
 static inline GenEvent emptyEvent() 
 {
   GenEvent empty_event = {.frame=0};
@@ -269,44 +319,21 @@ static void GenPatIdentification(GenDet* const det,
 	// END of storing the pattern data in the output file.
 
 
-	// Store the information about the pattern grade in the
+	// Store the information about the pattern in the
 	// statistics data structure.
 	if (pattern.pat_type==det->pattern_identifier->invalid) {
+	  // Invalid pattern.
 	  patstat->ninvalids++;
-	  break;
-	} else if (pattern.pat_type==1) {
-	  patstat->ngrade1++;
-	  break;
-	} else if (pattern.pat_type==2) {
-	  patstat->ngrade2++;
-	  break;
-	} else if (pattern.pat_type==3) {
-	  patstat->ngrade3++;
-	  break;
-	} else if (pattern.pat_type==4) {
-	  patstat->ngrade4++;
-	  break;
-	} else {
-	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: Unknown Pattern Type!\n", *status);
-	  return;
-	}
-
-	// Check if it's a valid pattern.
-	if (pattern.pat_type != det->pattern_identifier->invalid) {
-	  patstat->nvalids++;
-	}
-
-	// Check for pile-up.
-	if (pattern.event.pileup > 0) {
-	  patstat->npileup++;
-	  if (pattern.pat_type != det->pattern_identifier->invalid) {
-	    patstat->npileup_valid++;
-	  } else {
-	    patstat->npileup_invalid++;
+	  if (pattern.event.pileup > 0) {
+	    patstat->npinvalids++;
 	  }
-	  if (1==pattern.pat_type) {
-	    patstat->npileup_grade1++;
+	} else  {
+	  // Valid pattern.
+	  patstat->nvalids++;
+	  patstat->ngrade[pattern.pat_type]++;
+	  if (pattern.event.pileup > 0) {
+	    patstat->npvalids++;
+	    patstat->npgrade[pattern.pat_type]++;
 	  }
 	}
 	// END of gathering statistical data about the pattern type.
@@ -334,18 +361,7 @@ int genpat_main() {
   GenEvent** pixels=NULL;
   // Pattern statistics. Count the numbers of the individual pattern types
   // and store this information in the output event file.
-  struct PatternStatistics patstat={
-    .ngrade1=0,
-    .ngrade2=0,
-    .ngrade3=0,
-    .ngrade4=0,
-    .nvalids=0,
-    .ninvalids=0,
-    .npileup=0,
-    .npileup_grade1=0,
-    .npileup_valid=0,
-    .npileup_invalid=0
-  };
+  struct PatternStatistics patstat=emptyPatternStatistics();
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -537,39 +553,8 @@ int genpat_main() {
     headas_printf("\n");
 
     // Store the pattern statistics in the FITS header.
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NSINGLES", 
-			&patstat.ngrade1, "number of single patterns", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NDOUBLES", 
-			&patstat.ngrade2, "number of double patterns", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NTRIPLES", 
-			&patstat.ngrade3, "number of triple patterns", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NQUADRUP", 
-			&patstat.ngrade4, "number of quadruple patterns", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NVALIDS", 
-			&patstat.nvalids, "number of valid patterns", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NINVALID", 
-			&patstat.ninvalids, "number of invalid patterns", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUP", 
-			&patstat.npileup, "number of pile-up patterns", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPS", 
-			&patstat.npileup_grade1, 
-			"number of singles marked as pile-up", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPV", 
-			&patstat.npileup_valid, 
-			"number of valid patterns marked as pile-up", 
-			&status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPILEUPI", 
-			&patstat.npileup_invalid, 
-			"number of invalid patterns marked as pile-up", 
-			&status)) break;
+    writePatternStatistics2FITSHeader(patstat, output_file->geneventfile->fptr, &status);
+    if (EXIT_SUCCESS!=status) break;
 
   } while(0); // END of the error handling loop.
 
