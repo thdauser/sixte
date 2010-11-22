@@ -18,6 +18,10 @@
 #include <ctype.h>
 #include <expat.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "fitsio.h"
 #include "pil.h"
 #include "headas.h"

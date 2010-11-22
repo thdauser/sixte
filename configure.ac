@@ -28,7 +28,7 @@ AM_PROG_LIBTOOL
 # "-Werror" for the compiler to treat warnings as errors
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
-CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -std=c99 -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS -pg"
+CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -fopenmp -std=c99 -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS -pg"
 LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg"
 
 # Check for libraries:  (objdump -R/-T libncurses...)
@@ -42,7 +42,7 @@ AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 # cfitsio
 AC_SEARCH_LIBS(ffopen, 
 	[cfitsio_3.24 cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
-	[], [AC_MSG_ERROR([No cfitsio library found!])], [])
+	[], [AC_MSG_ERROR([No supported version of cfitsio library found!])], [])
 #lib_cfitsio="no"
 #AC_MSG_CHECKING([for versioned libcfitsio in \$HEADAS])
 #my_cfitsio=`ls "${HEADAS}"/lib/libcfitsio*.so 2> /dev/null`

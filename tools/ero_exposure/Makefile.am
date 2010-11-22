@@ -1,7 +1,7 @@
 # If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
 AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -Wall #-fopenmp
+AM_CFLAGS += -Wall
 #AM_CFLAGS += -Wall -Werror
 
 #LDADD = ...    add additional libraries
