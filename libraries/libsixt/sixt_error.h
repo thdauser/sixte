@@ -1,0 +1,24 @@
+#ifndef SIXT_ERROR_H
+#define SIXT_ERROR_H (1)
+
+
+/////////////////////////////////////////////////////////////////
+// Macro Definitions.
+/////////////////////////////////////////////////////////////////
+
+
+#define SIXT_ERROR(msg) (sixt_error(__func__, msg))
+
+
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
+
+
+/** Print the given error message for an error occured in the
+    specified function. The function name is also part of the
+    output. */
+void sixt_error(const char* const func, const char* const msg);
+
+
+#endif /* SIXT_ERROR_H */
