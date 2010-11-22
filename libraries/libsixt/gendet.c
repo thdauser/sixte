@@ -425,119 +425,106 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   // the XML file.
   if (-1==det->pixgrid->xwidth) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x-width of GenDet pixel array!\n", 
-		   *status);
-    return;    
+    SIXT_ERROR("no specification for x-width of GenDet pixel array in XML file");
+    return;
   }  
   if (-1==det->pixgrid->ywidth) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y-width of GenDet pixel array!\n", 
-		   *status);
-    return;    
+    SIXT_ERROR("no specification for y-width of GenDet pixel array in XML file");
+    return;
   }
 
   if (0>det->pixgrid->xrpix) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x reference pixel of GenDet!\n", 
-		   *status);
+    SIXT_ERROR("no specification for x reference pixel of GenDet in XML file");
     return;    
   }
   if (0>det->pixgrid->yrpix) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y reference pixel of GenDet!\n", 
-		   *status);
+    SIXT_ERROR("no specification for y reference pixel of GenDet in XML file");
     return;    
   }
 
   if (0>det->pixgrid->xrval) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x reference value of GenDet!\n", 
-		   *status);
+    SIXT_ERROR("no specification for x reference value of GenDet in XML file");
     return;    
   }
   if (0>det->pixgrid->yrval) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y reference value of GenDet!\n", 
-		   *status);
+    SIXT_ERROR("no specification for y reference value of GenDet in XML file");
     return;    
   }
 
   if (0>det->pixgrid->xdelt) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for x pixel width of GenDet!\n", 
-		   *status);
+    SIXT_ERROR("no specification for x pixel width of GenDet in XML file");
     return;    
   }
   if (0>det->pixgrid->ydelt) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for y pixel width of GenDet!\n", 
-		   *status);
+    SIXT_ERROR("no specification for y pixel width of GenDet in XML file");
     return;    
   }
   
   if (0.>det->pixgrid->xborder) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Invalid specification found for x-border of pixels!\n", 
-		   *status);
+    SIXT_ERROR("invalid specification for x-border of pixels in XML file");
     return;    
   }
   if (0.>det->pixgrid->yborder) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Invalid specification found for y-border of pixels!\n", 
-		   *status);
+    SIXT_ERROR("invalid specification for y-border of pixels in XML file");
     return;    
   }
 
   if (NULL==det->rmf) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for response file (RMF/RSP)!\n", 
-		   *status);
+    SIXT_ERROR("no specification for response file (RMF/RSP) in XML file");
     return;    
   }
 
   if (NULL==det->arf) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for ARF!\n", 
-		   *status);
+    SIXT_ERROR("no specification for ARF in XML file");
     return;    
   }
 
   if (0.>=det->focal_length) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for the focal length of the telescope!\n", 
-		   *status);
+    SIXT_ERROR("no specification for the focal length of the telescope "
+	       "in the XML file");
     return;    
   }
   if (0.>=det->fov_diameter) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for the diameter of the telescope FoV!\n", 
-		   *status);
+    SIXT_ERROR("no specification for the diameter of the telescope "
+	       "FoV in the XML file");
     return;    
   }
 
   if (0==det->readout_trigger) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No specification found for the readout trigger of GenDet!\n", 
-		   *status);
+    SIXT_ERROR("no specification for the readout trigger of GenDet in the XML file");
     return;
   }
 
   if (0==strlen(det->eventfile_template)) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No event file template specified!\n", *status);
+    SIXT_ERROR("no event file template specified in the XML file");
     return;    
   }
 
   if (0==strlen(det->patternfile_template)) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: No pattern file template specified!\n", *status);
+    SIXT_ERROR("no pattern file template specified in the XML file");
     return;    
   }
 
   if (GS_NONE!=det->split->type) {
     if (det->split->par1<=0.) {
       *status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: No valid split model parameters!\n", *status);
+      SIXT_ERROR("no valid split model parameters in the XML file");
       return;    
     }
   }

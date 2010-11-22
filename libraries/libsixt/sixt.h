@@ -26,15 +26,20 @@
 
 #include "sixt_random.h"
 #include "sixt_string.h"
+#include "sixt_error.h"
 
 
-#define FILENAME_LENGTH 512 /**< Maximum length of a filename. */
-#define MAXMSG 512 /**< Maximum length of a message string. */
+/** Maximum length of a filename. */
+#define MAXFILENAME (512)
+/** Obsolete: maximum filename length. */
+#define FILENAME_LENGTH (512)
+/** Maximum length of a message string. */
+#define MAXMSG (512)
 
 #define SIXT_NAN (0./0.) /**< Not a Number. */
 
 /** Seed for the HEAdas random number generator. */
-#define SIXT_HD_RANDOM_SEED 59843
+#define SIXT_HD_RANDOM_SEED (59843)
 
 
 /** Macro returning the maximum of 2 values. */
