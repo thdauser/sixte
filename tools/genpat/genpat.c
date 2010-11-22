@@ -285,6 +285,11 @@ static void GenPatIdentification(GenDet* const det,
 	}
 	// END of determine the pattern code.
 
+	// TODO For quadruple events introduce a check, whether the minimum
+	// charge is located in the pixel diagonal to the central one with
+	// the maximum charge.
+
+
 	// Determine the pattern grade.
 	GenPattern pattern = {
 	  .pat_type = getGenPatGrade(det->pattern_identifier,
@@ -339,11 +344,20 @@ static void GenPatIdentification(GenDet* const det,
 	// END of gathering statistical data about the pattern type.
 
 	// Delete the events belonging to the pattern from the pixel array
-	// in order to prevent them being used another time.
+	// in order to prevent them being used another time. Therefore first 
+	// create a new list with contributing events, also the ones below 
+	// the original split threshold.
+	// Otherwise there might be some events left below the split threshold.
+	nlist=0;
+	add2GenPatList(det, pixels, maxx, maxy, 0., list, &nlist);
 	for (kk=0; kk<nlist; kk++) {
 	  *(list[kk]) = emptyEvent();
 	}
+	// End of deleting all contributing events.
 
+	// TODO Due to the different option of including diagonal split events
+	// some events might have been cleared now that could contribute to
+	// the 3x3 matrix of a later close-by event.
       }
       // END of found an event above the primary threshold.
     }
