@@ -14,8 +14,21 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** Bad pixel map. */
+/** Individual event grade. */
 typedef struct {
+  int p11, p12, p13, p21, p23, p31, p32, p33;
+  int grade;
+} GenEventGrade;
+
+
+/** Information about event grading system. */
+typedef struct {
+
+  /** Array of pointers to event grades. */
+  GenEventGrade** grades;
+
+  /** Number of grades in the array. */
+  int ngrades;
 
   /** Array for the mapping of event patterns to grades. */
   int grade[256];
@@ -58,20 +71,32 @@ GenEventGrading* newGenEventGrading(const int invalid,
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenEventGrading data structure to NULL. */
-void destroyGenEventGrading(GenEventGrading** const ident);
+void destroyGenEventGrading(GenEventGrading** const grading);
+
+/** Constructor. */
+GenEventGrade* newGenEventGrade(const int p11, const int p12, const int p13, 
+				const int p21, const int p23,
+				const int p31, const int p32, const int p33,
+				const int grade, int* const status);
+
+/** Destructor for GenEventGrade. */
+void destroyGenEventGrade(GenEventGrade** const grade);
 
 /** Add a new grade to the GenEventGrading list. */
-void addGenPatGrade(GenEventGrading* const ident,
-		    const int code, const int grade);
+void addGenEventGrade(GenEventGrading* const grading,
+		      GenEventGrade* const grade,
+		      int* const status);
 
-/** Determine the event grade of a pattern with the particular
-    code. The 3rd and 4th parameter indicate, whether the pattern
-    touches the border of the detector pixel array and whether the
-    pattern is larger than a 3x3 matrix. */
-int getGenPatGrade(GenEventGrading* const ident,
-		   const int code, 
-		   const int border,
-		   const int large);
-
+/** Determine the event grade of a pattern with the given charge
+    distribution (3x3 matrix starting from the bottom left via the
+    bottom line, second line, and upper line to the top right). The
+    3rd and 4th parameter indicate, whether the pattern touches the
+    border of the detector pixel array and whether the total pattern
+    is larger than the specified 3x3 matrix. */
+int getGenEventGrade(GenEventGrading* const grading,
+		     const float* const charges,
+		     const int border,
+		     const int large);
+		     
 
 #endif /* GENEVENTGRADING_H */

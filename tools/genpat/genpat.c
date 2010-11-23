@@ -247,53 +247,62 @@ static void GenPatIdentification(GenDet* const det,
 	  }
 	}
 
-	// Determine the pattern code.
-	float total_charge = pixels[maxx][maxy].charge;
-	int pattern_code = 0;
+	// Determine the charges of the contributing events
+	// above the split threshold in the 3x3 matrix
+	// around the main event with the maximum charge.
+	float charges[9] = {0., 0., 0.,  0., 0., 0.,  0., 0., 0.};
+	charges[4] = pixels[maxx][maxy].charge; // Main pixel.
 	for (kk=1; kk<nlist; kk++) {
 	  if (list[kk]->rawy == maxy-1) {
 	    if (list[kk]->rawx == maxx-1) {
-	      pattern_code += 1;
-	      total_charge += list[kk]->charge;
+	      charges[0] = list[kk]->charge;
 	    } else if (list[kk]->rawx == maxx) {
-	      pattern_code += 2;
-	      total_charge += list[kk]->charge;
+	      charges[1] = list[kk]->charge;
 	    } else if (list[kk]->rawx == maxx+1) {
-	      pattern_code += 4;
-	      total_charge += list[kk]->charge;
+	      charges[2] = list[kk]->charge;
 	    }
 	  } else if (list[kk]->rawy == maxy) {
 	    if (list[kk]->rawx == maxx-1) {
-	      pattern_code += 8;
-	      total_charge += list[kk]->charge;
+	      charges[3] = list[kk]->charge;
 	    } else if (list[kk]->rawx == maxx+1) {
-	      pattern_code += 16;
-	      total_charge += list[kk]->charge;
+	      charges[5] = list[kk]->charge;
 	    }
 	  } else if (list[kk]->rawy == maxy+1) {
 	    if (list[kk]->rawx == maxx-1) {
-	      pattern_code += 32;
-	      total_charge += list[kk]->charge;
+	      charges[6] = list[kk]->charge;
 	    } else if (list[kk]->rawx == maxx) {
-	      pattern_code += 64;
-	      total_charge += list[kk]->charge;
+	      charges[7] = list[kk]->charge;
 	    } else if (list[kk]->rawx == maxx+1) {
-	      pattern_code += 128;
-	      total_charge += list[kk]->charge;
+	      charges[8] = list[kk]->charge;
 	    }
 	  }
 	}
-	// END of determine the pattern code.
+	// END of determine the charge distribution in the 3x3 matrix
+	// around the main event.
+
+	// Determine the total charge.
+	float total_charge = 0.;
+	for (kk=0; kk<9; kk++) {
+	  total_charge += charges[kk];
+	}
 
 	// TODO For quadruple events introduce a check, whether the minimum
 	// charge is located in the pixel diagonal to the central one with
 	// the maximum charge.
 
+	// Use different XML definition.
+	// Instead of '<grade code="0" grade="0"/>'
+	// use '<grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>'
+	// with the following values for the p_nm's:
+	// 0: contains no charge
+	// 1: contains charge above threshold
+	// 2: contains charge above threshold, which is higher than 
+	//    the charge in pixels with level 1
 
 	// Determine the pattern grade.
 	GenPattern pattern = {
-	  .pat_type = getGenPatGrade(det->grading,
-				     pattern_code, border, large),
+	  .pat_type = getGenEventGrade(det->grading, charges, 
+				       border, large),
 	  .event = pixels[maxx][maxy]
 	};
 

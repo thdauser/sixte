@@ -656,13 +656,39 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 
     } else if (!strcmp(Uelement, "GRADE")) {
       char buffer[MAXMSG]; // String buffer.
-      getAttribute(attr, "CODE", buffer);
-      int code  = atoi(buffer);
+
+      getAttribute(attr, "P11", buffer);
+      int p11  = atoi(buffer);
+      getAttribute(attr, "P12", buffer);
+      int p12  = atoi(buffer);
+      getAttribute(attr, "P13", buffer);
+      int p13  = atoi(buffer);
+
+      getAttribute(attr, "P21", buffer);
+      int p21  = atoi(buffer);
+      getAttribute(attr, "P23", buffer);
+      int p23  = atoi(buffer);
+
+      getAttribute(attr, "P31", buffer);
+      int p31  = atoi(buffer);
+      getAttribute(attr, "P32", buffer);
+      int p32  = atoi(buffer);
+      getAttribute(attr, "P33", buffer);
+      int p33  = atoi(buffer);
+
       getAttribute(attr, "GRADE", buffer);
       int grade = atoi(buffer);
       
-      addGenPatGrade(xmlparsedata->det->grading, code, grade);
-
+      GenEventGrade* ggrade = newGenEventGrade(p11, p12, p13,
+					       p21, p23,
+					       p31, p32, p33,
+					       grade, 
+					       &xmlparsedata->status);
+      if (EXIT_SUCCESS!=xmlparsedata->status) return;
+      addGenEventGrade(xmlparsedata->det->grading,
+		       ggrade,
+		       &xmlparsedata->status);
+      if (EXIT_SUCCESS!=xmlparsedata->status) return;
     }
 
     else { // Elements with independent attributes.
