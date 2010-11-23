@@ -60,14 +60,23 @@ GenEventGrade* newGenEventGrade(const int p11, const int p12, const int p13,
   // Initialize all pointers with NULL.
 
   // Set the initial values.
-  ggrade->p11 = p11;
-  ggrade->p12 = p12;
-  ggrade->p13 = p13;
-  ggrade->p21 = p21;
-  ggrade->p23 = p23;
-  ggrade->p31 = p31;
-  ggrade->p32 = p32;
-  ggrade->p33 = p33;
+  ggrade->p[0] = p11;
+  ggrade->p[1] = p12;
+  ggrade->p[2] = p13;
+  ggrade->p[3] = p21;
+  ggrade->p[4] = 1;
+  ggrade->p[5] = p23;
+  ggrade->p[6] = p31;
+  ggrade->p[7] = p32;
+  ggrade->p[8] = p33;
+  // Make sure that the central pixel always contains the local maximum.
+  int ii;
+  for (ii=0; ii<9; ii++) {
+    if (4==ii) continue;
+    if (ggrade->p[ii] >= ggrade->p[4]) {
+      ggrade->p[4] = ggrade->p[ii]+1;
+    }
+  }
   ggrade->grade = grade;
 
   return(ggrade);
@@ -121,17 +130,34 @@ int getGenEventGrade(GenEventGrading* const grading,
     GenEventGrade* grade = grading->grades[ii];
     // Check if the charge distribution matches the current 
     // grade pattern.
-    
-    if (((charges[0]>0.) == (grade->p11>0)) &&
-	((charges[1]>0.) == (grade->p12>0)) &&
-	((charges[2]>0.) == (grade->p13>0)) &&
-	((charges[3]>0.) == (grade->p21>0)) &&
-	((charges[5]>0.) == (grade->p23>0)) &&
-	((charges[6]>0.) == (grade->p31>0)) &&
-	((charges[7]>0.) == (grade->p32>0)) &&
-	((charges[8]>0.) == (grade->p33>0))) {
-      return(grade->grade);
+    int matching = 1;
+    int jj;
+    for (jj=0; jj<9; jj++) {
+      if ((charges[jj]>0.) != (grade->p[jj]>0)) {
+	matching = 0;
+	break;
+      }
     }
+    if (!matching) continue;
+
+    // Check the relative charge distribution among the split partners.
+    for (jj=0; jj<9; jj++) {
+      int kk;
+      for (kk=0; kk<9; kk++) {
+	if (jj==kk) continue;
+	if (grade->p[jj]>grade->p[kk]) {
+	  if (charges[jj]<=charges[kk]) {
+	    matching = 0;
+	    break;
+	  }
+	}
+      }
+      if (!matching) break;
+    }
+    if (!matching) continue;
+
+    // The charge pattern matches this grade.
+    return(grade->grade);
   }
   
   // None of the listed pattern matches.

@@ -286,10 +286,6 @@ static void GenPatIdentification(GenDet* const det,
 	  total_charge += charges[kk];
 	}
 
-	// TODO For quadruple events introduce a check, whether the minimum
-	// charge is located in the pixel diagonal to the central one with
-	// the maximum charge.
-
 	// Determine the pattern grade.
 	GenPattern pattern = {
 	  .pat_type = getGenEventGrade(det->grading, charges, 

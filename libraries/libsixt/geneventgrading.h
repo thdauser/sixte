@@ -27,7 +27,9 @@
 
 /** Individual event grade. */
 typedef struct {
-  int p11, p12, p13, p21, p23, p31, p32, p33;
+  /** Relative charge distribution in the 3x3 matrix. */
+  int p[9];
+  /** Assigned event grade (number). */
   int grade;
 } GenEventGrade;
 
