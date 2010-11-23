@@ -1049,8 +1049,6 @@ void GenDetLineShift(GenDet* const det)
 	int jj;
 	for (jj=0; jj<det->line[ii]->xwidth; jj++) {
 	  det->line[ii]->charge[jj] *= det->cte;
-	  // TODO RM
-	  printf("ii=%d jj=%d\n", ii, jj);
 	}
       }
     }
