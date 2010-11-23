@@ -126,6 +126,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->clocklist =NULL;
   det->badpixmap =NULL;
   det->eventfile =NULL;
+  det->grading=NULL;
 
   // Get empty GenPixGrid.
   det->pixgrid = newGenPixGrid(status);
@@ -184,6 +185,9 @@ void destroyGenDet(GenDet** const det, int* const status)
 
     // Destroy the BadPixMap.
     destroyBadPixMap(&(*det)->badpixmap);
+
+    // Destroy the pattern identifier.
+    destroyGenEventGrading(&(*det)->grading);
 
     // Close the event file.
     destroyGenEventFile(&(*det)->eventfile, status);
@@ -624,7 +628,57 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
       append2ClockList(xmlparsedata->det->clocklist, CL_READOUTLINE, 
 		       clreadoutline, &xmlparsedata->status);
 	
-    } else { // Elements with independent attributes.
+    } else if (!strcmp(Uelement, "EVENTGRADING")) {
+      char buffer[MAXMSG]; // String buffer.
+      getAttribute(attr, "INVALID", buffer);
+      int invalid       = atoi(buffer);
+      getAttribute(attr, "BORDERINVALID", buffer);
+      int borderinvalid = atoi(buffer);
+      getAttribute(attr, "LARGEINVALID", buffer);
+      int largeinvalid  = atoi(buffer);
+      
+      xmlparsedata->det->grading = 
+	newGenEventGrading(invalid, borderinvalid, largeinvalid,
+			   &xmlparsedata->status);
+
+    } else if (!strcmp(Uelement, "GRADE")) {
+      char buffer[MAXMSG]; // String buffer.
+
+      getAttribute(attr, "P11", buffer);
+      int p11  = atoi(buffer);
+      getAttribute(attr, "P12", buffer);
+      int p12  = atoi(buffer);
+      getAttribute(attr, "P13", buffer);
+      int p13  = atoi(buffer);
+
+      getAttribute(attr, "P21", buffer);
+      int p21  = atoi(buffer);
+      getAttribute(attr, "P23", buffer);
+      int p23  = atoi(buffer);
+
+      getAttribute(attr, "P31", buffer);
+      int p31  = atoi(buffer);
+      getAttribute(attr, "P32", buffer);
+      int p32  = atoi(buffer);
+      getAttribute(attr, "P33", buffer);
+      int p33  = atoi(buffer);
+
+      getAttribute(attr, "GRADE", buffer);
+      int grade = atoi(buffer);
+      
+      GenEventGrade* ggrade = newGenEventGrade(p11, p12, p13,
+					       p21, p23,
+					       p31, p32, p33,
+					       grade, 
+					       &xmlparsedata->status);
+      if (EXIT_SUCCESS!=xmlparsedata->status) return;
+      addGenEventGrade(xmlparsedata->det->grading,
+		       ggrade,
+		       &xmlparsedata->status);
+      if (EXIT_SUCCESS!=xmlparsedata->status) return;
+    }
+
+    else { // Elements with independent attributes.
 
       // Loop over the different attributes.
       int i;
@@ -861,7 +915,7 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 			xmlparsedata->det->threshold_split_lo_fraction*100.);
 	  }
 	}
-      
+
 	if (EXIT_SUCCESS!=xmlparsedata->status) return;
       } 
       // END of loop over different attributes.

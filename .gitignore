@@ -48,6 +48,8 @@ genpat
 comaimg
 comadet
 comarecon
+mmap_write
+mmap_read
 
 # Autotool stuff:
 aclocal.m4

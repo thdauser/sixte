@@ -28,6 +28,7 @@ dist_xml_DATA += epicpn.burst.xml
 dist_xml_DATA += epicpn.timing.xml
 dist_xml_DATA += comadet.xml
 dist_xml_DATA += gravitas.xml
+dist_xml_DATA += aciss3.xml
 
 ########### LIBRARIES #################
 
@@ -42,22 +43,23 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     xmseventfile.c htrsdetector.c gendet.c		\
 		     genpixgrid.c gensplit.c gendetline.c		\
 		     geneventfile.c genpatternfile.c clocklist.c	\
-		     badpixmap.c htrseventfile.c hexagonalpixels.c	\
-		     arcpixels.c telemetrypacket.c htrstelstream.c	\
-		     comadetector.c comaeventfile.c epicpn.c psf.c	\
-		     vignetting.c codedmask.c attitudecatalog.c		\
-		     attitudefile.c sixt_random.c sixt_string.c		\
-		     sixt_error.c vector.c pointsources.c		\
-		     pointsourcefile.c pointsourcelist.c		\
-		     pointsourcecatalog.c extendedsources.c		\
-		     sourceimage.c photon.c spectrum.c fits_pha.c	\
-		     check_fov.c photonlistfile.c linlightcurve.c	\
-		     kdtree.c rmf.c arf.c
+		     badpixmap.c geneventgrading.c htrseventfile.c	\
+		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
+		     htrstelstream.c comadetector.c comaeventfile.c	\
+		     epicpn.c psf.c vignetting.c codedmask.c		\
+		     attitudecatalog.c attitudefile.c sixt_random.c	\
+		     sixt_error.c sixt_string.c vector.c		\
+		     pointsources.c pointsourcefile.c			\
+		     pointsourcelist.c pointsourcecatalog.c		\
+		     extendedsources.c sourceimage.c photon.c		\
+		     spectrum.c fits_pha.c check_fov.c			\
+		     photonlistfile.c linlightcurve.c kdtree.c rmf.c	\
+		     arf.c
 
 
 ############ HEADERS #################
 
-# Define the headers that will be installed in $(includedir) :
+# Define the headers that will be installed in $(includedir):
 include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  gaussianchargecloud.h exponentialchargecloud.h	\
 		  arcpixels.h eventfile.h impactlistfile.h impact.h	\
@@ -67,16 +69,16 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  genpixgrid.h gensplit.h gendetline.h clocklist.h	\
 		  genevent.h genpattern.h geneventfile.h		\
 		  genpatternfile.h genpileupflag.h badpixmap.h		\
-		  xmseventfile.h xmsevent.h htrsdetector.h		\
-		  htrseventfile.h htrsevent.h telemetrypacket.h		\
-		  htrstelstream.h comadetector.h comaeventfile.h	\
-		  comaevent.h epicpn.h psf.h vignetting.h codedmask.h	\
-		  attitudecatalog.h attitudefile.h telescope.h sixt.h	\
-		  sixt_random.h sixt_string.h sixt_error.h point.h	\
-		  vector.h astrosources.h pointsources.h		\
-		  pointsourcefile.h pointsourcelist.h			\
-		  pointsourcecatalog.h extendedsources.h sourceimage.h	\
-		  photon.h spectrum.h fits_pha.h check_fov.h		\
-		  photonlistfile.h linlightcurve.h kdtree.h rmf.h	\
-		  arf.h
+		  geneventgrading.h xmseventfile.h xmsevent.h		\
+		  htrsdetector.h htrseventfile.h htrsevent.h		\
+		  telemetrypacket.h htrstelstream.h comadetector.h	\
+		  comaeventfile.h comaevent.h epicpn.h psf.h		\
+		  vignetting.h codedmask.h attitudecatalog.h		\
+		  attitudefile.h telescope.h sixt.h sixt_random.h	\
+		  sixt_string.h sixt_error.h point.h vector.h		\
+		  astrosources.h pointsources.h pointsourcefile.h	\
+		  pointsourcelist.h pointsourcecatalog.h		\
+		  extendedsources.h sourceimage.h photon.h spectrum.h	\
+		  fits_pha.h check_fov.h photonlistfile.h		\
+		  linlightcurve.h kdtree.h rmf.h arf.h
 

@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<instrument type="ACIS-S3">
+
+<telescope>
+<focallength value="10."/>
+<fov diameter="0.14"/>
+<psf filename="/home/schmid/chandra/psf/chandra.psf.fits"/>
+</telescope>
+
+<detector type="framestoreCCD">
+<dimensions xwidth="1024" ywidth="1024"/>
+<pixelborder x="0." y="0."/>
+<wcs xrpix="512.5" yrpix="512.5" xrval="0." yrval="0." xdelt="23.985e-6" ydelt="23.985e-6"/>
+<arf filename="/home/schmid/chandra/rsp/"/>
+<rmf filename="/home/schmid/chandra/rsp/"/>
+<!--<split type="gauss" par1="10.e-6"/>-->
+<threshold_readout_lo_keV value="0.15"/>
+<threshold_readout_up_keV value="10."/>
+<threshold_event_lo_keV value="0.15"/>
+<threshold_split_lo_keV value="0.1"/>
+<eventfile template="geneventfile.tpl"/>
+<patternfile template="genpatternfile.tpl"/>
+
+<readout mode="time">
+  <wait time="3.2"/>
+	
+  <loop start="0" end="1023" increment="1" variable="$i">
+    <readoutline lineindex="0" readoutindex="$i"/>
+    <lineshift/>
+    <wait time="40.e-6"/>
+  </loop>
+</readout>
+
+<!-- ASCA grades -->
+<eventgrading invalid="7" borderinvalid="1" largeinvalid="1">
+  <grade code="0" grade="1"/>
+  
+  <!-- TODO -->
+  <!--
+  <grade code="2" grade="2"/>
+  <grade code="8" grade="2"/>
+  <grade code="16" grade="2"/>
+  <grade code="64" grade="2"/>
+
+  <grade code="10" grade="3"/>
+  <grade code="18" grade="3"/>
+  <grade code="72" grade="3"/>
+  <grade code="80" grade="3"/>
+
+  <grade code="11" grade="4"/>
+  <grade code="22" grade="4"/>
+  <grade code="104" grade="4"/>
+  <grade code="208" grade="4"/>
+  -->
+</eventgrading>
+
+</detector>
+</instrument>

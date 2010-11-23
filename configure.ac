@@ -273,6 +273,7 @@ AC_CONFIG_FILES([Makefile
 		tools/genpat/Makefile
 		tools/comaimg/Makefile
 		tools/comadet/Makefile
-		tools/comarecon/Makefile])
+		tools/comarecon/Makefile
+		tools/mmap/Makefile])
 AC_OUTPUT
 

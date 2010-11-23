@@ -37,7 +37,7 @@ typedef struct {
 GenEventFile* newGenEventFile(int* const status);
 
 /** Destructor. */
-void destroyGenEventFile(GenEventFile** file, int* const status);
+void destroyGenEventFile(GenEventFile** const file, int* const status);
 
 /** Create and open a new GenEventFile. The new file is generated
     according to the specified template. */
