@@ -69,14 +69,11 @@ static inline void clearGenPatPixels(GenDet* const det,
 				     GenEvent** const pixels) 
 {
   int ii;
-#pragma omp for
+#pragma omp parallel for
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
     int jj;
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
       pixels[ii][jj] = emptyEvent();
-	  // TODO RM
-	  //printf("ii=%d jj=%d\n", ii, jj);
-      printf("threads: %d\n", omp_get_num_threads());
     }
   }
 }

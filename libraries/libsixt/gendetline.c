@@ -72,7 +72,7 @@ void clearGenDetLine(GenDetLine* const line)
   // is not necessary.
   if (1==line->anycharge) {
     int ii;
-#pragma omp for
+#pragma omp parallel for
     for(ii=0; ii<line->xwidth; ii++) {
       line->charge[ii] = 0.;
       line->pileup[ii] = GP_NONE;
@@ -86,7 +86,7 @@ void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1)
 {
   // Add the charges.
   int ii;
-#pragma omp for
+#pragma omp parallel for
   for(ii=0; ii<line1->xwidth; ii++) {
     line0->charge[ii] += line1->charge[ii];
 
