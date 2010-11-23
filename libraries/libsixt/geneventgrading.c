@@ -28,7 +28,6 @@ GenEventGrading* newGenEventGrading(const int invalid,
 }
 
 
-
 void destroyGenEventGrading(GenEventGrading** const grading) 
 {
   if (NULL!=(*grading)) {
@@ -37,6 +36,7 @@ void destroyGenEventGrading(GenEventGrading** const grading)
       for (ii=0; ii<(*grading)->ngrades; ii++) {
 	destroyGenEventGrade(&(*grading)->grades[ii]);
       }
+      free((*grading)->grades);
     }
 
     free(*grading);
