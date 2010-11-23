@@ -290,15 +290,6 @@ static void GenPatIdentification(GenDet* const det,
 	// charge is located in the pixel diagonal to the central one with
 	// the maximum charge.
 
-	// Use different XML definition.
-	// Instead of '<grade code="0" grade="0"/>'
-	// use '<grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>'
-	// with the following values for the p_nm's:
-	// 0: contains no charge
-	// 1: contains charge above threshold
-	// 2: contains charge above threshold, which is higher than 
-	//    the charge in pixels with level 1
-
 	// Determine the pattern grade.
 	GenPattern pattern = {
 	  .pat_type = getGenEventGrade(det->grading, charges, 

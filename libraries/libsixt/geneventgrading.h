@@ -13,6 +13,17 @@
 // Type Declarations.
 /////////////////////////////////////////////////////////////////
 
+// Grading scheme:
+// <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>
+// with the following values for the p_nm's:
+// 0: contains no charge
+// 1: contains charge above threshold
+// 2: contains charge above threshold, which is higher than 
+//    the charge in pixels with level 1
+// and the following matrix indices (nm):
+//   31  32  33
+//   21  22  23
+//   11  12  13
 
 /** Individual event grade. */
 typedef struct {
@@ -29,13 +40,6 @@ typedef struct {
 
   /** Number of grades in the array. */
   int ngrades;
-
-  /** Array for the mapping of event patterns to grades. */
-  int grade[256];
-  // Pattern coding:
-  //   32  64  128
-  //    8   0   16
-  //    1   2    4
 
   /** Grade for invalid events. */
   int invalid;

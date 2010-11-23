@@ -23,10 +23,6 @@ GenEventGrading* newGenEventGrading(const int invalid,
   grading->invalid       = invalid;
   grading->borderinvalid = borderinvalid;
   grading->largeinvalid  = largeinvalid;
-  int ii;
-  for (ii=0; ii<256; ii++) {
-    grading->grade[ii] = invalid;
-  }
 
   return(grading);
 }

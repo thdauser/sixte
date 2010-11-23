@@ -34,22 +34,22 @@
 </readout>
 
 <eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
-  <grade code="0" grade="0"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>
 
-  <grade code="2" grade="1"/>
-  <grade code="8" grade="2"/>
-  <grade code="16" grade="3"/>
-  <grade code="64" grade="4"/>
+  <grade p11="0" p12="1" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="1"/>
+  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="2"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="3"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="1" p33="0" grade="4"/>
 
-  <grade code="10" grade="5"/>
-  <grade code="18" grade="6"/>
-  <grade code="72" grade="7"/>
-  <grade code="80" grade="8"/>
+  <grade p11="0" p12="1" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="5"/>
+  <grade p11="0" p12="1" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="6"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="1" p33="0" grade="7"/>
+  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="1" p33="0" grade="8"/>
 
-  <grade code="11" grade="9"/>
-  <grade code="22" grade="10"/>
-  <grade code="104" grade="11"/>
-  <grade code="208" grade="12"/>
+  <grade p11="1" p12="2" p13="0" p21="2" p23="0" p31="0" p32="0" p33="0" grade="9"/>
+  <grade p11="0" p12="2" p13="1" p21="0" p23="2" p31="0" p32="0" p33="0" grade="10"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="2" p31="0" p32="2" p33="1" grade="11"/>
+  <grade p11="0" p12="0" p13="0" p21="2" p23="0" p31="1" p32="2" p33="0" grade="12"/>
 </eventgrading>
 
 </detector>
