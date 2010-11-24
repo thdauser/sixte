@@ -28,6 +28,7 @@ AM_PROG_LIBTOOL
 # "-Werror" for the compiler to treat warnings as errors
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
+# "-openmp" to use openMP multicore functionality
 CFLAGS="$CFLAGS -I$HEADAS/include/wcslib -I$HEADAS/include -g -fopenmp -std=c99 -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS -pg"
 LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall -O0 -pg"
 

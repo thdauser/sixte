@@ -1042,8 +1042,7 @@ void GenDetLineShift(GenDet* const det)
 
   // Apply the Charge Transfer Efficiency.
   int ii;
-  if (det->cte!=1.) {
-#pragma omp parallel for 
+  if (det->cte!=1.) { 
     for (ii=1; ii<det->pixgrid->ywidth; ii++) {
       if (0!=det->line[ii]->anycharge) {
 	int jj;

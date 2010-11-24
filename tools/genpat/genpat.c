@@ -69,7 +69,6 @@ static inline void clearGenPatPixels(GenDet* const det,
 				     GenEvent** const pixels) 
 {
   int ii;
-#pragma omp parallel for
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
     int jj;
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
