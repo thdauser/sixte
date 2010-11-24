@@ -618,9 +618,10 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
       
 	  if (fits_write_key(fptr, TSTRING, "CUNIT1", "m", "", status)) break;
 	  if (fits_write_key(fptr, TSTRING, "CUNIT2", "m", "", status)) break;
-	  double dbuffer = psf->data[index1][index2][index3].naxis1*0.5;
+	  double dbuffer = psf->data[index1][index2][index3].naxis1*0.5+0.5;
 	  if (fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
 			     "X axis reference pixel", status)) break;
+	  dbuffer = psf->data[index1][index2][index3].naxis2*0.5+0.5;
 	  if (fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
 			     "Y axis reference pixel", status)) break;
 	  dbuffer = 0.;
