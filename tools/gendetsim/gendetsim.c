@@ -84,6 +84,11 @@ int gendetsim_main() {
     operateGenDetClock(det, parameters.t0+parameters.timespan, &status);
     if (EXIT_SUCCESS!=status) break;
 
+    // Store the number of simulated input photons in the FITS header
+    // of the output event file.
+    if (fits_update_key(det->eventfile->fptr, TLONG, "NPHOTONS", 
+			&impactlistfile->nrows, "number of input photons", 
+			&status)) break;
     // Store the number of detected photons in the FITS header of
     // the output event file.
     if (fits_update_key(det->eventfile->fptr, TLONG, "NDETECTD", 

@@ -441,6 +441,14 @@ int genpat_main() {
     char comment[MAXMSG]; // Buffer.
 
     // Total number of detected photons.
+    long n_input_photons=0; 
+    if (fits_read_key(det->eventfile->fptr, TLONG, "NPHOTONS", 
+		      &n_input_photons, comment, &status)) break;
+    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPHOTONS", 
+			&n_input_photons, "number of input photons", 
+			&status)) break;
+
+    // Total number of detected photons.
     long n_detected_photons=0; 
     if (fits_read_key(det->eventfile->fptr, TLONG, "NDETECTD", 
 		      &n_detected_photons, comment, &status)) break;
