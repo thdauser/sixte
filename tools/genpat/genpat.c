@@ -173,7 +173,7 @@ static void findMaxCharge(GenDet* const det,
   min = MAX(0, *y-1);
   max = MIN(det->pixgrid->ywidth-1, *y+1);
   for (ii=min; ii<=max; ii++) {
-    if (pixels[*x][ii].charge > pixeks[xn][yn].charge) {
+    if (pixels[*x][ii].charge > pixels[xn][yn].charge) {
       xn = *x;
       yn = ii;
     }
@@ -340,13 +340,8 @@ static void GenPatIdentification(GenDet* const det,
 	}
 	// END of gathering statistical data about the pattern type.
 
-	// Delete the events belonging to the pattern from the pixel array
-	// in order to prevent them being used another time. Therefore first 
-	// create a new list with contributing events, also the ones below 
-	// the original split threshold.
-	// Otherwise there might be some events left below the split threshold.
-	nlist=0;
-	add2GenPatList(det, pixels, maxx, maxy, 0., list, &nlist);
+	// Delete the events belonging to this pattern from the pixel array
+	// in order to prevent them being used another time.
 	for (kk=0; kk<nlist; kk++) {
 	  *(list[kk]) = emptyEvent();
 	}
