@@ -56,7 +56,7 @@ typedef struct {
 
 /** ClockList element for line shift. */
 typedef struct {
-  //  void;
+  int dummy;
 } CLLineShift;
 
 
