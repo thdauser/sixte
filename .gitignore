@@ -48,6 +48,7 @@ genpat
 comaimg
 comadet
 comarecon
+comaexp
 mmap_write
 mmap_read
 

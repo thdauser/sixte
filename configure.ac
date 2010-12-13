@@ -260,6 +260,7 @@ AC_CONFIG_FILES([Makefile
 		tools/event_projection/Makefile
 		tools/ero_fits2tm/Makefile
 		tools/ero_exposure/Makefile
+		tools/comaexp/Makefile
 		tools/ero_merge_eventfiles/Makefile
 		tools/ero_split_photonfile/Makefile
 		tools/ero_merge_photonfiles/Makefile
