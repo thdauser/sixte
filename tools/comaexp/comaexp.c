@@ -48,12 +48,6 @@ struct ImageParameters {
   
 
 
-static inline double scalar_prod(const Vector v1, const Vector v2)
-{
-  return(v1.x*v2.x + v1.y*v2.y + v1.z*v2.z);
-}
-
-
 ////////////////////////////////////
 /** Main procedure. */
 int comaexp_main() 
@@ -146,10 +140,23 @@ int comaexp_main()
 
       // Determine the two other axes of the telescope reference
       // system (carteesian).
+      // Reference vectors:
       Vector north = { .x = 0., .y = 0., .z = 1. };
-      Vector ny = vector_product(nz,normalize_vector(vector_product(nz, north)));
-      // TODO Roll-angle.
-      Vector nx = vector_product(nz, ny);
+      Vector n2 = vector_product(normalize_vector(vector_product(nz, north)),nz);
+      Vector n1 = vector_product(nz, n2);
+      // Consider the roll-angle:
+      double roll_angle = getRollAngle(ac, time, &status); // [rad]
+      if (status != EXIT_SUCCESS) break;
+      Vector nx = {
+	.x = n1.x * cos(roll_angle) + n2.x * sin(roll_angle),
+	.y = n1.y * cos(roll_angle) + n2.y * sin(roll_angle),
+	.z = n1.z * cos(roll_angle) + n2.z * sin(roll_angle)
+      };
+      Vector ny = {
+	.x = - n1.x * sin(roll_angle) + n2.x * cos(roll_angle),
+	.y = - n1.y * sin(roll_angle) + n2.y * cos(roll_angle),
+	.z = - n1.z * sin(roll_angle) + n2.z * cos(roll_angle)
+      };
 
       // Loop over all pixel in the exposure map.
       for (x=0; x<imgParams.ra_bins; x++) {
@@ -164,21 +171,22 @@ int comaexp_main()
 	  // can continue with the next run.
 	  // NOTE: This check is necessary in order to avoid
 	  // ambiguous values for the subsequent check.
-	  if (scalar_prod(pixelpos, nz)<0.) continue;
+	  if (scalar_product(&pixelpos, &nz)<0.) continue;
 
 	  // Define the FoV.
-	  const double dec_max =  1. *M_PI/180.; // [rad]
-	  const double ra_max  =  1. *M_PI/180.; // [rad]
+	  const double dec_max =  15. *M_PI/180.; // [rad]
+	  const double dec_min = -35. *M_PI/180.; // [rad]
+	  const double ra_max  =  25. *M_PI/180.; // [rad]
+	  const double ra_min  = -25. *M_PI/180.; // [rad]
 	  
 	  // Check if the pixel is within the telescope FoV.
 	  // Declination:
-	  double dec = scalar_prod(pixelpos, ny);
+	  double dec = scalar_product(&pixelpos, &ny);
 	  // Right ascension:
-	  double ra  = scalar_prod(pixelpos, nx);
+	  double ra  = scalar_product(&pixelpos, &nx);
 	  // Check the limits of the FoV.
-	  // TODO Vorzeichen <-> Halbraum ???
-	  if ((fabs(dec) < sin(dec_max)) &&
-	      (fabs(ra)  < sin(ra_max) ) ) {
+	  if ((dec < sin(dec_max)) && (dec > sin(dec_min)) &&
+	      (ra  < sin(ra_max) ) && (ra  > sin(ra_min) )) {
 	    expoMap[x][y] += parameters.dt;
 	  }
 	}

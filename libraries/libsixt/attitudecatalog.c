@@ -11,7 +11,7 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
   long entry=0; // Counter for the AttitudeEntry elements in the AttitudeCatalog.
   char msg[MAXMSG];
 
-  do {  // beginning of ERROR handling loop
+  do { // Beginning of ERROR handling loop
 
     // Read-in the attitude data from the FITS file and store 
     // them in the AttitudeCatalog.
@@ -68,6 +68,8 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
 	// Telescope pointing direction nz:
 	ac->entry[entry].nz = 
 	  unit_vector(afe.viewra*M_PI/180., afe.viewdec*M_PI/180.);
+	// Roll-Angle:
+	ac->entry[entry].roll_angle = afe.rollang;
 
 	entry++;
       }
@@ -121,7 +123,7 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
   } while (0); // End of error handling loop
 
 
-  // --- clean up ---
+  // --- Clean up ---
 
   // Close FITS file
   if (NULL!=af) {
@@ -183,6 +185,8 @@ AttitudeCatalog* getEntireAttitudeCatalog(const char* filename, int* status)
       
       // Telescope pointing direction nz:
       ac->entry[entry].nz = unit_vector(afe.viewra*M_PI/180., afe.viewdec*M_PI/180.);
+      // Roll-Angle:
+      ac->entry[entry].roll_angle = afe.rollang; // [rad]
 
       entry++;
     }  // End of the attitude readout loop
@@ -228,7 +232,7 @@ AttitudeCatalog* getEntireAttitudeCatalog(const char* filename, int* status)
   } while (0); // End of error handling loop
 
 
-  // --- clean up ---
+  // --- Clean up ---
 
   // Close FITS file
   if (NULL!=af) {
@@ -280,7 +284,7 @@ Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status)
       HD_ERROR_THROW(msg, *status);
       return(nz);
     }
-    // If not, go one step back.
+    // If not, go one step further.
     ac->current_entry++;
   }
     
@@ -293,6 +297,46 @@ Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status)
 				ac->entry[ac->current_entry].time));
 
   return(nz);
+}
+
+
+
+double getRollAngle(AttitudeCatalog* ac, double time, int* status)
+{
+  char msg[MAXMSG]; // Error message buffer.
+
+  // Check if the requested time lies within the current time bin.
+  while (time < ac->entry[ac->current_entry].time) {
+    // Check if the beginning of the AttitudeCatalog is reached.
+    if (ac->current_entry <= 0) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      HD_ERROR_THROW(msg, *status);
+      return(0.);
+    }
+    // If not, go one step back.
+    ac->current_entry--;
+  }
+
+  while (time > ac->entry[ac->current_entry+1].time) {
+    // Check if the end of the AttitudeCatalog is reached.
+    if (ac->current_entry >= ac->nentries-2) {
+      *status = EXIT_FAILURE;
+      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      HD_ERROR_THROW(msg, *status);
+      return(0.);
+    }
+    // If not, go one step further.
+    ac->current_entry++;
+  }
+    
+  // The requested time lies within the current time bin.
+  // Interpolation:
+  double fraction = 
+    (time-ac->entry[ac->current_entry].time)/
+    (ac->entry[ac->current_entry+1].time-ac->entry[ac->current_entry].time);
+  return(ac->entry[ac->current_entry  ].roll_angle*(1.-fraction) + 
+	 ac->entry[ac->current_entry+1].roll_angle*    fraction );
 }
 
 

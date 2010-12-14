@@ -17,9 +17,9 @@ typedef struct {
   long row; /**< Current row in the attitude FITS table (starting at 0). */
   long nrows; /**< Number of rows in the attitude table. */
 
-  /* Column numbers of the individual attitude file entries. 
-   * The numbers start at 1. The number 0 means, that there 
-   * is no corresponding column in the table. */
+  /* Column numbers of the individual attitude file entries. The
+     numbers start at 1. The number 0 means, that there is no
+     corresponding column in the table. */
   int ctime, cviewra, cviewdec, crollang;
 
 } AttitudeFile;
