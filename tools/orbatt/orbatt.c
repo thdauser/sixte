@@ -93,7 +93,7 @@ int orbatt_main()
     // Create the output FITS file.
     remove(par.orbit_filename);
     if (fits_create_file(&fptr, par.orbit_filename, &status)) break;
-    char* ttype[] = { "Time", "X", "Y", "Z", "VX", "VY", "VZ" };
+    char* ttype[] = { "TIME", "X", "Y", "Z", "VX", "VY", "VZ" };
     char* tform[] = { "D"   , "D", "D", "D", "D" , "D" , "D"  };
     char* tunit[] = { "s"   , "m", "m", "m", "m/s","m/s","m/s"};
     if (fits_create_tbl(fptr, BINARY_TBL, 0, 7, ttype, tform, tunit, 

@@ -20,7 +20,10 @@
 struct Parameters {
   char attitude_filename[FILENAME_LENGTH];    // filename of the attitude file
   char exposuremap_filename[FILENAME_LENGTH]; // output: exposure map
-  
+
+  /** Coordinate system: equatorial (0) or galactic (1). */
+  int coordinate_system;
+
   double t0;
   double timespan;
   double dt; /**< Step width for the exposure map calculation. */
@@ -162,9 +165,33 @@ int comaexp_main()
       for (x=0; x<imgParams.ra_bins; x++) {
 	for (y=0; y<imgParams.dec_bins; y++) {	  
 	  // Determine the pointing vector to the pixel.
-	  Vector pixelpos = 
-	    unit_vector((x-(imgParams.rpix1-1.0))*imgParams.delt1 + imgParams.rval1,
-			(y-(imgParams.rpix2-1.0))*imgParams.delt2 + imgParams.rval2);
+	  double pixelra  = (x-(imgParams.rpix1-1.0))*imgParams.delt1 + imgParams.rval1;
+	  double pixeldec = (y-(imgParams.rpix2-1.0))*imgParams.delt2 + imgParams.rval2;
+			
+	  // If the coordinate system of the exposure map is galactic 
+	  // coordinates, convert the pixel position vector from 
+	  // galactic to equatorial coordinates.
+	  if (1==parameters.coordinate_system) {
+	    double lon = pixelra;
+	    double lat = pixeldec;
+	    const double l_ncp = 2.145566759798267518;
+	    const double cos_d_ngp = 0.8899880874849542;
+	    const double sin_d_ngp = 0.4559837761750669;
+	    pixelra  = 
+	      atan2(cos(lat)*sin(l_ncp - lon), 
+		    cos_d_ngp*sin(lat)-sin_d_ngp*cos(lat)*cos(l_ncp - lon)) +
+	      +3.3660332687500039;
+	    while (pixelra>2*M_PI) {
+	      pixelra -= 2*M_PI;
+	    }
+	    while (pixelra<0.) {
+	      pixelra += 2*M_PI;
+	    }
+	    pixeldec = asin(sin_d_ngp*sin(lat) + cos_d_ngp*cos(lat)*cos(l_ncp - lon));
+	  }
+
+	  // Calculate a carteesian coordinate vector.
+	  Vector pixelpos = unit_vector(pixelra, pixeldec);
 
 	  // If the source position is outside the hemisphere
 	  // defined by the telescope pointing direction, we
@@ -304,6 +331,10 @@ int comaexp_getpar(struct Parameters *parameters)
     HD_ERROR_THROW("Error reading the filename of the exposure map!\n", status);
   }
 
+  else if ((status = PILGetInt("coordinate_system", &parameters->coordinate_system))) {
+    HD_ERROR_THROW("Error reading the type of the coordinate system!\n", status);
+  }
+
   // Get the start time of the exposure map calculation
   else if ((status = PILGetReal("t0", &parameters->t0))) {
     HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
@@ -350,6 +381,11 @@ int comaexp_getpar(struct Parameters *parameters)
   parameters->ra2  *= M_PI/180.;
   parameters->dec1 *= M_PI/180.;
   parameters->dec2 *= M_PI/180.;
+
+  if ((parameters->coordinate_system<0)||(parameters->coordinate_system>1)) {
+    status=EXIT_FAILURE;
+    HD_ERROR_THROW("Error: invalid coordinate system!\n", status);
+  }
 
   return(status);
 }
