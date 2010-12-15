@@ -31,6 +31,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "sixt.h"
+#include "vector.h"
 
 #define TOOLSUB orbatt_main
 #include "headas_main.c"
@@ -59,8 +60,13 @@ struct Parameters {
   char orbit_filename[MAXFILENAME];
 };
 
-// Reads the program parameters using PIL.
+
+/** Reads the program parameters using PIL. */
 static int orbatt_getpar(struct Parameters* const par);
+
+/** Solves the Kepler equation. Calculates the eccentric anomaly from
+    the mean anomaly. */
+static double kepler_equation(const double M, const double e);
 
 
 //////////////////////////////////////////////////////////////////////
@@ -68,6 +74,7 @@ static int orbatt_getpar(struct Parameters* const par);
 int orbatt_main()
 {
   struct Parameters par;
+  fitsfile* fptr=NULL;
 
   int status=EXIT_SUCCESS;
 
@@ -83,9 +90,118 @@ int orbatt_main()
     status = orbatt_getpar(&par);
     if (EXIT_SUCCESS!=status) break;
 
-    // TODO
+    // Create the output FITS file.
+    remove(par.orbit_filename);
+    if (fits_create_file(&fptr, par.orbit_filename, &status)) break;
+    char* ttype[] = { "Time", "X", "Y", "Z", "VX", "VY", "VZ" };
+    char* tform[] = { "D"   , "D", "D", "D", "D" , "D" , "D"  };
+    char* tunit[] = { "s"   , "m", "m", "m", "m/s","m/s","m/s"};
+    if (fits_create_tbl(fptr, BINARY_TBL, 0, 7, ttype, tform, tunit, 
+			"ORBIT", &status)) break;
+    HDpar_stamp(fptr, 2, &status);
+    long nrows=0;
+    
+
+    // Setup initial orbit parameters.
+    const double mu  = 3.987e14;  // G*M_earth ([m^3/s^2])
+    const double R_e = 6378.14e3; // [m]
+    double a = par.a0;
+    double e = par.e0;
+    double p = a*(1-pow(e,2.0));
+    double i = par.i0;
+    double n = sqrt(mu/pow(a,3.0)); // mean motion.
+    const double J2  = 1082.6268e-6;
+    const double prefactor = -1.5*J2*n*powl(R_e/p,2.);
+
+    // Determine the orbit period (for a Kepler orbit) an print 
+    // it to the screen.
+    double T = 2*M_PI/n;
+    headas_printf("orbit period: %lf min\n", T/60.);
+    headas_printf("orbit precession period: %lf d\n", 
+		  2*M_PI/fabs(prefactor*cos(i))/(3600.*24.));
+
+    // Loop over the requested time interval.
+    double time; // The absolute time is: 'par.t0 + time'
+    for (time=0.; time<=par.timespan; time+=par.dt) {
+      // Iterate the Keplerian orbital elements.
+
+      // Secular perturbation effects (J_2 contributions only).
+      // Right ascension of ascending node.
+      double Omega = par.Omega0 + prefactor * cos(i) * time;
+      while (Omega < 0.) {
+	Omega += 2.*M_PI;
+      }
+      while (Omega > 2.*M_PI) {
+	Omega -= 2.*M_PI;
+      }
+      // Argument of perigee.
+      double omega = par.omega0 + prefactor*0.5*(1.-5.*pow(cos(i),2.)) * time;
+      while (omega < 0.) {
+	omega += 2.*M_PI;
+      }
+      while (omega > 2.*M_PI) {
+	omega -= 2.*M_PI;
+      }
+      // Mean eccentric anomaly.
+      double M = par.M0 + 
+	(n - prefactor*0.5*sqrt(1.-pow(e,2.))*(3.*pow(cos(i),2.)-1.)) * time;
+      while (M < 0.) {
+	M += 2.*M_PI;
+      }
+      while (M > 2.*M_PI) {
+	M -= 2.*M_PI;
+      }
+      // End of secular perturbation terms.
+
+      // Determine the eccentric anomaly E(t) by solving the Kepler 
+      // equation (Flury p. 18).
+      double E = kepler_equation(M, e);
+
+      // Calculate the true anomaly from the eccentric anomaly (Flury p. 16).
+      double f = 2.*atan(sqrt((1.+e)/(1.-e))*tan(E/2.));
+
+      // Now we know the argument of latitude and can calculate 
+      // its cosine and sine.
+      double cosu = cos(omega+f);
+      double sinu = sin(omega+f);
+  
+      // Now we can determine the position and velocity of the 
+      // satellite (Flury p. 38)
+      double rl = p/(1.+e*cos(f));
+      double vr = sqrt(mu/p)*e*sin(f);
+      double vf = sqrt(mu*p)/rl;
+  
+      // Position and velocity in Carteesian coordinates.
+      Vector position = {
+	.x = rl*(cos(Omega)*cosu-sin(Omega)*cos(i)*sinu),
+	.y = rl*(sin(Omega)*cosu+cos(Omega)*cos(i)*sinu),
+	.z = rl*sin(i)*sinu
+      };
+      Vector velocity = {
+	.x = vr*(cos(Omega)*cosu-sin(Omega)*cos(i)*sinu) -
+	vf*(cos(Omega)*sinu+sin(Omega)*cosu*cos(i)),
+	.y = vr*(sin(Omega)*cosu+cos(Omega)*cos(i)*sinu) - 
+	vf*(sin(Omega)*sinu-cos(Omega)*cosu*cos(i)),
+	.z = vr*sin(i)*sinu + vf*cosu*sin(i)
+      };
+      // END of orbit iteration
+
+      // Store the new parameters in the output file.
+      double t_abs = par.t0 + time; // Absolute time.
+      fits_insert_rows(fptr, nrows++, 1, &status);
+      fits_write_col(fptr, TDOUBLE, 1, nrows, 1, 1, &t_abs, &status);
+      fits_write_col(fptr, TDOUBLE, 2, nrows, 1, 1, &position.x, &status);
+      fits_write_col(fptr, TDOUBLE, 3, nrows, 1, 1, &position.y, &status);
+      fits_write_col(fptr, TDOUBLE, 4, nrows, 1, 1, &position.z, &status);
+      fits_write_col(fptr, TDOUBLE, 5, nrows, 1, 1, &velocity.x, &status);
+      fits_write_col(fptr, TDOUBLE, 6, nrows, 1, 1, &velocity.y, &status);
+      fits_write_col(fptr, TDOUBLE, 7, nrows, 1, 1, &velocity.z, &status);
+    }
+    // End of loop over time interval.
 
   } while(0); // END of error handling routine.
+
+  if (NULL!=fptr) fits_close_file(fptr, &status);
 
   if (EXIT_SUCCESS==status) {
     headas_chat(0, "finished successfully!\n");
@@ -155,6 +271,20 @@ static int orbatt_getpar(struct Parameters* const par)
 
 
 
+static double kepler_equation(const double M, const double e) 
+{
+  double E = M;
+  double dE;
+
+  // Newton algorithm to solve the Kepler equation
+  do {
+    dE = (M - E + e*sin(E))/(1.-e*cos(E));
+    E += dE;
+  } while (fabs(dE) > 0.00000001);
+
+  return(E);
+}
+
 
 
 /*
@@ -218,83 +348,6 @@ int calc_orbit_work(
     // Now we have the necessary data to calculate the position and velocity of
     // the satellite on its orbit at any given point of time.
     // So we can determine the position of the satellite at any point of time 't':
-
-    // first delete the old output files (ASCII and FITS)
-    remove(orbit_asciifile);
-    remove(orbit_fitsfile);
-    remove("test.fits");
-
-    // open ASCII file for the output of the position and velocity of the satellite
-    if(!(ascii_outfptr=fopen(orbit_asciifile, "w"))) {
-      status = EXIT_FAILURE;
-      sprintf(msg, "Error opening the ASCII file '%s' for output", orbit_asciifile);
-      HD_ERROR_THROW(msg,status);
-      break;
-    }
-
-    // create new FITS output file (orbit file)
-    if (fits_create_file(&fits_outfptr, orbit_fitsfile, &status)) break;
-
-    // variables for the creation of the fits-table (field-type, -format and -units of individual columns)
-    char *ftype[N_ORBIT_FIELDS];
-    char *fform[N_ORBIT_FIELDS];
-    char *funit[N_ORBIT_FIELDS];
-
-    // create a binary table in the FITS file
-    create_orbtbl_parameter(ftype, fform, funit);
-    if (fits_create_tbl(fits_outfptr, BINARY_TBL, 0, N_ORBIT_FIELDS, ftype, fform, funit, "eROSITA orbit", &status)) break;
-    
-
-
-    // write header into FITS file
-    // descriptory comments and mission headers:
-    fits_write_key (fits_outfptr, TSTRING, "MISSION", "SpectrumXGamma", "name of the mission", &status);
-    fits_write_key(fits_outfptr, TSTRING, "COMMENT", "DESCRIPT","orbit file for eROSITA simulation", &status);
-    fits_write_key(fits_outfptr, TSTRING, "COMMENT", "CONTENT","describes the orbit of the eROSITA satellite", &status);
-    fits_write_key(fits_outfptr, TSTRING, "COMMENT", "FORMAT","(t,x,y,z,vx,vy,vz)", &status);
-    fits_write_key(fits_outfptr, TSTRING, "COMMENT", "FORMAT","(time,position,velocity)", &status);
-    // about this orbit-calculation program:
-    fits_write_key(fits_outfptr, TSTRING, "PROGRAM", "calc_orbit", "orbit-calculation program", &status);
-    // history:
-    fits_write_key(fits_outfptr, TSTRING, "HISTORY", "program calc_orbit", "program name", &status);
-    fits_write_key(fits_outfptr, TSTRING, "HISTORY", "version 1.0", "version number", &status);
-
-    // date & time headers:
-    double dummy = 0.0;
-    long lbuffer = 0;
-
-    char creation_date[30];
-    int timeref;            // is 0, if returned time is in UTC
-    fits_get_system_time(creation_date, &timeref, &status);
-    fits_write_key(fits_outfptr, TSTRING, "DATE", "2008-03-10","FITS file creation date (yyyy-mm-dd)", &status);
-
-    fits_write_key(fits_outfptr, TSTRING, "DATE-OBS", "2008-03-10T10:00:00","start time for the orbit", &status);
-    fits_write_key(fits_outfptr, TSTRING, "DATE-END", "","end time of the orbit", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "MJDSTART", &dummy,"start time of the orbit in Julian date format", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "MJDEND", &dummy,"end time of the orbit in Julian date format", &status);
-    dummy = 0.;
-    fits_write_key(fits_outfptr, TDOUBLE, "TIMEZERO", &dummy,"Clock correction", &status);
-    fits_write_key(fits_outfptr, TLONG, "MJDREFI", &lbuffer,"integer part of reference time", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "MJDREFF", &dummy,"fractional part of reference time", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "TSTART", &t0,"start time of the orbit", &status);
-    dummy = t0 + timespan;
-    fits_write_key(fits_outfptr, TDOUBLE, "TEND", &dummy,"start time of the orbit", &status);
-
-    // initial orbit parameters:
-    fits_write_key(fits_outfptr, TDOUBLE, "t0", &t0, "t0", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "a0", &a0, "inital semimajor axis at t0", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "e0", &e0, "inital eccentricity at t0", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "i0", &i0, "inital inclination at t0", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "ra_an0", &Omega0, "inital right ascension of ascending node at t0", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "arg_per0", &omega0, "inital argument of perigee at t0", &status);
-    fits_write_key(fits_outfptr, TDOUBLE, "M0", &M0, "inital mean anomaly at t0", &status);
-    
-    // HEADAS parstamp: writes all parameters of this program call into the FITS file header
-    HDpar_stamp(fits_outfptr, 2, &status);
-
-    // if an error has occured during writing the headers, break and continue with cleaning up
-    if (status) break;
-
 
 
     ///////////////////////////////////////////////////////
