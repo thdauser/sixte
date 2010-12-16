@@ -791,10 +791,6 @@ void orbit_step_J234t(struct orbit_data *odata, struct orbit_position *oposition
 
 
 
-
-
-
-
 /////////////////////////////////////////////////////////////
 // Solves the Kepler equation.                             //
 // Calculates the eccentric anomaly from the mean anomaly. //

@@ -20,10 +20,15 @@ typedef struct {
   /** Telescope pointing direction. */
   Vector nz;
 
-  /** Defines the detector x-direction. The x-axis doesn't
-     necessarily have to point in the direction of the telescope
-     motion, but can be distorted by the roll-angle. */
+  /** Defines the detector x-direction. The x-axis doesn't necessarily
+      have to point in the direction of the telescope motion, but can
+      be distorted by the roll-angle. */
   Vector nx;
+
+  /** Roll-angle ([rad]). */
+  double roll_angle;
+
+  // TODO Keep either the roll_anlge or nx. 
 
 } AttitudeEntry;
 
@@ -63,6 +68,9 @@ void free_AttitudeCatalog(AttitudeCatalog* ac);
 
 /** Determine the telescope pointing direction at a specific time. */
 Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status);
+
+/** Determine the roll-angle ([rad]) at a specific time. */
+double getRollAngle(AttitudeCatalog* ac, double time, int* status);
 
 
 #endif /* ATTITUDECATALOG_H */
