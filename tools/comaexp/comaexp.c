@@ -108,10 +108,10 @@ int comaexp_main()
     // Determine the WCS parameters.
     imgParams.delt1 = (parameters.ra2 -parameters.ra1 )/parameters.ra_bins;
     imgParams.delt2 = (parameters.dec2-parameters.dec1)/parameters.dec_bins;
-    imgParams.rpix1 = (parameters.ra_bins /2)+ 0.5;
-    imgParams.rpix2 = (parameters.dec_bins/2)+ 0.5;
-    imgParams.rval1 = (parameters.ra1 + (imgParams.ra_bins /2)*imgParams.delt1);
-    imgParams.rval2 = (parameters.dec1+ (imgParams.dec_bins/2)*imgParams.delt2);
+    imgParams.rpix1 = (parameters.ra_bins /2.)+ 0.5;
+    imgParams.rpix2 = (parameters.dec_bins/2.)+ 0.5;
+    imgParams.rval1 = (parameters.ra1 + (imgParams.ra_bins /2.)*imgParams.delt1);
+    imgParams.rval2 = (parameters.dec1+ (imgParams.dec_bins/2.)*imgParams.delt2);
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.

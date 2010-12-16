@@ -440,7 +440,7 @@ int genpat_main() {
     // Copy header keywords from the input to the output event file.
     char comment[MAXMSG]; // Buffer.
 
-    // Total number of detected photons.
+    // Total number of simulated photons.
     long n_input_photons=0; 
     if (fits_read_key(det->eventfile->fptr, TLONG, "NPHOTONS", 
 		      &n_input_photons, comment, &status)) break;
