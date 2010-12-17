@@ -58,7 +58,11 @@ int comaexp_main()
   struct Parameters parameters; // Program parameters.
   
   AttitudeCatalog* ac=NULL;
-  
+
+  // Array for pre-calculation of the carteesian coordinate vectors
+  // of the individual pixels in the exposure map image.
+  Vector** pixelpositions=NULL;
+
   float** expoMap=NULL;       // Array for the calculation of the exposure map.
   float*  expoMap1d=NULL;     // 1d exposure map for storing in FITS image.
   struct ImageParameters imgParams;
@@ -105,6 +109,24 @@ int comaexp_main()
     }
     if (EXIT_SUCCESS!=status) break;
 
+    // Get memory for the pixel positions.
+    pixelpositions = (Vector**)malloc(imgParams.ra_bins*sizeof(Vector*));
+    if (NULL==pixelpositions) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
+      break;
+    }
+    for (x=0; x<imgParams.ra_bins; x++) {
+      pixelpositions[x] = (Vector*)malloc(imgParams.dec_bins*sizeof(Vector));
+      if (NULL==pixelpositions[x]) {
+	status = EXIT_FAILURE;
+	HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
+	break;
+      }
+    }
+    if (EXIT_SUCCESS!=status) break;
+
+
     // Determine the WCS parameters.
     imgParams.delt1 = (parameters.ra2 -parameters.ra1 )/parameters.ra_bins;
     imgParams.delt2 = (parameters.dec2-parameters.dec1)/parameters.dec_bins;
@@ -121,6 +143,40 @@ int comaexp_main()
     if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
 				      parameters.t0, parameters.timespan, 
 				      &status))) break;
+
+    // Pre-calculate the carteesian coordinate vectors of 
+    // the positions of the individual pixels in the exposure map.
+    for (x=0; x<imgParams.ra_bins; x++) {
+      for (y=0; y<imgParams.dec_bins; y++) {
+	double pixelra  = (x-(imgParams.rpix1-1.0))*imgParams.delt1 + imgParams.rval1;
+	double pixeldec = (y-(imgParams.rpix2-1.0))*imgParams.delt2 + imgParams.rval2;
+			
+	// If the coordinate system of the exposure map is galactic 
+	// coordinates, convert the pixel position vector from 
+	// galactic to equatorial coordinates.
+	if (1==parameters.coordinate_system) {
+	  double lon = pixelra;
+	  double lat = pixeldec;
+	  const double l_ncp = 2.145566759798267518;
+	  const double cos_d_ngp = 0.8899880874849542;
+	  const double sin_d_ngp = 0.4559837761750669;
+	  pixelra  = 
+	    atan2(cos(lat)*sin(l_ncp - lon), 
+		  cos_d_ngp*sin(lat)-sin_d_ngp*cos(lat)*cos(l_ncp - lon)) +
+	    +3.3660332687500039;
+	  while (pixelra>2*M_PI) {
+	    pixelra -= 2*M_PI;
+	  }
+	  while (pixelra<0.) {
+	    pixelra += 2*M_PI;
+	  }
+	  pixeldec = asin(sin_d_ngp*sin(lat) + cos_d_ngp*cos(lat)*cos(l_ncp - lon));
+	}
+
+	// Calculate the carteesian coordinate vector.
+	pixelpositions[x][y] = unit_vector(pixelra, pixeldec);
+      }
+    }    
 
     // --- END of Initialization ---
 
@@ -164,41 +220,12 @@ int comaexp_main()
       // Loop over all pixel in the exposure map.
       for (x=0; x<imgParams.ra_bins; x++) {
 	for (y=0; y<imgParams.dec_bins; y++) {	  
-	  // Determine the pointing vector to the pixel.
-	  double pixelra  = (x-(imgParams.rpix1-1.0))*imgParams.delt1 + imgParams.rval1;
-	  double pixeldec = (y-(imgParams.rpix2-1.0))*imgParams.delt2 + imgParams.rval2;
-			
-	  // If the coordinate system of the exposure map is galactic 
-	  // coordinates, convert the pixel position vector from 
-	  // galactic to equatorial coordinates.
-	  if (1==parameters.coordinate_system) {
-	    double lon = pixelra;
-	    double lat = pixeldec;
-	    const double l_ncp = 2.145566759798267518;
-	    const double cos_d_ngp = 0.8899880874849542;
-	    const double sin_d_ngp = 0.4559837761750669;
-	    pixelra  = 
-	      atan2(cos(lat)*sin(l_ncp - lon), 
-		    cos_d_ngp*sin(lat)-sin_d_ngp*cos(lat)*cos(l_ncp - lon)) +
-	      +3.3660332687500039;
-	    while (pixelra>2*M_PI) {
-	      pixelra -= 2*M_PI;
-	    }
-	    while (pixelra<0.) {
-	      pixelra += 2*M_PI;
-	    }
-	    pixeldec = asin(sin_d_ngp*sin(lat) + cos_d_ngp*cos(lat)*cos(l_ncp - lon));
-	  }
-
-	  // Calculate a carteesian coordinate vector.
-	  Vector pixelpos = unit_vector(pixelra, pixeldec);
-
 	  // If the source position is outside the hemisphere
 	  // defined by the telescope pointing direction, we
 	  // can continue with the next run.
 	  // NOTE: This check is necessary in order to avoid
 	  // ambiguous values for the subsequent check.
-	  if (scalar_product(&pixelpos, &nz)<0.) continue;
+	  if (scalar_product(&pixelpositions[x][y], &nz)<0.) continue;
 
 	  // Define the FoV.
 	  const double dec_max =  15. *M_PI/180.; // [rad]
@@ -208,9 +235,9 @@ int comaexp_main()
 	  
 	  // Check if the pixel is within the telescope FoV.
 	  // Declination:
-	  double dec = scalar_product(&pixelpos, &ny);
+	  double dec = scalar_product(&pixelpositions[x][y], &ny);
 	  // Right ascension:
-	  double ra  = scalar_product(&pixelpos, &nx);
+	  double ra  = scalar_product(&pixelpositions[x][y], &nx);
 	  // Check the limits of the FoV.
 	  if ((dec < sin(dec_max)) && (dec > sin(dec_min)) &&
 	      (ra  < sin(ra_max) ) && (ra  > sin(ra_min) )) {
@@ -311,9 +338,22 @@ int comaexp_main()
       }
     }
     free(expoMap);
+    expoMap=NULL;
   }
   if (NULL!=expoMap1d) {
     free(expoMap1d);
+    expoMap1d = NULL;
+  }
+
+  // Release memory of pixel positions.
+  if (NULL!=pixelpositions) {
+    for (x=0; x<parameters.ra_bins; x++) {
+      if (NULL!=pixelpositions[x]) {
+	free(pixelpositions[x]);
+      }
+    }
+    free(pixelpositions);
+    pixelpositions=NULL;
   }
 
   if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
