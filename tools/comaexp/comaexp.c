@@ -59,13 +59,17 @@ int comaexp_main()
   
   AttitudeCatalog* ac=NULL;
 
+  float** expMap=NULL;       // Array for the calculation of the exposure map.
+  float*  expMap1d=NULL;     // 1d exposure map for storing in FITS image.
+  struct ImageParameters expMapPar;
   // Array for pre-calculation of the carteesian coordinate vectors
   // of the individual pixels in the exposure map image.
   Vector** pixelpositions=NULL;
 
-  float** expoMap=NULL;       // Array for the calculation of the exposure map.
-  float*  expoMap1d=NULL;     // 1d exposure map for storing in FITS image.
-  struct ImageParameters imgParams;
+  // Image of the FoV.
+  float** fovImg=NULL;
+  struct ImageParameters fovImgPar;
+
   long x, y;                  // Counters.
   fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
 
@@ -83,18 +87,25 @@ int comaexp_main()
     // Read the program parameters using PIL library.
     if ((status=comaexp_getpar(&parameters))) break;
 
-    imgParams.ra_bins  = parameters.ra_bins;
-    imgParams.dec_bins = parameters.dec_bins;
+    // Determine the WCS parameters of the exposure map.
+    expMapPar.ra_bins  = parameters.ra_bins;
+    expMapPar.dec_bins = parameters.dec_bins;
+    expMapPar.delt1 = (parameters.ra2 -parameters.ra1 )/parameters.ra_bins;
+    expMapPar.delt2 = (parameters.dec2-parameters.dec1)/parameters.dec_bins;
+    expMapPar.rpix1 = (parameters.ra_bins /2.)+ 0.5;
+    expMapPar.rpix2 = (parameters.dec_bins/2.)+ 0.5;
+    expMapPar.rval1 = (parameters.ra1 + (expMapPar.ra_bins /2.)*expMapPar.delt1);
+    expMapPar.rval2 = (parameters.dec1+ (expMapPar.dec_bins/2.)*expMapPar.delt2);
 
     // Get memory for the exposure map.
-    expoMap = (float**)malloc(imgParams.ra_bins*sizeof(float*));
-    if (NULL!=expoMap) {
-      for (x=0; x<imgParams.ra_bins; x++) {
-	expoMap[x] = (float*)malloc(imgParams.dec_bins*sizeof(float));
-	if (NULL!=expoMap[x]) {
+    expMap = (float**)malloc(expMapPar.ra_bins*sizeof(float*));
+    if (NULL!=expMap) {
+      for (x=0; x<expMapPar.ra_bins; x++) {
+	expMap[x] = (float*)malloc(expMapPar.dec_bins*sizeof(float));
+	if (NULL!=expMap[x]) {
 	  // Clear the exposure map.
-	  for (y=0; y<imgParams.dec_bins; y++) {
-	    expoMap[x][y] = 0.;
+	  for (y=0; y<expMapPar.dec_bins; y++) {
+	    expMap[x][y] = 0.;
 	  }
 	} else {
 	  status = EXIT_FAILURE;
@@ -110,14 +121,14 @@ int comaexp_main()
     if (EXIT_SUCCESS!=status) break;
 
     // Get memory for the pixel positions.
-    pixelpositions = (Vector**)malloc(imgParams.ra_bins*sizeof(Vector*));
+    pixelpositions = (Vector**)malloc(expMapPar.ra_bins*sizeof(Vector*));
     if (NULL==pixelpositions) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
       break;
     }
-    for (x=0; x<imgParams.ra_bins; x++) {
-      pixelpositions[x] = (Vector*)malloc(imgParams.dec_bins*sizeof(Vector));
+    for (x=0; x<expMapPar.ra_bins; x++) {
+      pixelpositions[x] = (Vector*)malloc(expMapPar.dec_bins*sizeof(Vector));
       if (NULL==pixelpositions[x]) {
 	status = EXIT_FAILURE;
 	HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
@@ -126,14 +137,64 @@ int comaexp_main()
     }
     if (EXIT_SUCCESS!=status) break;
 
+    // Set up the dimensions of the FoV image.
+    fovImgPar.ra_bins = 512;
+    fovImgPar.rpix1   = 256.5;
+    fovImgPar.rval1   = 0.;
+    fovImgPar.delt1   = 0.1 * M_PI/180.; // [rad]
+    double sin_ra_max = sin(fovImgPar.rval1
+			    +(fovImgPar.ra_bins*1.-fovImgPar.rpix1+0.5)*fovImgPar.delt1);
+    double sin_ra_min = sin(fovImgPar.rval1-(fovImgPar.rpix1-0.5)*fovImgPar.delt1);
 
-    // Determine the WCS parameters.
-    imgParams.delt1 = (parameters.ra2 -parameters.ra1 )/parameters.ra_bins;
-    imgParams.delt2 = (parameters.dec2-parameters.dec1)/parameters.dec_bins;
-    imgParams.rpix1 = (parameters.ra_bins /2.)+ 0.5;
-    imgParams.rpix2 = (parameters.dec_bins/2.)+ 0.5;
-    imgParams.rval1 = (parameters.ra1 + (imgParams.ra_bins /2.)*imgParams.delt1);
-    imgParams.rval2 = (parameters.dec1+ (imgParams.dec_bins/2.)*imgParams.delt2);
+    fovImgPar.dec_bins = 512;
+    fovImgPar.rpix2    = 256.5;
+    fovImgPar.rval2    = -9.48 *M_PI/180.;
+    fovImgPar.delt2    =  0.1  *M_PI/180.; // [rad]
+    double sin_dec_max = sin(fovImgPar.rval2
+			     +(fovImgPar.dec_bins*1.-fovImgPar.rpix2+0.5)*fovImgPar.delt2);
+    double sin_dec_min = sin(fovImgPar.rval2-(fovImgPar.rpix2-0.5)*fovImgPar.delt2);
+
+    headas_chat(5, "FoV dimensions: from %.1lf deg to %.1lf deg (RA direction)\n", 
+		asin(sin_ra_min)*180./M_PI, asin(sin_ra_max)*180./M_PI);
+    headas_chat(5, "            and from %.1lf deg to %.1lf deg (Dec direction)\n", 
+		asin(sin_dec_min)*180./M_PI, asin(sin_dec_max)*180./M_PI);
+
+    // Get memory for the FoV image.
+    fovImg = (float**)malloc(fovImgPar.ra_bins*sizeof(float*));
+    if (NULL==fovImg) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for FoV image failed!\n", status);
+      break;
+    }
+    for (x=0; x<fovImgPar.ra_bins; x++) {
+      fovImg[x] = (float*)malloc(fovImgPar.dec_bins*sizeof(float));
+      if (NULL==fovImg[x]) {
+	status = EXIT_FAILURE;
+	HD_ERROR_THROW("Error: memory allocation for FoV image failed!\n", status);
+	break;
+      }
+    }
+    if (EXIT_SUCCESS!=status) break;
+
+    // Initialize the FoV image with zero values.
+    for (x=0; x<fovImgPar.ra_bins; x++) {
+      for (y=0; y<fovImgPar.dec_bins; y++) {
+	fovImg[x][y] = 0.;
+      }
+    }
+
+    // Set up the FoV image for the MIRAX design.
+    for (x=0; x<fovImgPar.ra_bins; x++) {
+      for (y=0; y<fovImgPar.dec_bins; y++) {
+	double ra = (fovImgPar.rval1+(x*1.-fovImgPar.rpix1+1.)*fovImgPar.delt1)*180./M_PI;
+	double dec= (fovImgPar.rval2+(y*1.-fovImgPar.rpix2+1.)*fovImgPar.delt2)*180./M_PI;
+	if (((ra>0.605)||(ra<-0.605)) && ((dec>-8.88)||(dec<-10.08))){
+	  fovImg[x][y] = 1.;
+	}
+      }
+    }
+    
+
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
@@ -146,10 +207,10 @@ int comaexp_main()
 
     // Pre-calculate the carteesian coordinate vectors of 
     // the positions of the individual pixels in the exposure map.
-    for (x=0; x<imgParams.ra_bins; x++) {
-      for (y=0; y<imgParams.dec_bins; y++) {
-	double pixelra  = (x-(imgParams.rpix1-1.0))*imgParams.delt1 + imgParams.rval1;
-	double pixeldec = (y-(imgParams.rpix2-1.0))*imgParams.delt2 + imgParams.rval2;
+    for (x=0; x<expMapPar.ra_bins; x++) {
+      for (y=0; y<expMapPar.dec_bins; y++) {
+	double pixelra  = (x-(expMapPar.rpix1-1.0))*expMapPar.delt1 + expMapPar.rval1;
+	double pixeldec = (y-(expMapPar.rpix2-1.0))*expMapPar.delt2 + expMapPar.rval2;
 			
 	// If the coordinate system of the exposure map is galactic 
 	// coordinates, convert the pixel position vector from 
@@ -218,8 +279,8 @@ int comaexp_main()
       };
 
       // Loop over all pixel in the exposure map.
-      for (x=0; x<imgParams.ra_bins; x++) {
-	for (y=0; y<imgParams.dec_bins; y++) {	  
+      for (x=0; x<expMapPar.ra_bins; x++) {
+	for (y=0; y<expMapPar.dec_bins; y++) {	  
 	  // If the source position is outside the hemisphere
 	  // defined by the telescope pointing direction, we
 	  // can continue with the next run.
@@ -227,21 +288,23 @@ int comaexp_main()
 	  // ambiguous values for the subsequent check.
 	  if (scalar_product(&pixelpositions[x][y], &nz)<0.) continue;
 
-	  // Define the FoV.
-	  const double dec_max =  15. *M_PI/180.; // [rad]
-	  const double dec_min = -35. *M_PI/180.; // [rad]
-	  const double ra_max  =  25. *M_PI/180.; // [rad]
-	  const double ra_min  = -25. *M_PI/180.; // [rad]
-	  
 	  // Check if the pixel is within the telescope FoV.
 	  // Declination:
-	  double dec = scalar_product(&pixelpositions[x][y], &ny);
+	  double sin_dec = scalar_product(&pixelpositions[x][y], &ny);
 	  // Right ascension:
-	  double ra  = scalar_product(&pixelpositions[x][y], &nx);
+	  double sin_ra  = scalar_product(&pixelpositions[x][y], &nx);
 	  // Check the limits of the FoV.
-	  if ((dec < sin(dec_max)) && (dec > sin(dec_min)) &&
-	      (ra  < sin(ra_max) ) && (ra  > sin(ra_min) )) {
-	    expoMap[x][y] += parameters.dt;
+	  if ((sin_dec < sin_dec_max) && (sin_dec > sin_dec_min) &&
+	      (sin_ra  < sin_ra_max ) && (sin_ra  > sin_ra_min )) {
+	    double ra = asin(sin_ra);
+	    double dec= asin(sin_dec);
+	    int xi = (int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
+	    int yi = (int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
+	    assert(xi>=0);
+	    assert(xi<fovImgPar.ra_bins);
+	    assert(yi>=0);
+	    assert(yi<fovImgPar.dec_bins);
+	    expMap[x][y] += parameters.dt * fovImg[xi][yi];
 	  }
 	}
       }
@@ -258,15 +321,15 @@ int comaexp_main()
 		parameters.exposuremap_filename);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
-    expoMap1d = (float*)malloc(parameters.ra_bins*parameters.dec_bins*sizeof(float));
-    if (NULL==expoMap1d) {
+    expMap1d = (float*)malloc(parameters.ra_bins*parameters.dec_bins*sizeof(float));
+    if (NULL==expMap1d) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for 1d exposure map failed!\n", status);
       break;
     }
     for (x=0; x<parameters.ra_bins; x++) {
       for (y=0; y<parameters.dec_bins; y++) {
-	expoMap1d[x + y*parameters.ra_bins] = expoMap[x][y];
+	expMap1d[x + y*parameters.ra_bins] = expMap[x][y];
       }
     }
 
@@ -291,19 +354,19 @@ int comaexp_main()
     }
 
     if (fits_update_key(fptr, TSTRING, "CUNIT1", "deg", "", &status)) break;   
-    buffer = imgParams.rval1 * 180./M_PI;
+    buffer = expMapPar.rval1 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CRVAL1", &buffer, "", &status)) break;
-    buffer = imgParams.rpix1;
+    buffer = expMapPar.rpix1;
     if (fits_update_key(fptr, TDOUBLE, "CRPIX1", &buffer, "", &status)) break;
-    buffer = imgParams.delt1 * 180./M_PI;
+    buffer = expMapPar.delt1 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CDELT1", &buffer, "", &status)) break;
 
     if (fits_update_key(fptr, TSTRING, "CUNIT2", "deg", "", &status)) break;   
-    buffer = imgParams.rval2 * 180./M_PI;
+    buffer = expMapPar.rval2 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CRVAL2", &buffer, "", &status)) break;
-    buffer = imgParams.rpix2;
+    buffer = expMapPar.rpix2;
     if (fits_update_key(fptr, TDOUBLE, "CRPIX2", &buffer, "", &status)) break;
-    buffer = imgParams.delt2 * 180./M_PI;
+    buffer = expMapPar.delt2 * 180./M_PI;
     if (fits_update_key(fptr, TDOUBLE, "CDELT2", &buffer, "", &status)) break;
 
 
@@ -311,8 +374,8 @@ int comaexp_main()
     long fpixel[2] = {1, 1};  // Lower left corner.
     //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
-    long lpixel[2] = {imgParams.ra_bins, imgParams.dec_bins}; 
-    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expoMap1d, &status);
+    long lpixel[2] = {expMapPar.ra_bins, expMapPar.dec_bins}; 
+    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expMap1d, &status);
 
   } while(0);  // END of the error handling loop.
 
@@ -326,23 +389,33 @@ int comaexp_main()
   // Close the exposure map FITS file.
   if(NULL!=fptr) fits_close_file(fptr, &status);
 
-  // Release memory.
+  // Release memory of the attitude catalog.
   free_AttitudeCatalog(ac);
 
-  // Release memory of exposure map.
-  if (NULL!=expoMap) {
-    for (x=0; x<parameters.ra_bins; x++) {
-      if (NULL!=expoMap[x]) {
-	free(expoMap[x]);
-	expoMap[x]=NULL;
+  // Release memory of the FoV image.
+  if (NULL!=fovImg) {
+    for (x=0; x<fovImgPar.ra_bins; x++) {
+      if (NULL!=fovImg[x]) {
+	free(fovImg[x]);
       }
     }
-    free(expoMap);
-    expoMap=NULL;
+    free(fovImg);
+    fovImg=NULL;
   }
-  if (NULL!=expoMap1d) {
-    free(expoMap1d);
-    expoMap1d = NULL;
+
+  // Release memory of exposure map.
+  if (NULL!=expMap) {
+    for (x=0; x<parameters.ra_bins; x++) {
+      if (NULL!=expMap[x]) {
+	free(expMap[x]);
+      }
+    }
+    free(expMap);
+    expMap=NULL;
+  }
+  if (NULL!=expMap1d) {
+    free(expMap1d);
+    expMap1d = NULL;
   }
 
   // Release memory of pixel positions.
