@@ -219,29 +219,6 @@ int comaexp_main()
 	double pixelra  = (x-(expMapPar.rpix1-1.0))*expMapPar.delt1 + expMapPar.rval1;
 	double pixeldec = (y-(expMapPar.rpix2-1.0))*expMapPar.delt2 + expMapPar.rval2;
 			
-	// If the coordinate system of the exposure map is galactic 
-	// coordinates, convert the pixel position vector from 
-	// galactic to equatorial coordinates.
-	if (1==parameters.coordinate_system) {
-	  double lon = pixelra;
-	  double lat = pixeldec;
-	  const double l_ncp = 2.145566759798267518;
-	  const double cos_d_ngp = 0.8899880874849542;
-	  const double sin_d_ngp = 0.4559837761750669;
-	  pixelra  = 
-	    atan2(cos(lat)*sin(l_ncp - lon), 
-		  cos_d_ngp*sin(lat)-sin_d_ngp*cos(lat)*cos(l_ncp - lon)) +
-	    +3.3660332687500039;
-	  while (pixelra>2*M_PI) {
-	    pixelra -= 2*M_PI;
-	  }
-	  while (pixelra<0.) {
-	    pixelra += 2*M_PI;
-	  }
-	  pixeldec = asin(sin_d_ngp*sin(lat) + cos_d_ngp*cos(lat)*cos(l_ncp - lon));
-
-	} 
-
 	// Check if the requested projection method is Hammer-Aitoff.
 	if (1==parameters.projection) {
 	  double lon = pixelra * 180./M_PI;
@@ -277,21 +254,40 @@ int comaexp_main()
 	    pixelra = phi   * M_PI/180.;
 	    pixeldec= theta * M_PI/180.;
 	  } else {
-	    pixelra  = -1000.;
-	    pixeldec = -1000.;
+	    pixelpositions[x][y].z = -1000.;
 	    status=EXIT_SUCCESS;
+	    continue;
 	  }
 	  if (EXIT_SUCCESS!=status) break;
 	}
 	// END of check if the requested projection method 
 	// is Hammer-Aitoff.
 
+	// If the coordinate system of the exposure map is galactic 
+	// coordinates, convert the pixel position vector from 
+	// galactic to equatorial coordinates.
+	if (1==parameters.coordinate_system) {
+	  double lon = pixelra;
+	  double lat = pixeldec;
+	  const double l_ncp = 2.145566759798267518;
+	  const double cos_d_ngp = 0.8899880874849542;
+	  const double sin_d_ngp = 0.4559837761750669;
+	  pixelra  = 
+	    atan2(cos(lat)*sin(l_ncp - lon), 
+		  cos_d_ngp*sin(lat)-sin_d_ngp*cos(lat)*cos(l_ncp - lon)) +
+	    +3.3660332687500039;
+	  while (pixelra>2*M_PI) {
+	    pixelra -= 2*M_PI;
+	  }
+	  while (pixelra<0.) {
+	    pixelra += 2*M_PI;
+	  }
+	  pixeldec = asin(sin_d_ngp*sin(lat) + cos_d_ngp*cos(lat)*cos(l_ncp - lon));
+	} 
+	// END of check if requested coordinate system is galactic.
+
 	// Calculate the carteesian coordinate vector.
-	if (pixelra>-100.) {
-	  pixelpositions[x][y] = unit_vector(pixelra, pixeldec);
-	} else {
-	  pixelpositions[x][y].z = -1000.;
-	}	  
+	pixelpositions[x][y] = unit_vector(pixelra, pixeldec);
       }
       if (EXIT_SUCCESS!=status) break;
       // END of loop over y.
