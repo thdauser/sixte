@@ -1,6 +1,7 @@
 attitude_filename,fre,lq,"attitude.fits",,,"attitude file (FITS input file) "
 exposuremap_filename,f,lq,"exposure.fits",,,"exposure map file (FITS output file) "
 coordinate_system,d,lq,0,0,1,"coordinate system (equatorial(0) or galactic(1)) "
+projection,d,lq,0,0,1,"WCS projection (Plate carrée(0) or Hammer-Aitoff(1)) "
 t0,r,lq,0.0,,,"t0 - start time (s) "
 timespan,r,lq,1000.0,0.0,1000000000.0,"time interval for the exposure map calculation (s) "
 dt,r,lq,1.0,0.0,1000.0,"time step for the exposure map calculation (s) "

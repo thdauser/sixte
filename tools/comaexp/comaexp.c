@@ -5,6 +5,10 @@
 #endif
 
 #include "sixt.h"
+
+#include <wcs.h>
+#include <wcshdr.h>
+
 #include "sixt_random.h"
 #include "vector.h"
 #include "point.h"
@@ -23,6 +27,9 @@ struct Parameters {
 
   /** Coordinate system: equatorial (0) or galactic (1). */
   int coordinate_system;
+
+  /** Projection method: Plate carrée (0) or Hammer-Aitoff (1). */
+  int projection;
 
   double t0;
   double timespan;
@@ -138,8 +145,8 @@ int comaexp_main()
     if (EXIT_SUCCESS!=status) break;
 
     // Set up the dimensions of the FoV image.
-    fovImgPar.ra_bins = 512;
-    fovImgPar.rpix1   = 256.5;
+    fovImgPar.ra_bins = 500;
+    fovImgPar.rpix1   = 250.5;
     fovImgPar.rval1   = 0.;
     fovImgPar.delt1   = 0.1 * M_PI/180.; // [rad]
     double sin_ra_max = sin(fovImgPar.rval1
@@ -186,9 +193,9 @@ int comaexp_main()
     // Set up the FoV image for the MIRAX design.
     for (x=0; x<fovImgPar.ra_bins; x++) {
       for (y=0; y<fovImgPar.dec_bins; y++) {
-	double ra = (fovImgPar.rval1+(x*1.-fovImgPar.rpix1+1.)*fovImgPar.delt1)*180./M_PI;
+	//double ra = (fovImgPar.rval1+(x*1.-fovImgPar.rpix1+1.)*fovImgPar.delt1)*180./M_PI;
 	double dec= (fovImgPar.rval2+(y*1.-fovImgPar.rpix2+1.)*fovImgPar.delt2)*180./M_PI;
-	if (((ra>0.605)||(ra<-0.605)) && ((dec>-8.88)||(dec<-10.08))){
+	if ((dec>-8.88)||(dec<-10.08)){
 	  fovImg[x][y] = 1.;
 	}
       }
@@ -232,12 +239,65 @@ int comaexp_main()
 	    pixelra += 2*M_PI;
 	  }
 	  pixeldec = asin(sin_d_ngp*sin(lat) + cos_d_ngp*cos(lat)*cos(l_ncp - lon));
+
+	} 
+
+	// Check if the requested projection method is Hammer-Aitoff.
+	if (1==parameters.projection) {
+	  double lon = pixelra * 180./M_PI;
+	  double lat = pixeldec* 180./M_PI;
+	  double phi   = 0.;
+	  double theta = 0.;
+
+	  struct celprm cel;
+	  status = celini(&cel);
+	  if (EXIT_SUCCESS!=status) break;
+	  cel.flag   = 0;
+	  cel.offset = 0;
+	  cel.phi0   = 0.;
+	  cel.theta0 = 0.;
+	  cel.ref[0] = 0.;
+	  cel.ref[1] = 0.;
+	  cel.ref[2] = 0.;
+	  cel.ref[3] = 0.;
+	  strcpy(cel.prj.code, "AIT");
+	  cel.prj.r0     = 0.;
+	  //	  cel.prjprm.pv = 
+	  cel.prj.phi0   = 0.;
+	  cel.prj.theta0 = 0.;
+
+	  // Transform coordinates from projection plane to 
+	  // celestial coordinates.
+	  int invalid_coordinates=0;
+	  status = celx2s(&cel, 1, 1, 1, 1, &lon, &lat,
+			  &phi, &theta, &pixelra, &pixeldec, 
+			  &invalid_coordinates);
+
+	  if (0==invalid_coordinates) {
+	    pixelra = phi   * M_PI/180.;
+	    pixeldec= theta * M_PI/180.;
+	  } else {
+	    pixelra  = -1000.;
+	    pixeldec = -1000.;
+	    status=EXIT_SUCCESS;
+	  }
+	  if (EXIT_SUCCESS!=status) break;
 	}
+	// END of check if the requested projection method 
+	// is Hammer-Aitoff.
 
 	// Calculate the carteesian coordinate vector.
-	pixelpositions[x][y] = unit_vector(pixelra, pixeldec);
+	if (pixelra>-100.) {
+	  pixelpositions[x][y] = unit_vector(pixelra, pixeldec);
+	} else {
+	  pixelpositions[x][y].z = -1000.;
+	}	  
       }
+      if (EXIT_SUCCESS!=status) break;
+      // END of loop over y.
     }    
+    if (EXIT_SUCCESS!=status) break;
+    // END of loop over x.
 
     // --- END of Initialization ---
 
@@ -286,6 +346,7 @@ int comaexp_main()
 	  // can continue with the next run.
 	  // NOTE: This check is necessary in order to avoid
 	  // ambiguous values for the subsequent check.
+	  if (pixelpositions[x][y].z < -100.) continue;
 	  if (scalar_product(&pixelpositions[x][y], &nz)<0.) continue;
 
 	  // Check if the pixel is within the telescope FoV.
@@ -345,13 +406,24 @@ int comaexp_main()
     double buffer;
     // Use the appropriate coordinate system: either equatorial or 
     // galactic.
+    char ctype1[MAXMSG];
+    char ctype2[MAXMSG];
     if (0==parameters.coordinate_system) {
-      if (fits_update_key(fptr, TSTRING, "CTYPE1", "RA---CAR", "", &status)) break;   
-      if (fits_update_key(fptr, TSTRING, "CTYPE2", "DEC--CAR", "", &status)) break;   
+      strcpy(ctype1, "RA---");
+      strcpy(ctype2, "DEC--");
     } else if (1==parameters.coordinate_system) {
-      if (fits_update_key(fptr, TSTRING, "CTYPE1", "GLON-CAR", "", &status)) break;   
-      if (fits_update_key(fptr, TSTRING, "CTYPE2", "GLAT-CAR", "", &status)) break;         
+      strcpy(ctype1, "GLON-");
+      strcpy(ctype2, "GLAT-");
     }
+    if (0==parameters.projection) {
+      strcat(ctype1, "CAR");
+      strcat(ctype2, "CAR");
+    } else if (1==parameters.coordinate_system) {
+      strcat(ctype1, "AIT");
+      strcat(ctype2, "AIT");
+    }
+    if (fits_update_key(fptr, TSTRING, "CTYPE1", ctype1, "", &status)) break;   
+    if (fits_update_key(fptr, TSTRING, "CTYPE2", ctype2, "", &status)) break;   
 
     if (fits_update_key(fptr, TSTRING, "CUNIT1", "deg", "", &status)) break;   
     buffer = expMapPar.rval1 * 180./M_PI;
@@ -454,6 +526,10 @@ int comaexp_getpar(struct Parameters *parameters)
 
   else if ((status = PILGetInt("coordinate_system", &parameters->coordinate_system))) {
     HD_ERROR_THROW("Error reading the type of the coordinate system!\n", status);
+  }
+
+  else if ((status = PILGetInt("projection", &parameters->projection))) {
+    HD_ERROR_THROW("Error reading the projection method!\n", status);
   }
 
   // Get the start time of the exposure map calculation
