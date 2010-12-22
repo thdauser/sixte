@@ -204,7 +204,7 @@ int comaexp_main()
       break;
     }      
     int anynul;
-    double null_value=0.;
+    float null_value=0.;
     long fpixel[2] = {1, 1};   // lower left corner
     //                |--|--> FITS coordinates start at (1,1)
     // upper right corner
