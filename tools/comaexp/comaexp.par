@@ -1,4 +1,5 @@
 attitude_filename,fre,lq,"attitude.fits",,,"attitude file (FITS input file) "
+fovimage_filename,fre,lq,"fov.fits",,,"FoV image file (FITS input file) "
 exposuremap_filename,f,lq,"exposure.fits",,,"exposure map file (FITS output file) "
 coordinate_system,d,lq,0,0,1,"coordinate system (equatorial(0) or galactic(1)) "
 projection,d,lq,0,0,1,"WCS projection (Plate carrée(0) or Hammer-Aitoff(1)) "

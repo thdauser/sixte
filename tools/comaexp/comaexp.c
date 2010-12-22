@@ -23,6 +23,7 @@
 /* Program parameters */
 struct Parameters {
   char attitude_filename[FILENAME_LENGTH];    // filename of the attitude file
+  char fovimage_filename[FILENAME_LENGTH];    // filename of the FoV image file
   char exposuremap_filename[FILENAME_LENGTH]; // output: exposure map
 
   /** Coordinate system: equatorial (0) or galactic (1). */
@@ -66,8 +67,8 @@ int comaexp_main()
   
   AttitudeCatalog* ac=NULL;
 
-  float** expMap=NULL;       // Array for the calculation of the exposure map.
-  float*  expMap1d=NULL;     // 1d exposure map for storing in FITS image.
+  // Array for the calculation of the exposure map.
+  float** expMap=NULL;       
   struct ImageParameters expMapPar;
   // Array for pre-calculation of the carteesian coordinate vectors
   // of the individual pixels in the exposure map image.
@@ -77,10 +78,13 @@ int comaexp_main()
   float** fovImg=NULL;
   struct ImageParameters fovImgPar;
 
-  long x, y;                  // Counters.
-  fitsfile* fptr=NULL;        // FITS file pointer for exposure map image.
+  // 1-dimensional image buffer for storing in FITS files.
+  float*  imagebuffer1d=NULL;     
 
-  int status=EXIT_SUCCESS;    // Error status.
+  long x, y;               // Counters.
+  fitsfile* fptr=NULL;     // FITS file pointer for exposure map image.
+
+  int status=EXIT_SUCCESS; // Error status.
 
 
   // Register HEATOOL:
@@ -144,19 +148,44 @@ int comaexp_main()
     }
     if (EXIT_SUCCESS!=status) break;
 
-    // Set up the dimensions of the FoV image.
-    fovImgPar.ra_bins = 500;
-    fovImgPar.rpix1   = 250.5;
-    fovImgPar.rval1   = 0.;
-    fovImgPar.delt1   = 0.1 * M_PI/180.; // [rad]
+
+    // Read the FoV image file.
+    // Open the file.
+    fits_open_file(&fptr, parameters.fovimage_filename, READONLY, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Determine the width of the image.
+    long naxes[2];
+    fits_get_img_size(fptr, 2, naxes, &status);
+    if (EXIT_SUCCESS!=status) break;
+    fovImgPar.ra_bins  = (int)naxes[0];
+    fovImgPar.dec_bins = (int)naxes[1];
+
+    // Read the WCS information.
+    char comment[MAXMSG];
+    fits_read_key(fptr, TDOUBLE, "CDELT1", &fovImgPar.delt1, 
+		  comment, &status);
+    fits_read_key(fptr, TDOUBLE, "CDELT2", &fovImgPar.delt2, 
+		  comment, &status);
+    fits_read_key(fptr, TDOUBLE, "CRPIX1", &fovImgPar.rpix1, 
+		  comment, &status);
+    fits_read_key(fptr, TDOUBLE, "CRPIX2", &fovImgPar.rpix2, 
+		  comment, &status);
+    fits_read_key(fptr, TDOUBLE, "CRVAL1", &fovImgPar.rval1, 
+		  comment, &status);
+    fits_read_key(fptr, TDOUBLE, "CRVAL2", &fovImgPar.rval2, 
+		  comment, &status);
+    if (EXIT_SUCCESS!=status) break;
+    // Convert from [deg] to [rad].
+    fovImgPar.delt1 *= M_PI/180.;
+    fovImgPar.delt2 *= M_PI/180.;
+    fovImgPar.rval1 *= M_PI/180.;
+    fovImgPar.rval2 *= M_PI/180.;
+
+    // Determine the dimensions of the FoV.
     double sin_ra_max = sin(fovImgPar.rval1
 			    +(fovImgPar.ra_bins*1.-fovImgPar.rpix1+0.5)*fovImgPar.delt1);
     double sin_ra_min = sin(fovImgPar.rval1-(fovImgPar.rpix1-0.5)*fovImgPar.delt1);
-
-    fovImgPar.dec_bins = 512;
-    fovImgPar.rpix2    = 256.5;
-    fovImgPar.rval2    = -9.48 *M_PI/180.;
-    fovImgPar.delt2    =  0.1  *M_PI/180.; // [rad]
     double sin_dec_max = sin(fovImgPar.rval2
 			     +(fovImgPar.dec_bins*1.-fovImgPar.rpix2+0.5)*fovImgPar.delt2);
     double sin_dec_min = sin(fovImgPar.rval2-(fovImgPar.rpix2-0.5)*fovImgPar.delt2);
@@ -166,43 +195,56 @@ int comaexp_main()
     headas_chat(5, "            and from %.1lf deg to %.1lf deg (Dec direction)\n", 
 		asin(sin_dec_min)*180./M_PI, asin(sin_dec_max)*180./M_PI);
 
-    // Get memory for the FoV image.
+    // Read the image from the file.
+    imagebuffer1d=(float*)malloc(fovImgPar.ra_bins*fovImgPar.dec_bins*
+				 sizeof(float));
+    if (NULL==imagebuffer1d) {
+      status = EXIT_FAILURE;
+      HD_ERROR_THROW("Error: memory allocation for image buffer failed!\n", status);
+      break;
+    }      
+    int anynul;
+    double null_value=0.;
+    long fpixel[2] = {1, 1};   // lower left corner
+    //                |--|--> FITS coordinates start at (1,1)
+    // upper right corner
+    long lpixel[2] = {fovImgPar.ra_bins, fovImgPar.dec_bins};  
+    long inc[2] = {1, 1};
+    fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value, 
+		     imagebuffer1d, &anynul, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Convert the 1-dimensional image to 2-d.
     fovImg = (float**)malloc(fovImgPar.ra_bins*sizeof(float*));
     if (NULL==fovImg) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for FoV image failed!\n", status);
       break;
-    }
+    }      
     for (x=0; x<fovImgPar.ra_bins; x++) {
       fovImg[x] = (float*)malloc(fovImgPar.dec_bins*sizeof(float));
       if (NULL==fovImg[x]) {
 	status = EXIT_FAILURE;
 	HD_ERROR_THROW("Error: memory allocation for FoV image failed!\n", status);
 	break;
+      }      
+      for (y=0; y<fovImgPar.dec_bins; y++) {
+	// Take care of choosing x- and y-axis properly!
+	fovImg[x][y]=imagebuffer1d[y*fovImgPar.ra_bins+x];
       }
     }
     if (EXIT_SUCCESS!=status) break;
 
-    // Initialize the FoV image with zero values.
-    for (x=0; x<fovImgPar.ra_bins; x++) {
-      for (y=0; y<fovImgPar.dec_bins; y++) {
-	fovImg[x][y] = 0.;
-      }
-    }
+    // Release memory.
+    free(imagebuffer1d);
+    imagebuffer1d=NULL;
+	
+    // Close the file.
+    fits_close_file(fptr, &status);
+    if (EXIT_SUCCESS!=status) break;
+    fptr=NULL;
 
-    // Set up the FoV image for the MIRAX design.
-    for (x=0; x<fovImgPar.ra_bins; x++) {
-      for (y=0; y<fovImgPar.dec_bins; y++) {
-	//double ra = (fovImgPar.rval1+(x*1.-fovImgPar.rpix1+1.)*fovImgPar.delt1)*180./M_PI;
-	double dec= (fovImgPar.rval2+(y*1.-fovImgPar.rpix2+1.)*fovImgPar.delt2)*180./M_PI;
-	if ((dec>-8.88)||(dec<-10.08)){
-	  fovImg[x][y] = 1.;
-	}
-      }
-    }
-    
 
-    
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
@@ -378,15 +420,15 @@ int comaexp_main()
 		parameters.exposuremap_filename);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
-    expMap1d = (float*)malloc(parameters.ra_bins*parameters.dec_bins*sizeof(float));
-    if (NULL==expMap1d) {
+    imagebuffer1d = (float*)malloc(parameters.ra_bins*parameters.dec_bins*sizeof(float));
+    if (NULL==imagebuffer1d) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation for 1d exposure map failed!\n", status);
       break;
     }
     for (x=0; x<parameters.ra_bins; x++) {
       for (y=0; y<parameters.dec_bins; y++) {
-	expMap1d[x + y*parameters.ra_bins] = expMap[x][y];
+	imagebuffer1d[x + y*parameters.ra_bins] = expMap[x][y];
       }
     }
 
@@ -394,7 +436,8 @@ int comaexp_main()
     remove(parameters.exposuremap_filename);
     if (fits_create_file(&fptr, parameters.exposuremap_filename, &status)) break;
     // Create an image in the FITS-file (primary HDU):
-    long naxes[2] = { parameters.ra_bins, parameters.dec_bins };
+    naxes[0] = parameters.ra_bins;
+    naxes[1] = parameters.dec_bins;
     if (fits_create_img(fptr, FLOAT_IMG, 2, naxes, &status)) break;
     //                                   |-> naxis
 
@@ -439,11 +482,12 @@ int comaexp_main()
 
 
     // Write the image to the file:
-    long fpixel[2] = {1, 1};  // Lower left corner.
-    //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
+    fpixel[0] = 1; // Lower left corner.
+    fpixel[1] = 1; // FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
-    long lpixel[2] = {expMapPar.ra_bins, expMapPar.dec_bins}; 
-    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expMap1d, &status);
+    lpixel[0] = expMapPar.ra_bins;
+    lpixel[1] = expMapPar.dec_bins; 
+    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, imagebuffer1d, &status);
 
   } while(0);  // END of the error handling loop.
 
@@ -481,9 +525,11 @@ int comaexp_main()
     free(expMap);
     expMap=NULL;
   }
-  if (NULL!=expMap1d) {
-    free(expMap1d);
-    expMap1d = NULL;
+  
+  // Image buffer.
+  if (NULL!=imagebuffer1d) {
+    free(imagebuffer1d);
+    imagebuffer1d = NULL;
   }
 
   // Release memory of pixel positions.
@@ -510,9 +556,14 @@ int comaexp_getpar(struct Parameters *parameters)
   int ra_bins, dec_bins;    // Buffer
   int status=EXIT_SUCCESS;  // Error status
   
-  // Get the filename of the input attitude file (FITS file)
+  // Get the filename of the attitude file (FITS file)
   if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
     HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
+  }
+
+  // Get the filename of the FoV image file (FITS file)
+  if ((status = PILGetFname("fovimage_filename", parameters->fovimage_filename))) {
+    HD_ERROR_THROW("Error reading the filename of the FoV image file!\n", status);
   }
   
   // Get the filename of the output exposure map (FITS file)
