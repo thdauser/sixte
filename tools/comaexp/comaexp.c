@@ -457,7 +457,7 @@ int comaexp_main()
     if (0==parameters.projection) {
       strcat(ctype1, "CAR");
       strcat(ctype2, "CAR");
-    } else if (1==parameters.coordinate_system) {
+    } else if (1==parameters.projection) {
       strcat(ctype1, "AIT");
       strcat(ctype2, "AIT");
     }
