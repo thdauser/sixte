@@ -19,6 +19,9 @@
 #define TOOLSUB comaexp_main
 #include "headas_main.c"
 
+// Compiler directive: use CAR (Plate carrée FoV images).
+#define FOV_CAR
+
 
 /* Program parameters */
 struct Parameters {
@@ -163,6 +166,11 @@ int comaexp_main()
 
     // Read the WCS information.
     char comment[MAXMSG];
+    char ctype1[MAXMSG], ctype2[MAXMSG];
+    fits_read_key(fptr, TSTRING, "CTYPE1", ctype1, 
+		  comment, &status);
+    fits_read_key(fptr, TSTRING, "CTYPE2", ctype2, 
+		  comment, &status);
     fits_read_key(fptr, TDOUBLE, "CDELT1", &fovImgPar.delt1, 
 		  comment, &status);
     fits_read_key(fptr, TDOUBLE, "CDELT2", &fovImgPar.delt2, 
@@ -181,6 +189,23 @@ int comaexp_main()
     fovImgPar.delt2 *= M_PI/180.;
     fovImgPar.rval1 *= M_PI/180.;
     fovImgPar.rval2 *= M_PI/180.;
+    // Check if the FoV image is given with the right projection.
+#ifdef FOV_CAR
+    if ((0!=strcmp(&(ctype1[5]), "CAR")) || 
+	(0!=strcmp(&(ctype2[5]), "CAR"))) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: WCS projection type of FoV image must be 'CAR'!\n",
+		     status);
+      break;
+    }
+#else
+    if ((strlen(ctype1)>0) || (strlen(ctype2)>0)) {
+      status=EXIT_FAILURE;
+      HD_ERROR_THROW("Error: FoV image should have empty projection type!\n",
+		     status);
+      break;
+    }
+#endif
 
     // Determine the dimensions of the FoV.
     double sin_ra_max = sin(fovImgPar.rval1
@@ -387,6 +412,9 @@ int comaexp_main()
 	  if (pixelpositions[x][y].z < -100.) continue;
 	  if (scalar_product(&pixelpositions[x][y], &nz)<0.) continue;
 
+#ifdef FOV_CAR
+	  // CAR (Plate carrée) system for FoV image.
+
 	  // Check if the pixel is within the telescope FoV.
 	  // Projection along y-axis:
 	  double sy = scalar_product(&pixelpositions[x][y], &ny);
@@ -406,6 +434,28 @@ int comaexp_main()
 	  if ((yi<0) || (yi>=fovImgPar.dec_bins)) continue;
 
 	  expMap[x][y] += parameters.dt * fovImg[xi][yi];
+#else
+	  // No particular projection selected for FoV image.
+	  // Use local system with 2 equivalent angles.
+
+	  // Declination:
+	  double sin_y = scalar_product(&pixelpositions[x][y], &ny);
+	  // Right ascension:
+	  double sin_x = scalar_product(&pixelpositions[x][y], &nx);
+	  // Check the limits of the FoV.
+	  if ((sin_y < sin_dec_max) && (sin_y > sin_dec_min) &&
+	      (sin_x  < sin_ra_max) && (sin_x  > sin_ra_min)) {
+	    double alpha = asin(sin_x);
+	    double beta  = asin(sin_y);
+	    int xi = (int)((alpha-fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
+	    int yi = (int)((beta -fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
+	    assert(xi>=0);
+	    assert(xi<fovImgPar.ra_bins);
+	    assert(yi>=0);
+	    assert(yi<fovImgPar.dec_bins);
+	    expMap[x][y] += parameters.dt * fovImg[xi][yi];
+	  }
+#endif 
 	}
       }
       if (status != EXIT_SUCCESS) break;
@@ -446,8 +496,6 @@ int comaexp_main()
     double buffer;
     // Use the appropriate coordinate system: either equatorial or 
     // galactic.
-    char ctype1[MAXMSG];
-    char ctype2[MAXMSG];
     if (0==parameters.coordinate_system) {
       strcpy(ctype1, "RA---");
       strcpy(ctype2, "DEC--");
