@@ -192,7 +192,7 @@ int comaexp_main()
 
     headas_chat(5, "FoV dimensions: from %.1lf deg to %.1lf deg (RA direction)\n", 
 		asin(sin_ra_min)*180./M_PI, asin(sin_ra_max)*180./M_PI);
-    headas_chat(5, "            and from %.1lf deg to %.1lf deg (Dec direction)\n", 
+    headas_chat(5, "                and from %.1lf deg to %.1lf deg (Dec direction)\n", 
 		asin(sin_dec_min)*180./M_PI, asin(sin_dec_max)*180./M_PI);
 
     // Read the image from the file.
@@ -389,16 +389,16 @@ int comaexp_main()
 
 	  // Check if the pixel is within the telescope FoV.
 	  // Declination:
-	  double sin_dec = scalar_product(&pixelpositions[x][y], &ny);
+	  double sin_y = scalar_product(&pixelpositions[x][y], &ny);
 	  // Right ascension:
-	  double sin_ra  = scalar_product(&pixelpositions[x][y], &nx);
+	  double sin_x  = scalar_product(&pixelpositions[x][y], &nx);
 	  // Check the limits of the FoV.
-	  if ((sin_dec < sin_dec_max) && (sin_dec > sin_dec_min) &&
-	      (sin_ra  < sin_ra_max ) && (sin_ra  > sin_ra_min )) {
-	    double ra = asin(sin_ra);
-	    double dec= asin(sin_dec);
-	    int xi = (int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
-	    int yi = (int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
+	  if ((sin_y < sin_dec_max) && (sin_y > sin_dec_min) &&
+	      (sin_x  < sin_ra_max) && (sin_x  > sin_ra_min)) {
+	    double alpha = asin(sin_x);
+	    double beta  = asin(sin_y);
+	    int xi = (int)((alpha-fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
+	    int yi = (int)((beta -fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
 	    assert(xi>=0);
 	    assert(xi<fovImgPar.ra_bins);
 	    assert(yi>=0);
