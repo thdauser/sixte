@@ -388,23 +388,24 @@ int comaexp_main()
 	  if (scalar_product(&pixelpositions[x][y], &nz)<0.) continue;
 
 	  // Check if the pixel is within the telescope FoV.
-	  // Declination:
-	  double sin_y = scalar_product(&pixelpositions[x][y], &ny);
-	  // Right ascension:
-	  double sin_x  = scalar_product(&pixelpositions[x][y], &nx);
-	  // Check the limits of the FoV.
-	  if ((sin_y < sin_dec_max) && (sin_y > sin_dec_min) &&
-	      (sin_x  < sin_ra_max) && (sin_x  > sin_ra_min)) {
-	    double alpha = asin(sin_x);
-	    double beta  = asin(sin_y);
-	    int xi = (int)((alpha-fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
-	    int yi = (int)((beta -fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
-	    assert(xi>=0);
-	    assert(xi<fovImgPar.ra_bins);
-	    assert(yi>=0);
-	    assert(yi<fovImgPar.dec_bins);
-	    expMap[x][y] += parameters.dt * fovImg[xi][yi];
-	  }
+	  // Projection along y-axis:
+	  double sy = scalar_product(&pixelpositions[x][y], &ny);
+	  if ((sy > sin_dec_max) || (sy < sin_dec_min)) continue;
+
+	  // Projection along x-axis:
+	  double sx = scalar_product(&pixelpositions[x][y], &nx);
+	  if ((sx > sin_ra_max) || (sx < sin_ra_min)) continue;
+
+	  double dec = asin(sy);
+	  double ra  = asin(sx/cos(dec));
+
+	  int xi = (int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
+	  int yi = (int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
+
+	  if ((xi<0) || (xi>=fovImgPar.ra_bins )) continue;
+	  if ((yi<0) || (yi>=fovImgPar.dec_bins)) continue;
+
+	  expMap[x][y] += parameters.dt * fovImg[xi][yi];
 	}
       }
       if (status != EXIT_SUCCESS) break;
