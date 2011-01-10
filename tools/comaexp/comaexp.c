@@ -20,7 +20,7 @@
 #include "headas_main.c"
 
 // Compiler directive: use CAR (Plate carrée FoV images).
-#define FOV_CAR
+#define FOV_CAR 1
 
 
 /* Program parameters */
