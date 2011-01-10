@@ -19,9 +19,6 @@
 #define TOOLSUB comaexp_main
 #include "headas_main.c"
 
-// Compiler directive: use CAR (Plate carrée FoV images).
-#define FOV_CAR 1
-
 
 /* Program parameters */
 struct Parameters {
@@ -80,6 +77,11 @@ int comaexp_main()
   // Image of the FoV.
   float** fovImg=NULL;
   struct ImageParameters fovImgPar;
+  // FoV image projection type: 
+  // 0: local tangential system (obsolete)
+  // 1: Plate carrée (CAR)
+  // 2: Gnomonic (TAN)
+  int fov_projection;
 
   // 1-dimensional image buffer for storing in FITS files.
   float*  imagebuffer1d=NULL;     
@@ -189,23 +191,40 @@ int comaexp_main()
     fovImgPar.delt2 *= M_PI/180.;
     fovImgPar.rval1 *= M_PI/180.;
     fovImgPar.rval2 *= M_PI/180.;
-    // Check if the FoV image is given with the right projection.
-#ifdef FOV_CAR
-    if ((0!=strcmp(&(ctype1[5]), "CAR")) || 
-	(0!=strcmp(&(ctype2[5]), "CAR"))) {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: WCS projection type of FoV image must be 'CAR'!\n",
-		     status);
-      break;
-    }
-#else
+
+    // Determine the projection type of the FoV image.
     if ((strlen(ctype1)>0) || (strlen(ctype2)>0)) {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: FoV image should have empty projection type!\n",
-		     status);
-      break;
+      if ((0==strcmp(&(ctype1[5]), "CAR")) && 
+	  (0==strcmp(&(ctype2[5]), "CAR"))) {
+	fov_projection = 1;
+      } else if ((0==strcmp(&(ctype1[5]), "TAN")) && 
+		 (0==strcmp(&(ctype2[5]), "TAN"))) {
+	fov_projection = 2;
+	// TODO CRVAL2 ???
+      } else {
+	status=EXIT_FAILURE;
+	HD_ERROR_THROW("Error: FoV image has unknown projection type!\n",
+		       status);
+	break;
+      }
+    } else {
+      fov_projection = 0;
     }
-#endif
+
+    // Output of projection type:
+    switch(fov_projection) {
+    case 0:
+      headas_chat(1, "CTYPE of FoV image: none\n");
+      break;
+    case 1:
+      headas_chat(1, "CTYPE of FoV image: CAR (Plate carrée)\n");
+      break;
+    case 2:
+      headas_chat(1, "CTYPE of FoV image: TAN (Gnomonic)\n");
+      break;
+    default:
+      headas_chat(1, "CTYPE of FoV image: unknown\n");
+    }
 
     // Determine the dimensions of the FoV.
     double sin_ra_max = sin(fovImgPar.rval1
@@ -412,50 +431,75 @@ int comaexp_main()
 	  if (pixelpositions[x][y].z < -100.) continue;
 	  if (scalar_product(&pixelpositions[x][y], &nz)<0.) continue;
 
-#ifdef FOV_CAR
-	  // CAR (Plate carrée) system for FoV image.
+	  // Distinguish between different FoV image projection
+	  // types.
+	  if (1==fov_projection) {
+	    // CAR (Plate carrée).
 
-	  // Check if the pixel is within the telescope FoV.
-	  // Projection along y-axis:
-	  double sy = scalar_product(&pixelpositions[x][y], &ny);
-	  if ((sy > sin_dec_max) || (sy < sin_dec_min)) continue;
+	    // Check if the pixel is within the telescope FoV.
+	    // Projection along y-axis:
+	    double sy = scalar_product(&pixelpositions[x][y], &ny);
+	    if ((sy > sin_dec_max) || (sy < sin_dec_min)) continue;
+	    
+	    // Projection along x-axis:
+	    double sx = scalar_product(&pixelpositions[x][y], &nx);
+	    if ((sx > sin_ra_max) || (sx < sin_ra_min)) continue;
 
-	  // Projection along x-axis:
-	  double sx = scalar_product(&pixelpositions[x][y], &nx);
-	  if ((sx > sin_ra_max) || (sx < sin_ra_min)) continue;
+	    double dec = asin(sy);
+	    double ra  = asin(sx/cos(dec));
+	    
+	    int xi = (int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
+	    int yi = (int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
+	    
+	    if ((xi<0) || (xi>=fovImgPar.ra_bins )) continue;
+	    if ((yi<0) || (yi>=fovImgPar.dec_bins)) continue;
 
-	  double dec = asin(sy);
-	  double ra  = asin(sx/cos(dec));
-
-	  int xi = (int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
-	  int yi = (int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
-
-	  if ((xi<0) || (xi>=fovImgPar.ra_bins )) continue;
-	  if ((yi<0) || (yi>=fovImgPar.dec_bins)) continue;
-
-	  expMap[x][y] += parameters.dt * fovImg[xi][yi];
-#else
-	  // No particular projection selected for FoV image.
-	  // Use local system with 2 equivalent angles.
-
-	  // Declination:
-	  double sin_y = scalar_product(&pixelpositions[x][y], &ny);
-	  // Right ascension:
-	  double sin_x = scalar_product(&pixelpositions[x][y], &nx);
-	  // Check the limits of the FoV.
-	  if ((sin_y < sin_dec_max) && (sin_y > sin_dec_min) &&
-	      (sin_x  < sin_ra_max) && (sin_x  > sin_ra_min)) {
-	    double alpha = asin(sin_x);
-	    double beta  = asin(sin_y);
-	    int xi = (int)((alpha-fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
-	    int yi = (int)((beta -fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
-	    assert(xi>=0);
-	    assert(xi<fovImgPar.ra_bins);
-	    assert(yi>=0);
-	    assert(yi<fovImgPar.dec_bins);
 	    expMap[x][y] += parameters.dt * fovImg[xi][yi];
-	  }
-#endif 
+
+	  } else if (2==fov_projection) {
+	    // TAN (Gnomonic).
+	    // Use local tangential system with 2 equivalent and
+	    // independent angles.
+
+	    // Angle in right ascension direction:
+	    double alpha = asin(scalar_product(&pixelpositions[x][y], &nx));
+	    // Angle in declination direction:
+	    double beta  = asin(scalar_product(&pixelpositions[x][y], &ny));
+
+	    // Image coordinates:
+	    int xi = (int)(tan(alpha)/tan(fovImgPar.delt1) + fovImgPar.rpix1 + 0.5) -1;
+	    int yi = (int)(tan(beta) /tan(fovImgPar.delt2) + fovImgPar.rpix2 + 0.5) -1;
+	    
+	    // Check the limits of the FoV.
+	    if ((xi >= 0) && (xi < fovImgPar.ra_bins ) &&
+		(yi >= 0) && (yi < fovImgPar.dec_bins)) {
+	      expMap[x][y] += parameters.dt * fovImg[xi][yi];
+	    }
+
+	  } else if (0==fov_projection) {
+	    // No particular projection selected for FoV image.
+	    // Use local system with 2 equivalent and
+	    // independent angles.
+
+	    // Declination direction:
+	    double sin_y = scalar_product(&pixelpositions[x][y], &ny);
+	    // Right ascension direction:
+	    double sin_x = scalar_product(&pixelpositions[x][y], &nx);
+	    // Check the limits of the FoV.
+	    if ((sin_y < sin_dec_max) && (sin_y > sin_dec_min) &&
+		(sin_x < sin_ra_max ) && (sin_x > sin_ra_min )) {
+	      double alpha = asin(sin_x);
+	      double beta  = asin(sin_y);
+	      int xi = (int)((alpha-fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
+	      int yi = (int)((beta -fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
+	      assert(xi>=0);
+	      assert(xi<fovImgPar.ra_bins);
+	      assert(yi>=0);
+	      assert(yi<fovImgPar.dec_bins);
+	      expMap[x][y] += parameters.dt * fovImg[xi][yi];
+	    }
+	  } 
+	  // END of different FoV image projection types.
 	}
       }
       if (status != EXIT_SUCCESS) break;
