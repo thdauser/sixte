@@ -10,9 +10,11 @@
 <detector type="htrs" mode="">
 <dimensions xwidth="1" ywidth="1"/>
 <wcs xrpix="1." yrpix="1." xrval="0." yrval="0." xdelt="100.e-6" ydelt="100.e-6"/>
-<rmf filename="/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.rsp"/>
+<rmf filename="/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.rmf"/>
+<arf filename="/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.arf"/>
 <split type="GAUSS" par1="11.e-6"/>
 <eventfile template="geneventfile.tpl"/>
+<patternfile template="genpatternfile.tpl"/>
 
 <threshold_readout_lo_keV value="150.e-3"/>
 <threshold_event_lo_keV value="150.e-3"/>

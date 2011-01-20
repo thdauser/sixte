@@ -13,6 +13,7 @@
 <rmf filename="gravitas.rmf"/>
 <split type="GAUSS" par1="11.e-6"/>
 <eventfile template="geneventfile.tpl"/>
+<patternfile template="genpatternfile.tpl"/>
 
 <threshold_readout_lo_keV value="0."/>
 <threshold_event_lo_keV value="150.e-3"/>
