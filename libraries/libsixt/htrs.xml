@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<instrument>
+<telescope>
+<focallength value="20.0"/>
+<fov diameter="1.0"/>
+<psf filename="/home/schmid/ixo/htrs/psf/htrs.psf.christian.12.6cm.fits"/>
+<vignetting filename="/home/schmid/ixo/ixo.vignetting.fits"/>
+</telescope>
+
+<detector type="htrs" mode="">
+<dimensions xwidth="1" ywidth="1"/>
+<wcs xrpix="1." yrpix="1." xrval="0." yrval="0." xdelt="100.e-6" ydelt="100.e-6"/>
+<rmf filename="/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.rsp"/>
+<split type="GAUSS" par1="11.e-6"/>
+<eventfile template="geneventfile.tpl"/>
+
+<threshold_readout_lo_keV value="150.e-3"/>
+<threshold_event_lo_keV value="150.e-3"/>
+<threshold_split_lo_keV value="150.e-3"/>
+<readout mode="time"></readout>
+</detector>
+</instrument>
