@@ -155,6 +155,9 @@ int CreateOrderedPhotonList(/** Pointer to the binary tree. Will be
 				of the list. */
 			    struct PhotonOrderedListEntry** list_current);
 
+/** Constructor. */
+Photon* newPhoton(int* const status);
+
 
 #endif  /* PHOTON_H */
 

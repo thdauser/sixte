@@ -144,7 +144,12 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact);
 
 /** Assign event grades to the events in the event list of the HTRS
     detector. The different event grades are determined with respect
-    to the required shaping times of the readout electronics. */
+    to the required shaping times of the readout electronics. Good
+    events detected with the fast and the slow filter have grade 0,
+    events detected only with the fast filter but not with the slow
+    filter have grade 1, pile-up event which cannot be distinguished
+    from each other at all have grade 2, events during a reset
+    interval have grade -1. */
 int HTRSassignEventGrades(HTRSDetector detector);
 
 

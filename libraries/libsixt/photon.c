@@ -388,5 +388,19 @@ int CreateOrderedPhotonList(struct PhotonBinaryTreeEntry** tree_ptr,
   return(status);
 }
 
-						       
+
+
+Photon* newPhoton(int* const status)
+{
+  Photon* ph = (Photon*)malloc(sizeof(Photon));
+  CHECK_NULL(ph, *status, "memory allocation for Photon failed");
+
+  // Set initial values.
+  ph->ra     = 0.;
+  ph->dec    = 0.;
+  ph->time   = 0.;
+  ph->energy = 0.;
+
+  return(ph);
+}
 
