@@ -3,9 +3,10 @@
 
 #include "sixt.h"
 
-#include "linkedlist.h"
+#include "linkedpholist.h"
 #include "photon.h"
 #include "xraysourcespectrum.h"
+
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -50,9 +51,15 @@ void freeXRaySource(XRaySource** src);
 
 /** Create photons for a particular source in the specified time
     interval. */
-LinkedListElement* getXRayPhotons(XRaySource* const src, 
-				  const double t0, const double t1,
-				  int* const status);
+LinkedPhoListElement* getXRayPhotons(XRaySource* const src, 
+				     const double t0, const double t1,
+				     int* const status);
+
+/** Sort the list of XRaySource objects with the specified number of
+    entries with respect to the requested coordinate axis using a
+    quick sort algorithm. */
+void quicksortXRaySources(XRaySource* const list, const long left, 
+			  const long right, const int axis);
 
 
 #endif /* XRAYSOURCE_H */

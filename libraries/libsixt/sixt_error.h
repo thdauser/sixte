@@ -9,18 +9,16 @@
 
 #define SIXT_ERROR(msg) (sixt_error(__func__, msg))
 
+
 #define CHECK_STATUS_BREAK(status) \
   if (EXIT_SUCCESS!=status) break;
 
-#define CHECK_STATUS_RET(status, retval)		\
+#define CHECK_STATUS_RET(status, retval) \
   if (EXIT_SUCCESS!=status) return(retval);
 
-#define CHECK_NULL(a,status,msg) \
-  if (NULL==a) { \
-    SIXT_ERROR(msg); \
-    status=EXIT_FAILURE; \
-    return(NULL);\
-  }
+#define CHECK_STATUS_VOID(status) \
+  if (EXIT_SUCCESS!=status) return;
+
 
 #define CHECK_NULL_VOID(a,status,msg) \
   if (NULL==a) { \
@@ -35,6 +33,15 @@
     status=EXIT_FAILURE; \
     break;\
   }
+
+#define CHECK_NULL_RET(a,status,msg,ret) \
+  if (NULL==a) { \
+    SIXT_ERROR(msg); \
+    status=EXIT_FAILURE; \
+    return(ret);	 \
+  }
+
+#define CHECK_NULL(a,status,msg) CHECK_NULL_RET(a,status,msg,NULL);
 
 
 /////////////////////////////////////////////////////////////////

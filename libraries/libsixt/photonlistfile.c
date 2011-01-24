@@ -1,7 +1,9 @@
 #include "photonlistfile.h"
 
 
-int openPhotonListFile(PhotonListFile* plf, char* filename, int access_mode)
+int openPhotonListFile(PhotonListFile* const plf, 
+		       const char* const filename, 
+		       const int access_mode)
 {
   char msg[MAXMSG];
   int status = EXIT_SUCCESS;
@@ -44,7 +46,9 @@ int openPhotonListFile(PhotonListFile* plf, char* filename, int access_mode)
 
 
 
-int openNewPhotonListFile(PhotonListFile* plf, char* filename, char* template)
+int openNewPhotonListFile(PhotonListFile* const plf, 
+			  const char* const filename, 
+			  const char* const template)
 {
   int status=EXIT_SUCCESS;
 

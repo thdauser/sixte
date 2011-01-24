@@ -141,7 +141,7 @@ void calculate_ra_dec(Vector v, double* ra, double* dec)
 
 
 
-double getVectorDimensionValue(Vector* vec, int dimension) 
+double getVectorDimensionValue(const Vector* const vec, const int dimension) 
 {
   if (0==dimension) {
     return(vec->x);

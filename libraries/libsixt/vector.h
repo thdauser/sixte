@@ -53,7 +53,7 @@ void calculate_ra_dec(Vector v, /**< Direction. Does not have to be normalized. 
 
 /** Returns the value of the k-th dimension of a vector (k=0 ->
     x-value, k=1 -> y-value, k=2 -> z-value). */
-double getVectorDimensionValue(Vector* vec, int dimension);
+double getVectorDimensionValue(const Vector* const vec, const int dimension);
 
 
 #endif /* VECTOR_H */

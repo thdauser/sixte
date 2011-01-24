@@ -136,7 +136,9 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
-/** Constructor. Allocates memory for a new GenDet data structure. */
+/** Constructor. Allocates memory for a new GenDet data structure and
+    initializes it with the values from the specified XML definition
+    file. */
 GenDet* newGenDet(const char* const filename, int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer

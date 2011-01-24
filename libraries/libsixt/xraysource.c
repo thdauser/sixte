@@ -39,14 +39,14 @@ void freeXRaySource(XRaySource** src)
 }
 
 
-LinkedListElement* getXRayPhotons(XRaySource* const src, 
-				  const double t0, const double t1,
-				  int* const status)
+LinkedPhoListElement* getXRayPhotons(XRaySource* const src, 
+				     const double t0, const double t1,
+				     int* const status)
 {
   // Time-ordered linked photon list.
-  LinkedListElement* list=NULL;
+  LinkedPhoListElement* list=NULL;
   // Points to the last (NULL) pointer in the linked list.
-  LinkedListElement** list_next = &list;
+  LinkedPhoListElement** list_next = &list;
 
   // Photon arrival time.
   if (NULL==src->t_next_photon) {
@@ -65,9 +65,11 @@ LinkedListElement* getXRayPhotons(XRaySource* const src,
   // is not exceeded.
   while (*(src->t_next_photon) <= t1) {
 
-    // Get a new photon object.
-    Photon* ph = newPhoton(status);
+    // Append a new entry at the end of the linked list.
+    *list_next = newLinkedPhoListElement(status);
     CHECK_STATUS_BREAK(*status);
+    Photon* ph = &((*list_next)->photon);
+    list_next =  &((*list_next)->next);
 
     // Set the photon properties.
     ph->time = *(src->t_next_photon);
@@ -77,15 +79,58 @@ LinkedListElement* getXRayPhotons(XRaySource* const src,
     // Determine the photon energy.
     ph->energy = getRndSpectrumEnergy(src->spectra[0]);
 
-    // Append the photon at the end of the linked list.
-    *list_next = newLinkedListElement(status);
-    CHECK_STATUS_BREAK(*status);
-    (*list_next)->el = ph;
-    list_next = &((*list_next)->next);
   }
   CHECK_STATUS_RET(*status, list);
 
   // Return the linked list of photons.
   return(list);
 }
+
+
+static long XRaySourcesPartition(XRaySource* const list, 
+				 const long left, const long right, 
+				 const long pivotIndex, const int axis)
+{
+  Vector location = unit_vector(list[pivotIndex].ra, list[pivotIndex].dec);
+  double pivotValue = getVectorDimensionValue(&location, axis);
+
+  // Move pivot to end.
+  XRaySource buffer;
+  buffer = list[pivotIndex];
+  list[pivotIndex] = list[right];
+  list[right] = buffer;
+
+  long storeIndex = left;
+  long i;
+  for (i=left; i<right; i++) { // left ≤ i < right  
+    location = unit_vector(list[i].ra, list[i].dec);
+    if (getVectorDimensionValue(&location, axis) <= pivotValue) {
+      buffer = list[storeIndex];
+      list[storeIndex] = list[i];
+      list[i] = buffer;
+      storeIndex++;
+    }
+  }
+
+  // Move pivot to its final place
+  buffer = list[storeIndex];
+  list[storeIndex] = list[right];
+  list[right] = buffer;
+
+  return (storeIndex);
+}
+
+
+void quicksortXRaySources(XRaySource* const list, const long left, 
+			  const long right, const int axis)
+{
+  if (right>left) {
+    // select a pivot index //(e.g. pivotIndex := left+(right-left)/2)
+    int pivotIndex = left+(right-left)/2;
+    int pivotNewIndex = XRaySourcesPartition(list, left, right, pivotIndex, axis);
+    quicksortXRaySources(list, left, pivotNewIndex-1, axis);
+    quicksortXRaySources(list, pivotNewIndex+1, right, axis);
+  }
+}
+
 

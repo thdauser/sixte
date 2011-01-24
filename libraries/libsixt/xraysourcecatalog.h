@@ -4,6 +4,7 @@
 #include "sixt.h"
 #include "gendet.h"
 #include "kdtreeelement.h"
+#include "linkedpholist.h"
 #include "xraysource.h"
 #include "xraysourcespectrum.h"
 
@@ -40,6 +41,16 @@ void freeXRaySourceCatalog(XRaySourceCatalog** cat);
 XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 				     const GenDet* const det,
 				     int* const status);
+
+/** Create photons for all sources in the catalog for the specified
+    time interval. Only sources within the FoV (given in [rad])
+    defined by the telescope pointing direction are taken into
+    account. */
+LinkedPhoListElement* genFoVXRayPhotons(XRaySourceCatalog* const cat, 
+					const Vector* const pointing, 
+					const float fov,
+					const double t0, const double t1,
+					int* const status);
 
 
 #endif /* XRAYSOURCECATALOG_H */

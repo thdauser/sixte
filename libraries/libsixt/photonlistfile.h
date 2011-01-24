@@ -36,16 +36,20 @@ typedef struct {
 /** Open an existing photon list FITS file and return the
     corresponding PhotonListFile object. The access_mode parameter can
     be either READONLY or READWRITE. */
-int openPhotonListFile(PhotonListFile* plf, char* filename, int access_mode);
+int openPhotonListFile(PhotonListFile* const plf, 
+		       const char* const filename, 
+		       const int access_mode);
 
 
 /** Create new photon list FITS file according to a given template and
     return the PhotonListFile object for the open file.  */
-int openNewPhotonListFile(PhotonListFile* plf, char* filename, char* template);
+int openNewPhotonListFile(PhotonListFile* const plf, 
+			  const char* const filename, 
+			  const char* const template);
 
 
 /** Close open PhotonListFile (FITS file). */
-int closePhotonListFile(PhotonListFile*) ;
+int closePhotonListFile(PhotonListFile* plf);
 
 /** Read the next Photon from the PhotonListFile. This routine
     increases the internal counter of the PhotonListFile data

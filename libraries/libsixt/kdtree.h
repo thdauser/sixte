@@ -47,14 +47,13 @@ kdTree buildKDTree(PointSource* list, long nelements);
 
 kdNode* buildKDNode(PointSource* list, long nelements, int depth);
 
-/** Perform a range search on the given kbTree, i.e., return all X-ray
+/** Perform a range search on the given kdTree, i.e., return all X-ray
     sources lying within a certain radius around the reference
     point. This region is defined by the minimum cosine value for the
     scalar product of the source direction and the reference
-    vector. New sources are appended at the end of the SourceList and
-    the number of the returned X-ray sources is stored in the
-    nelements parameter. The function return value is the error
-    status. */
+    vector. New photons are appended at the end of the list and the
+    number of the returned X-ray sources is stored in the nelements
+    parameter. The function return value is the error status. */
 void kdTreeRangeSearch(kdNode* node, int depth,
 		       Vector* ref, double min_align, 
 		       double time, double dt, 

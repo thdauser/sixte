@@ -90,20 +90,29 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
   fits_get_colnum(fptr, CASEINSEN, "SPECTRUM", &cspectrum, status);
   CHECK_STATUS_RET(*status, cat);
 
+  // Allocate memory for an array of the sources, which will be
+  // converted into a KDTree later.
+  XRaySource* list = (XRaySource*)malloc(nrows*sizeof(XRaySource));
+  CHECK_NULL_RET(list, *status,
+		 "memory allocation for source list failed", cat);
+
+  // Empty template object.
+  XRaySource* templatesrc = newXRaySource(status);
+  CHECK_STATUS_RET(*status, cat);
+
   // Loop over all entries in the FITS table.
   long row;
   for (row=0; row<nrows; row++) {
 
-    // New XRaySource object for each entry.
-    XRaySource* src = newXRaySource(status);
-    CHECK_STATUS_BREAK(*status);
+    // Start with an empty XRaySource object for each entry.
+    list[row] = *templatesrc;
 
     // Read the data from the FITS table.
     int anynul;
-    fits_read_col(fptr, TFLOAT, cra, row+1, 1, 1, &src->ra, 
-		  &src->ra, &anynul, status);
-    fits_read_col(fptr, TFLOAT, cdec, row+1, 1, 1, &src->dec, 
-		  &src->dec, &anynul, status);
+    fits_read_col(fptr, TFLOAT, cra, row+1, 1, 1, &(list[row].ra), 
+		  &(list[row].ra), &anynul, status);
+    fits_read_col(fptr, TFLOAT, cdec, row+1, 1, 1, &(list[row].dec), 
+		  &(list[row].dec), &anynul, status);
     float flux=0., emin=0., emax=0.;
     fits_read_col(fptr, TFLOAT, cflux, row+1, 1, 1, &flux, 
 		  &flux, &anynul, status);
@@ -137,23 +146,31 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
       CHECK_STATUS_BREAK(*status);      
     }
     // Assign the spectrum to the source.
-    src->nspectra   = 1;
-    src->spectra    = (XRaySourceSpectrum**)malloc(sizeof(XRaySourceSpectrum*));
+    list[row].nspectra = 1;
+    list[row].spectra  = (XRaySourceSpectrum**)malloc(sizeof(XRaySourceSpectrum*));
     CHECK_NULL_BREAK(cat->spectra, *status,
 		     "memory allocation for spectrum list failed");    
-    src->spectra[0] = cat->spectra[ii];
+    list[row].spectra[0] = cat->spectra[ii];
 
     // Determine the photon rate from this particular source.
-    src->pps = 
-      getSpectralPhotonRate(src->spectra[0], emin, emax) *
-      flux/getSpectralEnergyFlux(src->spectra[0], emin, emax);
+    list[row].pps = 
+      getSpectralPhotonRate(list[row].spectra[0], emin, emax) *
+      flux/getSpectralEnergyFlux(list[row].spectra[0], emin, emax);
 
-    // Insert the XRaySource object in the KDTree.
-    // TODO
-    
   } 
   CHECK_STATUS_RET(*status, cat);
   // END of loop over all entries in the FITS table.
+
+  // Build a KDTree from the source list (array of XRaySource objects).
+  cat->tree = buildKDTree2(list, nrows, 0, status);
+  CHECK_STATUS_RET(*status, cat);
+
+  // In a later development stage this could be directly stored in 
+  // a memory-mapped space.
+
+  // Release memory.
+  if (templatesrc) free(templatesrc);
+  if (list) free(list);
 
   // Close the FITS file.
   fits_close_file(fptr, status);
@@ -161,4 +178,27 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 
   return(cat);
 }
+
+
+
+LinkedPhoListElement* genFoVXRayPhotons(XRaySourceCatalog* const cat, 
+					const Vector* const pointing, 
+					const float fov,
+					const double t0, const double t1,
+					int* const status)
+{
+  // Minimum cos-value for point sources close to the FOV (in the direct
+  // neighborhood).
+  const double close_mult = 1.2; 
+  const double close_fov_min_align = cos(close_mult*fov/2.); 
+
+  // Perform a range search over all sources in the KDTree and 
+  // generate new photons for the sources within the FoV.
+  LinkedPhoListElement* list = 
+    KDTreeRangeSearch(cat->tree, 0, pointing, close_fov_min_align, 
+		      t0, t1, status);
+
+  return(list);
+}
+
 
