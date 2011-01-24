@@ -3,7 +3,7 @@
 
 ////////////////////////////////////
 /** Main procedure. */
-int photon_imaging_main() {
+int phoimg_main() {
   struct Parameters parameters;
 
   AttitudeCatalog* ac=NULL;
@@ -25,7 +25,7 @@ int photon_imaging_main() {
 
 
   // Register HEATOOL:
-  set_toolname("photon_imaging");
+  set_toolname("phoimg");
   set_toolversion("0.01");
 
 
@@ -34,7 +34,7 @@ int photon_imaging_main() {
     // --- Initialization ---
 
     // read parameters using PIL library
-    if ((status=photon_imaging_getpar(&parameters))) break;
+    if ((status=phoimg_getpar(&parameters))) break;
 
     // Initialize the detector data structure.
     det = newGenDet(parameters.xml_filename, &status);
@@ -207,7 +207,7 @@ int photon_imaging_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int photon_imaging_getpar(struct Parameters* parameters)
+int phoimg_getpar(struct Parameters* parameters)
 {
   int status=EXIT_SUCCESS; // Error status.
 

@@ -599,7 +599,7 @@ int getFirstSourceHDU(fitsfile* fptr, SourceCategory* sc, int* hdu)
 
 
 
-int photon_generation_main() 
+int phogen_main() 
 {
   // Program parameters.
   struct Parameters parameters;
@@ -633,7 +633,7 @@ int photon_generation_main()
   int status = EXIT_SUCCESS;  // error status flag
 
   // Register HEATOOL
-  set_toolname("photon_generation");
+  set_toolname("phogen");
   set_toolversion("0.01");
 
 
@@ -641,7 +641,7 @@ int photon_generation_main()
 
     // ---- Initialization ----
 
-    if((status=photon_generation_getpar(&parameters))) break;
+    if((status=phogen_getpar(&parameters))) break;
     
     // Initialize the detector data structure.
     det = newGenDet(parameters.xml_filename, &status);
@@ -853,7 +853,7 @@ int photon_generation_main()
 
 
 
-int photon_generation_getpar(struct Parameters* parameters)
+int phogen_getpar(struct Parameters* parameters)
 {
   char msg[MAXMSG];           // Error message buffer.
   int status = EXIT_SUCCESS;  // Error status flag.

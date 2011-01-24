@@ -1,5 +1,5 @@
-#ifndef PHOTON_IMAGING_H
-#define PHOTON_IMAGING_H 1
+#ifndef PHOIMG_H
+#define PHOIMG_H 1
 
 
 #include "sixt.h"
@@ -16,7 +16,7 @@
 #include "vignetting.h"
 #include "gendet.h"
 
-#define TOOLSUB photon_imaging_main
+#define TOOLSUB phoimg_main
 #include "headas_main.c"
 
 
@@ -41,7 +41,7 @@ struct Parameters {
 
 
 /** Reads the program parameters using PIL. */
-int photon_imaging_getpar(struct Parameters* parameters);
+int phoimg_getpar(struct Parameters* parameters);
 
 
-#endif /* PHOTON_IMAGING_H */
+#endif /* PHOIMG_H */
