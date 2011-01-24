@@ -1,5 +1,6 @@
 impactlist_filename,fre,lq,"impacts_10Crab.fits",,,"impact list file (FITS input file) "
-rmf_filename,fre,lq,"/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.rsp",,,"detector response file (RMF or RSP = ARF * RMF) (FITS input file) "
+rmf_filename,fre,lq,"/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.rmf",,,"detector response file (RMF) (FITS input file) "
+arf_filename,fre,lq,"/home/schmid/ixo/htrs/response/ixo_cdf_htrs_default_081117.arf",,,"detector response file (ARF) (FITS input file) "
 eventlist_filename,f,lq,"events_10Crab.fits",,,"event list file (FITS output file) "
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 pixelwidth,r,lq,4.e-3,0.0,1000000.0,"pixel width (m) "
