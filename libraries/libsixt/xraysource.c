@@ -77,7 +77,9 @@ LinkedPhoListElement* getXRayPhotons(XRaySource* const src,
 
     // Determine the photon energy.
     ph->energy = getRndSpectrumEnergy(src->spectra[0]);
-
+    
+    // Determine the arrival time of the next (future) photon.
+    *(src->t_next_photon) += rndexp(1./src->pps);
   }
   CHECK_STATUS_RET(*status, list);
 

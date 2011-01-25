@@ -45,7 +45,10 @@ void photon_generation(const char* const xml_filename,
     // Loop over the specified time interval.
     double time;
     for (time=t0; time<t1; time+=dt) {
-      
+      // Display the program progress status.
+      headas_chat(0, "\rtime: %.3lf s ", time);
+      fflush(NULL);
+
       // Determine the telescope pointing at the current point of time.
       Vector pointing =  getTelescopePointing(ac, time, status);
       CHECK_STATUS_BREAK(*status);
