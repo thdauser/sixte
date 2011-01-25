@@ -28,6 +28,9 @@ void photon_generation(const char* const xml_filename,
     loadSourceCatalog(simput_filename, det, status);
   CHECK_STATUS_VOID(*status);
   
+  // Remove the old photon list file.    
+  remove(photon_filename);
+  
   // Open the output photon list file.
   PhotonListFile plf = { .fptr=NULL };
   *status=openNewPhotonListFile(&plf, photon_filename, photonlist_template);
