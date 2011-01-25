@@ -1,5 +1,5 @@
-#ifndef PHOTON_GENERATION_H
-#define PHOTON_GENERATION_H 1
+#ifndef PHOGEN_H
+#define PHOGEN_H 1
 
 #include "sixt.h"
 
@@ -30,7 +30,7 @@
 #include "kdtree.h"
 #include "gendet.h"
 
-#define TOOLSUB photon_generation_main
+#define TOOLSUB phogen_main
 #include "headas_main.c"
 
 
@@ -46,8 +46,8 @@ struct Parameters {
 };
 
 
-int photon_generation_getpar(struct Parameters* parameters);
+int phogen_getpar(struct Parameters* parameters);
 
 
-#endif /* PHOTON_GENERATION_H */
+#endif /* PHOGEN_H */
 

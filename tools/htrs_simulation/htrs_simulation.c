@@ -59,7 +59,7 @@ int htrs_simulation_main() {
       .generic = { .ccsigma = parameters.ccsigma, 
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
-		   .arf_filename = NULL,
+		   .arf_filename = parameters.arf_filename,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
       .slow_shaping_time  = parameters.slow_shaping_time,
       .fast_shaping_time  = parameters.fast_shaping_time,
@@ -143,6 +143,7 @@ int htrs_simulation_main() {
       .generic = { .ccsigma = parameters.ccsigma, 
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
+		   .arf_filename = parameters.arf_filename,
 		   .rmf_filename = parameters.rmf_filename /* String address!! */ },
       .slow_shaping_time  = parameters.slow_shaping_time,
       .fast_shaping_time  = parameters.fast_shaping_time,
@@ -271,6 +272,10 @@ static int getpar(struct Parameters* parameters)
   if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
     HD_ERROR_THROW("Error reading the name of the detector" 
 		   "redistribution matrix file (RMF)!\n", status);
+  }
+
+  if ((status = PILGetFname("arf_filename", parameters->arf_filename))) {
+    HD_ERROR_THROW("Error reading the name of the detector ARF!\n", status);
   }
 
   // Get the background count rate

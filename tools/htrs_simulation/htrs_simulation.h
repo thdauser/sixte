@@ -19,6 +19,7 @@
 struct Parameters {
   char impactlist_filename[FILENAME_LENGTH];
   char rmf_filename[MAXMSG];
+  char arf_filename[MAXMSG];
   char eventlist_filename[MAXMSG];
   char eventlist_template[MAXMSG];
   double t0;
