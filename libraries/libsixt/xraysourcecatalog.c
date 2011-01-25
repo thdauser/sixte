@@ -21,10 +21,10 @@ XRaySourceCatalog* newXRaySourceCatalog(int* const status)
 void freeXRaySourceCatalog(XRaySourceCatalog** cat)
 {
   if (NULL!=*cat) {
+    // Free the KD-Tree.
     if (NULL!=(*cat)->tree) {
-      // TODO Free the binary tree.
+      freeKDTreeElement(&((*cat)->tree));
     }
-
     // Free the spectra.
     if (NULL!=(*cat)->spectra) {
       long ii;
@@ -108,7 +108,7 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
     list[row] = *templatesrc;
 
     // Read the data from the FITS table.
-    int anynul;
+    int anynul=0;
     fits_read_col(fptr, TFLOAT, cra, row+1, 1, 1, &(list[row].ra), 
 		  &(list[row].ra), &anynul, status);
     fits_read_col(fptr, TFLOAT, cdec, row+1, 1, 1, &(list[row].dec), 
@@ -120,8 +120,8 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 		  &emin, &anynul, status);
     fits_read_col(fptr, TFLOAT, cemax, row+1, 1, 1, &emax, 
 		  &emax, &anynul, status);
-    char spec_filename[MAXFILENAME];
-    strcpy(spec_filename, "");
+    char buffer[MAXFILENAME]="";
+    char* spec_filename = &(buffer[0]);
     fits_read_col(fptr, TSTRING, cspectrum, row+1, 1, 1, &spec_filename, 
 		  &spec_filename, &anynul, status);
     CHECK_STATUS_BREAK(*status);
@@ -153,6 +153,7 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
     list[row].spectra[0] = cat->spectra[ii];
 
     // Determine the photon rate from this particular source.
+    // TODO
     list[row].pps = 
       getSpectralPhotonRate(list[row].spectra[0], emin, emax) *
       flux/getSpectralEnergyFlux(list[row].spectra[0], emin, emax);

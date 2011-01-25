@@ -112,6 +112,10 @@ XRaySourceSpectrum* loadXRaySpectrumFilename(const char* const filename,
   // Get memory for the spectrum:
   spec->flux = (float*)malloc(spec->nbins*sizeof(float));
   CHECK_NULL(spec->flux, *status, "memory allocation for spectrum failed");
+  spec->emin = (float*)malloc(spec->nbins*sizeof(float));
+  CHECK_NULL(spec->flux, *status, "memory allocation for spectrum failed");
+  spec->emax = (float*)malloc(spec->nbins*sizeof(float));
+  CHECK_NULL(spec->flux, *status, "memory allocation for spectrum failed");
 
   // Determine the column number in the FITS table.
   int cemin, cemax, cflux;

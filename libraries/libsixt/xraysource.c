@@ -21,17 +21,16 @@ XRaySource* newXRaySource(int* const status)
 }
 
 
-void freeXRaySource(XRaySource** src)
+void freeXRaySource(XRaySource** const src)
 {
   if (NULL!=*src) {
     if (NULL!=(*src)->t_next_photon) {
       free((*src)->t_next_photon);
     }
     if (NULL!=(*src)->spectra) {
-      int ii;
-      for (ii=0; ii<(*src)->nspectra; ii++) {
-	freeXRaySourceSpectrum(&((*src)->spectra[ii]));
-      }
+      free((*src)->spectra);
+      // NOTE: the spectra must not be free'd, because this
+      // is already done in the destructor of the XRaySourceCatalog.
     }
     free(*src);
     *src=NULL;

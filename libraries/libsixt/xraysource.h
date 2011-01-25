@@ -47,7 +47,7 @@ typedef struct {
 XRaySource* newXRaySource(int* const status);
 
 /** Destructor. */
-void freeXRaySource(XRaySource** src);
+void freeXRaySource(XRaySource** const src);
 
 /** Create photons for a particular source in the specified time
     interval. */
