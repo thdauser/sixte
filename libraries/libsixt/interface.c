@@ -41,6 +41,12 @@ void photon_generation(const char* const xml_filename,
     // Open the output photon list file.
     *status=openNewPhotonListFile(&plf, photon_filename, photonlist_template);
     CHECK_STATUS_BREAK(*status);
+    // Set the attitude filename in the photon list (obsolete).
+    char buffer[MAXMSG];
+    strcpy(buffer, attitude_filename);
+    fits_update_key(plf.fptr, TSTRING, "ATTITUDE", buffer,
+		    "attitude file", status);
+    CHECK_STATUS_BREAK(*status);
 
     // Loop over the specified time interval.
     double time;
