@@ -153,7 +153,6 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
     list[row].spectra[0] = cat->spectra[ii];
 
     // Determine the photon rate from this particular source.
-    // TODO
     list[row].pps = 
       getSpectralPhotonRate(list[row].spectra[0], emin, emax) *
       flux/getSpectralEnergyFlux(list[row].spectra[0], emin, emax);

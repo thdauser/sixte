@@ -179,15 +179,11 @@ void applyARF2Spectrum(XRaySourceSpectrum* const spec,
 	float emin = MAX(arf->LowEnergy[jj], spec->emin[ii]);
 	float emax = MIN(arf->HighEnergy[jj], spec->emax[ii]);
 	assert(emax>emin);
-	arf_contribution += arf->EffArea[jj] * 
-	  (emax-emin)/(arf->HighEnergy[jj]-arf->LowEnergy[jj]);
+	arf_contribution += arf->EffArea[jj] * (emax-emin);
       }
     }
 
-    spec->ratedistr[ii] = 
-      spec->flux[ii] * 
-      (spec->emax[ii]-spec->emin[ii]) * 
-      arf_contribution;
+    spec->ratedistr[ii] = spec->flux[ii] * arf_contribution;
 
     // Generate a rate distribution. (Similar to a probability
     // distribution, but not normalized to 1 but the total photon rate.

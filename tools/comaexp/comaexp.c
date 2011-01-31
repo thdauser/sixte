@@ -201,6 +201,7 @@ int comaexp_main()
 		 (0==strcmp(&(ctype2[5]), "TAN"))) {
 	fov_projection = 2;
 	// TODO CRVAL2 ???
+	fovImgPar.rval2 = fovImgPar.rval1;
       } else {
 	status=EXIT_FAILURE;
 	HD_ERROR_THROW("Error: FoV image has unknown projection type!\n",

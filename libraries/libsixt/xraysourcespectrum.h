@@ -26,7 +26,8 @@ typedef struct {
   /** Accumulated photon rate distribution. The value of the last bin
       is the total photon rate distribution. In contrast to a common
       probability distribution, this array is not divided by the total
-      photon rate, i.e., it is not normalized. */
+      photon rate, i.e., it is not normalized [integrated
+      photons/s/bin] -> [photons/s]. */
   float* ratedistr;
 
   /** Filename the spectrum was loaded from. */
