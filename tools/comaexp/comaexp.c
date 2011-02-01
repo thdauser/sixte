@@ -537,6 +537,10 @@ int comaexp_main()
     if (fits_create_img(fptr, FLOAT_IMG, 2, naxes, &status)) break;
     //                                   |-> naxis
 
+    // Store the name of the FoV map in the exposure map FITS file header.
+    if (fits_update_key(fptr, TSTRING, "FOVMAP", parameters.fovimage_filename,
+			"", &status)) break;   
+
     // Write WCS keywords to the FITS header of the newly created image.
     double buffer;
     // Use the appropriate coordinate system: either equatorial or 
