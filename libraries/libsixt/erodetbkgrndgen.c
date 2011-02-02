@@ -20,11 +20,11 @@ int calcEvents(double *hit_time, long numrows) {
 inline double calcEventRate(double *hit_time,
                             long numrows,
                             int numevents,
-                            int interval) {
+                            double interval) {
   double eventrate = (double)numevents;
 
   eventrate /= hit_time[numrows - 1];
-  eventrate *= (((double)interval) / INTERVAL_UNIT);
+  eventrate *= interval;
 
   return eventrate;
 }
@@ -40,7 +40,7 @@ void eroBkgInitialize(const char *filename,
   bkginputdata.energycolname = "PI CCD";
   bkginputdata.xcolname = "X";
   bkginputdata.ycolname = "Y";
-  bkginputdata.interval = 0;
+  bkginputdata.interval = 0.;
   ftime(&time_struct);
   srand((unsigned int)time_struct.millitm - (unsigned int)time_struct.time);
 
@@ -101,7 +101,7 @@ void eroBkgCleanUp(int *status) {
 	free(bkginputdata.hit_energy);
 }
 
-eroBackgroundOutput *eroBkgGetBackgroundList(int interval) {
+eroBackgroundOutput *eroBkgGetBackgroundList(double interval) {
 	eroBackgroundOutput *bkgresultlist = NULL;
   bkgresultlist = (eroBackgroundOutput*) realloc(bkgresultlist, sizeof(eroBackgroundOutput));
 
@@ -112,7 +112,7 @@ eroBackgroundOutput *eroBkgGetBackgroundList(int interval) {
                                                   bkginputdata.numevents,
                                                   bkginputdata.interval);
   } else {
-    printf("background generation error: invalid interval specified: %d\nreturning NULL pointer...\n", interval);
+    printf("background generation error: invalid interval specified: %f\nreturning NULL pointer...\n", interval);
     free(bkgresultlist);
     bkgresultlist = NULL;
     return bkgresultlist;

@@ -8,15 +8,6 @@
 #include "gsl/gsl_randist.h"
 #include "fitsio.h"
 
-enum Units {
-  SECONDS = 1,
-  MILLISECONDS = 1000,
-  MICROSECONDS = 1000000
-};
-
-/** unit of interval */
-static int INTERVAL_UNIT = MILLISECONDS;
-
 /** needed for seeding the random number generator with
  * a value that changes sufficiently fast */
 struct timeb time_struct;
@@ -26,7 +17,7 @@ struct timeb time_struct;
 typedef struct eroBackgroundInput {
   fitsfile *inputfptr;
   long numrows;
-  int interval;			// unit as specified above with INTERVAL_UNIT
+  double interval;
   gsl_rng *randgen;
   
   char *timecolname;
@@ -66,7 +57,7 @@ typedef struct eroBackgroundOutput {
  * once before being ready to deliver data. As soon as no more data will
  * be needed one should call the function eroBkgCleanup in order to
  * release memory and close the input files. */
-eroBackgroundOutput* eroBkgGetBackgroundList(int interval);
+eroBackgroundOutput* eroBkgGetBackgroundList(double interval);
 
 /** open the simulation data file and initialize the random number
  * generator and the main structure */
@@ -85,6 +76,6 @@ int calcEvents(double *hit_time, long numrows);
 double calcEventRate(double *hit_time,
                      long numrows,
                      int numevents,
-                     int interval);
+                     double interval);
 
 #endif   /* _ERODETBKGRNDGEN_H_ */
