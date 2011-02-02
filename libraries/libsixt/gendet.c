@@ -128,6 +128,9 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->eventfile =NULL;
   det->grading=NULL;
 
+  // Set initial values.
+  det->erobackground = 0;
+
   // Get empty GenPixGrid.
   det->pixgrid = newGenPixGrid(status);
   if (EXIT_SUCCESS!=*status) return(det);
@@ -200,6 +203,11 @@ void destroyGenDet(GenDet** const det, int* const status)
 
     // Destroy the vignetting Function.
     destroyVignetting(&(*det)->vignetting);
+
+    // Free the cosmic ray background model.
+    if (1==(*det)->erobackground) {
+      eroBkgCleanUp(status);
+    }
 
     free(*det);
     *det=NULL;
@@ -803,6 +811,17 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	  }
 	}
 
+	else if (!strcmp(Uelement, "EROBACKGROUND")) {
+	  if (!strcmp(Uattribute, "FILENAME")) {
+	    // Load the detector background model for
+	    // cosmic rays.
+	    char buffer[MAXMSG];
+	    strcpy(buffer, attr[i+1]);
+	    eroBkgInitialize(buffer, &xmlparsedata->status);
+	    xmlparsedata->det->erobackground = 1;
+	  }
+	}
+
 	else if (!strcmp(Uelement, "SPLIT")) {
 	  if (!strcmp(Uattribute, "TYPE")) {
 	    strcpy(Uvalue, attr[i+1]);
@@ -1007,6 +1026,28 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
     case CL_WAIT:
       // A waiting period is finished.
       clwait = (CLWait*)element;
+
+      // Insert cosmic ray background events, if the appropriate model is defined.
+      if (1==det->erobackground) {
+	// Get background events for the required time interval (has
+	// to be given in [s]).
+	eroBackgroundOutput* list = eroBkgGetBackgroundList(clwait->time);
+	int ii;
+	for(ii = 0; ii<list->numhits; ii++) {
+	  // Position of the event.
+	  struct Point2d position = {
+	    .x = list->hit_xpos[ii] *0.001,
+	    .y = list->hit_ypos[ii] *0.001
+	  };
+
+	  makeGenSplitEvents(det->split, &position,
+			     // Energy of the event in [keV].
+			     list->hit_energy[ii],
+			     det->pixgrid, det->line);
+	} 
+	eroBkgFree(list);
+      }
+
       // Apply the bad pixel map (if available) with the bad pixel values weighted 
       // by the waiting time.
       if (NULL!=det->badpixmap) {

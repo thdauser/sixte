@@ -55,13 +55,11 @@ typedef struct {
 
 
 /** Constructor for the AttitudeCatalog. Load data from the specified
-    file for the time interval from t0 to t0+timespan. */
+    file. The routine loads the entire attitude data from the
+    file. After reading it checks, whether the required time interval
+    is a subset of the data provided in the attitude file. */
 AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, 
-				     double timespan, int* status);
-/** Constructor for the AttitudeCatalog. Load the entire attitude
-    catalog from the specified file (not only within a certain
-    interval). */
-AttitudeCatalog* getEntireAttitudeCatalog(const char* filename, int* status);
+				     double timespan, int* const status);
 
 /** Destructor for the AttitudeCatalog. */
 void free_AttitudeCatalog(AttitudeCatalog* ac);

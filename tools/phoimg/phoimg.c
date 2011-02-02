@@ -81,14 +81,9 @@ int phoimg_main() {
 
     // SCAN PHOTON LIST    
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    Photon photon={.time=0.};
-    // Buffer for impact position:
-    struct Point2d position;
-    // Buffer for scalar product:
-    double scp;
     while (photonlistfile.row<photonlistfile.nrows) {
 
-      if (EXIT_SUCCESS!=status) break;
+      Photon photon={.time=0.};
       
       // Read an entry from the photon list:
       status = PhotonListFile_getNextRow(&photonlistfile, &photon);
@@ -126,7 +121,7 @@ int phoimg_main() {
 	
 	// Remove the component along the vertical direction nz 
 	// (nx must be perpendicular to nz!):
-	scp = scalar_product(&telescope.nz, &telescope.nx);
+	double scp = scalar_product(&telescope.nz, &telescope.nx);
 	telescope.nx.x -= scp*telescope.nz.x;
 	telescope.nx.y -= scp*telescope.nz.y;
 	telescope.nx.z -= scp*telescope.nz.z;
@@ -142,6 +137,7 @@ int phoimg_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
+	struct Point2d position;
 	if (get_psf_pos(&position, photon, telescope, det->focal_length, 
 			det->vignetting, det->psf)) {
 	  // Check whether the photon hits the detector within the FOV. 
@@ -163,13 +159,16 @@ int phoimg_main() {
 	    fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cy, 
 			   impactlistfile->row, 1, 1, &position.y, &status);
 	    impactlistfile->nrows++;
+	    if (EXIT_SUCCESS!=status) break;
 	  }
 	} 
 	// END get_psf_pos(...)
       } 
       // End of FOV check.
-    } 
+    }
+    if (EXIT_SUCCESS!=status) break;
     // END of scanning LOOP over the photon list.
+
   } while(0); // END of the error handling loop.
 
 

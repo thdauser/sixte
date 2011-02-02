@@ -6,6 +6,7 @@
 #include "badpixmap.h"
 #include "clocklist.h"
 #include "codedmask.h"
+#include "erodetbkgrndgen.h"
 #include "gendetline.h"
 #include "geneventgrading.h"
 #include "genpixgrid.h"
@@ -100,6 +101,10 @@ typedef struct {
 
   /** Split model. */
   GenSplit* split;
+
+  /** Flag, whether a eroBackground model is available for the cosmic
+      ray detector background. */
+  int erobackground;
 
   /** Pattern Identification data structure containing the different
       event grades. */
