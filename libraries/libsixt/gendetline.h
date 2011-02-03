@@ -56,14 +56,6 @@ void clearGenDetLine(GenDetLine* const line);
     remain in there and have to be cleared separately. */
 void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1);
 
-/** Read-out a charge from the specified line. As long as there are
-    any charges, the return value is 1. If the line contains no more
-    charges, the function return value is 0. The function sets the
-    RAWX, CHARGE, and PILEUP values of the specified event data
-    structure. Other values are not modified. After reading out the
-    charge from the detector pixel, the pixel is cleared. */
-int readoutGenDetLine(GenDetLine* const line, GenEvent* const event);
-
 /** Add a charge (photon energy [keV]) to a particular pixel in the
     specified GenDetLine. The routine sets the anycharge flag of the
     affected line. */

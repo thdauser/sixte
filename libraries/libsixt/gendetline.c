@@ -100,33 +100,6 @@ void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1)
 }
 
 
-int readoutGenDetLine(GenDetLine* const line, GenEvent* const event)
-{
-  if (0==line->anycharge) {
-    return(0);
-  } else {
-    int i;
-    for (i=0; i<line->xwidth; i++) {
-      if (line->charge[i]>0.) {
-	// Return the pixel charge.
-	event->rawx = i;
-	event->charge = line->charge[i];
-	if (GP_PILEUP==line->pileup[i]) {
-	  event->pileup = 1;
-	} else {
-	  event->pileup = 0;
-	}
-	// Delete the charge in the pixel array.
-	line->charge[i] = 0.;
-	line->pileup[i] = GP_NONE;
-	return(1);
-      }
-    }
-    return(0);
-  }
-}
-
-
 void addGenDetCharge2Pixel(GenDetLine* const line, 
 			   const int column, 
 			   float energy)

@@ -1116,28 +1116,58 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 {
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
-  // Event data structure.
-  GenEvent event = {.time=0.};
+  GenDetLine* line = det->line[lineindex];
 
-  while (readoutGenDetLine(det->line[lineindex], &event)) {
+  if (0!=line->anycharge) {
+    int ii;
+    for (ii=0; ii<line->xwidth; ii++) {
+      if (line->charge[ii]>0.) {
 
-    // Apply the charge thresholds.
-    if (event.charge<=det->threshold_readout_lo_keV) continue;
+	// Determine the properties of a new Event object.
+	GenEvent event;
 
-    if (det->threshold_readout_up_keV >= 0.) {
-      if (event.charge>=det->threshold_readout_up_keV) continue;
+	event.charge = line->charge[ii];
+
+	// Apply the charge thresholds.
+	if (event.charge<=det->threshold_readout_lo_keV) {
+	  continue;
+	}
+	if (det->threshold_readout_up_keV >= 0.) {
+	  if (event.charge>=det->threshold_readout_up_keV) {
+	    continue;
+	  }
+	}
+
+	// Copy the pile-up flag.
+	if (GP_PILEUP==line->pileup[ii]) {
+	  event.pileup = 1;
+	} else {
+	  event.pileup = 0;
+	}
+
+	// Apply the detector response.
+	event.pha = getEBOUNDSChannel(event.charge, det->rmf);
+
+	// Store remaining information.
+	event.rawy  = readoutindex;
+	event.rawx  = ii;
+	event.time  = det->clocklist->time;  // Time of detection.
+	event.frame = det->clocklist->frame; // Frame of detection.
+
+	// Store the event in the output event file.
+	addGenEvent2File(det->eventfile, &event, status);
+	CHECK_STATUS_BREAK(*status);
+
+	// Delete the charge in the pixel array.
+	line->charge[ii] = 0.;
+	line->pileup[ii] = GP_NONE;
+      }
     }
+    CHECK_STATUS_VOID(*status);
+    // END of loop over all pixelsl in the line.
 
-    // Apply the detector response.
-    event.pha = getEBOUNDSChannel(event.charge, det->rmf);
-
-    // Store the additional information.
-    event.rawy  = readoutindex;
-    event.time  = det->clocklist->time;  // Time of detection.
-    event.frame = det->clocklist->frame; // Frame of detection.
-
-    // Store the event in the output event file.
-    addGenEvent2File(det->eventfile, &event, status);
+    // Reset the anycharge flag of this line.
+    line->anycharge=0;
   }
 }
 
