@@ -16,7 +16,7 @@
 <split type="gauss" par1="11.e-6"/>
 <threshold_readout_lo_keV value="0."/>
 <threshold_readout_up_keV value="12."/>
-<threshold_event_lo_keV value="150.e-3"/>
+<threshold_event_lo_keV value="200.e-3"/>
 <threshold_split_lo_fraction value="0.01"/>
 <eventfile template="geneventfile.tpl"/>
 <patternfile template="genpatternfile.tpl"/>
@@ -29,11 +29,11 @@
       <lineshift/>
     </loop>
     <wait time="22.3e-6"/><readoutline lineindex="0" readoutindex="$i"/>
-    <!-- shift and readout time are taken from the PhD Thesis of M. Kirsch (2000 -->
+    <!-- shift and readout time are taken from the PhD Thesis of M. Kirsch (2000) -->
   </loop>
 </readout>
 
-<eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
+<eventgrading invalid="-1" borderinvalid="0" largeinvalid="1">
   <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>
 
   <grade p11="0" p12="1" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="1"/>

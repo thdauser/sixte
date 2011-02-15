@@ -1125,8 +1125,18 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 
 	// Determine the properties of a new Event object.
 	GenEvent event;
-
+	
+	// Readout the charge from the pixel array ...
 	event.charge = line->charge[ii];
+	// ... copy the pile-up flag ...
+	if (GP_PILEUP==line->pileup[ii]) {
+	  event.pileup = 1;
+	} else {
+	  event.pileup = 0;
+	}
+	// ... and delete the pixel value.
+	line->charge[ii] = 0.;
+	line->pileup[ii] = GP_NONE;
 
 	// Apply the charge thresholds.
 	if (event.charge<=det->threshold_readout_lo_keV) {
@@ -1138,12 +1148,6 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 	  }
 	}
 
-	// Copy the pile-up flag.
-	if (GP_PILEUP==line->pileup[ii]) {
-	  event.pileup = 1;
-	} else {
-	  event.pileup = 0;
-	}
 
 	// Apply the detector response.
 	event.pha = getEBOUNDSChannel(event.charge, det->rmf);
@@ -1158,13 +1162,10 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 	addGenEvent2File(det->eventfile, &event, status);
 	CHECK_STATUS_BREAK(*status);
 
-	// Delete the charge in the pixel array.
-	line->charge[ii] = 0.;
-	line->pileup[ii] = GP_NONE;
       }
     }
     CHECK_STATUS_VOID(*status);
-    // END of loop over all pixelsl in the line.
+    // END of loop over all pixels in the line.
 
     // Reset the anycharge flag of this line.
     line->anycharge=0;

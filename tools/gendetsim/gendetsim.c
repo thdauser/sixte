@@ -23,7 +23,6 @@ int gendetsim_main() {
   set_toolname("gendetsim");
   set_toolversion("0.01");
 
-
   do { // Beginning of the ERROR handling loop (will at most be run once).
 
     // --- Initialization ---
@@ -111,7 +110,7 @@ int gendetsim_main() {
 
   // Close the impact list FITS file.
   destroyImpactListFile(&impactlistfile, &status);
-  
+
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
 }

@@ -157,6 +157,10 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
       getSpectralPhotonRate(list[row].spectra[0], emin, emax) *
       flux/getSpectralEnergyFlux(list[row].spectra[0], emin, emax);
 
+    headas_chat(5, "energy range from %lf to %lf:\n", emin, emax);
+    headas_chat(5, " %e erg/s/cm**2 corresponding to %e photons/s\n", 
+		getSpectralEnergyFlux(list[row].spectra[0], emin, emax),
+		getSpectralPhotonRate(list[row].spectra[0], emin, emax));
   } 
   CHECK_STATUS_RET(*status, cat);
   // END of loop over all entries in the FITS table.
