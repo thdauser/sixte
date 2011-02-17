@@ -8,8 +8,7 @@
 #include "heasp.h"
 #endif
 
-#include <wcs.h>
-#include <wcshdr.h>
+#include <wcslib/wcslib.h>
 
 #include "interface.h"
 #include "sixt_string.h"

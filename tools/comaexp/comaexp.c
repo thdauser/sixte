@@ -6,8 +6,7 @@
 
 #include "sixt.h"
 
-#include <wcs.h>
-#include <wcshdr.h>
+#include <wcslib/wcslib.h>
 
 #include "sixt_random.h"
 #include "vector.h"
@@ -97,7 +96,7 @@ int comaexp_main()
   set_toolversion("0.01");
   
 
-  do {  // Beginning of the ERROR handling loop (will at most be run once)
+  do { // Beginning of the ERROR handling loop (will at most be run once)
 
     // --- Initialization ---
     // Read the program parameters using PIL library.
