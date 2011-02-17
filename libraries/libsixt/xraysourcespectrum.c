@@ -186,7 +186,8 @@ void applyARF2Spectrum(XRaySourceSpectrum* const spec,
     spec->ratedistr[ii] = spec->flux[ii] * arf_contribution;
 
     // Generate a rate distribution. (Similar to a probability
-    // distribution, but not normalized to 1 but the total photon rate.
+    // distribution, but not normalized to 1, but the final value
+    // represents the total photon rate.)
     if (ii>0) {
       spec->ratedistr[ii] += spec->ratedistr[ii-1];
     }
