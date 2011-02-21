@@ -14,8 +14,7 @@ Vector unit_vector(const double ra, const double dec)
 }
 
 
-
-Vector normalize_vector(Vector x) {
+Vector normalize_vector(const Vector x) {
   double l;  // length of the vector x
   Vector y;  // normalized vector
 
@@ -27,8 +26,9 @@ Vector normalize_vector(Vector x) {
 
   return(y);
 }
-/////////////////////////////////////////////////////
-void normalize_vector_fast(Vector* v) {
+
+
+void normalize_vector_fast(Vector* const v) {
   double l;  // length of the vector x
   l = sqrt(pow(v->x,2.0)+pow(v->y,2.0)+pow(v->z,2.0));
 
@@ -48,7 +48,7 @@ double scalar_product(const Vector* const x, const Vector* const y)
 
 
 /** Calculates the vector product of two vectors. */
-Vector vector_product(Vector x, Vector y) {
+Vector vector_product(const Vector x, const Vector y) {
   Vector z;  // return vector
 
   z.x = x.y*y.z-x.z*y.y;
@@ -60,7 +60,7 @@ Vector vector_product(Vector x, Vector y) {
 
 
 
-Vector vector_difference(Vector x2, Vector x1) {
+Vector vector_difference(const Vector x2, const Vector x1) {
   Vector z;  // return vector
 
   z.x = x2.x-x1.x;
