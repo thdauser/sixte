@@ -72,9 +72,9 @@ Vector vector_difference(Vector x2, Vector x1) {
 
  
 
-Vector interpolate_vec(Vector v1, double t1, 
-		       Vector v2, double t2, 
-		       double time) {
+Vector interpolate_vec(const Vector v1, const double t1, 
+		       const Vector v2, const double t2, 
+		       const double time) {
   Vector pos;
   
   pos.x = v1.x + (time-t1)/(t2-t1)*(v2.x-v1.x);
@@ -86,7 +86,9 @@ Vector interpolate_vec(Vector v1, double t1,
 
 
 
-Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
+Vector interpolateCircleVector(const Vector v1, 
+			       const Vector v2, 
+			       const double phase)
 {
   Vector x1 = normalize_vector(v1); // Use as first base vector.
   Vector x2 = normalize_vector(v2);
@@ -106,15 +108,18 @@ Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
 
     // Calculate the second base vector spanning the plane of 
     // the circle.
-    Vector d = { .x=x2.x-cos(phi)*x1.x, 
-		 .y=x2.y-cos(phi)*x1.y, 
-		 .z=x2.z-cos(phi)*x1.z };
+    Vector d = { .x=x2.x-cosine_value*x1.x, 
+		 .y=x2.y-cosine_value*x1.y, 
+		 .z=x2.z-cosine_value*x1.z };
     x2 = normalize_vector(d); 
     
     // Determine the angle corresponding to the phase.
-    r.x = cos(phase*phi)*x1.x + sin(phase*phi)*x2.x;
-    r.y = cos(phase*phi)*x1.y + sin(phase*phi)*x2.y;
-    r.z = cos(phase*phi)*x1.z + sin(phase*phi)*x2.z;
+    double sinphasephi = sin(phase*phi);
+    double cosphasephi = cos(phase*phi);
+    r.x = cosphasephi*x1.x + sinphasephi*x2.x;
+    r.y = cosphasephi*x1.y + sinphasephi*x2.y;
+    r.z = cosphasephi*x1.z + sinphasephi*x2.z;
+    r = normalize_vector(r);
 
   } else { 
     // There is quasi no motion at all, so perform a linear
@@ -130,7 +135,7 @@ Vector interpolateCircleVector(Vector v1, Vector v2, double phase)
 
 
 
-void calculate_ra_dec(Vector v, double* ra, double* dec)
+void calculate_ra_dec(const Vector v, double* const ra, double* const dec)
 {
   // Determine the declination:
   *dec = asin(v.z/sqrt(scalar_product(&v, &v)));

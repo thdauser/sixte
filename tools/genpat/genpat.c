@@ -216,7 +216,7 @@ static void GenPatIdentification(GenDet* const det,
 	// Create a temporary event list of all pixels in the
 	// neighborhood above the split threshold.
 	float split_threshold;
-	if (det->threshold_split_lo_fraction > 0) {
+	if (det->threshold_split_lo_fraction > 0.) {
 	  split_threshold = det->threshold_split_lo_fraction*pixels[maxx][maxy].charge;
 	} else {
 	  split_threshold = det->threshold_split_lo_keV;

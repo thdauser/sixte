@@ -65,7 +65,9 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0,
 void free_AttitudeCatalog(AttitudeCatalog* ac);
 
 /** Determine the telescope pointing direction at a specific time. */
-Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status);
+Vector getTelescopePointing(AttitudeCatalog* const ac, 
+			    const double time, 
+			    int* const status);
 
 /** Determine the roll-angle ([rad]) at a specific time. */
 double getRollAngle(AttitudeCatalog* ac, double time, int* status);

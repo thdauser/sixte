@@ -142,7 +142,9 @@ void free_AttitudeCatalog(AttitudeCatalog* ac)
 
 
 
-Vector getTelescopePointing(AttitudeCatalog* ac, double time, int* status)
+Vector getTelescopePointing(AttitudeCatalog* const ac, 
+			    const double time, 
+			    int* const status)
 {
   Vector nz = { .x = 0., .y = 0., .z = 0. };
   char msg[MAXMSG]; // Error message buffer.
