@@ -53,6 +53,7 @@ comaexp
 orbatt
 mmap_write
 mmap_read
+simx2
 
 # Autotool stuff:
 aclocal.m4

@@ -7,4 +7,4 @@ SUBDIRS = phogen phogen2 phoimg wfi_simulation psfgen			\
 	  genpat ero_merge_photonfiles wfi_pattern_recombination	\
 	  analyse_xms_events htrs_psfgen htrs_pixel_intensity		\
 	  htrs_fits2tm htrs_digital_shaper comaimg comadet comarecon	\
-	  orbatt mmap
+	  orbatt mmap simx2

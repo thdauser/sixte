@@ -258,6 +258,7 @@ AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		libraries/libsixt/Makefile
 		tools/Makefile
+		tools/simx2/Makefile
 		tools/phogen/Makefile
 		tools/phogen2/Makefile
 		tools/phoimg/Makefile
