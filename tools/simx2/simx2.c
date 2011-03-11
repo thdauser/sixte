@@ -15,6 +15,9 @@ int simx2_main()
   // Catalog of input X-ray sources.
   XRaySourceCatalog* srccat=NULL;
 
+  // Photon list file.
+  PhotonListFile* plf=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
@@ -104,11 +107,29 @@ int simx2_main()
     }
     // END of setting up the source catalog.
 
+    // Set up photon list file.
+    // TODO
+    // Template for the photon list file.
+    //    char photonlist_template[] = "/home/schmid/share/sixt/templates/photonlist.tpl";
+
+    // Remove the old photon list file.
+    // remove(photon_filename);
+
+
     // --- End of Initialization ---
 
 
     // --- Simulation Process ---
 
+    // Photon Generation.
+    phgen(det, ac, srccat, plf, par.t0, par.t0+par.exposure, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Photon Imaging.
+    // TODO
+
+    // Photon Detection.
+    // TODO
 
     // --- End of simulation process ---
 
@@ -120,6 +141,7 @@ int simx2_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
+  freePhotonListFile(&plf, &status);
   freeXRaySourceCatalog(&srccat);
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);

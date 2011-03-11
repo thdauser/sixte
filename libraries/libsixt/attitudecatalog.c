@@ -155,7 +155,6 @@ void freeAttitudeCatalog(AttitudeCatalog** const ac)
 }
 
 
-
 Vector getTelescopePointing(AttitudeCatalog* const ac, 
 			    const double time, 
 			    int* const status)

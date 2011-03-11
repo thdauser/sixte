@@ -3,43 +3,24 @@
 
 #include "sixt.h"
 
-#ifndef HEASP_H
-#define HEASP_H 1
-#include "heasp.h"
-#endif
-
-#include <wcslib/wcslib.h>
-
-#include "interface.h"
-#include "sixt_string.h"
-#include "sourceimage.h"
-#include "pointsources.h"
-#include "pointsourcefile.h"
-#include "pointsourcecatalog.h"
-#include "pointsourcelist.h"
-#include "extendedsources.h"
-#include "vector.h"
-#include "spectrum.h"
-#include "photon.h"
-#include "photonlistfile.h"
-#include "astrosources.h"
-#include "telescope.h"
 #include "attitudecatalog.h"
-#include "arf.h"
-#include "check_fov.h"
-#include "kdtree.h"
 #include "gendet.h"
+#include "phgen.h"
+#include "photonlistfile.h"
+#include "sourceimage.h"
+#include "vector.h"
+#include "xraysourcecatalog.h"
 
 #define TOOLSUB phogen_main
 #include "headas_main.c"
 
 
 struct Parameters {
-  char xml_filename[MAXMSG];
-  char attitude_filename[MAXMSG];
-  char simput_filename[MAXMSG];
-  char photonlist_filename[MAXMSG];
-  char photonlist_template[MAXMSG];
+  char xml_filename[MAXFILENAME];
+  char attitude_filename[MAXFILENAME];
+  char simput_filename[MAXFILENAME];
+  char photonlist_filename[MAXFILENAME];
+  char photonlist_template[MAXFILENAME];
 
   double t0, timespan;
 };

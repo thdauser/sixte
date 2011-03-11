@@ -14,7 +14,7 @@ int comaimg_main() {
 
   AttitudeCatalog* attitudecatalog=NULL;
   struct Telescope telescope; // Telescope data.
-  PhotonListFile photonlistfile;
+  PhotonListFile* photonlistfile=NULL;
   ImpactListFile* impactlistfile=NULL;
   double refxcrvl=0., refycrvl=0.;
   CodedMask* mask=NULL;
@@ -45,13 +45,13 @@ int comaimg_main() {
     HDmtInit(1);
 
     // Open the FITS file with the input photon list:
-    status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
-				READONLY);
+    photonlistfile=openPhotonListFile(parameters.photonlist_filename, 
+				      READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Open the attitude file specified in the header keywords of the photon list.
     char comment[MAXMSG];
-    if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
+    if (fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, comment, &status)) break;
     if (NULL==(attitudecatalog=loadAttitudeCatalog(parameters.attitude_filename,
 						   0., 0., &status))) break;
@@ -84,20 +84,25 @@ int comaimg_main() {
     long attitude_counter=0;  // counter for AttitudeCatalog
 
     // SCAN PHOTON LIST    
-    for(photonlistfile.row=0; (photonlistfile.row<photonlistfile.nrows)&&(EXIT_SUCCESS==status); 
-	photonlistfile.row++) {
+    for(photonlistfile->row=0; 
+	(photonlistfile->row<photonlistfile->nrows)&&(EXIT_SUCCESS==status); 
+	photonlistfile->row++) {
       
       // Read an entry from the photon list:
       int anynul = 0;
       Photon photon = { .time=0., .energy=0., .ra=0., .dec=0. };
-      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.ctime, 
-		    photonlistfile.row+1, 1, 1, &photon.time, &photon.time, &anynul, &status);
-      fits_read_col(photonlistfile.fptr, TFLOAT, photonlistfile.cenergy, 
-		    photonlistfile.row+1, 1, 1, &photon.energy, &photon.energy, &anynul, &status);
-      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cra, 
-		    photonlistfile.row+1, 1, 1, &photon.ra, &photon.ra, &anynul, &status);
-      fits_read_col(photonlistfile.fptr, TDOUBLE, photonlistfile.cdec, 
-		    photonlistfile.row+1, 1, 1, &photon.dec, &photon.dec, &anynul, &status);
+      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->ctime, 
+		    photonlistfile->row+1, 1, 1, &photon.time, &photon.time, 
+		    &anynul, &status);
+      fits_read_col(photonlistfile->fptr, TFLOAT, photonlistfile->cenergy, 
+		    photonlistfile->row+1, 1, 1, &photon.energy, &photon.energy, 
+		    &anynul, &status);
+      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->cra, 
+		    photonlistfile->row+1, 1, 1, &photon.ra, &photon.ra, 
+		    &anynul, &status);
+      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->cdec, 
+		    photonlistfile->row+1, 1, 1, &photon.dec, &photon.dec, 
+		    &anynul, &status);
       if (status!=EXIT_SUCCESS) break;
 
       // Rescale from [deg] -> [rad]
@@ -187,7 +192,7 @@ int comaimg_main() {
 
   // Close the FITS files.
   destroyImpactListFile(&impactlistfile, &status);
-  status += closePhotonListFile(&photonlistfile);
+  freePhotonListFile(&photonlistfile, &status);
 
   freeAttitudeCatalog(&attitudecatalog);
   destroyCodedMask(&mask);

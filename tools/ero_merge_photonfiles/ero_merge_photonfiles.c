@@ -42,10 +42,10 @@ int ero_merge_photonfiles_getpar(struct Parameters* parameters)
 int ero_merge_photonfiles_main() {
   struct Parameters parameters;
   // Array of input photonlist files.
-  PhotonListFile inputfiles[MAX_N_INPUTFILES];
+  PhotonListFile* inputfiles[MAX_N_INPUTFILES];
   int fileidx;
   // Output (merged) photonlist file.
-  PhotonListFile outputfile;
+  PhotonListFile* outputfile=NULL;
   // Buffer for the photons.
   Photon photons[MAX_N_INPUTFILES];
 
@@ -66,17 +66,15 @@ int ero_merge_photonfiles_main() {
     for (fileidx=0; fileidx<parameters.n_inputfiles; fileidx++) {
       sprintf(filename, "%s%d.fits", 
 	      parameters.input_prefix, fileidx);
-      status = openPhotonListFile(&inputfiles[fileidx], 
-				  filename, 
-				  READONLY);
+      inputfiles[fileidx]=openPhotonListFile(filename, READONLY, &status);
       if (EXIT_SUCCESS!=status) break;
     }
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new output (merged) event file:
-    status = openNewPhotonListFile(&outputfile, 
-				   parameters.output_filename, 
-				   parameters.photonlist_template);
+    outputfile=openNewPhotonListFile(parameters.output_filename, 
+				     parameters.photonlist_template,
+				     &status);
     if (EXIT_SUCCESS!=status) break;
 
 
@@ -91,19 +89,19 @@ int ero_merge_photonfiles_main() {
 
     // Read from the first input file.
     char comment[MAXMSG]; // String buffer.
-    if (fits_read_key(inputfiles[0].fptr, TDOUBLE, "REFXCRVL", 
+    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "REFXCRVL", 
 		      &hkeys.refxcrvl, comment, &status)) break;    
-    if (fits_read_key(inputfiles[0].fptr, TDOUBLE, "REFYCRVL", 
+    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "REFYCRVL", 
 		      &hkeys.refycrvl, comment, &status)) break;    
-    if (fits_read_key(inputfiles[0].fptr, TSTRING, "ATTITUDE", 
+    if (fits_read_key(inputfiles[0]->fptr, TSTRING, "ATTITUDE", 
 		      hkeys.attitude, comment, &status)) break;
 
     // Write to output file.
-    if (fits_update_key(outputfile.fptr, TDOUBLE, "REFXCRVL", 
+    if (fits_update_key(outputfile->fptr, TDOUBLE, "REFXCRVL", 
 			&hkeys.refxcrvl, "", &status)) break;
-    if (fits_update_key(outputfile.fptr, TDOUBLE, "REFYCRVL", 
+    if (fits_update_key(outputfile->fptr, TDOUBLE, "REFYCRVL", 
 			&hkeys.refycrvl, "", &status)) break;
-    if (fits_update_key(outputfile.fptr, TSTRING, "ATTITUDE", 
+    if (fits_update_key(outputfile->fptr, TSTRING, "ATTITUDE", 
 			hkeys.attitude, "name of the attitude FITS file", 
 			&status)) break;
     // END of copying header keywords.
@@ -114,9 +112,9 @@ int ero_merge_photonfiles_main() {
     int sum_eof= 0;
     // Read the first entry from each photon list file:
     for (fileidx=0; fileidx<parameters.n_inputfiles; fileidx++) {
-      if (inputfiles[fileidx].nrows>0) {
-	status = PhotonListFile_getNextRow(&inputfiles[fileidx], 
-					   &photons[fileidx]);
+      if (inputfiles[fileidx]->nrows>0) {
+	status = PhotonListFile_getNextRow(inputfiles[fileidx], 
+					   &(photons[fileidx]));
 	if (status!=EXIT_SUCCESS) break;
 	eof[fileidx]=0;
       } else {
@@ -140,13 +138,13 @@ int ero_merge_photonfiles_main() {
       }
 
       // Add the photon to the output file.
-      status = addPhoton2File(&outputfile, &photons[minidx]);
+      status = addPhoton2File(outputfile, &photons[minidx]);
       if (EXIT_SUCCESS!=status) break;
 
       // Read new photon from the respective input file.
-      if (inputfiles[minidx].row<inputfiles[minidx].nrows) {
-	status = PhotonListFile_getNextRow(&inputfiles[minidx], 
-					   &photons[minidx]);
+      if (inputfiles[minidx]->row<inputfiles[minidx]->nrows) {
+	status = PhotonListFile_getNextRow(inputfiles[minidx], 
+					   &(photons[minidx]));
 	if (status!=EXIT_SUCCESS) break;
       } else {
 	eof[minidx]=1;
@@ -164,9 +162,9 @@ int ero_merge_photonfiles_main() {
   
   // Close the event files:
   for (fileidx=0; fileidx<parameters.n_inputfiles; fileidx++) {
-    closePhotonListFile(&inputfiles[fileidx]);
+    freePhotonListFile(&(inputfiles[fileidx]), &status);
   }
-  closePhotonListFile(&outputfile);
+  freePhotonListFile(&outputfile, &status);
 
   return(status);
 }

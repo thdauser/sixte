@@ -38,9 +38,9 @@ int ero_split_photonfile_main() {
   
   struct Parameters parameters;
   // Input photon list.
-  PhotonListFile inputfile;
+  PhotonListFile* inputfile=NULL;
   // Array of output photon files.
-  PhotonListFile outputfiles[7];
+  PhotonListFile* outputfiles[7];
   int filecounter;
 
   int status = EXIT_SUCCESS;
@@ -60,9 +60,8 @@ int ero_split_photonfile_main() {
     HDmtInit(SIXT_HD_RANDOM_SEED);
 
     // Open the INPUT file.
-    status = openPhotonListFile(&inputfile, 
-				parameters.input_filename, 
-				READONLY);
+    inputfile=openPhotonListFile(parameters.input_filename, 
+				 READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open new output photon list files.
@@ -70,9 +69,9 @@ int ero_split_photonfile_main() {
     for (filecounter=0; filecounter<7; filecounter++) {
       sprintf(filename, "%s%d.fits", 
 	      parameters.output_prefix, filecounter);
-      status = openNewPhotonListFile(&outputfiles[filecounter], 
-				     filename, 
-				     parameters.photonlist_template);
+      outputfiles[filecounter]=openNewPhotonListFile(filename, 
+						     parameters.photonlist_template,
+						     &status);
       if (EXIT_SUCCESS!=status) break;
     }
     if (EXIT_SUCCESS!=status) break;
@@ -87,20 +86,20 @@ int ero_split_photonfile_main() {
 
     // Read from input file.
     char comment[MAXMSG]; // String buffer.
-    if (fits_read_key(inputfile.fptr, TDOUBLE, "REFXCRVL", 
+    if (fits_read_key(inputfile->fptr, TDOUBLE, "REFXCRVL", 
 		      &hkeys.refxcrvl, comment, &status)) break;    
-    if (fits_read_key(inputfile.fptr, TDOUBLE, "REFYCRVL", 
+    if (fits_read_key(inputfile->fptr, TDOUBLE, "REFYCRVL", 
 		      &hkeys.refycrvl, comment, &status)) break;    
-    if (fits_read_key(inputfile.fptr, TSTRING, "ATTITUDE", 
+    if (fits_read_key(inputfile->fptr, TSTRING, "ATTITUDE", 
 		      hkeys.attitude, comment, &status)) break;
 
     // Write to output files.
     for (filecounter=0; filecounter<7; filecounter++) {
-      if (fits_update_key(outputfiles[filecounter].fptr, TDOUBLE, "REFXCRVL", 
+      if (fits_update_key(outputfiles[filecounter]->fptr, TDOUBLE, "REFXCRVL", 
 			  &hkeys.refxcrvl, "", &status)) break;
-      if (fits_update_key(outputfiles[filecounter].fptr, TDOUBLE, "REFYCRVL", 
+      if (fits_update_key(outputfiles[filecounter]->fptr, TDOUBLE, "REFYCRVL", 
 			  &hkeys.refycrvl, "", &status)) break;
-      if (fits_update_key(outputfiles[filecounter].fptr, TSTRING, "ATTITUDE", 
+      if (fits_update_key(outputfiles[filecounter]->fptr, TSTRING, "ATTITUDE", 
 			  hkeys.attitude, "name of the attitude FITS file", 
 			  &status)) break;
     }
@@ -110,12 +109,12 @@ int ero_split_photonfile_main() {
     // Copy photon list entries.
     Photon photon={.time=0.};
     int rnd_file;
-    while (inputfile.row<inputfile.nrows) {
+    while (inputfile->row<inputfile->nrows) {
 
       if (EXIT_SUCCESS!=status) break;
       
       // Read an entry from the photon list:
-      status = PhotonListFile_getNextRow(&inputfile, &photon);
+      status = PhotonListFile_getNextRow(inputfile, &photon);
       if (status!=EXIT_SUCCESS) break;
       
       // Get a random file index [0-6].
@@ -124,7 +123,7 @@ int ero_split_photonfile_main() {
       assert(rnd_file<=6);
 
       // Append the photon to the randomly chosen file.
-      status = addPhoton2File(&outputfiles[rnd_file], &photon);
+      status = addPhoton2File(outputfiles[rnd_file], &photon);
       if (status!=EXIT_SUCCESS) break;
     }
     if (EXIT_SUCCESS!=status) break;
@@ -139,9 +138,9 @@ int ero_split_photonfile_main() {
   HDmtFree();
 
   // Close the photon list files:
-  closePhotonListFile(&inputfile);
+  freePhotonListFile(&inputfile, &status);
   for(filecounter=0; filecounter<7; filecounter++) {
-    closePhotonListFile(&outputfiles[filecounter]);
+    freePhotonListFile(&outputfiles[filecounter], &status);
   }
   
   return(status);

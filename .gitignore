@@ -26,7 +26,6 @@ event_projection
 framestore_simulation
 wfi_pattern_recombination
 phogen
-phogen2
 phoimg
 psfgen
 xms_simulation

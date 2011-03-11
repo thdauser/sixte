@@ -8,7 +8,7 @@ int phoimg_main() {
 
   AttitudeCatalog* ac=NULL;
 
-  PhotonListFile photonlistfile;
+  PhotonListFile* photonlistfile=NULL;
   ImpactListFile* impactlistfile=NULL;
 
   // Detector data structure including telescope information like the PSF,
@@ -47,13 +47,13 @@ int phoimg_main() {
     HDmtInit(SIXT_HD_RANDOM_SEED+parameters.telescope);
 
     // Open the FITS file with the input photon list:
-    status = openPhotonListFile(&photonlistfile, parameters.photonlist_filename, 
-				READONLY);
+    photonlistfile=openPhotonListFile(parameters.photonlist_filename, 
+				      READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Open the attitude file specified in the header keywords of the photon list.
     char comment[MAXMSG]; // String buffer.
-    if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
+    if (fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, 
 		      comment, &status)) break;
     if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
@@ -81,12 +81,12 @@ int phoimg_main() {
 
     // SCAN PHOTON LIST    
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    while (photonlistfile.row<photonlistfile.nrows) {
+    while (photonlistfile->row<photonlistfile->nrows) {
 
       Photon photon={.time=0.};
       
       // Read an entry from the photon list:
-      status = PhotonListFile_getNextRow(&photonlistfile, &photon);
+      status = PhotonListFile_getNextRow(photonlistfile, &photon);
       if (status!=EXIT_SUCCESS) break;
 
       // Check whether we are still within the requested time interval.
@@ -180,7 +180,7 @@ int phoimg_main() {
 
   // Close the FITS files.
   destroyImpactListFile(&impactlistfile, &status);
-  status += closePhotonListFile(&photonlistfile);
+  freePhotonListFile(&photonlistfile, &status);
 
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);

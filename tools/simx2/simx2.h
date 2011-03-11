@@ -7,6 +7,8 @@
 
 #include "attitudecatalog.h"
 #include "gendet.h"
+#include "phgen.h"
+#include "photonlistfile.h"
 #include "vector.h"
 #include "xraysourcecatalog.h"
 

@@ -5,6 +5,18 @@ int phogen_main()
 {
   // Program parameters.
   struct Parameters parameters;
+
+  // Detector setup.
+  GenDet* det=NULL;
+
+  // Attitude.
+  AttitudeCatalog* ac=NULL;
+
+  // Catalog of input X-ray sources.
+  XRaySourceCatalog* srccat=NULL;
+
+  // Photon list file.
+  PhotonListFile* plf=NULL;
   
   // Error status.
   int status = EXIT_SUCCESS;  
@@ -18,12 +30,26 @@ int phogen_main()
 
     // ---- Initialization ----
 
+    // Read the parameters using PIL.
     status=phogen_getpar(&parameters);
     CHECK_STATUS_BREAK(status);
 
     // Initialize HEADAS random number generator.
     HDmtInit(SIXT_HD_RANDOM_SEED);
     
+    // Load the detector configuration.
+    det=newGenDet(parameters.xml_filename, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Load the attitude from the given file.
+    ac=loadAttitudeCatalog(parameters.attitude_filename,
+			   parameters.t0, parameters.timespan, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Load the SIMPUT X-ray source catalog.
+    srccat = loadSourceCatalog(parameters.simput_filename, det, &status);
+    CHECK_STATUS_BREAK(status);
+
     // --- End of Initialization ---
 
 
@@ -32,15 +58,11 @@ int phogen_main()
     // Start the actual photon generation (after loading required data):
     headas_chat(5, "start photon generation process ...\n");
 
-    photon_generation(parameters.xml_filename,
-		      parameters.attitude_filename,
-		      parameters.simput_filename,
-		      parameters.photonlist_filename,
-		      parameters.t0, 
-		      parameters.t0+parameters.timespan,
-		      &status);
+    phgen(det, ac, srccat, plf, 
+	  parameters.t0, parameters.t0+parameters.timespan, 
+	  &status);
     CHECK_STATUS_BREAK(status);
-
+ 
     // --- End of photon generation ---
 
   } while(0); // END of ERROR HANDLING Loop.
@@ -49,6 +71,12 @@ int phogen_main()
   // --- Clean up ---
   
   headas_chat(3, "\ncleaning up ...\n");
+
+  // Release memory.
+  freePhotonListFile(&plf, &status);
+  freeXRaySourceCatalog(&srccat);
+  freeAttitudeCatalog(&ac);
+  destroyGenDet(&det, &status);
 
   // Release HEADAS random number generator:
   HDmtFree();
