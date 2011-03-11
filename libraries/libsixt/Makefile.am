@@ -80,12 +80,11 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  vignetting.h codedmask.h attitudecatalog.h		\
 		  attitudefile.h telescope.h sixt.h sixt_random.h	\
 		  sixt_string.h sixt_error.h point.h vector.h		\
-		  astrosources.h pointsources.h pointsourcefile.h	\
-		  pointsourcelist.h pointsourcecatalog.h		\
-		  extendedsources.h sourceimage.h photon.h spectrum.h	\
-		  fits_pha.h check_fov.h photonlistfile.h		\
-		  linlightcurve.h kdtree.h rmf.h arf.h kdtreeelement.h	\
-		  xraysourcecatalog.h xraysourcespectrum.h		\
-		  xraysource.h linkedpholist.h erodetbkgrndgen.h	\
-		  phgen.h
+		  pointsources.h pointsourcefile.h pointsourcelist.h	\
+		  pointsourcecatalog.h extendedsources.h sourceimage.h	\
+		  photon.h spectrum.h fits_pha.h check_fov.h		\
+		  photonlistfile.h linlightcurve.h kdtree.h rmf.h	\
+		  arf.h kdtreeelement.h xraysourcecatalog.h		\
+		  xraysourcespectrum.h xraysource.h linkedpholist.h	\
+		  erodetbkgrndgen.h phgen.h
 
