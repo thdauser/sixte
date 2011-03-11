@@ -50,6 +50,20 @@ int phogen_main()
     srccat = loadSourceCatalog(parameters.simput_filename, det, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Remove the old photon list file.    
+    remove(parameters.photonlist_filename);
+    
+    // Open the output photon list file.
+    plf=openNewPhotonListFile(parameters.photonlist_filename, 
+			      parameters.photonlist_template, &status);
+    CHECK_STATUS_BREAK(status);
+    // Set the attitude filename in the photon list (obsolete).
+    char buffer[MAXMSG];
+    strcpy(buffer, parameters.attitude_filename);
+    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", buffer,
+		    "attitude file", &status);
+    CHECK_STATUS_BREAK(status);
+
     // --- End of Initialization ---
 
 
