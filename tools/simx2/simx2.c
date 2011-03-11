@@ -6,7 +6,18 @@ int simx2_main()
   // Program parameters.
   struct Parameters par;
   
-  int status = EXIT_SUCCESS; // Error status.
+  // Detector setup.
+  GenDet* det=NULL;
+
+  // Attitude.
+  AttitudeCatalog* ac=NULL;
+
+  // Catalog of input X-ray sources.
+  XRaySourceCatalog* srccat=NULL;
+
+  // Error status.
+  int status=EXIT_SUCCESS; 
+
 
   // Register HEATOOL
   set_toolname("simx2");
@@ -16,9 +27,82 @@ int simx2_main()
   do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-
+    
+    // Read the parameters using PIL.
     status=simx2_getpar(&par);
     CHECK_STATUS_BREAK(status);
+
+    // Initialize HEADAS random number generator.
+    HDmtInit(par.random_seed);
+
+    // Load the detector configuration.
+    det=newGenDet(par.xml_filename, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Assign the event list file to the detector data structure.
+    GenDetNewEventFile(det, par.eventlist_filename, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Set up the Attitude.
+    if (strlen(par.attitude_filename)>0) {
+    // Load the attitude from the given file.
+      ac=loadAttitudeCatalog(par.attitude_filename,
+			     par.t0, par.exposure, &status);
+      CHECK_STATUS_BREAK(status);
+
+    } else {
+      // Set up the a simple pointing attitude.
+
+      // First allocate memory.
+      ac=getAttitudeCatalog(&status);
+      CHECK_STATUS_BREAK(status);
+
+      ac->entry=(AttitudeEntry*)malloc(2*sizeof(AttitudeEntry));
+      if (NULL==ac->entry) {
+	status = EXIT_FAILURE;
+	HD_ERROR_THROW("memory allocation for AttitudeCatalog failed!\n", status);
+	break;
+      }
+
+      // Set the values of the entries.
+      ac->nentries=2;
+      ac->entry[0] = defaultAttitudeEntry();
+      ac->entry[1] = defaultAttitudeEntry();
+      
+      ac->entry[0].time = par.t0;
+      ac->entry[1].time = par.t0+par.exposure;
+
+      ac->entry[0].nz = unit_vector(par.pointing_ra*M_PI/180., 
+				    par.pointing_dec*M_PI/180.);
+      ac->entry[1].nz = ac->entry[0].nz;
+
+      Vector ny = {0., 1., 0.}; // TODO
+      ac->entry[0].nx = vector_product(ac->entry[0].nz, ny);
+      ac->entry[1].nx = ac->entry[0].nx;
+    }
+    // END of setting up the attitude.
+
+    // Set up the source catalog.
+    if (strlen(par.simput_filename)>0) {
+      // Load the SIMPUT X-ray source catalog.
+      srccat = loadSourceCatalog(par.simput_filename, det, &status);
+      CHECK_STATUS_BREAK(status);
+
+    } else {
+      // An individual source is given on the command line.
+      
+      // Get an empty source catalog.
+      srccat = newXRaySourceCatalog(&status);
+      CHECK_STATUS_BREAK(status);
+
+      // TODO
+      status=EXIT_FAILURE;
+      headas_printf("Error: source specification on the command line not "
+		    "is not implemented yet!\n");
+      break;
+
+    }
+    // END of setting up the source catalog.
 
     // --- End of Initialization ---
 
@@ -34,6 +118,14 @@ int simx2_main()
   // --- Clean up ---
   
   headas_chat(3, "\ncleaning up ...\n");
+
+  // Release memory.
+  freeXRaySourceCatalog(&srccat);
+  freeAttitudeCatalog(&ac);
+  destroyGenDet(&det, &status);
+
+  // Release HEADAS random number generator:
+  HDmtFree();
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);
@@ -77,9 +169,66 @@ int simx2_getpar(struct Parameters* const par)
   if ((status = PILGetString("simput_filename", par->simput_filename))) {
     HD_ERROR_THROW("Error reading the filename of the input source "
 		   "catalog (SIMPUT)!\n", status);
-  }
-  // TODO If the source catalog filename is empty, read source parameters
+    return(status);
+  } 
+    
+  // If the source catalog filename is empty, read source parameters
   // from the command line / PIL.
+  if (0==strlen(par->simput_filename)) {  
+    // Determine the source type.
+    if ((status = PILGetInt("src_type", &par->src_type))) {
+      HD_ERROR_THROW("Error reading the source type!\n", status);
+      return(status);
+    } 
+
+    // Point source.
+    if (0==par->src_type) {
+      if ((status = PILGetReal4("src_ra", &par->src_ra))) {
+	HD_ERROR_THROW("Error reading the right ascension "
+		       "of the source!\n", status);
+	return(status);
+      }
+      if ((status = PILGetReal4("src_dec", &par->src_dec))) {
+	HD_ERROR_THROW("Error reading the declination "
+		       "of the source!\n", status);
+	return(status);
+      }
+    } 
+    
+    // Image source.
+    if (2==par->src_type) {
+      if ((status = PILGetFname("src_image_filename", 
+				 par->src_image_filename))) {
+	HD_ERROR_THROW("Error reading the filename of the source image!\n",
+		       status);
+	return(status);
+      }   
+    }
+    
+    // Source flux.
+    if ((status = PILGetReal4("src_flux", &par->src_flux))) {
+      HD_ERROR_THROW("Error reading the source flux!\n", status);
+      return(status);
+    }
+
+    // Spectrum.
+    if ((status = PILGetString("src_spectrum_filename", 
+			       par->src_spectrum_filename))) {
+      HD_ERROR_THROW("Error reading the filename of the source spectrum!\n",
+		     status);
+      return(status);
+    }
+    // Mono-energetic source.
+    if (0==strlen(par->src_spectrum_filename)) {
+      if ((status = PILGetReal4("src_mono_energy", &par->src_mono_energy))) {
+	HD_ERROR_THROW("Error reading the source energy "
+		       "(mono-energetic source)!\n", status);
+	return(status);
+      }
+    }
+    
+  }
+  // END of reading the source data from the command line.
 
   // Get the start time of the simulation.
   if ((status = PILGetReal("t0", &par->t0))) {

@@ -56,7 +56,7 @@ int phoimg_main() {
     if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, 
 		      comment, &status)) break;
-    if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
+    if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
 				      parameters.t0, parameters.timespan, 
 				      &status))) break;
 
@@ -182,7 +182,7 @@ int phoimg_main() {
   destroyImpactListFile(&impactlistfile, &status);
   status += closePhotonListFile(&photonlistfile);
 
-  free_AttitudeCatalog(ac);
+  freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");

@@ -28,7 +28,7 @@ typedef struct {
   /** Roll-angle ([rad]). */
   double roll_angle;
 
-  // TODO Keep either the roll_anlge or nx. 
+  // TODO Keep either the roll_angle or nx. 
 
 } AttitudeEntry;
 
@@ -54,15 +54,20 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////
 
 
-/** Constructor for the AttitudeCatalog. Load data from the specified
-    file. The routine loads the entire attitude data from the
-    file. After reading it checks, whether the required time interval
-    is a subset of the data provided in the attitude file. */
-AttitudeCatalog* get_AttitudeCatalog(const char* filename, double t0, 
-				     double timespan, int* const status);
+/** Constructor for the AttitudeCatalog. Allocate memory for the
+    object. */
+AttitudeCatalog* getAttitudeCatalog(int* const status);
+
+/** Get a new AttitudeCatalog object and load the data from the
+    specified file. The routine loads the entire attitude data from
+    the file. After reading it checks, whether the required time
+    interval is a subset of the data provided in the attitude file. */
+AttitudeCatalog* loadAttitudeCatalog(const char* filename, 
+				     const double t0, const double timespan, 
+				     int* const status);
 
 /** Destructor for the AttitudeCatalog. */
-void free_AttitudeCatalog(AttitudeCatalog* ac);
+void freeAttitudeCatalog(AttitudeCatalog** const ac);
 
 /** Determine the telescope pointing direction at a specific time. */
 Vector getTelescopePointing(AttitudeCatalog* const ac, 
@@ -71,6 +76,9 @@ Vector getTelescopePointing(AttitudeCatalog* const ac,
 
 /** Determine the roll-angle ([rad]) at a specific time. */
 double getRollAngle(AttitudeCatalog* ac, double time, int* status);
+
+/** Return an empty AttitudeEntry object with default values. */
+AttitudeEntry defaultAttitudeEntry();
 
 
 #endif /* ATTITUDECATALOG_H */

@@ -27,7 +27,7 @@ void photon_generation(const char* const xml_filename,
     CHECK_STATUS_BREAK(*status);
 
     // Read the attitude.
-    ac = get_AttitudeCatalog(attitude_filename,
+    ac = loadAttitudeCatalog(attitude_filename,
 			     t0, t1-t0, status);
     CHECK_STATUS_BREAK(*status);
 
@@ -86,7 +86,7 @@ void photon_generation(const char* const xml_filename,
   // --- Clean up ---
   closePhotonListFile(&plf);
   freeXRaySourceCatalog(&srccat);
-  free_AttitudeCatalog(ac);
+  freeAttitudeCatalog(&ac);
   destroyGenDet(&det, status);
 }
 

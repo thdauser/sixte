@@ -201,7 +201,7 @@ int eroexposure_main() {
     HDmtInit(1);
 
     // Get the satellite catalog with the telescope attitude data:
-    if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
+    if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
 				      parameters.t0, parameters.timespan, 
 				      &status))) break;
 
@@ -303,7 +303,7 @@ int eroexposure_main() {
   if(NULL!=fptr) fits_close_file(fptr, &status);
 
   // Release memory.
-  free_AttitudeCatalog(ac);
+  freeAttitudeCatalog(&ac);
   destroyVignetting(&vignetting);
 
   // Release memory of exposure map.

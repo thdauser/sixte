@@ -6,11 +6,12 @@ int phogen_main()
   // Program parameters.
   struct Parameters parameters;
   
-  int status = EXIT_SUCCESS;  // error status flag
+  // Error status.
+  int status = EXIT_SUCCESS;  
 
-  // Register HEATOOL
+  // Register HEATOOL.
   set_toolname("phogen");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of ERROR HANDLING Loop.

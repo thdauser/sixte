@@ -1,9 +1,28 @@
 #include "attitudecatalog.h"
 
 
-AttitudeCatalog* get_AttitudeCatalog(const char* filename, 
-				     double t0, 
-				     double timespan,
+AttitudeCatalog* getAttitudeCatalog(int* const status)
+{
+  AttitudeCatalog* ac=(AttitudeCatalog*)malloc(sizeof(AttitudeCatalog));
+  if (NULL==ac) {
+    *status = EXIT_FAILURE;
+    HD_ERROR_THROW("memory allocation for AttitudeCatalog "
+		   "failed!\n", *status);
+    return(NULL);
+  }
+  
+  // Initialize.
+  ac->nentries = 0;
+  ac->current_entry = 0;
+  ac->entry = NULL;
+
+  return(ac);
+}
+
+
+AttitudeCatalog* loadAttitudeCatalog(const char* filename, 
+				     const double t0, 
+				     const double timespan,
 				     int* const status)
 {
   AttitudeCatalog* ac=NULL;
@@ -23,21 +42,16 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
     headas_chat(5, " attitude catalog contains %ld entries\n", 
 		af->nrows);
 
-    // Get memory for the AttitudeCatalog:
-    ac = (AttitudeCatalog*)malloc(sizeof(AttitudeCatalog));
-    if (NULL==ac) {
-      *status = EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory available to store the AttitudeCatalog!\n");
-      HD_ERROR_THROW(msg, *status);
-      break;
-    }
-    ac->nentries = 0;
-    ac->current_entry = 0;
-    ac->entry = (AttitudeEntry*)malloc(af->nrows*sizeof(AttitudeEntry));
+    // Get a new AttitudeCatalog object.
+    ac = getAttitudeCatalog(status);
+    CHECK_STATUS_BREAK(*status);
+
+    // Allocate memory for the entries in the catalog.
+    ac->entry=(AttitudeEntry*)malloc(af->nrows*sizeof(AttitudeEntry));
     if (NULL==ac->entry) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: not enough memory available to store the AttitudeCatalog!\n");
-      HD_ERROR_THROW(msg, *status);
+      HD_ERROR_THROW("not enough memory available to store "
+		     "the AttitudeCatalog!\n", *status);
       break;
     }
     
@@ -71,7 +85,7 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
       if ((ac->entry[0].time > t0) || 
 	  (ac->entry[ac->nentries-1].time < t0+timespan)) {
 	*status=EXIT_FAILURE;
-      sprintf(msg, "Error: Not enough attitude data available for the "
+      sprintf(msg, "not enough attitude data available for the "
 	      "specified period from %lf to %lf!", t0, t0+timespan);
       HD_ERROR_THROW(msg, *status);
       break;
@@ -129,14 +143,14 @@ AttitudeCatalog* get_AttitudeCatalog(const char* filename,
 }
 
 
-
-void free_AttitudeCatalog(AttitudeCatalog* ac)
+void freeAttitudeCatalog(AttitudeCatalog** const ac)
 {
-  if (NULL != ac) {
-    if (NULL != ac->entry) {
-      free(ac->entry);
+  if (NULL != (*ac)) {
+    if (NULL != (*ac)->entry) {
+      free((*ac)->entry);
     }
-    free(ac);
+    free(*ac);
+    *ac=NULL;
   }
 }
 
@@ -154,7 +168,7 @@ Vector getTelescopePointing(AttitudeCatalog* const ac,
     // Check if the beginning of the AttitudeCatalog is reached.
     if (ac->current_entry <= 0) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
       return(nz);
     }
@@ -166,7 +180,7 @@ Vector getTelescopePointing(AttitudeCatalog* const ac,
     // Check if the end of the AttitudeCatalog is reached.
     if (ac->current_entry >= ac->nentries-2) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
       return(nz);
     }
@@ -196,7 +210,7 @@ double getRollAngle(AttitudeCatalog* ac, double time, int* status)
     // Check if the beginning of the AttitudeCatalog is reached.
     if (ac->current_entry <= 0) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
       return(0.);
     }
@@ -208,7 +222,7 @@ double getRollAngle(AttitudeCatalog* ac, double time, int* status)
     // Check if the end of the AttitudeCatalog is reached.
     if (ac->current_entry >= ac->nentries-2) {
       *status = EXIT_FAILURE;
-      sprintf(msg, "Error: no orbit entry available for time %lf!\n", time);
+      sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
       return(0.);
     }
@@ -223,6 +237,26 @@ double getRollAngle(AttitudeCatalog* ac, double time, int* status)
     (ac->entry[ac->current_entry+1].time-ac->entry[ac->current_entry].time);
   return(ac->entry[ac->current_entry  ].roll_angle*(1.-fraction) + 
 	 ac->entry[ac->current_entry+1].roll_angle*    fraction );
+}
+
+
+AttitudeEntry defaultAttitudeEntry()
+{
+  AttitudeEntry ae;
+
+  ae.time = 0.;
+
+  ae.nz.x = 0.;
+  ae.nz.y = 0.;
+  ae.nz.z = 0.;
+
+  ae.nx.x = 0.;
+  ae.nx.y = 0.;
+  ae.nx.z = 0.;
+
+  ae.roll_angle = 0.;
+
+  return(ae);
 }
 
 

@@ -53,7 +53,7 @@ int comaimg_main() {
     char comment[MAXMSG];
     if (fits_read_key(photonlistfile.fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, comment, &status)) break;
-    if (NULL==(attitudecatalog=get_AttitudeCatalog(parameters.attitude_filename,
+    if (NULL==(attitudecatalog=loadAttitudeCatalog(parameters.attitude_filename,
 						   0., 0., &status))) break;
 
     // Load the coded mask from the file.
@@ -189,7 +189,7 @@ int comaimg_main() {
   destroyImpactListFile(&impactlistfile, &status);
   status += closePhotonListFile(&photonlistfile);
 
-  free_AttitudeCatalog(attitudecatalog);
+  freeAttitudeCatalog(&attitudecatalog);
   destroyCodedMask(&mask);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");

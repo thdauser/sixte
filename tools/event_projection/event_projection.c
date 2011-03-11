@@ -129,7 +129,7 @@ int event_projection_main() {
     headas_chat(5, "NXDIM: %d, NYDIM: %d\n", nxdim, nydim);
 
     // Get the satellite catalog with the telescope attitude data:
-    if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
+    if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
 				      parameters.t0, parameters.timespan, 
 				      &status))) break;
 						       
@@ -261,7 +261,7 @@ int event_projection_main() {
   closeeROSITAEventFile(&eventlistfile);
 
   // Release memory of AttitudeCatalog
-  free_AttitudeCatalog(ac);
+  freeAttitudeCatalog(&ac);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);

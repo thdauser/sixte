@@ -294,7 +294,7 @@ int comaexp_main()
     HDmtInit(1);
 
     // Get the satellite catalog with the telescope attitude data:
-    if (NULL==(ac=get_AttitudeCatalog(parameters.attitude_filename,
+    if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
 				      parameters.t0, parameters.timespan, 
 				      &status))) break;
 
@@ -599,7 +599,7 @@ int comaexp_main()
   if(NULL!=fptr) fits_close_file(fptr, &status);
 
   // Release memory of the attitude catalog.
-  free_AttitudeCatalog(ac);
+  freeAttitudeCatalog(&ac);
 
   // Release memory of the FoV image.
   if (NULL!=fovImg) {
