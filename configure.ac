@@ -260,7 +260,6 @@ AC_CONFIG_FILES([Makefile
 		tools/Makefile
 		tools/simx2/Makefile
 		tools/phogen/Makefile
-		tools/phogen2/Makefile
 		tools/phoimg/Makefile
 		tools/psfgen/Makefile
 		tools/wfi_simulation/Makefile

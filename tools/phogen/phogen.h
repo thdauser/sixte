@@ -10,6 +10,7 @@
 
 #include <wcslib/wcslib.h>
 
+#include "interface.h"
 #include "sixt_string.h"
 #include "sourceimage.h"
 #include "pointsources.h"
@@ -36,10 +37,9 @@
 struct Parameters {
   char xml_filename[MAXMSG];
   char attitude_filename[MAXMSG];
-  char sources_filename[MAXMSG];
+  char simput_filename[MAXMSG];
   char photonlist_filename[MAXMSG];
   char photonlist_template[MAXMSG];
-  int overwrite_photonlist;
 
   double t0, timespan;
 };
