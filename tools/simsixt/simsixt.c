@@ -225,7 +225,8 @@ int simsixt_main()
 
 
     // Photon Detection.
-    // TODO
+    phdetGenDet(det, ilf, elf, par.t0, par.exposure, &status);
+    CHECK_STATUS_BREAK(status);
 
 
     // Close the impact list file in order to save memory.

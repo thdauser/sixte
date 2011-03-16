@@ -6,6 +6,7 @@
 #include "attitudecatalog.h"
 #include "gendet.h"
 #include "impactlistfile.h"
+#include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
 #include "photonlistfile.h"

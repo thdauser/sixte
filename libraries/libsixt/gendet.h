@@ -155,7 +155,7 @@ int addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
 
 /** Operate the time-triggered elements of the GenDet detector up to
     the specified point of time. */
-void operateGenDetClock(GenDet* const det, EventListFile* elf,
+void operateGenDetClock(GenDet* const det, EventListFile* const elf,
 			const double time, int* const status);
 
 /** Shift the lines of the GenDet detector pixel array by one line

@@ -10,12 +10,7 @@ int gendetsim_main() {
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;
   // Input impact list.
-  ImpactListFile* impactlistfile=NULL;
-  // Total number of detected photons. Only the number of
-  // photons absorbed by valid pixels inside the detector is
-  // counted. Split events created by one photon are counted only
-  // once.
-  long n_detected_photons=0;
+  ImpactListFile* ilf=NULL;
 
   // Output event list file.
   EventListFile* elf=NULL;
@@ -33,25 +28,26 @@ int gendetsim_main() {
     headas_chat(3, "initialization ...\n");
 
     // Read parameters using PIL library.
-    if ((status=getpar(&parameters))) break;
+    status=getpar(&parameters);
+    CHECK_STATUS_BREAK(status);
 
     // Initialize HEADAS random number generator.
     HDmtInit(parameters.random_seed);
 
     // Open the FITS file with the input impact list:
-    impactlistfile = openImpactListFile(parameters.impactlist_filename,
-					READONLY, &status);
-    if (EXIT_SUCCESS!=status) break;
+    ilf=openImpactListFile(parameters.impactlist_filename,
+			   READONLY, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Initialize the detector data structure.
-    det = newGenDet(parameters.xml_filename, &status);
-    if (EXIT_SUCCESS!=status) break;
+    det=newGenDet(parameters.xml_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
-    elf = openNewEventListFile(parameters.eventlist_filename,
-			       parameters.eventlist_template,
-			       &status);
-    if (EXIT_SUCCESS!=status) break;
+    elf=openNewEventListFile(parameters.eventlist_filename,
+			     parameters.eventlist_template,
+			     &status);
+    CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
 
@@ -60,44 +56,8 @@ int gendetsim_main() {
 
     headas_chat(3, "start detection process ...\n");
 
-    // Loop over all impacts in the FITS file.
-    Impact impact;
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
-
-      getNextImpactFromFile(impactlistfile, &impact, &status);
-      if(EXIT_SUCCESS!=status) break;
-
-      // Check whether the event lies in the specified time interval:
-      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.exposure)) 
-	continue;
-
-      // Add the impact to the detector array. If it is absorbed
-      // by at least one valid pixel, increase the counter for
-      // the number of detected photons.
-      if (addGenDetPhotonImpact(det, &impact, elf, &status) > 0) {
-	n_detected_photons++;
-      }
-      if (EXIT_SUCCESS!=status) break;
-
-    };
-    if (EXIT_SUCCESS!=status) break;
-    // END of loop over all impacts in the FITS file.
-    
-    // Finalize the GenDet. Perform the time-triggered operations 
-    // without adding any new charges.
-    operateGenDetClock(det, elf, parameters.t0+parameters.exposure, &status);
-    if (EXIT_SUCCESS!=status) break;
-
-    // Store the number of simulated input photons in the FITS header
-    // of the output event file.
-    if (fits_update_key(elf->fptr, TLONG, "NPHOTONS", 
-			&impactlistfile->nrows, "number of input photons", 
-			&status)) break;
-    // Store the number of detected photons in the FITS header of
-    // the output event file.
-    if (fits_update_key(elf->fptr, TLONG, "NDETECTD", 
-			&n_detected_photons, "number of detected photons", 
-			&status)) break;
+    phdetGenDet(det, ilf, elf, parameters.t0, parameters.exposure, &status);
+    CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
 
@@ -117,7 +77,7 @@ int gendetsim_main() {
   freeEventListFile(&elf, &status);
 
   // Close the impact list FITS file.
-  freeImpactListFile(&impactlistfile, &status);
+  freeImpactListFile(&ilf, &status);
 
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);

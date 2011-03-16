@@ -57,7 +57,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     photonlistfile.c linlightcurve.c kdtree.c rmf.c	\
 		     arf.c kdtreeelement.c xraysourcecatalog.c		\
 		     xraysourcespectrum.c xraysource.c linkedpholist.c	\
-		     erodetbkgrndgen.c phgen.c phimg.c
+		     erodetbkgrndgen.c phgen.c phimg.c phdet.c
 
 
 ############ HEADERS #################
@@ -84,5 +84,5 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  linlightcurve.h kdtree.h rmf.h arf.h kdtreeelement.h	\
 		  xraysourcecatalog.h xraysourcespectrum.h		\
 		  xraysource.h linkedpholist.h erodetbkgrndgen.h	\
-		  phgen.h phimg.h
+		  phgen.h phimg.h phdet.h
 

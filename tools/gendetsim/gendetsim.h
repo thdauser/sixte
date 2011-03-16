@@ -5,8 +5,8 @@
 #include "sixt.h"
 #include "eventlistfile.h"
 #include "gendet.h"
-#include "impact.h"
 #include "impactlistfile.h"
+#include "phdet.h"
 
 #define TOOLSUB gendetsim_main
 #include "headas_main.c"
