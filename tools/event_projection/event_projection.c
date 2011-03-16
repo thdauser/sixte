@@ -18,8 +18,8 @@
 
 /* Program parameters */
 struct Parameters {
-  char attitude_filename[FILENAME_LENGTH];  // filename of the attitude file
-  char eventlist_filename[FILENAME_LENGTH]; // input: event list
+  char attitude_filename[MAXFILENAME];  // filename of the attitude file
+  char eventlist_filename[MAXFILENAME]; // input: event list
   
   double t0;
   double timespan;

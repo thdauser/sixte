@@ -21,6 +21,9 @@ int simsixt_main()
   // Impact list file.
   ImpactListFile* ilf=NULL;
 
+  // Event list file.
+  EventListFile* elf=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
@@ -44,10 +47,6 @@ int simsixt_main()
     // Load the detector configuration.
     det=newGenDet(par.xml_filename, &status);
     CHECK_STATUS_BREAK(status);
-
-    // Assign the event list file to the detector data structure.
-    GenDetNewEventFile(det, par.eventlist_filename, &status);
-    if (EXIT_SUCCESS!=status) break;
 
     // Set up the Attitude.
     if (strlen(par.attitude_filename)>0) {
@@ -198,6 +197,25 @@ int simsixt_main()
     // Reset internal line counter of impact list file.
     ilf->row=0;
 
+    // Set up the event list file.
+    // Template for the event list file.
+    char eventlist_template[MAXFILENAME];
+    char eventlist_filename[MAXFILENAME];
+    strcpy(eventlist_filename, par.eventlist_filename);
+    strcpy(eventlist_template, par.fits_templates);
+    strcat(eventlist_template, "/eventlist.tpl");
+
+    // Open the output event list file.
+    // If the old file should be removed, when it already exists,
+    // the filename has to start with an exclamation mark ('!').
+    elf=openNewEventListFile(eventlist_filename, eventlist_template, &status);
+    CHECK_STATUS_BREAK(status);
+    // Set the attitude filename in the event list (obsolete).
+    strcpy(buffer, par.attitude_filename);
+    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", buffer,
+		    "attitude file", &status);
+    CHECK_STATUS_BREAK(status);
+
 
     // Photon Detection.
     // TODO
@@ -216,6 +234,7 @@ int simsixt_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
+  freeEventListFile(&elf, &status);
   freeImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeXRaySourceCatalog(&srccat);
@@ -366,17 +385,17 @@ int simsixt_getpar(struct Parameters* const par)
     return(status);
   }
 
-  // Get the name of the FITS template directory from the 
-  // environment variable.
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
   char* buffer;
   if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
     strcpy(par->fits_templates, buffer);
   } else {
-    // Could not read the environment variable.
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable containing "
-		   "the location of the FITS templates!\n", status);
-    return(status);
+    if ((status = PILGetFname("fits_templates", par->fits_templates))) {
+      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);      
+      return(status);
+    }
   }
 
   return(status);

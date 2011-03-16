@@ -18,7 +18,7 @@
 
 struct Parameters {
 
-  char impactlist_filename[FILENAME_LENGTH];
+  char impactlist_filename[MAXFILENAME];
 
   /** Width of the spokes of the HTRS mask. */
   double mask_spoke_width;

@@ -16,8 +16,8 @@
 
 // Program parameters.
 struct Parameters {
-  char eventlist_filename[FILENAME_LENGTH];
-  char output_filename[FILENAME_LENGTH];
+  char eventlist_filename[MAXFILENAME];
+  char output_filename[MAXFILENAME];
 
   // Number of bits in each telemetry packet.
   int n_packet_bits;

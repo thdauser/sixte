@@ -7,17 +7,17 @@ AM_CFLAGS  = -I${HEADAS}/include
 
 # Directory where to install the FITS template files.
 fitstemplatesdir = $(pkgdatadir)/templates
-dist_fitstemplates_DATA  = erosita.eventlist.tpl 
+dist_fitstemplates_DATA  = coma.eventlist.tpl
+dist_fitstemplates_DATA += erosita.eventlist.tpl 
+dist_fitstemplates_DATA += eventlistfile.tpl
+dist_fitstemplates_DATA += genpatternfile.tpl
+dist_fitstemplates_DATA += htrs.eventlist.tpl
+dist_fitstemplates_DATA += impactlist.tpl
+dist_fitstemplates_DATA += photonlist.tpl 
 dist_fitstemplates_DATA	+= wfi.full1024.eventlist.tpl 
 dist_fitstemplates_DATA += wfi.window16.eventlist.tpl
 dist_fitstemplates_DATA += wfi.labor64.eventlist.tpl
 dist_fitstemplates_DATA += xms.eventlist.tpl
-dist_fitstemplates_DATA += htrs.eventlist.tpl
-dist_fitstemplates_DATA += impactlist.tpl
-dist_fitstemplates_DATA += coma.eventlist.tpl
-dist_fitstemplates_DATA += geneventfile.tpl
-dist_fitstemplates_DATA += genpatternfile.tpl
-dist_fitstemplates_DATA += photonlist.tpl 
 
 # Directory where to install the XML files.
 xmldir = $(pkgdatadir)/xml
@@ -44,7 +44,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     wfidetector.c wfieventfile.c xmsdetector.c		\
 		     xmseventfile.c htrsdetector.c gendet.c		\
 		     genpixgrid.c gensplit.c gendetline.c		\
-		     geneventfile.c genpatternfile.c clocklist.c	\
+		     eventlistfile.c genpatternfile.c clocklist.c	\
 		     badpixmap.c geneventgrading.c htrseventfile.c	\
 		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
 		     htrstelstream.c comadetector.c comaeventfile.c	\
@@ -70,19 +70,19 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  erositaeventfile.h erositaevent.h wfidetector.h	\
 		  wfieventfile.h wfievent.h xmsdetector.h gendet.h	\
 		  genpixgrid.h gensplit.h gendetline.h clocklist.h	\
-		  genevent.h genpattern.h geneventfile.h		\
-		  genpatternfile.h genpileupflag.h badpixmap.h		\
-		  geneventgrading.h xmseventfile.h xmsevent.h		\
-		  htrsdetector.h htrseventfile.h htrsevent.h		\
-		  telemetrypacket.h htrstelstream.h comadetector.h	\
-		  comaeventfile.h comaevent.h epicpn.h psf.h		\
-		  vignetting.h codedmask.h attitudecatalog.h		\
-		  attitudefile.h telescope.h sixt.h point.h vector.h	\
-		  pointsources.h pointsourcefile.h pointsourcelist.h	\
-		  pointsourcecatalog.h extendedsources.h sourceimage.h	\
-		  photon.h spectrum.h fits_pha.h check_fov.h		\
-		  photonlistfile.h linlightcurve.h kdtree.h rmf.h	\
-		  arf.h kdtreeelement.h xraysourcecatalog.h		\
-		  xraysourcespectrum.h xraysource.h linkedpholist.h	\
-		  erodetbkgrndgen.h phgen.h phimg.h
+		  event.h genpattern.h eventlistfile.h genpatternfile.h	\
+		  genpileupflag.h badpixmap.h geneventgrading.h		\
+		  xmseventfile.h xmsevent.h htrsdetector.h		\
+		  htrseventfile.h htrsevent.h telemetrypacket.h		\
+		  htrstelstream.h comadetector.h comaeventfile.h	\
+		  comaevent.h epicpn.h psf.h vignetting.h codedmask.h	\
+		  attitudecatalog.h attitudefile.h telescope.h sixt.h	\
+		  point.h vector.h pointsources.h pointsourcefile.h	\
+		  pointsourcelist.h pointsourcecatalog.h		\
+		  extendedsources.h sourceimage.h photon.h spectrum.h	\
+		  fits_pha.h check_fov.h photonlistfile.h		\
+		  linlightcurve.h kdtree.h rmf.h arf.h kdtreeelement.h	\
+		  xraysourcecatalog.h xraysourcespectrum.h		\
+		  xraysource.h linkedpholist.h erodetbkgrndgen.h	\
+		  phgen.h phimg.h
 

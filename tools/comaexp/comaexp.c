@@ -20,9 +20,9 @@
 
 /* Program parameters */
 struct Parameters {
-  char attitude_filename[FILENAME_LENGTH];    // filename of the attitude file
-  char fovimage_filename[FILENAME_LENGTH];    // filename of the FoV image file
-  char exposuremap_filename[FILENAME_LENGTH]; // output: exposure map
+  char attitude_filename[MAXFILENAME];    // filename of the attitude file
+  char fovimage_filename[MAXFILENAME];    // filename of the FoV image file
+  char exposuremap_filename[MAXFILENAME]; // output: exposure map
 
   /** Coordinate system: equatorial (0) or galactic (1). */
   int coordinate_system;

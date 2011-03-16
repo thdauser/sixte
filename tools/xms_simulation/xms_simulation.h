@@ -17,10 +17,10 @@
 ////////////////////////////////////////////////////////////////////////
 
 struct Parameters {
-  char impactlist_filename[FILENAME_LENGTH];
-  char rmf_filename_inner[MAXMSG], rmf_filename_outer[MAXMSG];
-  char eventlist_filename[MAXMSG];
-  char eventlist_template[MAXMSG];
+  char impactlist_filename[MAXFILENAME];
+  char rmf_filename_inner[MAXFILENAME], rmf_filename_outer[MAXFILENAME];
+  char eventlist_filename[MAXFILENAME];
+  char eventlist_template[MAXFILENAME];
   double t0;
   double timespan;
   

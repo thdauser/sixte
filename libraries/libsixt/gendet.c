@@ -125,7 +125,6 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->rmf =NULL;
   det->clocklist =NULL;
   det->badpixmap =NULL;
-  det->eventfile =NULL;
   det->grading=NULL;
 
   // Set initial values.
@@ -191,9 +190,6 @@ void destroyGenDet(GenDet** const det, int* const status)
 
     // Destroy the pattern identifier.
     destroyGenEventGrading(&(*det)->grading);
-
-    // Close the event file.
-    destroyGenEventFile(&(*det)->eventfile, status);
 
     // Destroy the PSF.
     destroyPSF(&(*det)->psf);
@@ -335,9 +331,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
   det->threshold_split_lo_fraction =  0.;
   det->fov_diameter = 0.;
   det->focal_length = 0.;
-  // Set string variables to empty strings.
-  strcpy(det->eventfile_template, "");
-  strcpy(det->patternfile_template, "");
 
 
   // Read the XML data from the file.
@@ -519,18 +512,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
     *status = EXIT_FAILURE;
     SIXT_ERROR("no specification for the readout trigger of GenDet in the XML file");
     return;
-  }
-
-  if (0==strlen(det->eventfile_template)) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no event file template specified in the XML file");
-    return;    
-  }
-
-  if (0==strlen(det->patternfile_template)) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no pattern file template specified in the XML file");
-    return;    
   }
 
   if (GS_NONE!=det->split->type) {
@@ -838,18 +819,6 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	  }
 	}
 
-	else if (!strcmp(Uelement, "EVENTFILE")) {
-	  if (!strcmp(Uattribute, "TEMPLATE")) {
-	    strcpy(xmlparsedata->det->eventfile_template, attr[i+1]);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "PATTERNFILE")) {
-	  if (!strcmp(Uattribute, "TEMPLATE")) {
-	    strcpy(xmlparsedata->det->patternfile_template, attr[i+1]);
-	  }
-	}
-
 	else if (!strcmp(Uelement, "READOUT")) {
 	  if (!strcmp(Uattribute, "MODE")) {
 	    strcpy(Uvalue, attr[i+1]);
@@ -962,10 +931,11 @@ static void GenDetXMLElementEnd(void* parsedata, const char* el)
 
 int addGenDetPhotonImpact(GenDet* const det, 
 			  const Impact* const impact, 
+			  EventListFile* const elf,
 			  int* const status)
 {
   // Call the detector operating clock routine.
-  operateGenDetClock(det, impact->time, status);
+  operateGenDetClock(det, elf, impact->time, status);
   if (EXIT_SUCCESS!=*status) return(0);
 
   // Determine the measured detector channel (PHA channel) according 
@@ -1002,7 +972,8 @@ int addGenDetPhotonImpact(GenDet* const det,
 
 
 
-void operateGenDetClock(GenDet* const det, const double time, int* const status)
+void operateGenDetClock(GenDet* const det, EventListFile* const elf,
+			const double time, int* const status)
 {
   // Check if the detector operation setup is time-triggered.
   if (GENDET_TIME_TRIGGERED!=det->readout_trigger) return;
@@ -1061,6 +1032,7 @@ void operateGenDetClock(GenDet* const det, const double time, int* const status)
       clreadoutline = (CLReadoutLine*)element;
       GenDetReadoutLine(det, clreadoutline->lineindex, 
 			clreadoutline->readoutindex, 
+			elf,
 			status);
       break;
     case CL_CLEARLINE:
@@ -1111,8 +1083,11 @@ void GenDetLineShift(GenDet* const det)
 
 
 
-void GenDetReadoutLine(GenDet* const det, const int lineindex, 
-		       const int readoutindex, int* const status)
+void GenDetReadoutLine(GenDet* const det, 
+		       const int lineindex, 
+		       const int readoutindex, 
+		       EventListFile* const elf,
+		       int* const status)
 {
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
@@ -1124,7 +1099,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
       if (line->charge[ii]>0.) {
 
 	// Determine the properties of a new Event object.
-	GenEvent event;
+	Event event;
 	
 	// Readout the charge from the pixel array ...
 	event.charge = line->charge[ii];
@@ -1159,7 +1134,7 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 	event.frame = det->clocklist->frame; // Frame of detection.
 
 	// Store the event in the output event file.
-	addGenEvent2File(det->eventfile, &event, status);
+	addEvent2File(elf, &event, status);
 	CHECK_STATUS_BREAK(*status);
 
       }
@@ -1176,58 +1151,6 @@ void GenDetReadoutLine(GenDet* const det, const int lineindex,
 
 void GenDetClearLine(GenDet* const det, const int lineindex) {
   clearGenDetLine(det->line[lineindex]);
-}
-
-
-
-void GenDetNewEventFile(GenDet* const det, const char* const filename, 
-			int* const status)
-{
-  // Check if there already is an open event file.
-  if (NULL!=det->eventfile) {
-    // Close the file
-    destroyGenEventFile(&det->eventfile, status);
-  }
-
-  // Filename of the template file.
-  char template[MAXMSG];
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(template, buffer);
-  } else {
-    *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not read environment variable 'SIXT_FITS_TEMPLATES'!\n", 
-		   *status);
-    return;
-  }
-
-  // Append the filename of the template file itself.
-  strcat(template, "/");
-  strcat(template, det->eventfile_template);
-
-  // Open a new event file from the specified template.
-  det->eventfile = openNewGenEventFile(filename, template, status);
-
-  // Insert the header keywords describing the detector.
-  if (fits_update_key(det->eventfile->fptr, TINT, "NXDIM", 
-		      &det->pixgrid->xwidth, "number of pixels in x-direction", 
-		      status)) return;
-  if (fits_update_key(det->eventfile->fptr, TINT, "NYDIM", 
-		      &det->pixgrid->ywidth, "number of pixels in y-direction", 
-		      status)) return;
-  if (fits_update_key(det->eventfile->fptr, TLONG, "DETCHANS",
-		      &det->rmf->NumberChannels, "number of EBOUNDS channels",
-		      status)) return;
-  if (fits_update_key(det->eventfile->fptr, TLONG, "TLMIN1",
-  		      &det->rmf->FirstChannel, "first channel of EBOUNDS",
-  		      status)) return;
-  long tlmax1 = det->rmf->FirstChannel + det->rmf->NumberChannels - 1;
-  if (fits_update_key(det->eventfile->fptr, TLONG, "TLMAX1",
-  		      &tlmax1, "last channel of EBOUNDS",
-  		      status)) return;
 }
 
 
@@ -1635,3 +1558,24 @@ void encounterGenDetBadPix(void* const data, const int x, const int y, const flo
   }
 }
 
+
+
+/*
+  // Insert the header keywords describing the detector.
+  if (fits_update_key(det->eventfile->fptr, TINT, "NXDIM", 
+		      &det->pixgrid->xwidth, "number of pixels in x-direction", 
+		      status)) return;
+  if (fits_update_key(det->eventfile->fptr, TINT, "NYDIM", 
+		      &det->pixgrid->ywidth, "number of pixels in y-direction", 
+		      status)) return;
+  if (fits_update_key(det->eventfile->fptr, TLONG, "DETCHANS",
+		      &det->rmf->NumberChannels, "number of EBOUNDS channels",
+		      status)) return;
+  if (fits_update_key(det->eventfile->fptr, TLONG, "TLMIN1",
+  		      &det->rmf->FirstChannel, "first channel of EBOUNDS",
+  		      status)) return;
+  long tlmax1 = det->rmf->FirstChannel + det->rmf->NumberChannels - 1;
+  if (fits_update_key(det->eventfile->fptr, TLONG, "TLMAX1",
+  		      &tlmax1, "last channel of EBOUNDS",
+  		      status)) return;
+*/

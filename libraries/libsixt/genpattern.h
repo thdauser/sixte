@@ -2,7 +2,7 @@
 #define GENPATTERN_H 1
 
 #include "sixt.h"
-#include "genevent.h"
+#include "event.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -13,7 +13,7 @@
 /** Generic event pattern on a pixelized X-ray detector. */
 typedef struct {
 
-  GenEvent event;
+  Event event;
 
   /** Split pattern type. Unknown (0), single (1), double (2), triple
       (3), quadruple (4), or invalid (-1). */

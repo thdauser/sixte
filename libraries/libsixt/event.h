@@ -1,5 +1,5 @@
-#ifndef GENEVENT_H 
-#define GENEVENT_H 1
+#ifndef EVENT_H 
+#define EVENT_H 1
 
 #include "sixt.h"
 
@@ -32,7 +32,7 @@ typedef struct {
       might be wrong due to energy or pattern pile-up. */
   int pileup;
 
-} GenEvent;
+} Event;
 
 
 /////////////////////////////////////////////////////////////////
@@ -41,4 +41,4 @@ typedef struct {
 
 
 
-#endif /* GENEVENT_H */
+#endif /* EVENT_H */

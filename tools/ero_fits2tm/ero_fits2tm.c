@@ -19,7 +19,7 @@
 
 
 struct Parameters {
-  char eventlist_filename[FILENAME_LENGTH];
+  char eventlist_filename[MAXFILENAME];
 };
 
 
@@ -231,7 +231,7 @@ int ero_fits2tm_main()
   enum Mode mode;
 
   eROSITAEventFile eventlistfile; // FITS file containing the event list
-  char output_filename[FILENAME_LENGTH];
+  char output_filename[MAXFILENAME];
   FILE *output_file = NULL;
   double binning_time; // Delta t (time step, length of each spectrum)
 

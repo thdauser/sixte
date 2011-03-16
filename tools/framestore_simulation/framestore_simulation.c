@@ -61,7 +61,7 @@ int framestore_simulation_main() {
 
 
     // Initialize HEADAS random number generator.
-    HDmtInit(SIXT_HD_RANDOM_SEED);
+    HDmtInit(-1);
 
 
     // DETECTOR setup.

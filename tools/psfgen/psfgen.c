@@ -16,7 +16,7 @@ int psfgen_main()
 {
   PSF* psf=NULL;
   // Output file (FITS file)
-  char psf_filename[FILENAME_LENGTH];
+  char psf_filename[MAXFILENAME];
   double focal_length; // [m]
   // HEW of on-axis Gaussian [deg].
   double hew;          

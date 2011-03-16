@@ -7,12 +7,12 @@
 #include "clocklist.h"
 #include "codedmask.h"
 #include "erodetbkgrndgen.h"
+#include "event.h"
+#include "eventlistfile.h"
 #include "gendetline.h"
 #include "geneventgrading.h"
 #include "genpixgrid.h"
 #include "gensplit.h"
-#include "genevent.h"
-#include "geneventfile.h"
 #include "impact.h"
 #include "psf.h"
 #include "rmf.h"
@@ -126,13 +126,6 @@ typedef struct {
   /** Bad pixel map. */
   BadPixMap* badpixmap;
 
-  /** Event file for the output of the detected events. */
-  GenEventFile* eventfile;
-  /** File name of the template for the event list FITS file. */
-  char eventfile_template[MAXMSG];
-  /** File name of the template for the pattern FITS file. */
-  char patternfile_template[MAXMSG];
-
 } GenDet;
 
 
@@ -158,12 +151,12 @@ void GenDetNewEventFile(GenDet* const det, const char* const filename,
 /** Add a new photon impact to the detector. The function return value
     is the number of affected valid detector pixels. */
 int addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
-			  int* const status);
+			  EventListFile* const elf, int* const status);
 
 /** Operate the time-triggered elements of the GenDet detector up to
     the specified point of time. */
-void operateGenDetClock(GenDet* const det, const double time, 
-			int* const status);
+void operateGenDetClock(GenDet* const det, EventListFile* elf,
+			const double time, int* const status);
 
 /** Shift the lines of the GenDet detector pixel array by one line
     into the direction of the read-out node in line 0. The charges in
@@ -176,8 +169,11 @@ void GenDetLineShift(GenDet* const det);
 /** Read-out a particular line of the GenDet pixel array and store the
     charges in the output event file. After read-out the charges
     in the pixels are deleted. */
-void GenDetReadoutLine(GenDet* const det, const int lineindex, 
-		       const int readoutindex, int* const status);
+void GenDetReadoutLine(GenDet* const det, 
+		       const int lineindex, 
+		       const int readoutindex, 
+		       EventListFile* const elf,
+		       int* const status);
 
 /** Clear a particular line of the GenDet pixel array. */
 void GenDetClearLine(GenDet* const det, const int lineindex);

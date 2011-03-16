@@ -1,6 +1,7 @@
 #ifndef EVENTFILE_H
 #define EVENTFILE_H (1)
 
+// OBSOLETE / DEPRECATED file!!
 
 #include "sixt.h"
 

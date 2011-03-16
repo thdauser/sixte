@@ -2,7 +2,7 @@
 #define GENDETLINE_H 1
 
 #include "sixt.h"
-#include "genevent.h"
+#include "event.h"
 #include "genpileupflag.h"
 
 

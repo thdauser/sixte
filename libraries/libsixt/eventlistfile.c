@@ -1,12 +1,12 @@
-#include "geneventfile.h"
+#include "eventlistfile.h"
 
 
-GenEventFile* newGenEventFile(int* const status)
+EventListFile* newEventListFile(int* const status)
 {
-  GenEventFile* file = (GenEventFile*)malloc(sizeof(GenEventFile));
+  EventListFile* file = (EventListFile*)malloc(sizeof(EventListFile));
   if (NULL==file) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenEventFile failed!\n", 
+    HD_ERROR_THROW("Error: Memory allocation for EventListFile failed!\n", 
 		   *status);
     return(file);
   }
@@ -29,7 +29,7 @@ GenEventFile* newGenEventFile(int* const status)
 
 
 
-void destroyGenEventFile(GenEventFile** const file, int* const status)
+void freeEventListFile(EventListFile** const file, int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
@@ -42,11 +42,11 @@ void destroyGenEventFile(GenEventFile** const file, int* const status)
 
 
 
-GenEventFile* openNewGenEventFile(const char* const filename,
-				  const char* const template,
-				  int* const status)
+EventListFile* openNewEventListFile(const char* const filename,
+				    const char* const template,
+				    int* const status)
 {
-  GenEventFile* file = newGenEventFile(status);
+  EventListFile* file = newEventListFile(status);
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Remove old file if it exists.
@@ -85,11 +85,11 @@ GenEventFile* openNewGenEventFile(const char* const filename,
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Close the file.
-  destroyGenEventFile(&file, status);
+  freeEventListFile(&file, status);
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Re-open the file.
-  file = openGenEventFile(filename, READWRITE, status);
+  file = openEventListFile(filename, READWRITE, status);
   if (EXIT_SUCCESS!=*status) return(file);
   
   return(file);
@@ -97,10 +97,10 @@ GenEventFile* openNewGenEventFile(const char* const filename,
 
 
 
-GenEventFile* openGenEventFile(const char* const filename,
-			       const int mode, int* const status)
+EventListFile* openEventListFile(const char* const filename,
+				 const int mode, int* const status)
 {
-  GenEventFile* file = newGenEventFile(status);
+  EventListFile* file = newEventListFile(status);
   if (EXIT_SUCCESS!=*status) return(file);
 
   headas_chat(4, "open event list file '%s' ...\n", filename);
@@ -131,8 +131,8 @@ GenEventFile* openGenEventFile(const char* const filename,
 
 
 
-void addGenEvent2File(GenEventFile* const file, GenEvent* const event, 
-		      int* const status)
+void addEvent2File(EventListFile* const file, Event* const event, 
+		   int* const status)
 {
   // Check if the event file has been opened.
   if (NULL==file) {
@@ -170,26 +170,26 @@ void addGenEvent2File(GenEventFile* const file, GenEvent* const event,
 
 
 
-void getGenEventFromFile(const GenEventFile* const file,
-			 const int row, GenEvent* const event,
-			 int* const status)
+void getEventFromFile(const EventListFile* const file,
+		      const int row, Event* const event,
+		      int* const status)
 {
   // Check if the file has been opened.
   if (NULL==file) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no GenEventFile opened!\n", *status);
+    HD_ERROR_THROW("Error: no EventListFile opened!\n", *status);
     return;
   }
   if (NULL==file->fptr) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no GenEventFile opened!\n", *status);
+    HD_ERROR_THROW("Error: no EventListFile opened!\n", *status);
     return;
   }
 
   // Check if there is still a row available.
   if (row > file->nrows) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: GenEventFile contains no further entries!\n", *status);
+    HD_ERROR_THROW("Error: EventListFile contains no further entries!\n", *status);
     return;
   }
 
@@ -236,9 +236,9 @@ void getGenEventFromFile(const GenEventFile* const file,
 
 
 
-void updateGenEventFromFile(const GenEventFile* const file,
-			    const int row, GenEvent* const event,
-			    int* const status)
+void updateEventInFile(const EventListFile* const file,
+		       const int row, Event* const event,
+		       int* const status)
 {
   if (fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
 		     1, 1, &event->time, status)) return;

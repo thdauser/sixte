@@ -3,6 +3,7 @@
 
 
 #include "sixt.h"
+#include "eventlistfile.h"
 #include "gendet.h"
 #include "impact.h"
 #include "impactlistfile.h"
@@ -17,9 +18,10 @@
 
 
 struct Parameters {
-  char xml_filename[MAXMSG];
-  char eventlist_filename[MAXMSG];
-  char impactlist_filename[MAXMSG];
+  char xml_filename[MAXFILENAME];
+  char impactlist_filename[MAXFILENAME];
+  char eventlist_filename[MAXFILENAME];
+  char eventlist_template[MAXFILENAME];
 
   double t0, exposure;
 

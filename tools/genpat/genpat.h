@@ -3,6 +3,8 @@
 
 
 #include "sixt.h"
+#include "event.h"
+#include "eventlistfile.h"
 #include "gendet.h"
 #include "genpattern.h"
 #include "genpatternfile.h"

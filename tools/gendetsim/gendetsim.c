@@ -17,6 +17,9 @@ int gendetsim_main() {
   // once.
   long n_detected_photons=0;
 
+  // Output event list file.
+  EventListFile* elf=NULL;
+
   int status=EXIT_SUCCESS; // Error status.
 
   // Register HEATOOL:
@@ -44,8 +47,10 @@ int gendetsim_main() {
     det = newGenDet(parameters.xml_filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    // Set the output event file.
-    GenDetNewEventFile(det, parameters.eventlist_filename, &status);
+    // Open the output event file.
+    elf = openNewEventListFile(parameters.eventlist_filename,
+			       parameters.eventlist_template,
+			       &status);
     if (EXIT_SUCCESS!=status) break;
 
     // --- END of Initialization ---
@@ -69,7 +74,7 @@ int gendetsim_main() {
       // Add the impact to the detector array. If it is absorbed
       // by at least one valid pixel, increase the counter for
       // the number of detected photons.
-      if (addGenDetPhotonImpact(det, &impact, &status) > 0) {
+      if (addGenDetPhotonImpact(det, &impact, elf, &status) > 0) {
 	n_detected_photons++;
       }
       if (EXIT_SUCCESS!=status) break;
@@ -80,17 +85,17 @@ int gendetsim_main() {
     
     // Finalize the GenDet. Perform the time-triggered operations 
     // without adding any new charges.
-    operateGenDetClock(det, parameters.t0+parameters.exposure, &status);
+    operateGenDetClock(det, elf, parameters.t0+parameters.exposure, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Store the number of simulated input photons in the FITS header
     // of the output event file.
-    if (fits_update_key(det->eventfile->fptr, TLONG, "NPHOTONS", 
+    if (fits_update_key(elf->fptr, TLONG, "NPHOTONS", 
 			&impactlistfile->nrows, "number of input photons", 
 			&status)) break;
     // Store the number of detected photons in the FITS header of
     // the output event file.
-    if (fits_update_key(det->eventfile->fptr, TLONG, "NDETECTD", 
+    if (fits_update_key(elf->fptr, TLONG, "NDETECTD", 
 			&n_detected_photons, "number of detected photons", 
 			&status)) break;
 
@@ -107,6 +112,9 @@ int gendetsim_main() {
 
   // Destroy the detector data structure.
   destroyGenDet(&det, &status);
+
+  // Close the event list FITS file.
+  freeEventListFile(&elf, &status);
 
   // Close the impact list FITS file.
   freeImpactListFile(&impactlistfile, &status);
@@ -159,6 +167,21 @@ int getpar(struct Parameters* const parameters)
 		   "number generator!\n", status);
     return(status);
   }
+
+  // Get the name of the FITS template directory.
+  // First try to read it from the environment variable.
+  // If the variable does not exist, read it from the PIL.
+  char* buffer;
+  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(parameters->eventlist_template, buffer);
+  } else {
+    if ((status = PILGetFname("fits_templates", parameters->eventlist_template))) {
+      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);      
+      return(status);
+    }
+  }
+  // Set the impact list template file:
+  strcat(parameters->eventlist_template, "/eventlist.tpl");
 
   return(status);
 }

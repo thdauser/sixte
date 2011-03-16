@@ -36,16 +36,11 @@
 
 /** Maximum length of a filename. */
 #define MAXFILENAME (512)
-/** Obsolete: maximum filename length (obsolete). */
-#define FILENAME_LENGTH (512)
 /** Maximum length of a message string. */
 #define MAXMSG (512)
 
 /** Not a Number. */
 #define SIXT_NAN (0./0.)
-
-/** Seed for the HEAdas random number generator (obsolete). */
-#define SIXT_HD_RANDOM_SEED (59843)
 
 
 /////////////////////////////////////////////////////////////////

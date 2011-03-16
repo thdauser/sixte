@@ -51,9 +51,9 @@ static void writePatternStatistics2FITSHeader(struct PatternStatistics stat,
 }
 
 
-static inline GenEvent emptyEvent() 
+static inline Event emptyEvent() 
 {
-  GenEvent empty_event = {.frame=0};
+  Event empty_event = {.frame=0};
   assert(0==empty_event.rawx);
   assert(0==empty_event.rawy);
   assert(0==empty_event.pileup);
@@ -66,7 +66,7 @@ static inline GenEvent emptyEvent()
 
 
 static inline void clearGenPatPixels(GenDet* const det, 
-				     GenEvent** const pixels) 
+				     Event** const pixels) 
 {
   int ii;
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
@@ -80,10 +80,10 @@ static inline void clearGenPatPixels(GenDet* const det,
 
 			     
 static void add2GenPatList(GenDet* const det, 
-			   GenEvent** const pixels, 
+			   Event** const pixels, 
 			   const int x, const int y, 
 			   const float split_threshold,
-			   GenEvent** const list, 
+			   Event** const list, 
 			   int* const nlist)
 {
   // Check if the pixel is already contained in the list.
@@ -137,7 +137,7 @@ static void add2GenPatList(GenDet* const det,
 
 
 static void findMaxCharge(GenDet* const det,
-			  GenEvent** const pixels,
+			  Event** const pixels,
 			  int* const x, 
 			  int* const y)
 {
@@ -193,12 +193,12 @@ static void findMaxCharge(GenDet* const det,
 
 
 static void GenPatIdentification(GenDet* const det, 
-				 GenEvent** const pixels, 
+				 Event** const pixels, 
 				 GenPatternFile* const file, 
 				 struct PatternStatistics* const patstat,
 				 int* const status)
 {
-  GenEvent* list[1000];
+  Event* list[1000];
   int nlist;
 
   // Loop over all pixels, searching charges/PHA values above 
@@ -368,10 +368,12 @@ int genpat_main() {
   struct Parameters parameters; 
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;
+  // Input event list file.
+  EventListFile* elf=NULL;
   // Output event file. 
   GenPatternFile* output_file=NULL;
   // Detector pixel array.
-  GenEvent** pixels=NULL;
+  Event** pixels=NULL;
   // Pattern statistics. Count the numbers of the individual pattern types
   // and store this information in the output event file.
   struct PatternStatistics patstat=emptyPatternStatistics();
@@ -391,7 +393,7 @@ int genpat_main() {
     headas_chat(3, "initialization ...\n");
 
     // Initialize HEADAS random number generator.
-    HDmtInit(SIXT_HD_RANDOM_SEED);
+    HDmtInit(-1);
 
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
@@ -411,7 +413,7 @@ int genpat_main() {
     }
 
     // Set the input event file.
-    det->eventfile=openGenEventFile(parameters.eventlist_filename, 
+    elf=openEventListFile(parameters.eventlist_filename, 
 				    READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
@@ -432,7 +434,7 @@ int genpat_main() {
     }
     // Append the filename of the template file itself.
     strcat(template, "/");
-    strcat(template, det->patternfile_template);
+    strcat(template, "genpatternfile.tpl");
     // Open a new pattern file from the specified template.
     output_file = openNewGenPatternFile(parameters.patternlist_filename, template, &status);
     if (EXIT_SUCCESS!=status) break;
@@ -442,59 +444,59 @@ int genpat_main() {
 
     // Total number of simulated photons.
     long n_input_photons=0; 
-    if (fits_read_key(det->eventfile->fptr, TLONG, "NPHOTONS", 
+    if (fits_read_key(elf->fptr, TLONG, "NPHOTONS", 
 		      &n_input_photons, comment, &status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NPHOTONS", 
+    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "NPHOTONS", 
 			&n_input_photons, "number of input photons", 
 			&status)) break;
 
     // Total number of detected photons.
     long n_detected_photons=0; 
-    if (fits_read_key(det->eventfile->fptr, TLONG, "NDETECTD", 
+    if (fits_read_key(elf->fptr, TLONG, "NDETECTD", 
 		      &n_detected_photons, comment, &status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "NDETECTD", 
+    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "NDETECTD", 
 			&n_detected_photons, "number of detected photons", 
 			&status)) break;
 
     // Number of EBOUNDS channels (DETCHANS).
     long detchans=0; 
-    if (fits_read_key(det->eventfile->fptr, TLONG, "DETCHANS", 
+    if (fits_read_key(elf->fptr, TLONG, "DETCHANS", 
 		      &detchans, comment, &status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "DETCHANS", 
+    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "DETCHANS", 
 			&detchans, comment, &status)) break;
 
     // First EBOUNDS channel.
     long tlmin1=0; 
-    if (fits_read_key(det->eventfile->fptr, TLONG, "TLMIN1", 
+    if (fits_read_key(elf->fptr, TLONG, "TLMIN1", 
 		      &tlmin1, comment, &status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "TLMIN1", 
+    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "TLMIN1", 
 			&tlmin1, comment, &status)) break;    
 
     // Last EBOUNDS channel.
     long tlmax1=0; 
-    if (fits_read_key(det->eventfile->fptr, TLONG, "TLMAX1", 
+    if (fits_read_key(elf->fptr, TLONG, "TLMAX1", 
 		      &tlmax1, comment, &status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TLONG, "TLMAX1", 
+    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "TLMAX1", 
 			&tlmax1, comment, &status)) break;    
 
     // Number of pixels in x-direction.
     long nxdim=0; 
-    if (fits_read_key(det->eventfile->fptr, TINT, "NXDIM", 
+    if (fits_read_key(elf->fptr, TINT, "NXDIM", 
 		      &nxdim, comment, &status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TINT, "NXDIM", 
+    if (fits_update_key(output_file->eventlistfile->fptr, TINT, "NXDIM", 
 			&nxdim, comment, &status)) break;
 
     // Number of pixels in y-direction.
     long nydim=0; 
-    if (fits_read_key(det->eventfile->fptr, TINT, "NYDIM", 
+    if (fits_read_key(elf->fptr, TINT, "NYDIM", 
 		      &nydim, comment, &status)) break;
-    if (fits_update_key(output_file->geneventfile->fptr, TINT, "NYDIM", 
+    if (fits_update_key(output_file->eventlistfile->fptr, TINT, "NYDIM", 
 			&nydim, comment, &status)) break;    
     // END of copying header keywords.
 
 
     // Allocate memory for the pixel array used for the pattern identification.
-    pixels=(GenEvent**)malloc(det->pixgrid->xwidth*sizeof(GenEvent*));
+    pixels=(Event**)malloc(det->pixgrid->xwidth*sizeof(Event*));
     if (NULL==pixels) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: Memory allocation for pixel array failed!\n", status);
@@ -502,7 +504,7 @@ int genpat_main() {
     }
     int ii;
     for (ii=0; ii<det->pixgrid->xwidth; ii++) {
-      pixels[ii]=(GenEvent*)malloc(det->pixgrid->ywidth*sizeof(GenEvent));
+      pixels[ii]=(Event*)malloc(det->pixgrid->ywidth*sizeof(Event));
       if (NULL==pixels[ii]) {
 	status = EXIT_FAILURE;
 	HD_ERROR_THROW("Error: Memory allocation for pixel array failed!\n", status);
@@ -531,16 +533,16 @@ int genpat_main() {
 
     // Loop over all events in the FITS file. The last detector 
     // frame is NOT neglected.
-    GenEvent event;
+    Event event;
     long row;
     long frame=0;
     int last_loop=0;
-    for (row=0; row<=det->eventfile->nrows; row++) {
+    for (row=0; row<=elf->nrows; row++) {
 
-      if (row<det->eventfile->nrows) {
+      if (row<elf->nrows) {
 	last_loop=0;
 	// Read the next event from the file.
-	getGenEventFromFile(det->eventfile, row+1, &event, &status);
+	getEventFromFile(elf, row+1, &event, &status);
 	if (EXIT_SUCCESS!=status) break;
       } else {
 	last_loop = 1;
@@ -574,7 +576,7 @@ int genpat_main() {
     headas_printf("\n");
 
     // Store the pattern statistics in the FITS header.
-    writePatternStatistics2FITSHeader(patstat, output_file->geneventfile->fptr, &status);
+    writePatternStatistics2FITSHeader(patstat, output_file->eventlistfile->fptr, &status);
     if (EXIT_SUCCESS!=status) break;
 
   } while(0); // END of the error handling loop.

@@ -12,12 +12,11 @@ GenPatternFile* newGenPatternFile(int* const status)
   }
 
   // Initialize pointers with NULL.
-  file->geneventfile=NULL;
+  file->eventlistfile=NULL;
 
   // Initialize.
   file->cpat_type=0;
   file->cphas    =0;
-  //  file->geneventfile=newGenEventFile(status);
 
   return(file);
 }
@@ -28,8 +27,8 @@ void destroyGenPatternFile(GenPatternFile** const file,
 			   int* const status)
 {
   if (NULL!=*file) {
-    if (NULL!=(*file)->geneventfile) {
-      destroyGenEventFile(&(*file)->geneventfile, status);
+    if (NULL!=(*file)->eventlistfile) {
+      freeEventListFile(&(*file)->eventlistfile, status);
     }
     free(*file);
     *file=NULL;
@@ -48,8 +47,8 @@ GenPatternFile* openNewGenPatternFile(const char* const filename,
   // Remove old file if it exists.
   remove(filename);
 
-  // Open the GenEventFile.
-  file->geneventfile = openNewGenEventFile(filename, template, status);
+  // Open the EventListFile.
+  file->eventlistfile = openNewEventListFile(filename, template, status);
 
   // Close the file.
   destroyGenPatternFile(&file, status);
@@ -73,12 +72,12 @@ GenPatternFile* openGenPatternFile(const char* const filename,
   headas_chat(4, "open pattern file '%s' ...\n", filename);
 
   // Call underlying open routine.
-  file->geneventfile = openGenEventFile(filename, mode, status);
+  file->eventlistfile = openEventListFile(filename, mode, status);
 
-  if(fits_get_colnum(file->geneventfile->fptr, CASEINSEN, 
+  if(fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
 		     "PAT_TYPE", &file->cpat_type, status)) 
     return(file);
-  if(fits_get_colnum(file->geneventfile->fptr, CASEINSEN, 
+  if(fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
 		     "PHAS", &file->cphas, status)) 
     return(file);
 
@@ -92,13 +91,13 @@ void addGenPattern2File(GenPatternFile* const file,
 			int* const status)
 {
   // Call underlying routine.
-  addGenEvent2File(file->geneventfile, &pattern->event, status);
+  addEvent2File(file->eventlistfile, &pattern->event, status);
   
-  if (fits_write_col(file->geneventfile->fptr, TINT, 
-		     file->cpat_type, file->geneventfile->row, 
+  if (fits_write_col(file->eventlistfile->fptr, TINT, 
+		     file->cpat_type, file->eventlistfile->row, 
 		     1, 1, &pattern->pat_type, status)) return;
-  if (fits_write_col(file->geneventfile->fptr, TLONG, 
-		     file->cphas, file->geneventfile->row, 
+  if (fits_write_col(file->eventlistfile->fptr, TLONG, 
+		     file->cphas, file->eventlistfile->row, 
 		     1, 9, &pattern->phas, status)) return;
 }
 

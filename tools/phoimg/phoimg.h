@@ -14,11 +14,11 @@
 
 
 struct Parameters {
-  char attitude_filename[MAXMSG];   // input: attitude file
-  char photonlist_filename[MAXMSG]; // input: photon list
-  char xml_filename[MAXMSG];        // input: detector XML description
-  char impactlist_filename[MAXMSG]; // output: impact list
-  char impactlist_template[MAXMSG];
+  char attitude_filename[MAXFILENAME];   // input: attitude file
+  char photonlist_filename[MAXFILENAME]; // input: photon list
+  char xml_filename[MAXFILENAME];        // input: detector XML description
+  char impactlist_filename[MAXFILENAME]; // output: impact list
+  char impactlist_template[MAXFILENAME];
 
   double t0;       // starting time of the simulation
   double exposure; // time span of the simulation

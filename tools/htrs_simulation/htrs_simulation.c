@@ -40,7 +40,7 @@ int htrs_simulation_main() {
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
-    HDmtInit(SIXT_HD_RANDOM_SEED);
+    HDmtInit(-1);
 
 
     // Open the impact list FITS file.

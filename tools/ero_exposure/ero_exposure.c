@@ -18,9 +18,9 @@
 
 /* Program parameters */
 struct Parameters {
-  char attitude_filename[FILENAME_LENGTH];    // filename of the attitude file
-  char vignetting_filename[FILENAME_LENGTH];  // filename of the vignetting file
-  char exposuremap_filename[FILENAME_LENGTH]; // output: exposure map
+  char attitude_filename[MAXFILENAME];    // filename of the attitude file
+  char vignetting_filename[MAXFILENAME];  // filename of the vignetting file
+  char exposuremap_filename[MAXFILENAME]; // output: exposure map
   
   double t0;
   double timespan;
