@@ -29,11 +29,11 @@ int gendetsim_main() {
 
     headas_chat(3, "initialization ...\n");
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(SIXT_HD_RANDOM_SEED);
-
-    // Read parameters using PIL library:
+    // Read parameters using PIL library.
     if ((status=getpar(&parameters))) break;
+
+    // Initialize HEADAS random number generator.
+    HDmtInit(parameters.random_seed);
 
     // Open the FITS file with the input impact list:
     impactlistfile = openImpactListFile(parameters.impactlist_filename,
@@ -63,7 +63,7 @@ int gendetsim_main() {
       if(EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
-      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) 
+      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.exposure)) 
 	continue;
 
       // Add the impact to the detector array. If it is absorbed
@@ -80,7 +80,7 @@ int gendetsim_main() {
     
     // Finalize the GenDet. Perform the time-triggered operations 
     // without adding any new charges.
-    operateGenDetClock(det, parameters.t0+parameters.timespan, &status);
+    operateGenDetClock(det, parameters.t0+parameters.exposure, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Store the number of simulated input photons in the FITS header
@@ -126,26 +126,38 @@ int getpar(struct Parameters* const parameters)
   // Get the name of the input impact list file (FITS file).
   if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the input impact list file!\n", status);
+    return(status);
   }
 
   // Get the name of the output event list file (FITS file).
-  else if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
+  if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
     HD_ERROR_THROW("Error reading the name of the output event list file!\n", status);
+    return(status);
   }
 
   // Get the name of the detector XML description file (FITS file).
-  else if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
+  if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
     HD_ERROR_THROW("Error reading the name of the detector definition XML file!\n", status);
+    return(status);
   }
 
   // Get the start time t0.
-  else if ((status = PILGetReal("t0", &parameters->t0))) {
+  if ((status = PILGetReal("t0", &parameters->t0))) {
     HD_ERROR_THROW("Error reading the start time t0!\n", status);
+    return(status);
   }
 
   // Get the time interval.
-  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
-    HD_ERROR_THROW("Error reading the simulated timespan!\n", status);
+  if ((status = PILGetReal("exposure", &parameters->exposure))) {
+    HD_ERROR_THROW("Error reading the simulated exposure!\n", status);
+    return(status);
+  }
+
+  // Get the seed for the random number generator.
+  if ((status = PILGetInt("random_seed", &parameters->random_seed))) {
+    HD_ERROR_THROW("Error reading the seed for the random "
+		   "number generator!\n", status);
+    return(status);
   }
 
   return(status);

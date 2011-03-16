@@ -20,8 +20,8 @@ struct Parameters {
   char impactlist_filename[MAXMSG]; // output: impact list
   char impactlist_template[MAXMSG];
 
-  double t0;        // starting time of the simulation
-  double timespan;  // time span of the simulation
+  double t0;       // starting time of the simulation
+  double exposure; // time span of the simulation
 
   int random_seed;
 };

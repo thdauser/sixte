@@ -32,18 +32,15 @@ int phoimg_main() {
 
     // Initialize the detector data structure.
     det = newGenDet(parameters.xml_filename, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
     
-    // Initialize HEADAS random number generator. Add the telescope number
-    // to the standard seed in order to avoid getting the same random number
-    // sequence for all the 7 telescopes. This results in problems due to
-    // event correlation.
+    // Initialize HEADAS random number generator.
     HDmtInit(parameters.random_seed);
 
     // Open the FITS file with the input photon list:
     photonlistfile=openPhotonListFile(parameters.photonlist_filename, 
 				      READONLY, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Open the attitude file specified in the header keywords of the photon list.
     char comment[MAXMSG]; // String buffer.
@@ -52,7 +49,7 @@ int phoimg_main() {
 		      comment, &status)) break;
     if (0<strlen(parameters.attitude_filename)) {
       if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
-					parameters.t0, parameters.timespan, 
+					parameters.t0, parameters.exposure, 
 					&status))) break;
     } else {
       status=EXIT_FAILURE;
@@ -76,10 +73,10 @@ int phoimg_main() {
     // --- Beginning of Imaging Process ---
 
     // Beginning of actual simulation (after loading required data):
-    headas_chat(5, "start imaging process ...\n");
+    headas_chat(3, "start imaging process ...\n");
 
     phimg(det, ac, photonlistfile, impactlistfile,
-	  parameters.t0, parameters.timespan, &status);
+	  parameters.t0, parameters.exposure, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- END of imaging process ---
@@ -117,28 +114,32 @@ int phoimg_getpar(struct Parameters* parameters)
   if ((status = PILGetFname("photonlist_filename", 
 			    parameters->photonlist_filename))) {
     HD_ERROR_THROW("Error reading the filename of the photon list!\n", status);
+    return(status);
   }
   
   // Get the filename of the XML detector description.
-  else if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
+  if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
     HD_ERROR_THROW("Error reading the filename of the XML detector description!\n", status);
+    return(status);
   }
 
   // Get the filename of the impact list output file (FITS file)
-  else if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
+  if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
     HD_ERROR_THROW("Error reading the filename of the impact list output file!\n", status);
+    return(status);
   }
 
   // Get the start time of the simulation
-  else if ((status = PILGetReal("t0", &parameters->t0))) {
+  if ((status = PILGetReal("t0", &parameters->t0))) {
     HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
+    return(status);
   }
 
   // Get the timespan for the simulation
-  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
-    HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
+  if ((status = PILGetReal("exposure", &parameters->exposure))) {
+    HD_ERROR_THROW("Error reading the 'exposure' parameter!\n", status);
+    return(status);
   }
-  if (EXIT_SUCCESS!=status) return(status);
 
   // Get the seed for the random number generator.
   if ((status = PILGetInt("random_seed", &parameters->random_seed))) {
@@ -156,6 +157,7 @@ int phoimg_getpar(struct Parameters* parameters)
   } else {
     if ((status = PILGetFname("fits_templates", parameters->impactlist_template))) {
       HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);      
+      return(status);
     }
   }
   // Set the impact list template file:

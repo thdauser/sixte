@@ -21,7 +21,9 @@ struct Parameters {
   char eventlist_filename[MAXMSG];
   char impactlist_filename[MAXMSG];
 
-  double t0, timespan;
+  double t0, exposure;
+
+  int random_seed;
 };
 
 

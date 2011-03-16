@@ -3,7 +3,7 @@ xml_filename,fre,lq,"/home/schmid/share/sixt/xml/eroframestore.xml",,,"XML file 
 impactlist_filename,f,lq,"impacts_2Crab.fits",,,"impact list file (FITS output file)"
 fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
 t0,r,lq,0.0,0.0,,"t0 - start time (s)  NOT USED! "
-timespan,r,lq,5.0,0.0,1000000000.0,"time interval for the measurement simulation (s) "
+exposure,r,lq,1000.0,0.0,,"time interval for the measurement simulation (s)"
 random_seed,i,-1,0,,,"seed for random number generator"
 chatter,i,lh,5,,,"chatter: control verbosity of the program"
 history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"
