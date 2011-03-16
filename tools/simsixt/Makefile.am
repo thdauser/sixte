@@ -13,15 +13,15 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = simx2.par
+dist_pfiles_DATA = simsixt.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and
 # stored in the 'bin' directory.
-bin_PROGRAMS = simx2
+bin_PROGRAMS = simsixt
 
-simx2_SOURCES = simx2.c simx2.h
-simx2_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
+simsixt_SOURCES = simsixt.c simsixt.h
+simsixt_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
 

@@ -1,5 +1,5 @@
-#ifndef SIMX2_H
-#define SIMX2_H 1
+#ifndef SIMSIXT_H
+#define SIMSIXT_H 1
 
 #include "sixt.h"
 
@@ -12,7 +12,7 @@
 #include "vector.h"
 #include "xraysourcecatalog.h"
 
-#define TOOLSUB simx2_main
+#define TOOLSUB simsixt_main
 #include "headas_main.c"
 
 
@@ -45,8 +45,8 @@ struct Parameters {
 };
 
 
-int simx2_getpar(struct Parameters* const par);
+int simsixt_getpar(struct Parameters* const par);
 
 
-#endif /* SIMX2_H */
+#endif /* SIMSIXT_H */
 

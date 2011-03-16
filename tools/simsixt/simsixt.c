@@ -1,7 +1,7 @@
-#include "simx2.h"
+#include "simsixt.h"
 
 
-int simx2_main() 
+int simsixt_main() 
 {
   // Program parameters.
   struct Parameters par;
@@ -26,7 +26,7 @@ int simx2_main()
 
 
   // Register HEATOOL
-  set_toolname("simx2");
+  set_toolname("simsixt");
   set_toolversion("0.01");
 
 
@@ -35,7 +35,7 @@ int simx2_main()
     // ---- Initialization ----
     
     // Read the parameters using PIL.
-    status=simx2_getpar(&par);
+    status=simsixt_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
     // Initialize HEADAS random number generator.
@@ -166,7 +166,7 @@ int simx2_main()
 
 
 
-int simx2_getpar(struct Parameters* const par)
+int simsixt_getpar(struct Parameters* const par)
 {
   int status = EXIT_SUCCESS; // Error status.
 
