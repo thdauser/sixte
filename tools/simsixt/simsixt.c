@@ -41,6 +41,8 @@ int simsixt_main()
     status=simsixt_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
+    headas_chat(3, "initialize ...\n");
+
     // Initialize HEADAS random number generator.
     HDmtInit(par.random_seed);
 
@@ -114,6 +116,8 @@ int simsixt_main()
 
     // --- Simulation Process ---
 
+    headas_chat(3, "start photon generation ...\n");
+
     // Set up photon list file.
     // Template for the photon list file.
     char photonlist_template[MAXFILENAME];
@@ -151,9 +155,10 @@ int simsixt_main()
     CHECK_STATUS_BREAK(status);
 
 
+    headas_chat(3, "start photon imaging ...\n");
+
     // Reset internal line counter of photon list file.
     plf->row=0;
-
 
     // Set up impact list file.
     // Template for the impact list file.
@@ -193,6 +198,8 @@ int simsixt_main()
     // Close the photon list file in order to save memory.
     freePhotonListFile(&plf, &status);
  
+
+    headas_chat(3, "start photon detection ...\n");
 
     // Reset internal line counter of impact list file.
     ilf->row=0;
