@@ -109,37 +109,102 @@ int simsixt_main()
     }
     // END of setting up the source catalog.
 
-    // Set up photon list file.
-    // TODO
-    // Template for the photon list file.
-    //    char photonlist_template[] = "/home/schmid/share/sixt/templates/photonlist.tpl";
-
-    // Remove the old photon list file.
-    // remove(photon_filename);
-
-    // TODO 
-    // Set up impact list file.
-
 
     // --- End of Initialization ---
 
 
     // --- Simulation Process ---
 
+    // Set up photon list file.
+    // Template for the photon list file.
+    char photonlist_template[MAXFILENAME];
+    char photonlist_filename[MAXFILENAME];
+    strcpy(photonlist_template, par.fits_templates);
+    strcat(photonlist_template, "/photonlist.tpl");
+
+    if (strlen(par.photonlist_filename)>0) {
+      strcpy(photonlist_filename, par.photonlist_filename);
+
+      // If the old file should be removed, when it already exists,
+      // the filename has to start with an exclamation mark ('!').
+
+    } else {
+      // No photon list file has been given. Therefore create a temporary 
+      // file, which resides in the memory and is removed after the program 
+      // terminates.
+      // Open with prefix 'mem://'.
+      strcpy(photonlist_filename, "mem://photons.fits");
+    }
+
+    // Open the output photon list file.
+    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, &status);
+    CHECK_STATUS_BREAK(status);
+    // Set the attitude filename in the photon list (obsolete).
+    char buffer[MAXMSG];
+    strcpy(buffer, par.attitude_filename);
+    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", buffer,
+		    "attitude file", &status);
+    CHECK_STATUS_BREAK(status);
+
+
     // Photon Generation.
     phgen(det, ac, srccat, plf, par.t0, par.t0+par.exposure, &status);
     CHECK_STATUS_BREAK(status);
 
-    // TODO Reset internal line counter of photon list file.
+
+    // Reset internal line counter of photon list file.
+    plf->row=0;
+
+
+    // Set up impact list file.
+    // Template for the impact list file.
+    char impactlist_template[MAXFILENAME];
+    char impactlist_filename[MAXFILENAME];
+    strcpy(impactlist_template, par.fits_templates);
+    strcat(impactlist_template, "/impactlist.tpl");
+
+    if (strlen(par.impactlist_filename)>0) {
+      strcpy(impactlist_filename, par.impactlist_filename);
+
+      // If the old file should be removed, when it already exists,
+      // the filename has to start with an exclamation mark ('!').
+
+    } else {
+      // No impact list file has been given. Therefore create a temporary 
+      // file, which resides in the memory and is removed after the program 
+      // terminates.
+      // Open with prefix 'mem://'.
+      strcpy(impactlist_filename, "mem://impacts.fits");
+    }
+
+    // Open the output impact list file.
+    ilf=openNewImpactListFile(impactlist_filename, impactlist_template, &status);
+    CHECK_STATUS_BREAK(status);
+    // Set the attitude filename in the impact list (obsolete).
+    strcpy(buffer, par.attitude_filename);
+    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", buffer,
+		    "attitude file", &status);
+    CHECK_STATUS_BREAK(status);
+
 
     // Photon Imaging.
     phimg(det, ac, plf, ilf, par.t0, par.t0+par.exposure, &status);
     CHECK_STATUS_BREAK(status);
 
-    // TODO Reset internal line counter of impact list file.
+    // Close the photon list file in order to save memory.
+    freePhotonListFile(&plf, &status);
+ 
+
+    // Reset internal line counter of impact list file.
+    ilf->row=0;
+
 
     // Photon Detection.
     // TODO
+
+
+    // Close the impact list file in order to save memory.
+    freeImpactListFile(&ilf, &status);
 
     // --- End of simulation process ---
 
@@ -272,6 +337,18 @@ int simsixt_getpar(struct Parameters* const par)
   // Get the exposure time for the simulation.
   if ((status = PILGetReal("exposure", &par->exposure))) {
     HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    return(status);
+  }
+
+  // Get the filename of the output photon list file.
+  if ((status = PILGetString("photonlist_filename", par->photonlist_filename))) {
+    HD_ERROR_THROW("Error reading the name of the output photon list file!\n", status);
+    return(status);
+  }
+
+  // Get the filename of the output impact list file.
+  if ((status = PILGetString("impactlist_filename", par->impactlist_filename))) {
+    HD_ERROR_THROW("Error reading the name of the output impact list file!\n", status);
     return(status);
   }
 

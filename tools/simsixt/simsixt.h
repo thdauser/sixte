@@ -35,6 +35,8 @@ struct Parameters {
   float src_mono_energy;
   char src_image_filename[MAXFILENAME];
 
+  char photonlist_filename[MAXFILENAME];
+  char impactlist_filename[MAXFILENAME];
   char eventlist_filename[MAXFILENAME];
 
   double t0, exposure;
