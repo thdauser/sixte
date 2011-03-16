@@ -6,7 +6,6 @@
 
 
 #include "sixt.h"
-#include "sixt_string.h"
 #include "erositaevent.h"
 #include "erositaeventfile.h"
 

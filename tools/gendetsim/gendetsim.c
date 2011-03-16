@@ -109,7 +109,7 @@ int gendetsim_main() {
   destroyGenDet(&det, &status);
 
   // Close the impact list FITS file.
-  destroyImpactListFile(&impactlistfile, &status);
+  freeImpactListFile(&impactlistfile, &status);
 
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);

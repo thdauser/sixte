@@ -82,7 +82,7 @@ int comadet_main() {
   freeCoMaDetector(detector);
 
   // Close the FITS files.
-  destroyImpactListFile(&impactlistfile, &status);
+  freeImpactListFile(&impactlistfile, &status);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);

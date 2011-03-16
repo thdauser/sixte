@@ -4,12 +4,9 @@
 #error "Do not compile outside Autotools!"
 #endif
 
-//#include <omp.h>
-
 #include "sixt.h"
 #include "vector.h"
 #include "point.h"
-#include "sixt_random.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
 #include "check_fov.h"

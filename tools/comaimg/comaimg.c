@@ -191,7 +191,7 @@ int comaimg_main() {
   HDmtFree();
 
   // Close the FITS files.
-  destroyImpactListFile(&impactlistfile, &status);
+  freeImpactListFile(&impactlistfile, &status);
   freePhotonListFile(&photonlistfile, &status);
 
   freeAttitudeCatalog(&attitudecatalog);

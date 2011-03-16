@@ -250,7 +250,7 @@ int htrs_pixel_intensity_main()
   // --- Clean up ---
 
   // Close the impact list file.
-  destroyImpactListFile(&impactlistfile, &status);
+  freeImpactListFile(&impactlistfile, &status);
 
 #ifdef HTRS_HEXPIXELS
   // Loop over the different pixel widths.

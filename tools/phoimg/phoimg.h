@@ -3,18 +3,11 @@
 
 
 #include "sixt.h"
-#include "vector.h"
-#include "check_fov.h"
-#include "sixt_random.h"
-#include "psf.h"
-#include "photon.h"
-#include "photonlistfile.h"
-#include "impact.h"
-#include "impactlistfile.h"
 #include "attitudecatalog.h"
-#include "telescope.h"
-#include "vignetting.h"
 #include "gendet.h"
+#include "impactlistfile.h"
+#include "photonlistfile.h"
+#include "phimg.h"
 
 #define TOOLSUB phoimg_main
 #include "headas_main.c"
@@ -27,11 +20,10 @@ struct Parameters {
   char impactlist_filename[MAXMSG]; // output: impact list
   char impactlist_template[MAXMSG];
 
-  /** Telescope number */
-  int telescope;
-
   double t0;        // starting time of the simulation
   double timespan;  // time span of the simulation
+
+  int random_seed;
 };
 
 

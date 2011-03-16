@@ -200,7 +200,7 @@ int htrs_simulation_main() {
   HDmtFree();
 
   // Close the FITS files.
-  destroyImpactListFile(&impactlistfile, &status);
+  freeImpactListFile(&impactlistfile, &status);
 
   // Release memory of detector.
   status+=cleanupHTRSDetector(&detector);

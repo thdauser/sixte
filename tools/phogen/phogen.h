@@ -23,6 +23,8 @@ struct Parameters {
   char photonlist_template[MAXFILENAME];
 
   double t0, timespan;
+
+  int random_seed;
 };
 
 

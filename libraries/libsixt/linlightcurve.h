@@ -2,7 +2,6 @@
 #define LINLIGHTCURVE_H 1
 
 #include "sixt.h"
-#include "sixt_random.h"
 
 // GSL header files
 #include <gsl/gsl_errno.h>

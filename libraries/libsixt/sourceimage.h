@@ -2,7 +2,6 @@
 #define SOURCEIMAGE_H 1
 
 #include "sixt.h"
-#include "sixt_random.h"
 #include "spectrum.h"
 
 

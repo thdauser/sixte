@@ -18,6 +18,9 @@ int simx2_main()
   // Photon list file.
   PhotonListFile* plf=NULL;
 
+  // Impact list file.
+  ImpactListFile* ilf=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
@@ -98,7 +101,6 @@ int simx2_main()
       srccat = newXRaySourceCatalog(&status);
       CHECK_STATUS_BREAK(status);
 
-      // TODO
       status=EXIT_FAILURE;
       headas_printf("Error: source specification on the command line not "
 		    "is not implemented yet!\n");
@@ -115,6 +117,9 @@ int simx2_main()
     // Remove the old photon list file.
     // remove(photon_filename);
 
+    // TODO 
+    // Set up impact list file.
+
 
     // --- End of Initialization ---
 
@@ -125,8 +130,13 @@ int simx2_main()
     phgen(det, ac, srccat, plf, par.t0, par.t0+par.exposure, &status);
     CHECK_STATUS_BREAK(status);
 
+    // TODO Reset internal line counter of photon list file.
+
     // Photon Imaging.
-    // TODO
+    phimg(det, ac, plf, ilf, par.t0, par.t0+par.exposure, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // TODO Reset internal line counter of impact list file.
 
     // Photon Detection.
     // TODO
@@ -141,6 +151,7 @@ int simx2_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
+  freeImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeXRaySourceCatalog(&srccat);
   freeAttitudeCatalog(&ac);
@@ -271,7 +282,7 @@ int simx2_getpar(struct Parameters* const par)
     return(status);
   }
 
-  // Get the filename of the output event list file.
+  // Get the seed for the random number generator.
   if ((status = PILGetInt("random_seed", &par->random_seed))) {
     HD_ERROR_THROW("Error reading the seed for the random "
 		   "number generator!\n", status);

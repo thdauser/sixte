@@ -5,7 +5,6 @@
 #include "sixt.h"
 #include "vector.h"
 #include "check_fov.h"
-#include "sixt_random.h"
 #include "photon.h"
 #include "photonlistfile.h"
 #include "impact.h"

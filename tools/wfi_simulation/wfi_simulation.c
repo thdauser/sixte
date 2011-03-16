@@ -114,7 +114,7 @@ int wfi_simulation_main() {
   HDmtFree();
 
   // Close the FITS files.
-  destroyImpactListFile(&impactlistfile, &status);
+  freeImpactListFile(&impactlistfile, &status);
 
   // Release memory of detector.
   status+=cleanupWFIDetector(&detector);

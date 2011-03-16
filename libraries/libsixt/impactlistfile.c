@@ -27,12 +27,13 @@ ImpactListFile* newImpactListFile(int* const status)
 
 
 
-void destroyImpactListFile(ImpactListFile** file, int* const status)
+void freeImpactListFile(ImpactListFile** const file, int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
       fits_close_file((*file)->fptr, status);
-      (*file)->fptr=NULL;
+      headas_chat(5, "closed impact list file (containing %ld rows).\n", 
+		  (*file)->nrows);
     }
     free(*file);
     *file=NULL;
@@ -129,7 +130,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Close the new ImpactListFile.
-  destroyImpactListFile(&file, status);
+  freeImpactListFile(&file, status);
   if (EXIT_SUCCESS!=*status) return(file);
   
   // Re-open the file.

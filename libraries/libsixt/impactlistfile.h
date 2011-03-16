@@ -39,7 +39,7 @@ typedef struct {
 ImpactListFile* newImpactListFile(int* const status);
 
 /** Destructor. */
-void destroyImpactListFile(ImpactListFile** file, int* const status);
+void freeImpactListFile(ImpactListFile** const file, int* const status);
 
 /** Open an existing ImpactListFile. */
 ImpactListFile* openImpactListFile(const char* const filename,

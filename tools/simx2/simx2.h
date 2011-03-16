@@ -3,11 +3,11 @@
 
 #include "sixt.h"
 
-//#include <wcslib/wcslib.h>
-
 #include "attitudecatalog.h"
 #include "gendet.h"
+#include "impactlistfile.h"
 #include "phgen.h"
+#include "phimg.h"
 #include "photonlistfile.h"
 #include "vector.h"
 #include "xraysourcecatalog.h"

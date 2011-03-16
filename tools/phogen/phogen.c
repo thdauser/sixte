@@ -35,7 +35,7 @@ int phogen_main()
     CHECK_STATUS_BREAK(status);
 
     // Initialize HEADAS random number generator.
-    HDmtInit(SIXT_HD_RANDOM_SEED);
+    HDmtInit(parameters.random_seed);
     
     // Load the detector configuration.
     det=newGenDet(parameters.xml_filename, &status);
@@ -142,6 +142,13 @@ int phogen_getpar(struct Parameters* parameters)
     HD_ERROR_THROW(msg, status);
   }
   if (EXIT_SUCCESS!=status) return(status);
+
+  // Get the seed for the random number generator.
+  if ((status = PILGetInt("random_seed", &parameters->random_seed))) {
+    HD_ERROR_THROW("Error reading the seed for the random "
+		   "number generator!\n", status);
+    return(status);
+  }
 
   // Get the name of the FITS template directory.
   // First try to read it from the environment variable.

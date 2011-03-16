@@ -2,7 +2,6 @@
 #define PSF_H 1
 
 #include "sixt.h"
-#include "sixt_random.h"
 
 #include "telescope.h"
 #include "photon.h"

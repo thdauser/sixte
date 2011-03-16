@@ -9,7 +9,6 @@
 #endif
 
 #include "vector.h"
-#include "sixt_random.h"
 #include "pointsources.h"
 #include "extendedsources.h"
 #include "rmf.h"

@@ -3,7 +3,6 @@
 
 
 #include "sixt.h"
-#include "sixt_random.h"
 #include "impact.h"
 #include "spectrum.h"
 #include "photon.h"

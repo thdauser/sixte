@@ -8,7 +8,6 @@
 
 #include <wcslib/wcslib.h>
 
-#include "sixt_random.h"
 #include "vector.h"
 #include "point.h"
 #include "telescope.h"

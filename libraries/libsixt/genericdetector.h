@@ -2,7 +2,6 @@
 #define GENERICDETECTOR_H 1
 
 #include "sixt.h"
-#include "sixt_random.h"
 #include "gaussianchargecloud.h"
 #include "exponentialchargecloud.h"
 #include "rmf.h"
