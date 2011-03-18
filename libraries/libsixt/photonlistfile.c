@@ -26,6 +26,8 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   plf->cenergy=0;
   plf->cra=0;
   plf->cdec=0;
+  plf->cph_id=0;
+  plf->csrc_id=0;
 
   // Open the FITS file table for reading:
   fits_open_table(&plf->fptr, filename, access_mode, status);
@@ -55,6 +57,10 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   fits_get_colnum(plf->fptr, CASEINSEN, "RA", &plf->cra, status);
   CHECK_STATUS_RET(*status, plf);
   fits_get_colnum(plf->fptr, CASEINSEN, "DEC", &plf->cdec, status);
+  CHECK_STATUS_RET(*status, plf);
+  fits_get_colnum(plf->fptr, CASEINSEN, "PH_ID", &plf->cph_id, status);
+  CHECK_STATUS_RET(*status, plf);
+  fits_get_colnum(plf->fptr, CASEINSEN, "SRC_ID", &plf->csrc_id, status);
   CHECK_STATUS_RET(*status, plf);
 
   return(plf);
@@ -103,7 +109,7 @@ void freePhotonListFile(PhotonListFile** const plf, int* const status)
 }
 
 
-int PhotonListFile_getNextRow(PhotonListFile* plf, Photon* ph)
+int PhotonListFile_getNextRow(PhotonListFile* const plf, Photon* const ph)
 {
   int status=EXIT_SUCCESS;
 
@@ -124,8 +130,8 @@ int PhotonListFile_getNextRow(PhotonListFile* plf, Photon* ph)
 }
 
 
-
-int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
+int PhotonListFile_getRow(PhotonListFile* const plf, 
+			  Photon* const ph, const long row)
 {
   int status=EXIT_SUCCESS;
   int anynul = 0;
@@ -152,6 +158,13 @@ int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
   if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, plf->row, 1, 1, 
 		    &ph->dec, &ph->dec, &anynul, &status)) return(status);
 
+  ph->ph_id = 0;
+  if (fits_read_col(plf->fptr, TLONG, plf->cph_id, plf->row, 1, 1, 
+		    &ph->ph_id, &ph->ph_id, &anynul, &status)) return(status);
+  ph->src_id = 0;
+  if (fits_read_col(plf->fptr, TLONG, plf->csrc_id, plf->row, 1, 1, 
+		    &ph->src_id, &ph->src_id, &anynul, &status)) return(status);
+
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     status = EXIT_FAILURE;
@@ -168,7 +181,7 @@ int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
 
 
 
-int addPhoton2File(PhotonListFile* plf, Photon* ph)
+int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
 {
   int status=EXIT_SUCCESS;
 
@@ -189,6 +202,10 @@ int addPhoton2File(PhotonListFile* plf, Photon* ph)
 		     plf->row, 1, 1, &ra, &status)) return(status);
   if (fits_write_col(plf->fptr, TDOUBLE, plf->cdec, 
 		     plf->row, 1, 1, &dec, &status)) return(status);
+  if (fits_write_col(plf->fptr, TLONG, plf->cph_id, 
+		     plf->row, 1, 1, &ph->ph_id, &status)) return(status);
+  if (fits_write_col(plf->fptr, TLONG, plf->csrc_id, 
+		     plf->row, 1, 1, &ph->src_id, &status)) return(status);
 
   return(status);
 }

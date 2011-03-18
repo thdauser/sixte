@@ -16,6 +16,7 @@
 /** Photon energy spectrum of an X-ray source. */
 typedef struct {
 
+  /** Location on the sky [rad]. */
   float ra, dec;
 
   /** Photon rate [photons/s]. */

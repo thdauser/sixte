@@ -111,8 +111,10 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
     int anynul=0;
     fits_read_col(fptr, TFLOAT, cra, row+1, 1, 1, &(list[row].ra), 
 		  &(list[row].ra), &anynul, status);
+    list[row].ra *= M_PI/180.; // Convert [deg] -> [rad].
     fits_read_col(fptr, TFLOAT, cdec, row+1, 1, 1, &(list[row].dec), 
 		  &(list[row].dec), &anynul, status);
+    list[row].dec *= M_PI/180.; // Convert [deg] -> [rad].
     float flux=0., emin=0., emax=0.;
     fits_read_col(fptr, TFLOAT, cflux, row+1, 1, 1, &flux, 
 		  &flux, &anynul, status);

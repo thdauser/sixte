@@ -40,6 +40,12 @@ typedef struct {
   /** Right ascension and declination of photon position [rad]. */
   double ra, dec; 
 
+  /** Unique photon identifier. */
+  long ph_id;
+
+  /** Unique source identifier for the originating X-ray source. */
+  long src_id;
+
 } Photon;
 
 

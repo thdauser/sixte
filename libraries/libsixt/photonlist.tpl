@@ -29,3 +29,9 @@ TCRPX#		0.		/
 TCRVL#		0.		/
 TCDLT#		1.		/
 TCUNI#		deg		/
+TTYPE#  	PH_ID           / Photon ID
+TFORM#  	J   		/
+TUNIT#  	                / 
+TTYPE#  	SRC_ID          / Source ID
+TFORM#  	J   		/
+TUNIT#  	                / 

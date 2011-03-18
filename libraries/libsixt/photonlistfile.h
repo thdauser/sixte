@@ -23,7 +23,7 @@ typedef struct {
   long row;
 
   /** Column numbers in the FITS binary table. */
-  int ctime, cenergy, cra, cdec;
+  int ctime, cenergy, cra, cdec, cph_id, csrc_id;
 
 } PhotonListFile;
 
@@ -54,16 +54,17 @@ void freePhotonListFile(PhotonListFile** const plf, int* const status);
 /** Read the next Photon from the PhotonListFile. This routine
     increases the internal counter of the PhotonListFile data
     structure. The return value is the error status. */
-int PhotonListFile_getNextRow(PhotonListFile* plf, Photon* ph);
+int PhotonListFile_getNextRow(PhotonListFile* const plf, Photon* const ph);
 
 /** Read a specific row from the PhotonListFile. This routine does NOT
     increase the internal counter of the PhotonListFile data
     structure. The return value of the function is the error
     status. */
-int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row);
+int PhotonListFile_getRow(PhotonListFile* const plf, 
+			  Photon* const ph, const long row);
 
 /** Append a new photon to the to PhotonListFile. */
-int addPhoton2File(PhotonListFile* plf, Photon* ph);
+int addPhoton2File(PhotonListFile* const plf, Photon* const ph);
 
 
 #endif /* PHOTONLISTFILE_H */
