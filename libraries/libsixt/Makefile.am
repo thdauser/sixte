@@ -44,12 +44,10 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     htrstelstream.c comadetector.c comaeventfile.c	\
 		     epicpn.c psf.c vignetting.c codedmask.c		\
 		     attitudecatalog.c attitudefile.c sixt.c vector.c	\
-		     pointsources.c pointsourcefile.c			\
-		     pointsourcelist.c pointsourcecatalog.c		\
-		     extendedsources.c sourceimage.c photon.c		\
-		     spectrum.c fits_pha.c check_fov.c			\
-		     photonlistfile.c linlightcurve.c kdtree.c rmf.c	\
-		     arf.c kdtreeelement.c xraysourcecatalog.c		\
+		     pointsources.c extendedsources.c sourceimage.c	\
+		     photon.c spectrum.c fits_pha.c check_fov.c		\
+		     photonlistfile.c linlightcurve.c rmf.c arf.c	\
+		     kdtreeelement.c xraysourcecatalog.c		\
 		     xraysourcespectrum.c xraysource.c linkedpholist.c	\
 		     erodetbkgrndgen.c phgen.c phimg.c phdet.c
 
@@ -70,11 +68,10 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  comaeventfile.h comaevent.h epicpn.h psf.h		\
 		  vignetting.h codedmask.h attitudecatalog.h		\
 		  attitudefile.h telescope.h sixt.h point.h vector.h	\
-		  pointsources.h pointsourcefile.h pointsourcelist.h	\
-		  pointsourcecatalog.h extendedsources.h sourceimage.h	\
+		  pointsources.h extendedsources.h sourceimage.h	\
 		  photon.h spectrum.h fits_pha.h check_fov.h		\
-		  photonlistfile.h linlightcurve.h kdtree.h rmf.h	\
-		  arf.h kdtreeelement.h xraysourcecatalog.h		\
+		  photonlistfile.h linlightcurve.h rmf.h arf.h		\
+		  kdtreeelement.h xraysourcecatalog.h			\
 		  xraysourcespectrum.h xraysource.h linkedpholist.h	\
 		  erodetbkgrndgen.h phgen.h phimg.h phdet.h
 
