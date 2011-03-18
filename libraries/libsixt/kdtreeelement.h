@@ -2,7 +2,7 @@
 #define KDTREEELEMENT_H 1
 
 #include "sixt.h"
-#include "xraysource.h"
+#include "source.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -12,7 +12,7 @@
 
 /** Element of a KDTree (multidimensional binary tree). */
 struct structKDTreeElement {
-  XRaySource* src;
+  Source* src;
   struct structKDTreeElement* left;
   struct structKDTreeElement* right;
 };
@@ -30,8 +30,8 @@ KDTreeElement* newKDTreeElement(int* const status);
 /** Destructor. */
 void freeKDTreeElement(KDTreeElement** el);
 
-/** Build up the KDTree from the given list of XRaySources. */
-KDTreeElement* buildKDTree2(XRaySource* const list, 
+/** Build up the KDTree from the given list of Sources. */
+KDTreeElement* buildKDTree2(Source* const list, 
 			    const long nelements,
 			    const int depth,
 			    int* const status);

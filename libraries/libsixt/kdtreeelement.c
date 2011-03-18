@@ -13,7 +13,7 @@ KDTreeElement* newKDTreeElement(int* const status)
   el->right = NULL;
 
   // Get memory for the content.
-  el->src = newXRaySource(status);
+  el->src = newSource(status);
   CHECK_STATUS_RET(*status, el);
 
   return(el);
@@ -29,7 +29,7 @@ void freeKDTreeElement(KDTreeElement** el)
     if (NULL!=(*el)->right) {
       freeKDTreeElement(&((*el)->right));
     }
-    freeXRaySource(&(*el)->src);
+    freeSource(&(*el)->src);
 
     free(*el);
     *el=NULL;
@@ -37,7 +37,7 @@ void freeKDTreeElement(KDTreeElement** el)
 }
 
 
-KDTreeElement* buildKDTree2(XRaySource* const list, 
+KDTreeElement* buildKDTree2(Source* const list, 
 			    const long nelements,
 			    const int depth,
 			    int* const status)
@@ -56,7 +56,7 @@ KDTreeElement* buildKDTree2(XRaySource* const list,
 
   long median = nelements/2;
   int axis = depth % 3;
-  quicksortXRaySources(list, 0, nelements-1, axis);
+  quicksortSources(list, 0, nelements-1, axis);
 
   // Fill the newly created node with data.
   *(node->src) = list[median];

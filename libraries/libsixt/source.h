@@ -1,11 +1,11 @@
-#ifndef XRAYSOURCE_H
-#define XRAYSOURCE_H 1
+#ifndef SOURCE_H
+#define SOURCE_H 1
 
 #include "sixt.h"
 
 #include "linkedpholist.h"
 #include "photon.h"
-#include "xraysourcespectrum.h"
+#include "sourcespectrum.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -27,11 +27,11 @@ typedef struct {
 
   /** Source spectrum / spectra. */
   int nspectra;
-  XRaySourceSpectrum** spectra;
+  SourceSpectrum** spectra;
 
   /* TODO
   int nimages;
-  XRaySourceImage** images;
+  SourceImage** images;
 
   XRayLightCurve* lc;
   */
@@ -39,7 +39,7 @@ typedef struct {
   /** Unique source identifier. */
   long src_id;
 
-} XRaySource;
+} Source;
 
 
 /////////////////////////////////////////////////////////////////
@@ -48,22 +48,22 @@ typedef struct {
 
 
 /** Constructor. */
-XRaySource* newXRaySource(int* const status);
+Source* newSource(int* const status);
 
 /** Destructor. */
-void freeXRaySource(XRaySource** const src);
+void freeSource(Source** const src);
 
 /** Create photons for a particular source in the specified time
     interval. */
-LinkedPhoListElement* getXRayPhotons(XRaySource* const src, 
+LinkedPhoListElement* getXRayPhotons(Source* const src, 
 				     const double t0, const double t1,
 				     int* const status);
 
-/** Sort the list of XRaySource objects with the specified number of
+/** Sort the list of Source objects with the specified number of
     entries with respect to the requested coordinate axis using a
     quick sort algorithm. */
-void quicksortXRaySources(XRaySource* const list, const long left, 
+void quicksortSources(Source* const list, const long left, 
 			  const long right, const int axis);
 
 
-#endif /* XRAYSOURCE_H */
+#endif /* SOURCE_H */

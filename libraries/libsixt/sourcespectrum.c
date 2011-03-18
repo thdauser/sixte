@@ -1,15 +1,15 @@
-#include "xraysourcespectrum.h"
+#include "sourcespectrum.h"
 
 
 // Conversion factor from [keV] -> [erg].
 const float keV2erg = 1.602e-9;
 
 
-XRaySourceSpectrum* newXRaySourceSpectrum(int* const status)
+SourceSpectrum* newSourceSpectrum(int* const status)
 {
-  XRaySourceSpectrum* spec = (XRaySourceSpectrum*)malloc(sizeof(XRaySourceSpectrum));
+  SourceSpectrum* spec = (SourceSpectrum*)malloc(sizeof(SourceSpectrum));
   CHECK_NULL(spec, *status,
-	     "memory allocation for XRaySourceSpectrum failed");
+	     "memory allocation for SourceSpectrum failed");
 
   // Initalize pointers with NULL.
   spec->emin = NULL;
@@ -24,7 +24,7 @@ XRaySourceSpectrum* newXRaySourceSpectrum(int* const status)
 }
 
 
-void freeXRaySourceSpectrum(XRaySourceSpectrum** spec)
+void freeSourceSpectrum(SourceSpectrum** spec)
 {
   if (NULL!=*spec) {
     if (NULL!=(*spec)->emin) {
@@ -45,7 +45,7 @@ void freeXRaySourceSpectrum(XRaySourceSpectrum** spec)
 }
 
 
-float getRndSpectrumEnergy(const XRaySourceSpectrum* const spec)
+float getRndSpectrumEnergy(const SourceSpectrum* const spec)
 {
   // Get a random energy bin according to the given spectral distribution.
   float rand = (float)sixt_get_random_number() * spec->ratedistr[spec->nbins-1];
@@ -67,12 +67,12 @@ float getRndSpectrumEnergy(const XRaySourceSpectrum* const spec)
 }
 
 
-XRaySourceSpectrum* loadXRaySpectrumFilename(const char* const filename,
+SourceSpectrum* loadXRaySpectrumFilename(const char* const filename,
 					     int* const status)
 {
   headas_chat(3, "load spectrum from file '%s' ...\n", filename);
   
-  XRaySourceSpectrum* spec = newXRaySourceSpectrum(status);
+  SourceSpectrum* spec = newSourceSpectrum(status);
   CHECK_STATUS_RET(*status, spec);
   
   // Store the filename.
@@ -153,7 +153,7 @@ XRaySourceSpectrum* loadXRaySpectrumFilename(const char* const filename,
 }
 
 
-void applyARF2Spectrum(XRaySourceSpectrum* const spec, 
+void applyARF2Spectrum(SourceSpectrum* const spec, 
 		       const struct ARF* const arf, 
 		       int* const status)
 {
@@ -196,7 +196,7 @@ void applyARF2Spectrum(XRaySourceSpectrum* const spec,
 }
 
 
-float getSpectralEnergyFlux(const XRaySourceSpectrum* const spec, 
+float getSpectralEnergyFlux(const SourceSpectrum* const spec, 
 			    const float emin, const float emax)
 {
   float flux = 0.;
@@ -218,7 +218,7 @@ float getSpectralEnergyFlux(const XRaySourceSpectrum* const spec,
 }
 
 
-float getSpectralPhotonRate(const XRaySourceSpectrum* const spec,
+float getSpectralPhotonRate(const SourceSpectrum* const spec,
 			    const float emin, const float emax)
 {
   // Photon rate.

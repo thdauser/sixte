@@ -11,7 +11,7 @@
 #include "phimg.h"
 #include "photonlistfile.h"
 #include "vector.h"
-#include "xraysourcecatalog.h"
+#include "sourcecatalog.h"
 
 #define TOOLSUB simsixt_main
 #include "headas_main.c"

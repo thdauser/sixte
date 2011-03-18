@@ -13,7 +13,7 @@ int phogen_main()
   AttitudeCatalog* ac=NULL;
 
   // Catalog of input X-ray sources.
-  XRaySourceCatalog* srccat=NULL;
+  SourceCatalog* srccat=NULL;
 
   // Photon list file.
   PhotonListFile* plf=NULL;
@@ -47,7 +47,7 @@ int phogen_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT X-ray source catalog.
-    srccat = loadSourceCatalog(parameters.simput_filename, det, &status);
+    srccat=loadSourceCatalog(parameters.simput_filename, det, &status);
     CHECK_STATUS_BREAK(status);
 
     // Remove the old photon list file.    
@@ -88,7 +88,7 @@ int phogen_main()
 
   // Release memory.
   freePhotonListFile(&plf, &status);
-  freeXRaySourceCatalog(&srccat);
+  freeSourceCatalog(&srccat);
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 

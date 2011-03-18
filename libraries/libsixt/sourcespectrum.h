@@ -1,5 +1,5 @@
-#ifndef XRAYSOURCESPECTRUM_H
-#define XRAYSOURCESPECTRUM_H 1
+#ifndef SOURCESPECTRUM_H
+#define SOURCESPECTRUM_H 1
 
 #include "sixt.h"
 
@@ -33,7 +33,7 @@ typedef struct {
   /** Filename the spectrum was loaded from. */
   char filename[MAXFILENAME];
 
-} XRaySourceSpectrum;
+} SourceSpectrum;
 
 
 /////////////////////////////////////////////////////////////////
@@ -42,35 +42,35 @@ typedef struct {
 
 
 /** Constructor. */
-XRaySourceSpectrum* newXRaySourceSpectrum(int* const status);
+SourceSpectrum* newSourceSpectrum(int* const status);
 
 /** Destructor. */
-void freeXRaySourceSpectrum(XRaySourceSpectrum** spec);
+void freeSourceSpectrum(SourceSpectrum** spec);
 
 /** Return a random energy from a distribution according to the
     spectrum. */
-float getRndSpectrumEnergy(const XRaySourceSpectrum* const spec);
+float getRndSpectrumEnergy(const SourceSpectrum* const spec);
 
 
 /** Load a spectrum from a file with the specified name. */
-XRaySourceSpectrum* loadXRaySpectrumFilename(const char* const filename,
+SourceSpectrum* loadXRaySpectrumFilename(const char* const filename,
 					     int* const status);
 
 /** Apply the instrument-specific ARF to a source spectrum in order to
     obtain a probability distribution from the given photon flux
     density. */
-void applyARF2Spectrum(XRaySourceSpectrum* const spec, 
+void applyARF2Spectrum(SourceSpectrum* const spec, 
 		       const struct ARF* const arf, 
 		       int* const status);
 
 /** Determine the energy flux in the given energy band
     [erg/s/cm^2]. */
-float getSpectralEnergyFlux(const XRaySourceSpectrum* const spec,
+float getSpectralEnergyFlux(const SourceSpectrum* const spec,
 			    const float emin, const float emax);
 
 /** Determine the photon flux in the given energy band [photons/s]. */
-float getSpectralPhotonRate(const XRaySourceSpectrum* const spec,
+float getSpectralPhotonRate(const SourceSpectrum* const spec,
 			    const float emin, const float emax);
 
 
-#endif /* XRAYSOURCESPECTRUM_H */
+#endif /* SOURCESPECTRUM_H */

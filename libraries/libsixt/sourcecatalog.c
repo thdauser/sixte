@@ -1,11 +1,11 @@
-#include "xraysourcecatalog.h"
+#include "sourcecatalog.h"
 
 
-XRaySourceCatalog* newXRaySourceCatalog(int* const status)
+SourceCatalog* newSourceCatalog(int* const status)
 {
-  XRaySourceCatalog* cat = (XRaySourceCatalog*)malloc(sizeof(XRaySourceCatalog));
+  SourceCatalog* cat = (SourceCatalog*)malloc(sizeof(SourceCatalog));
   CHECK_NULL(cat, *status,
-	     "memory allocation for XRaySourceCatalog failed");
+	     "memory allocation for SourceCatalog failed");
 
   // Initialize pointers with NULL.
   cat->tree = NULL;
@@ -18,7 +18,7 @@ XRaySourceCatalog* newXRaySourceCatalog(int* const status)
 }
 
 
-void freeXRaySourceCatalog(XRaySourceCatalog** cat)
+void freeSourceCatalog(SourceCatalog** cat)
 {
   if (NULL!=*cat) {
     // Free the KD-Tree.
@@ -29,7 +29,7 @@ void freeXRaySourceCatalog(XRaySourceCatalog** cat)
     if (NULL!=(*cat)->spectra) {
       long ii;
       for (ii=0; ii<(*cat)->nspectra; ii++) {
-	freeXRaySourceSpectrum(&((*cat)->spectra[ii]));
+	freeSourceSpectrum(&((*cat)->spectra[ii]));
       }
       free((*cat)->spectra);
     }
@@ -39,13 +39,13 @@ void freeXRaySourceCatalog(XRaySourceCatalog** cat)
 }
 
 
-XRaySourceCatalog* loadSourceCatalog(const char* const filename,
+SourceCatalog* loadSourceCatalog(const char* const filename,
 				     const GenDet* const det,
 				     int* const status)
 {
   headas_chat(3, "load source catalog from file '%s' ...\n", filename);
 
-  XRaySourceCatalog* cat = newXRaySourceCatalog(status);
+  SourceCatalog* cat = newSourceCatalog(status);
   CHECK_STATUS_RET(*status, cat);
 
   // Open the FITS file with the source catalog (SRC_CAT) extension.
@@ -93,19 +93,19 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 
   // Allocate memory for an array of the sources, which will be
   // converted into a KDTree later.
-  XRaySource* list = (XRaySource*)malloc(nrows*sizeof(XRaySource));
+  Source* list = (Source*)malloc(nrows*sizeof(Source));
   CHECK_NULL_RET(list, *status,
 		 "memory allocation for source list failed", cat);
 
   // Empty template object.
-  XRaySource* templatesrc = newXRaySource(status);
+  Source* templatesrc = newSource(status);
   CHECK_STATUS_RET(*status, cat);
 
   // Loop over all entries in the FITS table.
   long row;
   for (row=0; row<nrows; row++) {
 
-    // Start with an empty XRaySource object for each entry.
+    // Start with an empty Source object for each entry.
     list[row] = *templatesrc;
 
     // Read the data from the FITS table.
@@ -142,7 +142,7 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
     if (ii==cat->nspectra) {
       // The spectrum does not exist in the catalog yet.
       cat->spectra = realloc(cat->spectra, 
-			     (cat->nspectra+1)*sizeof(XRaySourceSpectrum*));
+			     (cat->nspectra+1)*sizeof(SourceSpectrum*));
       CHECK_NULL_BREAK(cat->spectra, *status,
 		       "memory allocation for spectrum catalog failed");
       cat->nspectra++;
@@ -155,7 +155,7 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
     }
     // Assign the spectrum to the source.
     list[row].nspectra = 1;
-    list[row].spectra  = (XRaySourceSpectrum**)malloc(sizeof(XRaySourceSpectrum*));
+    list[row].spectra  = (SourceSpectrum**)malloc(sizeof(SourceSpectrum*));
     CHECK_NULL_BREAK(cat->spectra, *status,
 		     "memory allocation for spectrum list failed");    
     list[row].spectra[0] = cat->spectra[ii];
@@ -173,7 +173,7 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
   CHECK_STATUS_RET(*status, cat);
   // END of loop over all entries in the FITS table.
 
-  // Build a KDTree from the source list (array of XRaySource objects).
+  // Build a KDTree from the source list (array of Source objects).
   cat->tree = buildKDTree2(list, nrows, 0, status);
   CHECK_STATUS_RET(*status, cat);
 
@@ -192,7 +192,7 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 }
 
 
-LinkedPhoListElement* genFoVXRayPhotons(XRaySourceCatalog* const cat, 
+LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat, 
 					const Vector* const pointing, 
 					const float fov,
 					const double t0, const double t1,

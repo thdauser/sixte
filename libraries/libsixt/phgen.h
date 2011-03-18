@@ -6,7 +6,7 @@
 #include "gendet.h"
 #include "photon.h"
 #include "photonlistfile.h"
-#include "xraysourcecatalog.h"
+#include "sourcecatalog.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -16,7 +16,7 @@
 
 void phgen(const GenDet* const det,
 	   AttitudeCatalog* const ac,
-	   XRaySourceCatalog* const srccat,
+	   SourceCatalog* const srccat,
 	   PhotonListFile* const plf,
 	   const double t0, const double t1,
 	   int* const status);

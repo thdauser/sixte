@@ -1,11 +1,11 @@
-#include "xraysource.h"
+#include "source.h"
 
 
-XRaySource* newXRaySource(int* const status)
+Source* newSource(int* const status)
 {
-  XRaySource* src = (XRaySource*)malloc(sizeof(XRaySource));
+  Source* src = (Source*)malloc(sizeof(Source));
   CHECK_NULL(src, *status, 
-	     "memory allocation for XRaySource failed");
+	     "memory allocation for Source failed");
 
   // Initalize pointers with NULL.
   src->t_next_photon = NULL;
@@ -22,7 +22,7 @@ XRaySource* newXRaySource(int* const status)
 }
 
 
-void freeXRaySource(XRaySource** const src)
+void freeSource(Source** const src)
 {
   if (NULL!=*src) {
     if (NULL!=(*src)->t_next_photon) {
@@ -31,7 +31,7 @@ void freeXRaySource(XRaySource** const src)
     if (NULL!=(*src)->spectra) {
       free((*src)->spectra);
       // NOTE: the spectra must not be free'd, because this
-      // is already done in the destructor of the XRaySourceCatalog.
+      // is already done in the destructor of the SourceCatalog.
     }
     free(*src);
     *src=NULL;
@@ -39,7 +39,7 @@ void freeXRaySource(XRaySource** const src)
 }
 
 
-LinkedPhoListElement* getXRayPhotons(XRaySource* const src, 
+LinkedPhoListElement* getXRayPhotons(Source* const src, 
 				     const double t0, const double t1,
 				     int* const status)
 {
@@ -97,15 +97,15 @@ LinkedPhoListElement* getXRayPhotons(XRaySource* const src,
 }
 
 
-static long XRaySourcesPartition(XRaySource* const list, 
-				 const long left, const long right, 
-				 const long pivotIndex, const int axis)
+static long SourcesPartition(Source* const list, 
+			     const long left, const long right, 
+			     const long pivotIndex, const int axis)
 {
   Vector location = unit_vector(list[pivotIndex].ra, list[pivotIndex].dec);
   double pivotValue = getVectorDimensionValue(&location, axis);
 
   // Move pivot to end.
-  XRaySource buffer;
+  Source buffer;
   buffer = list[pivotIndex];
   list[pivotIndex] = list[right];
   list[right] = buffer;
@@ -131,15 +131,15 @@ static long XRaySourcesPartition(XRaySource* const list,
 }
 
 
-void quicksortXRaySources(XRaySource* const list, const long left, 
-			  const long right, const int axis)
+void quicksortSources(Source* const list, const long left, 
+		      const long right, const int axis)
 {
   if (right>left) {
     // select a pivot index //(e.g. pivotIndex := left+(right-left)/2)
     int pivotIndex = left+(right-left)/2;
-    int pivotNewIndex = XRaySourcesPartition(list, left, right, pivotIndex, axis);
-    quicksortXRaySources(list, left, pivotNewIndex-1, axis);
-    quicksortXRaySources(list, pivotNewIndex+1, right, axis);
+    int pivotNewIndex = SourcesPartition(list, left, right, pivotIndex, axis);
+    quicksortSources(list, left, pivotNewIndex-1, axis);
+    quicksortSources(list, pivotNewIndex+1, right, axis);
   }
 }
 

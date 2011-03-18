@@ -9,7 +9,7 @@
 #include "photonlistfile.h"
 #include "sourceimage.h"
 #include "vector.h"
-#include "xraysourcecatalog.h"
+#include "sourcecatalog.h"
 
 #define TOOLSUB phogen_main
 #include "headas_main.c"

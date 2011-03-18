@@ -13,7 +13,7 @@ int simsixt_main()
   AttitudeCatalog* ac=NULL;
 
   // Catalog of input X-ray sources.
-  XRaySourceCatalog* srccat=NULL;
+  SourceCatalog* srccat=NULL;
 
   // Photon list file.
   PhotonListFile* plf=NULL;
@@ -99,7 +99,7 @@ int simsixt_main()
       // An individual source is given on the command line.
       
       // Get an empty source catalog.
-      srccat = newXRaySourceCatalog(&status);
+      srccat = newSourceCatalog(&status);
       CHECK_STATUS_BREAK(status);
 
       status=EXIT_FAILURE;
@@ -245,7 +245,7 @@ int simsixt_main()
   freeEventListFile(&elf, &status);
   freeImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
-  freeXRaySourceCatalog(&srccat);
+  freeSourceCatalog(&srccat);
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 
