@@ -10,13 +10,6 @@
     entries and returns the corresponding index. */
 static inline int getMinimumDistance(const double array[]);
 
-/** Set the pile-up flag of the specified pixel and all surrounding
-    pixels containing a positive charge by recursive function
-    calls. */
-static void setGenPileupFlag(GenDetLine** const line,	
-			     const GenPixGrid* const grid,
-			     const int x, const int y);
-
 
 ////////////////////////////////////////////////////////////////////
 // Program Code.
@@ -240,54 +233,8 @@ int makeGenSplitEvents(const GenSplit* const split,
   }
 
 
-  // Manage the pile-up flags for the new charges.
-  // Search for surrounding pixels already containing charges.
-  int xmin = x[0];
-  int ymin = y[0];
-  int xmax = x[0];
-  int ymax = y[0];
-  int ii, jj;
-  GenPileupFlag pileup = GP_NONE;
-  for(ii=1; ii<npixels; ii++) {
-    xmin = MIN(xmin, x[ii]);
-    ymin = MIN(ymin, y[ii]);
-    xmax = MAX(xmax, x[ii]);
-    ymax = MAX(ymax, y[ii]);
-  }
-#ifdef ENERGY_PILEUP_ONLY
-  xmin = MAX(0, xmin);
-  ymin = MAX(0, ymin);
-  xmax = MIN(grid->xwidth-1, xmax);
-  ymax = MIN(grid->ywidth-1, ymax);
-  for (ii=xmin; ii<=xmax; ii++) {
-    for (jj=ymin; jj<=ymax; jj++) {
-      if (detline[jj]->charge[ii]>0.) {
-	pileup = GP_PILEUP;
-      }
-    }
-  }
-#else
-
-  for (ii=MAX(0, xmin-1); ii<=MIN(grid->xwidth-1, xmax+1); ii++) {
-    for (jj=MAX(0, ymin-1); jj<=MIN(grid->ywidth-1, ymax+1); jj++) {
-      if (detline[jj]->charge[ii]>0.) {
-#ifndef DIAGONAL_PATTERN_PILEUP
-	// The diagonal pixels are NOT included in the pattern 
-	// pile-up search.
-	if (((ii==xmin-1)||(ii==xmax+1)) && ((jj==ymin-1)||(jj==ymax+1))) {
-	  continue;
-	}
-#endif
-	pileup = GP_PILEUP;
-      }
-    }
-  }
-#endif
-  // END of loop over all surrounding pixels.
-
-
   // Add charge to all valid pixels of the split event.
-  int nvalidpixels=0;
+  int ii, nvalidpixels=0;
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) && (x[ii]<grid->xwidth) &&
 	(y[ii]>=0) && (y[ii]<grid->ywidth)) {
@@ -296,12 +243,6 @@ int makeGenSplitEvents(const GenSplit* const split,
     }
   }
 
-
-  // If necessary set the pile-up flag for the generated pattern.
-  if (GP_PILEUP==pileup) {
-    setGenPileupFlag(detline, grid, x[0], y[0]);
-  }
-  
 
   // TODO Call the event trigger routine.
 
@@ -329,28 +270,4 @@ static inline int getMinimumDistance(const double array[])
 }
 
 
-
-static void setGenPileupFlag(GenDetLine** const line,	
-			     const GenPixGrid* const grid,
-			     const int x, const int y)
-{
-  // Set the GenPileupFlag for the specified pixel.
-  line[y]->pileup[x] = GP_PILEUP;
-
-  // Check the surrounding pixels.
-  int xmin = MAX(0, x-1);
-  int ymin = MAX(0, y-1);
-  int xmax = MIN(grid->xwidth-1, x+1);
-  int ymax = MIN(grid->ywidth-1, y+1);
-  int ii, jj;
-  for (ii=xmin; ii<=xmax; ii++) {
-    for (jj=ymin; jj<=ymax; jj++) {
-      if (line[jj]->charge[ii] > 0.) {
-	if (GP_PILEUP!=line[jj]->pileup[ii]) {
-	  setGenPileupFlag(line, grid, ii, jj);
-	}
-      }
-    }
-  }
-}
 

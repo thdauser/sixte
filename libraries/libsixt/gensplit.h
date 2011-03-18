@@ -2,17 +2,10 @@
 #define GENSPLIT_H 1
 
 #include "sixt.h"
-#include "genpixgrid.h"
 #include "gendetline.h"
-#include "point.h"
 #include "genericdetector.h"
-
-
-// Check only for energy pile-up and ignore pattern pile-up.
-//#define ENERGY_PILEUP_ONLY 1
-
-// Check for pattern pile-up in diagonal pixels.
-#define DIAGONAL_PATTERN_PILEUP 1
+#include "genpixgrid.h"
+#include "point.h"
 
 
 /////////////////////////////////////////////////////////////////

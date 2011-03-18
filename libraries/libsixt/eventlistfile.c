@@ -22,7 +22,6 @@ EventListFile* newEventListFile(int* const status)
   file->crawx=0;
   file->crawy=0;
   file->cframe =0;
-  file->cpileup=0;
 
   return(file);
 }
@@ -123,8 +122,6 @@ EventListFile* openEventListFile(const char* const filename,
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status)) 
     return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status)) 
-    return(file);
 
   return(file);
 }
@@ -164,8 +161,6 @@ void addEvent2File(EventListFile* const file, Event* const event,
 		     1, 1, &event->rawy, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cframe, file->row, 
 		     1, 1, &event->frame, status)) return;
-  if (fits_write_col(file->fptr, TINT, file->cpileup, file->row, 
-		     1, 1, &event->pileup, status)) return;
 }
 
 
@@ -196,33 +191,34 @@ void getEventFromFile(const EventListFile* const file,
   // Read in the data.
   int anynul = 0;
   event->time = 0.;
-  if (0<file->ctime) 
-    if (fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
-		      &event->time, &event->time, &anynul, status)) return;
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
+		&event->time, &event->time, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   event->pha = 0;
-  if (0<file->cpha) 
-    if (fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
-		      &event->pha, &event->pha, &anynul, status)) return;
+  fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
+		&event->pha, &event->pha, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   event->charge = 0.;
-  if (0<file->ccharge) 
-    if (fits_read_col(file->fptr, TFLOAT, file->ccharge, row, 1, 1, 
-		      &event->charge, &event->charge, &anynul, status)) return;
+  fits_read_col(file->fptr, TFLOAT, file->ccharge, row, 1, 1, 
+		&event->charge, &event->charge, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   event->rawx = 0;
-  if (0<file->crawx) 
-    if (fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
-		      &event->rawx, &event->rawx, &anynul, status)) return;
+  fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
+		&event->rawx, &event->rawx, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   event->rawy = 0;
-  if (0<file->crawy) 
-    if (fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
-		      &event->rawy, &event->rawy, &anynul, status)) return;
+  fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
+		&event->rawy, &event->rawy, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   event->frame = 0;
-  if (0<file->cframe) 
-    if (fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
-		      &event->frame, &event->frame, &anynul, status)) return;
-  event->pileup = 0;
-  if (0<file->cpileup) 
-    if (fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
-		      &event->pileup, &event->pileup, &anynul, status)) return;
+  fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
+		&event->frame, &event->frame, &anynul, status);
+  CHECK_STATUS_VOID(*status);
 
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
@@ -252,7 +248,5 @@ void updateEventInFile(const EventListFile* const file,
 		     1, 1, &event->rawy, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cframe, row, 
 		     1, 1, &event->frame, status)) return;
-  if (fits_write_col(file->fptr, TINT, file->cpileup, row, 
-		     1, 1, &event->pileup, status)) return;
 }
 

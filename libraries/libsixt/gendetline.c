@@ -21,20 +21,12 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
 
   // Set all pointers to NULL.
   line->charge=NULL;
-  line->pileup=NULL;
 
   line->xwidth=0;
   line->anycharge=0;
   // Allocate memory for the pixels.
   line->charge = (float*)malloc(xwidth*sizeof(float));
   if (NULL==line->charge) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenDetLine failed!\n", *status);
-    return(line);
-  }
-  // Allocate memory for the pile-up flag for each pixel.
-  line->pileup = (GenPileupFlag*)malloc(xwidth*sizeof(GenPileupFlag));
-  if (NULL==line->pileup) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error: Memory allocation for GenDetLine failed!\n", *status);
     return(line);
@@ -57,9 +49,6 @@ void destroyGenDetLine(GenDetLine** const line)
     if (NULL!=(*line)->charge) {
       free((*line)->charge);
     }
-    if (NULL!=(*line)->pileup) {
-      free((*line)->pileup);
-    }
     free(*line);
     *line=NULL;
   }
@@ -74,7 +63,6 @@ void clearGenDetLine(GenDetLine* const line)
     int ii;
     for(ii=0; ii<line->xwidth; ii++) {
       line->charge[ii] = 0.;
-      line->pileup[ii] = GP_NONE;
     }
     line->anycharge=0;
   }
@@ -87,11 +75,6 @@ void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1)
   int ii;
   for(ii=0; ii<line1->xwidth; ii++) {
     line0->charge[ii] += line1->charge[ii];
-
-    // Update the pile-up flags.
-    if (line1->pileup[ii]!=GP_NONE) {
-      line0->pileup[ii]=GP_PILEUP;
-    }
   }
   // Set the anycharge flag.
   if (0==line0->anycharge) {

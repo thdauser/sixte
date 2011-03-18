@@ -1103,15 +1103,8 @@ void GenDetReadoutLine(GenDet* const det,
 	
 	// Readout the charge from the pixel array ...
 	event.charge = line->charge[ii];
-	// ... copy the pile-up flag ...
-	if (GP_PILEUP==line->pileup[ii]) {
-	  event.pileup = 1;
-	} else {
-	  event.pileup = 0;
-	}
 	// ... and delete the pixel value.
 	line->charge[ii] = 0.;
-	line->pileup[ii] = GP_NONE;
 
 	// Apply the charge thresholds.
 	if (event.charge<=det->threshold_readout_lo_keV) {

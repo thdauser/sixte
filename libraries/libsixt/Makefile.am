@@ -61,17 +61,16 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  uniformdetectorbackground.h xmsdetector.h gendet.h	\
 		  genpixgrid.h gensplit.h gendetline.h clocklist.h	\
 		  event.h genpattern.h eventlistfile.h			\
-		  genpatternfile.h genpileupflag.h badpixmap.h		\
-		  geneventgrading.h xmseventfile.h xmsevent.h		\
-		  htrsdetector.h htrseventfile.h htrsevent.h		\
-		  telemetrypacket.h htrstelstream.h comadetector.h	\
-		  comaeventfile.h comaevent.h epicpn.h psf.h		\
-		  vignetting.h codedmask.h attitudecatalog.h		\
-		  attitudefile.h telescope.h sixt.h point.h vector.h	\
-		  pointsources.h extendedsources.h sourceimage.h	\
-		  photon.h spectrum.h fits_pha.h check_fov.h		\
-		  photonlistfile.h linlightcurve.h rmf.h arf.h		\
-		  kdtreeelement.h sourcecatalog.h sourcespectrum.h	\
-		  source.h linkedpholist.h erodetbkgrndgen.h phgen.h	\
-		  phimg.h phdet.h
+		  genpatternfile.h badpixmap.h geneventgrading.h	\
+		  xmseventfile.h xmsevent.h htrsdetector.h		\
+		  htrseventfile.h htrsevent.h telemetrypacket.h		\
+		  htrstelstream.h comadetector.h comaeventfile.h	\
+		  comaevent.h epicpn.h psf.h vignetting.h codedmask.h	\
+		  attitudecatalog.h attitudefile.h telescope.h sixt.h	\
+		  point.h vector.h pointsources.h extendedsources.h	\
+		  sourceimage.h photon.h spectrum.h fits_pha.h		\
+		  check_fov.h photonlistfile.h linlightcurve.h rmf.h	\
+		  arf.h kdtreeelement.h sourcecatalog.h			\
+		  sourcespectrum.h source.h linkedpholist.h		\
+		  erodetbkgrndgen.h phgen.h phimg.h phdet.h
 

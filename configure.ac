@@ -276,7 +276,6 @@ AC_CONFIG_FILES([Makefile
 		tools/htrs_digital_shaper/Makefile
 		tools/analyse_xms_events/Makefile
 		tools/gendetsim/Makefile
-		tools/genpat/Makefile
 		tools/comaimg/Makefile
 		tools/comadet/Makefile
 		tools/comarecon/Makefile

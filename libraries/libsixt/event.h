@@ -27,11 +27,6 @@ typedef struct {
   /** Frame counter. */
   long frame;
 
-  /** Pile-up flag. If the flag is set to 0 the event is not affected
-      by pile-up. For any other values the energy (PHA) information
-      might be wrong due to energy or pattern pile-up. */
-  int pileup;
-
 } Event;
 
 
