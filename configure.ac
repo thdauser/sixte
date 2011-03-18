@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 AC_INIT([sixt], [0.01], [christian.schmid@sternwarte.uni-erlangen.de])
-AC_CONFIG_SRCDIR([libraries/libsixt/wfidetector.c])
+AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
 # The following line tells 'configure' to create a header file 'config.h'
 # that is filled with definitions from this script.
 # The 'config.h' contains for example the name of the package and can be
@@ -262,15 +262,11 @@ AC_CONFIG_FILES([Makefile
 		tools/phogen/Makefile
 		tools/phoimg/Makefile
 		tools/psfgen/Makefile
-		tools/wfi_simulation/Makefile
-		tools/framestore_simulation/Makefile
 		tools/xms_simulation/Makefile
 		tools/xms_pixtemp/Makefile
-		tools/event_projection/Makefile
-		tools/ero_fits2tm/Makefile
 		tools/ero_exposure/Makefile
+		tools/ero_fits2tm/Makefile
 		tools/comaexp/Makefile
-		tools/ero_merge_eventfiles/Makefile
 		tools/ero_split_photonfile/Makefile
 		tools/ero_merge_photonfiles/Makefile
 		tools/htrs_simulation/Makefile
@@ -279,7 +275,6 @@ AC_CONFIG_FILES([Makefile
 		tools/htrs_fits2tm/Makefile
 		tools/htrs_digital_shaper/Makefile
 		tools/analyse_xms_events/Makefile
-		tools/wfi_pattern_recombination/Makefile
 		tools/gendetsim/Makefile
 		tools/genpat/Makefile
 		tools/comaimg/Makefile

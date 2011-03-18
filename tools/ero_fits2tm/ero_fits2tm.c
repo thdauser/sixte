@@ -6,8 +6,8 @@
 
 
 #include "sixt.h"
-#include "erositaevent.h"
-#include "erositaeventfile.h"
+#include "event.h"
+#include "eventlistfile.h"
 
 #define TOOLSUB ero_fits2tm_main
 #include "headas_main.c"
@@ -139,7 +139,7 @@ int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
 // Routine which is called to write an eROSITA event to the Binary_Output.
 // Return value is '0' if everything is ok, otherwise the function returns '-1'.
 int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
-				       eROSITAEvent *event)
+				       Event *event)
 {
   // Check for overflows:
   if (event->pha > 0x3FFF) return (-1);
@@ -150,9 +150,9 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
   binary_output->bytes[binary_output->n_bytes++] = 
     0xFF & (unsigned char)event->pha;
   binary_output->bytes[binary_output->n_bytes++] = 
-    0xFF & (unsigned char)event->yi;
+    0xFF & (unsigned char)event->rawy;
   binary_output->bytes[binary_output->n_bytes++] = 
-    0xFF & (unsigned char)event->xi;
+    0xFF & (unsigned char)event->rawx;
 
   // Check if record is full:
   if (binary_output->n_bytes>=binary_output->max_bytes) {
@@ -230,7 +230,7 @@ int ero_fits2tm_main()
   };
   enum Mode mode;
 
-  eROSITAEventFile eventlistfile; // FITS file containing the event list
+  EventListFile* eventlistfile=NULL; // FITS file containing the event list
   char output_filename[MAXFILENAME];
   FILE *output_file = NULL;
   double binning_time; // Delta t (time step, length of each spectrum)
@@ -254,16 +254,16 @@ int ero_fits2tm_main()
     }
 
     // Open the event list FITS file.
-    status=openeROSITAEventFile(&eventlistfile, parameters.eventlist_filename, READONLY);
+    eventlistfile=openEventListFile(parameters.eventlist_filename, READONLY, &status);
     if(EXIT_SUCCESS!=status) return(status);
 
     // Determine the output mode (events or spectrum) according to the 
     // telescope and detector type specified in the FITS header keywords.
     char telescop[MAXMSG], instrume[MAXMSG];
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "TELESCOP", telescop, 
+    if (fits_read_key(eventlistfile->fptr, TSTRING, "TELESCOP", telescop, 
 		      comment, &status)) break;
-    if (fits_read_key(eventlistfile.generic.fptr, TSTRING, "INSTRUME", instrume, 
+    if (fits_read_key(eventlistfile->fptr, TSTRING, "INSTRUME", instrume, 
 		      comment, &status)) break;
 
     // Convert to captial letters:
@@ -324,7 +324,7 @@ int ero_fits2tm_main()
       
     struct Binary_Output *binary_output = 
       get_Binary_Output(N_EROSITA_BYTES, output_file);
-    eROSITAEvent *eventlist = (eROSITAEvent*)malloc(10000*sizeof(eROSITAEvent));
+    Event *eventlist = (Event*)malloc(10000*sizeof(Event));
     if ((NULL==binary_output)||(NULL==eventlist)) {
       status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: memory allocation failed!\n", status);
@@ -335,22 +335,19 @@ int ero_fits2tm_main()
     for (count=0; count<10000; count++) {
       eventlist[count].time=0.;
       eventlist[count].pha=0;
-      eventlist[count].xi=0;
-      eventlist[count].yi=0;
+      eventlist[count].rawx=0;
+      eventlist[count].rawy=0;
       eventlist[count].frame=0;
-      eventlist[count].ra=SIXT_NAN;
-      eventlist[count].dec=SIXT_NAN;
-      eventlist[count].sky_xi=0;
-      eventlist[count].sky_yi=0;	    
     }
 
 
     // Loop over all entries in the event list:
     int n_buffered_events=0;
-    while(0==EventFileEOF(&eventlistfile.generic)) {
+    while(eventlistfile->row<eventlistfile->nrows) {
 
       // Read the event from the FITS file.
-      status=eROSITAEventFile_getNextRow(&eventlistfile, &(eventlist[n_buffered_events]));
+      getEventFromFile(eventlistfile, ++eventlistfile->row, 
+		       &(eventlist[n_buffered_events]), &status);
       if(EXIT_SUCCESS!=status) break;
 
       if (eventlist[n_buffered_events].frame > eventlist[0].frame) {
@@ -403,113 +400,6 @@ int ero_fits2tm_main()
       break;
     }
 
-      /*  } else if (mode == MODE_SPECTRUM) { 
-    // The individual events are binned to spectra before they are converted
-    // to a byte stream.
-
-    struct eROSITAEvent event;
-    event.pha = 0;
-    event.xi = 0;
-    event.yi = 0;
-    event.patid = 0;
-    event.patnum = 0;
-    event.frame = 0;
-    event.pileup = 0;
-
-    double time = binning_time; // Time of the current spectrum (end of spectrum)
-    long channel;      // Channel counter
-    unsigned char spectrum[Nchannels];  // Buffer for binning the spectrum.
-    unsigned char output_buffer[N_HTRS_BYTES];
-    
-    // Clear the output buffer:
-    binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
-    // Clear the spectrum:
-    binary_output_clear_bytes(spectrum, Nchannels);
-    
-    for (eventlist_file.row=0; eventlist_file.row<eventlist_file.nrows;
-	 eventlist_file.row++) {
-      
-      // Read the event from the FITS file.
-      if (get_eventlist_row(eventlist_file, &event, &status)) break;
-      
-      // Check whether binning time was exceeded:
-      if (event.time > time) {
-	// Store binned spectrum, clear spectrum buffer and start
-	// new binning cycle:
-	for (channel=0; channel<Nchannels; channel+=2) {	  
-	  
-	  if (spectrum[channel]   > max) max = spectrum[channel];
-	  if (spectrum[channel+1] > max) max = spectrum[channel+1];
-	  
-	  output_buffer[9 + (channel/2)%119] = (unsigned char)
-	    ((spectrum[channel] << 4) + (spectrum[channel+1] & 0x0F));
-	  
-	  // Clear binned spectrum:
-	  spectrum[channel]   = 0;  
-	  spectrum[channel+1] = 0;
-	  
-	  if ((channel+2)%28 == 0) { // Byte frame (128 byte) is complete!
-	    
-	    // Syncword 1 and 2:
-	    // output_buffer[0] = (char)'K';
-	    // output_buffer[1] = (char)'R';
-	    output_buffer[0] = 0x4B;  // 'K'
-	    output_buffer[1] = 0x82;  // 'R'
-	    
-	      // Spectrum Time:
-	    long ltime = (long)(time/binning_time);
-	    output_buffer[2] = (unsigned char)(ltime>>24);
-	    output_buffer[3] = (unsigned char)(ltime>>16);
-	    output_buffer[4] = (unsigned char)(ltime>>8);
-	    output_buffer[5] = (unsigned char)ltime;
-	    //headas_chat(5, "%ld: %u %u %u %u\n", ltime, output_buffer[2], 
-	    //	output_buffer[3], output_buffer[4], output_buffer[5]);
-	    
-	    // Spectrum Sequence counter:
-	    output_buffer[6] = (channel/238);
-
-	    // Data type ID:
-	    output_buffer[7] = 0x83;  // 'S'
-	    // 0x..   -> hexadecimal
-	    // 0...   -> octal
-	    
-	    // Number of used bytes:
-	    if (channel/119 == 4) {
-	      output_buffer[8] = 0x24; // 36
-	    } else {
-	      output_buffer[8] = 0x77; // 119
-	    }
-	    
-	    // Write bytes to file
-	    int nbytes = fwrite (output_buffer, 1, N_HTRS_BYTES, output_file);
-	    if (nbytes < N_HTRS_BYTES) {
-	      status=EXIT_FAILURE;
-	      sprintf(msg, "Error: writing data to output file '%s' failed!\n", 
-		      output_filename);
-	      HD_ERROR_THROW(msg,status);
-	    }
-	    
-	    // Clear the output buffer:
-	    binary_output_clear_bytes(output_buffer, N_HTRS_BYTES);
-	    
-	  } // END of starting new byte frame
-	  
-	} // END of loop over binned spectrum
-	time += binning_time;  // next binning cycle
-
-      }
-
-      if ((event.pha<=0)||(event.pha>Nchannels)) printf("Error!!\n");
-      
-      // Add event to the spectrum.
-      spectrum[event.pha-1]++;
-      
-    } // END of loop over all events in the FITS file
-    
-    headas_chat(5, "maximum spectral bin: %u\n", max);
-  
-    } // END (mode == MODE_SPECTRUM) */
-
   } while (0); // END of ERROR handling loop
 
 
@@ -517,7 +407,7 @@ int ero_fits2tm_main()
 
   // Close files
   if (output_file) fclose(output_file);
-  closeeROSITAEventFile(&eventlistfile);
+  freeEventListFile(&eventlistfile, &status);
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
