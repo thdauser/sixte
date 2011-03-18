@@ -36,6 +36,9 @@ typedef struct {
   XRayLightCurve* lc;
   */
 
+  /** Unique source identifier. */
+  long src_id;
+
 } XRaySource;
 
 

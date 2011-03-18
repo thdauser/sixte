@@ -16,6 +16,7 @@ XRaySource* newXRaySource(int* const status)
   src->dec = 0.;
   src->pps = 0.;
   src->nspectra = 0;
+  src->src_id   = 0;
 
   return(src);
 }
@@ -74,6 +75,14 @@ LinkedPhoListElement* getXRayPhotons(XRaySource* const src,
     ph->time = *(src->t_next_photon);
     ph->ra   = src->ra;
     ph->dec  = src->dec;
+
+    // Copy the source identifiers.
+    ph->src_id = src->src_id;
+
+    // Set Photon ID to default value of 0. The proper value is
+    // updated later, when the photon is inserted in the photon
+    // list file.
+    ph->ph_id = 0;
 
     // Determine the photon energy.
     ph->energy = getRndSpectrumEnergy(src->spectra[0]);

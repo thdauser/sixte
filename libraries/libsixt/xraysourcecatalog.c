@@ -81,7 +81,8 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
   CHECK_STATUS_RET(*status, cat);
 
   // Determine the column number in the FITS table.
-  int cra, cdec, cemin, cemax, cflux, cspectrum;
+  int csrc_id, cra, cdec, cemin, cemax, cflux, cspectrum;
+  fits_get_colnum(fptr, CASEINSEN, "SRC_ID", &csrc_id, status);
   fits_get_colnum(fptr, CASEINSEN, "RA", &cra, status);
   fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, status);
   fits_get_colnum(fptr, CASEINSEN, "E_MIN", &cemin, status);
@@ -109,12 +110,16 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 
     // Read the data from the FITS table.
     int anynul=0;
+    fits_read_col(fptr, TLONG, csrc_id, row+1, 1, 1, &(list[row].src_id), 
+		  &(list[row].src_id), &anynul, status);
+
     fits_read_col(fptr, TFLOAT, cra, row+1, 1, 1, &(list[row].ra), 
 		  &(list[row].ra), &anynul, status);
     list[row].ra *= M_PI/180.; // Convert [deg] -> [rad].
     fits_read_col(fptr, TFLOAT, cdec, row+1, 1, 1, &(list[row].dec), 
 		  &(list[row].dec), &anynul, status);
     list[row].dec *= M_PI/180.; // Convert [deg] -> [rad].
+
     float flux=0., emin=0., emax=0.;
     fits_read_col(fptr, TFLOAT, cflux, row+1, 1, 1, &flux, 
 		  &flux, &anynul, status);
@@ -122,6 +127,7 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 		  &emin, &anynul, status);
     fits_read_col(fptr, TFLOAT, cemax, row+1, 1, 1, &emax, 
 		  &emax, &anynul, status);
+
     char buffer[MAXFILENAME]="";
     char* spec_filename = &(buffer[0]);
     fits_read_col(fptr, TSTRING, cspectrum, row+1, 1, 1, &spec_filename, 
@@ -184,7 +190,6 @@ XRaySourceCatalog* loadSourceCatalog(const char* const filename,
 
   return(cat);
 }
-
 
 
 LinkedPhoListElement* genFoVXRayPhotons(XRaySourceCatalog* const cat, 
