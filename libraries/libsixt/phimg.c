@@ -93,6 +93,10 @@ void phimg(const GenDet* const det,
 			 ilf->row, 1, 1, &position.x, status);
 	  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy, 
 			 ilf->row, 1, 1, &position.y, status);
+	  fits_write_col(ilf->fptr, TLONG, ilf->cph_id, 
+			 ilf->row, 1, 1, &photon.ph_id, status);
+	  fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
+			 ilf->row, 1, 1, &photon.src_id, status);
 	  ilf->nrows++;
 	  CHECK_STATUS_VOID(*status);
 	}

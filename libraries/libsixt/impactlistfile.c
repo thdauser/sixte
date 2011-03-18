@@ -21,6 +21,8 @@ ImpactListFile* newImpactListFile(int* const status)
   file->cenergy=0;
   file->cx   =0;
   file->cy   =0;
+  file->cph_id =0;
+  file->csrc_id=0;
 
   return(file);
 }
@@ -71,8 +73,7 @@ ImpactListFile* openImpactListFile(const char* const filename,
   // Set internal row counter to the beginning of the file (starting at 0).
   file->row = 0;
 
-  // Determine the individual column numbers:
-  // REQUIRED columns:
+  // Determine the individual column numbers.
   if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "ENERGY", &file->cenergy, status)) 
@@ -80,6 +81,10 @@ ImpactListFile* openImpactListFile(const char* const filename,
   if(fits_get_colnum(file->fptr, CASEINSEN, "X", &file->cx, status)) 
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "Y", &file->cy, status)) 
+    return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status)) 
+    return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status)) 
     return(file);
 
   return(file);
@@ -170,21 +175,34 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
   // Read in the data.
   int anynul = 0;
   impact->time = 0.;
-  if (0<file->ctime) 
-    if (fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
-		      &impact->time, &impact->time, &anynul, status)) return;
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
+		&impact->time, &impact->time, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   impact->energy = 0.;
-  if (0<file->cenergy) 
-    if (fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
-		      &impact->energy, &impact->energy, &anynul, status)) return;
+  fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
+		&impact->energy, &impact->energy, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   impact->position.x = 0.;
-  if (0<file->cx) 
-    if (fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
-		      &impact->position.x, &impact->position.x, &anynul, status)) return;
+  fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
+		&impact->position.x, &impact->position.x, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
   impact->position.y = 0.;
-  if (0<file->cy) 
-    if (fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
-		      &impact->position.y, &impact->position.y, &anynul, status)) return;
+  fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
+		&impact->position.y, &impact->position.y, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
+  impact->ph_id = 0;
+  fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1, 
+		&impact->ph_id, &impact->ph_id, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
+  impact->src_id = 0;
+  fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1, 
+		&impact->src_id, &impact->src_id, &anynul, status);
+  CHECK_STATUS_VOID(*status);
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
@@ -198,7 +216,7 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
 
 
 
-int ImpactListFile_EOF(ImpactListFile* file) {
+int ImpactListFile_EOF(ImpactListFile* const file) {
   if (file->row >= file->nrows) {
     return(1);
   } else {

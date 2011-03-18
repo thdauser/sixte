@@ -77,7 +77,7 @@ struct PhotonBinaryTreeEntry {
 /** Create photons for a particular PointSource. Take into account
     the particular rate specified by the light curve and add the
     photons to the time ordered photon list. The return value is the
-    value of the error status variable. */
+    value of the error status variable. (Deprecated) */
 int create_PointSourcePhotons(PointSource* ps, 
 			      double time, double dt,
 			      struct PhotonOrderedListEntry** pl, 

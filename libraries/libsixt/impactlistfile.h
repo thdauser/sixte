@@ -24,7 +24,7 @@ typedef struct {
   long row;
 
   /** Column numbers in the FITS binary table. */
-  int ctime, cenergy, cx, cy;
+  int ctime, cenergy, cx, cy, cph_id, csrc_id;
 
 } ImpactListFile;
 
@@ -63,7 +63,7 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
     the last line in the file, i.e. this is the formerly read line, or
     has an even higher value, the function return value is 1,
     otherwise it is 0. */
-int ImpactListFile_EOF(ImpactListFile*);
+int ImpactListFile_EOF(ImpactListFile* const ilf);
 
 
 #endif /* IMPACTLISTFILE_H */
