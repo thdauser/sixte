@@ -6,6 +6,7 @@
 #include "telescope.h"
 #include "photon.h"
 #include "point.h"
+#include "vector.h"
 #include "vignetting.h"
 
 

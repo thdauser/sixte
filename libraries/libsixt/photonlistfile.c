@@ -163,9 +163,6 @@ int PhotonListFile_getRow(PhotonListFile* plf, Photon* ph, long row)
   ph->ra  *= M_PI/180.;
   ph->dec *= M_PI/180.;
   
-  // Determine the unit vector pointing in the direction of the photon.
-  ph->direction = unit_vector(ph->ra, ph->dec);
-
   return(status);
 }
 

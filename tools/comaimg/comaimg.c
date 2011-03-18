@@ -108,19 +108,18 @@ int comaimg_main() {
       // Rescale from [deg] -> [rad]
       photon.ra  = photon.ra *M_PI/180.;
       photon.dec = photon.dec*M_PI/180.;
-      // Determine a unit vector pointing in the direction of the photon.
-      photon.direction = unit_vector(photon.ra, photon.dec);
 
+      // Determine the unit vector pointing in the direction of the photon.
+      Vector photon_direction = unit_vector(photon.ra, photon.dec);
    
       // Determine telescope pointing direction at the current time.
       telescope.nz = getTelescopePointing(attitudecatalog, photon.time, &status);
       if (EXIT_SUCCESS!=status) break;
 
-
       // Check whether the photon is inside the FOV:
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
-      if (check_fov(&photon.direction, &telescope.nz, fov_min_align)==0) {
+      if (check_fov(&photon_direction, &telescope.nz, fov_min_align)==0) {
 	// Photon is inside the FOV!
 	
 	// Determine telescope data like direction etc. (attitude).

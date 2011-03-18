@@ -34,7 +34,8 @@ void phimg(const GenDet* const det,
     CHECK_STATUS_VOID(*status);
 
     // Compare the photon direction to the direction of the telescope axis.
-    if (check_fov(&photon.direction, &telescope.nz, fov_min_align)==0) {
+    Vector photon_direction = unit_vector(photon.ra, photon.dec);
+    if (check_fov(&photon_direction, &telescope.nz, fov_min_align)==0) {
       // Photon is inside the FOV!
 	
       // Determine telescope data like pointing direction (attitude) etc.

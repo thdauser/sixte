@@ -8,10 +8,10 @@
 #include "heasp.h"
 #endif
 
-#include "vector.h"
-#include "pointsources.h"
 #include "extendedsources.h"
+#include "pointsources.h"
 #include "rmf.h"
+#include "vector.h"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -30,15 +30,16 @@ long photon_counter;
 
 /** Contains all information about a single photon in the sky. */
 typedef struct {
-  double time;  /**< Real time, when the photon is falling on the detector (in [s]). */
-  float energy; /**< Photon energy in [keV]. */
+  /** Real time, when the photon is falling on the detector (in
+      [s]). */
+  double time;  
+
+  /** Photon energy in [keV]. */
+  float energy; 
 
   /** Right ascension and declination of photon position [rad]. */
   double ra, dec; 
 
-  // REMOVE (obsolete)
-  Vector direction; // direction from which the photon originates 
-                    // (source direction)
 } Photon;
 
 

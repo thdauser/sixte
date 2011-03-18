@@ -31,9 +31,12 @@ float photon_energy(const Spectrum* const spectrum,
 
 
 
-int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
-			      double time /**< Current time. */, 
-			      double dt /**< Time interval for photon generation. */,       
+int create_PointSourcePhotons(/** Source data. */
+			      PointSource* ps,
+			      /** Current time. */
+			      double time, 
+			      /** Time interval for photon generation. */
+			      double dt,
 			      /** Address of pointer to time-ordered photon list.*/
 			      struct PhotonOrderedListEntry** list_first,
 			      const struct ARF* const arf)
@@ -54,11 +57,10 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
 
 
   // Create photons and insert them into the given time-ordered list:
-  Photon new_photon; // Buffer for new Photon.
   while (ps->t_last_photon < time+dt) {
+    Photon new_photon;
     new_photon.ra  = ps->ra;
     new_photon.dec = ps->dec; 
-    new_photon.direction = unit_vector(new_photon.ra, new_photon.dec); // REMOVE
 
     // Determine the energy of the new photon
     new_photon.energy = photon_energy(ps->spectrum, arf);
@@ -123,9 +125,12 @@ int create_PointSourcePhotons(PointSource* ps /**< Source data. */,
 
 
 
-int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
-				 double time /**< Current time. */, 
-				 double dt /**< Time interval for photon generation. */,       
+int create_ExtendedSourcePhotons(/** Source data. */
+				 ExtendedSource* es,
+				 /** Current time. */
+				 double time, 
+				 /** Time interval for photon generation. */
+				 double dt,
 				 /** Address of pointer to time-ordered photon list.*/
 				 struct PhotonOrderedListEntry** list_first,
 				 const struct ARF* const arf)
@@ -189,14 +194,15 @@ int create_ExtendedSourcePhotons(ExtendedSource* es /**< Source data. */,
     radius = sixt_get_random_number()*es->radius;
     
     // Photon direction is composition of these vectors:
-    new_photon.direction.x = center_direction.x + 
+    Vector new_photon_direction;
+    new_photon_direction.x = center_direction.x + 
       radius*(cos(alpha)*a1.x + sin(alpha)*a2.x);
-    new_photon.direction.y = center_direction.y + 
+    new_photon_direction.y = center_direction.y + 
       radius*(cos(alpha)*a1.y + sin(alpha)*a2.y);
-    new_photon.direction.z = center_direction.z + 
+    new_photon_direction.z = center_direction.z + 
       radius*(cos(alpha)*a1.z + sin(alpha)*a2.z);
-    normalize_vector_fast(&new_photon.direction);
-    calculate_ra_dec(new_photon.direction, &new_photon.ra, &new_photon.dec);
+    normalize_vector_fast(&new_photon_direction);
+    calculate_ra_dec(new_photon_direction, &new_photon.ra, &new_photon.dec);
 
     // Determine the energy of the new photon
     new_photon.energy = photon_energy(es->spectrum, arf);
