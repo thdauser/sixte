@@ -99,7 +99,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   ImpactListFile* file = newImpactListFile(status);
   if (EXIT_SUCCESS!=*status) return(file);
 
-  // Remove old file if it exists.
+  // Remove old file, if it exists.
   remove(filename);
 
   // Create a new event list FITS file from the template file.

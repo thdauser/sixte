@@ -8,7 +8,7 @@ AM_CFLAGS  = -I${HEADAS}/include
 # Directory where to install the FITS template files.
 fitstemplatesdir = $(pkgdatadir)/templates
 dist_fitstemplates_DATA  = coma.eventlist.tpl
-dist_fitstemplates_DATA += eventlistfile.tpl
+dist_fitstemplates_DATA += eventlist.tpl
 dist_fitstemplates_DATA += genpatternfile.tpl
 dist_fitstemplates_DATA += htrs.eventlist.tpl
 dist_fitstemplates_DATA += impactlist.tpl

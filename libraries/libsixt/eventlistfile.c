@@ -22,6 +22,8 @@ EventListFile* newEventListFile(int* const status)
   file->crawx=0;
   file->crawy=0;
   file->cframe =0;
+  file->cph_id =0;
+  file->csrc_id=0;
 
   return(file);
 }
@@ -48,7 +50,7 @@ EventListFile* openNewEventListFile(const char* const filename,
   EventListFile* file = newEventListFile(status);
   if (EXIT_SUCCESS!=*status) return(file);
 
-  // Remove old file if it exists.
+  // Remove old file, if it exists.
   remove(filename);
 
   // Create a new event list FITS file from the template file.
@@ -122,6 +124,45 @@ EventListFile* openEventListFile(const char* const filename,
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status)) 
     return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status)) 
+    return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status)) 
+    return(file);
+
+  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
+  // with the corresponding array lengths in the Event data structure.
+  int typecode;
+  long repeat, width;
+  // PH_ID.
+  fits_get_coltype(file->fptr, file->cph_id, &typecode, &repeat,
+		   &width, status);
+  CHECK_STATUS_RET(*status, file);
+  if (repeat!=NEVENTPHOTONS) {
+    // Throw an error.
+    *status = EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: the maximum number of photons contributing "
+	    "to a single event is different for the parameter set "
+	    "in the simulation (%d) and in the event list "
+	    "template file (%ld)!\n", NEVENTPHOTONS, repeat);
+    HD_ERROR_THROW(msg, *status);
+    return(file);
+  }
+  // SRC_ID.
+  fits_get_coltype(file->fptr, file->csrc_id, &typecode, &repeat,
+		   &width, status);
+  CHECK_STATUS_RET(*status, file);
+  if (repeat!=NEVENTPHOTONS) {
+    // Throw an error.
+    *status = EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: the maximum number of photons contributing "
+	    "to a single event is different for the parameter set "
+	    "in the simulation (%d) and in the event list "
+	    "template file (%ld)!\n", NEVENTPHOTONS, repeat);
+    HD_ERROR_THROW(msg, *status);
+    return(file);
+  }
 
   return(file);
 }
@@ -161,6 +202,10 @@ void addEvent2File(EventListFile* const file, Event* const event,
 		     1, 1, &event->rawy, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cframe, file->row, 
 		     1, 1, &event->frame, status)) return;
+  if (fits_write_col(file->fptr, TLONG, file->cph_id, file->row, 
+		     1, NEVENTPHOTONS, &event->ph_id, status)) return;
+  if (fits_write_col(file->fptr, TLONG, file->csrc_id, file->row, 
+		     1, NEVENTPHOTONS, &event->src_id, status)) return;
 }
 
 
@@ -189,35 +234,42 @@ void getEventFromFile(const EventListFile* const file,
   }
 
   // Read in the data.
-  int anynul = 0;
-  event->time = 0.;
+  int anynul=0;
+  double dnull=0.;
+  float fnull=0.;
+  long lnull=0;
+  int inull=0;
+
   fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
-		&event->time, &event->time, &anynul, status);
+		&dnull, &event->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  event->pha = 0;
   fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
-		&event->pha, &event->pha, &anynul, status);
+		&lnull, &event->pha, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  event->charge = 0.;
   fits_read_col(file->fptr, TFLOAT, file->ccharge, row, 1, 1, 
-		&event->charge, &event->charge, &anynul, status);
+		&fnull, &event->charge, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  event->rawx = 0;
   fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
-		&event->rawx, &event->rawx, &anynul, status);
+		&inull, &event->rawx, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  event->rawy = 0;
   fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
-		&event->rawy, &event->rawy, &anynul, status);
+		&inull, &event->rawy, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  event->frame = 0;
   fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
-		&event->frame, &event->frame, &anynul, status);
+		&lnull, &event->frame, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
+  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS, 
+		&lnull, &event->ph_id, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
+  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NEVENTPHOTONS, 
+		&lnull, &event->src_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   // Check if an error occurred during the reading process.

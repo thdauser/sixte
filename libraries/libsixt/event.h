@@ -4,6 +4,13 @@
 #include "sixt.h"
 
 
+/** Maximum number of photons that are stored as a contribution to a
+    single event. If an event originates from more than this
+    particular number of photons, the additional ones are not
+    stored in the event history. */
+#define NEVENTPHOTONS (2)
+
+
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
 /////////////////////////////////////////////////////////////////
@@ -26,6 +33,13 @@ typedef struct {
 
   /** Frame counter. */
   long frame;
+
+  /** Identifiers of the contributing photons. */
+  long ph_id[NEVENTPHOTONS];
+
+  /** Identifiers of the corresponding sources (defined in the SIMPUT
+      source catalog). */
+  long src_id[NEVENTPHOTONS];
 
 } Event;
 

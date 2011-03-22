@@ -52,7 +52,8 @@ int makeGenSplitEvents(const GenSplit* const split,
 		       const struct Point2d* const position,
 		       const float charge,
 		       const GenPixGrid* const grid,
-		       GenDetLine** const detline)
+		       GenDetLine** const detline,
+		       const long ph_id, const long src_id)
 {
   // Number of affected pixels.
   int npixels=0;
@@ -238,7 +239,8 @@ int makeGenSplitEvents(const GenSplit* const split,
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) && (x[ii]<grid->xwidth) &&
 	(y[ii]>=0) && (y[ii]<grid->ywidth)) {
-      addGenDetCharge2Pixel(detline[y[ii]], x[ii], charge*fraction[ii]);
+      addGenDetCharge2Pixel(detline[y[ii]], x[ii], charge*fraction[ii], 
+			    ph_id, src_id);
       nvalidpixels++;
     }
   }

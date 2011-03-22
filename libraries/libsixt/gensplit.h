@@ -59,7 +59,8 @@ int makeGenSplitEvents(const GenSplit* const split,
 		       const struct Point2d* const impact,
 		       const float charge,
 		       const GenPixGrid* const grid,
-		       GenDetLine** const line);
+		       GenDetLine** const line,
+		       const long ph_id, const long src_id);
 
 
 #endif /* GENSPLIT_H */

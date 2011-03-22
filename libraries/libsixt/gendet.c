@@ -964,7 +964,8 @@ int addGenDetPhotonImpact(GenDet* const det,
 
   // Create split events.
   int npixels = makeGenSplitEvents(det->split, &impact->position, charge, 
-				   det->pixgrid, det->line)>0;
+				   det->pixgrid, det->line, 
+				   impact->ph_id, impact->src_id)>0;
   
   // Return the number of affected pixels.
   return(npixels);
@@ -1014,7 +1015,7 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
 	  makeGenSplitEvents(det->split, &position,
 			     // Energy of the event in [keV].
 			     list->hit_energy[ii],
-			     det->pixgrid, det->line);
+			     det->pixgrid, det->line, -1, -1);
 	} 
 	eroBkgFree(list);
       }
@@ -1060,7 +1061,9 @@ void GenDetLineShift(GenDet* const det)
       if (0!=det->line[ii]->anycharge) {
 	int jj;
 	for (jj=0; jj<det->line[ii]->xwidth; jj++) {
-	  det->line[ii]->charge[jj] *= det->cte;
+	  if (det->line[ii]->charge[jj] > 0.) {
+	    det->line[ii]->charge[jj] *= det->cte;
+	  }
 	}
       }
     }
@@ -1106,6 +1109,15 @@ void GenDetReadoutLine(GenDet* const det,
 	// ... and delete the pixel value.
 	line->charge[ii] = 0.;
 
+	// Copy the information about the original photons.
+	int jj;
+	for(jj=0; jj<NEVENTPHOTONS; jj++) {
+	  event.ph_id[jj]  = line->ph_id[ii][jj];
+	  event.src_id[jj] = line->src_id[ii][jj];
+	  line->ph_id[ii][jj]  = 0;
+	  line->src_id[ii][jj] = 0;
+	}
+
 	// Apply the charge thresholds.
 	if (event.charge<=det->threshold_readout_lo_keV) {
 	  continue;
@@ -1115,7 +1127,6 @@ void GenDetReadoutLine(GenDet* const det,
 	    continue;
 	  }
 	}
-
 
 	// Apply the detector response.
 	event.pha = getEBOUNDSChannel(event.charge, det->rmf);
@@ -1537,7 +1548,10 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
 
 
 
-void encounterGenDetBadPix(void* const data, const int x, const int y, const float value) {
+void encounterGenDetBadPix(void* const data, 
+			   const int x, const int y, 
+			   const float value) 
+{
   // Array of pointers to pixel lines.
   GenDetLine** line = (GenDetLine**)data;
 
@@ -1547,7 +1561,7 @@ void encounterGenDetBadPix(void* const data, const int x, const int y, const flo
     line[y]->charge[x] = 0.;
   } else if (value > 0.) { // The pixel is a hot one.
     // Add additional charge to the pixel.
-    addGenDetCharge2Pixel(line[y], x, value);
+    addGenDetCharge2Pixel(line[y], x, value, -1, -1);
   }
 }
 

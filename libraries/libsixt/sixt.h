@@ -22,11 +22,13 @@
 #include <omp.h>
 #endif
 
+#include "ape/ape_trad.h"
 #include "fitsio.h"
 #include "pil.h"
 #include "headas.h"
 #include "headas_error.h"
 #include "headas_rand.h"
+
 
 
 /////////////////////////////////////////////////////////////////

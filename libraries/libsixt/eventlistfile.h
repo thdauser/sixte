@@ -22,7 +22,7 @@ typedef struct {
   long row;
 
   /** Column numbers. */
-  int ctime, cpha, ccharge, crawx, crawy, cframe;
+  int ctime, cpha, ccharge, crawx, crawy, cframe, cph_id, csrc_id;
 
 } EventListFile;
 

@@ -73,7 +73,7 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
 {
   PhotonListFile* plf=NULL;
 
-  // Remove old file if it exists.
+  // Remove old file, if it exists.
   remove(filename);
 
   // Create a new photon list FITS file from the given FITS template.
@@ -82,6 +82,12 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   sprintf(buffer, "%s(%s)", filename, template);
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, plf);
+
+  // Add header information about program parameters.
+  // The second parameter "1" means that the headers are written
+  // to the first extension.
+  HDpar_stamp(fptr, 1, status);
+  if (EXIT_SUCCESS!=*status) return(plf);
 
   // Close the file (it is reopened in the next step).
   fits_close_file(fptr, status);

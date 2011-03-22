@@ -127,15 +127,12 @@ int simsixt_main()
 
     if (strlen(par.photonlist_filename)>0) {
       strcpy(photonlist_filename, par.photonlist_filename);
-
-      // If the old file should be removed, when it already exists,
-      // the filename has to start with an exclamation mark ('!').
-
     } else {
       // No photon list file has been given. Therefore create a temporary 
       // file, which resides in the memory and is removed after the program 
       // terminates.
-      // Open with prefix 'mem://'.
+      // Open with prefix 'mem://'. 
+      // TODO
       strcpy(photonlist_filename, "mem://photons.fits");
     }
 
@@ -260,29 +257,45 @@ int simsixt_main()
 
 int simsixt_getpar(struct Parameters* const par)
 {
-  int status = EXIT_SUCCESS; // Error status.
+  // String input buffer.
+  char* sbuffer=NULL;
+
+  // Error status.
+  int status = EXIT_SUCCESS; 
+
 
   // Get the filename of the detector XML definition file.
-  if ((status = PILGetFname("xml_filename", par->xml_filename))) {
+  status=ape_trad_query_file_name("xml_filename", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the detector " 
 		   "XML definition file!\n", status);
     return(status);
   }
+  strcpy(par->xml_filename, sbuffer);
+  free(sbuffer);
 
   // Get the filename of the attitude file (FITS file).
-  if ((status = PILGetString("attitude_filename", par->attitude_filename))) {
+  status=ape_trad_query_string("attitude_filename", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the attitude file!\n", status);
     return(status);
+  } 
+  strcpy(par->attitude_filename, sbuffer);
+  free(sbuffer);
 
-  } else if (0==strlen(par->attitude_filename)) {
+
+  if ((0==strlen(par->attitude_filename)) || 
+      (0==strcmp(par->attitude_filename, " "))) {
     // If the attitude filename is empty, read pointing parameters 
     // from the command line / PIL.
-    if ((status = PILGetReal4("pointing_ra", &par->pointing_ra))) {
+    status=ape_trad_query_float("pointing_ra", &par->pointing_ra);
+    if (EXIT_SUCCESS!=status) {
       HD_ERROR_THROW("Error reading the right ascension of the telescope "
 		     "pointing direction!\n", status);
       return(status);
     }
-    if ((status = PILGetReal4("pointing_dec", &par->pointing_dec))) {
+    status=ape_trad_query_float("pointing_dec", &par->pointing_dec);
+    if (EXIT_SUCCESS!=status) {
       HD_ERROR_THROW("Error reading the declination of the telescope "
 		     "pointing direction!\n", status);
       return(status);
@@ -291,29 +304,37 @@ int simsixt_getpar(struct Parameters* const par)
 
   // Determine the name of the file that contains the input source catalog.
   // The file must have the SIMPUT format.
-  if ((status = PILGetString("simput_filename", par->simput_filename))) {
+  status=ape_trad_query_string("simput_filename", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the filename of the input source "
 		   "catalog (SIMPUT)!\n", status);
     return(status);
   } 
+  strcpy(par->simput_filename, sbuffer);
+  free(sbuffer);
     
-  // If the source catalog filename is empty, read source parameters
-  // from the command line / PIL.
-  if (0==strlen(par->simput_filename)) {  
+  if ((0==strlen(par->simput_filename)) ||
+      (0==strcmp(par->simput_filename, " "))) {
+    // If the source catalog filename is empty, read source parameters
+    // from the command line / PIL.
+
     // Determine the source type.
-    if ((status = PILGetInt("src_type", &par->src_type))) {
+    status=ape_trad_query_int("src_type", &par->src_type);
+    if (EXIT_SUCCESS!=status) {
       HD_ERROR_THROW("Error reading the source type!\n", status);
       return(status);
     } 
 
     // Point source.
     if (0==par->src_type) {
-      if ((status = PILGetReal4("src_ra", &par->src_ra))) {
+      status=ape_trad_query_float("src_ra", &par->src_ra);
+      if (EXIT_SUCCESS!=status) {
 	HD_ERROR_THROW("Error reading the right ascension "
 		       "of the source!\n", status);
 	return(status);
       }
-      if ((status = PILGetReal4("src_dec", &par->src_dec))) {
+      status=ape_trad_query_float("src_dec", &par->src_dec);
+      if (EXIT_SUCCESS!=status) {
 	HD_ERROR_THROW("Error reading the declination "
 		       "of the source!\n", status);
 	return(status);
@@ -322,30 +343,38 @@ int simsixt_getpar(struct Parameters* const par)
     
     // Image source.
     if (2==par->src_type) {
-      if ((status = PILGetFname("src_image_filename", 
-				 par->src_image_filename))) {
+      status=ape_trad_query_string("src_image_filename", &sbuffer);
+      if (EXIT_SUCCESS!=status) {
 	HD_ERROR_THROW("Error reading the filename of the source image!\n",
 		       status);
 	return(status);
-      }   
+      }
+      strcpy(par->src_image_filename, sbuffer);
+      free(sbuffer);
     }
     
     // Source flux.
-    if ((status = PILGetReal4("src_flux", &par->src_flux))) {
+    status=ape_trad_query_float("src_flux", &par->src_flux);
+    if (EXIT_SUCCESS!=status) {
       HD_ERROR_THROW("Error reading the source flux!\n", status);
       return(status);
     }
 
     // Spectrum.
-    if ((status = PILGetString("src_spectrum_filename", 
-			       par->src_spectrum_filename))) {
+    status=ape_trad_query_string("src_spectrum_filename", &sbuffer);
+    if (EXIT_SUCCESS!=status) {
       HD_ERROR_THROW("Error reading the filename of the source spectrum!\n",
 		     status);
       return(status);
     }
+    strcpy(par->src_spectrum_filename, sbuffer);
+    free(sbuffer);
+
     // Mono-energetic source.
-    if (0==strlen(par->src_spectrum_filename)) {
-      if ((status = PILGetReal4("src_mono_energy", &par->src_mono_energy))) {
+    if ((0==strlen(par->src_spectrum_filename)) ||
+	(0==strcmp(par->src_spectrum_filename, " "))) {
+      status=ape_trad_query_float("src_mono_energy", &par->src_mono_energy);
+      if (EXIT_SUCCESS!=status) {
 	HD_ERROR_THROW("Error reading the source energy "
 		       "(mono-energetic source)!\n", status);
 	return(status);
@@ -356,38 +385,52 @@ int simsixt_getpar(struct Parameters* const par)
   // END of reading the source data from the command line.
 
   // Get the start time of the simulation.
-  if ((status = PILGetReal("t0", &par->t0))) {
+  status=ape_trad_query_double("t0", &par->t0);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the start time t_0!\n", status);
     return(status);
   }
 
   // Get the exposure time for the simulation.
-  if ((status = PILGetReal("exposure", &par->exposure))) {
+  status=ape_trad_query_double("exposure", &par->exposure);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the exposure time!\n", status);
     return(status);
   }
 
   // Get the filename of the output photon list file.
-  if ((status = PILGetString("photonlist_filename", par->photonlist_filename))) {
-    HD_ERROR_THROW("Error reading the name of the output photon list file!\n", status);
+  status=ape_trad_query_string("photonlist_filename", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the output photon "
+		   "list file!\n", status);
     return(status);
   }
+  strcpy(par->photonlist_filename, sbuffer);
+  free(sbuffer);
 
   // Get the filename of the output impact list file.
-  if ((status = PILGetString("impactlist_filename", par->impactlist_filename))) {
-    HD_ERROR_THROW("Error reading the name of the output impact list file!\n", status);
+  status=ape_trad_query_string("impactlist_filename", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the output impact "
+		   "list file!\n", status);
     return(status);
   }
+  strcpy(par->impactlist_filename, sbuffer);
+  free(sbuffer);
 
   // Get the filename of the output event list file.
-  if ((status = PILGetFname("eventlist_filename", par->eventlist_filename))) {
+  status=ape_trad_query_file_name("eventlist_filename", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the output " 
 		   "event list file!\n", status);
     return(status);
   }
+  strcpy(par->eventlist_filename, sbuffer);
+  free(sbuffer);
 
   // Get the seed for the random number generator.
-  if ((status = PILGetInt("random_seed", &par->random_seed))) {
+  status=ape_trad_query_int("random_seed", &par->random_seed);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the seed for the random "
 		   "number generator!\n", status);
     return(status);
@@ -396,14 +439,19 @@ int simsixt_getpar(struct Parameters* const par)
   // Get the name of the FITS template directory.
   // First try to read it from the environment variable.
   // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(par->fits_templates, buffer);
+  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(par->fits_templates, sbuffer);
+    // Note: the char* pointer returned by getenv should not
+    // be modified nor free'd.
   } else {
-    if ((status = PILGetFname("fits_templates", par->fits_templates))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);      
+    status=ape_trad_query_file_name("fits_templates", &sbuffer);
+    if (EXIT_SUCCESS!=status) {
+      HD_ERROR_THROW("Error reading the path of the FITS "
+		     "templates!\n", status);
       return(status);
     }
+    strcpy(par->fits_templates, sbuffer);
+    free(sbuffer);    
   }
 
   return(status);

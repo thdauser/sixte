@@ -20,6 +20,14 @@ typedef struct {
   /** Charges contained in the individual pixels of this line. */
   float* charge;
 
+  /** Photon IDs corresponding to the charges in the individual
+      pixels. */
+  long** ph_id;
+
+  /** Source IDs corresponding to the charges in the individual
+      pixels. */
+  long** src_id;
+
   /** This flag specifies if the line contains any charges (value
       1). If not (value 0), the read-out does not have to be
       performed. */
@@ -55,6 +63,7 @@ void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1);
     specified GenDetLine. The routine sets the anycharge flag of the
     affected line. */
 void addGenDetCharge2Pixel(GenDetLine* const line, const int column, 
-			   float energy);
+			   const float energy,
+			   const long ph_id, const long src_id);
 
 #endif /* GENDETLINE_H */
