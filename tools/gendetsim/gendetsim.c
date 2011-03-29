@@ -105,7 +105,8 @@ int getpar(struct Parameters* const parameters)
 
   // Get the name of the detector XML description file (FITS file).
   if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
-    HD_ERROR_THROW("Error reading the name of the detector definition XML file!\n", status);
+    HD_ERROR_THROW("Error reading the name of the detector "
+		   "definition XML file!\n", status);
     return(status);
   }
 
