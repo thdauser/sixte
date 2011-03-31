@@ -1,0 +1,19 @@
+OutputStem -> file stem
+PhotonList,s,h,"none",,,"photon list output file"
+ImpactList,s,h,"none",,,"impact list output file"
+EventList,f,h,"none",,,"event list output file"
+Mission
+Instrument
+Mode (includes Filter)
+XMLFile,fre,h,"",,,"XML file with detector definition"
+Attitude,s,h,"none",,,"attitude file"
+RA,r,lq,0.0,0.0,360.0,"right ascension of telescope pointing (degree)"
+Dec,r,lq,0.0,-90.0,90.0,"declination of telescope pointing (degree)"
+Simput,s,lq,"source_catalog.fits",,,"source catalog"
+MJDREF,r,h,50814,,,""
+TIMEZERO,r,h,0.0,0.0,,"t0 - start time (s)"
+Exposure,r,lq,1000.0,0.0,,"time interval for the measurement simulation (s)"
+Seed,i,lh,-1,,,"seed for random number generator"
+chatter,i,lh,4,,,"chatter: control verbosity of the program"
+clobber,...
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"
