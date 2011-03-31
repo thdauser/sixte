@@ -113,7 +113,7 @@ int comaimg_main() {
       Vector photon_direction = unit_vector(photon.ra, photon.dec);
    
       // Determine telescope pointing direction at the current time.
-      telescope.nz = getTelescopePointing(attitudecatalog, photon.time, &status);
+      telescope.nz = getTelescopeNz(attitudecatalog, photon.time, &status);
       if (EXIT_SUCCESS!=status) break;
 
       // Check whether the photon is inside the FOV:

@@ -26,7 +26,7 @@ typedef struct {
   Vector nx;
 
   /** Roll-angle ([rad]). */
-  double roll_angle;
+  float roll_angle;
 
   // TODO Keep either the roll_angle or nx. 
 
@@ -45,6 +45,13 @@ typedef struct {
 
   /** Index of the currently selected entry in the catalog. */
   long current_entry;
+
+  /** Alignment flag. If the rollangle should be determined with
+      respect to the equatorial plane, the value of the alignment flag
+      should be 0. If the alignment is with respect to the motion of
+      the telescope axis, the value of the alignment flag should be
+      1. */
+  int alignment;
 
 } AttitudeCatalog;
 
@@ -70,12 +77,23 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
 void freeAttitudeCatalog(AttitudeCatalog** const ac);
 
 /** Determine the telescope pointing direction at a specific time. */
-Vector getTelescopePointing(AttitudeCatalog* const ac, 
-			    const double time, 
-			    int* const status);
+Vector getTelescopeNz(AttitudeCatalog* const ac, 
+		      const double time, 
+		      int* const status);
+
+/** Determine the 3 axes vectors for the telescope coordinate
+    system. */
+void getTelescopeAxes(AttitudeCatalog* const ac,
+		      Vector* const nx,
+		      Vector* const ny,
+		      Vector* const nz,
+		      const double time, 
+		      int* const status);
 
 /** Determine the roll-angle ([rad]) at a specific time. */
-double getRollAngle(AttitudeCatalog* ac, double time, int* status);
+float getRollAngle(AttitudeCatalog* const ac, 
+		   const double time, 
+		   int* const status);
 
 /** Return an empty AttitudeEntry object with default values. */
 AttitudeEntry defaultAttitudeEntry();

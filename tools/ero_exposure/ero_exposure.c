@@ -64,7 +64,7 @@ static inline int timestep(float** expoMap,
   int status = EXIT_SUCCESS;
 
   // Determine the telescope pointing direction at the current time.
-  telescope_nz = getTelescopePointing(ac, time, &status);
+  telescope_nz = getTelescopeNz(ac, time, &status);
   if (EXIT_SUCCESS!=status) return(status);
 
   // Calculate the RA and DEC of the pointing direction.

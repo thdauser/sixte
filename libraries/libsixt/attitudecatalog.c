@@ -54,6 +54,25 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
 		     "the AttitudeCatalog!\n", *status);
       break;
     }
+
+    // Determine whether the rollangle alignment should refer
+    // to the telescope's direction of motion or to the equatorial 
+    // plane.
+    char comment[MAXMSG], sbuffer[MAXMSG]; // String buffers.
+    fits_read_key(af->fptr, TSTRING, "ALIGNMEN", &sbuffer, comment, status);
+    CHECK_STATUS_BREAK(*status);
+    // Check the value of the header keyword and set the alignment flag
+    // appropriately.
+    strtoupper(sbuffer);
+    if ((0==strlen(sbuffer)) || (!strcmp(sbuffer, "EQUATOR"))) {
+      ac->alignment=0;
+    } else if (!strcmp(sbuffer, "MOTION")) {
+      ac->alignment=1;
+    } else {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("invalid value for telescope alignment flag");
+    } 
+
     
     // Read all lines from attitude file subsequently.
     AttitudeFileEntry afe;
@@ -64,14 +83,13 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
 
       // Calculate and store attitude data:
       ac->entry[af->row].time = afe.time;
-      // Rescale from degrees to radians:
-      afe.rollang = afe.rollang*M_PI/180.;
 
       // Telescope pointing direction nz:
       ac->entry[af->row].nz = 
 	unit_vector(afe.viewra*M_PI/180., afe.viewdec*M_PI/180.);
+
       // Roll-Angle:
-      ac->entry[af->row].roll_angle = afe.rollang;
+      ac->entry[af->row].roll_angle = afe.rollang*M_PI/180.;
     }
     if (EXIT_SUCCESS!=*status) break;
     // End of the attitude readout loop
@@ -92,40 +110,57 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
       }
     }
 
-    // Loop over all AttitudeEntry elements in the AttitudeCatalog in
-    // order to determine the telescope nx-direction (so far only the
-    // nz direction is set).
-    // Check the change of the telescope pointing direction between two subsequent
-    // AttitudeEntry elements.
+
+    // Determine the telescope nx-direction for all entries in the
+    // AttitudeCatalog (so far only the nz direction is set).
+
+    // TODO Check whether nx should explicitly be aligned parallel to 
+    // the equatorial plane or to the direction of the telescope motion.
+
+    // Special case for the first entry in the attitude catalog.
+    // Determine the change of the telescope pointing direction 
+    // between two subsequent AttitudeEntry elements.
     Vector dnz = vector_difference(ac->entry[1].nz, ac->entry[0].nz);
-    if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { // 1.e-3
-      // Change of the telescope axis is too small to be significant.
-      Vector ny = {0., 1., 0.};
-      ac->entry[0].nx=vector_product(ac->entry[0].nz, ny); // TODO
-    } else {
+    if (sqrt(scalar_product(&dnz, &dnz))>1.e-7) {
+      // The vector nx is pointing along the direction of the 
+      // telescope motion.
       // nx = (nz_0 x nz_1) x nz_0
       ac->entry[0].nx=
 	normalize_vector(vector_product(vector_product(ac->entry[0].nz,
 						       ac->entry[1].nz),
 					ac->entry[0].nz));
+    } else {
+      // Change of the telescope axis is too small to be significant.
+      // Therefore the nx vector is selected to be aligned parallel 
+      // to the equatorial plane.
+      Vector ny = {0., 1., 0.};
+      ac->entry[0].nx=vector_product(ac->entry[0].nz, ny); 
+      // TODO If nz is pointing towards of one of the poles.
     }
 
+    // Loop over all other (than the first) AttitudeEntry elements 
+    // in the AttitudeCatalog.
     long ii;
     for (ii=1; ii<ac->nentries; ii++) {
 
       Vector dnz = 
 	vector_difference(ac->entry[ii].nz, ac->entry[ii-1].nz);
-      if (sqrt(scalar_product(&dnz, &dnz))<1.e-7) { // 1.e-3
-	// Change of the telescope axis is too small to be significant.
-	Vector ny = {0., 1., 0.};
-	ac->entry[ii].nx=vector_product(ac->entry[ii].nz, ny); // TODO
-      } else {
+      if (sqrt(scalar_product(&dnz, &dnz))>1.e-7) {
+	// The vector nx is pointing along the direction of the 
+	// telescope motion.
 	ac->entry[ii].nx=
 	  normalize_vector(vector_difference(ac->entry[ii].nz,
 					     ac->entry[ii-1].nz));
+      } else {
+	// Change of the telescope axis is too small to be significant.
+	// Therefore the nx vector is selected to be aligned parallel 
+	// to the equatorial plane.
+	Vector ny = {0., 1., 0.};
+	ac->entry[ii].nx=vector_product(ac->entry[ii].nz, ny); // TODO
       }
 
-    } // END of loop over all AttitudeEntry elements for the calculation of nx.
+    } 
+    // END of loop over all AttitudeEntry elements for the calculation of nx.
 
   } while (0); // End of error handling loop
 
@@ -155,11 +190,10 @@ void freeAttitudeCatalog(AttitudeCatalog** const ac)
 }
 
 
-Vector getTelescopePointing(AttitudeCatalog* const ac, 
-			    const double time, 
-			    int* const status)
+static void setAttitudeCatalogCurrentEntry(AttitudeCatalog* const ac,
+					   const double time,
+					   int* const status)
 {
-  Vector nz = { .x = 0., .y = 0., .z = 0. };
   char msg[MAXMSG]; // Error message buffer.
 
   // Check if the requested time lies within the current time bin.
@@ -169,7 +203,7 @@ Vector getTelescopePointing(AttitudeCatalog* const ac,
       *status = EXIT_FAILURE;
       sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
-      return(nz);
+      return;
     }
     // If not, go one step back.
     ac->current_entry--;
@@ -181,53 +215,116 @@ Vector getTelescopePointing(AttitudeCatalog* const ac,
       *status = EXIT_FAILURE;
       sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
-      return(nz);
+      return;
     }
     // If not, go one step further.
     ac->current_entry++;
   }
-    
+}
+
+
+Vector getTelescopeNz(AttitudeCatalog* const ac, 
+		      const double time, 
+		      int* const status)
+{
+  Vector nz = {.x=0., .y=0., .z=0.};
+ 
+  // Find the appropriate entry in the AttitudeCatalog for the 
+  // requested time.
+  setAttitudeCatalogCurrentEntry(ac, time, status);
+  CHECK_STATUS_RET(*status,nz);
+   
   // The requested time lies within the current time bin.
   // Interpolation:
-  nz = interpolateCircleVector(ac->entry[ac->current_entry].nz, 
-			       ac->entry[ac->current_entry+1].nz, 
-			       (time-ac->entry[ac->current_entry].time)/
-			       (ac->entry[ac->current_entry+1].time-
-				ac->entry[ac->current_entry].time));
-
+  nz=interpolateCircleVector(ac->entry[ac->current_entry].nz, 
+			     ac->entry[ac->current_entry+1].nz, 
+			     (time-ac->entry[ac->current_entry].time)/
+			     (ac->entry[ac->current_entry+1].time-
+			      ac->entry[ac->current_entry].time));
+  
   return(nz);
 }
 
 
+void getTelescopeAxes(AttitudeCatalog* const ac,
+		      Vector* const nx,
+		      Vector* const ny,
+		      Vector* const nz,
+		      const double time, 
+		      int* const status)
+{   
+  // Determine the z vector (telescope pointing direction):
+  *nz=getTelescopeNz(ac, time, status);
+  CHECK_STATUS_VOID(*status);
+  // After calling getTelescopeNz() the internal current entry pointer
+  // within the attitude catalog is set to the appropriate time bin.
 
-double getRollAngle(AttitudeCatalog* ac, double time, int* status)
+  // Check if this is a pointed observation.
+  int pointed=0;
+  Vector dnz;
+  if (ac->nentries==1) {
+    // There is only one entry in the AttitudeCatalog.
+    pointed=1;
+  } else {
+    if (ac->current_entry>0) {
+      dnz = vector_difference(ac->entry[ac->current_entry].nz, 
+			      ac->entry[ac->current_entry-1].nz);
+    } else {
+      dnz = vector_difference(ac->entry[ac->current_entry+1].nz, 
+			      ac->entry[ac->current_entry].nz);
+    }
+    if (scalar_product(&dnz, &dnz)<1.e-10) {
+      pointed=1;
+    }
+  }
+
+  // Check if the x1 vector should be aligned parallel to the equatorial 
+  // plane or along the direction of motion of the telescope axis 
+  // (neglecting the roll angle). For a pointed observation the alignment 
+  // is done parallel to the equatorial plane.
+  Vector x1;
+  if ((1==pointed) || (0==ac->alignment)) {
+    // Alignment parallel to the equatorial plane.
+    Vector b = {0., 0., 1.};
+    x1=vector_product(*nz, b);
+    
+    // CHECK if the telescope is pointing towards one of the poles.
+    if (scalar_product(&x1, &x1)<1.e-10) {
+      Vector c = {1., 0., 0.};
+      x1 = vector_product(*nz, c);
+    }
+
+  } else {
+    // Alignment along the direction of motion of the telescope axis.
+    x1=normalize_vector(dnz);
+  }
+
+  // Determine the y1 vector, which is perpendicular 
+  // to the other 2 axes nz and x1:
+  Vector y1=normalize_vector(vector_product(*nz, x1));
+
+  // Take into account the roll angle.
+  float roll_angle = getRollAngle(ac, time, status);
+  CHECK_STATUS_VOID(*status);
+  nx->x = x1.x * cos(roll_angle) + y1.x * sin(roll_angle);
+  nx->y = x1.y * cos(roll_angle) + y1.y * sin(roll_angle);
+  nx->z = x1.z * cos(roll_angle) + y1.z * sin(roll_angle);
+  ny->x = - x1.x * sin(roll_angle) + y1.x * cos(roll_angle);
+  ny->y = - x1.y * sin(roll_angle) + y1.y * cos(roll_angle);
+  ny->z = - x1.z * sin(roll_angle) + y1.z * cos(roll_angle);
+  
+  return;
+}
+
+
+float getRollAngle(AttitudeCatalog* const ac, 
+		   const double time, 
+		   int* const status)
 {
-  char msg[MAXMSG]; // Error message buffer.
-
-  // Check if the requested time lies within the current time bin.
-  while (time < ac->entry[ac->current_entry].time) {
-    // Check if the beginning of the AttitudeCatalog is reached.
-    if (ac->current_entry <= 0) {
-      *status = EXIT_FAILURE;
-      sprintf(msg, "no attitude entry available for time %lf!\n", time);
-      HD_ERROR_THROW(msg, *status);
-      return(0.);
-    }
-    // If not, go one step back.
-    ac->current_entry--;
-  }
-
-  while (time > ac->entry[ac->current_entry+1].time) {
-    // Check if the end of the AttitudeCatalog is reached.
-    if (ac->current_entry >= ac->nentries-2) {
-      *status = EXIT_FAILURE;
-      sprintf(msg, "no attitude entry available for time %lf!\n", time);
-      HD_ERROR_THROW(msg, *status);
-      return(0.);
-    }
-    // If not, go one step further.
-    ac->current_entry++;
-  }
+  // Find the appropriate entry in the AttitudeCatalog for the 
+  // requested time.
+  setAttitudeCatalogCurrentEntry(ac, time, status);
+  CHECK_STATUS_RET(*status,0.);
     
   // The requested time lies within the current time bin.
   // Interpolation:

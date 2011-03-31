@@ -30,7 +30,7 @@ void phimg(const GenDet* const det,
 
     // Check whether the photon is inside the FOV.
     // First determine telescope pointing direction at the current time.
-    telescope.nz = getTelescopePointing(ac, photon.time, status);
+    telescope.nz = getTelescopeNz(ac, photon.time, status);
     CHECK_STATUS_VOID(*status);
 
     // Compare the photon direction to the direction of the telescope axis.

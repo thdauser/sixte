@@ -53,10 +53,10 @@ int add_attitudetbl_row(fitsfile *fptr,
 			long row, 
 			char valtime[], 
 			double time, 
-			double view_ra, 
-			double view_dec, 
-			double rollangle, 
-			double aspangle, 
+			float view_ra, 
+			float view_dec, 
+			float rollangle, 
+			float aspangle, 
 			int fitsstatus)
 {
   int status = fitsstatus;
@@ -64,17 +64,17 @@ int add_attitudetbl_row(fitsfile *fptr,
   fits_insert_rows(fptr, row++, 1, &status);
   fits_write_col(fptr, TSTRING, 1, row, 1, 1, &valtime, &status);
   fits_write_col(fptr, TDOUBLE, 2, row, 1, 1, &time, &status);
-  fits_write_col(fptr, TDOUBLE, 3, row, 1, 1, &view_ra, &status);
-  fits_write_col(fptr, TDOUBLE, 4, row, 1, 1, &view_dec, &status);
-  fits_write_col(fptr, TDOUBLE, 5, row, 1, 1, &rollangle, &status);
-  fits_write_col(fptr, TDOUBLE, 6, row, 1, 1, &aspangle, &status);
+  fits_write_col(fptr, TFLOAT, 3, row, 1, 1, &view_ra, &status);
+  fits_write_col(fptr, TFLOAT, 4, row, 1, 1, &view_dec, &status);
+  fits_write_col(fptr, TFLOAT, 5, row, 1, 1, &rollangle, &status);
+  fits_write_col(fptr, TFLOAT, 6, row, 1, 1, &aspangle, &status);
 
   return(status);
 }
 
 
 
-AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status)
+AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const status)
 {
   AttitudeFileEntry afe = { .time = 0. };
   int anynul = 0;
@@ -83,13 +83,13 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status)
   fits_read_col(af->fptr, TDOUBLE, af->ctime, af->row+1, 1, 1, 
 		&afe.time, &afe.time, &anynul, status);
   // VIEWRA
-  fits_read_col(af->fptr, TDOUBLE, af->cviewra, af->row+1, 1, 1, 
+  fits_read_col(af->fptr, TFLOAT, af->cviewra, af->row+1, 1, 1, 
 		&afe.viewra, &afe.viewra, &anynul, status);
   // VIEWDEC
-  fits_read_col(af->fptr, TDOUBLE, af->cviewdec, af->row+1, 1, 1, 
+  fits_read_col(af->fptr, TFLOAT, af->cviewdec, af->row+1, 1, 1, 
 		&afe.viewdec, &afe.viewdec, &anynul, status);
   // ROLLANG
-  fits_read_col(af->fptr, TDOUBLE, af->crollang, af->row+1, 1, 1, 
+  fits_read_col(af->fptr, TFLOAT, af->crollang, af->row+1, 1, 1, 
 		&afe.rollang, &afe.rollang, &anynul, status);
 
   return(afe);
@@ -97,7 +97,8 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status)
 
 
 
-AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* status)
+AttitudeFile* open_AttitudeFile(const char filename[], const int access_mode, 
+				int* const status)
 {
   AttitudeFile* af=NULL;
   char msg[MAXMSG];  // buffer for error messages

@@ -19,7 +19,7 @@ void phgen(const GenDet* const det,
     fflush(NULL);
 
     // Determine the telescope pointing at the current point of time.
-    Vector pointing = getTelescopePointing(ac, time, status);
+    Vector pointing = getTelescopeNz(ac, time, status);
     CHECK_STATUS_BREAK(*status);
     
     // Get photons for all sources in the catalog.
