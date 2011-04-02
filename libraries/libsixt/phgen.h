@@ -18,7 +18,8 @@ void phgen(const GenDet* const det,
 	   AttitudeCatalog* const ac,
 	   SourceCatalog* const srccat,
 	   PhotonListFile* const plf,
-	   const double t0, const double t1,
+	   const double t0, 
+	   const double exposure,
 	   int* const status);
 
 

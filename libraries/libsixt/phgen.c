@@ -5,7 +5,8 @@ void phgen(const GenDet* const det,
 	   AttitudeCatalog* const ac,
 	   SourceCatalog* const srccat,
 	   PhotonListFile* const plf,
-	   const double t0, const double t1,
+	   const double t0, 
+	   const double exposure,
 	   int* const status)
 {
   // Step width of the time loop.
@@ -13,7 +14,7 @@ void phgen(const GenDet* const det,
 
   // Loop over the specified time interval.
   double time;
-  for (time=t0; time<t1; time+=dt) {
+  for (time=t0; time<t0+exposure; time+=dt) {
     // Display the program progress status.
     headas_chat(0, "\rtime: %.3lf s ", time);
     fflush(NULL);

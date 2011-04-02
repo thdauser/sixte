@@ -29,6 +29,7 @@
 #include "headas_error.h"
 #include "headas_rand.h"
 
+#include "simput.h"
 
 
 /////////////////////////////////////////////////////////////////

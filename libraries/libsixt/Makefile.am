@@ -17,15 +17,12 @@ dist_fitstemplates_DATA += xms.eventlist.tpl
 
 # Directory where to install the XML files.
 xmldir = $(pkgdatadir)/xml
-dist_xml_DATA  = eroframestore.xml 
-dist_xml_DATA += wfi.full.xml
-dist_xml_DATA += wfi.iaat.xml
+dist_xml_DATA  = wfi.iaat.xml
 dist_xml_DATA += htrs.xml
 dist_xml_DATA += epicpn.fullframe.xml
 dist_xml_DATA += epicpn.timing.xml
 dist_xml_DATA += epicpn.burst.xml
 dist_xml_DATA += comadet.xml
-dist_xml_DATA += gravitas.xml
 dist_xml_DATA += aciss3.xml
 
 ########### LIBRARIES #################
