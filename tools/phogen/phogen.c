@@ -72,8 +72,7 @@ int phogen_main()
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");
 
-    phgen(det, ac, srccat, plf, 
-	  parameters.t0, parameters.t0+parameters.exposure, 
+    phgen(det, ac, srccat, plf, parameters.t0, parameters.exposure, 
 	  &status);
     CHECK_STATUS_BREAK(status);
  

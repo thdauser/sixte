@@ -1,55 +1,61 @@
 The installation of this package is based on the GNU autotools.
 
-If you checked out the sources directly from the repository you first have
-to create a configure script from the existing 'configure.ac'.
-For this purpose go into the main directory of the package (where there is 
-this file) and run the 'autoreconf' command belonging to the GNU autotools.
-(If you extraced the code from the .tar.gz archive, you can skip the following
-step and continue with the next paragraph.)
+If you checked out the sources directly from the repository you first
+have to create a configure script from the existing 'configure.ac'.
+For this purpose go into the main directory of the package (where
+there is this file) and run the 'autoreconf' command belonging to the
+GNU autotools. (If you extraced the code from the .tar.gz archive,
+you can skip the following step and continue with the next paragraph.)
 
  cd sixt/
  autoreconf --install
 
-This basically generates the 'configure' script (and some 'Makefile.in's).
-In the next step you have to run the 'configure' script to produce 'Makefile's
-for the compilation and installation of the software. 
-At this point you also have to specify the installation directory. The default
-setting on most platforms is '/usr/local', i.e. the binaries will be installed
-to '/usr/local/bin', the libraries to '/usr/local/lib' etc. This setting can 
-be changed using the '--prefix' option of the 'configure' script (see below).
-Apart from the installation directory you also have to specify the location,
-where the PIL parameter files will be installed. This option can also be set on
-the command line or the environment via the 'PFILESDIR' variable.
-If the software will be used by different users the parameter files should be
-stored in the '${HEADAS}/syspfiles' directory (ususally root privileges 
-required). For a local installation for the current user, the files can also
-be stored in '${HOME}/pfiles'.
-So for a local installation, e.g. type:
+This basically generates the 'configure' script (and some
+'Makefile.in's). In the next step you have to run the 'configure'
+script to produce 'Makefile's for the compilation and installation of
+the software. At this point you also have to specify the installation
+directory. The default setting on most platforms is '/usr/local',
+i.e. the binaries will be installed to '/usr/local/bin', the libraries
+to '/usr/local/lib' etc. This setting can be changed using the
+'--prefix' option of the 'configure' script (see below). Apart from
+the installation directory you also have to specify the location,
+where the PIL parameter files will be installed. This option can also
+be set on the command line or the environment via the 'PFILESDIR'
+variable. If the software will be used by different users the
+parameter files should be stored in the '${HEADAS}/syspfiles'
+directory (ususally root privileges required). For a local
+installation for the current user, the files can also be stored in
+'${HOME}/pfiles'. So for a local installation, e.g. type:
 
  ./configure --prefix=$HOME PFILESDIR=$HOME/pfiles
 
-Now the 'Makefile's to compile and install the software should be available.
-To continue type:
+Now the 'Makefile's to compile and install the software should be
+available. In order to continue type:
 
  make
  make install
 
-The simulation package uses several FITS template files to create FITS files. 
-These templates are stored in ${prefix}/share/sixt/templates during the installation.
-In order to be able to use these files, you either have to specify this path at each 
-program call, or you can store it in the environment variable SIXT_FITS_TEMPLATES.
-When using the simulation frequently it is strongly recommended to set the environment 
-variable in the shell startup scripts.
+The simulation package uses several FITS template files to create FITS
+files. These templates are stored in ${prefix}/share/sixt/templates
+during the installation. In order to be able to use these files, you
+have to specify this path in the environment variable
+SIXT_FITS_TEMPLATES. The location of the detector XML definition files
+is given in the enviroment variable SIXT_XML_PATH. When using the
+simulation frequently it is strongly recommended to set the
+environment variables in the shell startup scripts.
 
 If you are using csh add the following line to your .cshrc
 
  setenv SIXT_FITS_TEMPLATES ${prefix}/share/sixt/templates
+ setenv SIXT_XML_PATH ${prefix}/share/sixt/xml
 
 If you are using bash add add the following line to your .bashrc
 
  export SIXT_FITS_TEMPLATES=${prefix}/share/sixt/templates
+ export SIXT_XMLPATH=${prefix}/share/sixt/xml
 
-Where in both calls the expression ${prefix} has to be replaced by the value you have 
-specified at calling .configure. (Don't use '${prefix}' literally!)
+Where in both calls the expression ${prefix} has to be replaced by the
+value you have specified at calling .configure. (Don't use '${prefix}'
+literally!)
 
 If everything worked properly you can now use the software.

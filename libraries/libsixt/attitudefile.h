@@ -28,9 +28,9 @@ typedef struct {
 /** Contains a line of attitude data from a FITS file. */
 typedef struct {
   double time; /**< Time for which the AttitudeFileEntry is valid. */
-  double viewra; /**< Right ascension of telescope pointing direction [deg]. */
-  double viewdec; /**< Declination of telescope pointing direction [deg].*/
-  double rollang; /**< Rollangle [deg]. */
+  float viewra; /**< Right ascension of telescope pointing direction [deg]. */
+  float viewdec; /**< Declination of telescope pointing direction [deg].*/
+  float rollang; /**< Rollangle [deg]. */
 } AttitudeFileEntry;
 
 
@@ -42,11 +42,12 @@ typedef struct {
 /** Reads a line of data from the attitude table in a FITS file. The
     routine does NOT increment the row counter of the AttitudeFile
     object. */
-AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* af, int* status);
+AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const status);
 
 /** Opens an existing attitude file. The access_mode parameter can be
     either READONLY or READWRITE. */
-AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* status);
+AttitudeFile* open_AttitudeFile(const char filename[], const int access_mode, 
+				int* const status);
 
 
 
@@ -54,8 +55,8 @@ AttitudeFile* open_AttitudeFile(const char filename[], int access_mode, int* sta
 // Old routines: 
 // Writes a row of attitude data in to the FITS file.
 int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], 
-			double time, double view_ra, double view_dec, 
-			double rollangle, double aspangle, int fitsstatus);
+			double time, float view_ra, float view_dec, 
+			float rollangle, float aspangle, int fitsstatus);
 
 // Creates the necessary parameters to generate the table in the attitude FITS file.
 void create_attitudetbl_parameter(char *ftype[N_ATTITUDE_FIELDS], 

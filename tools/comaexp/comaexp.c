@@ -396,7 +396,7 @@ int comaexp_main()
       fflush(NULL);
 
       // Determine the telescope pointing direction.
-      Vector nz = getTelescopePointing(ac, time, &status);
+      Vector nz = getTelescopeNz(ac, time, &status);
       if (status != EXIT_SUCCESS) break;
 
       // Determine the two other axes of the telescope reference
