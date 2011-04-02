@@ -76,7 +76,7 @@ then
 else
    AC_MSG_RESULT([no])
 fi
-AC_SEARCH_LIBS(pilclose_, ape $my_ape, [],
+AC_SEARCH_LIBS(ape_trad_init, ape $my_ape, [],
           [AC_MSG_ERROR([No ape library found!])], [])
 AC_SUBST(lib_ape)
 
