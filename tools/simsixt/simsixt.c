@@ -435,7 +435,7 @@ int simsixt_getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_int("clobber", &par->clobber);
+  status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
     return(status);
