@@ -52,7 +52,7 @@ If you are using csh add the following line to your .cshrc
 If you are using bash add add the following line to your .bashrc
 
  export SIXT_FITS_TEMPLATES=${prefix}/share/sixt/templates
- export SIXT_XMLPATH=${prefix}/share/sixt/xml
+ export SIXT_XML_PATH=${prefix}/share/sixt/xml
 
 Where in both calls the expression ${prefix} has to be replaced by the
 value you have specified at calling .configure. (Don't use '${prefix}'

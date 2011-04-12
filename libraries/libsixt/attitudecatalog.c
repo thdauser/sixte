@@ -58,9 +58,11 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
     // Determine whether the rollangle alignment should refer
     // to the telescope's direction of motion or to the equatorial 
     // plane.
-    char comment[MAXMSG], sbuffer[MAXMSG]; // String buffers.
-    fits_read_key(af->fptr, TSTRING, "ALIGNMEN", &sbuffer, comment, status);
-    CHECK_STATUS_BREAK(*status);
+    int status2=EXIT_SUCCESS;
+    char comment[MAXMSG], sbuffer[MAXMSG]={""}; // String buffers.
+    fits_write_errmark();
+    fits_read_key(af->fptr, TSTRING, "ALIGNMEN", &sbuffer, comment, &status2);
+    fits_clear_errmark();
     // Check the value of the header keyword and set the alignment flag
     // appropriately.
     strtoupper(sbuffer);

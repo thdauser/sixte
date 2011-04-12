@@ -39,7 +39,7 @@ struct Parameters {
 
   int Seed;
   
-  int clobber;
+  char clobber;
 
   char fits_templates[MAXFILENAME];
   char xml_path[MAXFILENAME];
