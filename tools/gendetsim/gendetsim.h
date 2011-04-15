@@ -18,14 +18,23 @@
 
 
 struct Parameters {
-  char xml_filename[MAXFILENAME];
-  char impactlist_filename[MAXFILENAME];
-  char eventlist_filename[MAXFILENAME];
-  char eventlist_template[MAXFILENAME];
+  char ImpactList[MAXFILENAME];
+  char EventList[MAXFILENAME];
+  char Mission[MAXMSG];
+  char Instrument[MAXMSG];
+  char Mode[MAXMSG];
+  char XMLFile[MAXFILENAME];
 
-  double t0, exposure;
+  double MJDREF;
+  double TIMEZERO;
+  double Exposure;
 
-  int random_seed;
+  int Seed;
+  
+  char clobber;
+
+  char fits_templates[MAXFILENAME];
+  char xml_path[MAXFILENAME];
 };
 
 
