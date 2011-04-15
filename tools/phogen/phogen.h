@@ -16,15 +16,28 @@
 
 
 struct Parameters {
-  char xml_filename[MAXFILENAME];
-  char attitude_filename[MAXFILENAME];
-  char simput_filename[MAXFILENAME];
-  char photonlist_filename[MAXFILENAME];
-  char photonlist_template[MAXFILENAME];
+  char PhotonList[MAXFILENAME];
+  char Mission[MAXMSG];
+  char Instrument[MAXMSG];
+  char Mode[MAXMSG];
+  char XMLFile[MAXFILENAME];
+  char Attitude[MAXFILENAME];
 
-  double t0, exposure;
+  /** [deg] */
+  float RA, Dec;
 
-  int random_seed;
+  char Simput[MAXFILENAME];
+
+  double MJDREF;
+  double TIMEZERO;
+  double Exposure;
+
+  int Seed;
+  
+  char clobber;
+
+  char fits_templates[MAXFILENAME];
+  char xml_path[MAXFILENAME];
 };
 
 

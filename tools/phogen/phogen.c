@@ -4,7 +4,7 @@
 int phogen_main() 
 {
   // Program parameters.
-  struct Parameters parameters;
+  struct Parameters par;
 
   // Detector setup.
   GenDet* det=NULL;
@@ -31,37 +31,142 @@ int phogen_main()
     // ---- Initialization ----
 
     // Read the parameters using PIL.
-    status=phogen_getpar(&parameters);
+    status=phogen_getpar(&par);
     CHECK_STATUS_BREAK(status);
+
+    headas_chat(3, "initialize ...\n");
+
+    // Determine the appropriate detector XML definition file.
+    char xml_filename[MAXFILENAME];
+    // Convert the user input to capital letters.
+    strtoupper(par.Mission);
+    strtoupper(par.Instrument);
+    strtoupper(par.Mode);
+    // Check the available missions, instruments, and modes.
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.XMLFile);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer, "NONE")) {
+      // Determine the base directory containing the XML
+      // definition files.
+      strcpy(xml_filename, par.xml_path);
+
+      // Determine the XML filename according to the selected
+      // mission, instrument, and mode.
+      if (0==strcmp(par.Mission, "SRG")) {
+	strcat(xml_filename, "/srg");
+	if (0==strcmp(par.Instrument, "EROSITA")) {
+	  strcat(xml_filename, "/erosita.xml");
+	} else {
+	  status=EXIT_FAILURE;
+	  SIXT_ERROR("selected instrument is not supported");
+	  break;
+	}
+
+      } else if (0==strcmp(par.Mission, "IXO")) {
+	strcat(xml_filename, "/ixo");
+	if (0==strcmp(par.Instrument, "WFI")) {
+	  strcat(xml_filename, "/wfi");
+	  if (0==strcmp(par.Instrument, "FULLFRAME")) {
+	    strcat(xml_filename, "/fullframe.xml");
+	  } else {
+	    status=EXIT_FAILURE;
+	    SIXT_ERROR("selected mode is not supported");
+	    break;
+	  }
+	} else {
+	  status=EXIT_FAILURE;
+	  SIXT_ERROR("selected instrument is not supported");
+	  break;
+	}
+
+      } else if (0==strcmp(par.Mission, "GRAVITAS")) {
+	strcat(xml_filename, "/gravitas");
+	if (0==strcmp(par.Instrument, "HIFI")) {
+	  strcat(xml_filename, "/hifi.xml");
+	} else {
+	  status=EXIT_FAILURE;
+	  SIXT_ERROR("selected instrument is not supported");
+	  break;
+	}
+
+      } else {
+	status=EXIT_FAILURE;
+	SIXT_ERROR("selected mission is not supported");
+	break;
+      }
+	    
+    } else {
+      // The XML filename has been given explicitly.
+      strcpy(xml_filename, par.XMLFile);
+    }
+    // END of determine the XML filename.
+
+
+    // Determine the photon list output file and the file template.
+    char photonlist_template[MAXFILENAME];
+    char photonlist_filename[MAXFILENAME];
+    strcpy(photonlist_filename, par.PhotonList);
+    strcpy(photonlist_template, par.fits_templates);
+    strcat(photonlist_template, "/photonlist.tpl");
+
+    // Determine the random number seed.
+    int seed;
+    if (-1!=par.Seed) {
+      seed = par.Seed;
+    } else {
+      // Determine the seed from the system clock.
+      seed = (int)time(NULL);
+    }
 
     // Initialize HEADAS random number generator.
-    HDmtInit(parameters.random_seed);
-    
+    HDmtInit(seed);
+
     // Load the detector configuration.
-    det=newGenDet(parameters.xml_filename, &status);
+    det=newGenDet(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the attitude from the given file.
-    ac=loadAttitudeCatalog(parameters.attitude_filename,
-			   parameters.t0, parameters.exposure, &status);
-    CHECK_STATUS_BREAK(status);
+    // Set up the Attitude.
+    strcpy(ucase_buffer, par.Attitude);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer, "NONE")) {
+      // Set up a simple pointing attitude.
+
+      // First allocate memory.
+      ac=getAttitudeCatalog(&status);
+      CHECK_STATUS_BREAK(status);
+
+      ac->entry=(AttitudeEntry*)malloc(2*sizeof(AttitudeEntry));
+      if (NULL==ac->entry) {
+	status = EXIT_FAILURE;
+	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	break;
+      }
+
+      // Set the values of the entries.
+      ac->nentries=2;
+      ac->entry[0] = defaultAttitudeEntry();
+      ac->entry[1] = defaultAttitudeEntry();
+      
+      ac->entry[0].time = par.TIMEZERO;
+      ac->entry[1].time = par.TIMEZERO+par.Exposure;
+
+      ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+      ac->entry[1].nz = ac->entry[0].nz;
+
+      Vector vz = {0., 0., 1.};
+      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
+      ac->entry[1].nx = ac->entry[0].nx;
+
+    } else {
+      // Load the attitude from the given file.
+      ac=loadAttitudeCatalog(par.Attitude, par.TIMEZERO, par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    // END of setting up the attitude.
 
     // Load the SIMPUT X-ray source catalog.
-    srccat=loadSourceCatalog(parameters.simput_filename, det, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Remove the old photon list file.    
-    remove(parameters.photonlist_filename);
-    
-    // Open the output photon list file.
-    plf=openNewPhotonListFile(parameters.photonlist_filename, 
-			      parameters.photonlist_template, &status);
-    CHECK_STATUS_BREAK(status);
-    // Set the attitude filename in the photon list (obsolete).
-    char buffer[MAXMSG];
-    strcpy(buffer, parameters.attitude_filename);
-    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", buffer,
-		    "attitude file", &status);
+    srccat = loadSourceCatalog(par.Simput, det, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of Initialization ---
@@ -69,10 +174,20 @@ int phogen_main()
 
     // --- Photon Generation Process ---
 
+    // Open the output photon list file.
+    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, &status);
+    CHECK_STATUS_BREAK(status);
+    // Set the attitude filename in the photon list (obsolete).
+    char buffer[MAXMSG];
+    strcpy(buffer, par.Attitude);
+    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", buffer,
+		    "attitude file", &status);
+    CHECK_STATUS_BREAK(status);
+
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");
 
-    phgen(det, ac, srccat, plf, parameters.t0, parameters.exposure, 
+    phgen(det, ac, srccat, plf, par.TIMEZERO, par.Exposure, 
 	  &status);
     CHECK_STATUS_BREAK(status);
  
@@ -100,72 +215,140 @@ int phogen_main()
 
 
 
-int phogen_getpar(struct Parameters* parameters)
+int phogen_getpar(struct Parameters* par)
 {
-  int status = EXIT_SUCCESS; // Error status.
+  // String input buffer.
+  char* sbuffer=NULL;
 
-  // Get the filename of the detector XML definition file.
-  if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the detector " 
-		   "XML definition file!\n", status);
+  // Error status.
+  int status = EXIT_SUCCESS; 
+
+  // Read all parameters via the ape_trad_ routines.
+
+  status=ape_trad_query_string("PhotonList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the photon list!\n", status);
+    return(status);
+  } 
+  strcpy(par->PhotonList, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("Mission", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the mission!\n", status);
+    return(status);
+  } 
+  strcpy(par->Mission, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("Instrument", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the instrument!\n", status);
+    return(status);
+  } 
+  strcpy(par->Instrument, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("Mode", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the instrument mode!\n", status);
+    return(status);
+  } 
+  strcpy(par->Mode, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    return(status);
+  } 
+  strcpy(par->XMLFile, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("Attitude", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the attitude!\n", status);
+    return(status);
+  } 
+  strcpy(par->Attitude, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_float("RA", &par->RA);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the right ascension of the telescope pointing!\n", status);
+    return(status);
+  } 
+
+  status=ape_trad_query_float("Dec", &par->Dec);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the declination of the telescope pointing!\n", status);
+    return(status);
+  } 
+
+  status=ape_trad_query_string("Simput", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the SIMPUT file!\n", status);
+    return(status);
+  } 
+  strcpy(par->Simput, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_double("MJDREF", &par->MJDREF);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading MJDREF!\n", status);
+    return(status);
+  } 
+
+  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
+    return(status);
+  } 
+
+  status=ape_trad_query_double("Exposure", &par->Exposure);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    return(status);
+  } 
+
+  status=ape_trad_query_int("seed", &par->Seed);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
     return(status);
   }
 
-  // Get the filename of the Attitude file (FITS file).
-  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
     return(status);
   }
 
-  // Get the start time of the photon generation
-  if ((status = PILGetReal("t0", &parameters->t0))) {
-    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
-    return(status);
-  }
 
-  // Get the timespan for the photon generation
-  if ((status = PILGetReal("exposure", &parameters->exposure))) {
-    HD_ERROR_THROW("Error reading the 'exposure' parameter!\n", status);
-    return(status);
-  }
-
-  // Determine the name of the file that contains the input sources (either
-  // a point source catalog, source images, or a FITS grouping extension listing
-  // several input files).
-  if ((status = PILGetFname("simput_filename", parameters->simput_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the input sources!\n", status);
-    return(status);
-  }
-
-  // Get the filename of the Photon-List file (FITS file):
-  if ((status = PILGetFname("photonlist_filename", 
-			    parameters->photonlist_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the output file for "
-		   "the photon list!\n", status);
-    return(status);
-  }
-
-  // Get the seed for the random number generator.
-  if ((status = PILGetInt("random_seed", &parameters->random_seed))) {
-    HD_ERROR_THROW("Error reading the seed for the random "
-		   "number generator!\n", status);
-    return(status);
-  }
-
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(parameters->photonlist_template, buffer);
+  // Get the name of the FITS template directory
+  // from the environment variable.
+  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(par->fits_templates, sbuffer);
+    // Note: the char* pointer returned by getenv should not
+    // be modified nor free'd.
   } else {
-    if ((status = PILGetFname("fits_templates", parameters->photonlist_template))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      return(status);      
-    }
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error reading the environment variable 'SIXT_FITS_TEMPLATES'!\n", 
+		   status);
+    return(status);
   }
-  // Set the photon list template file:
-  strcat(parameters->photonlist_template, "/photonlist.tpl");
+
+  // Get the name of the directory containing the detector
+  // XML definition files from the environment variable.
+  if (NULL!=(sbuffer=getenv("SIXT_XML_PATH"))) {
+    strcpy(par->xml_path, sbuffer);
+    // Note: the char* pointer returned by getenv should not
+    // be modified nor free'd.
+  } else {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error reading the environment variable 'SIXT_XML_PATH'!\n", 
+		   status);
+    return(status);
+  }
 
   return(status);
 }
