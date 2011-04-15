@@ -14,16 +14,27 @@
 
 
 struct Parameters {
-  char attitude_filename[MAXFILENAME];   // input: attitude file
-  char photonlist_filename[MAXFILENAME]; // input: photon list
-  char xml_filename[MAXFILENAME];        // input: detector XML description
-  char impactlist_filename[MAXFILENAME]; // output: impact list
-  char impactlist_template[MAXFILENAME];
+  char PhotonList[MAXFILENAME];
+  char ImpactList[MAXFILENAME];
+  char Mission[MAXMSG];
+  char Instrument[MAXMSG];
+  char Mode[MAXMSG];
+  char XMLFile[MAXFILENAME];
+  char Attitude[MAXFILENAME];
 
-  double t0;       // starting time of the simulation
-  double exposure; // time span of the simulation
+  /** [deg] */
+  float RA, Dec;
 
-  int random_seed;
+  double MJDREF;
+  double TIMEZERO;
+  double Exposure;
+
+  int Seed;
+  
+  char clobber;
+
+  char fits_templates[MAXFILENAME];
+  char xml_path[MAXFILENAME];
 };
 
 
