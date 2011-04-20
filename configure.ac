@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([sixt], [0.01], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixt], [0.02], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
 # The following line tells 'configure' to create a header file 'config.h'
 # that is filled with definitions from this script.
