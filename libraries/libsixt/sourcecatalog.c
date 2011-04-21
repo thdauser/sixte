@@ -44,6 +44,10 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // Set reference to ARF for SIMPUT library.
   simputSetARF(det->arf);
 
+  // Set refernce to the random number generator to be used by the
+  // SIMPUT library routines.
+  simputSetRndGen(sixt_get_random_number);
+
   // Use the routines from the SIMPUT library to load the catalog.
   cat->simput = loadSimputSourceCatalog(filename, status);
   CHECK_STATUS_RET(*status, cat);
