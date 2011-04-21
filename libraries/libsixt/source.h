@@ -16,28 +16,14 @@
 /** Photon energy spectrum of an X-ray source. */
 typedef struct {
 
-  /** Location on the sky [rad]. */
-  float ra, dec;
+  /** Pointer to an entry in the SIMPUT source catalog. */
+  SimputSourceEntry* src;
 
   /** Photon rate [photons/s]. */
   float pps;
 
   /** Time of the emission of the last photon. */
   double* t_next_photon;
-
-  /** Source spectrum / spectra. */
-  int nspectra;
-  SourceSpectrum** spectra;
-
-  /* TODO
-  int nimages;
-  SourceImage** images;
-
-  XRayLightCurve* lc;
-  */
-
-  /** Unique source identifier. */
-  long src_id;
 
 } Source;
 
@@ -63,7 +49,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     entries with respect to the requested coordinate axis using a
     quick sort algorithm. */
 void quicksortSources(Source* const list, const long left, 
-			  const long right, const int axis);
+		      const long right, const int axis);
 
 
 #endif /* SOURCE_H */

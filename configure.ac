@@ -170,6 +170,11 @@ AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
 
 
+####################################
+# SIMPUT
+AC_SEARCH_LIBS(getSimputSourceEntry, [simput], [], 
+	       [AC_MSG_ERROR([No supported version of SIMPUT library found!])], [])
+
 #################################### 
 # Check for header files:
 AC_HEADER_STDC

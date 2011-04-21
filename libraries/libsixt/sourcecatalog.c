@@ -8,11 +8,8 @@ SourceCatalog* newSourceCatalog(int* const status)
 	     "memory allocation for SourceCatalog failed");
 
   // Initialize pointers with NULL.
-  cat->tree = NULL;
-  cat->spectra = NULL;
-
-  // Initialize values.
-  cat->nspectra = 0;
+  cat->tree   = NULL;
+  cat->simput = NULL;
 
   return(cat);
 }
@@ -25,13 +22,9 @@ void freeSourceCatalog(SourceCatalog** cat)
     if (NULL!=(*cat)->tree) {
       freeKDTreeElement(&((*cat)->tree));
     }
-    // Free the spectra.
-    if (NULL!=(*cat)->spectra) {
-      long ii;
-      for (ii=0; ii<(*cat)->nspectra; ii++) {
-	freeSourceSpectrum(&((*cat)->spectra[ii]));
-      }
-      free((*cat)->spectra);
+    // Free the SIMPUT source catalog.
+    if (NULL!=(*cat)->simput) {
+      freeSimputSourceCatalog(&((*cat)->simput));
     }
     free(*cat);
     *cat=NULL;
@@ -48,52 +41,16 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   SourceCatalog* cat = newSourceCatalog(status);
   CHECK_STATUS_RET(*status, cat);
 
-  // Open the FITS file with the source catalog (SRC_CAT) extension.
-  fitsfile* fptr;
-  fits_open_table(&fptr, filename, READONLY, status);
-  CHECK_STATUS_RET(*status, cat);
-  
-  int hdunum, hdutype;
-  // After opening the FITS file, get the number of the current HDU.
-  if (1==fits_get_hdu_num(fptr, &hdunum)) {
-    // This is the primary array, so try to move to the first extension 
-    // and see if it is a table.
-    fits_movabs_hdu(fptr, 2, &hdutype, status);
-  } else {
-    // Get the HDU type.
-    fits_get_hdu_type(fptr, &hdutype, status);
-  }
-  CHECK_STATUS_RET(*status, cat);
-  
-  // If the current HDU is an image extension, throw an error message:
-  if (IMAGE_HDU==hdutype) {
-    *status=EXIT_FAILURE;
-    char msg[MAXMSG];
-    sprintf(msg, "Error: FITS extension in file '%s' is not a table "
-	    "but an image (HDU number: %d)\n", filename, hdunum);
-    SIXT_ERROR(msg);
-    return(cat);
-  }
+  // Set reference to ARF for SIMPUT library.
+  simputSetARF(det->arf);
 
-  // Determine the number of sources.
-  long nrows;
-  fits_get_num_rows(fptr, &nrows, status);
-  CHECK_STATUS_RET(*status, cat);
-
-  // Determine the column number in the FITS table.
-  int csrc_id, cra, cdec, cemin, cemax, cflux, cspectrum;
-  fits_get_colnum(fptr, CASEINSEN, "SRC_ID", &csrc_id, status);
-  fits_get_colnum(fptr, CASEINSEN, "RA", &cra, status);
-  fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, status);
-  fits_get_colnum(fptr, CASEINSEN, "E_MIN", &cemin, status);
-  fits_get_colnum(fptr, CASEINSEN, "E_MAX", &cemax, status);
-  fits_get_colnum(fptr, CASEINSEN, "FLUX", &cflux, status);
-  fits_get_colnum(fptr, CASEINSEN, "SPECTRUM", &cspectrum, status);
+  // Use the routines from the SIMPUT library to load the catalog.
+  cat->simput = loadSimputSourceCatalog(filename, status);
   CHECK_STATUS_RET(*status, cat);
 
   // Allocate memory for an array of the sources, which will be
   // converted into a KDTree later.
-  Source* list = (Source*)malloc(nrows*sizeof(Source));
+  Source* list = (Source*)malloc(cat->simput->nentries*sizeof(Source));
   CHECK_NULL_RET(list, *status,
 		 "memory allocation for source list failed", cat);
 
@@ -101,80 +58,28 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   Source* templatesrc = newSource(status);
   CHECK_STATUS_RET(*status, cat);
 
-  // Loop over all entries in the FITS table.
-  long row;
-  for (row=0; row<nrows; row++) {
+  // Loop over all entries in the SIMPUT source catalog.
+  int ii;
+  for (ii=0; ii<cat->simput->nentries; ii++) {
 
     // Start with an empty Source object for each entry.
-    list[row] = *templatesrc;
+    list[ii] = *templatesrc;
 
-    // Read the data from the FITS table.
-    int anynul=0;
-    fits_read_col(fptr, TLONG, csrc_id, row+1, 1, 1, &(list[row].src_id), 
-		  &(list[row].src_id), &anynul, status);
+    // Set the properties from the SIMPUT catalog.
+    list[ii].src = cat->simput->entries[ii];
 
-    fits_read_col(fptr, TFLOAT, cra, row+1, 1, 1, &(list[row].ra), 
-		  &(list[row].ra), &anynul, status);
-    list[row].ra *= M_PI/180.; // Convert [deg] -> [rad].
-    fits_read_col(fptr, TFLOAT, cdec, row+1, 1, 1, &(list[row].dec), 
-		  &(list[row].dec), &anynul, status);
-    list[row].dec *= M_PI/180.; // Convert [deg] -> [rad].
+    //  TODO  Determine the photon rate from this particular source.
+    list[ii].pps = getSimputPhotonRate(list[ii].src, status);
+    CHECK_STATUS_RET(*status, cat);
+    //  getSpectralPhotonRate(list[row].spectra[0], emin, emax) *
+    //  flux/getSpectralEnergyFlux(list[row].spectra[0], emin, emax);
 
-    float flux=0., emin=0., emax=0.;
-    fits_read_col(fptr, TFLOAT, cflux, row+1, 1, 1, &flux, 
-		  &flux, &anynul, status);
-    fits_read_col(fptr, TFLOAT, cemin, row+1, 1, 1, &emin, 
-		  &emin, &anynul, status);
-    fits_read_col(fptr, TFLOAT, cemax, row+1, 1, 1, &emax, 
-		  &emax, &anynul, status);
-
-    char buffer[MAXFILENAME]="";
-    char* spec_filename = &(buffer[0]);
-    fits_read_col(fptr, TSTRING, cspectrum, row+1, 1, 1, &spec_filename, 
-		  &spec_filename, &anynul, status);
-    CHECK_STATUS_BREAK(*status);
-    
-    // Load the required spectrum, if not available yet.
-    long ii;
-    for (ii=0; ii<cat->nspectra; ii++) {
-      if (0==strcmp(cat->spectra[ii]->filename, spec_filename)) break;
-    }
-    if (ii==cat->nspectra) {
-      // The spectrum does not exist in the catalog yet.
-      cat->spectra = realloc(cat->spectra, 
-			     (cat->nspectra+1)*sizeof(SourceSpectrum*));
-      CHECK_NULL_BREAK(cat->spectra, *status,
-		       "memory allocation for spectrum catalog failed");
-      cat->nspectra++;
-      cat->spectra[ii] = loadXRaySpectrumFilename(spec_filename, status);
-      CHECK_STATUS_BREAK(*status);
-
-      // Apply the ARF.
-      applyARF2Spectrum(cat->spectra[ii], det->arf, status);
-      CHECK_STATUS_BREAK(*status);      
-    }
-    // Assign the spectrum to the source.
-    list[row].nspectra = 1;
-    list[row].spectra  = (SourceSpectrum**)malloc(sizeof(SourceSpectrum*));
-    CHECK_NULL_BREAK(cat->spectra, *status,
-		     "memory allocation for spectrum list failed");    
-    list[row].spectra[0] = cat->spectra[ii];
-
-    // Determine the photon rate from this particular source.
-    list[row].pps = 
-      getSpectralPhotonRate(list[row].spectra[0], emin, emax) *
-      flux/getSpectralEnergyFlux(list[row].spectra[0], emin, emax);
-
-    headas_chat(5, "energy range from %lf to %lf:\n", emin, emax);
-    headas_chat(5, " %e erg/s/cm**2 corresponding to %e photons/s\n", 
-		getSpectralEnergyFlux(list[row].spectra[0], emin, emax),
-		getSpectralPhotonRate(list[row].spectra[0], emin, emax));
   } 
   CHECK_STATUS_RET(*status, cat);
   // END of loop over all entries in the FITS table.
 
   // Build a KDTree from the source list (array of Source objects).
-  cat->tree = buildKDTree2(list, nrows, 0, status);
+  cat->tree = buildKDTree2(list, cat->simput->nentries, 0, status);
   CHECK_STATUS_RET(*status, cat);
 
   // In a later development stage this could be directly stored in 
@@ -183,10 +88,6 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // Release memory.
   if (templatesrc) free(templatesrc);
   if (list) free(list);
-
-  // Close the FITS file.
-  fits_close_file(fptr, status);
-  CHECK_STATUS_RET(*status, cat);
 
   return(cat);
 }

@@ -5,6 +5,7 @@
 #include "gendet.h"
 #include "kdtreeelement.h"
 #include "linkedpholist.h"
+#include "simput.h"
 #include "source.h"
 #include "sourcespectrum.h"
 
@@ -19,9 +20,8 @@ typedef struct {
   /** KDTree containing the Source objects. */
   KDTreeElement* tree;
 
-  /** Library containing all spectra. */
-  SourceSpectrum** spectra;
-  long nspectra;
+  /** SIMPUT source catalog containing all relevant data. */
+  SimputSourceCatalog* simput;
 
 } SourceCatalog;
 

@@ -60,6 +60,9 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
   // otherwise the line will not be cleared, because the function assumes
   // that all pixel charges are already set to 0.
   line->anycharge=1;
+  for(ii=0; ii<line->xwidth; ii++) {
+    line->charge[ii]=1.;
+  }
   clearGenDetLine(line);
 
   return(line);

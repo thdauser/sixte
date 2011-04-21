@@ -8,15 +8,11 @@ Source* newSource(int* const status)
 	     "memory allocation for Source failed");
 
   // Initalize pointers with NULL.
+  src->src           = NULL;
   src->t_next_photon = NULL;
-  src->spectra       = NULL;
 
   // Initialize values.
-  src->ra  = 0.;
-  src->dec = 0.;
   src->pps = 0.;
-  src->nspectra = 0;
-  src->src_id   = 0;
 
   return(src);
 }
@@ -27,11 +23,6 @@ void freeSource(Source** const src)
   if (NULL!=*src) {
     if (NULL!=(*src)->t_next_photon) {
       free((*src)->t_next_photon);
-    }
-    if (NULL!=(*src)->spectra) {
-      free((*src)->spectra);
-      // NOTE: the spectra must not be free'd, because this
-      // is already done in the destructor of the SourceCatalog.
     }
     free(*src);
     *src=NULL;
@@ -73,11 +64,11 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 
     // Set the photon properties.
     ph->time = *(src->t_next_photon);
-    ph->ra   = src->ra;
-    ph->dec  = src->dec;
+    ph->ra   = src->src->ra;
+    ph->dec  = src->src->dec;
 
     // Copy the source identifiers.
-    ph->src_id = src->src_id;
+    ph->src_id = src->src->src_id;
 
     // Set Photon ID to default value of 0. The proper value is
     // updated later, when the photon is inserted in the photon
@@ -85,8 +76,9 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     ph->ph_id = 0;
 
     // Determine the photon energy.
-    ph->energy = getRndSpectrumEnergy(src->spectra[0]);
-    
+    ph->energy = getSimputPhotonEnergy(src->src, status);
+    CHECK_STATUS_BREAK(*status);
+
     // Determine the arrival time of the next (future) photon.
     *(src->t_next_photon) += rndexp(1./src->pps);
   }
@@ -101,7 +93,8 @@ static long SourcesPartition(Source* const list,
 			     const long left, const long right, 
 			     const long pivotIndex, const int axis)
 {
-  Vector location = unit_vector(list[pivotIndex].ra, list[pivotIndex].dec);
+  Vector location = unit_vector(list[pivotIndex].src->ra, 
+				list[pivotIndex].src->dec);
   double pivotValue = getVectorDimensionValue(&location, axis);
 
   // Move pivot to end.
@@ -111,13 +104,13 @@ static long SourcesPartition(Source* const list,
   list[right] = buffer;
 
   long storeIndex = left;
-  long i;
-  for (i=left; i<right; i++) { // left ≤ i < right  
-    location = unit_vector(list[i].ra, list[i].dec);
+  long ii;
+  for (ii=left; ii<right; ii++) { // left ≤ i < right  
+    location = unit_vector(list[ii].src->ra, list[ii].src->dec);
     if (getVectorDimensionValue(&location, axis) <= pivotValue) {
       buffer = list[storeIndex];
-      list[storeIndex] = list[i];
-      list[i] = buffer;
+      list[storeIndex] = list[ii];
+      list[ii] = buffer;
       storeIndex++;
     }
   }
