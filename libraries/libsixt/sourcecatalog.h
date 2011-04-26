@@ -7,7 +7,6 @@
 #include "linkedpholist.h"
 #include "simput.h"
 #include "source.h"
-#include "sourcespectrum.h"
 
 
 /////////////////////////////////////////////////////////////////

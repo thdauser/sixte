@@ -5,7 +5,6 @@
 
 #include "linkedpholist.h"
 #include "photon.h"
-#include "sourcespectrum.h"
 
 
 /////////////////////////////////////////////////////////////////
