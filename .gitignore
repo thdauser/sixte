@@ -26,7 +26,6 @@ event_projection
 phogen
 phoimg
 psfgen
-xms_simulation
 xms_pixtemp
 ero_exposure
 ero_fits2tm

@@ -3,8 +3,8 @@
 
 #include "sixt.h"
 #include "genericdetector.h"
-#include "xmseventfile.h"
-#include "xmsevent.h"
+#include "eventlistfile.h"
+#include "event.h"
 
 
 #define TOOLSUB xms_pixtemp_main

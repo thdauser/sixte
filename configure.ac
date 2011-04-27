@@ -214,7 +214,6 @@ AC_CONFIG_FILES([Makefile
 		tools/phogen/Makefile
 		tools/phoimg/Makefile
 		tools/psfgen/Makefile
-		tools/xms_simulation/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/ero_exposure/Makefile
 		tools/ero_fits2tm/Makefile

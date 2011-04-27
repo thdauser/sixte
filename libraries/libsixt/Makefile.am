@@ -13,7 +13,6 @@ dist_fitstemplates_DATA += patternlist.tpl
 dist_fitstemplates_DATA += htrs.eventlist.tpl
 dist_fitstemplates_DATA += impactlist.tpl
 dist_fitstemplates_DATA += photonlist.tpl 
-dist_fitstemplates_DATA += xms.eventlist.tpl
 
 # Directory where to install the XML files.
 xmldir = $(pkgdatadir)/xml
@@ -33,8 +32,7 @@ lib_LTLIBRARIES = libsixt.la
 # Sources:
 libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     impactlistfile.c uniformdetectorbackground.c	\
-		     xmsdetector.c xmseventfile.c htrsdetector.c	\
-		     gendet.c genpixgrid.c gendetline.c			\
+		     htrsdetector.c gendet.c genpixgrid.c gendetline.c	\
 		     eventlistfile.c genpatternfile.c clocklist.c	\
 		     badpixmap.c geneventgrading.c htrseventfile.c	\
 		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
@@ -55,11 +53,10 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  gaussianchargecloud.h exponentialchargecloud.h	\
 		  arcpixels.h eventfile.h impactlistfile.h impact.h	\
-		  uniformdetectorbackground.h xmsdetector.h gendet.h	\
-		  genpixgrid.h gendetline.h clocklist.h event.h		\
-		  genpattern.h eventlistfile.h genpatternfile.h		\
-		  badpixmap.h geneventgrading.h xmseventfile.h		\
-		  xmsevent.h htrsdetector.h htrseventfile.h		\
+		  uniformdetectorbackground.h gendet.h genpixgrid.h	\
+		  gendetline.h clocklist.h event.h genpattern.h		\
+		  eventlistfile.h genpatternfile.h badpixmap.h		\
+		  geneventgrading.h htrsdetector.h htrseventfile.h	\
 		  htrsevent.h telemetrypacket.h htrstelstream.h		\
 		  comadetector.h comaeventfile.h comaevent.h psf.h	\
 		  vignetting.h codedmask.h attitudecatalog.h		\

@@ -3,7 +3,7 @@
 
 int xms_pixtemp_main() {
   struct Parameters parameters;
-  XMSEventFile eventfile;
+  EventListFile* elf=NULL;
   FILE* output_file=NULL;
 
   int status = EXIT_SUCCESS;
@@ -23,7 +23,7 @@ int xms_pixtemp_main() {
     HDmtInit(1);
 
     // Open the event file.
-    status=openXMSEventFile(&eventfile, parameters.eventlist_filename, READWRITE);
+    elf=openEventListFile(parameters.eventlist_filename, READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Read the EBOUNDS from the detector response file.
@@ -39,17 +39,18 @@ int xms_pixtemp_main() {
     }
 
     // Loop over all events in the event file.
-    while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventfile.generic))) {
+    long row;
+    for (row=0; row<elf->nrows; row++) {
       
       // Read the next event from the FITS file.
-      XMSEvent event;
-      status=XMSEventFile_getNextRow(&eventfile, &event);
-      if(EXIT_SUCCESS!=status) break;
+      Event event;
+      getEventFromFile(elf, row+1, &event, &status);
+      CHECK_STATUS_BREAK(status);
 
-      if ((1==event.array) && // Only events from the inner array.
-	  (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) {
-	fprintf(output_file, " %lf\t%lf\n", event.time, getEBOUNDSEnergy(event.pha, rmf, 0));
-      }
+      /*      if ((1==event.array) && // Only events from the inner array.
+	      (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) { */
+      fprintf(output_file, " %lf\t%lf\n", event.time, getEBOUNDSEnergy(event.pha, rmf, 0));
+      /* } */
 
     } // End of loop over all events in the event file
     
@@ -59,7 +60,7 @@ int xms_pixtemp_main() {
   // --- Clean Up ---
 
   // Close the event file.
-  closeXMSEventFile(&eventfile);
+  freeEventListFile(&elf, &status);
 
   // Close the output file.
   if (NULL!=output_file) {
