@@ -2,7 +2,8 @@
 #define ANALYSE_XMS_EVENTS_H 1
 
 #include "sixt.h"
-#include "xmseventfile.h"
+#include "eventlistfile.h"
+#include "genpatternfile.h"
 
 
 #define TOOLSUB analyse_xms_events_main
@@ -10,22 +11,23 @@
 
 
 struct Parameters{
-  /** Filename of the XMS event file. */
-  char eventlist_filename[MAXMSG];
+  char EventList[MAXFILENAME];
+  char PatternList[MAXFILENAME];
 
   /** Characteristic time unit of the TES microcalorimeter. */
-  double time_unit;
-  /** Time units before and after and event that may not be affected by further
-   * impacting photons in the same pixel. Otherwise the event energy determination
-   * will be degraded. */
-  int units_before_pulse, units_after_pulse;
+  double TimeUnit;
+
+  int PreTrigger;
+  int PostTrigger;
+
+  char fits_templates[MAXFILENAME];
 };
 
 
 //////////////////////////////////////////////////////////////////
 
 
-int analyse_xms_events_getpar(struct Parameters*);
+int analyse_xms_events_getpar(struct Parameters* par);
 
 
 #endif /* ANALYSE_XMS_EVENTS_H */

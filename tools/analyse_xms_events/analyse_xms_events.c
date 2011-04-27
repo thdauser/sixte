@@ -2,151 +2,199 @@
 
 
 int analyse_xms_events_main() {
-  struct Parameters parameters;
-  XMSEventFile eventfile;
+  struct Parameters par;
+  EventListFile* elf=NULL;
+  GenPatternFile* plf=NULL;
 
   int status = EXIT_SUCCESS;
 
 
   // Register HEATOOL
   set_toolname("analyse_xms_events");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
   do { // ERROR handling loop
 
+    // Event grade counters.
+    long nphotons=0, ngrade0=0, ngrade1=0, ngrade2=0, ngrade3=0, ngrade4=0;
+
     // Read parameters by PIL:
-    status = analyse_xms_events_getpar(&parameters);
+    status = analyse_xms_events_getpar(&par);
     if (EXIT_SUCCESS!=status) break;
 
-    // Open the event file.
-    status=openXMSEventFile(&eventfile, parameters.eventlist_filename, READWRITE);
+    // Set the input event file.
+    elf=openEventListFile(par.EventList, READWRITE, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Create and open the output event file.
+    // Filename of the template file.
+    char template[MAXMSG];
+    strcpy(template, par.fits_templates);
+    strcat(template, "/");
+    strcat(template, "patternlist.tpl");
+    // Open a new pattern file from the specified template.
+    plf=openNewGenPatternFile(par.PatternList, template, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
     // Loop over all events in the event file.
-    while((EXIT_SUCCESS==status) && (0==EventFileEOF(&eventfile.generic))) {
+    long row;
+    for (row=0; row<elf->nrows; row++) {
       
-      // Read the next event from the FITS file.
-      XMSEvent event;
-      status=XMSEventFile_getNextRow(&eventfile, &event);
-      if(EXIT_SUCCESS!=status) break;
+      // Read a new event from the file.
+      Event event;
+      getEventFromFile(elf, row+1, &event, &status);
+      CHECK_STATUS_BREAK(status);
 
-      // Check the events before and after the current one within the specified 
-      // time spans.
-      XMSEvent eventbuffer;
-      int nbefore=0, nafter=0;
+      // Check the events before and after the current one 
+      // within the specified time spans.
+      int nbefore_short=0, nbefore_long=0;
+      int nafter_short=0, nafter_long=0;
+
       // Former events:
-      long row = eventfile.generic.row-1;
-      while (1==EventFileRowIsValid(&eventfile.generic, row)) {
-	status = XMSEventFile_getRow(&eventfile, &eventbuffer, row);
-	if (EXIT_SUCCESS!=status) break;
-	if (event.time - eventbuffer.time > 
-	    parameters.units_before_pulse * parameters.time_unit) break;
-	if ((event.xi == eventbuffer.xi) && (event.yi == eventbuffer.yi)) nbefore++;
-	if (nbefore > 2) break; // Avoid too many unnecessary loop runs.
-	row--;
+      long row2;
+      for (row2=row-1; row2>=0; row2--) {
+	Event event2; // Buffer.
+	getEventFromFile(elf, row2+1, &event2, &status);
+	CHECK_STATUS_BREAK(status);
+	
+	if (event.time-event2.time > par.PostTrigger*par.TimeUnit) break;
+	if ((event.rawx==event2.rawx)&&(event.rawy==event2.rawy)) {
+	  nbefore_long++;
+	  if (event.time-event2.time < par.PreTrigger*par.TimeUnit) {
+	    nbefore_short++;
+	  }	
+	}
+	// Avoid too many unnecessary loop runs.
+	if ((nbefore_short>0) || (nbefore_long>0)) break;
       }
-      if (EXIT_SUCCESS!=status) break;
+      CHECK_STATUS_BREAK(status);
+
       // Subsequent events:
-      row = eventfile.generic.row + 1;
-      while (1==EventFileRowIsValid(&eventfile.generic, row)) {
-	status = XMSEventFile_getRow(&eventfile, &eventbuffer, row);
-	if (EXIT_SUCCESS!=status) break;
-	if (eventbuffer.time - event.time > 
-	    parameters.units_after_pulse * parameters.time_unit) break;
-	if ((event.xi == eventbuffer.xi) && (event.yi == eventbuffer.yi)) nafter++;
-	if (nafter > 2) break; // Avoid too many unnecessary loop runs.
-	row++;
+      for (row2=row+1; row2<elf->nrows; row2++) {
+	Event event2; // Buffer.
+	getEventFromFile(elf, row2+1, &event2, &status);
+	CHECK_STATUS_BREAK(status);
+	
+	if (event2.time-event.time > par.PostTrigger*par.TimeUnit) break;
+	if ((event.rawx==event2.rawx)&&(event.rawy==event2.rawy)) {
+	  nafter_long++;
+	  if (event2.time-event.time < par.PreTrigger*par.TimeUnit) {
+	    nafter_short++;
+	  }
+	}
+	// Avoid too many unnecessary loop runs.
+	if ((nafter_short>0) || (nafter_long>0)) break;
       }
-      if (EXIT_SUCCESS!=status) break;
+      CHECK_STATUS_BREAK(status);
 
+      GenPattern pattern = {
+	.pat_type= 0,
+	.pileup  = 0,
+	.event   = event
+      };
 
-      // Determine the grade of the event.
-      if (0 == nbefore + nafter) {
-	event.grade = 1; // High precision
-      } else if (1 == nbefore + nafter) {
-	event.grade = 2; // Intermediate precision
+      // Determine the event grade.
+      if ((nbefore_short>0)||(nafter_short>0)) {
+	pattern.pat_type = 2;
+      } else if ((nbefore_short==0) && (nafter_long==0)) {
+	pattern.pat_type = 0;
       } else {
-	event.grade = 1000; // Worse
-      }
+	pattern.pat_type = 1;
+      } 
 
-      // Write the event information to the event file.
-      status = XMSEventFile_writeRow(&eventfile, &event, eventfile.generic.row);
-      if (EXIT_SUCCESS!=status) break;
+      nphotons++;
+      switch (pattern.pat_type) {
+      case 0: ngrade0++; break;
+      case 1: ngrade1++; break;
+      case 2: ngrade2++; break;
+      case 3: ngrade3++; break;
+      case 4: ngrade4++; break;
+      }
+      
+      // Write the data to the output file.
+      addGenPattern2File(plf, &pattern, &status);	  
+      CHECK_STATUS_BREAK(status);
 
     } // End of loop over all events in the event file
-    
-  } while(0); // End of error handling loop
+    CHECK_STATUS_BREAK(status);
 
+    // Write header keywords.
+    fits_write_key(plf->eventlistfile->fptr, TLONG, "NPHOTONS", &nphotons, "", &status);
+    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE0", &ngrade0, "", &status);
+    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE1", &ngrade1, "", &status);
+    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE2", &ngrade2, "", &status);
+    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE3", &ngrade3, "", &status);
+    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE4", &ngrade4, "", &status);
+    CHECK_STATUS_BREAK(status);
+
+  } while(0); // End of error handling loop
 
   // --- Clean Up ---
 
-  // Close the event file.
-  closeXMSEventFile(&eventfile);
+  // Close the files.
+  freeEventListFile(&elf, &status);
+  destroyGenPatternFile(&plf, &status);
 
   return(status);
 }
 
 
-
-/*
-void analyse_tes_event(
-		       double* event_list,
-		       double t_0, double t_1,
-		       double time_before, double time_after,
-		       long* event_type
-		       )
+int analyse_xms_events_getpar(struct Parameters* par)
 {
-  // Check the event in the middle of the event list (index [2]).
-  if ((event_list[2] > t_0) && (event_list[2] < t_1)) {
-    // The event lies within the valid observation interval!
+  // String input buffer.
+  char* sbuffer=NULL;
 
-    // Count total events within the observation interval
-    event_type[0]++;
-
-
-    // Check for HIGH PRECISION events.
-    if ((event_list[2]-event_list[3] >= time_before) &&
-	// distance to former event
-	(event_list[1]-event_list[2] >= time_after))
-        // enough relaxation time
-      { // valid high precision event!
-	event_type[1]++;
-      }
-
-    
-    // Check for HIGH precision AND DEGRADED precision events:
-    if ((event_list[2]-event_list[4]>=time_before) &&
-	(event_list[0]-event_list[2]>=time_after) &&
-	(event_list[1]-event_list[3]>=time_before+time_after))
-      { // valid event (either high or degraded precision) !
-	event_type[2]++;
-      }
-  } // END of check for observation time interval
-}
-*/
+  // Error status.
+  int status=EXIT_SUCCESS;
 
 
-int analyse_xms_events_getpar(struct Parameters* parameters)
-{
-  int status = EXIT_SUCCESS;
+  status=ape_trad_query_file_name("EventList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
+    return(status);
+  } 
+  strcpy(par->EventList, sbuffer);
+  free(sbuffer);
 
-  if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
-    HD_ERROR_THROW("Error reading the name of the input file!\n", status);
+
+  status=ape_trad_query_string("PatternList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the pattern list!\n", status);
+    return(status);
+  } 
+  strcpy(par->PatternList, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_double("TimeUnit", &par->TimeUnit);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the time unit!\n", status);
+    return(status);
   }
 
-  else if ((status = PILGetReal("time_unit", &parameters->time_unit))) {
-    HD_ERROR_THROW("Error reading the detector intrinsic time unit!\n", status);
+  status=ape_trad_query_int("PreTrigger", &par->PreTrigger);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the pre-trigger!\n", status);
+    return(status);
   }
 
-  else if ((status = PILGetInt("units_before_pulse", &parameters->units_before_pulse))) {
-    HD_ERROR_THROW("Error reading the time units required before a "
-		   "high precision event!\n", status);
+  status=ape_trad_query_int("PostTrigger", &par->PostTrigger);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the post-trigger!\n", status);
+    return(status);
   }
 
-  else if ((status = PILGetInt("units_after_pulse", &parameters->units_after_pulse))) {
-    HD_ERROR_THROW("Error reading the time units required after a "
-		   "high precision event!\n", status);
+  // Get the name of the FITS template directory
+  // from the environment variable.
+  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(par->fits_templates, sbuffer);
+    // Note: the char* pointer returned by getenv should not
+    // be modified nor free'd.
+  } else {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error reading the environment variable 'SIXT_FITS_TEMPLATES'!\n", 
+		   status);
+    return(status);
   }
 
   return(status);

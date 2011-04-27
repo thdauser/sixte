@@ -536,11 +536,12 @@ int genpat_main() {
 
     // Loop over all events in the FITS file. The last detector 
     // frame is NOT neglected.
-    Event event;
     long row;
     long frame=0;
     int last_loop=0;
     for (row=0; row<=elf->nrows; row++) {
+      
+      Event event;
 
       if (row<elf->nrows) {
 	last_loop=0;
@@ -613,7 +614,8 @@ int genpat_main() {
   // Destroy the detector data structure.
   destroyGenDet(&det, &status);
   
-  // Close the output eventfile.
+  // Close the files.
+  freeEventListFile(&elf, &status);
   destroyGenPatternFile(&plf, &status);
   
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
@@ -621,9 +623,6 @@ int genpat_main() {
 }
 
 
-
-////////////////////////////////////////////////////////////////
-// This routine reads the program parameters using the PIL.
 int getpar(struct Parameters* const par)
 {
   // String input buffer.
