@@ -163,7 +163,6 @@ GenDet* newGenDet(const char* const filename, int* const status)
 }
 
 
-
 void destroyGenDet(GenDet** const det, int* const status)
 {
   if (NULL!=*det) {
@@ -211,7 +210,6 @@ void destroyGenDet(GenDet** const det, int* const status)
 }
 
 
-
 static void addString2XMLBuffer(struct XMLBuffer* const buffer, 
 				const char* const string,
 				int* const status)
@@ -254,7 +252,6 @@ static void addString2XMLBuffer(struct XMLBuffer* const buffer,
 }
 
 
-
 static void copyXMLBuffer(struct XMLBuffer* const destination,
 			  struct XMLBuffer* const source,
 			  int* const status)
@@ -274,7 +271,6 @@ static void copyXMLBuffer(struct XMLBuffer* const destination,
 }
 
 
-
 static struct XMLBuffer* newXMLBuffer(int* const status)
 {
   struct XMLBuffer* buffer=(struct XMLBuffer*)malloc(sizeof(struct XMLBuffer));
@@ -291,7 +287,6 @@ static struct XMLBuffer* newXMLBuffer(int* const status)
 }
 
 
-
 static void destroyXMLBuffer(struct XMLBuffer** const buffer)
 {
   if (NULL!=*buffer) {
@@ -304,8 +299,9 @@ static void destroyXMLBuffer(struct XMLBuffer** const buffer)
 }
 
 
-
-static void parseGenDetXML(GenDet* const det, const char* const filename, int* const status)
+static void parseGenDetXML(GenDet* const det, 
+			   const char* const filename, 
+			   int* const status)
 {
   headas_chat(5, "read detector setup from XML file '%s' ...\n", filename);
 
@@ -544,7 +540,6 @@ static void parseGenDetXML(GenDet* const det, const char* const filename, int* c
 }
 
 
-
 static void getAttribute(const char** attr, const char* const key, char* const value)
 {
   char Uattribute[MAXMSG]; // Upper case version of XML attribute
@@ -568,7 +563,6 @@ static void getAttribute(const char** attr, const char* const key, char* const v
   strcpy(value, "");
   return;
 }
-
 
 
 static void GenDetXMLElementStart(void* parsedata, const char* el, const char** attr) 
@@ -914,7 +908,6 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 }
 
 
-
 static void GenDetXMLElementEnd(void* parsedata, const char* el) 
 {
   struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
@@ -926,7 +919,6 @@ static void GenDetXMLElementEnd(void* parsedata, const char* el)
 
   return;
 }
-
 
 
 int addGenDetPhotonImpact(GenDet* const det, 
@@ -970,7 +962,6 @@ int addGenDetPhotonImpact(GenDet* const det,
   // Return the number of affected pixels.
   return(npixels);
 }
-
 
 
 void operateGenDetClock(GenDet* const det, EventListFile* const elf,

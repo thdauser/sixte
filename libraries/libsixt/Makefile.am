@@ -39,10 +39,10 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     badpixmap.c geneventgrading.c htrseventfile.c	\
 		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
 		     htrstelstream.c comadetector.c comaeventfile.c	\
-		     epicpn.c psf.c vignetting.c codedmask.c		\
-		     attitudecatalog.c attitudefile.c sixt.c vector.c	\
-		     pointsources.c extendedsources.c sourceimage.c	\
-		     photon.c spectrum.c fits_pha.c check_fov.c		\
+		     psf.c vignetting.c codedmask.c attitudecatalog.c	\
+		     attitudefile.c sixt.c vector.c pointsources.c	\
+		     extendedsources.c sourceimage.c photon.c		\
+		     spectrum.c fits_pha.c check_fov.c			\
 		     photonlistfile.c linlightcurve.c rmf.c arf.c	\
 		     kdtreeelement.c sourcecatalog.c source.c		\
 		     linkedpholist.c erodetbkgrndgen.c phgen.c phimg.c	\
@@ -62,7 +62,7 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  xmseventfile.h xmsevent.h htrsdetector.h		\
 		  htrseventfile.h htrsevent.h telemetrypacket.h		\
 		  htrstelstream.h comadetector.h comaeventfile.h	\
-		  comaevent.h epicpn.h psf.h vignetting.h codedmask.h	\
+		  comaevent.h psf.h vignetting.h codedmask.h		\
 		  attitudecatalog.h attitudefile.h telescope.h sixt.h	\
 		  point.h vector.h pointsources.h extendedsources.h	\
 		  sourceimage.h photon.h spectrum.h fits_pha.h		\

@@ -125,10 +125,6 @@ int xms_simulation_main() {
 }
 
 
-
-
-////////////////////////////////////////////////////////////////
-// This routine reads the program parameters using the PIL.
 static int getpar(struct Parameters* parameters)
 {
   int pha_threshold;

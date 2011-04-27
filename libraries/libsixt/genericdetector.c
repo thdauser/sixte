@@ -1,7 +1,8 @@
 #include "genericdetector.h"
 
 
-int initGenericDetector(GenericDetector* gd, struct GenericDetectorParameters* parameters) 
+int initGenericDetector(GenericDetector* gd, 
+			struct GenericDetectorParameters* parameters) 
 {
   int status = EXIT_SUCCESS;
 

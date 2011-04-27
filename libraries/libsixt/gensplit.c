@@ -37,7 +37,6 @@ GenSplit* newGenSplit(int* const status)
 }
 
 
-
 void destroyGenSplit(GenSplit** const split)
 {
   if (NULL!=*split) {
@@ -45,7 +44,6 @@ void destroyGenSplit(GenSplit** const split)
     *split=NULL;
   }
 }
-
 
 
 int makeGenSplitEvents(const GenSplit* const split,
@@ -252,7 +250,6 @@ int makeGenSplitEvents(const GenSplit* const split,
   // Return the number of affected pixels.
   return(nvalidpixels);
 }
-
 
 
 static inline int getMinimumDistance(const double array[]) 
