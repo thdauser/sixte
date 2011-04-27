@@ -9,7 +9,7 @@ AM_CFLAGS  = -I${HEADAS}/include
 fitstemplatesdir = $(pkgdatadir)/templates
 dist_fitstemplates_DATA  = coma.eventlist.tpl
 dist_fitstemplates_DATA += eventlist.tpl
-dist_fitstemplates_DATA += genpatternfile.tpl
+dist_fitstemplates_DATA += patternlist.tpl
 dist_fitstemplates_DATA += htrs.eventlist.tpl
 dist_fitstemplates_DATA += impactlist.tpl
 dist_fitstemplates_DATA += photonlist.tpl 
@@ -46,7 +46,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     photonlistfile.c linlightcurve.c rmf.c arf.c	\
 		     kdtreeelement.c sourcecatalog.c source.c		\
 		     linkedpholist.c erodetbkgrndgen.c phgen.c phimg.c	\
-		     phdet.c
+		     phdet.c event.c
 
 
 ############ HEADERS #################

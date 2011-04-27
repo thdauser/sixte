@@ -49,5 +49,12 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
+/** Constructor for Event data structure. Initializes pointers with
+    NULL and variables with their default values. */
+Event* getEvent(int* const status);
+
+/** Destructor for Event data structure. */
+void freeEvent(Event** const event);
+
 
 #endif /* EVENT_H */

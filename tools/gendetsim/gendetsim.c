@@ -140,6 +140,14 @@ int gendetsim_main() {
     elf=openNewEventListFile(eventlist_filename, eventlist_template, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Write header keywords in EventList file.
+    // Number of pixels in x-direction.
+    if (fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
+			"number of pixels in x-direction", &status)) break;
+    // Number of pixels in y-direction.
+    if (fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
+			"number of pixels in y-direction", &status)) break;    
+
     // Photon detection.
     phdetGenDet(det, ilf, elf, par.TIMEZERO, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);

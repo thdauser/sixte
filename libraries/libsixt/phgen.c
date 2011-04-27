@@ -24,9 +24,10 @@ void phgen(const GenDet* const det,
     CHECK_STATUS_BREAK(*status);
     
     // Get photons for all sources in the catalog.
+    double t2 = MIN(time+dt, t0+exposure);
     LinkedPhoListElement* pholist =
       genFoVXRayPhotons(srccat, &pointing, det->fov_diameter,
-			time, time+dt, status);
+			time, t2, status);
     CHECK_STATUS_BREAK(*status);
       
     // Process the list of generated photons.

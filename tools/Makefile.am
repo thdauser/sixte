@@ -2,7 +2,7 @@
 # In order to change this, include "." in the list of SUBDIRS.
 SUBDIRS = phogen phoimg psfgen htrs_simulation xms_simulation		\
 	  xms_pixtemp ero_fits2tm ero_exposure comaexp			\
-	  ero_split_photonfile gendetsim ero_merge_photonfiles		\
+	  ero_split_photonfile gendetsim genpat ero_merge_photonfiles	\
 	  analyse_xms_events htrs_psfgen htrs_pixel_intensity		\
 	  htrs_fits2tm htrs_digital_shaper comaimg comadet comarecon	\
 	  orbatt mmap simsixt

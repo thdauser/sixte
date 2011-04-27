@@ -1,6 +1,23 @@
 #include "genpat.h"
 
 
+static void copyEvent(Event* const ev1, const Event* const ev2)
+{
+  ev1->rawx  =ev2->rawx;
+  ev1->rawy  =ev2->rawy;
+  ev1->pha   =ev2->pha;
+  ev1->charge=ev2->charge;
+  ev1->time  =ev2->time;
+  ev1->frame =ev2->frame;
+
+  int ii;
+  for(ii=0; ii<NEVENTPHOTONS; ii++) {
+    ev1->ph_id[ii]  =ev2->ph_id[ii];
+    ev1->src_id[ii] =ev2->src_id[ii];
+  }
+}
+
+
 static struct PatternStatistics emptyPatternStatistics()
 {
   struct PatternStatistics stat = {
@@ -51,36 +68,21 @@ static void writePatternStatistics2FITSHeader(struct PatternStatistics stat,
 }
 
 
-static inline Event emptyEvent() 
-{
-  Event empty_event = {.frame=0};
-  assert(0==empty_event.rawx);
-  assert(0==empty_event.rawy);
-  assert(0==empty_event.pileup);
-  assert(0==empty_event.pha);
-  assert(0.==empty_event.charge);
-  assert(0==empty_event.frame);
-
-  return(empty_event);
-}
-
-
 static inline void clearGenPatPixels(GenDet* const det, 
-				     Event** const pixels) 
+				     Event*** const pixels) 
 {
   int ii;
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
     int jj;
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
-      pixels[ii][jj] = emptyEvent();
+      freeEvent(&pixels[ii][jj]);
     }
   }
 }
 
 
-			     
 static void add2GenPatList(GenDet* const det, 
-			   Event** const pixels, 
+			   Event*** const pixels, 
 			   const int x, const int y, 
 			   const float split_threshold,
 			   Event** const list, 
@@ -89,14 +91,15 @@ static void add2GenPatList(GenDet* const det,
   // Check if the pixel is already contained in the list.
   int ii; 
   for (ii=0; ii<*nlist; ii++) {
-    if (list[ii]==&pixels[x][y]) {
+    if (list[ii]==pixels[x][y]) {
       // The pixel is already contained in the list.
       return;
     }
   }
 
   // Add the event to the list.
-  list[*nlist] = &pixels[x][y];
+  assert(NULL!=pixels[x][y]);
+  list[*nlist]=pixels[x][y];
   (*nlist)++;
   assert(*nlist<1000);
 
@@ -110,7 +113,8 @@ static void add2GenPatList(GenDet* const det,
   int ymax = MIN(det->pixgrid->ywidth-1, y+1);
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
-      if (pixels[ii][jj].charge > split_threshold) {
+      if (NULL==pixels[ii][jj]) continue;
+      if (pixels[ii][jj]->charge > split_threshold) {
 	add2GenPatList(det, pixels, ii, jj, split_threshold, list, nlist);
       }
     }
@@ -120,14 +124,16 @@ static void add2GenPatList(GenDet* const det,
   int min = MAX(0, x-1);
   int max = MIN(det->pixgrid->xwidth-1, x+1);
   for (ii=min; ii<=max; ii++) {
-    if (pixels[ii][y].charge > split_threshold) {
+    if (NULL==pixels[ii][y]) continue;
+    if (pixels[ii][y]->charge > split_threshold) {
       add2GenPatList(det, pixels, ii, y, split_threshold, list, nlist);
     }
   }
   min = MAX(0, y-1);
   max = MIN(det->pixgrid->ywidth-1, y+1);
   for (ii=min; ii<=max; ii++) {
-    if (pixels[x][ii].charge > split_threshold) {
+    if (NULL==pixels[x][ii]) continue;
+    if (pixels[x][ii]->charge > split_threshold) {
       add2GenPatList(det, pixels, x, ii, split_threshold, list, nlist);
     }
   }
@@ -135,9 +141,8 @@ static void add2GenPatList(GenDet* const det,
 }
 
 
-
 static void findMaxCharge(GenDet* const det,
-			  Event** const pixels,
+			  Event*** const pixels,
 			  int* const x, 
 			  int* const y)
 {
@@ -153,7 +158,8 @@ static void findMaxCharge(GenDet* const det,
   int ymax = MIN(det->pixgrid->ywidth-1, *y+1);
   for (ii=xmin; ii<=xmax; ii++) {
     for (jj=ymin; jj<=ymax; jj++) {
-      if (pixels[ii][jj].charge > pixels[xn][yn].charge) {
+      if (NULL==pixels[ii][jj]) continue;
+      if (pixels[ii][jj]->charge > pixels[xn][yn]->charge) {
 	xn = ii;
 	yn = jj;
       }
@@ -165,7 +171,8 @@ static void findMaxCharge(GenDet* const det,
   int min = MAX(0, *x-1);
   int max = MIN(det->pixgrid->xwidth-1, *x+1);
   for (ii=min; ii<=max; ii++) {
-    if (pixels[ii][*y].charge > pixels[xn][yn].charge) {
+    if (NULL==pixels[ii][*y]) continue;	  
+    if (pixels[ii][*y]->charge > pixels[xn][yn]->charge) {
       xn = ii;
       yn = *y;
     }
@@ -173,7 +180,8 @@ static void findMaxCharge(GenDet* const det,
   min = MAX(0, *y-1);
   max = MIN(det->pixgrid->ywidth-1, *y+1);
   for (ii=min; ii<=max; ii++) {
-    if (pixels[*x][ii].charge > pixels[xn][yn].charge) {
+    if (NULL==pixels[*x][ii]) continue;
+    if (pixels[*x][ii]->charge > pixels[xn][yn]->charge) {
       xn = *x;
       yn = ii;
     }
@@ -191,9 +199,8 @@ static void findMaxCharge(GenDet* const det,
 }
 
 
-
 static void GenPatIdentification(GenDet* const det, 
-				 Event** const pixels, 
+				 Event*** const pixels, 
 				 GenPatternFile* const file, 
 				 struct PatternStatistics* const patstat,
 				 int* const status)
@@ -206,18 +213,19 @@ static void GenPatIdentification(GenDet* const det,
   int ii, jj;
   for (ii=0; ii<det->pixgrid->xwidth; ii++) {
     for (jj=0; jj<det->pixgrid->ywidth; jj++) {
-      if (pixels[ii][jj].charge > det->threshold_event_lo_keV) {
+      if (NULL==pixels[ii][jj]) continue;
+      if (pixels[ii][jj]->charge > det->threshold_event_lo_keV) {
 	// Found an event above the primary event threshold.
 
 	// Find the local charge maximum.
 	int maxx=ii, maxy=jj;
 	findMaxCharge(det, pixels, &maxx, &maxy);
-	
+
 	// Create a temporary event list of all pixels in the
 	// neighborhood above the split threshold.
 	float split_threshold;
 	if (det->threshold_split_lo_fraction > 0.) {
-	  split_threshold = det->threshold_split_lo_fraction*pixels[maxx][maxy].charge;
+	  split_threshold = det->threshold_split_lo_fraction*pixels[maxx][maxy]->charge;
 	} else {
 	  split_threshold = det->threshold_split_lo_keV;
 	}
@@ -243,7 +251,7 @@ static void GenPatIdentification(GenDet* const det,
 	for (kk=1; kk<nlist; kk++) {
 	  if ((abs(list[kk]->rawx-list[0]->rawx)>1) ||
 	      (abs(list[kk]->rawy-list[0]->rawy)>1)) {
-	    large = 1;
+	    large=1;
 	    break;
 	  }
 	}
@@ -252,7 +260,7 @@ static void GenPatIdentification(GenDet* const det,
 	// above the split threshold in the 3x3 matrix
 	// around the main event with the maximum charge.
 	float charges[9] = {0., 0., 0.,  0., 0., 0.,  0., 0., 0.};
-	charges[4] = pixels[maxx][maxy].charge; // Main pixel.
+	charges[4] = pixels[maxx][maxy]->charge; // Main pixel.
 	for (kk=1; kk<nlist; kk++) {
 	  if (list[kk]->rawy == maxy-1) {
 	    if (list[kk]->rawx == maxx-1) {
@@ -291,7 +299,8 @@ static void GenPatIdentification(GenDet* const det,
 	GenPattern pattern = {
 	  .pat_type = getGenEventGrade(det->grading, charges, 
 				       border, large),
-	  .event = pixels[maxx][maxy]
+	  .pileup= 0,
+	  .event = *(pixels[maxx][maxy])
 	};
 
 	// Combine the PHA values of the individual events.
@@ -304,9 +313,33 @@ static void GenPatIdentification(GenDet* const det,
 	}
 	for (kk=0; kk<nlist; kk++) {
 	  if ((abs(list[kk]->rawx-maxx)<2) && (abs(list[kk]->rawy-maxy)<2)) {
-	    pattern.phas[(list[kk]->rawx-maxx+1) + (3*(list[kk]->rawy-maxy+1))] = 
-	      list[kk]->pha;
+	    if ((list[kk]->rawx-maxx+1) + (3*(list[kk]->rawy-maxy+1)) < 9) {
+	      pattern.phas[(list[kk]->rawx-maxx+1) + (3*(list[kk]->rawy-maxy+1))] = 
+		list[kk]->pha;
+	    }
 	  }
+	}
+
+	// Check for pile-up:
+	// - multiple photons with different IDs in the same pixel
+	// - multiple photons with different IDs in neighboring pixels
+	int ph_id =0;
+	for(kk=0; kk<nlist; kk++) {
+	  int ll;
+	  for (ll=0; ll<NEVENTPHOTONS; ll++) {
+	    if ((0==kk)&&(0==ll)) {
+	      // No photon ID registered yet.
+	      ph_id = list[0]->ph_id[0];
+	      assert(ph_id!=0);
+	    } else if (list[kk]->ph_id[ll]!=0) {
+	      if (ph_id!=list[kk]->ph_id[ll]) {
+		// Different photon ID.
+		pattern.pileup=1;
+		break;
+	      }
+	    }
+	  }
+	  if (1==pattern.pileup) break;
 	}
 
 	
@@ -326,14 +359,14 @@ static void GenPatIdentification(GenDet* const det,
 	if (pattern.pat_type==det->grading->invalid) {
 	  // Invalid pattern.
 	  patstat->ninvalids++;
-	  if (pattern.event.pileup > 0) {
+	  if (pattern.pileup > 0) {
 	    patstat->npinvalids++;
 	  }
 	} else  {
 	  // Valid pattern.
 	  patstat->nvalids++;
 	  patstat->ngrade[pattern.pat_type]++;
-	  if (pattern.event.pileup > 0) {
+	  if (pattern.pileup > 0) {
 	    patstat->npvalids++;
 	    patstat->npgrade[pattern.pat_type]++;
 	  }
@@ -343,7 +376,8 @@ static void GenPatIdentification(GenDet* const det,
 	// Delete the events belonging to this pattern from the pixel array
 	// in order to prevent them being used another time.
 	for (kk=0; kk<nlist; kk++) {
-	  *(list[kk]) = emptyEvent();
+	  freeEvent(&(pixels[list[kk]->rawx][list[kk]->rawy]));
+	  list[kk]=NULL;
 	}
 	// End of deleting all contributing events.
 
@@ -359,21 +393,20 @@ static void GenPatIdentification(GenDet* const det,
 }
 
 
-
 ////////////////////////////////////
 /** Main procedure. */
 int genpat_main() {
 
   // Containing all programm parameters read by PIL
-  struct Parameters parameters; 
+  struct Parameters par; 
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;
   // Input event list file.
   EventListFile* elf=NULL;
   // Output event file. 
-  GenPatternFile* output_file=NULL;
+  GenPatternFile* plf=NULL;
   // Detector pixel array.
-  Event** pixels=NULL;
+  Event*** pixels=NULL;
   // Pattern statistics. Count the numbers of the individual pattern types
   // and store this information in the output event file.
   struct PatternStatistics patstat=emptyPatternStatistics();
@@ -383,7 +416,7 @@ int genpat_main() {
 
   // Register HEATOOL:
   set_toolname("genpat");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -392,14 +425,23 @@ int genpat_main() {
 
     headas_chat(3, "initialization ...\n");
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(-1);
-
     // Read parameters using PIL library:
-    if ((status=getpar(&parameters))) break;
+    if ((status=getpar(&par))) break;
+
+    // Determine the random number seed.
+    int seed;
+    if (-1!=par.Seed) {
+      seed = par.Seed;
+    } else {
+      // Determine the seed from the system clock.
+      seed = (int)time(NULL);
+    }
+
+    // Initialize HEADAS random number generator.
+    HDmtInit(seed);
 
     // Initialize the detector data structure.
-    det = newGenDet(parameters.xml_filename, &status);
+    det=newGenDet(par.XMLFile, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Check if the detector data structure contains
@@ -407,36 +449,24 @@ int genpat_main() {
     // to run the pattern identification algorithm.
     if (NULL==det->grading) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: no event grading specified in detector XML definition file!\n",
-		     status);
+      HD_ERROR_THROW("Error: no event grading specified in detector "
+		     "XML definition file!\n", status);
       break;
     }
 
     // Set the input event file.
-    elf=openEventListFile(parameters.eventlist_filename, 
-				    READWRITE, &status);
+    elf=openEventListFile(par.EventList, READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
     // Create and open the output event file.
     // Filename of the template file.
     char template[MAXMSG];
-    // Get the name of the FITS template directory.
-    // Try to read it from the environment variable.
-    char* buffer;
-    if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-      strcpy(template, buffer);
-    } else {
-      status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Could not read environment variable 'SIXT_FITS_TEMPLATES'!\n", 
-		     status);
-      break;
-    }
-    // Append the filename of the template file itself.
+    strcpy(template, par.fits_templates);
     strcat(template, "/");
-    strcat(template, "genpatternfile.tpl");
+    strcat(template, "patternlist.tpl");
     // Open a new pattern file from the specified template.
-    output_file = openNewGenPatternFile(parameters.patternlist_filename, template, &status);
+    plf=openNewGenPatternFile(par.PatternList, template, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Copy header keywords from the input to the output event file.
@@ -446,7 +476,7 @@ int genpat_main() {
     long n_input_photons=0; 
     if (fits_read_key(elf->fptr, TLONG, "NPHOTONS", 
 		      &n_input_photons, comment, &status)) break;
-    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "NPHOTONS", 
+    if (fits_update_key(plf->eventlistfile->fptr, TLONG, "NPHOTONS", 
 			&n_input_photons, "number of input photons", 
 			&status)) break;
 
@@ -454,49 +484,28 @@ int genpat_main() {
     long n_detected_photons=0; 
     if (fits_read_key(elf->fptr, TLONG, "NDETECTD", 
 		      &n_detected_photons, comment, &status)) break;
-    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "NDETECTD", 
+    if (fits_update_key(plf->eventlistfile->fptr, TLONG, "NDETECTD", 
 			&n_detected_photons, "number of detected photons", 
 			&status)) break;
-
-    // Number of EBOUNDS channels (DETCHANS).
-    long detchans=0; 
-    if (fits_read_key(elf->fptr, TLONG, "DETCHANS", 
-		      &detchans, comment, &status)) break;
-    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "DETCHANS", 
-			&detchans, comment, &status)) break;
-
-    // First EBOUNDS channel.
-    long tlmin1=0; 
-    if (fits_read_key(elf->fptr, TLONG, "TLMIN1", 
-		      &tlmin1, comment, &status)) break;
-    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "TLMIN1", 
-			&tlmin1, comment, &status)) break;    
-
-    // Last EBOUNDS channel.
-    long tlmax1=0; 
-    if (fits_read_key(elf->fptr, TLONG, "TLMAX1", 
-		      &tlmax1, comment, &status)) break;
-    if (fits_update_key(output_file->eventlistfile->fptr, TLONG, "TLMAX1", 
-			&tlmax1, comment, &status)) break;    
 
     // Number of pixels in x-direction.
     long nxdim=0; 
     if (fits_read_key(elf->fptr, TINT, "NXDIM", 
 		      &nxdim, comment, &status)) break;
-    if (fits_update_key(output_file->eventlistfile->fptr, TINT, "NXDIM", 
+    if (fits_update_key(plf->eventlistfile->fptr, TINT, "NXDIM", 
 			&nxdim, comment, &status)) break;
 
     // Number of pixels in y-direction.
     long nydim=0; 
     if (fits_read_key(elf->fptr, TINT, "NYDIM", 
 		      &nydim, comment, &status)) break;
-    if (fits_update_key(output_file->eventlistfile->fptr, TINT, "NYDIM", 
+    if (fits_update_key(plf->eventlistfile->fptr, TINT, "NYDIM", 
 			&nydim, comment, &status)) break;    
     // END of copying header keywords.
 
 
     // Allocate memory for the pixel array used for the pattern identification.
-    pixels=(Event**)malloc(det->pixgrid->xwidth*sizeof(Event*));
+    pixels=(Event***)malloc(det->pixgrid->xwidth*sizeof(Event**));
     if (NULL==pixels) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error: Memory allocation for pixel array failed!\n", status);
@@ -504,22 +513,16 @@ int genpat_main() {
     }
     int ii;
     for (ii=0; ii<det->pixgrid->xwidth; ii++) {
-      pixels[ii]=(Event*)malloc(det->pixgrid->ywidth*sizeof(Event));
+      pixels[ii]=(Event**)malloc(det->pixgrid->ywidth*sizeof(Event*));
       if (NULL==pixels[ii]) {
 	status = EXIT_FAILURE;
 	HD_ERROR_THROW("Error: Memory allocation for pixel array failed!\n", status);
 	break;
       }
-      // Initialize the event data structures with 0 values.
+      // Initialize Event pointers with NULL.
       int jj;
       for (jj=0; jj<det->pixgrid->ywidth; jj++) {
-	pixels[ii][jj].time = 0.;
-	pixels[ii][jj].pha  = 0;
-	pixels[ii][jj].charge = 0.;
-	pixels[ii][jj].rawx = 0;
-	pixels[ii][jj].rawy = 0;
-	pixels[ii][jj].frame  = 0;
-	pixels[ii][jj].pileup = 0;
+	pixels[ii][jj] = NULL;
       }
     }
     if (EXIT_SUCCESS!=status) break;
@@ -543,7 +546,7 @@ int genpat_main() {
 	last_loop=0;
 	// Read the next event from the file.
 	getEventFromFile(elf, row+1, &event, &status);
-	if (EXIT_SUCCESS!=status) break;
+	CHECK_STATUS_BREAK(status);
       } else {
 	last_loop = 1;
       }
@@ -555,29 +558,34 @@ int genpat_main() {
 
 	// Run the pattern identification and store the pattern 
 	// information in the event file.
-	GenPatIdentification(det, pixels, output_file, &patstat, &status);
+	GenPatIdentification(det, pixels, plf, &patstat, &status);
+	CHECK_STATUS_BREAK(status);
 	
 	// Delete the old events in the pixel array.
 	clearGenPatPixels(det, pixels);
 
 	// Update the frame counter.
 	frame = event.frame;
-	headas_printf("\rframe: %ld ", frame);
-	fflush(NULL);
+	if (0==frame%100) {
+	  headas_printf("\rframe: %ld ", frame);
+	  fflush(NULL);
+	}
       }
 
       if (0==last_loop) {
 	// Add the event to the pixel array.
-	pixels[event.rawx][event.rawy] = event;
+	pixels[event.rawx][event.rawy] = getEvent(&status);
+	CHECK_STATUS_BREAK(status);
+	copyEvent(pixels[event.rawx][event.rawy], &event);
       }
-    };
-    if (EXIT_SUCCESS!=status) break;
-    // END of loop over all events in the FITS file.
+    }
+    CHECK_STATUS_BREAK(status);
     headas_printf("\n");
+    // END of loop over all events in the FITS file.
 
     // Store the pattern statistics in the FITS header.
-    writePatternStatistics2FITSHeader(patstat, output_file->eventlistfile->fptr, &status);
-    if (EXIT_SUCCESS!=status) break;
+    writePatternStatistics2FITSHeader(patstat, plf->eventlistfile->fptr, &status);
+    CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
 
@@ -606,7 +614,7 @@ int genpat_main() {
   destroyGenDet(&det, &status);
   
   // Close the output eventfile.
-  destroyGenPatternFile(&output_file, &status);
+  destroyGenPatternFile(&plf, &status);
   
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
@@ -616,25 +624,63 @@ int genpat_main() {
 
 ////////////////////////////////////////////////////////////////
 // This routine reads the program parameters using the PIL.
-int getpar(struct Parameters* const parameters)
+int getpar(struct Parameters* const par)
 {
-  int status=EXIT_SUCCESS; // Error status
+  // String input buffer.
+  char* sbuffer=NULL;
 
-  // Get the name of the input event list file (FITS file).
-  if ((status = PILGetFname("eventlist_filename", 
-			    parameters->eventlist_filename))) {
-    HD_ERROR_THROW("Error reading the name of the input event list file!\n", status);
+  // Error status.
+  int status=EXIT_SUCCESS;
+
+  status=ape_trad_query_file_name("XMLFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    return(status);
+  } 
+  strcpy(par->XMLFile, sbuffer);
+  free(sbuffer);
+
+
+  status=ape_trad_query_file_name("EventList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
+    return(status);
+  } 
+  strcpy(par->EventList, sbuffer);
+  free(sbuffer);
+
+
+  status=ape_trad_query_string("PatternList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the pattern list!\n", status);
+    return(status);
+  } 
+  strcpy(par->PatternList, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_int("seed", &par->Seed);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    return(status);
   }
 
-  // Get the name of the output event list file (FITS file).
-  else if ((status = PILGetFname("patternlist_filename", 
-				 parameters->patternlist_filename))) {
-    HD_ERROR_THROW("Error reading the name of the output pattern list file!\n", status);
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    return(status);
   }
 
-  // Get the name of the detector XML description file (FITS file).
-  else if ((status = PILGetFname("xml_filename", parameters->xml_filename))) {
-    HD_ERROR_THROW("Error reading the name of the detector definition XML file!\n", status);
+  // Get the name of the FITS template directory
+  // from the environment variable.
+  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
+    strcpy(par->fits_templates, sbuffer);
+    // Note: the char* pointer returned by getenv should not
+    // be modified nor free'd.
+  } else {
+    status = EXIT_FAILURE;
+    HD_ERROR_THROW("Error reading the environment variable 'SIXT_FITS_TEMPLATES'!\n", 
+		   status);
+    return(status);
   }
 
   return(status);

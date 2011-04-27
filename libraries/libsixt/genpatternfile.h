@@ -17,7 +17,7 @@ typedef struct {
   EventListFile* eventlistfile;
 
   /** Column numbers. */
-  int cpat_type, cphas;
+  int cpat_type, cpileup, cphas;
 
 } GenPatternFile;
 

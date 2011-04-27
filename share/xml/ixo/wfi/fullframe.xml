@@ -10,7 +10,8 @@
 <detector type="wfi" mode="fullframe">
 <dimensions xwidth="1024" ywidth="1024"/>
 <wcs xrpix="512.5" yrpix="512.5" xrval="0." yrval="0." xdelt="100.e-6" ydelt="100.e-6"/>
-<rmf filename="/home/schmid/ixo/wfi/response/ixo_cdf_wfi_default.rsp"/>
+<rmf filename="/home/schmid/ixo/wfi/response/ixo_cdf_wfi_default.rmf"/>
+<arf filename="/home/schmid/ixo/wfi/response/ixo_cdf_wfi_default.arf"/>
 <split type="GAUSS" par1="11.e-6"/>
 <eventfile template="geneventfile.tpl"/>
 
@@ -24,5 +25,25 @@
     <readoutline lineindex="1023-$i" readoutindex="1023-$i"/>
   </loop>
 </readout>
+
+<eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
+  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="1"/>
+
+  <grade p11="0" p12="1" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="2"/>
+  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="2"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="2"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="1" p33="0" grade="2"/>
+
+  <grade p11="0" p12="1" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="3"/>
+  <grade p11="0" p12="1" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="3"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="1" p33="0" grade="3"/>
+  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="1" p33="0" grade="3"/>
+
+  <grade p11="1" p12="2" p13="0" p21="2" p23="0" p31="0" p32="0" p33="0" grade="4"/>
+  <grade p11="0" p12="2" p13="1" p21="0" p23="2" p31="0" p32="0" p33="0" grade="4"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="2" p31="0" p32="2" p33="1" grade="4"/>
+  <grade p11="0" p12="0" p13="0" p21="2" p23="0" p31="1" p32="2" p33="0" grade="4"/>
+</eventgrading>
+
 </detector>
 </instrument>

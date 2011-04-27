@@ -15,7 +15,7 @@
 
 // Insert only valid events into the output event file with
 // the recombined patterns.
-#define ONLY_VALID_PATTERNS 1
+//#define ONLY_VALID_PATTERNS 1
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -24,9 +24,15 @@
 
 
 struct Parameters {
-  char xml_filename[MAXMSG];
-  char eventlist_filename[MAXMSG];
-  char patternlist_filename[MAXMSG];
+  char XMLFile[MAXFILENAME];
+  char EventList[MAXFILENAME];
+  char PatternList[MAXFILENAME];
+
+  int Seed;
+  
+  char clobber;
+
+  char fits_templates[MAXFILENAME];
 };
 
 

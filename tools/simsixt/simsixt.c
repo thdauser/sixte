@@ -266,12 +266,19 @@ int simsixt_main()
     // the filename has to start with an exclamation mark ('!').
     elf=openNewEventListFile(eventlist_filename, eventlist_template, &status);
     CHECK_STATUS_BREAK(status);
-    // Set the attitude filename in the event list (obsolete).
+
+    // Set header keywords in EventList file.
+    // Set the attitude filename.
     strcpy(buffer, par.Attitude);
     fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", buffer,
 		    "attitude file", &status);
     CHECK_STATUS_BREAK(status);
-
+    // Number of pixels in x-direction.
+    if (fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
+			"number of pixels in x-direction", &status)) break;
+    // Number of pixels in y-direction.
+    if (fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
+			"number of pixels in y-direction", &status)) break;    
 
     // Photon Detection.
     headas_chat(3, "start photon detection ...\n");
