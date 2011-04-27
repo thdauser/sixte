@@ -10,10 +10,11 @@
 #include "event.h"
 #include "eventlistfile.h"
 #include "gendetline.h"
+#include "genericdetector.h"
 #include "geneventgrading.h"
 #include "genpixgrid.h"
-#include "gensplit.h"
 #include "impact.h"
+#include "point.h"
 #include "psf.h"
 #include "rmf.h"
 #include "vignetting.h"
@@ -35,9 +36,31 @@ typedef enum {
 } ReadoutTrigger;
 
 
+typedef enum {
+  GS_NONE        = 0,
+  GS_GAUSS       = 1,
+  GS_EXPONENTIAL = 2
+} GenSplitType;
+
+
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
 /////////////////////////////////////////////////////////////////
+
+
+/** Generic split event generator. */
+typedef struct {
+
+  /** Type of the GenSplit model. */
+  GenSplitType type;
+
+  /** Split parameter 1. For the Gaussian split model this parameter
+      represents the charge cloud size in [m]. For the exponential
+      model this parameter represents the denominator in the
+      exponential distribution term. */
+  double par1;
+
+} GenSplit;
 
 
 /** Generic pixelized X-ray detector. The data structure is designed
@@ -182,6 +205,24 @@ void GenDetClearLine(GenDet* const det, const int lineindex);
     be applied to the detector pixel array. The parameter 'value' has
     to be added to the bad pixel at 'x' and 'y'. */
 void encounterGenDetBadPix(void* const data, const int x, const int y, const float value);
+
+/** Constructor for GenSplit data structure. */
+GenSplit* newGenSplit(int* const status);
+
+/** Destructor for GenSplit data structure. */
+void destroyGenSplit(GenSplit** const split);
+
+/** Determine split events for a particular photon impact and add the
+    fractional charges to the affected pixels. The function return
+    value is the number of valid affected pixels inside the detector,
+    where charge has been added to. */
+int makeGenSplitEvents(GenDet* const det,
+		       const struct Point2d* const impact,
+		       const float charge,
+		       const long ph_id, const long src_id,
+		       const double time,
+		       EventListFile* const elf,
+		       int* const status);
 
 
 #endif /* GENDET_H */

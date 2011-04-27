@@ -34,7 +34,7 @@ lib_LTLIBRARIES = libsixt.la
 libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     impactlistfile.c uniformdetectorbackground.c	\
 		     xmsdetector.c xmseventfile.c htrsdetector.c	\
-		     gendet.c genpixgrid.c gensplit.c gendetline.c	\
+		     gendet.c genpixgrid.c gendetline.c			\
 		     eventlistfile.c genpatternfile.c clocklist.c	\
 		     badpixmap.c geneventgrading.c htrseventfile.c	\
 		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
@@ -56,18 +56,18 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  gaussianchargecloud.h exponentialchargecloud.h	\
 		  arcpixels.h eventfile.h impactlistfile.h impact.h	\
 		  uniformdetectorbackground.h xmsdetector.h gendet.h	\
-		  genpixgrid.h gensplit.h gendetline.h clocklist.h	\
-		  event.h genpattern.h eventlistfile.h			\
-		  genpatternfile.h badpixmap.h geneventgrading.h	\
-		  xmseventfile.h xmsevent.h htrsdetector.h		\
-		  htrseventfile.h htrsevent.h telemetrypacket.h		\
-		  htrstelstream.h comadetector.h comaeventfile.h	\
-		  comaevent.h psf.h vignetting.h codedmask.h		\
-		  attitudecatalog.h attitudefile.h telescope.h sixt.h	\
-		  point.h vector.h pointsources.h extendedsources.h	\
-		  sourceimage.h photon.h spectrum.h fits_pha.h		\
-		  check_fov.h photonlistfile.h linlightcurve.h rmf.h	\
-		  arf.h kdtreeelement.h sourcecatalog.h source.h	\
+		  genpixgrid.h gendetline.h clocklist.h event.h		\
+		  genpattern.h eventlistfile.h genpatternfile.h		\
+		  badpixmap.h geneventgrading.h xmseventfile.h		\
+		  xmsevent.h htrsdetector.h htrseventfile.h		\
+		  htrsevent.h telemetrypacket.h htrstelstream.h		\
+		  comadetector.h comaeventfile.h comaevent.h psf.h	\
+		  vignetting.h codedmask.h attitudecatalog.h		\
+		  attitudefile.h telescope.h sixt.h point.h vector.h	\
+		  pointsources.h extendedsources.h sourceimage.h	\
+		  photon.h spectrum.h fits_pha.h check_fov.h		\
+		  photonlistfile.h linlightcurve.h rmf.h arf.h		\
+		  kdtreeelement.h sourcecatalog.h source.h		\
 		  linkedpholist.h erodetbkgrndgen.h phgen.h phimg.h	\
 		  phdet.h
 
