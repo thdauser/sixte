@@ -149,6 +149,13 @@ typedef struct {
   /** Bad pixel map. */
   BadPixMap* badpixmap;
 
+  /** File name (without path contributions) of the FITS file
+      containing the XML detector definition. */
+  char* filename;
+
+  /** Path to the FITS file containing the XML detector definition. */
+  char* filepath;
+
 } GenDet;
 
 

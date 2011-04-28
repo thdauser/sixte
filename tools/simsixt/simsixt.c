@@ -57,7 +57,7 @@ int simsixt_main()
       // Determine the base directory containing the XML
       // definition files.
       strcpy(xml_filename, par.data_path);
-      strcat(xml_filename, "/xml");
+      strcat(xml_filename, "/instruments");
 
       // Determine the XML filename according to the selected
       // mission, instrument, and mode.

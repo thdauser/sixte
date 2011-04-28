@@ -125,7 +125,9 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->rmf =NULL;
   det->clocklist =NULL;
   det->badpixmap =NULL;
-  det->grading=NULL;
+  det->grading   =NULL;
+  det->filepath  =NULL;
+  det->filename  =NULL;
 
   // Set initial values.
   det->erobackground = 0;
@@ -141,6 +143,45 @@ GenDet* newGenDet(const char* const filename, int* const status)
   // Get empty split model.
   det->split = newGenSplit(status);
   if (EXIT_SUCCESS!=*status) return(det);
+
+  // Split the reference to the XML detector definition file
+  // into path and filename. This has to be done before
+  // calling the parser routine for the XML file.
+  char filename2[MAXFILENAME];
+  char rootname[MAXFILENAME];
+  // Make a local copy of the filename variable in order to avoid
+  // compiler warnings due to discarded const qualifier at the 
+  // subsequent function call.
+  strcpy(filename2, filename);
+  fits_parse_rootname(filename2, rootname, status);
+  CHECK_STATUS_RET(*status, det);
+
+  // Split rootname into the file path and the file name.
+  char* lastslash = strrchr(rootname, '/');
+  if (NULL==lastslash) {
+    det->filepath=(char*)malloc(sizeof(char));
+    CHECK_NULL_RET(det->filepath, *status, 
+		   "memory allocation for filepath failed", det);
+    det->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
+    CHECK_NULL_RET(det->filename, *status, 
+		   "memory allocation for filename failed", det);
+    strcpy(det->filepath, "");
+    strcpy(det->filename, rootname);
+  } else {
+    lastslash++;
+    det->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
+    CHECK_NULL_RET(det->filename, *status, 
+		   "memory allocation for filename failed", det);
+    strcpy(det->filename, lastslash);
+      
+    *lastslash='\0';
+    det->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
+    CHECK_NULL_RET(det->filepath, *status, 
+		   "memory allocation for filepath failed", det);
+    strcpy(det->filepath, rootname);
+  }
+  // END of storing the filename and filepath.
+
 
   // Read in the XML definition of the detector.
   parseGenDetXML(det, filename, status);
@@ -173,6 +214,14 @@ void destroyGenDet(GenDet** const det, int* const status)
 	destroyGenDetLine(&(*det)->line[i]);
       }
       free((*det)->line);
+    }
+
+    if (NULL!=(*det)->filepath) {
+      free((*det)->filepath);
+    }
+
+    if (NULL!=(*det)->filename) {
+      free((*det)->filename);
     }
 
     // Destroy the ClockList.
@@ -707,8 +756,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	else if (!strcmp(Uelement, "RMF")) {
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the detector response file (RSP/RMF).
-	    char buffer[MAXMSG];
-	    strcpy(buffer, attr[i+1]);
+	    char buffer[MAXFILENAME];
+	    strcpy(buffer, xmlparsedata->det->filepath);
+	    strcat(buffer, attr[i+1]);
 	    xmlparsedata->det->rmf = loadRMF(buffer, &xmlparsedata->status);
 	  }
 	}
@@ -716,8 +766,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	else if (!strcmp(Uelement, "ARF")) {
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the detector ARF.
-	    char buffer[MAXMSG];
-	    strcpy(buffer, attr[i+1]);
+	    char buffer[MAXFILENAME];
+	    strcpy(buffer, xmlparsedata->det->filepath);
+	    strcat(buffer, attr[i+1]);
 	    xmlparsedata->det->arf = loadARF(buffer, &xmlparsedata->status);
 	  }
 	}
@@ -733,8 +784,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	  }
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the PSF.
-	    char buffer[MAXMSG];
-	    strcpy(buffer, attr[i+1]);
+	    char buffer[MAXFILENAME];
+	    strcpy(buffer, xmlparsedata->det->filepath);
+	    strcat(buffer, attr[i+1]);
 	    xmlparsedata->det->psf = newPSF(buffer,
 					    xmlparsedata->det->focal_length,
 					    &xmlparsedata->status);
@@ -744,17 +796,20 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	else if (!strcmp(Uelement, "CODEDMASK")) {
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the CodedMask.
-	    char buffer[MAXMSG];
-	    strcpy(buffer, attr[i+1]);
-	    xmlparsedata->det->coded_mask = getCodedMaskFromFile(buffer, &xmlparsedata->status);
+	    char buffer[MAXFILENAME];
+	    strcpy(buffer, xmlparsedata->det->filepath);
+	    strcat(buffer, attr[i+1]);
+	    xmlparsedata->det->coded_mask = 
+	      getCodedMaskFromFile(buffer, &xmlparsedata->status);
 	  }
 	}
 
 	else if (!strcmp(Uelement, "VIGNETTING")) {
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the Vignetting function.
-	    char buffer[MAXMSG];
-	    strcpy(buffer, attr[i+1]);
+	    char buffer[MAXFILENAME];
+	    strcpy(buffer, xmlparsedata->det->filepath);
+	    strcat(buffer, attr[i+1]);
 	    xmlparsedata->det->vignetting = newVignetting(buffer, &xmlparsedata->status);
 	  }
 	}
@@ -780,8 +835,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	else if (!strcmp(Uelement, "BADPIXMAP")) {
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the detector bad pixel map.
-	    char buffer[MAXMSG];
-	    strcpy(buffer, attr[i+1]);
+	    char buffer[MAXFILENAME];
+	    strcpy(buffer, xmlparsedata->det->filepath);
+	    strcat(buffer, attr[i+1]);
 	    xmlparsedata->det->badpixmap = loadBadPixMap(buffer, &xmlparsedata->status);
 	  }
 	}
@@ -790,8 +846,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	  if (!strcmp(Uattribute, "FILENAME")) {
 	    // Load the detector background model for
 	    // cosmic rays.
-	    char buffer[MAXMSG];
-	    strcpy(buffer, attr[i+1]);
+	    char buffer[MAXFILENAME];
+	    strcpy(buffer, xmlparsedata->det->filepath);
+	    strcat(buffer, attr[i+1]);
 	    eroBkgInitialize(buffer, &xmlparsedata->status);
 	    xmlparsedata->det->erobackground = 1;
 	  }
