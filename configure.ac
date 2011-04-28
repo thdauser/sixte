@@ -234,6 +234,6 @@ AC_CONFIG_FILES([Makefile
 		tools/orbatt/Makefile
 		tools/mmap/Makefile
 		share/Makefile
-		share/xml/Makefile])
+		share/instruments/Makefile])
 AC_OUTPUT
 

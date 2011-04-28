@@ -1,7 +1,7 @@
 ########## DIRECTORIES ###############
 
 # Directory where to install the XML files.
-xmldir = $(pkgdatadir)/xml
+xmldir = $(pkgdatadir)/instruments
 
 # GRAVITAS
 gravitasdir = $(xmldir)/gravitas

@@ -16,7 +16,7 @@ int analyse_xms_events_main() {
   do { // ERROR handling loop
 
     // Event grade counters.
-    long nphotons=0, ngrade0=0, ngrade1=0, ngrade2=0, ngrade3=0, ngrade4=0;
+    long nphotons=0, ngrade0=0, ngrade1=0, ngrade2=0;
 
     // Read parameters by PIL:
     status = analyse_xms_events_getpar(&par);
@@ -29,9 +29,8 @@ int analyse_xms_events_main() {
     // Create and open the output event file.
     // Filename of the template file.
     char template[MAXMSG];
-    strcpy(template, par.fits_templates);
-    strcat(template, "/");
-    strcat(template, "patternlist.tpl");
+    strcpy(template, par.data_path);
+    strcat(template, "/templates/patternlist.tpl");
     // Open a new pattern file from the specified template.
     plf=openNewGenPatternFile(par.PatternList, template, &status);
     if (EXIT_SUCCESS!=status) break;
@@ -108,8 +107,6 @@ int analyse_xms_events_main() {
       case 0: ngrade0++; break;
       case 1: ngrade1++; break;
       case 2: ngrade2++; break;
-      case 3: ngrade3++; break;
-      case 4: ngrade4++; break;
       }
       
       // Write the data to the output file.
@@ -124,8 +121,6 @@ int analyse_xms_events_main() {
     fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE0", &ngrade0, "", &status);
     fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE1", &ngrade1, "", &status);
     fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE2", &ngrade2, "", &status);
-    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE3", &ngrade3, "", &status);
-    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE4", &ngrade4, "", &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // End of error handling loop
@@ -184,15 +179,15 @@ int analyse_xms_events_getpar(struct Parameters* par)
     return(status);
   }
 
-  // Get the name of the FITS template directory
-  // from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(par->fits_templates, sbuffer);
+  // Get the name of the FITS directory containing the data
+  // required for the simulation from the environment variable.
+  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
+    strcpy(par->data_path, sbuffer);
     // Note: the char* pointer returned by getenv should not
     // be modified nor free'd.
   } else {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_FITS_TEMPLATES'!\n", 
+    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
 		   status);
     return(status);
   }

@@ -36,9 +36,13 @@ struct Parameters {
   
   char clobber;
 
-  char fits_templates[MAXFILENAME];
-  char xml_path[MAXFILENAME];
+  char data_path[MAXFILENAME];
 };
+
+
+////////////////////////////////////////////////////////////////////////
+// Function declarations.
+////////////////////////////////////////////////////////////////////////
 
 
 int phogen_getpar(struct Parameters* parameters);

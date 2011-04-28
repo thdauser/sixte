@@ -44,7 +44,8 @@ int gendetsim_main() {
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Determine the base directory containing the XML
       // definition files.
-      strcpy(xml_filename, par.xml_path);
+      strcpy(xml_filename, par.data_path);
+      strcat(xml_filename, "/instruments");
 
       // Determine the XML filename according to the selected
       // mission, instrument, and mode.
@@ -106,8 +107,8 @@ int gendetsim_main() {
     char eventlist_template[MAXFILENAME];
     char eventlist_filename[MAXFILENAME];
     strcpy(eventlist_filename, par.EventList);
-    strcpy(eventlist_template, par.fits_templates);
-    strcat(eventlist_template, "/eventlist.tpl");
+    strcpy(eventlist_template, par.data_path);
+    strcat(eventlist_template, "/templates/eventlist.tpl");
 
     // Determine the random number seed.
     int seed;
@@ -269,28 +270,15 @@ int getpar(struct Parameters* const par)
   }
 
 
-  // Get the name of the FITS template directory
-  // from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(par->fits_templates, sbuffer);
+  // Get the name of the directory containing the data
+  // required for the simulation from the environment variable.
+  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
+    strcpy(par->data_path, sbuffer);
     // Note: the char* pointer returned by getenv should not
     // be modified nor free'd.
   } else {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_FITS_TEMPLATES'!\n", 
-		   status);
-    return(status);
-  }
-
-  // Get the name of the directory containing the detector
-  // XML definition files from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_XML_PATH"))) {
-    strcpy(par->xml_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_XML_PATH'!\n", 
+    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
 		   status);
     return(status);
   }
