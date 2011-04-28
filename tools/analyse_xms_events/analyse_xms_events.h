@@ -16,9 +16,9 @@ struct Parameters{
 
   /** Characteristic time unit of the TES microcalorimeter. */
   double TimeUnit;
-
   int PreTrigger;
   int PostTrigger;
+  double PileupTime;
 
   char data_path[MAXFILENAME];
 };

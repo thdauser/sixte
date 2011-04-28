@@ -47,8 +47,8 @@ int analyse_xms_events_main() {
 
       // Check the events before and after the current one 
       // within the specified time spans.
-      int nbefore_short=0, nbefore_long=0;
-      int nafter_short=0, nafter_long=0;
+      int nbefore_short=0, nbefore_long=0, nbefore_veryshort=0;
+      int nafter_short=0, nafter_long=0, nafter_veryshort=0;
 
       // Former events:
       long row2;
@@ -62,6 +62,9 @@ int analyse_xms_events_main() {
 	  nbefore_long++;
 	  if (event.time-event2.time < par.PreTrigger*par.TimeUnit) {
 	    nbefore_short++;
+	  }	
+	  if (event.time-event2.time < par.PileupTime) {
+	    nbefore_veryshort++;
 	  }	
 	}
 	// Avoid too many unnecessary loop runs.
@@ -81,6 +84,9 @@ int analyse_xms_events_main() {
 	  if (event2.time-event.time < par.PreTrigger*par.TimeUnit) {
 	    nafter_short++;
 	  }
+	  if (event2.time-event.time < par.PileupTime) {
+	    nafter_veryshort++;
+	  }
 	}
 	// Avoid too many unnecessary loop runs.
 	if ((nafter_short>0) || (nafter_long>0)) break;
@@ -94,7 +100,9 @@ int analyse_xms_events_main() {
       };
 
       // Determine the event grade.
-      if ((nbefore_short>0)||(nafter_short>0)) {
+      if ((nbefore_veryshort>0) || (nafter_veryshort>0)) {
+	pattern.pat_type = 3;
+      } else if ((nbefore_short>0)||(nafter_short>0)) {
 	pattern.pat_type = 2;
       } else if ((nbefore_short==0) && (nafter_long==0)) {
 	pattern.pat_type = 0;
@@ -176,6 +184,12 @@ int analyse_xms_events_getpar(struct Parameters* par)
   status=ape_trad_query_int("PostTrigger", &par->PostTrigger);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the post-trigger!\n", status);
+    return(status);
+  }
+
+  status=ape_trad_query_double("PileupTime", &par->PileupTime);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the pile-up time!\n", status);
     return(status);
   }
 
