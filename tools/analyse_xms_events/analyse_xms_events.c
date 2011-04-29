@@ -45,6 +45,13 @@ int analyse_xms_events_main() {
       getEventFromFile(elf, row+1, &event, &status);
       CHECK_STATUS_BREAK(status);
 
+      // Count the total number of photon events in the event list.
+      nphotons++;
+
+      // Neglect the inner pixel(s).
+      //if ((event.rawx>=14)&&(event.rawx<=16)&&
+      //(event.rawy>=14)&&(event.rawy<=16)) continue;
+
       // Check the events before and after the current one 
       // within the specified time spans.
       int nbefore_short=0, nbefore_long=0, nbefore_veryshort=0;
@@ -77,7 +84,7 @@ int analyse_xms_events_main() {
 	Event event2; // Buffer.
 	getEventFromFile(elf, row2+1, &event2, &status);
 	CHECK_STATUS_BREAK(status);
-	
+
 	if (event2.time-event.time > par.PostTrigger*par.TimeUnit) break;
 	if ((event.rawx==event2.rawx)&&(event.rawy==event2.rawy)) {
 	  nafter_long++;
@@ -110,7 +117,6 @@ int analyse_xms_events_main() {
 	pattern.pat_type = 1;
       } 
 
-      nphotons++;
       switch (pattern.pat_type) {
       case 0: ngrade0++; break;
       case 1: ngrade1++; break;
