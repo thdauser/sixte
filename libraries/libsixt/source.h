@@ -19,7 +19,7 @@ typedef struct {
   SimputSourceEntry* src;
 
   /** Photon rate [photons/s]. */
-  float pps;
+  //  float pps;
 
   /** Time of the emission of the last photon. */
   double* t_next_photon;

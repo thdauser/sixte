@@ -8,6 +8,7 @@
 #include "gendet.h"
 #include "genpattern.h"
 #include "genpatternfile.h"
+#include "rmf.h"
 
 #define TOOLSUB genpat_main
 #include "headas_main.c"

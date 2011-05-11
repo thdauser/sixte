@@ -71,13 +71,6 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 
     // Set the properties from the SIMPUT catalog.
     list[ii].src = cat->simput->entries[ii];
-
-    //  TODO  Determine the photon rate from this particular source.
-    list[ii].pps = getSimputPhotonRate(list[ii].src, status);
-    CHECK_STATUS_RET(*status, cat);
-    //  getSpectralPhotonRate(list[row].spectra[0], emin, emax) *
-    //  flux/getSpectralEnergyFlux(list[row].spectra[0], emin, emax);
-
   } 
   CHECK_STATUS_RET(*status, cat);
   // END of loop over all entries in the FITS table.

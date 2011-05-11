@@ -11,9 +11,6 @@ Source* newSource(int* const status)
   src->src           = NULL;
   src->t_next_photon = NULL;
 
-  // Initialize values.
-  src->pps = 0.;
-
   return(src);
 }
 
@@ -45,11 +42,14 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     src->t_next_photon=(double*)malloc(sizeof(double));
     CHECK_NULL(src->t_next_photon, *status,
 	       "memory allocation for 't_next_photon' (double) failed");
-    *(src->t_next_photon)= t0 + rndexp(1./src->pps);
+    *(src->t_next_photon) = getSimputPhotonTime(src->src, t0, status);
+    CHECK_STATUS_RET(*status, list);
+
   } else if (*(src->t_next_photon) < t0) {
     // The arrival time of the next photon was before the
     // requested time interval.
-    *(src->t_next_photon)= t0 + rndexp(1./src->pps);
+    *(src->t_next_photon) = getSimputPhotonTime(src->src, t0, status);
+    CHECK_STATUS_RET(*status, list);
   }
 
   // Create new photons, as long as the requested time interval 
@@ -80,7 +80,9 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     CHECK_STATUS_BREAK(*status);
 
     // Determine the arrival time of the next (future) photon.
-    *(src->t_next_photon) += rndexp(1./src->pps);
+    *(src->t_next_photon) = 
+      getSimputPhotonTime(src->src, *(src->t_next_photon), status);
+    CHECK_STATUS_BREAK(*status);
   }
   CHECK_STATUS_RET(*status, list);
 
