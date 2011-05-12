@@ -188,6 +188,10 @@ int addGenDetPhotonImpact(GenDet* const det, const Impact* const impact,
 void operateGenDetClock(GenDet* const det, EventListFile* const elf,
 			const double time, int* const status);
 
+/** Set the current detector time in the clocklist to the specified
+    value. The default value for the start time is 0. */
+void setGenDetStartTime(GenDet* const det, const double t0);
+
 /** Shift the lines of the GenDet detector pixel array by one line
     into the direction of the read-out node in line 0. The charges in
     line 1 are added to the charges in line 0, such that the content

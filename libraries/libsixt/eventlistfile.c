@@ -24,6 +24,8 @@ EventListFile* newEventListFile(int* const status)
   file->cframe =0;
   file->cph_id =0;
   file->csrc_id=0;
+  file->mjdref=0.;
+  file->timezero=0.;
 
   return(file);
 }
@@ -45,6 +47,7 @@ void freeEventListFile(EventListFile** const file, int* const status)
 
 EventListFile* openNewEventListFile(const char* const filename,
 				    const char* const template,
+				    double mjdref,
 				    int* const status)
 {
   EventListFile* file = newEventListFile(status);
@@ -84,6 +87,18 @@ EventListFile* openNewEventListFile(const char* const filename,
   // to the first extension.
   HDpar_stamp(file->fptr, 1, status);
   if (EXIT_SUCCESS!=*status) return(file);
+
+
+  // Move to the binary table extension.
+  fits_movabs_hdu(file->fptr, 2, 0, status);
+  CHECK_STATUS_RET(*status, file);
+
+  // Add timing header keywords.
+  fits_write_key(file->fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
+  double dbuff = 0.;
+  fits_write_key(file->fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
+  CHECK_STATUS_RET(*status, file);
+
 
   // Close the file.
   freeEventListFile(&file, status);
@@ -164,9 +179,14 @@ EventListFile* openEventListFile(const char* const filename,
     return(file);
   }
 
+  // Determine the timing header keywords.
+  char comment[MAXMSG];
+  fits_read_key(file->fptr, TDOUBLE, "MJDREF", &file->mjdref, comment, status);
+  fits_read_key(file->fptr, TDOUBLE, "TIMEZERO", &file->timezero, comment, status);
+  CHECK_STATUS_RET(*status, file);
+
   return(file);
 }
-
 
 
 void addEvent2File(EventListFile* const file, Event* const event, 
@@ -190,8 +210,9 @@ void addEvent2File(EventListFile* const file, Event* const event,
   file->nrows++;
 
   // Insert the event data.
+  double dbuffer = event->time - file->timezero - file->mjdref*24.*3600.;
   if (fits_write_col(file->fptr, TDOUBLE, file->ctime, file->row, 
-		     1, 1, &event->time, status)) return;
+		     1, 1, &dbuffer, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cpha, file->row, 
 		     1, 1, &event->pha, status)) return;
   if (fits_write_col(file->fptr, TFLOAT, file->ccharge, file->row, 
@@ -207,7 +228,6 @@ void addEvent2File(EventListFile* const file, Event* const event,
   if (fits_write_col(file->fptr, TLONG, file->csrc_id, file->row, 
 		     1, NEVENTPHOTONS, &event->src_id, status)) return;
 }
-
 
 
 void getEventFromFile(const EventListFile* const file,
@@ -243,6 +263,7 @@ void getEventFromFile(const EventListFile* const file,
   fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
 		&dnull, &event->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
+  event->time += file->mjdref*24.*3600. + file->timezero;
 
   fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
 		&lnull, &event->pha, &anynul, status);

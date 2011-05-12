@@ -74,6 +74,7 @@ int ero_merge_photonfiles_main() {
     // Create and open a new output (merged) event file:
     outputfile=openNewPhotonListFile(parameters.output_filename, 
 				     parameters.photonlist_template,
+				     inputfiles[0]->mjdref,
 				     &status);
     if (EXIT_SUCCESS!=status) break;
 

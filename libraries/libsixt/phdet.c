@@ -14,6 +14,9 @@ void phdetGenDet(GenDet* const det,
   // once.
   long n_detected_photons=0;
 
+  // Set the start time for the detector simulation.
+  setGenDetStartTime(det, t0);
+
   // Loop over all impacts in the FITS file.
   while (0==ImpactListFile_EOF(ilf)) {
 

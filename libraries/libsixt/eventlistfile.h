@@ -24,6 +24,11 @@ typedef struct {
   /** Column numbers. */
   int ctime, cpha, ccharge, crawx, crawy, cframe, cph_id, csrc_id;
 
+  /** MJDREF [d]. */
+  double mjdref;
+
+  double timezero;
+
 } EventListFile;
 
 
@@ -43,6 +48,7 @@ void freeEventListFile(EventListFile** const file, int* const status);
     according to the specified template. */
 EventListFile* openNewEventListFile(const char* const filename,
 				    const char* const template,
+				    double mjdref,
 				    int* const status);
 
 /** Open an existing EventListFile. */

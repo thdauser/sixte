@@ -191,7 +191,8 @@ int phogen_main()
     // --- Photon Generation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, &status);
+    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, 
+			      par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
     // Set the attitude filename in the photon list (obsolete).
     char buffer[MAXMSG];

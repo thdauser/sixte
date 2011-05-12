@@ -141,7 +141,8 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
-    elf=openNewEventListFile(eventlist_filename, eventlist_template, &status);
+    elf=openNewEventListFile(eventlist_filename, eventlist_template, 
+			     par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords in EventList file.

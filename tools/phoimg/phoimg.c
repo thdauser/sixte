@@ -194,7 +194,8 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, impactlist_template, &status);
+    ilf=openNewImpactListFile(impactlist_filename, impactlist_template, 
+			      par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
     // Set the attitude filename in the impact list (obsolete).
     char buffer[MAXMSG];

@@ -234,7 +234,8 @@ int simsixt_main()
     // --- Simulation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, &status);
+    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, 
+			      par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
     // Set the attitude filename in the photon list (obsolete).
     char buffer[MAXMSG];
@@ -255,7 +256,8 @@ int simsixt_main()
 
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, impactlist_template, &status);
+    ilf=openNewImpactListFile(impactlist_filename, impactlist_template, 
+			      par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
     // Set the attitude filename in the impact list (obsolete).
     strcpy(buffer, par.Attitude);
@@ -280,7 +282,8 @@ int simsixt_main()
     // Open the output event list file.
     // If the old file should be removed, when it already exists,
     // the filename has to start with an exclamation mark ('!').
-    elf=openNewEventListFile(eventlist_filename, eventlist_template, &status);
+    elf=openNewEventListFile(eventlist_filename, eventlist_template, 
+			     par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set header keywords in EventList file.

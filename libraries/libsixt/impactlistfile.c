@@ -23,10 +23,11 @@ ImpactListFile* newImpactListFile(int* const status)
   file->cy   =0;
   file->cph_id =0;
   file->csrc_id=0;
+  file->mjdref=0.;
+  file->timezero=0.;
 
   return(file);
 }
-
 
 
 void freeImpactListFile(ImpactListFile** const file, int* const status)
@@ -41,7 +42,6 @@ void freeImpactListFile(ImpactListFile** const file, int* const status)
     *file=NULL;
   }
 }
-
 
 
 ImpactListFile* openImpactListFile(const char* const filename,
@@ -87,13 +87,19 @@ ImpactListFile* openImpactListFile(const char* const filename,
   if(fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status)) 
     return(file);
 
+  // Determine the timing header keywords.
+  char comment[MAXMSG];
+  fits_read_key(file->fptr, TDOUBLE, "MJDREF", &file->mjdref, comment, status);
+  fits_read_key(file->fptr, TDOUBLE, "TIMEZERO", &file->timezero, comment, status);
+  CHECK_STATUS_RET(*status, file);
+
   return(file);
 }
 
 
-
 ImpactListFile* openNewImpactListFile(const char* const filename,
 				      const char* const template,
+				      double mjdref,
 				      int* const status)
 {
   ImpactListFile* file = newImpactListFile(status);
@@ -109,7 +115,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
 	      filename, template);
   if (fits_create_file(&file->fptr, buffer, status)) return(file);
 
-  // Set the time-keyword in the Event List Header.
+  // Set the time-keyword in the header.
   // See also: Stevens, "Advanced Programming in the UNIX environment",
   // p. 155 ff.
   time_t current_time;
@@ -132,19 +138,28 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   // The second parameter "1" means that the headers are written
   // to the first extension.
   HDpar_stamp(file->fptr, 1, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  CHECK_STATUS_RET(*status, file);
+
+  // Move to the binary table extension.
+  fits_movabs_hdu(file->fptr, 2, 0, status);
+  CHECK_STATUS_RET(*status, file);
+
+  // Add timing header keywords.
+  fits_write_key(file->fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
+  double dbuff = 0.;
+  fits_write_key(file->fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
+  CHECK_STATUS_RET(*status, file);
 
   // Close the new ImpactListFile.
   freeImpactListFile(&file, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  CHECK_STATUS_RET(*status, file);
   
   // Re-open the file.
   file = openImpactListFile(filename, READWRITE, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  CHECK_STATUS_RET(*status, file);
 
   return(file);
 }
-
 
 
 void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact, 
@@ -178,6 +193,7 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
   fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
 		&impact->time, &impact->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
+  impact->time += file->mjdref*24.*3600. + file->timezero;
 
   impact->energy = 0.;
   fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
@@ -215,7 +231,6 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
 }
 
 
-
 int ImpactListFile_EOF(ImpactListFile* const file) {
   if (file->row >= file->nrows) {
     return(1);
@@ -224,4 +239,25 @@ int ImpactListFile_EOF(ImpactListFile* const file) {
   }
 }
 
+
+void addImpact2File(ImpactListFile* const ilf, 
+		    Impact* const impact, 
+		    int* const status)
+{
+  fits_insert_rows(ilf->fptr, ilf->row++, 1, status);
+  double dbuffer = impact->time - ilf->timezero - ilf->mjdref*24.*3600.;
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
+		 ilf->row, 1, 1, &dbuffer, status);
+  fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
+		 ilf->row, 1, 1, &impact->energy, status);
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cx, 
+		 ilf->row, 1, 1, &(impact->position.x), status);
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy, 
+		 ilf->row, 1, 1, &(impact->position.y), status);
+  fits_write_col(ilf->fptr, TLONG, ilf->cph_id, 
+		 ilf->row, 1, 1, &impact->ph_id, status);
+  fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
+		 ilf->row, 1, 1, &impact->src_id, status);
+  ilf->nrows++;
+}
 

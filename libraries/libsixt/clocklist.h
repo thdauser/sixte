@@ -38,7 +38,7 @@ typedef struct {
   /** Current element. Index starts at 0. */
   int element;
 
-  /** Current time. */
+  /** Current time [s]. */
   double time;
 
   /** Current frame number. */

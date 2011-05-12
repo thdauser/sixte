@@ -423,7 +423,7 @@ int genpat_main() {
     strcat(template, "/");
     strcat(template, "patternlist.tpl");
     // Open a new pattern file from the specified template.
-    plf=openNewGenPatternFile(par.PatternList, template, &status);
+    plf=openNewGenPatternFile(par.PatternList, template, elf->mjdref, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Copy header keywords from the input to the output event file.

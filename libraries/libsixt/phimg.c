@@ -81,24 +81,19 @@ void phimg(const GenDet* const det,
 	// the edge of the FOV, although the source is inside the FOV.)
 	if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
 	    tan(det->fov_diameter)*det->focal_length) {
-	    
+
 	  // Insert the impact position with the photon data into the 
-	  // impact list:
-	  fits_insert_rows(ilf->fptr, ilf->row++, 1, status);
-	  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
-			 ilf->row, 1, 1, &photon.time, status);
-	  fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
-			 ilf->row, 1, 1, &photon.energy, status);
-	  fits_write_col(ilf->fptr, TDOUBLE, ilf->cx, 
-			 ilf->row, 1, 1, &position.x, status);
-	  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy, 
-			 ilf->row, 1, 1, &position.y, status);
-	  fits_write_col(ilf->fptr, TLONG, ilf->cph_id, 
-			 ilf->row, 1, 1, &photon.ph_id, status);
-	  fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
-			 ilf->row, 1, 1, &photon.src_id, status);
-	  ilf->nrows++;
+	  // impact list.
+	  Impact impact = { 
+	    .time   = photon.time,
+	    .energy = photon.energy,
+	    .position = position,
+	    .ph_id  = photon.ph_id,
+	    .src_id = photon.src_id
+	  };
+	  addImpact2File(ilf, &impact, status);	    
 	  CHECK_STATUS_VOID(*status);
+	  
 	}
       } 
       // END get_psf_pos(...)

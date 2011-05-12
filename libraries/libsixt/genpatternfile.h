@@ -38,6 +38,7 @@ void destroyGenPatternFile(GenPatternFile** const file, int* const status);
     according to the specified template. */
 GenPatternFile* openNewGenPatternFile(const char* const filename,
 				      const char* const template,
+				      double mjdref,
 				      int* const status);
 
 /** Open an existing EventListFile. */

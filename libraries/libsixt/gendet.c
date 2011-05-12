@@ -1900,6 +1900,8 @@ int makeGenSplitEvents(GenDet* const det,
 }
 
 
-
-
+void setGenDetStartTime(GenDet* const det, const double t0)
+{
+  det->clocklist->time = t0;
+}
 

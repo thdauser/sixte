@@ -120,7 +120,7 @@ void getClockListElement(ClockList* const list, const double time,
   if (CL_WAIT==list->type[list->element]) {
     CLWait* clwait = (CLWait*)list->list[list->element];
     if (list->time+clwait->time >= time) {
-      // The wait period still last.
+      // The wait period still continues.
       *type   =CL_NONE;
       *element=NULL;
       return;

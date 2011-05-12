@@ -32,7 +32,7 @@ int analyse_xms_events_main() {
     strcpy(template, par.data_path);
     strcat(template, "/templates/patternlist.tpl");
     // Open a new pattern file from the specified template.
-    plf=openNewGenPatternFile(par.PatternList, template, &status);
+    plf=openNewGenPatternFile(par.PatternList, template, elf->mjdref, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
