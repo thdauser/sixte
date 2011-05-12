@@ -388,7 +388,7 @@ double getPhotonTime(LinLightCurve* lc, double time)
       // Step 4 (u > u_k).
       u = (u-uk)/(1-uk);
       k++;
-      time = lc->t0 + k*lc->step_width;;
+      time = lc->t0 + k*lc->step_width;
     }
   }
 

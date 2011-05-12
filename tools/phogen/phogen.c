@@ -36,6 +36,9 @@ int phogen_main()
 
     headas_chat(3, "initialize ...\n");
 
+    // Start time for the simulation.
+    double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
     // Convert the user input to capital letters.
@@ -149,8 +152,8 @@ int phogen_main()
       ac->entry[0] = defaultAttitudeEntry();
       ac->entry[1] = defaultAttitudeEntry();
       
-      ac->entry[0].time = par.TIMEZERO;
-      ac->entry[1].time = par.TIMEZERO+par.Exposure;
+      ac->entry[0].time = t0;
+      ac->entry[1].time = t0 + par.Exposure;
 
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
       ac->entry[1].nz = ac->entry[0].nz;
@@ -161,8 +164,20 @@ int phogen_main()
 
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, par.TIMEZERO, par.Exposure, &status);
+      ac=loadAttitudeCatalog(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
+
+      // Check if the required time interval for the simulation
+      // is a subset of the time described by the attitude file.
+      if ((ac->entry[0].time > t0) || 
+	  (ac->entry[ac->nentries-1].time < t0+par.Exposure)) {
+	status=EXIT_FAILURE;
+	char msg[MAXMSG];
+	sprintf(msg, "attitude data does not cover the "
+		"specified period from %lf to %lf!", t0, t0+par.Exposure);
+	HD_ERROR_THROW(msg, status);
+	break;
+      }
     }
     // END of setting up the attitude.
 
@@ -188,7 +203,7 @@ int phogen_main()
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");
 
-    phgen(det, ac, srccat, plf, par.TIMEZERO, par.Exposure, 
+    phgen(det, ac, srccat, plf, t0, par.Exposure, 
 	  &status);
     CHECK_STATUS_BREAK(status);
  

@@ -31,6 +31,9 @@ int gendetsim_main() {
 
     headas_chat(3, "initialize ...\n");
 
+    // Start time for the simulation.
+    double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
     // Convert the user input to capital letters.
@@ -150,7 +153,7 @@ int gendetsim_main() {
 			"number of pixels in y-direction", &status)) break;    
 
     // Photon detection.
-    phdetGenDet(det, ilf, elf, par.TIMEZERO, par.Exposure, &status);
+    phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.

@@ -199,7 +199,6 @@ int eroexposure_main() {
 
     // Get the satellite catalog with the telescope attitude data:
     if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
-				      parameters.t0, parameters.timespan, 
 				      &status))) break;
 
     // Get the Vignetting data:

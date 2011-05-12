@@ -54,7 +54,7 @@ int comaimg_main() {
     if (fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
 		      &parameters.attitude_filename, comment, &status)) break;
     if (NULL==(attitudecatalog=loadAttitudeCatalog(parameters.attitude_filename,
-						   0., 0., &status))) break;
+						   &status))) break;
 
     // Load the coded mask from the file.
     mask = getCodedMaskFromFile(parameters.mask_filename, &status);
@@ -66,10 +66,13 @@ int comaimg_main() {
 					   &status);
     if (EXIT_SUCCESS!=status) break;
     // Write WCS header keywords.
-    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status)) break;
-    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status)) break;
+    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", 
+			&refxcrvl, "", &status)) break;
+    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", 
+			&refycrvl, "", &status)) break;
     // Add attitude filename.
-    if (fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", parameters.attitude_filename,
+    if (fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", 
+			parameters.attitude_filename,
 		       "name of the attitude FITS file", &status)) break;
     
     // --- END of Initialization ---

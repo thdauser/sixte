@@ -1,0 +1,7 @@
+XMLFile,fre,lq,"eroframestore.xml",,,"XML input file with detector definition "
+EventList,fre,lq,"events.fits",,,"input event list file (FITS file) "
+PatternList,s,lq,"pattern.fits",,,"output pattern list file (FITS file) "
+Seed,i,lh,-1,,,"seed for random number generator (-1: initialize with system time)"
+chatter,i,lh,4,,,"chatter: control verbosity of the program "
+clobber,b,h,no,,,"overwrite output files if exist?"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

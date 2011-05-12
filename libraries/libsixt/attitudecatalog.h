@@ -70,7 +70,6 @@ AttitudeCatalog* getAttitudeCatalog(int* const status);
     the file. After reading it checks, whether the required time
     interval is a subset of the data provided in the attitude file. */
 AttitudeCatalog* loadAttitudeCatalog(const char* filename, 
-				     const double t0, const double timespan, 
 				     int* const status);
 
 /** Destructor for the AttitudeCatalog. */

@@ -21,13 +21,10 @@ AttitudeCatalog* getAttitudeCatalog(int* const status)
 
 
 AttitudeCatalog* loadAttitudeCatalog(const char* filename, 
-				     const double t0, 
-				     const double timespan,
 				     int* const status)
 {
   AttitudeCatalog* ac=NULL;
   AttitudeFile* af=NULL;
-  char msg[MAXMSG];
 
   do { // Beginning of ERROR handling loop
 
@@ -98,19 +95,6 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
 
     // Save the number of AttitudeEntry elements.
     ac->nentries = af->nrows;
-
-    // Check if the required time interval for the simulation
-    // is a subset of the time described by the attitude file.
-    if (t0>0.) {
-      if ((ac->entry[0].time > t0) || 
-	  (ac->entry[ac->nentries-1].time < t0+timespan)) {
-	*status=EXIT_FAILURE;
-      sprintf(msg, "not enough attitude data available for the "
-	      "specified period from %lf to %lf!", t0, t0+timespan);
-      HD_ERROR_THROW(msg, *status);
-      break;
-      }
-    }
 
 
     // Determine the telescope nx-direction for all entries in the

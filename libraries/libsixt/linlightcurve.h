@@ -60,7 +60,7 @@ typedef struct {
   /** Piece-wise linear light curve data points ([photons/s]). The
       value a_k represents the gradient of the light curve between the
       time t_k (= t0 + k*step_width) and t_{k+1} (slope).  The value
-      b_k represents the contant contribution (intercept) at t_k. */
+      b_k represents the constant contribution (intercept) at t_k. */
   double *a, *b;
 
 } LinLightCurve;
