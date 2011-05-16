@@ -14,8 +14,9 @@ AttitudeCatalog* getAttitudeCatalog(int* const status)
   // Initialize.
   ac->nentries = 0;
   ac->current_entry = 0;
-  ac->entry = NULL;
-
+  ac->entry    = NULL;
+  ac->mjdref   = 0.;
+  ac->timezero = 0.;
   return(ac);
 }
 
@@ -47,8 +48,8 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
     ac->entry=(AttitudeEntry*)malloc(af->nrows*sizeof(AttitudeEntry));
     if (NULL==ac->entry) {
       *status = EXIT_FAILURE;
-      HD_ERROR_THROW("not enough memory available to store "
-		     "the AttitudeCatalog!\n", *status);
+      SIXT_ERROR("not enough memory available to store "
+		 "the AttitudeCatalog\n");
       break;
     }
 
@@ -70,7 +71,13 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
     } else {
       *status=EXIT_FAILURE;
       SIXT_ERROR("invalid value for telescope alignment flag");
+      break;
     } 
+
+    // Determine the timing header keywords.
+    fits_read_key(af->fptr, TDOUBLE, "MJDREF", &ac->mjdref, comment, status);
+    fits_read_key(af->fptr, TDOUBLE, "TIMEZERO", &ac->timezero, comment, status);
+    CHECK_STATUS_BREAK(*status);
 
     
     // Read all lines from attitude file subsequently.
@@ -81,7 +88,7 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
       if (EXIT_SUCCESS!=*status) break;
 
       // Calculate and store attitude data:
-      ac->entry[af->row].time = afe.time;
+      ac->entry[af->row].time = afe.time + ac->mjdref*24.*3600. + ac->timezero;
 
       // Telescope pointing direction nz:
       ac->entry[af->row].nz = 
@@ -180,13 +187,12 @@ static void setAttitudeCatalogCurrentEntry(AttitudeCatalog* const ac,
 					   const double time,
 					   int* const status)
 {
-  char msg[MAXMSG]; // Error message buffer.
-
   // Check if the requested time lies within the current time bin.
   while (time < ac->entry[ac->current_entry].time) {
     // Check if the beginning of the AttitudeCatalog is reached.
     if (ac->current_entry <= 0) {
       *status = EXIT_FAILURE;
+      char msg[MAXMSG]; 
       sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
       return;
@@ -199,6 +205,7 @@ static void setAttitudeCatalogCurrentEntry(AttitudeCatalog* const ac,
     // Check if the end of the AttitudeCatalog is reached.
     if (ac->current_entry >= ac->nentries-2) {
       *status = EXIT_FAILURE;
+      char msg[MAXMSG]; 
       sprintf(msg, "no attitude entry available for time %lf!\n", time);
       HD_ERROR_THROW(msg, *status);
       return;

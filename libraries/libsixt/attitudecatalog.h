@@ -53,6 +53,12 @@ typedef struct {
       1. */
   int alignment;
 
+  /** MJDREF [d]. */
+  double mjdref;
+  
+  /** Time offset [s]. */
+  double timezero;
+
 } AttitudeCatalog;
 
 

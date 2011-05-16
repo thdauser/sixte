@@ -304,7 +304,6 @@ void getEventFromFile(const EventListFile* const file,
 }
 
 
-
 void updateEventInFile(const EventListFile* const file,
 		       const int row, Event* const event,
 		       int* const status)

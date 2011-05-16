@@ -27,7 +27,8 @@ typedef struct {
 
   /** MJDREF [d]. */
   double mjdref;
-
+  
+  /** Time offset [s]. */
   double timezero;
 
 } PhotonListFile;

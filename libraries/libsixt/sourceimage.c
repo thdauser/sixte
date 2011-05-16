@@ -33,7 +33,6 @@ SourceImage* get_SourceImage()
 }
 
 
-
 SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
 {
   SourceImage* si=NULL;
@@ -87,7 +86,6 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
 }
 
 
-
 SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 {
   SourceImage* si=NULL;
@@ -111,7 +109,6 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
 
   return(si);
 }
-
 
 
 SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
@@ -260,7 +257,6 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 }
 
 
-
 void saveSourceImage(SourceImage* si, char* filename, int* status)
 {
   fitsfile *fptr=NULL;
@@ -361,7 +357,6 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
 }
 
 
-
 void free_SourceImage(SourceImage* si) 
 {
   if(si != NULL) {
@@ -377,7 +372,6 @@ void free_SourceImage(SourceImage* si)
 }
 
 
-
 SourceImageCatalog* get_SourceImageCatalog() 
 {
   SourceImageCatalog* sic = NULL;
@@ -391,7 +385,6 @@ SourceImageCatalog* get_SourceImageCatalog()
 
   return(sic);
 }
-
 
 
 void free_SourceImageCatalog(SourceImageCatalog* sic) 
@@ -411,7 +404,6 @@ void free_SourceImageCatalog(SourceImageCatalog* sic)
 }
 
 
-
 int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr) 
 {
   int status=EXIT_SUCCESS;
@@ -424,17 +416,20 @@ int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr)
     sic->images = (SourceImage**)malloc(sizeof(SourceImage*));
     if (NULL==sic->images) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
+      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", 
+		     status);
       return(status);
     }
     sic->nimages=1; // Initial value.
 	
   } else { // SourceImageCatalog already contains SourceImage objects.
     // Resize the formerly allocated memory.
-    sic->images = (SourceImage**)realloc(sic->images, (sic->nimages+1)*sizeof(SourceImage*));
+    sic->images = (SourceImage**)realloc(sic->images, 
+					 (sic->nimages+1)*sizeof(SourceImage*));
     if (NULL==sic->images) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", status);
+      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", 
+		     status);
       return(status);
     }
     sic->nimages++;
@@ -445,7 +440,6 @@ int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr)
 
   return(status);
 }
-
 
 
 void getRandomSourceImagePixel(SourceImage* si, int* x, int* y) 
