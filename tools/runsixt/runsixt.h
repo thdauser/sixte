@@ -1,5 +1,5 @@
-#ifndef SIMSIXT_H
-#define SIMSIXT_H 1
+#ifndef RUNSIXT_H
+#define RUNSIXT_H 1
 
 #include "sixt.h"
 
@@ -13,7 +13,7 @@
 #include "vector.h"
 #include "sourcecatalog.h"
 
-#define TOOLSUB simsixt_main
+#define TOOLSUB runsixt_main
 #include "headas_main.c"
 
 
@@ -45,8 +45,8 @@ struct Parameters {
 };
 
 
-int simsixt_getpar(struct Parameters* const par);
+int runsixt_getpar(struct Parameters* const par);
 
 
-#endif /* SIMSIXT_H */
+#endif /* RUNSIXT_H */
 

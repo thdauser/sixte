@@ -1,7 +1,7 @@
-#include "simsixt.h"
+#include "runsixt.h"
 
 
-int simsixt_main() 
+int runsixt_main() 
 {
   // Program parameters.
   struct Parameters par;
@@ -29,7 +29,7 @@ int simsixt_main()
 
 
   // Register HEATOOL
-  set_toolname("simsixt");
+  set_toolname("runsixt");
   set_toolversion("0.01");
 
 
@@ -38,7 +38,7 @@ int simsixt_main()
     // ---- Initialization ----
     
     // Read the parameters using PIL.
-    status=simsixt_getpar(&par);
+    status=runsixt_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
@@ -334,7 +334,7 @@ int simsixt_main()
 
 
 
-int simsixt_getpar(struct Parameters* const par)
+int runsixt_getpar(struct Parameters* const par)
 {
   // String input buffer.
   char* sbuffer=NULL;

@@ -210,7 +210,7 @@ AC_CONFIG_FILES([Makefile
 		libraries/Makefile
 		libraries/libsixt/Makefile
 		tools/Makefile
-		tools/simsixt/Makefile
+		tools/runsixt/Makefile
 		tools/phogen/Makefile
 		tools/phoimg/Makefile
 		tools/psfgen/Makefile
