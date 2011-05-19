@@ -1,43 +1,94 @@
-#include "phogen.h"
+#if HAVE_CONFIG_H
+#include <config.h>
+#else
+#error "Do not compile outside Autotools!"
+#endif
 
 
-int phogen_main() 
-{
-  // Program parameters.
-  struct Parameters par;
+#include "sixt.h"
+#include "attitudecatalog.h"
+#include "event.h"
+#include "eventlistfile.h"
+#include "gendet.h"
+#include "point.h"
+#include "vector.h"
 
-  // Detector setup.
+#define TOOLSUB projev_main
+#include "headas_main.c"
+
+
+/* Program parameters */
+struct Parameters {
+  char EventList[MAXFILENAME];
+  char Mission[MAXMSG];
+  char Instrument[MAXMSG];
+  char Mode[MAXMSG];
+  char XMLFile[MAXFILENAME];
+  char Attitude[MAXFILENAME];
+
+  /** [deg] */
+  float RA, Dec;
+
+  double MJDREF;
+  double TIMEZERO;
+  double Exposure;
+
+  int Seed;
+  
+  char clobber;
+
+  char data_path[MAXFILENAME];
+};
+
+
+int projev_getpar(struct Parameters *par);
+
+
+////////////////////////////////////
+/** Main procedure. */
+int projev_main() {
+  struct Parameters par; // Program parameters
+
+  // Input event list file.
+  EventListFile* elf=NULL;
+  // Attitude catalog.
+  AttitudeCatalog* ac=NULL;
+  // Detector data structure (containing the focal length, FoV, ...).
   GenDet* det=NULL;
 
-  // Attitude.
-  AttitudeCatalog* ac=NULL;
-
-  // Catalog of input X-ray sources.
-  SourceCatalog* srccat=NULL;
-
-  // Photon list file.
-  PhotonListFile* plf=NULL;
-  
   // Error status.
-  int status = EXIT_SUCCESS;  
-
-  // Register HEATOOL.
-  set_toolname("phogen");
-  set_toolversion("0.02");
+  int status=EXIT_SUCCESS;   
 
 
-  do { // Beginning of ERROR HANDLING Loop.
+  // Register HEATOOL:
+  set_toolname("projev");
+  set_toolversion("0.01");
 
-    // ---- Initialization ----
 
-    // Read the parameters using PIL.
-    status=phogen_getpar(&par);
+  do {  // Beginning of the ERROR handling loop (will at most be run once)
+
+    // --- Initialization ---
+
+    // Read the program parameters using PIL library.
+    status=projev_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
     double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+
+    // Determine the random number seed.
+    int seed;
+    if (-1!=par.Seed) {
+      seed = par.Seed;
+    } else {
+      // Determine the seed from the system clock.
+      seed = (int)time(NULL);
+    }
+
+    // Initialize HEADAS random number generator.
+    HDmtInit(seed);
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
@@ -106,26 +157,6 @@ int phogen_main()
     }
     // END of determine the XML filename.
 
-
-    // Determine the photon list output file and the file template.
-    char photonlist_template[MAXFILENAME];
-    char photonlist_filename[MAXFILENAME];
-    strcpy(photonlist_filename, par.PhotonList);
-    strcpy(photonlist_template, par.data_path);
-    strcat(photonlist_template, "/templates/photonlist.tpl");
-
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed = par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed = (int)time(NULL);
-    }
-
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
-
     // Load the detector configuration.
     det=newGenDet(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
@@ -181,58 +212,101 @@ int phogen_main()
     }
     // END of setting up the attitude.
 
-    // Load the SIMPUT X-ray source catalog.
-    srccat = loadSourceCatalog(par.Simput, det, &status);
+    // Set the input event file.
+    elf=openEventListFile(par.EventList, READWRITE, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+
+    // For very small angles tan(x) \approx x.
+    float radpermeter = 1./det->focal_length; 
+
+    // --- END of Initialization ---
+
+
+    // --- Beginning of the Sky Projection Process ---
+
+    // Beginning of actual simulation (after loading required data):
+    headas_chat(5, "start sky projection process ...\n");
+
+    // LOOP over all events in the FITS table.
+    long row;
+    for (row=0; row<elf->nrows; row++) {
+
+      // Read the next event from the file.
+      Event event;
+      getEventFromFile(elf, row+1, &event, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine the Position of the source on the sky:
+      // First determine telescope pointing direction at the current time.
+      Vector nx, ny, nz;
+      getTelescopeAxes(ac, &nx, &ny, &nz, event.time, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine RA and DEC of the photon origin.
+      // Exact position on the detector:
+      struct Point2d detpos;
+      detpos.x = // in [m]
+	(event.rawx*1.-det->pixgrid->xrpix+0.5+sixt_get_random_number())*
+	det->pixgrid->xdelt + 
+	det->pixgrid->xrval;
+      detpos.y = // in [m]
+	(event.rawy*1.-det->pixgrid->yrpix+0.5+sixt_get_random_number())*
+	det->pixgrid->ydelt + 
+	det->pixgrid->yrval;
+      double d = sqrt(pow(detpos.x,2.)+pow(detpos.y,2.)); // in [m]
+
+      // Determine the off-axis angle corresponding to the detector position.
+      double offaxis_angle = d * radpermeter; // [rad]
+
+      // Determine the source position on the sky using the telescope 
+      // axis pointing vector and a vector from the point of the intersection 
+      // of the optical axis with the sky plane to the source position.
+      // Determine the length of this vector (in the sky projection plane).
+      double r = tan(offaxis_angle); 
+
+      Vector srcpos;
+      srcpos.x = nz.x + r*(detpos.x/d*nx.x+detpos.y/d*ny.x);
+      srcpos.y = nz.y + r*(detpos.x/d*nx.y+detpos.y/d*ny.y);
+      srcpos.z = nz.z + r*(detpos.x/d*nx.z+detpos.y/d*ny.z);
+      srcpos = normalize_vector(srcpos);
+
+      // Determine the equatorial coordinates RA and DEC
+      // (RA and DEC are in the range [-pi:pi] and [-pi/2:pi/2] respectively).
+      calculate_ra_dec(srcpos, &event.ra, &event.dec);
+
+      // Update the data in the Event List FITS file.
+      updateEventInFile(elf, row+1, &event, &status);
+      CHECK_STATUS_BREAK(status);
+    } 
     CHECK_STATUS_BREAK(status);
+    // END of LOOP over all events
 
-    // --- End of Initialization ---
-
-
-    // --- Photon Generation Process ---
-
-    // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, 
-			      par.MJDREF, &status);
-    CHECK_STATUS_BREAK(status);
-    // Set the attitude filename in the photon list (obsolete).
-    char buffer[MAXMSG];
-    strcpy(buffer, par.Attitude);
-    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", buffer,
-		    "attitude file", &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Start the actual photon generation (after loading required data):
-    headas_chat(3, "start photon generation process ...\n");
-
-    phgen(det, ac, srccat, plf, t0, par.Exposure, 
-	  &status);
-    CHECK_STATUS_BREAK(status);
- 
-    // --- End of photon generation ---
-
-  } while(0); // END of ERROR HANDLING Loop.
+  } while(0); // END of the error handling loop.
 
 
-  // --- Clean up ---
-  
-  headas_chat(3, "\ncleaning up ...\n");
+  // --- Cleaning up ---
+  headas_chat(5, "cleaning up ...\n");
 
-  // Release memory.
-  freePhotonListFile(&plf, &status);
-  freeSourceCatalog(&srccat);
-  freeAttitudeCatalog(&ac);
-  destroyGenDet(&det, &status);
-
-  // Release HEADAS random number generator:
+  // Release HEADAS random number generator.
   HDmtFree();
 
-  if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
+  // Destroy the detector data structure.
+  destroyGenDet(&det, &status);
+  
+  // Close the files.
+  freeEventListFile(&elf, &status);
+
+  // Release memory of AttitudeCatalog
+  freeAttitudeCatalog(&ac);
+
+  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);
 }
 
 
 
-int phogen_getpar(struct Parameters* par)
+int projev_getpar(struct Parameters* par)
 {
   // String input buffer.
   char* sbuffer=NULL;
@@ -242,12 +316,12 @@ int phogen_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_string("PhotonList", &sbuffer);
+  status=ape_trad_query_file_name("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the photon list!\n", status);
+    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
     return(status);
   } 
-  strcpy(par->PhotonList, sbuffer);
+  strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);
@@ -302,14 +376,6 @@ int phogen_getpar(struct Parameters* par)
     return(status);
   } 
 
-  status=ape_trad_query_file_name("Simput", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the SIMPUT file!\n", status);
-    return(status);
-  } 
-  strcpy(par->Simput, sbuffer);
-  free(sbuffer);
-
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading MJDREF!\n", status);
@@ -356,5 +422,6 @@ int phogen_getpar(struct Parameters* par)
 
   return(status);
 }
+
 
 

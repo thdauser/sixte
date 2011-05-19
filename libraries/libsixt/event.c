@@ -10,10 +10,12 @@ Event* getEvent(int* const status)
   // Initalize.
   ev->rawx=0;
   ev->rawy=0;
-  ev->pha=0;
+  ev->pha =0;
   ev->charge=0.;
-  ev->time=0.;
+  ev->time =0.;
   ev->frame=0;
+  ev->ra   =0.;
+  ev->dec  =0.;
 
   int ii;
   for(ii=0; ii<NEVENTPHOTONS; ii++) {

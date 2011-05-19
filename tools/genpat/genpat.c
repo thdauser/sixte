@@ -397,7 +397,7 @@ static void GenPatIdentification(GenDet* const det,
 /** Main procedure. */
 int genpat_main() {
 
-  // Containing all programm parameters read by PIL
+  // Containing all programm parameters read by PIL.
   struct Parameters par; 
   // Detector data structure (containing the pixel array, its width, ...).
   GenDet* det=NULL;

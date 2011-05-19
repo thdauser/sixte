@@ -13,14 +13,14 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = event_projection.par
+dist_pfiles_DATA = projev.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = event_projection
+bin_PROGRAMS = projev
 
-event_projection_SOURCES = event_projection.c
-event_projection_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+projev_SOURCES = projev.c
+projev_LDADD = @top_builddir@/libraries/libsixt/libsixt.la

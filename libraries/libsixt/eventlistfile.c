@@ -18,10 +18,12 @@ EventListFile* newEventListFile(int* const status)
   file->nrows=0;
   file->row  =0;
   file->ctime=0;
-  file->cpha =0;
-  file->crawx=0;
-  file->crawy=0;
   file->cframe =0;
+  file->cpha   =0;
+  file->crawx  =0;
+  file->crawy  =0;
+  file->cra    =0;
+  file->cdec   =0;
   file->cph_id =0;
   file->csrc_id=0;
   file->mjdref=0.;
@@ -129,6 +131,8 @@ EventListFile* openEventListFile(const char* const filename,
   // Determine the column numbers.
   if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
     return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status)) 
+    return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status)) 
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "CHARGE", &file->ccharge, status)) 
@@ -137,7 +141,9 @@ EventListFile* openEventListFile(const char* const filename,
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status)) 
     return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status)) 
+  if(fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status)) 
+    return(file);
+  if(fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status)) 
     return(file);
   if(fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status)) 
     return(file);
@@ -205,28 +211,14 @@ void addEvent2File(EventListFile* const file, Event* const event,
   }
 
   // Insert a new, empty row to the table:
-  if (fits_insert_rows(file->fptr, file->row, 1, status)) return;
-  file->row++;
+  fits_insert_rows(file->fptr, file->row, 1, status);
+  CHECK_STATUS_VOID(*status);
   file->nrows++;
+  file->row = file->nrows;
 
-  // Insert the event data.
-  double dbuffer = event->time - file->timezero - file->mjdref*24.*3600.;
-  if (fits_write_col(file->fptr, TDOUBLE, file->ctime, file->row, 
-		     1, 1, &dbuffer, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cpha, file->row, 
-		     1, 1, &event->pha, status)) return;
-  if (fits_write_col(file->fptr, TFLOAT, file->ccharge, file->row, 
-		     1, 1, &event->charge, status)) return;
-  if (fits_write_col(file->fptr, TINT, file->crawx, file->row, 
-		     1, 1, &event->rawx, status)) return;
-  if (fits_write_col(file->fptr, TINT, file->crawy, file->row, 
-		     1, 1, &event->rawy, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cframe, file->row, 
-		     1, 1, &event->frame, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cph_id, file->row, 
-		     1, NEVENTPHOTONS, &event->ph_id, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->csrc_id, file->row, 
-		     1, NEVENTPHOTONS, &event->src_id, status)) return;
+  // Write the data.
+  updateEventInFile(file, file->row, event, status);
+  CHECK_STATUS_VOID(*status);
 }
 
 
@@ -262,8 +254,12 @@ void getEventFromFile(const EventListFile* const file,
 
   fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
 		&dnull, &event->time, &anynul, status);
-  CHECK_STATUS_VOID(*status);
   event->time += file->mjdref*24.*3600. + file->timezero;
+  CHECK_STATUS_VOID(*status);
+
+  fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
+		&lnull, &event->frame, &anynul, status);
+  CHECK_STATUS_VOID(*status);
 
   fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
 		&lnull, &event->pha, &anynul, status);
@@ -281,8 +277,14 @@ void getEventFromFile(const EventListFile* const file,
 		&inull, &event->rawy, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
-		&lnull, &event->frame, &anynul, status);
+  fits_read_col(file->fptr, TDOUBLE, file->cra, row, 1, 1, 
+		&dnull, &event->ra, &anynul, status);
+  event->ra *= M_PI/180.;
+  CHECK_STATUS_VOID(*status);
+
+  fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1, 
+		&lnull, &event->dec, &anynul, status);
+  event->dec*= M_PI/180.;
   CHECK_STATUS_VOID(*status);
 
   fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS, 
@@ -299,8 +301,6 @@ void getEventFromFile(const EventListFile* const file,
     HD_ERROR_THROW("Error: reading from ImpactListFile failed!\n", *status);
     return;
   }
-
-  return;
 }
 
 
@@ -308,8 +308,11 @@ void updateEventInFile(const EventListFile* const file,
 		       const int row, Event* const event,
 		       int* const status)
 {
+  double dbuffer = event->time - file->timezero - file->mjdref*24.*3600.;
   if (fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
-		     1, 1, &event->time, status)) return;
+		     1, 1, &dbuffer, status)) return;
+  if (fits_write_col(file->fptr, TLONG, file->cframe, row, 
+		     1, 1, &event->frame, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cpha, row, 
 		     1, 1, &event->pha, status)) return;
   if (fits_write_col(file->fptr, TFLOAT, file->ccharge, row, 
@@ -318,7 +321,15 @@ void updateEventInFile(const EventListFile* const file,
 		     1, 1, &event->rawx, status)) return;
   if (fits_write_col(file->fptr, TINT, file->crawy, row, 
 		     1, 1, &event->rawy, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cframe, row, 
-		     1, 1, &event->frame, status)) return;
+  dbuffer = event->ra  * 180./M_PI;
+  if (fits_write_col(file->fptr, TDOUBLE, file->cra, row, 
+		     1, 1, &dbuffer, status)) return;
+  dbuffer = event->dec * 180./M_PI;
+  if (fits_write_col(file->fptr, TDOUBLE, file->cdec, row, 
+		     1, 1, &dbuffer, status)) return;
+  if (fits_write_col(file->fptr, TLONG, file->cph_id, row, 
+		     1, NEVENTPHOTONS, &event->ph_id, status)) return;
+  if (fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
+		     1, NEVENTPHOTONS, &event->src_id, status)) return;
 }
 

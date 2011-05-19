@@ -233,6 +233,7 @@ AC_CONFIG_FILES([Makefile
 		tools/comadet/Makefile
 		tools/comarecon/Makefile
 		tools/orbatt/Makefile
+		tools/projev/Makefile
 		tools/mmap/Makefile
 		share/Makefile
 		share/instruments/Makefile])

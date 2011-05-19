@@ -101,6 +101,9 @@ int gendetsim_main() {
     }
     // END of determine the XML filename.
 
+    // Load the detector configuration.
+    det=newGenDet(xml_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Determine the impact list output file and the file template.
     char impactlist_filename[MAXFILENAME];
@@ -124,10 +127,6 @@ int gendetsim_main() {
 
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
-
-    // Load the detector configuration.
-    det=newGenDet(xml_filename, &status);
-    CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
 

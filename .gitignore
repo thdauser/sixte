@@ -22,7 +22,7 @@ pnSimGraph
 # Binaries:
 analyse_xms_events
 binary_stream
-event_projection
+projev
 phogen
 phoimg
 psfgen

@@ -429,7 +429,7 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   } 
 
-  status=ape_trad_query_string("Simput", &sbuffer);
+  status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the SIMPUT file!\n", status);
     return(status);

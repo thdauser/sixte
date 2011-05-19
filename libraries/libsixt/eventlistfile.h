@@ -22,7 +22,8 @@ typedef struct {
   long row;
 
   /** Column numbers. */
-  int ctime, cpha, ccharge, crawx, crawy, cframe, cph_id, csrc_id;
+  int ctime, cframe, cpha, ccharge, crawx, crawy, cra, cdec, 
+    cph_id, csrc_id;
 
   /** MJDREF [d]. */
   double mjdref;

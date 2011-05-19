@@ -4,4 +4,4 @@ SUBDIRS = phogen phoimg psfgen htrs_simulation xms_pixtemp ero_fits2tm	\
 	  ero_exposure comaexp ero_split_photonfile gendetsim genpat	\
 	  genpat2 ero_merge_photonfiles analyse_xms_events htrs_psfgen	\
 	  htrs_pixel_intensity htrs_fits2tm htrs_digital_shaper		\
-	  comaimg comadet comarecon orbatt mmap runsixt
+	  comaimg comadet comarecon orbatt mmap runsixt projev

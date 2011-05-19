@@ -33,6 +33,12 @@ typedef struct {
 
   /** Frame counter. */
   long frame;
+  
+  /** Back-projected right ascension of the event to the sky [rad]. */
+  double ra;
+
+  /** Back-projected declination of the event to the sky [rad]. */
+  double dec;
 
   /** Identifiers of the contributing photons. */
   long ph_id[NEVENTPHOTONS];
