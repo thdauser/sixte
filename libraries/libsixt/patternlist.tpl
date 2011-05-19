@@ -32,6 +32,9 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  TIME            / Time of event detection
 	TFORM#  D               / Format of column TIME
 	TUNIT#  s               / Unit of column TIME
+	TTYPE#  FRAME           / Frame counter
+	TFORM#  J               / Format of column FRAME
+	TUNIT#                  / Unit of column FRAME
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
@@ -44,9 +47,12 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  RAWY            / Raw y-coordinate of pixel
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
-	TTYPE#  FRAME           / Frame counter
-	TFORM#  J               / Format of column FRAME
-	TUNIT#                  / Unit of column FRAME
+	TTYPE#  RA              / Back-projected right ascension
+	TFORM#  D               / Format of column RA
+	TUNIT#  deg             / Unit of column RA
+	TTYPE#  DEC             / Back-projected declination
+	TFORM#  D               / Format of column DEC
+	TUNIT#  deg             / Unit of column DEC
 	TTYPE# 	PH_ID           / Photon ID
 	TFORM# 	2J   		/
 	TUNIT# 	                / 

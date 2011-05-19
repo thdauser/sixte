@@ -78,7 +78,7 @@ int runsixt_main()
 	strcat(xml_filename, "/ixo");
 	if (0==strcmp(par.Instrument, "WFI")) {
 	  strcat(xml_filename, "/wfi");
-	  if (0==strcmp(par.Instrument, "FULLFRAME")) {
+	  if (0==strcmp(par.Mode, "FULLFRAME")) {
 	    strcat(xml_filename, "/fullframe.xml");
 	  } else {
 	    status=EXIT_FAILURE;

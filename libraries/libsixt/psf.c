@@ -14,13 +14,13 @@ int get_psf_pos(struct Point2d* const position,
   // Determine the direction of origin of the photon.
   Vector photon_direction = unit_vector(photon.ra, photon.dec);
   
-  // Calculate the off-axis angle ([rad])
+  // Calculate the off-axis angle ([rad]).
   double theta = acos(scalar_product(&telescope.nz, &photon_direction));
   // and the azimuthal angle ([rad]) of the source position.
   double phi = atan2(scalar_product(&telescope.ny, &photon_direction), 
 		     scalar_product(&telescope.nx, &photon_direction));
 
-  // Get a random number to determine a random hitting position
+  // Get a random number to determine a random hitting position.
   double rnd = sixt_get_random_number();
   if (rnd > get_Vignetting_Factor(vignetting, photon.energy, theta, phi)) {
     // The photon does not hit the detector at all (e.g. it is absorbed).

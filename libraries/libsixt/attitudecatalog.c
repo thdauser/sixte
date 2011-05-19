@@ -287,6 +287,9 @@ void getTelescopeAxes(AttitudeCatalog* const ac,
       x1 = vector_product(*nz, c);
     }
 
+    // Normalize the vector in order to obtain a unit vector.
+    x1=normalize_vector(x1);
+
   } else {
     // Alignment along the direction of motion of the telescope axis.
     x1=normalize_vector(dnz);
@@ -305,8 +308,6 @@ void getTelescopeAxes(AttitudeCatalog* const ac,
   ny->x = - x1.x * sin(roll_angle) + y1.x * cos(roll_angle);
   ny->y = - x1.y * sin(roll_angle) + y1.y * cos(roll_angle);
   ny->z = - x1.z * sin(roll_angle) + y1.z * cos(roll_angle);
-  
-  return;
 }
 
 
