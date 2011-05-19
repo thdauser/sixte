@@ -308,6 +308,13 @@ int runsixt_main()
     // Close the impact list file in order to save memory.
     freeImpactListFile(&ilf, &status);
 
+
+    // Run the event projection.
+    headas_chat(5, "start sky projection ...\n");
+    phproj(det, ac, elf, t0, par.Exposure, &status);
+    CHECK_STATUS_BREAK(status);
+
+
     // --- End of simulation process ---
 
   } while(0); // END of ERROR HANDLING Loop.
@@ -419,13 +426,15 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the right ascension of the telescope pointing!\n", status);
+    HD_ERROR_THROW("Error reading the right ascension of the telescope "
+		   "pointing!\n", status);
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the declination of the telescope pointing!\n", status);
+    HD_ERROR_THROW("Error reading the declination of the telescope "
+		   "pointing!\n", status);
     return(status);
   } 
 

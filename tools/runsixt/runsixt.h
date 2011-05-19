@@ -4,14 +4,16 @@
 #include "sixt.h"
 
 #include "attitudecatalog.h"
+#include "eventlistfile.h"
 #include "gendet.h"
 #include "impactlistfile.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
 #include "photonlistfile.h"
-#include "vector.h"
+#include "phproj.h"
 #include "sourcecatalog.h"
+#include "vector.h"
 
 #define TOOLSUB runsixt_main
 #include "headas_main.c"
