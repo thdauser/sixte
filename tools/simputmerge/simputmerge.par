@@ -1,0 +1,7 @@
+Infile1,fre,lq,"input1.fits",,,"input SIMPUT file number 1"
+Infile2,fre,lq,"input2.fits",,,"input SIMPUT file number 2"
+Outfile,f,lq,"output.fits",,,"output SIMPUT file"
+FetchExtensions,b,lq,yes,,,"store all extensions in the output file"
+chatter,i,lh,4,,,"chatter: control verbosity of the program"
+clobber,b,h,no,,,"overwrite output files if exist?"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"

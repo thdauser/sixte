@@ -49,6 +49,7 @@ orbatt
 mmap_write
 mmap_read
 runsixt
+simputmerge
 
 # Autotool stuff:
 aclocal.m4

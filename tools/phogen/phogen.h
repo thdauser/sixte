@@ -7,7 +7,7 @@
 #include "gendet.h"
 #include "phgen.h"
 #include "photonlistfile.h"
-#include "sourceimage.h"
+#include "simput.h"
 #include "vector.h"
 #include "sourcecatalog.h"
 
