@@ -13,6 +13,19 @@ int simputmerge_main()
   SimputSourceCatalog* incat[2]={NULL, NULL};
   SimputSourceCatalog* outcat  = NULL;
 
+  // Simput data structures (used as buffers).
+  SimputMissionIndepSpec* spec=NULL;
+  SimputImg*              img =NULL;
+  SimputLC*               lc  =NULL;
+
+  // HDU extension references used in the catalog.
+  char** specextrefs[2] = {NULL, NULL};
+  long  nspecextrefs[2] = {   0,    0};
+  char** imgextrefs[2] = {NULL, NULL};
+  long  nimgextrefs[2] = {   0,    0};
+  char** lcextrefs[2] = {NULL, NULL};
+  long  nlcextrefs[2] = {   0,    0};
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
@@ -119,8 +132,88 @@ int simputmerge_main()
 	} else {
 	  // Extensions should be copied to the new output file.
 
-	  // TODO
-	}	
+	  // Spectrum extensions.
+	  if ((strlen(incat[ii]->entries[jj]->spectrum)>0) &&
+	      (0!=strcmp(incat[ii]->entries[jj]->spectrum, "NULL"))) {
+	    // Check if this reference has already been used.
+	    long kk;
+	    for (kk=0; kk<nspecextrefs[ii]; kk++) {
+	      if (0==strcmp(specextrefs[ii][kk], incat[ii]->entries[jj]->spectrum)) {
+		break;
+	      }
+	    }
+	    if (kk==nspecextrefs[ii]) {
+	      // If not, append it to the list of used references.
+	      specextrefs[ii] = 
+		(char**)realloc(specextrefs[ii],
+				(nspecextrefs[ii]+1)*sizeof(char*));
+	      CHECK_NULL_BREAK(specextrefs[ii], status, "memory allocation failed");
+	      specextrefs[ii][kk] = 
+		(char*)malloc((strlen(incat[ii]->entries[jj]->spectrum)+1)*sizeof(char));
+	      CHECK_NULL_BREAK(specextrefs[ii][kk], status, "memory allocation failed");
+	      nspecextrefs[ii]++;
+	      strcpy(specextrefs[ii][kk], incat[ii]->entries[jj]->spectrum);
+	    }
+	    // Remove the preceeding file path and name.
+	    strcpy(spectrum, strchr(incat[ii]->entries[jj]->spectrum, '['));
+	  } else {
+	    strcpy(spectrum, "");
+	  }
+	  
+	  // Image extensions.
+	  if ((strlen(incat[ii]->entries[jj]->image)>0) &&
+	      (0!=strcmp(incat[ii]->entries[jj]->image, "NULL"))) {
+	    // Check if this reference has already been used.
+	    for (kk=0; kk<nimgextrefs[ii]; kk++) {
+	      if (0==strcmp(imgextrefs[ii][kk], incat[ii]->entries[jj]->image)) {
+		break;
+	      }
+	    }
+	    if (kk==nimgextrefs[ii]) {
+	      // If not, append it to the list of used references.
+	      imgextrefs[ii] = 
+		(char**)realloc(imgextrefs[ii],
+				(nimgextrefs[ii]+1)*sizeof(char*));
+	      CHECK_NULL_BREAK(imgextrefs[ii], status, "memory allocation failed");
+	      imgextrefs[ii][kk] = 
+	      (char*)malloc((strlen(incat[ii]->entries[jj]->image)+1)*sizeof(char));
+	      CHECK_NULL_BREAK(imgextrefs[ii][kk], status, "memory allocation failed");
+	      nimgextrefs[ii]++;
+	      strcpy(imgextrefs[ii][kk], incat[ii]->entries[jj]->image);
+	    }
+	    // Remove the preceeding file path and name.
+	    strcpy(image, strchr(incat[ii]->entries[jj]->image, '['));
+	  } else {
+	    strcpy(image, "");
+	  }
+
+	  // Light curve extensions.
+	  if ((strlen(incat[ii]->entries[jj]->lightcur)>0) &&
+	      (0!=strcmp(incat[ii]->entries[jj]->lightcur, "NULL"))) {
+	    // Check if this reference has already been used.
+	    for (kk=0; kk<nlcextrefs[ii]; kk++) {
+	      if (0==strcmp(lcextrefs[ii][kk], incat[ii]->entries[jj]->lightcur)) {
+		break;
+	      }
+	    }
+	    if (kk==nlcextrefs[ii]) {
+	      // If not, append it to the list of used references.
+	      lcextrefs[ii] = 
+		(char**)realloc(lcextrefs[ii],
+				(nlcextrefs[ii]+1)*sizeof(char*));
+	      CHECK_NULL_BREAK(lcextrefs[ii], status, "memory allocation failed");
+	      lcextrefs[ii][kk] = 
+		(char*)malloc((strlen(incat[ii]->entries[jj]->lightcur)+1)*sizeof(char));
+	      CHECK_NULL_BREAK(lcextrefs[ii][kk], status, "memory allocation failed");
+	      nlcextrefs[ii]++;
+	      strcpy(lcextrefs[ii][kk], incat[ii]->entries[jj]->lightcur);
+	    }
+	    // Remove the preceeding file path and name.
+	    strcpy(lightcur, strchr(incat[ii]->entries[jj]->lightcur, '['));  
+	  } else {
+	    strcpy(lightcur, "");
+	  }
+	}
 	// END of extensions should be copied to the new output file.
 
 	// Copy the entry from the input to the output catalog.
@@ -158,6 +251,121 @@ int simputmerge_main()
     saveSimputSourceCatalog(outcat, par.Outfile, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Copy the used extensions to the new output file.
+    if (0!=par.FetchExtensions) {
+
+      // Spectra.
+      // Check for duplicates.
+      for (ii=0; ii<2; ii++) {
+	long jj;
+	for (jj=0; jj<nspecextrefs[ii]; jj++) {
+	  if (strlen(specextrefs[ii][jj])>0) {
+	    int kk;
+	    for (kk=0; kk<ii; kk++) {
+	      long ll;
+	      for (ll=0; ll<nspecextrefs[kk]; ll++) {
+		if (0==strcmp(specextrefs[ii][jj], specextrefs[kk][ll])) {
+		  headas_printf("Warning: reference to spectrum '%s' might "
+				"not be unique!\n (used in '%s' and '%s')\n",
+				specextrefs[ii][jj],
+				infilenames[ii], infilenames[kk]);
+		  strcpy(specextrefs[ii][jj], "");
+		}
+	      }
+	    }
+	  }
+	}
+      }
+
+      // Images.
+      // Check for duplicates.
+      for (ii=0; ii<2; ii++) {
+	long jj;
+	for (jj=0; jj<nimgextrefs[ii]; jj++) {
+	  if (strlen(imgextrefs[ii][jj])>0) {
+	    int kk;
+	    for (kk=0; kk<ii; kk++) {
+	      long ll;
+	      for (ll=0; ll<nimgextrefs[kk]; ll++) {
+		if (0==strcmp(imgextrefs[ii][jj], imgextrefs[kk][ll])) {
+		  headas_printf("Warning: reference to image '%s' might "
+				"not be unique!\n (used in '%s' and '%s')\n",
+				imgextrefs[ii][jj],
+				infilenames[ii], infilenames[kk]);
+		  strcpy(imgextrefs[ii][jj], "");
+		}
+	      }
+	    }
+	  }
+	}
+      }
+
+      // Light curves.
+      // Check for duplicates.
+      for (ii=0; ii<2; ii++) {
+	long jj;
+	for (jj=0; jj<nlcextrefs[ii]; jj++) {
+	  if (strlen(lcextrefs[ii][jj])>0) {
+	    int kk;
+	    for (kk=0; kk<ii; kk++) {
+	      long ll;
+	      for (ll=0; ll<nlcextrefs[kk]; ll++) {
+		if (0==strcmp(lcextrefs[ii][jj], lcextrefs[kk][ll])) {
+		  headas_printf("Warning: reference to light curve '%s' might "
+				"not be unique!\n (used in '%s' and '%s')\n",
+				lcextrefs[ii][jj],
+				infilenames[ii], infilenames[kk]);
+		  strcpy(lcextrefs[ii][jj], "");
+		}
+	      }
+	    }
+	  }
+	}
+      }
+
+      // Go through the lists and, load the HDU data, and store it
+      // in the new output file.
+      // Spectra.
+      for (ii=0; ii<2; ii++) {
+	long jj;
+	for (jj=0; jj<nspecextrefs[ii]; jj++) {
+	  if (strlen(specextrefs[ii][jj])>0) {
+	    char filename[MAXFILENAME];
+	    if ('['==specextrefs[ii][jj][0]) {
+	      strcpy(filename, infilenames[ii]);
+	      strcat(filename, specextrefs[ii][jj]);
+	    } else {
+	      strcpy(filename, specextrefs[ii][jj]);
+	    }
+
+	    // Load the spectrum.
+	    spec=loadSimputMissionIndepSpec(filename, &status);
+	    CHECK_STATUS_BREAK(status);
+	    
+	    // Determine the EXTNAME and EXTVER.
+	    char extname[MAXFILENAME];
+	    int extver;
+	    fitsfile* fptr=NULL;
+	    fits_open_file(&fptr, filename, READONLY, &status);
+	    fits_read_key(fptr, TSTRING, "EXTNAME", extname, NULL, &status);
+	    fits_read_key(fptr, TINT, "EXTVER", &extver, NULL, &status);
+	    fits_close_file(fptr, &status);
+	    CHECK_STATUS_BREAK(status);
+
+	    // Store it in the output file.
+	    saveSimputMissionIndepSpec(spec, par.Outfile, extname, extver, &status);
+	    CHECK_STATUS_BREAK(status);
+	  }
+	}
+	CHECK_STATUS_BREAK(status);
+      }
+      CHECK_STATUS_BREAK(status);
+    }
+
+    // TODO Images and LCs.
+
+    // END of copy extensions to the new output file.
+
   } while(0); // END of ERROR HANDLING Loop.
 
   // --- Clean up ---
@@ -167,6 +375,45 @@ int simputmerge_main()
   freeSimputSourceCatalog(&incat[0]);
   freeSimputSourceCatalog(&incat[1]);
   freeSimputSourceCatalog(&outcat);
+
+  freeSimputMissionIndepSpec(&spec);
+  freeSimputImg(&img);
+  freeSimputLC(&lc);
+
+  int ii;
+  for (ii=0; ii<2; ii++) {
+    if (NULL!=specextrefs[ii]) {
+      long jj;
+      for (jj=0; jj<nspecextrefs[ii]; jj++) {
+	if (NULL!=specextrefs[ii][jj]) {
+	  free(specextrefs[ii][jj]);
+	}
+      }
+      free(specextrefs[ii]);
+    }
+  }
+  for (ii=0; ii<2; ii++) {
+    if (NULL!=imgextrefs[ii]) {
+      long jj;
+      for (jj=0; jj<nimgextrefs[ii]; jj++) {
+	if (NULL!=imgextrefs[ii][jj]) {
+	  free(imgextrefs[ii][jj]);
+	}
+      }
+      free(imgextrefs[ii]);
+    }
+  }
+  for (ii=0; ii<2; ii++) {
+    if (NULL!=lcextrefs[ii]) {
+      long jj;
+      for (jj=0; jj<nlcextrefs[ii]; jj++) {
+	if (NULL!=lcextrefs[ii][jj]) {
+	  free(lcextrefs[ii][jj]);
+	}
+      }
+      free(lcextrefs[ii]);
+    }
+  }
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);
