@@ -90,6 +90,23 @@ int psfgen_main()
 
     } // END of Simple Gauss PSF (type==1)
     
+    else if (type == 2) { // King profile.
+      if ((status = PILGetReal("rc_a", &rc))) {
+	sprintf(msg, "Error reading the King parameter rc!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      if ((status = PILGetReal("alpha_x", &alpha))) {
+	sprintf(msg, "Error reading the King parameter alpha!\n");
+	HD_ERROR_THROW(msg,status);
+	break;
+      }
+      psf->nenergies = 1;
+      psf->nthetas   = 1;
+      psf->nphis     = 1;
+      
+    } // End of type 2, King profile
+
     else if (type == 3) { // King profile for pn Camera
       double rc_a, rc_b, rc_c, rc_d = 0.;
       double alpha_x, alpha_y, alpha_z, alpha_w = 0.;
@@ -242,6 +259,40 @@ int psfgen_main()
 	}
       }
     }
+
+    if (type == 2) {
+      // Create a PSF with a King profile.
+      psf->energies = (double*)malloc(sizeof(double));
+      psf->thetas   = (double*)malloc(sizeof(double));
+      psf->phis     = (double*)malloc(sizeof(double));
+      if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
+	HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+	break;
+      }
+      psf->energies[0] = 1.;
+      psf->thetas[0]   = 0.;
+      psf->phis[0]     = 0.;
+
+      // Calculate the King profile.
+      double norm=0.;
+      for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
+	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
+	  double x = (count1-psf->data[0][0][0].naxis1/2+0.5)*psf->data[0][0][0].cdelt1;
+	  double y = (count2-psf->data[0][0][0].naxis2/2+0.5)*psf->data[0][0][0].cdelt2;;
+	  psf->data[0][0][0].data[count1][count2] = 
+	    1./(pow(1.+pow(sqrt(pow(x,2.)+pow(y,2.))/rc,2.),alpha));
+	  norm += psf->data[0][0][0].data[count1][count2];
+	}
+      }
+
+      // Normalization.
+      for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
+	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
+	  psf->data[0][0][0].data[count1][count2] *= 1./norm;
+	}
+      }
+    }
+
     else if (type == 3) {
       // Create a PSF with the King Profile with rc, the King core radius and alpha, the King slope
       psf->energies = (double*)malloc(sizeof(double));
