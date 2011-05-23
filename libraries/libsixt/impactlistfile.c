@@ -145,9 +145,9 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   // Add timing header keywords.
-  fits_write_key(file->fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
+  fits_update_key(file->fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
   double dbuff = 0.;
-  fits_write_key(file->fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
+  fits_update_key(file->fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
   CHECK_STATUS_RET(*status, file);
 
   // Close the new ImpactListFile.

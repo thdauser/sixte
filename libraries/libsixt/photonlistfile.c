@@ -103,9 +103,9 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
 
   // Add timing header keywords.
-  fits_write_key(fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
+  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
   double dbuff = 0.;
-  fits_write_key(fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
+  fits_update_key(fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
   CHECK_STATUS_RET(*status, plf);
 
   // Close the file (it is reopened in the next step).

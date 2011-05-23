@@ -274,6 +274,8 @@ int psfgen_main()
       psf->phis[0]     = 0.;
 
       // Calculate the King profile.
+      //double A = (alpha-1.)/(pow(rc,2.) * M_PI)
+      //*psf->data[0][0][0].cdelt1*psf->data[0][0][0].cdelt2;
       double norm=0.;
       for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
 	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
