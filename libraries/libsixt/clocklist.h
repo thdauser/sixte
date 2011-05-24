@@ -38,11 +38,16 @@ typedef struct {
   /** Current element. Index starts at 0. */
   int element;
 
-  /** Current time [s]. */
+  /** Current detector time [s]. This time resembles the current
+      status of the detector clock list. */
   double time;
 
   /** Current frame number. */
   long frame;
+
+  /** Current frame time [s]. This time is attached to the read-out
+      events. */
+  double readout_time;
 
 } ClockList;
 

@@ -1209,7 +1209,7 @@ void GenDetReadoutLine(GenDet* const det,
     for (ii=0; ii<line->xwidth; ii++) {
 
       GenDetReadoutPixel(det, lineindex, readoutindex, ii,
-			 det->clocklist->time, elf, status);
+			 det->clocklist->readout_time, elf, status);
       CHECK_STATUS_BREAK(*status);
     }
     CHECK_STATUS_VOID(*status);
@@ -1888,8 +1888,10 @@ int makeGenSplitEvents(GenDet* const det,
       nvalidpixels++;
 
       // Call the event trigger routine.
-      GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, elf, status);
-      CHECK_STATUS_BREAK(*status);
+      if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
+	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, elf, status);
+	CHECK_STATUS_BREAK(*status);
+      }
     }
   }
   CHECK_STATUS_RET(*status, nvalidpixels);
@@ -1902,6 +1904,7 @@ int makeGenSplitEvents(GenDet* const det,
 
 void setGenDetStartTime(GenDet* const det, const double t0)
 {
-  det->clocklist->time = t0;
+  det->clocklist->time         = t0;
+  det->clocklist->readout_time = t0;
 }
 

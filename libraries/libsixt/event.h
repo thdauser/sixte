@@ -28,7 +28,7 @@ typedef struct {
   /** Pixel charge in [keV]. */
   float charge;
 
-  /** Time of event detection. */
+  /** Time of event detection [s]. */
   double time;
 
   /** Frame counter. */

@@ -21,6 +21,7 @@ ClockList* newClockList(int* const status)
   list->nelements=0;
   list->element  =0;
   list->time     =0.;
+  list->readout_time=0.;
   list->frame    =0;
 
   return(list);
@@ -98,6 +99,7 @@ static inline void moveClockList2NextElement(ClockList* const list)
     list->element=0;
     // Start a new frame.
     list->frame++;
+    list->readout_time=list->time;
   }
 }
 
