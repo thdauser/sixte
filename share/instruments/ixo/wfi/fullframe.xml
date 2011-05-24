@@ -13,7 +13,6 @@
 <rmf filename="ixo_cdf_wfi_default.rmf"/>
 <arf filename="ixo_cdf_wfi_default.arf"/>
 <split type="GAUSS" par1="11.e-6"/>
-<eventfile template="geneventfile.tpl"/>
 
 <threshold_readout_lo_keV value="150.e-3"/>
 <threshold_event_lo_keV value="150.e-3"/>
