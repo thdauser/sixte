@@ -76,7 +76,6 @@ KDTreeElement* buildKDTree2(Source* const list,
 }
 
 
-
 LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node, 
 					const int depth,
 					const Vector* const ref, 

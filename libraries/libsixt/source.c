@@ -64,9 +64,9 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 
     // Set the photon properties.
     ph->time = *(src->t_next_photon);
-    ph->ra   = src->src->ra;
-    ph->dec  = src->src->dec;
-
+    getSimputPhotonCoord(src->src, &ph->ra, &ph->dec, status);
+    CHECK_STATUS_RET(*status, list);
+ 
     // Copy the source identifiers.
     ph->src_id = src->src->src_id;
 

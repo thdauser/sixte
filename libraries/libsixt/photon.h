@@ -74,34 +74,6 @@ struct PhotonBinaryTreeEntry {
 //////////////////////////////////////////////////////////////////////////
 
 
-/** Create photons for a particular PointSource. Take into account
-    the particular rate specified by the light curve and add the
-    photons to the time ordered photon list. The return value is the
-    value of the error status variable. (Deprecated) */
-int create_PointSourcePhotons(PointSource* ps, 
-			      double time, double dt,
-			      struct PhotonOrderedListEntry** pl, 
-			      const struct ARF* const arf);
-
-
-/** Create photons for a particular ExtendedSource. Take into account
-    the particular rate specified by the light curve and add the
-    photons to the time ordered photon list. The return value is the
-    value of the error status variable. */
-int create_ExtendedSourcePhotons(ExtendedSource* es, 
-				 double time, double dt,
-				 struct PhotonOrderedListEntry** pl, 
-				 const struct ARF* const arf);
-
-
-/** Create random photon energy. The routine randomly determines a
-    photon energy according to the given source spectrum. The spectrum
-    must be given in ARF [channels]. The function returns the photon
-    energy in [keV] according to the bins defined in the ARF. */
-float photon_energy(const Spectrum* const spectrum, 
-		    const struct ARF* const arf);
-
-
 /** Inserts a new photon into the time-ordered photon list. If the
     list does not exist so far, the routine creates a new list. The
     return value is the error status. */

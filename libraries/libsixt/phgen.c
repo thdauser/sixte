@@ -16,7 +16,7 @@ void phgen(const GenDet* const det,
   double time;
   for (time=t0; time<t0+exposure; time+=dt) {
     // Display the program progress status.
-    headas_chat(0, "\rtime: %.3lf s ", time);
+    headas_chat(2, "\rtime: %.3lf s ", time);
     fflush(NULL);
 
     // Determine the telescope pointing at the current point of time.

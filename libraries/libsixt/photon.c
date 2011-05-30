@@ -1,130 +1,7 @@
 #include "photon.h"
 
 
-float photon_energy(const Spectrum* const spectrum, 
-		    const struct ARF* const arf)
-{
-  // Get a random PHA channel according to the given PHA distribution.
-  float rand = (float)sixt_get_random_number();
-  long upper = spectrum->NumberChannels-1, lower=0, mid;
-  
-  if(rand > spectrum->rate[spectrum->NumberChannels-1]) {
-    printf("PHA sum: %f < RAND: %f\n", 
-	   spectrum->rate[spectrum->NumberChannels-1], rand);
-  }
-
-  // Determine the energy of the photon (using binary search).
-  while (upper>lower) {
-    mid = (lower+upper)/2;
-    if (spectrum->rate[mid] < rand) {
-      lower = mid+1;
-    } else {
-      upper = mid;
-    }
-  }
-
-  // Return an energy chosen randomly out of the determined PHA bin:
-  return(arf->LowEnergy[lower] + 
-	 sixt_get_random_number()*(arf->HighEnergy[lower]-
-				   arf->LowEnergy[lower]));
-}
-
-
-
-int create_PointSourcePhotons(/** Source data. */
-			      PointSource* ps,
-			      /** Current time. */
-			      double time, 
-			      /** Time interval for photon generation. */
-			      double dt,
-			      /** Address of pointer to time-ordered photon list.*/
-			      struct PhotonOrderedListEntry** list_first,
-			      const struct ARF* const arf)
-{
-  // Second pointer to photon list, that can be moved along the list,   
-  // without loosing the first entry.
-  struct PhotonOrderedListEntry* list_current = *list_first;
-
-  int status=EXIT_SUCCESS;
-
-  // Check if the photon rate of the source is positive.
-  if (ps->rate<=0.) return(status);
-
-  // If there is no photon time stored so far, set the current time.
-  if (ps->t_last_photon <= time) {
-    ps->t_last_photon = time;
-  }
-
-
-  // Create photons and insert them into the given time-ordered list:
-  while (ps->t_last_photon < time+dt) {
-    Photon new_photon;
-    new_photon.ra  = ps->ra;
-    new_photon.dec = ps->dec; 
-
-    // Determine the energy of the new photon
-    new_photon.energy = photon_energy(ps->spectrum, arf);
-
-    // Determine the impact time of the photon according to the light
-    // curve of the source.
-    if (NULL==ps->lc) {
-      if (T_LC_CONSTANT==ps->lc_type) {
-	ps->lc = getLinLightCurve(1, &status);
-	if (EXIT_SUCCESS!=status) return(status);
-      } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	ps->lc = getLinLightCurve(TK_LC_LENGTH, &status);
-	if (EXIT_SUCCESS!=status) return(status);
-      } else {
-	status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Unknown light curve type!\n", EXIT_FAILURE);
-	return(status);
-      }
-    }
-
-    // Determine the arrival time of the new photon with the
-    // appropriate random number generator. If the light curve
-    // is not initialized, the function returns a negative time 
-    // (-1).
-    new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
-
-    // If the new time is negative, the light curve did not cover the
-    // appropriate interval or is empty.
-    if (new_photon.time < 0.) {
-      // The current point of time is not covered by the light curve.
-      // Therefore we have to generate a new one.
-      if (T_LC_CONSTANT==ps->lc_type) {
-	status = initConstantLinLightCurve(ps->lc, 
-					   ps->t_last_photon, 1.e9, 
-					   ps->rate);
-	if (EXIT_SUCCESS!=status) return(status);
-      } else if (T_LC_TIMMER_KOENIG==ps->lc_type) {
-	status = initTimmerKoenigLinLightCurve(ps->lc, ps->t_last_photon, 
-					       TK_LC_STEP_WIDTH, 
-					       ps->rate, ps->rate/3.);
-	if (EXIT_SUCCESS!=status) return(status);
-      }
-      // Repeat the determination of the photon arrival time,
-      // now with the proper light curve.
-      new_photon.time = getPhotonTime(ps->lc, ps->t_last_photon);
-    } 
-    // END if (new_photon.time < 0.)
-        
-    assert(new_photon.time>=0.);
-    assert(new_photon.time>=ps->t_last_photon);
-    ps->t_last_photon = new_photon.time;
-
-    // Insert photon to the global photon list:
-    status=insert_Photon2TimeOrderedList(list_first, &list_current, 
-					 &new_photon);
-    if (EXIT_SUCCESS!=status) return(status);  
-    
-  } // END of loop 'while(t_last_photon < time+dt)'
-
-  return(status);
-}
-
-
-
+// Obsolete
 int create_ExtendedSourcePhotons(/** Source data. */
 				 ExtendedSource* es,
 				 /** Current time. */
@@ -132,8 +9,7 @@ int create_ExtendedSourcePhotons(/** Source data. */
 				 /** Time interval for photon generation. */
 				 double dt,
 				 /** Address of pointer to time-ordered photon list.*/
-				 struct PhotonOrderedListEntry** list_first,
-				 const struct ARF* const arf)
+				 struct PhotonOrderedListEntry** list_first)
 {
   // Second pointer to photon list, that can be moved along the list,   
   // without loosing the first entry.
@@ -205,7 +81,7 @@ int create_ExtendedSourcePhotons(/** Source data. */
     calculate_ra_dec(new_photon_direction, &new_photon.ra, &new_photon.dec);
 
     // Determine the energy of the new photon
-    new_photon.energy = photon_energy(es->spectrum, arf);
+    //    new_photon.energy = photon_energy(es->spectrum, arf);
 
     // Determine the impact time of the photon according to the light
     // curve of the source.
@@ -253,7 +129,6 @@ int create_ExtendedSourcePhotons(/** Source data. */
 }
 
 
-
 void clear_PhotonList(struct PhotonOrderedListEntry** pole)
 {
   struct PhotonOrderedListEntry* buffer;
@@ -264,7 +139,6 @@ void clear_PhotonList(struct PhotonOrderedListEntry** pole)
     *pole = buffer;
   }
 }
-
 
 
 int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
@@ -306,7 +180,6 @@ int insert_Photon2TimeOrderedList(struct PhotonOrderedListEntry** first,
   
   return(EXIT_SUCCESS);
 }
-
 
 
 int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
@@ -363,7 +236,6 @@ int insert_Photon2BinaryTree(struct PhotonBinaryTreeEntry** ptr, Photon* ph)
 }
 
 
-
 int CreateOrderedPhotonList(struct PhotonBinaryTreeEntry** tree_ptr,
 			    struct PhotonOrderedListEntry** list_first,
 			    struct PhotonOrderedListEntry** list_current)
@@ -393,7 +265,6 @@ int CreateOrderedPhotonList(struct PhotonBinaryTreeEntry** tree_ptr,
 
   return(status);
 }
-
 
 
 Photon* newPhoton(int* const status)
