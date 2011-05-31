@@ -16,8 +16,15 @@
 
 /** Catalog of different X-ray sources. */
 typedef struct {
-  /** KDTree containing the Source objects. */
+  /** KDTree containing the Source objects for all point-like
+      sources. */
   KDTreeElement* tree;
+
+  /** Array containing Source objects for all extended sources. */
+  Source* extsources;
+
+  /** Number of entries in the linear array of extended sources. */
+  long nextsources;
 
   /** SIMPUT source catalog containing all relevant data. */
   SimputSourceCatalog* simput;
