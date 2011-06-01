@@ -29,9 +29,9 @@ psfgen
 xms_pixtemp
 ero_exposure
 ero_fits2tm
-ero_merge_eventfiles
 ero_split_photonfile
-ero_merge_photonfiles
+ero_merge_eventfiles
+photonmerge
 hexagonal_pixel_intensity
 htrs_psfgen
 htrs_simulation

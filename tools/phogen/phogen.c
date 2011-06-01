@@ -333,6 +333,11 @@ int phogen_getpar(struct Parameters* par)
     HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
     return(status);
   }
+  status=ape_trad_query_int("seed", &par->Seed);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    return(status);
+  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {

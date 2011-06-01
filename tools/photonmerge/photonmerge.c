@@ -1,46 +1,47 @@
-#include "ero_merge_photonfiles.h"
+#include "photonmerge.h"
 
 
-int ero_merge_photonfiles_getpar(struct Parameters* parameters)
+int ero_merge_photonfiles_getpar(struct Parameters* par)
 {
+  char* sbuffer=NULL;
+
   int status = EXIT_SUCCESS;
 
-  if ((status = PILGetInt("n_inputfiles", &parameters->n_inputfiles))) {
+  status=ape_trad_query_int("seed", &par->NInputFiles);
+  if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the number of input files!\n", status);
+    return(status);
   }
 
-  else if ((status = PILGetFname("input_prefix", parameters->input_prefix))) {
-    HD_ERROR_THROW("Error reading the prefix for the input files!\n", status);
-  }
+  status=ape_trad_query_string("InputPrefix", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the prefix of the input files!\n", status);
+    return(status);
+  } 
+  strcpy(par->InputPrefix, sbuffer);
+  free(sbuffer);
 
-  else if ((status = PILGetFname("output_filename", parameters->output_filename))) {
-    HD_ERROR_THROW("Error reading the name of the output file!\n", status);
-  }
+  status=ape_trad_query_string("OutputFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the outpuf file!\n", status);
+    return(status);
+  } 
+  strcpy(par->OutputFile, sbuffer);
+  free(sbuffer);
 
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  else { 
-    char* buffer;
-    if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-      strcpy(parameters->photonlist_template, buffer);
-    } else {
-      if ((status = PILGetFname("fits_templates", parameters->photonlist_template))) {
-	HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      }
-    }
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    return(status);
   }
-  if (EXIT_SUCCESS!=status) return(status);
-  // Set the event list template file for eROSITA:
-  strcat(parameters->photonlist_template, "/photonlist.tpl");
 
   return(status);
 }
 
 
 
-int ero_merge_photonfiles_main() {
-  struct Parameters parameters;
+int photonmerge_main() {
+  struct Parameters par;
   // Array of input photonlist files.
   PhotonListFile* inputfiles[MAX_N_INPUTFILES];
   int fileidx;
@@ -58,22 +59,22 @@ int ero_merge_photonfiles_main() {
   do { // ERROR handling loop
 
     // Read parameters by PIL:
-    status = ero_merge_photonfiles_getpar(&parameters);
+    status = ero_merge_photonfiles_getpar(&par);
     if (EXIT_SUCCESS!=status) break;
 
     // Open the INPUT event files:
     char filename[MAXMSG];
-    for (fileidx=0; fileidx<parameters.n_inputfiles; fileidx++) {
+    for (fileidx=0; fileidx<par.NInputFiles; fileidx++) {
       sprintf(filename, "%s%d.fits", 
-	      parameters.input_prefix, fileidx);
+	      par.InputPrefix, fileidx);
       inputfiles[fileidx]=openPhotonListFile(filename, READONLY, &status);
       if (EXIT_SUCCESS!=status) break;
     }
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new output (merged) event file:
-    outputfile=openNewPhotonListFile(parameters.output_filename, 
-				     parameters.photonlist_template,
+    outputfile=openNewPhotonListFile(par.OutputFile, 
+				     filename,
 				     inputfiles[0]->mjdref,
 				     &status);
     if (EXIT_SUCCESS!=status) break;
@@ -112,7 +113,7 @@ int ero_merge_photonfiles_main() {
     int eof[MAX_N_INPUTFILES];
     int sum_eof= 0;
     // Read the first entry from each photon list file:
-    for (fileidx=0; fileidx<parameters.n_inputfiles; fileidx++) {
+    for (fileidx=0; fileidx<par.NInputFiles; fileidx++) {
       if (inputfiles[fileidx]->nrows>0) {
 	status = PhotonListFile_getNextRow(inputfiles[fileidx], 
 					   &(photons[fileidx]));
@@ -126,13 +127,13 @@ int ero_merge_photonfiles_main() {
     // Repeat this loop as long as at least one the input event 
     // files contains furhter un-read lines.
     int minidx;
-    while(sum_eof<parameters.n_inputfiles) {
+    while(sum_eof<par.NInputFiles) {
 
       // Find the photon with the lowest time value.
-      for (minidx=0; minidx<parameters.n_inputfiles; minidx++) {
+      for (minidx=0; minidx<par.NInputFiles; minidx++) {
 	if (0==eof[minidx]) break;
       }
-      for (fileidx=minidx+1; fileidx<parameters.n_inputfiles; fileidx++) {
+      for (fileidx=minidx+1; fileidx<par.NInputFiles; fileidx++) {
 	if (photons[fileidx].time < photons[minidx].time) {
 	  minidx = fileidx;
 	}
@@ -162,7 +163,7 @@ int ero_merge_photonfiles_main() {
   // --- Clean Up ---
   
   // Close the event files:
-  for (fileidx=0; fileidx<parameters.n_inputfiles; fileidx++) {
+  for (fileidx=0; fileidx<par.NInputFiles; fileidx++) {
     freePhotonListFile(&(inputfiles[fileidx]), &status);
   }
   freePhotonListFile(&outputfile, &status);
