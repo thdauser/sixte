@@ -2,6 +2,7 @@
 #define KDTREEELEMENT_H 1
 
 #include "sixt.h"
+#include "check_fov.h"
 #include "source.h"
 
 

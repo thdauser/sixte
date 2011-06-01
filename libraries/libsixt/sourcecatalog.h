@@ -2,6 +2,7 @@
 #define SOURCECATALOG_H 1
 
 #include "sixt.h"
+#include "check_fov.h"
 #include "gendet.h"
 #include "kdtreeelement.h"
 #include "linkedpholist.h"

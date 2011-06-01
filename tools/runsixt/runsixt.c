@@ -250,6 +250,8 @@ int runsixt_main()
     phgen(det, ac, srccat, plf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Free the source catalog in order to save memory.
+    freeSourceCatalog(&srccat);
 
     // Reset internal line counter of photon list file.
     plf->row=0;

@@ -159,8 +159,10 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
     // Check if at least a part of the source lies within the FoV.
     Vector location=unit_vector(cat->extsources[ii].src->ra, 
 				cat->extsources[ii].src->dec);
-    if (fabs(scalar_product(&location, pointing)) > 
-	cos(close_mult*(fov*0.5 + extension))) {
+    if (0==check_fov(&location, pointing, 
+		     cos(close_mult*(fov*0.5 + extension)))) {
+//    if (fabs(scalar_product(&location, pointing)) > 
+//	cos(close_mult*(fov*0.5 + extension))) {
       // Generate photons for this particular source.
       LinkedPhoListElement* newlist = 
 	getXRayPhotons(&(cat->extsources[ii]), t0, t1, status);

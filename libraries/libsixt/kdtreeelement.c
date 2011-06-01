@@ -90,7 +90,8 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
   
   // Check if the current node lies within the search radius.
   Vector location = unit_vector(node->src->src->ra, node->src->src->dec);
-  if (fabs(scalar_product(&location, ref)) > min_align) {
+  if (0==check_fov(&location, ref, min_align)) {
+//  if (fabs(scalar_product(&location, ref)) > min_align) {
     // Generate photons for this particular source.
     list = getXRayPhotons(node->src, t0, t1, status);
     CHECK_STATUS_RET(*status, list);
