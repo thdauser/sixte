@@ -83,7 +83,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 		 "memory allocation for source list failed", cat);
 
   // Allocate memory for the array of the extended sources.
-  cat->extsources = (Source*)malloc(cat->nextsources*sizeof(Source));
+  cat->extsources = (Source*)malloc(nextended*sizeof(Source));
   CHECK_NULL_RET(list, *status,
 		 "memory allocation for source list failed", cat);
 

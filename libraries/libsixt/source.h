@@ -18,9 +18,6 @@ typedef struct {
   /** Pointer to an entry in the SIMPUT source catalog. */
   SimputSourceEntry* src;
 
-  /** Photon rate [photons/s]. */
-  //  float pps;
-
   /** Time of the emission of the last photon. */
   double* t_next_photon;
 
