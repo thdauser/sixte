@@ -15,8 +15,7 @@ AttitudeCatalog* getAttitudeCatalog(int* const status)
   ac->nentries = 0;
   ac->current_entry = 0;
   ac->entry    = NULL;
-  ac->mjdref   = 0.;
-  ac->timezero = 0.;
+
   return(ac);
 }
 
@@ -74,11 +73,6 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
       break;
     } 
 
-    // Determine the timing header keywords.
-    fits_read_key(af->fptr, TDOUBLE, "MJDREF", &ac->mjdref, comment, status);
-    fits_read_key(af->fptr, TDOUBLE, "TIMEZERO", &ac->timezero, comment, status);
-    CHECK_STATUS_BREAK(*status);
-
     
     // Read all lines from attitude file subsequently.
     AttitudeFileEntry afe;
@@ -88,7 +82,7 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
       if (EXIT_SUCCESS!=*status) break;
 
       // Calculate and store attitude data:
-      ac->entry[af->row].time = afe.time + ac->mjdref*24.*3600. + ac->timezero;
+      ac->entry[af->row].time = afe.time;
 
       // Telescope pointing direction nz:
       ac->entry[af->row].nz = 

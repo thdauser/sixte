@@ -71,7 +71,6 @@ int ero_split_photonfile_main() {
 	      parameters.output_prefix, filecounter);
       outputfiles[filecounter]=openNewPhotonListFile(filename, 
 						     parameters.photonlist_template,
-						     inputfile->mjdref,
 						     &status);
       if (EXIT_SUCCESS!=status) break;
     }

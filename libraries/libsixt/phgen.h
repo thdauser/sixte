@@ -20,6 +20,7 @@ void phgen(const GenDet* const det,
 	   PhotonListFile* const plf,
 	   const double t0, 
 	   const double exposure,
+	   const double mjdref,
 	   int* const status);
 
 

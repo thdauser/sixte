@@ -78,10 +78,7 @@ int photonmerge_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new output (merged) event file:
-    outputfile=openNewPhotonListFile(par.OutputFile, 
-				     filename,
-				     inputfiles[0]->mjdref,
-				     &status);
+    outputfile=openNewPhotonListFile(par.OutputFile, filename, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
@@ -162,7 +159,6 @@ int photonmerge_main() {
     // END of event transfer loop.
         
   } while(0); // End of error handling loop
-
 
   // --- Clean Up ---
   

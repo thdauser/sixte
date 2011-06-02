@@ -63,7 +63,7 @@ int comaimg_main() {
     // Create a new FITS file for the output of the impact list.
     impactlistfile = openNewImpactListFile(parameters.impactlist_filename, 
 					   parameters.impactlist_template,
-					   0., &status);
+					   &status);
     if (EXIT_SUCCESS!=status) break;
     // Write WCS header keywords.
     if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", 

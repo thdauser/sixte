@@ -7,6 +7,7 @@ void phgen(const GenDet* const det,
 	   PhotonListFile* const plf,
 	   const double t0, 
 	   const double exposure,
+	   const double mjdref,
 	   int* const status)
 {
   // Step width of the time loop.
@@ -27,7 +28,7 @@ void phgen(const GenDet* const det,
     double t2 = MIN(time+dt, t0+exposure);
     LinkedPhoListElement* pholist =
       genFoVXRayPhotons(srccat, &pointing, det->fov_diameter,
-			time, t2, status);
+			time, t2, mjdref, status);
     CHECK_STATUS_BREAK(*status);
       
     // Process the list of generated photons.

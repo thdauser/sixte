@@ -23,8 +23,6 @@ ImpactListFile* newImpactListFile(int* const status)
   file->cy   =0;
   file->cph_id =0;
   file->csrc_id=0;
-  file->mjdref=0.;
-  file->timezero=0.;
 
   return(file);
 }
@@ -87,19 +85,12 @@ ImpactListFile* openImpactListFile(const char* const filename,
   if(fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status)) 
     return(file);
 
-  // Determine the timing header keywords.
-  char comment[MAXMSG];
-  fits_read_key(file->fptr, TDOUBLE, "MJDREF", &file->mjdref, comment, status);
-  fits_read_key(file->fptr, TDOUBLE, "TIMEZERO", &file->timezero, comment, status);
-  CHECK_STATUS_RET(*status, file);
-
   return(file);
 }
 
 
 ImpactListFile* openNewImpactListFile(const char* const filename,
 				      const char* const template,
-				      double mjdref,
 				      int* const status)
 {
   ImpactListFile* file = newImpactListFile(status);
@@ -142,12 +133,6 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
 
   // Move to the binary table extension.
   fits_movabs_hdu(file->fptr, 2, 0, status);
-  CHECK_STATUS_RET(*status, file);
-
-  // Add timing header keywords.
-  fits_update_key(file->fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
-  double dbuff = 0.;
-  fits_update_key(file->fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
   CHECK_STATUS_RET(*status, file);
 
   // Close the new ImpactListFile.
@@ -193,7 +178,6 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
   fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
 		&impact->time, &impact->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
-  impact->time += file->mjdref*24.*3600. + file->timezero;
 
   impact->energy = 0.;
   fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
@@ -231,23 +215,13 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
 }
 
 
-int ImpactListFile_EOF(ImpactListFile* const file) {
-  if (file->row >= file->nrows) {
-    return(1);
-  } else {
-    return(0);
-  }
-}
-
-
 void addImpact2File(ImpactListFile* const ilf, 
 		    Impact* const impact, 
 		    int* const status)
 {
   fits_insert_rows(ilf->fptr, ilf->row++, 1, status);
-  double dbuffer = impact->time - ilf->timezero - ilf->mjdref*24.*3600.;
   fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
-		 ilf->row, 1, 1, &dbuffer, status);
+		 ilf->row, 1, 1, &impact->time, status);
   fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
 		 ilf->row, 1, 1, &impact->energy, status);
   fits_write_col(ilf->fptr, TDOUBLE, ilf->cx, 

@@ -18,7 +18,7 @@ void phdetGenDet(GenDet* const det,
   setGenDetStartTime(det, t0);
 
   // Loop over all impacts in the FITS file.
-  while (0==ImpactListFile_EOF(ilf)) {
+  while (ilf->row<ilf->nrows) {
 
     Impact impact;
     getNextImpactFromFile(ilf, &impact, status);
@@ -35,6 +35,12 @@ void phdetGenDet(GenDet* const det,
       n_detected_photons++;
     }
     CHECK_STATUS_BREAK(*status);
+
+    if (0==ilf->row%1000) {
+      headas_chat(2, "\r %ld of %ld impacts(%.2lf%%) ", 
+		  ilf->row, ilf->nrows, ilf->row*100./ilf->nrows);
+      fflush(NULL);
+    }
 
   };
   CHECK_STATUS_VOID(*status);

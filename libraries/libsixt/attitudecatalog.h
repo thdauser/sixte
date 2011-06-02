@@ -53,12 +53,6 @@ typedef struct {
       1. */
   int alignment;
 
-  /** MJDREF [d]. */
-  double mjdref;
-  
-  /** Time offset [s]. */
-  double timezero;
-
 } AttitudeCatalog;
 
 
@@ -83,7 +77,7 @@ void freeAttitudeCatalog(AttitudeCatalog** const ac);
 
 /** Determine the telescope pointing direction at a specific time. */
 Vector getTelescopeNz(AttitudeCatalog* const ac, 
-		      const double time, 
+		      const double time,
 		      int* const status);
 
 /** Determine the 3 axes vectors for the telescope coordinate

@@ -144,7 +144,7 @@ int htrs_pixel_intensity_main()
 
     // Loop over all impacts in the FITS file.
     int pixel;
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
+    while (impactlistfile->row<impactlistfile->nrows) {
 
       getNextImpactFromFile(impactlistfile, &impact, &status);
       if (EXIT_SUCCESS!=status) break;

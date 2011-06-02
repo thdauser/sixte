@@ -60,7 +60,7 @@ int comadet_main() {
     Impact impact;
 
     // Loop over all impacts in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
+    while (impactlistfile->row<impactlistfile->nrows) {
 
       getNextImpactFromFile(impactlistfile, &impact, &status);
       if(EXIT_SUCCESS!=status) break;

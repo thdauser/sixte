@@ -39,6 +39,7 @@ void freeSource(Source** const src);
     interval. */
 LinkedPhoListElement* getXRayPhotons(Source* const src, 
 				     const double t0, const double t1,
+				     const double mjdref,
 				     int* const status);
 
 /** Sort the list of Source objects with the specified number of

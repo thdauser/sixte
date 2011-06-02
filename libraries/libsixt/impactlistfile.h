@@ -26,11 +26,6 @@ typedef struct {
   /** Column numbers in the FITS binary table. */
   int ctime, cenergy, cx, cy, cph_id, csrc_id;
 
-  /** MJDREF [d]. */
-  double mjdref;
-
-  double timezero;
-
 } ImpactListFile;
 
 
@@ -54,7 +49,6 @@ ImpactListFile* openImpactListFile(const char* const filename,
     according to the specified template. */
 ImpactListFile* openNewImpactListFile(const char* const filename,
 				      const char* const template,
-				      double mjdref,
 				      int* const status);
 
 /** Return the next impact from the file. Increments the internal row
@@ -63,13 +57,6 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
     increased to 'row==1'). */
 void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact, 
 			   int* const status);
-
-/** Checks whether the end of the ImpactListFile is reached. If the
-    internal pointer of the ImpactListFile data structure points to
-    the last line in the file, i.e. this is the formerly read line, or
-    has an even higher value, the function return value is 1,
-    otherwise it is 0. */
-int ImpactListFile_EOF(ImpactListFile* const ilf);
 
 /** Append a new entry to the ImpactListFile. */
 void addImpact2File(ImpactListFile* const ilf, 

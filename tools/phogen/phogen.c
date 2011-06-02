@@ -37,7 +37,7 @@ int phogen_main()
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
-    double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+    double t0 = par.TIMEZERO;
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
@@ -191,21 +191,23 @@ int phogen_main()
     // --- Photon Generation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, 
-			      par.MJDREF, &status);
+    plf=openNewPhotonListFile(photonlist_filename, 
+			      photonlist_template, 
+			      &status);
     CHECK_STATUS_BREAK(status);
-    // Set the attitude filename in the photon list (obsolete).
-    char buffer[MAXMSG];
-    strcpy(buffer, par.Attitude);
-    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", buffer,
+
+    // Set FITS header keywords.
+    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
+    fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
+
     CHECK_STATUS_BREAK(status);
 
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");
 
-    phgen(det, ac, srccat, plf, t0, par.Exposure, 
-	  &status);
+    phgen(det, ac, srccat, plf, t0, par.Exposure, par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
  
     // --- End of photon generation ---

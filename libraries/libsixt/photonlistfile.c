@@ -28,8 +28,6 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   plf->cdec=0;
   plf->cph_id=0;
   plf->csrc_id=0;
-  plf->mjdref=0.;
-  plf->timezero=0.;
 
   // Open the FITS file table for reading:
   fits_open_table(&plf->fptr, filename, access_mode, status);
@@ -65,19 +63,12 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   fits_get_colnum(plf->fptr, CASEINSEN, "SRC_ID", &plf->csrc_id, status);
   CHECK_STATUS_RET(*status, plf);
 
-  // Determine the timing header keywords.
-  char comment[MAXMSG];
-  fits_read_key(plf->fptr, TDOUBLE, "MJDREF", &plf->mjdref, comment, status);
-  fits_read_key(plf->fptr, TDOUBLE, "TIMEZERO", &plf->timezero, comment, status);
-  CHECK_STATUS_RET(*status, plf);
-
   return(plf);
 }
 
 
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
 				      const char* const template,
-				      double mjdref,
 				      int* const status)
 {
   PhotonListFile* plf=NULL;
@@ -100,12 +91,6 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
 
   // Move to the binary table extension.
   fits_movabs_hdu(fptr, 2, 0, status);
-  CHECK_STATUS_RET(*status, plf);
-
-  // Add timing header keywords.
-  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
-  double dbuff = 0.;
-  fits_update_key(fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
   CHECK_STATUS_RET(*status, plf);
 
   // Close the file (it is reopened in the next step).
@@ -173,7 +158,6 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
   ph->time = 0.;
   if (fits_read_col(plf->fptr, TDOUBLE, plf->ctime, plf->row, 1, 1, 
 		    &ph->time, &ph->time, &anynul, &status)) return(status);
-  ph->time += plf->mjdref*24.*3600. + plf->timezero;
 
   ph->energy = 0.;
   if (fits_read_col(plf->fptr, TFLOAT, plf->cenergy, plf->row, 1, 1, 
@@ -227,10 +211,8 @@ int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
   ph->ph_id = plf->row;
   
   // Store the data in the FITS file.
-  double dbuffer = ph->time - plf->timezero - plf->mjdref*24.*3600.;
   if (fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
-		     plf->row, 1, 1, &dbuffer, &status)) return(status);
-
+		     plf->row, 1, 1, &ph->time, &status)) return(status);
   if (fits_write_col(plf->fptr, TFLOAT, plf->cenergy, 
 		     plf->row, 1, 1, &ph->energy, &status)) return(status);
   if (fits_write_col(plf->fptr, TDOUBLE, plf->cra, 

@@ -30,7 +30,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -44,7 +44,7 @@ int runsixt_main()
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
-    double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+    double t0 = par.TIMEZERO;
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
@@ -234,20 +234,22 @@ int runsixt_main()
     // --- Simulation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, photonlist_template, 
-			      par.MJDREF, &status);
+    plf=openNewPhotonListFile(photonlist_filename, 
+			      photonlist_template, 
+			      &status);
     CHECK_STATUS_BREAK(status);
-    // Set the attitude filename in the photon list (obsolete).
-    char buffer[MAXMSG];
-    strcpy(buffer, par.Attitude);
-    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", buffer,
+
+    // Set FITS header keywords.
+    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
+    fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
     CHECK_STATUS_BREAK(status);
 
 
     // Photon Generation.
     headas_chat(3, "start photon generation ...\n");
-    phgen(det, ac, srccat, plf, t0, par.Exposure, &status);
+    phgen(det, ac, srccat, plf, t0, par.Exposure, par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
 
     // Free the source catalog in order to save memory.
@@ -258,13 +260,16 @@ int runsixt_main()
 
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, impactlist_template, 
-			      par.MJDREF, &status);
+    ilf=openNewImpactListFile(impactlist_filename, 
+			      impactlist_template, 
+			      &status);
     CHECK_STATUS_BREAK(status);
-    // Set the attitude filename in the impact list (obsolete).
-    strcpy(buffer, par.Attitude);
-    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", buffer,
+
+    // Set FITS header keywords.
+    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
+    fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -282,24 +287,23 @@ int runsixt_main()
 
 
     // Open the output event list file.
-    // If the old file should be removed, when it already exists,
-    // the filename has to start with an exclamation mark ('!').
-    elf=openNewEventListFile(eventlist_filename, eventlist_template, 
-			     par.MJDREF, &status);
+    elf=openNewEventListFile(eventlist_filename, 
+			     eventlist_template, 
+			     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Set header keywords in EventList file.
-    // Set the attitude filename.
-    strcpy(buffer, par.Attitude);
-    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", buffer,
+    // Set FITS header keywords.
+    fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
+    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
     CHECK_STATUS_BREAK(status);
-    // Number of pixels in x-direction.
-    if (fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
-			"number of pixels in x-direction", &status)) break;
-    // Number of pixels in y-direction.
-    if (fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
-			"number of pixels in y-direction", &status)) break;    
+    // Number of pixels in x- and y-direction.
+    fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
+		    "number of pixels in x-direction", &status);
+    fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
+		    "number of pixels in y-direction", &status);    
+    CHECK_STATUS_BREAK(status);
 
     // Photon Detection.
     headas_chat(3, "start photon detection ...\n");

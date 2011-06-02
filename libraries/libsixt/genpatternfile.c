@@ -23,7 +23,6 @@ GenPatternFile* newGenPatternFile(int* const status)
 }
 
 
-
 void destroyGenPatternFile(GenPatternFile** const file, 
 			   int* const status)
 {
@@ -37,10 +36,8 @@ void destroyGenPatternFile(GenPatternFile** const file,
 }
 
 
-
 GenPatternFile* openNewGenPatternFile(const char* const filename,
 				      const char* const template,
-				      double mjdref,
 				      int* const status)
 {
   GenPatternFile* file = newGenPatternFile(status);
@@ -51,7 +48,7 @@ GenPatternFile* openNewGenPatternFile(const char* const filename,
 
   // Open the EventListFile.
   file->eventlistfile = 
-    openNewEventListFile(filename, template, mjdref, status);
+    openNewEventListFile(filename, template, status);
 
   // Close the file.
   destroyGenPatternFile(&file, status);
@@ -63,7 +60,6 @@ GenPatternFile* openNewGenPatternFile(const char* const filename,
   
   return(file);
 }
-
 
 
 GenPatternFile* openGenPatternFile(const char* const filename,
@@ -91,7 +87,6 @@ GenPatternFile* openGenPatternFile(const char* const filename,
 }
 
 
-
 void addGenPattern2File(GenPatternFile* const file, 
 			GenPattern* const pattern, 
 			int* const status)
@@ -109,6 +104,4 @@ void addGenPattern2File(GenPatternFile* const file,
 		     file->cphas, file->eventlistfile->row, 
 		     1, 9, &pattern->phas, status)) return;
 }
-
-
 

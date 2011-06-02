@@ -32,7 +32,7 @@ int gendetsim_main() {
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
-    double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+    double t0 = par.TIMEZERO;
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
@@ -140,17 +140,21 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
-    elf=openNewEventListFile(eventlist_filename, eventlist_template, 
-			     par.MJDREF, &status);
+    elf=openNewEventListFile(eventlist_filename, 
+			     eventlist_template, 
+			     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Write header keywords in EventList file.
-    // Number of pixels in x-direction.
-    if (fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
-			"number of pixels in x-direction", &status)) break;
-    // Number of pixels in y-direction.
-    if (fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
-			"number of pixels in y-direction", &status)) break;    
+    // Set FITS header keywords.
+    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
+    CHECK_STATUS_BREAK(status);
+    // Number of pixels in x- and y-direction.
+    fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
+		    "number of pixels in x-direction", &status);
+    fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
+		    "number of pixels in y-direction", &status);    
+    CHECK_STATUS_BREAK(status);
 
     // Photon detection.
     phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);
@@ -182,8 +186,6 @@ int gendetsim_main() {
 
 
 
-////////////////////////////////////////////////////////////////
-// This routine reads the program parameters using the PIL.
 int getpar(struct Parameters* const par)
 {
   // String input buffer.

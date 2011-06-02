@@ -25,12 +25,6 @@ typedef struct {
   /** Column numbers in the FITS binary table. */
   int ctime, cenergy, cra, cdec, cph_id, csrc_id;
 
-  /** MJDREF [d]. */
-  double mjdref;
-  
-  /** Time offset [s]. */
-  double timezero;
-
 } PhotonListFile;
 
 
@@ -51,7 +45,6 @@ PhotonListFile* openPhotonListFile(const char* const filename,
     return the PhotonListFile object for the open file.  */
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
 				      const char* const template,
-				      double mjdref,
 				      int* const status);
 
 

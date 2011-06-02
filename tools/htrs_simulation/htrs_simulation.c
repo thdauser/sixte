@@ -164,13 +164,14 @@ int htrs_simulation_main() {
     Impact impact; // Buffer to store the impacts read from the FITS file.
 
     // Loop over all impacts in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==ImpactListFile_EOF(impactlistfile))) {
+    while (impactlistfile->row<impactlistfile->nrows) {
 
       getNextImpactFromFile(impactlistfile, &impact, &status);
       if (EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
-      if ((impact.time<parameters.t0)||(impact.time>parameters.t0+parameters.timespan)) continue;
+      if ((impact.time<parameters.t0)||
+	  (impact.time>parameters.t0+parameters.timespan)) continue;
 
       // Call the photon detection routine that generates the right charge
       // and stores it in the detector pixels.

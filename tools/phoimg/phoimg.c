@@ -194,16 +194,19 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, impactlist_template, 
-			      par.MJDREF, &status);
-    CHECK_STATUS_BREAK(status);
-    // Set the attitude filename in the impact list (obsolete).
-    char buffer[MAXMSG];
-    strcpy(buffer, par.Attitude);
-    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", buffer,
-		    "attitude file", &status);
+    ilf=openNewImpactListFile(impactlist_filename, 
+			      impactlist_template, 
+			      &status);
     CHECK_STATUS_BREAK(status);
 
+    // Set FITS header keywords.
+    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+		    "attitude file", &status);
+    fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Photon Imaging.
     phimg(det, ac, plf, ilf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -232,8 +235,6 @@ int phoimg_main() {
 
 
 
-////////////////////////////////////////////////////////////////
-// This routine reads the program parameters using the PIL.
 int phoimg_getpar(struct Parameters* par)
 {
   // String input buffer.

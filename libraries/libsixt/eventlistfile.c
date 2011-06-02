@@ -26,8 +26,6 @@ EventListFile* newEventListFile(int* const status)
   file->cdec   =0;
   file->cph_id =0;
   file->csrc_id=0;
-  file->mjdref=0.;
-  file->timezero=0.;
 
   return(file);
 }
@@ -49,7 +47,6 @@ void freeEventListFile(EventListFile** const file, int* const status)
 
 EventListFile* openNewEventListFile(const char* const filename,
 				    const char* const template,
-				    double mjdref,
 				    int* const status)
 {
   EventListFile* file = newEventListFile(status);
@@ -94,13 +91,6 @@ EventListFile* openNewEventListFile(const char* const filename,
   // Move to the binary table extension.
   fits_movabs_hdu(file->fptr, 2, 0, status);
   CHECK_STATUS_RET(*status, file);
-
-  // Add timing header keywords.
-  fits_update_key(file->fptr, TDOUBLE, "MJDREF", &mjdref, "", status);
-  double dbuff = 0.;
-  fits_update_key(file->fptr, TDOUBLE, "TIMEZERO", &dbuff, "", status);
-  CHECK_STATUS_RET(*status, file);
-
 
   // Close the file.
   freeEventListFile(&file, status);
@@ -185,12 +175,6 @@ EventListFile* openEventListFile(const char* const filename,
     return(file);
   }
 
-  // Determine the timing header keywords.
-  char comment[MAXMSG];
-  fits_read_key(file->fptr, TDOUBLE, "MJDREF", &file->mjdref, comment, status);
-  fits_read_key(file->fptr, TDOUBLE, "TIMEZERO", &file->timezero, comment, status);
-  CHECK_STATUS_RET(*status, file);
-
   return(file);
 }
 
@@ -254,7 +238,6 @@ void getEventFromFile(const EventListFile* const file,
 
   fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
 		&dnull, &event->time, &anynul, status);
-  event->time += file->mjdref*24.*3600. + file->timezero;
   CHECK_STATUS_VOID(*status);
 
   fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
@@ -308,9 +291,8 @@ void updateEventInFile(const EventListFile* const file,
 		       const int row, Event* const event,
 		       int* const status)
 {
-  double dbuffer = event->time - file->timezero - file->mjdref*24.*3600.;
   if (fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
-		     1, 1, &dbuffer, status)) return;
+		     1, 1, &event->time, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cframe, row, 
 		     1, 1, &event->frame, status)) return;
   if (fits_write_col(file->fptr, TLONG, file->cpha, row, 
@@ -321,7 +303,7 @@ void updateEventInFile(const EventListFile* const file,
 		     1, 1, &event->rawx, status)) return;
   if (fits_write_col(file->fptr, TINT, file->crawy, row, 
 		     1, 1, &event->rawy, status)) return;
-  dbuffer = event->ra  * 180./M_PI;
+  double dbuffer = event->ra  * 180./M_PI;
   if (fits_write_col(file->fptr, TDOUBLE, file->cra, row, 
 		     1, 1, &dbuffer, status)) return;
   dbuffer = event->dec * 180./M_PI;
