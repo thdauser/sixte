@@ -7,7 +7,7 @@ int ero_merge_photonfiles_getpar(struct Parameters* par)
 
   int status = EXIT_SUCCESS;
 
-  status=ape_trad_query_int("seed", &par->NInputFiles);
+  status=ape_trad_query_int("NInputFiles", &par->NInputFiles);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the number of input files!\n", status);
     return(status);
@@ -53,10 +53,15 @@ int photonmerge_main() {
   int status = EXIT_SUCCESS;
 
   // Register HEATOOL
-  set_toolname("ero_merge_photonfiles");
+  set_toolname("photonmerge");
   set_toolversion("0.01");
 
   do { // ERROR handling loop
+
+    // Initialize with NULL.
+    for (fileidx=0; fileidx<MAX_N_INPUTFILES; fileidx++) {
+      inputfiles[fileidx]=NULL;
+    }
 
     // Read parameters by PIL:
     status = ero_merge_photonfiles_getpar(&par);
@@ -84,28 +89,22 @@ int photonmerge_main() {
     // Read the keywords from the first PhotonListFile and write
     // them to the output file.
     struct HKeys {
-      double refxcrvl;
-      double refycrvl;
-      char attitude[MAXMSG];
+      double mjdref;
+      double timezero;
     } hkeys;
 
     // Read from the first input file.
     char comment[MAXMSG]; // String buffer.
-    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "REFXCRVL", 
-		      &hkeys.refxcrvl, comment, &status)) break;    
-    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "REFYCRVL", 
-		      &hkeys.refycrvl, comment, &status)) break;    
-    if (fits_read_key(inputfiles[0]->fptr, TSTRING, "ATTITUDE", 
-		      hkeys.attitude, comment, &status)) break;
+    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "MJDREF", 
+		      &hkeys.mjdref, comment, &status)) break;    
+    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TIMEZERO", 
+		      &hkeys.timezero, comment, &status)) break;    
 
     // Write to output file.
-    if (fits_update_key(outputfile->fptr, TDOUBLE, "REFXCRVL", 
-			&hkeys.refxcrvl, "", &status)) break;
-    if (fits_update_key(outputfile->fptr, TDOUBLE, "REFYCRVL", 
-			&hkeys.refycrvl, "", &status)) break;
-    if (fits_update_key(outputfile->fptr, TSTRING, "ATTITUDE", 
-			hkeys.attitude, "name of the attitude FITS file", 
-			&status)) break;
+    if (fits_update_key(outputfile->fptr, TDOUBLE, "MJDREF", 
+			&hkeys.mjdref, "", &status)) break;
+    if (fits_update_key(outputfile->fptr, TDOUBLE, "TIMEZERO", 
+			&hkeys.timezero, "", &status)) break;
     // END of copying header keywords.
 
 
@@ -125,7 +124,7 @@ int photonmerge_main() {
       }
     }
     // Repeat this loop as long as at least one the input event 
-    // files contains furhter un-read lines.
+    // files contains further un-read lines.
     int minidx;
     while(sum_eof<par.NInputFiles) {
 
@@ -134,10 +133,15 @@ int photonmerge_main() {
 	if (0==eof[minidx]) break;
       }
       for (fileidx=minidx+1; fileidx<par.NInputFiles; fileidx++) {
-	if (photons[fileidx].time < photons[minidx].time) {
-	  minidx = fileidx;
+	if (0==eof[fileidx]) {
+	  if (photons[fileidx].time < photons[minidx].time) {
+	    minidx = fileidx;
+	  }
 	}
       }
+
+      // Reset the photon ID.
+      photons[minidx].ph_id = 0;
 
       // Add the photon to the output file.
       status = addPhoton2File(outputfile, &photons[minidx]);

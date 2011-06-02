@@ -8,7 +8,7 @@
 #define TOOLSUB photonmerge_main
 #include "headas_main.c"
 
-#define MAX_N_INPUTFILES 100
+#define MAX_N_INPUTFILES 1000
 
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
