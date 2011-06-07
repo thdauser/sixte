@@ -37,7 +37,7 @@ void phdetGenDet(GenDet* const det,
     CHECK_STATUS_BREAK(*status);
 
     if (0==ilf->row%1000) {
-      headas_chat(2, "\r %ld of %ld impacts(%.2lf%%) ", 
+      headas_chat(2, "\r %ld of %ld impacts (%.2lf%%) ", 
 		  ilf->row, ilf->nrows, ilf->row*100./ilf->nrows);
       fflush(NULL);
     }

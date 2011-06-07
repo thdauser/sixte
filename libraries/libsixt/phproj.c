@@ -44,14 +44,14 @@ void phproj(GenDet* const det,
     // of the optical axis with the sky plane to the source position.
     Vector srcpos;
     srcpos.x = nz.x 
-      -detpos.x/det->focal_length*nx.x
-      -detpos.y/det->focal_length*ny.x;
+      +detpos.x/det->focal_length*nx.x
+      +detpos.y/det->focal_length*ny.x;
     srcpos.y = nz.y 
-      -detpos.x/det->focal_length*nx.y
-      -detpos.y/det->focal_length*ny.y;
+      +detpos.x/det->focal_length*nx.y
+      +detpos.y/det->focal_length*ny.y;
     srcpos.z = nz.z 
-      -detpos.x/det->focal_length*nx.z
-      -detpos.y/det->focal_length*ny.z;
+      +detpos.x/det->focal_length*nx.z
+      +detpos.y/det->focal_length*ny.z;
     srcpos = normalize_vector(srcpos);
 
     // Determine the equatorial coordinates RA and DEC

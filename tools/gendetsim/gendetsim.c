@@ -148,6 +148,9 @@ int gendetsim_main() {
     // Set FITS header keywords.
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
+    double dbuffer=0.;
+    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
     // Number of pixels in x- and y-direction.
     fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 

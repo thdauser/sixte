@@ -33,7 +33,7 @@ int phoimg_main() {
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
-    double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+    double t0 = par.TIMEZERO;
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
@@ -204,6 +204,9 @@ int phoimg_main() {
 		    "attitude file", &status);
     fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
+    double dbuffer=0.;
+    fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
     // Photon Imaging.

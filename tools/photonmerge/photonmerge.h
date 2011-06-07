@@ -26,6 +26,8 @@ struct Parameters{
   char OutputFile[MAXFILENAME];
 
   char clobber;
+
+  char data_path[MAXFILENAME];
 };
 
 

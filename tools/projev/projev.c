@@ -74,7 +74,7 @@ int projev_main() {
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
-    double t0 = par.MJDREF*24.*3600. + par.TIMEZERO;
+    double t0 = par.TIMEZERO;
 
     // Determine the random number seed.
     int seed;

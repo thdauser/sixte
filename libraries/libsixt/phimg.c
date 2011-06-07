@@ -40,35 +40,11 @@ void phimg(const GenDet* const det,
 	
       // Determine telescope data like pointing direction (attitude) etc.
       // The telescope coordinate system consists of an x-, y-, and z-axis.
-      // The z-axis is perpendicular to the detector plane and pointing along
-      // the telescope direction. The x-axis is aligned along the detector 
-      // x-direction, which is identical to the detector RAWX/COLUMN.
-      // The y-axis is pointing along the y-direction of the detector,
-      // which is also referred to as RAWY/ROW.
+      getTelescopeAxes(ac, &telescope.nx, &telescope.ny, &telescope.nz, 
+		       photon.time, status);
+      CHECK_STATUS_BREAK(*status);
 
-      // Determine the vector nx: perpendicular to telescope x-axis
-      // and in the direction of the satellite motion.
-      telescope.nx = 
-	normalize_vector(interpolate_vec(ac->entry[ac->current_entry].nx, 
-					 ac->entry[ac->current_entry].time, 
-					 ac->entry[ac->current_entry+1].nx, 
-					 ac->entry[ac->current_entry+1].time, 
-					 photon.time));
-	
-      // Remove the component along the vertical direction nz 
-      // (nx must be perpendicular to nz!):
-      double scp = scalar_product(&telescope.nz, &telescope.nx);
-      telescope.nx.x -= scp*telescope.nz.x;
-      telescope.nx.y -= scp*telescope.nz.y;
-      telescope.nx.z -= scp*telescope.nz.z;
-      telescope.nx = normalize_vector(telescope.nx);
-
-
-      // The third axis of the coordinate system ny is perpendicular 
-      // to the telescope axis nz and nx:
-      telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
-	
-      // Determine the photon impact position on the detector (in [m]):
+      // Determine the photon impact position on the detector (in [m]).
 
       // Convolution with PSF:
       // Function returns 0, if the photon does not fall on the detector. 

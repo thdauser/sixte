@@ -201,7 +201,9 @@ int phogen_main()
 		    "attitude file", &status);
     fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
-
+    double dbuffer=0.;
+    fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
     // Start the actual photon generation (after loading required data):

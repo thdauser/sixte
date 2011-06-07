@@ -244,6 +244,9 @@ int runsixt_main()
 		    "attitude file", &status);
     fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
+    double dbuffer=0.;
+    fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -270,6 +273,9 @@ int runsixt_main()
 		    "attitude file", &status);
     fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
+    dbuffer=0.;
+    fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -297,6 +303,9 @@ int runsixt_main()
 		    "attitude file", &status);
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
+    dbuffer=0.;
+    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
     // Number of pixels in x- and y-direction.
     fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 

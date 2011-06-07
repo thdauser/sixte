@@ -77,7 +77,8 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     ph->ph_id = 0;
 
     // Determine the photon energy.
-    ph->energy = getSimputPhotonEnergy(src->src, status);
+    ph->energy = 
+      getSimputPhotonEnergy(src->src, *(src->t_next_photon), mjdref, status);
     CHECK_STATUS_BREAK(*status);
 
     // Determine the arrival time of the next (future) photon.
