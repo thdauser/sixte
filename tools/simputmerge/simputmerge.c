@@ -10,6 +10,7 @@ int simputmerge_main()
   char infilenames[2][MAXFILENAME];
 
   // SIMPUT source catalogs.
+  SimputSourceCatalogFile* catalogfile=NULL;
   SimputSourceCatalog* incat[2]={NULL, NULL};
   SimputSourceCatalog* outcat  = NULL;
 
@@ -48,7 +49,11 @@ int simputmerge_main()
     strcpy(infilenames[1], par.Infile2);
     int ii;
     for (ii=0; ii<2; ii++) {
-      incat[ii] = loadSimputSourceCatalog(infilenames[ii], &status);
+      catalogfile = openSimputSourceCatalogFile(infilenames[ii], &status);
+      CHECK_STATUS_BREAK(status);
+      incat[ii] = loadSimputSourceCatalog(catalogfile, &status);
+      CHECK_STATUS_BREAK(status);
+      freeSimputSourceCatalogFile(&catalogfile, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
@@ -375,6 +380,7 @@ int simputmerge_main()
   freeSimputSourceCatalog(&incat[0]);
   freeSimputSourceCatalog(&incat[1]);
   freeSimputSourceCatalog(&outcat);
+  freeSimputSourceCatalogFile(&catalogfile, &status);
 
   freeSimputMissionIndepSpec(&spec);
   freeSimputImg(&img);

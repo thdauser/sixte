@@ -11,13 +11,13 @@ SourceCatalog* newSourceCatalog(int* const status)
   cat->tree       =NULL;
   cat->extsources =NULL;
   cat->nextsources=0;
-  cat->simput     =NULL;
-
+  cat->simputfile   =NULL;
+  cat->simputcatalog=NULL;
   return(cat);
 }
 
 
-void freeSourceCatalog(SourceCatalog** cat)
+void freeSourceCatalog(SourceCatalog** const cat, int* const status)
 {
   if (NULL!=*cat) {
     // Free the KD-Tree.
@@ -29,8 +29,12 @@ void freeSourceCatalog(SourceCatalog** cat)
       free((*cat)->extsources);
     }
     // Free the SIMPUT source catalog.
-    if (NULL!=(*cat)->simput) {
-      freeSimputSourceCatalog(&((*cat)->simput));
+    if (NULL!=(*cat)->simputfile) {
+      freeSimputSourceCatalogFile(&((*cat)->simputfile), status);
+    }
+    // Free the SIMPUT source catalog.
+    if (NULL!=(*cat)->simputcatalog) {
+      freeSimputSourceCatalog(&((*cat)->simputcatalog));
     }
     free(*cat);
     *cat=NULL;
@@ -39,8 +43,8 @@ void freeSourceCatalog(SourceCatalog** cat)
 
 
 SourceCatalog* loadSourceCatalog(const char* const filename,
-				     const GenDet* const det,
-				     int* const status)
+				 const GenDet* const det,
+				 int* const status)
 {
   headas_chat(3, "load source catalog from file '%s' ...\n", filename);
 
@@ -55,7 +59,9 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   simputSetRndGen(sixt_get_random_number);
 
   // Use the routines from the SIMPUT library to load the catalog.
-  cat->simput = loadSimputSourceCatalog(filename, status);
+  cat->simputfile    = openSimputSourceCatalogFile(filename, status);
+  CHECK_STATUS_RET(*status, cat);
+  cat->simputcatalog = loadSimputSourceCatalog(cat->simputfile, status);
   CHECK_STATUS_RET(*status, cat);
 
   // Determine the number of point-like and the number of 
@@ -63,8 +69,8 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   long nextended  = 0;
   long npointlike = 0;
   long ii;
-  for (ii=0; ii<cat->simput->nentries; ii++) {
-    float extension = getSimputSourceExtension(cat->simput->entries[ii], status);
+  for (ii=0; ii<cat->simputfile->nentries; ii++) {
+    float extension = getSimputSourceExtension(cat->simputcatalog->entries[ii], status);
     CHECK_STATUS_BREAK(*status);
     if (extension>0.) {
       // This is an extended source.
@@ -94,8 +100,8 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // Loop over all entries in the SIMPUT source catalog.
   long cpointlike =0;
   cat->nextsources=0;
-  for (ii=0; ii<cat->simput->nentries; ii++) {
-    float extension = getSimputSourceExtension(cat->simput->entries[ii], status);
+  for (ii=0; ii<cat->simputfile->nentries; ii++) {
+    float extension = getSimputSourceExtension(cat->simputcatalog->entries[ii], status);
     CHECK_STATUS_BREAK(*status);
     if (extension>0.) {
       // This is an extended source.
@@ -103,13 +109,13 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
       // Start with an empty Source object for this entry.
       cat->extsources[cat->nextsources-1] = *templatesrc;
       // Set the properties from the SIMPUT catalog.
-      cat->extsources[cat->nextsources-1].src = cat->simput->entries[ii];
+      cat->extsources[cat->nextsources-1].src = cat->simputcatalog->entries[ii];
 
     } else {
       // This is a point-like source.
       cpointlike++;
       list[cpointlike-1]     = *templatesrc;
-      list[cpointlike-1].src = cat->simput->entries[ii];
+      list[cpointlike-1].src = cat->simputcatalog->entries[ii];
     }
   } 
   CHECK_STATUS_RET(*status, cat);

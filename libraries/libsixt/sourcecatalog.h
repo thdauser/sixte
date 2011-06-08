@@ -28,7 +28,8 @@ typedef struct {
   long nextsources;
 
   /** SIMPUT source catalog containing all relevant data. */
-  SimputSourceCatalog* simput;
+  SimputSourceCatalogFile* simputfile;
+  SimputSourceCatalog* simputcatalog;
 
 } SourceCatalog;
 
@@ -42,7 +43,7 @@ typedef struct {
 SourceCatalog* newSourceCatalog(int* const status);
 
 /** Destructor. */
-void freeSourceCatalog(SourceCatalog** cat);
+void freeSourceCatalog(SourceCatalog** const cat, int* const status);
 
 /** Load a SIMPUT source catalog from a FITS file. */
 SourceCatalog* loadSourceCatalog(const char* const filename,

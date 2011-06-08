@@ -223,7 +223,7 @@ int phogen_main()
 
   // Release memory.
   freePhotonListFile(&plf, &status);
-  freeSourceCatalog(&srccat);
+  freeSourceCatalog(&srccat, &status);
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 

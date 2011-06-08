@@ -256,7 +256,8 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Free the source catalog in order to save memory.
-    freeSourceCatalog(&srccat);
+    freeSourceCatalog(&srccat, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Reset internal line counter of photon list file.
     plf->row=0;
@@ -343,7 +344,7 @@ int runsixt_main()
   freeEventListFile(&elf, &status);
   freeImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
-  freeSourceCatalog(&srccat);
+  freeSourceCatalog(&srccat, &status);
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 

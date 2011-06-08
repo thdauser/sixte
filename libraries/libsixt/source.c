@@ -43,13 +43,25 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     src->t_next_photon=(double*)malloc(sizeof(double));
     CHECK_NULL(src->t_next_photon, *status,
 	       "memory allocation for 't_next_photon' (double) failed");
-    *(src->t_next_photon) = getSimputPhotonTime(src->src, t0, mjdref, status);
+    
+    float rate = getSimputPhotonRate(src->src, t0, mjdref, status);
     CHECK_STATUS_RET(*status, list);
+    assert(rate > 0.);
+    *(src->t_next_photon) = t0 - 2./rate;
 
   } else if (*(src->t_next_photon) < t0) {
+    float rate = getSimputPhotonRate(src->src, t0, mjdref, status);
+    CHECK_STATUS_RET(*status, list);
+    assert(rate > 0.);
+    *(src->t_next_photon) = t0 - 2./rate;
+  }
+
+  // Get a valid photon arrival time in the interval [t0,t1]
+  while (*(src->t_next_photon) < t0) {
     // The arrival time of the next photon was before the
     // requested time interval.
-    *(src->t_next_photon) = getSimputPhotonTime(src->src, t0, mjdref, status);
+    *(src->t_next_photon) = 
+      getSimputPhotonTime(src->src, *(src->t_next_photon), mjdref, status);
     CHECK_STATUS_RET(*status, list);
   }
 
