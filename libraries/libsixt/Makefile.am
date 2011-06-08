@@ -9,6 +9,7 @@ AM_CFLAGS  = -I${HEADAS}/include
 fitstemplatesdir = $(pkgdatadir)/templates
 dist_fitstemplates_DATA  = coma.eventlist.tpl
 dist_fitstemplates_DATA += eventlist.tpl
+dist_fitstemplates_DATA += eroeventlist.tpl
 dist_fitstemplates_DATA += patternlist.tpl
 dist_fitstemplates_DATA += htrs.eventlist.tpl
 dist_fitstemplates_DATA += impactlist.tpl

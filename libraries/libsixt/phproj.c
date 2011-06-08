@@ -36,7 +36,7 @@ void phproj(GenDet* const det,
       det->pixgrid->xrval;
     detpos.y = // in [m]
       (event.rawy*1.-det->pixgrid->yrpix+0.5+sixt_get_random_number())*
-	det->pixgrid->ydelt + 
+      det->pixgrid->ydelt + 
       det->pixgrid->yrval;
     
     // Determine the source position on the sky using the telescope 

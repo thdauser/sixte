@@ -216,6 +216,7 @@ AC_CONFIG_FILES([Makefile
 		tools/psfgen/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/ero_exposure/Makefile
+		tools/ero_events/Makefile
 		tools/ero_fits2tm/Makefile
 		tools/comaexp/Makefile
 		tools/ero_split_photonfile/Makefile

@@ -286,7 +286,8 @@ void getTelescopeAxes(AttitudeCatalog* const ac,
 
   } else {
     // Alignment along the direction of motion of the telescope axis.
-    x1=normalize_vector(dnz);
+    Vector perpendicular=vector_product(*nz, dnz);
+    x1=normalize_vector(vector_product(perpendicular, *nz));
   }
 
   // Determine the y1 vector, which is perpendicular 
@@ -302,6 +303,7 @@ void getTelescopeAxes(AttitudeCatalog* const ac,
   ny->x = - x1.x * sin(roll_angle) + y1.x * cos(roll_angle);
   ny->y = - x1.y * sin(roll_angle) + y1.y * cos(roll_angle);
   ny->z = - x1.z * sin(roll_angle) + y1.z * cos(roll_angle);
+
 }
 
 
