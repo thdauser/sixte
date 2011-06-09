@@ -36,21 +36,26 @@ int ero_events_main()
 
 
     // Create and open the output eROSITA event file.
+    // Remove old file, if it exists.
+    remove(par.eroEventList);
+
     // Filename of the template file.
     char template[MAXMSG];
     strcpy(template, par.fits_templates);
     strcat(template, "/");
     strcat(template, "eroeventlist.tpl");
-
-    // Remove old file, if it exists.
-    remove(par.eroEventList);
-
+    
     // Create and open a new FITS file using the template.
     char buffer[MAXMSG];
     sprintf(buffer, "%s(%s)", par.eroEventList, template);
     headas_chat(4, "create new eROSITA event list file '%s' from template '%s' ...\n", 
 		par.eroEventList, template);
     fits_create_file(&fptr, buffer, &status);
+    if (EXIT_SUCCESS!=status) break;
+
+    // Move to the binary table HDU.
+    int hdutype;
+    fits_movabs_hdu(fptr, 2, &hdutype, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Set the time-keyword in the Event List Header.
@@ -73,7 +78,7 @@ int ero_events_main()
     // END of writing time information to Event File FITS header.
 
     // Determine the column numbers.
-    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec;
+    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cccdnr;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
@@ -82,6 +87,7 @@ int ero_events_main()
     fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
     fits_get_colnum(fptr, CASEINSEN, "RA", &cra, &status);
     fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, &status);
+    fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // --- END of Initialization ---
@@ -93,7 +99,7 @@ int ero_events_main()
 
     // Loop over all events in the FITS file. 
     long row;
-    for (row=0; row<=gelf->nrows; row++) {
+    for (row=0; row<gelf->nrows; row++) {
       
       // Read the next event from the input file.
       Event event;
@@ -114,8 +120,6 @@ int ero_events_main()
       int rawy = event.rawy+1;
       fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &rawy, &status);
 
-      // TODO
-
       long ra = (long)(event.ra/1.e-6);
       if (event.ra < 0.) ra--;
       fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ra, &status);
@@ -124,9 +128,12 @@ int ero_events_main()
       if (event.dec < 0.) dec--;
       fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &dec, &status);
       
+      // TODO
       // X
       // Y
-      // CCDNR (PIL parameter)
+
+      fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &par.CCDNr, &status);
+
       CHECK_STATUS_BREAK(status);
 
     }
@@ -171,6 +178,12 @@ int getpar(struct Parameters* const par)
   } 
   strcpy(par->eroEventList, sbuffer);
   free(sbuffer);
+
+  status=ape_trad_query_int("CCDNr", &par->CCDNr);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the CCDNr parameter!\n", status);
+    return(status);
+  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {

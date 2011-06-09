@@ -19,6 +19,8 @@ struct Parameters {
   char genEventList[MAXFILENAME];
   char eroEventList[MAXFILENAME];
 
+  int CCDNr;
+
   char clobber;
 
   char fits_templates[MAXFILENAME];

@@ -1,7 +1,7 @@
 XTENSION        BINTABLE        / Binary table extension
 EXTNAME         EVENTS          / Extension name
-HDUCLASS        OGIP
-HDUCLAS1        EVENTS
+HDUCLASS        OGIP            /
+HDUCLAS1        EVENTS          /
 ORIGIN          REMEIS          / Origin of FITS File
 CREATOR         FAU             / Program that created this FITS file
 MISSION         SRG             / Mission name
@@ -30,31 +30,26 @@ DEC_PNT         Real            / actual pointing DEC
 RADECSYS        FK5             / Stellar reference frame
 EQUINOX         2000.0          / Coordinate system equinox
 LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
-NXDIM           384
-NYDIM           384
-PIXLEN_X        75.0
-PIXLEN_Y        75.0
-
-TTYPEi      'X       '
-TCTYPi      'RA---SIN'     / WCS Coord. type: RA tangent plane projection
-TCUNIi      'deg'          / WCS  physical unit of X axis C
-TCRPXi      real           / WCS axis reference pixel
-TCRVLi      real           / [deg] WCS coord. at X axis ref. pixel
-TCDLTi      real           / [deg/pix] WCS X increment at ref. pixel
-
-TLMINi      real           / Minimum for X
-TLMAXi      real           / Maximum for X
-
-TTYPEj      'Y       '
-TCTYPj      'DEC--SIN'     / WCS Coord. type: DEC tangent plane projection
-TCUNIj      'deg'          / WCS  physical unit of Y axis 
-TCRPXj      real           / WCS axis reference pixel
-TCRVLj      real           / [deg] WCS coord. at Y axis ref. pixel
-TCDLTj      real           / [deg/pix] WCS Y increment at ref. pixel
-
-TLMINj      real           / Minimum for Y
-TLMAXj      real           / Maximum for Y
-
+NXDIM           384             /
+NYDIM           384             /
+PIXLEN_X        75.0            /
+PIXLEN_Y        75.0            /
+TTYPEi          X               /
+TCTYPi          RA---SIN        / WCS Coord. type: RA tangent plane projection
+TCUNIi          deg             / WCS  physical unit of X axis C
+TCRPXi          real            / WCS axis reference pixel
+TCRVLi          real            / [deg] WCS coord. at X axis ref. pixel
+TCDLTi          real            / [deg/pix] WCS X increment at ref. pixel
+TLMINi          real            / Minimum for X
+TLMAXi          real            / Maximum for X
+TTYPEj          Y               /
+TCTYPj          DEC--SIN        / WCS Coord. type: DEC tangent plane projection
+TCUNIj          deg             / WCS  physical unit of Y axis 
+TCRPXj          real            / WCS axis reference pixel
+TCRVLj          real            / [deg] WCS coord. at Y axis ref. pixel
+TCDLTj          real            / [deg/pix] WCS Y increment at ref. pixel
+TLMINj          real            / Minimum for Y
+TLMAXj          real            / Maximum for Y
 #Column definitions
 	TTYPE#  TIME            / Time of event detection
 	TFORM#  D               / Format of column TIME
