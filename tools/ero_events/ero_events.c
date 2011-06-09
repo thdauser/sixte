@@ -112,7 +112,9 @@ int ero_events_main()
     wcs.cdelt[1] = 0.001;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
-    
+    strcpy(wcs.ctype[0], "RA---SIN");
+    strcpy(wcs.ctype[1], "DEC--SIN");
+
     // --- END of Initialization ---
 
     
