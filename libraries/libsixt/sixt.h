@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <expat.h>
+#include <wcslib/wcslib.h>
 
 #ifdef _OPENMP
 #include <omp.h>

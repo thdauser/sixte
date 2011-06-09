@@ -12,6 +12,11 @@ int ero_events_main()
   // File pointer to the output eROSITA event file. 
   fitsfile* fptr=NULL;
 
+  // WCS data structure used for projection.
+  struct wcsprm wcs = { .flag=-1 };
+  // String buffer for FITS header.
+  char* headerstr=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
@@ -78,7 +83,7 @@ int ero_events_main()
     // END of writing time information to Event File FITS header.
 
     // Determine the column numbers.
-    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cccdnr;
+    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cx, cy, cccdnr;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
@@ -87,9 +92,27 @@ int ero_events_main()
     fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
     fits_get_colnum(fptr, CASEINSEN, "RA", &cra, &status);
     fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, &status);
+    fits_get_colnum(fptr, CASEINSEN, "X", &cx, &status);
+    fits_get_colnum(fptr, CASEINSEN, "Y", &cy, &status);
     fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
     if (EXIT_SUCCESS!=status) break;
 
+    // Set up the WCS data structure.
+    if (0!=wcsini(1, 2, &wcs)) {
+      SIXT_ERROR("initalization of WCS data structure failed");
+      status=EXIT_FAILURE;
+      break;
+    }
+    wcs.naxis =  2;
+    wcs.crpix[0] = 0.;
+    wcs.crpix[1] = 0.;
+    wcs.crval[0] = 0.;
+    wcs.crval[1] = 0.;    
+    wcs.cdelt[0] = 0.001;
+    wcs.cdelt[1] = 0.001;
+    strcpy(wcs.cunit[0], "deg");
+    strcpy(wcs.cunit[1], "deg");
+    
     // --- END of Initialization ---
 
     
@@ -120,17 +143,27 @@ int ero_events_main()
       int rawy = event.rawy+1;
       fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &rawy, &status);
 
-      long ra = (long)(event.ra/1.e-6);
+      long ra = (long)(event.ra*180./M_PI/1.e-6);
       if (event.ra < 0.) ra--;
       fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ra, &status);
 
-      long dec = (long)(event.dec/1.e-6);
+      long dec = (long)(event.dec*180./M_PI/1.e-6);
       if (event.dec < 0.) dec--;
       fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &dec, &status);
+      CHECK_STATUS_BREAK(status);
       
-      // TODO
-      // X
-      // Y
+      // Convert world coordinates to image coordinates X and Y.
+      double world[2] = { event.ra*180./M_PI, event.dec*180./M_PI };
+      double imgcrd[2], pixcrd[2];
+      double phi, theta;
+      wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &status);
+      CHECK_STATUS_BREAK(status);
+      long x = (long)pixcrd[0]; 
+      if (pixcrd[0] < 0.) x--;
+      long y = (long)pixcrd[1]; 
+      if (pixcrd[1] < 0.) y--;
+      fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &x, &status);
+      fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &y, &status);
 
       fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &par.CCDNr, &status);
 
@@ -150,6 +183,10 @@ int ero_events_main()
   freeEventListFile(&gelf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
   
+  // Release memory.
+  wcsfree(&wcs);
+  if (NULL!=headerstr) free(headerstr);
+
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
 }

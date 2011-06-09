@@ -34,22 +34,6 @@ NXDIM           384             /
 NYDIM           384             /
 PIXLEN_X        75.0            /
 PIXLEN_Y        75.0            /
-TTYPEi          X               /
-TCTYPi          RA---SIN        / WCS Coord. type: RA tangent plane projection
-TCUNIi          deg             / WCS  physical unit of X axis C
-TCRPXi          real            / WCS axis reference pixel
-TCRVLi          real            / [deg] WCS coord. at X axis ref. pixel
-TCDLTi          real            / [deg/pix] WCS X increment at ref. pixel
-TLMINi          real            / Minimum for X
-TLMAXi          real            / Maximum for X
-TTYPEj          Y               /
-TCTYPj          DEC--SIN        / WCS Coord. type: DEC tangent plane projection
-TCUNIj          deg             / WCS  physical unit of Y axis 
-TCRPXj          real            / WCS axis reference pixel
-TCRVLj          real            / [deg] WCS coord. at Y axis ref. pixel
-TCDLTj          real            / [deg/pix] WCS Y increment at ref. pixel
-TLMINj          real            / Minimum for Y
-TLMAXj          real            / Maximum for Y
 #Column definitions
 	TTYPE#  TIME            / Time of event detection
 	TFORM#  D               / Format of column TIME
@@ -78,9 +62,23 @@ TLMAXj          real            / Maximum for Y
 	TTYPE#  X               / Back-projected right ascension
 	TFORM#  J               / Format of column RA
 	TUNIT#                  / Unit of column RA
+	TCTYP#  RA---SIN        / WCS Coord. type: RA tangent plane projection
+	TCUNI#  deg             / WCS  physical unit of X axis C
+	TCRPX#  0.0             / WCS axis reference pixel
+	TCRVL#  0.0             / [deg] WCS coord. at X axis ref. pixel
+	TCDLT#  0.001           / [deg/pix] WCS X increment at ref. pixel
+	TLMIN#  long            / Minimum for X
+	TLMAX#  long            / Maximum for X
 	TTYPE#  Y               / Back-projected declination
 	TFORM#  J               / Format of column DEC
 	TUNIT#                  / Unit of column DEC
+	TCTYP#  DEC--SIN        / WCS Coord. type: DEC tangent plane projection
+	TCUNI#  deg             / WCS  physical unit of Y axis 
+	TCRPX#  0.0             / WCS axis reference pixel
+	TCRVL#  0.0             / [deg] WCS coord. at Y axis ref. pixel
+	TCDLT#  0.001           / [deg/pix] WCS Y increment at ref. pixel
+	TLMIN#  long            / Minimum for Y
+	TLMAX#  long            / Maximum for Y
 	TTYPE# 	CCDNR           / 1-7 for eROSITA
 	TFORM# 	I   		/
 	TUNIT# 	                / 
