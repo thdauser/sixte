@@ -108,8 +108,8 @@ int ero_events_main()
     wcs.crpix[1] = 0.;
     wcs.crval[0] = 0.;
     wcs.crval[1] = 0.;    
-    wcs.cdelt[0] = 0.001;
-    wcs.cdelt[1] = 0.001;
+    wcs.cdelt[0] = 0.001/3600.;
+    wcs.cdelt[1] = 0.001/3600.;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
     strcpy(wcs.ctype[0], "RA---SIN");

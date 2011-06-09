@@ -66,7 +66,7 @@ PIXLEN_Y        75.0            /
 	TCUNI#  deg             / WCS  physical unit of X axis C
 	TCRPX#  0.0             / WCS axis reference pixel
 	TCRVL#  0.0             / [deg] WCS coord. at X axis ref. pixel
-	TCDLT#  0.001           / [deg/pix] WCS X increment at ref. pixel
+	TCDLT#  2.777778e-7     / [deg/pix] WCS X increment at ref. pixel
 	TLMIN#  long            / Minimum for X
 	TLMAX#  long            / Maximum for X
 	TTYPE#  Y               / Back-projected declination
@@ -76,7 +76,7 @@ PIXLEN_Y        75.0            /
 	TCUNI#  deg             / WCS  physical unit of Y axis 
 	TCRPX#  0.0             / WCS axis reference pixel
 	TCRVL#  0.0             / [deg] WCS coord. at Y axis ref. pixel
-	TCDLT#  0.001           / [deg/pix] WCS Y increment at ref. pixel
+	TCDLT#  2.777778e-7     / [deg/pix] WCS Y increment at ref. pixel
 	TLMIN#  long            / Minimum for Y
 	TLMAX#  long            / Maximum for Y
 	TTYPE# 	CCDNR           / 1-7 for eROSITA
