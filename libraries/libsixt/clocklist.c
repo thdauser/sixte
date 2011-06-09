@@ -28,7 +28,6 @@ ClockList* newClockList(int* const status)
 }
 
 
-
 void destroyClockList(ClockList** const list)
 {
   if (NULL!=(*list)) {
@@ -43,6 +42,10 @@ void destroyClockList(ClockList** const list)
 	  } else if (CL_LINESHIFT==(*list)->type[i]) {
 	    CLLineShift* cllineshift = (CLLineShift*)((*list)->list[i]);
 	    destroyCLLineShift(&cllineshift);
+	    (*list)->list[i] = NULL;
+	  } else if (CL_NEWFRAME==(*list)->type[i]) {
+	    CLNewFrame* clnewframe = (CLNewFrame*)((*list)->list[i]);
+	    destroyCLNewFrame(&clnewframe);
 	    (*list)->list[i] = NULL;
 	  } else if (CL_READOUTLINE==(*list)->type[i]) {
 	    CLReadoutLine* clreadoutline = (CLReadoutLine*)((*list)->list[i]);
@@ -61,7 +64,6 @@ void destroyClockList(ClockList** const list)
     *list=NULL;
   }
 }
-
 
 
 void append2ClockList(ClockList* const list, const CLType type, 
