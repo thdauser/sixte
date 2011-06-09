@@ -6,7 +6,6 @@
 
 #include "sixt.h"
 #include "vector.h"
-#include "point.h"
 #include "telescope.h"
 #include "attitudecatalog.h"
 #include "check_fov.h"

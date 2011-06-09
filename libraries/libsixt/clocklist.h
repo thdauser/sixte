@@ -14,7 +14,8 @@ typedef enum {
   CL_WAIT        = 1,
   CL_LINESHIFT   = 2,
   CL_READOUTLINE = 3,
-  CL_CLEARLINE   = 4
+  CL_CLEARLINE   = 4,
+  CL_NEWFRAME    = 5
 } CLType;
 
 
@@ -63,6 +64,12 @@ typedef struct {
 typedef struct {
   int dummy;
 } CLLineShift;
+
+
+/** ClockList element for a new detector frame. */
+typedef struct {
+  int dummy;
+} CLNewFrame;
 
 
 /** ClockList element for readout line. */
@@ -125,6 +132,12 @@ void destroyCLWait(CLWait** const clwait);
 CLLineShift* newCLLineShift(int* const status);
 /** Destructor for CLLineShift. */
 void destroyCLLineShift(CLLineShift** const cllineshift);
+
+
+/** Constructor for CLNewFrame. */
+CLNewFrame* newCLNewFrame(int* const status);
+/** Destructor for CLNewFrame. */
+void destroyCLNewFrame(CLNewFrame** const clnewframe);
 
 
 /** Constructor for CLReadoutLine. */

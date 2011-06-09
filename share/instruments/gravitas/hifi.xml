@@ -30,6 +30,7 @@
     <readoutline lineindex="50+$i" readoutindex="50+$i"/>    
     <readoutline lineindex="51+$i" readoutindex="51+$i"/>    
   </loop>
+  <newframe/>
 </readout>
 
 <eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">

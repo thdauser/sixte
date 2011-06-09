@@ -97,12 +97,8 @@ static inline void moveClockList2NextElement(ClockList* const list)
   if (list->element>=list->nelements) {
     // Start from the beginning.
     list->element=0;
-    // Start a new frame.
-    list->frame++;
-    list->readout_time=list->time;
   }
 }
-
 
 
 void getClockListElement(ClockList* const list, const double time,
@@ -128,18 +124,18 @@ void getClockListElement(ClockList* const list, const double time,
       return;
     } else {
       // The wait period is finished.
-      *type   =CL_WAIT;
-      *element=list->list[list->element];
-      // Move to the next element in the ClockList.
-      moveClockList2NextElement(list);
       list->time+=clwait->time;
     }
     
-  } else { // The current element is NOT of type CL_WAIT.
-    *type   =list->type[list->element];
-    *element=list->list[list->element];
-    moveClockList2NextElement(list);
-  }
+  } else if (CL_NEWFRAME==list->type[list->element]) {
+    // Start a new frame.
+    list->frame++;
+    list->readout_time=list->time;
+  } 
+  
+  *type   =list->type[list->element];
+  *element=list->list[list->element];
+  moveClockList2NextElement(list);
 }
 
 
@@ -189,7 +185,6 @@ CLLineShift* newCLLineShift(int* const status) {
 }
 
 
-
 void destroyCLLineShift(CLLineShift** const cllineshift)
 {
   if (NULL!=(*cllineshift)) {
@@ -198,6 +193,29 @@ void destroyCLLineShift(CLLineShift** const cllineshift)
   }
 }
 
+
+CLNewFrame* newCLNewFrame(int* const status) {
+  headas_chat(5, "new CLNewFrame element\n");
+
+  // Allocate memory.
+  CLNewFrame* clnewframe = (CLNewFrame*)malloc(sizeof(CLNewFrame));
+  if (NULL==clnewframe) {
+    *status = EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for CLNewFrame element failed");
+    return(clnewframe);
+  }
+  
+  return(clnewframe);
+}
+
+
+void destroyCLNewFrame(CLNewFrame** const clnewframe)
+{
+  if (NULL!=(*clnewframe)) {
+    free(*clnewframe);
+    *clnewframe=NULL;
+  }
+}
 
 
 CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex, 
@@ -210,7 +228,7 @@ CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
   CLReadoutLine* clreadoutline = (CLReadoutLine*)malloc(sizeof(CLReadoutLine));
   if (NULL==clreadoutline) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for CLReadoutLine element failed!\n", *status);
+    SIXT_ERROR("memory allocation for CLReadoutLine element failed");
     return(clreadoutline);
   }
   
@@ -222,7 +240,6 @@ CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
 }
 
 
-
 void destroyCLReadoutLine(CLReadoutLine** const clreadoutline)
 {
   if (NULL!=(*clreadoutline)) {
@@ -230,7 +247,6 @@ void destroyCLReadoutLine(CLReadoutLine** const clreadoutline)
     *clreadoutline=NULL;
   }
 }
-
 
 
 CLClearLine* newCLClearLine(const int lineindex, int* const status)

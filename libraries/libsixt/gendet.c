@@ -622,7 +622,7 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
   char Uvalue[MAXMSG];     // Upper case version of XML attribute value
 
   // Check if an error has occurred previously.
-  if (EXIT_SUCCESS!=xmlparsedata->status) return;
+  CHECK_STATUS_VOID(xmlparsedata->status);
 
   // Convert the element to an upper case string.
   strcpy(Uelement, el);
@@ -631,9 +631,18 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
   // Elements without attributes.
   if (!strcmp(Uelement, "LINESHIFT")) {
     CLLineShift* cllineshift = newCLLineShift(&xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
     append2ClockList(xmlparsedata->det->clocklist, CL_LINESHIFT, 
 		     cllineshift, &xmlparsedata->status);
-    
+    CHECK_STATUS_VOID(xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "NEWFRAME")) {
+    CLNewFrame* clnewframe = newCLNewFrame(&xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
+    append2ClockList(xmlparsedata->det->clocklist, CL_NEWFRAME, 
+		     clnewframe, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
+
   } else { 
     
     // Elements with attributes.
@@ -1045,6 +1054,10 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       // No operation has to be performed. The clock list is
       // currently in a wait status.
       break;
+    case CL_NEWFRAME:
+      // No operation has to be performed. The clock list has
+      // internally increased the frame counter and readout time.
+      break;
     case CL_WAIT:
       // A waiting period is finished.
       clwait = (CLWait*)element;
@@ -1095,7 +1108,6 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
     CHECK_STATUS_VOID(*status);
   } while(type!=CL_NONE);
 }
-
 
 
 void GenDetLineShift(GenDet* const det)
