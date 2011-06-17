@@ -15,8 +15,15 @@
 /** Photon energy spectrum of an X-ray source. */
 typedef struct {
 
-  /** Pointer to an entry in the SIMPUT source catalog. */
-  SimputSourceEntry* src;
+  /** Coordinates of source position. */
+  double ra, dec;
+
+  /** Source extension [rad]. */
+  float extension;
+
+  /** Row number of the source in the SimputCatalog. Numbering starts
+      at line 1. */
+  long row;
 
   /** Time of the emission of the last photon. */
   double* t_next_photon;
@@ -38,6 +45,7 @@ void freeSource(Source** const src);
 /** Create photons for a particular source in the specified time
     interval. */
 LinkedPhoListElement* getXRayPhotons(Source* const src, 
+				     SimputCatalog* const simput,
 				     const double t0, const double t1,
 				     const double mjdref,
 				     int* const status);

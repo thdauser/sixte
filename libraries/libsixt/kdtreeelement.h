@@ -49,6 +49,7 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
 					const double min_align, 
 					const double t0, const double t1,
 					const double mjdref,
+					SimputCatalog* const simputcat,
 					int* const status);
 
 

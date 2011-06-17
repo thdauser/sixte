@@ -10,9 +10,8 @@ int simputmerge_main()
   char infilenames[2][MAXFILENAME];
 
   // SIMPUT source catalogs.
-  SimputSourceCatalogFile* catalogfile=NULL;
-  SimputSourceCatalog* incat[2]={NULL, NULL};
-  SimputSourceCatalog* outcat  = NULL;
+  SimputCatalog* incat[2]={NULL, NULL};
+  SimputCatalog* outcat  = NULL;
 
   // Simput data structures (used as buffers).
   SimputMissionIndepSpec* spec=NULL;
@@ -44,30 +43,19 @@ int simputmerge_main()
     status=simputmerge_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
-    // Load the input catalogs.
+    // Open the input catalogs.
     strcpy(infilenames[0], par.Infile1);
     strcpy(infilenames[1], par.Infile2);
     int ii;
     for (ii=0; ii<2; ii++) {
-      catalogfile = openSimputSourceCatalogFile(infilenames[ii], &status);
-      CHECK_STATUS_BREAK(status);
-      incat[ii] = loadSimputSourceCatalog(catalogfile, &status);
-      CHECK_STATUS_BREAK(status);
-      freeSimputSourceCatalogFile(&catalogfile, &status);
+      incat[ii] = openSimputCatalog(infilenames[ii], READONLY, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
 
-    // Get an empty object for the output catalog.
-    outcat = getSimputSourceCatalog(&status);
+    // Get an empty output catalog.
+    outcat = openSimputCatalog(par.Outfile, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
-
-    // Allocate sufficient memory to store the entries of both
-    // input catalogs in the output catalog.
-    outcat->entries = 
-      (SimputSourceEntry**)
-      malloc((incat[0]->nentries+incat[1]->nentries)*sizeof(SimputSourceEntry*));
-    CHECK_NULL_BREAK(outcat->entries, status, "memory allocation failed!\n");
 
     // Smallest still available SRC_ID.
     long min_src_id=1; 
@@ -79,14 +67,18 @@ int simputmerge_main()
 
 	// Check if the SRC_ID of the new source is already contained 
 	// in the output catalog. The SRC_ID entry must be unique.
-	long src_id = incat[ii]->entries[jj]->src_id;
+	SimputSource* insrc = returnSimputSource(incat[ii], jj+1, &status);
+	CHECK_STATUS_BREAK(status);
+	long src_id = insrc->src_id;
 	if (src_id<min_src_id) {
 	  src_id=min_src_id;
 	}
 	long kk;
 	do {
 	  for (kk=0; kk<outcat->nentries; kk++) {
-	    if (src_id==outcat->entries[kk]->src_id) {
+	    SimputSource* outsrc = returnSimputSource(outcat, kk+1, &status);
+	    CHECK_STATUS_BREAK(status);
+	    if (src_id==outsrc->src_id) {
 	      // This SRC_ID is not available any more.
 	      if (src_id==min_src_id) {
 		min_src_id++;
@@ -94,7 +86,8 @@ int simputmerge_main()
 	      src_id++;
 	      break;
 	    }
-	  } 
+	  }
+	  CHECK_STATUS_BREAK(status);
 	} while (kk<outcat->nentries);
 	if (src_id==min_src_id) {
 	  min_src_id++;
@@ -112,25 +105,25 @@ int simputmerge_main()
 	  // Check if they are local references to the same file
 	  // containing the catalog.
 	  // Spectrum.
-	  if ('['==incat[ii]->entries[jj]->spectrum[0]) {
+	  if ('['==insrc->spectrum[0]) {
 	    strcpy(spectrum, infilenames[ii]);
-	    strcat(spectrum, incat[ii]->entries[jj]->spectrum);
+	    strcat(spectrum, insrc->spectrum);
 	  } else {
-	    strcpy(spectrum, incat[ii]->entries[jj]->spectrum);
+	    strcpy(spectrum, insrc->spectrum);
 	  }
 	  // Image.
-	  if ('['==incat[ii]->entries[jj]->image[0]) {
+	  if ('['==insrc->image[0]) {
 	    strcpy(image, infilenames[ii]);
-	    strcat(image, incat[ii]->entries[jj]->image);
+	    strcat(image, insrc->image);
 	  } else {
-	    strcpy(image, incat[ii]->entries[jj]->image);
+	    strcpy(image, insrc->image);
 	  }
 	  // Light curve.
-	  if ('['==incat[ii]->entries[jj]->lightcur[0]) {
+	  if ('['==insrc->lightcur[0]) {
 	    strcpy(lightcur, infilenames[ii]);
-	    strcat(lightcur, incat[ii]->entries[jj]->lightcur);
+	    strcat(lightcur, insrc->lightcur);
 	  } else {
-	    strcpy(lightcur, incat[ii]->entries[jj]->lightcur);
+	    strcpy(lightcur, insrc->lightcur);
 	  }
 	  // TODO What happens if the input file resides in another 
 	  // directory than the output file.
@@ -138,12 +131,12 @@ int simputmerge_main()
 	  // Extensions should be copied to the new output file.
 
 	  // Spectrum extensions.
-	  if ((strlen(incat[ii]->entries[jj]->spectrum)>0) &&
-	      (0!=strcmp(incat[ii]->entries[jj]->spectrum, "NULL"))) {
+	  if ((strlen(insrc->spectrum)>0) &&
+	      (0!=strcmp(insrc->spectrum, "NULL"))) {
 	    // Check if this reference has already been used.
 	    long kk;
 	    for (kk=0; kk<nspecextrefs[ii]; kk++) {
-	      if (0==strcmp(specextrefs[ii][kk], incat[ii]->entries[jj]->spectrum)) {
+	      if (0==strcmp(specextrefs[ii][kk], insrc->spectrum)) {
 		break;
 	      }
 	    }
@@ -154,23 +147,23 @@ int simputmerge_main()
 				(nspecextrefs[ii]+1)*sizeof(char*));
 	      CHECK_NULL_BREAK(specextrefs[ii], status, "memory allocation failed");
 	      specextrefs[ii][kk] = 
-		(char*)malloc((strlen(incat[ii]->entries[jj]->spectrum)+1)*sizeof(char));
+		(char*)malloc((strlen(insrc->spectrum)+1)*sizeof(char));
 	      CHECK_NULL_BREAK(specextrefs[ii][kk], status, "memory allocation failed");
 	      nspecextrefs[ii]++;
-	      strcpy(specextrefs[ii][kk], incat[ii]->entries[jj]->spectrum);
+	      strcpy(specextrefs[ii][kk], insrc->spectrum);
 	    }
 	    // Remove the preceeding file path and name.
-	    strcpy(spectrum, strchr(incat[ii]->entries[jj]->spectrum, '['));
+	    strcpy(spectrum, strchr(insrc->spectrum, '['));
 	  } else {
 	    strcpy(spectrum, "");
 	  }
 	  
 	  // Image extensions.
-	  if ((strlen(incat[ii]->entries[jj]->image)>0) &&
-	      (0!=strcmp(incat[ii]->entries[jj]->image, "NULL"))) {
+	  if ((strlen(insrc->image)>0) &&
+	      (0!=strcmp(insrc->image, "NULL"))) {
 	    // Check if this reference has already been used.
 	    for (kk=0; kk<nimgextrefs[ii]; kk++) {
-	      if (0==strcmp(imgextrefs[ii][kk], incat[ii]->entries[jj]->image)) {
+	      if (0==strcmp(imgextrefs[ii][kk], insrc->image)) {
 		break;
 	      }
 	    }
@@ -181,23 +174,23 @@ int simputmerge_main()
 				(nimgextrefs[ii]+1)*sizeof(char*));
 	      CHECK_NULL_BREAK(imgextrefs[ii], status, "memory allocation failed");
 	      imgextrefs[ii][kk] = 
-	      (char*)malloc((strlen(incat[ii]->entries[jj]->image)+1)*sizeof(char));
+	      (char*)malloc((strlen(insrc->image)+1)*sizeof(char));
 	      CHECK_NULL_BREAK(imgextrefs[ii][kk], status, "memory allocation failed");
 	      nimgextrefs[ii]++;
-	      strcpy(imgextrefs[ii][kk], incat[ii]->entries[jj]->image);
+	      strcpy(imgextrefs[ii][kk], insrc->image);
 	    }
 	    // Remove the preceeding file path and name.
-	    strcpy(image, strchr(incat[ii]->entries[jj]->image, '['));
+	    strcpy(image, strchr(insrc->image, '['));
 	  } else {
 	    strcpy(image, "");
 	  }
 
 	  // Light curve extensions.
-	  if ((strlen(incat[ii]->entries[jj]->lightcur)>0) &&
-	      (0!=strcmp(incat[ii]->entries[jj]->lightcur, "NULL"))) {
+	  if ((strlen(insrc->lightcur)>0) &&
+	      (0!=strcmp(insrc->lightcur, "NULL"))) {
 	    // Check if this reference has already been used.
 	    for (kk=0; kk<nlcextrefs[ii]; kk++) {
-	      if (0==strcmp(lcextrefs[ii][kk], incat[ii]->entries[jj]->lightcur)) {
+	      if (0==strcmp(lcextrefs[ii][kk], insrc->lightcur)) {
 		break;
 	      }
 	    }
@@ -208,13 +201,13 @@ int simputmerge_main()
 				(nlcextrefs[ii]+1)*sizeof(char*));
 	      CHECK_NULL_BREAK(lcextrefs[ii], status, "memory allocation failed");
 	      lcextrefs[ii][kk] = 
-		(char*)malloc((strlen(incat[ii]->entries[jj]->lightcur)+1)*sizeof(char));
+		(char*)malloc((strlen(insrc->lightcur)+1)*sizeof(char));
 	      CHECK_NULL_BREAK(lcextrefs[ii][kk], status, "memory allocation failed");
 	      nlcextrefs[ii]++;
-	      strcpy(lcextrefs[ii][kk], incat[ii]->entries[jj]->lightcur);
+	      strcpy(lcextrefs[ii][kk], insrc->lightcur);
 	    }
 	    // Remove the preceeding file path and name.
-	    strcpy(lightcur, strchr(incat[ii]->entries[jj]->lightcur, '['));  
+	    strcpy(lightcur, strchr(insrc->lightcur, '['));  
 	  } else {
 	    strcpy(lightcur, "");
 	  }
@@ -222,23 +215,24 @@ int simputmerge_main()
 	// END of extensions should be copied to the new output file.
 
 	// Copy the entry from the input to the output catalog.
-	outcat->nentries++;
-	outcat->entries[outcat->nentries-1] = 
-	  getSimputSourceEntryV(src_id, 
-				incat[ii]->entries[jj]->src_name,
-				incat[ii]->entries[jj]->ra,
-				incat[ii]->entries[jj]->dec,
-				incat[ii]->entries[jj]->imgrota,
-				incat[ii]->entries[jj]->imgscal,
-				incat[ii]->entries[jj]->e_min,
-				incat[ii]->entries[jj]->e_max,
-				incat[ii]->entries[jj]->flux,
-				spectrum, image, lightcur,
-				&status);
+	SimputSource* outsrc=getSimputSourceV(src_id, 
+					      insrc->src_name,
+					      insrc->ra,
+					      insrc->dec,
+					      insrc->imgrota,
+					      insrc->imgscal,
+					      insrc->e_min,
+					      insrc->e_max,
+					      insrc->flux,
+					      spectrum, image, lightcur,
+					      &status);
+	CHECK_STATUS_BREAK(status);
+
+	appendSimputSource(outcat, outsrc, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// Output of progress.
-	if (0==outcat->nentries % 100) {
+	if (0==outcat->nentries % 1000) {
 	  headas_chat(1, "\r%ld/%ld (%.1lf%%) entries", 
 		      outcat->nentries, incat[0]->nentries+incat[1]->nentries,
 		      outcat->nentries*100./(incat[0]->nentries+incat[1]->nentries));
@@ -251,10 +245,6 @@ int simputmerge_main()
     CHECK_STATUS_BREAK(status);
     headas_chat(1, "\n");
     // END of loop over both source catalogs.
-
-    // Store the output catalog in the FITS file.
-    saveSimputSourceCatalog(outcat, par.Outfile, &status);
-    CHECK_STATUS_BREAK(status);
 
     // Copy the used extensions to the new output file.
     if (0!=par.FetchExtensions) {
@@ -377,10 +367,9 @@ int simputmerge_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freeSimputSourceCatalog(&incat[0]);
-  freeSimputSourceCatalog(&incat[1]);
-  freeSimputSourceCatalog(&outcat);
-  freeSimputSourceCatalogFile(&catalogfile, &status);
+  freeSimputCatalog(&incat[0], &status);
+  freeSimputCatalog(&incat[1], &status);
+  freeSimputCatalog(&outcat, &status);
 
   freeSimputMissionIndepSpec(&spec);
   freeSimputImg(&img);

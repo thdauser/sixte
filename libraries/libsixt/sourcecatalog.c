@@ -11,8 +11,7 @@ SourceCatalog* newSourceCatalog(int* const status)
   cat->tree       =NULL;
   cat->extsources =NULL;
   cat->nextsources=0;
-  cat->simputfile   =NULL;
-  cat->simputcatalog=NULL;
+  cat->simput     =NULL;
   return(cat);
 }
 
@@ -29,12 +28,8 @@ void freeSourceCatalog(SourceCatalog** const cat, int* const status)
       free((*cat)->extsources);
     }
     // Free the SIMPUT source catalog.
-    if (NULL!=(*cat)->simputfile) {
-      freeSimputSourceCatalogFile(&((*cat)->simputfile), status);
-    }
-    // Free the SIMPUT source catalog.
-    if (NULL!=(*cat)->simputcatalog) {
-      freeSimputSourceCatalog(&((*cat)->simputcatalog));
+    if (NULL!=(*cat)->simput) {
+      freeSimputCatalog(&((*cat)->simput), status);
     }
     free(*cat);
     *cat=NULL;
@@ -59,9 +54,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   simputSetRndGen(sixt_get_random_number);
 
   // Use the routines from the SIMPUT library to load the catalog.
-  cat->simputfile    = openSimputSourceCatalogFile(filename, status);
-  CHECK_STATUS_RET(*status, cat);
-  cat->simputcatalog = loadSimputSourceCatalog(cat->simputfile, status);
+  cat->simput = openSimputCatalog(filename, READONLY, status);
   CHECK_STATUS_RET(*status, cat);
 
   // Determine the number of point-like and the number of 
@@ -69,8 +62,13 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   long nextended  = 0;
   long npointlike = 0;
   long ii;
-  for (ii=0; ii<cat->simputfile->nentries; ii++) {
-    float extension = getSimputSourceExtension(cat->simputcatalog->entries[ii], status);
+  for (ii=0; ii<cat->simput->nentries; ii++) {
+    // Get the source.
+    SimputSource* src=returnSimputSource(cat->simput, ii+1, status);
+    CHECK_STATUS_BREAK(*status);
+
+    // Determine the extension.
+    float extension = getSimputSourceExtension(src, status);
     CHECK_STATUS_BREAK(*status);
     if (extension>0.) {
       // This is an extended source.
@@ -100,22 +98,34 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // Loop over all entries in the SIMPUT source catalog.
   long cpointlike =0;
   cat->nextsources=0;
-  for (ii=0; ii<cat->simputfile->nentries; ii++) {
-    float extension = getSimputSourceExtension(cat->simputcatalog->entries[ii], status);
+  for (ii=0; ii<cat->simput->nentries; ii++) {
+    // Get the source.
+    SimputSource* src=returnSimputSource(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
+
+    float extension = getSimputSourceExtension(src, status);
+    CHECK_STATUS_BREAK(*status);
+
     if (extension>0.) {
       // This is an extended source.
       cat->nextsources++;
       // Start with an empty Source object for this entry.
       cat->extsources[cat->nextsources-1] = *templatesrc;
-      // Set the properties from the SIMPUT catalog.
-      cat->extsources[cat->nextsources-1].src = cat->simputcatalog->entries[ii];
+      // Set the properties from the SIMPUT catalog (position,
+      // extension, and row number in the catalog).
+      cat->extsources[cat->nextsources-1].ra  = src->ra;
+      cat->extsources[cat->nextsources-1].dec = src->dec;
+      cat->extsources[cat->nextsources-1].row = ii+1;
+      cat->extsources[cat->nextsources-1].extension = extension;
 
     } else {
       // This is a point-like source.
       cpointlike++;
       list[cpointlike-1]     = *templatesrc;
-      list[cpointlike-1].src = cat->simputcatalog->entries[ii];
+      list[cpointlike-1].ra  = src->ra;
+      list[cpointlike-1].dec = src->dec;
+      list[cpointlike-1].row = ii+1;
+      
     }
   } 
   CHECK_STATUS_RET(*status, cat);
@@ -153,24 +163,19 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
   // The kdTree only contains point-like sources.
   LinkedPhoListElement* list = 
     KDTreeRangeSearch(cat->tree, 0, pointing, close_fov_min_align, 
-		      t0, t1, mjdref, status);
+		      t0, t1, mjdref, cat->simput, status);
 
   // Loop over all extended sources.
   long ii;
   for (ii=0; ii<cat->nextsources; ii++) {
-    // Get the maximum extension of the source.
-    float extension=
-      getSimputSourceExtension(cat->extsources[ii].src, status);
-    CHECK_STATUS_RET(*status, list);
-
     // Check if at least a part of the source lies within the FoV.
-    Vector location=unit_vector(cat->extsources[ii].src->ra, 
-				cat->extsources[ii].src->dec);
+    Vector location=unit_vector(cat->extsources[ii].ra, 
+				cat->extsources[ii].dec);
     if (0==check_fov(&location, pointing, 
-		     cos(close_mult*(fov*0.5 + extension)))) {
+		     cos(close_mult*(fov*0.5 + cat->extsources[ii].extension)))) {
       // Generate photons for this particular source.
       LinkedPhoListElement* newlist = 
-	getXRayPhotons(&(cat->extsources[ii]), t0, t1, mjdref, status);
+	getXRayPhotons(&(cat->extsources[ii]), cat->simput, t0, t1, mjdref, status);
       CHECK_STATUS_RET(*status, list);
 
       // Merge the new photons into the existing list.

@@ -28,8 +28,7 @@ typedef struct {
   long nextsources;
 
   /** SIMPUT source catalog containing all relevant data. */
-  SimputSourceCatalogFile* simputfile;
-  SimputSourceCatalog* simputcatalog;
+  SimputCatalog* simput;
 
 } SourceCatalog;
 
