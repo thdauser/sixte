@@ -54,13 +54,25 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     
     float rate = getSimputPhotonRate(simputsrc, t0, mjdref, status);
     CHECK_STATUS_RET(*status, list);
-    assert(rate > 0.);
+    if (rate <= 0.) {
+      char msg[MAXMSG];
+      sprintf(msg, "photon rate %e <= 0.", rate);
+      SIXT_ERROR(msg);
+      *status = EXIT_FAILURE;
+      return(list);
+    }
     *(src->t_next_photon) = t0 - 2./rate;
 
   } else if (*(src->t_next_photon) < t0) {
     float rate = getSimputPhotonRate(simputsrc, t0, mjdref, status);
     CHECK_STATUS_RET(*status, list);
-    assert(rate > 0.);
+    if (rate <= 0.) {
+      char msg[MAXMSG];
+      sprintf(msg, "photon rate %e <= 0.", rate);
+      SIXT_ERROR(msg);
+      *status = EXIT_FAILURE;
+      return(list);
+    }
     *(src->t_next_photon) = t0 - 2./rate;
   }
 

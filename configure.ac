@@ -38,7 +38,7 @@ CFLAGS="$CFLAGS -I$HEADAS/include -I$HOME/include -g -fopenmp -ansi -std=c99 -pe
 #CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=500"
 #CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_THREAD_SAFE -U_GNU_SOURCE"
 
-LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall -O0 -pg"
+LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall -pg"
 
 # Check for libraries:  (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
@@ -172,7 +172,7 @@ AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 
 ####################################
 # SIMPUT
-AC_SEARCH_LIBS(getSimputSourceEntry, [simput], [], 
+AC_SEARCH_LIBS(getSimputSource, [simput], [], 
 	       [AC_MSG_ERROR([No supported version of SIMPUT library found!])], [])
 
 #################################### 
