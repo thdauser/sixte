@@ -11,5 +11,6 @@ dec1,r,lq,-90.0,-90.0,90.0,"lower declination value of desired section of the sk
 dec2,r,lq,90.0,-90.0,90.0,"upper declination value of desired section of the sky (degree) "
 ra_bins,i,lq,360,,,"number of bins in right ascension "
 dec_bins,i,lq,180,,,"number of bins in declination "
+projection,i,lq,1,1,2,"projection method (1: AIT, 2: SIN) "
 chatter,i,lh,5,,,"chatter: control verbosity of the program "
 history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

@@ -34,6 +34,9 @@ struct Parameters {
   double dec1, dec2; 
   /** Number of pixels in right ascension and declination. */
   long ra_bins, dec_bins; 
+
+  /** Projection method (1: AIT, 2: SIN). */
+  int projection;
 };
 
 
@@ -116,8 +119,17 @@ int ero_exposure_main()
     wcs.cdelt[1] = (par.dec2-par.dec1)*180./M_PI/par.dec_bins;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
-    strcpy(wcs.ctype[0], "RA---SIN");
-    strcpy(wcs.ctype[1], "DEC--SIN");
+    if (1==par.projection) {
+      strcpy(wcs.ctype[0], "RA---AIT");
+      strcpy(wcs.ctype[1], "DEC--AIT");
+    } else if (2==par.projection) {
+      strcpy(wcs.ctype[0], "RA---SIN");
+      strcpy(wcs.ctype[1], "DEC--SIN");
+    } else {
+      SIXT_ERROR("projection type not supported");
+      status=EXIT_FAILURE;
+      break;
+    }
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
@@ -171,7 +183,10 @@ int ero_exposure_main()
       // with the next time step.
       Vector pixpos = 
 	unit_vector(0.5*(par.ra1+par.ra2), 0.5*(par.dec1+par.dec2));
-      if (check_fov(&pixpos, &telescope_nz, field_min_align)!=0) continue;
+      if (check_fov(&pixpos, &telescope_nz, field_min_align)!=0) {
+	printf("continue ...\n");
+	continue;
+      }
 
       // 2d Loop over the exposure map in order to determine all pixels that
       // are currently within the FOV.
@@ -183,8 +198,17 @@ int ero_exposure_main()
 	  double pixcrd[2] = { x+1., y+1. };
 	  double imgcrd[2], world[2];
 	  double phi, theta;
-	  wcsp2s(&wcs, 1, 2, pixcrd, imgcrd, &phi, &theta, world, &status);
-	  CHECK_STATUS_BREAK(status);
+	  int status2=0;
+	  wcsp2s(&wcs, 1, 2, pixcrd, imgcrd, &phi, &theta, world, &status2);
+	  if (3==status2) { 
+	    // Pixel does not correspond to valid world coordinates.
+	    continue;
+	  } else if (0!=status2) {
+	    SIXT_ERROR("projection failed");
+	    status=EXIT_FAILURE;
+	    break;
+	  }
+
 
 	  // Determine a unit vector for the calculated RA and Dec.
 	  pixpos=unit_vector(world[0]*M_PI/180., world[1]*M_PI/180.);
@@ -388,6 +412,11 @@ int ero_exposure_getpar(struct Parameters *parameters)
   }
   else if ((status = PILGetInt("dec_bins", &dec_bins))) {
     HD_ERROR_THROW("Error reading the number of DEC bins!\n", status);
+  }
+
+  // Get the number of bins for the exposure map.
+  else if ((status = PILGetInt("projection", &parameters->projection))) {
+    HD_ERROR_THROW("Error reading the number of RA bins!\n", status);
   }
 
   // Convert Integer types to Long.
