@@ -37,11 +37,99 @@ struct Parameters {
 
   /** Projection method (1: AIT, 2: SIN). */
   int projection;
+
+  /** Number of interim maps to be stored. */
+  int intermaps;
 };
 
 
 int ero_exposure_getpar(struct Parameters *parameters);
-  
+
+
+void saveExpoMap(float** const map,
+		 const char* const filename,
+		 const long naxis1, const long naxis2,
+		 struct wcsprm* const wcs,
+		 int* const status) 
+{
+  // 1d image buffer for storing in FITS image.
+  float* map1d=NULL;
+
+  // FITS file pointer for exposure map image.
+  fitsfile* fptr=NULL;
+
+  // String buffer for FITS header.
+  char* headerstr=NULL;
+
+  // Store the exposure map in a FITS file image.
+  headas_chat(4, "\nstore exposure map in FITS image '%s' ...\n", 
+	      filename);
+
+  do { // Beginning of error handling loop.
+
+    // Convert the exposure map to a 1d-array to store it in the FITS image.
+    map1d=(float*)malloc(naxis1*naxis2*sizeof(float));
+    CHECK_NULL_BREAK(map1d, *status, 
+		    "memory allocation for 1d exposure map buffer failed");
+    long x;
+    for (x=0; x<naxis1; x++) {
+      long y;
+      for (y=0; y<naxis2; y++) {
+	map1d[x + y*naxis1] = map[x][y];
+      }
+    }
+
+    // Create a new FITS-file (remove existing one before):
+    remove(filename);
+    fits_create_file(&fptr, filename, status);
+    CHECK_STATUS_BREAK(*status);
+
+    // Create an image in the FITS-file (primary HDU):
+    long naxes[2] = { naxis1, naxis2 };
+    fits_create_img(fptr, FLOAT_IMG, 2, naxes, status);
+    //                               |-> naxis
+    CHECK_STATUS_BREAK(*status);
+
+    // Write WCS header keywords.
+    int nkeyrec;
+    if (0!=wcshdo(0, wcs, &nkeyrec, &headerstr)) {
+      SIXT_ERROR("construction of WCS header failed");
+      *status=EXIT_FAILURE;
+      break;
+    }
+    char* strptr=headerstr;
+    while (strlen(strptr)>0) {
+      char strbuffer[81];
+      strncpy(strbuffer, strptr, 80);
+      strbuffer[80] = '\0';
+      fits_write_record(fptr, strbuffer, status);
+      CHECK_STATUS_BREAK(*status);
+      strptr += 80;
+    }
+    CHECK_STATUS_BREAK(*status);
+
+    // Write the image to the file.
+    long fpixel[2] = {1, 1}; // Lower left corner.
+    //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
+    // Upper right corner.
+    long lpixel[2] = {naxis1, naxis2}; 
+    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, map1d, status);
+    CHECK_STATUS_BREAK(*status);
+
+  } while(0); // End of error handling loop.
+
+  // Close the exposure map FITS file.
+  if(NULL!=fptr) fits_close_file(fptr, status);
+
+  // Release memory.
+  if (NULL!=map1d) {
+    free(map1d);
+  }
+  if (NULL!=headerstr) {
+    free(headerstr);
+  }
+}  
+
 
 int ero_exposure_main() 
 {
@@ -53,16 +141,9 @@ int ero_exposure_main()
   
   // Array for the calculation of the exposure map.
   float** expoMap=NULL;
-  // 1d image buffer for storing in FITS image.
-  float*  expoMap1d=NULL;
 
   // WCS data structure used for projection.
   struct wcsprm wcs = { .flag=-1 };
-  // String buffer for FITS header.
-  char* headerstr=NULL;
-
-  // FITS file pointer for exposure map image.
-  fitsfile* fptr=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;
@@ -70,7 +151,7 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
   
 
   do {  // Beginning of the ERROR handling loop.
@@ -148,13 +229,15 @@ int ero_exposure_main()
     // Gaussian distribution.
     HDmtInit(1);
 
-    // Get the satellite catalog with the telescope attitude data:
+    // Get the telescope attitude data.
     ac=loadAttitudeCatalog(par.attitude_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Get the Vignetting data:
-    vignetting=newVignetting(par.vignetting_filename, &status);
-    CHECK_STATUS_BREAK(status);
+    // Load the Vignetting data.
+    if (0<strlen(par.vignetting_filename)) {
+      vignetting=newVignetting(par.vignetting_filename, &status);
+      CHECK_STATUS_BREAK(status);
+    }
 
     // --- END of Initialization ---
 
@@ -163,6 +246,7 @@ int ero_exposure_main()
     headas_chat(3, "calculate the exposure map ...\n");
 
     // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
+    int intermaps=0;
     double time;
     for (time=par.t0; time<par.t0+par.timespan; time+=par.dt) {
       
@@ -222,95 +306,47 @@ int ero_exposure_main()
 	
 	    // Add the exposure time step weighted with the vignetting
 	    // factor for this particular off-axis angle at 1 keV.
-	    expoMap[x][y] += 
-	      par.dt* get_Vignetting_Factor(vignetting, 1., delta, 0.);
+	    double addvalue = par.dt;
+	    if (NULL!=vignetting) {
+	      addvalue *= get_Vignetting_Factor(vignetting, 1., delta, 0.);
+	    }
+	    expoMap[x][y] += addvalue;
 	  }
 	}
 	CHECK_STATUS_BREAK(status);  
       }
       CHECK_STATUS_BREAK(status);
+
+      // Check if an interim map should be saved now.
+      if (par.intermaps>0) {
+	if (time > par.t0+ intermaps*(par.timespan/(par.intermaps+1))) {
+	  // Construct the filename.
+	  char filename[MAXFILENAME];
+	  strncpy(filename, par.exposuremap_filename, 
+		  strlen(par.exposuremap_filename)-5);
+	  filename[strlen(par.exposuremap_filename)-5]='\0';
+	  char buffer[MAXFILENAME];
+	  sprintf(buffer, "_%d.fits", intermaps);
+	  strcat(filename, buffer);
+
+	  // Save the interim map.
+	  saveExpoMap(expoMap, filename, par.ra_bins, par.dec_bins, 
+		      &wcs, &status);
+	  CHECK_STATUS_BREAK(status);
+
+	  intermaps++;
+	}
+      }
+      // END of saving an interim map.
     } 
     CHECK_STATUS_BREAK(status);
     // END of LOOP over the specified time interval.
     
     // END of generating the exposure map.
 
-
-    // Store the exposure map in a FITS file image.
-    headas_chat(4, "\nstore exposure map in FITS image '%s' ...\n", 
-		par.exposuremap_filename);
-
-    // Convert the exposure map to a 1d-array to store it in the FITS image.
-    expoMap1d = (float*)malloc(par.ra_bins*par.dec_bins*sizeof(float));
-    if (NULL==expoMap1d) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for 1d exposure map failed!\n", status);
-      break;
-    }
-    long x;
-    for (x=0; x<par.ra_bins; x++) {
-      long y;
-      for (y=0; y<par.dec_bins; y++) {
-	expoMap1d[x + y*par.ra_bins] = expoMap[x][y];
-      }
-    }
-
-    // Create a new FITS-file (remove existing one before):
-    remove(par.exposuremap_filename);
-    if (fits_create_file(&fptr, par.exposuremap_filename, &status)) break;
-    // Create an image in the FITS-file (primary HDU):
-    long naxes[2] = { par.ra_bins, par.dec_bins };
-    fits_create_img(fptr, FLOAT_IMG, 2, naxes, &status);
-    //                               |-> naxis
-    CHECK_STATUS_BREAK(status);
-
-
-    // Write WCS header keywords.
-    int nkeyrec;
-    if (0!=wcshdo(0, &wcs, &nkeyrec, &headerstr)) {
-      SIXT_ERROR("construction of WCS header failed");
-      status=EXIT_FAILURE;
-      break;
-    }
-    char* strptr=headerstr;
-    while (strlen(strptr)>0) {
-      char strbuffer[81];
-      strncpy(strbuffer, strptr, 80);
-      strbuffer[80] = '\0';
-      fits_write_record(fptr, strbuffer, &status);
-      CHECK_STATUS_BREAK(status);
-      strptr += 80;
-    }
-    CHECK_STATUS_BREAK(status);
-
-    /*
-    // Write WCS keywords to the FITS header of the newly created image.
-    double buffer;
-    if (fits_update_key(fptr, TSTRING, "CTYPE1", "RA---CAR", "", &status)) break;   
-    if (fits_update_key(fptr, TSTRING, "CUNIT1", "deg", "", &status)) break;   
-    buffer = imgParams.rval1 * 180./M_PI;
-    if (fits_update_key(fptr, TDOUBLE, "CRVAL1", &buffer, "", &status)) break;
-    buffer = imgParams.rpix1;
-    if (fits_update_key(fptr, TDOUBLE, "CRPIX1", &buffer, "", &status)) break;
-    buffer = imgParams.delt1 * 180./M_PI;
-    if (fits_update_key(fptr, TDOUBLE, "CDELT1", &buffer, "", &status)) break;
-
-    if (fits_update_key(fptr, TSTRING, "CTYPE2", "DEC--CAR", "", &status)) break;   
-    if (fits_update_key(fptr, TSTRING, "CUNIT2", "deg", "", &status)) break;   
-    buffer = imgParams.rval2 * 180./M_PI;
-    if (fits_update_key(fptr, TDOUBLE, "CRVAL2", &buffer, "", &status)) break;
-    buffer = imgParams.rpix2;
-    if (fits_update_key(fptr, TDOUBLE, "CRPIX2", &buffer, "", &status)) break;
-    buffer = imgParams.delt2 * 180./M_PI;
-    if (fits_update_key(fptr, TDOUBLE, "CDELT2", &buffer, "", &status)) break;
-    */
-
-    // Write the image to the file:
-    long fpixel[2] = {1, 1}; // Lower left corner.
-    //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
-    // Upper right corner.
-    long lpixel[2] = {par.ra_bins, par.dec_bins}; 
-    fits_write_subset(fptr, TFLOAT, fpixel, lpixel, expoMap1d, &status);
+    // Store the exposure map in the output file.
+    saveExpoMap(expoMap, par.exposuremap_filename,
+		par.ra_bins, par.dec_bins, &wcs, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -322,14 +358,10 @@ int ero_exposure_main()
   // Release HEADAS random number generator.
   HDmtFree();
 
-  // Close the exposure map FITS file.
-  if(NULL!=fptr) fits_close_file(fptr, &status);
-
   // Release memory.
   freeAttitudeCatalog(&ac);
   destroyVignetting(&vignetting);
   wcsfree(&wcs);
-  if (NULL!=headerstr) free(headerstr);
 
   // Release memory of exposure map.
   if (NULL!=expoMap) {
@@ -342,71 +374,68 @@ int ero_exposure_main()
     }
     free(expoMap);
   }
-  if (NULL!=expoMap1d) {
-    free(expoMap1d);
-  }
 
   if (EXIT_SUCCESS==status) headas_chat(2, "finished successfully!\n\n");
   return(status);
 }
 
 
-int ero_exposure_getpar(struct Parameters *parameters)
+int ero_exposure_getpar(struct Parameters *par)
 {
   int ra_bins, dec_bins;    // Buffer
   int status=EXIT_SUCCESS;  // Error status
   
   // Get the filename of the input attitude file (FITS file)
-  if ((status = PILGetFname("attitude_filename", parameters->attitude_filename))) {
+  if ((status = PILGetFname("attitude_filename", par->attitude_filename))) {
     HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
   }
   
   // Get the filename of the vignetting data file (FITS file)
-  else if ((status = PILGetFname("vignetting_filename", 
-				 parameters->vignetting_filename))) {
+  else if ((status = PILGetString("vignetting_filename", 
+				  par->vignetting_filename))) {
     HD_ERROR_THROW("Error reading the filename of the vignetting file!\n", status);
   }
 
   // Get the filename of the output exposure map (FITS file)
-  else if ((status = PILGetFname("exposuremap_filename", parameters->exposuremap_filename))) {
+  else if ((status = PILGetFname("exposuremap_filename", par->exposuremap_filename))) {
     HD_ERROR_THROW("Error reading the filename of the exposure map!\n", status);
   }
 
   // Read the diameter of the FOV (in arcmin)
-  else if ((status = PILGetReal("fov_diameter", &parameters->fov_diameter))) {
+  else if ((status = PILGetReal("fov_diameter", &par->fov_diameter))) {
     HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
   }
 
   // Get the start time of the exposure map calculation
-  else if ((status = PILGetReal("t0", &parameters->t0))) {
+  else if ((status = PILGetReal("t0", &par->t0))) {
     HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
   }
 
   // Get the timespan for the exposure map calculation
-  else if ((status = PILGetReal("timespan", &parameters->timespan))) {
+  else if ((status = PILGetReal("timespan", &par->timespan))) {
     HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
   }
 
   // Get the time step for the exposure map calculation
-  else if ((status = PILGetReal("dt", &parameters->dt))) {
+  else if ((status = PILGetReal("dt", &par->dt))) {
     HD_ERROR_THROW("Error reading the 'dt' parameter!\n", status);
   }
 
   // Get the position of the desired section of the sky 
   // (right ascension and declination range).
-  else if ((status = PILGetReal("ra1", &parameters->ra1))) {
+  else if ((status = PILGetReal("ra1", &par->ra1))) {
     HD_ERROR_THROW("Error reading the 'ra1' parameter!\n", status);
   }
-  else if ((status = PILGetReal("ra2", &parameters->ra2))) {
+  else if ((status = PILGetReal("ra2", &par->ra2))) {
     HD_ERROR_THROW("Error reading the 'ra2' parameter!\n", status);
   }
-  else if ((status = PILGetReal("dec1", &parameters->dec1))) {
+  else if ((status = PILGetReal("dec1", &par->dec1))) {
     HD_ERROR_THROW("Error reading the 'dec1' parameter!\n", status);
   }
-  else if ((status = PILGetReal("dec2", &parameters->dec2))) {
+  else if ((status = PILGetReal("dec2", &par->dec2))) {
     HD_ERROR_THROW("Error reading the 'dec2' parameter!\n", status);
   }
-  // Get the number of bins for the exposure map.
+  // Get the number of x- and y-bins for the exposure map.
   else if ((status = PILGetInt("ra_bins", &ra_bins))) {
     HD_ERROR_THROW("Error reading the number of RA bins!\n", status);
   }
@@ -414,23 +443,25 @@ int ero_exposure_getpar(struct Parameters *parameters)
     HD_ERROR_THROW("Error reading the number of DEC bins!\n", status);
   }
 
-  // Get the number of bins for the exposure map.
-  else if ((status = PILGetInt("projection", &parameters->projection))) {
-    HD_ERROR_THROW("Error reading the number of RA bins!\n", status);
+  else if ((status = PILGetInt("projection", &par->projection))) {
+    HD_ERROR_THROW("Error reading the projection type!\n", status);
+  }
+  else if ((status = PILGetInt("intermaps", &par->intermaps))) {
+    HD_ERROR_THROW("Error reading the number of inter-maps!\n", status);
   }
 
   // Convert Integer types to Long.
-  parameters->ra_bins  = (long)ra_bins;
-  parameters->dec_bins = (long)dec_bins;
+  par->ra_bins  = (long)ra_bins;
+  par->dec_bins = (long)dec_bins;
 
   // Convert angles from [deg] to [rad].
-  parameters->ra1  *= M_PI/180.;
-  parameters->ra2  *= M_PI/180.;
-  parameters->dec1 *= M_PI/180.;
-  parameters->dec2 *= M_PI/180.;
+  par->ra1  *= M_PI/180.;
+  par->ra2  *= M_PI/180.;
+  par->dec1 *= M_PI/180.;
+  par->dec2 *= M_PI/180.;
 
   // Convert angles from [arc min] to [rad].
-  parameters->fov_diameter *= M_PI/(60.*180.); 
+  par->fov_diameter *= M_PI/(60.*180.); 
   
   return(status);
 }

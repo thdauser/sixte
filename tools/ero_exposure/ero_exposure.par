@@ -1,5 +1,5 @@
 attitude_filename,fre,lq,"attitude_183d_10s.fits",,,"attitude file (FITS input file) "
-vignetting_filename,fre,lq,"~/erosita/vignetting/erosita.vignetting.fits",,,"Vignetting data file (FITS input file)"
+vignetting_filename,s,lq,"~/erosita/vignetting/erosita.vignetting.fits",,,"Vignetting data file (FITS input file)"
 exposuremap_filename,f,lq,"exposure.fits",,,"exposure map file (FITS output file) "
 t0,r,lq,0.0,,,"t0 - start time (s) "
 timespan,r,lq,15724800.0,0.0,1000000000.0,"time interval for the exposure map calculation (s) "
@@ -12,5 +12,6 @@ dec2,r,lq,90.0,-90.0,90.0,"upper declination value of desired section of the sky
 ra_bins,i,lq,360,,,"number of bins in right ascension "
 dec_bins,i,lq,180,,,"number of bins in declination "
 projection,i,lq,1,1,2,"projection method (1: AIT, 2: SIN) "
+intermaps,i,lq,0,0,,"number of inter-maps "
 chatter,i,lh,5,,,"chatter: control verbosity of the program "
 history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "
