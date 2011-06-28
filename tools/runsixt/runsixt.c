@@ -501,8 +501,7 @@ int runsixt_getpar(struct Parameters* const par)
     // be modified nor free'd.
   } else {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
-		   status);
+    SIXT_ERROR("could not read environment variable 'SIXT_DATA_PATH'");
     return(status);
   }
 

@@ -46,9 +46,8 @@ int ero_events_main()
 
     // Filename of the template file.
     char template[MAXMSG];
-    strcpy(template, par.fits_templates);
-    strcat(template, "/");
-    strcat(template, "eroeventlist.tpl");
+    strcpy(template, par.data_path);
+    strcat(template, "/templates/eroeventlist.tpl");
     
     // Create and open a new FITS file using the template.
     char buffer[MAXMSG];
@@ -230,16 +229,16 @@ int getpar(struct Parameters* const par)
     return(status);
   }
 
-  // Get the name of the FITS template directory
-  // from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(par->fits_templates, sbuffer);
+
+  // Get the name of the directory containing the data
+  // required for the simulations from the environment variable.
+  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
+    strcpy(par->data_path, sbuffer);
     // Note: the char* pointer returned by getenv should not
     // be modified nor free'd.
   } else {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_FITS_TEMPLATES'!\n", 
-		   status);
+    SIXT_ERROR("could not read environment variable 'SIXT_DATA_PATH'");
     return(status);
   }
 
