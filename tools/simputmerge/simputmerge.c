@@ -223,7 +223,7 @@ int simputmerge_main()
 					      insrc->imgscal,
 					      insrc->e_min,
 					      insrc->e_max,
-					      insrc->flux,
+					      insrc->eflux,
 					      spectrum, image, lightcur,
 					      &status);
 	CHECK_STATUS_BREAK(status);
