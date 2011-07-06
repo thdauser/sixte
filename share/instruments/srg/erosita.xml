@@ -28,7 +28,7 @@
   <loop start="0" end="383" increment="1" variable="$i">
     <readoutline lineindex="0" readoutindex="$i"/>
     <lineshift/>
-    <wait time="1.e-6"/>
+    <wait time="0.25e-6"/>
   </loop>
 
   <newframe/>

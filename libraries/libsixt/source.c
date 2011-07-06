@@ -54,7 +54,9 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     
     float rate = getSimputPhotonRate(simputsrc, t0, mjdref, status);
     CHECK_STATUS_RET(*status, list);
-    if (rate <= 0.) {
+    if (0.==rate) {
+      return(list);
+    } else if (rate < 0.) {
       char msg[MAXMSG];
       sprintf(msg, "photon rate %e <= 0.", rate);
       SIXT_ERROR(msg);
@@ -66,7 +68,9 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
   } else if (*(src->t_next_photon) < t0) {
     float rate = getSimputPhotonRate(simputsrc, t0, mjdref, status);
     CHECK_STATUS_RET(*status, list);
-    if (rate <= 0.) {
+    if (0.==rate) {
+      return(list);
+    } else if (rate <= 0.) {
       char msg[MAXMSG];
       sprintf(msg, "photon rate %e <= 0.", rate);
       SIXT_ERROR(msg);
@@ -80,9 +84,12 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
   while (*(src->t_next_photon) < t0) {
     // The arrival time of the next photon was before the
     // requested time interval.
+    int failed=0;
     *(src->t_next_photon) = 
-      getSimputPhotonTime(simputsrc, *(src->t_next_photon), mjdref, status);
+      getSimputPhotonTime(simputsrc, *(src->t_next_photon), mjdref, 
+			  &failed, status);
     CHECK_STATUS_RET(*status, list);
+    if (1==failed) return(list);
   }
 
   // Create new photons, as long as the requested time interval 
@@ -114,9 +121,12 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     CHECK_STATUS_BREAK(*status);
 
     // Determine the arrival time of the next (future) photon.
+    int failed=0;
     *(src->t_next_photon) = 
-      getSimputPhotonTime(simputsrc, *(src->t_next_photon), mjdref, status);
+      getSimputPhotonTime(simputsrc, *(src->t_next_photon), mjdref, 
+			  &failed, status);
     CHECK_STATUS_BREAK(*status);
+    if (1==failed) return(list);
   }
   CHECK_STATUS_RET(*status, list);
 
