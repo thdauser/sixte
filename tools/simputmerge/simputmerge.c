@@ -13,6 +13,11 @@ int simputmerge_main()
   SimputCatalog* incat[2]={NULL, NULL};
   SimputCatalog* outcat  = NULL;
 
+  // Array of already used IDs.
+  long* ids=NULL;
+  // Number of already used IDs.
+  long nids=0;
+
   // Simput data structures (used as buffers).
   SimputMissionIndepSpec* spec=NULL;
   SimputImg*              img =NULL;
@@ -54,6 +59,7 @@ int simputmerge_main()
     CHECK_STATUS_BREAK(status);
 
     // Get an empty output catalog.
+    remove(par.Outfile);
     outcat = openSimputCatalog(par.Outfile, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -75,10 +81,8 @@ int simputmerge_main()
 	}
 	long kk;
 	do {
-	  for (kk=0; kk<outcat->nentries; kk++) {
-	    SimputSource* outsrc = returnSimputSource(outcat, kk+1, &status);
-	    CHECK_STATUS_BREAK(status);
-	    if (src_id==outsrc->src_id) {
+	  for (kk=0; kk<nids; kk++) {
+	    if (src_id==ids[kk]) {
 	      // This SRC_ID is not available any more.
 	      if (src_id==min_src_id) {
 		min_src_id++;
@@ -87,11 +91,17 @@ int simputmerge_main()
 	      break;
 	    }
 	  }
-	  CHECK_STATUS_BREAK(status);
-	} while (kk<outcat->nentries);
+	} while (kk<nids);
 	if (src_id==min_src_id) {
 	  min_src_id++;
 	}
+
+	// Insert the new ID in the buffer of all used IDs.
+	if (0==(nids % 1000)) {
+	  ids = (long*)realloc(ids, (nids+1)*1000*sizeof(long));
+	  CHECK_NULL_BREAK(ids, status, "memory allocation failed");
+	}
+	ids[nids++] = src_id;
 
 	// Handle spectrum, image, and lightcur extensions.
 	char spectrum[MAXFILENAME];
@@ -367,6 +377,8 @@ int simputmerge_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
+  if (NULL!=ids) free(ids);
+  
   freeSimputCatalog(&incat[0], &status);
   freeSimputCatalog(&incat[1], &status);
   freeSimputCatalog(&outcat, &status);
