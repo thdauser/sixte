@@ -4,12 +4,12 @@
 #error "Do not compile outside Autotools!"
 #endif
 
-#include "htrs_simulation.h"
+#include "htrssim.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int htrs_simulation_main() {
+int htrssim_main() {
 
   // Containing all programm parameters read by PIL
   struct Parameters parameters; 
@@ -27,7 +27,7 @@ int htrs_simulation_main() {
 
 
   // Register HEATOOL:
-  set_toolname("htrs_simulation");
+  set_toolname("htrssim");
   set_toolversion("0.01");
 
 

@@ -222,7 +222,7 @@ AC_CONFIG_FILES([Makefile
 		tools/comaexp/Makefile
 		tools/ero_split_photonfile/Makefile
 		tools/photonmerge/Makefile
-		tools/htrs_simulation/Makefile
+		tools/htrssim/Makefile
 		tools/htrs_psfgen/Makefile
 		tools/htrs_pixel_intensity/Makefile
 		tools/htrs_fits2tm/Makefile

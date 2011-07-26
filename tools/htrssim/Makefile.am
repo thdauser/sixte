@@ -13,15 +13,15 @@ AM_CFLAGS += -Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = htrs_simulation.par
+dist_pfiles_DATA = htrssim.par
 
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = htrs_simulation
+bin_PROGRAMS = htrssim
 
-htrs_simulation_SOURCES = htrs_simulation.c htrs_simulation.h
-htrs_simulation_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+htrssim_SOURCES = htrssim.c htrssim.h
+htrssim_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
 

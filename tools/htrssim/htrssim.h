@@ -1,5 +1,5 @@
-#ifndef HTRS_SIMULATION_H
-#define HTRS_SIMULATION_H 1
+#ifndef HTRSSIM_H
+#define HTRSSIM_H 1
 
 #include "sixt.h"
 #include "htrsdetector.h"
@@ -8,7 +8,7 @@
 #include "impact.h"
 #include "impactlistfile.h"
 
-#define TOOLSUB htrs_simulation_main
+#define TOOLSUB htrssim_main
 #include "headas_main.c"
 
 
@@ -53,5 +53,5 @@ struct Parameters {
 static int getpar(struct Parameters* parameters);
 
 
-#endif /* HTRS_SIMULATION_H */
+#endif /* HTRSSIM_H */
 
