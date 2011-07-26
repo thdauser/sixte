@@ -210,7 +210,9 @@ void GenDetClearLine(GenDet* const det, const int lineindex);
 /** This function is called if a bad pixel is encountered and has to
     be applied to the detector pixel array. The parameter 'value' has
     to be added to the bad pixel at 'x' and 'y'. */
-void encounterGenDetBadPix(void* const data, const int x, const int y, const float value);
+void encounterGenDetBadPix(void* const data, 
+			   const int x, const int y, 
+			   const float value);
 
 /** Constructor for GenSplit data structure. */
 GenSplit* newGenSplit(int* const status);
@@ -229,6 +231,10 @@ int makeGenSplitEvents(GenDet* const det,
 		       const double time,
 		       EventListFile* const elf,
 		       int* const status);
+
+/** Parse the GenDet definition from an XML file. */
+void parseGenDetXML(GenDet* const det, const char* const filename, 
+		    int* const status);
 
 
 #endif /* GENDET_H */

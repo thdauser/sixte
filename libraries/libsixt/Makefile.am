@@ -33,9 +33,9 @@ lib_LTLIBRARIES = libsixt.la
 # Sources:
 libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     impactlistfile.c htrsdetector.c gendet.c		\
-		     genpixgrid.c gendetline.c eventlistfile.c		\
-		     genpatternfile.c clocklist.c badpixmap.c		\
-		     geneventgrading.c htrseventfile.c			\
+		     gendet_init.c genpixgrid.c gendetline.c		\
+		     eventlistfile.c genpatternfile.c clocklist.c	\
+		     badpixmap.c geneventgrading.c htrseventfile.c	\
 		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
 		     htrstelstream.c comadetector.c comaeventfile.c	\
 		     psf.c vignetting.c codedmask.c attitudecatalog.c	\
@@ -45,7 +45,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     photonlistfile.c linlightcurve.c rmf.c arf.c	\
 		     kdtreeelement.c sourcecatalog.c source.c		\
 		     linkedpholist.c erodetbkgrndgen.c phgen.c phimg.c	\
-		     phdet.c phproj.c event.c
+		     phdet.c phproj.c event.c lad.c lad_init.c
 
 
 ############ HEADERS #################
@@ -66,5 +66,6 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  fits_pha.h check_fov.h photonlistfile.h		\
 		  linlightcurve.h rmf.h arf.h kdtreeelement.h		\
 		  sourcecatalog.h source.h linkedpholist.h		\
-		  erodetbkgrndgen.h phgen.h phimg.h phdet.h phproj.h
+		  erodetbkgrndgen.h phgen.h phimg.h phdet.h phproj.h	\
+		  lad.h
 

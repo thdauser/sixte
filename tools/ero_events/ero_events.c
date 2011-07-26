@@ -169,7 +169,6 @@ int ero_events_main()
       fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &par.CCDNr, &status);
 
       CHECK_STATUS_BREAK(status);
-
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over all events in the FITS file.
