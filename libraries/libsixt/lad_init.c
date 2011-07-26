@@ -189,7 +189,7 @@ static struct XMLBuffer* newXMLBuffer(int* const status)
 }
 
 
-static void destroyXMLBuffer(struct XMLBuffer** const buffer)
+static void freeXMLBuffer(struct XMLBuffer** const buffer)
 {
   if (NULL!=*buffer) {
     if (NULL!=(*buffer)->text) {
@@ -682,10 +682,10 @@ static void expandXMLElementEnd(void* data, const char* el)
 			    &mydata->status);
 	CHECK_STATUS_VOID(mydata->status);
 
-	destroyXMLBuffer(&replacedBuffer);
+	freeXMLBuffer(&replacedBuffer);
       }
       // Clear the loop buffer.
-      destroyXMLBuffer(&mydata->loop_buffer);
+      freeXMLBuffer(&mydata->loop_buffer);
       mydata->loop_buffer=newXMLBuffer(&mydata->status);
       CHECK_STATUS_VOID(mydata->status);
       
@@ -768,8 +768,8 @@ static void expandXML(struct XMLBuffer* const buffer, int* const status)
     copyXMLBuffer(buffer, data.output_buffer, status);
     CHECK_STATUS_VOID(*status);
     // ... and release allocated memory.
-    destroyXMLBuffer(&data.output_buffer);
-    destroyXMLBuffer(&data.loop_buffer);
+    freeXMLBuffer(&data.output_buffer);
+    freeXMLBuffer(&data.loop_buffer);
 
     XML_ParserFree(parser);
 
@@ -883,7 +883,7 @@ LAD* getLADfromXML(const char* const filename,
   XML_ParserFree(parser);
 
   // Remove the XML string buffer.
-  destroyXMLBuffer(&xmlbuffer);
+  freeXMLBuffer(&xmlbuffer);
 
 
   // Iteratively go through the LAD data structure and set properties

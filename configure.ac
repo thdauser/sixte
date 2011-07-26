@@ -213,6 +213,7 @@ AC_CONFIG_FILES([Makefile
 		tools/runsixt/Makefile
 		tools/phogen/Makefile
 		tools/phoimg/Makefile
+		tools/ladsim/Makefile
 		tools/psfgen/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/ero_exposure/Makefile

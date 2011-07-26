@@ -24,13 +24,13 @@ LAD* newLAD(int* const status)
 }
 
 
-void destroyLAD(LAD** const lad)
+void freeLAD(LAD** const lad)
 {
   if (NULL!=*lad) {
     if (NULL!=(*lad)->panel) {
       long ii;
       for (ii=0; ii<(*lad)->npanels; ii++) {
-	destroyLADPanel(&((*lad)->panel[ii]));
+	freeLADPanel(&((*lad)->panel[ii]));
       }
       free((*lad)->panel);
     }
@@ -60,13 +60,13 @@ LADPanel* newLADPanel(int* const status)
 }
 
 
-void destroyLADPanel(LADPanel** const panel)
+void freeLADPanel(LADPanel** const panel)
 {
   if (NULL!=*panel) {
     if (NULL!=(*panel)->module) {
       long ii;
       for (ii=0; ii<(*panel)->nmodules; ii++) {
-	destroyLADModule(&((*panel)->module[ii]));
+	freeLADModule(&((*panel)->module[ii]));
       }
       free((*panel)->module);
     }
@@ -96,13 +96,13 @@ LADModule* newLADModule(int* const status)
 }
 
 
-void destroyLADModule(LADModule** const module)
+void freeLADModule(LADModule** const module)
 {
   if (NULL!=*module) {
     if (NULL!=(*module)->element) {
       long ii;
       for (ii=0; ii<(*module)->nelements; ii++) {
-	destroyLADElement(&((*module)->element[ii]));
+	freeLADElement(&((*module)->element[ii]));
       }
       free((*module)->element);
     }
@@ -130,7 +130,7 @@ LADElement* newLADElement(int* const status)
 }
 
 
-void destroyLADElement(LADElement** const element)
+void freeLADElement(LADElement** const element)
 {
   if (NULL!=*element) {
     free(*element);

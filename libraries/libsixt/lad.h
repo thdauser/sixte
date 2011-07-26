@@ -75,28 +75,28 @@ LAD* newLAD(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the LAD data structure to NULL. */
-void destroyLAD(LAD** const lad);
+void freeLAD(LAD** const lad);
 
 /** Constructor. Allocates memory for a new LADPanel data structure. */
 LADPanel* newLADPanel(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the LADPanel data structure to NULL. */
-void destroyLADPanel(LADPanel** const panel);
+void freeLADPanel(LADPanel** const panel);
 
 /** Constructor. Allocates memory for a new LADModule data structure. */
 LADModule* newLADModule(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the LADModule data structure to NULL. */
-void destroyLADModule(LADModule** const module);
+void freeLADModule(LADModule** const module);
 
 /** Constructor. Allocates memory for a new LADElement data structure. */
 LADElement* newLADElement(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the LADElement data structure to NULL. */
-void destroyLADElement(LADElement** const element);
+void freeLADElement(LADElement** const element);
 
 
 #endif
