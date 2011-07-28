@@ -48,6 +48,12 @@ typedef struct {
 
   /** Number of elements. */
   long nelements;
+
+  /** Width of the module in x-direction [m]. */
+  float xdim;
+
+  /** Width of the module in y-direction [m]. */
+  float ydim;
   
   /** Array containing pointers to the individual elements. */
   LADElement** element;
@@ -61,9 +67,21 @@ typedef struct {
   /** Unique identifier within the LAD. */
   long id;
 
+  /** Number of child modules in x-direction. */
+  long nx;
+
+  /** Number of child modules in y-direction. */
+  long ny;
+
   /** Number of modules. */
   long nmodules;
   
+  /** Width of the panel in x-direction [m]. */
+  float xdim;
+
+  /** Width of the panel in y-direction [m]. */
+  float ydim;
+
   /** Array containing pointers to the individual modules. */
   LADModule** module;
 
@@ -99,6 +117,7 @@ LAD* newLAD(int* const status);
     to the LAD data structure to NULL. */
 void freeLAD(LAD** const lad);
 
+
 /** Constructor. Allocates memory for a new LADPanel data structure. */
 LADPanel* newLADPanel(int* const status);
 
@@ -106,12 +125,14 @@ LADPanel* newLADPanel(int* const status);
     to the LADPanel data structure to NULL. */
 void freeLADPanel(LADPanel** const panel);
 
+
 /** Constructor. Allocates memory for a new LADModule data structure. */
 LADModule* newLADModule(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the LADModule data structure to NULL. */
 void freeLADModule(LADModule** const module);
+
 
 /** Constructor. Allocates memory for a new LADElement data structure. */
 LADElement* newLADElement(int* const status);

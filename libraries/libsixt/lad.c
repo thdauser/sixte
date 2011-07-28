@@ -55,6 +55,10 @@ LADPanel* newLADPanel(int* const status)
   panel->module  =NULL;
   panel->nmodules=0;
   panel->id      =0;
+  panel->nx      =0;
+  panel->ny      =0;
+  panel->xdim    =0.;
+  panel->ydim    =0.;
 
   return(panel);
 }
@@ -91,6 +95,10 @@ LADModule* newLADModule(int* const status)
   module->element  =NULL;
   module->nelements=0;
   module->id       =0;
+  module->nx       =0;
+  module->ny       =0;
+  module->xdim     =0.;
+  module->ydim     =0.;
 
   return(module);
 }
@@ -125,6 +133,8 @@ LADElement* newLADElement(int* const status)
 
   // Initialize all pointers with NULL and set initial values.
   element->id       =0;
+  element->xdim     =0.;
+  element->ydim     =0.;
 
   return(element);
 }
@@ -137,4 +147,5 @@ void freeLADElement(LADElement** const element)
     *element=NULL;
   }
 }
+
 

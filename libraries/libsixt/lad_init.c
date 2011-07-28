@@ -57,6 +57,87 @@ struct XMLPreParseData {
 ////////////////////////////////////////////////////////////////////
 
 
+static void calcModuleXYDim(LADModule* const module)
+{
+  // XDIM and YDIM have to be calculated.
+  long ii;
+
+  // Loop over all columns.
+  module->xdim = 0.;
+  for (ii=0; ii<module->nx; ii++) {
+    // Determine the element with the maximum extension in x-direction 
+    // (within the current column).
+    float xmax=0.;
+    long jj;
+    for (jj=0; jj<module->ny; jj++) {
+      if (module->element[ii+jj*module->nx]->xdim > xmax) {
+	xmax = module->element[ii+jj*module->nx]->xdim;
+      }
+    }
+    // Add the extension of the biggest element in this column.
+    module->xdim += xmax;
+  }
+
+  // Loop over all rows.
+  module->ydim = 0.;
+  for (ii=0; ii<module->ny; ii++) {
+    // Determine the element with the maximum extension in y-direction 
+    // (within the current row).
+    float ymax=0.;
+    long jj;
+    for (jj=0; jj<module->nx; jj++) {
+      if (module->element[jj+ii*module->nx]->ydim > ymax) {
+	ymax = module->element[jj+ii*module->nx]->ydim;
+      }
+    }
+    // Add the extension of the biggest element in this row.
+    module->ydim += ymax;
+  }  
+}
+
+
+static void calcPanelXYDim(LADPanel* const panel)
+{
+  // XDIM and YDIM have to be calculated.
+  long ii;
+
+  // Loop over all columns.
+  panel->xdim = 0.;
+  for (ii=0; ii<panel->nx; ii++) {
+    // Determine the module with the maximum extension in x-direction 
+    // (within the current column).
+    float xmax=0.;
+    long jj;
+    for (jj=0; jj<panel->ny; jj++) {
+      // Calculate XDIM and YDIM for each child module.
+      calcModuleXYDim(panel->module[ii+jj*panel->nx]);
+
+      if (panel->module[ii+jj*panel->nx]->xdim > xmax) {
+	xmax = panel->module[ii+jj*panel->nx]->xdim;
+      }
+    }
+    // Add the extension of the biggest module in this column.
+    panel->xdim += xmax;
+  }
+
+  // Loop over all rows.
+  panel->ydim = 0.;
+  for (ii=0; ii<panel->ny; ii++) {
+    // Determine the module with the maximum extension in y-direction 
+    // (within the current row).
+    float ymax=0.;
+    long jj;
+    for (jj=0; jj<panel->nx; jj++) {
+      if (panel->module[jj+ii*panel->nx]->ydim > ymax) {
+	ymax = panel->module[jj+ii*panel->nx]->ydim;
+      }
+    }
+    // Add the extension of the biggest module in this row.
+    panel->ydim += ymax;
+  }  
+}
+
+
 static void checkLADConsistency(LAD* const lad, int* const status)
 {
   // Check if the the LAD exists.
@@ -76,6 +157,14 @@ static void checkLADConsistency(LAD* const lad, int* const status)
     CHECK_NULL_VOID(lad->panel[ii]->module, *status, 
 		    "panel contains no modules");
 
+    // Check if the number of modules is consistent with the
+    // product of nx times ny.
+    if (lad->panel[ii]->nmodules!=lad->panel[ii]->nx*lad->panel[ii]->ny) {
+      *status = EXIT_FAILURE;
+      SIXT_ERROR("inconsistent number of modules in a panel");
+      return;
+    }
+
     headas_chat(5, " panel %d contains %ld modules\n", 
 		lad->panel[ii]->id, lad->panel[ii]->nmodules);
 
@@ -89,6 +178,15 @@ static void checkLADConsistency(LAD* const lad, int* const status)
       // Check if the module contains any elements.
       CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element, *status, 
 		      "module contains no elements");
+
+      // Check if the number of elements is consistent with the
+      // product of nx times ny.
+      if (lad->panel[ii]->module[jj]->nelements!=
+	  lad->panel[ii]->module[jj]->nx*lad->panel[ii]->module[jj]->ny) {
+	*status = EXIT_FAILURE;
+	SIXT_ERROR("inconsistent number of elements in a module");
+	return;
+      }
 
       headas_chat(5, "  module %d contains %ld elements\n", 
 		  lad->panel[ii]->module[jj]->id, 
@@ -107,6 +205,12 @@ static void checkLADConsistency(LAD* const lad, int* const status)
       // END of loop over all elements.
     }
     // END of loop over all modules.
+
+
+    // Calculate the dimensions of the panels from bottom up 
+    // (elements -> modules -> panels).
+    calcPanelXYDim(lad->panel[ii]);
+
   }
   // END of loop over all panels.
 }
@@ -308,13 +412,19 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char buffer[MAXMSG]; // String buffer.
     getAttribute(attr, "ID", buffer);
     long id = atol(buffer);
-    
+    getAttribute(attr, "NX", buffer);
+    long nx = atol(buffer);
+    getAttribute(attr, "NY", buffer);
+    long ny = atol(buffer);
+
     // Create a new Panel.
     LADPanel* panel = newLADPanel(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
-    // Set the ID.
+    // Set the properties.
     panel->id = id;
+    panel->nx = nx;
+    panel->ny = ny;
     
     // Add the new panel to the LAD.
     addPanel2LAD(xmlparsedata->lad, panel, &xmlparsedata->status);
@@ -329,14 +439,20 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char buffer[MAXMSG]; // String buffer.
     getAttribute(attr, "ID", buffer);
     long id = atol(buffer);
-    
+    getAttribute(attr, "NX", buffer);
+    long nx = atol(buffer);
+    getAttribute(attr, "NY", buffer);
+    long ny = atol(buffer);
+
     // Create a new Module.
     LADModule* module = newLADModule(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
-    // Set the ID.
+    // Set the properties.
     module->id = id;
-    
+    module->nx = nx;
+    module->ny = ny;
+
     // Add the new module to the LAD.
     addModule2Panel(xmlparsedata->panel, module, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
@@ -350,13 +466,19 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char buffer[MAXMSG]; // String buffer.
     getAttribute(attr, "ID", buffer);
     long id = atol(buffer);
+    getAttribute(attr, "XDIM", buffer);
+    float xdim = (float)atof(buffer);
+    getAttribute(attr, "YDIM", buffer);
+    float ydim = (float)atof(buffer);
     
     // Create a new Element.
     LADElement* element = newLADElement(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
-    // Set the ID.
+    // Set the properties.
     element->id = id;
+    element->xdim = xdim;
+    element->ydim = ydim;
     
     // Add the new element to the LAD.
     addElement2Module(xmlparsedata->module, element, &xmlparsedata->status);
