@@ -307,7 +307,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the ID of the new panel.
     char buffer[MAXMSG]; // String buffer.
     getAttribute(attr, "ID", buffer);
-    int id = atoi(buffer);
+    long id = atol(buffer);
     
     // Create a new Panel.
     LADPanel* panel = newLADPanel(&xmlparsedata->status);
@@ -328,7 +328,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the ID of the new module.
     char buffer[MAXMSG]; // String buffer.
     getAttribute(attr, "ID", buffer);
-    int id = atoi(buffer);
+    long id = atol(buffer);
     
     // Create a new Module.
     LADModule* module = newLADModule(&xmlparsedata->status);
@@ -349,7 +349,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the ID of the new element.
     char buffer[MAXMSG]; // String buffer.
     getAttribute(attr, "ID", buffer);
-    int id = atoi(buffer);
+    long id = atol(buffer);
     
     // Create a new Element.
     LADElement* element = newLADElement(&xmlparsedata->status);

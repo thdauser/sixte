@@ -13,16 +13,38 @@
 typedef struct {
   
   /** Unique identifier within the parent module. */
-  int id;
-    
+  long id;
+
+  /** Number of anodes. Must be an even number, since each element
+      contains the two rows of anodes at the top and at the bottom
+      edge. */
+  long nanodes;
+
+  /** Width of the element in x-direction (along the drift as in
+      Campana, 2010) [m]. */
+  float xdim;
+
+  /** Width of the element in y-direction (parallel to the anodes as
+      in Campana, 2010) [m]. */
+  float ydim;
+
+  /** Anode pitch [m]. */
+  float pitch;
+
 } LADElement;
 
 
 /** Module of the LAD detector for LOFT. */
 typedef struct {
 
-  /** Unique identifier within the parent Panel. */
-  int id;
+  /** Unique identifier within the parent panel. */
+  long id;
+
+  /** Number of child elements in x-direction. */
+  long nx;
+
+  /** Number of child elements in y-direction. */
+  long ny;
 
   /** Number of elements. */
   long nelements;
@@ -37,7 +59,7 @@ typedef struct {
 typedef struct {
 
   /** Unique identifier within the LAD. */
-  int id;
+  long id;
 
   /** Number of modules. */
   long nmodules;
