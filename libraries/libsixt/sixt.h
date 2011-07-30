@@ -136,5 +136,16 @@ void strtoupper(char* string);
 void sixt_error(const char* const func, const char* const msg);
 
 
+/** Determine the XMLFilename according to the selected mission,
+    instrument and mode. */
+void sixt_get_XMLFile(char* const filename,
+		      const char* const xmlfile,
+		      const char* const data_path,
+		      const char* const mission,
+		      const char* const instrument,
+		      const char* const mode,
+		      int* const status);
+
+
 #endif /* SIXT_H */
 
