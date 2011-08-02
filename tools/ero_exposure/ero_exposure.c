@@ -268,7 +268,6 @@ int ero_exposure_main()
       Vector pixpos = 
 	unit_vector(0.5*(par.ra1+par.ra2), 0.5*(par.dec1+par.dec2));
       if (check_fov(&pixpos, &telescope_nz, field_min_align)!=0) {
-	printf("continue ...\n");
 	continue;
       }
 

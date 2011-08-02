@@ -16,13 +16,16 @@ void phgen(const GenDet* const det,
   // Loop over the specified time interval.
   double time;
   for (time=t0; time<t0+exposure; time+=dt) {
-    // Display the program progress status.
-    headas_chat(2, "\rtime: %.3lf s ", time);
-    fflush(NULL);
-
     // Determine the telescope pointing at the current point of time.
     Vector pointing = getTelescopeNz(ac, time, status);
     CHECK_STATUS_BREAK(*status);
+
+    // Display the program progress status.
+    double ra, dec;
+    calculate_ra_dec(pointing, &ra, &dec);
+    headas_chat(2, "\rtime: %.3lf s, telescope: (%.3lf,%.3lf)", 
+		time, ra*180./M_PI, dec*180./M_PI);
+    fflush(NULL);
     
     // Get photons for all sources in the catalog.
     double t2 = MIN(time+dt, t0+exposure);
