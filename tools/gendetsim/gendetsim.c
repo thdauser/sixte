@@ -36,70 +36,10 @@ int gendetsim_main() {
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
-    // Convert the user input to capital letters.
-    strtoupper(par.Mission);
-    strtoupper(par.Instrument);
-    strtoupper(par.Mode);
-    // Check the available missions, instruments, and modes.
-    char ucase_buffer[MAXFILENAME];
-    strcpy(ucase_buffer, par.XMLFile);
-    strtoupper(ucase_buffer);
-    if (0==strcmp(ucase_buffer, "NONE")) {
-      // Determine the base directory containing the XML
-      // definition files.
-      strcpy(xml_filename, par.data_path);
-      strcat(xml_filename, "/instruments");
-
-      // Determine the XML filename according to the selected
-      // mission, instrument, and mode.
-      if (0==strcmp(par.Mission, "SRG")) {
-	strcat(xml_filename, "/srg");
-	if (0==strcmp(par.Instrument, "EROSITA")) {
-	  strcat(xml_filename, "/erosita.xml");
-	} else {
-	  status=EXIT_FAILURE;
-	  SIXT_ERROR("selected instrument is not supported");
-	  break;
-	}
-
-      } else if (0==strcmp(par.Mission, "IXO")) {
-	strcat(xml_filename, "/ixo");
-	if (0==strcmp(par.Instrument, "WFI")) {
-	  strcat(xml_filename, "/wfi");
-	  if (0==strcmp(par.Mode, "FULLFRAME")) {
-	    strcat(xml_filename, "/fullframe.xml");
-	  } else {
-	    status=EXIT_FAILURE;
-	    SIXT_ERROR("selected mode is not supported");
-	    break;
-	  }
-	} else {
-	  status=EXIT_FAILURE;
-	  SIXT_ERROR("selected instrument is not supported");
-	  break;
-	}
-
-      } else if (0==strcmp(par.Mission, "GRAVITAS")) {
-	strcat(xml_filename, "/gravitas");
-	if (0==strcmp(par.Instrument, "HIFI")) {
-	  strcat(xml_filename, "/hifi.xml");
-	} else {
-	  status=EXIT_FAILURE;
-	  SIXT_ERROR("selected instrument is not supported");
-	  break;
-	}
-
-      } else {
-	status=EXIT_FAILURE;
-	SIXT_ERROR("selected mission is not supported");
-	break;
-      }
-	    
-    } else {
-      // The XML filename has been given explicitly.
-      strcpy(xml_filename, par.XMLFile);
-    }
-    // END of determine the XML filename.
+    sixt_get_XMLFile(xml_filename, par.XMLFile, par.data_path,
+		     par.Mission, par.Instrument, par.Mode,
+		     &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the detector configuration.
     det=newGenDet(xml_filename, &status);
