@@ -23,7 +23,7 @@ void phgen(const GenDet* const det,
     // Display the program progress status.
     double ra, dec;
     calculate_ra_dec(pointing, &ra, &dec);
-    headas_chat(2, "\rtime: %.3lf s, telescope: (%.3lf,%.3lf)", 
+    headas_chat(3, "\rtime: %.3lf s, telescope: (%.3lf,%.3lf)     ", 
 		time, ra*180./M_PI, dec*180./M_PI);
     fflush(NULL);
     
