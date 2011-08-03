@@ -15,11 +15,6 @@ typedef struct {
   /** Unique identifier within the parent module. */
   long id;
 
-  /** Number of anodes. Must be an even number, since each element
-      contains the two rows of anodes at the top and at the bottom
-      edge. */
-  long nanodes;
-
   /** Width of the element in x-direction (along the drift as in
       Campana, 2010) [m]. */
   float xdim;
@@ -28,8 +23,13 @@ typedef struct {
       in Campana, 2010) [m]. */
   float ydim;
 
+  /** Number of anodes. Must be an even number, since each element
+      contains the two rows of anodes at the top and at the bottom
+      edge. */
+  long nanodes;
+
   /** Anode pitch [m]. */
-  float pitch;
+  float anodepitch;
 
 } LADElement;
 

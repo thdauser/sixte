@@ -165,7 +165,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
       return;
     }
 
-    headas_chat(5, " panel %d contains %ld modules\n", 
+    headas_chat(5, " panel %ld contains %ld modules\n", 
 		lad->panel[ii]->id, lad->panel[ii]->nmodules);
 
     // Loop over all modules.
@@ -188,7 +188,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	return;
       }
 
-      headas_chat(5, "  module %d contains %ld elements\n", 
+      headas_chat(5, "  module %ld contains %ld elements\n", 
 		  lad->panel[ii]->module[jj]->id, 
 		  lad->panel[ii]->module[jj]->nelements);
 
@@ -198,9 +198,17 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	// Check if the the element exists.
 	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk], 
 			*status, "element is not defined");
+
+	// Check if the element contains any anodes.
+	if (0==lad->panel[ii]->module[jj]->element[kk]->nanodes) {
+	  SIXT_ERROR("element contains no anodes");
+	  *status=EXIT_FAILURE;
+	  return;
+	}
 	
-	headas_chat(5, "   element %d\n", 
-		    lad->panel[ii]->module[jj]->element[kk]->id);
+	headas_chat(5, "   element %ld has %ld anodes \n", 
+		    lad->panel[ii]->module[jj]->element[kk]->id,
+		    lad->panel[ii]->module[jj]->element[kk]->nanodes);
       }
       // END of loop over all elements.
     }
@@ -470,6 +478,10 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     float xdim = (float)atof(buffer);
     getAttribute(attr, "YDIM", buffer);
     float ydim = (float)atof(buffer);
+    getAttribute(attr, "NANODES", buffer);
+    long nanodes = atol(buffer);
+    getAttribute(attr, "ANODEPITCH", buffer);
+    float anodepitch = (float)atof(buffer);
     
     // Create a new Element.
     LADElement* element = newLADElement(&xmlparsedata->status);
@@ -479,6 +491,8 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     element->id = id;
     element->xdim = xdim;
     element->ydim = ydim;
+    element->nanodes = nanodes;
+    element->anodepitch = anodepitch;
     
     // Add the new element to the LAD.
     addElement2Module(xmlparsedata->module, element, &xmlparsedata->status);
