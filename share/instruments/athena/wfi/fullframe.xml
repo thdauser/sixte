@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<instrument>
+<telescope>
+<focallength value="11.5"/>
+<fov diameter="0.5"/>
+<psf filename="/home/schmid/athena/psf/athena.psf.gauss10arcsec11.5m.fits"/>
+<!--<vignetting filename="/home/schmid/ixo/ixo.vignetting.fits"/>-->
+</telescope>
+
+<detector type="wfi" mode="fullframe">
+<dimensions xwidth="640" ywidth="640"/>
+<wcs xrpix="320.5" yrpix="320.5" xrval="0." yrval="0." xdelt="130.e-6" ydelt="130.e-6"/>
+<rmf filename="/home/schmid/athena/rsp/09052011/ixo_wfi_default_owl_0.15_11.5_09052011.rmf"/>
+<arf filename="/home/schmid/athena/rsp/09052011/ixo_wfi_default_owl_0.15_11.5_09052011.arf"/>
+<split type="GAUSS" par1="11.e-6"/>
+
+<threshold_readout_lo_keV value="100.e-3"/>
+<threshold_event_lo_keV value="100.e-3"/>
+<threshold_split_lo_keV value="100.e-3"/>
+<readout mode="time">
+  <loop start="319" end="0" increment="-1" variable="$i">
+    <wait time="4.e-6"/>
+    <readoutline lineindex="$i" readoutindex="$i"/>
+    <readoutline lineindex="639-$i" readoutindex="639-$i"/>
+  </loop>
+  <newframe/>
+</readout>
+
+<eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
+  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="1"/>
+
+  <grade p11="0" p12="1" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="2"/>
+  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="2"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="2"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="1" p33="0" grade="2"/>
+
+  <grade p11="0" p12="1" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="3"/>
+  <grade p11="0" p12="1" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="3"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="1" p33="0" grade="3"/>
+  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="1" p33="0" grade="3"/>
+
+  <grade p11="1" p12="2" p13="0" p21="2" p23="0" p31="0" p32="0" p33="0" grade="4"/>
+  <grade p11="0" p12="2" p13="1" p21="0" p23="2" p31="0" p32="0" p33="0" grade="4"/>
+  <grade p11="0" p12="0" p13="0" p21="0" p23="2" p31="0" p32="2" p33="1" grade="4"/>
+  <grade p11="0" p12="0" p13="0" p21="2" p23="0" p31="1" p32="2" p33="0" grade="4"/>
+</eventgrading>
+
+</detector>
+</instrument>

@@ -111,6 +111,23 @@ void sixt_get_XMLFile(char* const filename,
 	return;
       }
 
+    } else if (0==strcmp(Mission, "ATHENA")) {
+      strcat(filename, "/athena");
+      if (0==strcmp(Instrument, "WFI")) {
+	strcat(filename, "/wfi");
+	if (0==strcmp(Mode, "FULLFRAME")) {
+	  strcat(filename, "/fullframe.xml");
+	} else {
+	  *status=EXIT_FAILURE;
+	  SIXT_ERROR("selected mode is not supported");
+	  return;
+	}
+      } else {
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("selected instrument is not supported");
+	return;
+      }
+
     } else if (0==strcmp(Mission, "GRAVITAS")) {
       strcat(filename, "/gravitas");
       if (0==strcmp(Instrument, "HIFI")) {
