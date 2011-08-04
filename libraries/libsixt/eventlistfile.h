@@ -67,4 +67,4 @@ void updateEventInFile(const EventListFile* const file,
 		       int* const status);
 
 
-#endif /* GENEVENTFILE_H */
+#endif /* EVENTLISTFILE_H */

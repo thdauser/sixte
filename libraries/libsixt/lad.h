@@ -2,6 +2,8 @@
 #define LAD_H 1
 
 #include "sixt.h"
+#include "ladevent.h"
+#include "ladeventlistfile.h"
 
 
 /////////////////////////////////////////////////////////////////
