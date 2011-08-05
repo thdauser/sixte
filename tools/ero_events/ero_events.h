@@ -21,6 +21,13 @@ struct Parameters {
 
   int CCDNr;
 
+  /** Projection type (usually SIN). */
+  char Projection[MAXMSG];
+  /** Right ascension of reference point [deg]. */
+  float RefRA;
+  /** Declination of reference point [deg]. */
+  float RefDec;
+
   char clobber;
 
   char data_path[MAXFILENAME];

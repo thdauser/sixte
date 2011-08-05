@@ -35,10 +35,16 @@ int ero_events_main()
     // Read parameters using PIL library:
     if ((status=getpar(&par))) break;
 
-    // Set the input event file.
+    // Check whether an appropriate WCS projection has been selected.
+    if (strlen(par.Projection)!=3) {
+      SIXT_ERROR("invalid WCS projection type");
+      status=EXIT_FAILURE;
+      break;
+    }
+
+    // Open the input event file.
     gelf=openEventListFile(par.genEventList, READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
-
 
     // Create and open the output eROSITA event file.
     // Remove old file, if it exists.
@@ -75,7 +81,7 @@ int ero_events_main()
 	  // Return value should be == 19 !
 	  fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
 			  "Start Time (UTC) of exposure", &status);
-	  if (EXIT_SUCCESS!=status) break;
+	  CHECK_STATUS_BREAK(status);
 	}
       }
     } 
@@ -94,7 +100,7 @@ int ero_events_main()
     fits_get_colnum(fptr, CASEINSEN, "X", &cx, &status);
     fits_get_colnum(fptr, CASEINSEN, "Y", &cy, &status);
     fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Set up the WCS data structure.
     if (0!=wcsini(1, 2, &wcs)) {
@@ -105,14 +111,33 @@ int ero_events_main()
     wcs.naxis =  2;
     wcs.crpix[0] = 0.;
     wcs.crpix[1] = 0.;
-    wcs.crval[0] = 0.;
-    wcs.crval[1] = 0.;    
+    wcs.crval[0] = par.RefRA;
+    wcs.crval[1] = par.RefDec;    
     wcs.cdelt[0] = 0.001/3600.;
     wcs.cdelt[1] = 0.001/3600.;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
-    strcpy(wcs.ctype[0], "RA---SIN");
-    strcpy(wcs.ctype[1], "DEC--SIN");
+    strcpy(wcs.ctype[0], "RA---");
+    strcat(wcs.ctype[0], par.Projection);
+    strcpy(wcs.ctype[1], "DEC--");
+    strcat(wcs.ctype[1], par.Projection);
+
+    // Update the WCS keywords in the output event file.
+    char keyword[MAXMSG];
+    sprintf(keyword, "TCTYP%d", cx);
+    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[0], 
+		    "projection type", &status);
+    sprintf(keyword, "TCTYP%d", cy);
+    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[1], 
+		    "projection type", &status);
+    sprintf(keyword, "TCRVL%d", cx);
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[0], 
+		    "reference value", &status);
+    sprintf(keyword, "TCRVL%d", cy);
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1], 
+		    "reference value", &status);
+    CHECK_STATUS_BREAK(status);
+
 
     // --- END of Initialization ---
 
@@ -221,6 +246,26 @@ int getpar(struct Parameters* const par)
     HD_ERROR_THROW("Error reading the CCDNr parameter!\n", status);
     return(status);
   }
+
+  status=ape_trad_query_string("Projection", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the projection type!\n", status);
+    return(status);
+  } 
+  strcpy(par->Projection, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_float("RefRA", &par->RefRA);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading RefRA!\n", status);
+    return(status);
+  } 
+
+  status=ape_trad_query_float("RefDec", &par->RefDec);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading RefDEC!\n", status);
+    return(status);
+  } 
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
