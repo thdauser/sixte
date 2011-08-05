@@ -3,15 +3,15 @@
 <telescope>
 <focallength value="11.5"/>
 <fov diameter="0.5"/>
-<psf filename="/home/schmid/athena/psf/athena.psf.gauss10arcsec11.5m.fits"/>
+<psf filename="athena.psf.gauss10arcsec11.5m.fits"/>
 <!--<vignetting filename="/home/schmid/ixo/ixo.vignetting.fits"/>-->
 </telescope>
 
 <detector type="wfi" mode="fullframe">
 <dimensions xwidth="640" ywidth="640"/>
 <wcs xrpix="320.5" yrpix="320.5" xrval="0." yrval="0." xdelt="130.e-6" ydelt="130.e-6"/>
-<rmf filename="/home/schmid/athena/rsp/09052011/ixo_wfi_default_owl_0.15_11.5_09052011.rmf"/>
-<arf filename="/home/schmid/athena/rsp/09052011/ixo_wfi_default_owl_0.15_11.5_09052011.arf"/>
+<rmf filename="ixo_wfi_default_owl_0.15_11.5_09052011.rmf"/>
+<arf filename="ixo_wfi_default_owl_0.15_11.5_09052011.arf"/>
 <split type="GAUSS" par1="11.e-6"/>
 
 <threshold_readout_lo_keV value="100.e-3"/>
