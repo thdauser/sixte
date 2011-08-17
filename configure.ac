@@ -237,6 +237,7 @@ AC_CONFIG_FILES([Makefile
 		tools/orbatt/Makefile
 		tools/projev/Makefile
 		tools/simputmerge/Makefile
+		tools/fudgexp/Makefile
 		tools/mmap/Makefile
 		share/Makefile
 		share/instruments/Makefile])

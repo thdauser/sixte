@@ -52,6 +52,7 @@ mmap_write
 mmap_read
 runsixt
 simputmerge
+fudgexp
 
 # Autotool stuff:
 aclocal.m4

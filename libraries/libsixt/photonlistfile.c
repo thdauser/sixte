@@ -148,39 +148,34 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
 
   // Check if there is still a row available.
   if (row > plf->nrows) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: photon list file does not contain the requested line!\n", 
-		   status);
-    return(status);
+    SIXT_ERROR("photon list file does not contain the requested line");
+    return(EXIT_FAILURE);
   }
 
   // Read in the data.
   ph->time = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->ctime, plf->row, 1, 1, 
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->ctime, row, 1, 1, 
 		    &ph->time, &ph->time, &anynul, &status)) return(status);
-
   ph->energy = 0.;
-  if (fits_read_col(plf->fptr, TFLOAT, plf->cenergy, plf->row, 1, 1, 
+  if (fits_read_col(plf->fptr, TFLOAT, plf->cenergy, row, 1, 1, 
 		    &ph->energy, &ph->energy, &anynul, &status)) return(status);
   ph->ra = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->cra, plf->row, 1, 1, 
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->cra, row, 1, 1, 
 		    &ph->ra, &ph->ra, &anynul, &status)) return(status);
   ph->dec = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, plf->row, 1, 1, 
+  if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, row, 1, 1, 
 		    &ph->dec, &ph->dec, &anynul, &status)) return(status);
-
   ph->ph_id = 0;
-  if (fits_read_col(plf->fptr, TLONG, plf->cph_id, plf->row, 1, 1, 
+  if (fits_read_col(plf->fptr, TLONG, plf->cph_id, row, 1, 1, 
 		    &ph->ph_id, &ph->ph_id, &anynul, &status)) return(status);
   ph->src_id = 0;
-  if (fits_read_col(plf->fptr, TLONG, plf->csrc_id, plf->row, 1, 1, 
+  if (fits_read_col(plf->fptr, TLONG, plf->csrc_id, row, 1, 1, 
 		    &ph->src_id, &ph->src_id, &anynul, &status)) return(status);
 
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: reading from event list failed!\n", status);
-    return(status);
+    SIXT_ERROR("reading from event list failed");
+    return(EXIT_FAILURE);
   }
 
   // Convert from [deg] to [rad].

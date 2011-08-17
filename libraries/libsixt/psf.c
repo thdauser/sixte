@@ -233,7 +233,6 @@ static void sortDList(double* const list, const int nvalues)
 }
 
 
-
 PSF* newPSF(const char* const filename, const float focal_length, 
 	    int* const status)
 {
