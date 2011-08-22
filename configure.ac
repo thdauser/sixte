@@ -236,6 +236,7 @@ AC_CONFIG_FILES([Makefile
 		tools/comarecon/Makefile
 		tools/orbatt/Makefile
 		tools/projev/Makefile
+		tools/imgev/Makefile
 		tools/simputmerge/Makefile
 		tools/fudgexp/Makefile
 		tools/mmap/Makefile

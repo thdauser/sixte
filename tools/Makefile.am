@@ -5,4 +5,4 @@ SUBDIRS = phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
 	  gendetsim genpat genpat2 photonmerge analyse_xms_events	\
 	  htrs_psfgen htrs_pixel_intensity htrs_fits2tm			\
 	  htrs_digital_shaper comaimg comadet comarecon orbatt mmap	\
-	  runsixt projev simputmerge ladsim fudgexp
+	  runsixt projev imgev simputmerge ladsim fudgexp
