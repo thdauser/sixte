@@ -5,6 +5,11 @@
 #include "point.h"
 
 
+/////////////////////////////////////////////////////////////////
+// Type Declarations.
+/////////////////////////////////////////////////////////////////
+
+
 /** Impact of a photon on the detector plane. */
 typedef struct {
   /** Arrival time of the photon on the detector [s]. */
@@ -21,6 +26,7 @@ typedef struct {
 
   /** Unique source identifier for the originating X-ray source. */
   long src_id;
+
 } Impact;
 
 
