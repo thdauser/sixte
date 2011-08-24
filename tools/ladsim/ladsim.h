@@ -4,14 +4,14 @@
 #include "sixt.h"
 
 #include "attitudecatalog.h"
-#include "eventlistfile.h"
-#include "impactlistfile.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
 #include "photonlistfile.h"
 #include "phproj.h"
 #include "lad.h"
+#include "ladeventlistfile.h"
+#include "ladimpactlistfile.h"
 #include "sourcecatalog.h"
 #include "vector.h"
 
