@@ -19,6 +19,7 @@ LAD* newLAD(int* const status)
   // Initialize all pointers with NULL and set initial values.
   lad->panel  =NULL;
   lad->npanels=0;
+  lad->arf    =NULL;
 
   return(lad);
 }
@@ -33,6 +34,9 @@ void freeLAD(LAD** const lad)
 	freeLADPanel(&((*lad)->panel[ii]));
       }
       free((*lad)->panel);
+    }
+    if (NULL!=(*lad)->arf) {
+      freeARF((*lad)->arf);
     }
 
     free(*lad);

@@ -2,6 +2,7 @@
 #define LAD_H 1
 
 #include "sixt.h"
+#include "arf.h"
 #include "ladevent.h"
 #include "ladeventlistfile.h"
 
@@ -98,6 +99,9 @@ typedef struct {
 
   /** Array containing pointers to the individual panels. */
   LADPanel** panel;
+
+  /** ARF containing the geometric area of the LAD panels. */
+  struct ARF* arf;
 
 } LAD;
 

@@ -219,6 +219,30 @@ static void checkLADConsistency(LAD* const lad, int* const status)
     // (elements -> modules -> panels).
     calcPanelXYDim(lad->panel[ii]);
 
+
+    // Determine the geometric area of all panels and construct an ARF
+    // from this value.
+    float area=0.;
+    for (ii=0; ii<lad->npanels; ii++) {
+      area += lad->panel[ii]->xdim * lad->panel[ii]->ydim;
+    }
+
+    // Initialize an empty ARF data structure.
+    lad->arf = getARF(status);
+    CHECK_STATUS_VOID(*status);
+
+    // Fill the ARF with data.
+    lad->arf->NumberEnergyBins = 1;
+    lad->arf->LowEnergy  = (float*)malloc(lad->arf->NumberEnergyBins*sizeof(float));
+    CHECK_NULL_VOID(lad->arf->LowEnergy, *status, "memory allocation for ARF failed");
+    lad->arf->HighEnergy = (float*)malloc(lad->arf->NumberEnergyBins*sizeof(float));
+    CHECK_NULL_VOID(lad->arf->HighEnergy, *status, "memory allocation for ARF failed");
+    lad->arf->EffArea    = (float*)malloc(lad->arf->NumberEnergyBins*sizeof(float));
+    CHECK_NULL_VOID(lad->arf->EffArea, *status, "memory allocation for ARF failed");
+    lad->arf->LowEnergy[0]     = 0.;
+    lad->arf->HighEnergy[0]    = 1000.;
+    lad->arf->EffArea[0]       = area;
+
   }
   // END of loop over all panels.
 }
@@ -1021,14 +1045,9 @@ LAD* getLADfromXML(const char* const filename,
   // Remove the XML string buffer.
   freeXMLBuffer(&xmlbuffer);
 
-
   // Iteratively go through the LAD data structure and set properties
-  // of parent and child elements.
-  // TODO
-  // This can also be done together with the consistency check.
-
-
-  // Perform consistency check of the LAD detector.
+  // of parent and child elements. Perform consistency check of the
+  // LAD detector.
   checkLADConsistency(lad, status);
   CHECK_STATUS_RET(*status, lad);
 
