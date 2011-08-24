@@ -144,7 +144,12 @@ static void ladphdet(const LAD* const lad,
 	 gaussint((yi-element->anodepitch*0.5-y0)/(sigma*sqrt(2.))));
 
       // Apply thresholds.
-      // TODO
+      if (NULL!=lad->threshold_readout_lo_keV) {
+	if (event.signal < *(lad->threshold_readout_lo_keV)) continue;
+      }
+      if (NULL!=lad->threshold_readout_up_keV) {
+	if (event.signal > *(lad->threshold_readout_up_keV)) continue;
+      }
 
       // Append the new event to the file.
       addLADEvent2File(elf, &event, status);

@@ -117,6 +117,12 @@ typedef struct {
   /** Mobility [m**2/V/s]. */
   float mobility; 
 
+  /** Lower read-out threshold [keV]. */
+  float* threshold_readout_lo_keV;
+
+  /** Upper read-out threshold [keV]. */
+  float* threshold_readout_up_keV;
+
 } LAD;
 
 

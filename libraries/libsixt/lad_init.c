@@ -338,7 +338,9 @@ static void freeXMLBuffer(struct XMLBuffer** const buffer)
 }
 
 
-static void getAttribute(const char** attr, const char* const key, char* const value)
+static void getAttributeString(const char** attr, 
+			       const char* const key, 
+			       char* const value)
 {
   char Uattribute[MAXMSG]; // Upper case version of XML attribute
   char Ukey[MAXMSG];       // Upper case version of search expression
@@ -360,6 +362,24 @@ static void getAttribute(const char** attr, const char* const key, char* const v
   // Keyword was not found
   strcpy(value, "");
   return;
+}
+
+
+static float getAttributeFloat(const char** attr, 
+			       const char* const key)
+{
+  char buffer[MAXMSG]; // String buffer.
+  getAttributeString(attr, key, buffer);
+  return((float)atof(buffer));
+}
+
+
+static long getAttributeLong(const char** attr, 
+			     const char* const key)
+{
+  char buffer[MAXMSG]; // String buffer.
+  getAttributeString(attr, key, buffer);
+  return(atol(buffer));
 }
 
 
@@ -442,13 +462,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   if (!strcmp(Uelement, "PANEL")) {
 
     // Determine the ID of the new panel.
-    char buffer[MAXMSG]; // String buffer.
-    getAttribute(attr, "ID", buffer);
-    long id = atol(buffer);
-    getAttribute(attr, "NX", buffer);
-    long nx = atol(buffer);
-    getAttribute(attr, "NY", buffer);
-    long ny = atol(buffer);
+    long id = getAttributeLong(attr, "ID");
+    long nx = getAttributeLong(attr, "NX");
+    long ny = getAttributeLong(attr, "NY");
 
     // Create a new Panel.
     LADPanel* panel = newLADPanel(&xmlparsedata->status);
@@ -469,13 +485,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "MODULE")) {
 
     // Determine the ID of the new module.
-    char buffer[MAXMSG]; // String buffer.
-    getAttribute(attr, "ID", buffer);
-    long id = atol(buffer);
-    getAttribute(attr, "NX", buffer);
-    long nx = atol(buffer);
-    getAttribute(attr, "NY", buffer);
-    long ny = atol(buffer);
+    long id = getAttributeLong(attr, "ID");
+    long nx = getAttributeLong(attr, "NX");
+    long ny = getAttributeLong(attr, "NY");
 
     // Create a new Module.
     LADModule* module = newLADModule(&xmlparsedata->status);
@@ -496,17 +508,11 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "ELEMENT")) {
 
     // Determine the ID of the new element.
-    char buffer[MAXMSG]; // String buffer.
-    getAttribute(attr, "ID", buffer);
-    long id = atol(buffer);
-    getAttribute(attr, "XDIM", buffer);
-    float xdim = (float)atof(buffer);
-    getAttribute(attr, "YDIM", buffer);
-    float ydim = (float)atof(buffer);
-    getAttribute(attr, "NANODES", buffer);
-    long nanodes = atol(buffer);
-    getAttribute(attr, "ANODEPITCH", buffer);
-    float anodepitch = (float)atof(buffer);
+    long id    = getAttributeLong(attr, "ID");
+    float xdim = getAttributeFloat(attr, "XDIM");
+    float ydim = getAttributeFloat(attr, "YDIM");
+    long nanodes = getAttributeLong(attr, "NANODES");
+    float anodepitch = getAttributeFloat(attr, "ANODEPITCH");
     
     // Create a new Element.
     LADElement* element = newLADElement(&xmlparsedata->status);
@@ -529,30 +535,46 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "FOV")) {
 
     // Determine the diameter of the FOV.
-    char buffer[MAXMSG]; // String buffer.
-    getAttribute(attr, "FOV", buffer);
-    xmlparsedata->lad->fov_diameter = (float)atof(buffer);
+    xmlparsedata->lad->fov_diameter = getAttributeFloat(attr, "FOV");
    
   } else if (!strcmp(Uelement, "TEMPERATURE")) {
 
     // Determine the value of the temperature.
-    char buffer[MAXMSG]; // String buffer.
-    getAttribute(attr, "VALUE", buffer);
-    xmlparsedata->lad->temperature = (float)atof(buffer);
+    xmlparsedata->lad->temperature = getAttributeFloat(attr, "VALUE");
    
   } else if (!strcmp(Uelement, "EFIELD")) {
 
     // Determine the electric field.
-    char buffer[MAXMSG]; // String buffer.
-    getAttribute(attr, "VALUE", buffer);
-    xmlparsedata->lad->efield = (float)atof(buffer);
+    xmlparsedata->lad->efield = getAttributeFloat(attr, "VALUE");
    
   } else if (!strcmp(Uelement, "MOBILITY")) {
 
     // Determine the mobility.
-    char buffer[MAXMSG]; // String buffer.
-    getAttribute(attr, "VALUE", buffer);
-    xmlparsedata->lad->mobility = (float)atof(buffer);
+    xmlparsedata->lad->mobility = getAttributeFloat(attr, "VALUE");
+
+  } else if (!strcmp(Uelement, "THRESHOLD")) {
+
+    // Determine the lower and the upper read-out threshold.
+    float threshold_readout_lo_keV = getAttributeFloat(attr, "READOUT_LO_KEV");
+    float threshold_readout_up_keV = getAttributeFloat(attr, "READOUT_UP_KEV");
+    
+    if (0.<threshold_readout_lo_keV) {
+      xmlparsedata->lad->threshold_readout_lo_keV = 
+	(float*)malloc(sizeof(float));
+      CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_lo_keV, 
+		      xmlparsedata->status,
+		      "memory allocation for threshold failed");
+      *(xmlparsedata->lad->threshold_readout_lo_keV) = threshold_readout_lo_keV;
+    }
+
+    if (0.<threshold_readout_up_keV) {
+      xmlparsedata->lad->threshold_readout_up_keV = 
+	(float*)malloc(sizeof(float));
+      CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_up_keV, 
+		      xmlparsedata->status,
+		      "memory allocation for threshold failed");
+      *(xmlparsedata->lad->threshold_readout_up_keV) = threshold_readout_up_keV;
+    }
 
   } else {
     xmlparsedata->status = EXIT_FAILURE;

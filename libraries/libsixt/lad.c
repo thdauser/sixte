@@ -24,6 +24,8 @@ LAD* newLAD(int* const status)
   lad->temperature =0.;
   lad->efield      =0.;
   lad->mobility    =0.;
+  lad->threshold_readout_lo_keV=NULL;
+  lad->threshold_readout_up_keV=NULL;
 
   return(lad);
 }
