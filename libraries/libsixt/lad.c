@@ -26,6 +26,8 @@ LAD* newLAD(int* const status)
   lad->mobility    =0.;
   lad->threshold_readout_lo_keV=NULL;
   lad->threshold_readout_up_keV=NULL;
+  lad->filename    =NULL;
+  lad->filepath    =NULL;
 
   return(lad);
 }
@@ -43,6 +45,18 @@ void freeLAD(LAD** const lad)
     }
     if (NULL!=(*lad)->arf) {
       freeARF((*lad)->arf);
+    }
+    if (NULL!=(*lad)->threshold_readout_lo_keV) {
+      free((*lad)->threshold_readout_lo_keV);
+    }
+    if (NULL!=(*lad)->threshold_readout_up_keV) {
+      free((*lad)->threshold_readout_up_keV);
+    }
+    if (NULL!=(*lad)->filename) {
+      free((*lad)->filename);
+    }
+    if (NULL!=(*lad)->filepath) {
+      free((*lad)->filepath);
     }
 
     free(*lad);

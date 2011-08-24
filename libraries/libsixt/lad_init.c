@@ -219,31 +219,6 @@ static void checkLADConsistency(LAD* const lad, int* const status)
     // (elements -> modules -> panels).
     calcPanelXYDim(lad->panel[ii]);
 
-
-    // Determine the geometric area of all panels and construct an ARF
-    // from this value.
-    float area=0.;
-    for (ii=0; ii<lad->npanels; ii++) {
-      area += lad->panel[ii]->xdim * lad->panel[ii]->ydim;
-    }
-
-    // Initialize an empty ARF data structure.
-    lad->arf = getARF(status);
-    CHECK_STATUS_VOID(*status);
-
-    // Fill the ARF with data.
-    lad->arf->NumberEnergyBins = 1;
-    lad->arf->LowEnergy  = (float*)malloc(lad->arf->NumberEnergyBins*sizeof(float));
-    CHECK_NULL_VOID(lad->arf->LowEnergy, *status, "memory allocation for ARF failed");
-    lad->arf->HighEnergy = (float*)malloc(lad->arf->NumberEnergyBins*sizeof(float));
-    CHECK_NULL_VOID(lad->arf->HighEnergy, *status, "memory allocation for ARF failed");
-    lad->arf->EffArea    = (float*)malloc(lad->arf->NumberEnergyBins*sizeof(float));
-    CHECK_NULL_VOID(lad->arf->EffArea, *status, "memory allocation for ARF failed");
-    lad->arf->LowEnergy[0]     = 0.;
-    lad->arf->HighEnergy[0]    = 1000.;
-    lad->arf->EffArea[0]       = area;
-    // TODO Include the detector sensitivity.
-
   }
   // END of loop over all panels.
 }
@@ -575,6 +550,16 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 		      "memory allocation for threshold failed");
       *(xmlparsedata->lad->threshold_readout_up_keV) = threshold_readout_up_keV;
     }
+
+  } else if (!strcmp(Uelement, "ARF")) {
+    
+    // Determine the filename of the instrument ARF and load it.
+    char filename[MAXFILENAME];
+    getAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->lad->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->lad->arf = loadARF(filepathname, &xmlparsedata->status);
 
   } else {
     xmlparsedata->status = EXIT_FAILURE;
@@ -999,6 +984,45 @@ LAD* getLADfromXML(const char* const filename,
   // Allocate memory for a new LAD data structure.
   lad = newLAD(status);
   CHECK_STATUS_RET(*status, lad);
+
+
+  // Split the reference to the XML LAD definition file
+  // into file path and name. This has to be done before
+  // calling the parser routine for the XML file.
+  char filename2[MAXFILENAME];
+  char rootname[MAXFILENAME];
+  // Make a local copy of the filename variable in order to avoid
+  // compiler warnings due to discarded const qualifier at the 
+  // subsequent function call.
+  strcpy(filename2, filename);
+  fits_parse_rootname(filename2, rootname, status);
+  CHECK_STATUS_RET(*status, lad);
+
+  // Split rootname into the file path and the file name.
+  char* lastslash = strrchr(rootname, '/');
+  if (NULL==lastslash) {
+    lad->filepath=(char*)malloc(sizeof(char));
+    CHECK_NULL_RET(lad->filepath, *status, 
+		   "memory allocation for filepath failed", lad);
+    lad->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
+    CHECK_NULL_RET(lad->filename, *status, 
+		   "memory allocation for filename failed", lad);
+    strcpy(lad->filepath, "");
+    strcpy(lad->filename, rootname);
+  } else {
+    lastslash++;
+    lad->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
+    CHECK_NULL_RET(lad->filename, *status, 
+		   "memory allocation for filename failed", lad);
+    strcpy(lad->filename, lastslash);
+      
+    *lastslash='\0';
+    lad->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
+    CHECK_NULL_RET(lad->filepath, *status, 
+		   "memory allocation for filepath failed", lad);
+    strcpy(lad->filepath, rootname);
+  }
+  // END of storing the filename and filepath.
 
 
   // Read the data from the XML file.

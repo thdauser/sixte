@@ -123,6 +123,13 @@ typedef struct {
   /** Upper read-out threshold [keV]. */
   float* threshold_readout_up_keV;
 
+  /** File name (without path contributions) of the FITS file
+      containing the XML LAD definition. */
+  char* filename;
+
+  /** Path to the FITS file containing the XML detector definition. */
+  char* filepath;
+
 } LAD;
 
 
