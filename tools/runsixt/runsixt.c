@@ -165,7 +165,7 @@ int runsixt_main()
     // END of setting up the attitude.
 
     // Load the SIMPUT X-ray source catalog.
-    srccat = loadSourceCatalog(par.Simput, det, &status);
+    srccat = loadSourceCatalog(par.Simput, det->arf, &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -295,7 +295,6 @@ int runsixt_main()
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);
 }
-
 
 
 int runsixt_getpar(struct Parameters* const par)

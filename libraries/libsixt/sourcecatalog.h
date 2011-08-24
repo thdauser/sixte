@@ -46,7 +46,7 @@ void freeSourceCatalog(SourceCatalog** const cat, int* const status);
 
 /** Load a SIMPUT source catalog from a FITS file. */
 SourceCatalog* loadSourceCatalog(const char* const filename,
-				 const GenDet* const det,
+				 struct ARF* const arf,
 				 int* const status);
 
 /** Create photons for all sources in the catalog for the specified

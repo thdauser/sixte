@@ -122,7 +122,7 @@ int phogen_main()
     // END of setting up the attitude.
 
     // Load the SIMPUT X-ray source catalog.
-    srccat = loadSourceCatalog(par.Simput, det, &status);
+    srccat = loadSourceCatalog(par.Simput, det->arf, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of Initialization ---

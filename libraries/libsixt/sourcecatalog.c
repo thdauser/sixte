@@ -38,7 +38,7 @@ void freeSourceCatalog(SourceCatalog** const cat, int* const status)
 
 
 SourceCatalog* loadSourceCatalog(const char* const filename,
-				 const GenDet* const det,
+				 struct ARF* const arf,
 				 int* const status)
 {
   headas_chat(3, "load source catalog from file '%s' ...\n", filename);
@@ -47,7 +47,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   CHECK_STATUS_RET(*status, cat);
 
   // Set reference to ARF for SIMPUT library.
-  simputSetARF(det->arf);
+  simputSetARF(arf);
 
   // Set refernce to the random number generator to be used by the
   // SIMPUT library routines.
