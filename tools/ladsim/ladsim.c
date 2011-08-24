@@ -9,8 +9,6 @@ static void ladphimg(const LAD* const lad,
 		     const double exposure,
 		     int* const status)
 {
-  struct Telescope telescope;
-
   // Calculate the minimum cos-value for sources inside the FOV: 
   // (angle(x0,source) <= 1/2 * diameter)
   const double fov_min_align = cos(lad->fov_diameter/2.); 
@@ -29,6 +27,7 @@ static void ladphimg(const LAD* const lad,
     if (photon.time > t0+exposure) break;
 
     // Determine telescope pointing direction at the current time.
+    struct Telescope telescope;
     telescope.nz = getTelescopeNz(ac, photon.time, status);
     CHECK_STATUS_VOID(*status);
 
@@ -44,29 +43,44 @@ static void ladphimg(const LAD* const lad,
 		       photon.time, status);
       CHECK_STATUS_BREAK(*status);
 
+      // New impact.
+      LADImpact impact;
+      impact.time = photon.time;
+      impact.energy = photon.energy;
+      impact.ph_id  = photon.ph_id;
+      impact.src_id = photon.src_id;
+
       // Determine the photon impact position on the detector:
-      // the affected panel, module, element, and the position on the 
-      // element (in [m]).
+      // Randomly select a panel, module, and element
+      impact.panel   = 
+	(long)(sixt_get_random_number()*
+	       lad->npanels);
+      impact.module  = 
+	(long)(sixt_get_random_number()*
+	       lad->panel[impact.panel]->nmodules);
+      impact.element = 	
+	(long)(sixt_get_random_number()*
+	       lad->panel[impact.panel]->module[impact.module]->nelements);
 
-      // TODO
-      long panel   = 0;
-      long module  = 0;
-      long element = 0;
-      struct Point2d position = { .x=1.e-3, .y=1.e-3 };
-
+      // Pointer to the element.
+      LADElement* element = 
+	lad->panel[impact.panel]->module[impact.module]->element[impact.element];
       
-      // Insert the impact position with the photon data into the 
-      // impact list.
-      LADImpact impact = { 
-	.time   = photon.time,
-	.energy = photon.energy,
-	.panel  = panel,
-	.module = module,
-	.element= element,
-	.position = position,
-	.ph_id  = photon.ph_id,
-	.src_id = photon.src_id
-      };
+      // Determine the entrance position into a collimator hole ([m]).
+      struct Point2d entrance_position;
+      do {
+	// Get a random position on the element.
+	entrance_position.x=sixt_get_random_number()*element->xdim;
+	entrance_position.y=sixt_get_random_number()*element->ydim;
+      } while (!LADCollimatorOpen(entrance_position));
+
+      // Determine the position on the detector according to the off-axis
+      // angle and the orientation of the element ([m]).
+      // TODO
+      impact.position = entrance_position;
+      
+      
+      // Insert the impact with the photon data into the list.
       addLADImpact2File(ilf, &impact, status);	    
       CHECK_STATUS_VOID(*status);
 	  

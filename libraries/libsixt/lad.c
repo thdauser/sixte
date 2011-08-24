@@ -175,3 +175,75 @@ void freeLADElement(LADElement** const element)
 }
 
 
+int LADCollimatorOpen(const struct Point2d position)
+{
+  // Distance between holes in the collimator.
+  const double pitch = 28.e-6; // [m]
+  // Diameter of holes in the collimator.
+  const double diameter = 25.e-6; // [m]
+  // Square radius of the holes in the collimator.
+  double radius2 = pow(diameter*0.5, 2.);
+
+  // Distance between 2 subsequent rows.
+  double h = pitch*0.5/tan(M_PI/6.);
+
+  // Determine the row.
+  long row = (long)(position.y/h);
+  // Determine the column.
+  long col = (long)(position.x/(pitch*0.5));
+
+  // Center indices of the circles that have to be taken into account.
+  long c[2], r[2];
+  
+  // Check if row is an even or an odd number.
+  if (row % 2 == 1) {
+    // Odd (as first row).
+    
+    // Check if column is an even or an odd number.
+    if (col % 2 == 1) {
+      c[0] = col;
+      r[0] = row;
+      c[1] = col+1;
+      r[1] = row+1;
+    } else {
+      c[0] = col+1;
+      r[0] = row;
+      c[1] = col;
+      r[1] = row+1;
+    }
+    // END of column is an even or odd number.
+
+  } else {
+    // Row is even number (as second row).
+
+    // Check if column is an even or an odd number.
+    if (col % 2 == 1) {
+      c[0] = col+1;
+      r[0] = row;
+      c[1] = col;
+      r[1] = row+1;
+    } else {
+      c[0] = col;
+      r[0] = row;
+      c[1] = col+1;
+      r[1] = row+1;
+    }
+    // END of column is an even or odd number.
+
+  }
+  // END of row is odd or even.
+
+  // Calculate the distances to the 2 circles that might contain 
+  // the specified position.
+  int ii;
+  for (ii=0; ii<2; ii++) {
+    struct Point2d center;
+    center.x = c[ii]*pitch/2.;
+    center.y = r[ii]*h;
+    // Check if the specified position lies within the regarded circle (hole).
+    if (pow(position.x-center.x, 2.) + pow(position.y-center.y, 2.) < radius2) return(1);  
+  }
+  // Position is not open.
+  return(0);
+}
+

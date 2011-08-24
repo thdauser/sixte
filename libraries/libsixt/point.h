@@ -7,9 +7,4 @@ struct Point2d {
 };
 
 
-struct Point2i {
-  double x, y;
-};
-
-
 #endif

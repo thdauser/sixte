@@ -5,6 +5,7 @@
 #include "arf.h"
 #include "ladevent.h"
 #include "ladeventlistfile.h"
+#include "point.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -173,6 +174,10 @@ LADElement* newLADElement(int* const status);
 /** Destructor. Releases all allocated memory and resets the pointer
     to the LADElement data structure to NULL. */
 void freeLADElement(LADElement** const element);
+
+/** Determine whether the specified position lies on an open hole of
+    the collimator. */
+int LADCollimatorOpen(const struct Point2d position);
 
 
 #endif
