@@ -193,7 +193,8 @@ int runsixt_main()
 
     // Photon Generation.
     headas_chat(3, "start photon generation ...\n");
-    phgen(det, ac, srccat, plf, t0, par.Exposure, par.MJDREF, &status);
+    phgen(ac, srccat, plf, t0, par.Exposure, par.MJDREF, 
+	  det->fov_diameter, &status);
     CHECK_STATUS_BREAK(status);
 
     // Free the source catalog in order to save memory.

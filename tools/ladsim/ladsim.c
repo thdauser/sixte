@@ -19,10 +19,10 @@ int ladsim_main()
   PhotonListFile* plf=NULL;
 
   // Impact list file.
-  ImpactListFile* ilf=NULL;
+  LADImpactListFile* ilf=NULL;
 
   // Event list file.
-  EventListFile* elf=NULL;
+  LADEventListFile* elf=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -90,7 +90,7 @@ int ladsim_main()
       strcpy(impactlist_filename, par.ImpactList);
     }
     strcpy(impactlist_template, par.data_path);
-    strcat(impactlist_template, "/templates/impactlist.tpl");
+    strcat(impactlist_template, "/templates/ladimpactlist.tpl");
     
     // Determine the event list output file and the file template.
     char eventlist_template[MAXFILENAME];
@@ -104,7 +104,7 @@ int ladsim_main()
       strcpy(eventlist_filename, par.EventList);
     }
     strcpy(eventlist_template, par.data_path);
-    strcat(eventlist_template, "/templates/eventlist.tpl");
+    strcat(eventlist_template, "/templates/ladeventlist.tpl");
 
     // Determine the random number generator seed.
     int seed;
@@ -174,8 +174,7 @@ int ladsim_main()
     // END of setting up the attitude.
 
     // Load the SIMPUT X-ray source catalog.
-    // TODO
-    //srccat = loadSourceCatalog(par.Simput, det, &status);
+    srccat = loadSourceCatalog(par.Simput, lad->arf, &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -203,8 +202,8 @@ int ladsim_main()
 
     // Photon Generation.
     headas_chat(3, "start photon generation ...\n");
-    // TODO
-    //phgen(det, ac, srccat, plf, t0, par.Exposure, par.MJDREF, &status);
+    phgen(ac, srccat, plf, t0, par.Exposure, par.MJDREF, 
+	  lad->fov_diameter, &status);
     CHECK_STATUS_BREAK(status);
 
     // Free the source catalog in order to save memory.
@@ -216,9 +215,9 @@ int ladsim_main()
 
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, 
-			      impactlist_template, 
-			      &status);
+    ilf=openNewLADImpactListFile(impactlist_filename, 
+				 impactlist_template, 
+				 &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -247,9 +246,9 @@ int ladsim_main()
 
 
     // Open the output event list file.
-    elf=openNewEventListFile(eventlist_filename, 
-			     eventlist_template, 
-			     &status);
+    elf=openNewLADEventListFile(eventlist_filename, 
+				eventlist_template, 
+				&status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -264,13 +263,12 @@ int ladsim_main()
 
     // Photon Detection.
     headas_chat(3, "start photon detection ...\n");
-    // TODO
     //phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
 
     // Close the impact list file in order to save memory.
-    freeImpactListFile(&ilf, &status);
+    freeLADImpactListFile(&ilf, &status);
 
 
     // Run the event projection.
@@ -290,8 +288,8 @@ int ladsim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freeEventListFile(&elf, &status);
-  freeImpactListFile(&ilf, &status);
+  freeLADEventListFile(&elf, &status);
+  freeLADImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
   freeAttitudeCatalog(&ac);

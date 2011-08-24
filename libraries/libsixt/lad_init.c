@@ -525,6 +525,13 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Store the pointer to the currently open element.
     xmlparsedata->element = element;
 
+  } else if (!strcmp(Uelement, "FOV")) {
+
+    // Determine the diameter of the FOV
+    char buffer[MAXMSG]; // String buffer.
+    getAttribute(attr, "FOV", buffer);
+    xmlparsedata->lad->fov_diameter = (float)atof(buffer);
+   
   } else {
     xmlparsedata->status = EXIT_FAILURE;
     SIXT_ERROR("unknown XML element");

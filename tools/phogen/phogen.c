@@ -149,7 +149,8 @@ int phogen_main()
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");
 
-    phgen(det, ac, srccat, plf, t0, par.Exposure, par.MJDREF, &status);
+    phgen(ac, srccat, plf, t0, par.Exposure, par.MJDREF, 
+	  det->fov_diameter, &status);
     CHECK_STATUS_BREAK(status);
  
     // --- End of photon generation ---

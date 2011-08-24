@@ -19,6 +19,7 @@ LAD* newLAD(int* const status)
   // Initialize all pointers with NULL and set initial values.
   lad->panel  =NULL;
   lad->npanels=0;
+  lad->fov_diameter=0.;
   lad->arf    =NULL;
 
   return(lad);

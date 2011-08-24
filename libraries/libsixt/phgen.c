@@ -1,13 +1,13 @@
 #include "phgen.h"
 
 
-void phgen(const GenDet* const det,
-	   AttitudeCatalog* const ac,
+void phgen(AttitudeCatalog* const ac,
 	   SourceCatalog* const srccat,
 	   PhotonListFile* const plf,
 	   const double t0, 
 	   const double exposure,
 	   const double mjdref,
+	   const float fov,
 	   int* const status)
 {
   // Step width of the time loop.
@@ -30,7 +30,7 @@ void phgen(const GenDet* const det,
     // Get photons for all sources in the catalog.
     double t2 = MIN(time+dt, t0+exposure);
     LinkedPhoListElement* pholist =
-      genFoVXRayPhotons(srccat, &pointing, det->fov_diameter,
+      genFoVXRayPhotons(srccat, &pointing, fov,
 			time, t2, mjdref, status);
     CHECK_STATUS_BREAK(*status);
       

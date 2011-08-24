@@ -100,6 +100,11 @@ typedef struct {
   /** Array containing pointers to the individual panels. */
   LADPanel** panel;
 
+  /** Diameter of the FoV defined by the collimator [rad]. In the XML
+      file the diameter is given in [deg], but it is converted to
+      [rad] when parsing the XML file. */
+  float fov_diameter;
+
   /** ARF containing the geometric area of the LAD panels. */
   struct ARF* arf;
 

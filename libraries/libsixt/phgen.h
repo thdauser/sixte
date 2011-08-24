@@ -14,13 +14,13 @@
 /////////////////////////////////////////////////////////////////
 
 
-void phgen(const GenDet* const det,
-	   AttitudeCatalog* const ac,
+void phgen(AttitudeCatalog* const ac,
 	   SourceCatalog* const srccat,
 	   PhotonListFile* const plf,
 	   const double t0, 
 	   const double exposure,
 	   const double mjdref,
+	   const float fov,
 	   int* const status);
 
 
