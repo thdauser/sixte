@@ -21,6 +21,9 @@ LAD* newLAD(int* const status)
   lad->npanels=0;
   lad->fov_diameter=0.;
   lad->arf    =NULL;
+  lad->temperature =0.;
+  lad->efield      =0.;
+  lad->mobility    =0.;
 
   return(lad);
 }

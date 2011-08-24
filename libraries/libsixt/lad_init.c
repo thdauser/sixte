@@ -242,6 +242,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
     lad->arf->LowEnergy[0]     = 0.;
     lad->arf->HighEnergy[0]    = 1000.;
     lad->arf->EffArea[0]       = area;
+    // TODO Include the detector sensitivity.
 
   }
   // END of loop over all panels.
@@ -527,11 +528,32 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "FOV")) {
 
-    // Determine the diameter of the FOV
+    // Determine the diameter of the FOV.
     char buffer[MAXMSG]; // String buffer.
     getAttribute(attr, "FOV", buffer);
     xmlparsedata->lad->fov_diameter = (float)atof(buffer);
    
+  } else if (!strcmp(Uelement, "TEMPERATURE")) {
+
+    // Determine the value of the temperature.
+    char buffer[MAXMSG]; // String buffer.
+    getAttribute(attr, "VALUE", buffer);
+    xmlparsedata->lad->temperature = (float)atof(buffer);
+   
+  } else if (!strcmp(Uelement, "EFIELD")) {
+
+    // Determine the electric field.
+    char buffer[MAXMSG]; // String buffer.
+    getAttribute(attr, "VALUE", buffer);
+    xmlparsedata->lad->efield = (float)atof(buffer);
+   
+  } else if (!strcmp(Uelement, "MOBILITY")) {
+
+    // Determine the mobility.
+    char buffer[MAXMSG]; // String buffer.
+    getAttribute(attr, "VALUE", buffer);
+    xmlparsedata->lad->mobility = (float)atof(buffer);
+
   } else {
     xmlparsedata->status = EXIT_FAILURE;
     SIXT_ERROR("unknown XML element");

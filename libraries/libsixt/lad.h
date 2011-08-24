@@ -108,6 +108,15 @@ typedef struct {
   /** ARF containing the geometric area of the LAD panels. */
   struct ARF* arf;
 
+  /** Temperature of the SDDs [K]. */
+  float temperature;
+  
+  /** Strength of the electric drift field [V]. */
+  float efield;
+
+  /** Mobility [m**2/V/s]. */
+  float mobility; 
+
 } LAD;
 
 

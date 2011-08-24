@@ -4,6 +4,7 @@
 #include "sixt.h"
 
 #include "attitudecatalog.h"
+#include "genericdetector.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"

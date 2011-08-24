@@ -34,7 +34,6 @@ int initGenericDetector(GenericDetector* gd,
 }
 
 
-
 void cleanupGenericDetector(GenericDetector* gd)
 {
   // Actually one has to release the energy allocated for the internal
@@ -45,7 +44,6 @@ void cleanupGenericDetector(GenericDetector* gd)
   freeRMF(gd->rmf);
   gd->rmf=NULL;
 }
-
 
 
 double gaussint(const double x) 

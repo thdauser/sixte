@@ -1,6 +1,170 @@
 #include "ladsim.h"
 
 
+static void ladphimg(const LAD* const lad,
+		     AttitudeCatalog* const ac,
+		     PhotonListFile* const plf,
+		     LADImpactListFile* const ilf,
+		     const double t0,
+		     const double exposure,
+		     int* const status)
+{
+  struct Telescope telescope;
+
+  // Calculate the minimum cos-value for sources inside the FOV: 
+  // (angle(x0,source) <= 1/2 * diameter)
+  const double fov_min_align = cos(lad->fov_diameter/2.); 
+
+  // Scan the entire photon list.  
+  while (plf->row < plf->nrows) {
+
+    Photon photon={.time=0.};
+      
+    // Read an entry from the photon list:
+    *status=PhotonListFile_getNextRow(plf, &photon);
+    CHECK_STATUS_VOID(*status);
+
+    // Check whether we are still within the requested time interval.
+    if (photon.time < t0) continue;
+    if (photon.time > t0+exposure) break;
+
+    // Determine telescope pointing direction at the current time.
+    telescope.nz = getTelescopeNz(ac, photon.time, status);
+    CHECK_STATUS_VOID(*status);
+
+    // Compare the photon direction to the direction of the telescope
+    // axis to check whether the photon is inside the FOV.
+    Vector photon_direction = unit_vector(photon.ra, photon.dec);
+    if (check_fov(&photon_direction, &telescope.nz, fov_min_align)==0) {
+      // Photon is inside the FOV!
+	
+      // Determine telescope data like pointing direction (attitude) etc.
+      // The telescope coordinate system consists of an x-, y-, and z-axis.
+      getTelescopeAxes(ac, &telescope.nx, &telescope.ny, &telescope.nz, 
+		       photon.time, status);
+      CHECK_STATUS_BREAK(*status);
+
+      // Determine the photon impact position on the detector:
+      // the affected panel, module, element, and the position on the 
+      // element (in [m]).
+
+      // TODO
+      long panel   = 0;
+      long module  = 0;
+      long element = 0;
+      struct Point2d position = { .x=1.e-3, .y=1.e-3 };
+
+      
+      // Insert the impact position with the photon data into the 
+      // impact list.
+      LADImpact impact = { 
+	.time   = photon.time,
+	.energy = photon.energy,
+	.panel  = panel,
+	.module = module,
+	.element= element,
+	.position = position,
+	.ph_id  = photon.ph_id,
+	.src_id = photon.src_id
+      };
+      addLADImpact2File(ilf, &impact, status);	    
+      CHECK_STATUS_VOID(*status);
+	  
+    } 
+    // End of FOV check.
+  }
+  // END of scanning LOOP over the photon list.
+}
+
+
+static void ladphdet(const LAD* const lad,
+		     LADImpactListFile* const ilf,
+		     LADEventListFile* const elf,
+		     const double t0,
+		     const double exposure,
+		     int* const status)
+{
+  // Loop over all impacts in the FITS file.
+  while (ilf->row<ilf->nrows) {
+
+    LADImpact impact;
+    getNextLADImpactFromFile(ilf, &impact, status);
+    CHECK_STATUS_VOID(*status);
+
+    // Check whether we are still within the requested time interval.
+    if (impact.time < t0) continue;
+    if (impact.time > t0+exposure) break;
+
+
+    // Photon detection process according to Campana (2011).
+    LADElement* element = 
+      lad->panel[impact.panel]->module[impact.module]->element[impact.element];
+
+    // Determine the parameters of the charge cloud.
+    // Boltzmann constant.
+    const double kB = 8.6173324e-5; // [eV/K]
+    // Diffusion coefficient.
+    //double D = kB * lad->temperature * lad->mobility;
+    // Drift velocity.
+    double vD = lad->mobility * lad->efield;
+    // Charge cloud dispersion.
+    const double sigma0 = 20.e-6; // (according to Campana, 2011) [m]
+    double sigma = 
+      sqrt(2.*kB*lad->temperature*impact.position.x*1.e6/lad->efield + 
+	   pow(sigma0*1.e6,2.)) /1.e6;
+
+    // Drift time.
+    double drifttime = impact.position.x / vD;
+
+    // Determine the index of the closest anode strip.
+    double y0 = impact.position.y/element->anodepitch;
+    long center_anode = ((long)(y0+1)) -1;
+
+    // Loop over adjacent anodes.
+    long ii;
+    for (ii=MAX(0,center_anode-2); 
+	 ii<MIN(element->nanodes,center_anode+3); ii++) {
+
+      LADEvent event;
+      event.panel   = impact.panel;
+      event.module  = impact.module;
+      event.element = impact.element;
+      event.anode   = ii;
+      event.ph_id[0] = impact.ph_id;
+      event.src_id[0] = impact.src_id;
+
+      // Measured time.
+      event.time = impact.time + drifttime;
+
+      // Measured signal.
+      double yi = (ii-center_anode)*1.0;
+      event.signal = 
+	impact.energy*0.5*
+	(gaussint((yi+element->anodepitch*0.5-y0)/(sigma*sqrt(2.)))-
+	 gaussint((yi-element->anodepitch*0.5-y0)/(sigma*sqrt(2.))));
+
+      // Apply thresholds.
+      // TODO
+
+      // Append the new event to the file.
+      addLADEvent2File(elf, &event, status);
+      CHECK_STATUS_VOID(*status);
+    }
+    // END of loop over adjacent anodes.
+
+    // Display program progress.
+    if (0==ilf->row%1000) {
+      headas_chat(2, "\r %ld of %ld impacts (%.2lf%%) ", 
+		  ilf->row, ilf->nrows, ilf->row*100./ilf->nrows);
+      fflush(NULL);
+    }
+
+  };
+  CHECK_STATUS_VOID(*status);
+  // END of loop over all impacts in the FITS file.
+}
+
+
 int ladsim_main() 
 {
   // Program parameters.
@@ -233,8 +397,7 @@ int ladsim_main()
 
     // Photon Imaging.
     headas_chat(3, "start photon imaging ...\n");
-    // TODO
-    //phimg(det, ac, plf, ilf, t0, par.Exposure, &status);
+    ladphimg(lad, ac, plf, ilf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
     // Close the photon list file in order to save memory.
@@ -263,7 +426,7 @@ int ladsim_main()
 
     // Photon Detection.
     headas_chat(3, "start photon detection ...\n");
-    //phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);
+    ladphdet(lad, ilf, elf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
 
