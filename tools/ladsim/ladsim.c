@@ -43,6 +43,14 @@ static void ladphimg(const LAD* const lad,
 		       photon.time, status);
       CHECK_STATUS_BREAK(*status);
 
+      // Apply the geometric vignetting corresponding to the projected
+      // detector surface.
+      double p = sixt_get_random_number();
+      if (p > scalar_product(&photon_direction, &telescope.nz)) {
+	// Photon is not detected, since it misses the detector.
+	continue;
+      }
+
       // New impact.
       LADImpact impact;
       impact.time = photon.time;
