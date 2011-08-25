@@ -88,10 +88,31 @@ static void ladphimg(const LAD* const lad,
 
       // Determine the position on the detector according to the off-axis
       // angle and the orientation of the element ([m]).
-      // TODO
-      impact.position = entrance_position;
-      
-      
+
+      // Determine the photon direction with respect to the telescope
+      // coordinate system.
+      Vector deviation;
+      deviation.x = scalar_product(&telescope.nx, &photon_direction);
+      deviation.y = scalar_product(&telescope.ny, &photon_direction);
+      deviation.z = scalar_product(&telescope.nz, &photon_direction);
+
+      // Determine the length of the vector to reach from the entrance 
+      // position on top of the collimator to the bottom.
+      // (The collimator has a thickness of 2 mm.)
+      double length = 2.0e-3 / deviation.z;
+
+      // Add the off-axis deviation to the entrance position.
+      impact.position.x = 
+	entrance_position.x + deviation.x * length;
+      impact.position.y = 
+	entrance_position.y + deviation.x * length;
+
+      // Check if the impact position still is inside the hole.
+      // Otherwise the photon has been absorbed by the walls of the hole.
+      if (!LADCollimatorOpen(impact.position)) continue;
+
+      // TODO Make sure that it is the SAME hole as before !!!
+
       // Insert the impact with the photon data into the list.
       addLADImpact2File(ilf, &impact, status);	    
       CHECK_STATUS_VOID(*status);
