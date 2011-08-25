@@ -20,6 +20,7 @@
 #define TOOLSUB ladsim_main
 #include "headas_main.c"
 
+#define LAD_OAR 1
 
 struct Parameters {
   char OutputStem[MAXFILENAME];

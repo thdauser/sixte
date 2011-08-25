@@ -76,18 +76,11 @@ static void ladphimg(const LAD* const lad,
       
       // Determine the entrance position into a collimator hole ([m]).
       struct Point2d entrance_position;
-      long ii;
-      long try=0, pass=0;
-      for (ii=0; ii<1000000; ii++) {
       do {
-	try++;
 	// Get a random position on the element.
 	entrance_position.x=sixt_get_random_number()*element->xdim;
 	entrance_position.y=sixt_get_random_number()*element->ydim;
       } while (!LADCollimatorOpen(entrance_position));
-      pass++;
-      }
-      printf("### LAD open fraction: %lf ###\n", pass*1./try);
 
       // Determine the position on the detector according to the off-axis
       // angle and the orientation of the element ([m]).
@@ -396,6 +389,28 @@ int ladsim_main()
     // Load the SIMPUT X-ray source catalog.
     srccat = loadSourceCatalog(par.Simput, lad->arf, &status);
     CHECK_STATUS_BREAK(status);
+
+
+#ifdef LAD_OAR
+    // Determine the Open Area Ratio of the Collimator on the LAD.
+    long kk;
+    long try=0, pass=0;
+    struct Point2d position;
+    for (kk=0; kk<1000000; kk++) {
+      do {
+	try++;
+	// Get a random position on the element.
+	position.x=
+	  sixt_get_random_number()*
+	  lad->panel[0]->module[0]->element[0]->xdim;
+	position.y=
+	  sixt_get_random_number()*
+	  lad->panel[0]->module[0]->element[0]->ydim;
+      } while (!LADCollimatorOpen(position));
+      pass++;
+    }
+    printf("### LAD Open Area Ratio: %lf ###\n", pass*1./try);
+#endif
 
 
     // --- End of Initialization ---
