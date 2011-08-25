@@ -175,6 +175,13 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	  *status=EXIT_FAILURE;
 	  return;
 	}
+
+	// Check if the number of anodes is even.
+	if (lad->panel[ii]->module[jj]->element[kk]->nanodes % 2 == 1) {
+	  SIXT_ERROR("number of anodes must be even");
+	  *status=EXIT_FAILURE;
+	  return;
+	}
 	
 	headas_chat(5, "   element %ld has %ld anodes \n", 
 		    lad->panel[ii]->module[jj]->element[kk]->id,
@@ -317,19 +324,14 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   // Check for the different kinds of allowed elements.
   if (!strcmp(Uelement, "PANEL")) {
 
-    // Determine the ID of the new panel.
-    long id = getAttributeLong(attr, "ID");
-    long nx = getAttributeLong(attr, "NX");
-    long ny = getAttributeLong(attr, "NY");
-
     // Create a new Panel.
     LADPanel* panel = newLADPanel(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    panel->id = id;
-    panel->nx = nx;
-    panel->ny = ny;
+    panel->id = getAttributeLong(attr, "ID");
+    panel->nx = getAttributeLong(attr, "NX");
+    panel->ny = getAttributeLong(attr, "NY");
     
     // Add the new panel to the LAD.
     addPanel2LAD(xmlparsedata->lad, panel, &xmlparsedata->status);
@@ -340,19 +342,14 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "MODULE")) {
 
-    // Determine the ID of the new module.
-    long id = getAttributeLong(attr, "ID");
-    long nx = getAttributeLong(attr, "NX");
-    long ny = getAttributeLong(attr, "NY");
-
     // Create a new Module.
     LADModule* module = newLADModule(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    module->id = id;
-    module->nx = nx;
-    module->ny = ny;
+    module->id = getAttributeLong(attr, "ID");
+    module->nx = getAttributeLong(attr, "NX");
+    module->ny = getAttributeLong(attr, "NY");
 
     // Add the new module to the LAD.
     addModule2Panel(xmlparsedata->panel, module, &xmlparsedata->status);
@@ -363,23 +360,17 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "ELEMENT")) {
 
-    // Determine the ID of the new element.
-    long id    = getAttributeLong(attr, "ID");
-    float xdim = getAttributeFloat(attr, "XDIM");
-    float ydim = getAttributeFloat(attr, "YDIM");
-    long nanodes = getAttributeLong(attr, "NANODES");
-    float anodepitch = getAttributeFloat(attr, "ANODEPITCH");
-    
     // Create a new Element.
     LADElement* element = newLADElement(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    element->id = id;
-    element->xdim = xdim;
-    element->ydim = ydim;
-    element->nanodes = nanodes;
-    element->anodepitch = anodepitch;
+    element->id = getAttributeLong(attr, "ID");
+    element->xdim = getAttributeFloat(attr, "XDIM");
+    element->ydim = getAttributeFloat(attr, "YDIM");
+    element->xborder = getAttributeFloat(attr, "XBORDER");
+    element->yborder = getAttributeFloat(attr, "YBORDER");
+    element->nanodes = getAttributeLong(attr, "NANODES");
     
     // Add the new element to the LAD.
     addElement2Module(xmlparsedata->module, element, &xmlparsedata->status);

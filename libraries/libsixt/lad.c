@@ -163,8 +163,9 @@ LADElement* newLADElement(int* const status)
   element->id       =0;
   element->xdim     =0.;
   element->ydim     =0.;
+  element->xborder  =0.;
+  element->yborder  =0.;
   element->nanodes  =0;
-  element->anodepitch=0.;
 
   return(element);
 }

@@ -73,13 +73,17 @@ static void ladphimg(const LAD* const lad,
       // Pointer to the element.
       LADElement* element = 
 	lad->panel[impact.panel]->module[impact.module]->element[impact.element];
+
+      // Determine the sensitive area of the element.
+      float xwidth = element->xdim - 2.*element->xborder;
+      float ywidth = element->ydim - 2.*element->yborder;
       
       // Determine the entrance position into a collimator hole ([m]).
       struct Point2d entrance_position;
       do {
-	// Get a random position on the element.
-	entrance_position.x=sixt_get_random_number()*element->xdim;
-	entrance_position.y=sixt_get_random_number()*element->ydim;
+	// Get a random position on the sensitive area of the element.
+	entrance_position.x=sixt_get_random_number()*xwidth;
+	entrance_position.y=sixt_get_random_number()*ywidth;
       } while (!LADCollimatorOpen(entrance_position));
 
       // Determine the position on the detector according to the off-axis
@@ -122,6 +126,9 @@ static void ladphdet(const LAD* const lad,
     LADElement* element = 
       lad->panel[impact.panel]->module[impact.module]->element[impact.element];
 
+    // Determine the anode pitch [m].
+    float anode_pitch = (element->ydim - 2.*element->yborder)/(element->nanodes-1);
+
     // Determine the parameters of the charge cloud.
     // Boltzmann constant.
     const double kB = 8.6173324e-5; // [eV/K]
@@ -139,7 +146,7 @@ static void ladphdet(const LAD* const lad,
     double drifttime = impact.position.x / vD;
 
     // Determine the index of the closest anode strip.
-    double y0 = impact.position.y/element->anodepitch;
+    double y0 = impact.position.y/anode_pitch;
     long center_anode = ((long)(y0+1)) -1;
 
     // Determine the measured detector channel (PHA channel) according 
@@ -184,8 +191,8 @@ static void ladphdet(const LAD* const lad,
       double yi = (ii-center_anode)*1.0;
       event.signal = 
 	signal*0.5*
-	(gaussint((yi+element->anodepitch*0.5-y0)/(sigma*sqrt(2.)))-
-	 gaussint((yi-element->anodepitch*0.5-y0)/(sigma*sqrt(2.))));
+	(gaussint((yi+anode_pitch*0.5-y0)/(sigma*sqrt(2.)))-
+	 gaussint((yi-anode_pitch*0.5-y0)/(sigma*sqrt(2.))));
 
       // Apply thresholds.
       if (NULL!=lad->threshold_readout_lo_keV) {
@@ -396,16 +403,18 @@ int ladsim_main()
     long kk;
     long try=0, pass=0;
     struct Point2d position;
+    float xwidth = 
+      lad->panel[0]->module[0]->element[0]->xdim - 
+      lad->panel[0]->module[0]->element[0]->xborder*2.;
+    float ywidth = 
+      lad->panel[0]->module[0]->element[0]->ydim - 
+      lad->panel[0]->module[0]->element[0]->yborder*2.;
     for (kk=0; kk<1000000; kk++) {
       do {
 	try++;
 	// Get a random position on the element.
-	position.x=
-	  sixt_get_random_number()*
-	  lad->panel[0]->module[0]->element[0]->xdim;
-	position.y=
-	  sixt_get_random_number()*
-	  lad->panel[0]->module[0]->element[0]->ydim;
+	position.x=sixt_get_random_number()*xwidth;
+	position.y=sixt_get_random_number()*ywidth;
       } while (!LADCollimatorOpen(position));
       pass++;
     }

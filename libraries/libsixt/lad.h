@@ -29,13 +29,17 @@ typedef struct {
       in Campana, 2010) [m]. */
   float ydim;
 
+  /** Border of the element at the top and at the bottom of the anode
+      lines [m]. */
+  float xborder;
+
+  /** Border of the element at both sides of the drift strips [m]. */
+  float yborder;
+
   /** Number of anodes. Must be an even number, since each element
       contains the two rows of anodes at the top and at the bottom
       edge. */
   long nanodes;
-
-  /** Anode pitch [m]. */
-  float anodepitch;
 
 } LADElement;
 
