@@ -561,6 +561,16 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     strcat(filepathname, filename);
     xmlparsedata->lad->arf = loadARF(filepathname, &xmlparsedata->status);
 
+  } else if (!strcmp(Uelement, "RMF")) {
+    
+    // Determine the filename of the detector RMF and load it.
+    char filename[MAXFILENAME];
+    getAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->lad->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->lad->rmf = loadRMF(filepathname, &xmlparsedata->status);
+
   } else {
     xmlparsedata->status = EXIT_FAILURE;
     SIXT_ERROR("unknown XML element");

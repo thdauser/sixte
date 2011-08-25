@@ -6,6 +6,7 @@
 #include "ladevent.h"
 #include "ladeventlistfile.h"
 #include "point.h"
+#include "rmf.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -106,8 +107,11 @@ typedef struct {
       [rad] when parsing the XML file. */
   float fov_diameter;
 
-  /** ARF containing the geometric area of the LAD panels. */
+  /** ARF containing the on-axis effective area of the instrument. */
   struct ARF* arf;
+
+  /** RMF of the detector. */
+  struct RMF* rmf;
 
   /** Temperature of the SDDs [K]. */
   float temperature;

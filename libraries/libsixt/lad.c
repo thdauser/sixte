@@ -21,6 +21,7 @@ LAD* newLAD(int* const status)
   lad->npanels=0;
   lad->fov_diameter=0.;
   lad->arf    =NULL;
+  lad->rmf    =NULL;
   lad->temperature =0.;
   lad->efield      =0.;
   lad->mobility    =0.;
@@ -45,6 +46,9 @@ void freeLAD(LAD** const lad)
     }
     if (NULL!=(*lad)->arf) {
       freeARF((*lad)->arf);
+    }
+    if (NULL!=(*lad)->rmf) {
+      freeRMF((*lad)->rmf);
     }
     if (NULL!=(*lad)->threshold_readout_lo_keV) {
       free((*lad)->threshold_readout_lo_keV);

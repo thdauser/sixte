@@ -13,6 +13,7 @@
 #include "lad.h"
 #include "ladeventlistfile.h"
 #include "ladimpactlistfile.h"
+#include "rmf.h"
 #include "sourcecatalog.h"
 #include "vector.h"
 

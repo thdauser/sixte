@@ -134,6 +134,28 @@ static void ladphdet(const LAD* const lad,
     double y0 = impact.position.y/element->anodepitch;
     long center_anode = ((long)(y0+1)) -1;
 
+    // Determine the measured detector channel (PHA channel) according 
+    // to the RMF.
+    // The channel is obtained from the RMF using the corresponding
+    // HEAdas routine which is based on drawing a random number.
+    long channel;
+    ReturnChannel(lad->rmf, impact.energy, 1, &channel);
+
+    // Check if the photon is really measured. If the
+    // PHA channel returned by the HEAdas RMF function is '-1', 
+    // the photon is not detected.
+    // This can happen, if the RMF actually is an RSP, i.e. it 
+    // includes ARF contributions, e.g., 
+    // the detector quantum efficiency and filter transmission.
+    if (0>channel) {
+      continue; // Photon is not detected.
+    }
+
+    // Determine the signal corresponding to the channel according 
+    // to the EBOUNDS table.
+    float signal = getEBOUNDSEnergy(channel, lad->rmf, 0);
+    assert(signal>=0.);
+
     // Loop over adjacent anodes.
     long ii;
     for (ii=MAX(0,center_anode-2); 
@@ -153,7 +175,7 @@ static void ladphdet(const LAD* const lad,
       // Measured signal.
       double yi = (ii-center_anode)*1.0;
       event.signal = 
-	impact.energy*0.5*
+	signal*0.5*
 	(gaussint((yi+element->anodepitch*0.5-y0)/(sigma*sqrt(2.)))-
 	 gaussint((yi-element->anodepitch*0.5-y0)/(sigma*sqrt(2.))));
 
