@@ -583,9 +583,6 @@ LAD* getLADfromXML(const char* const filename,
   expandXML(xmlbuffer, status);
   CHECK_STATUS_RET(*status, lad);
 
-  printf("%s", xmlbuffer->text);
-  exit(0);
-
 
   // Iteratively parse the XML code and construct the LAD data
   // structure.

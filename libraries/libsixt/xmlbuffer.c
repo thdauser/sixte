@@ -234,6 +234,97 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
 {
   char* occurrence=buffer->text;
 
+  // Perform all "*" before "+" and "-" operations.
+  // Loop while a "*" sign is found in the buffer text.
+  while (NULL!=(occurrence=strpbrk(occurrence, "*"))) {
+
+    // 1. Determine the first term.
+    char* start = occurrence-1;
+    // Scan forward until reaching a non-digit.
+    while (strpbrk(start, "0123456789")==start) {
+      start--;
+    }
+    start++;
+
+    // Check if there really is a numeric term in front of the "+" or "-" sign.
+    // If not continue with the next loop iteration.
+    if (start==occurrence) {
+      occurrence++;
+      continue;
+    }
+
+    // Store the first value in a separate string.
+    char svalue[MAXMSG];
+    int ii;
+    for (ii=0; start+ii<occurrence; ii++) {
+      svalue[ii] = start[ii];
+    }
+    svalue[ii] = '\0';
+    
+    // Convert the string to an integer value.
+    int ivalue1 = atoi(svalue);
+
+
+    // 2. Determine the second term.
+    char* end = occurrence+1;
+    // Scan backward until reaching a non-digit.
+    while (strpbrk(end, "0123456789")==end) {
+      end++;
+    }
+    end--;
+
+    // Check if there really is a numeric term behind of the "+" or "-" sign.
+    // If not continue with the next loop iteration.
+    if (end==occurrence) {
+      occurrence++;
+      continue;
+    }
+
+    // Store the second value in a separate string.
+    for (ii=0; occurrence+ii<end; ii++) {
+      svalue[ii] = occurrence[1+ii];
+    }
+    svalue[ii] = '\0';
+
+    // Convert the string to an integer value.
+    int ivalue2 = atoi(svalue);
+
+
+    // Perform the multiplication.
+    int result = ivalue1 * ivalue2;
+
+
+    // Store the result at the right position in the XMLBuffer text.
+    // Determine the new sub-string.
+    sprintf(svalue, "%d", result);
+
+    // Get the length of the tail.
+    int len_tail = strlen(end)-1;
+
+    // String tail after the first occurrence of the old string in the buffer text.
+    char* tail=(char*)malloc((1+len_tail)*sizeof(char));
+    if (NULL==tail) {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for string buffer in XML pre-parser failed");
+      return;
+    }
+    // Copy the tail of the string without the old string to the buffer.
+    strcpy(tail, &end[1]);
+    // Truncate the buffer string directly before the occurrence of the old string.
+    start[0] = '\0';
+    // Append the new string to the truncated buffer string.
+    addString2XMLBuffer(buffer, svalue, status);
+    // Append the tail after the newly inserted new string.
+    addString2XMLBuffer(buffer, tail, status);
+
+    // Release memory of the tail buffer.
+    free(tail);
+  }
+  // END of loop over all occurrences of "*" signs.
+
+  // Reset the pointer to the beginning of the XML buffer text.
+  occurrence=buffer->text;
+
   // Loop while a "+" or "-" sign is found in the buffer text.
   while (NULL!=(occurrence=strpbrk(occurrence, "+-"))) {
 
