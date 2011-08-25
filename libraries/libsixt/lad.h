@@ -7,6 +7,7 @@
 #include "ladeventlistfile.h"
 #include "point.h"
 #include "rmf.h"
+#include "xmlbuffer.h"
 
 
 /////////////////////////////////////////////////////////////////
