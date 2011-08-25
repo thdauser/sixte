@@ -257,7 +257,6 @@ void parseGenDetXML(GenDet* const det,
   fclose(xmlfile);
 
 
-
   // Before acutally parsing the XML code, expand the loops and 
   // arithmetic operations in the GenDet XML description.
   // The expansion algorithm repeatetly scans the XML code and
@@ -265,7 +264,6 @@ void parseGenDetXML(GenDet* const det,
   // the contained XML code.
   expandXML(xmlbuffer, status);
   if (EXIT_SUCCESS!=*status) return;
-
 
 
   // Parse XML code in the xmlbuffer using the expat library.
@@ -304,13 +302,13 @@ void parseGenDetXML(GenDet* const det,
     *status = xmlparsedata.status;
     return;
   }
+
+
+  // Release memory.
   XML_ParserFree(parser);
-
-
 
   // Remove the XML string buffer.
   destroyXMLBuffer(&xmlbuffer);
-
 
 
   // Check if all required parameters have been read successfully from 

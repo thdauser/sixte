@@ -76,11 +76,18 @@ static void ladphimg(const LAD* const lad,
       
       // Determine the entrance position into a collimator hole ([m]).
       struct Point2d entrance_position;
+      long ii;
+      long try=0, pass=0;
+      for (ii=0; ii<1000000; ii++) {
       do {
+	try++;
 	// Get a random position on the element.
 	entrance_position.x=sixt_get_random_number()*element->xdim;
 	entrance_position.y=sixt_get_random_number()*element->ydim;
       } while (!LADCollimatorOpen(entrance_position));
+      pass++;
+      }
+      printf("### LAD open fraction: %lf ###\n", pass*1./try);
 
       // Determine the position on the detector according to the off-axis
       // angle and the orientation of the element ([m]).

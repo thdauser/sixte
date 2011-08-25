@@ -572,8 +572,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     xmlparsedata->lad->rmf = loadRMF(filepathname, &xmlparsedata->status);
 
   } else {
-    xmlparsedata->status = EXIT_FAILURE;
-    SIXT_ERROR("unknown XML element");
+    printf("Warning: unknown XML element '%s'\n", Uelement);
   }
 }
 
@@ -1086,6 +1085,9 @@ LAD* getLADfromXML(const char* const filename,
   expandXML(xmlbuffer, status);
   CHECK_STATUS_RET(*status, lad);
 
+  printf("%s", xmlbuffer->text);
+  exit(0);
+
 
   // Iteratively parse the XML code and construct the LAD data
   // structure.
@@ -1124,7 +1126,10 @@ LAD* getLADfromXML(const char* const filename,
     return(lad);
   }
   // Check for errors.
-  CHECK_STATUS_RET(xmlparsedata.status, lad);
+  *status = xmlparsedata.status;
+  CHECK_STATUS_RET(*status, lad);
+
+  // Release memory.
   XML_ParserFree(parser);
 
   // Remove the XML string buffer.
