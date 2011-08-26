@@ -184,9 +184,12 @@ LADElement* newLADElement(int* const status);
     to the LADElement data structure to NULL. */
 void freeLADElement(LADElement** const element);
 
-/** Determine whether the specified position lies on an open hole of
-    the collimator. */
-int LADCollimatorOpen(const struct Point2d position);
+/** Determine the column and row indices of the hole, in which the
+    specified position on the collimator lies. If the position is not
+    inside a hole but on the absorbing material, the return values of
+    the column and row indices are set to -1. */
+void LADCollimatorHoleIdx(const struct Point2d position,
+			  long* col, long* row);
 
 
 #endif

@@ -79,12 +79,17 @@ static void ladphimg(const LAD* const lad,
       float ywidth = element->ydim - 2.*element->yborder;
       
       // Determine the entrance position into a collimator hole ([m]).
+      long col1, row1;
       struct Point2d entrance_position;
       do {
 	// Get a random position on the sensitive area of the element.
 	entrance_position.x=sixt_get_random_number()*xwidth;
 	entrance_position.y=sixt_get_random_number()*ywidth;
-      } while (!LADCollimatorOpen(entrance_position));
+	
+	// Check if the random position lies within a hole opening.
+	LADCollimatorHoleIdx(entrance_position, &col1, &row1);
+
+      } while ((col1<0)||(row1<0));
 
       // Determine the position on the detector according to the off-axis
       // angle and the orientation of the element ([m]).
@@ -105,18 +110,27 @@ static void ladphimg(const LAD* const lad,
       impact.position.x = 
 	entrance_position.x + deviation.x * length;
       impact.position.y = 
-	entrance_position.y + deviation.x * length;
+	entrance_position.y + deviation.y * length;
 
       // Check if the impact position still is inside the hole.
       // Otherwise the photon has been absorbed by the walls of the hole.
-      if (!LADCollimatorOpen(impact.position)) continue;
+      // Make sure that it is the SAME hole as before.
+      long col2, row2;
+      LADCollimatorHoleIdx(impact.position, &col2, &row2);
+      if ((col1!=col2)||(row1!=row2)) {
+	continue;
+      }
 
-      // TODO Make sure that it is the SAME hole as before !!!
+      // Check if the impact position still is on the active area of the SDD.
+      if ((impact.position.x<0.)||(impact.position.x>xwidth)||
+	  (impact.position.y<0.)||(impact.position.y>ywidth)) {
+	continue;
+      }
 
       // Insert the impact with the photon data into the list.
       addLADImpact2File(ilf, &impact, status);	    
       CHECK_STATUS_VOID(*status);
-	  
+      
     } 
     // End of FOV check.
   }
@@ -431,12 +445,17 @@ int ladsim_main()
       lad->panel[0]->module[0]->element[0]->ydim - 
       lad->panel[0]->module[0]->element[0]->yborder*2.;
     for (kk=0; kk<1000000; kk++) {
+      long col, row;
       do {
 	try++;
 	// Get a random position on the element.
 	position.x=sixt_get_random_number()*xwidth;
 	position.y=sixt_get_random_number()*ywidth;
-      } while (!LADCollimatorOpen(position));
+	
+	// Determine the indices of the respective hole.
+	LADCollimatorHoleIdx(position, &col, &row);
+
+      } while ((col<0)||(row<0));
       pass++;
     }
     printf("### LAD Open Area Ratio: %lf ###\n", pass*1./try);
