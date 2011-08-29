@@ -47,6 +47,8 @@ PIXLEN_Y        75.0            /
 	TTYPE#  ENERGY          / Recombined photon energy [eV]
 	TFORM#  E               
 	TUNIT#  eV              
+	TLMIN#  0.0
+	TLMAX#  20.48
 	TTYPE#  RAWX            / Raw x-coordinate of pixel
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX
@@ -60,10 +62,10 @@ PIXLEN_Y        75.0            /
 	TFORM#  J               / Format of column DEC
 	TUNIT#                  / Unit of column DEC
 	TTYPE#  X               / Back-projected right ascension
-	TFORM#  J               / Format of column RA
-	TUNIT#                  / Unit of column RA
-	TCTYP#  RA---SIN        / WCS Coord. type: RA tangent plane projection
-	TCUNI#  deg             / WCS  physical unit of X axis C
+	TFORM#  J               / Format of column X
+	TUNIT#                  / Unit of column X
+	TCTYP#  RA---SIN        / WCS Coord. type
+	TCUNI#  deg             / WCS  physical unit of X axis
 	TCRPX#  0.0             / WCS axis reference pixel
 	TCRVL#  0.0             / [deg] WCS coord. at X axis ref. pixel
 	TCDLT#  2.777778e-7     / [deg/pix] WCS X increment at ref. pixel
@@ -71,8 +73,8 @@ PIXLEN_Y        75.0            /
 	TLMAX#  long            / Maximum for X
 	TTYPE#  Y               / Back-projected declination
 	TFORM#  J               / Format of column DEC
-	TUNIT#                  / Unit of column DEC
-	TCTYP#  DEC--SIN        / WCS Coord. type: DEC tangent plane projection
+	TUNIT#                  / Unit of column Y
+	TCTYP#  DEC--SIN        / WCS Coord. type
 	TCUNI#  deg             / WCS  physical unit of Y axis 
 	TCRPX#  0.0             / WCS axis reference pixel
 	TCRVL#  0.0             / [deg] WCS coord. at Y axis ref. pixel
@@ -80,5 +82,6 @@ PIXLEN_Y        75.0            /
 	TLMIN#  long            / Minimum for Y
 	TLMAX#  long            / Maximum for Y
 	TTYPE# 	CCDNR           / 1-7 for eROSITA
-	TFORM# 	I   		/
-	TUNIT# 	                / 
+	TFORM# 	I   		/ Format of column CCDNR
+	TUNIT#                  / Unit of column CCDNR
+	

@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -146,6 +146,14 @@ int ero_events_main()
 
     headas_chat(3, "start copy process ...\n");
 
+    // Values for TLMIN and TLMAX header keywords in the output file.
+    float tlmin_energy=0.;
+    float tlmax_energy=0.;
+    long tlmin_x=0;
+    long tlmax_x=0;
+    long tlmin_y=0;
+    long tlmax_y=0;
+
     // Loop over all events in the FITS file. 
     long row;
     for (row=0; row<gelf->nrows; row++) {
@@ -162,8 +170,16 @@ int ero_events_main()
       fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, &event.time, &status);
       fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &event.frame, &status);
       fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &event.pha, &status);
+
       float energy = event.charge * 1000.; // [eV]
       fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &energy, &status);
+      if ((energy < tlmin_energy) || (0==row)) {
+	tlmin_energy = energy;
+      }
+      if (energy > tlmax_energy) {
+	tlmax_energy = energy;
+      }
+
       int rawx = event.rawx+1;
       fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &rawx, &status);
       int rawy = event.rawy+1;
@@ -190,6 +206,18 @@ int ero_events_main()
       if (pixcrd[1] < 0.) y--;
       fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &x, &status);
       fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &y, &status);
+      if ((x < tlmin_x) || (0==row)) {
+	tlmin_x = x;
+      }
+      if (x > tlmax_x) {
+	tlmax_x = x;
+      }
+      if ((y < tlmin_y) || (0==row)) {
+	tlmin_y = y;
+      }
+      if (y > tlmax_y) {
+	tlmax_y = y;
+      }
 
       fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &par.CCDNr, &status);
 
@@ -197,6 +225,31 @@ int ero_events_main()
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over all events in the FITS file.
+
+
+    // Update TLMIN and TLMAX header keywords.
+    sprintf(keyword, "TLMIN%d", cenergy);
+    fits_update_key(fptr, TFLOAT, keyword, &tlmin_energy, 
+		    "", &status);
+    sprintf(keyword, "TLMAX%d", cenergy);
+    fits_update_key(fptr, TFLOAT, keyword, &tlmax_energy, 
+		    "", &status);
+
+    sprintf(keyword, "TLMIN%d", cx);
+    fits_update_key(fptr, TLONG, keyword, &tlmin_x, 
+		    "", &status);
+    sprintf(keyword, "TLMAX%d", cx);
+    fits_update_key(fptr, TLONG, keyword, &tlmax_x, 
+		    "", &status);
+
+    sprintf(keyword, "TLMIN%d", cy);
+    fits_update_key(fptr, TLONG, keyword, &tlmin_y, 
+		    "", &status);
+    sprintf(keyword, "TLMAX%d", cy);
+    fits_update_key(fptr, TLONG, keyword, &tlmax_y, 
+		    "", &status);
+
+    CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
 
