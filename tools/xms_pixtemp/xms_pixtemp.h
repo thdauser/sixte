@@ -13,11 +13,12 @@
 
 struct Parameters{
   /** Filename of the XMS event file. */
-  char eventlist_filename[MAXMSG];
+  char EventList[MAXMSG];
   /** Filename of the output file. */
-  char output_filename[MAXMSG];
-  /** Filename of the detector response file containing the EBOUDNS table. */
-  char rsp_filename[MAXMSG];
+  char OutputFile[MAXMSG];
+  /** Filename of the detector response file containing the EBOUDNS
+      table. */
+  char RSP[MAXMSG];
 
   /** X- and y- coordinate of the pixel to be investigated. */
   int pixx, pixy;

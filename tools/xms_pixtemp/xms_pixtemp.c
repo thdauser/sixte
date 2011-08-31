@@ -11,7 +11,7 @@ int xms_pixtemp_main() {
 
   // Register HEATOOL
   set_toolname("xms_pixtemp");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
   do { // ERROR handling loop
 
@@ -23,15 +23,15 @@ int xms_pixtemp_main() {
     HDmtInit(1);
 
     // Open the event file.
-    elf=openEventListFile(parameters.eventlist_filename, READWRITE, &status);
+    elf=openEventListFile(parameters.EventList, READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Read the EBOUNDS from the detector response file.
-    struct RMF* rmf = loadRMF(parameters.rsp_filename, &status);
+    struct RMF* rmf = loadRMF(parameters.RSP, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Open the output file.
-    output_file = fopen(parameters.output_filename, "w+");
+    output_file = fopen(parameters.OutputFile, "w+");
     if (NULL==output_file) {
       status = EXIT_FAILURE;
       HD_ERROR_THROW("Error opening the output file!\n", status);
@@ -80,15 +80,15 @@ int xms_pixtemp_getpar(struct Parameters* parameters)
 {
   int status = EXIT_SUCCESS;
 
-  if ((status = PILGetFname("eventlist_filename", parameters->eventlist_filename))) {
+  if ((status = PILGetFname("EventList", parameters->EventList))) {
     HD_ERROR_THROW("Error reading the name of the input file!\n", status);
   }
 
-  else if ((status = PILGetFname("output_filename", parameters->output_filename))) {
+  else if ((status = PILGetFname("OutputFile", parameters->OutputFile))) {
     HD_ERROR_THROW("Error reading the name of the output file!\n", status);
   }
 
-  else if ((status = PILGetFname("rsp_filename", parameters->rsp_filename))) {
+  else if ((status = PILGetFname("RSP", parameters->RSP))) {
     HD_ERROR_THROW("Error reading the name of the detector response file!\n", status);
   }
 
@@ -102,8 +102,5 @@ int xms_pixtemp_getpar(struct Parameters* parameters)
 
   return(status);
 }
-
-
-
 
 
