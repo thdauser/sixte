@@ -238,6 +238,7 @@ AC_CONFIG_FILES([Makefile
 		tools/projev/Makefile
 		tools/imgev/Makefile
 		tools/simputmerge/Makefile
+		tools/simputspec/Makefile
 		tools/fudgexp/Makefile
 		tools/mmap/Makefile
 		share/Makefile
