@@ -33,12 +33,12 @@ AM_PROG_LIBTOOL
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -I$HEADAS/include -I$HOME/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS -pg"
+CFLAGS="$CFLAGS -I$HEADAS/include -I$HOME/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS"
 #CPPFLAGS="$CPPFLAGS -D__STRICT_ANSI__ -D_ISOC99_SOURCE"
 #CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=500"
 #CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_THREAD_SAFE -U_GNU_SOURCE"
 
-LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall -pg"
+LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall"
 
 # Check for libraries:  (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
