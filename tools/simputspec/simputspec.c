@@ -29,6 +29,17 @@ int simputspec_main()
     status=simputspec_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
+    // ---- END of Initialization ----
+
+
+    // ---- Main Part ----
+
+    // Run the command.
+    system("isis");
+    // TODO Process return value.
+
+    // ---- END of Main Part ----
+
   } while(0); // END of error handling loop.
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
