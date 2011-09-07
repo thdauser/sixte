@@ -9,14 +9,28 @@
 
 
 struct Parameters {
-  float plIndex;
-  float plNorm;
+
+  /** Power law. */
+  float plPhoIndex;
+  float plFlux;
+
+  /** Black body temperature [keV]. */
   float bbkT;
-  float bbNorm;
+  float bbFlux;
+
+  /** Line dispersion [keV]. */
   float flSigma;
-  float flNorm;
+  float flFlux;
+
   float rflSpin;
-  float rflNorm;
+  float rflFlux;
+
+  /** Absorption column [10^22 atoms/cm^2] */
+  float nH;
+
+  /** Reference energy band [keV]. */
+  float Emin;
+  float Emax;
 
   char Outfile[MAXFILENAME];
   
