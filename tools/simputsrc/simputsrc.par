@@ -1,0 +1,8 @@
+Spectrum,fre,lq,"spectrum.fits",,,"reference to the SIMPUT spectrum"
+Emin,r,lq,0.5,0.0,,"E_min of reference energy band for fluxes (keV)"
+Emax,r,lq,2.0,0.0,,"E_max of reference energy band for fluxes (keV)"
+Flux,r,lq,1.0e-14,0.0,,"flux in reference energy band (erg/s/cm^2)"
+Simput,f,lq,"simput.fits",,,"output SIMPUT catalog file"
+chatter,i,lh,4,,,"chatter: control verbosity of the program"
+clobber,b,h,no,,,"overwrite output files if exist?"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"

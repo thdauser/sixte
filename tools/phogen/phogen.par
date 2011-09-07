@@ -1,5 +1,5 @@
 PhotonList,s,lq,"photons.fits",,,"photon list output file"
-Mission,s,lq,"SRG",,,"mission name: Chandra, GRAVITAS, IXO, SRG, XMM"
+Mission,s,lq,"SRG",,,"mission name: Chandra, GRAVITAS, IXO, ATHENA, SRG, XMM"
 Instrument,s,lq,"eROSITA",,,"instrument name"
 Mode,s,lq,"none",,,"instrument mode (including filter)"
 XMLFile,s,h,"none",,,"XML input file with detector definition (overwrites Mission, Instrument, and Mode)"

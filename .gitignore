@@ -54,6 +54,7 @@ mmap_read
 runsixt
 simputmerge
 simputspec
+simputsrc
 fudgexp
 
 # Autotool stuff:
