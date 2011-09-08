@@ -64,7 +64,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   long ii;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
-    SimputSource* src=returnSimputSource(cat->simput, ii+1, status);
+    SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
     // Determine the extension.
@@ -100,7 +100,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   cat->nextsources=0;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
-    SimputSource* src=returnSimputSource(cat->simput, ii+1, status);
+    SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
     float extension = getSimputSourceExtension(src, status);

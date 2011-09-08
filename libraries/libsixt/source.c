@@ -42,7 +42,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
   LinkedPhoListElement** list_next = &list;
 
   // Load the source data from the SIMPUT catalog.
-  SimputSource* simputsrc=returnSimputSource(simputcat, src->row, status);
+  SimputSource* simputsrc=loadCacheSimputSource(simputcat, src->row, status);
   CHECK_STATUS_RET(*status, list);
 
   // Photon arrival time.
@@ -52,7 +52,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     CHECK_NULL(src->t_next_photon, *status,
 	       "memory allocation for 't_next_photon' (double) failed");
     
-    float rate = getSimputPhotonRate(simputsrc, t0, mjdref, status);
+    float rate=getSimputPhotonRate(simputsrc, t0, mjdref, status);
     CHECK_STATUS_RET(*status, list);
     if (0.==rate) {
       return(list);

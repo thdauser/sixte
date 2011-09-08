@@ -1,8 +1,3 @@
-AM_CFLAGS  = -I${HEADAS}/include
-#AM_CFLAGS += -Wall 
-#AM_CFLAGS += -Wall -Werror 
-
-
 ########## DIRECTORIES ###############
 
 # Directory where to install the FITS template files.

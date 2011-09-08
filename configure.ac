@@ -3,17 +3,13 @@
 
 AC_PREREQ(2.61)
 AC_INIT([sixt], [0.02], [christian.schmid@sternwarte.uni-erlangen.de])
-AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
-# The following line tells 'configure' to create a header file 'config.h'
-# that is filled with definitions from this script.
-# The 'config.h' contains for example the name of the package and can be
-# included in the programm sources.
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
 
 # Check if HEADAS is available.
 if test -z "$HEADAS"; then
-	AC_MSG_WARN([HEADAS is not defined - the build might fail!])
+   AC_MSG_WARN([HEADAS is not defined - the build might fail!])
 fi
 
 # Check for programs:
@@ -198,6 +194,12 @@ then
 fi
 AC_SUBST([PFILESDIR])
 
+
+# The following line tells 'configure' to create a header file 'config.h'
+# that is filled with definitions from this script.
+# The 'config.h' contains for example the name of the package and can be
+# included in the programm sources.
+AC_CONFIG_HEADER([config.h])
 
 # Create the following Makefiles (including subdirectories).
 # A Makefile that is not listed here will not be created by 'automake'!

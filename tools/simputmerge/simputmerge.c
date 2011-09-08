@@ -73,7 +73,7 @@ int simputmerge_main()
 
 	// Check if the SRC_ID of the new source is already contained 
 	// in the output catalog. The SRC_ID entry must be unique.
-	SimputSource* insrc = returnSimputSource(incat[ii], jj+1, &status);
+	SimputSource* insrc = loadCacheSimputSource(incat[ii], jj+1, &status);
 	CHECK_STATUS_BREAK(status);
 	long src_id = insrc->src_id;
 	if (src_id<min_src_id) {
