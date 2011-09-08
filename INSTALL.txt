@@ -37,17 +37,17 @@ available. In order to continue type:
 
 The simulation package uses several FITS template files to create FITS
 files. These templates are stored in ${prefix}/share/sixt/templates
-during the installation. In order to be able to use these files, you
-have to specify this path in the environment variable
-SIXT_FITS_TEMPLATES. The location of the detector XML definition files
-is given in the enviroment variable SIXT_XML_PATH. When using the
-simulation frequently it is strongly recommended to set the
-environment variables in the shell startup scripts.
+during the installation. The instrument XML definition files are
+maintained in the directory ${prefix}/share/sixt/instruments. In order
+to be able to use the FITS templates and the XML files, one has to
+specify the respective path in the environment variable
+SIXT_DATA_PATH. When using the simulation frequently it is strongly
+recommended to set the environment variables in the shell startup
+scripts.
 
 If you are using csh add the following line to your .cshrc
 
- setenv SIXT_FITS_TEMPLATES ${prefix}/share/sixt/templates
- setenv SIXT_XML_PATH ${prefix}/share/sixt/xml
+ setenv SIXT_DATA_PATH ${prefix}/share/sixt
 
 If you are using bash add add the following line to your .bashrc
 
