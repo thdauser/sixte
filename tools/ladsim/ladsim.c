@@ -206,10 +206,20 @@ static void ladphdet(const LAD* const lad,
     float signal = getEBOUNDSEnergy(channel, lad->rmf, 0);
     assert(signal>=0.);
 
+    // Determine which half of the anodes (bottom or top) is affected.
+    long min_anode, max_anode;
+    if (center_anode < element->nanodes/2) {
+      min_anode=0;
+      max_anode=element->nanodes/2-1;
+    } else {
+      min_anode=element->nanodes/2;
+      max_anode=element->nanodes-1;
+    }
+
     // Loop over adjacent anodes.
     long ii;
-    for (ii=MAX(0,center_anode-2); 
-	 ii<MIN(element->nanodes,center_anode+3); ii++) {
+    for (ii =MAX(min_anode,center_anode-2); 
+	 ii<=MIN(max_anode,center_anode+2); ii++) {
 
       LADEvent event;
       event.panel   = impact.panel;
