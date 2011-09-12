@@ -140,7 +140,7 @@ static void ladphimg(const LAD* const lad,
 
 static void ladphdet(const LAD* const lad,
 		     LADImpactListFile* const ilf,
-		     LADEventListFile* const elf,
+		     LADRawEventListFile* const elf,
 		     const double t0,
 		     const double exposure,
 		     int* const status)
@@ -221,7 +221,7 @@ static void ladphdet(const LAD* const lad,
     for (ii =MAX(min_anode,center_anode-2); 
 	 ii<=MIN(max_anode,center_anode+2); ii++) {
 
-      LADEvent event;
+      LADRawEvent event;
       event.panel   = impact.panel;
       event.module  = impact.module;
       event.element = impact.element;
@@ -248,7 +248,7 @@ static void ladphdet(const LAD* const lad,
       }
 
       // Append the new event to the file.
-      addLADEvent2File(elf, &event, status);
+      addLADRawEvent2File(elf, &event, status);
       CHECK_STATUS_VOID(*status);
     }
     // END of loop over adjacent anodes.
@@ -287,7 +287,7 @@ int ladsim_main()
   LADImpactListFile* ilf=NULL;
 
   // Event list file.
-  LADEventListFile* elf=NULL;
+  LADRawEventListFile* elf=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -369,7 +369,7 @@ int ladsim_main()
       strcpy(eventlist_filename, par.EventList);
     }
     strcpy(eventlist_template, par.data_path);
-    strcat(eventlist_template, "/templates/ladeventlist.tpl");
+    strcat(eventlist_template, "/templates/ladraweventlist.tpl");
 
     // Determine the random number generator seed.
     int seed;
@@ -539,9 +539,9 @@ int ladsim_main()
 
 
     // Open the output event list file.
-    elf=openNewLADEventListFile(eventlist_filename, 
-				eventlist_template, 
-				&status);
+    elf=openNewLADRawEventListFile(eventlist_filename, 
+				   eventlist_template, 
+				   &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -581,7 +581,7 @@ int ladsim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freeLADEventListFile(&elf, &status);
+  freeLADRawEventListFile(&elf, &status);
   freeLADImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);

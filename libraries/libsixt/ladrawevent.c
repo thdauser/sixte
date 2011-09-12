@@ -1,11 +1,11 @@
-#include "ladevent.h"
+#include "ladrawevent.h"
 
 
-LADEvent* getLADEvent(int* const status)
+LADRawEvent* getLADRawEvent(int* const status)
 {
-  LADEvent* ev = (LADEvent*)malloc(sizeof(LADEvent));
+  LADRawEvent* ev = (LADRawEvent*)malloc(sizeof(LADRawEvent));
   CHECK_NULL_RET(ev, *status, 
-		 "memory allocation for LADEvent failed", ev);
+		 "memory allocation for LADRawEvent failed", ev);
   
   // Initalize.
   ev->panel  =0;
@@ -16,7 +16,7 @@ LADEvent* getLADEvent(int* const status)
   ev->time   =0.;
 
   long ii;
-  for(ii=0; ii<NLADEVENTPHOTONS; ii++) {
+  for(ii=0; ii<NLADRAWEVENTPHOTONS; ii++) {
     ev->ph_id[ii]  = 0;
     ev->src_id[ii] = 0;
   }
@@ -25,7 +25,7 @@ LADEvent* getLADEvent(int* const status)
 }
 
 
-void freeLADEvent(LADEvent** const event)
+void freeLADRawEvent(LADRawEvent** const event)
 {
   if (NULL!=*event) {
     free(*event);

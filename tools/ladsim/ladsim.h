@@ -11,7 +11,7 @@
 #include "photonlistfile.h"
 #include "phproj.h"
 #include "lad.h"
-#include "ladeventlistfile.h"
+#include "ladraweventlistfile.h"
 #include "ladimpactlistfile.h"
 #include "rmf.h"
 #include "sourcecatalog.h"

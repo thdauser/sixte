@@ -1,5 +1,5 @@
-#ifndef LADEVENT_H 
-#define LADEVENT_H 1
+#ifndef LADRAWEVENT_H 
+#define LADRAWEVENT_H 1
 
 #include "sixt.h"
 
@@ -8,7 +8,7 @@
     single event. If an event originates from more than this
     particular number of photons, the additional ones are not
     stored in the event history. */
-#define NLADEVENTPHOTONS (2)
+#define NLADRAWEVENTPHOTONS (2)
 
 
 /////////////////////////////////////////////////////////////////
@@ -38,13 +38,13 @@ typedef struct {
   double time;
 
   /** Identifiers of the contributing photons. */
-  long ph_id[NLADEVENTPHOTONS];
+  long ph_id[NLADRAWEVENTPHOTONS];
 
   /** Identifiers of the corresponding sources (defined in the SIMPUT
       source catalog). */
-  long src_id[NLADEVENTPHOTONS];
+  long src_id[NLADRAWEVENTPHOTONS];
 
-} LADEvent;
+} LADRawEvent;
 
 
 /////////////////////////////////////////////////////////////////
@@ -52,12 +52,12 @@ typedef struct {
 /////////////////////////////////////////////////////////////////
 
 
-/** Constructor for LADEvent data structure. Initializes pointers with
-    NULL and variables with their default values. */
-LADEvent* getLADEvent(int* const status);
+/** Constructor for LADRawEvent data structure. Initializes pointers
+    with NULL and variables with their default values. */
+LADRawEvent* getLADRawEvent(int* const status);
 
-/** Destructor for LADEvent data structure. */
-void freeLADEvent(LADEvent** const event);
+/** Destructor for LADRawEvent data structure. */
+void freeLADRawEvent(LADRawEvent** const event);
 
 
-#endif /* LADEVENT_H */
+#endif /* LADRAWEVENT_H */

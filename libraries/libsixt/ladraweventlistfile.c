@@ -1,11 +1,12 @@
-#include "ladeventlistfile.h"
+#include "ladraweventlistfile.h"
 
 
-LADEventListFile* newLADEventListFile(int* const status)
+LADRawEventListFile* newLADRawEventListFile(int* const status)
 {
-  LADEventListFile* file=(LADEventListFile*)malloc(sizeof(LADEventListFile));
+  LADRawEventListFile* file=
+    (LADRawEventListFile*)malloc(sizeof(LADRawEventListFile));
   CHECK_NULL_RET(file, *status, 
-		 "emory allocation for LADEventListFile failed", file);
+		 "memory allocation for LADRawEventListFile failed", file);
 
   // Initialize pointers with NULL.
   file->fptr=NULL;
@@ -26,7 +27,8 @@ LADEventListFile* newLADEventListFile(int* const status)
 }
 
 
-void freeLADEventListFile(LADEventListFile** const file, int* const status)
+void freeLADRawEventListFile(LADRawEventListFile** const file, 
+			     int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
@@ -38,24 +40,24 @@ void freeLADEventListFile(LADEventListFile** const file, int* const status)
 }
 
 
-LADEventListFile* openNewLADEventListFile(const char* const filename,
-					  const char* const template,
-					  int* const status)
+LADRawEventListFile* openNewLADRawEventListFile(const char* const filename,
+						const char* const template,
+						int* const status)
 {
-  LADEventListFile* file = newLADEventListFile(status);
+  LADRawEventListFile* file = newLADRawEventListFile(status);
   CHECK_STATUS_RET(*status, file);
 
   // Remove old file, if it exists.
   remove(filename);
 
-  // Create a new LADEvent list FITS file from the template file.
+  // Create a new LADRawEvent list FITS file from the template file.
   char buffer[MAXMSG];
   sprintf(buffer, "%s(%s)", filename, template);
   headas_chat(4, "create new event list file '%s' from template '%s' ...\n", 
 	      filename, template);
   if (fits_create_file(&file->fptr, buffer, status)) return(file);
 
-  // Set the time-keyword in the LADEvent List Header.
+  // Set the time-keyword in the LADRawEvent List Header.
   // See also: Stevens, "Advanced Programming in the UNIX environment",
   // p. 155 ff.
   time_t current_time;
@@ -85,21 +87,22 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   // Close the file.
-  freeLADEventListFile(&file, status);
+  freeLADRawEventListFile(&file, status);
   CHECK_STATUS_RET(*status, file);
 
   // Re-open the file.
-  file = openLADEventListFile(filename, READWRITE, status);
+  file = openLADRawEventListFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
   
   return(file);
 }
 
 
-LADEventListFile* openLADEventListFile(const char* const filename,
-				       const int mode, int* const status)
+LADRawEventListFile* openLADRawEventListFile(const char* const filename,
+					     const int mode, 
+					     int* const status)
 {
-  LADEventListFile* file = newLADEventListFile(status);
+  LADRawEventListFile* file = newLADRawEventListFile(status);
   CHECK_STATUS_RET(*status, file);
 
   headas_chat(4, "open event list file '%s' ...\n", filename);
@@ -112,39 +115,32 @@ LADEventListFile* openLADEventListFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   // Determine the column numbers.
-  if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "PANEL", &file->cpanel, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "MODULE", &file->cmodule, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "ELEMENT", &file->celement, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "ANODE", &file->canode, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status)) 
-    return(file);
+  fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PANEL", &file->cpanel, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "MODULE", &file->cmodule, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "ELEMENT", &file->celement, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "ANODE", &file->canode, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
+  CHECK_STATUS_RET(*status, file);
 
   // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
-  // with the corresponding array lengths in the LADEvent data structure.
+  // with the corresponding array lengths in the LADRawEvent data structure.
   int typecode;
   long repeat, width;
   // PH_ID.
   fits_get_coltype(file->fptr, file->cph_id, &typecode, &repeat,
 		   &width, status);
   CHECK_STATUS_RET(*status, file);
-  if (repeat!=NLADEVENTPHOTONS) {
+  if (repeat!=NLADRAWEVENTPHOTONS) {
     // Throw an error.
     *status = EXIT_FAILURE;
     char msg[MAXMSG];
     sprintf(msg, "maximum number of photons contributing "
 	    "to a single event is different "
 	    "in the simulation (%d) and in the event list "
-	    "template file (%ld)", NLADEVENTPHOTONS, repeat);
+	    "template file (%ld)", NLADRAWEVENTPHOTONS, repeat);
     SIXT_ERROR(msg);
     return(file);
   }
@@ -152,14 +148,14 @@ LADEventListFile* openLADEventListFile(const char* const filename,
   fits_get_coltype(file->fptr, file->csrc_id, &typecode, &repeat,
 		   &width, status);
   CHECK_STATUS_RET(*status, file);
-  if (repeat!=NLADEVENTPHOTONS) {
+  if (repeat!=NLADRAWEVENTPHOTONS) {
     // Throw an error.
     *status = EXIT_FAILURE;
     char msg[MAXMSG];
     sprintf(msg, "maximum number of photons contributing "
 	    "to a single event is different "
 	    "in the simulation (%d) and in the event list "
-	    "template file (%ld)!\n", NLADEVENTPHOTONS, repeat);
+	    "template file (%ld)!\n", NLADRAWEVENTPHOTONS, repeat);
     SIXT_ERROR(msg);
     return(file);
   }
@@ -168,9 +164,9 @@ LADEventListFile* openLADEventListFile(const char* const filename,
 }
 
 
-void addLADEvent2File(LADEventListFile* const file, 
-		      LADEvent* const LADEvent, 
-		      int* const status)
+void addLADRawEvent2File(LADRawEventListFile* const file, 
+			 LADRawEvent* const event, 
+			 int* const status)
 {
   // Check if the event file has been opened.
   CHECK_NULL_VOID(file, *status, "no event file opened");
@@ -183,14 +179,14 @@ void addLADEvent2File(LADEventListFile* const file,
   file->row = file->nrows;
 
   // Write the data.
-  updateLADEventInFile(file, file->row, LADEvent, status);
+  updateLADRawEventInFile(file, file->row, event, status);
   CHECK_STATUS_VOID(*status);
 }
 
 
-void getLADEventFromFile(const LADEventListFile* const file,
-			 const int row, LADEvent* const event,
-			 int* const status)
+void getLADRawEventFromFile(const LADRawEventListFile* const file,
+			    const int row, LADRawEvent* const event,
+			    int* const status)
 {
   // Check if the file has been opened.
   CHECK_NULL_VOID(file, *status, "no event file opened");
@@ -233,11 +229,11 @@ void getLADEventFromFile(const LADEventListFile* const file,
 		&lnull, &event->anode, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NLADEVENTPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NLADRAWEVENTPHOTONS, 
 		&lnull, &event->ph_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NLADEVENTPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NLADRAWEVENTPHOTONS, 
 		&lnull, &event->src_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
@@ -250,25 +246,26 @@ void getLADEventFromFile(const LADEventListFile* const file,
 }
 
 
-void updateLADEventInFile(const LADEventListFile* const file,
-			  const int row, LADEvent* const event,
-			  int* const status)
+void updateLADRawEventInFile(const LADRawEventListFile* const file,
+			     const int row, LADRawEvent* const event,
+			     int* const status)
 {
-  if (fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
-		     1, 1, &event->time, status)) return;
-  if (fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
-		     1, 1, &event->signal, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cpanel, row, 
-		     1, 1, &event->panel, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cmodule, row, 
-		     1, 1, &event->module, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->celement, row, 
-		     1, 1, &event->element, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->canode, row, 
-		     1, 1, &event->anode, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cph_id, row, 
-		     1, NLADEVENTPHOTONS, &event->ph_id, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
-		     1, NLADEVENTPHOTONS, &event->src_id, status)) return;
+  fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
+		 1, 1, &event->time, status);
+  fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
+		 1, 1, &event->signal, status);
+  fits_write_col(file->fptr, TLONG, file->cpanel, row, 
+		 1, 1, &event->panel, status);
+  fits_write_col(file->fptr, TLONG, file->cmodule, row, 
+		 1, 1, &event->module, status);
+  fits_write_col(file->fptr, TLONG, file->celement, row, 
+		 1, 1, &event->element, status);
+  fits_write_col(file->fptr, TLONG, file->canode, row, 
+		 1, 1, &event->anode, status);
+  fits_write_col(file->fptr, TLONG, file->cph_id, row, 
+		 1, NLADRAWEVENTPHOTONS, &event->ph_id, status);
+  fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
+		 1, NLADRAWEVENTPHOTONS, &event->src_id, status);
+  CHECK_STATUS_VOID(*status);
 }
 
