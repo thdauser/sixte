@@ -5,6 +5,7 @@ fitstemplatesdir = $(pkgdatadir)/templates
 dist_fitstemplates_DATA  = coma.eventlist.tpl
 dist_fitstemplates_DATA += eventlist.tpl
 dist_fitstemplates_DATA += ladraweventlist.tpl
+dist_fitstemplates_DATA += ladeventlist.tpl
 dist_fitstemplates_DATA += eroeventlist.tpl
 dist_fitstemplates_DATA += patternlist.tpl
 dist_fitstemplates_DATA += htrs.eventlist.tpl
@@ -32,8 +33,9 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     impactlistfile.c ladimpactlistfile.c		\
 		     htrsdetector.c gendet.c gendet_init.c		\
 		     genpixgrid.c gendetline.c eventlistfile.c		\
-		     ladraweventlistfile.c genpatternfile.c clocklist.c	\
-		     badpixmap.c geneventgrading.c htrseventfile.c	\
+		     ladraweventlistfile.c ladeventlistfile.c		\
+		     genpatternfile.c clocklist.c badpixmap.c		\
+		     geneventgrading.c htrseventfile.c			\
 		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
 		     htrstelstream.c comadetector.c comaeventfile.c	\
 		     psf.c vignetting.c codedmask.c attitudecatalog.c	\
@@ -43,8 +45,8 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     photonlistfile.c linlightcurve.c rmf.c arf.c	\
 		     kdtreeelement.c sourcecatalog.c source.c		\
 		     linkedpholist.c erodetbkgrndgen.c phgen.c phimg.c	\
-		     phdet.c phproj.c event.c ladrawevent.c ladimpact.c	\
-		     lad.c lad_init.c xmlbuffer.c
+		     phdet.c phproj.c event.c ladrawevent.c ladevent.c	\
+		     ladimpact.c lad.c lad_init.c xmlbuffer.c
 
 
 ############ HEADERS #################
@@ -55,17 +57,18 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  arcpixels.h eventfile.h impactlistfile.h		\
 		  ladimpactlistfile.h impact.h gendet.h genpixgrid.h	\
 		  gendetline.h clocklist.h event.h ladrawevent.h	\
-		  ladimpact.h genpattern.h eventlistfile.h		\
-		  ladraweventlistfile.h genpatternfile.h badpixmap.h	\
-		  geneventgrading.h htrsdetector.h htrseventfile.h	\
-		  htrsevent.h telemetrypacket.h htrstelstream.h		\
-		  comadetector.h comaeventfile.h comaevent.h psf.h	\
-		  vignetting.h codedmask.h attitudecatalog.h		\
-		  attitudefile.h telescope.h sixt.h point.h vector.h	\
-		  pointsources.h extendedsources.h sourceimage.h	\
-		  photon.h spectrum.h fits_pha.h check_fov.h		\
-		  photonlistfile.h linlightcurve.h rmf.h arf.h		\
-		  kdtreeelement.h sourcecatalog.h source.h		\
-		  linkedpholist.h erodetbkgrndgen.h phgen.h phimg.h	\
-		  phdet.h phproj.h lad.h xmlbuffer.h
+		  ladevent.h ladimpact.h genpattern.h eventlistfile.h	\
+		  ladraweventlistfile.h ladeventlistfile.h		\
+		  genpatternfile.h badpixmap.h geneventgrading.h	\
+		  htrsdetector.h htrseventfile.h htrsevent.h		\
+		  telemetrypacket.h htrstelstream.h comadetector.h	\
+		  comaeventfile.h comaevent.h psf.h vignetting.h	\
+		  codedmask.h attitudecatalog.h attitudefile.h		\
+		  telescope.h sixt.h point.h vector.h pointsources.h	\
+		  extendedsources.h sourceimage.h photon.h spectrum.h	\
+		  fits_pha.h check_fov.h photonlistfile.h		\
+		  linlightcurve.h rmf.h arf.h kdtreeelement.h		\
+		  sourcecatalog.h source.h linkedpholist.h		\
+		  erodetbkgrndgen.h phgen.h phimg.h phdet.h phproj.h	\
+		  lad.h xmlbuffer.h
 
