@@ -26,7 +26,7 @@ struct Parameters {
   char OutputStem[MAXFILENAME];
   char PhotonList[MAXFILENAME];
   char ImpactList[MAXFILENAME];
-  char EventList[MAXFILENAME];
+  char RawEventList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
 

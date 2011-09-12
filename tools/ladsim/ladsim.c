@@ -140,7 +140,7 @@ static void ladphimg(const LAD* const lad,
 
 static void ladphdet(const LAD* const lad,
 		     LADImpactListFile* const ilf,
-		     LADRawEventListFile* const elf,
+		     LADRawEventListFile* const relf,
 		     const double t0,
 		     const double exposure,
 		     int* const status)
@@ -162,7 +162,8 @@ static void ladphdet(const LAD* const lad,
       lad->panel[impact.panel]->module[impact.module]->element[impact.element];
 
     // Determine the anode pitch [m].
-    float anode_pitch = (element->ydim - 2.*element->yborder)/(element->nanodes-1);
+    float anode_pitch = 
+      (element->ydim - 2.*element->yborder)/(element->nanodes-1);
 
     // Determine the parameters of the charge cloud.
     // Boltzmann constant.
@@ -221,34 +222,34 @@ static void ladphdet(const LAD* const lad,
     for (ii =MAX(min_anode,center_anode-2); 
 	 ii<=MIN(max_anode,center_anode+2); ii++) {
 
-      LADRawEvent event;
-      event.panel   = impact.panel;
-      event.module  = impact.module;
-      event.element = impact.element;
-      event.anode   = ii;
-      event.ph_id[0] = impact.ph_id;
-      event.src_id[0] = impact.src_id;
+      LADRawEvent rev;
+      rev.panel   = impact.panel;
+      rev.module  = impact.module;
+      rev.element = impact.element;
+      rev.anode   = ii;
+      rev.ph_id[0] = impact.ph_id;
+      rev.src_id[0] = impact.src_id;
 
       // Measured time.
-      event.time = impact.time + drifttime;
+      rev.time = impact.time + drifttime;
 
       // Measured signal.
       double yi = (ii-center_anode)*1.0;
-      event.signal = 
+      rev.signal = 
 	signal*0.5*
 	(gaussint((yi+anode_pitch*0.5-y0)/(sigma*sqrt(2.)))-
 	 gaussint((yi-anode_pitch*0.5-y0)/(sigma*sqrt(2.))));
 
       // Apply thresholds.
       if (NULL!=lad->threshold_readout_lo_keV) {
-	if (event.signal < *(lad->threshold_readout_lo_keV)) continue;
+	if (rev.signal < *(lad->threshold_readout_lo_keV)) continue;
       }
       if (NULL!=lad->threshold_readout_up_keV) {
-	if (event.signal > *(lad->threshold_readout_up_keV)) continue;
+	if (rev.signal > *(lad->threshold_readout_up_keV)) continue;
       }
 
       // Append the new event to the file.
-      addLADRawEvent2File(elf, &event, status);
+      addLADRawEvent2File(relf, &rev, status);
       CHECK_STATUS_VOID(*status);
     }
     // END of loop over adjacent anodes.
@@ -287,7 +288,7 @@ int ladsim_main()
   LADImpactListFile* ilf=NULL;
 
   // Event list file.
-  LADRawEventListFile* elf=NULL;
+  LADRawEventListFile* relf=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -358,18 +359,18 @@ int ladsim_main()
     strcat(impactlist_template, "/templates/ladimpactlist.tpl");
     
     // Determine the event list output file and the file template.
-    char eventlist_template[MAXFILENAME];
-    char eventlist_filename[MAXFILENAME];
-    strcpy(ucase_buffer, par.EventList);
+    char raweventlist_template[MAXFILENAME];
+    char raweventlist_filename[MAXFILENAME];
+    strcpy(ucase_buffer, par.RawEventList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(eventlist_filename, par.OutputStem);
-      strcat(eventlist_filename, "_events.fits");
+      strcpy(raweventlist_filename, par.OutputStem);
+      strcat(raweventlist_filename, "_rawevents.fits");
     } else {
-      strcpy(eventlist_filename, par.EventList);
+      strcpy(raweventlist_filename, par.RawEventList);
     }
-    strcpy(eventlist_template, par.data_path);
-    strcat(eventlist_template, "/templates/ladraweventlist.tpl");
+    strcpy(raweventlist_template, par.data_path);
+    strcat(raweventlist_template, "/templates/ladraweventlist.tpl");
 
     // Determine the random number generator seed.
     int seed;
@@ -539,24 +540,24 @@ int ladsim_main()
 
 
     // Open the output event list file.
-    elf=openNewLADRawEventListFile(eventlist_filename, 
-				   eventlist_template, 
-				   &status);
+    relf=openNewLADRawEventListFile(raweventlist_filename, 
+				    raweventlist_template, 
+				    &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+    fits_update_key(relf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
-    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+    fits_update_key(relf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
     dbuffer=0.;
-    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+    fits_update_key(relf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
     // Photon Detection.
     headas_chat(3, "start photon detection ...\n");
-    ladphdet(lad, ilf, elf, t0, par.Exposure, &status);
+    ladphdet(lad, ilf, relf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -567,7 +568,7 @@ int ladsim_main()
     // Run the event projection.
     headas_chat(5, "start sky projection ...\n");
     // TODO
-    //phproj(det, ac, elf, t0, par.Exposure, &status);
+    //phproj(det, ac, relf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -581,7 +582,7 @@ int ladsim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freeLADRawEventListFile(&elf, &status);
+  freeLADRawEventListFile(&relf, &status);
   freeLADImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
@@ -631,12 +632,12 @@ int ladsim_getpar(struct Parameters* const par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("EventList", &sbuffer);
+  status=ape_trad_query_string("RawEventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
+    HD_ERROR_THROW("Error reading the name of the raw event list!\n", status);
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->RawEventList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
