@@ -267,6 +267,61 @@ static void ladphdet(const LAD* const lad,
 }
 
 
+static void ladevents(const LAD* const lad,
+		      LADRawEventListFile* const relf,
+		      LADEventListFile* const elf,
+		      int* const status)
+{
+  // Maximum trigger time between subsequent raw events assigned 
+  // to the same event.
+  const double dt = 1.e-12;
+
+  // Output buffer.
+  LADEvent* ev=NULL;
+
+  while (relf->row < relf->nrows) {
+    
+    // Read the next raw event from the list.
+    LADRawEvent rev;
+    getLADRawEventFromFile(relf, relf->row+1, &rev, status);
+    CHECK_STATUS_BREAK(*status);
+
+    if (NULL!=ev) {
+      // TODO Check for panel, module, element, anodes.
+      if (rev.time-ev->time>dt) { 
+	// The new raw event does not belong to the event any more.
+	// Add the event to the output file.
+	addLADEvent2File(elf, ev, status);
+	CHECK_STATUS_BREAK(*status);
+
+	// Release the buffer.
+	freeLADEvent(&ev);
+      }
+    }
+
+    // Check if the buffer is already initialized.
+    if (NULL==ev) { 
+      ev = getLADEvent(status);
+      CHECK_STATUS_VOID(*status);
+
+      ev->time = rev.time;
+      ev->panel = rev.panel;
+      ev->module = rev.module;
+      ev->element = rev.element;
+      // TODO Anode?
+      ev->signal = rev.signal;
+    } else {
+      // TODO Anode?
+      ev->signal += rev.signal;
+    }
+    // TODO PH_ID, SRC_ID.
+
+  }
+  CHECK_STATUS_VOID(*status);
+  // END of loop over all raw events.
+}
+
+
 int ladsim_main() 
 {
   // Program parameters.
@@ -287,8 +342,11 @@ int ladsim_main()
   // Impact list file.
   LADImpactListFile* ilf=NULL;
 
-  // Event list file.
+  // Raw event list file.
   LADRawEventListFile* relf=NULL;
+
+  // Recombined event list file.
+  LADEventListFile* elf=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -296,7 +354,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -358,7 +416,7 @@ int ladsim_main()
     strcpy(impactlist_template, par.data_path);
     strcat(impactlist_template, "/templates/ladimpactlist.tpl");
     
-    // Determine the event list output file and the file template.
+    // Determine the raw event list output file and the file template.
     char raweventlist_template[MAXFILENAME];
     char raweventlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.RawEventList);
@@ -371,6 +429,20 @@ int ladsim_main()
     }
     strcpy(raweventlist_template, par.data_path);
     strcat(raweventlist_template, "/templates/ladraweventlist.tpl");
+
+    // Determine the recombined event list output file and the file template.
+    char eventlist_template[MAXFILENAME];
+    char eventlist_filename[MAXFILENAME];
+    strcpy(ucase_buffer, par.EventList);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer,"NONE")) {
+      strcpy(eventlist_filename, par.OutputStem);
+      strcat(eventlist_filename, "_events.fits");
+    } else {
+      strcpy(eventlist_filename, par.EventList);
+    }
+    strcpy(eventlist_template, par.data_path);
+    strcat(eventlist_template, "/templates/ladeventlist.tpl");
 
     // Determine the random number generator seed.
     int seed;
@@ -539,7 +611,7 @@ int ladsim_main()
     ilf->row=0;
 
 
-    // Open the output event list file.
+    // Open the output raw event list file.
     relf=openNewLADRawEventListFile(raweventlist_filename, 
 				    raweventlist_template, 
 				    &status);
@@ -565,6 +637,33 @@ int ladsim_main()
     freeLADImpactListFile(&ilf, &status);
 
 
+    // Reset internal line counter of raw event list file.
+    relf->row=0;
+
+
+    // Open the output event list file for recombined events.
+    elf=openNewLADEventListFile(eventlist_filename, 
+				eventlist_template, 
+				&status);
+    CHECK_STATUS_BREAK(status);
+
+    // Set FITS header keywords.
+    fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+		    "attitude file", &status);
+    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
+    dbuffer=0.;
+    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
+    CHECK_STATUS_BREAK(status);
+
+
+    // Run the event recombination.
+    headas_chat(5, "start event recombination ...\n");
+    ladevents(lad, relf, elf, &status);
+    CHECK_STATUS_BREAK(status);
+
+
     // Run the event projection.
     headas_chat(5, "start sky projection ...\n");
     // TODO
@@ -582,6 +681,7 @@ int ladsim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
+  freeLADEventListFile(&elf, &status);
   freeLADRawEventListFile(&relf, &status);
   freeLADImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
@@ -638,6 +738,14 @@ int ladsim_getpar(struct Parameters* const par)
     return(status);
   } 
   strcpy(par->RawEventList, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("EventList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
+    return(status);
+  } 
+  strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("XMLFile", &sbuffer);

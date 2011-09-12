@@ -11,8 +11,9 @@
 #include "photonlistfile.h"
 #include "phproj.h"
 #include "lad.h"
-#include "ladraweventlistfile.h"
+#include "ladeventlistfile.h"
 #include "ladimpactlistfile.h"
+#include "ladraweventlistfile.h"
 #include "rmf.h"
 #include "sourcecatalog.h"
 #include "vector.h"
@@ -27,6 +28,7 @@ struct Parameters {
   char PhotonList[MAXFILENAME];
   char ImpactList[MAXFILENAME];
   char RawEventList[MAXFILENAME];
+  char EventList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
 
