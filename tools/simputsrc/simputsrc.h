@@ -10,13 +10,30 @@
 
 struct Parameters {
 
-  char Spectrum[MAXFILENAME];
-  char Simput[MAXFILENAME];
+  /** Power law. */
+  float plPhoIndex;
+  float plFlux;
+
+  /** Black body temperature [keV]. */
+  float bbkT;
+  float bbFlux;
+
+  /** Line dispersion [keV]. */
+  float flSigma;
+  float flFlux;
+
+  float rflSpin;
+  float rflFlux;
+
+  /** Absorption column [10^22 atoms/cm^2] */
+  float nH;
 
   /** Reference energy band [keV]. */
   float Emin;
   float Emax;
-  float Flux;
+
+  /** File name of output SIMPUT file. */
+  char Simput[MAXFILENAME];
   
   char clobber;
 };

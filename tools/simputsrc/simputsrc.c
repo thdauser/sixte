@@ -3,12 +3,26 @@
 
 int simputsrc_main() 
 {
+  // Filename constants.
+  const char CMDFILE[] = "isis.tmp";
+  const char SPECFILE[] = "spec.tmp";
+
   // Program parameters.
   struct Parameters par;
 
-  // Simput data structure.
-  SimputCatalog* cat=NULL;
+  // Temporary files for ISIS interaction.
+  FILE* cmdfile=NULL;
+  fitsfile* specfile=NULL;
+
+  // Buffers for spectral components.
+  long nrows=0;
+  float* energies=NULL;
+  float** flux=NULL;
+
+  // SIMPUT data structures.
+  SimputMissionIndepSpec* simputspec=NULL;
   SimputSource* src=NULL;
+  SimputCatalog* cat=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -16,7 +30,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -26,6 +40,14 @@ int simputsrc_main()
     // Read the parameters using PIL.
     status=simputsrc_getpar(&par);
     CHECK_STATUS_BREAK(status);
+
+    // Allocate memory.
+    flux=(float**)malloc(4*sizeof(float*));
+    CHECK_NULL_BREAK(flux, status, "memory allocation failed");
+    int ii;
+    for (ii=0; ii<4; ii++) {
+      flux[ii]=NULL;
+    }
 
     // ---- END of Initialization ----
 
@@ -38,21 +60,245 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.
+    float totalFlux = par.plFlux + par.bbFlux + par.flFlux + par.rflFlux;
     src=getSimputSourceV(1, "", 0., 0., 0., 1., 
-			 par.Emin, par.Emax, par.Flux, 
-			 par.Spectrum, "", "", &status);
+			 par.Emin, par.Emax, totalFlux, 
+			 "[SPECTRUM,1]", "", "", &status);
     CHECK_STATUS_BREAK(status);
     appendSimputSource(cat, src, &status);
     CHECK_STATUS_BREAK(status);
+
+    // END of creating the catalog.
+
+
+    // Create the spectrum.
+    // Loop over the different components of the spectral model.
+    for (ii=0; ii<4; ii++) {
+
+      // Open the ISIS command file.
+      // TODO Get a random temporary name instead of using a constant.
+      cmdfile=fopen(CMDFILE,"w+");
+      CHECK_NULL_BREAK(cmdfile, status, "opening temporary file failed");
+
+      // Write the header.
+      fprintf(cmdfile, "require(\"isisscripts\");\n");
+      fprintf(cmdfile, "()=xspec_abund(\"wilm\");\n");
+      fprintf(cmdfile, "use_localmodel(\"relline\");\n");
+
+      // Define the energy grid.
+      fprintf(cmdfile, "variable grid=[0.05:100.0:0.01];\n");
+      fprintf(cmdfile, "variable lo=grid[[0:length(grid)-2]];\n");
+      fprintf(cmdfile, "variable hi=grid[[1:length(grid)-1]];\n");
+
+      // Define the spectral model and set the parameters.
+      switch(ii) {
+      case 0:
+	fprintf(cmdfile, "fit_fun(\"phabs(1)*powerlaw(1)\");\n");
+	fprintf(cmdfile, "set_par(\"powerlaw(1).PhoIndex\", %e);\n", 
+		par.plPhoIndex);
+	break;
+      case 1:
+	fprintf(cmdfile, "fit_fun(\"phabs(1)*bbody(1)\");\n");
+	fprintf(cmdfile, "set_par(\"bbody(1).kT\", %e);\n", par.bbkT);	
+	break;
+      case 2:
+	fprintf(cmdfile, "fit_fun(\"phabs(1)*egauss(1)\");\n");
+	fprintf(cmdfile, "set_par(\"egauss(1).center\", 6.4);\n");	
+	fprintf(cmdfile, "set_par(\"egauss(1).sigma\", %e);\n", par.flSigma);	
+	break;
+      case 3:
+	fprintf(cmdfile, "fit_fun(\"phabs(1)*relline(1)\");\n");
+	fprintf(cmdfile, "set_par(\"relline(1).lineE\", 6.4);\n");	
+	fprintf(cmdfile, "set_par(\"relline(1).a\", %f);\n", par.rflSpin);	
+	break;
+      default:
+	status=EXIT_FAILURE;
+	break;
+      }
+      CHECK_STATUS_BREAK(status);
+
+      // Absorption is the same for all spectral components.
+      fprintf(cmdfile, "set_par(\"phabs(1).nH\", %e);\n", par.nH);
+
+      // Evaluate the spectral model and store the data in a temporary 
+      // FITS file.
+      fprintf(cmdfile, "variable flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
+      fprintf(cmdfile, "variable spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
+      fprintf(cmdfile, "fits_write_binary_table(\"%s\",\"SPECTRUM\", spec);\n", 
+	      SPECFILE);
+      fprintf(cmdfile, "exit;\n");
+
+      // End of writing the ISIS file.
+      fclose(cmdfile);
+      cmdfile=NULL;
+
+      // Construct the shell command to run ISIS.
+      char command[MAXMSG];
+      strcpy(command, "isis ");
+      strcat(command, CMDFILE);
+      
+      // Run ISIS.
+      status=system(command);
+      CHECK_STATUS_BREAK(status);
+
+      // Remove the temporary ISIS command file.
+      remove(CMDFILE);
+
+      // Read the spectrum.
+      fits_open_table(&specfile, SPECFILE, READONLY, &status);
+      CHECK_STATUS_BREAK(status);
+      int anynull;
+
+      // Determine the number of rows.
+      if (0==ii) {
+	fits_get_num_rows(specfile, &nrows, &status);
+	CHECK_STATUS_BREAK(status);
+
+	energies=(float*)malloc(nrows*sizeof(float));
+	CHECK_NULL_BREAK(energies, status, "memory allocation failed");
+
+	fits_read_col(specfile, TFLOAT, 1, 1, 1, nrows, 0, energies, 
+		      &anynull, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+
+      flux[ii]=(float*)malloc(nrows*sizeof(float));
+      CHECK_NULL_BREAK(flux[ii], status, "memory allocation failed");
+
+      fits_read_col(specfile, TFLOAT, 2, 1, 1, nrows, 0, flux[ii], 
+		    &anynull, &status);
+      CHECK_STATUS_BREAK(status);
+
+      fits_close_file(specfile, &status);
+      specfile=NULL;
+      CHECK_STATUS_BREAK(status);
+
+      // Normalize the spectrum.
+      // Determine the required flux in the reference band.
+      float shouldflux=0.;
+      switch(ii) {
+      case 0:
+	shouldflux = par.plFlux;
+	break;
+      case 1:
+	shouldflux = par.bbFlux;
+	break;
+      case 2:
+	shouldflux = par.flFlux;
+	break;
+      case 3:
+	shouldflux = par.rflFlux;
+	break;
+      default:
+	status = EXIT_FAILURE;
+	break;
+      }
+      CHECK_STATUS_BREAK(status);
+
+      float factor;
+      if (shouldflux==0.) {
+	factor = 0.;
+      } else {
+	// Determine the current flux in the reference band.
+	// Conversion factor from [keV] -> [erg].
+	const float keV2erg = 1.602e-9;
+	// Flux in reference energy band.
+	float isflux=0.; 
+	long jj;
+	for (jj=0; jj<nrows; jj++) {
+	  float binmin, binmax;
+	  if (0==jj) {
+	    binmin=energies[0];
+	  } else {
+	    binmin=0.5*(energies[jj]+energies[jj-1]);
+	  }
+	  if (nrows-1==jj) {
+	    binmax=energies[nrows-1];
+	  } else {
+	    binmax=0.5*(energies[jj]+energies[jj+1]);
+	  }
+	  if ((binmax>par.Emin) && (binmin<par.Emax)) {
+	    float min = MAX(binmin, par.Emin);
+	    float max = MIN(binmax, par.Emax);
+	    assert(max>min);
+	    isflux += (max-min) * flux[ii][jj] * energies[jj];
+	  }
+	}
+	// Convert units of 'flux' from [keV/s/cm^2] -> [erg/s/cm^2].
+	isflux *= keV2erg;
+	
+	factor = shouldflux/isflux;
+      }
+
+      // Normalize.
+      long jj;
+      for (jj=0; jj<nrows; jj++) {
+	flux[ii][jj] *= factor;
+      }
+
+      // Remove the temporary spectrum file.
+      remove(SPECFILE);
+    }
+    CHECK_STATUS_BREAK(status);
+    // END of loop over the different spectral components.
+
+    // Add the spectra and append the total spectrum to the SIMPUT file.
+    simputspec=getSimputMissionIndepSpec(&status);
+    CHECK_STATUS_BREAK(status);
+    simputspec->nentries=nrows;
+    simputspec->energy=(float*)malloc(nrows*sizeof(float));
+    CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+    simputspec->pflux=(float*)malloc(nrows*sizeof(float));
+    CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+    long jj;
+    for (jj=0; jj<nrows; jj++) {
+      simputspec->energy[jj] = energies[jj];
+      simputspec->pflux[jj] = 
+	flux[0][jj] + flux[1][jj] + flux[2][jj] + flux[3][jj];
+
+      // Check if the flux has a physically reasonable value.
+      if ((simputspec->pflux[jj]<0.)||(simputspec->pflux[jj]>1.e12)) {
+	SIXT_ERROR("flux out of boundaries");
+	status=EXIT_FAILURE;
+      }
+    }
+    saveSimputMissionIndepSpec(simputspec, par.Simput, "SPECTRUM", 1, &status);
+    CHECK_STATUS_BREAK(status);
+    // END of creating the spectrum.
 
     // ---- END of Main Part ----
 
   } while(0); // END of error handling loop.
 
+  // Close the temporary files.
+  if (NULL!=cmdfile) {
+    fclose(cmdfile);
+    cmdfile=NULL;
+  }
+  if (NULL!=specfile) {
+    fits_close_file(specfile, &status);
+    specfile=NULL;
+  }
 
   // Release memory.
+  freeSimputMissionIndepSpec(&simputspec);
   freeSimputSource(&src);
   freeSimputCatalog(&cat, &status);
+
+  if (NULL!=energies) {
+    free(energies);
+    energies=NULL;
+  }
+  if (NULL!=flux) {
+    int ii;
+    for (ii=0; ii<4; ii++) {
+      if (NULL!=flux[ii]) {
+	free(flux[ii]);
+      }
+    }
+    free(flux);
+    flux=NULL;
+  }
 
   if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
   return(status);
@@ -70,9 +316,57 @@ int simputsrc_getpar(struct Parameters* const par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_float("Flux", &par->Flux);
+  status=ape_trad_query_float("plPhoIndex", &par->plPhoIndex);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("reading the Flux parameter failed");
+    SIXT_ERROR("reading the plPhoIndex parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("plFlux", &par->plFlux);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the plFlux parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("bbkT", &par->bbkT);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the bbkT parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("bbFlux", &par->bbFlux);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the bbFlux parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("flSigma", &par->flSigma);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the flSigma parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("flFlux", &par->flFlux);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the flFlux parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("rflSpin", &par->rflSpin);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the rflSpin parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("rflFlux", &par->rflFlux);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the rflFlux parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("nH", &par->nH);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the nH parameter failed");
     return(status);
   }
 
@@ -87,14 +381,6 @@ int simputsrc_getpar(struct Parameters* const par)
     SIXT_ERROR("reading the Emax parameter failed");
     return(status);
   }
-
-  status=ape_trad_query_file_name("Spectrum", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("reading the name of the spectrum file failed");
-    return(status);
-  } 
-  strcpy(par->Spectrum, sbuffer);
-  free(sbuffer);
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {

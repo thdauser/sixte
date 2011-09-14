@@ -660,7 +660,7 @@ int ladsim_main()
 
     // Run the event recombination.
     headas_chat(5, "start event recombination ...\n");
-    ladevents(lad, relf, elf, &status);
+    //ladevents(lad, relf, elf, &status);
     CHECK_STATUS_BREAK(status);
 
 

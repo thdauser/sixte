@@ -53,7 +53,6 @@ mmap_write
 mmap_read
 runsixt
 simputmerge
-simputspec
 simputsrc
 fudgexp
 
