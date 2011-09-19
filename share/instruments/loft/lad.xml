@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<instrument type="LOFT LAD">
+  <telescope>
+    <fov diameter="1.5"/>
+    <vignetting filename="vignetting_lad.fits"/>
+  </telescope>
+
+  <detector type="SDD">
+    <delay time="0." rms="1.e-5"/>
+    <cte value="1."/>
+    <loop variable="$ii" start="0" end="5" increment="1">
+      <panel id="$ii" nx="3" ny="7">
+        <rotation value="$ii*60"/>
+        <orientation xval="0." yval="0." zval="0."/>
+        <position xrpix="0.5" yrpix="0.5" xrval="3.367*sin($ii*pi/3)"
+         yrval="-3.367*(1-cos($ii*pi/3))"/>
+        <loop variable="$jj" start="0" end="6" increment="1">
+          <loop variable="$kk" start="0" end="2" increment="1">
+            <module id="$jj*3+$kk" nx="4" ny="4">
+              <delay time="1.e-5" rms="2.e-5"/>
+              <border x="0." y="0."/>
+              <loop variable="$ll" start="0" end="3" increment="1">
+                <loop variable="$mm" start="0" end="3" increment="1">
+                  <element id="$ll*4+$mm" xdim="0.0725" ydim="0.12084" nanodes="256" xborder="0.00125" yborder="0.00615">
+                  </element>
+                </loop>
+              </loop>
+            </module>
+          </loop>
+        </loop>
+      </panel>
+    </loop>
+
+  <arf filename="LOFT_combined.arf"/>
+  <rmf filename="LOFT_combined.rmf"/>
+  <temperature value="300"/>
+  <efield value="3.e+4"/>
+  <mobility value="3.e-2"/>
+  <threshold_readout_lo_keV value="2."/>
+  <threshold_readout_up_keV value="30."/>
+  <background filename="loft_background.fits"/>
+
+  <readout mode="event">
+    <time_width value="1.e-5"/>
+    <reconstruction type="campana"/>
+  </readout>
+
+  </detector>
+</instrument>

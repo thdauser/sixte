@@ -23,3 +23,7 @@ dist_athenawfi_DATA = athena/wfi/fullframe.xml
 srgdir = $(xmldir)/srg
 dist_srg_DATA = srg/erosita.xml
 
+# LOFT
+loftdir = $(xmldir)/loft
+dist_loft_DATA = loft/lad.xml
+
