@@ -1,11 +1,5 @@
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -Wall 
-#AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
-
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS += -Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -13,6 +7,7 @@ AM_CFLAGS += -Wall
 pfilesdir = @PFILESDIR@
 dist_pfiles_DATA = comarecon.par
 
+AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 ############ BINARIES #################
 

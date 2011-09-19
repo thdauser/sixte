@@ -23,7 +23,6 @@ struct Parameters {
   char photonlist_filename[MAXMSG]; // input: photon list
   char mask_filename[MAXMSG];       // input: coded mask file
   char impactlist_filename[MAXMSG]; // output: impact list
-  char impactlist_template[MAXMSG]; // template for the impact list FITS file
 
   // Distance between the coded mask and the detector plane ([m]).
   double mask_distance;  

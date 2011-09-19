@@ -62,7 +62,6 @@ int comaimg_main() {
 
     // Create a new FITS file for the output of the impact list.
     impactlistfile = openNewImpactListFile(parameters.impactlist_filename, 
-					   parameters.impactlist_template,
 					   &status);
     if (EXIT_SUCCESS!=status) break;
     // Write WCS header keywords.
@@ -230,21 +229,6 @@ int comaimg_getpar(struct Parameters* parameters)
 		   status);
   }
   if (EXIT_SUCCESS!=status) return(status);
-
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(parameters->impactlist_template, buffer);
-  } else {
-    if ((status = PILGetFname("fits_templates", parameters->impactlist_template))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      
-    }
-  }
-  // Set the impact list template file:
-  strcat(parameters->impactlist_template, "/impactlist.tpl");
 
   return(status);
 }

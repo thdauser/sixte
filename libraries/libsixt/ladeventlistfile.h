@@ -43,7 +43,6 @@ void freeLADEventListFile(LADEventListFile** const file,
 /** Create and open a new LADEventListFile. The new file is generated
     according to the specified template. */
 LADEventListFile* openNewLADEventListFile(const char* const filename,
-					  const char* const template,
 					  int* const status);
 
 /** Open an existing LADEventListFile. */

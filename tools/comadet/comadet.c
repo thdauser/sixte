@@ -15,13 +15,13 @@ int comadet_main() {
   ImpactListFile* impactlistfile=NULL;
   CoMaDetector* detector=NULL;
 
-  int status=EXIT_SUCCESS; // Error status.
+  // Error status.
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
   set_toolname("comadet");
-  set_toolversion("0.01");
-
+  set_toolversion("0.02");
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
 
@@ -119,20 +119,8 @@ int comadet_getpar(struct Parameters* parameters)
   }
   if (EXIT_SUCCESS!=status) return(status);
 
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(parameters->eventlist_template, buffer);
-  } else {
-    if ((status = PILGetFname("fits_templates", 
-			      parameters->eventlist_template))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      
-    }
-  }
-  // Set the impact list template file:
+  // Set the event list template file:
+  strcpy(parameters->eventlist_template, SIXT_DATA_PATH);
   strcat(parameters->eventlist_template, "/coma.eventlist.tpl");
 
   return(status);

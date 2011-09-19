@@ -37,7 +37,6 @@ void destroyGenPatternFile(GenPatternFile** const file,
 
 
 GenPatternFile* openNewGenPatternFile(const char* const filename,
-				      const char* const template,
 				      int* const status)
 {
   GenPatternFile* file = newGenPatternFile(status);
@@ -47,8 +46,7 @@ GenPatternFile* openNewGenPatternFile(const char* const filename,
   remove(filename);
 
   // Open the EventListFile.
-  file->eventlistfile = 
-    openNewEventListFile(filename, template, status);
+  file->eventlistfile = openNewEventListFile(filename, status);
 
   // Close the file.
   destroyGenPatternFile(&file, status);

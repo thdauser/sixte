@@ -32,8 +32,6 @@ struct Parameters {
   int Seed;
   
   char clobber;
-
-  char data_path[MAXFILENAME];
 };
 
 

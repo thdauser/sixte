@@ -13,22 +13,6 @@ int ero_split_photonfile_getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the prefix for the output files!\n", status);
   }
 
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(parameters->photonlist_template, buffer);
-  } else {
-    if ((status = PILGetFname("fits_templates", parameters->photonlist_template))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      
-    }
-  }
-  if (EXIT_SUCCESS!=status) return(status);
-  // Set the photon list template file:
-  strcat(parameters->photonlist_template, "/photonlist.tpl");
-
   return(status);
 }
 
@@ -69,9 +53,7 @@ int ero_split_photonfile_main() {
     for (filecounter=0; filecounter<7; filecounter++) {
       sprintf(filename, "%s%d.fits", 
 	      parameters.output_prefix, filecounter);
-      outputfiles[filecounter]=openNewPhotonListFile(filename, 
-						     parameters.photonlist_template,
-						     &status);
+      outputfiles[filecounter]=openNewPhotonListFile(filename, &status);
       if (EXIT_SUCCESS!=status) break;
     }
     if (EXIT_SUCCESS!=status) break;

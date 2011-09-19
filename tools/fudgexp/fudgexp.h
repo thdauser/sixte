@@ -26,8 +26,6 @@ struct Parameters{
   float ExposureTime;
 
   char clobber;
-
-  char data_path[MAXFILENAME];
 };
 
 

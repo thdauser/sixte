@@ -29,8 +29,6 @@ struct Parameters {
   float RefDec;
 
   char clobber;
-
-  char data_path[MAXFILENAME];
 };
 
 

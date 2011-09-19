@@ -68,7 +68,6 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 
 
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
-				      const char* const template,
 				      int* const status)
 {
   PhotonListFile* plf=NULL;
@@ -78,8 +77,8 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
 
   // Create a new photon list FITS file from the given FITS template.
   fitsfile* fptr=NULL;
-  char buffer[MAXMSG];
-  sprintf(buffer, "%s(%s)", filename, template);
+  char buffer[MAXFILENAME];
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/photonlist.tpl");
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, plf);
 

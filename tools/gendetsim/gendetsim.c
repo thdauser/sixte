@@ -15,7 +15,9 @@ int gendetsim_main() {
   // Output event list file.
   EventListFile* elf=NULL;
 
-  int status=EXIT_SUCCESS; // Error status.
+  // Error status.
+  int status=EXIT_SUCCESS;
+
 
   // Register HEATOOL:
   set_toolname("gendetsim");
@@ -36,7 +38,7 @@ int gendetsim_main() {
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, par.data_path,
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
@@ -45,16 +47,13 @@ int gendetsim_main() {
     det=newGenDet(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Determine the impact list output file and the file template.
+    // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
     
-    // Determine the event list output file and the file template.
-    char eventlist_template[MAXFILENAME];
+    // Determine the event list output file.
     char eventlist_filename[MAXFILENAME];
     strcpy(eventlist_filename, par.EventList);
-    strcpy(eventlist_template, par.data_path);
-    strcat(eventlist_template, "/templates/eventlist.tpl");
 
     // Determine the random number seed.
     int seed;
@@ -80,9 +79,7 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
-    elf=openNewEventListFile(eventlist_filename, 
-			     eventlist_template, 
-			     &status);
+    elf=openNewEventListFile(eventlist_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -214,20 +211,6 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
-    return(status);
-  }
-
-
-  // Get the name of the directory containing the data
-  // required for the simulation from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
-    strcpy(par->data_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
-		   status);
     return(status);
   }
 

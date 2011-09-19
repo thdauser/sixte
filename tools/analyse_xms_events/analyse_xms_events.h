@@ -19,8 +19,6 @@ struct Parameters{
   int PreTrigger;
   int PostTrigger;
   double PileupTime;
-
-  char data_path[MAXFILENAME];
 };
 
 

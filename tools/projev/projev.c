@@ -34,8 +34,6 @@ struct Parameters {
   int Seed;
   
   char clobber;
-
-  char data_path[MAXFILENAME];
 };
 
 
@@ -90,7 +88,7 @@ int projev_main() {
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, par.data_path,
+    sixt_get_XMLFile(xml_filename, par.XMLFile, 
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
@@ -289,20 +287,6 @@ int projev_getpar(struct Parameters* par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
-    return(status);
-  }
-
-
-  // Get the name of the directory containing the detector
-  // XML definition files from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
-    strcpy(par->data_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
-		   status);
     return(status);
   }
 

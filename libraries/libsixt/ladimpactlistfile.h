@@ -48,7 +48,6 @@ LADImpactListFile* openLADImpactListFile(const char* const filename,
 /** Create and open a new LADImpactListFile. The new file is generated
     according to the specified template. */
 LADImpactListFile* openNewLADImpactListFile(const char* const filename,
-					    const char* const template,
 					    int* const status);
 
 /** Return the next impact from the file. Increments the internal row

@@ -48,15 +48,14 @@ int runsixt_main()
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, par.data_path,
+    sixt_get_XMLFile(xml_filename, par.XMLFile, 
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
 
 
-    // Determine the photon list output file and the file template.
+    // Determine the photon list output file.
     char ucase_buffer[MAXFILENAME];
-    char photonlist_template[MAXFILENAME];
     char photonlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.PhotonList);
     strtoupper(ucase_buffer);
@@ -66,11 +65,8 @@ int runsixt_main()
     } else {
       strcpy(photonlist_filename, par.PhotonList);
     }
-    strcpy(photonlist_template, par.data_path);
-    strcat(photonlist_template, "/templates/photonlist.tpl");
 
-    // Determine the impact list output file and the file template.
-    char impactlist_template[MAXFILENAME];
+    // Determine the impact list output file.
     char impactlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.ImpactList);
     strtoupper(ucase_buffer);
@@ -80,11 +76,8 @@ int runsixt_main()
     } else {
       strcpy(impactlist_filename, par.ImpactList);
     }
-    strcpy(impactlist_template, par.data_path);
-    strcat(impactlist_template, "/templates/impactlist.tpl");
     
-    // Determine the event list output file and the file template.
-    char eventlist_template[MAXFILENAME];
+    // Determine the event list output file.
     char eventlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
@@ -94,8 +87,6 @@ int runsixt_main()
     } else {
       strcpy(eventlist_filename, par.EventList);
     }
-    strcpy(eventlist_template, par.data_path);
-    strcat(eventlist_template, "/templates/eventlist.tpl");
 
     // Determine the random number seed.
     int seed;
@@ -175,9 +166,7 @@ int runsixt_main()
     // --- Simulation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, 
-			      photonlist_template, 
-			      &status);
+    plf=openNewPhotonListFile(photonlist_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -206,9 +195,7 @@ int runsixt_main()
 
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, 
-			      impactlist_template, 
-			      &status);
+    ilf=openNewImpactListFile(impactlist_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -236,9 +223,7 @@ int runsixt_main()
 
 
     // Open the output event list file.
-    elf=openNewEventListFile(eventlist_filename, 
-			     eventlist_template, 
-			     &status);
+    elf=openNewEventListFile(eventlist_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -430,19 +415,6 @@ int runsixt_getpar(struct Parameters* const par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
-    return(status);
-  }
-
-
-  // Get the name of the directory containing the data
-  // required for the simulations from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
-    strcpy(par->data_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    SIXT_ERROR("could not read environment variable 'SIXT_DATA_PATH'");
     return(status);
   }
 

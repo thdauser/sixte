@@ -15,7 +15,8 @@ int phoimg_main() {
   // vignetting function, focal length, and FOV diameter.
   GenDet* det=NULL;
 
-  int status=EXIT_SUCCESS; // Error status
+  // Error status.
+  int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL:
@@ -37,21 +38,18 @@ int phoimg_main() {
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, par.data_path,
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Determine the impact list input file and the file template.
+    // Determine the photon list file name.
     char photonlist_filename[MAXFILENAME];
     strcpy(photonlist_filename, par.PhotonList);
 
-    // Determine the impact list output file and the file template.
-    char impactlist_template[MAXFILENAME];
+    // Determine the impact list output file.
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
-    strcpy(impactlist_template, par.data_path);
-    strcat(impactlist_template, "/templates/impactlist.tpl");
 
     // Determine the random number seed.
     int seed;
@@ -134,9 +132,7 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, 
-			      impactlist_template, 
-			      &status);
+    ilf=openNewImpactListFile(impactlist_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -284,20 +280,6 @@ int phoimg_getpar(struct Parameters* par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
-    return(status);
-  }
-
-
-  // Get the name of the directory containing the data
-  // required for the simulation from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
-    strcpy(par->data_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
-		   status);
     return(status);
   }
 

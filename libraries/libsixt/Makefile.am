@@ -23,6 +23,8 @@ dist_xml_DATA += epicpn.burst.xml
 dist_xml_DATA += comadet.xml
 dist_xml_DATA += aciss3.xml
 
+AM_CFLAGS = -DSIXT_DATA_PATH='"$(pkgdatadir)"'
+
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.

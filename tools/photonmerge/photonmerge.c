@@ -35,20 +35,6 @@ int ero_merge_photonfiles_getpar(struct Parameters* par)
     return(status);
   }
 
-
-  // Get the name of the directory containing the detector
-  // XML definition files from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
-    strcpy(par->data_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
-		   status);
-    return(status);
-  }
-
   return(status);
 }
 
@@ -91,14 +77,8 @@ int photonmerge_main() {
     }
     if (EXIT_SUCCESS!=status) break;
 
-    // Determine the template for the photon list output file.
-    char photonlist_template[MAXFILENAME];
-    strcpy(photonlist_template, par.data_path);
-    strcat(photonlist_template, "/templates/photonlist.tpl");
-
     // Create and open a new output photon file:
-    outputfile=openNewPhotonListFile(par.OutputFile, photonlist_template, 
-				     &status);
+    outputfile=openNewPhotonListFile(par.OutputFile, &status);
     if (EXIT_SUCCESS!=status) break;
 
 

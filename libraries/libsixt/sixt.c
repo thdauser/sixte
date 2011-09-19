@@ -55,7 +55,6 @@ void sixt_error(const char* const func, const char* const msg)
 
 void sixt_get_XMLFile(char* const filename,
 		      const char* const xmlfile,
-		      const char* const data_path,
 		      const char* const mission,
 		      const char* const instrument,
 		      const char* const mode,
@@ -79,7 +78,7 @@ void sixt_get_XMLFile(char* const filename,
   if (0==strcmp(XMLFile, "NONE")) {
     // Determine the base directory containing the XML
     // definition files.
-    strcpy(filename, data_path);
+    strcpy(filename, SIXT_DATA_PATH);
     strcat(filename, "/instruments");
 
     // Determine the XML filename according to the selected
@@ -143,6 +142,25 @@ void sixt_get_XMLFile(char* const filename,
       SIXT_ERROR("selected mission is not supported");
       return;
     }
+    
+  } else {
+    // The XML filename has been given explicitly.
+    strcpy(filename, xmlfile);
+  }
+}
+
+
+void sixt_get_LADXMLFile(char* const filename,
+			 const char* const xmlfile)
+{
+  // Check the available missions, instruments, and modes.
+  char XMLFile[MAXFILENAME];
+  strcpy(XMLFile, xmlfile);
+  strtoupper(XMLFile);
+  if (0==strcmp(XMLFile, "NONE")) {
+    // Set default LAD XML file.
+    strcpy(filename, SIXT_DATA_PATH);
+    strcat(filename, "/instruments/loft/lad.xml");
     
   } else {
     // The XML filename has been given explicitly.

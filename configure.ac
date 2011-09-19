@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([sixt], [0.02], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixt], [0.03], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
@@ -17,7 +17,7 @@ AC_PROG_CC     # Search for a C-Compiler and store it in the Variable 'CC'.
 
 LT_INIT #([disable-shared]) #([shared]) 
 
-# Compiler and Linker Flags:
+# Compiler Flags:
 # "-g -W -Wall -O0" for the compiler for debugging
 # "-g" to create debugging information (seems to be used automatically by autotools)
 # "-Werror" for the compiler to treat warnings as errors
@@ -25,10 +25,8 @@ LT_INIT #([disable-shared]) #([shared])
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
 CFLAGS="$CFLAGS -I$HEADAS/include -I$HOME/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS"
-#CPPFLAGS="$CPPFLAGS -D__STRICT_ANSI__ -D_ISOC99_SOURCE"
-#CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=500"
-#CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_THREAD_SAFE -U_GNU_SOURCE"
 
+# Linker Flags:
 LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall"
 
 # Check for libraries:  (objdump -R/-T libncurses...)

@@ -52,7 +52,7 @@ int ero_events_main()
 
     // Filename of the template file.
     char template[MAXMSG];
-    strcpy(template, par.data_path);
+    strcpy(template, SIXT_DATA_PATH);
     strcat(template, "/templates/eroeventlist.tpl");
     
     // Create and open a new FITS file using the template.
@@ -323,19 +323,6 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
-    return(status);
-  }
-
-
-  // Get the name of the directory containing the data
-  // required for the simulations from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
-    strcpy(par->data_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    SIXT_ERROR("could not read environment variable 'SIXT_DATA_PATH'");
     return(status);
   }
 

@@ -140,11 +140,15 @@ void sixt_error(const char* const func, const char* const msg);
     instrument and mode. */
 void sixt_get_XMLFile(char* const filename,
 		      const char* const xmlfile,
-		      const char* const data_path,
 		      const char* const mission,
 		      const char* const instrument,
 		      const char* const mode,
 		      int* const status);
+
+
+/** Determine the LAD XMLFilename. */
+void sixt_get_LADXMLFile(char* const filename,
+			 const char* const xmlfile);
 
 
 #endif /* SIXT_H */

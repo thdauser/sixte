@@ -20,10 +20,6 @@ struct Parameters{
 
   /** Prefix for the output photon list files. */
   char output_prefix[MAXMSG];
-
-  /** Template for the newly generated photon list files. */
-  char photonlist_template[MAXMSG];
-
 };
 
 

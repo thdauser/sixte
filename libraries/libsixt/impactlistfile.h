@@ -48,7 +48,6 @@ ImpactListFile* openImpactListFile(const char* const filename,
 /** Create and open a new ImpactListFile. The new file is generated
     according to the specified template. */
 ImpactListFile* openNewImpactListFile(const char* const filename,
-				      const char* const template,
 				      int* const status);
 
 /** Return the next impact from the file. Increments the internal row

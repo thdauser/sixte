@@ -34,10 +34,8 @@ GenPatternFile* newGenPatternFile(int* const status);
 /** Destructor. */
 void destroyGenPatternFile(GenPatternFile** const file, int* const status);
 
-/** Create and open a new GenPatternFile. The new file is generated
-    according to the specified template. */
+/** Create and open a new GenPatternFile. */
 GenPatternFile* openNewGenPatternFile(const char* const filename,
-				      const char* const template,
 				      int* const status);
 
 /** Open an existing EventListFile. */

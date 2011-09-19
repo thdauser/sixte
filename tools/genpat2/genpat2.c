@@ -416,14 +416,8 @@ int genpat_main() {
     if (EXIT_SUCCESS!=status) break;
 
 
-    // Create and open the output event file.
-    // Filename of the template file.
-    char template[MAXMSG];
-    strcpy(template, par.fits_templates);
-    strcat(template, "/");
-    strcat(template, "patternlist.tpl");
-    // Open a new pattern file from the specified template.
-    plf=openNewGenPatternFile(par.PatternList, template, &status);
+    // Create and open a new event file.
+    plf=openNewGenPatternFile(par.PatternList, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Copy header keywords from the input to the output event file.
@@ -623,19 +617,6 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
-    return(status);
-  }
-
-  // Get the name of the FITS template directory
-  // from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(par->fits_templates, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_FITS_TEMPLATES'!\n", 
-		   status);
     return(status);
   }
 

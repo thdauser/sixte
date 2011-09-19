@@ -173,27 +173,12 @@ int htrs_digital_shaper_getpar(struct Parameters* parameters)
     HD_ERROR_THROW("Error reading the number of required samplings!\n", status);
   }
 
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  else { 
-    char* buffer;
-    if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-      strcpy(parameters->eventlist_template, buffer);
-    } else {
-      if ((status = PILGetFname("fits_templates", parameters->eventlist_template))) {
-	HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      }
-    }
-  }
   if (EXIT_SUCCESS!=status) return(status);
+
   // Set the event list template file:
+  strcpy(parameters->eventlist_template, SIXT_DATA_PATH);
   strcat(parameters->eventlist_template, "/htrs.eventlist.tpl");
 
   return(status);
 }
-
-
-
-
 

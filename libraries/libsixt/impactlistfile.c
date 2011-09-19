@@ -90,7 +90,6 @@ ImpactListFile* openImpactListFile(const char* const filename,
 
 
 ImpactListFile* openNewImpactListFile(const char* const filename,
-				      const char* const template,
 				      int* const status)
 {
   ImpactListFile* file = newImpactListFile(status);
@@ -99,12 +98,11 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   // Remove old file, if it exists.
   remove(filename);
 
-  // Create a new event list FITS file from the template file.
-  char buffer[MAXMSG];
-  sprintf(buffer, "%s(%s)", filename, template);
-  headas_chat(4, "create new impact list file '%s' from template '%s' ...\n", 
-	      filename, template);
-  if (fits_create_file(&file->fptr, buffer, status)) return(file);
+  // Create a new event list FITS file from the template.
+  char buffer[MAXFILENAME];
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/impactlist.tpl");
+  fits_create_file(&file->fptr, buffer, status);
+  CHECK_STATUS_RET(*status, file);
 
   // Set the time-keyword in the header.
   // See also: Stevens, "Advanced Programming in the UNIX environment",

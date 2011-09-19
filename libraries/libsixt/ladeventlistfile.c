@@ -41,7 +41,6 @@ void freeLADEventListFile(LADEventListFile** const file,
 
 
 LADEventListFile* openNewLADEventListFile(const char* const filename,
-					  const char* const template,
 					  int* const status)
 {
   LADEventListFile* file = newLADEventListFile(status);
@@ -51,11 +50,10 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
   remove(filename);
 
   // Create a new LADEvent list FITS file from the template file.
-  char buffer[MAXMSG];
-  sprintf(buffer, "%s(%s)", filename, template);
-  headas_chat(4, "create new event list file '%s' from template '%s' ...\n", 
-	      filename, template);
-  if (fits_create_file(&file->fptr, buffer, status)) return(file);
+  char buffer[MAXFILENAME];
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/ladeventlist.tpl");
+  fits_create_file(&file->fptr, buffer, status);
+  CHECK_STATUS_RET(*status, file);
 
   // Set the time-keyword in the LADEvent List Header.
   // See also: Stevens, "Advanced Programming in the UNIX environment",

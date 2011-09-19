@@ -42,9 +42,8 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 
 
 /** Create new photon list FITS file according to a given template and
-    return the PhotonListFile object for the open file.  */
+    return the PhotonListFile object for the open file. */
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
-				      const char* const template,
 				      int* const status);
 
 

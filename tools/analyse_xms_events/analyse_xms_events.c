@@ -26,13 +26,8 @@ int analyse_xms_events_main() {
     elf=openEventListFile(par.EventList, READWRITE, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    // Create and open the output event file.
-    // Filename of the template file.
-    char template[MAXMSG];
-    strcpy(template, par.data_path);
-    strcat(template, "/templates/patternlist.tpl");
-    // Open a new pattern file from the specified template.
-    plf=openNewGenPatternFile(par.PatternList, template, &status);
+    // Create and open a new event file.
+    plf=openNewGenPatternFile(par.PatternList, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
@@ -198,19 +193,6 @@ int analyse_xms_events_getpar(struct Parameters* par)
   status=ape_trad_query_double("PileupTime", &par->PileupTime);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the pile-up time!\n", status);
-    return(status);
-  }
-
-  // Get the name of the FITS directory containing the data
-  // required for the simulation from the environment variable.
-  if (NULL!=(sbuffer=getenv("SIXT_DATA_PATH"))) {
-    strcpy(par->data_path, sbuffer);
-    // Note: the char* pointer returned by getenv should not
-    // be modified nor free'd.
-  } else {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error reading the environment variable 'SIXT_DATA_PATH'!\n", 
-		   status);
     return(status);
   }
 

@@ -32,8 +32,6 @@ struct Parameters {
   int Seed;
   
   char clobber;
-
-  char fits_templates[MAXFILENAME];
 };
 
 

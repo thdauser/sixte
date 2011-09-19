@@ -178,20 +178,8 @@ int comarecon_getpar(struct Parameters* parameters)
   }
   if (EXIT_SUCCESS!=status) return(status);
 
-  // Get the name of the FITS template directory.
-  // First try to read it from the environment variable.
-  // If the variable does not exist, read it from the PIL.
-  char* buffer;
-  if (NULL!=(buffer=getenv("SIXT_FITS_TEMPLATES"))) {
-    strcpy(parameters->eventlist_template, buffer);
-  } else {
-    if ((status = PILGetFname("fits_templates", 
-			      parameters->eventlist_template))) {
-      HD_ERROR_THROW("Error reading the path of the FITS templates!\n", status);
-      
-    }
-  }
-  // Set the impact list template file:
+  // Set the event list template file:
+  strcpy(parameters->eventlist_template, SIXT_DATA_PATH);
   strcat(parameters->eventlist_template, "/coma.eventlist.tpl");
 
   return(status);

@@ -43,7 +43,6 @@ void freeLADRawEventListFile(LADRawEventListFile** const file,
 /** Create and open a new LADRawEventListFile. The new file is generated
     according to the specified template. */
 LADRawEventListFile* openNewLADRawEventListFile(const char* const filename,
-						const char* const template,
 						int* const status);
 
 /** Open an existing LADRawEventListFile. */
