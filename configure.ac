@@ -36,7 +36,7 @@ AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 ####################################
 # cfitsio
 AC_SEARCH_LIBS(ffopen, 
-	[cfitsio_3.25 cfitsio_3.24 cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
+	[cfitsio_3.27 cfitsio_3.25 cfitsio_3.24 cfitsio_3.22 cfitsio_3.181 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
 	[], [AC_MSG_ERROR([No supported version of cfitsio library found!])], [])
 
 ####################################
