@@ -209,9 +209,8 @@ void parseGenDetXML(GenDet* const det,
   }
 
   if (NULL==det->rmf) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for response file (RMF/RSP) in XML file");
-    return;    
+    headas_printf("*** warning: no specification for response file (RMF/RSP) "
+		  "in XML definition ***");
   }
 
   if (NULL==det->arf) {
@@ -254,17 +253,19 @@ void parseGenDetXML(GenDet* const det,
   // according to the RMF. If a charge threshold is given in addition,
   // its value is overwritten by the charge corresponding to the PHA 
   // specification. I.e., the PHA thresholds have a higher priority.
-  if (det->threshold_readout_lo_PHA>-1) {
-    det->threshold_readout_lo_keV = 
-      getEBOUNDSEnergy(det->threshold_readout_lo_PHA, det->rmf, -1);
-    headas_chat(3, "set lower readout threshold to %.3lf keV (PHA %ld)\n", 
-		det->threshold_readout_lo_keV, det->threshold_readout_lo_PHA);
-  }
-  if (det->threshold_readout_up_PHA>-1) {
-    det->threshold_readout_up_keV = 
-      getEBOUNDSEnergy(det->threshold_readout_up_PHA, det->rmf,  1);
-    headas_chat(3, "set upper readout threshold to %.3lf keV (PHA %ld)\n", 
-		det->threshold_readout_up_keV, det->threshold_readout_up_PHA);
+  if (NULL!=det->rmf) {
+    if (det->threshold_readout_lo_PHA>-1) {
+      det->threshold_readout_lo_keV = 
+	getEBOUNDSEnergy(det->threshold_readout_lo_PHA, det->rmf, -1);
+      headas_chat(3, "set lower readout threshold to %.3lf keV (PHA %ld)\n", 
+		  det->threshold_readout_lo_keV, det->threshold_readout_lo_PHA);
+    }
+    if (det->threshold_readout_up_PHA>-1) {
+      det->threshold_readout_up_keV = 
+	getEBOUNDSEnergy(det->threshold_readout_up_PHA, det->rmf,  1);
+      headas_chat(3, "set upper readout threshold to %.3lf keV (PHA %ld)\n", 
+		  det->threshold_readout_up_keV, det->threshold_readout_up_PHA);
+    }
   }
 }
 

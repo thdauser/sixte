@@ -170,37 +170,46 @@ int addGenDetPhotonImpact(GenDet* const det,
   operateGenDetClock(det, elf, impact->time, status);
   if (EXIT_SUCCESS!=*status) return(0);
 
-  // Determine the measured detector channel (PHA channel) according 
-  // to the RMF.
-  // The channel is obtained from the RMF using the corresponding
-  // HEAdas routine which is based on drawing a random number.
-  long channel;
-  ReturnChannel(det->rmf, impact->energy, 1, &channel);
+  // Determine the detected energy.
+  float energy;
+  
+  if (NULL!=det->rmf) {
+    // Determine the measured detector channel (PHA channel) according 
+    // to the RMF.
+    // The channel is obtained from the RMF using the corresponding
+    // HEAdas routine which is based on drawing a random number.
+    long channel;
+    ReturnChannel(det->rmf, impact->energy, 1, &channel);
 
-  // Check if the photon is really measured. If the
-  // PHA channel returned by the HEAdas RMF function is '-1', 
-  // the photon is not detected.
-  // This can happen, if the RMF actually is an RSP, i.e. it 
-  // includes ARF contributions, e.g., 
-  // the detector quantum efficiency and filter transmission.
-  if (0>channel) {
-    return(0); // Break the function (photon is not detected).
+    // Check if the photon is really measured. If the
+    // PHA channel returned by the HEAdas RMF function is '-1', 
+    // the photon is not detected.
+    // This can happen, if the RMF actually is an RSP, i.e. it 
+    // includes ARF contributions, e.g., 
+    // the detector quantum efficiency and filter transmission.
+    if (0>channel) {
+      return(0); // Break the function (photon is not detected).
+    }
+
+    // Determine the corresponding detected energy.
+    // NOTE: In this simulation the collected charge is represented by the nominal
+    // photon energy [keV], which corresponds to the PHA channel according 
+    // to the EBOUNDS table.
+    energy = getEBOUNDSEnergy(channel, det->rmf, 0);
+    assert(energy>=0.);
+
+  } else {
+    // The detector has no particular RMF. Therefore we directly
+    // use the energy of the incident photon.
+    energy = impact->energy;
   }
 
-  // Get the corresponding created charge.
-  // NOTE: In this simulation the charge is represented by the nominal
-  // photon energy [keV] which corresponds to the PHA channel according 
-  // to the EBOUNDS table.
-  float charge = getEBOUNDSEnergy(channel, det->rmf, 0);
-  assert(charge>=0.);
-
   // Create split events.
-  int npixels = makeGenSplitEvents(det, &impact->position, charge, 
+  int npixels = makeGenSplitEvents(det, &impact->position, energy, 
 				   impact->ph_id, impact->src_id, 
 				   impact->time, elf, status);
   CHECK_STATUS_RET(*status, npixels);
 
-  
   // Return the number of affected pixels.
   return(npixels);
 }
@@ -363,8 +372,12 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       }
     }
     
-    // Apply the detector response.
-    event.pha = getEBOUNDSChannel(event.charge, det->rmf);
+    // Apply the detector response if available.
+    if (NULL!=det->rmf) {
+      event.pha = getEBOUNDSChannel(event.charge, det->rmf);
+    } else {
+      event.pha = 0;
+    }
 
     // Store remaining information.
     event.rawy  = readoutindex;
