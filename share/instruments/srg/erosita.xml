@@ -1,14 +1,11 @@
 <?xml version="1.0"?>
-<instrument type="eROSITA">
+<instrument name="eROSITA">
 
-<telescope>
-<focallength value="1.6"/>
 <fov diameter="1.02"/>
-<psf filename="erosita.psf.7.5mum.fits"/>
 <vignetting filename="erosita.vignetting.fits"/>
-</telescope>
+<psf filename="erosita.psf.7.5mum.fits"/>
+<focallength value="1.6"/>
 
-<detector type="framestoreCCD">
 <dimensions xwidth="384" ywidth="384"/>
 <pixelborder x="0." y="0."/>
 <wcs xrpix="192.5" yrpix="192.5" xrval="0." yrval="0." xdelt="75.e-6" ydelt="75.e-6"/>
@@ -53,5 +50,4 @@
   <grade p11="0" p12="0" p13="0" p21="2" p23="0" p31="1" p32="2" p33="0" grade="12"/>
 </eventgrading>
 
-</detector>
 </instrument>
