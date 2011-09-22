@@ -85,6 +85,8 @@ void phpat(GenDet* const det,
 	nframelist++;
       }
 
+      // TODO Treatment of last event in input list.
+
       // Check if the new event belongs to a subsequent frame, or if the 
       // end of the event list is reached.
       if ((event->frame!=framelist[0]->frame) || (ii==elf->nrows-1)) {
@@ -305,7 +307,7 @@ void phpat(GenDet* const det,
 
 	    // Remove processed events from neighbor list.
 	    for (kk=0; kk<nneighborlist; kk++) {
-	      free(neighborlist[kk]);
+	      freeEvent(&neighborlist[kk]);
 	      neighborlist[kk]=NULL;
 	    }
 	    nneighborlist=0;

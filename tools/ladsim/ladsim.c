@@ -276,49 +276,130 @@ static void ladevents(const LAD* const lad,
   // to the same event.
   const double dt = 1.e-12;
 
-  // Output buffer.
-  LADEvent* ev=NULL;
+  // List of contributing raw events.
+  LADRawEvent** list=NULL;
+  long nlist=0;
+  const long maxnlist=10;
+
+  // Allocate memory.
+  list=(LADRawEvent**)malloc(maxnlist*sizeof(LADRawEvent*));
+  CHECK_NULL_VOID(list, *status, "memory allocation for list failed");
 
   while (relf->row < relf->nrows) {
     
     // Read the next raw event from the list.
-    LADRawEvent rev;
-    getLADRawEventFromFile(relf, relf->row+1, &rev, status);
+    LADRawEvent* rev=getLADRawEvent(status);
+    CHECK_STATUS_BREAK(*status);
+    getLADRawEventFromFile(relf, relf->row+1, rev, status);
     CHECK_STATUS_BREAK(*status);
 
-    if (NULL!=ev) {
-      // TODO Check for panel, module, element, anodes.
-      if (rev.time-ev->time>dt) { 
-	// The new raw event does not belong to the event any more.
+    if (0==nlist) {
+      // There are no raw events in the list up to now.
+      list[0] = rev;
+      nlist   = 1;
+      
+    } else {
+      
+      // Check if the new raw event seems to belong to the same photon event.
+      int different = 0;
+      if ((rev->time-list[0]->time>dt) ||
+	  (rev->panel!=list[0]->panel) ||
+	  (rev->module!=list[0]->module) ||
+	  (rev->element!=list[0]->element) ||
+	  (abs(rev->anode-list[nlist-1]->anode)>1)) {
+	different = 1;
+      }
+      // Check for the different (bottom and top) anode lines.
+      long nanodes = 
+	lad->panel[rev->panel]->module[rev->module]->element[rev->element]->nanodes;
+      if (((rev->anode >= nanodes/2)&&(list[0]->anode <  nanodes/2)) ||
+	  ((rev->anode <  nanodes/2)&&(list[0]->anode >= nanodes/2))) {
+	different = 1;
+      }
+
+      // If the raw event belongs to the same photon event, add it to the list.
+      if (0==different) { 
+	if (nlist==maxnlist) {
+	  SIXT_ERROR("too many raw events for list buffer");
+	  *status=EXIT_FAILURE;
+	  break;
+	}
+	list[nlist] = rev;
+	nlist++;
+      }
+
+      // TODO Treatment of last event in input list.
+
+      if ((1==different) || (relf->row == relf->nrows)) { 
+	// The new raw event does not belong to the previous events any more,
+	// or it is the last one in the input list.
+
+	// Construct a combined event for output.
+	LADEvent* ev = getLADEvent(status);
+	CHECK_STATUS_BREAK(*status);
+	ev->panel   = list[0]->panel;
+	ev->module  = list[0]->module;
+	ev->element = list[0]->element;
+	ev->time    = list[0]->time;
+
+	long ii;
+	long maxidx=0;
+	for (ii=0; ii<nlist; ii++) {
+	  // Search the anode with the maximum signal.
+	  if (list[ii]->signal>list[maxidx]->signal) {
+	    maxidx=ii;
+	  }
+	
+	  // Sum the signal contributions.
+	  ev->signal += list[ii]->signal;
+
+	  // Set PH_IDs and SRC_IDs.
+	  long jj;
+	  for (jj=0; jj<NLADRAWEVENTPHOTONS; jj++) {
+	    long kk;
+	    for (kk=0; kk<NLADEVENTPHOTONS; kk++) {
+	      if (list[ii]->ph_id[jj]==ev->ph_id[kk]) break;
+	      if (0==ev->ph_id[kk]) {
+		ev->ph_id[kk] =list[ii]->ph_id[jj];
+		ev->src_id[kk]=list[ii]->src_id[jj];		
+		break;
+	      }
+	    }
+	  }
+	}
+	ev->anode = list[maxidx]->anode;
+
 	// Add the event to the output file.
 	addLADEvent2File(elf, ev, status);
 	CHECK_STATUS_BREAK(*status);
 
 	// Release the buffer.
 	freeLADEvent(&ev);
+	for (ii=0; ii<nlist; ii++) {
+	  freeLADRawEvent(&list[ii]);
+	}
+	
+	// If this has not been the last raw event, start a new list.
+	if (relf->row < relf->nrows) {
+	  list[0] = rev;
+	  nlist   = 1;
+	}
       }
     }
-
-    // Check if the buffer is already initialized.
-    if (NULL==ev) { 
-      ev = getLADEvent(status);
-      CHECK_STATUS_VOID(*status);
-
-      ev->time = rev.time;
-      ev->panel = rev.panel;
-      ev->module = rev.module;
-      ev->element = rev.element;
-      // TODO Anode?
-      ev->signal = rev.signal;
-    } else {
-      // TODO Anode?
-      ev->signal += rev.signal;
-    }
-    // TODO PH_ID, SRC_ID.
-
   }
   CHECK_STATUS_VOID(*status);
   // END of loop over all raw events.
+
+  // Release memory.
+  if (NULL!=list) {
+    long ii;
+    for (ii=0; ii<nlist; ii++) {
+      if (NULL!=list[ii]) {
+	freeLADRawEvent(&list[ii]);
+      }
+    }
+    free(list);
+  }
 }
 
 
@@ -628,12 +709,12 @@ int ladsim_main()
 
     // Run the event recombination.
     headas_chat(5, "start event recombination ...\n");
-    //ladevents(lad, relf, elf, &status);
+    ladevents(lad, relf, elf, &status);
     CHECK_STATUS_BREAK(status);
 
 
     // Run the event projection.
-    headas_chat(5, "start sky projection ...\n");
+    //headas_chat(5, "start sky projection ...\n");
     // TODO
     //phproj(det, ac, relf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
