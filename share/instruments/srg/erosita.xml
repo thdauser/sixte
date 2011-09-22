@@ -1,53 +1,56 @@
 <?xml version="1.0"?>
 <instrument name="eROSITA">
 
-<fov diameter="1.02"/>
-<focallength value="1.6"/>
-<vignetting filename="erosita.vignetting.fits"/>
-<psf filename="erosita.psf.7.5mum.fits"/>
+<telescope>
+  <fov diameter="1.02"/>
+  <focallength value="1.6"/>
+  <vignetting filename="erosita.vignetting.fits"/>
+  <psf filename="erosita.psf.7.5mum.fits"/>
+</telescope>
 
-<dimensions xwidth="384" ywidth="384"/>
-<pixelborder x="0." y="0."/>
-<wcs xrpix="192.5" yrpix="192.5" xrval="0." yrval="0." xdelt="75.e-6" ydelt="75.e-6"/>
-<cte value="1"/>
-<arf filename="erosita_iv_1telonaxis_ff.arf"/>
-<rmf filename="erosita_iv_1telonaxis_ff.rmf"/>
-<split type="exponential" par1="0.355"/>
-<threshold_readout_lo_keV value="0."/>
-<threshold_readout_up_keV value="12."/>
-<threshold_event_lo_keV value="150.e-3"/>
-<threshold_split_lo_fraction value="0.01"/>
-<erobackground filename="eROSITA_hitlist_reduced_1308_81s.fits"/>
-
-<readout mode="time">
-  <wait time="0.05"/>
+<detector>
+  <dimensions xwidth="384" ywidth="384"/>
+  <pixelborder x="0." y="0."/>
+  <wcs xrpix="192.5" yrpix="192.5" xrval="0." yrval="0." xdelt="75.e-6" ydelt="75.e-6"/>
+  <cte value="1"/>
+  <arf filename="erosita_iv_1telonaxis_ff.arf"/>
+  <rmf filename="erosita_iv_1telonaxis_ff.rmf"/>
+  <split type="exponential" par1="0.355"/>
+  <threshold_readout_lo_keV value="0."/>
+  <threshold_readout_up_keV value="12."/>
+  <threshold_event_lo_keV value="150.e-3"/>
+  <threshold_split_lo_fraction value="0.01"/>
+  <erobackground filename="eROSITA_hitlist_reduced_1308_81s.fits"/>
+  
+  <readout mode="time">
+    <wait time="0.05"/>
 	
-  <loop start="0" end="383" increment="1" variable="$i">
-    <readoutline lineindex="0" readoutindex="$i"/>
-    <lineshift/>
-    <wait time="0.3e-6"/>
-  </loop>
+    <loop start="0" end="383" increment="1" variable="$i">
+      <readoutline lineindex="0" readoutindex="$i"/>
+      <lineshift/>
+      <wait time="0.3e-6"/>
+    </loop>
 
-  <newframe/>
-</readout>
+    <newframe/>
+  </readout>
 
-<eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
-  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>
+  <eventgrading invalid="-1" borderinvalid="1" largeinvalid="1">
+    <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>
 
-  <grade p11="0" p12="1" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="1"/>
-  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="2"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="3"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="1" p33="0" grade="4"/>
+    <grade p11="0" p12="1" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="1"/>
+    <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="2"/>
+    <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="3"/>
+    <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="1" p33="0" grade="4"/>
 
-  <grade p11="0" p12="1" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="5"/>
-  <grade p11="0" p12="1" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="6"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="1" p33="0" grade="7"/>
-  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="1" p33="0" grade="8"/>
-
-  <grade p11="1" p12="2" p13="0" p21="2" p23="0" p31="0" p32="0" p33="0" grade="9"/>
-  <grade p11="0" p12="2" p13="1" p21="0" p23="2" p31="0" p32="0" p33="0" grade="10"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="2" p31="0" p32="2" p33="1" grade="11"/>
-  <grade p11="0" p12="0" p13="0" p21="2" p23="0" p31="1" p32="2" p33="0" grade="12"/>
-</eventgrading>
-
+    <grade p11="0" p12="1" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="5"/>
+    <grade p11="0" p12="1" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="6"/>
+    <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="1" p33="0" grade="7"/>
+    <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="1" p33="0" grade="8"/>
+    
+    <grade p11="1" p12="2" p13="0" p21="2" p23="0" p31="0" p32="0" p33="0" grade="9"/>
+    <grade p11="0" p12="2" p13="1" p21="0" p23="2" p31="0" p32="0" p33="0" grade="10"/>
+    <grade p11="0" p12="0" p13="0" p21="0" p23="2" p31="0" p32="2" p33="1" grade="11"/>
+    <grade p11="0" p12="0" p13="0" p21="2" p23="0" p31="1" p32="2" p33="0" grade="12"/>
+  </eventgrading>
+</detector>
 </instrument>
