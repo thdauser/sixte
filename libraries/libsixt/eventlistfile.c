@@ -85,11 +85,6 @@ EventListFile* openNewEventListFile(const char* const filename,
   HDpar_stamp(file->fptr, 1, status);
   if (EXIT_SUCCESS!=*status) return(file);
 
-
-  // Move to the binary table extension.
-  fits_movabs_hdu(file->fptr, 2, 0, status);
-  CHECK_STATUS_RET(*status, file);
-
   // Close the file.
   freeEventListFile(&file, status);
   if (EXIT_SUCCESS!=*status) return(file);

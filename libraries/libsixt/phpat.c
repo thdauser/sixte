@@ -1,13 +1,44 @@
 #include "phpat.h"
 
-
 // TODO Apply thresholds.
+
+struct PatternStatistics {
+  /** Number of valid patterns. */
+  long nvalids;
+  /** Number of valid patterns flagged as pile-up. */
+  long npvalids;
+
+  /** Number of invalid patterns. */
+  long ninvalids;
+  /** Number of invalid patterns flagged as pile-up. */
+  long npinvalids;
+
+  /** Number of patterns with a particular grade. */
+  long ngrade[13];
+  /** NUmber of patterns with a particular grade flagged as
+      pile-up. */
+  long npgrade[13];
+};
+
 
 void phpat(GenDet* const det,
 	   EventListFile* const elf,
 	   PatternFile* const plf,
 	   int* const status)
 {
+  // Pattern / grade statistics.
+  struct PatternStatistics statistics = {
+    .nvalids    = 0,
+    .npvalids   = 0,
+    .ninvalids  = 0,
+    .npinvalids = 0,
+  };
+  long ii;
+  for (ii=0; ii<13; ii++) {
+    statistics.ngrade[ii]  = 0;
+    statistics.npgrade[ii] = 0;
+  }
+
   // List of all events belonging to the current frame.
   const long maxnframelist=10000;
   Event** framelist=NULL;
@@ -25,7 +56,6 @@ void phpat(GenDet* const det,
   CHECK_NULL_VOID(neighborlist, *status, "memory allocation for neighbor list failed");
 
   // Loop over all events in the input list.
-  long ii;
   for (ii=0; ii<elf->nrows; ii++) {
       
     // Read the next event from the file.
@@ -35,10 +65,10 @@ void phpat(GenDet* const det,
     CHECK_STATUS_BREAK(*status);
 
     // Check if there are any events in the list for the current frame.
-    if (NULL==framelist) {
+    if (0==nframelist) {
       // The frame list is empty.
       // Add the new event to the new frame list.
-      framelist[0] = event;
+      framelist[0]=event;
       nframelist=1;
 
     } else {
@@ -51,7 +81,7 @@ void phpat(GenDet* const det,
 	  *status=EXIT_FAILURE;
 	  break;
 	}
-	framelist[nframelist] = event;
+	framelist[nframelist]=event;
 	nframelist++;
       }
 
@@ -167,21 +197,18 @@ void phpat(GenDet* const det,
 		  if (0==pattern->event->ph_id[mm]) {
 		    pattern->event->ph_id[mm] =neighborlist[kk]->ph_id[ll];
 		    pattern->event->src_id[mm]=neighborlist[kk]->src_id[ll];
+		    break;
 		  }
 		}
 	      }
 
-	      // Check for bordering pixels.
+	      // Check for border pixels.
 	      if ((0==neighborlist[kk]->rawx)||
 		  (neighborlist[kk]->rawx==det->pixgrid->xwidth-1)||
 		  (0==neighborlist[kk]->rawy)||
 		  (neighborlist[kk]->rawy==det->pixgrid->ywidth-1)) {
 		border=1;
 	      }
-
-	      // Remove processed event from neighbor list.
-	      free(neighborlist[kk]);
-	      neighborlist[kk]=NULL;
 	    }
 	    // END of loop over all entries in the neighbor list.
 
@@ -194,9 +221,6 @@ void phpat(GenDet* const det,
 		pattern->pileup=1;
 	      }
 	    }
-
-	    // Neighbor list should be empty now.
-	    nneighborlist=0;
 
 	    // Determine the pattern type.
 	    // First assume that the pattern is invalid.
@@ -264,27 +288,77 @@ void phpat(GenDet* const det,
 	    }
 	    // END of determine the pattern type.
 
+	    // Update the pattern statistics.
+	    if (pattern->type<0) {
+	      statistics.ninvalids++;
+	      if (pattern->pileup>0) {
+		statistics.npinvalids++;
+	      }
+	    } else {
+	      statistics.nvalids++;
+	      statistics.ngrade[pattern->type]++;
+	      if (pattern->pileup>0) {
+		statistics.npvalids++;
+		statistics.npgrade[pattern->type]++;
+	      }
+	    }	      
+
+	    // Remove processed events from neighbor list.
+	    for (kk=0; kk<nneighborlist; kk++) {
+	      free(neighborlist[kk]);
+	      neighborlist[kk]=NULL;
+	    }
+	    nneighborlist=0;
+
 	    // Add the new pattern to the output file.
 	    addPattern2File(plf, pattern, status);	  
 	    CHECK_STATUS_BREAK(*status);
+
+	    // Release memory.
+	    freePattern(&pattern);
 	  }
 	}
 	CHECK_STATUS_BREAK(*status);
 	// END of loop over all events in the frame list.
-      }
 
-      // Check if the new event belongs to a subsequent frame.
-      if (event->frame!=framelist[0]->frame) {
-	// Delete the old frame list and start a new one with the new
-	// event.
-	framelist[0]=event;
-	nframelist=1;
+	// If this has not been the last event in the input file,
+	// start a new frame list with the next event.
+	if (ii<elf->nrows-1) {
+	  framelist[0]=event;
+	  nframelist=1;
+	}
       }
     }
     
   }
   CHECK_STATUS_VOID(*status);
   // END of loop over all events in the input file.
+
+  // Store pattern statistics in the output file.
+  // Valids.
+  if (fits_update_key(plf->eventlistfile->fptr, TLONG, "NVALID", &statistics.nvalids, 
+		      "number of valid patterns", status)) return;
+  if (fits_update_key(plf->eventlistfile->fptr, TLONG, "NPVALID", &statistics.npvalids, 
+		      "number of piled up valid patterns", status)) return;
+  // Invalids.
+  if (fits_update_key(plf->eventlistfile->fptr, TLONG, "NINVALID", &statistics.ninvalids, 
+		      "number of invalid patterns", status)) return;
+  if (fits_update_key(plf->eventlistfile->fptr, TLONG, "NPINVALI", &statistics.npinvalids, 
+		      "number of piled up invalid patterns", status)) return;
+  // Numbered grades.
+  for (ii=0; ii<13; ii++) {
+    char keyword[MAXMSG];
+    char comment[MAXMSG];
+    sprintf(keyword, "NGRAD%ld", ii);
+    sprintf(comment, "number of patterns with grade %ld", ii);
+    if (fits_update_key(plf->eventlistfile->fptr, TLONG, keyword, &statistics.ngrade[ii], 
+			comment, status)) return;
+    sprintf(keyword, "NPGRA%ld", ii);
+    sprintf(comment, "number of piled up patterns with grade %ld", ii);
+    if (fits_update_key(plf->eventlistfile->fptr, TLONG, keyword, &statistics.npgrade[ii], 
+			comment, status)) return;    
+  }
+
 
   // Release memory.
   if (NULL!=framelist) {

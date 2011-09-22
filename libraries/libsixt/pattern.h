@@ -27,7 +27,7 @@ typedef struct {
 
   /** 3x3 array with individual signal values [keV] around the main
       event. */
-  long signals[9];
+  float signals[9];
 
 } Pattern;
 
