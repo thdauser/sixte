@@ -14,7 +14,8 @@
 /////////////////////////////////////////////////////////////////
 
 
-void phpat(EventListFile* const elf,
+void phpat(GenDet* const det,
+	   EventListFile* const elf,
 	   PatternFile* const plf,
 	   int* const status);
 

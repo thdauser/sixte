@@ -95,24 +95,21 @@ int analyse_xms_events_main() {
       }
       CHECK_STATUS_BREAK(status);
 
-      Pattern pattern = {
-	.pat_type= 0,
-	.pileup  = 0,
-	.event   = event
-      };
+      Pattern* pattern = getPattern(&status);
+      CHECK_STATUS_BREAK(status);
 
       // Determine the event grade.
       if ((nbefore_veryshort>0) || (nafter_veryshort>0)) {
-	pattern.pat_type = 3;
+	pattern->type = 3;
       } else if ((nbefore_short>0)||(nafter_short>0)) {
-	pattern.pat_type = 2;
+	pattern->type = 2;
       } else if ((nbefore_short==0) && (nafter_long==0)) {
-	pattern.pat_type = 0;
+	pattern->type = 0;
       } else {
-	pattern.pat_type = 1;
+	pattern->type = 1;
       } 
 
-      switch (pattern.pat_type) {
+      switch (pattern->type) {
       case 0: ngrade0++; break;
       case 1: ngrade1++; break;
       case 2: ngrade2++; break;
@@ -120,7 +117,7 @@ int analyse_xms_events_main() {
       }
       
       // Write the data to the output file.
-      addPattern2File(plf, &pattern, &status);	  
+      addPattern2File(plf, pattern, &status);	  
       CHECK_STATUS_BREAK(status);
 
     } // End of loop over all events in the event file

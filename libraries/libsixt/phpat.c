@@ -1,10 +1,308 @@
 #include "phpat.h"
 
 
-void phpat(EventListFile* const elf,
+// TODO Apply thresholds.
+
+void phpat(GenDet* const det,
+	   EventListFile* const elf,
 	   PatternFile* const plf,
 	   int* const status)
 {
+  // List of all events belonging to the current frame.
+  const long maxnframelist=10000;
+  Event** framelist=NULL;
+  long nframelist=0;
+
+  // List of all neighboring events in the current frame.
+  const long maxnneighborlist=1000;
+  Event** neighborlist=NULL;
+  long nneighborlist=0;
+
+  // Allocate memory.
+  framelist=(Event**)malloc(maxnframelist*sizeof(Event*));
+  CHECK_NULL_VOID(framelist, *status, "memory allocation for frame list failed");
+  neighborlist=(Event**)malloc(maxnneighborlist*sizeof(Event*));
+  CHECK_NULL_VOID(neighborlist, *status, "memory allocation for neighbor list failed");
+
+  // Loop over all events in the input list.
+  long ii;
+  for (ii=0; ii<elf->nrows; ii++) {
+      
+    // Read the next event from the file.
+    Event* event=getEvent(status);
+    CHECK_STATUS_BREAK(*status);
+    getEventFromFile(elf, ii+1, event, status);
+    CHECK_STATUS_BREAK(*status);
+
+    // Check if there are any events in the list for the current frame.
+    if (NULL==framelist) {
+      // The frame list is empty.
+      // Add the new event to the new frame list.
+      framelist[0] = event;
+      nframelist=1;
+
+    } else {
+      // The frame list is not empty.
+      // Check if the new event belongs to the same frame as the previous ones.
+      if (event->frame==framelist[0]->frame) {
+	// Append the new event to the frame list.
+	if (nframelist>=maxnframelist) {
+	  SIXT_ERROR("too many events in the same frame");
+	  *status=EXIT_FAILURE;
+	  break;
+	}
+	framelist[nframelist] = event;
+	nframelist++;
+      }
+
+      // Check if the new event belongs to a subsequent frame, or if the 
+      // end of the event list is reached.
+      if ((event->frame!=framelist[0]->frame) || (ii==elf->nrows-1)) {
+	// Loop over all events in the current frame.
+	long jj;
+	for (jj=0; jj<nframelist; jj++) {
+	  if (NULL!=framelist[jj]) {
+	    // Start a new neighbor list.
+	    neighborlist[0]=framelist[jj];
+	    nneighborlist=1;
+	    framelist[jj]=NULL;
+
+	    // Find all neighboring events.
+	    long kk;
+	    for (kk=0; kk<nneighborlist; kk++) {
+	      long ll;
+	      for (ll=jj+1; ll<nframelist; ll++) {
+		if (NULL!=framelist[ll]) {
+		  if (((neighborlist[kk]->rawx==framelist[ll]->rawx+1)&&
+		       (neighborlist[kk]->rawy==framelist[ll]->rawy)) ||
+		      ((neighborlist[kk]->rawx==framelist[ll]->rawx-1)&&
+		       (neighborlist[kk]->rawy==framelist[ll]->rawy)) ||
+		      ((neighborlist[kk]->rawx==framelist[ll]->rawx)&&
+		       (neighborlist[kk]->rawy==framelist[ll]->rawy+1)) ||
+		      ((neighborlist[kk]->rawx==framelist[ll]->rawx)&&
+		       (neighborlist[kk]->rawy==framelist[ll]->rawy-1))) {
+		    // This is a neighbor.
+		    if (nneighborlist>=maxnneighborlist) {
+		      SIXT_ERROR("too many events in the same pattern");
+		      *status=EXIT_FAILURE;
+		      break;
+		    }
+		    neighborlist[nneighborlist]=framelist[ll];
+		    nneighborlist++;
+		    framelist[ll]=NULL;
+		  }
+		}
+	      }
+	      CHECK_STATUS_BREAK(*status);
+	    }
+	    CHECK_STATUS_BREAK(*status);
+	    // END of finding all neighbors.
+	    
+	    // Search the pixel with the maximum signal.
+	    long maxidx=0;
+	    for (kk=1; kk<nneighborlist; kk++) {
+	      if (neighborlist[kk]->charge>neighborlist[maxidx]->charge) {
+		maxidx=kk;
+	      }
+	    }
+	    // END of searching the pixel with the maximum signal.
+
+	    // Get a new pattern.
+	    Pattern* pattern = getPattern(status);
+	    CHECK_STATUS_BREAK(*status);
+	    
+	    // Set basic properties.
+	    pattern->event->rawx =neighborlist[maxidx]->rawx;
+	    pattern->event->rawy =neighborlist[maxidx]->rawy;
+	    pattern->event->time =neighborlist[maxidx]->time;
+	    pattern->event->frame=neighborlist[maxidx]->frame;
+	    pattern->event->ra   =neighborlist[maxidx]->ra;
+	    pattern->event->dec  =neighborlist[maxidx]->dec;
+	    pattern->npixels     =nneighborlist;
+
+	    // Set the advanced properties.
+	    // Total signal.
+	    pattern->event->charge=0.;
+	    // Flag whether pattern touches the border of the detector.
+	    int border=0;
+	    for (kk=0; kk<nneighborlist; kk++) {
+	      
+	      // Determine the total signal.
+	      pattern->event->charge+=neighborlist[kk]->charge;
+
+	      // Determine signals in 3x3 matrix.
+	      if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx-1) {
+		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
+		  pattern->signals[0] = neighborlist[kk]->charge;
+		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
+		  pattern->signals[3] = neighborlist[kk]->charge;
+		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
+		  pattern->signals[6] = neighborlist[kk]->charge;
+		}
+	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx) {
+		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
+		  pattern->signals[1] = neighborlist[kk]->charge;
+		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
+		  pattern->signals[4] = neighborlist[kk]->charge;
+		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
+		  pattern->signals[7] = neighborlist[kk]->charge;
+		}
+	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx+1) {
+		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
+		  pattern->signals[2] = neighborlist[kk]->charge;
+		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
+		  pattern->signals[5] = neighborlist[kk]->charge;
+		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
+		  pattern->signals[8] = neighborlist[kk]->charge;
+		}
+	      }
+
+	      // Set PH_IDs and SRC_IDs.
+	      long ll;
+	      for (ll=0; ll<NEVENTPHOTONS; ll++) {
+		if (0==neighborlist[kk]->ph_id[ll]) break;
+		long mm;
+		for (mm=0; mm<NEVENTPHOTONS; mm++) {
+		  if (pattern->event->ph_id[mm]==neighborlist[kk]->ph_id[ll]) break;
+		  if (0==pattern->event->ph_id[mm]) {
+		    pattern->event->ph_id[mm] =neighborlist[kk]->ph_id[ll];
+		    pattern->event->src_id[mm]=neighborlist[kk]->src_id[ll];
+		  }
+		}
+	      }
+
+	      // Check for bordering pixels.
+	      if ((0==neighborlist[kk]->rawx)||
+		  (neighborlist[kk]->rawx==det->pixgrid->xwidth-1)||
+		  (0==neighborlist[kk]->rawy)||
+		  (neighborlist[kk]->rawy==det->pixgrid->ywidth-1)) {
+		border=1;
+	      }
+
+	      // Remove processed event from neighbor list.
+	      free(neighborlist[kk]);
+	      neighborlist[kk]=NULL;
+	    }
+	    // END of loop over all entries in the neighbor list.
+
+	    // Determine the PHA corresponding to the total signal.
+	    pattern->event->pha=getEBOUNDSChannel(pattern->event->charge, det->rmf);
+
+	    // Check for pile-up.
+	    if (NEVENTPHOTONS>=2) {
+	      if (0!=pattern->event->ph_id[1]) {
+		pattern->pileup=1;
+	      }
+	    }
+
+	    // Neighbor list should be empty now.
+	    nneighborlist=0;
+
+	    // Determine the pattern type.
+	    // First assume that the pattern is invalid.
+	    pattern->type = -1; 
+	    // Border events are declared as invalid.
+	    if (0==border) {
+	      if (1==nneighborlist) {
+		// Single event.
+		pattern->type = 0;
+
+	      } else if (2==nneighborlist) {
+		// Check for double types.
+		if (pattern->signals[1]>0.) {
+		  pattern->type = 1; // bottom
+		} else if (pattern->signals[3]>0.) {
+		  pattern->type = 2; // left
+		} else if (pattern->signals[7]>0.) {
+		  pattern->type = 3; // top
+		} else if (pattern->signals[5]>0.) {
+		  pattern->type = 4; // right
+		} 
+
+	      } else if (3==nneighborlist) {
+		// Check for triple types.
+		if (pattern->signals[1]>0.) {
+		  // bottom
+		  if (pattern->signals[3]>0.) {
+		    pattern->type = 5; // bottom-left
+		  } else if (pattern->signals[5]>0.) {
+		    pattern->type = 6; // bottom-right
+		  }
+		} else if (pattern->signals[7]>0.) {
+		  // top
+		  if (pattern->signals[3]>0.) {
+		    pattern->type = 7; // top-left
+		  } else if (pattern->signals[5]>0.) {
+		    pattern->type = 8; // top-right
+		  }
+		}
+
+	      } else if (4==nneighborlist) {
+		// Check for quadruple types.
+		if (pattern->signals[0]>0.) { // bottom-left
+		  if ((pattern->signals[1]>pattern->signals[0])&&
+		      (pattern->signals[3]>pattern->signals[0])) {
+		    pattern->type = 9; 
+		  } 
+		} else if (pattern->signals[2]>0.) { // bottom-right
+		  if ((pattern->signals[1]>pattern->signals[2])&&
+		      (pattern->signals[5]>pattern->signals[2])) {
+		    pattern->type = 10;
+		  }
+		} else if (pattern->signals[6]>0.) { // top-left
+		  if ((pattern->signals[7]>pattern->signals[6])&&
+		      (pattern->signals[3]>pattern->signals[6])) {
+		    pattern->type = 11; 
+		  }
+		} else if (pattern->signals[8]>0.) { // top-right
+		  if ((pattern->signals[7]>pattern->signals[8])&&
+		      (pattern->signals[5]>pattern->signals[8])) {
+		    pattern->type = 12; 
+		  }
+		} 
+	      }
+	    }
+	    // END of determine the pattern type.
+
+	    // Add the new pattern to the output file.
+	    addPattern2File(plf, pattern, status);	  
+	    CHECK_STATUS_BREAK(*status);
+	  }
+	}
+	CHECK_STATUS_BREAK(*status);
+	// END of loop over all events in the frame list.
+      }
+
+      // Check if the new event belongs to a subsequent frame.
+      if (event->frame!=framelist[0]->frame) {
+	// Delete the old frame list and start a new one with the new
+	// event.
+	framelist[0]=event;
+	nframelist=1;
+      }
+    }
+    
+  }
+  CHECK_STATUS_VOID(*status);
+  // END of loop over all events in the input file.
+
+  // Release memory.
+  if (NULL!=framelist) {
+    for (ii=0; ii<nframelist; ii++) {
+      if (NULL!=framelist[ii]) {
+	free(framelist[ii]);
+      }
+    }
+    free(framelist);
+  }
+  if (NULL!=neighborlist) {
+    for (ii=0; ii<nneighborlist; ii++) {
+      if (NULL!=neighborlist[ii]) {
+	free(neighborlist[ii]);
+      }
+    }
+    free(neighborlist);
+  }
 
 }
 

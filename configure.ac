@@ -224,13 +224,12 @@ AC_CONFIG_FILES([Makefile
 		tools/htrs_digital_shaper/Makefile
 		tools/analyse_xms_events/Makefile
 		tools/gendetsim/Makefile
-		tools/genpat/Makefile
-		tools/genpat2/Makefile
 		tools/comaimg/Makefile
 		tools/comadet/Makefile
 		tools/comarecon/Makefile
 		tools/orbatt/Makefile
 		tools/projev/Makefile
+		tools/evpat/Makefile
 		tools/imgev/Makefile
 		tools/simputmerge/Makefile
 		tools/simputsrc/Makefile

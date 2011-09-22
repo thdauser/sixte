@@ -15,8 +15,9 @@ PatternFile* newPatternFile(int* const status)
   file->eventlistfile=NULL;
 
   // Initialize.
-  file->cpat_type=0;
-  file->cphas    =0;
+  file->ctype    =0;
+  file->cnpixels =0;
+  file->csignals =0;
   file->cpileup  =0;
 
   return(file);
@@ -73,11 +74,13 @@ PatternFile* openPatternFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
-		  "PAT_TYPE", &file->cpat_type, status);
+		  "NPIXELS", &file->cnpixels, status);
+  fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
+		  "TYPE", &file->ctype, status);
   fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
 		  "PILEUP", &file->cpileup, status);
   fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
-		  "PHAS", &file->cphas, status);
+		  "SIGNALS", &file->csignals, status);
   CHECK_STATUS_RET(*status, file);
 
   return(file);
@@ -89,17 +92,20 @@ void addPattern2File(PatternFile* const file,
 		     int* const status)
 {
   // Call underlying routine.
-  addEvent2File(file->eventlistfile, &pattern->event, status);
+  addEvent2File(file->eventlistfile, pattern->event, status);
   
+  fits_write_col(file->eventlistfile->fptr, TLONG, 
+		 file->cnpixels, file->eventlistfile->row, 
+		 1, 1, &pattern->npixels, status);
   fits_write_col(file->eventlistfile->fptr, TINT, 
-		 file->cpat_type, file->eventlistfile->row, 
-		 1, 1, &pattern->pat_type, status);
+		 file->ctype, file->eventlistfile->row, 
+		 1, 1, &pattern->type, status);
   fits_write_col(file->eventlistfile->fptr, TINT, 
 		 file->cpileup, file->eventlistfile->row, 
 		 1, 1, &pattern->pileup, status);
-  fits_write_col(file->eventlistfile->fptr, TLONG, 
-		 file->cphas, file->eventlistfile->row, 
-		 1, 9, &pattern->phas, status);
+  fits_write_col(file->eventlistfile->fptr, TFLOAT, 
+		 file->csignals, file->eventlistfile->row, 
+		 1, 9, &pattern->signals, status);
   CHECK_STATUS_VOID(*status);
 }
 
