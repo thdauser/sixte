@@ -1,5 +1,5 @@
-#ifndef GENPATTERN_H 
-#define GENPATTERN_H 1
+#ifndef PATTERN_H 
+#define PATTERN_H 1
 
 #include "sixt.h"
 #include "event.h"
@@ -10,7 +10,7 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** Generic event pattern on a pixelized X-ray detector. */
+/** Event pattern on a pixelized X-ray detector. */
 typedef struct {
 
   Event event;
@@ -25,7 +25,7 @@ typedef struct {
   /** 3x3 array with individual PHA values around the main event. */
   long phas[9];
 
-} GenPattern;
+} Pattern;
 
 
 /////////////////////////////////////////////////////////////////
@@ -34,4 +34,4 @@ typedef struct {
 
 
 
-#endif /* GENPATTERN_H */
+#endif /* PATTERN_H */

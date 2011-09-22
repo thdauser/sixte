@@ -4,7 +4,7 @@
 int analyse_xms_events_main() {
   struct Parameters par;
   EventListFile* elf=NULL;
-  GenPatternFile* plf=NULL;
+  PatternFile* plf=NULL;
 
   int status = EXIT_SUCCESS;
 
@@ -27,7 +27,7 @@ int analyse_xms_events_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new event file.
-    plf=openNewGenPatternFile(par.PatternList, &status);
+    plf=openNewPatternFile(par.PatternList, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
@@ -95,7 +95,7 @@ int analyse_xms_events_main() {
       }
       CHECK_STATUS_BREAK(status);
 
-      GenPattern pattern = {
+      Pattern pattern = {
 	.pat_type= 0,
 	.pileup  = 0,
 	.event   = event
@@ -120,7 +120,7 @@ int analyse_xms_events_main() {
       }
       
       // Write the data to the output file.
-      addGenPattern2File(plf, &pattern, &status);	  
+      addPattern2File(plf, &pattern, &status);	  
       CHECK_STATUS_BREAK(status);
 
     } // End of loop over all events in the event file
@@ -140,7 +140,7 @@ int analyse_xms_events_main() {
 
   // Close the files.
   freeEventListFile(&elf, &status);
-  destroyGenPatternFile(&plf, &status);
+  destroyPatternFile(&plf, &status);
 
   return(status);
 }

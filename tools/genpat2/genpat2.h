@@ -6,8 +6,8 @@
 #include "event.h"
 #include "eventlistfile.h"
 #include "gendet.h"
-#include "genpattern.h"
-#include "genpatternfile.h"
+#include "pattern.h"
+#include "patternfile.h"
 #include "rmf.h"
 
 #define TOOLSUB genpat_main

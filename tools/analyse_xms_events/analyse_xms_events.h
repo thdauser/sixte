@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 #include "eventlistfile.h"
-#include "genpatternfile.h"
+#include "patternfile.h"
 
 
 #define TOOLSUB analyse_xms_events_main

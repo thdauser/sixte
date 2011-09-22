@@ -201,7 +201,7 @@ static void findMaxCharge(GenDet* const det,
 
 static void GenPatIdentification(GenDet* const det, 
 				 Event*** const pixels, 
-				 GenPatternFile* const file, 
+				 PatternFile* const file, 
 				 struct PatternStatistics* const patstat,
 				 int* const status)
 {
@@ -296,7 +296,7 @@ static void GenPatIdentification(GenDet* const det,
 	}
 
 	// Determine the pattern grade.
-	GenPattern pattern = {
+	Pattern pattern = {
 	  .pat_type = getGenEventGrade(det->grading, charges, 
 				       border, large),
 	  .pileup= 0,
@@ -347,7 +347,7 @@ static void GenPatIdentification(GenDet* const det,
 #ifdef ONLY_VALID_PATTERNS
 	if (pattern.pat_type != det->grading->invalid) {
 #endif
-	  addGenPattern2File(file, &pattern, status);	  
+	  addPattern2File(file, &pattern, status);	  
 #ifdef ONLY_VALID_PATTERNS
 	}
 #endif
@@ -404,7 +404,7 @@ int genpat_main() {
   // Input event list file.
   EventListFile* elf=NULL;
   // Output event file. 
-  GenPatternFile* plf=NULL;
+  PatternFile* plf=NULL;
   // Detector pixel array.
   Event*** pixels=NULL;
   // Pattern statistics. Count the numbers of the individual pattern types
@@ -460,7 +460,7 @@ int genpat_main() {
 
 
     // Create and open a new event file.
-    plf=openNewGenPatternFile(par.PatternList, &status);
+    plf=openNewPatternFile(par.PatternList, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Copy header keywords from the input to the output event file.
@@ -610,7 +610,7 @@ int genpat_main() {
   
   // Close the files.
   freeEventListFile(&elf, &status);
-  destroyGenPatternFile(&plf, &status);
+  destroyPatternFile(&plf, &status);
   
   if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
