@@ -359,7 +359,14 @@ void phpat(GenDet* const det,
 	CHECK_STATUS_BREAK(*status);
 	// END of loop over all events in the frame list.
 
-	// Now the frame list is empty, too.
+	// Delete all remaining events in the frame list.
+	// There might still be some, which are below the
+	// thresholds.
+	for (jj=0; jj<nframelist; jj++) {
+	  if (NULL!=framelist[jj]) {
+	    freeEvent(&framelist[jj]);
+	  }
+	}
 	nframelist=0;
       }
 
@@ -415,7 +422,7 @@ void phpat(GenDet* const det,
   if (NULL!=framelist) {
     for (ii=0; ii<nframelist; ii++) {
       if (NULL!=framelist[ii]) {
-	free(framelist[ii]);
+	freeEvent(&framelist[ii]);
       }
     }
     free(framelist);
@@ -423,7 +430,7 @@ void phpat(GenDet* const det,
   if (NULL!=neighborlist) {
     for (ii=0; ii<nneighborlist; ii++) {
       if (NULL!=neighborlist[ii]) {
-	free(neighborlist[ii]);
+	freeEvent(&neighborlist[ii]);
       }
     }
     free(neighborlist);

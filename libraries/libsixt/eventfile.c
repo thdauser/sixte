@@ -38,7 +38,6 @@ int openEventFile(EventFile* ef, char* filename, int access_mode)
 }
 
 
-
 int closeEventFile(EventFile* ef) 
 {
   int status = EXIT_SUCCESS;
@@ -55,7 +54,6 @@ int closeEventFile(EventFile* ef)
 }
 
 
-
 int EventFileEOF(EventFile* ef) {
   if (ef->row >= ef->nrows) {
     return(1);
@@ -63,7 +61,6 @@ int EventFileEOF(EventFile* ef) {
     return(0);
   }
 }
-
 
 
 int EventFileRowIsValid(EventFile* ef, long row) {
@@ -74,6 +71,4 @@ int EventFileRowIsValid(EventFile* ef, long row) {
     return(1);
   }
 }
-
-
 

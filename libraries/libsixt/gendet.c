@@ -346,49 +346,52 @@ static inline void GenDetReadoutPixel(GenDet* const det,
   if (line->charge[xindex]>0.) {
 
     // Determine the properties of a new Event object.
-    Event event;
+    Event* event=getEvent(status);
+    CHECK_STATUS_VOID(*status);
     
     // Readout the charge from the pixel array ...
-    event.charge = line->charge[xindex];
+    event->charge = line->charge[xindex];
     // ... and delete the pixel value.
     line->charge[xindex] = 0.;
     
     // Copy the information about the original photons.
     int jj;
     for(jj=0; jj<NEVENTPHOTONS; jj++) {
-      event.ph_id[jj]  = line->ph_id[xindex][jj];
-      event.src_id[jj] = line->src_id[xindex][jj];
+      event->ph_id[jj]  = line->ph_id[xindex][jj];
+      event->src_id[jj] = line->src_id[xindex][jj];
       line->ph_id[xindex][jj]  = 0;
       line->src_id[xindex][jj] = 0;
     }
 
     // Apply the charge thresholds.
-    if (event.charge<=det->threshold_readout_lo_keV) {
+    if (event->charge<=det->threshold_readout_lo_keV) {
       return;
     }
     if (det->threshold_readout_up_keV >= 0.) {
-      if (event.charge>=det->threshold_readout_up_keV) {
+      if (event->charge>=det->threshold_readout_up_keV) {
 	return;
       }
     }
     
     // Apply the detector response if available.
     if (NULL!=det->rmf) {
-      event.pha = getEBOUNDSChannel(event.charge, det->rmf);
+      event->pha=getEBOUNDSChannel(event->charge, det->rmf);
     } else {
-      event.pha = 0;
+      event->pha=0;
     }
 
     // Store remaining information.
-    event.rawy  = readoutindex;
-    event.rawx  = xindex;
-    event.time  = time;  // Time of detection.
-    event.frame = det->clocklist->frame; // Frame of detection.
+    event->rawy  = readoutindex;
+    event->rawx  = xindex;
+    event->time  = time;  // Time of detection.
+    event->frame = det->clocklist->frame; // Frame of detection.
 
     // Store the event in the output event file.
-    addEvent2File(elf, &event, status);
+    addEvent2File(elf, event, status);
     CHECK_STATUS_VOID(*status);
 
+    // Release memory
+    freeEvent(&event);
   }
 }
 

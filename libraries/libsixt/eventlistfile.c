@@ -31,7 +31,6 @@ EventListFile* newEventListFile(int* const status)
 }
 
 
-
 void freeEventListFile(EventListFile** const file, int* const status)
 {
   if (NULL!=*file) {
@@ -42,7 +41,6 @@ void freeEventListFile(EventListFile** const file, int* const status)
     *file=NULL;
   }
 }
-
 
 
 EventListFile* openNewEventListFile(const char* const filename,
@@ -97,7 +95,6 @@ EventListFile* openNewEventListFile(const char* const filename,
 }
 
 
-
 EventListFile* openEventListFile(const char* const filename,
 				 const int mode, int* const status)
 {
@@ -112,26 +109,17 @@ EventListFile* openEventListFile(const char* const filename,
   fits_get_num_rows(file->fptr, &file->nrows, status);
 
   // Determine the column numbers.
-  if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "CHARGE", &file->ccharge, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status)) 
-    return(file);
+  fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "CHARGE", &file->ccharge, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
+  CHECK_STATUS_RET(*status, file);
 
   // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
   // with the corresponding array lengths in the Event data structure.
@@ -274,7 +262,7 @@ void getEventFromFile(const EventListFile* const file,
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: reading from ImpactListFile failed!\n", *status);
+    HD_ERROR_THROW("Error: reading from EventistFile failed!\n", *status);
     return;
   }
 }

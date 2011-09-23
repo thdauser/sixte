@@ -154,21 +154,33 @@ void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1)
 
 void addGenDetCharge2Pixel(GenDetLine* const line, 
 			   const int column, 
-			   const float energy,
+			   const float signal,
 			   const long ph_id,
 			   const long src_id)
 {
-  line->charge[column] += energy;
-  line->anycharge       = 1;
-  
-  int ii;
-  for (ii=0; ii<NEVENTPHOTONS; ii++) {
-    if (0==line->ph_id[column][ii]) {
-      line->ph_id[column][ii]  = ph_id;
-      line->src_id[column][ii] = src_id;
-      break;
+  // Set PH_ID and SRC_ID.
+  if (line->charge[column]<0.001) {
+    // If the charge collect in the pixel up to now is below 1eV,
+    // overwrite the old PH_ID and SRC_ID by the new value.
+    line->ph_id[column][0]  = ph_id;
+    line->src_id[column][0] = src_id;
+
+  } else if (signal>0.001) {
+    // Only store the PH_ID and SRC_ID of the new contribution
+    // if its signal is above 1eV.
+    long ii;
+    for (ii=0; ii<NEVENTPHOTONS; ii++) {
+      if (0==line->ph_id[column][ii]) {
+	line->ph_id[column][ii]  = ph_id;
+	line->src_id[column][ii] = src_id;
+	break;
+      }
     }
   }
+
+  // Add the signal.
+  line->charge[column] += signal;
+  line->anycharge       = 1;
 }
 
 

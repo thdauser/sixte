@@ -40,8 +40,7 @@ void destroyPatternFile(PatternFile** const file,
 PatternFile* openNewPatternFile(const char* const filename,
 				int* const status)
 {
-  PatternFile* file = newPatternFile(status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  PatternFile* file=NULL;
 
   // Remove old file if it exists.
   remove(filename);
@@ -64,8 +63,8 @@ PatternFile* openNewPatternFile(const char* const filename,
       if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
 		   current_time_utc) > 0) {
 	// Return value should be == 19 !
-	if (fits_update_key(fptr, TSTRING, "DATE-OBS", 
-			    current_time_str, "Start Time (UTC) of exposure", status)) 
+	if (fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
+			    "Start Time (UTC) of exposure", status)) 
 	  return(file);
       }
     }
@@ -83,7 +82,7 @@ PatternFile* openNewPatternFile(const char* const filename,
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Re-open the file.
-  file = openPatternFile(filename, READWRITE, status);
+  file=openPatternFile(filename, READWRITE, status);
   if (EXIT_SUCCESS!=*status) return(file);
   
   return(file);
