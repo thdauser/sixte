@@ -7,10 +7,12 @@
 #include "eventlistfile.h"
 #include "gendet.h"
 #include "impactlistfile.h"
+#include "patternfile.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
 #include "photonlistfile.h"
+#include "phpat.h"
 #include "phproj.h"
 #include "sourcecatalog.h"
 #include "vector.h"
@@ -24,6 +26,8 @@ struct Parameters {
   char PhotonList[MAXFILENAME];
   char ImpactList[MAXFILENAME];
   char EventList[MAXFILENAME];
+  char PatternList[MAXFILENAME];
+
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];

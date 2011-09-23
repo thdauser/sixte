@@ -124,11 +124,11 @@ int analyse_xms_events_main() {
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
-    fits_write_key(plf->eventlistfile->fptr, TLONG, "NPHOTONS", &nphotons, "", &status);
-    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE0", &ngrade0, "", &status);
-    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE1", &ngrade1, "", &status);
-    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE2", &ngrade2, "", &status);
-    fits_write_key(plf->eventlistfile->fptr, TLONG, "NGRADE3", &ngrade3, "", &status);
+    fits_write_key(plf->fptr, TLONG, "NPHOTONS", &nphotons, "", &status);
+    fits_write_key(plf->fptr, TLONG, "NGRADE0", &ngrade0, "", &status);
+    fits_write_key(plf->fptr, TLONG, "NGRADE1", &ngrade1, "", &status);
+    fits_write_key(plf->fptr, TLONG, "NGRADE2", &ngrade2, "", &status);
+    fits_write_key(plf->fptr, TLONG, "NGRADE3", &ngrade3, "", &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // End of error handling loop

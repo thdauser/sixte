@@ -38,9 +38,9 @@ LONGSTR         OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
-	TTYPE#  CHARGE          / Pixel charge
-	TFORM#  E               / Format of column CHARGE
-	TUNIT#  keV             / Unit of column CHARGE
+	TTYPE#  SIGNAL          / Pixel SIGNAL
+	TFORM#  E               / Format of column SIGNAL
+	TUNIT#  keV             / Unit of column SIGNAL
 	TTYPE#  RAWX            / Raw x-coordinate of pixel
 	TFORM#  I               / Format of column RAWX
 	TUNIT#  pixel           / Unit of column RAWX

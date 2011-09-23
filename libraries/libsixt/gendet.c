@@ -349,8 +349,8 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     Event* event=getEvent(status);
     CHECK_STATUS_VOID(*status);
     
-    // Readout the charge from the pixel array ...
-    event->charge = line->charge[xindex];
+    // Readout the signal from the pixel array ...
+    event->signal = line->charge[xindex];
     // ... and delete the pixel value.
     line->charge[xindex] = 0.;
     
@@ -364,18 +364,18 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     }
 
     // Apply the charge thresholds.
-    if (event->charge<=det->threshold_readout_lo_keV) {
+    if (event->signal<=det->threshold_readout_lo_keV) {
       return;
     }
     if (det->threshold_readout_up_keV >= 0.) {
-      if (event->charge>=det->threshold_readout_up_keV) {
+      if (event->signal>=det->threshold_readout_up_keV) {
 	return;
       }
     }
     
     // Apply the detector response if available.
     if (NULL!=det->rmf) {
-      event->pha=getEBOUNDSChannel(event->charge, det->rmf);
+      event->pha=getEBOUNDSChannel(event->signal, det->rmf);
     } else {
       event->pha=0;
     }

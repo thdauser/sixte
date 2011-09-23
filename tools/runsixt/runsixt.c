@@ -24,13 +24,16 @@ int runsixt_main()
   // Event list file.
   EventListFile* elf=NULL;
 
+  // Pattern list file.
+  PatternFile* patf=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -86,6 +89,17 @@ int runsixt_main()
       strcat(eventlist_filename, "_events.fits");
     } else {
       strcpy(eventlist_filename, par.EventList);
+    }
+
+    // Determine the pattern list output file.
+    char patternlist_filename[MAXFILENAME];
+    strcpy(ucase_buffer, par.PatternList);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer,"NONE")) {
+      strcpy(patternlist_filename, par.OutputStem);
+      strcat(patternlist_filename, "_pattern.fits");
+    } else {
+      strcpy(patternlist_filename, par.PatternList);
     }
 
     // Determine the random number seed.
@@ -235,26 +249,40 @@ int runsixt_main()
     fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
-    // Number of pixels in x- and y-direction.
-    fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
-		    "number of pixels in x-direction", &status);
-    fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
-		    "number of pixels in y-direction", &status);    
-    CHECK_STATUS_BREAK(status);
 
     // Photon Detection.
     headas_chat(3, "start photon detection ...\n");
     phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
-
     // Close the impact list file in order to save memory.
     freeImpactListFile(&ilf, &status);
+    
+    // Open the output pattern list file.
+    patf=openNewPatternFile(patternlist_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
+    // Set FITS header keywords.
+    fits_update_key(patf->fptr, TSTRING, "ATTITUDE", 
+		    par.Attitude, "attitude file", &status);
+    fits_update_key(patf->fptr, TDOUBLE, "MJDREF", 
+		    &par.MJDREF, "reference MJD", &status);
+    dbuffer=0.;
+    fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", 
+		    &dbuffer, "time offset", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Pattern analysis.
+    headas_chat(3, "start event pattern analysis ...\n");
+    phpat(det, elf, patf, &status);
+    CHECK_STATUS_BREAK(status);
+    
+    // Close the event list file in order to save memory.
+    freeEventListFile(&elf, &status);
 
     // Run the event projection.
     headas_chat(5, "start sky projection ...\n");
-    phproj(det, ac, elf, t0, par.Exposure, &status);
+    phproj(det, ac, patf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -268,6 +296,7 @@ int runsixt_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
+  destroyPatternFile(&patf, &status);
   freeEventListFile(&elf, &status);
   freeImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
@@ -324,6 +353,14 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   } 
   strcpy(par->EventList, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("PatternList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the pattern list!\n", status);
+    return(status);
+  } 
+  strcpy(par->PatternList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

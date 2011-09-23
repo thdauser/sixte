@@ -343,10 +343,11 @@ int ero_fits2tm_main()
 
     // Loop over all entries in the event list:
     int n_buffered_events=0;
-    while(eventlistfile->row<eventlistfile->nrows) {
+    long row;
+    for (row=0; row<eventlistfile->nrows; row++) {
 
       // Read the event from the FITS file.
-      getEventFromFile(eventlistfile, ++eventlistfile->row, 
+      getEventFromFile(eventlistfile, row+1, 
 		       &(eventlist[n_buffered_events]), &status);
       if(EXIT_SUCCESS!=status) break;
 

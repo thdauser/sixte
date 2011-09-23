@@ -1,4 +1,4 @@
-genEventList,fre,lq,"events.fits",,,"input generic event list file (FITS file) "
+PatternList,fre,lq,"events.fits",,,"input pattern list file (FITS file) "
 eroEventList,s,lq,"erosita_events.fits",,,"output eROSITA event list file (FITS file) "
 CCDNr,i,lq,0,,,"CCD / telescope number"
 Projection,s,h,"SIN",,,"WCS projection type "

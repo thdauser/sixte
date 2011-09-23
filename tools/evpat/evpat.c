@@ -67,25 +67,13 @@ int evpat_main()
     char comment[MAXMSG];
     double mjdref=0.;
     fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
-    fits_update_key(plf->eventlistfile->fptr, TDOUBLE, "MJDREF", &mjdref, 
+    fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &mjdref, 
 		    "reference MJD", &status);
     CHECK_STATUS_BREAK(status);
     double timezero=0.;
     fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
-    fits_update_key(plf->eventlistfile->fptr, TDOUBLE, "TIMEZERO", &timezero, 
+    fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &timezero, 
 		    "time offset", &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Number of pixels in x- and y-direction.
-    int nxdim=0;
-    fits_read_key(elf->fptr, TINT, "NXDIM", &nxdim, comment, &status);
-    fits_update_key(plf->eventlistfile->fptr, TINT, "NXDIM", &nxdim, 
-		    "number of pixels in x-direction", &status);
-    CHECK_STATUS_BREAK(status);
-    int nydim=0;
-    fits_read_key(elf->fptr, TINT, "NYDIM", &nydim, comment, &status);
-    fits_update_key(plf->eventlistfile->fptr, TINT, "NYDIM", &nydim, 
-		    "number of pixels in y-direction", &status);    
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.

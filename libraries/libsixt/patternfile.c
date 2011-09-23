@@ -4,21 +4,28 @@
 PatternFile* newPatternFile(int* const status)
 {
   PatternFile* file=(PatternFile*)malloc(sizeof(PatternFile));
-  if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for PatternFile failed!\n", 
-		   *status);
-    return(file);
-  }
+  CHECK_NULL_RET(file, *status, "memory allocation for PatternFile failed", 
+		 file);
 
   // Initialize pointers with NULL.
-  file->eventlistfile=NULL;
+  file->fptr=NULL;
 
   // Initialize.
-  file->ctype    =0;
-  file->cnpixels =0;
-  file->csignals =0;
-  file->cpileup  =0;
+  file->nrows=0;
+  file->ctime=0;
+  file->cframe =0;
+  file->cpha   =0;
+  file->csignal=0;
+  file->crawx  =0;
+  file->crawy  =0;
+  file->cra    =0;
+  file->cdec   =0;
+  file->cph_id =0;
+  file->csrc_id=0;
+  file->ctype   =0;
+  file->cnpixels=0;
+  file->csignals=0;
+  file->cpileup =0;
 
   return(file);
 }
@@ -28,8 +35,8 @@ void destroyPatternFile(PatternFile** const file,
 			int* const status)
 {
   if (NULL!=*file) {
-    if (NULL!=(*file)->eventlistfile) {
-      freeEventListFile(&(*file)->eventlistfile, status);
+    if (NULL!=(*file)->fptr) {
+      fits_close_file((*file)->fptr, status);
     }
     free(*file);
     *file=NULL;
@@ -40,16 +47,16 @@ void destroyPatternFile(PatternFile** const file,
 PatternFile* openNewPatternFile(const char* const filename,
 				int* const status)
 {
-  PatternFile* file=NULL;
+  PatternFile* file=newPatternFile(status);
+  CHECK_STATUS_RET(*status, file);
 
   // Remove old file if it exists.
   remove(filename);
 
   // Create a new event list FITS file from the template file.
-  fitsfile* fptr=NULL;
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/patternlist.tpl");
-  fits_create_file(&fptr, buffer, status);
+  fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 
   // Set the time-keyword in the Event List Header.
@@ -63,7 +70,7 @@ PatternFile* openNewPatternFile(const char* const filename,
       if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
 		   current_time_utc) > 0) {
 	// Return value should be == 19 !
-	if (fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
+	if (fits_update_key(file->fptr, TSTRING, "DATE-OBS", current_time_str, 
 			    "Start Time (UTC) of exposure", status)) 
 	  return(file);
       }
@@ -74,11 +81,11 @@ PatternFile* openNewPatternFile(const char* const filename,
   // Add header information about program parameters.
   // The second parameter "1" means that the headers are written
   // to the first extension.
-  HDpar_stamp(fptr, 1, status);
+  HDpar_stamp(file->fptr, 1, status);
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Close the file.
-  fits_close_file(fptr, status);
+  destroyPatternFile(&file, status);
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Re-open the file.
@@ -96,20 +103,63 @@ PatternFile* openPatternFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   headas_chat(4, "open pattern file '%s' ...\n", filename);
-
-  // Call underlying open routine.
-  file->eventlistfile = openEventListFile(filename, mode, status);
+  fits_open_table(&file->fptr, filename, mode, status);
   CHECK_STATUS_RET(*status, file);
 
-  fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
-		  "NPIXELS", &file->cnpixels, status);
-  fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
-		  "TYPE", &file->ctype, status);
-  fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
-		  "PILEUP", &file->cpileup, status);
-  fits_get_colnum(file->eventlistfile->fptr, CASEINSEN, 
-		  "SIGNALS", &file->csignals, status);
+  // Determine the row numbers.
+  fits_get_num_rows(file->fptr, &file->nrows, status);
+
+  // Determine the column numbers.
+  fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "NPIXELS", &file->cnpixels, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "TYPE", &file->ctype, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SIGNALS", &file->csignals, status);
   CHECK_STATUS_RET(*status, file);
+
+  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
+  // with the corresponding array lengths in the Event data structure.
+  int typecode;
+  long repeat, width;
+  // PH_ID.
+  fits_get_coltype(file->fptr, file->cph_id, &typecode, &repeat,
+		   &width, status);
+  CHECK_STATUS_RET(*status, file);
+  if (repeat!=NPATTERNPHOTONS) {
+    // Throw an error.
+    *status = EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: the maximum number of photons contributing "
+	    "to a single pattern is different for the parameter set "
+	    "in the simulation (%d) and in the pattern list "
+	    "template file (%ld)!\n", NPATTERNPHOTONS, repeat);
+    HD_ERROR_THROW(msg, *status);
+    return(file);
+  }
+  // SRC_ID.
+  fits_get_coltype(file->fptr, file->csrc_id, &typecode, &repeat,
+		   &width, status);
+  CHECK_STATUS_RET(*status, file);
+  if (repeat!=NPATTERNPHOTONS) {
+    // Throw an error.
+    *status = EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "Error: the maximum number of photons contributing "
+	    "to a single pattern is different for the parameter set "
+	    "in the simulation (%d) and in the pattern list "
+	    "template file (%ld)!\n", NPATTERNPHOTONS, repeat);
+    HD_ERROR_THROW(msg, *status);
+    return(file);
+  }
 
   return(file);
 }
@@ -119,20 +169,117 @@ void addPattern2File(PatternFile* const file,
 		     Pattern* const pattern, 
 		     int* const status)
 {
-  // Call underlying routine.
-  addEvent2File(file->eventlistfile, pattern->event, status);
-  
-  fits_write_col(file->eventlistfile->fptr, TLONG, 
-		 file->cnpixels, file->eventlistfile->row, 
+  // Check if the file has been opened.
+  CHECK_NULL_VOID(file, *status, "pattern file not open");
+  CHECK_NULL_VOID(file->fptr, *status, "pattern file not open");
+
+  // Insert a new, empty row to the table:
+  fits_insert_rows(file->fptr, file->nrows, 1, status);
+  CHECK_STATUS_VOID(*status);
+  file->nrows++;
+
+  // Write the data.
+  updatePatternInFile(file, file->nrows, pattern, status);
+  CHECK_STATUS_VOID(*status);
+}
+
+
+void getPatternFromFile(const PatternFile* const file,
+			const int row, Pattern* const pattern,
+			int* const status)
+{
+  // Check if the file has been opened.
+  CHECK_NULL_VOID(file, *status, "pattern file not open");
+  CHECK_NULL_VOID(file->fptr, *status, "pattern file not open");
+
+  // Check if there is still a row available.
+  if (row > file->nrows) {
+    *status = EXIT_FAILURE;
+    SIXT_ERROR("pattern file contains no further entries");
+    return;
+  }
+
+  // Read in the data.
+  int anynul=0;
+  double dnull=0.;
+  float fnull=0.;
+  long lnull=0;
+  int inull=0;
+
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
+		&dnull, &pattern->time, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
+		&lnull, &pattern->frame, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
+		&lnull, &pattern->pha, &anynul, status);
+  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
+		&fnull, &pattern->signal, &anynul, status);
+  fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
+		&inull, &pattern->rawx, &anynul, status);
+  fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
+		&inull, &pattern->rawy, &anynul, status);
+  fits_read_col(file->fptr, TDOUBLE, file->cra, row, 1, 1, 
+		&dnull, &pattern->ra, &anynul, status);
+  pattern->ra *= M_PI/180.;
+  fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1, 
+		&lnull, &pattern->dec, &anynul, status);
+  pattern->dec*= M_PI/180.;
+  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NPATTERNPHOTONS, 
+		&lnull, &pattern->ph_id, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NPATTERNPHOTONS, 
+		&lnull, &pattern->src_id, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cnpixels, row, 1, 1, 
+		&lnull, &pattern->npixels, &anynul, status);
+  fits_read_col(file->fptr, TINT, file->ctype, row, 1, 1, 
+		&inull, &pattern->type, &anynul, status);
+  fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
+		&inull, &pattern->pileup, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->csignals, row, 1, 9, 
+		&lnull, &pattern->signals, &anynul, status);
+  CHECK_STATUS_VOID(*status);
+
+  // Check if an error occurred during the reading process.
+  if (0!=anynul) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("reading from PatternFile failed");
+    return;
+  }
+}
+
+
+void updatePatternInFile(const PatternFile* const file,
+			 const int row, Pattern* const pattern,
+			 int* const status)
+{
+  fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
+		 1, 1, &pattern->time, status);
+  fits_write_col(file->fptr, TLONG, file->cframe, row, 
+		 1, 1, &pattern->frame, status);
+  fits_write_col(file->fptr, TLONG, file->cpha, row, 
+		 1, 1, &pattern->pha, status);
+  fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
+		 1, 1, &pattern->signal, status);
+  fits_write_col(file->fptr, TINT, file->crawx, row, 
+		 1, 1, &pattern->rawx, status);
+  fits_write_col(file->fptr, TINT, file->crawy, row, 
+		 1, 1, &pattern->rawy, status);
+  double dbuffer = pattern->ra  * 180./M_PI;
+  fits_write_col(file->fptr, TDOUBLE, file->cra, row, 
+		 1, 1, &dbuffer, status);
+  dbuffer = pattern->dec * 180./M_PI;
+  fits_write_col(file->fptr, TDOUBLE, file->cdec, row, 
+		 1, 1, &dbuffer, status);
+  fits_write_col(file->fptr, TLONG, file->cph_id, row, 
+		 1, NPATTERNPHOTONS, &pattern->ph_id, status);
+  fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
+		 1, NPATTERNPHOTONS, &pattern->src_id, status);
+  fits_write_col(file->fptr, TLONG, file->cnpixels, row, 
 		 1, 1, &pattern->npixels, status);
-  fits_write_col(file->eventlistfile->fptr, TINT, 
-		 file->ctype, file->eventlistfile->row, 
-		 1, 1, &pattern->type, status);
-  fits_write_col(file->eventlistfile->fptr, TINT, 
-		 file->cpileup, file->eventlistfile->row, 
+  fits_write_col(file->fptr, TINT, file->cpileup, row, 
 		 1, 1, &pattern->pileup, status);
-  fits_write_col(file->eventlistfile->fptr, TFLOAT, 
-		 file->csignals, file->eventlistfile->row, 
+  fits_write_col(file->fptr, TINT, file->ctype, row, 
+		 1, 1, &pattern->type, status);
+  fits_write_col(file->fptr, TLONG, file->csignals, row, 
 		 1, 9, &pattern->signals, status);
   CHECK_STATUS_VOID(*status);
 }

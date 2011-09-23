@@ -89,12 +89,6 @@ int gendetsim_main() {
     fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
-    // Number of pixels in x- and y-direction.
-    fits_update_key(elf->fptr, TINT, "NXDIM", &det->pixgrid->xwidth, 
-		    "number of pixels in x-direction", &status);
-    fits_update_key(elf->fptr, TINT, "NYDIM", &det->pixgrid->ywidth, 
-		    "number of pixels in y-direction", &status);    
-    CHECK_STATUS_BREAK(status);
 
     // Photon detection.
     phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);

@@ -2,7 +2,13 @@
 #define PATTERN_H 1
 
 #include "sixt.h"
-#include "event.h"
+
+
+/** Maximum number of photons that are stored as a contribution to a
+    single pattern. If a pattern originates from more than this
+    particular number of photons, the additional ones are not stored
+    in the event history. */
+#define NPATTERNPHOTONS (2)
 
 
 /////////////////////////////////////////////////////////////////
@@ -13,7 +19,33 @@
 /** Event pattern on a pixelized X-ray detector. */
 typedef struct {
 
-  Event* event;
+  /** Raw detector coordinates. Indices start at 0. */
+  int rawx, rawy;
+
+  /** Detected PHA channel. */
+  long pha;
+
+  /** Signal in [keV]. */
+  float signal;
+
+  /** Time of detection [s]. */
+  double time;
+
+  /** Frame counter. */
+  long frame;
+  
+  /** Back-projected right ascension to the sky [rad]. */
+  double ra;
+
+  /** Back-projected declination to the sky [rad]. */
+  double dec;
+
+  /** Identifiers of the contributing photons. */
+  long ph_id[NPATTERNPHOTONS];
+
+  /** Identifiers of the corresponding sources (defined in the SIMPUT
+      source catalog). */
+  long src_id[NPATTERNPHOTONS];
 
   /** Number of pixels involved in the pattern. */
   long npixels;

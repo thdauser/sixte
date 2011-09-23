@@ -7,7 +7,7 @@
 
 #include "sixt.h"
 #include "attitudecatalog.h"
-#include "eventlistfile.h"
+#include "patternfile.h"
 #include "gendet.h"
 #include "phproj.h"
 
@@ -17,7 +17,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char EventList[MAXFILENAME];
+  char PatternList[MAXFILENAME];
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
@@ -45,8 +45,8 @@ int projev_getpar(struct Parameters *par);
 int projev_main() {
   struct Parameters par; // Program parameters
 
-  // Input event list file.
-  EventListFile* elf=NULL;
+  // Input pattern list file.
+  PatternFile* plf=NULL;
   // Attitude catalog.
   AttitudeCatalog* ac=NULL;
   // Detector data structure (containing the focal length, FoV, ...).
@@ -149,8 +149,8 @@ int projev_main() {
     }
     // END of setting up the attitude.
 
-    // Set the input event file.
-    elf=openEventListFile(par.EventList, READWRITE, &status);
+    // Set the input pattern file.
+    plf=openPatternFile(par.PatternList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
@@ -161,8 +161,8 @@ int projev_main() {
     // Beginning of actual simulation (after loading required data):
     headas_chat(5, "start sky projection process ...\n");
 
-    // Run the event projection.
-    phproj(det, ac, elf, t0, par.Exposure, &status);
+    // Run the pattern projection.
+    phproj(det, ac, plf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -178,7 +178,7 @@ int projev_main() {
   destroyGenDet(&det, &status);
   
   // Close the files.
-  freeEventListFile(&elf, &status);
+  destroyPatternFile(&plf, &status);
 
   // Release memory of AttitudeCatalog
   freeAttitudeCatalog(&ac);
@@ -199,12 +199,12 @@ int projev_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("EventList", &sbuffer);
+  status=ape_trad_query_file_name("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
+    HD_ERROR_THROW("Error reading the name of the pattern list!\n", status);
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->PatternList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

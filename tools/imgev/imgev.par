@@ -1,4 +1,4 @@
-EventList,fre,lq,"events.fits",,,"event list input file"
+PatternList,fre,lq,"events.fits",,,"pattern list input file"
 Image,f,lq,"image.fits",,,"image output file"
 NAXIS1,i,lq,1,1,1000000,"NAXIS1"
 NAXIS2,i,lq,1,1,1000000,"NAXIS2"

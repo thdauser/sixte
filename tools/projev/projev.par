@@ -1,4 +1,4 @@
-EventList,fre,lq,"events.fits",,,"event list input file"
+PatternList,fre,lq,"pattern.fits",,,"pattern list input file"
 Mission,s,lq,"SRG",,,"mission name: Chandra, GRAVITAS, IXO, SRG, XMM"
 Instrument,s,lq,"eROSITA",,,"instrument name"
 Mode,s,lq,"none",,,"instrument mode (including filter)"

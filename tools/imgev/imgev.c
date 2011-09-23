@@ -6,8 +6,8 @@
 
 
 #include "sixt.h"
-#include "eventlistfile.h"
-#include "event.h"
+#include "patternfile.h"
+#include "pattern.h"
 #include <wcslib/wcslib.h>
 
 #define TOOLSUB imgev_main
@@ -16,7 +16,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char EventList[MAXFILENAME];
+  char PatternList[MAXFILENAME];
   char Image[MAXFILENAME];
 
   long naxis1, naxis2;
@@ -39,8 +39,8 @@ int imgev_main() {
   // Program parameters.
   struct Parameters par; 
 
-  // Input event list file.
-  EventListFile* elf=NULL;
+  // Input pattern list file.
+  PatternFile* plf=NULL;
 
   // Output image.
   long** img=NULL;
@@ -70,8 +70,8 @@ int imgev_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Set the input event file.
-    elf=openEventListFile(par.EventList, READWRITE, &status);
+    // Set the input pattern file.
+    plf=openPatternFile(par.PatternList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Allocate memory for the output image.
@@ -112,19 +112,19 @@ int imgev_main() {
     // --- Beginning Image Binning ---
     headas_chat(5, "image binning ...\n");
 
-    // LOOP over all events in the FITS table.
+    // LOOP over all patterns in the FITS table.
     long row;
-    for (row=0; row<elf->nrows; row++) {
+    for (row=0; row<plf->nrows; row++) {
       
-      // Read the next event from the file.
-      Event event;
-      getEventFromFile(elf, row+1, &event, &status);
+      // Read the next pattern from the file.
+      Pattern pattern;
+      getPatternFromFile(plf, row+1, &pattern, &status);
       CHECK_STATUS_BREAK(status);
       
-      // Determine the image coordinates of the event.
+      // Determine the image coordinates of the pattern.
       double pixcrd[2];
       double imgcrd[2];
-      double world[2] = {event.ra*180./M_PI, event.dec*180./M_PI};
+      double world[2] = {pattern.ra*180./M_PI, pattern.dec*180./M_PI};
       double phi, theta;
       int status2=0;
       wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &status2);
@@ -137,7 +137,7 @@ int imgev_main() {
 	break;
       }
       
-      // Increase the image value at the event position.
+      // Increase the image value at the pattern position.
       long xx = ((long)(pixcrd[0]+0.5))-1;
       long yy = ((long)(pixcrd[1]+0.5))-1;
       if ((xx>=0)&&(xx<par.naxis1) && (yy>=0)&&(yy<par.naxis2)) {
@@ -201,7 +201,7 @@ int imgev_main() {
   headas_chat(5, "cleaning up ...\n");
 
   // Close the files.
-  freeEventListFile(&elf, &status);
+  destroyPatternFile(&plf, &status);
 
   // Close image file.
   if (NULL!=imgfptr) fits_close_file(imgfptr, &status);
@@ -238,12 +238,12 @@ int imgev_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("EventList", &sbuffer);
+  status=ape_trad_query_file_name("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the event list file");
+    SIXT_ERROR("failed reading the name of the pattern list file");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->PatternList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("Image", &sbuffer);

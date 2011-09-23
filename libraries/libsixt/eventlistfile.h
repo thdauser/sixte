@@ -18,12 +18,8 @@ typedef struct {
   /** Total number of rows in the file. */
   long nrows;
 
-  /** Current row in the file. */
-  long row;
-
   /** Column numbers. */
-  int ctime, cframe, cpha, ccharge, crawx, crawy, cra, cdec, 
-    cph_id, csrc_id;
+  int ctime, cframe, cpha, csignal, crawx, crawy, cph_id, csrc_id;
 
 } EventListFile;
 
@@ -49,7 +45,7 @@ EventListFile* openNewEventListFile(const char* const filename,
 EventListFile* openEventListFile(const char* const filename,
 				 const int mode, int* const status);
 
-/** Append a new event to the event file. */
+/** Append a new event at the end of the event file. */
 void addEvent2File(EventListFile* const file, Event* const event, 
 		   int* const status);
 

@@ -6,8 +6,8 @@
 
 /** Maximum number of photons that are stored as a contribution to a
     single event. If an event originates from more than this
-    particular number of photons, the additional ones are not
-    stored in the event history. */
+    particular number of photons, the additional ones are not stored
+    in the event history. */
 #define NEVENTPHOTONS (2)
 
 
@@ -25,8 +25,8 @@ typedef struct {
   /** Detected PHA channel. */
   long pha;
 
-  /** Pixel charge in [keV]. */
-  float charge;
+  /** Signal in [keV]. */
+  float signal;
 
   /** Time of event detection [s]. */
   double time;
@@ -34,12 +34,6 @@ typedef struct {
   /** Frame counter. */
   long frame;
   
-  /** Back-projected right ascension of the event to the sky [rad]. */
-  double ra;
-
-  /** Back-projected declination of the event to the sky [rad]. */
-  double dec;
-
   /** Identifiers of the contributing photons. */
   long ph_id[NEVENTPHOTONS];
 

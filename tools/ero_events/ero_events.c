@@ -6,8 +6,8 @@ int ero_events_main()
   // Containing all programm parameters read by PIL
   struct Parameters par; 
 
-  // Input event list file.
-  EventListFile* gelf=NULL;
+  // Input pattern file.
+  PatternFile* plf=NULL;
 
   // File pointer to the output eROSITA event file. 
   fitsfile* fptr=NULL;
@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -42,8 +42,8 @@ int ero_events_main()
       break;
     }
 
-    // Open the input event file.
-    gelf=openEventListFile(par.genEventList, READONLY, &status);
+    // Open the input pattern file.
+    plf=openPatternFile(par.PatternList, READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open the output eROSITA event file.
@@ -154,24 +154,24 @@ int ero_events_main()
     long tlmin_y=0;
     long tlmax_y=0;
 
-    // Loop over all events in the FITS file. 
+    // Loop over all patterns in the FITS file. 
     long row;
-    for (row=0; row<gelf->nrows; row++) {
+    for (row=0; row<plf->nrows; row++) {
       
-      // Read the next event from the input file.
-      Event event;
-      getEventFromFile(gelf, row+1, &event, &status);
+      // Read the next pattern from the input file.
+      Pattern pattern;
+      getPatternFromFile(plf, row+1, &pattern, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Store the event in the output file.
+      // Store the pattern in the output file.
       fits_insert_rows(fptr, row, 1, &status);
       CHECK_STATUS_BREAK(status);
 
-      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, &event.time, &status);
-      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &event.frame, &status);
-      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &event.pha, &status);
+      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, &pattern.time, &status);
+      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &pattern.frame, &status);
+      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &pattern.pha, &status);
 
-      float energy = event.charge * 1000.; // [eV]
+      float energy = pattern.signal * 1000.; // [eV]
       fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &energy, &status);
       if ((energy < tlmin_energy) || (0==row)) {
 	tlmin_energy = energy;
@@ -180,22 +180,22 @@ int ero_events_main()
 	tlmax_energy = energy;
       }
 
-      int rawx = event.rawx+1;
+      int rawx = pattern.rawx+1;
       fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &rawx, &status);
-      int rawy = event.rawy+1;
+      int rawy = pattern.rawy+1;
       fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &rawy, &status);
 
-      long ra = (long)(event.ra*180./M_PI/1.e-6);
-      if (event.ra < 0.) ra--;
+      long ra = (long)(pattern.ra*180./M_PI/1.e-6);
+      if (pattern.ra < 0.) ra--;
       fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ra, &status);
 
-      long dec = (long)(event.dec*180./M_PI/1.e-6);
-      if (event.dec < 0.) dec--;
+      long dec = (long)(pattern.dec*180./M_PI/1.e-6);
+      if (pattern.dec < 0.) dec--;
       fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &dec, &status);
       CHECK_STATUS_BREAK(status);
       
       // Convert world coordinates to image coordinates X and Y.
-      double world[2] = { event.ra*180./M_PI, event.dec*180./M_PI };
+      double world[2] = { pattern.ra*180./M_PI, pattern.dec*180./M_PI };
       double imgcrd[2], pixcrd[2];
       double phi, theta;
       wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &status);
@@ -224,7 +224,7 @@ int ero_events_main()
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
-    // END of loop over all events in the FITS file.
+    // END of loop over all patterns in the FITS file.
 
 
     // Update TLMIN and TLMAX header keywords.
@@ -258,7 +258,7 @@ int ero_events_main()
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  freeEventListFile(&gelf, &status);
+  destroyPatternFile(&plf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
   
   // Release memory.
@@ -278,12 +278,12 @@ int getpar(struct Parameters* const par)
   // Error status.
   int status=EXIT_SUCCESS;
 
-  status=ape_trad_query_file_name("genEventList", &sbuffer);
+  status=ape_trad_query_file_name("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the input event list!\n", status);
+    HD_ERROR_THROW("Error reading the name of the input pattern list!\n", status);
     return(status);
   } 
-  strcpy(par->genEventList, sbuffer);
+  strcpy(par->PatternList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("eroEventList", &sbuffer);

@@ -3,7 +3,6 @@
 
 #include "sixt.h"
 #include "pattern.h"
-#include "eventlistfile.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -13,11 +12,15 @@
 
 /** Event pattern file for the GenDet generic detector model. */
 typedef struct {
-  
-  EventListFile* eventlistfile;
+  /** Pointer to the FITS file. */
+  fitsfile* fptr;
+
+  /** Total number of rows in the file. */
+  long nrows;
 
   /** Column numbers. */
-  int cnpixels, ctype, cpileup, csignals;
+  int ctime, cframe, cpha, csignal, crawx, crawy, cra, cdec, 
+    cph_id, csrc_id, cnpixels, ctype, cpileup, csignals;
 
 } PatternFile;
 
@@ -46,6 +49,18 @@ PatternFile* openPatternFile(const char* const filename,
 void addPattern2File(PatternFile* const file, 
 		     Pattern* const pattern, 
 		     int* const status);
+
+/** Read the Pattern at the specified row from the file. The
+    numbering for the rows starts at 1 for the first line. */
+void getPatternFromFile(const PatternFile* const file,
+			const int row, Pattern* const pattern,
+			int* const status);
+
+/** Update the Pattern at the specified row in the file. The
+    numbering for the rows starts at 1 for the first line. */
+void updatePatternInFile(const PatternFile* const file,
+			 const int row, Pattern* const pattern,
+			 int* const status);
 
 
 #endif /* PATTERNFILE_H */

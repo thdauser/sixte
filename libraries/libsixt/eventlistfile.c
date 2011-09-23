@@ -4,26 +4,20 @@
 EventListFile* newEventListFile(int* const status)
 {
   EventListFile* file = (EventListFile*)malloc(sizeof(EventListFile));
-  if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for EventListFile failed!\n", 
-		   *status);
-    return(file);
-  }
+  CHECK_NULL_RET(file, *status, "memory allocation for EventFile failed", 
+		 file);
 
   // Initialize pointers with NULL.
   file->fptr=NULL;
 
   // Initialize values.
   file->nrows=0;
-  file->row  =0;
   file->ctime=0;
   file->cframe =0;
   file->cpha   =0;
+  file->csignal=0;
   file->crawx  =0;
   file->crawy  =0;
-  file->cra    =0;
-  file->cdec   =0;
   file->cph_id =0;
   file->csrc_id=0;
 
@@ -46,7 +40,7 @@ void freeEventListFile(EventListFile** const file, int* const status)
 EventListFile* openNewEventListFile(const char* const filename,
 				    int* const status)
 {
-  EventListFile* file = newEventListFile(status);
+  EventListFile* file=newEventListFile(status);
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Remove old file, if it exists.
@@ -88,7 +82,7 @@ EventListFile* openNewEventListFile(const char* const filename,
   if (EXIT_SUCCESS!=*status) return(file);
 
   // Re-open the file.
-  file = openEventListFile(filename, READWRITE, status);
+  file=openEventListFile(filename, READWRITE, status);
   if (EXIT_SUCCESS!=*status) return(file);
   
   return(file);
@@ -98,25 +92,23 @@ EventListFile* openNewEventListFile(const char* const filename,
 EventListFile* openEventListFile(const char* const filename,
 				 const int mode, int* const status)
 {
-  EventListFile* file = newEventListFile(status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  EventListFile* file=newEventListFile(status);
+  CHECK_STATUS_RET(*status, file);
 
   headas_chat(4, "open event list file '%s' ...\n", filename);
-  if (fits_open_table(&file->fptr, filename, mode, status)) return(file);
+  fits_open_table(&file->fptr, filename, mode, status);
+  CHECK_STATUS_RET(*status, file);
 
   // Determine the row numbers.
-  file->row=0;
   fits_get_num_rows(file->fptr, &file->nrows, status);
 
   // Determine the column numbers.
   fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
   fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "CHARGE", &file->ccharge, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
   CHECK_STATUS_RET(*status, file);
@@ -164,25 +156,16 @@ void addEvent2File(EventListFile* const file, Event* const event,
 		   int* const status)
 {
   // Check if the event file has been opened.
-  if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no event file opened!\n", *status);
-    return;
-  }
-  if (NULL==file->fptr) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no event file opened!\n", *status);
-    return;
-  }
+  CHECK_NULL_VOID(file, *status, "event file not open");
+  CHECK_NULL_VOID(file->fptr, *status, "event file not open");
 
   // Insert a new, empty row to the table:
-  fits_insert_rows(file->fptr, file->row, 1, status);
+  fits_insert_rows(file->fptr, file->nrows, 1, status);
   CHECK_STATUS_VOID(*status);
   file->nrows++;
-  file->row = file->nrows;
 
   // Write the data.
-  updateEventInFile(file, file->row, event, status);
+  updateEventInFile(file, file->nrows, event, status);
   CHECK_STATUS_VOID(*status);
 }
 
@@ -192,21 +175,13 @@ void getEventFromFile(const EventListFile* const file,
 		      int* const status)
 {
   // Check if the file has been opened.
-  if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no EventListFile opened!\n", *status);
-    return;
-  }
-  if (NULL==file->fptr) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no EventListFile opened!\n", *status);
-    return;
-  }
+  CHECK_NULL_VOID(file, *status, "event file not open");
+  CHECK_NULL_VOID(file->fptr, *status, "event file not open");
 
   // Check if there is still a row available.
   if (row > file->nrows) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: EventListFile contains no further entries!\n", *status);
+    SIXT_ERROR("event file contains no further entries");
     return;
   }
 
@@ -219,50 +194,26 @@ void getEventFromFile(const EventListFile* const file,
 
   fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
 		&dnull, &event->time, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-
   fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
 		&lnull, &event->frame, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-
   fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
 		&lnull, &event->pha, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-
-  fits_read_col(file->fptr, TFLOAT, file->ccharge, row, 1, 1, 
-		&fnull, &event->charge, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-
+  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
+		&fnull, &event->signal, &anynul, status);
   fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
 		&inull, &event->rawx, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-
   fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
 		&inull, &event->rawy, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-
-  fits_read_col(file->fptr, TDOUBLE, file->cra, row, 1, 1, 
-		&dnull, &event->ra, &anynul, status);
-  event->ra *= M_PI/180.;
-  CHECK_STATUS_VOID(*status);
-
-  fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1, 
-		&lnull, &event->dec, &anynul, status);
-  event->dec*= M_PI/180.;
-  CHECK_STATUS_VOID(*status);
-
   fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS, 
 		&lnull, &event->ph_id, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-
   fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NEVENTPHOTONS, 
 		&lnull, &event->src_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: reading from EventistFile failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("reading from EventListFile failed");
     return;
   }
 }
@@ -272,27 +223,22 @@ void updateEventInFile(const EventListFile* const file,
 		       const int row, Event* const event,
 		       int* const status)
 {
-  if (fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
-		     1, 1, &event->time, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cframe, row, 
-		     1, 1, &event->frame, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cpha, row, 
-		     1, 1, &event->pha, status)) return;
-  if (fits_write_col(file->fptr, TFLOAT, file->ccharge, row, 
-		     1, 1, &event->charge, status)) return;
-  if (fits_write_col(file->fptr, TINT, file->crawx, row, 
-		     1, 1, &event->rawx, status)) return;
-  if (fits_write_col(file->fptr, TINT, file->crawy, row, 
-		     1, 1, &event->rawy, status)) return;
-  double dbuffer = event->ra  * 180./M_PI;
-  if (fits_write_col(file->fptr, TDOUBLE, file->cra, row, 
-		     1, 1, &dbuffer, status)) return;
-  dbuffer = event->dec * 180./M_PI;
-  if (fits_write_col(file->fptr, TDOUBLE, file->cdec, row, 
-		     1, 1, &dbuffer, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->cph_id, row, 
-		     1, NEVENTPHOTONS, &event->ph_id, status)) return;
-  if (fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
-		     1, NEVENTPHOTONS, &event->src_id, status)) return;
+  fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
+		 1, 1, &event->time, status);
+  fits_write_col(file->fptr, TLONG, file->cframe, row, 
+		 1, 1, &event->frame, status);
+  fits_write_col(file->fptr, TLONG, file->cpha, row, 
+		 1, 1, &event->pha, status);
+  fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
+		 1, 1, &event->signal, status);
+  fits_write_col(file->fptr, TINT, file->crawx, row, 
+		 1, 1, &event->rawx, status);
+  fits_write_col(file->fptr, TINT, file->crawy, row, 
+		 1, 1, &event->rawy, status);
+  fits_write_col(file->fptr, TLONG, file->cph_id, row, 
+		 1, NEVENTPHOTONS, &event->ph_id, status);
+  fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
+		 1, NEVENTPHOTONS, &event->src_id, status);
+  CHECK_STATUS_VOID(*status);
 }
 

@@ -60,7 +60,6 @@ struct RMF* loadRMF(const char* const filename, int* const status)
 }
 
 
-
 void freeRMF(struct RMF* const rmf) 
 {
   if (NULL!=rmf) {
@@ -69,9 +68,11 @@ void freeRMF(struct RMF* const rmf)
 }
 
 
-
 long getEBOUNDSChannel(const float energy, const struct RMF* const rmf)
 {
+  // In case there is no RMF, just return the channel 0.
+  if (NULL==rmf) return(0);
+
   // Check if the charge is outside the range of the energy bins defined
   // in the EBOUNDS table. In that case the return value of this function is '-1'.
   if (rmf->ChannelLowEnergy[0] > energy) {
@@ -97,7 +98,6 @@ long getEBOUNDSChannel(const float energy, const struct RMF* const rmf)
   // Return the PHA channel.
   return(min + rmf->FirstChannel);
 }
-
 
 
 float getEBOUNDSEnergy(long channel, const struct RMF* const rmf, 

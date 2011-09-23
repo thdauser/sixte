@@ -3,39 +3,39 @@
 
 void phproj(GenDet* const det,
 	    AttitudeCatalog* const ac,
-	    EventListFile* const elf,
+	    PatternFile* const plf,
 	    const double t0,
 	    const double exposure,
 	    int* const status)
 {
-  // LOOP over all events in the FITS table.
+  // LOOP over all patterns in the FITS table.
   long row;
-  for (row=0; row<elf->nrows; row++) {
+  for (row=0; row<plf->nrows; row++) {
     
-    // Read the next event from the file.
-    Event event;
-    getEventFromFile(elf, row+1, &event, status);
+    // Read the next pattern from the file.
+    Pattern pattern;
+    getPatternFromFile(plf, row+1, &pattern, status);
     CHECK_STATUS_BREAK(*status);
 
     // Check whether we are still within the requested time interval.
-    if (event.time < t0) continue;
-    if (event.time > t0+exposure) break;
+    if (pattern.time < t0) continue;
+    if (pattern.time > t0+exposure) break;
 
     // Determine the Position of the source on the sky:
     // First determine telescope pointing direction at the current time.
     Vector nx, ny, nz;
-    getTelescopeAxes(ac, &nx, &ny, &nz, event.time, status);
+    getTelescopeAxes(ac, &nx, &ny, &nz, pattern.time, status);
     CHECK_STATUS_BREAK(*status);
 
     // Determine RA and DEC of the photon origin.
     // Exact position on the detector:
     struct Point2d detpos;
     detpos.x = // in [m]
-      (event.rawx*1.-det->pixgrid->xrpix+0.5+sixt_get_random_number())*
+      (pattern.rawx*1.-det->pixgrid->xrpix+0.5+sixt_get_random_number())*
       det->pixgrid->xdelt + 
       det->pixgrid->xrval;
     detpos.y = // in [m]
-      (event.rawy*1.-det->pixgrid->yrpix+0.5+sixt_get_random_number())*
+      (pattern.rawy*1.-det->pixgrid->yrpix+0.5+sixt_get_random_number())*
       det->pixgrid->ydelt + 
       det->pixgrid->yrval;
     
@@ -56,12 +56,12 @@ void phproj(GenDet* const det,
 
     // Determine the equatorial coordinates RA and DEC
     // (RA and DEC are in the range [-pi:pi] and [-pi/2:pi/2] respectively).
-    calculate_ra_dec(srcpos, &event.ra, &event.dec);
+    calculate_ra_dec(srcpos, &pattern.ra, &pattern.dec);
     
-    // Update the data in the Event List FITS file.
-    updateEventInFile(elf, row+1, &event, status);
+    // Update the data in the pattern list FITS file.
+    updatePatternInFile(plf, row+1, &pattern, status);
     CHECK_STATUS_BREAK(*status);
   } 
   CHECK_STATUS_VOID(*status);
-  // END of LOOP over all events.
+  // END of LOOP over all patterns.
 }

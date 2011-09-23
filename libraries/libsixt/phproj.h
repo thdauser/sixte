@@ -3,8 +3,8 @@
 
 #include "sixt.h"
 #include "attitudecatalog.h"
-#include "event.h"
-#include "eventlistfile.h"
+#include "pattern.h"
+#include "patternfile.h"
 #include "gendet.h"
 #include "point.h"
 #include "vector.h"
@@ -17,7 +17,7 @@
 
 void phproj(GenDet* const det,
 	    AttitudeCatalog* const ac,
-	    EventListFile* const elf,
+	    PatternFile* const plf,
 	    const double t0,
 	    const double exposure,
 	    int* const status);

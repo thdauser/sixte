@@ -104,7 +104,7 @@ void phpat(GenDet* const det,
 	  if (NULL!=framelist[jj]) {
 	    
 	    // Check if the event is below the threshold.
-	    if (framelist[jj]->charge<det->threshold_event_lo_keV) continue;
+	    if (framelist[jj]->signal<det->threshold_event_lo_keV) continue;
   
 	    // Start a new neighbor list.
 	    neighborlist[0]=framelist[jj];
@@ -112,16 +112,16 @@ void phpat(GenDet* const det,
 	    framelist[jj]=NULL;
 	    
 	    // Find the signal maximum in the neighboring pixels.
-	    Event* maxchargeev=neighborlist[0];
+	    Event* maxsignalev=neighborlist[0];
 	    int updated=0;
 	    do {
 	      updated=0;
 	      long ll;
 	      for (ll=0; ll<nframelist; ll++) {
 		if (NULL!=framelist[ll]) {
-		  if (isNeighbor(maxchargeev, framelist[ll])) {
-		    if (framelist[ll]->charge>maxchargeev->charge) {
-		      maxchargeev=framelist[ll];
+		  if (isNeighbor(maxsignalev, framelist[ll])) {
+		    if (framelist[ll]->signal>maxsignalev->signal) {
+		      maxsignalev=framelist[ll];
 		      updated=1;
 		    }
 		  }
@@ -133,7 +133,7 @@ void phpat(GenDet* const det,
 	    float split_threshold;
 	    if (det->threshold_split_lo_fraction > 0.) {
 	      split_threshold=
-		det->threshold_split_lo_fraction*maxchargeev->charge;
+		det->threshold_split_lo_fraction*maxsignalev->signal;
 	    } else {
 	      split_threshold=det->threshold_split_lo_keV;
 	    }
@@ -147,7 +147,7 @@ void phpat(GenDet* const det,
 		  if (isNeighbor(neighborlist[kk], framelist[ll])) {
 
 		    // Check if its signal is below the split threshold.
-		    if (framelist[ll]->charge<split_threshold) continue;
+		    if (framelist[ll]->signal<split_threshold) continue;
 		    
 		    // Add the event to the neighbor list.
 		    if (nneighborlist>=maxnneighborlist) {
@@ -169,7 +169,7 @@ void phpat(GenDet* const det,
 	    // Search the pixel with the maximum signal.
 	    long maxidx=0;
 	    for (kk=1; kk<nneighborlist; kk++) {
-	      if (neighborlist[kk]->charge>neighborlist[maxidx]->charge) {
+	      if (neighborlist[kk]->signal>neighborlist[maxidx]->signal) {
 		maxidx=kk;
 	      }
 	    }
@@ -180,48 +180,48 @@ void phpat(GenDet* const det,
 	    CHECK_STATUS_BREAK(*status);
 	    
 	    // Set basic properties.
-	    pattern->event->rawx =neighborlist[maxidx]->rawx;
-	    pattern->event->rawy =neighborlist[maxidx]->rawy;
-	    pattern->event->time =neighborlist[maxidx]->time;
-	    pattern->event->frame=neighborlist[maxidx]->frame;
-	    pattern->event->ra   =neighborlist[maxidx]->ra;
-	    pattern->event->dec  =neighborlist[maxidx]->dec;
-	    pattern->npixels     =nneighborlist;
+	    pattern->rawx   =neighborlist[maxidx]->rawx;
+	    pattern->rawy   =neighborlist[maxidx]->rawy;
+	    pattern->time   =neighborlist[maxidx]->time;
+	    pattern->frame  =neighborlist[maxidx]->frame;
+	    pattern->ra     =0.;
+	    pattern->dec    =0.;
+	    pattern->npixels=nneighborlist;
 
 	    // Set the advanced properties.
 	    // Total signal.
-	    pattern->event->charge=0.;
+	    pattern->signal=0.;
 	    // Flag whether pattern touches the border of the detector.
 	    int border=0;
 	    for (kk=0; kk<nneighborlist; kk++) {
 	      
 	      // Determine the total signal.
-	      pattern->event->charge+=neighborlist[kk]->charge;
+	      pattern->signal+=neighborlist[kk]->signal;
 
 	      // Determine signals in 3x3 matrix.
 	      if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx-1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[0] = neighborlist[kk]->charge;
+		  pattern->signals[0] = neighborlist[kk]->signal;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[3] = neighborlist[kk]->charge;
+		  pattern->signals[3] = neighborlist[kk]->signal;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[6] = neighborlist[kk]->charge;
+		  pattern->signals[6] = neighborlist[kk]->signal;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[1] = neighborlist[kk]->charge;
+		  pattern->signals[1] = neighborlist[kk]->signal;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[4] = neighborlist[kk]->charge;
+		  pattern->signals[4] = neighborlist[kk]->signal;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[7] = neighborlist[kk]->charge;
+		  pattern->signals[7] = neighborlist[kk]->signal;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx+1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[2] = neighborlist[kk]->charge;
+		  pattern->signals[2] = neighborlist[kk]->signal;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[5] = neighborlist[kk]->charge;
+		  pattern->signals[5] = neighborlist[kk]->signal;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[8] = neighborlist[kk]->charge;
+		  pattern->signals[8] = neighborlist[kk]->signal;
 		}
 	      }
 
@@ -230,11 +230,11 @@ void phpat(GenDet* const det,
 	      for (ll=0; ll<NEVENTPHOTONS; ll++) {
 		if (0==neighborlist[kk]->ph_id[ll]) break;
 		long mm;
-		for (mm=0; mm<NEVENTPHOTONS; mm++) {
-		  if (pattern->event->ph_id[mm]==neighborlist[kk]->ph_id[ll]) break;
-		  if (0==pattern->event->ph_id[mm]) {
-		    pattern->event->ph_id[mm] =neighborlist[kk]->ph_id[ll];
-		    pattern->event->src_id[mm]=neighborlist[kk]->src_id[ll];
+		for (mm=0; mm<NPATTERNPHOTONS; mm++) {
+		  if (pattern->ph_id[mm]==neighborlist[kk]->ph_id[ll]) break;
+		  if (0==pattern->ph_id[mm]) {
+		    pattern->ph_id[mm] =neighborlist[kk]->ph_id[ll];
+		    pattern->src_id[mm]=neighborlist[kk]->src_id[ll];
 		    break;
 		  }
 		}
@@ -251,11 +251,11 @@ void phpat(GenDet* const det,
 	    // END of loop over all entries in the neighbor list.
 
 	    // Determine the PHA corresponding to the total signal.
-	    pattern->event->pha=getEBOUNDSChannel(pattern->event->charge, det->rmf);
+	    pattern->pha=getEBOUNDSChannel(pattern->signal, det->rmf);
 
 	    // Check for pile-up.
-	    if (NEVENTPHOTONS>=2) {
-	      if (0!=pattern->event->ph_id[1]) {
+	    if (NPATTERNPHOTONS>=2) {
+	      if (0!=pattern->ph_id[1]) {
 		pattern->pileup=1;
 	      }
 	    }
@@ -387,17 +387,17 @@ void phpat(GenDet* const det,
 
     // Store pattern statistics in the output file.
     // Valids.
-    fits_update_key(plf->eventlistfile->fptr, TLONG, "NVALID", 
+    fits_update_key(plf->fptr, TLONG, "NVALID", 
 		    &statistics.nvalids, 
 		    "number of valid patterns", status);
-    fits_update_key(plf->eventlistfile->fptr, TLONG, "NPVALID", 
+    fits_update_key(plf->fptr, TLONG, "NPVALID", 
 		    &statistics.npvalids, 
 		    "number of piled up valid patterns", status);
     // Invalids.
-    fits_update_key(plf->eventlistfile->fptr, TLONG, "NINVALID", 
+    fits_update_key(plf->fptr, TLONG, "NINVALID", 
 		    &statistics.ninvalids, 
 		    "number of invalid patterns", status);
-    fits_update_key(plf->eventlistfile->fptr, TLONG, "NPINVALI", 
+    fits_update_key(plf->fptr, TLONG, "NPINVALI", 
 		    &statistics.npinvalids, 
 		    "number of piled up invalid patterns", status);
     // Numbered grades.
@@ -406,11 +406,11 @@ void phpat(GenDet* const det,
       char comment[MAXMSG];
       sprintf(keyword, "NGRAD%ld", ii);
       sprintf(comment, "number of patterns with grade %ld", ii);
-      fits_update_key(plf->eventlistfile->fptr, TLONG, keyword, 
+      fits_update_key(plf->fptr, TLONG, keyword, 
 		      &statistics.ngrade[ii], comment, status);
       sprintf(keyword, "NPGRA%ld", ii);
       sprintf(comment, "number of piled up patterns with grade %ld", ii);
-      fits_update_key(plf->eventlistfile->fptr, TLONG, keyword, 
+      fits_update_key(plf->fptr, TLONG, keyword, 
 		      &statistics.npgrade[ii], comment, status);    
     }
     CHECK_STATUS_BREAK(*status);

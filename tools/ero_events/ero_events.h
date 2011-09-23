@@ -3,8 +3,8 @@
 
 
 #include "sixt.h"
-#include "event.h"
-#include "eventlistfile.h"
+#include "pattern.h"
+#include "patternfile.h"
 
 #define TOOLSUB ero_events_main
 #include "headas_main.c"
@@ -16,7 +16,7 @@
 
 
 struct Parameters {
-  char genEventList[MAXFILENAME];
+  char PatternList[MAXFILENAME];
   char eroEventList[MAXFILENAME];
 
   int CCDNr;
