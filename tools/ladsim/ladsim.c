@@ -140,7 +140,7 @@ static void ladphimg(const LAD* const lad,
 
 static void ladphdet(const LAD* const lad,
 		     LADImpactListFile* const ilf,
-		     LADRawEventListFile* const relf,
+		     LADSignalListFile* const relf,
 		     const double t0,
 		     const double exposure,
 		     int* const status)
@@ -222,7 +222,7 @@ static void ladphdet(const LAD* const lad,
     for (ii =MAX(min_anode,center_anode-2); 
 	 ii<=MIN(max_anode,center_anode+2); ii++) {
 
-      LADRawEvent rev;
+      LADSignal rev;
       rev.panel   = impact.panel;
       rev.module  = impact.module;
       rev.element = impact.element;
@@ -249,7 +249,7 @@ static void ladphdet(const LAD* const lad,
       }
 
       // Append the new event to the file.
-      addLADRawEvent2File(relf, &rev, status);
+      addLADSignal2File(relf, &rev, status);
       CHECK_STATUS_VOID(*status);
     }
     // END of loop over adjacent anodes.
@@ -268,7 +268,7 @@ static void ladphdet(const LAD* const lad,
 
 
 static void ladevents(const LAD* const lad,
-		      LADRawEventListFile* const relf,
+		      LADSignalListFile* const relf,
 		      LADEventListFile* const elf,
 		      int* const status)
 {
@@ -277,7 +277,7 @@ static void ladevents(const LAD* const lad,
   const double dt = 1.e-12;
 
   // List of contributing raw events.
-  LADRawEvent** list=NULL;
+  LADSignal** list=NULL;
   long nlist=0;
   const long maxnlist=10;
 
@@ -285,7 +285,7 @@ static void ladevents(const LAD* const lad,
   do { 
     
     // Allocate memory.
-    list=(LADRawEvent**)malloc(maxnlist*sizeof(LADRawEvent*));
+    list=(LADSignal**)malloc(maxnlist*sizeof(LADSignal*));
     CHECK_NULL_BREAK(list, *status, "memory allocation for list failed");
 
     // Loop over all rows in the input file.
@@ -293,11 +293,11 @@ static void ladevents(const LAD* const lad,
     for (mm=0; mm<=relf->nrows; mm++) {
     
       // Read the next raw event from the list.
-      LADRawEvent* rev=NULL;
+      LADSignal* rev=NULL;
       if (mm<relf->nrows) {
-	rev=getLADRawEvent(status);
+	rev=getLADSignal(status);
 	CHECK_STATUS_BREAK(*status);
-	getLADRawEventFromFile(relf, mm+1, rev, status);
+	getLADSignalFromFile(relf, mm+1, rev, status);
 	CHECK_STATUS_BREAK(*status);
       }
 
@@ -347,7 +347,7 @@ static void ladevents(const LAD* const lad,
 
 	  // Set PH_IDs and SRC_IDs.
 	  long jj;
-	  for (jj=0; jj<NLADRAWEVENTPHOTONS; jj++) {
+	  for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
 	    long kk;
 	    for (kk=0; kk<NLADEVENTPHOTONS; kk++) {
 	      if (list[ii]->ph_id[jj]==ev->ph_id[kk]) break;
@@ -368,7 +368,7 @@ static void ladevents(const LAD* const lad,
 	// Release the buffer.
 	freeLADEvent(&ev);
 	for (ii=0; ii<nlist; ii++) {
-	  freeLADRawEvent(&list[ii]);
+	  freeLADSignal(&list[ii]);
 	}
 	nlist=0;
       }
@@ -394,7 +394,7 @@ static void ladevents(const LAD* const lad,
     long ii;
     for (ii=0; ii<nlist; ii++) {
       if (NULL!=list[ii]) {
-	freeLADRawEvent(&list[ii]);
+	freeLADSignal(&list[ii]);
       }
     }
     free(list);
@@ -423,7 +423,7 @@ int ladsim_main()
   LADImpactListFile* ilf=NULL;
 
   // Raw event list file.
-  LADRawEventListFile* relf=NULL;
+  LADSignalListFile* relf=NULL;
 
   // Recombined event list file.
   LADEventListFile* elf=NULL;
@@ -479,14 +479,14 @@ int ladsim_main()
     }
     
     // Determine the raw event list output file.
-    char raweventlist_filename[MAXFILENAME];
-    strcpy(ucase_buffer, par.RawEventList);
+    char signallist_filename[MAXFILENAME];
+    strcpy(ucase_buffer, par.SignalList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(raweventlist_filename, par.OutputStem);
-      strcat(raweventlist_filename, "_rawevents.fits");
+      strcpy(signallist_filename, par.OutputStem);
+      strcat(signallist_filename, "_signals.fits");
     } else {
-      strcpy(raweventlist_filename, par.RawEventList);
+      strcpy(signallist_filename, par.SignalList);
     }
 
     // Determine the recombined event list output file.
@@ -664,7 +664,7 @@ int ladsim_main()
 
 
     // Open the output raw event list file.
-    relf=openNewLADRawEventListFile(raweventlist_filename, &status);
+    relf=openNewLADSignalListFile(signallist_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -730,7 +730,7 @@ int ladsim_main()
 
   // Release memory.
   freeLADEventListFile(&elf, &status);
-  freeLADRawEventListFile(&relf, &status);
+  freeLADSignalListFile(&relf, &status);
   freeLADImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
@@ -780,12 +780,12 @@ int ladsim_getpar(struct Parameters* const par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("RawEventList", &sbuffer);
+  status=ape_trad_query_string("SignalList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the raw event list!\n", status);
     return(status);
   } 
-  strcpy(par->RawEventList, sbuffer);
+  strcpy(par->SignalList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("EventList", &sbuffer);

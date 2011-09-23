@@ -13,7 +13,7 @@
 #include "lad.h"
 #include "ladeventlistfile.h"
 #include "ladimpactlistfile.h"
-#include "ladraweventlistfile.h"
+#include "ladsignallistfile.h"
 #include "rmf.h"
 #include "sourcecatalog.h"
 #include "vector.h"
@@ -27,7 +27,7 @@ struct Parameters {
   char OutputStem[MAXFILENAME];
   char PhotonList[MAXFILENAME];
   char ImpactList[MAXFILENAME];
-  char RawEventList[MAXFILENAME];
+  char SignalList[MAXFILENAME];
   char EventList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];

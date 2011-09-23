@@ -2,9 +2,9 @@ XTENSION        BINTABLE        / Binary table extension
 EXTNAME         EVENTS          / Extension name
 ORIGIN          REMEIS          / Origin of FITS File
 CREATOR         FAU             / Program that created this FITS file
-MISSION         String          / Mission name
+MISSION         LOFT            / Mission name
 TELESCOP        String          / Telescope name
-INSTRUME        String          / Instrument name
+INSTRUME        LAD             / Instrument name
 OBS_MODE        String          / Observation mode
 DATAMODE        String          / Instrument data mode
 FILTER          String          / CCD filter used
