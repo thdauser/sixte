@@ -13,15 +13,15 @@
   <pixelborder x="0." y="0."/>
   <wcs xrpix="192.5" yrpix="192.5" xrval="0." yrval="0." 
        xdelt="75.e-6" ydelt="75.e-6"/>
-  <cte value="1"/>
   <arf filename="erosita_iv_1telonaxis_ff.arf"/>
   <rmf filename="erosita_iv_1telonaxis_ff.rmf"/>
+  <cte value="1"/>
   <split type="exponential" par1="0.355"/>
+  <erobackground filename="eROSITA_hitlist_reduced_1308_81s.fits"/>
   <threshold_readout_lo_keV value="0."/>
   <threshold_readout_up_keV value="12."/>
   <threshold_event_lo_keV value="150.e-3"/>
   <threshold_split_lo_fraction value="0.01"/>
-  <erobackground filename="eROSITA_hitlist_reduced_1308_81s.fits"/>
   
   <readout mode="time">
     <wait time="0.05"/>

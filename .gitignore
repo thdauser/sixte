@@ -49,6 +49,7 @@ comarecon
 comaexp
 orbatt
 ladsim
+ladspec
 mmap_write
 mmap_read
 runsixt

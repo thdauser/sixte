@@ -1,0 +1,5 @@
+EventList,fre,lq,"events.fits",,,"event list input file"
+Spectrum,f,lq,"spectrum.fits",,,"spectrum output file"
+chatter,i,lh,4,,,"chatter: control verbosity of the program"
+clobber,b,h,no,,,"overwrite output files if exist?"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"
