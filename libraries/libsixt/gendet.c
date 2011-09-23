@@ -27,7 +27,6 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->rmf =NULL;
   det->clocklist =NULL;
   det->badpixmap =NULL;
-  det->grading   =NULL;
   det->filepath  =NULL;
   det->filename  =NULL;
 
@@ -137,9 +136,6 @@ void destroyGenDet(GenDet** const det, int* const status)
 
     // Destroy the BadPixMap.
     destroyBadPixMap(&(*det)->badpixmap);
-
-    // Destroy the pattern identifier.
-    destroyGenEventGrading(&(*det)->grading);
 
     // Destroy the PSF.
     destroyPSF(&(*det)->psf);

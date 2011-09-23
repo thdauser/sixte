@@ -11,7 +11,6 @@
 #include "eventlistfile.h"
 #include "gendetline.h"
 #include "genericdetector.h"
-#include "geneventgrading.h"
 #include "genpixgrid.h"
 #include "impact.h"
 #include "point.h"
@@ -124,10 +123,6 @@ typedef struct {
   /** Flag, whether a eroBackground model is available for the cosmic
       ray detector background. */
   int erobackground;
-
-  /** Pattern Identification data structure containing the different
-      event grades. */
-  GenEventGrading* grading;
 
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or

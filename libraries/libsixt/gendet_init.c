@@ -344,63 +344,13 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
 	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmlparsedata->status);
 	return;
       }
-      CLReadoutLine* clreadoutline = newCLReadoutLine(lineindex,
-						      readoutindex,
-						      &xmlparsedata->status);
+      CLReadoutLine* clreadoutline=newCLReadoutLine(lineindex,
+						    readoutindex,
+						    &xmlparsedata->status);
       append2ClockList(xmlparsedata->det->clocklist, CL_READOUTLINE, 
 		       clreadoutline, &xmlparsedata->status);
-	
-    } else if (!strcmp(Uelement, "EVENTGRADING")) {
-      char buffer[MAXMSG]; // String buffer.
-      getAttribute(attr, "INVALID", buffer);
-      int invalid       = atoi(buffer);
-      getAttribute(attr, "BORDERINVALID", buffer);
-      int borderinvalid = atoi(buffer);
-      getAttribute(attr, "LARGEINVALID", buffer);
-      int largeinvalid  = atoi(buffer);
       
-      xmlparsedata->det->grading = 
-	newGenEventGrading(invalid, borderinvalid, largeinvalid,
-			   &xmlparsedata->status);
-
-    } else if (!strcmp(Uelement, "GRADE")) {
-      char buffer[MAXMSG]; // String buffer.
-
-      getAttribute(attr, "P11", buffer);
-      int p11  = atoi(buffer);
-      getAttribute(attr, "P12", buffer);
-      int p12  = atoi(buffer);
-      getAttribute(attr, "P13", buffer);
-      int p13  = atoi(buffer);
-
-      getAttribute(attr, "P21", buffer);
-      int p21  = atoi(buffer);
-      getAttribute(attr, "P23", buffer);
-      int p23  = atoi(buffer);
-
-      getAttribute(attr, "P31", buffer);
-      int p31  = atoi(buffer);
-      getAttribute(attr, "P32", buffer);
-      int p32  = atoi(buffer);
-      getAttribute(attr, "P33", buffer);
-      int p33  = atoi(buffer);
-
-      getAttribute(attr, "GRADE", buffer);
-      int grade = atoi(buffer);
-      
-      GenEventGrade* ggrade = newGenEventGrade(p11, p12, p13,
-					       p21, p23,
-					       p31, p32, p33,
-					       grade, 
-					       &xmlparsedata->status);
-      if (EXIT_SUCCESS!=xmlparsedata->status) return;
-      addGenEventGrade(xmlparsedata->det->grading,
-		       ggrade,
-		       &xmlparsedata->status);
-      if (EXIT_SUCCESS!=xmlparsedata->status) return;
-    }
-
-    else { // Elements with independent attributes.
+    } else { // Elements with independent attributes.
 
       // Loop over the different attributes.
       int i;

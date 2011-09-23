@@ -37,13 +37,12 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     genpixgrid.c gendetline.c eventlistfile.c		\
 		     ladraweventlistfile.c ladeventlistfile.c		\
 		     patternfile.c clocklist.c badpixmap.c		\
-		     geneventgrading.c htrseventfile.c			\
-		     hexagonalpixels.c arcpixels.c telemetrypacket.c	\
-		     htrstelstream.c comadetector.c comaeventfile.c	\
-		     psf.c vignetting.c codedmask.c attitudecatalog.c	\
-		     attitudefile.c sixt.c vector.c pointsources.c	\
-		     extendedsources.c sourceimage.c photon.c		\
-		     spectrum.c fits_pha.c check_fov.c			\
+		     htrseventfile.c hexagonalpixels.c arcpixels.c	\
+		     telemetrypacket.c htrstelstream.c comadetector.c	\
+		     comaeventfile.c psf.c vignetting.c codedmask.c	\
+		     attitudecatalog.c attitudefile.c sixt.c vector.c	\
+		     pointsources.c extendedsources.c sourceimage.c	\
+		     photon.c spectrum.c fits_pha.c check_fov.c		\
 		     photonlistfile.c linlightcurve.c rmf.c arf.c	\
 		     kdtreeelement.c sourcecatalog.c source.c		\
 		     linkedpholist.c erodetbkgrndgen.c phgen.c phimg.c	\
@@ -62,16 +61,15 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  gendetline.h clocklist.h event.h ladrawevent.h	\
 		  ladevent.h ladimpact.h pattern.h eventlistfile.h	\
 		  ladraweventlistfile.h ladeventlistfile.h		\
-		  patternfile.h badpixmap.h geneventgrading.h		\
-		  htrsdetector.h htrseventfile.h htrsevent.h		\
-		  telemetrypacket.h htrstelstream.h comadetector.h	\
-		  comaeventfile.h comaevent.h psf.h vignetting.h	\
-		  codedmask.h attitudecatalog.h attitudefile.h		\
-		  telescope.h sixt.h point.h vector.h pointsources.h	\
-		  extendedsources.h sourceimage.h photon.h spectrum.h	\
-		  fits_pha.h check_fov.h photonlistfile.h		\
-		  linlightcurve.h rmf.h arf.h kdtreeelement.h		\
-		  sourcecatalog.h source.h linkedpholist.h		\
-		  erodetbkgrndgen.h phgen.h phimg.h phdet.h phproj.h	\
-		  phpat.h lad.h xmlbuffer.h
+		  patternfile.h badpixmap.h htrsdetector.h		\
+		  htrseventfile.h htrsevent.h telemetrypacket.h		\
+		  htrstelstream.h comadetector.h comaeventfile.h	\
+		  comaevent.h psf.h vignetting.h codedmask.h		\
+		  attitudecatalog.h attitudefile.h telescope.h sixt.h	\
+		  point.h vector.h pointsources.h extendedsources.h	\
+		  sourceimage.h photon.h spectrum.h fits_pha.h		\
+		  check_fov.h photonlistfile.h linlightcurve.h rmf.h	\
+		  arf.h kdtreeelement.h sourcecatalog.h source.h	\
+		  linkedpholist.h erodetbkgrndgen.h phgen.h phimg.h	\
+		  phdet.h phproj.h phpat.h lad.h xmlbuffer.h
 

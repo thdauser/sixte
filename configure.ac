@@ -24,7 +24,7 @@ LT_INIT #([disable-shared]) #([shared])
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -I$HEADAS/include -I$HOME/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -O0 -DHTRS_ARCPIXELS"
+CFLAGS="$CFLAGS -I$HEADAS/include -I$HOME/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS"
 
 # Linker Flags:
 LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall"
