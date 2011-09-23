@@ -281,58 +281,50 @@ static void ladevents(const LAD* const lad,
   long nlist=0;
   const long maxnlist=10;
 
-  // Allocate memory.
-  list=(LADRawEvent**)malloc(maxnlist*sizeof(LADRawEvent*));
-  CHECK_NULL_VOID(list, *status, "memory allocation for list failed");
-
-  while (relf->row < relf->nrows) {
+  // Error handling loop.
+  do { 
     
-    // Read the next raw event from the list.
-    LADRawEvent* rev=getLADRawEvent(status);
-    CHECK_STATUS_BREAK(*status);
-    getLADRawEventFromFile(relf, relf->row+1, rev, status);
-    CHECK_STATUS_BREAK(*status);
+    // Allocate memory.
+    list=(LADRawEvent**)malloc(maxnlist*sizeof(LADRawEvent*));
+    CHECK_NULL_BREAK(list, *status, "memory allocation for list failed");
 
-    if (0==nlist) {
-      // There are no raw events in the list up to now.
-      list[0] = rev;
-      nlist   = 1;
-      
-    } else {
-      
+    // Loop over all rows in the input file.
+    long mm;
+    for (mm=0; mm<=relf->nrows; mm++) {
+    
+      // Read the next raw event from the list.
+      LADRawEvent* rev=NULL;
+      if (mm<relf->nrows) {
+	rev=getLADRawEvent(status);
+	CHECK_STATUS_BREAK(*status);
+	getLADRawEventFromFile(relf, mm+1, rev, status);
+	CHECK_STATUS_BREAK(*status);
+      }
+
       // Check if the new raw event seems to belong to the same photon event.
-      int different = 0;
-      if ((rev->time-list[0]->time>dt) ||
-	  (rev->panel!=list[0]->panel) ||
-	  (rev->module!=list[0]->module) ||
-	  (rev->element!=list[0]->element) ||
-	  (abs(rev->anode-list[nlist-1]->anode)>1)) {
-	different = 1;
-      }
-      // Check for the different (bottom and top) anode lines.
-      long nanodes = 
-	lad->panel[rev->panel]->module[rev->module]->element[rev->element]->nanodes;
-      if (((rev->anode >= nanodes/2)&&(list[0]->anode <  nanodes/2)) ||
-	  ((rev->anode <  nanodes/2)&&(list[0]->anode >= nanodes/2))) {
-	different = 1;
-      }
-
-      // If the raw event belongs to the same photon event, add it to the list.
-      if (0==different) { 
-	if (nlist==maxnlist) {
-	  SIXT_ERROR("too many raw events for list buffer");
-	  *status=EXIT_FAILURE;
-	  break;
+      int different=0;
+      if ((nlist>0) && (NULL!=rev)) {
+	if ((rev->time-list[0]->time>dt) ||
+	    (rev->panel!=list[0]->panel) ||
+	    (rev->module!=list[0]->module) ||
+	    (rev->element!=list[0]->element) ||
+	    (abs(rev->anode-list[nlist-1]->anode)>1)) {
+	  different=1;
 	}
-	list[nlist] = rev;
-	nlist++;
+
+	// Check for the different (bottom and top) anode lines.
+	long nanodes = 
+	  lad->panel[rev->panel]->module[rev->module]->element[rev->element]->nanodes;
+	if (((rev->anode >= nanodes/2)&&(list[0]->anode <  nanodes/2)) ||
+	    ((rev->anode <  nanodes/2)&&(list[0]->anode >= nanodes/2))) {
+	  different=1;
+	}
       }
 
-      // TODO Treatment of last event in input list.
-
-      if ((1==different) || (relf->row == relf->nrows)) { 
-	// The new raw event does not belong to the previous events any more,
-	// or it is the last one in the input list.
+      // If the new raw event belongs to a different photon event
+      // or the end of the input list has been reached, perform 
+      // a pattern analysis.
+      if ((1==different) || ((mm==relf->nrows)&&(nlist>0))) { 
 
 	// Construct a combined event for output.
 	LADEvent* ev = getLADEvent(status);
@@ -378,18 +370,25 @@ static void ladevents(const LAD* const lad,
 	for (ii=0; ii<nlist; ii++) {
 	  freeLADRawEvent(&list[ii]);
 	}
-	
-	// If this has not been the last raw event, start a new list.
-	if (relf->row < relf->nrows) {
-	  list[0] = rev;
-	  nlist   = 1;
+	nlist=0;
+      }
+
+      // Add the new raw event to the list.
+      if (NULL!=rev) {
+	if (nlist==maxnlist) {
+	  SIXT_ERROR("too many raw events for list buffer");
+	  *status=EXIT_FAILURE;
+	  break;
 	}
+	list[nlist]=rev;
+	nlist++;
       }
     }
-  }
-  CHECK_STATUS_VOID(*status);
-  // END of loop over all raw events.
+    CHECK_STATUS_VOID(*status);
+    // END of loop over all raw events.
 
+  } while(0); // END of error handling loop.
+    
   // Release memory.
   if (NULL!=list) {
     long ii;
