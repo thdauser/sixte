@@ -1,6 +1,5 @@
 #include "phpat.h"
 
-// TODO Apply thresholds.
 
 struct PatternStatistics {
   /** Number of valid patterns. */
@@ -19,6 +18,19 @@ struct PatternStatistics {
       pile-up. */
   long npgrade[13];
 };
+
+
+static int isNeighbor(const Event* const e1, const Event* const e2) {
+  if (((e1->rawx==e2->rawx+1)&&(e1->rawy==e2->rawy)) ||
+      ((e1->rawx==e2->rawx-1)&&(e1->rawy==e2->rawy)) ||
+      ((e1->rawx==e2->rawx)&&(e1->rawy==e2->rawy+1)) ||
+      ((e1->rawx==e2->rawx)&&(e1->rawy==e2->rawy-1))) {
+    // The events are neighbors.
+    return(1);
+  } else {
+    return(0);
+  }
+}
 
 
 void phpat(GenDet* const det,
@@ -48,6 +60,7 @@ void phpat(GenDet* const det,
   const long maxnneighborlist=1000;
   Event** neighborlist=NULL;
   long nneighborlist=0;
+
 
   // Error handling loop.
   do {
@@ -89,26 +102,54 @@ void phpat(GenDet* const det,
 	long jj;
 	for (jj=0; jj<nframelist; jj++) {
 	  if (NULL!=framelist[jj]) {
+	    
+	    // Check if the event is below the threshold.
+	    if (framelist[jj]->charge<det->threshold_event_lo_keV) continue;
+  
 	    // Start a new neighbor list.
 	    neighborlist[0]=framelist[jj];
 	    nneighborlist=1;
 	    framelist[jj]=NULL;
+	    
+	    // Find the signal maximum in the neighboring pixels.
+	    Event* maxchargeev=neighborlist[0];
+	    int updated=0;
+	    do {
+	      updated=0;
+	      long ll;
+	      for (ll=0; ll<nframelist; ll++) {
+		if (NULL!=framelist[ll]) {
+		  if (isNeighbor(maxchargeev, framelist[ll])) {
+		    if (framelist[ll]->charge>maxchargeev->charge) {
+		      maxchargeev=framelist[ll];
+		      updated=1;
+		    }
+		  }
+		}
+	      }
+	    } while(updated);
 
-	    // Find all neighboring events.
-	    long kk;
+	    // Determine the split threshold [keV].
+	    float split_threshold;
+	    if (det->threshold_split_lo_fraction > 0.) {
+	      split_threshold=
+		det->threshold_split_lo_fraction*maxchargeev->charge;
+	    } else {
+	      split_threshold=det->threshold_split_lo_keV;
+	    }
+
+	    // Find all neighboring events above the split threshold.
+ 	    long kk;
 	    for (kk=0; kk<nneighborlist; kk++) {
 	      long ll;
-	      for (ll=jj+1; ll<nframelist; ll++) {
+	      for (ll=0; ll<nframelist; ll++) {
 		if (NULL!=framelist[ll]) {
-		  if (((neighborlist[kk]->rawx==framelist[ll]->rawx+1)&&
-		       (neighborlist[kk]->rawy==framelist[ll]->rawy)) ||
-		      ((neighborlist[kk]->rawx==framelist[ll]->rawx-1)&&
-		       (neighborlist[kk]->rawy==framelist[ll]->rawy)) ||
-		      ((neighborlist[kk]->rawx==framelist[ll]->rawx)&&
-		       (neighborlist[kk]->rawy==framelist[ll]->rawy+1)) ||
-		      ((neighborlist[kk]->rawx==framelist[ll]->rawx)&&
-		       (neighborlist[kk]->rawy==framelist[ll]->rawy-1))) {
-		    // This is a neighbor.
+		  if (isNeighbor(neighborlist[kk], framelist[ll])) {
+
+		    // Check if its signal is below the split threshold.
+		    if (framelist[ll]->charge<split_threshold) continue;
+		    
+		    // Add the event to the neighbor list.
 		    if (nneighborlist>=maxnneighborlist) {
 		      SIXT_ERROR("too many events in the same pattern");
 		      *status=EXIT_FAILURE;
