@@ -273,7 +273,7 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       GenDetLineShift(det);
       break;
     case CL_READOUTLINE:
-      clreadoutline = (CLReadoutLine*)element;
+      clreadoutline=(CLReadoutLine*)element;
       GenDetReadoutLine(det, clreadoutline->lineindex, 
 			clreadoutline->readoutindex, 
 			elf,
@@ -341,50 +341,57 @@ static inline void GenDetReadoutPixel(GenDet* const det,
 
   if (line->charge[xindex]>0.) {
 
-    // Determine the properties of a new Event object.
-    Event* event=getEvent(status);
-    CHECK_STATUS_VOID(*status);
-    
-    // Readout the signal from the pixel array ...
-    event->signal = line->charge[xindex];
-    // ... and delete the pixel value.
-    line->charge[xindex] = 0.;
-    
-    // Copy the information about the original photons.
-    int jj;
-    for(jj=0; jj<NEVENTPHOTONS; jj++) {
-      event->ph_id[jj]  = line->ph_id[xindex][jj];
-      event->src_id[jj] = line->src_id[xindex][jj];
-      line->ph_id[xindex][jj]  = 0;
-      line->src_id[xindex][jj] = 0;
-    }
+    Event* event=NULL;
 
-    // Apply the charge thresholds.
-    if (event->signal<=det->threshold_readout_lo_keV) {
-      return;
-    }
-    if (det->threshold_readout_up_keV >= 0.) {
-      if (event->signal>=det->threshold_readout_up_keV) {
-	return;
+    // Error handling loop.
+    do {
+
+      // Determine the properties of a new Event object.
+      event=getEvent(status);
+      CHECK_STATUS_BREAK(*status);
+    
+      // Readout the signal from the pixel array ...
+      event->signal = line->charge[xindex];
+      // ... and delete the pixel value.
+      line->charge[xindex] = 0.;
+    
+      // Copy the information about the original photons.
+      int jj;
+      for(jj=0; jj<NEVENTPHOTONS; jj++) {
+	event->ph_id[jj]  = line->ph_id[xindex][jj];
+	event->src_id[jj] = line->src_id[xindex][jj];
+	line->ph_id[xindex][jj]  = 0;
+	line->src_id[xindex][jj] = 0;
       }
-    }
+      
+      // Apply the charge thresholds.
+      if (event->signal<=det->threshold_readout_lo_keV) {
+	break;
+      }
+      if (det->threshold_readout_up_keV >= 0.) {
+	if (event->signal>=det->threshold_readout_up_keV) {
+	  break;
+	}
+      }
     
-    // Apply the detector response if available.
-    if (NULL!=det->rmf) {
-      event->pha=getEBOUNDSChannel(event->signal, det->rmf);
-    } else {
-      event->pha=0;
-    }
+      // Apply the detector response if available.
+      if (NULL!=det->rmf) {
+	event->pha=getEBOUNDSChannel(event->signal, det->rmf);
+      } else {
+	event->pha=0;
+      }
 
-    // Store remaining information.
-    event->rawy  = readoutindex;
-    event->rawx  = xindex;
-    event->time  = time;  // Time of detection.
-    event->frame = det->clocklist->frame; // Frame of detection.
+      // Store remaining information.
+      event->rawy =readoutindex;
+      event->rawx =xindex;
+      event->time =time;  // Time of detection.
+      event->frame=det->clocklist->frame; // Frame of detection.
 
-    // Store the event in the output event file.
-    addEvent2File(elf, event, status);
-    CHECK_STATUS_VOID(*status);
+      // Store the event in the output event file.
+      addEvent2File(elf, event, status);
+      CHECK_STATUS_BREAK(*status);
+
+    } while(0); // END of error handling loop.
 
     // Release memory
     freeEvent(&event);
