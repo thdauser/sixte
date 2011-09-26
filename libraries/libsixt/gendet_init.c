@@ -238,8 +238,16 @@ void parseGenDetXML(GenDet* const det,
     return;
   }
 
-  if (GS_NONE!=det->split->type) {
-    if (det->split->par1<=0.) {
+  if (GS_EXPONENTIAL==det->split->type) {
+    if (det->split->par1==0.) {
+      *status = EXIT_FAILURE;
+      SIXT_ERROR("no valid split model parameters in the XML file");
+      return;    
+    }
+  }
+
+  if (GS_GAUSS==det->split->type) {
+    if ((det->split->par1==0.)&&(det->split->par2==0.)) {
       *status = EXIT_FAILURE;
       SIXT_ERROR("no valid split model parameters in the XML file");
       return;    
@@ -436,6 +444,7 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
       xmlparsedata->det->split->type = GS_EXPONENTIAL;
     }
     xmlparsedata->det->split->par1=getXMLAttributeFloat(attr, "PAR1");
+    xmlparsedata->det->split->par2=getXMLAttributeFloat(attr, "PAR2");
 
   } else if (!strcmp(Uelement, "READOUT")) {
 

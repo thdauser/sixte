@@ -465,6 +465,7 @@ GenSplit* newGenSplit(int* const status)
   // Set default values.
   split->type = GS_NONE;
   split->par1 = 0.;
+  split->par2 = 0.;
 
   return(split);
 }
@@ -498,7 +499,7 @@ static inline int getMinimumDistance(const double array[])
 
 int makeGenSplitEvents(GenDet* const det,
 		       const struct Point2d* const position,
-		       const float charge,
+		       const float signal,
 		       const long ph_id, const long src_id,
 		       const double time,
 		       EventListFile* const elf, 
@@ -508,7 +509,7 @@ int makeGenSplitEvents(GenDet* const det,
   int npixels=0;
   // x- and y-indices of affected pixels.
   int x[4], y[4];
-  // Charge fractions in the individual pixels.
+  // Signal fractions in the individual pixels.
   float fraction[4];
 
   // The following array entries are used to transform between 
@@ -536,8 +537,12 @@ int makeGenSplitEvents(GenDet* const det,
   } else if (GS_GAUSS==det->split->type) {  
     // Gaussian split model.
 
-    // Charge cloud size (3 sigma).
-    const float ccsize = det->split->par1*3.;
+    // Signal cloud sigma as a function of the photon energy.
+    const float ccsigma = 
+      det->split->par1 + det->split->par2 * sqrt(signal); 
+
+    // Signal cloud size (3 sigma).
+    const float ccsize = ccsigma * 3.;
 
     // Calculate pixel indices (integer) of the central affected pixel:
     x[0] = getGenDetAffectedColumn(det->pixgrid, position->x);
@@ -571,7 +576,7 @@ int makeGenSplitEvents(GenDet* const det,
       x[1] = x[0] + xe[mindist];
       y[1] = y[0] + ye[mindist];
 
-      double mindistgauss = gaussint(distances[mindist]/det->split->par1);
+      double mindistgauss = gaussint(distances[mindist]/ccsigma);
 
       // Search for the next to minimum distance to an edge.
       double minimum = distances[mindist];
@@ -588,8 +593,8 @@ int makeGenSplitEvents(GenDet* const det,
 	x[3] = x[1] + xe[secmindist];
 	y[3] = y[1] + ye[secmindist];
 
-	// Calculate the different charge fractions in the 4 affected pixels.
-	double secmindistgauss = gaussint(distances[secmindist]/det->split->par1);
+	// Calculate the different signal fractions in the 4 affected pixels.
+	double secmindistgauss = gaussint(distances[secmindist]/ccsigma);
 	fraction[0] = (1.-mindistgauss)*(1.-secmindistgauss);
 	fraction[1] =     mindistgauss *(1.-secmindistgauss);
 	fraction[2] = (1.-mindistgauss)*    secmindistgauss ;
@@ -616,7 +621,7 @@ int makeGenSplitEvents(GenDet* const det,
 
   } else if (GS_EXPONENTIAL==det->split->type) {  
     // Exponential split model.
-    // None-Gaussian, exponential charge cloud model 
+    // None-Gaussian, exponential signal cloud model 
     // (concept proposed by Konrad Dennerl).
     npixels=4;
 
@@ -663,7 +668,7 @@ int makeGenSplitEvents(GenDet* const det,
     y[3] = y[1] + ye[secmindist];
 
     // Now we know the affected pixels and can determine the 
-    // charge fractions according to the model exp(-(r/0.355)^2).
+    // signal fractions according to the model exp(-(r/0.355)^2).
     // Remember that the array distances[] contains the distances
     // to the pixel borders, whereas here we need the distances from
     // the pixel center for the parameter r.
@@ -691,12 +696,12 @@ int makeGenSplitEvents(GenDet* const det,
   }
 
 
-  // Add charge to all valid pixels of the split event.
+  // Add signal to all valid pixels of the split event.
   int ii, nvalidpixels=0;
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) && (x[ii]<det->pixgrid->xwidth) &&
 	(y[ii]>=0) && (y[ii]<det->pixgrid->ywidth)) {
-      addGenDetCharge2Pixel(det->line[y[ii]], x[ii], charge*fraction[ii], 
+      addGenDetCharge2Pixel(det->line[y[ii]], x[ii], signal*fraction[ii], 
 			    ph_id, src_id);
       nvalidpixels++;
 

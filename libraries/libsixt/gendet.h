@@ -50,10 +50,16 @@ typedef struct {
   GenSplitType type;
 
   /** Split parameter 1. For the Gaussian split model this parameter
-      represents the charge cloud size in [m]. For the exponential
-      model this parameter represents the denominator in the
-      exponential distribution term. */
-  double par1;
+      represents the charge cloud size in [m] at a photon energy of 1
+      keV. For the exponential model this parameter represents the
+      denominator in the exponential distribution term. */
+  float par1;
+
+  /** Split parameter 2. This value is only defined for the Gaussian
+  charge cloud model. It represents the slope of the function giving
+  the charge cloud size vs. photon energy. (ccs(E) = par1 + par2
+  *sqrt(E)). */
+  float par2;
 
 } GenSplit;
 
