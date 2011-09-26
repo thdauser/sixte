@@ -563,3 +563,56 @@ void expandXML(struct XMLBuffer* const buffer, int* const status)
   // Replace arithmetic +/- expressions.
   execArithmeticOpsInXMLBuffer(buffer, status);
 }
+
+
+void getXMLAttributeString(const char** attr, 
+			   const char* const key, 
+			   char* const value)
+{
+  char Uattribute[MAXMSG]; // Upper case version of XML attribute
+  char Ukey[MAXMSG];       // Upper case version of search expression
+
+  // Convert the search expression to an upper case string.
+  strcpy(Ukey, key);
+  strtoupper(Ukey);
+
+  int i;
+  for (i=0; attr[i]; i+=2) {  
+    // Convert the attribute to an upper case string.
+    strcpy(Uattribute, attr[i]);
+    strtoupper(Uattribute);
+    if (!strcmp(Uattribute, Ukey)) {
+      strcpy(value, attr[i+1]);
+      return;
+    }
+  }
+  // Keyword was not found
+  strcpy(value, "");
+  return;
+}
+
+
+float getXMLAttributeFloat(const char** attr, const char* const key)
+{
+  char buffer[MAXMSG]; // String buffer.
+  getXMLAttributeString(attr, key, buffer);
+  return((float)atof(buffer));
+}
+
+
+int getXMLAttributeInt(const char** attr, const char* const key)
+{
+  char buffer[MAXMSG]; // String buffer.
+  getXMLAttributeString(attr, key, buffer);
+  return(atoi(buffer));
+}
+
+
+long getXMLAttributeLong(const char** attr, const char* const key)
+{
+  char buffer[MAXMSG]; // String buffer.
+  getXMLAttributeString(attr, key, buffer);
+  return(atol(buffer));
+}
+
+

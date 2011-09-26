@@ -201,51 +201,6 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 }
 
 
-static void getAttributeString(const char** attr, 
-			       const char* const key, 
-			       char* const value)
-{
-  char Uattribute[MAXMSG]; // Upper case version of XML attribute
-  char Ukey[MAXMSG];       // Upper case version of search expression
-
-  // Convert the search expression to an upper case string.
-  strcpy(Ukey, key);
-  strtoupper(Ukey);
-
-  int i;
-  for (i=0; attr[i]; i+=2) {  
-    // Convert the attribute to an upper case string.
-    strcpy(Uattribute, attr[i]);
-    strtoupper(Uattribute);
-    if (!strcmp(Uattribute, Ukey)) {
-      strcpy(value, attr[i+1]);
-      return;
-    }
-  }
-  // Keyword was not found
-  strcpy(value, "");
-  return;
-}
-
-
-static float getAttributeFloat(const char** attr, 
-			       const char* const key)
-{
-  char buffer[MAXMSG]; // String buffer.
-  getAttributeString(attr, key, buffer);
-  return((float)atof(buffer));
-}
-
-
-static long getAttributeLong(const char** attr, 
-			     const char* const key)
-{
-  char buffer[MAXMSG]; // String buffer.
-  getAttributeString(attr, key, buffer);
-  return(atol(buffer));
-}
-
-
 static void addPanel2LAD(LAD* const lad, 
 			 LADPanel* const panel, 
 			 int* const status)
@@ -312,7 +267,7 @@ static void addElement2Module(LADModule* const module,
 static void XMLElementStart(void* parsedata, const char* el, const char** attr) 
 {
   struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
-  char Uelement[MAXMSG];   // Upper case version of XML element
+  char Uelement[MAXMSG]; // Upper case version of XML element.
 
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
@@ -329,9 +284,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    panel->id = getAttributeLong(attr, "ID");
-    panel->nx = getAttributeLong(attr, "NX");
-    panel->ny = getAttributeLong(attr, "NY");
+    panel->id = getXMLAttributeLong(attr, "ID");
+    panel->nx = getXMLAttributeLong(attr, "NX");
+    panel->ny = getXMLAttributeLong(attr, "NY");
     
     // Add the new panel to the LAD.
     addPanel2LAD(xmlparsedata->lad, panel, &xmlparsedata->status);
@@ -347,9 +302,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    module->id = getAttributeLong(attr, "ID");
-    module->nx = getAttributeLong(attr, "NX");
-    module->ny = getAttributeLong(attr, "NY");
+    module->id = getXMLAttributeLong(attr, "ID");
+    module->nx = getXMLAttributeLong(attr, "NX");
+    module->ny = getXMLAttributeLong(attr, "NY");
 
     // Add the new module to the LAD.
     addModule2Panel(xmlparsedata->panel, module, &xmlparsedata->status);
@@ -365,12 +320,12 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    element->id = getAttributeLong(attr, "ID");
-    element->xdim = getAttributeFloat(attr, "XDIM");
-    element->ydim = getAttributeFloat(attr, "YDIM");
-    element->xborder = getAttributeFloat(attr, "XBORDER");
-    element->yborder = getAttributeFloat(attr, "YBORDER");
-    element->nanodes = getAttributeLong(attr, "NANODES");
+    element->id = getXMLAttributeLong(attr, "ID");
+    element->xdim = getXMLAttributeFloat(attr, "XDIM");
+    element->ydim = getXMLAttributeFloat(attr, "YDIM");
+    element->xborder = getXMLAttributeFloat(attr, "XBORDER");
+    element->yborder = getXMLAttributeFloat(attr, "YBORDER");
+    element->nanodes = getXMLAttributeLong(attr, "NANODES");
     
     // Add the new element to the LAD.
     addElement2Module(xmlparsedata->module, element, &xmlparsedata->status);
@@ -382,28 +337,28 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "FOV")) {
 
     // Determine the diameter of the FOV.
-    xmlparsedata->lad->fov_diameter = getAttributeFloat(attr, "DIAMETER");
+    xmlparsedata->lad->fov_diameter = getXMLAttributeFloat(attr, "DIAMETER");
    
   } else if (!strcmp(Uelement, "TEMPERATURE")) {
 
     // Determine the value of the temperature.
-    xmlparsedata->lad->temperature = getAttributeFloat(attr, "VALUE");
+    xmlparsedata->lad->temperature = getXMLAttributeFloat(attr, "VALUE");
    
   } else if (!strcmp(Uelement, "EFIELD")) {
 
     // Determine the electric field.
-    xmlparsedata->lad->efield = getAttributeFloat(attr, "VALUE");
+    xmlparsedata->lad->efield = getXMLAttributeFloat(attr, "VALUE");
    
   } else if (!strcmp(Uelement, "MOBILITY")) {
 
     // Determine the mobility.
-    xmlparsedata->lad->mobility = getAttributeFloat(attr, "VALUE");
+    xmlparsedata->lad->mobility = getXMLAttributeFloat(attr, "VALUE");
 
   } else if (!strcmp(Uelement, "THRESHOLD")) {
 
     // Determine the lower and the upper read-out threshold.
-    float threshold_readout_lo_keV = getAttributeFloat(attr, "READOUT_LO_KEV");
-    float threshold_readout_up_keV = getAttributeFloat(attr, "READOUT_UP_KEV");
+    float threshold_readout_lo_keV = getXMLAttributeFloat(attr, "READOUT_LO_KEV");
+    float threshold_readout_up_keV = getXMLAttributeFloat(attr, "READOUT_UP_KEV");
     
     if (0.<threshold_readout_lo_keV) {
       xmlparsedata->lad->threshold_readout_lo_keV = 
@@ -427,7 +382,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     
     // Determine the filename of the instrument ARF and load it.
     char filename[MAXFILENAME];
-    getAttributeString(attr, "FILENAME", filename);
+    getXMLAttributeString(attr, "FILENAME", filename);
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
@@ -437,7 +392,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     
     // Determine the filename of the detector RMF and load it.
     char filename[MAXFILENAME];
-    getAttributeString(attr, "FILENAME", filename);
+    getXMLAttributeString(attr, "FILENAME", filename);
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);

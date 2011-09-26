@@ -270,37 +270,10 @@ void parseGenDetXML(GenDet* const det,
 }
 
 
-static void getAttribute(const char** attr, const char* const key, char* const value)
-{
-  char Uattribute[MAXMSG]; // Upper case version of XML attribute
-  char Ukey[MAXMSG];       // Upper case version of search expression
-
-  // Convert the search expression to an upper case string.
-  strcpy(Ukey, key);
-  strtoupper(Ukey);
-
-  int i;
-  for (i=0; attr[i]; i+=2) {  
-    // Convert the attribute to an upper case string.
-    strcpy(Uattribute, attr[i]);
-    strtoupper(Uattribute);
-    if (!strcmp(Uattribute, Ukey)) {
-      strcpy(value, attr[i+1]);
-      return;
-    }
-  }
-  // Keyword was not found
-  strcpy(value, "");
-  return;
-}
-
-
 static void GenDetXMLElementStart(void* parsedata, const char* el, const char** attr) 
 {
   struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
-  char Uelement[MAXMSG];   // Upper case version of XML element
-  char Uattribute[MAXMSG]; // Upper case version of XML attribute
-  char Uvalue[MAXMSG];     // Upper case version of XML attribute value
+  char Uelement[MAXMSG]; // Upper case version of XML element.
 
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
@@ -309,299 +282,237 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
   strcpy(Uelement, el);
   strtoupper(Uelement);
 
-  // Elements without attributes.
+  // Check for different elements.
   if (!strcmp(Uelement, "LINESHIFT")) {
-    CLLineShift* cllineshift = newCLLineShift(&xmlparsedata->status);
+    CLLineShift* cllineshift=newCLLineShift(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     append2ClockList(xmlparsedata->det->clocklist, CL_LINESHIFT, 
 		     cllineshift, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "NEWFRAME")) {
-    CLNewFrame* clnewframe = newCLNewFrame(&xmlparsedata->status);
+    CLNewFrame* clnewframe=newCLNewFrame(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     append2ClockList(xmlparsedata->det->clocklist, CL_NEWFRAME, 
 		     clnewframe, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
-  } else { 
-    
-    // Elements with attributes.
+  } else if (!strcmp(Uelement, "READOUTLINE")) {
 
-    if (!strcmp(Uelement, "READOUTLINE")) {
-      char buffer[MAXMSG]; // String buffer.
-      getAttribute(attr, "LINEINDEX", buffer);
-      int lineindex    = atoi(buffer);
-      if (lineindex<0) {
-	xmlparsedata->status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmlparsedata->status);
-	return;
-      }
-      getAttribute(attr, "READOUTINDEX", buffer);
-      int readoutindex = atoi(buffer);
-      if (readoutindex<0) {
-	xmlparsedata->status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Negative index for readout line!\n", xmlparsedata->status);
-	return;
-      }
-      CLReadoutLine* clreadoutline=newCLReadoutLine(lineindex,
-						    readoutindex,
-						    &xmlparsedata->status);
-      append2ClockList(xmlparsedata->det->clocklist, CL_READOUTLINE, 
-		       clreadoutline, &xmlparsedata->status);
-      
-    } else { // Elements with independent attributes.
-
-      // Loop over the different attributes.
-      int i;
-      for (i=0; attr[i]; i+=2) {
-      
-	// Convert the attribute to an upper case string.
-	strcpy(Uattribute, attr[i]);
-	strtoupper(Uattribute);
-
-	// Check the XML element name.
-	if (!strcmp(Uelement, "DIMENSIONS")) {
-	  if (!strcmp(Uattribute, "XWIDTH")) {
-	    xmlparsedata->det->pixgrid->xwidth = atoi(attr[i+1]);
-	  } else if (!strcmp(Uattribute, "YWIDTH")) {
-	    xmlparsedata->det->pixgrid->ywidth = atoi(attr[i+1]);
-	  }
-	}
-      
-	else if (!strcmp(Uelement, "WCS")) {
-	  if (!strcmp(Uattribute, "XRPIX")) {
-	    xmlparsedata->det->pixgrid->xrpix = (float)atof(attr[i+1]);
-	  } else if (!strcmp(Uattribute, "YRPIX")) {
-	    xmlparsedata->det->pixgrid->yrpix = (float)atof(attr[i+1]);
-	  } else if (!strcmp(Uattribute, "XRVAL")) {
-	    xmlparsedata->det->pixgrid->xrval = (float)atof(attr[i+1]);
-	  } else if (!strcmp(Uattribute, "YRVAL")) {
-	    xmlparsedata->det->pixgrid->yrval = (float)atof(attr[i+1]);
-	  } else if (!strcmp(Uattribute, "XDELT")) {
-	    xmlparsedata->det->pixgrid->xdelt = (float)atof(attr[i+1]);
-	  } else if (!strcmp(Uattribute, "YDELT")) {
-	    xmlparsedata->det->pixgrid->ydelt = (float)atof(attr[i+1]);
-	  }
-	}
-	
-	else if (!strcmp(Uelement, "PIXELBORDER")) {
-	  if (!strcmp(Uattribute, "X")) {
-	    xmlparsedata->det->pixgrid->xborder = (float)atof(attr[i+1]);
-	  } else if (!strcmp(Uattribute, "Y")) {
-	    xmlparsedata->det->pixgrid->yborder = (float)atof(attr[i+1]);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "RMF")) {
-	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the detector response file (RSP/RMF).
-	    char buffer[MAXFILENAME];
-	    strcpy(buffer, xmlparsedata->det->filepath);
-	    strcat(buffer, attr[i+1]);
-	    xmlparsedata->det->rmf = loadRMF(buffer, &xmlparsedata->status);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "ARF")) {
-	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the detector ARF.
-	    char buffer[MAXFILENAME];
-	    strcpy(buffer, xmlparsedata->det->filepath);
-	    strcat(buffer, attr[i+1]);
-	    xmlparsedata->det->arf = loadARF(buffer, &xmlparsedata->status);
-	  }
-	}
-      
-	else if (!strcmp(Uelement, "PSF")) {
-	  // The focal length must be specified before load the PSF.
-	  // Check if this is the case.
-	  if (xmlparsedata->det->focal_length<=0.) {
-	    xmlparsedata->status=EXIT_FAILURE;
-	    HD_ERROR_THROW("Error: Telescope focal length must be specified "
-			   "before loading the PSF!\n", xmlparsedata->status);
-	    return;
-	  }
-	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the PSF.
-	    char buffer[MAXFILENAME];
-	    strcpy(buffer, xmlparsedata->det->filepath);
-	    strcat(buffer, attr[i+1]);
-	    xmlparsedata->det->psf = newPSF(buffer,
-					    xmlparsedata->det->focal_length,
-					    &xmlparsedata->status);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "CODEDMASK")) {
-	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the CodedMask.
-	    char buffer[MAXFILENAME];
-	    strcpy(buffer, xmlparsedata->det->filepath);
-	    strcat(buffer, attr[i+1]);
-	    xmlparsedata->det->coded_mask = 
-	      getCodedMaskFromFile(buffer, &xmlparsedata->status);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "VIGNETTING")) {
-	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the Vignetting function.
-	    char buffer[MAXFILENAME];
-	    strcpy(buffer, xmlparsedata->det->filepath);
-	    strcat(buffer, attr[i+1]);
-	    xmlparsedata->det->vignetting = newVignetting(buffer, &xmlparsedata->status);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "FOCALLENGTH")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->focal_length = (float)atof(attr[i+1]);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "FOV")) {
-	  if (!strcmp(Uattribute, "DIAMETER")) {
-	    xmlparsedata->det->fov_diameter = (float)(atof(attr[i+1])*M_PI/180.);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "CTE")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->cte = (float)atof(attr[i+1]);
-	  }
-	}
-	
-	else if (!strcmp(Uelement, "BADPIXMAP")) {
-	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the detector bad pixel map.
-	    char buffer[MAXFILENAME];
-	    strcpy(buffer, xmlparsedata->det->filepath);
-	    strcat(buffer, attr[i+1]);
-	    xmlparsedata->det->badpixmap = loadBadPixMap(buffer, &xmlparsedata->status);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "EROBACKGROUND")) {
-	  if (!strcmp(Uattribute, "FILENAME")) {
-	    // Load the detector background model for
-	    // cosmic rays.
-	    char buffer[MAXFILENAME];
-	    strcpy(buffer, xmlparsedata->det->filepath);
-	    strcat(buffer, attr[i+1]);
-	    eroBkgInitialize(buffer, &xmlparsedata->status);
-	    xmlparsedata->det->erobackground = 1;
-	  }
-	}
-
-	else if (!strcmp(Uelement, "SPLIT")) {
-	  if (!strcmp(Uattribute, "TYPE")) {
-	    strcpy(Uvalue, attr[i+1]);
-	    strtoupper(Uvalue);
-	    if (!strcmp(Uvalue, "NONE")) {
-	      xmlparsedata->det->split->type = GS_NONE;
-	    } else if (!strcmp(Uvalue, "GAUSS")) {
-	      xmlparsedata->det->split->type = GS_GAUSS;
-	    } else if (!strcmp(Uvalue, "EXPONENTIAL")) {
-	      xmlparsedata->det->split->type = GS_EXPONENTIAL;
-	    }
-	  } else if (!strcmp(Uattribute, "PAR1")) {
-	    xmlparsedata->det->split->par1 = atof(attr[i+1]);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "READOUT")) {
-	  if (!strcmp(Uattribute, "MODE")) {
-	    strcpy(Uvalue, attr[i+1]);
-	    strtoupper(Uvalue);
-	    if (!strcmp(Uvalue, "TIME")) {
-	      xmlparsedata->det->readout_trigger = GENDET_TIME_TRIGGERED;
-	    } else if (!strcmp(Uvalue, "EVENT")) {
-	      xmlparsedata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
-	    }
-	  }
-	}
-      
-	else if (!strcmp(Uelement, "WAIT")) {
-	  if (!strcmp(Uattribute, "TIME")) {
-	    CLWait* clwait = newCLWait(atof(attr[i+1]), &xmlparsedata->status);
-	    append2ClockList(xmlparsedata->det->clocklist, CL_WAIT, 
-			     clwait, &xmlparsedata->status);
-	  }
-	}
-	
-	else if (!strcmp(Uelement, "CLEARLINE")) {
-	  if (!strcmp(Uattribute, "LINEINDEX")) {
-	    CLClearLine* clclearline = newCLClearLine(atoi(attr[i+1]), 
-						      &xmlparsedata->status);
-	    append2ClockList(xmlparsedata->det->clocklist, CL_CLEARLINE, 
-			     clclearline, &xmlparsedata->status);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->threshold_readout_lo_keV = (float)atof(attr[i+1]);
-	    headas_chat(3, "lower readout threshold: %.3lf keV\n", 
-			xmlparsedata->det->threshold_readout_lo_keV);
-	  }
-	}
-	
-	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_KEV")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->threshold_readout_up_keV = (float)atof(attr[i+1]);
-	    headas_chat(3, "upper readout threshold: %.3lf keV\n", 
-			xmlparsedata->det->threshold_readout_up_keV);
-	  }
-	}
-	
-	else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_PHA")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->threshold_readout_lo_PHA = (long)atoi(attr[i+1]);
-	    headas_chat(3, "lower readout threshold: %ld PHA\n", 
-			xmlparsedata->det->threshold_readout_lo_PHA);
-	  }
-	}
-	
-	else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_PHA")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->threshold_readout_up_PHA = (long)atoi(attr[i+1]);
-	    headas_chat(3, "upper readout threshold: %ld PHA\n", 
-			xmlparsedata->det->threshold_readout_up_PHA);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->threshold_event_lo_keV = (float)atof(attr[i+1]);
-	    headas_chat(3, "lower event threshold: %.3lf keV\n", 
-			xmlparsedata->det->threshold_event_lo_keV);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_KEV")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->threshold_split_lo_keV = (float)atof(attr[i+1]);
-	    headas_chat(3, "lower split threshold: %.3lf keV\n", 
-			xmlparsedata->det->threshold_split_lo_keV);
-	  }
-	}
-
-	else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
-	  if (!strcmp(Uattribute, "VALUE")) {
-	    xmlparsedata->det->threshold_split_lo_fraction = (float)atof(attr[i+1]);
-	    headas_chat(3, "lower split threshold: %.1lf %%\n", 
-			xmlparsedata->det->threshold_split_lo_fraction*100.);
-	  }
-	}
-
-	if (EXIT_SUCCESS!=xmlparsedata->status) return;
-      } 
-      // END of loop over different attributes.
+    int lineindex=getXMLAttributeInt(attr, "LINEINDEX");
+    if (lineindex<0) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("negative index for readout line");
+      return;
     }
-    // END of elements with independent attributes
+    int readoutindex=getXMLAttributeInt(attr, "READOUTINDEX");
+    if (readoutindex<0) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("negative index for readout line");
+      return;
+    }
+    CLReadoutLine* clreadoutline=
+      newCLReadoutLine(lineindex, readoutindex, &xmlparsedata->status);
+    append2ClockList(xmlparsedata->det->clocklist, CL_READOUTLINE, 
+		     clreadoutline, &xmlparsedata->status);
+      
+  } else if (!strcmp(Uelement, "DIMENSIONS")) {
+
+    xmlparsedata->det->pixgrid->xwidth=getXMLAttributeInt(attr, "XWIDTH");
+    xmlparsedata->det->pixgrid->ywidth=getXMLAttributeInt(attr, "YWIDTH");
+      
+  } else if (!strcmp(Uelement, "WCS")) {
+
+    xmlparsedata->det->pixgrid->xrpix=getXMLAttributeFloat(attr, "XRPIX");
+    xmlparsedata->det->pixgrid->yrpix=getXMLAttributeFloat(attr, "YRPIX");
+    xmlparsedata->det->pixgrid->xrval=getXMLAttributeFloat(attr, "XRVAL");
+    xmlparsedata->det->pixgrid->yrval=getXMLAttributeFloat(attr, "YRVAL");
+    xmlparsedata->det->pixgrid->xdelt=getXMLAttributeFloat(attr, "XDELT");
+    xmlparsedata->det->pixgrid->ydelt=getXMLAttributeFloat(attr, "YDELT");
+	
+  } else if (!strcmp(Uelement, "PIXELBORDER")) {
+
+    xmlparsedata->det->pixgrid->xborder=getXMLAttributeFloat(attr, "X");
+    xmlparsedata->det->pixgrid->yborder=getXMLAttributeFloat(attr, "Y");
+    
+  } else if (!strcmp(Uelement, "RMF")) {
+
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->det->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->det->rmf=loadRMF(filepathname, &xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "ARF")) {
+
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->det->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->det->arf=loadARF(filepathname, &xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "PSF")) {
+    
+    // The focal length must be specified before load the PSF.
+    // Check if this is the case.
+    if (xmlparsedata->det->focal_length<=0.) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("telescope focal length must be specified "
+		 "before loading the PSF");
+      return;
+    }
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->det->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->det->psf= 
+      newPSF(filepathname, xmlparsedata->det->focal_length, 
+	     &xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "CODEDMASK")) {
+
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->det->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->det->coded_mask = 
+      getCodedMaskFromFile(filepathname, &xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "VIGNETTING")) {
+
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->det->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->det->vignetting =
+      newVignetting(filepathname, &xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "FOCALLENGTH")) {
+    
+    xmlparsedata->det->focal_length=getXMLAttributeFloat(attr, "VALUE");
+
+  } else if (!strcmp(Uelement, "FOV")) {
+
+    xmlparsedata->det->fov_diameter=getXMLAttributeFloat(attr, "DIAMETER")*M_PI/180.;
+
+  } else if (!strcmp(Uelement, "CTE")) {
+    xmlparsedata->det->cte=getXMLAttributeFloat(attr, "VALUE");
+	
+  } else if (!strcmp(Uelement, "BADPIXMAP")) {
+
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->det->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->det->badpixmap = 
+      loadBadPixMap(filepathname, &xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "EROBACKGROUND")) {
+
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->det->filepath);
+    strcat(filepathname, filename);
+    eroBkgInitialize(filepathname, &xmlparsedata->status);
+    xmlparsedata->det->erobackground=1;
+
+  } else if (!strcmp(Uelement, "SPLIT")) {
+
+    char type[MAXMSG];
+    getXMLAttributeString(attr, "TYPE", type);
+    strtoupper(type);
+    if (!strcmp(type, "NONE")) {
+      xmlparsedata->det->split->type = GS_NONE;
+    } else if (!strcmp(type, "GAUSS")) {
+      xmlparsedata->det->split->type = GS_GAUSS;
+    } else if (!strcmp(type, "EXPONENTIAL")) {
+      xmlparsedata->det->split->type = GS_EXPONENTIAL;
+    }
+    xmlparsedata->det->split->par1=getXMLAttributeFloat(attr, "PAR1");
+
+  } else if (!strcmp(Uelement, "READOUT")) {
+
+    char mode[MAXMSG];
+    getXMLAttributeString(attr, "MODE", mode);
+    strtoupper(mode);
+    if (!strcmp(mode, "TIME")) {
+      xmlparsedata->det->readout_trigger = GENDET_TIME_TRIGGERED;
+    } else if (!strcmp(mode, "EVENT")) {
+      xmlparsedata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
+    }
+      
+  } else if (!strcmp(Uelement, "WAIT")) {
+    
+    float waittime=getXMLAttributeFloat(attr, "TIME");
+    CLWait* clwait=newCLWait(waittime, &xmlparsedata->status);
+    append2ClockList(xmlparsedata->det->clocklist, CL_WAIT, 
+		     clwait, &xmlparsedata->status);
+	
+  } else if (!strcmp(Uelement, "CLEARLINE")) {
+
+    int lineindex=getXMLAttributeInt(attr, "LINEINDEX");
+    CLClearLine* clclearline=newCLClearLine(lineindex, &xmlparsedata->status);
+    append2ClockList(xmlparsedata->det->clocklist, CL_CLEARLINE, 
+		     clclearline, &xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
+
+    xmlparsedata->det->threshold_readout_lo_keV = 
+      getXMLAttributeFloat(attr, "VALUE");
+    headas_chat(3, "lower readout threshold: %.3lf keV\n", 
+		xmlparsedata->det->threshold_readout_lo_keV);
+	
+  } else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_KEV")) {
+
+    xmlparsedata->det->threshold_readout_up_keV = 
+      getXMLAttributeFloat(attr, "VALUE");
+    headas_chat(3, "upper readout threshold: %.3lf keV\n", 
+		xmlparsedata->det->threshold_readout_up_keV);
+
+  } else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_PHA")) {
+
+    xmlparsedata->det->threshold_readout_lo_PHA = 
+      getXMLAttributeLong(attr, "VALUE");
+    headas_chat(3, "lower readout threshold: %ld PHA\n", 
+		xmlparsedata->det->threshold_readout_lo_PHA);
+
+  } else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_PHA")) {
+
+    xmlparsedata->det->threshold_readout_up_PHA = 
+      getXMLAttributeLong(attr, "VALUE");
+    headas_chat(3, "upper readout threshold: %ld PHA\n", 
+		xmlparsedata->det->threshold_readout_up_PHA);
+
+  } else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
+
+    xmlparsedata->det->threshold_event_lo_keV = 
+      getXMLAttributeFloat(attr, "VALUE");
+    headas_chat(3, "lower event threshold: %.3lf keV\n", 
+		xmlparsedata->det->threshold_event_lo_keV);
+
+  } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_KEV")) {
+
+    xmlparsedata->det->threshold_split_lo_keV =
+      getXMLAttributeFloat(attr, "VALUE");
+    headas_chat(3, "lower split threshold: %.3lf keV\n", 
+		xmlparsedata->det->threshold_split_lo_keV);
+
+  } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
+
+    xmlparsedata->det->threshold_split_lo_fraction = 
+      getXMLAttributeFloat(attr, "VALUE");
+    headas_chat(3, "lower split threshold: %.1lf %%\n", 
+		xmlparsedata->det->threshold_split_lo_fraction*100.);
+
   }
-  // END of elements with attributes.
+  if (EXIT_SUCCESS!=xmlparsedata->status) return;
 }
 
 

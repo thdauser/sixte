@@ -63,4 +63,18 @@ void addString2XMLBuffer(struct XMLBuffer* const buffer,
 void expandXML(struct XMLBuffer* const buffer, int* const status);
 
 
+/** Read the string value of an XML element. */
+void getXMLAttributeString(const char** attr, const char* const key, 
+			   char* const value);
+
+/** Read the float value of an XML element. */
+float getXMLAttributeFloat(const char** attr, const char* const key);
+
+/** Read the integer value of an XML element. */
+int getXMLAttributeInt(const char** attr, const char* const key);
+
+/** Read the long value of an XML element. */
+long getXMLAttributeLong(const char** attr, const char* const key);
+
+
 #endif /* XMLBUFFER_H */
