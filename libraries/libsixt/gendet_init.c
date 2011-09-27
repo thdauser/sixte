@@ -37,14 +37,14 @@ void parseGenDetXML(GenDet* const det,
   headas_chat(5, "read detector setup from XML file '%s' ...\n", filename);
 
   // Set initial values before parsing the parameters from the XML file.
-  det->pixgrid->xwidth =-1;
-  det->pixgrid->ywidth =-1;
-  det->pixgrid->xrpix  =-1.;
-  det->pixgrid->yrpix  =-1.;
-  det->pixgrid->xrval  =-1.;
-  det->pixgrid->yrval  =-1.;
-  det->pixgrid->xdelt  =-1.;
-  det->pixgrid->ydelt  =-1.;
+  det->pixgrid->xwidth = 0;
+  det->pixgrid->ywidth = 0;
+  det->pixgrid->xrpix  = 0.;
+  det->pixgrid->yrpix  = 0.;
+  det->pixgrid->xrval  = 0.;
+  det->pixgrid->yrval  = 0.;
+  det->pixgrid->xdelt  = 0.;
+  det->pixgrid->ydelt  = 0.;
   det->pixgrid->xborder= 0.;
   det->pixgrid->yborder= 0.;
   det->readout_trigger = 0;
@@ -111,13 +111,13 @@ void parseGenDetXML(GenDet* const det,
   XML_Parser parser = XML_ParserCreate(NULL);
   if (NULL==parser) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not allocate memory for XML parser!\n", *status);
+    SIXT_ERROR("could not allocate memory for XML parser");
     return;
   }
 
   // Set data that is passed to the handler functions.
   struct XMLParseData xmlparsedata = {
-    .det   = det,
+    .det    = det,
     .status = EXIT_SUCCESS
   };
   XML_SetUserData(parser, &xmlparsedata);
@@ -134,7 +134,7 @@ void parseGenDetXML(GenDet* const det,
     sprintf(msg, "Error: Parsing XML file '%s' failed:\n%s\n", 
 	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
     printf("%s", xmlbuffer->text);
-    HD_ERROR_THROW(msg, *status);
+    SIXT_ERROR(msg);
     return;
   }
   // Check for errors.
@@ -153,89 +153,61 @@ void parseGenDetXML(GenDet* const det,
 
   // Check if all required parameters have been read successfully from 
   // the XML file.
-  if (-1==det->pixgrid->xwidth) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for x-width of GenDet pixel array in XML file");
-    return;
+  if (0==det->pixgrid->xwidth) {
+    headas_printf("*** warning: no specification of x-width of pixel array");
   }  
-  if (-1==det->pixgrid->ywidth) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for y-width of GenDet pixel array in XML file");
-    return;
+  if (0==det->pixgrid->ywidth) {
+    headas_printf("*** warning: no specification of y-width of pixel array");
   }
 
-  if (0>det->pixgrid->xrpix) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for x reference pixel of GenDet in XML file");
-    return;    
+  if (0.==det->pixgrid->xrpix) {
+    headas_printf("*** warning: no specification of x reference pixel");
   }
-  if (0>det->pixgrid->yrpix) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for y reference pixel of GenDet in XML file");
-    return;    
+  if (0.==det->pixgrid->yrpix) {
+    headas_printf("*** warning: no specification of y reference pixel");
   }
 
-  if (0>det->pixgrid->xrval) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for x reference value of GenDet in XML file");
-    return;    
+  if (0.==det->pixgrid->xrval) {
+    headas_printf("*** warning: no specification of x reference value");
   }
-  if (0>det->pixgrid->yrval) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for y reference value of GenDet in XML file");
-    return;    
+  if (0.==det->pixgrid->yrval) {
+    headas_printf("*** warning: no specification of y reference value");
   }
 
-  if (0>det->pixgrid->xdelt) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for x pixel width of GenDet in XML file");
-    return;    
+  if (0.==det->pixgrid->xdelt) {
+    headas_printf("*** warning: no specification of pixel x-width");
   }
-  if (0>det->pixgrid->ydelt) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for y pixel width of GenDet in XML file");
-    return;    
+  if (0.==det->pixgrid->ydelt) {
+    headas_printf("*** warning: no specification of pixel y-width");
   }
   
   if (0.>det->pixgrid->xborder) {
     *status = EXIT_FAILURE;
-    SIXT_ERROR("invalid specification for x-border of pixels in XML file");
+    SIXT_ERROR("invalid specification of x-border of pixels");
     return;    
   }
   if (0.>det->pixgrid->yborder) {
     *status = EXIT_FAILURE;
-    SIXT_ERROR("invalid specification for y-border of pixels in XML file");
+    SIXT_ERROR("invalid specification of y-border of pixels");
     return;    
   }
 
   if (NULL==det->rmf) {
-    headas_printf("*** warning: no specification for response file (RMF/RSP) "
-		  "in XML definition ***");
+    headas_printf("*** warning: no specification of response file (RMF/RSP)");
   }
-
   if (NULL==det->arf) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for ARF in XML file");
-    return;    
+    headas_printf("*** warning: no specification of ARF");
   }
 
-  if (0.>=det->focal_length) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for the focal length of the telescope "
-	       "in the XML file");
-    return;    
+  if (0.==det->focal_length) {
+    headas_printf("*** warning: no specification of the focal length of the telescope");
   }
-  if (0.>=det->fov_diameter) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for the diameter of the telescope "
-	       "FoV in the XML file");
-    return;    
+  if (0.==det->fov_diameter) {
+    headas_printf("*** warning: no specification of the diameter of the telescope FoV");
   }
 
   if (0==det->readout_trigger) {
-    *status = EXIT_FAILURE;
-    SIXT_ERROR("no specification for the readout trigger of GenDet in the XML file");
-    return;
+    headas_printf("*** warning: no specification of the readout trigger");
   }
 
   if (GS_EXPONENTIAL==det->split->type) {
