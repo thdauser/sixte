@@ -128,7 +128,7 @@ int runsixt_main()
       ac=getAttitudeCatalog(&status);
       CHECK_STATUS_BREAK(status);
 
-      ac->entry=(AttitudeEntry*)malloc(2*sizeof(AttitudeEntry));
+      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status = EXIT_FAILURE;
 	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
@@ -136,19 +136,13 @@ int runsixt_main()
       }
 
       // Set the values of the entries.
-      ac->nentries=2;
+      ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[1] = defaultAttitudeEntry();
-      
       ac->entry[0].time = t0;
-      ac->entry[1].time = t0+par.Exposure;
-
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
-      ac->entry[1].nz = ac->entry[0].nz;
 
       Vector vz = {0., 0., 1.};
       ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
-      ac->entry[1].nx = ac->entry[0].nx;
 
     } else {
       // Load the attitude from the given file.

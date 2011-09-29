@@ -181,6 +181,12 @@ static void setAttitudeCatalogCurrentEntry(AttitudeCatalog* const ac,
 					   const double time,
 					   int* const status)
 {
+  // Check if this is a pointing attitude with only one data point.
+  if (1==ac->nentries) {
+    ac->current_entry=0;
+    return;
+  }
+
   // Check if the requested time lies within the current time bin.
   while (time < ac->entry[ac->current_entry].time) {
     // Check if the beginning of the AttitudeCatalog is reached.
@@ -216,19 +222,25 @@ Vector getTelescopeNz(AttitudeCatalog* const ac,
 {
   Vector nz = {.x=0., .y=0., .z=0.};
  
-  // Find the appropriate entry in the AttitudeCatalog for the 
-  // requested time.
-  setAttitudeCatalogCurrentEntry(ac, time, status);
-  CHECK_STATUS_RET(*status,nz);
+  // Check if survey attitude.
+  if (ac->nentries>1) {
+    // Find the appropriate entry in the AttitudeCatalog for the 
+    // requested time.
+    setAttitudeCatalogCurrentEntry(ac, time, status);
+    CHECK_STATUS_RET(*status,nz);
    
-  // The requested time lies within the current time bin.
-  // Interpolation:
-  nz=interpolateCircleVector(ac->entry[ac->current_entry].nz, 
-			     ac->entry[ac->current_entry+1].nz, 
-			     (time-ac->entry[ac->current_entry].time)/
-			     (ac->entry[ac->current_entry+1].time-
-			      ac->entry[ac->current_entry].time));
-  
+    // The requested time lies within the current time bin.
+    // Interpolation:
+    nz=interpolateCircleVector(ac->entry[ac->current_entry].nz, 
+			       ac->entry[ac->current_entry+1].nz, 
+			       (time-ac->entry[ac->current_entry].time)/
+			       (ac->entry[ac->current_entry+1].time-
+				ac->entry[ac->current_entry].time));
+
+  } else { // Pointing attitude.
+    nz=ac->entry[0].nz;
+  }
+    
   return(nz);
 }
 
@@ -249,7 +261,7 @@ void getTelescopeAxes(AttitudeCatalog* const ac,
   // Check if this is a pointed observation.
   int pointed=0;
   Vector dnz;
-  if (ac->nentries==1) {
+  if (1==ac->nentries) {
     // There is only one entry in the AttitudeCatalog.
     pointed=1;
   } else {
@@ -303,7 +315,6 @@ void getTelescopeAxes(AttitudeCatalog* const ac,
   ny->x = - x1.x * sin(roll_angle) + y1.x * cos(roll_angle);
   ny->y = - x1.y * sin(roll_angle) + y1.y * cos(roll_angle);
   ny->z = - x1.z * sin(roll_angle) + y1.z * cos(roll_angle);
-
 }
 
 
@@ -311,18 +322,25 @@ float getRollAngle(AttitudeCatalog* const ac,
 		   const double time, 
 		   int* const status)
 {
-  // Find the appropriate entry in the AttitudeCatalog for the 
-  // requested time.
-  setAttitudeCatalogCurrentEntry(ac, time, status);
-  CHECK_STATUS_RET(*status,0.);
+  // Check if survey attitude.
+  if (ac->nentries>1) {
+
+    // Find the appropriate entry in the AttitudeCatalog for the 
+    // requested time.
+    setAttitudeCatalogCurrentEntry(ac, time, status);
+    CHECK_STATUS_RET(*status,0.);
     
-  // The requested time lies within the current time bin.
-  // Interpolation:
-  double fraction = 
-    (time-ac->entry[ac->current_entry].time)/
-    (ac->entry[ac->current_entry+1].time-ac->entry[ac->current_entry].time);
-  return(ac->entry[ac->current_entry  ].roll_angle*(1.-fraction) + 
-	 ac->entry[ac->current_entry+1].roll_angle*    fraction );
+    // The requested time lies within the current time bin.
+    // Interpolation:
+    double fraction = 
+      (time-ac->entry[ac->current_entry].time)/
+      (ac->entry[ac->current_entry+1].time-ac->entry[ac->current_entry].time);
+    return(ac->entry[ac->current_entry  ].roll_angle*(1.-fraction) + 
+	   ac->entry[ac->current_entry+1].roll_angle*    fraction );
+
+  } else { // Pointing attitude.
+    return(ac->entry[0].roll_angle);
+  }
 }
 
 
