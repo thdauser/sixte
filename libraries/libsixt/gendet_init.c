@@ -154,31 +154,31 @@ void parseGenDetXML(GenDet* const det,
   // Check if all required parameters have been read successfully from 
   // the XML file.
   if (0==det->pixgrid->xwidth) {
-    headas_printf("*** warning: no specification of x-width of pixel array");
+    headas_printf("*** warning: no specification of x-width of pixel array\n");
   }  
   if (0==det->pixgrid->ywidth) {
-    headas_printf("*** warning: no specification of y-width of pixel array");
+    headas_printf("*** warning: no specification of y-width of pixel array\n");
   }
 
   if (0.==det->pixgrid->xrpix) {
-    headas_printf("*** warning: no specification of x reference pixel");
+    headas_printf("*** warning: no specification of x reference pixel\n");
   }
   if (0.==det->pixgrid->yrpix) {
-    headas_printf("*** warning: no specification of y reference pixel");
+    headas_printf("*** warning: no specification of y reference pixel\n");
   }
 
   if (0.==det->pixgrid->xrval) {
-    headas_printf("*** warning: no specification of x reference value");
+    headas_printf("*** warning: no specification of x reference value\n");
   }
   if (0.==det->pixgrid->yrval) {
-    headas_printf("*** warning: no specification of y reference value");
+    headas_printf("*** warning: no specification of y reference value\n");
   }
 
   if (0.==det->pixgrid->xdelt) {
-    headas_printf("*** warning: no specification of pixel x-width");
+    headas_printf("*** warning: no specification of pixel x-width\n");
   }
   if (0.==det->pixgrid->ydelt) {
-    headas_printf("*** warning: no specification of pixel y-width");
+    headas_printf("*** warning: no specification of pixel y-width\n");
   }
   
   if (0.>det->pixgrid->xborder) {
@@ -193,21 +193,21 @@ void parseGenDetXML(GenDet* const det,
   }
 
   if (NULL==det->rmf) {
-    headas_printf("*** warning: no specification of response file (RMF/RSP)");
+    headas_printf("*** warning: no specification of response file (RMF/RSP)\n");
   }
   if (NULL==det->arf) {
-    headas_printf("*** warning: no specification of ARF");
+    headas_printf("*** warning: no specification of ARF\n");
   }
 
   if (0.==det->focal_length) {
-    headas_printf("*** warning: no specification of the focal length of the telescope");
+    headas_printf("*** warning: no specification of the focal length of the telescope\n");
   }
   if (0.==det->fov_diameter) {
-    headas_printf("*** warning: no specification of the diameter of the telescope FoV");
+    headas_printf("*** warning: no specification of the diameter of the telescope FoV\n");
   }
 
   if (0==det->readout_trigger) {
-    headas_printf("*** warning: no specification of the readout trigger");
+    headas_printf("*** warning: no specification of the readout trigger\n");
   }
 
   if (GS_EXPONENTIAL==det->split->type) {
