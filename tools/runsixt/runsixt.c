@@ -253,7 +253,7 @@ int runsixt_main()
     freeImpactListFile(&ilf, &status);
 
     // Perform a pattern analysis, only if split events are simulated.
-    if (NULL!=det->split) {
+    if (GS_NONE!=det->split->type) {
       // Open the output pattern list file.
       patf=openNewPatternFile(patternlist_filename, &status);
       CHECK_STATUS_BREAK(status);
@@ -278,7 +278,7 @@ int runsixt_main()
       freeEventListFile(&elf, &status);
 
     // Run the event projection.
-    if (NULL!=det->split) { // TODO Also do this, if no split events are simulated.
+    if (GS_NONE!=det->split->type) { // TODO Also do this, if no split events are simulated.
       headas_chat(5, "start sky projection ...\n");
       phproj(det, ac, patf, t0, par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
