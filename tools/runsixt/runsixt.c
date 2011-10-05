@@ -33,7 +33,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -251,34 +251,39 @@ int runsixt_main()
 
     // Close the impact list file in order to save memory.
     freeImpactListFile(&ilf, &status);
-    
-    // Open the output pattern list file.
-    patf=openNewPatternFile(patternlist_filename, &status);
-    CHECK_STATUS_BREAK(status);
 
-    // Set FITS header keywords.
-    fits_update_key(patf->fptr, TSTRING, "ATTITUDE", 
-		    par.Attitude, "attitude file", &status);
-    fits_update_key(patf->fptr, TDOUBLE, "MJDREF", 
-		    &par.MJDREF, "reference MJD", &status);
-    dbuffer=0.;
-    fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", 
+    // Perform a pattern analysis, only if split events are simulated.
+    if (NULL!=det->split) {
+      // Open the output pattern list file.
+      patf=openNewPatternFile(patternlist_filename, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Set FITS header keywords.
+      fits_update_key(patf->fptr, TSTRING, "ATTITUDE", 
+		      par.Attitude, "attitude file", &status);
+      fits_update_key(patf->fptr, TDOUBLE, "MJDREF", 
+		      &par.MJDREF, "reference MJD", &status);
+      dbuffer=0.;
+      fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", 
 		    &dbuffer, "time offset", &status);
-    CHECK_STATUS_BREAK(status);
+      CHECK_STATUS_BREAK(status);
 
-    // Pattern analysis.
-    headas_chat(3, "start event pattern analysis ...\n");
-    phpat(det, elf, patf, &status);
-    CHECK_STATUS_BREAK(status);
+      // Pattern analysis.
+      headas_chat(3, "start event pattern analysis ...\n");
+      phpat(det, elf, patf, &status);
+      CHECK_STATUS_BREAK(status);
+    }
     
-    // Close the event list file in order to save memory.
-    freeEventListFile(&elf, &status);
+      // Close the event list file in order to save memory.
+      freeEventListFile(&elf, &status);
 
     // Run the event projection.
-    headas_chat(5, "start sky projection ...\n");
-    phproj(det, ac, patf, t0, par.Exposure, &status);
-    CHECK_STATUS_BREAK(status);
+    if (NULL!=det->split) { // TODO Also do this, if no split events are simulated.
+      headas_chat(5, "start sky projection ...\n");
+      phproj(det, ac, patf, t0, par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
 
+    }
 
     // --- End of simulation process ---
 
