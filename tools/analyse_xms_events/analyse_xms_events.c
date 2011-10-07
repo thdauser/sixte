@@ -120,6 +120,9 @@ int analyse_xms_events_main() {
       addPattern2File(plf, pattern, &status);	  
       CHECK_STATUS_BREAK(status);
 
+      // Release memory.
+      freePattern(&pattern);
+
     } // End of loop over all events in the event file
     CHECK_STATUS_BREAK(status);
 
