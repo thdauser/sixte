@@ -191,19 +191,19 @@ int addGenDetPhotonImpact(GenDet* const det,
     // NOTE: In this simulation the collected charge is represented by the nominal
     // photon energy [keV], which corresponds to the PHA channel according 
     // to the EBOUNDS table.
-    energy = getEBOUNDSEnergy(channel, det->rmf, 0);
+    energy=getEBOUNDSEnergy(channel, det->rmf, 0);
     assert(energy>=0.);
 
   } else {
     // The detector has no particular RMF. Therefore we directly
     // use the energy of the incident photon.
-    energy = impact->energy;
+    energy=impact->energy;
   }
 
   // Create split events.
-  int npixels = makeGenSplitEvents(det, &impact->position, energy, 
-				   impact->ph_id, impact->src_id, 
-				   impact->time, elf, status);
+  int npixels=makeGenSplitEvents(det, &impact->position, energy, 
+				 impact->ph_id, impact->src_id, 
+				 impact->time, elf, status);
   CHECK_STATUS_RET(*status, npixels);
 
   // Return the number of affected pixels.
@@ -463,9 +463,9 @@ GenSplit* newGenSplit(int* const status)
   // Initialize all pointers with NULL.
 
   // Set default values.
-  split->type = GS_NONE;
-  split->par1 = 0.;
-  split->par2 = 0.;
+  split->type=GS_NONE;
+  split->par1=0.;
+  split->par2=0.;
 
   return(split);
 }
@@ -523,8 +523,8 @@ int makeGenSplitEvents(GenDet* const det,
     npixels=1;
 
     // Determine the affected detector line and column.
-    x[0] = getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0] = getGenDetAffectedLine  (det->pixgrid, position->y);
+    x[0]=getGenDetAffectedColumn(det->pixgrid, position->x);
+    y[0]=getGenDetAffectedLine  (det->pixgrid, position->y);
 
     // Check if the returned values are valid line and column indices.
     if ((x[0]<0) || (y[0]<0)) {
@@ -532,21 +532,21 @@ int makeGenSplitEvents(GenDet* const det,
     }
     
     // The single pixel receives the total photon energy.
-    fraction[0] = 1.;
+    fraction[0]=1.;
     
   } else if (GS_GAUSS==det->split->type) {  
     // Gaussian split model.
 
     // Signal cloud sigma as a function of the photon energy.
-    const float ccsigma = 
-      det->split->par1 + det->split->par2 * sqrt(signal); 
+    const float ccsigma= 
+      det->split->par1 + det->split->par2*sqrt(signal);
 
     // Signal cloud size (3 sigma).
-    const float ccsize = ccsigma * 3.;
+    const float ccsize=ccsigma*3.;
 
     // Calculate pixel indices (integer) of the central affected pixel:
-    x[0] = getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0] = getGenDetAffectedLine  (det->pixgrid, position->y);
+    x[0]=getGenDetAffectedColumn(det->pixgrid, position->x);
+    y[0]=getGenDetAffectedLine  (det->pixgrid, position->y);
   
     // Check if the impact position lies inside the detector pixel array.
     if ((0>x[0]) || (0>y[0])) {

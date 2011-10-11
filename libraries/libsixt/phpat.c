@@ -137,6 +137,11 @@ void phpat(GenDet* const det,
 	    } else {
 	      split_threshold=det->threshold_split_lo_keV;
 	    }
+	    
+	    // Check if the split threshold is above the event threshold.
+	    if (split_threshold > det->threshold_event_lo_keV) {
+	      printf("*** warning: split threshold is above event threshold\n");
+	    }
 
 	    // Find all neighboring events above the split threshold.
  	    long kk;
@@ -147,7 +152,9 @@ void phpat(GenDet* const det,
 		  if (isNeighbor(neighborlist[kk], framelist[ll])) {
 
 		    // Check if its signal is below the split threshold.
-		    if (framelist[ll]->signal<split_threshold) continue;
+		    if (framelist[ll]->signal<split_threshold) {
+		      continue;
+		    }
 		    
 		    // Add the event to the neighbor list.
 		    if (nneighborlist>=maxnneighborlist) {
@@ -251,7 +258,11 @@ void phpat(GenDet* const det,
 	    // END of loop over all entries in the neighbor list.
 
 	    // Determine the PHA corresponding to the total signal.
-	    pattern->pha=getEBOUNDSChannel(pattern->signal, det->rmf);
+	    if (NULL!=det->rmf) {
+	      pattern->pha=getEBOUNDSChannel(pattern->signal, det->rmf);
+	    } else {
+	      pattern->pha=0;
+	    }
 
 	    // Check for pile-up.
 	    if (NPATTERNPHOTONS>=2) {
@@ -262,23 +273,23 @@ void phpat(GenDet* const det,
 
 	    // Determine the pattern type.
 	    // First assume that the pattern is invalid.
-	    pattern->type = -1; 
+	    pattern->type=-1; 
 	    // Border events are declared as invalid.
 	    if (0==border) {
 	      if (1==nneighborlist) {
 		// Single event.
-		pattern->type = 0;
+		pattern->type=0;
 
 	      } else if (2==nneighborlist) {
 		// Check for double types.
 		if (pattern->signals[1]>0.) {
-		  pattern->type = 1; // bottom
+		  pattern->type=1; // bottom
 		} else if (pattern->signals[3]>0.) {
-		  pattern->type = 2; // left
+		  pattern->type=2; // left
 		} else if (pattern->signals[7]>0.) {
-		  pattern->type = 3; // top
+		  pattern->type=3; // top
 		} else if (pattern->signals[5]>0.) {
-		  pattern->type = 4; // right
+		  pattern->type=4; // right
 		} 
 
 	      } else if (3==nneighborlist) {
@@ -286,16 +297,16 @@ void phpat(GenDet* const det,
 		if (pattern->signals[1]>0.) {
 		  // bottom
 		  if (pattern->signals[3]>0.) {
-		    pattern->type = 5; // bottom-left
+		    pattern->type=5; // bottom-left
 		  } else if (pattern->signals[5]>0.) {
-		    pattern->type = 6; // bottom-right
+		    pattern->type=6; // bottom-right
 		  }
 		} else if (pattern->signals[7]>0.) {
 		  // top
 		  if (pattern->signals[3]>0.) {
-		    pattern->type = 7; // top-left
+		    pattern->type=7; // top-left
 		  } else if (pattern->signals[5]>0.) {
-		    pattern->type = 8; // top-right
+		    pattern->type=8; // top-right
 		  }
 		}
 
@@ -304,22 +315,22 @@ void phpat(GenDet* const det,
 		if (pattern->signals[0]>0.) { // bottom-left
 		  if ((pattern->signals[1]>pattern->signals[0])&&
 		      (pattern->signals[3]>pattern->signals[0])) {
-		    pattern->type = 9; 
+		    pattern->type=9; 
 		  } 
 		} else if (pattern->signals[2]>0.) { // bottom-right
 		  if ((pattern->signals[1]>pattern->signals[2])&&
 		      (pattern->signals[5]>pattern->signals[2])) {
-		    pattern->type = 10;
+		    pattern->type=10;
 		  }
 		} else if (pattern->signals[6]>0.) { // top-left
 		  if ((pattern->signals[7]>pattern->signals[6])&&
 		      (pattern->signals[3]>pattern->signals[6])) {
-		    pattern->type = 11; 
+		    pattern->type=11; 
 		  }
 		} else if (pattern->signals[8]>0.) { // top-right
 		  if ((pattern->signals[7]>pattern->signals[8])&&
 		      (pattern->signals[5]>pattern->signals[8])) {
-		    pattern->type = 12; 
+		    pattern->type=12; 
 		  }
 		} 
 	      }
@@ -369,6 +380,7 @@ void phpat(GenDet* const det,
 	}
 	nframelist=0;
       }
+      // END of if new frame.
 
       // Append the new event to the frame list.
       if (NULL!=event) {
