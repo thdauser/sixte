@@ -245,7 +245,7 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       if (1==det->erobackground) {
 	// Get background events for the required time interval (has
 	// to be given in [s]).
-	eroBackgroundOutput* list = eroBkgGetBackgroundList(clwait->time);
+	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
 	int ii;
 	for(ii = 0; ii<list->numhits; ii++) {
 	  // Position of the event.

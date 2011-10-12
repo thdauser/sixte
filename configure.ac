@@ -18,7 +18,7 @@ AC_PROG_CC     # Search for a C-Compiler and store it in the Variable 'CC'.
 LT_INIT #([disable-shared]) #([shared]) 
 
 # Compiler Flags:
-# "-g -W -Wall -O0" for the compiler for debugging
+# "-g -W -Wall -O0" for debugging
 # "-g" to create debugging information (seems to be used automatically by autotools)
 # "-Werror" for the compiler to treat warnings as errors
 # "-pg" for the compiler and linker to include information for gprof (Profiler)

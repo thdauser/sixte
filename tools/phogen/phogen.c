@@ -19,7 +19,7 @@ int phogen_main()
   PhotonListFile* plf=NULL;
   
   // Error status.
-  int status = EXIT_SUCCESS;  
+  int status=EXIT_SUCCESS;  
 
   // Register HEATOOL.
   set_toolname("phogen");
