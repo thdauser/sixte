@@ -32,6 +32,8 @@ GenDet* newGenDet(const char* const filename, int* const status)
 
   // Set initial values.
   det->erobackground = 0;
+  det->frametime     = 0.;
+  det->anyphoton     = 0;
 
   // Get empty GenPixGrid.
   det->pixgrid = newGenPixGrid(status);
@@ -206,6 +208,9 @@ int addGenDetPhotonImpact(GenDet* const det,
 				 impact->time, elf, status);
   CHECK_STATUS_RET(*status, npixels);
 
+  // Set the flag that there has been a photon interaction.
+  det->anyphoton=1;
+
   // Return the number of affected pixels.
   return(npixels);
 }
@@ -234,8 +239,22 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       // currently in a wait status.
       break;
     case CL_NEWFRAME:
-      // No operation has to be performed. The clock list has
-      // internally increased the frame counter and readout time.
+      // The clock list has internally increased the frame counter and readout 
+      // time. 
+
+      // If there has been no photon interaction during the last frame
+      // and if no background model is activated, jump over the next empty frames
+      // until there is a new photon impact.
+      if (0==det->anyphoton) {
+	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
+	det->clocklist->time       +=nframes*det->frametime;
+	det->clocklist->frame      +=nframes;
+	det->clocklist->readout_time=det->clocklist->time;
+      }
+
+      // Reset the flag.
+      det->anyphoton=0;
+
       break;
     case CL_WAIT:
       // A waiting period is finished.

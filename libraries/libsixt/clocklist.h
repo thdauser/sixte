@@ -46,7 +46,7 @@ typedef struct {
   /** Current frame number. */
   long frame;
 
-  /** Current frame time [s]. This time is attached to the read-out
+  /** Current frame time [s]. This time is attached to the detected
       events. */
   double readout_time;
 

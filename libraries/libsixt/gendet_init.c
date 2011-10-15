@@ -424,9 +424,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
     getXMLAttributeString(attr, "MODE", mode);
     strtoupper(mode);
     if (!strcmp(mode, "TIME")) {
-      xmlparsedata->det->readout_trigger = GENDET_TIME_TRIGGERED;
+      xmlparsedata->det->readout_trigger=GENDET_TIME_TRIGGERED;
     } else if (!strcmp(mode, "EVENT")) {
-      xmlparsedata->det->readout_trigger = GENDET_EVENT_TRIGGERED;
+      xmlparsedata->det->readout_trigger=GENDET_EVENT_TRIGGERED;
     }
       
   } else if (!strcmp(Uelement, "WAIT")) {
@@ -435,6 +435,9 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
     CLWait* clwait=newCLWait(waittime, &xmlparsedata->status);
     append2ClockList(xmlparsedata->det->clocklist, CL_WAIT, 
 		     clwait, &xmlparsedata->status);
+
+    // Accumulate the amount of time required for one read-out frame.
+    xmlparsedata->det->frametime += waittime;
 	
   } else if (!strcmp(Uelement, "CLEARLINE")) {
 

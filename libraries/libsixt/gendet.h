@@ -138,6 +138,13 @@ typedef struct {
   /** List of clock operations for time-triggered detectors. */
   ClockList* clocklist;
 
+  /** Time for one read-out frame [s]. */
+  double frametime;
+
+  /** Flag whether there has been any photon interaction since the
+      last new frame. */
+  int anyphoton;
+
   /** Charge transfer efficiency (CTE). In a line shift of the pixel
       array the charges in the shifted pixels are multiplied by this
       value in order to account for losses due to the shift. */
