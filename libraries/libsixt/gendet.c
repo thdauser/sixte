@@ -245,7 +245,7 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       // If there has been no photon interaction during the last frame
       // and if no background model is activated, jump over the next empty frames
       // until there is a new photon impact.
-      if (0==det->anyphoton) {
+      if ((0==det->erobackground)&&(0==det->anyphoton)) {
 	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
 	det->clocklist->time       +=nframes*det->frametime;
 	det->clocklist->frame      +=nframes;
