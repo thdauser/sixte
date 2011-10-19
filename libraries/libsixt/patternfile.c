@@ -289,6 +289,13 @@ void copyEvents2PatternFile(const EventListFile* const elf,
 			    PatternFile* const plf,
 			    int* const status)
 {
+  // Check if the pattern file is empty.
+  if (plf->nrows>0) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("pattern file is not empty");
+    return;
+  }
+  
   // Get memory for buffers.
   Event* event=getEvent(status);
   CHECK_STATUS_VOID(*status);
