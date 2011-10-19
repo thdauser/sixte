@@ -2,6 +2,7 @@
 #define LADSPEC_H 1
 
 #include "sixt.h"
+#include "lad.h"
 #include "ladeventlistfile.h"
 #include "ladevent.h"
 
@@ -13,6 +14,7 @@
 struct Parameters {
   char EventList[MAXFILENAME];
   char Spectrum[MAXFILENAME];
+  char XMLFile[MAXFILENAME];
 
   char clobber;
 };

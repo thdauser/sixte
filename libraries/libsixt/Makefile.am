@@ -6,6 +6,7 @@ dist_fitstemplates_DATA  = coma.eventlist.tpl
 dist_fitstemplates_DATA += eventlist.tpl
 dist_fitstemplates_DATA += ladsignallist.tpl
 dist_fitstemplates_DATA += ladeventlist.tpl
+dist_fitstemplates_DATA += ladspec.tpl
 dist_fitstemplates_DATA += eroeventlist.tpl
 dist_fitstemplates_DATA += patternlist.tpl
 dist_fitstemplates_DATA += htrs.eventlist.tpl

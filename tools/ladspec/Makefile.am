@@ -2,12 +2,14 @@ AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt
 AM_CFLAGS += -Wall -Werror
 
 
-########## PIL .par-FILES##############
+########## DIRECTORIES ##############
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
 dist_pfiles_DATA = ladspec.par
 
+
+AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 ############ BINARIES #################
 

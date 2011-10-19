@@ -7,12 +7,8 @@ int ladspec_main() {
   // Program parameters.
   struct Parameters par; 
 
-  // TODO Use variable number of bins and energy range,
-  // which can be selected by the user.
-
-  // Number of bins in the spectrum
-  const long NBINS=1024;
-
+  // Detector setup.
+  LAD* lad=NULL;
 
   // Input event list file.
   LADEventListFile* elf=NULL;
@@ -22,12 +18,12 @@ int ladspec_main() {
   fitsfile* fptr=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS;   
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
   set_toolname("ladspec");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -44,13 +40,24 @@ int ladspec_main() {
     elf=openLADEventListFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Determine the detector XML definition file.
+    char xml_filename[MAXFILENAME];
+    sixt_get_LADXMLFile(xml_filename, par.XMLFile);
+    CHECK_STATUS_BREAK(status);
+
+    // Load the detector configuration.
+    lad=getLADfromXML(xml_filename, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Allocate memory for the output spectrum.
-    spec=(long*)malloc(NBINS*sizeof(long));
+    headas_chat(5, "create empty spectrum with %ld channels ...\n",
+		lad->rmf->NumberChannels);
+    spec=(long*)malloc(lad->rmf->NumberChannels*sizeof(long));
     CHECK_NULL_BREAK(spec, status, "memory allocation for spectrum failed");
 
     // Initialize the spectrum with 0.
     long ii; 
-    for (ii=0; ii<NBINS; ii++) {
+    for (ii=0; ii<lad->rmf->NumberChannels; ii++) {
       spec[ii]=0;
     }
 
@@ -68,6 +75,14 @@ int ladspec_main() {
       getLADEventFromFile(elf, ii+1, &event, &status);
       CHECK_STATUS_BREAK(status);
       
+      // Determine the PHA channel.
+      long pha=getEBOUNDSChannel(event.signal, lad->rmf);
+      
+      // Add the event to the spectrum.
+      assert(pha-lad->rmf->FirstChannel>=0);
+      assert(pha<lad->rmf->NumberChannels);      
+      spec[pha-lad->rmf->FirstChannel]++;
+
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over all events in the input file.
@@ -77,10 +92,32 @@ int ladspec_main() {
 
     // Create a new FITS-file (remove existing one before):
     remove(par.Spectrum);
-    fits_create_file(&fptr, par.Spectrum, &status);
+    char buffer[MAXFILENAME];
+    sprintf(buffer, "%s(%s%s)", par.Spectrum, SIXT_DATA_PATH, "/templates/ladspec.tpl");
+    fits_create_file(&fptr, buffer, &status);
     CHECK_STATUS_BREAK(status);
 
-    // TODO
+    // Get column numbers.
+    int cchannel, ccounts;
+    fits_get_colnum(fptr, CASEINSEN, "CHANNEL", &cchannel, &status);
+    fits_get_colnum(fptr, CASEINSEN, "COUNTS", &ccounts, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Write header keywords.
+    fits_update_key(fptr, TSTRING, "RESPFILE", "", "response file", &status);
+    fits_update_key(fptr, TSTRING, "ANCRFILE", "", "ancillary response file", &status);
+    fits_update_key(fptr, TLONG, "DETCHANS", &lad->rmf->NumberChannels,
+		    "number of detector channels", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Loop over all channels in the spectrum.
+    for (ii=0; ii<lad->rmf->NumberChannels; ii++) {    
+      long channel=ii+lad->rmf->FirstChannel;
+      fits_write_col(fptr, TLONG, cchannel, ii, 1, 1, &channel, &status);
+    }
+    fits_write_col(fptr, TLONG, ccounts, 1, 1, lad->rmf->NumberChannels,
+		   spec, &status);
+    CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
 
@@ -94,6 +131,8 @@ int ladspec_main() {
 
   // Release memory.
   if (NULL!=spec) free(spec);
+  freeLAD(&lad);
+
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);
@@ -124,6 +163,14 @@ int ladspec_getpar(struct Parameters* par)
     return(status);
   } 
   strcpy(par->Spectrum, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_file_name("XMLFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the detector definition XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_bool("clobber", &par->clobber);
