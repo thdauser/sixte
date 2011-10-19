@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([sixt], [0.04], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixt], [0.05], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
@@ -13,7 +13,7 @@ if test -z "$HEADAS"; then
 fi
 
 # Check for programs:
-AC_PROG_CC     # Search for a C-Compiler and store it in the Variable 'CC'.
+AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
 
 LT_INIT #([disable-shared]) #([shared]) 
 
@@ -31,7 +31,6 @@ LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall"
 
 # Check for libraries:  (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
-
 
 ####################################
 # cfitsio
@@ -228,7 +227,6 @@ AC_CONFIG_FILES([Makefile
 		tools/comaimg/Makefile
 		tools/comadet/Makefile
 		tools/comarecon/Makefile
-		tools/orbatt/Makefile
 		tools/projev/Makefile
 		tools/evpat/Makefile
 		tools/imgev/Makefile

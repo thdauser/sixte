@@ -1,5 +1,4 @@
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall -Werror
 
 ########## DIRECTORIES ###############
@@ -17,5 +16,5 @@ AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS = evpat
 
 evpat_SOURCES = evpat.c evpat.h
-evpat_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+evpat_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
 

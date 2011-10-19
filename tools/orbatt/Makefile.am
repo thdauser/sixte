@@ -1,17 +1,12 @@
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall
-#AM_CFLAGS += -Wall -Werror
 
-#LDADD = ...    add additional libraries
-
-
-########## PIL .par-FILES##############
+########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
 dist_pfiles_DATA = orbatt.par
+
 
 ############ BINARIES #################
 

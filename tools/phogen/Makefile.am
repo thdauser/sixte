@@ -1,20 +1,14 @@
-#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
-
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-#AM_CFLAGS  = -I${HEADAS}/include 
 AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
 
 #LDADD = ...    add additional libraries
 
-
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
 dist_pfiles_DATA = phogen.par
-
 
 ############ BINARIES #################
 

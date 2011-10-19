@@ -30,7 +30,7 @@ struct Parameters {
 };
 
 
-int imgev_getpar(struct Parameters *par);
+static int imgev_getpar(struct Parameters *par);
 
 
 ////////////////////////////////////
@@ -228,7 +228,7 @@ int imgev_main() {
 }
 
 
-int imgev_getpar(struct Parameters* par)
+static int imgev_getpar(struct Parameters* par)
 {
   // String input buffer.
   char* sbuffer=NULL;
