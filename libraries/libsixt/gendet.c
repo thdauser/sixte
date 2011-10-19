@@ -710,8 +710,9 @@ int makeGenSplitEvents(GenDet* const det,
     // END of exponential split model.
 
   } else {
-    printf("Error: split model not supported!\n");
-    exit(0);
+    SIXT_ERROR("split model not supported");
+    *status=EXIT_FAILURE;
+    return(0);
   }
 
 
@@ -728,6 +729,9 @@ int makeGenSplitEvents(GenDet* const det,
       if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
 	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, elf, status);
 	CHECK_STATUS_BREAK(*status);
+
+	// In event-triggered mode each event occupies its own frame.
+	det->clocklist->frame++;
       }
     }
   }
