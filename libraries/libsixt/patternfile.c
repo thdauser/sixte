@@ -284,3 +284,67 @@ void updatePatternInFile(const PatternFile* const file,
   CHECK_STATUS_VOID(*status);
 }
 
+
+void copyEvents2PatternFile(const EventListFile* const elf,
+			    PatternFile* const plf,
+			    int* const status)
+{
+  // Get memory for buffers.
+  Event* event=getEvent(status);
+  CHECK_STATUS_VOID(*status);
+  Pattern* pattern=getPattern(status);
+  CHECK_STATUS_VOID(*status);
+
+  // Loop over all rows in the event file.
+  long row;
+  for (row=0; row<elf->nrows; row++) {
+
+    // Read an event from the input list.
+    getEventFromFile(elf, row+1, event, status);
+    CHECK_STATUS_BREAK(*status);
+    
+    // Copy event data to pattern.
+    pattern->rawx   =event->rawx;
+    pattern->rawy   =event->rawy;
+    pattern->time   =event->time;
+    pattern->frame  =event->frame;
+    pattern->pha    =event->pha;
+    pattern->signal =event->signal;
+    pattern->ra     =0.;
+    pattern->dec    =0.;
+    pattern->npixels=1;
+    pattern->type   =0;
+    
+    pattern->pileup =0;
+    int ii;
+    for (ii=0; (ii<NEVENTPHOTONS)&&(ii<NPATTERNPHOTONS); ii++){
+      pattern->ph_id[ii] =event->ph_id[ii];
+      pattern->src_id[ii]=event->src_id[ii];
+
+      if ((ii>0)&&(pattern->ph_id[ii]!=0)) {
+	pattern->pileup=1;
+      }
+    }
+    
+    pattern->signals[0]=0.;
+    pattern->signals[1]=0.;
+    pattern->signals[2]=0.;
+    pattern->signals[3]=0.;
+    pattern->signals[4]=event->signal;
+    pattern->signals[5]=0.;
+    pattern->signals[6]=0.;
+    pattern->signals[7]=0.;
+    pattern->signals[8]=0.;
+
+    // Add the new pattern to the output file.
+    addPattern2File(plf, pattern, status);	  
+    CHECK_STATUS_BREAK(*status);
+
+  }
+  CHECK_STATUS_VOID(*status);
+
+  // Free memory.
+  freeEvent(&event);
+}
+
+

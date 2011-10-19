@@ -2,6 +2,8 @@
 #define PATTERNFILE_H 1
 
 #include "sixt.h"
+#include "event.h"
+#include "eventlistfile.h"
 #include "pattern.h"
 
 
@@ -61,6 +63,14 @@ void getPatternFromFile(const PatternFile* const file,
 void updatePatternInFile(const PatternFile* const file,
 			 const int row, Pattern* const pattern,
 			 int* const status);
+
+/** Fill the PatternFile with data from the given EventFile. The
+    routine is used to transfer events without pattern identification
+    to a PatternFile. This is needed, e.g., if no split events are
+    simulated. */
+void copyEvents2PatternFile(const EventListFile* const elf,
+			    PatternFile* const plf,
+			    int* const status);
 
 
 #endif /* PATTERNFILE_H */
