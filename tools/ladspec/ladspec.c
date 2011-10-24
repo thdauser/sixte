@@ -93,8 +93,14 @@ int ladspec_main() {
     // Create a new FITS-file (remove existing one before):
     remove(par.Spectrum);
     char buffer[MAXFILENAME];
-    sprintf(buffer, "%s(%s%s)", par.Spectrum, SIXT_DATA_PATH, "/templates/ladspec.tpl");
+    sprintf(buffer, "%s(%s%s)", par.Spectrum, SIXT_DATA_PATH, 
+	    "/templates/ladspec.tpl");
     fits_create_file(&fptr, buffer, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Move to the HDU containing the binary table.
+    int hdutype;
+    fits_movabs_hdu(fptr, 2, &hdutype, &status);
     CHECK_STATUS_BREAK(status);
 
     // Get column numbers.
@@ -105,7 +111,8 @@ int ladspec_main() {
 
     // Write header keywords.
     fits_update_key(fptr, TSTRING, "RESPFILE", "", "response file", &status);
-    fits_update_key(fptr, TSTRING, "ANCRFILE", "", "ancillary response file", &status);
+    fits_update_key(fptr, TSTRING, "ANCRFILE", "", "ancillary response file", 
+		    &status);
     fits_update_key(fptr, TLONG, "DETCHANS", &lad->rmf->NumberChannels,
 		    "number of detector channels", &status);
     CHECK_STATUS_BREAK(status);
@@ -113,7 +120,7 @@ int ladspec_main() {
     // Loop over all channels in the spectrum.
     for (ii=0; ii<lad->rmf->NumberChannels; ii++) {    
       long channel=ii+lad->rmf->FirstChannel;
-      fits_write_col(fptr, TLONG, cchannel, ii, 1, 1, &channel, &status);
+      fits_write_col(fptr, TLONG, cchannel, ii+1, 1, 1, &channel, &status);
     }
     fits_write_col(fptr, TLONG, ccounts, 1, 1, lad->rmf->NumberChannels,
 		   spec, &status);
@@ -132,7 +139,6 @@ int ladspec_main() {
   // Release memory.
   if (NULL!=spec) free(spec);
   freeLAD(&lad);
-
 
   if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
   return(status);

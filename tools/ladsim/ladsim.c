@@ -198,7 +198,7 @@ static void ladphdet(const LAD* const lad,
     // This can happen, if the RMF actually is an RSP, i.e. it 
     // includes ARF contributions, e.g., 
     // the detector quantum efficiency and filter transmission.
-    if (0>channel) {
+    if (channel<0) {
       continue; // Photon is not detected.
     }
 
@@ -234,11 +234,11 @@ static void ladphdet(const LAD* const lad,
       rev.time = impact.time + drifttime;
 
       // Measured signal.
-      double yi = (ii-center_anode)*1.0;
+      double yi = ii*1.0;
       rev.signal = 
 	signal*0.5*
-	(gaussint((yi+anode_pitch*0.5-y0)/(sigma*sqrt(2.)))-
-	 gaussint((yi-anode_pitch*0.5-y0)/(sigma*sqrt(2.))));
+	(gaussint(((yi-y0)*1.0-0.5)*anode_pitch/(sigma*sqrt(2.)))-
+	 gaussint(((yi-y0)*1.0+0.5)*anode_pitch/(sigma*sqrt(2.))));
 
       // Apply thresholds.
       if (NULL!=lad->threshold_readout_lo_keV) {
