@@ -65,7 +65,7 @@ int ladspec_main() {
 
 
     // --- Begin Spectrum Binning ---
-    headas_chat(5, "create spectrum ...\n");
+    headas_chat(5, "calculate spectrum ...\n");
 
     // LOOP over all events in the FITS table.
     for (ii=0; ii<elf->nrows; ii++) {

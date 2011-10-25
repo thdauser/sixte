@@ -30,4 +30,4 @@ TFORM#  J               /
 TUNIT#                  / 
 TTYPE#  COUNTS          / Counts
 TFORM#  J               / 
-TUNIT#  counts/s        / 
+TUNIT#  counts          / 
