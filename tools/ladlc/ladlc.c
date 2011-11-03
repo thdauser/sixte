@@ -20,7 +20,7 @@ int ladlc_main() {
 
   // Register HEATOOL:
   set_toolname("ladlc");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop.

@@ -675,6 +675,8 @@ int ladsim_main()
     dbuffer=0.;
     fits_update_key(relf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
+    fits_update_key(relf->fptr, TDOUBLE, "EXPOSURE", &par.Exposure,
+		    "exposure time", &status);
     CHECK_STATUS_BREAK(status);
 
     // Photon Detection.
@@ -703,6 +705,8 @@ int ladsim_main()
     dbuffer=0.;
     fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
+    fits_update_key(elf->fptr, TDOUBLE, "EXPOSURE", &par.Exposure,
+		    "exposure time", &status);
     CHECK_STATUS_BREAK(status);
 
 

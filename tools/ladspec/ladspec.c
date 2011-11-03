@@ -23,7 +23,7 @@ int ladspec_main() {
 
   // Register HEATOOL:
   set_toolname("ladspec");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -114,8 +114,18 @@ int ladspec_main() {
 		    "response file", &status);
     fits_update_key(fptr, TSTRING, "ANCRFILE", lad->arf_filename, 
 		    "ancillary response file", &status);
+    fits_update_key(fptr, TSTRING, "BACKFILE", "", 
+		    "background file", &status);
     fits_update_key(fptr, TLONG, "DETCHANS", &lad->rmf->NumberChannels,
 		    "number of detector channels", &status);
+    // Exposure time.
+    double exposure=0.;
+    char comment[MAXMSG];
+    fits_read_key(elf->fptr, TDOUBLE, "EXPOSURE", &exposure, 
+		  comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TDOUBLE, "EXPOSURE", &exposure,
+		    "exposure time", &status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over all channels in the spectrum.
