@@ -68,10 +68,12 @@ int ladlc_main() {
       
       // Determine the respective bin in the light curve.
       long bin=(long)(event.time/par.dt);
+
+      // If the event exceeds the end of the light curve, simply neglect it.
+      if (bin>=nbins) continue;
       
       // Add the event to the light curve.
       assert(bin>=0);
-      assert(bin<nbins);      
       counts[bin]++;
     }
     CHECK_STATUS_BREAK(status);
