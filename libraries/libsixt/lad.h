@@ -111,9 +111,11 @@ typedef struct {
   float fov_diameter;
 
   /** ARF containing the on-axis effective area of the instrument. */
+  char* arf_filename;
   struct ARF* arf;
 
   /** RMF of the detector. */
+  char* rmf_filename;
   struct RMF* rmf;
 
   /** Temperature of the SDDs [K]. */

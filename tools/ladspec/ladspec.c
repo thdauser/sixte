@@ -110,9 +110,10 @@ int ladspec_main() {
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
-    fits_update_key(fptr, TSTRING, "RESPFILE", "", "response file", &status);
-    fits_update_key(fptr, TSTRING, "ANCRFILE", "", "ancillary response file", 
-		    &status);
+    fits_update_key(fptr, TSTRING, "RESPFILE", lad->rmf_filename, 
+		    "response file", &status);
+    fits_update_key(fptr, TSTRING, "ANCRFILE", lad->arf_filename, 
+		    "ancillary response file", &status);
     fits_update_key(fptr, TLONG, "DETCHANS", &lad->rmf->NumberChannels,
 		    "number of detector channels", &status);
     CHECK_STATUS_BREAK(status);

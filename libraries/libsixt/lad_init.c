@@ -380,9 +380,18 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "ARF")) {
     
-    // Determine the filename of the instrument ARF and load it.
+    // Determine the filename of the instrument ARF.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Store the file name of the ARF.
+    xmlparsedata->lad->arf_filename=(char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->lad->arf_filename, 
+		      xmlparsedata->status,
+		      "memory allocation for ARF file name failed");
+    strcpy(xmlparsedata->lad->arf_filename, filename);
+
+    // Load the ARF.
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
@@ -390,9 +399,18 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "RMF")) {
     
-    // Determine the filename of the detector RMF and load it.
+    // Determine the filename of the detector RMF.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+    
+    // Store the file name of the RMF.
+    xmlparsedata->lad->rmf_filename=(char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename, 
+		      xmlparsedata->status,
+		      "memory allocation for RMF file name failed");
+    strcpy(xmlparsedata->lad->rmf_filename, filename);
+
+    // Load the RMF.
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
