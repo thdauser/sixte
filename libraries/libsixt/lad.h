@@ -121,7 +121,7 @@ typedef struct {
   /** Temperature of the SDDs [K]. */
   float temperature;
   
-  /** Strength of the electric drift field [V]. */
+  /** Strength of the electric drift field [V/m]. */
   float efield;
 
   /** Mobility [m**2/V/s]. */

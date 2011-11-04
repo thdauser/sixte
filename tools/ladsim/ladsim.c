@@ -175,15 +175,15 @@ static void ladphdet(const LAD* const lad,
     // Charge cloud dispersion.
     const double sigma0 = 20.e-6; // (according to Campana, 2011) [m]
     double sigma = 
-      sqrt(2.*kB*lad->temperature*impact.position.x*1.e6/lad->efield + 
-	   pow(sigma0*1.e6,2.)) /1.e6;
+      sqrt(2.*kB*lad->temperature*impact.position.x/lad->efield + 
+	   pow(sigma0,2.));
 
     // Drift time.
     double drifttime = impact.position.x / vD;
 
     // Determine the index of the closest anode strip.
-    double y0 = impact.position.y/anode_pitch;
-    long center_anode = ((long)(y0+1)) -1;
+    double y0=impact.position.y/anode_pitch;
+    long center_anode=((long)(y0+1)) -1;
 
     // Determine the measured detector channel (PHA channel) according 
     // to the RMF.
@@ -235,10 +235,9 @@ static void ladphdet(const LAD* const lad,
 
       // Measured signal.
       double yi = ii*1.0;
-      rev.signal = 
-	signal*0.5*
-	(gaussint(((yi-y0)*1.0-0.5)*anode_pitch/(sigma*sqrt(2.)))-
-	 gaussint(((yi-y0)*1.0+0.5)*anode_pitch/(sigma*sqrt(2.))));
+      rev.signal = signal*
+	(gaussint(((yi-y0)-0.5)*anode_pitch/sigma)-
+	 gaussint(((yi-y0)+0.5)*anode_pitch/sigma));
 
       // Apply thresholds.
       if (NULL!=lad->threshold_readout_lo_keV) {
@@ -274,7 +273,7 @@ static void ladevents(const LAD* const lad,
 {
   // Maximum trigger time between subsequent raw events assigned 
   // to the same event.
-  const double dt = 1.e-12;
+  const double dt=1.e-12;
 
   // List of contributing raw events.
   LADSignal** list=NULL;
@@ -304,7 +303,7 @@ static void ladevents(const LAD* const lad,
       // Check if the new raw event seems to belong to the same photon event.
       int different=0;
       if ((nlist>0) && (NULL!=rev)) {
-	if ((rev->time-list[0]->time>dt) ||
+	if ((fabs(rev->time-list[0]->time)>dt) ||
 	    (rev->panel!=list[0]->panel) ||
 	    (rev->module!=list[0]->module) ||
 	    (rev->element!=list[0]->element) ||
@@ -315,8 +314,8 @@ static void ladevents(const LAD* const lad,
 	// Check for the different (bottom and top) anode lines.
 	long nanodes = 
 	  lad->panel[rev->panel]->module[rev->module]->element[rev->element]->nanodes;
-	if (((rev->anode >= nanodes/2)&&(list[0]->anode <  nanodes/2)) ||
-	    ((rev->anode <  nanodes/2)&&(list[0]->anode >= nanodes/2))) {
+	if (((rev->anode>=nanodes/2)&&(list[0]->anode< nanodes/2)) ||
+	    ((rev->anode< nanodes/2)&&(list[0]->anode>=nanodes/2))) {
 	  different=1;
 	}
       }
@@ -434,7 +433,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR HANDLING Loop.
