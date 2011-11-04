@@ -251,23 +251,33 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
   } else {
     // Find the right energy bin.
     int ii;
-    float factor=0.;
     for(ii=0; ii<vi->nenergies; ii++) {
       if ((energy>vi->energ_lo[ii])&&(energy<=vi->energ_hi[ii])) {
-	// Find the best fitting theta.
+
+	// Check if the required angle is larger than the biggest in the 
+	// vignetting data.
+	if (theta>=vi->theta[vi->ntheta-1]) {
+	  return(vi->vignet[ii][vi->ntheta-1][0]);
+	}
+
+	// Find the two values in the vignetting data surrounding
+	// the required angle.
 	int jj;
-	float dtheta_min=-1.;
-	for(jj=0; jj<vi->ntheta; jj++) {
-	  if ((fabs(theta-vi->theta[jj])<dtheta_min) || (dtheta_min<0.)) {
-	    dtheta_min=fabs(theta-vi->theta[jj]);
-	    factor    =vi->vignet[ii][jj][0];
+	for(jj=1; jj<vi->ntheta; jj++) {
+	  if (vi->theta[jj]>=theta) {
+	    break;
 	  }
-	} // Loop to find the best theta.
-	break;
+	}
+	// Interpolate between both values.
+	return(vi->vignet[ii][jj-1][0]+
+	       (vi->vignet[ii][jj][0]-vi->vignet[ii][jj-1][0])*
+	       (theta-vi->theta[jj-1])/(vi->theta[jj]-vi->theta[jj-1]));
+
       }
     } // Loop to find the right energy bin.
+
     assert(ii<vi->nenergies);
-    return(factor);
+    return(0.); // (this should never be reached)
   }
 }
 
