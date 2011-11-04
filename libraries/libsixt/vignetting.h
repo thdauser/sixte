@@ -11,18 +11,29 @@
 
 /** Data structure containing the mirror vignetting function. */
 typedef struct {
-  int nenergies; /**< Number of energy bins. */
-  int ntheta; /**< Number of off-axis angles. */
-  int nphi; /**< Number of azimuth angles. */
+  /** Number of energy bins. */
+  int nenergies; 
+  /** Number of off-axis angles. */
+  int ntheta; 
+  /** Number of azimuth angles. */
+  int nphi; 
 
-  float* energ_lo; /**< Minimum energy of bin in [keV]. */
-  float* energ_hi; /**< Maximum energy of bin in [keV]. */
-  float* theta; /**< Off-axis angle in [rad]. */
-  float* phi; /**< Azimuth angle in [rad]. */
-  float*** vignet; /**< Vignetting data. Array[energy, theta, phi] */
+  /** Minimum energy of bin in [keV]. */
+  float* energ_lo;
+  /** Maximum energy of bin in [keV]. */ 
+  float* energ_hi;
+  /** Off-axis angle in [rad]. */
+  float* theta; 
+  /** Azimuthal angle in [rad]. */
+  float* phi; 
+  /** Vignetting data. Array[energy, theta, phi] */
+  float*** vignet; 
 
-  float Emin; /**< Minimum available energy. */
-  float Emax; /**< Maximum available energy. */
+  /** Minimum available energy [keV]. */
+  float Emin; 
+  /** Maximum available energy [keV]. */
+  float Emax; 
+
 } Vignetting;
 
 

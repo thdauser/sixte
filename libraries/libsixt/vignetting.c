@@ -232,7 +232,8 @@ void destroyVignetting(Vignetting** const vi) {
 float get_Vignetting_Factor(const Vignetting* const vi, const float energy, 
 			    const float theta, const float phi) 
 {
-  // Check if any vignetting is specified. If not, return a default value of 1.
+  // Check if any vignetting is specified. 
+  // If not, return a default value of 1.
   if (NULL==vi) return(1.);
 
   (void)phi;
@@ -248,24 +249,24 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
   if ((energy<vi->Emin) || (energy>vi->Emax)) {
     return(-1.); // Energy is out of range!
   } else {
-    // Find the right energy bin:
-    int count;
+    // Find the right energy bin.
+    int ii;
     float factor=0.;
-    for(count=0; count<vi->nenergies; count++) {
-      if ((energy>vi->energ_lo[count]) && (energy<=vi->energ_hi[count])) {
-	// Find the best fitting theta:
-	int count2;
+    for(ii=0; ii<vi->nenergies; ii++) {
+      if ((energy>vi->energ_lo[ii])&&(energy<=vi->energ_hi[ii])) {
+	// Find the best fitting theta.
+	int jj;
 	float dtheta_min=-1.;
-	for(count2=0; count2<vi->ntheta; count2++) {
-	  if ((fabs(theta - vi->theta[count2]) < dtheta_min) || (dtheta_min<0.)) {
-	    dtheta_min = fabs(theta - vi->theta[count2]);
-	    factor = vi->vignet[count][count2][0];
+	for(jj=0; jj<vi->ntheta; jj++) {
+	  if ((fabs(theta-vi->theta[jj])<dtheta_min) || (dtheta_min<0.)) {
+	    dtheta_min=fabs(theta-vi->theta[jj]);
+	    factor    =vi->vignet[ii][jj][0];
 	  }
 	} // Loop to find the best theta.
 	break;
       }
     } // Loop to find the right energy bin.
-    assert (count<vi->nenergies);
+    assert(ii<vi->nenergies);
     return(factor);
   }
 }
