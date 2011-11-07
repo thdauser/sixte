@@ -5,7 +5,7 @@ int simputsrc_main()
 {
   // Filename constants.
   const char CMDFILE[] = "isis.tmp";
-  const char SPECFILE[] = "spec.tmp";
+  const char SPECFILE[] = "spec%d.tmp";
 
   // Program parameters.
   struct Parameters par;
@@ -15,9 +15,7 @@ int simputsrc_main()
   fitsfile* specfile=NULL;
 
   // Buffers for spectral components.
-  long nrows=0;
-  float* energies=NULL;
-  float** flux=NULL;
+  float* flux=NULL;
 
   // SIMPUT data structures.
   SimputMissionIndepSpec* simputspec=NULL;
@@ -30,7 +28,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -40,14 +38,6 @@ int simputsrc_main()
     // Read the parameters using PIL.
     status=simputsrc_getpar(&par);
     CHECK_STATUS_BREAK(status);
-
-    // Allocate memory.
-    flux=(float**)malloc(4*sizeof(float*));
-    CHECK_NULL_BREAK(flux, status, "memory allocation failed");
-    int ii;
-    for (ii=0; ii<4; ii++) {
-      flux[ii]=NULL;
-    }
 
     // ---- END of Initialization ----
 
@@ -60,7 +50,7 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.
-    float totalFlux = par.plFlux + par.bbFlux + par.flFlux + par.rflFlux;
+    float totalFlux = par.plFlux+par.bbFlux+par.flFlux+par.rflFlux;
     char src_name[MAXMSG];
     strcpy(src_name, par.Src_Name);
     strtoupper(src_name);
@@ -83,23 +73,27 @@ int simputsrc_main()
 
 
     // Create the spectrum.
+
+    // Open the ISIS command file.
+    // TODO Get a random temporary name instead of using a constant.
+    cmdfile=fopen(CMDFILE,"w+");
+    CHECK_NULL_BREAK(cmdfile, status, "opening temporary file failed");
+
+    // Write the header.
+    fprintf(cmdfile, "require(\"isisscripts\");\n");
+    fprintf(cmdfile, "()=xspec_abund(\"wilm\");\n");
+    fprintf(cmdfile, "use_localmodel(\"relline\");\n");
+    
+    // Define the energy grid.
+    fprintf(cmdfile, "variable grid=[0.05:100.0:0.01];\n");
+    fprintf(cmdfile, "variable lo=grid[[0:length(grid)-2]];\n");
+    fprintf(cmdfile, "variable hi=grid[[1:length(grid)-1]];\n");
+    fprintf(cmdfile, "variable flux;\n");
+    fprintf(cmdfile, "variable spec;\n");
+
     // Loop over the different components of the spectral model.
+    int ii;
     for (ii=0; ii<4; ii++) {
-
-      // Open the ISIS command file.
-      // TODO Get a random temporary name instead of using a constant.
-      cmdfile=fopen(CMDFILE,"w+");
-      CHECK_NULL_BREAK(cmdfile, status, "opening temporary file failed");
-
-      // Write the header.
-      fprintf(cmdfile, "require(\"isisscripts\");\n");
-      fprintf(cmdfile, "()=xspec_abund(\"wilm\");\n");
-      fprintf(cmdfile, "use_localmodel(\"relline\");\n");
-
-      // Define the energy grid.
-      fprintf(cmdfile, "variable grid=[0.05:100.0:0.01];\n");
-      fprintf(cmdfile, "variable lo=grid[[0:length(grid)-2]];\n");
-      fprintf(cmdfile, "variable hi=grid[[1:length(grid)-1]];\n");
 
       // Define the spectral model and set the parameters.
       switch(ii) {
@@ -133,47 +127,69 @@ int simputsrc_main()
 
       // Evaluate the spectral model and store the data in a temporary 
       // FITS file.
-      fprintf(cmdfile, "variable flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
-      fprintf(cmdfile, "variable spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
-      fprintf(cmdfile, "fits_write_binary_table(\"%s\",\"SPECTRUM\", spec);\n", 
-	      SPECFILE);
-      fprintf(cmdfile, "exit;\n");
-
-      // End of writing the ISIS file.
-      fclose(cmdfile);
-      cmdfile=NULL;
-
-      // Construct the shell command to run ISIS.
+      fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
+      fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
       char command[MAXMSG];
-      strcpy(command, "/data/system/software/local/bin/isis ");
-      strcat(command, CMDFILE);
+      sprintf(command, 
+	      "fits_write_binary_table(\"%s\",\"SPECTRUM\", spec);\n", SPECFILE);
+      fprintf(cmdfile, command, ii);
+    } 
+    CHECK_STATUS_BREAK(status);
+    // END of loop over the different spectral components.
+
+    fprintf(cmdfile, "exit;\n");
+
+    // End of writing the ISIS file.
+    fclose(cmdfile);
+    cmdfile=NULL;
+
+    // Construct the shell command to run ISIS.
+    char command[MAXMSG];
+    strcpy(command, "/data/system/software/local/bin/isis ");
+    strcat(command, CMDFILE);
       
-      // Run ISIS.
-      status=system(command);
-      CHECK_STATUS_BREAK(status);
+    // Run ISIS.
+    status=system(command);
+    CHECK_STATUS_BREAK(status);
+
+    // Add the spectra and append the total spectrum to the SIMPUT file.
+    simputspec=getSimputMissionIndepSpec(&status);
+    CHECK_STATUS_BREAK(status);
+
+    // Loop over the different components of the spectral model.
+    for (ii=0; ii<4; ii++) {
 
       // Read the spectrum.
-      fits_open_table(&specfile, SPECFILE, READONLY, &status);
+      char filename[MAXFILENAME];
+      sprintf(filename, SPECFILE, ii);
+      fits_open_table(&specfile, filename, READONLY, &status);
       CHECK_STATUS_BREAK(status);
-      int anynull;
 
-      // Determine the number of rows.
+      // Read the data.
+      long nrows=0;
+      int anynull;
       if (0==ii) {
+	// Determine the number of rows.
 	fits_get_num_rows(specfile, &nrows, &status);
 	CHECK_STATUS_BREAK(status);
 
-	energies=(float*)malloc(nrows*sizeof(float));
-	CHECK_NULL_BREAK(energies, status, "memory allocation failed");
+	// Allocate memory.
+	simputspec->nentries=nrows;
+	simputspec->energy=(float*)malloc(nrows*sizeof(float));
+	CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+	simputspec->pflux=(float*)malloc(nrows*sizeof(float));
+	CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
 
-	fits_read_col(specfile, TFLOAT, 1, 1, 1, nrows, 0, energies, 
+	// Read the energy column.
+	fits_read_col(specfile, TFLOAT, 1, 1, 1, nrows, 0, simputspec->energy, 
 		      &anynull, &status);
 	CHECK_STATUS_BREAK(status);
       }
 
-      flux[ii]=(float*)malloc(nrows*sizeof(float));
-      CHECK_NULL_BREAK(flux[ii], status, "memory allocation failed");
+      flux=(float*)malloc(nrows*sizeof(float));
+      CHECK_NULL_BREAK(flux, status, "memory allocation failed");
 
-      fits_read_col(specfile, TFLOAT, 2, 1, 1, nrows, 0, flux[ii], 
+      fits_read_col(specfile, TFLOAT, 2, 1, 1, nrows, 0, flux, 
 		    &anynull, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -205,7 +221,7 @@ int simputsrc_main()
 
       float factor;
       if (shouldflux==0.) {
-	factor = 0.;
+	factor=0.;
       } else {
 	// Determine the current flux in the reference band.
 	// Conversion factor from [keV] -> [erg].
@@ -216,20 +232,20 @@ int simputsrc_main()
 	for (jj=0; jj<nrows; jj++) {
 	  float binmin, binmax;
 	  if (0==jj) {
-	    binmin=energies[0];
+	    binmin=simputspec->energy[0];
 	  } else {
-	    binmin=0.5*(energies[jj]+energies[jj-1]);
+	    binmin=0.5*(simputspec->energy[jj]+simputspec->energy[jj-1]);
 	  }
 	  if (nrows-1==jj) {
-	    binmax=energies[nrows-1];
+	    binmax=simputspec->energy[nrows-1];
 	  } else {
-	    binmax=0.5*(energies[jj]+energies[jj+1]);
+	    binmax=0.5*(simputspec->energy[jj]+simputspec->energy[jj+1]);
 	  }
-	  if ((binmax>par.Emin) && (binmin<par.Emax)) {
+	  if ((binmax>par.Emin)&&(binmin<par.Emax)) {
 	    float min = MAX(binmin, par.Emin);
 	    float max = MIN(binmax, par.Emax);
 	    assert(max>min);
-	    isflux += (max-min) * flux[ii][jj] * energies[jj];
+	    isflux += (max-min)*flux[jj]*simputspec->energy[jj];
 	  }
 	}
 	// Convert units of 'flux' from [keV/s/cm^2] -> [erg/s/cm^2].
@@ -238,29 +254,21 @@ int simputsrc_main()
 	factor = shouldflux/isflux;
       }
 
-      // Normalize.
       long jj;
       for (jj=0; jj<nrows; jj++) {
-	flux[ii][jj] *= factor;
+	// Normalize.
+	flux[jj] *= factor;
+
+	// Add the component to the total spectrum.
+	simputspec->pflux[jj] += flux[jj];
       }
+
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over the different spectral components.
 
-    // Add the spectra and append the total spectrum to the SIMPUT file.
-    simputspec=getSimputMissionIndepSpec(&status);
-    CHECK_STATUS_BREAK(status);
-    simputspec->nentries=nrows;
-    simputspec->energy=(float*)malloc(nrows*sizeof(float));
-    CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
-    simputspec->pflux=(float*)malloc(nrows*sizeof(float));
-    CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
     long jj;
-    for (jj=0; jj<nrows; jj++) {
-      simputspec->energy[jj] = energies[jj];
-      simputspec->pflux[jj] = 
-	flux[0][jj] + flux[1][jj] + flux[2][jj] + flux[3][jj];
-
+    for (jj=0; jj<simputspec->nentries; jj++) {
       // Check if the flux has a physically reasonable value.
       if ((simputspec->pflux[jj]<0.)||(simputspec->pflux[jj]>1.e12)) {
 	SIXT_ERROR("flux out of boundaries");
@@ -286,24 +294,19 @@ int simputsrc_main()
   }
   // Remove the temporary files.
   remove(CMDFILE);
-  remove(SPECFILE);
+  int ii;
+  for (ii=0; ii<4; ii++) {
+    char filename[MAXFILENAME];
+    sprintf(filename, SPECFILE, ii);
+    remove(filename);
+  }
 
   // Release memory.
   freeSimputMissionIndepSpec(&simputspec);
   freeSimputSource(&src);
   freeSimputCatalog(&cat, &status);
 
-  if (NULL!=energies) {
-    free(energies);
-    energies=NULL;
-  }
   if (NULL!=flux) {
-    int ii;
-    for (ii=0; ii<4; ii++) {
-      if (NULL!=flux[ii]) {
-	free(flux[ii]);
-      }
-    }
     free(flux);
     flux=NULL;
   }
