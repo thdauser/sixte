@@ -6,7 +6,7 @@ AM_CFLAGS += -Wall -Werror
 
 # Directory where to install the PIL parameter files.
 pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = ladlc.par
+dist_pfiles_DATA = genlc.par
 
 
 AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
@@ -15,7 +15,7 @@ AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = ladlc
+bin_PROGRAMS = genlc
 
-ladlc_SOURCES = ladlc.c ladlc.h
-ladlc_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+genlc_SOURCES = genlc.c genlc.h
+genlc_LDADD = @top_builddir@/libraries/libsixt/libsixt.la

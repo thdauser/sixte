@@ -32,6 +32,9 @@ struct Parameters {
   float Emin;
   float Emax;
 
+  /** Name of the X-ray source. */
+  char Src_Name[MAXMSG];
+
   /** File name of output SIMPUT file. */
   char Simput[MAXFILENAME];
   

@@ -61,7 +61,18 @@ int simputsrc_main()
 
     // Insert a point-like source.
     float totalFlux = par.plFlux + par.bbFlux + par.flFlux + par.rflFlux;
-    src=getSimputSourceV(1, "", 0., 0., 0., 1., 
+    char src_name[MAXMSG];
+    strcpy(src_name, par.Src_Name);
+    strtoupper(src_name);
+    if ((strlen(src_name)>0)&&(strcmp(src_name, "NONE"))) {
+      // Copy again the name, this time without upper-case conversion.
+      strcpy(src_name, par.Src_Name);
+    } else {
+      strcpy(src_name, "");
+    }
+    
+    // Get a new source entry.
+    src=getSimputSourceV(1, src_name, 0., 0., 0., 1., 
 			 par.Emin, par.Emax, totalFlux, 
 			 "[SPECTRUM,1]", "", "", &status);
     CHECK_STATUS_BREAK(status);
@@ -134,15 +145,12 @@ int simputsrc_main()
 
       // Construct the shell command to run ISIS.
       char command[MAXMSG];
-      strcpy(command, "isis ");
+      strcpy(command, "/data/system/software/local/bin/isis ");
       strcat(command, CMDFILE);
       
       // Run ISIS.
       status=system(command);
       CHECK_STATUS_BREAK(status);
-
-      // Remove the temporary ISIS command file.
-      remove(CMDFILE);
 
       // Read the spectrum.
       fits_open_table(&specfile, SPECFILE, READONLY, &status);
@@ -235,9 +243,6 @@ int simputsrc_main()
       for (jj=0; jj<nrows; jj++) {
 	flux[ii][jj] *= factor;
       }
-
-      // Remove the temporary spectrum file.
-      remove(SPECFILE);
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over the different spectral components.
@@ -279,6 +284,9 @@ int simputsrc_main()
     fits_close_file(specfile, &status);
     specfile=NULL;
   }
+  // Remove the temporary files.
+  remove(CMDFILE);
+  remove(SPECFILE);
 
   // Release memory.
   freeSimputMissionIndepSpec(&simputspec);

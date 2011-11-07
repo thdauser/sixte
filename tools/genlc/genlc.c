@@ -1,26 +1,26 @@
-#include "ladlc.h"
+#include "genlc.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int ladlc_main() {
+int genlc_main() {
   // Program parameters.
   struct Parameters par; 
 
   // Input event list file.
-  LADEventListFile* elf=NULL;
+  fitsfile* infptr=NULL;
 
   // Output light curve.
   long* counts=NULL;
-  fitsfile* fptr=NULL;
+  fitsfile* outfptr=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
-  set_toolname("ladlc");
-  set_toolversion("0.02");
+  set_toolname("genlc");
+  set_toolversion("0.01");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -28,13 +28,23 @@ int ladlc_main() {
     // --- Initialization ---
 
     // Read the program parameters using PIL library.
-    status=ladlc_getpar(&par);
+    status=genlc_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
 
     // Set the input pattern file.
-    elf=openLADEventListFile(par.EventList, READONLY, &status);
+    fits_open_table(&infptr, par.EventList, READONLY, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the column containing the time information.
+    int ctime;
+    fits_get_colnum(infptr, CASEINSEN, "TIME", &ctime, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the number of rows in the input file.
+    long nrows;
+    fits_get_num_rows(infptr, &nrows, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the number of bins for the light curve.
@@ -59,15 +69,18 @@ int ladlc_main() {
     headas_chat(5, "calculate light curve ...\n");
 
     // LOOP over all events in the FITS table.
-    for (ii=0; ii<elf->nrows; ii++) {
+    for (ii=0; ii<nrows; ii++) {
       
-      // Read the next event from the file.
-      LADEvent event;
-      getLADEventFromFile(elf, ii+1, &event, &status);
+      // Read the time of the next event from the file.
+      double time;
+      double dnull=0.0;
+      int anynul=0;
+      fits_read_col(infptr, TDOUBLE, ctime, ii+1, 1, 1, 
+		    &dnull, &time, &anynul, &status);
       CHECK_STATUS_BREAK(status);
       
       // Determine the respective bin in the light curve.
-      long bin=(long)(event.time/par.dt);
+      long bin=(long)(time/par.dt);
 
       // If the event exceeds the end of the light curve, simply neglect it.
       if (bin>=nbins) continue;
@@ -87,26 +100,26 @@ int ladlc_main() {
     char buffer[MAXFILENAME];
     sprintf(buffer, "%s(%s%s)", par.LightCurve, SIXT_DATA_PATH, 
 	    "/templates/ladlc.tpl");
-    fits_create_file(&fptr, buffer, &status);
+    fits_create_file(&outfptr, buffer, &status);
     CHECK_STATUS_BREAK(status);
 
     // Move to the HDU containing the binary table.
     int hdutype;
-    fits_movabs_hdu(fptr, 2, &hdutype, &status);
+    fits_movabs_hdu(outfptr, 2, &hdutype, &status);
     CHECK_STATUS_BREAK(status);
 
     // Get column numbers.
     int ccounts;
-    fits_get_colnum(fptr, CASEINSEN, "COUNTS", &ccounts, &status);
+    fits_get_colnum(outfptr, CASEINSEN, "COUNTS", &ccounts, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
-    fits_update_key(fptr, TDOUBLE, "TIMERES", &par.dt, 
+    fits_update_key(outfptr, TDOUBLE, "TIMERES", &par.dt, 
 		    "time resolution", &status);
     CHECK_STATUS_BREAK(status);
 
     // Write the data into the table.
-    fits_write_col(fptr, TLONG, ccounts, 1, 1, nbins, counts, &status);
+    fits_write_col(outfptr, TLONG, ccounts, 1, 1, nbins, counts, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -116,8 +129,8 @@ int ladlc_main() {
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  freeLADEventListFile(&elf, &status);
-  if (NULL!=fptr) fits_close_file(fptr, &status);
+  if (NULL!= infptr) fits_close_file( infptr, &status);
+  if (NULL!=outfptr) fits_close_file(outfptr, &status);
 
   // Release memory.
   if (NULL!=counts) free(counts);
@@ -127,13 +140,13 @@ int ladlc_main() {
 }
 
 
-int ladlc_getpar(struct Parameters* par)
+int genlc_getpar(struct Parameters* par)
 {
   // String input buffer.
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 

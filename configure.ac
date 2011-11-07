@@ -209,7 +209,7 @@ AC_CONFIG_FILES([Makefile
 		tools/phoimg/Makefile
 		tools/ladsim/Makefile
 		tools/ladspec/Makefile
-		tools/ladlc/Makefile
+		tools/genlc/Makefile
 		tools/psfgen/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/ero_exposure/Makefile

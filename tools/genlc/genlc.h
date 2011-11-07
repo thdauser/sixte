@@ -1,12 +1,12 @@
-#ifndef LADLC_H
-#define LADLC_H 1
+#ifndef GENLC_H
+#define GENLC_H 1
 
 #include "sixt.h"
 #include "lad.h"
 #include "ladeventlistfile.h"
 #include "ladevent.h"
 
-#define TOOLSUB ladlc_main
+#define TOOLSUB genlc_main
 #include "headas_main.c"
 
 
@@ -25,8 +25,8 @@ struct Parameters {
 };
 
 
-int ladlc_getpar(struct Parameters *par);
+int genlc_getpar(struct Parameters *par);
 
 
-#endif /* LADLC_H */
+#endif /* GENLC_H */
 
