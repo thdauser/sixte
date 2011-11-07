@@ -2,7 +2,7 @@
 <instrument type="LOFT LAD">
   <telescope>
     <fov diameter="1.5"/>
-    <vignetting filename="vignetting_lad.fits"/>
+<!--    <vignetting filename="vignetting_lad.fits"/> -->
   </telescope>
 
   <detector type="SDD">
@@ -31,14 +31,14 @@
       </panel>
     </loop>
 
-  <arf filename="LOFT_combined.arf"/>
-  <rmf filename="LOFT_combined.rmf"/>
+  <arf filename="LOFT_Requirement_v3.arf"/>
+  <rmf filename="LOFT_Requirement_v3.rmf"/>
   <temperature value="300"/>
-  <efield value="3.e+4"/>
+  <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
   <threshold_readout_lo_keV value="2."/>
-  <threshold_readout_up_keV value="30."/>
-  <background filename="loft_background.fits"/>
+  <threshold_readout_up_keV value="50."/>
+<!--  <background filename="loft_background.fits"/> -->
 
   <readout mode="event">
     <time_width value="1.e-5"/>

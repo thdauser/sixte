@@ -433,7 +433,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of ERROR HANDLING Loop.
