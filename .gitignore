@@ -50,7 +50,7 @@ comaexp
 orbatt
 ladsim
 ladspec
-ladlc
+genlc
 mmap_write
 mmap_read
 runsixt

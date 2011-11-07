@@ -118,6 +118,8 @@ int ladspec_main() {
 		    "background file", &status);
     fits_update_key(fptr, TLONG, "DETCHANS", &lad->rmf->NumberChannels,
 		    "number of detector channels", &status);
+    fits_update_key(fptr, TSTRING, "CORRFILE", "", 
+		    "none", &status);
     // Exposure time.
     double exposure=0.;
     char comment[MAXMSG];
