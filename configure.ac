@@ -147,7 +147,7 @@ AC_SEARCH_LIBS(ReadRMFMatrix, hdsp $my_hdsp, [],
 AC_SUBST(lib_hdsp)
 #################################### 
 # WCS Library:
-AC_SEARCH_LIBS(wcsbth, [wcs_6.9 wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
+AC_SEARCH_LIBS(wcsbth, [wcs_6.11 wcs_6.10 wcs_6.9 wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
 		       [AC_MSG_ERROR([No WCS library found!])], [])
 
 #################################### 
