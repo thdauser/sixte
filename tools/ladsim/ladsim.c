@@ -199,6 +199,7 @@ static void ladphdet(const LAD* const lad,
     // includes ARF contributions, e.g., 
     // the detector quantum efficiency and filter transmission.
     if (channel<0) {
+      printf("### undetected photon\n");
       continue; // Photon is not detected.
     }
 
