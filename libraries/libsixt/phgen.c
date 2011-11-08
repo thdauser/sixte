@@ -13,34 +13,6 @@ void phgen(AttitudeCatalog* const ac,
   // Step width of the time loop.
   const double dt = 1.0;
 
-  // If this is a pointing attitude, store the direction in the output
-  // photon list.
-  if (1==ac->nentries) {
-    // Determine the telescope pointing direction and roll angle.
-    Vector pointing=getTelescopeNz(ac, t0, status);
-    CHECK_STATUS_VOID(*status);
-    
-    // Direction.
-    double ra, dec;
-    calculate_ra_dec(pointing, &ra, &dec);
-    
-    // Roll angle.
-    float rollangle=getRollAngle(ac, t0, status);
-    CHECK_STATUS_VOID(*status);
-
-    // Store the RA and Dec information in the FITS header.
-    ra *= 180./M_PI;
-    dec*= 180./M_PI;
-    rollangle*= 180./M_PI;
-    fits_update_key(plf->fptr, TDOUBLE, "RA_PNT", &ra,
-		    "RA of pointing direction [deg]", status);
-    fits_update_key(plf->fptr, TDOUBLE, "DEC_PNT", &dec,
-		    "Dec of pointing direction [deg]", status);
-    fits_update_key(plf->fptr, TFLOAT, "PA_PNT", &rollangle,
-		    "Roll angle [deg]", status);
-    CHECK_STATUS_VOID(*status);
-  }
-
   // Loop over the specified time interval.
   double time;
   for (time=t0; time<t0+exposure; time+=dt) {
