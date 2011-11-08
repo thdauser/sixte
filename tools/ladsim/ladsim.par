@@ -1,4 +1,4 @@
-OutputStem,s,lq,"sim",,,"filename stem for output files"
+Prefix,s,h,"none",,,"prefix for output files"
 PhotonList,s,h,"none",,,"photon list output file"
 ImpactList,s,h,"none",,,"impact list output file"
 SignalList,s,h,"none",,,"raw event list output file"

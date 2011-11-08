@@ -42,8 +42,11 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 
 
 /** Create new photon list FITS file according to a given template and
-    return the PhotonListFile object for the open file. */
+    return the PhotonListFile object for the open file. If the clobber
+    parameter has a value different from 0, any existing files will be
+    overwritten. */
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
+				      const int clobber,
 				      int* const status);
 
 

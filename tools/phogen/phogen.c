@@ -122,7 +122,7 @@ int phogen_main()
     // --- Photon Generation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, 
+    plf=openNewPhotonListFile(photonlist_filename, par.clobber,
 			      &status);
     CHECK_STATUS_BREAK(status);
 

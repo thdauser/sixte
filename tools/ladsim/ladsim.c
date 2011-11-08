@@ -199,7 +199,7 @@ static void ladphdet(const LAD* const lad,
     // includes ARF contributions, e.g., 
     // the detector quantum efficiency and filter transmission.
     if (channel<0) {
-      printf("### undetected photon\n");
+      headas_chat(5, "### undetected photon\n");
       continue; // Photon is not detected.
     }
 
@@ -260,8 +260,7 @@ static void ladphdet(const LAD* const lad,
 		  ilf->row, ilf->nrows, ilf->row*100./ilf->nrows);
       fflush(NULL);
     }
-
-  };
+  }
   CHECK_STATUS_VOID(*status);
   // END of loop over all impacts in the FITS file.
 }
@@ -434,7 +433,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -455,16 +454,24 @@ int ladsim_main()
     sixt_get_LADXMLFile(xml_filename, par.XMLFile);
     CHECK_STATUS_BREAK(status);
 
-    // Determine the photon list output file.
+    // Determine the prefix for the output files.
     char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.Prefix);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer,"NONE")) {
+      strcpy(par.Prefix, "");
+    } 
+
+    // Determine the photon list output file.
     char photonlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.PhotonList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(photonlist_filename, par.OutputStem);
+      strcpy(photonlist_filename, par.Prefix);
       strcat(photonlist_filename, "_photons.fits");
     } else {
-      strcpy(photonlist_filename, par.PhotonList);
+      strcpy(photonlist_filename, par.Prefix);
+      strcat(photonlist_filename, par.PhotonList);
     }
 
     // Determine the impact list output file.
@@ -472,32 +479,35 @@ int ladsim_main()
     strcpy(ucase_buffer, par.ImpactList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(impactlist_filename, par.OutputStem);
+      strcpy(impactlist_filename, par.Prefix);
       strcat(impactlist_filename, "_impacts.fits");
     } else {
-      strcpy(impactlist_filename, par.ImpactList);
+      strcpy(impactlist_filename, par.Prefix);
+      strcat(impactlist_filename, par.ImpactList);
     }
     
-    // Determine the raw event list output file.
+    // Determine the signal list output file.
     char signallist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.SignalList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(signallist_filename, par.OutputStem);
+      strcpy(signallist_filename, par.Prefix);
       strcat(signallist_filename, "_signals.fits");
     } else {
-      strcpy(signallist_filename, par.SignalList);
+      strcpy(signallist_filename, par.Prefix);
+      strcat(signallist_filename, par.SignalList);
     }
 
-    // Determine the recombined event list output file.
+    // Determine the event list output file.
     char eventlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(eventlist_filename, par.OutputStem);
-      strcat(eventlist_filename, "_events.fits");
+      strcpy(eventlist_filename, par.Prefix);
+      strcpy(eventlist_filename, "_events.fits");
     } else {
-      strcpy(eventlist_filename, par.EventList);
+      strcpy(eventlist_filename, par.Prefix);
+      strcat(eventlist_filename, par.EventList);
     }
 
     // Determine the random number generator seed.
@@ -600,14 +610,13 @@ int ladsim_main()
     printf("### LAD Open Area Ratio: %lf ###\n", pass*1./try);
 #endif
 
-
     // --- End of Initialization ---
 
 
     // --- Simulation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, &status);
+    plf=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -759,13 +768,13 @@ int ladsim_getpar(struct Parameters* const par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_string("OutputStem", &sbuffer);
+  status=ape_trad_query_string("Prefix", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the filename stem for the output files!\n", 
+    HD_ERROR_THROW("Error reading the prefix for the output files!\n", 
 		   status);
     return(status);
   }
-  strcpy(par->OutputStem, sbuffer);
+  strcpy(par->Prefix, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("PhotonList", &sbuffer);

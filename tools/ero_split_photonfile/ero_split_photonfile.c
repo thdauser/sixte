@@ -53,7 +53,7 @@ int ero_split_photonfile_main() {
     for (filecounter=0; filecounter<7; filecounter++) {
       sprintf(filename, "%s%d.fits", 
 	      parameters.output_prefix, filecounter);
-      outputfiles[filecounter]=openNewPhotonListFile(filename, &status);
+      outputfiles[filecounter]=openNewPhotonListFile(filename, 0, &status);
       if (EXIT_SUCCESS!=status) break;
     }
     if (EXIT_SUCCESS!=status) break;

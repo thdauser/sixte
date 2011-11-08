@@ -68,15 +68,36 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 
 
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
+				      const int clobber,
 				      int* const status)
 {
   PhotonListFile* plf=NULL;
+  fitsfile* fptr=NULL;
 
-  // Remove old file, if it exists.
-  remove(filename);
+  // Check if the file already exists.
+  int exists;
+  fits_file_exists(filename, &exists, status);
+  CHECK_STATUS_RET(*status, plf);
+  if (0!=exists) {
+    if (0!=clobber) {
+      // Open and remove the file.
+      fits_open_file(&fptr, filename, READONLY, status);
+      CHECK_STATUS_RET(*status, plf);
+      fits_delete_file(fptr, status);
+      CHECK_STATUS_RET(*status, plf);
+      fits_close_file(fptr, status);
+      CHECK_STATUS_RET(*status, plf);
+    } else {
+      // Throw an error.
+      char msg[MAXMSG];
+      sprintf(msg, "file '%s' already exists", filename);
+      SIXT_ERROR(msg);
+      *status=EXIT_FAILURE;
+      return(plf);
+    }
+  }
 
   // Create a new photon list FITS file from the given FITS template.
-  fitsfile* fptr=NULL;
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/photonlist.tpl");
   fits_create_file(&fptr, buffer, status);

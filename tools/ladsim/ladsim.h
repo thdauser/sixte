@@ -26,7 +26,7 @@
 #define LAD_OAR 1
 
 struct Parameters {
-  char OutputStem[MAXFILENAME];
+  char Prefix[MAXFILENAME];
   char PhotonList[MAXFILENAME];
   char ImpactList[MAXFILENAME];
   char SignalList[MAXFILENAME];

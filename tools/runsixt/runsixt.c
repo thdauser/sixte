@@ -167,14 +167,13 @@ int runsixt_main()
     srccat = loadSourceCatalog(par.Simput, det->arf, &status);
     CHECK_STATUS_BREAK(status);
 
-
     // --- End of Initialization ---
 
 
     // --- Simulation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, &status);
+    plf=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

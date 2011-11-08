@@ -78,7 +78,7 @@ int photonmerge_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new output photon file:
-    outputfile=openNewPhotonListFile(par.OutputFile, &status);
+    outputfile=openNewPhotonListFile(par.OutputFile, par.clobber, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
