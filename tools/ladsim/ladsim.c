@@ -448,7 +448,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -828,7 +828,7 @@ int ladsim_main()
     } while(1); // END of photon processing loop.
     
     // Progress output.
-    headas_chat(2, "\r%.1lf %%", 100.);
+    headas_chat(2, "\r%.1lf %%\n", 100.);
     fflush(NULL);
 
     // Run the event recombination.
@@ -837,7 +837,7 @@ int ladsim_main()
     CHECK_STATUS_BREAK(status);
       
     // Run the event projection.
-    //headas_chat(3, "start sky projection ...\n");
+    //headas_chat(3, "sky projection ...\n");
     // TODO
     //phproj(det, ac, slf, par.TIMEZERO, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
