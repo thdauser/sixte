@@ -8,11 +8,6 @@
 #include "heasp.h"
 #endif
 
-/** Normalize the RSP such that it only contains the RMF. The ARF has
-    already been taken into account in the generation of the input
-    spectra of the X-ray sources. */
-#define NORMALIZE_RMF (1) // TODO Check whether RMF is normalized.
-
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.

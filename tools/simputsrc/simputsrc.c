@@ -316,7 +316,6 @@ int simputsrc_main()
 }
 
 
-
 int simputsrc_getpar(struct Parameters* const par)
 {
   // String input buffer.

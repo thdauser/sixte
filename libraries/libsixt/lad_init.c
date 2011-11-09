@@ -417,7 +417,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     xmlparsedata->lad->rmf = loadRMF(filepathname, &xmlparsedata->status);
 
   } else {
-    printf("Warning: unknown XML element '%s'\n", Uelement);
+    char msg[MAXMSG];
+    sprintf(msg, "unknown XML element '%s'", Uelement);
+    SIXT_WARNING(msg);
   }
 }
 

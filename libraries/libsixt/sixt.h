@@ -52,13 +52,13 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** Macro returning the maximum of 2 values. */
+/** Returns the maximum of 2 values. */
 #define MAX(a, b) ( (a)>(b) ? (a) : (b) )
-/** Macro returning the minimum of 2 values. */
+/** Returns the minimum of 2 values. */
 #define MIN(a, b) ( (a)<(b) ? (a) : (b) )
 
 
-// Error reporting macros.
+// Error handling macros.
 #define SIXT_ERROR(msg) (sixt_error(__func__, msg))
 
 #define CHECK_STATUS_BREAK(status) \
@@ -95,6 +95,10 @@
 #define CHECK_NULL(a,status,msg) CHECK_NULL_RET(a,status,msg,NULL);
 
 
+// Warnings.
+#define SIXT_WARNING(msg) (sixt_warning(msg))
+
+
 /////////////////////////////////////////////////////////////////
 // Function declarations.
 /////////////////////////////////////////////////////////////////
@@ -111,30 +115,28 @@
     files 'headas_rand.h' and 'headas_rand.c'. */
 double sixt_get_random_number();
 
-
 /** Returns a random value on the basis of an exponential distribution
     with a given average distance. In the simulation this function is
     used to calculate the temporal differences between individual
     photons from a source. The photons have Poisson statistics. */
 double rndexp(const double avg);
 
-
 /** Determine 2 (!) Gaussian distributed random numbers using the
     Box-Muller method (Gould & Tobochnik, p. 432). The standard
     deviation of the random numbers is 1. */
 void get_gauss_random_numbers(double* const x, double* const y);
 
-
 /** Convert a squence of chars into captial letters. The sequence has
     to be terminated by a '\0' mark. */
 void strtoupper(char* string);
-
 
 /** Print the given error message for an error occured in the
     specified function. The function name is also part of the
     output. */
 void sixt_error(const char* const func, const char* const msg);
 
+/** Print the given warning message. */
+void sixt_warning(const char* const msg);
 
 /** Determine the XMLFilename according to the selected mission,
     instrument and mode. */
@@ -144,7 +146,6 @@ void sixt_get_XMLFile(char* const filename,
 		      const char* const instrument,
 		      const char* const mode,
 		      int* const status);
-
 
 /** Determine the LAD XMLFilename. */
 void sixt_get_LADXMLFile(char* const filename,

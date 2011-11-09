@@ -8,53 +8,55 @@ struct RMF* loadRMF(const char* const filename, int* const status)
   struct RMF* rmf = (struct RMF*)malloc(sizeof(struct RMF));
   if (NULL==rmf) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: could not allocate memory for RMF!\n", *status);
+    SIXT_ERROR("could not allocate memory for RMF");
     return(rmf);
   }
 
   // Load the RMF from the FITS file using the HEAdas RMF access routines
   // (part of libhdsp).
   fits_open_file(&fptr, filename, READONLY, status);
-  if (*status!=EXIT_SUCCESS) return(rmf);
+  CHECK_STATUS_RET(*status, rmf);
   
   // Read the 'SPECRESP MATRIX' or 'MATRIX' extension:
-  if ((*status=ReadRMFMatrix(fptr, 0, rmf))!=EXIT_SUCCESS) return(rmf);
+  *status=ReadRMFMatrix(fptr, 0, rmf);
+  CHECK_STATUS_RET(*status, rmf);
 
   // Print some information:
   headas_chat(5, "RMF loaded with %ld energy bins and %ld channels\n",
 	      rmf->NumberEnergyBins, rmf->NumberChannels);
 
-#ifdef NORMALIZE_RMF
-  // Normalize the RMF:
-  headas_printf("### Warning: RSP/RMF is explicitly normalized!                 ###\n");
-  headas_printf("### ARF contributions must be contained in the input spectrum! ###\n");
-  NormalizeRMF(rmf);
-#else
-  // Check if the RSP file contains matrix rows with a sum of more than 1.
+  // Check if the RMF file contains matrix rows with a sum of more than 1.
   // In that case the RSP probably also contains the mirror ARF, what should 
-  // normally not be the case for this simulation.
+  // not be the case for this simulation. Row sums with a value of less than
+  // 1 should actually also not be used, but can be handled by the simulation.
   long chancount, bincount;
-  double maxsum = 0.;
+  double min_sum=1.;
   for (bincount=0; bincount<rmf->NumberEnergyBins; bincount++) {
-    double sum = 0.;
+    double sum=0.;
     for (chancount=0; chancount<rmf->NumberChannels; chancount++) {
-      sum += ReturnRMFElement(rmf, chancount, bincount);
+      sum+=ReturnRMFElement(rmf, chancount, bincount);
     }
-    if (sum > maxsum) {
-      maxsum = sum;
+    if (sum>1.000001) {
+      SIXT_ERROR("RMF contains rows with a sum > 1.0 (probably contains ARF)");
+      *status=EXIT_FAILURE;
+      return(rmf);
+    }
+    if (sum<min_sum) {
+      min_sum=sum;
     }
   }
-  if (fabs(maxsum-1.)>1.e-3) {
-    headas_printf("### Warning: RSP probably contains ARF "
-		  "(row-sum = %lf)! ###\n", maxsum);
+
+  if (min_sum<0.999999) {
+    SIXT_WARNING("RMF is not normalized");
   }
-#endif
 
   // Read the EBOUNDS extension:
-  if ((*status=ReadRMFEbounds(fptr, 0, rmf))!=EXIT_SUCCESS) return(rmf);
+  *status=ReadRMFEbounds(fptr, 0, rmf);
+  CHECK_STATUS_RET(*status, rmf);
 
   // Close the open FITS file.
   fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, rmf);
   
   return(rmf);
 }

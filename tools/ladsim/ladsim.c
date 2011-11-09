@@ -233,52 +233,51 @@ static int ladphdet(const LAD* const lad,
   // Determine which half of the anodes (bottom or top) is affected.
   long min_anode, max_anode;
   if (center_anode < element->nanodes/2) {
-    min_anode=0;
-    max_anode=element->nanodes/2-1;
+    min_anode=MAX(0                   , center_anode-2);
+    max_anode=MIN(element->nanodes/2-1, center_anode+2);
   } else {
-    min_anode=element->nanodes/2;
-    max_anode=element->nanodes-1;
+    min_anode=MAX(element->nanodes/2, center_anode-2);
+    max_anode=MIN(element->nanodes-1, center_anode+2);
   }
+  int n_anodes=max_anode-min_anode+1;
   
   // Loop over adjacent anodes.
-  long ii;
-  for (ii =MAX(min_anode,center_anode-2); 
-       ii<=MIN(max_anode,center_anode+2); ii++) {
+  int ii; // (lies within [0,4])
+  for (ii=0; ii<n_anodes; ii++) {
     
-    assert(ii-center_anode+2>=0);
-    assert(ii-center_anode+2< 5);
+    assert(ii<5);
 
-    signals[ii-center_anode+2].panel   = imp->panel;
-    signals[ii-center_anode+2].module  = imp->module;
-    signals[ii-center_anode+2].element = imp->element;
-    signals[ii-center_anode+2].anode   = ii;
-    signals[ii-center_anode+2].ph_id[0] = imp->ph_id;
-    signals[ii-center_anode+2].src_id[0] = imp->src_id;
+    signals[ii].panel   = imp->panel;
+    signals[ii].module  = imp->module;
+    signals[ii].element = imp->element;
+    signals[ii].anode   = ii+min_anode;
+    signals[ii].ph_id[0]  = imp->ph_id;
+    signals[ii].src_id[0] = imp->src_id;
     
     // Measured time.
-    signals[ii-center_anode+2].time = imp->time + drifttime;
+    signals[ii].time = imp->time + drifttime;
     
     // Measured signal.
-    double yi = ii*1.0;
-    signals[ii-center_anode+2].signal = signal*
+    double yi = (ii+min_anode)*1.0;
+    signals[ii].signal = signal*
       (gaussint(((yi-y0)-0.5)*anode_pitch/sigma)-
        gaussint(((yi-y0)+0.5)*anode_pitch/sigma));
 
     // Apply thresholds.
     if (NULL!=lad->threshold_readout_lo_keV) {
-      if (signals[ii-center_anode+2].signal < *(lad->threshold_readout_lo_keV)) {
+      if (signals[ii].signal < *(lad->threshold_readout_lo_keV)) {
 	return(0);
       }
     }
     if (NULL!=lad->threshold_readout_up_keV) {
-      if (signals[ii-center_anode+2].signal > *(lad->threshold_readout_up_keV)) {
+      if (signals[ii].signal > *(lad->threshold_readout_up_keV)) {
 	return(0);
       }
     }
   }
   // END of loop over adjacent anodes.
 
-  return(1);
+  return(n_anodes);
 }
 
 
@@ -503,7 +502,7 @@ int ladsim_main()
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(signallist_filename, par.Prefix);
-      strcat(signallist_filename, "_signals.fits");
+      strcat(signallist_filename, "signals.fits");
     } else {
       strcpy(signallist_filename, par.Prefix);
       strcat(signallist_filename, par.SignalList);
@@ -515,7 +514,7 @@ int ladsim_main()
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(eventlist_filename, par.Prefix);
-      strcpy(eventlist_filename, "_events.fits");
+      strcpy(eventlist_filename, "events.fits");
     } else {
       strcpy(eventlist_filename, par.Prefix);
       strcat(eventlist_filename, par.EventList);
@@ -574,8 +573,9 @@ int ladsim_main()
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", par.TIMEZERO, par.TIMEZERO+par.Exposure);
-	HD_ERROR_THROW(msg, status);
+		"specified period from %lf to %lf!", 
+		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+	SIXT_ERROR(msg);
 	break;
       }
     }
@@ -764,6 +764,8 @@ int ladsim_main()
     // Loop over photon generation and processing
     // till the time of the photon exceeds the requested
     // exposure time.
+    // Simulation progress (running from 0 to 1000).
+    int progress=0;
     do {
 
       // Photon generation.
@@ -802,20 +804,32 @@ int ladsim_main()
 
       // Photon Detection.
       LADSignal signals[5];
-      int isdet=ladphdet(lad, &imp, signals);
+      int ndet=ladphdet(lad, &imp, signals);
+      assert(ndet<=5);
 
       // If the photon is not detected but lost,
       // continue with the next one.
-      if (0==isdet) continue;
+      if (0==ndet) continue;
 
-      // Write the signals and the events to the output file.
+      // Write the signals to the output file.
       int ii;
-      for (ii=0; ii<5; ii++) {
-	addLADSignal2File(slf, &signals[ii], &status);
+      for (ii=0; ii<ndet; ii++) {
+	addLADSignal2File(slf, &(signals[ii]), &status);
 	CHECK_STATUS_BREAK(status);
+      }
+      
+      // Program progress output.
+      if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+	progress++;
+	headas_chat(2, "\r%.1lf %%", progress*1./10.);
+	fflush(NULL);
       }
 
     } while(1); // END of photon processing loop.
+    
+    // Progress output.
+    headas_chat(2, "\r%.1lf %%", 100.);
+    fflush(NULL);
 
     // Run the event recombination.
     headas_chat(3, "event recombination ...\n");
