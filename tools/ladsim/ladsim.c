@@ -823,7 +823,7 @@ int ladsim_main()
     CHECK_STATUS_BREAK(status);
       
     // Run the event projection.
-    //headas_chat(5, "start sky projection ...\n");
+    //headas_chat(3, "start sky projection ...\n");
     // TODO
     //phproj(det, ac, slf, par.TIMEZERO, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
@@ -849,7 +849,7 @@ int ladsim_main()
   // Release HEADAS random number generator:
   HDmtFree();
 
-  if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
+  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 

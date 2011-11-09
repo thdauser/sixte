@@ -66,7 +66,7 @@ int genlc_main() {
 
 
     // --- Begin Spectrum Binning ---
-    headas_chat(5, "calculate light curve ...\n");
+    headas_chat(3, "calculate light curve ...\n");
 
     // LOOP over all events in the FITS table.
     for (ii=0; ii<nrows; ii++) {

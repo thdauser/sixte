@@ -161,7 +161,7 @@ int phogen_main()
   // Release HEADAS random number generator:
   HDmtFree();
 
-  if (status==EXIT_SUCCESS) headas_chat(0, "finished successfully!\n\n");
+  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 

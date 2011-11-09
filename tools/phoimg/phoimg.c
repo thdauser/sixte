@@ -149,7 +149,7 @@ int phoimg_main() {
 
 
   // --- cleaning up ---
-  headas_chat(5, "cleaning up ...\n");
+  headas_chat(3, "cleaning up ...\n");
 
   // Release HEADAS random number generator.
   HDmtFree();
@@ -161,7 +161,7 @@ int phoimg_main() {
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
 
   return(status);
 }

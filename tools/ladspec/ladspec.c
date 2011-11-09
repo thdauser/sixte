@@ -65,7 +65,7 @@ int ladspec_main() {
 
 
     // --- Begin Spectrum Binning ---
-    headas_chat(5, "calculate spectrum ...\n");
+    headas_chat(3, "calculate spectrum ...\n");
 
     // LOOP over all events in the FITS table.
     for (ii=0; ii<elf->nrows; ii++) {
@@ -143,7 +143,7 @@ int ladspec_main() {
 
 
   // --- Cleaning up ---
-  headas_chat(5, "cleaning up ...\n");
+  headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
   freeLADEventListFile(&elf, &status);
@@ -153,7 +153,7 @@ int ladspec_main() {
   if (NULL!=spec) free(spec);
   freeLAD(&lad);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 
