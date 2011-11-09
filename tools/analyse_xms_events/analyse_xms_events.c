@@ -27,7 +27,7 @@ int analyse_xms_events_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new event file.
-    plf=openNewPatternFile(par.PatternList, &status);
+    plf=openNewPatternFile(par.PatternList, 0, &status);
     if (EXIT_SUCCESS!=status) break;
 
 

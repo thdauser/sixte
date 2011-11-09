@@ -41,6 +41,7 @@ void destroyPatternFile(PatternFile** const file, int* const status);
 
 /** Create and open a new PatternFile. */
 PatternFile* openNewPatternFile(const char* const filename,
+				const char clobber,
 				int* const status);
 
 /** Open an existing EventListFile. */

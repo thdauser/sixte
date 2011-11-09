@@ -38,13 +38,29 @@ void freeEventListFile(EventListFile** const file, int* const status)
 
 
 EventListFile* openNewEventListFile(const char* const filename,
+				    const char clobber,
 				    int* const status)
 {
   EventListFile* file=newEventListFile(status);
   if (EXIT_SUCCESS!=*status) return(file);
 
-  // Remove old file, if it exists.
-  remove(filename);
+  // Check if the file already exists.
+  int exists;
+  fits_file_exists(filename, &exists, status);
+  CHECK_STATUS_RET(*status, file);
+  if (0!=exists) {
+    if (0!=clobber) {
+      // Delete the file.
+      remove(filename);
+    } else {
+      // Throw an error.
+      char msg[MAXMSG];
+      sprintf(msg, "file '%s' already exists", filename);
+      SIXT_ERROR(msg);
+      *status=EXIT_FAILURE;
+      return(file);
+    }
+  }
 
   // Create a new event list FITS file from the template file.
   char buffer[MAXFILENAME];

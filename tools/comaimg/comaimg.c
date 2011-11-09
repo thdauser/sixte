@@ -47,32 +47,34 @@ int comaimg_main() {
     // Open the FITS file with the input photon list:
     photonlistfile=openPhotonListFile(parameters.photonlist_filename, 
 				      READONLY, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Open the attitude file specified in the header keywords of the photon list.
     char comment[MAXMSG];
-    if (fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
-		      &parameters.attitude_filename, comment, &status)) break;
-    if (NULL==(attitudecatalog=loadAttitudeCatalog(parameters.attitude_filename,
-						   &status))) break;
+    fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
+		  &parameters.attitude_filename, comment, &status);
+    attitudecatalog=loadAttitudeCatalog(parameters.attitude_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the coded mask from the file.
     mask = getCodedMaskFromFile(parameters.mask_filename, &status);
-    if(EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
     impactlistfile = openNewImpactListFile(parameters.impactlist_filename, 
-					   &status);
-    if (EXIT_SUCCESS!=status) break;
+					   0, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Write WCS header keywords.
-    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", 
-			&refxcrvl, "", &status)) break;
-    if (fits_update_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", 
-			&refycrvl, "", &status)) break;
+    fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", 
+		    &refxcrvl, "", &status);
+    fits_update_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", 
+		    &refycrvl, "", &status);
     // Add attitude filename.
-    if (fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", 
-			parameters.attitude_filename,
-		       "name of the attitude FITS file", &status)) break;
+    fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", 
+		    parameters.attitude_filename,
+		    "name of the attitude FITS file", &status);
+    CHECK_STATUS_BREAK(status);
     
     // --- END of Initialization ---
 
@@ -80,7 +82,7 @@ int comaimg_main() {
     // --- Beginning of Imaging Process ---
 
     // Beginning of actual simulation (after loading required data):
-    headas_chat(5, "start imaging process ...\n");
+    headas_chat(3, "start imaging process ...\n");
 
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
     long attitude_counter=0;  // counter for AttitudeCatalog
@@ -105,7 +107,7 @@ int comaimg_main() {
       fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->cdec, 
 		    photonlistfile->row+1, 1, 1, &photon.dec, &photon.dec, 
 		    &anynul, &status);
-      if (status!=EXIT_SUCCESS) break;
+      CHECK_STATUS_BREAK(status);
 
       // Rescale from [deg] -> [rad]
       photon.ra  = photon.ra *M_PI/180.;
@@ -116,7 +118,7 @@ int comaimg_main() {
    
       // Determine telescope pointing direction at the current time.
       telescope.nz = getTelescopeNz(attitudecatalog, photon.time, &status);
-      if (EXIT_SUCCESS!=status) break;
+      CHECK_STATUS_BREAK(status);
 
       // Check whether the photon is inside the FOV:
       // Compare the photon direction to the unit vector specifiing the 
@@ -176,17 +178,19 @@ int comaimg_main() {
 			 impactlistfile->row, 1, 1, &position.x, &status);
 	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cy, 
 			 impactlistfile->row, 1, 1, &position.y, &status);
+	  CHECK_STATUS_BREAK(status);
 	  impactlistfile->nrows++;
 	  //}
 	} // END getCodedMaskImpactPos(...)
       } // End of FOV check.
     } // END of scanning LOOP over the photon list.
-
+    CHECK_STATUS_BREAK(status);
+      
   } while(0);  // END of the error handling loop.
 
 
   // --- Cleaning up ---
-  headas_chat(5, "cleaning up ...\n");
+  headas_chat(3, "cleaning up ...\n");
 
   // release HEADAS random number generator
   HDmtFree();
@@ -198,7 +202,7 @@ int comaimg_main() {
   freeAttitudeCatalog(&attitudecatalog);
   destroyCodedMask(&mask);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 

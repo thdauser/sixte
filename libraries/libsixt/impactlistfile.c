@@ -45,10 +45,10 @@ void freeImpactListFile(ImpactListFile** const file, int* const status)
 ImpactListFile* openImpactListFile(const char* const filename,
 				   const int mode, int* const status)
 {
-  ImpactListFile* file = newImpactListFile(status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  ImpactListFile* file=newImpactListFile(status);
+  CHECK_STATUS_RET(*status, file);
 
-  headas_chat(4, "open impact list file '%s' ...\n", filename);
+  headas_chat(5, "open impact list file '%s' ...\n", filename);
 
   // Open the FITS file table for reading:
   if (fits_open_table(&file->fptr, filename, mode, status)) return(file);;
@@ -60,9 +60,9 @@ ImpactListFile* openImpactListFile(const char* const filename,
   if (IMAGE_HDU==hdutype) {
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "Error: no table extension available in FITS file '%s'!\n", 
+    sprintf(msg, "no table extension available in file '%s'", 
 	    filename);
-    HD_ERROR_THROW(msg, *status);
+    SIXT_ERROR(msg);
     return(file);
   }
 
@@ -72,31 +72,42 @@ ImpactListFile* openImpactListFile(const char* const filename,
   file->row = 0;
 
   // Determine the individual column numbers.
-  if(fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "ENERGY", &file->cenergy, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "X", &file->cx, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "Y", &file->cy, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status)) 
-    return(file);
-  if(fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status)) 
-    return(file);
+  fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "ENERGY", &file->cenergy, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "X", &file->cx, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "Y", &file->cy, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
+  CHECK_STATUS_RET(*status, file);
 
   return(file);
 }
 
 
 ImpactListFile* openNewImpactListFile(const char* const filename,
+				      const char clobber,
 				      int* const status)
 {
-  ImpactListFile* file = newImpactListFile(status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  ImpactListFile* file=newImpactListFile(status);
+  CHECK_STATUS_RET(*status, file);
 
-  // Remove old file, if it exists.
-  remove(filename);
+  // Check if the file already exists.
+  int exists;
+  fits_file_exists(filename, &exists, status);
+  CHECK_STATUS_RET(*status, file);
+  if (0!=exists) {
+    if (0!=clobber) {
+      // Delete the file.
+      remove(filename);
+    } else {
+      // Throw an error.
+      char msg[MAXMSG];
+      sprintf(msg, "file '%s' already exists", filename);
+      SIXT_ERROR(msg);
+      *status=EXIT_FAILURE;
+      return(file);
+    }
+  }
 
   // Create a new event list FITS file from the template.
   char buffer[MAXFILENAME];

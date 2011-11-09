@@ -60,7 +60,7 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Open the output pattern file.
-    plf=openNewPatternFile(pattern_filename, &status);
+    plf=openNewPatternFile(pattern_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Copy FITS header keywords.

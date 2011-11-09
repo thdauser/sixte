@@ -126,7 +126,7 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, &status);
+    ilf=openNewImpactListFile(impactlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

@@ -202,7 +202,7 @@ int runsixt_main()
 
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, &status);
+    ilf=openNewImpactListFile(impactlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -230,7 +230,7 @@ int runsixt_main()
 
 
     // Open the output event list file.
-    elf=openNewEventListFile(eventlist_filename, &status);
+    elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -253,7 +253,7 @@ int runsixt_main()
 
 
     // Open the output pattern list file.
-    patf=openNewPatternFile(patternlist_filename, &status);
+    patf=openNewPatternFile(patternlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

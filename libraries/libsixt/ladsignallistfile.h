@@ -43,6 +43,7 @@ void freeLADSignalListFile(LADSignalListFile** const file,
 /** Create and open a new LADSignalListFile. The new file is generated
     according to the specified template. */
 LADSignalListFile* openNewLADSignalListFile(const char* const filename,
+					    const char clobber,
 					    int* const status);
 
 /** Open an existing LADSignalListFile. */

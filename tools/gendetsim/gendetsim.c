@@ -79,7 +79,7 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
-    elf=openNewEventListFile(eventlist_filename, &status);
+    elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

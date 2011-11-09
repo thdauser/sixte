@@ -1,13 +1,13 @@
 #include "ladsim.h"
 
-static int ladphgen(AttitudeCatalog* const ac,
-		    SourceCatalog* const srccat,
-		    const double t0, 
-		    const double exposure,
-		    const double mjdref,
-		    const float fov,
-		    Photon* ph,
-		    int* const status)
+static inline int ladphgen(AttitudeCatalog* const ac,
+			   SourceCatalog* const srccat,
+			   const double t0, 
+			   const double exposure,
+			   const double mjdref,
+			   const float fov,
+			   Photon* ph,
+			   int* const status)
 {
   // Step width of the time loop.
   const double dt=1.0;
@@ -61,11 +61,11 @@ static int ladphgen(AttitudeCatalog* const ac,
 }
 
 
-static int ladphimg(const LAD* const lad,
-		    AttitudeCatalog* const ac,
-		    Photon* const ph,
-		    LADImpact* const imp,
-		    int* const status)
+static inline int ladphimg(const LAD* const lad,
+			   AttitudeCatalog* const ac,
+			   Photon* const ph,
+			   LADImpact* const imp,
+			   int* const status)
 {
   // Calculate the minimum cos-value for sources inside the FOV: 
   // (angle(x0,source) <= 1/2 * diameter)
@@ -175,9 +175,9 @@ static int ladphimg(const LAD* const lad,
 }
 
 
-static int ladphdet(const LAD* const lad,
-		     LADImpact* const imp,
-		     LADSignal* const signals)
+static inline int ladphdet(const LAD* const lad,
+			   LADImpact* const imp,
+			   LADSignal* const signals)
 {
   // Photon detection process according to Campana (2011).
   LADElement* element = 
@@ -627,16 +627,16 @@ int ladsim_main()
 
     // Open the output impact list file.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewLADImpactListFile(impactlist_filename, &status);
+      ilf=openNewLADImpactListFile(impactlist_filename, par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output raw event list file.
-    slf=openNewLADSignalListFile(signallist_filename, &status);
+    slf=openNewLADSignalListFile(signallist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the output event list file for recombined events.
-    elf=openNewLADEventListFile(eventlist_filename, &status);
+    elf=openNewLADEventListFile(eventlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

@@ -1,25 +1,16 @@
 #include "photonlistfile.h"
 
 
-PhotonListFile* openPhotonListFile(const char* const filename, 
-				   const int access_mode,
-				   int* const status)
+PhotonListFile* newPhotonListFile(int* const status)
 {
-  PhotonListFile* plf=NULL;
-  char msg[MAXMSG];
+  PhotonListFile* plf=(PhotonListFile*)malloc(sizeof(PhotonListFile));
+  CHECK_NULL_RET(plf, *status, "memory allocation for PhotonListFile failed",
+		 plf);
 
-  headas_chat(5, "open photon list file '%s' ...\n", filename);
-
-  // Get memory for the new PhotonListFile object.
-  plf = (PhotonListFile*)malloc(sizeof(PhotonListFile));
-  if (NULL==plf) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("memory allocation for PhotonListFile failed!\n", *status);
-    return(NULL);
-  }
-  
-  // Initialize with default values.
+  // Initialize pointers with NULL.
   plf->fptr=NULL;
+
+  // Initialize values.
   plf->nrows=0;
   plf->row=0;
   plf->ctime=0;
@@ -28,6 +19,33 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   plf->cdec=0;
   plf->cph_id=0;
   plf->csrc_id=0;
+
+  return(plf);
+}
+
+
+void freePhotonListFile(PhotonListFile** const plf, int* const status) 
+{
+  if (NULL!=*plf) {
+    if (NULL!=(*plf)->fptr) {
+      fits_close_file((*plf)->fptr, status);
+      headas_chat(5, "closed photon list file (containing %ld rows).\n", 
+		  (*plf)->nrows);
+    }
+    free(*plf);
+    *plf=NULL;
+  }
+}
+
+
+PhotonListFile* openPhotonListFile(const char* const filename, 
+				   const int access_mode,
+				   int* const status)
+{
+  PhotonListFile* plf=newPhotonListFile(status);
+  CHECK_STATUS_RET(*status, plf);
+  
+  headas_chat(5, "open photon list file '%s' ...\n", filename);
 
   // Open the FITS file table for reading:
   fits_open_table(&plf->fptr, filename, access_mode, status);
@@ -39,9 +57,10 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
   // Image HDU results in an error message.
   if (IMAGE_HDU==hdutype) {
+    char msg[MAXMSG];
     *status=EXIT_FAILURE;
-    sprintf(msg, "Error: no table extension available in FITS file '%s'!\n", filename);
-    HD_ERROR_THROW(msg, *status);
+    sprintf(msg, "no table extension available in file '%s'", filename);
+    SIXT_ERROR(msg);
     return(plf);
   }
 
@@ -68,11 +87,11 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 
 
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
-				      const int clobber,
+				      const char clobber,
 				      int* const status)
 {
-  PhotonListFile* plf=NULL;
-  fitsfile* fptr=NULL;
+  PhotonListFile* plf=newPhotonListFile(status);
+  CHECK_STATUS_RET(*status, plf);
 
   // Check if the file already exists.
   int exists;
@@ -80,13 +99,8 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
   if (0!=exists) {
     if (0!=clobber) {
-      // Open and remove the file.
-      fits_open_file(&fptr, filename, READONLY, status);
-      CHECK_STATUS_RET(*status, plf);
-      fits_delete_file(fptr, status);
-      CHECK_STATUS_RET(*status, plf);
-      fits_close_file(fptr, status);
-      CHECK_STATUS_RET(*status, plf);
+      // Delete the file.
+      remove(filename);
     } else {
       // Throw an error.
       char msg[MAXMSG];
@@ -100,21 +114,21 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   // Create a new photon list FITS file from the given FITS template.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/photonlist.tpl");
-  fits_create_file(&fptr, buffer, status);
+  fits_create_file(&plf->fptr, buffer, status);
   CHECK_STATUS_RET(*status, plf);
 
   // Add header information about program parameters.
   // The second parameter "1" means that the headers are written
   // to the first extension.
-  HDpar_stamp(fptr, 1, status);
-  if (EXIT_SUCCESS!=*status) return(plf);
+  HDpar_stamp(plf->fptr, 1, status);
+  CHECK_STATUS_RET(*status, plf);
 
   // Move to the binary table extension.
-  fits_movabs_hdu(fptr, 2, 0, status);
+  fits_movabs_hdu(plf->fptr, 2, 0, status);
   CHECK_STATUS_RET(*status, plf);
 
   // Close the file (it is reopened in the next step).
-  fits_close_file(fptr, status);
+  freePhotonListFile(&plf, status);
   CHECK_STATUS_RET(*status, plf);
 
   // Open the newly created FITS file.
@@ -122,20 +136,6 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
 
   return(plf);
-}
-
-
-void freePhotonListFile(PhotonListFile** const plf, int* const status) 
-{
-  if (NULL!=*plf) {
-    if (NULL!=(*plf)->fptr) {
-      fits_close_file((*plf)->fptr, status);
-      headas_chat(5, "closed photon list file (containing %ld rows).\n", 
-		  (*plf)->nrows);
-    }
-    free(*plf);
-    *plf=NULL;
-  }
 }
 
 
