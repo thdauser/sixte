@@ -44,7 +44,7 @@ LADSignalListFile* openNewLADSignalListFile(const char* const filename,
 					    const char clobber,
 					    int* const status)
 {
-  LADSignalListFile* file = newLADSignalListFile(status);
+  LADSignalListFile* file=newLADSignalListFile(status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the file already exists.
@@ -105,7 +105,7 @@ LADSignalListFile* openNewLADSignalListFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   // Re-open the file.
-  file = openLADSignalListFile(filename, READWRITE, status);
+  file=openLADSignalListFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
   
   return(file);

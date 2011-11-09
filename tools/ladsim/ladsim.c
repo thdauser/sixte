@@ -23,7 +23,7 @@ static inline int ladphgen(AttitudeCatalog* const ac,
 
   // If the photon list is empty, generate new photons from the
   // given source catalog.
-  while(NULL==pholist) {
+  while((NULL==pholist)&&(time<t0+exposure)) {
     // Determine the telescope pointing at the current point of time.
     Vector pointing = getTelescopeNz(ac, time, status);
     CHECK_STATUS_BREAK(*status);
@@ -44,7 +44,6 @@ static inline int ladphgen(AttitudeCatalog* const ac,
 
     // Increase the time.
     time+=dt;
-    if (time>=t0+exposure) break;
   }
 
   // If there is no photon in the buffer.
@@ -253,7 +252,12 @@ static inline int ladphdet(const LAD* const lad,
     signals[ii].anode   = ii+min_anode;
     signals[ii].ph_id[0]  = imp->ph_id;
     signals[ii].src_id[0] = imp->src_id;
-    
+    int jj;
+    for (jj=1; jj<NLADSIGNALPHOTONS; jj++) {
+      signals[ii].ph_id[jj] = 0;
+      signals[ii].src_id[jj]= 0;
+    }
+
     // Measured time.
     signals[ii].time = imp->time + drifttime;
     
@@ -771,7 +775,7 @@ int ladsim_main()
     // Loop over photon generation and processing
     // till the time of the photon exceeds the requested
     // exposure time.
-    // Simulation progress (running from 0 to 1000).
+    // Simulation progress status (running from 0 to 1000).
     int progress=0;
     do {
 
@@ -820,17 +824,11 @@ int ladsim_main()
 
       // Write the signals to the output file.
       int ii;
-      float sum=0.;
       for (ii=0; ii<ndet; ii++) {
-	sum+=signals[ii].signal;
 	addLADSignal2File(slf, &(signals[ii]), &status);
 	CHECK_STATUS_BREAK(status);
       }
 
-      if (sum<1.0) {
-	printf("%e\n", sum);
-      }
-      
       // Program progress output.
       if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
 	progress++;
