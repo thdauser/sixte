@@ -258,10 +258,17 @@ static inline int ladphdet(const LAD* const lad,
     signals[ii].time = imp->time + drifttime;
     
     // Measured signal.
-    double yi = (ii+min_anode)*1.0;
-    signals[ii].signal = signal*
-      (gaussint(((yi-y0)-0.5)*anode_pitch/sigma)-
-       gaussint(((yi-y0)+0.5)*anode_pitch/sigma));
+    double yi=(ii+min_anode)*1.0;
+    double fraction=0.;
+    if (ii>0) {
+      fraction =gaussint(((yi-y0)-0.5)*anode_pitch/sigma);
+    } else {
+      fraction =1.;
+    }
+    if (ii<n_anodes-1) {
+      fraction -=gaussint(((yi-y0)+0.5)*anode_pitch/sigma);
+    }
+    signals[ii].signal = signal*fraction;
 
     // Apply thresholds.
     if (NULL!=lad->threshold_readout_lo_keV) {
@@ -813,9 +820,15 @@ int ladsim_main()
 
       // Write the signals to the output file.
       int ii;
+      float sum=0.;
       for (ii=0; ii<ndet; ii++) {
+	sum+=signals[ii].signal;
 	addLADSignal2File(slf, &(signals[ii]), &status);
 	CHECK_STATUS_BREAK(status);
+      }
+
+      if (sum<1.0) {
+	printf("%e\n", sum);
       }
       
       // Program progress output.
