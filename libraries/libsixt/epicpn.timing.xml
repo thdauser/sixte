@@ -31,26 +31,8 @@
     <wait time="22.3e-6"/><readoutline lineindex="0" readoutindex="$i"/>
     <!-- shift and readout time are taken from the PhD Thesis of M. Kirsch (2000) -->
   </loop>
+  <newframe/>
 </readout>
-
-<eventgrading invalid="-1" borderinvalid="0" largeinvalid="1">
-  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="0"/>
-
-  <grade p11="0" p12="1" p13="0" p21="0" p23="0" p31="0" p32="0" p33="0" grade="1"/>
-  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="2"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="3"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="0" p31="0" p32="1" p33="0" grade="4"/>
-
-  <grade p11="0" p12="1" p13="0" p21="1" p23="0" p31="0" p32="0" p33="0" grade="5"/>
-  <grade p11="0" p12="1" p13="0" p21="0" p23="1" p31="0" p32="0" p33="0" grade="6"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="1" p31="0" p32="1" p33="0" grade="7"/>
-  <grade p11="0" p12="0" p13="0" p21="1" p23="0" p31="0" p32="1" p33="0" grade="8"/>
-
-  <grade p11="1" p12="2" p13="0" p21="2" p23="0" p31="0" p32="0" p33="0" grade="9"/>
-  <grade p11="0" p12="2" p13="1" p21="0" p23="2" p31="0" p32="0" p33="0" grade="10"/>
-  <grade p11="0" p12="0" p13="0" p21="0" p23="2" p31="0" p32="2" p33="1" grade="11"/>
-  <grade p11="0" p12="0" p13="0" p21="2" p23="0" p31="1" p32="2" p33="0" grade="12"/>
-</eventgrading>
 
 </detector>
 </instrument>
