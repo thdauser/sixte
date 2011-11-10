@@ -292,138 +292,128 @@ static inline int ladphdet(const LAD* const lad,
 }
 
 
-static void ladevents(const LAD* const lad,
-		      LADSignalListFile* const slf,
-		      LADEventListFile* const elf,
-		      int* const status)
+static inline int ladevrecomb(const LAD* const lad,
+			      LADSignal* const sig,
+			      LADEvent* const ev,
+			      int* const status)
 {
   // Maximum trigger time between subsequent raw events assigned 
   // to the same event.
   const double dt=1.e-12;
 
   // List of contributing raw events.
-  LADSignal** list=NULL;
-  long nlist=0;
+  static LADSignal** list=NULL;
+  static long nlist=0;
   const long maxnlist=10;
+  
+  // Number of recombined events (0 or 1).
+  int nevents=0;
 
-  // Error handling loop.
-  do { 
-    
-    // Allocate memory.
+  // Allocate memory.
+  if(NULL==list) {
     list=(LADSignal**)malloc(maxnlist*sizeof(LADSignal*));
-    CHECK_NULL_BREAK(list, *status, "memory allocation for list failed");
+    CHECK_NULL_RET(list, *status, "memory allocation for list failed", nevents);
+  }
 
-    // Loop over all rows in the input file.
-    long mm;
-    for (mm=0; mm<=slf->nrows; mm++) {
-    
-      // Read the next raw event from the list.
-      LADSignal* rev=NULL;
-      if (mm<slf->nrows) {
-	rev=getLADSignal(status);
-	CHECK_STATUS_BREAK(*status);
-	getLADSignalFromFile(slf, mm+1, rev, status);
-	CHECK_STATUS_BREAK(*status);
+  // Check if the new signal seems to belong to the same photon event.
+  int different=0;
+  if ((nlist>0)&&(NULL!=sig)) {
+    if ((fabs(sig->time-list[0]->time)>dt) ||
+	(sig->panel!=list[0]->panel) ||
+	(sig->module!=list[0]->module) ||
+	(sig->element!=list[0]->element) ||
+	(abs(sig->anode-list[nlist-1]->anode)>1)) {
+      different=1;
+    }
+
+    // Check for the different (bottom and top) anode lines.
+    long nanodes = 
+      lad->panel[sig->panel]->module[sig->module]->
+      element[sig->element]->nanodes;
+    if (((sig->anode>=nanodes/2)&&(list[0]->anode< nanodes/2)) ||
+	((sig->anode< nanodes/2)&&(list[0]->anode>=nanodes/2))) {
+      different=1;
+    }
+  }
+
+  // If the new signal belongs to a different photon event
+  // or the end of the input list has been reached, perform 
+  // a pattern analysis.
+  if ((1==different) || ((NULL==sig)&&(nlist>0))) { 
+
+    // Create a new empty event.
+    LADEvent* emptyev=getLADEvent(status);
+    CHECK_STATUS_RET(*status, nevents);
+    copyLADEvent(ev, emptyev);
+    freeLADEvent(&emptyev);
+
+    // Construct a combined event for output.
+    ev->panel   = list[0]->panel;
+    ev->module  = list[0]->module;
+    ev->element = list[0]->element;
+    ev->time    = list[0]->time;
+
+    long ii;
+    long maxidx=0;
+    for (ii=0; ii<nlist; ii++) {
+      // Search the anode with the maximum signal.
+      if (list[ii]->signal>list[maxidx]->signal) {
+	maxidx=ii;
       }
-
-      // Check if the new raw event seems to belong to the same photon event.
-      int different=0;
-      if ((nlist>0) && (NULL!=rev)) {
-	if ((fabs(rev->time-list[0]->time)>dt) ||
-	    (rev->panel!=list[0]->panel) ||
-	    (rev->module!=list[0]->module) ||
-	    (rev->element!=list[0]->element) ||
-	    (abs(rev->anode-list[nlist-1]->anode)>1)) {
-	  different=1;
-	}
-
-	// Check for the different (bottom and top) anode lines.
-	long nanodes = 
-	  lad->panel[rev->panel]->module[rev->module]->element[rev->element]->nanodes;
-	if (((rev->anode>=nanodes/2)&&(list[0]->anode< nanodes/2)) ||
-	    ((rev->anode< nanodes/2)&&(list[0]->anode>=nanodes/2))) {
-	  different=1;
-	}
-      }
-
-      // If the new raw event belongs to a different photon event
-      // or the end of the input list has been reached, perform 
-      // a pattern analysis.
-      if ((1==different) || ((mm==slf->nrows)&&(nlist>0))) { 
-
-	// Construct a combined event for output.
-	LADEvent* ev = getLADEvent(status);
-	CHECK_STATUS_BREAK(*status);
-	ev->panel   = list[0]->panel;
-	ev->module  = list[0]->module;
-	ev->element = list[0]->element;
-	ev->time    = list[0]->time;
-
-	long ii;
-	long maxidx=0;
-	for (ii=0; ii<nlist; ii++) {
-	  // Search the anode with the maximum signal.
-	  if (list[ii]->signal>list[maxidx]->signal) {
-	    maxidx=ii;
-	  }
 	
-	  // Sum the signal contributions.
-	  ev->signal += list[ii]->signal;
+      // Sum the signal contributions.
+      ev->signal += list[ii]->signal;
 
-	  // Set PH_IDs and SRC_IDs.
-	  long jj;
-	  for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
-	    long kk;
-	    for (kk=0; kk<NLADEVENTPHOTONS; kk++) {
-	      if (list[ii]->ph_id[jj]==ev->ph_id[kk]) break;
-	      if (0==ev->ph_id[kk]) {
-		ev->ph_id[kk] =list[ii]->ph_id[jj];
-		ev->src_id[kk]=list[ii]->src_id[jj];		
-		break;
-	      }
-	    }
+      // Set PH_IDs and SRC_IDs.
+      long jj;
+      for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
+	long kk;
+	for (kk=0; kk<NLADEVENTPHOTONS; kk++) {
+	  if (list[ii]->ph_id[jj]==ev->ph_id[kk]) break;
+	  if (0==ev->ph_id[kk]) {
+	    ev->ph_id[kk] =list[ii]->ph_id[jj];
+	    ev->src_id[kk]=list[ii]->src_id[jj];		
+	    break;
 	  }
 	}
-	ev->anode = list[maxidx]->anode;
-
-	// Add the event to the output file.
-	addLADEvent2File(elf, ev, status);
-	CHECK_STATUS_BREAK(*status);
-
-	// Release the buffer.
-	freeLADEvent(&ev);
-	for (ii=0; ii<nlist; ii++) {
-	  freeLADSignal(&list[ii]);
-	}
-	nlist=0;
-      }
-
-      // Add the new raw event to the list.
-      if (NULL!=rev) {
-	if (nlist==maxnlist) {
-	  SIXT_ERROR("too many raw events for list buffer");
-	  *status=EXIT_FAILURE;
-	  break;
-	}
-	list[nlist]=rev;
-	nlist++;
       }
     }
-    CHECK_STATUS_VOID(*status);
-    // END of loop over all raw events.
+    ev->anode = list[maxidx]->anode;
+    nevents=1;
 
-  } while(0); // END of error handling loop.
-    
-  // Release memory.
-  if (NULL!=list) {
+    // Release the buffer.
+    for (ii=0; ii<nlist; ii++) {
+      freeLADSignal(&list[ii]);
+    }
+    nlist=0;
+  }
+
+  // Add the new raw event to the list.
+  if (NULL!=sig) {
+    if (nlist==maxnlist) {
+      SIXT_ERROR("too many signals for buffer");
+      *status=EXIT_FAILURE;
+      return(nevents);
+    }
+    LADSignal* sig2=getLADSignal(status);
+    CHECK_STATUS_RET(*status, nevents);
+    copyLADSignal(sig2, sig);
+    list[nlist]=sig2;
+    nlist++;
+
+  } else {
+    // This has been the last signal. Therefore clean up and
+    // release allocated memory.
     long ii;
     for (ii=0; ii<nlist; ii++) {
-      if (NULL!=list[ii]) {
-	freeLADSignal(&list[ii]);
-      }
+      freeLADSignal(&list[ii]);
     }
+    nlist=0;
     free(list);
+    list=NULL;
   }
+
+  return(nevents);
 }
 
 
@@ -450,11 +440,6 @@ int ladsim_main()
   // Signal list file.
   LADSignalListFile* slf=NULL;
 
-  // Flag whether the signal list file should be removed after
-  // finishing the simulation process.
-  int remove_signallist=0;
-  char signallist_filename[MAXFILENAME];
-
   // Recombined event list file.
   LADEventListFile* elf=NULL;
 
@@ -464,7 +449,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -513,12 +498,11 @@ int ladsim_main()
     }
     
     // Determine the signal list output file.
+    char signallist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.SignalList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(signallist_filename, par.Prefix);
-      strcat(signallist_filename, "signals.fits");
-      remove_signallist=1;
+      strcpy(signallist_filename, "");
     } else {
       strcpy(signallist_filename, par.Prefix);
       strcat(signallist_filename, par.SignalList);
@@ -648,8 +632,10 @@ int ladsim_main()
     }
 
     // Open the output raw event list file.
-    slf=openNewLADSignalListFile(signallist_filename, par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
+    if (strlen(signallist_filename)>0) {
+      slf=openNewLADSignalListFile(signallist_filename, par.clobber, &status);
+      CHECK_STATUS_BREAK(status);
+    }
 
     // Open the output event list file for recombined events.
     elf=openNewLADEventListFile(eventlist_filename, par.clobber, &status);
@@ -699,13 +685,15 @@ int ladsim_main()
       }
 
       // Signal list file.
-      fits_update_key(slf->fptr, TDOUBLE, "RA_PNT", &ra,
-		      "RA of pointing direction [deg]", &status);
-      fits_update_key(slf->fptr, TDOUBLE, "DEC_PNT", &dec,
-		      "Dec of pointing direction [deg]", &status);
-      fits_update_key(slf->fptr, TFLOAT, "PA_PNT", &rollangle,
-		      "Roll angle [deg]", &status);
-      CHECK_STATUS_BREAK(status);
+      if (NULL!=slf) {
+	fits_update_key(slf->fptr, TDOUBLE, "RA_PNT", &ra,
+			"RA of pointing direction [deg]", &status);
+	fits_update_key(slf->fptr, TDOUBLE, "DEC_PNT", &dec,
+			"Dec of pointing direction [deg]", &status);
+	fits_update_key(slf->fptr, TFLOAT, "PA_PNT", &rollangle,
+			"Roll angle [deg]", &status);
+	CHECK_STATUS_BREAK(status);
+      }
 
       // Event list file.
       fits_update_key(elf->fptr, TDOUBLE, "RA_PNT", &ra,
@@ -726,8 +714,10 @@ int ladsim_main()
 	fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 			"attitude file", &status);
       }
-      fits_update_key(slf->fptr, TSTRING, "ATTITUDE", par.Attitude,
-		      "attitude file", &status);
+      if (NULL!=slf) {
+	fits_update_key(slf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+			"attitude file", &status);
+      }
       fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		      "attitude file", &status);
       CHECK_STATUS_BREAK(status);
@@ -754,11 +744,13 @@ int ladsim_main()
     }
 
     // Signal list file.
-    fits_update_key(slf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    fits_update_key(slf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    CHECK_STATUS_BREAK(status);
+    if (NULL!=slf) {
+      fits_update_key(slf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		      "reference MJD", &status);
+      fits_update_key(slf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		      "time offset", &status);
+      CHECK_STATUS_BREAK(status);
+    }
 
     // Event list file.
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
@@ -830,9 +822,30 @@ int ladsim_main()
       // Write the signals to the output file.
       int ii;
       for (ii=0; ii<ndet; ii++) {
-	addLADSignal2File(slf, &(signals[ii]), &status);
+	if (NULL!=slf) {
+	  addLADSignal2File(slf, &(signals[ii]), &status);
+	  CHECK_STATUS_BREAK(status);
+	}
+
+	// Recombine neighboring signals to events.
+	LADEvent ev;
+	int isev=ladevrecomb(lad, &(signals[ii]), &ev, &status);
 	CHECK_STATUS_BREAK(status);
+
+	// Add the event to the output file.
+	if (1==isev) {
+	  addLADEvent2File(elf, &ev, &status);
+	  CHECK_STATUS_BREAK(status);
+	}
+
+	// Run the event projection.
+	//headas_chat(3, "sky projection ...\n");
+	// TODO
+	//phproj(det, ac, slf, par.TIMEZERO, par.Exposure, &status);
+	//CHECK_STATUS_BREAK(status);
+
       }
+      // END of loop over all signals.
 
       // Program progress output.
       if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
@@ -842,21 +855,23 @@ int ladsim_main()
       }
 
     } while(1); // END of photon processing loop.
-    
+    CHECK_STATUS_BREAK(status);
+
+
+    // Call recombination routine one last time to finish up.
+    LADEvent ev;
+    int isev=ladevrecomb(lad, NULL, &ev, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Add the event to the output file.
+    if (1==isev) {
+      addLADEvent2File(elf, &ev, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     // Progress output.
     headas_chat(2, "\r%.1lf %%\n", 100.);
     fflush(NULL);
-
-    // Run the event recombination.
-    headas_chat(3, "event recombination ...\n");
-    ladevents(lad, slf, elf, &status);
-    CHECK_STATUS_BREAK(status);
-      
-    // Run the event projection.
-    //headas_chat(3, "sky projection ...\n");
-    // TODO
-    //phproj(det, ac, slf, par.TIMEZERO, par.Exposure, &status);
-    CHECK_STATUS_BREAK(status);
 
     // --- End of simulation process ---
 
@@ -875,11 +890,6 @@ int ladsim_main()
   freeSourceCatalog(&srccat, &status);
   freeAttitudeCatalog(&ac);
   freeLAD(&lad);
-
-  // Delete unnecessary files.
-  if (0!=remove_signallist) {
-    remove(signallist_filename);
-  }
 
   // Release HEADAS random number generator:
   HDmtFree();

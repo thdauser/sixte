@@ -59,5 +59,8 @@ LADSignal* getLADSignal(int* const status);
 /** Destructor for LADSignal data structure. */
 void freeLADSignal(LADSignal** const event);
 
+/** Copy LADSignal data structure. */
+void copyLADSignal(LADSignal* const dest, const LADSignal* const src);
+
 
 #endif /* LADSIGNAL_H */

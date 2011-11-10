@@ -33,3 +33,20 @@ void freeLADSignal(LADSignal** const event)
   }
 }
 
+
+void copyLADSignal(LADSignal* const dest, const LADSignal* const src)
+{
+  dest->time   = src->time;
+  dest->signal = src->signal;
+  dest->panel  = src->panel;
+  dest->module = src->module;
+  dest->element= src->element;
+  dest->anode  = src->anode;
+
+  long ii;
+  for(ii=0; ii<NLADSIGNALPHOTONS; ii++) {
+    dest->ph_id[ii]  = src->ph_id[ii];
+    dest->src_id[ii] = src->src_id[ii];
+  }
+}
+

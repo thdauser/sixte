@@ -59,5 +59,8 @@ LADEvent* getLADEvent(int* const status);
 /** Destructor for LADEvent data structure. */
 void freeLADEvent(LADEvent** const event);
 
+/** Copy LADEvent data structure. */
+void copyLADEvent(LADEvent* const dest, const LADEvent* const src);
+
 
 #endif /* LADEVENT_H */
