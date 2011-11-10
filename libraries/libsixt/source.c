@@ -82,14 +82,19 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 
   // Get a valid photon arrival time in the interval [t0,t1]
   while (*(src->t_next_photon) < t0) {
-    // The arrival time of the next photon was before the
+    // The arrival time of the next photon lies before the
     // requested time interval.
     int failed=0;
-    *(src->t_next_photon) = 
-      getSimputPhotonTime(simputsrc, *(src->t_next_photon), mjdref, 
-			  &failed, status);
+    double dt=
+      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status);
+    // Note that we have to use t0 for getSimputPhotonTime() here,
+    // since the value of *(src->t_next_photon) might be outside
+    // the time interval covered by the source light curve, as it
+    // has been set to t0-2./rate.
     CHECK_STATUS_RET(*status, list);
     if (1==failed) return(list);
+
+    *(src->t_next_photon) += dt;
   }
 
   // Create new photons, as long as the requested time interval 
