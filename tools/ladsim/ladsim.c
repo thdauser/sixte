@@ -447,8 +447,13 @@ int ladsim_main()
   // Impact list file.
   LADImpactListFile* ilf=NULL;
 
-  // Raw event list file.
+  // Signal list file.
   LADSignalListFile* slf=NULL;
+
+  // Flag whether the signal list file should be removed after
+  // finishing the simulation process.
+  int remove_signallist=0;
+  char signallist_filename[MAXFILENAME];
 
   // Recombined event list file.
   LADEventListFile* elf=NULL;
@@ -459,7 +464,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -508,12 +513,12 @@ int ladsim_main()
     }
     
     // Determine the signal list output file.
-    char signallist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.SignalList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(signallist_filename, par.Prefix);
       strcat(signallist_filename, "signals.fits");
+      remove_signallist=1;
     } else {
       strcpy(signallist_filename, par.Prefix);
       strcat(signallist_filename, par.SignalList);
@@ -870,6 +875,11 @@ int ladsim_main()
   freeSourceCatalog(&srccat, &status);
   freeAttitudeCatalog(&ac);
   freeLAD(&lad);
+
+  // Delete unnecessary files.
+  if (0!=remove_signallist) {
+    remove(signallist_filename);
+  }
 
   // Release HEADAS random number generator:
   HDmtFree();
