@@ -3,34 +3,41 @@
 
 #include "sixt.h"
 
-#define N_ATTITUDE_FIELDS 6  // number of fields in the attitude table
-
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
 
+
 /** Data structure describing an attitude file. */
 typedef struct {
-  fitsfile* fptr; /**< File pointer to the FITS file. */
+  /** File pointer to the FITS file. */
+  fitsfile* fptr; 
 
-  long row; /**< Current row in the attitude FITS table (starting at 0). */
-  long nrows; /**< Number of rows in the attitude table. */
+  /** Current row in the attitude FITS table (starting at 0). */
+  long row; 
+  /** Number of rows in the attitude table. */
+  long nrows; 
 
   /* Column numbers of the individual attitude file entries. The
      numbers start at 1. The number 0 means, that there is no
      corresponding column in the table. */
-  int ctime, cviewra, cviewdec, crollang;
+  int ctime, cra, cdec, crollang;
 
 } AttitudeFile;
 
 
 /** Contains a line of attitude data from a FITS file. */
 typedef struct {
-  double time; /**< Time for which the AttitudeFileEntry is valid. */
-  float viewra; /**< Right ascension of telescope pointing direction [deg]. */
-  float viewdec; /**< Declination of telescope pointing direction [deg].*/
-  float rollang; /**< Rollangle [deg]. */
+  /** Time for which the AttitudeFileEntry is valid. */
+  double time; 
+  /** Right ascension of telescope pointing direction [deg]. */
+  float ra; 
+  /** Declination of telescope pointing direction [deg].*/
+  float dec; 
+  /** Rollangle [deg]. */
+  float rollang; 
+
 } AttitudeFileEntry;
 
 
@@ -48,20 +55,6 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const stat
     either READONLY or READWRITE. */
 AttitudeFile* open_AttitudeFile(const char filename[], const int access_mode, 
 				int* const status);
-
-
-
-/////////////////////
-// Old routines: 
-// Writes a row of attitude data in to the FITS file.
-int add_attitudetbl_row(fitsfile *fptr, long row, char valtime[], 
-			double time, float view_ra, float view_dec, 
-			float rollangle, float aspangle, int fitsstatus);
-
-// Creates the necessary parameters to generate the table in the attitude FITS file.
-void create_attitudetbl_parameter(char *ftype[N_ATTITUDE_FIELDS], 
-				  char *fform[N_ATTITUDE_FIELDS], 
-				  char *funit[N_ATTITUDE_FIELDS]);
 
 
 #endif /* ATTITUDEFILE_H */

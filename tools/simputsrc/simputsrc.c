@@ -18,7 +18,7 @@ int simputsrc_main()
   float* flux=NULL;
 
   // SIMPUT data structures.
-  SimputMissionIndepSpec* simputspec=NULL;
+  SimputMIdpSpec* simputspec=NULL;
   SimputSource* src=NULL;
   SimputCatalog* cat=NULL;
 
@@ -153,7 +153,7 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
 
     // Add the spectra and append the total spectrum to the SIMPUT file.
-    simputspec=getSimputMissionIndepSpec(&status);
+    simputspec=getSimputMIdpSpec(&status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over the different components of the spectral model.
@@ -275,7 +275,7 @@ int simputsrc_main()
 	status=EXIT_FAILURE;
       }
     }
-    saveSimputMissionIndepSpec(simputspec, par.Simput, "SPECTRUM", 1, &status);
+    saveSimputMIdpSpec(simputspec, par.Simput, "SPECTRUM", 1, &status);
     CHECK_STATUS_BREAK(status);
     // END of creating the spectrum.
 
@@ -302,7 +302,7 @@ int simputsrc_main()
   }
 
   // Release memory.
-  freeSimputMissionIndepSpec(&simputspec);
+  freeSimputMIdpSpec(&simputspec);
   freeSimputSource(&src);
   freeSimputCatalog(&cat, &status);
 
@@ -311,7 +311,7 @@ int simputsrc_main()
     flux=NULL;
   }
 
-  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 

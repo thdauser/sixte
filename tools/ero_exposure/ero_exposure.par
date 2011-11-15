@@ -1,5 +1,5 @@
 attitude_filename,fre,lq,"attitude_183d_10s.fits",,,"attitude file (FITS input file) "
-vignetting_filename,s,lq,"~/erosita/vignetting/erosita.vignetting.fits",,,"Vignetting data file (FITS input file)"
+vignetting_filename,s,lq,"erosita.vignetting.fits",,,"Vignetting data file (FITS input file)"
 exposuremap_filename,f,lq,"exposure.fits",,,"exposure map file (FITS output file) "
 t0,r,lq,0.0,,,"t0 - start time (s) "
 timespan,r,lq,15724800.0,0.0,1000000000.0,"time interval for the exposure map calculation (s) "

@@ -19,9 +19,9 @@ int simputmerge_main()
   long nids=0;
 
   // Simput data structures (used as buffers).
-  SimputMissionIndepSpec* spec=NULL;
-  SimputImg*              img =NULL;
-  SimputLC*               lc  =NULL;
+  SimputMIdpSpec* spec=NULL;
+  SimputImg*      img =NULL;
+  SimputLC*       lc  =NULL;
 
   // HDU extension references used in the catalog.
   char** specextrefs[2] = {NULL, NULL};
@@ -344,7 +344,7 @@ int simputmerge_main()
 	    }
 
 	    // Load the spectrum.
-	    spec=loadSimputMissionIndepSpec(filename, &status);
+	    spec=loadSimputMIdpSpec(filename, &status);
 	    CHECK_STATUS_BREAK(status);
 	    
 	    // Determine the EXTNAME and EXTVER.
@@ -358,7 +358,7 @@ int simputmerge_main()
 	    CHECK_STATUS_BREAK(status);
 
 	    // Store it in the output file.
-	    saveSimputMissionIndepSpec(spec, par.Outfile, extname, extver, &status);
+	    saveSimputMIdpSpec(spec, par.Outfile, extname, extver, &status);
 	    CHECK_STATUS_BREAK(status);
 	  }
 	}
@@ -383,7 +383,7 @@ int simputmerge_main()
   freeSimputCatalog(&incat[1], &status);
   freeSimputCatalog(&outcat, &status);
 
-  freeSimputMissionIndepSpec(&spec);
+  freeSimputMIdpSpec(&spec);
   freeSimputImg(&img);
   freeSimputLC(&lc);
 

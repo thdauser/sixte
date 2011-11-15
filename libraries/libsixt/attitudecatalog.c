@@ -86,7 +86,7 @@ AttitudeCatalog* loadAttitudeCatalog(const char* filename,
 
       // Telescope pointing direction nz:
       ac->entry[af->row].nz = 
-	unit_vector(afe.viewra*M_PI/180., afe.viewdec*M_PI/180.);
+	unit_vector(afe.ra*M_PI/180., afe.dec*M_PI/180.);
 
       // Roll-Angle:
       ac->entry[af->row].roll_angle = afe.rollang*M_PI/180.;
