@@ -28,7 +28,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -62,7 +62,7 @@ int simputsrc_main()
     }
     
     // Get a new source entry.
-    src=getSimputSourceV(1, src_name, 0., 0., 0., 1., 
+    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1., 
 			 par.Emin, par.Emax, totalFlux, 
 			 "[SPECTRUM,1]", "", "", &status);
     CHECK_STATUS_BREAK(status);
@@ -399,6 +399,18 @@ int simputsrc_getpar(struct Parameters* const par)
   status=ape_trad_query_float("Emax", &par->Emax);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("reading the Emax parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("RA", &par->RA);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the right ascension failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Dec", &par->Dec);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the declination failed");
     return(status);
   }
 

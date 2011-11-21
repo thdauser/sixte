@@ -32,6 +32,10 @@ struct Parameters {
   float Emin;
   float Emax;
 
+  /** Source position [deg]. */
+  float RA;
+  float Dec;
+
   /** Name of the X-ray source. */
   char Src_Name[MAXMSG];
 
