@@ -157,6 +157,7 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
 
     // Loop over the different components of the spectral model.
+    long nrows=0;
     for (ii=0; ii<4; ii++) {
 
       // Read the spectrum.
@@ -165,8 +166,7 @@ int simputsrc_main()
       fits_open_table(&specfile, filename, READONLY, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Read the data.
-      long nrows=0;
+      // Load the data from the file.
       int anynull;
       if (0==ii) {
 	// Determine the number of rows.
@@ -179,16 +179,28 @@ int simputsrc_main()
 	CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
 	simputspec->pflux=(float*)malloc(nrows*sizeof(float));
 	CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+	flux=(float*)malloc(nrows*sizeof(float));
+	CHECK_NULL_BREAK(flux, status, "memory allocation failed");
 
 	// Read the energy column.
 	fits_read_col(specfile, TFLOAT, 1, 1, 1, nrows, 0, simputspec->energy, 
 		      &anynull, &status);
 	CHECK_STATUS_BREAK(status);
+
+      } else {
+	// Check whether the number of entries is
+	// consistent with the previous files.
+	fits_get_num_rows(specfile, &nrows, &status);
+	CHECK_STATUS_BREAK(status);
+	
+	if (nrows!=simputspec->nentries) {
+	  SIXT_ERROR("inconsistent sizes of spectra");
+	  status=EXIT_FAILURE;
+	  break;
+	}
       }
 
-      flux=(float*)malloc(nrows*sizeof(float));
-      CHECK_NULL_BREAK(flux, status, "memory allocation failed");
-
+      // Read the flux column.
       fits_read_col(specfile, TFLOAT, 2, 1, 1, nrows, 0, flux, 
 		    &anynull, &status);
       CHECK_STATUS_BREAK(status);
@@ -254,15 +266,13 @@ int simputsrc_main()
 	factor = shouldflux/isflux;
       }
 
-      long jj;
-      for (jj=0; jj<nrows; jj++) {
-	// Normalize.
-	flux[jj] *= factor;
-
-	// Add the component to the total spectrum.
-	simputspec->pflux[jj] += flux[jj];
+      // Add the normalized component to the total spectrum.
+      if (factor>0.) {
+	long jj;
+	for (jj=0; jj<nrows; jj++) {
+	  simputspec->pflux[jj] += flux[jj]*factor;
+	}
       }
-
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over the different spectral components.
