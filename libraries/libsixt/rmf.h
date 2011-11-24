@@ -31,6 +31,11 @@ struct RMF* loadRMF(const char* const filename, int* const status);
     realeased. */
 void freeRMF(struct RMF* const rmf);
 
+/** Returns a randomly selected channel for a photon of the given
+    input energy. */
+void returnRMFChannel(struct RMF *rmf, const float energy, 
+		      long* const channel);
+
 /** Determines the PHA channel corresponding to a given energy
     according to the EBOUNDS table of the detector response. The
     routine performs a binary search to obtain the PHA channel the

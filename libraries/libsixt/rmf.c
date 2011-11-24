@@ -125,4 +125,15 @@ float getEBOUNDSEnergy(long channel, const struct RMF* const rmf,
 }
 
 
+void returnRMFChannel(struct RMF *rmf, const float energy, 
+		      long* const channel)
+{
+  ReturnChannel(rmf, energy, 1, channel);
 
+#ifdef CORRECT_RMF_FIRST_CHANNEL
+  // Due to a bug in the HEAdas heasp ReturnChannel() routine,
+  // we have to subtract the FirstChannel in order to get the
+  // right value.
+  *channel -= rmf->FirstChannel;
+#endif 
+}

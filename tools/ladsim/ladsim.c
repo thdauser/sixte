@@ -211,8 +211,8 @@ static inline int ladphdet(const LAD* const lad,
   // The channel is obtained from the RMF using the corresponding
   // HEAdas routine which is based on drawing a random number.
   long channel;
-  ReturnChannel(lad->rmf, imp->energy, 1, &channel);
-  
+  returnRMFChannel(lad->rmf, imp->energy, &channel);
+
   // Check if the photon is really measured. If the
   // PHA channel returned by the HEAdas RMF function is '-1', 
   // the photon is not detected.
@@ -222,6 +222,9 @@ static inline int ladphdet(const LAD* const lad,
   if (channel<0) {
     headas_chat(5, "### undetected photon\n");
     return(0); // Photon is not detected.
+  } else if (channel<lad->rmf->FirstChannel) {
+    headas_printf("### wrong channel number !\n");
+    return(0);
   }
 
   // Determine the signal corresponding to the channel according 

@@ -177,7 +177,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     // The channel is obtained from the RMF using the corresponding
     // HEAdas routine which is based on drawing a random number.
     long channel;
-    ReturnChannel(det->rmf, impact->energy, 1, &channel);
+    returnRMFChannel(det->rmf, impact->energy, &channel);
 
     // Check if the photon is really measured. If the
     // PHA channel returned by the HEAdas RMF function is '-1', 
@@ -185,7 +185,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     // This can happen, if the RMF actually is an RSP, i.e. it 
     // includes ARF contributions, e.g., 
     // the detector quantum efficiency and filter transmission.
-    if (0>channel) {
+    if (channel<det->rmf->FirstChannel) {
       return(0); // Break the function (photon is not detected).
     }
 
