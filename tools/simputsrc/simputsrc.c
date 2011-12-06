@@ -28,7 +28,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -77,9 +77,8 @@ int simputsrc_main()
     fprintf(cmdfile, "use_localmodel(\"relline\");\n");
     
     // Define the energy grid.
-    fprintf(cmdfile, "variable grid=[0.05:100.0:0.01];\n");
-    fprintf(cmdfile, "variable lo=grid[[0:length(grid)-2]];\n");
-    fprintf(cmdfile, "variable hi=grid[[1:length(grid)-1]];\n");
+    fprintf(cmdfile, "variable lo=[0.05:100.0:0.01];\n");
+    fprintf(cmdfile, "variable hi=make_hi_grid(lo);\n");
     fprintf(cmdfile, "variable flux;\n");
     fprintf(cmdfile, "variable spec;\n");
 
