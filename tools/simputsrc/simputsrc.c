@@ -3,15 +3,12 @@
 
 int simputsrc_main() 
 {
-  // Filename constants.
-  const char CMDFILE[] = "isis.tmp";
-  const char SPECFILE[] = "spec%d.tmp";
-
   // Program parameters.
   struct Parameters par;
 
   // Temporary files for ISIS interaction.
   FILE* cmdfile=NULL;
+  char cmdfilename[MAXFILENAME]="";
   fitsfile* specfile=NULL;
 
   // Buffers for spectral components.
@@ -28,7 +25,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -67,8 +64,8 @@ int simputsrc_main()
     // Create the spectrum.
 
     // Open the ISIS command file.
-    // TODO Get a random temporary name instead of using a constant.
-    cmdfile=fopen(CMDFILE,"w+");
+    sprintf(cmdfilename, "%s.isis", par.Simput);
+    cmdfile=fopen(cmdfilename,"w+");
     CHECK_NULL_BREAK(cmdfile, status, "opening temporary file failed");
 
     // Write the header.
@@ -120,10 +117,9 @@ int simputsrc_main()
       // FITS file.
       fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
       fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
-      char command[MAXMSG];
-      sprintf(command, 
-	      "fits_write_binary_table(\"%s\",\"SPECTRUM\", spec);\n", SPECFILE);
-      fprintf(cmdfile, command, ii);
+      fprintf(cmdfile, 
+	      "fits_write_binary_table(\"%s.spec%d\",\"SPECTRUM\", spec);\n", 
+	      par.Simput, ii);
     } 
     CHECK_STATUS_BREAK(status);
     // END of loop over the different spectral components.
@@ -137,7 +133,7 @@ int simputsrc_main()
     // Construct the shell command to run ISIS.
     char command[MAXMSG];
     strcpy(command, "/data/system/software/local/bin/isis ");
-    strcat(command, CMDFILE);
+    strcat(command, cmdfilename);
       
     // Run ISIS.
     status=system(command);
@@ -153,7 +149,7 @@ int simputsrc_main()
 
       // Read the spectrum.
       char filename[MAXFILENAME];
-      sprintf(filename, SPECFILE, ii);
+      sprintf(filename, "%s.spec%d", par.Simput, ii);
       fits_open_table(&specfile, filename, READONLY, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -321,11 +317,13 @@ int simputsrc_main()
     specfile=NULL;
   }
   // Remove the temporary files.
-  remove(CMDFILE);
+  if (strlen(cmdfilename)>0) {
+    remove(cmdfilename);
+  }
   int ii;
   for (ii=0; ii<4; ii++) {
     char filename[MAXFILENAME];
-    sprintf(filename, SPECFILE, ii);
+    sprintf(filename, "%s.spec%d", par.Simput, ii);
     remove(filename);
   }
 
