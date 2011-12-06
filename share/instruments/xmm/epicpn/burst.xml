@@ -1,26 +1,36 @@
 <?xml version="1.0"?>
 <instrument>
 
+<telescope>
+<focallength value="7.5"/>
+<fov diameter="1.0"/>
+<psf filename="psf.fits"/>
+</telescope>
+
 <detector type="EPIC-pn">
 <dimensions xwidth="64" ywidth="200"/>
 <wcs xrpix="32.5" yrpix="190.5" xrval="0." yrval="0." xdelt="150.e-6" ydelt="150.e-6"/>
 <cte value="1"/>
-<!-- TODO -->
-<rmf filename="/home/schmid/erosita/rsp/erosita_iv_1telonaxis_ff.rsp"/>
-<!-- <split type="gauss" par1="11.e-6"/> -->
-<!-- TODO -->
+<rmf filename="pn-med-10.rmf"/>
+<arf filename="pn-med-10.arf"/>
+<split type="gauss" par1="11.e-6"/>
 <threshold_readout_lo_keV value="0."/>
 <threshold_readout_up_keV value="12."/>
 <threshold_event_lo_keV value="150.e-3"/>
 <threshold_split_lo_fraction value="0.01"/>
-<eventfile template="geneventfile.tpl"/>
+
 <readout mode="time">
   <loop start="0" end="199" increment="1">
-    <clearline lineindex="0"/><lineshift/><wait time="0.72e-6"/>
+    <clearline lineindex="0"/>
+    <lineshift/>
+    <wait time="0.72e-6"/>
   </loop>
   <loop start="0" end="179" increment="1" variable="$i">
     <!-- TODO Calculate the event time according to Kuster (1999) -->
-    <readoutline lineindex="0" readoutindex="$i"/><lineshift/><wait time="0.72e-6"/>
+    <readoutline lineindex="0" readoutindex="$i"/>
+    <newframe/>
+    <lineshift/>
+    <wait time="0.72e-6"/>
   </loop>
 </readout>
 </detector>

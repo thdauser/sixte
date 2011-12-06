@@ -19,9 +19,6 @@ dist_fitstemplates_DATA += photonlist.tpl
 xmldir = $(pkgdatadir)/xml
 dist_xml_DATA  = wfi.iaat.xml
 dist_xml_DATA += htrs.xml
-dist_xml_DATA += epicpn.fullframe.xml
-dist_xml_DATA += epicpn.timing.xml
-dist_xml_DATA += epicpn.burst.xml
 dist_xml_DATA += comadet.xml
 dist_xml_DATA += aciss3.xml
 
