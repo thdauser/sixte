@@ -1,6 +1,43 @@
 #include "simputsrc.h"
 
 
+float getFlux(const float* const energy, 
+	      const float* const flux,
+	      const long nrows,
+	      const float emin, 
+	      const float emax) 
+{
+  // Determine the current flux in the reference band.
+  // Conversion factor from [keV] -> [erg].
+  const float keV2erg = 1.602e-9;
+  // Flux in reference energy band.
+  float isflux=0.; 
+  long jj;
+  for (jj=0; jj<nrows; jj++) {
+    float binmin, binmax;
+    if (0==jj) {
+      binmin=energy[0];
+    } else {
+      binmin=0.5*(energy[jj]+energy[jj-1]);
+    }
+    if (nrows-1==jj) {
+      binmax=energy[nrows-1];
+    } else {
+      binmax=0.5*(energy[jj]+energy[jj+1]);
+    }
+    if ((binmax>emin)&&(binmin<emax)) {
+      float min = MAX(binmin, emin);
+      float max = MIN(binmax, emax);
+      assert(max>min);
+      isflux += (max-min)*flux[jj]*energy[jj];
+    }
+  }
+  // Convert units of 'flux' from [keV/s/cm^2] -> [erg/s/cm^2].
+  isflux *= keV2erg;
+  return(isflux);
+}
+
+
 int simputsrc_main() 
 {
   // Program parameters.
@@ -11,6 +48,9 @@ int simputsrc_main()
   char cmdfilename[MAXFILENAME]="";
   fitsfile* specfile=NULL;
 
+  // ISIS parameter file containing an explicit spectral model.
+  char ISISFile[MAXFILENAME]="";
+
   // Buffers for spectral components.
   float* flux=NULL;
 
@@ -20,12 +60,12 @@ int simputsrc_main()
   SimputCatalog* cat=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -61,7 +101,19 @@ int simputsrc_main()
     }
 
 
-    // Create the spectrum.
+    // -- Create the spectrum.
+
+    // Check if an ISIS spectral parameter file is given. In that 
+    // case the spectral model therein is used instead of the 
+    // individually defined components.
+    strcpy(ISISFile, par.ISISFile);
+    strtoupper(ISISFile);
+    if ((strlen(ISISFile)>0)&&(strcmp(ISISFile, "NONE"))) {
+      // Copy again the name, this time without upper-case conversion.
+      strcpy(ISISFile, par.ISISFile);
+    } else {
+      strcpy(ISISFile, "");
+    }
 
     // Open the ISIS command file.
     sprintf(cmdfilename, "%s.isis", par.Simput);
@@ -79,50 +131,67 @@ int simputsrc_main()
     fprintf(cmdfile, "variable flux;\n");
     fprintf(cmdfile, "variable spec;\n");
 
-    // Loop over the different components of the spectral model.
-    int ii;
-    for (ii=0; ii<4; ii++) {
+    // Distinguish whether, the individual spectral components or
+    // an ISIS spectral parameter file should be used.
+    if (strlen(ISISFile)==0) {
+    
+      // Loop over the different components of the spectral model.
+      int ii;
+      for (ii=0; ii<4; ii++) {
 
-      // Define the spectral model and set the parameters.
-      switch(ii) {
-      case 0:
-	fprintf(cmdfile, "fit_fun(\"phabs(1)*powerlaw(1)\");\n");
-	fprintf(cmdfile, "set_par(\"powerlaw(1).PhoIndex\", %e);\n", 
-		par.plPhoIndex);
-	break;
-      case 1:
-	fprintf(cmdfile, "fit_fun(\"phabs(1)*bbody(1)\");\n");
-	fprintf(cmdfile, "set_par(\"bbody(1).kT\", %e);\n", par.bbkT);	
-	break;
-      case 2:
-	fprintf(cmdfile, "fit_fun(\"phabs(1)*egauss(1)\");\n");
-	fprintf(cmdfile, "set_par(\"egauss(1).center\", 6.4);\n");	
-	fprintf(cmdfile, "set_par(\"egauss(1).sigma\", %e);\n", par.flSigma);	
-	break;
-      case 3:
-	fprintf(cmdfile, "fit_fun(\"phabs(1)*relline(1)\");\n");
-	fprintf(cmdfile, "set_par(\"relline(1).lineE\", 6.4);\n");	
-	fprintf(cmdfile, "set_par(\"relline(1).a\", %f);\n", par.rflSpin);	
-	break;
-      default:
-	status=EXIT_FAILURE;
-	break;
-      }
+	// Define the spectral model and set the parameters.
+	switch(ii) {
+	case 0:
+	  fprintf(cmdfile, "fit_fun(\"phabs(1)*powerlaw(1)\");\n");
+	  fprintf(cmdfile, "set_par(\"powerlaw(1).PhoIndex\", %e);\n", 
+		  par.plPhoIndex);
+	  break;
+	case 1:
+	  fprintf(cmdfile, "fit_fun(\"phabs(1)*bbody(1)\");\n");
+	  fprintf(cmdfile, "set_par(\"bbody(1).kT\", %e);\n", par.bbkT);	
+	  break;
+	case 2:
+	  fprintf(cmdfile, "fit_fun(\"phabs(1)*egauss(1)\");\n");
+	  fprintf(cmdfile, "set_par(\"egauss(1).center\", 6.4);\n");	
+	  fprintf(cmdfile, "set_par(\"egauss(1).sigma\", %e);\n", par.flSigma);	
+	  break;
+	case 3:
+	  fprintf(cmdfile, "fit_fun(\"phabs(1)*relline(1)\");\n");
+	  fprintf(cmdfile, "set_par(\"relline(1).lineE\", 6.4);\n");	
+	  fprintf(cmdfile, "set_par(\"relline(1).a\", %f);\n", par.rflSpin);	
+	  break;
+	default:
+	  status=EXIT_FAILURE;
+	  break;
+	}
+	CHECK_STATUS_BREAK(status);
+
+	// Absorption is the same for all spectral components.
+	fprintf(cmdfile, "set_par(\"phabs(1).nH\", %e);\n", par.NH);
+
+	// Evaluate the spectral model and store the data in a temporary 
+	// FITS file.
+	fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
+	fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
+	fprintf(cmdfile, 
+		"fits_write_binary_table(\"%s.spec%d\",\"SPECTRUM\", spec);\n", 
+		par.Simput, ii);
+      } 
       CHECK_STATUS_BREAK(status);
+      // END of loop over the different spectral components.
 
-      // Absorption is the same for all spectral components.
-      fprintf(cmdfile, "set_par(\"phabs(1).nH\", %e);\n", par.nH);
-
-      // Evaluate the spectral model and store the data in a temporary 
-      // FITS file.
+    } else { 
+      // An ISIS parameter file with an explizit spectral
+      // model is given.
+      fprintf(cmdfile, "load_par(\"%s\");\n", ISISFile);
       fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
       fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
       fprintf(cmdfile, 
-	      "fits_write_binary_table(\"%s.spec%d\",\"SPECTRUM\", spec);\n", 
-	      par.Simput, ii);
-    } 
-    CHECK_STATUS_BREAK(status);
-    // END of loop over the different spectral components.
+	      "fits_write_binary_table(\"%s.spec0\",\"SPECTRUM\", spec);\n", 
+	      par.Simput);
+    }
+    // END of using an explicit spectral model given in an ISIS 
+    // parameter file.
 
     fprintf(cmdfile, "exit;\n");
 
@@ -139,12 +208,13 @@ int simputsrc_main()
     status=system(command);
     CHECK_STATUS_BREAK(status);
 
-    // Add the spectra and append the total spectrum to the SIMPUT file.
+    // Add the spectra and insert the total spectrum in the SIMPUT file.
     simputspec=getSimputMIdpSpec(&status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over the different components of the spectral model.
     long nrows=0;
+    int ii;
     for (ii=0; ii<4; ii++) {
 
       // Read the spectrum.
@@ -196,69 +266,60 @@ int simputsrc_main()
       specfile=NULL;
       CHECK_STATUS_BREAK(status);
 
-      // Normalize the spectrum.
-      // Determine the required flux in the reference band.
-      float shouldflux=0.;
-      switch(ii) {
-      case 0:
-	shouldflux = par.plFlux;
-	break;
-      case 1:
-	shouldflux = par.bbFlux;
-	break;
-      case 2:
-	shouldflux = par.flFlux;
-	break;
-      case 3:
-	shouldflux = par.rflFlux;
-	break;
-      default:
-	status = EXIT_FAILURE;
-	break;
-      }
-      CHECK_STATUS_BREAK(status);
+      // If the spectrum is given via individual components, they
+      // have to be normalized according to their respective fluxes.
+      if (strlen(ISISFile)==0) {
+	// Determine the required flux in the reference band.
+	float shouldflux=0.;
+	switch(ii) {
+	case 0:
+	  shouldflux = par.plFlux;
+	  break;
+	case 1:
+	  shouldflux = par.bbFlux;
+	  break;
+	case 2:
+	  shouldflux = par.flFlux;
+	  break;
+	case 3:
+	  shouldflux = par.rflFlux;
+	  break;
+	default:
+	  status = EXIT_FAILURE;
+	  break;
+	}
+	CHECK_STATUS_BREAK(status);
 
-      float factor;
-      if (shouldflux==0.) {
-	factor=0.;
+	float factor;
+	if (shouldflux==0.) {
+	  factor=0.;
+	} else {
+	  // Determine the factor between the current flux in the reference 
+	  // band and the desired flux.
+	  factor = shouldflux/
+	    getFlux(simputspec->energy, flux, nrows, par.Emin, par.Emax);
+	}
+
+	// Add the normalized component to the total spectrum.
+	if (factor>0.) {
+	  long jj;
+	  for (jj=0; jj<nrows; jj++) {
+	    simputspec->pflux[jj]+=flux[jj]*factor;
+	  }
+	}
+
       } else {
-	// Determine the current flux in the reference band.
-	// Conversion factor from [keV] -> [erg].
-	const float keV2erg = 1.602e-9;
-	// Flux in reference energy band.
-	float isflux=0.; 
+	// The spectral model is given in an ISIS parameter file.
+	// Therefore we do not have to normalize it, but can directly
+	// add it to the SIMPUT spectrum.
 	long jj;
 	for (jj=0; jj<nrows; jj++) {
-	  float binmin, binmax;
-	  if (0==jj) {
-	    binmin=simputspec->energy[0];
-	  } else {
-	    binmin=0.5*(simputspec->energy[jj]+simputspec->energy[jj-1]);
-	  }
-	  if (nrows-1==jj) {
-	    binmax=simputspec->energy[nrows-1];
-	  } else {
-	    binmax=0.5*(simputspec->energy[jj]+simputspec->energy[jj+1]);
-	  }
-	  if ((binmax>par.Emin)&&(binmin<par.Emax)) {
-	    float min = MAX(binmin, par.Emin);
-	    float max = MIN(binmax, par.Emax);
-	    assert(max>min);
-	    isflux += (max-min)*flux[jj]*simputspec->energy[jj];
-	  }
+	  simputspec->pflux[jj]=flux[jj];
 	}
-	// Convert units of 'flux' from [keV/s/cm^2] -> [erg/s/cm^2].
-	isflux *= keV2erg;
 	
-	factor = shouldflux/isflux;
-      }
-
-      // Add the normalized component to the total spectrum.
-      if (factor>0.) {
-	long jj;
-	for (jj=0; jj<nrows; jj++) {
-	  simputspec->pflux[jj] += flux[jj]*factor;
-	}
+	// Since there are no further components, we can skip
+	// the further processing of the loop.
+	break;
       }
     }
     CHECK_STATUS_BREAK(status);
@@ -274,15 +335,16 @@ int simputsrc_main()
     }
     saveSimputMIdpSpec(simputspec, par.Simput, "SPECTRUM", 1, &status);
     CHECK_STATUS_BREAK(status);
-    // END of creating the spectrum.
+    // -- END of creating the spectrum.
 
 
-    // Create a new SIMPUT catalog.
+    // -- Create a new SIMPUT catalog.
     cat=openSimputCatalog(par.Simput, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.
-    float totalFlux = par.plFlux+par.bbFlux+par.flFlux+par.rflFlux;
+    float totalFlux = 	    
+      getFlux(simputspec->energy, simputspec->pflux, nrows, par.Emin, par.Emax);
     char src_name[MAXMSG];
     strcpy(src_name, par.Src_Name);
     strtoupper(src_name);
@@ -301,7 +363,7 @@ int simputsrc_main()
     appendSimputSource(cat, src, &status);
     CHECK_STATUS_BREAK(status);
 
-    // END of creating the catalog.
+    // -- END of creating the source catalog.
 
     // ---- END of Main Part ----
 
@@ -325,6 +387,9 @@ int simputsrc_main()
     char filename[MAXFILENAME];
     sprintf(filename, "%s.spec%d", par.Simput, ii);
     remove(filename);
+    
+    // Check whether there is only one file.
+    if (strlen(ISISFile)>0) break;
   }
 
   // Release memory.
@@ -400,9 +465,9 @@ int simputsrc_getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_float("nH", &par->nH);
+  status=ape_trad_query_float("NH", &par->NH);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("reading the nH parameter failed");
+    SIXT_ERROR("reading the N_H parameter failed");
     return(status);
   }
 
@@ -429,6 +494,22 @@ int simputsrc_getpar(struct Parameters* const par)
     SIXT_ERROR("reading the declination failed");
     return(status);
   }
+
+  status=ape_trad_query_string("Src_Name", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the source name failed");
+    return(status);
+  }
+  strcpy(par->Src_Name, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("ISISFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the name of the ISIS spectral parameter file failed");
+    return(status);
+  }
+  strcpy(par->ISISFile, sbuffer);
+  free(sbuffer);
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {

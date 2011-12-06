@@ -26,11 +26,14 @@ struct Parameters {
   float rflFlux;
 
   /** Absorption column [10^22 atoms/cm^2] */
-  float nH;
+  float NH;
 
   /** Reference energy band [keV]. */
   float Emin;
   float Emax;
+
+  /** File name of the input ISIS spectral parameters file. */
+  char ISISFile[MAXFILENAME];
 
   /** Source position [deg]. */
   float RA;
@@ -39,7 +42,7 @@ struct Parameters {
   /** Name of the X-ray source. */
   char Src_Name[MAXMSG];
 
-  /** File name of output SIMPUT file. */
+  /** File name of the output SIMPUT file. */
   char Simput[MAXFILENAME];
   
   char clobber;
