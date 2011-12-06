@@ -28,7 +28,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -44,32 +44,24 @@ int simputsrc_main()
 
     // ---- Main Part ----
 
-    // Create a new SIMPUT catalog.
-    remove(par.Simput);
-    cat=openSimputCatalog(par.Simput, READWRITE, &status);
+    // Check if the SIMPUT file already exists and remove the old 
+    // one if necessary.
+    int exists;
+    fits_file_exists(par.Simput, &exists, &status);
     CHECK_STATUS_BREAK(status);
-
-    // Insert a point-like source.
-    float totalFlux = par.plFlux+par.bbFlux+par.flFlux+par.rflFlux;
-    char src_name[MAXMSG];
-    strcpy(src_name, par.Src_Name);
-    strtoupper(src_name);
-    if ((strlen(src_name)>0)&&(strcmp(src_name, "NONE"))) {
-      // Copy again the name, this time without upper-case conversion.
-      strcpy(src_name, par.Src_Name);
-    } else {
-      strcpy(src_name, "");
+    if (0!=exists) {
+      if (0!=par.clobber) {
+	// Delete the file.
+	remove(par.Simput);
+      } else {
+	// Throw an error.
+	char msg[MAXMSG];
+	sprintf(msg, "file '%s' already exists", par.Simput);
+	SIXT_ERROR(msg);
+	status=EXIT_FAILURE;
+	break;
+      }
     }
-    
-    // Get a new source entry.
-    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1., 
-			 par.Emin, par.Emax, totalFlux, 
-			 "[SPECTRUM,1]", "", "", &status);
-    CHECK_STATUS_BREAK(status);
-    appendSimputSource(cat, src, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // END of creating the catalog.
 
 
     // Create the spectrum.
@@ -288,6 +280,33 @@ int simputsrc_main()
     saveSimputMIdpSpec(simputspec, par.Simput, "SPECTRUM", 1, &status);
     CHECK_STATUS_BREAK(status);
     // END of creating the spectrum.
+
+
+    // Create a new SIMPUT catalog.
+    cat=openSimputCatalog(par.Simput, READWRITE, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Insert a point-like source.
+    float totalFlux = par.plFlux+par.bbFlux+par.flFlux+par.rflFlux;
+    char src_name[MAXMSG];
+    strcpy(src_name, par.Src_Name);
+    strtoupper(src_name);
+    if ((strlen(src_name)>0)&&(strcmp(src_name, "NONE"))) {
+      // Copy again the name, this time without upper-case conversion.
+      strcpy(src_name, par.Src_Name);
+    } else {
+      strcpy(src_name, "");
+    }
+    
+    // Get a new source entry.
+    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1., 
+			 par.Emin, par.Emax, totalFlux, 
+			 "[SPECTRUM,1]", "", "", &status);
+    CHECK_STATUS_BREAK(status);
+    appendSimputSource(cat, src, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // END of creating the catalog.
 
     // ---- END of Main Part ----
 
