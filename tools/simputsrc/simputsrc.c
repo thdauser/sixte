@@ -3,10 +3,10 @@
 // TODO Re-structure the code and use the tmpfile command.
 
 float getFlux(const float* const energy, 
-	      const float* const flux,
-	      const long nrows,
-	      const float emin, 
-	      const float emax) 
+    const float* const flux,
+    const long nrows,
+    const float emin,
+    const float emax)
 {
   // Determine the current flux in the reference band.
   // Conversion factor from [keV] -> [erg].
@@ -77,7 +77,7 @@ int simputsrc_main()
   do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-    
+
     // Read the parameters using PIL.
     status=simputsrc_getpar(&par);
     CHECK_STATUS_BREAK(status);
@@ -114,7 +114,7 @@ int simputsrc_main()
     }
     int use_components=0;
     if ((par.plFlux>0.) || (par.bbFlux>0.) || 
-	(par.flFlux>0.) || (par.rflFlux>0.)) {
+        (par.flFlux>0.) || (par.rflFlux>0.)) {
       use_components=1;
       noptions++;
     }
@@ -138,15 +138,15 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
     if (0!=exists) {
       if (0!=par.clobber) {
-	// Delete the file.
-	remove(par.Simput);
+        // Delete the file.
+        remove(par.Simput);
       } else {
-	// Throw an error.
-	char msg[MAXMSG];
-	sprintf(msg, "file '%s' already exists", par.Simput);
-	SIXT_ERROR(msg);
-	status=EXIT_FAILURE;
-	break;
+        // Throw an error.
+        char msg[MAXMSG];
+        sprintf(msg, "file '%s' already exists", par.Simput);
+        SIXT_ERROR(msg);
+        status=EXIT_FAILURE;
+        break;
       }
     }
     // END of checking the existence of an old SIMPUT file.
@@ -171,71 +171,71 @@ int simputsrc_main()
       fprintf(cmdfile, "require(\"isisscripts\");\n");
       fprintf(cmdfile, "()=xspec_abund(\"wilm\");\n");
       fprintf(cmdfile, "use_localmodel(\"relline\");\n");
-    
+
       // Define the energy grid.
       fprintf(cmdfile, "variable lo=[0.05:100.0:0.01];\n");
       fprintf(cmdfile, "variable hi=make_hi_grid(lo);\n");
       fprintf(cmdfile, "variable flux;\n");
       fprintf(cmdfile, "variable spec;\n");
-    
+
       // Distinguish whether, the individual spectral components or
       // an ISIS spectral parameter file should be used.
       if (strlen(ISISFile)==0) {
-    
-	// Loop over the different components of the spectral model.
-	int ii;
-	for (ii=0; ii<4; ii++) {
 
-	  // Define the spectral model and set the parameters.
-	  switch(ii) {
-	  case 0:
-	    fprintf(cmdfile, "fit_fun(\"phabs(1)*powerlaw(1)\");\n");
-	    fprintf(cmdfile, "set_par(\"powerlaw(1).PhoIndex\", %e);\n", 
-		    par.plPhoIndex);
-	    break;
-	  case 1:
-	    fprintf(cmdfile, "fit_fun(\"phabs(1)*bbody(1)\");\n");
-	    fprintf(cmdfile, "set_par(\"bbody(1).kT\", %e);\n", par.bbkT);
-	    break;
-	  case 2:
-	    fprintf(cmdfile, "fit_fun(\"phabs(1)*egauss(1)\");\n");
-	    fprintf(cmdfile, "set_par(\"egauss(1).center\", 6.4);\n");	
-	    fprintf(cmdfile, "set_par(\"egauss(1).sigma\", %e);\n", par.flSigma);
-	    break;
-	  case 3:
-	    fprintf(cmdfile, "fit_fun(\"phabs(1)*relline(1)\");\n");
-	    fprintf(cmdfile, "set_par(\"relline(1).lineE\", 6.4);\n");	
-	    fprintf(cmdfile, "set_par(\"relline(1).a\", %f);\n", par.rflSpin);
-	    break;
-	  default:
-	    status=EXIT_FAILURE;
-	    break;
-	  }
-	  CHECK_STATUS_BREAK(status);
-	  
-	  // Absorption is the same for all spectral components.
-	  fprintf(cmdfile, "set_par(\"phabs(1).nH\", %e);\n", par.NH);
-	  
-	  // Evaluate the spectral model and store the data in a temporary 
-	  // FITS file.
-	  fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
-	  fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
-	  fprintf(cmdfile, 
-		  "fits_write_binary_table(\"%s.spec%d\",\"SPECTRUM\", spec);\n", 
-		  par.Simput, ii);
-	} 
-	CHECK_STATUS_BREAK(status);
-	// END of loop over the different spectral components.
+        // Loop over the different components of the spectral model.
+        int ii;
+        for (ii=0; ii<4; ii++) {
+
+          // Define the spectral model and set the parameters.
+          switch(ii) {
+          case 0:
+            fprintf(cmdfile, "fit_fun(\"phabs(1)*powerlaw(1)\");\n");
+            fprintf(cmdfile, "set_par(\"powerlaw(1).PhoIndex\", %e);\n",
+                par.plPhoIndex);
+            break;
+          case 1:
+            fprintf(cmdfile, "fit_fun(\"phabs(1)*bbody(1)\");\n");
+            fprintf(cmdfile, "set_par(\"bbody(1).kT\", %e);\n", par.bbkT);
+            break;
+          case 2:
+            fprintf(cmdfile, "fit_fun(\"phabs(1)*egauss(1)\");\n");
+            fprintf(cmdfile, "set_par(\"egauss(1).center\", 6.4);\n");
+            fprintf(cmdfile, "set_par(\"egauss(1).sigma\", %e);\n", par.flSigma);
+            break;
+          case 3:
+            fprintf(cmdfile, "fit_fun(\"phabs(1)*relline(1)\");\n");
+            fprintf(cmdfile, "set_par(\"relline(1).lineE\", 6.4);\n");
+            fprintf(cmdfile, "set_par(\"relline(1).a\", %f);\n", par.rflSpin);
+            break;
+          default:
+            status=EXIT_FAILURE;
+            break;
+          }
+          CHECK_STATUS_BREAK(status);
+
+          // Absorption is the same for all spectral components.
+          fprintf(cmdfile, "set_par(\"phabs(1).nH\", %e);\n", par.NH);
+
+          // Evaluate the spectral model and store the data in a temporary
+          // FITS file.
+          fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
+          fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
+          fprintf(cmdfile,
+              "fits_write_binary_table(\"%s.spec%d\",\"SPECTRUM\", spec);\n",
+              par.Simput, ii);
+        }
+        CHECK_STATUS_BREAK(status);
+        // END of loop over the different spectral components.
 
       } else { 
-	// An ISIS parameter file with an explizit spectral
-	// model is given.
-	fprintf(cmdfile, "load_par(\"%s\");\n", ISISFile);
-	fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
-	fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
-	fprintf(cmdfile, 
-		"fits_write_binary_table(\"%s.spec0\",\"SPECTRUM\", spec);\n", 
-		par.Simput);
+        // An ISIS parameter file with an explizit spectral
+        // model is given.
+        fprintf(cmdfile, "load_par(\"%s\");\n", ISISFile);
+        fprintf(cmdfile, "flux=eval_fun_keV(lo, hi)/(hi-lo);\n");
+        fprintf(cmdfile, "spec=struct{ENERGY=0.5*(lo+hi), FLUX=flux};\n");
+        fprintf(cmdfile,
+            "fits_write_binary_table(\"%s.spec0\",\"SPECTRUM\", spec);\n",
+            par.Simput);
       }
       // END of using an explicit spectral model given in an ISIS 
       // parameter file.
@@ -250,11 +250,11 @@ int simputsrc_main()
       char command[MAXMSG];
       strcpy(command, "/data/system/software/local/bin/isis ");
       strcat(command, cmdfilename);
-      
+
       // Run ISIS.
       status=system(command);
       CHECK_STATUS_BREAK(status);
-      
+
     } // END of running ISIS.
 
     // Add the spectra and insert the total spectrum in the SIMPUT file.
@@ -268,111 +268,111 @@ int simputsrc_main()
       long nrows=0;
       int ii;
       for (ii=0; ii<4; ii++) {
-	
-	// Determine the file name.
-	char filename[MAXFILENAME];
-	sprintf(filename, "%s.spec%d", par.Simput, ii);
-	fits_open_table(&specfile, filename, READONLY, &status);
-	CHECK_STATUS_BREAK(status);
 
-	// Load the data from the file.
-	int anynull;
-	if (0==ii) {
-	  // Determine the number of rows.
-	  fits_get_num_rows(specfile, &nrows, &status);
-	  CHECK_STATUS_BREAK(status);
-	  
-	  // Allocate memory.
-	  simputspec->nentries=nrows;
-	  simputspec->energy=(float*)malloc(nrows*sizeof(float));
-	  CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
-	  simputspec->pflux=(float*)malloc(nrows*sizeof(float));
-	  CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
-	  flux=(float*)malloc(nrows*sizeof(float));
-	  CHECK_NULL_BREAK(flux, status, "memory allocation failed");
-	  
-	  // Read the energy column.
-	  fits_read_col(specfile, TFLOAT, 1, 1, 1, nrows, 0, simputspec->energy, 
-			&anynull, &status);
-	  CHECK_STATUS_BREAK(status);
+        // Determine the file name.
+        char filename[MAXFILENAME];
+        sprintf(filename, "%s.spec%d", par.Simput, ii);
+        fits_open_table(&specfile, filename, READONLY, &status);
+        CHECK_STATUS_BREAK(status);
 
-	} else {
-	  // Check whether the number of entries is
-	  // consistent with the previous files.
-	  fits_get_num_rows(specfile, &nrows, &status);
-	  CHECK_STATUS_BREAK(status);
-	  
-	  if (nrows!=simputspec->nentries) {
-	    SIXT_ERROR("inconsistent sizes of spectra");
-	    status=EXIT_FAILURE;
-	    break;
-	  }
-	}
+        // Load the data from the file.
+        int anynull;
+        if (0==ii) {
+          // Determine the number of rows.
+          fits_get_num_rows(specfile, &nrows, &status);
+          CHECK_STATUS_BREAK(status);
 
-	// Read the flux column.
-	fits_read_col(specfile, TFLOAT, 2, 1, 1, nrows, 0, flux, 
-		      &anynull, &status);
-	CHECK_STATUS_BREAK(status);
-	
-	fits_close_file(specfile, &status);
-	specfile=NULL;
-	CHECK_STATUS_BREAK(status);
+          // Allocate memory.
+          simputspec->nentries=nrows;
+          simputspec->energy=(float*)malloc(nrows*sizeof(float));
+          CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+          simputspec->pflux=(float*)malloc(nrows*sizeof(float));
+          CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+          flux=(float*)malloc(nrows*sizeof(float));
+          CHECK_NULL_BREAK(flux, status, "memory allocation failed");
 
-	// If the spectrum is given via individual components, they
-	// have to be normalized according to their respective fluxes.
-	if (strlen(ISISFile)==0) {
-	  // Determine the required flux in the reference band.
-	  float shouldflux=0.;
-	  switch(ii) {
-	  case 0:
-	    shouldflux = par.plFlux;
-	    break;
-	  case 1:
-	    shouldflux = par.bbFlux;
-	    break;
-	  case 2:
-	    shouldflux = par.flFlux;
-	    break;
-	  case 3:
-	    shouldflux = par.rflFlux;
-	    break;
-	  default:
-	    status = EXIT_FAILURE;
-	    break;
-	  }
-	  CHECK_STATUS_BREAK(status);
-	  
-	  float factor;
-	  if (shouldflux==0.) {
-	    factor=0.;
-	  } else {
-	    // Determine the factor between the current flux in the reference 
-	    // band and the desired flux.
-	    factor = shouldflux/
-	      getFlux(simputspec->energy, flux, nrows, par.Emin, par.Emax);
-	  }
+          // Read the energy column.
+          fits_read_col(specfile, TFLOAT, 1, 1, 1, nrows, 0, simputspec->energy,
+              &anynull, &status);
+          CHECK_STATUS_BREAK(status);
 
-	  // Add the normalized component to the total spectrum.
-	  if (factor>0.) {
-	    long jj;
-	    for (jj=0; jj<nrows; jj++) {
-	      simputspec->pflux[jj]+=flux[jj]*factor;
-	    }
-	  }
-	  
-	} else {
-	  // The spectral model is given in an ISIS parameter file.
-	  // Therefore we do not have to normalize it, but can directly
-	  // add it to the SIMPUT spectrum.
-	  long jj;
-	  for (jj=0; jj<nrows; jj++) {
-	    simputspec->pflux[jj]=flux[jj];
-	  }
-	
-	  // Since there are no further components, we can skip
-	  // the further processing of the loop.
-	  break;
-	}
+        } else {
+          // Check whether the number of entries is
+          // consistent with the previous files.
+          fits_get_num_rows(specfile, &nrows, &status);
+          CHECK_STATUS_BREAK(status);
+
+          if (nrows!=simputspec->nentries) {
+            SIXT_ERROR("inconsistent sizes of spectra");
+            status=EXIT_FAILURE;
+            break;
+          }
+        }
+
+        // Read the flux column.
+        fits_read_col(specfile, TFLOAT, 2, 1, 1, nrows, 0, flux,
+            &anynull, &status);
+        CHECK_STATUS_BREAK(status);
+
+        fits_close_file(specfile, &status);
+        specfile=NULL;
+        CHECK_STATUS_BREAK(status);
+
+        // If the spectrum is given via individual components, they
+        // have to be normalized according to their respective fluxes.
+        if (strlen(ISISFile)==0) {
+          // Determine the required flux in the reference band.
+          float shouldflux=0.;
+          switch(ii) {
+          case 0:
+            shouldflux = par.plFlux;
+            break;
+          case 1:
+            shouldflux = par.bbFlux;
+            break;
+          case 2:
+            shouldflux = par.flFlux;
+            break;
+          case 3:
+            shouldflux = par.rflFlux;
+            break;
+          default:
+            status = EXIT_FAILURE;
+            break;
+          }
+          CHECK_STATUS_BREAK(status);
+
+          float factor;
+          if (shouldflux==0.) {
+            factor=0.;
+          } else {
+            // Determine the factor between the current flux in the reference
+            // band and the desired flux.
+            factor = shouldflux/
+                getFlux(simputspec->energy, flux, nrows, par.Emin, par.Emax);
+          }
+
+          // Add the normalized component to the total spectrum.
+          if (factor>0.) {
+            long jj;
+            for (jj=0; jj<nrows; jj++) {
+              simputspec->pflux[jj]+=flux[jj]*factor;
+            }
+          }
+
+        } else {
+          // The spectral model is given in an ISIS parameter file.
+          // Therefore we do not have to normalize it, but can directly
+          // add it to the SIMPUT spectrum.
+          long jj;
+          for (jj=0; jj<nrows; jj++) {
+            simputspec->pflux[jj]=flux[jj];
+          }
+
+          // Since there are no further components, we can skip
+          // the further processing of the loop.
+          break;
+        }
       }
       CHECK_STATUS_BREAK(status);
       // END of loop over the different spectral components.
@@ -384,19 +384,19 @@ int simputsrc_main()
       // Open the file.
       datafile=fopen(ASCIIFile,"r");
       CHECK_NULL_BREAK(datafile, status, "could not open ASCII file");
-      
+
       // Determine the number of rows.
       long nlines=0;
       char c=0;
       while(!feof(datafile)) {
-	c=fgetc(datafile);
-	if ('\n'==c) {
-	  nlines++;
-	}
+        c=fgetc(datafile);
+        if ('\n'==c) {
+          nlines++;
+        }
       }
       // Check if the last line has been empty.
       if('\n'==c) {
-	nlines--;
+        nlines--;
       }
       printf("*** %ld lines\n", nlines);
 
@@ -412,8 +412,8 @@ int simputsrc_main()
       rewind(datafile);
       long ii;
       for (ii=0; ii<nlines; ii++) {
-	fscanf(datafile, "%f %f\n", 
-	       &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
+        fscanf(datafile, "%f %f\n",
+            &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
       }      
 
       // Close the file.
@@ -426,8 +426,8 @@ int simputsrc_main()
     for (jj=0; jj<simputspec->nentries; jj++) {
       // Check if the flux has a physically reasonable value.
       if ((simputspec->pflux[jj]<0.)||(simputspec->pflux[jj]>1.e12)) {
-	SIXT_ERROR("flux out of boundaries");
-	status=EXIT_FAILURE;
+        SIXT_ERROR("flux out of boundaries");
+        status=EXIT_FAILURE;
       }
     }
     saveSimputMIdpSpec(simputspec, par.Simput, "SPECTRUM", 1, &status);
@@ -452,8 +452,8 @@ int simputsrc_main()
 
     // Insert a point-like source.
     float totalFlux = 	    
-      getFlux(simputspec->energy, simputspec->pflux, simputspec->nentries, 
-	      par.Emin, par.Emax);
+        getFlux(simputspec->energy, simputspec->pflux, simputspec->nentries,
+            par.Emin, par.Emax);
     char src_name[MAXMSG];
     strcpy(src_name, par.Src_Name);
     strtoupper(src_name);
@@ -463,11 +463,11 @@ int simputsrc_main()
     } else {
       strcpy(src_name, "");
     }
-    
+
     // Get a new source entry.
     src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1., 
-			 par.Emin, par.Emax, totalFlux, 
-			 "[SPECTRUM,1]", "", "", &status);
+        par.Emin, par.Emax, totalFlux,
+        "[SPECTRUM,1]", "", "", &status);
     CHECK_STATUS_BREAK(status);
     appendSimputSource(cat, src, &status);
     CHECK_STATUS_BREAK(status);
@@ -502,7 +502,7 @@ int simputsrc_main()
     char filename[MAXFILENAME];
     sprintf(filename, "%s.spec%d", par.Simput, ii);
     remove(filename);
-    
+
     // Check whether there is only one file.
     if (strlen(ISISFile)>0) break;
   }
