@@ -32,6 +32,11 @@ struct Parameters {
   float Emin;
   float Emax;
 
+  /** PSD general parameters */
+  float PSDnpt;
+  float PSDfmin;
+  float PSDfmax;
+
   /** PSD: Zero-frequency Lorentzian parameters */
   float LFQ;
   float LFrms;

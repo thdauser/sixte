@@ -434,14 +434,61 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
     // -- END of creating the spectrum.
 
-    // -- Create PSD
+    // -- Create PSD if necessary
 
     if(par.LFQ != 0) {
       psd = getSimputPSD(&status);
       CHECK_STATUS_BREAK(status);
 
-      saveSimputPSD(psd, par.Simput, "LIGHTCUR", 1, &status);
-      CHECK_STATUS_BREAK(status);
+      // Generate log-scaled frequency grid
+      psd->frequency = (float*) malloc(par.PSDnpt * sizeof(float));
+      long ii;
+      for(ii = 0; ii < par.PSDnpt; ii++) {
+        psd->frequency[ii] = exp(log(par.PSDfmin) + ii * (log(par.PSDfmax) / par.PSDnpt));
+      }
+
+      // Calculate Lorentzians
+      psd->power = (float*) malloc(par.PSDnpt * sizeof(float));
+      float* Lzero = NULL;
+      float* LHBO = NULL;
+      float* LQ1 = NULL;
+      float* LQ2 = NULL;
+      float* LQ3 = NULL;
+
+      // zero order Lorentzian
+      Lzero = (float*) malloc(par.PSDnpt * sizeof(float));
+      for(ii = 0; ii < par.PSDnpt; ii++) {
+        Lzero[ii] = par.LFQ / (2 * M_PI * (pow(psd->frequency[ii], 2) + pow(par.LFQ / 2, 2)));
+        //printf("%f\n", Lzero[ii]);
+      }
+
+      // HBO Lorentzian
+      if(par.HBOf != 0) {
+        LHBO = (float*) malloc(par.PSDnpt * sizeof(float));
+      }
+
+      // QPO1 Lorentzian
+      if(par.Q1f != 0) {
+        LQ1 = (float*) malloc(par.PSDnpt * sizeof(float));
+      }
+
+      // QPO2 Lorentzian
+      if(par.Q2f != 0) {
+        LQ2 = (float*) malloc(par.PSDnpt * sizeof(float));
+      }
+
+      // QPO3 Lorentzian
+      if(par.Q3f != 0) {
+        LQ3 = (float*) malloc(par.PSDnpt * sizeof(float));
+      }
+
+      if ((psd->frequency != NULL) && (psd->power != NULL)) {
+        saveSimputPSD(psd, par.Simput, "LIGHTCUR", 1, &status);
+        CHECK_STATUS_BREAK(status);
+      }
+
+      // cleanup
+      free(Lzero); free(LHBO); free(LQ1); free(LQ2); free(LQ3);
     }
 
     // -- END of creating PSD
@@ -596,6 +643,24 @@ int simputsrc_getpar(struct Parameters* const par)
   status=ape_trad_query_float("Emax", &par->Emax);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("reading the Emax parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("PSDnpt", &par->PSDnpt);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the PSDnpt parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("PSDfmin", &par->PSDfmin);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the PSDfmin parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("PSDfmax", &par->PSDfmax);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the PSDfmax parameter failed");
     return(status);
   }
 
