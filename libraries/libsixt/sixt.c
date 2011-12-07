@@ -31,7 +31,7 @@ void get_gauss_random_numbers(double* const x, double* const y)
 }
 
 
-void strtoupper(char* string) 
+void strtoupper(char* const string) 
 {
   int count=0;
   while (string[count] != '\0') {

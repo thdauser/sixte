@@ -54,8 +54,12 @@ struct Parameters {
   float Q3Q;
   float Q3rms;
 
-  /** File name of the input ISIS spectral parameters file. */
+  /** File name of the input ISIS parameter file containing a spectral
+      model. */
   char ISISFile[MAXFILENAME];
+
+  /** File name of the input ASCII spectrum. */
+  char ASCIIFile[MAXFILENAME];
 
   /** Source position [deg]. */
   float RA;

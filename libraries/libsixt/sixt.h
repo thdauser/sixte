@@ -128,7 +128,7 @@ void get_gauss_random_numbers(double* const x, double* const y);
 
 /** Convert a squence of chars into captial letters. The sequence has
     to be terminated by a '\0' mark. */
-void strtoupper(char* string);
+void strtoupper(char* const string);
 
 /** Print the given error message for an error occured in the
     specified function. The function name is also part of the
