@@ -340,7 +340,13 @@ int simputsrc_main()
 
     // -- Create PSD
 
-    psd = getSimputPSD(&status);
+    if(par.LFQ != 0) {
+      psd = getSimputPSD(&status);
+      CHECK_STATUS_BREAK(status);
+
+      saveSimputPSD(psd, par.Simput, "LIGHTCUR", 1, &status);
+      CHECK_STATUS_BREAK(status);
+    }
 
     // -- END of creating PSD
 
