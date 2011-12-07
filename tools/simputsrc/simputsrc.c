@@ -483,6 +483,90 @@ int simputsrc_getpar(struct Parameters* const par)
     return(status);
   }
 
+  status=ape_trad_query_float("LFQ", &par->LFQ);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the LFQ parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("LFrms", &par->LFrms);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the LFrms parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("HBOf", &par->HBOf);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the HBOf parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("HBOQ", &par->HBOQ);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the HBOQ parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("HBOrms", &par->HBOrms);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the HBOrms parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q1f", &par->Q1f);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q1f parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q1Q", &par->Q1Q);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q1Q parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q1rms", &par->Q1rms);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q1rms parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q2f", &par->Q2f);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q2f parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q2Q", &par->Q2Q);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q2Q parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q2rms", &par->Q2rms);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q2rms parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q3f", &par->Q3f);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q3f parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q3Q", &par->Q3Q);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q3Q parameter failed");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Q3rms", &par->Q3rms);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the Q3rms parameter failed");
+    return(status);
+  }
+
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("reading the right ascension failed");

@@ -32,6 +32,28 @@ struct Parameters {
   float Emin;
   float Emax;
 
+  /** PSD: Zero-frequency Lorentzian parameters */
+  float LFQ;
+  float LFrms;
+
+  /** PSD: Horizontal branch Lorentzian parameters */
+  float HBOf;
+  float HBOQ;
+  float HBOrms;
+
+  /** PSD: Quasi-periodic Lorentzian parameters (1-3) */
+  float Q1f;
+  float Q1Q;
+  float Q1rms;
+
+  float Q2f;
+  float Q2Q;
+  float Q2rms;
+
+  float Q3f;
+  float Q3Q;
+  float Q3rms;
+
   /** File name of the input ISIS spectral parameters file. */
   char ISISFile[MAXFILENAME];
 
