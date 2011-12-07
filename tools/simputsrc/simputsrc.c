@@ -58,6 +58,7 @@ int simputsrc_main()
   SimputMIdpSpec* simputspec=NULL;
   SimputSource* src=NULL;
   SimputCatalog* cat=NULL;
+  SimputPSD* psd = NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;
@@ -337,6 +338,11 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
     // -- END of creating the spectrum.
 
+    // -- Create PSD
+
+    psd = getSimputPSD(&status);
+
+    // -- END of creating PSD
 
     // -- Create a new SIMPUT catalog.
     cat=openSimputCatalog(par.Simput, READWRITE, &status);
@@ -394,6 +400,7 @@ int simputsrc_main()
 
   // Release memory.
   freeSimputMIdpSpec(&simputspec);
+  freeSimputPSD(&psd);
   freeSimputSource(&src);
   freeSimputCatalog(&cat, &status);
 
