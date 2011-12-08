@@ -447,8 +447,11 @@ int simputsrc_main()
         psd->frequency[ii] = exp(log(par.PSDfmin) + ii * (log(par.PSDfmax) / par.PSDnpt));
       }
 
-      // Calculate Lorentzians
-      psd->power = (float*) malloc(par.PSDnpt * sizeof(float));
+      // Calculate Lorentzians using Formula (5.1) in
+      // Pottschmidt, K.: Accretion Disk Weather of Black Hole X-Ray Binaries
+      // (2002), p. 95
+      //float PSDnorm = 1;
+      psd->power = (float*) calloc(par.PSDnpt, sizeof(float));
       float* Lzero = NULL;
       float* LHBO = NULL;
       float* LQ1 = NULL;
@@ -456,31 +459,57 @@ int simputsrc_main()
       float* LQ3 = NULL;
 
       // zero order Lorentzian
-      Lzero = (float*) malloc(par.PSDnpt * sizeof(float));
+      Lzero = (float*) calloc(par.PSDnpt, sizeof(float));
+      float zNorm = par.LFrms / sqrt(0.5 - (atan(par.LFQ * (-1)) / M_PI));
       for(ii = 0; ii < par.PSDnpt; ii++) {
-        Lzero[ii] = par.LFQ / (2 * M_PI * (pow(psd->frequency[ii], 2) + pow(par.LFQ / 2, 2)));
-        //printf("%f\n", Lzero[ii]);
+        Lzero[ii] = (1 / M_PI) * ((pow(zNorm, 2) * par.LFQ * 1e-5) / (pow(1e-5, 2) + (pow(par.LFQ, 2) * pow((psd->frequency[ii] - 1e-5), 2))));
+				psd->power[ii] += Lzero[ii];
       }
 
       // HBO Lorentzian
       if(par.HBOf != 0) {
-        LHBO = (float*) malloc(par.PSDnpt * sizeof(float));
+				float HBONorm = par.HBOrms / sqrt(0.5 - (atan(par.HBOQ * (-1)) / M_PI));
+        LHBO = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LHBO[ii] = (1 / M_PI) * ((pow(HBONorm, 2) * par.HBOQ * par.HBOf) / (pow(par.HBOf, 2) + (pow(par.HBOQ, 2) * pow((psd->frequency[ii] - par.HBOf), 2))));
+					psd->power[ii] += LHBO[ii];
+				}
       }
 
       // QPO1 Lorentzian
       if(par.Q1f != 0) {
-        LQ1 = (float*) malloc(par.PSDnpt * sizeof(float));
+				float Q1Norm = par.Q1rms / sqrt(0.5 - (atan(par.Q1Q * (-1)) / M_PI));
+        LQ1 = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LQ1[ii] = (1 / M_PI) * ((pow(Q1Norm, 2) * par.Q1Q * par.Q1f) / (pow(par.Q1f, 2) + (pow(par.Q1Q, 2) * pow((psd->frequency[ii] - par.Q1f), 2))));
+					psd->power[ii] += LQ1[ii];
+					printf("%f\n", LQ1[ii]);
+				}
       }
 
       // QPO2 Lorentzian
       if(par.Q2f != 0) {
-        LQ2 = (float*) malloc(par.PSDnpt * sizeof(float));
+				float Q2Norm = par.Q2rms / sqrt(0.5 - (atan(par.Q2Q * (-1)) / M_PI));
+        LQ2 = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LQ2[ii] = (1 / M_PI) * ((pow(Q2Norm, 2) * par.Q2Q * par.Q2f) / (pow(par.Q2f, 2) + (pow(par.Q2Q, 2) * pow((psd->frequency[ii] - par.Q2f), 2))));
+					psd->power[ii] += LQ2[ii];
+				}
       }
 
       // QPO3 Lorentzian
       if(par.Q3f != 0) {
-        LQ3 = (float*) malloc(par.PSDnpt * sizeof(float));
+				float Q3Norm = par.Q3rms / sqrt(0.5 - (atan(par.Q3Q * (-1)) / M_PI));
+        LQ3 = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LQ3[ii] = (1 / M_PI) * ((pow(Q3Norm, 2) * par.Q3Q * par.Q3f) / (pow(par.Q3f, 2) + (pow(par.Q3Q, 2) * pow((psd->frequency[ii] - par.Q3f), 2))));
+					psd->power[ii] += LQ3[ii];
+				}
       }
+
+      for(ii = 0; ii < par.PSDnpt; ii++) {
+				printf("%f\t%f\n", psd->frequency[ii], psd->power[ii]);
+			}
 
       if ((psd->frequency != NULL) && (psd->power != NULL)) {
         saveSimputPSD(psd, par.Simput, "LIGHTCUR", 1, &status);
