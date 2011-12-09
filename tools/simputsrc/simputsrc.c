@@ -378,7 +378,7 @@ int simputsrc_main()
       // END of loop over the different spectral components.
 
     } else {
-      // The spectrum is contained in an ASCII file has to be loaded 
+      // The spectrum is contained in an ASCII file has to be loaded
       // from there.
 
       // Open the file.
@@ -407,14 +407,14 @@ int simputsrc_main()
       simputspec->pflux=(float*)malloc(nlines*sizeof(float));
       CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
 
-      // Reset the file pointer, read the data and store them in 
+      // Reset the file pointer, read the data and store them in
       // the SimputMIdpSpec data structure.
       rewind(datafile);
       long ii;
       for (ii=0; ii<nlines; ii++) {
         fscanf(datafile, "%f %f\n",
             &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
-      }      
+      }
 
       // Close the file.
       fclose(datafile);
@@ -439,9 +439,10 @@ int simputsrc_main()
     if(par.LFQ != 0) {
       psd = getSimputPSD(&status);
       CHECK_STATUS_BREAK(status);
+      psd->nentries = par.PSDnpt;
 
       // Generate log-scaled frequency grid
-      psd->frequency = (float*) malloc(par.PSDnpt * sizeof(float));
+      psd->frequency = (float*) calloc(par.PSDnpt, sizeof(float));
       long ii;
       for(ii = 0; ii < par.PSDnpt; ii++) {
         psd->frequency[ii] = exp(log(par.PSDfmin) + ii * (log(par.PSDfmax) / par.PSDnpt));
@@ -450,7 +451,6 @@ int simputsrc_main()
       // Calculate Lorentzians using Formula (5.1) in
       // Pottschmidt, K.: Accretion Disk Weather of Black Hole X-Ray Binaries
       // (2002), p. 95
-      //float PSDnorm = 1;
       psd->power = (float*) calloc(par.PSDnpt, sizeof(float));
       float* Lzero = NULL;
       float* LHBO = NULL;
@@ -483,7 +483,6 @@ int simputsrc_main()
         for(ii = 0; ii < par.PSDnpt; ii++) {
 					LQ1[ii] = (1 / M_PI) * ((pow(Q1Norm, 2) * par.Q1Q * par.Q1f) / (pow(par.Q1f, 2) + (pow(par.Q1Q, 2) * pow((psd->frequency[ii] - par.Q1f), 2))));
 					psd->power[ii] += LQ1[ii];
-					printf("%f\n", LQ1[ii]);
 				}
       }
 
@@ -507,10 +506,6 @@ int simputsrc_main()
 				}
       }
 
-      for(ii = 0; ii < par.PSDnpt; ii++) {
-				printf("%f\t%f\n", psd->frequency[ii], psd->power[ii]);
-			}
-
       if ((psd->frequency != NULL) && (psd->power != NULL)) {
         saveSimputPSD(psd, par.Simput, "LIGHTCUR", 1, &status);
         CHECK_STATUS_BREAK(status);
@@ -527,7 +522,7 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.
-    float totalFlux = 	    
+    float totalFlux =
         getFlux(simputspec->energy, simputspec->pflux, simputspec->nentries,
             par.Emin, par.Emax);
     char src_name[MAXMSG];
@@ -541,7 +536,7 @@ int simputsrc_main()
     }
 
     // Get a new source entry.
-    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1., 
+    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
         par.Emin, par.Emax, totalFlux,
         "[SPECTRUM,1]", "", "", &status);
     CHECK_STATUS_BREAK(status);
