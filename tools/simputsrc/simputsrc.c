@@ -627,11 +627,19 @@ int simputsrc_main()
       strcpy(src_name, "");
     }
 
-    // Get a new source entry.
-    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
-        par.Emin, par.Emax, totalFlux,
-        "[SPECTRUM,1]", "", "", &status);
-    CHECK_STATUS_BREAK(status);
+    // Get a new source entry. Check if PSD is present and add to catalog if necessary.
+    if(psd != NULL) {
+      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
+          par.Emin, par.Emax, totalFlux,
+          "[SPECTRUM,1]", "", "[LIGHTCUR,1]", &status);
+      CHECK_STATUS_BREAK(status);
+    } else {
+      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
+          par.Emin, par.Emax, totalFlux,
+          "[SPECTRUM,1]", "", "", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     appendSimputSource(cat, src, &status);
     CHECK_STATUS_BREAK(status);
 
