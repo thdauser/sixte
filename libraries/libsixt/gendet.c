@@ -17,7 +17,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   }
 
   // Initialize all pointers with NULL.
-  det->instrument=NULL;
+  det->telescope=NULL;
   det->pixgrid=NULL;
   det->split  =NULL;
   det->line=NULL;
@@ -111,8 +111,8 @@ GenDet* newGenDet(const char* const filename, int* const status)
 void destroyGenDet(GenDet** const det, int* const status)
 {
   if (NULL!=*det) {
-    if (NULL!=(*det)->instrument) {
-      free((*det)->instrument);
+    if (NULL!=(*det)->telescope) {
+      free((*det)->telescope);
     }
     if (NULL!=(*det)->line) {
       int i;

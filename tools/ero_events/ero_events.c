@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -58,7 +58,8 @@ int ero_events_main()
     // Create and open a new FITS file using the template.
     char buffer[MAXMSG];
     sprintf(buffer, "%s(%s)", par.eroEventList, template);
-    headas_chat(4, "create new eROSITA event list file '%s' from template '%s' ...\n", 
+    headas_chat(4, "create new eROSITA event list file '%s' "
+		"from template '%s' ...\n", 
 		par.eroEventList, template);
     fits_create_file(&fptr, buffer, &status);
     if (EXIT_SUCCESS!=status) break;
@@ -102,13 +103,27 @@ int ero_events_main()
     fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Timing keywords.
+    float frametime=50.0;
+    fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametime,
+		    "[ms] nominal frame time", &status);
+
+    float timezero=0.0;
+    fits_update_key(fptr, TFLOAT, "TIMEZERO", &timezero,
+		    "clock correction", &status);
+    fits_update_key(fptr, TSTRING, "TIMEUNIT", "s",
+		    "Time unit", &status);
+    fits_update_key(fptr, TSTRING, "TIMESYS", "TT",
+		    "Time system (Terrestial Time)", &status);
+    CHECK_STATUS_BREAK(status);
+
     // Set up the WCS data structure.
     if (0!=wcsini(1, 2, &wcs)) {
       SIXT_ERROR("initalization of WCS data structure failed");
       status=EXIT_FAILURE;
       break;
     }
-    wcs.naxis =  2;
+    wcs.naxis = 2;
     wcs.crpix[0] = 0.;
     wcs.crpix[1] = 0.;
     wcs.crval[0] = par.RefRA;
@@ -136,8 +151,13 @@ int ero_events_main()
     sprintf(keyword, "TCRVL%d", cy);
     fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1], 
 		    "reference value", &status);
+    fits_update_key(fptr, TSTRING, "RADECSYS", "FK5", "", &status);
+    float equinox=2000.0;
+    fits_update_key(fptr, TFLOAT, "EQUINOX", &equinox, "", &status);
+    fits_update_key(fptr, TSTRING, "LONGSTR", "OGIP 1.0",
+		    "to support multi-line COMMENT oder HISTORY records",
+		    &status);
     CHECK_STATUS_BREAK(status);
-
 
     // --- END of Initialization ---
 
@@ -229,11 +249,9 @@ int ero_events_main()
 
     // Update TLMIN and TLMAX header keywords.
     sprintf(keyword, "TLMIN%d", cenergy);
-    fits_update_key(fptr, TFLOAT, keyword, &tlmin_energy, 
-		    "", &status);
+    fits_update_key(fptr, TFLOAT, keyword, &tlmin_energy, "", &status);
     sprintf(keyword, "TLMAX%d", cenergy);
-    fits_update_key(fptr, TFLOAT, keyword, &tlmax_energy, 
-		    "", &status);
+    fits_update_key(fptr, TFLOAT, keyword, &tlmax_energy, "", &status);
 
     sprintf(keyword, "TLMIN%d", cx);
     fits_update_key(fptr, TLONG, keyword, &tlmin_x, 

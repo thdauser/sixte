@@ -63,10 +63,6 @@ struct Parameters {
       model. */
   char ISISFile[MAXFILENAME];
 
-  /** File name of the input Xspec xcm file containing a spectral
-      model. */
-  char XSPECFile[MAXFILENAME];
-
   /** File name of the input ASCII spectrum. */
   char ASCIIFile[MAXFILENAME];
 

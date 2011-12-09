@@ -234,9 +234,10 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    if (NULL!=det->instrument) {
-      fits_update_key(elf->fptr, TSTRING, "INSTRUME", det->instrument,
-		      "instrument name", &status);
+    if (NULL!=det->telescope) {
+      fits_update_key(elf->fptr, TSTRING, "TELESCOP", det->telescope,
+		      "telescope name", &status);
+      CHECK_STATUS_BREAK(status);
     }
     fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
@@ -261,6 +262,11 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
+    if (NULL!=det->telescope) {
+      fits_update_key(patf->fptr, TSTRING, "TELESCOP", det->telescope,
+		      "telescope name", &status);
+      CHECK_STATUS_BREAK(status);
+    }
     fits_update_key(patf->fptr, TSTRING, "ATTITUDE", 
 		    par.Attitude, "attitude file", &status);
     fits_update_key(patf->fptr, TDOUBLE, "MJDREF", 

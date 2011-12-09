@@ -17,9 +17,9 @@
 
 /* Program parameters */
 struct Parameters {
-  char attitude_filename[MAXFILENAME];    // filename of the attitude file
-  char vignetting_filename[MAXFILENAME];  // filename of the vignetting file
-  char exposuremap_filename[MAXFILENAME]; // output: exposure map
+  char Attitude[MAXFILENAME];    // filename of the attitude file
+  char Vignetting[MAXFILENAME];  // filename of the vignetting file
+  char Exposuremap[MAXFILENAME]; // output: exposure map
   
   double t0;
   double timespan;
@@ -151,7 +151,7 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
   
 
   do {  // Beginning of the ERROR handling loop.
@@ -218,7 +218,8 @@ int ero_exposure_main()
     double field_min_align;
     if ((par.ra2-par.ra1 > M_PI/6.) || 
 	(par.dec2-par.dec1 > M_PI/6.)) {
-      field_min_align = -2.; // Actually -1 should be sufficient, but -2 is even safer.
+      // Actually -1 should be sufficient, but -2 is even safer.
+      field_min_align = -2.; 
     } else {
       field_min_align = 
 	cos((sqrt(pow(par.ra2-par.ra1, 2.)+pow(par.dec2-par.dec1, 2.))+
@@ -230,12 +231,12 @@ int ero_exposure_main()
     HDmtInit(1);
 
     // Get the telescope attitude data.
-    ac=loadAttitudeCatalog(par.attitude_filename, &status);
+    ac=loadAttitudeCatalog(par.Attitude, &status);
     CHECK_STATUS_BREAK(status);
 
     // Load the Vignetting data.
-    if (0<strlen(par.vignetting_filename)) {
-      vignetting=newVignetting(par.vignetting_filename, &status);
+    if (0<strlen(par.Vignetting)) {
+      vignetting=newVignetting(par.Vignetting, &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -321,9 +322,9 @@ int ero_exposure_main()
 	if (time > par.t0+ intermaps*(par.timespan/(par.intermaps+1))) {
 	  // Construct the filename.
 	  char filename[MAXFILENAME];
-	  strncpy(filename, par.exposuremap_filename, 
-		  strlen(par.exposuremap_filename)-5);
-	  filename[strlen(par.exposuremap_filename)-5]='\0';
+	  strncpy(filename, par.Exposuremap, 
+		  strlen(par.Exposuremap)-5);
+	  filename[strlen(par.Exposuremap)-5]='\0';
 	  char buffer[MAXFILENAME];
 	  sprintf(buffer, "_%d.fits", intermaps);
 	  strcat(filename, buffer);
@@ -344,7 +345,7 @@ int ero_exposure_main()
     // END of generating the exposure map.
 
     // Store the exposure map in the output file.
-    saveExpoMap(expoMap, par.exposuremap_filename,
+    saveExpoMap(expoMap, par.Exposuremap,
 		par.ra_bins, par.dec_bins, &wcs, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -385,18 +386,18 @@ int ero_exposure_getpar(struct Parameters *par)
   int status=EXIT_SUCCESS;  // Error status
   
   // Get the filename of the input attitude file (FITS file)
-  if ((status = PILGetFname("attitude_filename", par->attitude_filename))) {
+  if ((status = PILGetFname("Attitude", par->Attitude))) {
     HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
   }
   
   // Get the filename of the vignetting data file (FITS file)
-  else if ((status = PILGetString("vignetting_filename", 
-				  par->vignetting_filename))) {
+  else if ((status = PILGetString("Vignetting", 
+				  par->Vignetting))) {
     HD_ERROR_THROW("Error reading the filename of the vignetting file!\n", status);
   }
 
   // Get the filename of the output exposure map (FITS file)
-  else if ((status = PILGetFname("exposuremap_filename", par->exposuremap_filename))) {
+  else if ((status = PILGetFname("Exposuremap", par->Exposuremap))) {
     HD_ERROR_THROW("Error reading the filename of the exposure map!\n", status);
   }
 
@@ -464,6 +465,4 @@ int ero_exposure_getpar(struct Parameters *par)
   
   return(status);
 }
-
-
 

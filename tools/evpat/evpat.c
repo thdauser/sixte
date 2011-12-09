@@ -21,7 +21,7 @@ int evpat_main()
 
   // Register HEATOOL:
   set_toolname("evpat");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -62,6 +62,13 @@ int evpat_main()
     // Open the output pattern file.
     plf=openNewPatternFile(pattern_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Set header keywords.
+    if (NULL!=det->telescope) {
+      fits_update_key(plf->fptr, TSTRING, "TELESCOP", det->telescope,
+		      "telescope name", &status);
+      CHECK_STATUS_BREAK(status);
+    }
 
     // Copy FITS header keywords.
     char comment[MAXMSG];

@@ -5,8 +5,8 @@ HDUCLAS1        EVENTS          /
 ORIGIN          REMEIS          / Origin of FITS File
 CREATOR         FAU             / Program that created this FITS file
 MISSION         SRG             / Mission name
-TELESCOP        FM4             / Telescope name
-INSTRUME        eROSITA         / Instrument name
+TELESCOP        eROSITA         / Telescope name
+INSTRUME        FM4             / Instrument name
 OBS_MODE        String          / Observation mode
 DATAMODE        String          / Instrument data mode
 FILTER          OPEN            / CCD filter used
@@ -44,6 +44,8 @@ PIXLEN_Y        75.0            /
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
+	TLMIN#  0
+	TLMAX#  4095
 	TTYPE#  ENERGY          / Recombined photon energy [eV]
 	TFORM#  E               
 	TUNIT#  eV              

@@ -264,16 +264,16 @@ static void GenDetXMLElementStart(void* parsedata, const char* el,
   strtoupper(Uelement);
 
   // Check for different elements.
-  if (!strcmp(Uelement, "INSTRUMENT")) {
-    // Determine the name of the instrument.
-    char instrument[MAXMSG];
-    getXMLAttributeString(attr, "NAME", instrument);
-    xmlparsedata->det->instrument=
-      (char*)malloc((strlen(instrument)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->det->instrument, 
+  if (!strcmp(Uelement, "TELESCOP")) {
+    // Determine the name of the telescope.
+    char telescope[MAXMSG];
+    getXMLAttributeString(attr, "NAME", telescope);
+    xmlparsedata->det->telescope=
+      (char*)malloc((strlen(telescope)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->det->telescope, 
 		      xmlparsedata->status,
-		      "memory allocation for instrument name failed");
-    strcpy(xmlparsedata->det->instrument, instrument);
+		      "memory allocation for telescope name failed");
+    strcpy(xmlparsedata->det->telescope, telescope);
 
   } else if (!strcmp(Uelement, "LINESHIFT")) {
     CLLineShift* cllineshift=newCLLineShift(&xmlparsedata->status);

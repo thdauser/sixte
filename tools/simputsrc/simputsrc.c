@@ -51,7 +51,6 @@ int simputsrc_main()
 
   // Parameter files containing explicit spectral models.
   char ISISFile[MAXFILENAME]="";
-  char XSPECFile[MAXFILENAME]="";
 
   // ASCII file containing a spectrum.
   char ASCIIFile[MAXFILENAME]="";
@@ -76,7 +75,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.09");
+  set_toolversion("0.10");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -89,7 +88,7 @@ int simputsrc_main()
 
     // Check the input type for the spectrum.
     // Check the specification of an ISIS parameter file, an
-    // XSPEC xcm file, an ASCII file, and the individual spectral components.
+    // ASCII file, and the individual spectral components.
     // Only one of these 3 option may be used. In case multiple of
     // them exist, throw an error message and abort.
     strcpy(ISISFile, par.ISISFile);
@@ -99,15 +98,6 @@ int simputsrc_main()
       strcpy(ISISFile, par.ISISFile);
     } else {
       strcpy(ISISFile, "");
-    }
-
-    strcpy(XSPECFile, par.XSPECFile);
-    strtoupper(XSPECFile);
-    if ((strlen(XSPECFile)>0)&&(strcmp(XSPECFile, "NONE"))) {
-      // Copy again the name, this time without upper-case conversion.
-      strcpy(XSPECFile, par.XSPECFile);
-    } else {
-      strcpy(XSPECFile, "");
     }
 
     strcpy(ASCIIFile, par.ASCIIFile);
@@ -121,9 +111,6 @@ int simputsrc_main()
 
     int noptions=0;
     if (strlen(ISISFile)>0) {
-      noptions++;
-    }
-    if (strlen(XSPECFile)>0) {
       noptions++;
     }
     if (strlen(ASCIIFile)>0) {
@@ -271,40 +258,7 @@ int simputsrc_main()
       status=system(command);
       CHECK_STATUS_BREAK(status);
 
-      // END of running ISIS.
-
-    } else if (strlen(XSPECFile)>0) {
-
-      // Open the Xspec command file.
-      sprintf(cmdfilename, "%s.xspec", par.Simput);
-      cmdfile=fopen(cmdfilename,"w");
-      CHECK_NULL_BREAK(cmdfile, status, "opening temporary file failed");
-
-      // Write the commands.
-      fprintf(cmdfile, "@%s\n", par.XSPECFile);
-      fprintf(cmdfile, "dummyrsp %lf %lf %ld\n", 
-	      par.Emin, par.Emax, (long)((par.Emax-par.Emin)/0.01));
-      fprintf(cmdfile, "setplot none\n");       // TODO
-      fprintf(cmdfile, "iplot model\n");
-      fprintf(cmdfile, "wdata %s.spec0\n", par.Simput);
-      fprintf(cmdfile, "quit\n");
-      fprintf(cmdfile, "query y\n");
-      fprintf(cmdfile, "quit\n");
-
-      // End of writing the Xspec command file.
-      fclose(cmdfile);
-      cmdfile=NULL;
-
-      // Construct the shell command to run Xspec.
-      char command[MAXMSG];
-      strcpy(command, "$HEADAS/bin/xspec ");
-      strcat(command, cmdfilename);
-
-      // Run Xspec.
-      status=system(command);
-      CHECK_STATUS_BREAK(status);
-
-    } // END of running XSPEC.
+    } // END of running ISIS.
 
     // Add the spectra and insert the total spectrum in the SIMPUT file.
     simputspec=getSimputMIdpSpec(&status);
@@ -426,49 +380,6 @@ int simputsrc_main()
       CHECK_STATUS_BREAK(status);
       // END of loop over the different spectral components.
 
-    } else if (strlen(XSPECFile)>0) {
-
-      // Open the file.
-      char filename[MAXFILENAME];
-      sprintf(filename, "%s.spec0", par.Simput);
-      datafile=fopen(filename, "r");
-      CHECK_NULL_BREAK(datafile, status, "could not open data file");
-
-      // Determine the number of rows.
-      long nlines=0;
-      char c=0;
-      while(!feof(datafile)) {
-        c=fgetc(datafile);
-        if ('\n'==c) {
-          nlines++;
-        }
-      }
-      // Check if the last line has been empty.
-      if('\n'==c) {
-        nlines--;
-      }
-      printf("*** %ld lines\n", nlines);
-
-      // Allocate memory.
-      simputspec->nentries=nlines;
-      simputspec->energy=(float*)malloc(nlines*sizeof(float));
-      CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
-      simputspec->pflux=(float*)malloc(nlines*sizeof(float));
-      CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
-
-      // Reset the file pointer, read the data and store them in 
-      // the SimputMIdpSpec data structure.
-      rewind(datafile);
-      long ii;
-      for (ii=0; ii<nlines; ii++) {
-        fscanf(datafile, "%f %f\n", // TODO
-            &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
-      }      
-
-      // Close the file.
-      fclose(datafile);
-      datafile=NULL;
-
     } else {
       // The spectrum is contained in an ASCII file has to be loaded
       // from there.
@@ -490,7 +401,7 @@ int simputsrc_main()
       if('\n'==c) {
         nlines--;
       }
-      printf("*** %ld lines\n", nlines);
+      printf("*** %ld lines\n", nlines); // TODO Remove this line.
 
       // Allocate memory.
       simputspec->nentries=nlines;
@@ -505,7 +416,7 @@ int simputsrc_main()
       long ii;
       for (ii=0; ii<nlines; ii++) {
         fscanf(datafile, "%f %f\n",
-            &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
+	       &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
       }
 
       // Close the file.
@@ -555,47 +466,47 @@ int simputsrc_main()
       float zNorm = par.LFrms / sqrt(0.5 - (atan(par.LFQ * (-1)) / M_PI));
       for(ii = 0; ii < par.PSDnpt; ii++) {
         Lzero[ii] = (1 / M_PI) * ((pow(zNorm, 2) * par.LFQ * 1e-5) / (pow(1e-5, 2) + (pow(par.LFQ, 2) * pow((psd->frequency[ii] - 1e-5), 2))));
-				psd->power[ii] += Lzero[ii];
+        psd->power[ii] += Lzero[ii];
       }
 
       // HBO Lorentzian
       if(par.HBOf != 0) {
-				float HBONorm = par.HBOrms / sqrt(0.5 - (atan(par.HBOQ * (-1)) / M_PI));
+        float HBONorm = par.HBOrms / sqrt(0.5 - (atan(par.HBOQ * (-1)) / M_PI));
         LHBO = (float*) calloc(par.PSDnpt, sizeof(float));
         for(ii = 0; ii < par.PSDnpt; ii++) {
-					LHBO[ii] = (1 / M_PI) * ((pow(HBONorm, 2) * par.HBOQ * par.HBOf) / (pow(par.HBOf, 2) + (pow(par.HBOQ, 2) * pow((psd->frequency[ii] - par.HBOf), 2))));
-					psd->power[ii] += LHBO[ii];
-				}
+          LHBO[ii] = (1 / M_PI) * ((pow(HBONorm, 2) * par.HBOQ * par.HBOf) / (pow(par.HBOf, 2) + (pow(par.HBOQ, 2) * pow((psd->frequency[ii] - par.HBOf), 2))));
+          psd->power[ii] += LHBO[ii];
+        }
       }
 
       // QPO1 Lorentzian
       if(par.Q1f != 0) {
-				float Q1Norm = par.Q1rms / sqrt(0.5 - (atan(par.Q1Q * (-1)) / M_PI));
+        float Q1Norm = par.Q1rms / sqrt(0.5 - (atan(par.Q1Q * (-1)) / M_PI));
         LQ1 = (float*) calloc(par.PSDnpt, sizeof(float));
         for(ii = 0; ii < par.PSDnpt; ii++) {
-					LQ1[ii] = (1 / M_PI) * ((pow(Q1Norm, 2) * par.Q1Q * par.Q1f) / (pow(par.Q1f, 2) + (pow(par.Q1Q, 2) * pow((psd->frequency[ii] - par.Q1f), 2))));
-					psd->power[ii] += LQ1[ii];
-				}
+          LQ1[ii] = (1 / M_PI) * ((pow(Q1Norm, 2) * par.Q1Q * par.Q1f) / (pow(par.Q1f, 2) + (pow(par.Q1Q, 2) * pow((psd->frequency[ii] - par.Q1f), 2))));
+          psd->power[ii] += LQ1[ii];
+        }
       }
 
       // QPO2 Lorentzian
       if(par.Q2f != 0) {
-				float Q2Norm = par.Q2rms / sqrt(0.5 - (atan(par.Q2Q * (-1)) / M_PI));
+        float Q2Norm = par.Q2rms / sqrt(0.5 - (atan(par.Q2Q * (-1)) / M_PI));
         LQ2 = (float*) calloc(par.PSDnpt, sizeof(float));
         for(ii = 0; ii < par.PSDnpt; ii++) {
-					LQ2[ii] = (1 / M_PI) * ((pow(Q2Norm, 2) * par.Q2Q * par.Q2f) / (pow(par.Q2f, 2) + (pow(par.Q2Q, 2) * pow((psd->frequency[ii] - par.Q2f), 2))));
-					psd->power[ii] += LQ2[ii];
-				}
+          LQ2[ii] = (1 / M_PI) * ((pow(Q2Norm, 2) * par.Q2Q * par.Q2f) / (pow(par.Q2f, 2) + (pow(par.Q2Q, 2) * pow((psd->frequency[ii] - par.Q2f), 2))));
+          psd->power[ii] += LQ2[ii];
+        }
       }
 
       // QPO3 Lorentzian
       if(par.Q3f != 0) {
-				float Q3Norm = par.Q3rms / sqrt(0.5 - (atan(par.Q3Q * (-1)) / M_PI));
+        float Q3Norm = par.Q3rms / sqrt(0.5 - (atan(par.Q3Q * (-1)) / M_PI));
         LQ3 = (float*) calloc(par.PSDnpt, sizeof(float));
         for(ii = 0; ii < par.PSDnpt; ii++) {
-					LQ3[ii] = (1 / M_PI) * ((pow(Q3Norm, 2) * par.Q3Q * par.Q3f) / (pow(par.Q3f, 2) + (pow(par.Q3Q, 2) * pow((psd->frequency[ii] - par.Q3f), 2))));
-					psd->power[ii] += LQ3[ii];
-				}
+          LQ3[ii] = (1 / M_PI) * ((pow(Q3Norm, 2) * par.Q3Q * par.Q3f) / (pow(par.Q3f, 2) + (pow(par.Q3Q, 2) * pow((psd->frequency[ii] - par.Q3f), 2))));
+          psd->power[ii] += LQ3[ii];
+        }
       }
 
       if ((psd->frequency != NULL) && (psd->power != NULL)) {
@@ -627,11 +538,19 @@ int simputsrc_main()
       strcpy(src_name, "");
     }
 
-    // Get a new source entry.
-    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
-        par.Emin, par.Emax, totalFlux,
-        "[SPECTRUM,1]", "", "", &status);
-    CHECK_STATUS_BREAK(status);
+    // Get a new source entry. Check if PSD is present and add to catalog if necessary.
+    if(psd != NULL) {
+      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
+          par.Emin, par.Emax, totalFlux,
+          "[SPECTRUM,1]", "", "[LIGHTCUR,1]", &status);
+      CHECK_STATUS_BREAK(status);
+    } else {
+      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
+          par.Emin, par.Emax, totalFlux,
+          "[SPECTRUM,1]", "", "", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     appendSimputSource(cat, src, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -668,7 +587,7 @@ int simputsrc_main()
       remove(filename);
     }      
   }
-  if ((strlen(ISISFile)>0) || (strlen(XSPECFile)>0)) {
+  if (strlen(ISISFile)>0) {
     char filename[MAXFILENAME];
     sprintf(filename, "%s.spec0", par.Simput);
     remove(filename);
@@ -894,14 +813,6 @@ int simputsrc_getpar(struct Parameters* const par)
     return(status);
   }
   strcpy(par->ISISFile, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XSPECFile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("reading the name of the XSPEC xcm file failed");
-    return(status);
-  }
-  strcpy(par->XSPECFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("ASCIIFile", &sbuffer);
