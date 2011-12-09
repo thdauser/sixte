@@ -250,7 +250,8 @@ void parseGenDetXML(GenDet* const det,
 }
 
 
-static void GenDetXMLElementStart(void* parsedata, const char* el, const char** attr) 
+static void GenDetXMLElementStart(void* parsedata, const char* el, 
+				  const char** attr) 
 {
   struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
   char Uelement[MAXMSG]; // Upper case version of XML element.
@@ -263,7 +264,18 @@ static void GenDetXMLElementStart(void* parsedata, const char* el, const char** 
   strtoupper(Uelement);
 
   // Check for different elements.
-  if (!strcmp(Uelement, "LINESHIFT")) {
+  if (!strcmp(Uelement, "INSTRUMENT")) {
+    // Determine the name of the instrument.
+    char instrument[MAXMSG];
+    getXMLAttributeString(attr, "NAME", instrument);
+    xmlparsedata->det->instrument=
+      (char*)malloc((strlen(instrument)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->det->instrument, 
+		      xmlparsedata->status,
+		      "memory allocation for instrument name failed");
+    strcpy(xmlparsedata->det->instrument, instrument);
+
+  } else if (!strcmp(Uelement, "LINESHIFT")) {
     CLLineShift* cllineshift=newCLLineShift(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     append2ClockList(xmlparsedata->det->clocklist, CL_LINESHIFT, 

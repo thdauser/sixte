@@ -67,10 +67,23 @@ void phpat(GenDet* const det,
 
     // Allocate memory.
     framelist=(Event**)malloc(maxnframelist*sizeof(Event*));
-    CHECK_NULL_BREAK(framelist, *status, "memory allocation for frame list failed");
+    CHECK_NULL_BREAK(framelist, *status, 
+		     "memory allocation for frame list failed");
     neighborlist=(Event**)malloc(maxnneighborlist*sizeof(Event*));
-    CHECK_NULL_BREAK(neighborlist, *status, "memory allocation for neighbor list failed");
-  
+    CHECK_NULL_BREAK(neighborlist, *status, 
+		     "memory allocation for neighbor list failed");
+
+    // Determine the name of the instrument.
+    // Particular instruments require a special pattern
+    // recombination scheme (e.g. eROSITA).
+    char instrument[MAXMSG];
+    char comment[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "INSTRUME", 
+		  instrument, comment, status);
+    CHECK_STATUS_BREAK(*status);
+    strtoupper(instrument);
+      
+
     // Loop over all events in the input list.
     for (ii=0; ii<=elf->nrows; ii++) {
       
@@ -131,13 +144,45 @@ void phpat(GenDet* const det,
 
 	    // Determine the split threshold [keV].
 	    float split_threshold;
-	    if (det->threshold_split_lo_fraction > 0.) {
-	      split_threshold=
-		det->threshold_split_lo_fraction*maxsignalev->signal;
-	    } else {
-	      split_threshold=det->threshold_split_lo_keV;
+	    // For eROSITA we need a special treatment (according to
+	    // a prescription of K. Dennerl).
+	    if (!strcmp(instrument, "EROSITA")) {
+	      if (det->threshold_split_lo_fraction > 0.) {
+		float vertical=0., horizontal=0.;
+		long ll;
+		for (ll=0; ll<nframelist; ll++) {
+		  if (NULL!=framelist[ll]) {
+		    if (isNeighbor(maxsignalev, framelist[ll])) {
+		      if (framelist[ll]->rawx==maxsignalev->rawx) {
+			if (framelist[ll]->signal>horizontal) {
+			  horizontal=framelist[ll]->signal;
+			}
+		      } else {
+			if (framelist[ll]->signal>vertical) {
+			  vertical=framelist[ll]->signal;
+			}
+		      }
+		    }
+		  }
+		}
+		split_threshold=det->threshold_split_lo_fraction*
+		  (maxsignalev->signal+horizontal+vertical);
+	      } else {
+		SIXT_ERROR("eROSITA requires a fraction split threshold");
+		*status=EXIT_FAILURE;
+		break;
+	      }
+
+	    } else { // Split threshold for generic instruments.
+	      if (det->threshold_split_lo_fraction > 0.) {
+		split_threshold=
+		  det->threshold_split_lo_fraction*maxsignalev->signal;
+	      } else {
+		split_threshold=det->threshold_split_lo_keV;
+	      }
 	    }
-	    
+	    // END of determine the split threshold.
+
 	    // Check if the split threshold is above the event threshold.
 	    if (split_threshold > det->threshold_event_lo_keV) {
 	      printf("*** warning: split threshold is above event threshold\n");

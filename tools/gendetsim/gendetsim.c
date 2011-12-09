@@ -83,6 +83,10 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
+    if (NULL!=det->instrument) {
+      fits_update_key(elf->fptr, TSTRING, "INSTRUME", det->instrument,
+		      "instrument name", &status);
+    }
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
     double dbuffer=0.;

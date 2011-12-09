@@ -49,14 +49,19 @@ int simputsrc_main()
   char cmdfilename[MAXFILENAME]="";
   fitsfile* specfile=NULL;
 
-  // ISIS parameter file containing an explicit spectral model.
+  // Parameter files containing explicit spectral models.
   char ISISFile[MAXFILENAME]="";
+  char XSPECFile[MAXFILENAME]="";
 
-  // ASCII file containing a spectrum
+  // ASCII file containing a spectrum.
   char ASCIIFile[MAXFILENAME]="";
   FILE* datafile=NULL;
 
-  // Buffers for spectral components.
+  // Flag, whether the spectrum should be constructed from 
+  // different components.
+  int use_components=0;
+
+  // Buffer for various spectral components.
   float* flux=NULL;
 
   // SIMPUT data structures.
@@ -84,7 +89,7 @@ int simputsrc_main()
 
     // Check the input type for the spectrum.
     // Check the specification of an ISIS parameter file, an
-    // ASCII file, and the individual spectral components.
+    // XSPEC xcm file, an ASCII file, and the individual spectral components.
     // Only one of these 3 option may be used. In case multiple of
     // them exist, throw an error message and abort.
     strcpy(ISISFile, par.ISISFile);
@@ -94,6 +99,15 @@ int simputsrc_main()
       strcpy(ISISFile, par.ISISFile);
     } else {
       strcpy(ISISFile, "");
+    }
+
+    strcpy(XSPECFile, par.XSPECFile);
+    strtoupper(XSPECFile);
+    if ((strlen(XSPECFile)>0)&&(strcmp(XSPECFile, "NONE"))) {
+      // Copy again the name, this time without upper-case conversion.
+      strcpy(XSPECFile, par.XSPECFile);
+    } else {
+      strcpy(XSPECFile, "");
     }
 
     strcpy(ASCIIFile, par.ASCIIFile);
@@ -109,10 +123,12 @@ int simputsrc_main()
     if (strlen(ISISFile)>0) {
       noptions++;
     }
+    if (strlen(XSPECFile)>0) {
+      noptions++;
+    }
     if (strlen(ASCIIFile)>0) {
       noptions++;
     }
-    int use_components=0;
     if ((par.plFlux>0.) || (par.bbFlux>0.) || 
         (par.flFlux>0.) || (par.rflFlux>0.)) {
       use_components=1;
@@ -242,7 +258,7 @@ int simputsrc_main()
 
       fprintf(cmdfile, "exit;\n");
 
-      // End of writing the ISIS file.
+      // End of writing the ISIS command file.
       fclose(cmdfile);
       cmdfile=NULL;
 
@@ -255,7 +271,40 @@ int simputsrc_main()
       status=system(command);
       CHECK_STATUS_BREAK(status);
 
-    } // END of running ISIS.
+      // END of running ISIS.
+
+    } else if (strlen(XSPECFile)>0) {
+
+      // Open the Xspec command file.
+      sprintf(cmdfilename, "%s.xspec", par.Simput);
+      cmdfile=fopen(cmdfilename,"w");
+      CHECK_NULL_BREAK(cmdfile, status, "opening temporary file failed");
+
+      // Write the commands.
+      fprintf(cmdfile, "@%s\n", par.XSPECFile);
+      fprintf(cmdfile, "dummyrsp %lf %lf %ld\n", 
+	      par.Emin, par.Emax, (long)((par.Emax-par.Emin)/0.01));
+      fprintf(cmdfile, "setplot none\n");       // TODO
+      fprintf(cmdfile, "iplot model\n");
+      fprintf(cmdfile, "wdata %s.spec0\n", par.Simput);
+      fprintf(cmdfile, "quit\n");
+      fprintf(cmdfile, "query y\n");
+      fprintf(cmdfile, "quit\n");
+
+      // End of writing the Xspec command file.
+      fclose(cmdfile);
+      cmdfile=NULL;
+
+      // Construct the shell command to run Xspec.
+      char command[MAXMSG];
+      strcpy(command, "$HEADAS/bin/xspec ");
+      strcat(command, cmdfilename);
+
+      // Run Xspec.
+      status=system(command);
+      CHECK_STATUS_BREAK(status);
+
+    } // END of running XSPEC.
 
     // Add the spectra and insert the total spectrum in the SIMPUT file.
     simputspec=getSimputMIdpSpec(&status);
@@ -376,6 +425,49 @@ int simputsrc_main()
       }
       CHECK_STATUS_BREAK(status);
       // END of loop over the different spectral components.
+
+    } else if (strlen(XSPECFile)>0) {
+
+      // Open the file.
+      char filename[MAXFILENAME];
+      sprintf(filename, "%s.spec0", par.Simput);
+      datafile=fopen(filename, "r");
+      CHECK_NULL_BREAK(datafile, status, "could not open data file");
+
+      // Determine the number of rows.
+      long nlines=0;
+      char c=0;
+      while(!feof(datafile)) {
+        c=fgetc(datafile);
+        if ('\n'==c) {
+          nlines++;
+        }
+      }
+      // Check if the last line has been empty.
+      if('\n'==c) {
+        nlines--;
+      }
+      printf("*** %ld lines\n", nlines);
+
+      // Allocate memory.
+      simputspec->nentries=nlines;
+      simputspec->energy=(float*)malloc(nlines*sizeof(float));
+      CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+      simputspec->pflux=(float*)malloc(nlines*sizeof(float));
+      CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
+
+      // Reset the file pointer, read the data and store them in 
+      // the SimputMIdpSpec data structure.
+      rewind(datafile);
+      long ii;
+      for (ii=0; ii<nlines; ii++) {
+        fscanf(datafile, "%f %f\n", // TODO
+            &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
+      }      
+
+      // Close the file.
+      fclose(datafile);
+      datafile=NULL;
 
     } else {
       // The spectrum is contained in an ASCII file has to be loaded
@@ -568,14 +660,18 @@ int simputsrc_main()
   if (strlen(cmdfilename)>0) {
     remove(cmdfilename);
   }
-  int ii;
-  for (ii=0; ii<4; ii++) {
+  if (use_components>0) {
+    int ii;
+    for (ii=0; ii<4; ii++) {
+      char filename[MAXFILENAME];
+      sprintf(filename, "%s.spec%d", par.Simput, ii);
+      remove(filename);
+    }      
+  }
+  if ((strlen(ISISFile)>0) || (strlen(XSPECFile)>0)) {
     char filename[MAXFILENAME];
-    sprintf(filename, "%s.spec%d", par.Simput, ii);
+    sprintf(filename, "%s.spec0", par.Simput);
     remove(filename);
-
-    // Check whether there is only one file.
-    if (strlen(ISISFile)>0) break;
   }
 
   // Release memory.
@@ -798,6 +894,14 @@ int simputsrc_getpar(struct Parameters* const par)
     return(status);
   }
   strcpy(par->ISISFile, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XSPECFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("reading the name of the XSPEC xcm file failed");
+    return(status);
+  }
+  strcpy(par->XSPECFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("ASCIIFile", &sbuffer);

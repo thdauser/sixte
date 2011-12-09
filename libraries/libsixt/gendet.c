@@ -17,6 +17,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   }
 
   // Initialize all pointers with NULL.
+  det->instrument=NULL;
   det->pixgrid=NULL;
   det->split  =NULL;
   det->line=NULL;
@@ -110,7 +111,9 @@ GenDet* newGenDet(const char* const filename, int* const status)
 void destroyGenDet(GenDet** const det, int* const status)
 {
   if (NULL!=*det) {
-    // Destroy the pixel array.
+    if (NULL!=(*det)->instrument) {
+      free((*det)->instrument);
+    }
     if (NULL!=(*det)->line) {
       int i;
       for (i=0; i<(*det)->pixgrid->ywidth; i++) {
@@ -692,13 +695,17 @@ int makeGenSplitEvents(GenDet* const det,
     // to the pixel borders, whereas here we need the distances from
     // the pixel center for the parameter r.
     // The value 0.355 is given by the parameter ecc->parameter.
-    fraction[0] = exp(-(pow(0.5-distances[mindist],2.)+pow(0.5-distances[secmindist],2.))/
+    fraction[0] = exp(-(pow(0.5-distances[mindist],2.)+
+			pow(0.5-distances[secmindist],2.))/
 		      pow(det->split->par1,2.));
-    fraction[1] = exp(-(pow(0.5+distances[mindist],2.)+pow(0.5-distances[secmindist],2.))/
+    fraction[1] = exp(-(pow(0.5+distances[mindist],2.)+
+			pow(0.5-distances[secmindist],2.))/
 		      pow(det->split->par1,2.));
-    fraction[2] = exp(-(pow(0.5-distances[mindist],2.)+pow(0.5+distances[secmindist],2.))/
+    fraction[2] = exp(-(pow(0.5-distances[mindist],2.)+
+			pow(0.5+distances[secmindist],2.))/
 		      pow(det->split->par1,2.));
-    fraction[3] = exp(-(pow(0.5+distances[mindist],2.)+pow(0.5+distances[secmindist],2.))/
+    fraction[3] = exp(-(pow(0.5+distances[mindist],2.)+
+			pow(0.5+distances[secmindist],2.))/
 		      pow(det->split->par1,2.));
     // Normalization to 1.
     double sum = fraction[0]+fraction[1]+fraction[2]+fraction[3];
