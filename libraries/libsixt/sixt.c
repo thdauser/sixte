@@ -177,27 +177,50 @@ void writeMissionKeys(fitsfile* const fptr,
 		      const char* const instrument, 
 		      int* const status)
 {
-  char mission[MAXMSG];
-  char telescope[MAXMSG];
-  char instr[MAXMSG];
-
-  strcpy(instr, instrument);
-
   // Distinguish between different missions.
   char buffer[MAXMSG];
   strcpy(buffer, instrument);
   strtoupper(buffer);
   if (0==strcmp(buffer, "EROSITA")) {
-    strcpy(mission, "SRG");
-    strcpy(telescope, "eROSITA");
+
+    fits_update_key(fptr, TSTRING, "MISSION", "SRG",
+		    "mission name", status);
+    fits_update_key(fptr, TSTRING, "TELESCOP", "eROSITA",
+		    "telescope name", status);
+    fits_update_key(fptr, TSTRING, "INSTRUME", "FM4",
+		    "instrument name", status);
+
+    fits_update_key(fptr, TSTRING, "FILTER", "OPEN",
+		    "filter", status);
+
+    float frametime=50.0;
+    fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametime,
+		    "[ms] nominal frame time", status);
+    float timezero=0.0;
+    fits_update_key(fptr, TFLOAT, "TIMEZERO", &timezero,
+		    "clock correction", status);
+    fits_update_key(fptr, TSTRING, "TIMEUNIT", "s",
+		    "Time unit", status);
+    fits_update_key(fptr, TSTRING, "TIMESYS", "TT",
+		    "Time system (Terrestial Time)", status);
+
+    fits_update_key(fptr, TSTRING, "RADECSYS", "FK5", "", status);
+    float equinox=2000.0;
+    fits_update_key(fptr, TFLOAT, "EQUINOX", &equinox, "", status);
+    fits_update_key(fptr, TSTRING, "LONGSTR", "OGIP 1.0",
+		    "to support multi-line COMMENT oder HISTORY records",
+		    status);
+
+    int nxdim=384, nydim=384;
+    fits_update_key(fptr, TINT, "NXDIM", &nxdim, "", status);
+    fits_update_key(fptr, TINT, "NYDIM", &nydim, "", status);
+    
+    float pixlen=75.0;
+    fits_update_key(fptr, TFLOAT, "PIXLEN_X", &pixlen, "[micron]", status);
+    fits_update_key(fptr, TFLOAT, "PIXLEN_Y", &pixlen, "[micron]", status);
+
+    // END of eROSITA
   }
 
-  // Write the keywords.
-  fits_update_key(fptr, TSTRING, "MISSION", mission,
-		  "instrument name", status);
-  fits_update_key(fptr, TSTRING, "TELESCOP", telescope,
-		  "instrument name", status);
-  fits_update_key(fptr, TSTRING, "INSTRUME", instr,
-		  "instrument name", status);
 }
 
