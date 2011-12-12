@@ -168,7 +168,7 @@ void phpat(GenDet* const det,
 		split_threshold=det->threshold_split_lo_fraction*
 		  (maxsignalev->signal+horizontal+vertical);
 	      } else {
-		SIXT_ERROR("eROSITA requires a fraction split threshold");
+		SIXT_ERROR("eROSITA requires a fractional split threshold");
 		*status=EXIT_FAILURE;
 		break;
 	      }
