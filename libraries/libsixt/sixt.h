@@ -151,6 +151,11 @@ void sixt_get_XMLFile(char* const filename,
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);
 
+/** Write the mission-specific header keywords. */
+void writeMissionKeys(fitsfile* const fptr, 
+		      const char* const instrument,
+		      int* const status);
+
 
 #endif /* SIXT_H */
 

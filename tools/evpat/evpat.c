@@ -63,6 +63,12 @@ int evpat_main()
     plf=openNewPatternFile(pattern_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Set header keywords.
+    if (NULL!=det->instrument) {
+      writeMissionKeys(elf->fptr, det->instrument, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     // Copy FITS header keywords.
     char comment[MAXMSG];
     double mjdref=0.;

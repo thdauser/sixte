@@ -235,8 +235,8 @@ int runsixt_main()
 
     // Set FITS header keywords.
     if (NULL!=det->instrument) {
-      fits_update_key(elf->fptr, TSTRING, "INSTRUME", det->instrument,
-		      "instrument name", &status);
+      writeMissionKeys(elf->fptr, det->instrument, &status);
+      CHECK_STATUS_BREAK(status);
     }
     fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
@@ -261,6 +261,10 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
+    if (NULL!=det->instrument) {
+      writeMissionKeys(patf->fptr, det->instrument, &status);
+      CHECK_STATUS_BREAK(status);
+    }
     fits_update_key(patf->fptr, TSTRING, "ATTITUDE", 
 		    par.Attitude, "attitude file", &status);
     fits_update_key(patf->fptr, TDOUBLE, "MJDREF", 

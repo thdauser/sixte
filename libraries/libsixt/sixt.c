@@ -172,3 +172,32 @@ void sixt_get_LADXMLFile(char* const filename,
   }
 }
 
+
+void writeMissionKeys(fitsfile* const fptr, 
+		      const char* const instrument, 
+		      int* const status)
+{
+  char mission[MAXMSG];
+  char telescope[MAXMSG];
+  char instr[MAXMSG];
+
+  strcpy(instr, instrument);
+
+  // Distinguish between different missions.
+  char buffer[MAXMSG];
+  strcpy(buffer, instrument);
+  strtoupper(buffer);
+  if (0==strcmp(buffer, "EROSITA")) {
+    strcpy(mission, "SRG");
+    strcpy(telescope, "eROSITA");
+  }
+
+  // Write the keywords.
+  fits_update_key(fptr, TSTRING, "MISSION", mission,
+		  "instrument name", status);
+  fits_update_key(fptr, TSTRING, "TELESCOP", telescope,
+		  "instrument name", status);
+  fits_update_key(fptr, TSTRING, "INSTRUME", instr,
+		  "instrument name", status);
+}
+
