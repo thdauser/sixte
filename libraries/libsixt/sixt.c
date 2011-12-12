@@ -219,6 +219,18 @@ void writeMissionKeys(fitsfile* const fptr,
     fits_update_key(fptr, TFLOAT, "PIXLEN_X", &pixlen, "[micron]", status);
     fits_update_key(fptr, TFLOAT, "PIXLEN_Y", &pixlen, "[micron]", status);
 
+    // Determine the number of the PHA column and set the 
+    // TLMIN and TLMAX keywords.
+    int colnum;
+    fits_get_colnum(fptr, 0, "PHA", &colnum, status);
+    CHECK_STATUS_VOID(*status);
+    char keyword[MAXMSG];
+    int tlmin=0, tlmax=4095;
+    sprintf(keyword, "TLMIN%d", colnum);
+    fits_update_key(fptr, TINT, keyword, &tlmin, "", status);
+    sprintf(keyword, "TLMAX%d", colnum);
+    fits_update_key(fptr, TINT, keyword, &tlmax, "", status);
+
     // END of eROSITA
   }
 
