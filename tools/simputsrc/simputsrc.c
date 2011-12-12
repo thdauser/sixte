@@ -381,7 +381,7 @@ int simputsrc_main()
       // END of loop over the different spectral components.
 
     } else {
-      // The spectrum is contained in an ASCII file has to be loaded 
+      // The spectrum is contained in an ASCII file has to be loaded
       // from there.
 
       // Open the file.
@@ -410,14 +410,14 @@ int simputsrc_main()
       simputspec->pflux=(float*)malloc(nlines*sizeof(float));
       CHECK_NULL_BREAK(simputspec->energy, status, "memory allocation failed");
 
-      // Reset the file pointer, read the data and store them in 
+      // Reset the file pointer, read the data and store them in
       // the SimputMIdpSpec data structure.
       rewind(datafile);
       long ii;
       for (ii=0; ii<nlines; ii++) {
         fscanf(datafile, "%f %f\n",
             &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
-      }      
+      }
 
       // Close the file.
       fclose(datafile);
@@ -442,16 +442,19 @@ int simputsrc_main()
     if(par.LFQ != 0) {
       psd = getSimputPSD(&status);
       CHECK_STATUS_BREAK(status);
+      psd->nentries = par.PSDnpt;
 
       // Generate log-scaled frequency grid
-      psd->frequency = (float*) malloc(par.PSDnpt * sizeof(float));
+      psd->frequency = (float*) calloc(par.PSDnpt, sizeof(float));
       long ii;
       for(ii = 0; ii < par.PSDnpt; ii++) {
         psd->frequency[ii] = exp(log(par.PSDfmin) + ii * (log(par.PSDfmax) / par.PSDnpt));
       }
 
-      // Calculate Lorentzians
-      psd->power = (float*) malloc(par.PSDnpt * sizeof(float));
+      // Calculate Lorentzians using Formula (5.1) in
+      // Pottschmidt, K.: Accretion Disk Weather of Black Hole X-Ray Binaries
+      // (2002), p. 95
+      psd->power = (float*) calloc(par.PSDnpt, sizeof(float));
       float* Lzero = NULL;
       float* LHBO = NULL;
       float* LQ1 = NULL;
@@ -459,30 +462,51 @@ int simputsrc_main()
       float* LQ3 = NULL;
 
       // zero order Lorentzian
-      Lzero = (float*) malloc(par.PSDnpt * sizeof(float));
+      Lzero = (float*) calloc(par.PSDnpt, sizeof(float));
+      float zNorm = par.LFrms / sqrt(0.5 - (atan(par.LFQ * (-1)) / M_PI));
       for(ii = 0; ii < par.PSDnpt; ii++) {
-        Lzero[ii] = par.LFQ / (2 * M_PI * (pow(psd->frequency[ii], 2) + pow(par.LFQ / 2, 2)));
-        //printf("%f\n", Lzero[ii]);
+        Lzero[ii] = (1 / M_PI) * ((pow(zNorm, 2) * par.LFQ * 1e-5) / (pow(1e-5, 2) + (pow(par.LFQ, 2) * pow((psd->frequency[ii] - 1e-5), 2))));
+				psd->power[ii] += Lzero[ii];
       }
 
       // HBO Lorentzian
       if(par.HBOf != 0) {
-        LHBO = (float*) malloc(par.PSDnpt * sizeof(float));
+				float HBONorm = par.HBOrms / sqrt(0.5 - (atan(par.HBOQ * (-1)) / M_PI));
+        LHBO = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LHBO[ii] = (1 / M_PI) * ((pow(HBONorm, 2) * par.HBOQ * par.HBOf) / (pow(par.HBOf, 2) + (pow(par.HBOQ, 2) * pow((psd->frequency[ii] - par.HBOf), 2))));
+					psd->power[ii] += LHBO[ii];
+				}
       }
 
       // QPO1 Lorentzian
       if(par.Q1f != 0) {
-        LQ1 = (float*) malloc(par.PSDnpt * sizeof(float));
+				float Q1Norm = par.Q1rms / sqrt(0.5 - (atan(par.Q1Q * (-1)) / M_PI));
+        LQ1 = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LQ1[ii] = (1 / M_PI) * ((pow(Q1Norm, 2) * par.Q1Q * par.Q1f) / (pow(par.Q1f, 2) + (pow(par.Q1Q, 2) * pow((psd->frequency[ii] - par.Q1f), 2))));
+					psd->power[ii] += LQ1[ii];
+				}
       }
 
       // QPO2 Lorentzian
       if(par.Q2f != 0) {
-        LQ2 = (float*) malloc(par.PSDnpt * sizeof(float));
+				float Q2Norm = par.Q2rms / sqrt(0.5 - (atan(par.Q2Q * (-1)) / M_PI));
+        LQ2 = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LQ2[ii] = (1 / M_PI) * ((pow(Q2Norm, 2) * par.Q2Q * par.Q2f) / (pow(par.Q2f, 2) + (pow(par.Q2Q, 2) * pow((psd->frequency[ii] - par.Q2f), 2))));
+					psd->power[ii] += LQ2[ii];
+				}
       }
 
       // QPO3 Lorentzian
       if(par.Q3f != 0) {
-        LQ3 = (float*) malloc(par.PSDnpt * sizeof(float));
+				float Q3Norm = par.Q3rms / sqrt(0.5 - (atan(par.Q3Q * (-1)) / M_PI));
+        LQ3 = (float*) calloc(par.PSDnpt, sizeof(float));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+					LQ3[ii] = (1 / M_PI) * ((pow(Q3Norm, 2) * par.Q3Q * par.Q3f) / (pow(par.Q3f, 2) + (pow(par.Q3Q, 2) * pow((psd->frequency[ii] - par.Q3f), 2))));
+					psd->power[ii] += LQ3[ii];
+				}
       }
 
       if ((psd->frequency != NULL) && (psd->power != NULL)) {
@@ -501,7 +525,7 @@ int simputsrc_main()
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.
-    float totalFlux = 	    
+    float totalFlux =
         getFlux(simputspec->energy, simputspec->pflux, simputspec->nentries,
             par.Emin, par.Emax);
     char src_name[MAXMSG];
@@ -514,11 +538,19 @@ int simputsrc_main()
       strcpy(src_name, "");
     }
 
-    // Get a new source entry.
-    src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1., 
-        par.Emin, par.Emax, totalFlux,
-        "[SPECTRUM,1]", "", "", &status);
-    CHECK_STATUS_BREAK(status);
+    // Get a new source entry. Check if PSD is present and add to catalog if necessary.
+    if(psd != NULL) {
+      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
+          par.Emin, par.Emax, totalFlux,
+          "[SPECTRUM,1]", "", "[LIGHTCUR,1]", &status);
+      CHECK_STATUS_BREAK(status);
+    } else {
+      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
+          par.Emin, par.Emax, totalFlux,
+          "[SPECTRUM,1]", "", "", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     appendSimputSource(cat, src, &status);
     CHECK_STATUS_BREAK(status);
 
