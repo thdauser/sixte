@@ -123,7 +123,7 @@ int ero_events_main()
       status=EXIT_FAILURE;
       break;
     }
-    wcs.naxis =  2;
+    wcs.naxis = 2;
     wcs.crpix[0] = 0.;
     wcs.crpix[1] = 0.;
     wcs.crval[0] = par.RefRA;
