@@ -103,33 +103,6 @@ int ero_events_main()
     fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Set fixed keywords.
-    /*
-    fits_update_key(fptr, TSTRING, "MISSION", "SRG",
-		    "mission name", &status);
-    fits_update_key(fptr, TSTRING, "TELESCOP", "eROSITA",
-		    "telescope name", &status);
-    fits_update_key(fptr, TSTRING, "INSTRUME", "FM4",
-		    "instrument name", &status);
-    fits_update_key(fptr, TSTRING, "FILTER", "OPEN",
-		    "filter", &status);
-
-    int nxdim=384, nydim=384;
-    fits_update_key(fptr, TINT, "NXDIM", &nxdim, "", &status);
-    fits_update_key(fptr, TINT, "NYDIM", &nydim, "", &status);
-    
-    float pixlen=75.0;
-    fits_update_key(fptr, TFLOAT, "PIXLEN_X", &pixlen, "[micron]", &status);
-    fits_update_key(fptr, TFLOAT, "PIXLEN_Y", &pixlen, "[micron]", &status);
-
-    long tlmin_pha=0, tlmax_pha=4095;
-    sprintf(keyword, "TLMIN%d", cpha);
-    fits_update_key(fptr, TLONG, keyword, &tlmin_pha, "", &status);
-    sprintf(keyword, "TLMAX%d", cpha);
-    fits_update_key(fptr, TLONG, keyword, &tlmax_pha, "", &status);    
-    CHECK_STATUS_BREAK(status);
-    */
-
     // Timing keywords.
     float frametime=50.0;
     fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametime,
