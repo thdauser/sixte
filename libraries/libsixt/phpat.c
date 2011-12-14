@@ -76,12 +76,12 @@ void phpat(GenDet* const det,
     // Determine the name of the instrument.
     // Particular instruments require a special pattern
     // recombination scheme (e.g. eROSITA).
-    char instrument[MAXMSG];
+    char telescope[MAXMSG];
     char comment[MAXMSG];
-    fits_read_key(elf->fptr, TSTRING, "INSTRUME", 
-		  instrument, comment, status);
+    fits_read_key(elf->fptr, TSTRING, "TELESCOP", 
+		  telescope, comment, status);
     CHECK_STATUS_BREAK(*status);
-    strtoupper(instrument);
+    strtoupper(telescope);
       
 
     // Loop over all events in the input list.
@@ -146,7 +146,7 @@ void phpat(GenDet* const det,
 	    float split_threshold;
 	    // For eROSITA we need a special treatment (according to
 	    // a prescription of K. Dennerl).
-	    if (!strcmp(instrument, "EROSITA")) {
+	    if (!strcmp(telescope, "EROSITA")) {
 	      if (det->threshold_split_lo_fraction > 0.) {
 		float vertical=0., horizontal=0.;
 		long ll;

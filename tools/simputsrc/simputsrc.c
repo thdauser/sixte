@@ -401,7 +401,7 @@ int simputsrc_main()
       if('\n'==c) {
         nlines--;
       }
-      printf("*** %ld lines\n", nlines);
+      printf("*** %ld lines\n", nlines); // TODO Remove this line.
 
       // Allocate memory.
       simputspec->nentries=nlines;
@@ -416,7 +416,7 @@ int simputsrc_main()
       long ii;
       for (ii=0; ii<nlines; ii++) {
         fscanf(datafile, "%f %f\n",
-            &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
+	       &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
       }
 
       // Close the file.

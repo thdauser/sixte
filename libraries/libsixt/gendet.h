@@ -69,9 +69,9 @@ typedef struct {
     detector are defined in a detector specific XML file. */
 typedef struct {
 
-  /** Instrument name, which is stored in the 'INSTRUME' header
+  /** Telescope name, which is stored in the 'TELESCOP' header
       keyword in FITS files. */
-  char* instrument;
+  char* telescope;
 
   /** Detector pixel dimensions. */
   GenPixGrid* pixgrid;

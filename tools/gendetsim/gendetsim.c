@@ -83,8 +83,9 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    if (NULL!=det->instrument) {
-      writeMissionKeys(elf->fptr, det->instrument, &status);
+    if (NULL!=det->telescope) {
+      fits_update_key(elf->fptr, TSTRING, "TELESCOP", det->telescope,
+		      "telescope name", &status);
       CHECK_STATUS_BREAK(status);
     }
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,

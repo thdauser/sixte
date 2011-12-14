@@ -218,7 +218,8 @@ int ero_exposure_main()
     double field_min_align;
     if ((par.ra2-par.ra1 > M_PI/6.) || 
 	(par.dec2-par.dec1 > M_PI/6.)) {
-      field_min_align = -2.; // Actually -1 should be sufficient, but -2 is even safer.
+      // Actually -1 should be sufficient, but -2 is even safer.
+      field_min_align = -2.; 
     } else {
       field_min_align = 
 	cos((sqrt(pow(par.ra2-par.ra1, 2.)+pow(par.dec2-par.dec1, 2.))+
@@ -464,6 +465,4 @@ int ero_exposure_getpar(struct Parameters *par)
   
   return(status);
 }
-
-
 
