@@ -86,7 +86,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     // requested time interval.
     int failed=0;
     double dt=
-      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status);
+      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status)-t0;
     // Note that we have to use t0 for getSimputPhotonTime() here,
     // since the value of *(src->t_next_photon) might be outside
     // the time interval covered by the source light curve, as it
@@ -94,7 +94,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     CHECK_STATUS_RET(*status, list);
     if (1==failed) return(list);
 
-    *(src->t_next_photon) += dt;
+    *(src->t_next_photon)+=dt;
   }
 
   // Create new photons, as long as the requested time interval 
