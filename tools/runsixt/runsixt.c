@@ -33,7 +33,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -46,27 +46,23 @@ int runsixt_main()
 
     headas_chat(3, "initialize ...\n");
 
-    // Start time for the simulation.
-    double t0 = par.TIMEZERO;
-
-    // Determine the appropriate detector XML definition file.
-    char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
-		     par.Mission, par.Instrument, par.Mode,
-		     &status);
-    CHECK_STATUS_BREAK(status);
-
+    // Determine the prefix for the output files.
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.Prefix);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer,"NONE")) {
+      strcpy(par.Prefix, "");
+    } 
 
     // Determine the photon list output file.
-    char ucase_buffer[MAXFILENAME];
     char photonlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.PhotonList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(photonlist_filename, par.OutputStem);
-      strcat(photonlist_filename, "_photons.fits");
+      strcpy(photonlist_filename, "");
     } else {
-      strcpy(photonlist_filename, par.PhotonList);
+      strcpy(photonlist_filename, par.Prefix);
+      strcat(photonlist_filename, par.PhotonList);
     }
 
     // Determine the impact list output file.
@@ -74,10 +70,11 @@ int runsixt_main()
     strcpy(ucase_buffer, par.ImpactList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(impactlist_filename, par.OutputStem);
-      strcat(impactlist_filename, "_impacts.fits");
+      strcpy(impactlist_filename, par.Prefix);
+      strcat(impactlist_filename, "impacts.fits");
     } else {
-      strcpy(impactlist_filename, par.ImpactList);
+      strcpy(impactlist_filename, par.Prefix);
+      strcat(impactlist_filename, par.ImpactList);
     }
     
     // Determine the event list output file.
@@ -85,10 +82,11 @@ int runsixt_main()
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(eventlist_filename, par.OutputStem);
-      strcat(eventlist_filename, "_events.fits");
+      strcpy(eventlist_filename, par.Prefix);
+      strcat(eventlist_filename, "events.fits");
     } else {
-      strcpy(eventlist_filename, par.EventList);
+      strcpy(eventlist_filename, par.Prefix);
+      strcat(eventlist_filename, par.EventList);
     }
 
     // Determine the pattern list output file.
@@ -96,10 +94,11 @@ int runsixt_main()
     strcpy(ucase_buffer, par.PatternList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(patternlist_filename, par.OutputStem);
-      strcat(patternlist_filename, "_pattern.fits");
+      strcpy(patternlist_filename, par.Prefix);
+      strcat(patternlist_filename, "pattern.fits");
     } else {
-      strcpy(patternlist_filename, par.PatternList);
+      strcpy(patternlist_filename, par.Prefix);
+      strcat(patternlist_filename, par.PatternList);
     }
 
     // Determine the random number seed.
@@ -113,6 +112,13 @@ int runsixt_main()
 
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
+
+    // Determine the appropriate detector XML definition file.
+    char xml_filename[MAXFILENAME];
+    sixt_get_XMLFile(xml_filename, par.XMLFile, 
+		     par.Mission, par.Instrument, par.Mode,
+		     &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the detector configuration.
     det=newGenDet(xml_filename, &status);
@@ -138,7 +144,7 @@ int runsixt_main()
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = t0;
+      ac->entry[0].time = par.TIMEZERO;
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -151,13 +157,14 @@ int runsixt_main()
       
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > t0) || 
-	  (ac->entry[ac->nentries-1].time < t0+par.Exposure)) {
+      if ((ac->entry[0].time > par.TIMEZERO) || 
+	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", t0, t0+par.Exposure);
-	HD_ERROR_THROW(msg, status);
+		"specified period from %lf to %lf!", 
+		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+	SIXT_ERROR(msg);
 	break;
       }
     }
@@ -170,115 +177,213 @@ int runsixt_main()
     // --- End of Initialization ---
 
 
-    // --- Simulation Process ---
+    // --- Open and set up files ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Set FITS header keywords.
-    fits_update_key(plf->fptr, TSTRING, "ATTITUDE", par.Attitude,
-		    "attitude file", &status);
-    fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    double dbuffer=0.;
-    fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    CHECK_STATUS_BREAK(status);
-
-
-    // Photon Generation.
-    headas_chat(3, "start photon generation ...\n");
-    phgen(ac, srccat, plf, t0, par.Exposure, par.MJDREF, 
-	  det->fov_diameter, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Free the source catalog in order to save memory.
-    freeSourceCatalog(&srccat, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Reset internal line counter of photon list file.
-    plf->row=0;
-
+    if (strlen(photonlist_filename)>0) {
+      plf=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
+      CHECK_STATUS_BREAK(status);
+    }
 
     // Open the output impact list file.
     ilf=openNewImpactListFile(impactlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Set FITS header keywords.
-    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
-		    "attitude file", &status);
-    fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    dbuffer=0.;
-    fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    CHECK_STATUS_BREAK(status);
-
-
-    // Photon Imaging.
-    headas_chat(3, "start photon imaging ...\n");
-    phimg(det, ac, plf, ilf, t0, par.Exposure, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Close the photon list file in order to save memory.
-    freePhotonListFile(&plf, &status);
- 
-
-    // Reset internal line counter of impact list file.
-    ilf->row=0;
-
-
     // Open the output event list file.
     elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
-
-    // Set FITS header keywords.
-    if (NULL!=det->telescope) {
-      fits_update_key(elf->fptr, TSTRING, "TELESCOP", det->telescope,
-		      "telescope name", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-    fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
-		    "attitude file", &status);
-    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    dbuffer=0.;
-    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Photon Detection.
-    headas_chat(3, "start photon detection ...\n");
-    phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Close the impact list file in order to save memory.
-    freeImpactListFile(&ilf, &status);
-
 
     // Open the output pattern list file.
     patf=openNewPatternFile(patternlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    if (NULL!=det->telescope) {
-      fits_update_key(patf->fptr, TSTRING, "TELESCOP", det->telescope,
-		      "telescope name", &status);
+    // If this is a pointing attitude, store the direction in the output
+    // photon list.
+    if (1==ac->nentries) {
+      // Determine the telescope pointing direction and roll angle.
+      Vector pointing=getTelescopeNz(ac, par.TIMEZERO, &status);
+      CHECK_STATUS_BREAK(status);
+    
+      // Direction.
+      double ra, dec;
+      calculate_ra_dec(pointing, &ra, &dec);
+    
+      // Roll angle.
+      float rollangle=getRollAngle(ac, par.TIMEZERO, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Store the RA and Dec information in the FITS header.
+      ra *= 180./M_PI;
+      dec*= 180./M_PI;
+      rollangle*= 180./M_PI;
+
+      // Photon list file.
+      if (NULL!=plf) {
+	fits_update_key(plf->fptr, TDOUBLE, "RA_PNT", &ra,
+			"RA of pointing direction [deg]", &status);
+	fits_update_key(plf->fptr, TDOUBLE, "DEC_PNT", &dec,
+			"Dec of pointing direction [deg]", &status);
+	fits_update_key(plf->fptr, TFLOAT, "PA_PNT", &rollangle,
+			"Roll angle [deg]", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+
+      // Impact list file.
+      if (NULL!=ilf) {
+	fits_update_key(ilf->fptr, TDOUBLE, "RA_PNT", &ra,
+			"RA of pointing direction [deg]", &status);
+	fits_update_key(ilf->fptr, TDOUBLE, "DEC_PNT", &dec,
+			"Dec of pointing direction [deg]", &status);
+	fits_update_key(ilf->fptr, TFLOAT, "PA_PNT", &rollangle,
+			"Roll angle [deg]", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+
+      // Event list file.
+      if (NULL!=elf) {
+	fits_update_key(elf->fptr, TDOUBLE, "RA_PNT", &ra,
+			"RA of pointing direction [deg]", &status);
+	fits_update_key(elf->fptr, TDOUBLE, "DEC_PNT", &dec,
+			"Dec of pointing direction [deg]", &status);
+	fits_update_key(elf->fptr, TFLOAT, "PA_PNT", &rollangle,
+			"Roll angle [deg]", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+
+      // Pattern list file.
+      fits_update_key(patf->fptr, TDOUBLE, "RA_PNT", &ra,
+		      "RA of pointing direction [deg]", &status);
+      fits_update_key(patf->fptr, TDOUBLE, "DEC_PNT", &dec,
+		      "Dec of pointing direction [deg]", &status);
+      fits_update_key(patf->fptr, TFLOAT, "PA_PNT", &rollangle,
+		      "Roll angle [deg]", &status);
+      CHECK_STATUS_BREAK(status);
+
+    } else {
+      // An explicit attitude file is given.
+      if (NULL!=plf) {
+	fits_update_key(plf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+			"attitude file", &status);
+      }
+      if (NULL!=ilf) {
+	fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+			"attitude file", &status);
+      }
+      if (NULL!=elf) {
+	fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+			"attitude file", &status);
+      }
+      fits_update_key(patf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+		      "attitude file", &status);
       CHECK_STATUS_BREAK(status);
     }
-    fits_update_key(patf->fptr, TSTRING, "ATTITUDE", 
-		    par.Attitude, "attitude file", &status);
-    fits_update_key(patf->fptr, TDOUBLE, "MJDREF", 
-		    &par.MJDREF, "reference MJD", &status);
-    dbuffer=0.;
-    fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", 
-		    &dbuffer, "time offset", &status);
+
+    // Timing keywords.
+    double dbuffer=0.;
+    // Photon list file.
+    if (NULL!=plf) {
+      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		      "reference MJD", &status);
+      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		      "time offset", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
+    // Impact list file.
+    if (NULL!=ilf) {
+      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		      "reference MJD", &status);
+      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		      "time offset", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
+    // Event list file.
+    if (NULL!=elf) {
+      fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		      "reference MJD", &status);
+      fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		      "time offset", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
+    // Pattern list file.
+    fits_update_key(patf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+		    "reference MJD", &status);
+    fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+		    "time offset", &status);
+    fits_update_key(patf->fptr, TDOUBLE, "EXPOSURE", &par.Exposure,
+		    "exposure time [s]", &status);
     CHECK_STATUS_BREAK(status);
+
+    // --- End of opening files ---
+
+
+    // --- Simulation Process ---
+
+    headas_chat(3, "start simulation ...\n");
+
+    // Loop over photon generation and processing
+    // till the time of the photon exceeds the requested
+    // exposure time.
+    // Simulation progress status (running from 0 to 1000).
+    int progress=0;
+    do {
+
+      // Photon generation.
+      Photon ph;
+      int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
+		     det->fov_diameter, &ph, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // If no photon has been generated, break the loop.
+      if (0==isph) break;
+
+      // Check if the photon still is within the requested exposre time.
+      if (ph.time>par.TIMEZERO+par.Exposure) break;
+
+      // If requested write the photon to the output file.
+      if (NULL!=plf) {
+	status=addPhoton2File(plf, &ph);
+	CHECK_STATUS_BREAK(status);
+      }
+
+      // Photon imaging.
+      Impact imp;
+      int isimg=phimg(det, ac, &ph, &imp, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // If the photon is not imaged but lost in the optical system,
+      // continue with the next one.
+      if (0==isimg) continue;
+
+      // Write the impact to the output file.
+      addImpact2File(ilf, &imp, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Program progress output.
+      if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+	progress++;
+	headas_chat(2, "\r%.1lf %%", progress*1./10.);
+	fflush(NULL);
+      }
+
+    } while(1); // END of photon processing loop.
+    CHECK_STATUS_BREAK(status);
+
+    // Progress output.
+    headas_chat(2, "\r%.1lf %%\n", 100.);
+    fflush(NULL);
+
+    // Photon Detection.
+    headas_chat(3, "start detection process ...\n");
+    phdetGenDet(det, ilf, elf, par.TIMEZERO, par.Exposure, &status);
+    CHECK_STATUS_BREAK(status);
+
 
     // Perform a pattern analysis, only if split events are simulated.
     if (GS_NONE!=det->split->type) {
-
       // Pattern analysis.
       headas_chat(3, "start event pattern analysis ...\n");
       phpat(det, elf, patf, &status);
@@ -290,7 +395,6 @@ int runsixt_main()
       headas_chat(3, "copy events to pattern file ...\n");
       copyEvents2PatternFile(elf, patf, &status);
       CHECK_STATUS_BREAK(status);
-
     }
     
     // Close the event list file in order to save memory.
@@ -298,7 +402,7 @@ int runsixt_main()
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
-    phproj(det, ac, patf, t0, par.Exposure, &status);
+    phproj(det, ac, patf, par.TIMEZERO, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of simulation process ---
@@ -333,17 +437,17 @@ int runsixt_getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_string("OutputStem", &sbuffer);
+  status=ape_trad_query_string("Prefix", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the filename stem for the output files!\n", 
+    HD_ERROR_THROW("Error reading the prefix for the output files!\n", 
 		   status);
     return(status);
   }
-  strcpy(par->OutputStem, sbuffer);
+  strcpy(par->Prefix, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("PhotonList", &sbuffer);

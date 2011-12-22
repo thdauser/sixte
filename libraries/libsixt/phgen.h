@@ -5,7 +5,6 @@
 #include "attitudecatalog.h"
 #include "gendet.h"
 #include "photon.h"
-#include "photonlistfile.h"
 #include "sourcecatalog.h"
 
 
@@ -14,14 +13,14 @@
 /////////////////////////////////////////////////////////////////
 
 
-void phgen(AttitudeCatalog* const ac,
-	   SourceCatalog* const srccat,
-	   PhotonListFile* const plf,
-	   const double t0, 
-	   const double exposure,
-	   const double mjdref,
-	   const float fov,
-	   int* const status);
+int phgen(AttitudeCatalog* const ac,
+	  SourceCatalog* const srccat,
+	  const double t0, 
+	  const double exposure,
+	  const double mjdref,
+	  const float fov,
+	  Photon* const ph,
+	  int* const status);
 
 
 #endif /* PHGEN_H */

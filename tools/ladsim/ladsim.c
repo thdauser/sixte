@@ -1,64 +1,5 @@
 #include "ladsim.h"
 
-static inline int ladphgen(AttitudeCatalog* const ac,
-			   SourceCatalog* const srccat,
-			   const double t0, 
-			   const double exposure,
-			   const double mjdref,
-			   const float fov,
-			   Photon* ph,
-			   int* const status)
-{
-  // Step width of the time loop.
-  const double dt=1.0;
-
-  // Photon list buffer.
-  static LinkedPhoListElement* pholist=NULL;
-
-  // Current time.
-  static double time=0.;
-  if (time<t0) {
-    time=t0;
-  }
-
-  // If the photon list is empty, generate new photons from the
-  // given source catalog.
-  while((NULL==pholist)&&(time<t0+exposure)) {
-    // Determine the telescope pointing at the current point of time.
-    Vector pointing = getTelescopeNz(ac, time, status);
-    CHECK_STATUS_BREAK(*status);
-
-    // Display the program progress status.
-    double ra, dec;
-    calculate_ra_dec(pointing, &ra, &dec);
-    headas_chat(5, "\rtime: %.1lf s, telescope: (%.3lf,%.3lf)     ", 
-		time, ra*180./M_PI, dec*180./M_PI);
-    fflush(NULL);
-    
-    // Get photons for all sources in the catalog.
-    double t1=MIN(time+dt, t0+exposure);
-    pholist=
-      genFoVXRayPhotons(srccat, &pointing, fov,
-			time, t1, mjdref, status);
-    CHECK_STATUS_BREAK(*status);
-
-    // Increase the time.
-    time+=dt;
-  }
-
-  // If there is no photon in the buffer.
-  if (NULL==pholist) return(0);
-      
-  // Take the first photon from the list and return it.
-  copyPhoton(ph, &pholist->photon);
-
-  // Delete the processed element.
-  LinkedPhoListElement* next=pholist->next;
-  free(pholist);
-  pholist = next;
-  return(1);
-}
-
 
 static inline int ladphimg(const LAD* const lad,
 			   AttitudeCatalog* const ac,
@@ -452,7 +393,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -464,11 +405,6 @@ int ladsim_main()
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
-
-    // Determine the appropriate detector XML definition file.
-    char xml_filename[MAXFILENAME];
-    sixt_get_LADXMLFile(xml_filename, par.XMLFile);
-    CHECK_STATUS_BREAK(status);
 
     // Determine the prefix for the output files.
     char ucase_buffer[MAXFILENAME];
@@ -535,6 +471,11 @@ int ladsim_main()
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
 
+    // Determine the appropriate detector XML definition file.
+    char xml_filename[MAXFILENAME];
+    sixt_get_LADXMLFile(xml_filename, par.XMLFile);
+    CHECK_STATUS_BREAK(status);
+
     // Load the detector configuration.
     lad=getLADfromXML(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
@@ -564,6 +505,7 @@ int ladsim_main()
 
       Vector vz = {0., 0., 1.};
       ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
+
     } else {
       // Load the attitude from the given file.
       ac=loadAttitudeCatalog(par.Attitude, &status);
@@ -769,7 +711,6 @@ int ladsim_main()
 
     // --- Simulation Process ---
 
-    // Photon Generation.
     headas_chat(3, "start simulation ...\n");
 
     // Loop over photon generation and processing
@@ -782,8 +723,8 @@ int ladsim_main()
       // Photon generation.
       // Get a new photon from the generation routine.
       Photon ph;
-      int isph=ladphgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
-			lad->fov_diameter, &ph, &status);
+      int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
+		     lad->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
       
       // If no photon has been generated, break the loop.

@@ -21,7 +21,7 @@ int phoimg_main() {
 
   // Register HEATOOL:
   set_toolname("phoimg");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -32,16 +32,6 @@ int phoimg_main() {
     if ((status=phoimg_getpar(&par))) break;
 
     headas_chat(3, "initialize ...\n");
-
-    // Start time for the simulation.
-    double t0 = par.TIMEZERO;
-
-    // Determine the appropriate detector XML definition file.
-    char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile,
-		     par.Mission, par.Instrument, par.Mode,
-		     &status);
-    CHECK_STATUS_BREAK(status);
 
     // Determine the photon list file name.
     char photonlist_filename[MAXFILENAME];
@@ -62,6 +52,13 @@ int phoimg_main() {
 
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
+
+    // Determine the appropriate detector XML definition file.
+    char xml_filename[MAXFILENAME];
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
+		     par.Mission, par.Instrument, par.Mode,
+		     &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the detector configuration.
     det=newGenDet(xml_filename, &status);
@@ -88,7 +85,7 @@ int phoimg_main() {
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = t0;
+      ac->entry[0].time = par.TIMEZERO;
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -101,13 +98,14 @@ int phoimg_main() {
 
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > t0) || 
-	  (ac->entry[ac->nentries-1].time < t0+par.Exposure)) {
+      if ((ac->entry[0].time > par.TIMEZERO) || 
+	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", t0, t0+par.Exposure);
-	HD_ERROR_THROW(msg, status);
+		"specified period from %lf to %lf!", 
+		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+	SIXT_ERROR(msg);
 	break;
       }
     }
@@ -139,9 +137,46 @@ int phoimg_main() {
 		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
-    // Photon Imaging.
-    phimg(det, ac, plf, ilf, t0, par.Exposure, &status);
+    // Scan the entire photon list.
+    int progress=0;  
+    while (plf->row < plf->nrows) {
+
+      Photon photon={.time=0.};
+      
+      // Read an entry from the photon list:
+      status=PhotonListFile_getNextRow(plf, &photon);
+      CHECK_STATUS_BREAK(status);
+
+      // Check whether we are still within the requested time interval.
+      if (photon.time < par.TIMEZERO) continue;
+      if (photon.time > par.TIMEZERO+par.Exposure) break;
+
+      // Photon Imaging.
+      Impact impact;
+      int isimg=phimg(det, ac, &photon, &impact, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // If the photon is not imaged but lost in the optical system,
+      // continue with the next one.
+      if (0==isimg) continue;
+
+      // Write the impact to the output file.
+      addImpact2File(ilf, &impact, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Program progress output.
+      if ((int)((photon.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+	progress++;
+	headas_chat(2, "\r%.1lf %%", progress*1./10.);
+	fflush(NULL);
+      }
+
+    } while(1); // END of photon processing loop.
     CHECK_STATUS_BREAK(status);
+
+    // Progress output.
+    headas_chat(2, "\r%.1lf %%\n", 100.);
+    fflush(NULL);
 
     // --- END of imaging process ---
 

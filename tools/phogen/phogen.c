@@ -23,7 +23,7 @@ int phogen_main()
 
   // Register HEATOOL.
   set_toolname("phogen");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -35,16 +35,6 @@ int phogen_main()
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
-
-    // Start time for the simulation.
-    double t0 = par.TIMEZERO;
-
-    // Determine the appropriate detector XML definition file.
-    char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
-		     par.Mission, par.Instrument, par.Mode,
-		     &status);
-    CHECK_STATUS_BREAK(status);
 
     // Determine the photon list output file.
     char photonlist_filename[MAXFILENAME];
@@ -61,6 +51,13 @@ int phogen_main()
 
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
+
+    // Determine the appropriate detector XML definition file.
+    char xml_filename[MAXFILENAME];
+    sixt_get_XMLFile(xml_filename, par.XMLFile, 
+		     par.Mission, par.Instrument, par.Mode,
+		     &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the detector configuration.
     det=newGenDet(xml_filename, &status);
@@ -87,7 +84,7 @@ int phogen_main()
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();      
-      ac->entry[0].time = t0;
+      ac->entry[0].time = par.TIMEZERO;
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -100,13 +97,14 @@ int phogen_main()
 
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > t0) || 
-	  (ac->entry[ac->nentries-1].time < t0+par.Exposure)) {
+      if ((ac->entry[0].time > par.TIMEZERO) || 
+	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", t0, t0+par.Exposure);
-	HD_ERROR_THROW(msg, status);
+		"specified period from %lf to %lf!", 
+		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+	SIXT_ERROR(msg);
 	break;
       }
     }
@@ -139,10 +137,42 @@ int phogen_main()
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");
 
-    phgen(ac, srccat, plf, t0, par.Exposure, par.MJDREF, 
-	  det->fov_diameter, &status);
+    // Loop over photon generation, till the time of the photon exceeds 
+    // the requested exposure time.
+    // Simulation progress status (running from 0 to 1000).
+    int progress=0;
+    do {
+
+      // Photon generation.
+      Photon ph;
+      int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
+		     det->fov_diameter, &ph, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // If no photon has been generated, break the loop.
+      if (0==isph) break;
+
+      // Check if the photon still is within the requested exposre time.
+      if (ph.time>par.TIMEZERO+par.Exposure) break;
+
+      // Write the photon to the output file.
+      status=addPhoton2File(plf, &ph);
+      CHECK_STATUS_BREAK(status);
+
+      // Program progress output.
+      if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+	progress++;
+	headas_chat(2, "\r%.1lf %%", progress*1./10.);
+	fflush(NULL);
+      }
+
+    } while(1); // END of photon generation loop.
     CHECK_STATUS_BREAK(status);
  
+    // Progress output.
+    headas_chat(2, "\r%.1lf %%\n", 100.);
+    fflush(NULL);
+
     // --- End of photon generation ---
 
   } while(0); // END of ERROR HANDLING Loop.

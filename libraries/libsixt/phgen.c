@@ -1,21 +1,30 @@
 #include "phgen.h"
 
 
-void phgen(AttitudeCatalog* const ac,
-	   SourceCatalog* const srccat,
-	   PhotonListFile* const plf,
-	   const double t0, 
-	   const double exposure,
-	   const double mjdref,
-	   const float fov,
-	   int* const status)
+int phgen(AttitudeCatalog* const ac,
+	  SourceCatalog* const srccat,
+	  const double t0, 
+	  const double exposure,
+	  const double mjdref,
+	  const float fov,
+	  Photon* const ph,
+	  int* const status)
 {
   // Step width of the time loop.
   const double dt = 1.0;
 
-  // Loop over the specified time interval.
-  double time;
-  for (time=t0; time<t0+exposure; time+=dt) {
+  // Photon list buffer.
+  static LinkedPhoListElement* pholist=NULL;
+
+  // Current time.
+  static double time=0.;
+  if (time<t0) {
+    time=t0;
+  }
+
+  // If the photon list is empty generate new photons from the 
+  // given source catalog.
+  while((NULL==pholist)&&(time<t0+exposure)) {
     // Determine the telescope pointing at the current point of time.
     Vector pointing = getTelescopeNz(ac, time, status);
     CHECK_STATUS_BREAK(*status);
@@ -23,30 +32,31 @@ void phgen(AttitudeCatalog* const ac,
     // Display the program progress status.
     double ra, dec;
     calculate_ra_dec(pointing, &ra, &dec);
-    headas_chat(3, "\rtime: %.1lf s, telescope: (%.3lf,%.3lf)     ", 
+    headas_chat(5, "\rtime: %.1lf s, telescope: (%.3lf,%.3lf)     ", 
 		time, ra*180./M_PI, dec*180./M_PI);
     fflush(NULL);
     
     // Get photons for all sources in the catalog.
-    double t2 = MIN(time+dt, t0+exposure);
-    LinkedPhoListElement* pholist =
+    double t1 = MIN(time+dt, t0+exposure);
+    pholist =
       genFoVXRayPhotons(srccat, &pointing, fov,
-			time, t2, mjdref, status);
+			time, t1, mjdref, status);
     CHECK_STATUS_BREAK(*status);
       
-    // Process the list of generated photons.
-    while(pholist) {
-      // Output to the FITS file.
-      *status = addPhoton2File(plf, &(pholist->photon));
-      CHECK_STATUS_BREAK(*status);
-	
-      // Delete the processed element.
-      LinkedPhoListElement* next = pholist->next;
-      free(pholist);
-      pholist = next;
-    }
-    CHECK_STATUS_BREAK(*status);
+    // Increase the time.
+    time+=dt;
   }
-  // END of loop over the requested time interval.
+
+  // If there is no photon in the buffer.
+  if (NULL==pholist) return(0);
+
+  // Take the first photon from the list and return it.
+  copyPhoton(ph, &pholist->photon);
+
+  // Delete the processed element.
+  LinkedPhoListElement* next=pholist->next;
+  free(pholist);
+  pholist = next;
+  return(1);
 }
 
