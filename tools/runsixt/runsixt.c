@@ -33,7 +33,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -292,9 +292,9 @@ int runsixt_main()
 
     // Impact list file.
     if (NULL!=ilf) {
-      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+      fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		      "time offset", &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -363,7 +363,7 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
 	progress++;
 	headas_chat(2, "\r%.1lf %%", progress*1./10.);
 	fflush(NULL);
@@ -375,6 +375,9 @@ int runsixt_main()
     // Progress output.
     headas_chat(2, "\r%.1lf %%\n", 100.);
     fflush(NULL);
+
+    // Reset internal line counter of the impact list file.
+    ilf->row=0;
 
     // Photon Detection.
     headas_chat(3, "start detection process ...\n");

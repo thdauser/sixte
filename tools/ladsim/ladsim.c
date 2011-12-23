@@ -393,7 +393,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.09");
+  set_toolversion("0.10");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -792,7 +792,7 @@ int ladsim_main()
       // END of loop over all signals.
 
       // Program progress output.
-      if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
 	progress++;
 	headas_chat(2, "\r%.1lf %%", progress*1./10.);
 	fflush(NULL);

@@ -23,7 +23,7 @@ int phogen_main()
 
   // Register HEATOOL.
   set_toolname("phogen");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -160,7 +160,7 @@ int phogen_main()
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      if ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
 	progress++;
 	headas_chat(2, "\r%.1lf %%", progress*1./10.);
 	fflush(NULL);
