@@ -24,10 +24,10 @@ LT_INIT #([disable-shared]) #([shared])
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -I$HEADAS/include -I$HOME/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -DCORRECT_RMF_FIRST_CHANNEL"
+CFLAGS="$CFLAGS -I$HEADAS/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -DCORRECT_RMF_FIRST_CHANNEL"
 
 # Linker Flags:
-LDFLAGS="$LDFLAGS -L$HEADAS/lib -L$HOME/lib -g -W -Wall"
+LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall"
 
 # Check for libraries:  (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
