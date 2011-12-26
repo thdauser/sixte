@@ -171,7 +171,7 @@ int phoimg_main() {
 	fflush(NULL);
       }
 
-    } while(1); // END of photon processing loop.
+    }; // END of photon processing loop.
     CHECK_STATUS_BREAK(status);
 
     // Progress output.
