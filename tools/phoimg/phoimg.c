@@ -21,7 +21,7 @@ int phoimg_main() {
 
   // Register HEATOOL:
   set_toolname("phoimg");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -165,7 +165,7 @@ int phoimg_main() {
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      if ((int)((photon.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((photon.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
 	progress++;
 	headas_chat(2, "\r%.1lf %%", progress*1./10.);
 	fflush(NULL);

@@ -99,7 +99,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 
   // Create new photons, as long as the requested time interval 
   // is not exceeded.
-  while (*(src->t_next_photon) <= t1) {
+  while (*(src->t_next_photon)<=t1) {
 
     // Append a new entry at the end of the linked list.
     *list_next = newLinkedPhoListElement(status);
