@@ -310,7 +310,7 @@ static int getpar(struct Parameters* parameters)
 
   // Set the event list template file:
   strcpy(parameters->eventlist_template, SIXT_DATA_PATH);
-  strcat(parameters->eventlist_template, "/htrs.eventlist.tpl");
+  strcat(parameters->eventlist_template, "/templates/htrs.eventlist.tpl");
 
   return(status);
 }
