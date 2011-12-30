@@ -51,50 +51,19 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     src->t_next_photon=(double*)malloc(sizeof(double));
     CHECK_NULL(src->t_next_photon, *status,
 	       "memory allocation for 't_next_photon' (double) failed");
-    
-    float rate=getSimputPhotonRate(simputsrc, t0, mjdref, status);
-    CHECK_STATUS_RET(*status, list);
-    if (0.==rate) {
-      return(list);
-    } else if (rate < 0.) {
-      char msg[MAXMSG];
-      sprintf(msg, "photon rate %e <= 0.", rate);
-      SIXT_ERROR(msg);
-      *status = EXIT_FAILURE;
-      return(list);
-    }
-    *(src->t_next_photon) = t0 - 2./rate;
 
-  } else if (*(src->t_next_photon) < t0) {
-    float rate = getSimputPhotonRate(simputsrc, t0, mjdref, status);
-    CHECK_STATUS_RET(*status, list);
-    if (0.==rate) {
-      return(list);
-    } else if (rate <= 0.) {
-      char msg[MAXMSG];
-      sprintf(msg, "photon rate %e <= 0.", rate);
-      SIXT_ERROR(msg);
-      *status = EXIT_FAILURE;
-      return(list);
-    }
-    *(src->t_next_photon) = t0 - 2./rate;
-  }
-
-  // Get a valid photon arrival time in the interval [t0,t1]
-  while (*(src->t_next_photon) < t0) {
-    // The arrival time of the next photon lies before the
-    // requested time interval.
     int failed=0;
-    double dt=
-      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status)-t0;
-    // Note that we have to use t0 for getSimputPhotonTime() here,
-    // since the value of *(src->t_next_photon) might be outside
-    // the time interval covered by the source light curve, as it
-    // has been set to t0-2./rate.
+    *(src->t_next_photon) = 
+      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status);
     CHECK_STATUS_RET(*status, list);
     if (1==failed) return(list);
 
-    *(src->t_next_photon)+=dt;
+  } else if (*(src->t_next_photon) < t0) {
+    int failed=0;
+    *(src->t_next_photon) = 
+      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status);
+    CHECK_STATUS_RET(*status, list);
+    if (1==failed) return(list);
   }
 
   // Create new photons, as long as the requested time interval 
