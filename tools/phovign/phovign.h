@@ -17,10 +17,6 @@ struct Parameters {
   /** [deg] */
   float RA, Dec;
 
-  double MJDREF;
-  double TIMEZERO;
-  double Exposure;
-
   int Seed;
   
   char clobber;

@@ -15,7 +15,7 @@ int phovign_main() {
 
   // Register HEATOOL:
   set_toolname("phovign");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -64,7 +64,7 @@ int phovign_main() {
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = par.TIMEZERO;
+      ac->entry[0].time = 0.;
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -74,19 +74,6 @@ int phovign_main() {
       // Load the attitude from the given file.
       ac=loadAttitudeCatalog(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
-
-      // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TIMEZERO) || 
-	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TIMEZERO, par.TIMEZERO+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
     }
     // END of setting up the attitude.
     
@@ -110,10 +97,6 @@ int phovign_main() {
       // Read an entry from the photon list:
       status=PhotonListFile_getNextRow(plf, &photon);
       CHECK_STATUS_BREAK(status);
-
-      // Check whether we are still within the requested time interval.
-      if (photon.time < par.TIMEZERO) continue;
-      if (photon.time > par.TIMEZERO+par.Exposure) break;
 
       // Apply the vignetting.
       // Compare the photon direction to the direction of the telescope axis.
@@ -205,24 +188,6 @@ int phovign_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the declination of the "
 		   "telescope pointing!\n", status);
-    return(status);
-  } 
-
-  status=ape_trad_query_double("MJDREF", &par->MJDREF);
-  if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading MJDREF!\n", status);
-    return(status);
-  } 
-
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
-  if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
-    return(status);
-  } 
-
-  status=ape_trad_query_double("Exposure", &par->Exposure);
-  if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the exposure time!\n", status);
     return(status);
   } 
 
