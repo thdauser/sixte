@@ -207,6 +207,7 @@ AC_CONFIG_FILES([Makefile
 		tools/runsixt/Makefile
 		tools/phogen/Makefile
 		tools/phoimg/Makefile
+		tools/phovign/Makefile
 		tools/ladsim/Makefile
 		tools/ladspec/Makefile
 		tools/genlc/Makefile
