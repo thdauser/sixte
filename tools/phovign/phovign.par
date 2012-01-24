@@ -1,4 +1,5 @@
-PhotonList,fre,lq,"photons.fits",,,"photon list input file"
+InputList,fre,lq,"photons.fits",,,"photon list input file"
+OutputList,s,lq,"photons_vignetted.fits",,,"photon list output file"
 Attitude,s,h,"none",,,"attitude input file"
 RA,r,lq,0.0,0.0,360.0,"right ascension of telescope pointing (degree)"
 Dec,r,lq,0.0,-90.0,90.0,"declination of telescope pointing (degree)"

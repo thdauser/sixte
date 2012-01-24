@@ -7,7 +7,8 @@ int phovign_main() {
   struct Parameters par;
 
   AttitudeCatalog* ac=NULL;
-  PhotonListFile* plf=NULL;
+  PhotonListFile* plif=NULL;
+  PhotonListFile* plof=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -15,7 +16,7 @@ int phovign_main() {
 
   // Register HEATOOL:
   set_toolname("phovign");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -27,9 +28,13 @@ int phovign_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Determine the photon list file name.
-    char photonlist_filename[MAXFILENAME];
-    strcpy(photonlist_filename, par.PhotonList);
+    // Determine the input photon list file name.
+    char inputlist_filename[MAXFILENAME];
+    strcpy(inputlist_filename, par.InputList);
+
+    // Determine the output photon list file name.
+    char outputlist_filename[MAXFILENAME];
+    strcpy(outputlist_filename, par.OutputList);
 
     // Determine the random number seed.
     int seed;
@@ -84,18 +89,21 @@ int phovign_main() {
 
     headas_chat(3, "apply vignetting ...\n");
 
-    // Open the photon list file.
-    plf=openPhotonListFile(photonlist_filename, READWRITE, &status);
+    // Open the photon list files.
+    plif=openPhotonListFile(inputlist_filename, READONLY, &status);
+    CHECK_STATUS_BREAK(status);
+    plof=openNewPhotonListFile(outputlist_filename, par.clobber,
+			       &status);
     CHECK_STATUS_BREAK(status);
 
     // Scan the entire photon list.
     int progress=0;  
-    while (plf->row < plf->nrows) {
+    while (plif->row < plif->nrows) {
 
       Photon photon={.time=0.};
       
       // Read an entry from the photon list:
-      status=PhotonListFile_getNextRow(plf, &photon);
+      status=PhotonListFile_getNextRow(plif, &photon);
       CHECK_STATUS_BREAK(status);
 
       // Apply the vignetting.
@@ -108,16 +116,14 @@ int phovign_main() {
       double rnd=sixt_get_random_number();
 
       // Delete the photon from the FITS file.
-      if (cosine<rnd) {
-	fits_delete_rows(plf->fptr, plf->row, 1, &status);
+      if (cosine>=rnd) {
+	// Write the photon to the output file.
+	status=addPhoton2File(plof, &photon);
 	CHECK_STATUS_BREAK(status);
-
-	plf->nrows--;
-	plf->row--;
       }
 
       // Program progress output.
-      while ((int)(plf->row*1000./plf->nrows)>progress) {
+      while ((int)(plif->row*1000./plif->nrows)>progress) {
 	progress++;
 	headas_chat(2, "\r%.1lf %%", progress*1./10.);
 	fflush(NULL);
@@ -142,7 +148,8 @@ int phovign_main() {
   HDmtFree();
 
   // Close the FITS files.
-  freePhotonListFile(&plf, &status);
+  freePhotonListFile(&plof, &status);
+  freePhotonListFile(&plif, &status);
   freeAttitudeCatalog(&ac);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
@@ -161,17 +168,25 @@ int phovign_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("PhotonList", &sbuffer);
+  status=ape_trad_query_file_name("InputList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the photon list!\n", status);
+    SIXT_ERROR("could not read the name of the input photon list");
     return(status);
   } 
-  strcpy(par->PhotonList, sbuffer);
+  strcpy(par->InputList, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("OutputList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("could not read the name of the output photon list");
+    return(status);
+  } 
+  strcpy(par->OutputList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the attitude!\n", status);
+    SIXT_ERROR("could not read the name of the attitude");
     return(status);
   } 
   strcpy(par->Attitude, sbuffer);

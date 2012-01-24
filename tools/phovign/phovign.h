@@ -11,7 +11,8 @@
 
 
 struct Parameters {
-  char PhotonList[MAXFILENAME];
+  char InputList[MAXFILENAME];
+  char OutputList[MAXFILENAME];
   char Attitude[MAXFILENAME];
 
   /** [deg] */
