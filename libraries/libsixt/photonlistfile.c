@@ -221,9 +221,10 @@ int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
   plf->nrows++;
 
   // Set the unique photon identifier to the row number in the photon
-  // list file. Up to now it should contain the default value 0.
-  assert(0==ph->ph_id);
-  ph->ph_id = plf->row;
+  // list file. Unless the value is already set.
+  if (0==ph->ph_id) {
+    ph->ph_id=plf->row;
+  }
   
   // Store the data in the FITS file.
   if (fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
