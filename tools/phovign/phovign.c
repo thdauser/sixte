@@ -16,7 +16,7 @@ int phovign_main() {
 
   // Register HEATOOL:
   set_toolname("phovign");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -95,6 +95,31 @@ int phovign_main() {
     plof=openNewPhotonListFile(outputlist_filename, par.clobber,
 			       &status);
     CHECK_STATUS_BREAK(status);
+
+    // Copy FITS header keywords.
+    char attitude[MAXMSG], comment[MAXMSG];
+    fits_read_key(plif->fptr, TSTRING, "ATTITUDE", 
+		  attitude, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(plof->fptr, TSTRING, "ATTITUDE",
+		    attitude, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    double dbuffer=0.;
+    fits_read_key(plif->fptr, TDOUBLE, "MJDREF", 
+		  &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(plof->fptr, TDOUBLE, "MJDREF",
+		    &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    fits_read_key(plif->fptr, TDOUBLE, "TIMEZERO", 
+		  &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(plof->fptr, TDOUBLE, "TIMEZERO", 
+		    &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
 
     // Scan the entire photon list.
     int progress=0;  
