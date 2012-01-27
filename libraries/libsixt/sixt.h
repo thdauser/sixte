@@ -121,11 +121,6 @@ double sixt_get_random_number();
     photons from a source. The photons have Poisson statistics. */
 double rndexp(const double avg);
 
-/** Determine 2 (!) Gaussian distributed random numbers using the
-    Box-Muller method (Gould & Tobochnik, p. 432). The standard
-    deviation of the random numbers is 1. */
-void get_gauss_random_numbers(double* const x, double* const y);
-
 /** Convert a squence of chars into captial letters. The sequence has
     to be terminated by a '\0' mark. */
 void strtoupper(char* const string);

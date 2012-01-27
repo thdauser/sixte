@@ -26,6 +26,12 @@ int phogen_main()
   set_toolversion("0.04");
 
 
+  HDmtInit(1093843);
+  simputSetRndGen(sixt_get_random_number);
+  loadSimputLCfromPSD("psd.simput[LIGHTCUR,1]", 0., 0., &status);
+  exit(0);
+
+ 
   do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
