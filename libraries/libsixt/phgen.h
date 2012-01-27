@@ -18,6 +18,7 @@ int phgen(AttitudeCatalog* const ac,
 	  const double t0, 
 	  const double exposure,
 	  const double mjdref,
+	  const double dt,
 	  const float fov,
 	  Photon* const ph,
 	  int* const status);

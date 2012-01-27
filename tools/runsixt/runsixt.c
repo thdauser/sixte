@@ -334,7 +334,7 @@ int runsixt_main()
       // Photon generation.
       Photon ph;
       int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
-		     det->fov_diameter, &ph, &status);
+		     par.dt, det->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
       // If no photon has been generated, break the loop.
@@ -565,9 +565,15 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   } 
 
+  status=ape_trad_query_double("dt", &par->dt);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading dt");
+    return(status);
+  } 
+
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 

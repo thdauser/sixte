@@ -146,7 +146,7 @@ int phogen_main()
       // Photon generation.
       Photon ph;
       int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
-		     det->fov_diameter, &ph, &status);
+		     par.dt, det->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
       // If no photon has been generated, break the loop.
@@ -257,19 +257,19 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the right ascension of the telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the declination of the telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
   } 
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the SIMPUT file!\n", status);
+    SIXT_ERROR("failed reading the name of the SIMPUT file");
     return(status);
   } 
   strcpy(par->Simput, sbuffer);
@@ -277,7 +277,13 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading MJDREF!\n", status);
+    SIXT_ERROR("failed reading MJDREF");
+    return(status);
+  } 
+
+  status=ape_trad_query_double("dt", &par->dt);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading dt");
     return(status);
   } 
 

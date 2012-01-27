@@ -6,13 +6,11 @@ int phgen(AttitudeCatalog* const ac,
 	  const double t0, 
 	  const double exposure,
 	  const double mjdref,
+	  const double dt,
 	  const float fov,
 	  Photon* const ph,
 	  int* const status)
 {
-  // Step width of the time loop.
-  const double dt = 1.0;
-
   // Photon list buffer.
   static LinkedPhoListElement* pholist=NULL;
 

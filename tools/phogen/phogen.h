@@ -31,6 +31,7 @@ struct Parameters {
   double MJDREF;
   double TIMEZERO;
   double Exposure;
+  double dt;
 
   int Seed;
   

@@ -724,7 +724,7 @@ int ladsim_main()
       // Get a new photon from the generation routine.
       Photon ph;
       int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
-		     lad->fov_diameter, &ph, &status);
+		     par.dt, lad->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
       
       // If no photon has been generated, break the loop.
@@ -934,25 +934,31 @@ int ladsim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading MJDREF!\n", status);
+    SIXT_ERROR("failed reading MJDREF");
     return(status);
   } 
 
   status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
+    SIXT_ERROR("failed reading TIMEZERO");
     return(status);
   } 
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    SIXT_ERROR("failed reading the exposure time");
+    return(status);
+  } 
+
+  status=ape_trad_query_double("dt", &par->dt);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading dt");
     return(status);
   } 
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
