@@ -182,10 +182,29 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	  *status=EXIT_FAILURE;
 	  return;
 	}
+
+	// Set up the FEE ASICs.
+	// Determine the required number of ASICs.
+	if (lad->panel[ii]->module[jj]->element[kk]->nanodes/2 % lad->asic_channels != 0) {
+	  SIXT_ERROR("number of anodes must be a multiple of ASIC channels");
+	  *status=EXIT_FAILURE;
+	  return;
+	}
+	int nasics=(int)(lad->panel[ii]->module[jj]->element[kk]->nanodes/lad->asic_channels);
+	// Allocate memory for the read-out times of the ASICs.
+	lad->panel[ii]->module[jj]->element[kk]->asic_readout_time=
+	  (double*)malloc(nasics*sizeof(double));
+	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk]->asic_readout_time, 
+			*status, "cannot allocate memory for ASIC read-out times");
+	int ll;
+	for (ll=0; ll<nasics; ll++) {
+	  lad->panel[ii]->module[jj]->element[kk]->asic_readout_time[ll]=0.;
+	}
 	
-	headas_chat(5, "   element %ld has %ld anodes \n", 
+	headas_chat(5, "   element %ld has %ld anodes and %d ASICs \n", 
 		    lad->panel[ii]->module[jj]->element[kk]->id,
-		    lad->panel[ii]->module[jj]->element[kk]->nanodes);
+		    lad->panel[ii]->module[jj]->element[kk]->nanodes,
+		    nasics);
       }
       // END of loop over all elements.
     }
@@ -356,15 +375,14 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the mobility.
     xmlparsedata->lad->mobility = getXMLAttributeFloat(attr, "VALUE");
 
-  } else if (!strcmp(Uelement, "DEADTIME")) {
+  } else if (!strcmp(Uelement, "ASIC")) {
 
     // Determine the dead time.
-    xmlparsedata->lad->deadtime = getXMLAttributeFloat(attr, "VALUE");
-
-  } else if (!strcmp(Uelement, "COINCIDENCETIME")) {
-
+    xmlparsedata->lad->deadtime = getXMLAttributeFloat(attr, "DEADTIME");
     // Determine the length of the coincidence time window.
-    xmlparsedata->lad->coincidencetime = getXMLAttributeFloat(attr, "VALUE");
+    xmlparsedata->lad->coincidencetime = getXMLAttributeFloat(attr, "COINCIDENCETIME");
+    // Determine the number of input channels per ASIC.
+    xmlparsedata->lad->asic_channels = getXMLAttributeInt(attr, "CHANNELS");
 
   } else if (!strcmp(Uelement, "THRESHOLD")) {
 

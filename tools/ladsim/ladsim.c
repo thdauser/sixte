@@ -190,6 +190,8 @@ static inline int ladphdet(const LAD* const lad,
     
     assert(ii<5);
 
+    // TODO Apply the ASIC dead time.
+
     signals[ii].panel   = imp->panel;
     signals[ii].module  = imp->module;
     signals[ii].element = imp->element;
@@ -221,12 +223,12 @@ static inline int ladphdet(const LAD* const lad,
     // Apply thresholds.
     if (NULL!=lad->threshold_readout_lo_keV) {
       if (signals[ii].signal < *(lad->threshold_readout_lo_keV)) {
-	return(0);
+	return(0); // TODO Do not use a return here!!!
       }
     }
     if (NULL!=lad->threshold_readout_up_keV) {
       if (signals[ii].signal > *(lad->threshold_readout_up_keV)) {
-	return(0);
+	return(0); // TODO Do not use a return here!!!
       }
     }
   }
@@ -389,7 +391,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.11");
+  set_toolversion("0.12");
 
 
   do { // Beginning of ERROR HANDLING Loop.

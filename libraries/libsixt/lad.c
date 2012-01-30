@@ -176,6 +176,7 @@ LADElement* newLADElement(int* const status)
   element->xborder  =0.;
   element->yborder  =0.;
   element->nanodes  =0;
+  element->asic_readout_time=NULL;
 
   return(element);
 }
@@ -184,6 +185,9 @@ LADElement* newLADElement(int* const status)
 void freeLADElement(LADElement** const element)
 {
   if (NULL!=*element) {
+    if (NULL!=(*element)->asic_readout_time) {
+      free((*element)->asic_readout_time);
+    }
     free(*element);
     *element=NULL;
   }

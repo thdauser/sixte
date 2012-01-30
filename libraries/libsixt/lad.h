@@ -39,6 +39,10 @@ typedef struct {
       edge. */
   long nanodes;
 
+  /** Array for all ASICs, which contains the point of time, when the
+      last read-out of this ASIC was triggered by the MBEE. */
+  double* asic_readout_time;
+
 } LADElement;
 
 
@@ -134,6 +138,9 @@ typedef struct {
       trigger [s]. If a neighboring anode also measures a charge
       during this interval, the signals are combined. */
   float coincidencetime;
+
+  /** Number of input channels (anodes) per ASIC in the FEE. */
+  int asic_channels;
 
   /** Lower read-out threshold [keV]. */
   float* threshold_readout_lo_keV;
