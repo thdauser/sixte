@@ -20,7 +20,7 @@ int genlc_main() {
 
   // Register HEATOOL:
   set_toolname("genlc");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -38,8 +38,8 @@ int genlc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Determine the column containing the time information.
-    int ctime;
-    fits_get_colnum(infptr, CASEINSEN, "TIME", &ctime, &status);
+    int citime;
+    fits_get_colnum(infptr, CASEINSEN, "TIME", &citime, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the number of rows in the input file.
@@ -48,9 +48,9 @@ int genlc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Determine the number of bins for the light curve.
-    long nbins=(long)(par.length/par.dt)+1;
+    long nbins=(long)(par.length/par.dt);
 
-    // Allocate memory for the output light curve.
+    // Allocate memory for the count histogram.
     headas_chat(5, "create empty light curve with %ld bins ...\n",
 		nbins);
     counts=(long*)malloc(nbins*sizeof(long));
@@ -75,7 +75,7 @@ int genlc_main() {
       double time;
       double dnull=0.0;
       int anynul=0;
-      fits_read_col(infptr, TDOUBLE, ctime, ii+1, 1, 1, 
+      fits_read_col(infptr, TDOUBLE, citime, ii+1, 1, 1, 
 		    &dnull, &time, &anynul, &status);
       CHECK_STATUS_BREAK(status);
       
@@ -109,17 +109,31 @@ int genlc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Get column numbers.
-    int ccounts;
-    fits_get_colnum(outfptr, CASEINSEN, "COUNTS", &ccounts, &status);
+    int cotime, crate;
+    fits_get_colnum(outfptr, CASEINSEN, "TIME", &cotime, &status);
+    fits_get_colnum(outfptr, CASEINSEN, "RATE", &crate, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
+    fits_update_key(outfptr, TSTRING, "TIMEUNIT", "s", 
+		    "time unit", &status);
     fits_update_key(outfptr, TDOUBLE, "TIMERES", &par.dt, 
 		    "time resolution", &status);
     CHECK_STATUS_BREAK(status);
 
     // Write the data into the table.
-    fits_write_col(outfptr, TLONG, ccounts, 1, 1, nbins, counts, &status);
+    for (ii=0; ii<nbins; ii++) {
+      // Convert the count histogram to a light curve with
+      // time and rate entries.
+      double dbuffer=(ii+1)*par.dt;
+      fits_write_col(outfptr, TDOUBLE, cotime, ii+1, 1, 1, 
+		     &dbuffer, &status);
+      CHECK_STATUS_BREAK(status);
+      dbuffer = counts[ii]/par.dt;
+      fits_write_col(outfptr, TDOUBLE, crate, ii+1, 1, 1, 
+		     &dbuffer, &status);
+      CHECK_STATUS_BREAK(status);
+    }
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.

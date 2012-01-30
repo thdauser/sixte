@@ -6,7 +6,11 @@ MISSION         LOFT            / Mission name
 TELESCOP        String          / Telescope name
 INSTRUME        LAD             / Instrument name
 FILTER          NONE            / filter used
+TIMEUNIT        String          / time unit
 #Column definitions
-TTYPE#  COUNTS          / Counts
-TFORM#  J               / 
-TUNIT#  counts          / 
+TTYPE#  TIME            / Time
+TFORM#  D               / 
+TUNIT#  s               / 
+TTYPE#  RATE            / Count rate
+TFORM#  D               / 
+TUNIT#  counts/s        / 
