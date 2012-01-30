@@ -31,8 +31,8 @@
       </panel>
     </loop>
 
-  <arf filename="LOFT_Requirement_v3.arf"/>
-  <rmf filename="LOFT_Requirement_v3.rmf"/>
+  <arf filename="LOFT_Requirement_v4.arf"/>
+  <rmf filename="LOFT_Requirement_v4.rmf"/>
   <temperature value="300"/>
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
