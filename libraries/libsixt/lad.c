@@ -28,6 +28,7 @@ LAD* newLAD(int* const status)
   lad->efield      =0.;
   lad->mobility    =0.;
   lad->deadtime    =0.;
+  lad->coincidencetime=0.;
   lad->threshold_readout_lo_keV=NULL;
   lad->threshold_readout_up_keV=NULL;
   lad->filename    =NULL;

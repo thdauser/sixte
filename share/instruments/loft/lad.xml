@@ -37,6 +37,7 @@
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
   <deadtime value="102.e-6"/>
+  <coincidencetime value="150.e-9"/>
   <threshold_readout_lo_keV value="2."/>
   <threshold_readout_up_keV value="50."/>
 <!--  <background filename="loft_background.fits"/> -->

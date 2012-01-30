@@ -361,6 +361,11 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the dead time.
     xmlparsedata->lad->deadtime = getXMLAttributeFloat(attr, "VALUE");
 
+  } else if (!strcmp(Uelement, "COINCIDENCETIME")) {
+
+    // Determine the length of the coincidence time window.
+    xmlparsedata->lad->coincidencetime = getXMLAttributeFloat(attr, "VALUE");
+
   } else if (!strcmp(Uelement, "THRESHOLD")) {
 
     // Determine the lower and the upper read-out threshold.

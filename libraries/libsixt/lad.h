@@ -130,6 +130,11 @@ typedef struct {
   /** Dead time [s] due to the ADC conversion in the ASIC. */
   float deadtime;
 
+  /** Length of the coincidence time window opened after an anode
+      trigger [s]. If a neighboring anode also measures a charge
+      during this interval, the signals are combined. */
+  float coincidencetime;
+
   /** Lower read-out threshold [keV]. */
   float* threshold_readout_lo_keV;
 

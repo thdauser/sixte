@@ -241,10 +241,6 @@ static inline int ladevrecomb(const LAD* const lad,
 			      LADEvent* const ev,
 			      int* const status)
 {
-  // Maximum trigger time between subsequent raw events assigned 
-  // to the same event.
-  const double dt=1.e-12;
-
   // List of contributing raw events.
   static LADSignal** list=NULL;
   static long nlist=0;
@@ -262,7 +258,7 @@ static inline int ladevrecomb(const LAD* const lad,
   // Check if the new signal seems to belong to the same photon event.
   int different=0;
   if ((nlist>0)&&(NULL!=sig)) {
-    if ((fabs(sig->time-list[0]->time)>dt) ||
+    if ((fabs(sig->time-list[0]->time)>lad->coincidencetime) ||
 	(sig->panel!=list[0]->panel) ||
 	(sig->module!=list[0]->module) ||
 	(sig->element!=list[0]->element) ||
@@ -393,7 +389,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.10");
+  set_toolversion("0.11");
 
 
   do { // Beginning of ERROR HANDLING Loop.
