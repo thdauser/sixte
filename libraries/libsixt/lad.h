@@ -127,6 +127,9 @@ typedef struct {
   /** Mobility [m**2/V/s]. */
   float mobility; 
 
+  /** Dead time [s] due to the ADC conversion in the ASIC. */
+  float deadtime;
+
   /** Lower read-out threshold [keV]. */
   float* threshold_readout_lo_keV;
 

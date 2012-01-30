@@ -782,12 +782,6 @@ int ladsim_main()
 	  CHECK_STATUS_BREAK(status);
 	}
 
-	// Run the event projection.
-	//headas_chat(3, "sky projection ...\n");
-	// TODO
-	//phproj(det, ac, slf, par.TIMEZERO, par.Exposure, &status);
-	//CHECK_STATUS_BREAK(status);
-
       }
       // END of loop over all signals.
 

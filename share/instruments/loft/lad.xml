@@ -21,7 +21,7 @@
               <border x="0." y="0."/>
               <loop variable="$ll" start="0" end="3" increment="1">
                 <loop variable="$mm" start="0" end="3" increment="1">
-                  <element id="$ll*4+$mm" xdim="0.0725" ydim="0.12084" nanodes="256" xborder="0.00125" yborder="0.00615">
+                  <element id="$ll*4+$mm" xdim="0.0725" ydim="0.12084" nanodes="224" xborder="0.00125" yborder="0.00615">
                   </element>
                 </loop>
               </loop>
@@ -36,6 +36,7 @@
   <temperature value="300"/>
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
+  <deadtime value="102.e-6"/>
   <threshold_readout_lo_keV value="2."/>
   <threshold_readout_up_keV value="50."/>
 <!--  <background filename="loft_background.fits"/> -->

@@ -235,7 +235,8 @@ static void addModule2Panel(LADPanel* const panel,
   // Extend the LAD module array.
   panel->module = 
     (LADModule**)realloc(panel->module, (panel->nmodules+1)*sizeof(LADModule*));
-  CHECK_NULL_VOID(panel->module, *status, "memory allocation for new LADModule failed");
+  CHECK_NULL_VOID(panel->module, *status, 
+		  "memory allocation for new LADModule failed");
   panel->nmodules++;
 
   // Append the new module to the LAD.
@@ -256,7 +257,8 @@ static void addElement2Module(LADModule* const module,
   // Extend the LAD element array.
   module->element = 
     (LADElement**)realloc(module->element, (module->nelements+1)*sizeof(LADElement*));
-  CHECK_NULL_VOID(module->element, *status, "memory allocation for new LADElement failed");
+  CHECK_NULL_VOID(module->element, *status, 
+		  "memory allocation for new LADElement failed");
   module->nelements++;
 
   // Append the new element to the LAD.
@@ -353,6 +355,11 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
     // Determine the mobility.
     xmlparsedata->lad->mobility = getXMLAttributeFloat(attr, "VALUE");
+
+  } else if (!strcmp(Uelement, "DEADTIME")) {
+
+    // Determine the dead time.
+    xmlparsedata->lad->deadtime = getXMLAttributeFloat(attr, "VALUE");
 
   } else if (!strcmp(Uelement, "THRESHOLD")) {
 
