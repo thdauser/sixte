@@ -214,6 +214,10 @@ static inline int ladphdet(const LAD* const lad,
       }
     }
 
+    // Determine the point of time at which the charge is 
+    // collected on the anode.
+    signals[jj].time = imp->time + drifttime;
+
     signals[jj].panel   = imp->panel;
     signals[jj].module  = imp->module;
     signals[jj].element = imp->element;
@@ -226,16 +230,60 @@ static inline int ladphdet(const LAD* const lad,
       signals[jj].src_id[kk]= 0;
     }
 
-    // Measured time.
-    signals[jj].time = imp->time + drifttime;
-
     // Increment counter for signal buffer.
     jj++;
 
-    // TODO Apply the ASIC dead time.
-    
   }
   // END of loop over adjacent anodes.
+
+  // If no signal is above the threshold, we can skip here.
+  if (jj==0) return(0);
+
+
+  // Apply the ASIC dead time.
+  // Determine the ASIC and the pin of the ASIC to which the 
+  // central anode is attached.
+  int asic=(int)(center_anode/lad->asic_channels);
+  int pin =      center_anode%lad->asic_channels;
+
+  // Check if the bin is at the border of the ASIC and whether
+  // the neighboring ASIC has to be read out, too.
+  int asic2 = -1;
+  if ((pin<2) && (asic!=0) && (asic!=element->nasics/2)) {
+    asic2 = asic-1;
+  } else if ((pin>lad->asic_channels-3) && 
+	     (asic!=element->nasics/2-1) &&
+	     (asic!=element->nasics-1)) {
+    asic2 = asic+1;
+  }
+
+  // Check if the event happens after the coincidence time, but
+  // during the dead time.
+  if (element->asic_readout_time[asic]>0.) {
+    if ((signals[0].time-element->asic_readout_time[asic]>lad->coincidencetime) &&
+	(signals[0].time-element->asic_readout_time[asic]<
+	 lad->coincidencetime+lad->deadtime)) {
+      return(0);
+    }
+  } else if (asic2>=0) {
+    if (element->asic_readout_time[asic2]>0.) {
+      if ((signals[0].time-element->asic_readout_time[asic2]>lad->coincidencetime) &&
+	  (signals[0].time-element->asic_readout_time[asic2]<
+	   lad->coincidencetime+lad->deadtime)) {
+	return(0);
+      }
+    }
+  }
+
+  // Set the time of the last ASIC readout.
+  if ((element->asic_readout_time[asic]==0.) ||
+      (signals[0].time-element->asic_readout_time[asic]>lad->coincidencetime)) {
+    element->asic_readout_time[asic]=signals[0].time;
+    if (asic2>=0) {
+      element->asic_readout_time[asic2]=signals[0].time;
+    }
+  }
+  // END of dead time application.
 
   return(jj);
 }

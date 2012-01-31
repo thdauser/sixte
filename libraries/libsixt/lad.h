@@ -39,6 +39,9 @@ typedef struct {
       edge. */
   long nanodes;
 
+  /** Number of ASICs. */
+  int nasics;
+
   /** Array for all ASICs, which contains the point of time, when the
       last read-out of this ASIC was triggered by the MBEE. */
   double* asic_readout_time;

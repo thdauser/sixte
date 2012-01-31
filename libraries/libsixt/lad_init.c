@@ -185,26 +185,30 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 
 	// Set up the FEE ASICs.
 	// Determine the required number of ASICs.
-	if (lad->panel[ii]->module[jj]->element[kk]->nanodes/2 % lad->asic_channels != 0) {
+	if (lad->panel[ii]->module[jj]->element[kk]->nanodes/2 % 
+	    lad->asic_channels != 0) {
 	  SIXT_ERROR("number of anodes must be a multiple of ASIC channels");
 	  *status=EXIT_FAILURE;
 	  return;
 	}
-	int nasics=(int)(lad->panel[ii]->module[jj]->element[kk]->nanodes/lad->asic_channels);
+	lad->panel[ii]->module[jj]->element[kk]->nasics=
+	  (int)(lad->panel[ii]->module[jj]->element[kk]->nanodes/
+		lad->asic_channels);
 	// Allocate memory for the read-out times of the ASICs.
 	lad->panel[ii]->module[jj]->element[kk]->asic_readout_time=
-	  (double*)malloc(nasics*sizeof(double));
+	  (double*)malloc(lad->panel[ii]->module[jj]->element[kk]->nasics*
+			  sizeof(double));
 	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk]->asic_readout_time, 
 			*status, "cannot allocate memory for ASIC read-out times");
 	int ll;
-	for (ll=0; ll<nasics; ll++) {
+	for (ll=0; ll<lad->panel[ii]->module[jj]->element[kk]->nasics; ll++) {
 	  lad->panel[ii]->module[jj]->element[kk]->asic_readout_time[ll]=0.;
 	}
 	
 	headas_chat(5, "   element %ld has %ld anodes and %d ASICs \n", 
 		    lad->panel[ii]->module[jj]->element[kk]->id,
 		    lad->panel[ii]->module[jj]->element[kk]->nanodes,
-		    nasics);
+		    lad->panel[ii]->module[jj]->element[kk]->nasics);
       }
       // END of loop over all elements.
     }

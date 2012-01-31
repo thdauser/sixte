@@ -176,6 +176,7 @@ LADElement* newLADElement(int* const status)
   element->xborder  =0.;
   element->yborder  =0.;
   element->nanodes  =0;
+  element->nasics   =0;
   element->asic_readout_time=NULL;
 
   return(element);
