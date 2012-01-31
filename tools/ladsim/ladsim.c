@@ -183,31 +183,13 @@ static inline int ladphdet(const LAD* const lad,
     max_anode=MIN(element->nanodes-1, center_anode+2);
   }
   int n_anodes=max_anode-min_anode+1;
-  
+  assert(n_anodes<=5);
+    
   // Loop over adjacent anodes.
-  int ii; // (lies within [0,4])
+  int ii, jj=0; // (lies within [0,4])
   for (ii=0; ii<n_anodes; ii++) {
-    
-    assert(ii<5);
 
-    // TODO Apply the ASIC dead time.
-
-    signals[ii].panel   = imp->panel;
-    signals[ii].module  = imp->module;
-    signals[ii].element = imp->element;
-    signals[ii].anode   = ii+min_anode;
-    signals[ii].ph_id[0]  = imp->ph_id;
-    signals[ii].src_id[0] = imp->src_id;
-    int jj;
-    for (jj=1; jj<NLADSIGNALPHOTONS; jj++) {
-      signals[ii].ph_id[jj] = 0;
-      signals[ii].src_id[jj]= 0;
-    }
-
-    // Measured time.
-    signals[ii].time = imp->time + drifttime;
-    
-    // Measured signal.
+    // Determine the signal fraction at this anode.
     double yi=(ii+min_anode)*1.0;
     double fraction=0.;
     if (ii>0) {
@@ -218,23 +200,44 @@ static inline int ladphdet(const LAD* const lad,
     if (ii<n_anodes-1) {
       fraction -=gaussint(((yi-y0)+0.5)*anode_pitch/sigma);
     }
-    signals[ii].signal = signal*fraction;
+    signals[jj].signal = signal*fraction;
 
     // Apply thresholds.
     if (NULL!=lad->threshold_readout_lo_keV) {
-      if (signals[ii].signal < *(lad->threshold_readout_lo_keV)) {
-	return(0); // TODO Do not use a return here!!!
+      if (signals[jj].signal < *(lad->threshold_readout_lo_keV)) {
+	continue;
       }
     }
     if (NULL!=lad->threshold_readout_up_keV) {
-      if (signals[ii].signal > *(lad->threshold_readout_up_keV)) {
-	return(0); // TODO Do not use a return here!!!
+      if (signals[jj].signal > *(lad->threshold_readout_up_keV)) {
+	continue;
       }
     }
+
+    signals[jj].panel   = imp->panel;
+    signals[jj].module  = imp->module;
+    signals[jj].element = imp->element;
+    signals[jj].anode   = ii+min_anode;
+    signals[jj].ph_id[0]  = imp->ph_id;
+    signals[jj].src_id[0] = imp->src_id;
+    int kk;
+    for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
+      signals[jj].ph_id[kk] = 0;
+      signals[jj].src_id[kk]= 0;
+    }
+
+    // Measured time.
+    signals[jj].time = imp->time + drifttime;
+
+    // Increment counter for signal buffer.
+    jj++;
+
+    // TODO Apply the ASIC dead time.
+    
   }
   // END of loop over adjacent anodes.
 
-  return(n_anodes);
+  return(jj);
 }
 
 
