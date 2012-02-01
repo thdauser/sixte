@@ -382,11 +382,14 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "ASIC")) {
 
     // Determine the dead time.
-    xmlparsedata->lad->deadtime = getXMLAttributeFloat(attr, "DEADTIME");
+    xmlparsedata->lad->deadtime = 
+      getXMLAttributeFloat(attr, "DEADTIME");
     // Determine the length of the coincidence time window.
-    xmlparsedata->lad->coincidencetime = getXMLAttributeFloat(attr, "COINCIDENCETIME");
+    xmlparsedata->lad->coincidencetime = 
+      getXMLAttributeFloat(attr, "COINCIDENCETIME");
     // Determine the number of input channels per ASIC.
-    xmlparsedata->lad->asic_channels = getXMLAttributeInt(attr, "CHANNELS");
+    xmlparsedata->lad->asic_channels = 
+      getXMLAttributeInt(attr, "CHANNELS");
 
   } else if (!strcmp(Uelement, "THRESHOLD")) {
 

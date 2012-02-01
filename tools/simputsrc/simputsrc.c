@@ -469,6 +469,14 @@ int simputsrc_main()
         psd->power[ii] += Lzero[ii];
       }
 
+      /*
+      // TODO RM
+      FILE* ftmp=fopen("norm.dat", "w+");
+      fprintf(ftmp, "zNorm: %lf\n", zNorm);
+      fprintf(ftmp, "LFrms: %lf\n", par.LFrms);
+      fclose(ftmp);
+      */
+
       // HBO Lorentzian
       if(par.HBOf != 0) {
         float HBONorm = par.HBOrms / sqrt(0.5 - (atan(par.HBOQ * (-1)) / M_PI));

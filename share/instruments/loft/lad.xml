@@ -36,7 +36,8 @@
   <temperature value="300"/>
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
-  <asic deadtime="102.e-6" coincidencetime="150.e-9" channels="16"/>
+  <asic deadtime="0.0" coincidencetime="0.0" channels="16"/>
+<!--  <asic deadtime="102.e-6" coincidencetime="150.e-9" channels="16"/> -->
   <threshold_readout_lo_keV value="0.1"/>
   <threshold_readout_up_keV value="50."/>
 <!--  <background filename="loft_background.fits"/> -->
