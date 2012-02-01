@@ -33,7 +33,7 @@ struct Parameters {
   float Emax;
 
   /** PSD general parameters */
-  float PSDnpt;
+  long PSDnpt;
   float PSDfmin;
   float PSDfmax;
 

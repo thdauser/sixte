@@ -448,7 +448,8 @@ int simputsrc_main()
       psd->frequency = (float*) calloc(par.PSDnpt, sizeof(float));
       long ii;
       for(ii = 0; ii < par.PSDnpt; ii++) {
-        psd->frequency[ii] = exp(log(par.PSDfmin) + ii * (log(par.PSDfmax) / par.PSDnpt));
+        psd->frequency[ii] = 
+	  exp(log(par.PSDfmin) + ii * (log(par.PSDfmax/par.PSDfmin) / par.PSDnpt));
       }
 
       // Calculate Lorentzians using Formula (5.1) in
@@ -468,14 +469,6 @@ int simputsrc_main()
         Lzero[ii] = (1 / M_PI) * ((pow(zNorm, 2) * par.LFQ * 1e-5) / (pow(1e-5, 2) + (pow(par.LFQ, 2) * pow((psd->frequency[ii] - 1e-5), 2))));
         psd->power[ii] += Lzero[ii];
       }
-
-      /*
-      // TODO RM
-      FILE* ftmp=fopen("norm.dat", "w+");
-      fprintf(ftmp, "zNorm: %lf\n", zNorm);
-      fprintf(ftmp, "LFrms: %lf\n", par.LFrms);
-      fclose(ftmp);
-      */
 
       // HBO Lorentzian
       if(par.HBOf != 0) {
@@ -693,7 +686,7 @@ int simputsrc_getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_float("PSDnpt", &par->PSDnpt);
+  status=ape_trad_query_long("PSDnpt", &par->PSDnpt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("reading the PSDnpt parameter failed");
     return(status);
