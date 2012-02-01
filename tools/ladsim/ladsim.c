@@ -125,7 +125,7 @@ static inline int ladphdet(const LAD* const lad,
 
   // Determine the anode pitch [m].
   float anode_pitch = 
-    (element->ydim - 2.*element->yborder)/(element->nanodes-1);
+    (element->ydim - 2.*element->yborder)/(2*element->nanodes);
 
   // Determine the parameters of the charge cloud.
   // Boltzmann constant.
