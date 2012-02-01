@@ -125,7 +125,7 @@ static inline int ladphdet(const LAD* const lad,
 
   // Determine the anode pitch [m].
   float anode_pitch = 
-    (element->ydim - 2.*element->yborder)/(2*element->nanodes);
+    (element->ydim - 2.*element->yborder)/(element->nanodes/2);
 
   // Determine the parameters of the charge cloud.
   // Boltzmann constant.
@@ -144,7 +144,13 @@ static inline int ladphdet(const LAD* const lad,
   double drifttime = imp->position.x / vD;
 
   // Determine the index of the closest anode strip.
-  double y0=imp->position.y/anode_pitch;
+  float xwidth = element->xdim - 2.*element->xborder;
+  double y0;
+  if (imp->position.x<0.5*xwidth) {
+    y0=imp->position.y/anode_pitch;
+  } else {
+    y0=imp->position.y/anode_pitch + element->nanodes/2;
+  }
   long center_anode=((long)(y0+1)) -1;
 
   // Determine the measured detector channel (PHA channel) according 
@@ -193,14 +199,14 @@ static inline int ladphdet(const LAD* const lad,
     double yi=(ii+min_anode)*1.0;
     double fraction=0.;
     if (ii>0) {
-      fraction =gaussint(((yi-y0)-0.5)*anode_pitch/sigma);
+      fraction =gaussint((yi-y0)*anode_pitch/sigma);
     } else {
       fraction =1.;
     }
     if (ii<n_anodes-1) {
-      fraction -=gaussint(((yi-y0)+0.5)*anode_pitch/sigma);
+      fraction -=gaussint((yi-y0+1.0)*anode_pitch/sigma);
     }
-    signals[jj].signal = signal*fraction;
+    signals[jj].signal = fraction*signal;
 
     // Apply thresholds.
     if (NULL!=lad->threshold_readout_lo_keV) {
@@ -294,6 +300,10 @@ static inline int ladevrecomb(const LAD* const lad,
 			      LADEvent* const ev,
 			      int* const status)
 {
+  // TODO Pile-up events are not recombined properly, if there
+  // are other events in the time interval between both partners,
+  // which affect a different panel/element/module/anode.
+
   // List of contributing raw events.
   static LADSignal** list=NULL;
   static long nlist=0;
@@ -442,7 +452,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.12");
+  set_toolversion("0.13");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -501,7 +511,6 @@ int ladsim_main()
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(eventlist_filename, par.Prefix);
       strcpy(eventlist_filename, "events.fits");
     } else {
       strcpy(eventlist_filename, par.Prefix);
@@ -730,9 +739,9 @@ int ladsim_main()
 
     // Impact list file.
     if (NULL!=ilf) {
-      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
+      fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		      "time offset", &status);
       CHECK_STATUS_BREAK(status);
     }
