@@ -275,7 +275,7 @@ static inline int ladphdet(const LAD* const lad,
     }
   }
 
-  // Set the time of the last ASIC readout.
+  // Set the time of this ASIC readout.
   if ((element->asic_readout_time[asic]==0.) ||
       (signals[0].time-element->asic_readout_time[asic]>lad->coincidencetime)) {
     element->asic_readout_time[asic]=signals[0].time;
