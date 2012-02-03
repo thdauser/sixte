@@ -17,7 +17,7 @@ OBJECT          String          / Name of observed Object
 RA_OBJ          Real            / Source right ascension in degrees
 DEC_OBJ         Real            / Source declination in degrees
 DATE-OBS        UTC_format      / Date of the start of the observation
-DATE-END        UTC_format      / Date of the end of the observation
+#DATE-END        UTC_format      / Date of the end of the observation
 TSTART          Real            / Start time of the observation
 TSTOP           Real            / End time of the observation
 TEND            Real            / End time of the observation
@@ -40,7 +40,6 @@ PIXLEN_Y        75.0            /
 	TUNIT#  s               / Unit of column TIME
 	TTYPE#  FRAME           / Frame counter
 	TFORM#  J               / Format of column FRAME
-	TUNIT#                  / Unit of column FRAME
 	TTYPE#  PHA             / Uncorrected Event Energy
 	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
@@ -59,13 +58,10 @@ PIXLEN_Y        75.0            /
 	TUNIT#  pixel           / Unit of column RAWY
 	TTYPE#  RA              / Back-projected right ascension
 	TFORM#  J               / Format of column RA
-	TUNIT#                  / Unit of column RA
 	TTYPE#  DEC             / Back-projected declination
 	TFORM#  J               / Format of column DEC
-	TUNIT#                  / Unit of column DEC
 	TTYPE#  X               / Back-projected right ascension
 	TFORM#  J               / Format of column X
-	TUNIT#                  / Unit of column X
 	TCTYP#  RA---SIN        / WCS Coord. type
 	TCUNI#  deg             / WCS  physical unit of X axis
 	TCRPX#  0.0             / WCS axis reference pixel
@@ -75,7 +71,6 @@ PIXLEN_Y        75.0            /
 	TLMAX#  long            / Maximum for X
 	TTYPE#  Y               / Back-projected declination
 	TFORM#  J               / Format of column DEC
-	TUNIT#                  / Unit of column Y
 	TCTYP#  DEC--SIN        / WCS Coord. type
 	TCUNI#  deg             / WCS  physical unit of Y axis 
 	TCRPX#  0.0             / WCS axis reference pixel
@@ -85,5 +80,3 @@ PIXLEN_Y        75.0            /
 	TLMAX#  long            / Maximum for Y
 	TTYPE# 	CCDNR           / 1-7 for eROSITA
 	TFORM# 	I   		/ Format of column CCDNR
-	TUNIT#                  / Unit of column CCDNR
-	
