@@ -64,7 +64,7 @@ struct Parameters {
   char ISISFile[MAXFILENAME];
 
   /** File name of the input ASCII spectrum. */
-  char ASCIIFile[MAXFILENAME];
+  char XSPECFile[MAXFILENAME];
 
   /** Source position [deg]. */
   float RA;

@@ -52,8 +52,8 @@ int simputsrc_main()
   // Parameter files containing explicit spectral models.
   char ISISFile[MAXFILENAME]="";
 
-  // ASCII file containing a spectrum.
-  char ASCIIFile[MAXFILENAME]="";
+  // XSPEC iplot file containing a spectrum.
+  char XSPECFile[MAXFILENAME]="";
   FILE* datafile=NULL;
 
   // Flag, whether the spectrum should be constructed from 
@@ -88,7 +88,7 @@ int simputsrc_main()
 
     // Check the input type for the spectrum.
     // Check the specification of an ISIS parameter file, an
-    // ASCII file, and the individual spectral components.
+    // XSPEC file, and the individual spectral components.
     // Only one of these 3 option may be used. In case multiple of
     // them exist, throw an error message and abort.
     strcpy(ISISFile, par.ISISFile);
@@ -100,20 +100,20 @@ int simputsrc_main()
       strcpy(ISISFile, "");
     }
 
-    strcpy(ASCIIFile, par.ASCIIFile);
-    strtoupper(ASCIIFile);
-    if ((strlen(ASCIIFile)>0)&&(strcmp(ASCIIFile, "NONE"))) {
+    strcpy(XSPECFile, par.XSPECFile);
+    strtoupper(XSPECFile);
+    if ((strlen(XSPECFile)>0)&&(strcmp(XSPECFile, "NONE"))) {
       // Copy again the name, this time without upper-case conversion.
-      strcpy(ASCIIFile, par.ASCIIFile);
+      strcpy(XSPECFile, par.XSPECFile);
     } else {
-      strcpy(ASCIIFile, "");
+      strcpy(XSPECFile, "");
     }
 
     int noptions=0;
     if (strlen(ISISFile)>0) {
       noptions++;
     }
-    if (strlen(ASCIIFile)>0) {
+    if (strlen(XSPECFile)>0) {
       noptions++;
     }
     if ((par.plFlux>0.) || (par.bbFlux>0.) || 
@@ -381,12 +381,12 @@ int simputsrc_main()
       // END of loop over the different spectral components.
 
     } else {
-      // The spectrum is contained in an ASCII file has to be loaded
-      // from there.
+      // The XPSEC spectrum is contained in an ASCII file and has 
+      // to be loaded from there.
 
       // Open the file.
-      datafile=fopen(ASCIIFile,"r");
-      CHECK_NULL_BREAK(datafile, status, "could not open ASCII file");
+      datafile=fopen(XSPECFile,"r");
+      CHECK_NULL_BREAK(datafile, status, "could not open XSPEC file");
 
       // Determine the number of rows.
       long nlines=0;
@@ -401,7 +401,11 @@ int simputsrc_main()
       if('\n'==c) {
         nlines--;
       }
-      printf("*** %ld lines\n", nlines); // TODO Remove this line.
+
+      // The first 3 lines do not contain data.
+      nlines -= 3;
+
+      printf("*** %ld data lines\n", nlines); // TODO Remove this line.
 
       // Allocate memory.
       simputspec->nentries=nlines;
@@ -413,17 +417,25 @@ int simputsrc_main()
       // Reset the file pointer, read the data and store them in
       // the SimputMIdpSpec data structure.
       rewind(datafile);
+      // Read the first three lines.
+      char sbuffer1[MAXMSG], sbuffer2[MAXMSG];
+      int ibuffer;
+      fscanf(datafile, "%s %s %d\n", sbuffer1, sbuffer2, &ibuffer);
+      fscanf(datafile, "%s\n", sbuffer1);
+      fscanf(datafile, "%s\n", sbuffer1);
+      // Read the actual data.
       long ii;
       for (ii=0; ii<nlines; ii++) {
-        fscanf(datafile, "%f %f\n",
-	       &(simputspec->energy[ii]), &(simputspec->pflux[ii]));
+	float fbuffer;
+        fscanf(datafile, "%f %f %f\n",
+	       &(simputspec->energy[ii]), &fbuffer, &(simputspec->pflux[ii]));
       }
 
       // Close the file.
       fclose(datafile);
       datafile=NULL;
 
-    } // END of loading the spectrum from an ASCII file.
+    } // END of loading the spectrum from an XSPEC file.
 
     long jj;
     for (jj=0; jj<simputspec->nentries; jj++) {
@@ -816,12 +828,12 @@ int simputsrc_getpar(struct Parameters* const par)
   strcpy(par->ISISFile, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("ASCIIFile", &sbuffer);
+  status=ape_trad_query_string("XSPECFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("reading the name of the ASCII spectrum file failed");
+    SIXT_ERROR("reading the name of the XSPEC spectrum file failed");
     return(status);
   }
-  strcpy(par->ASCIIFile, sbuffer);
+  strcpy(par->XSPECFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
