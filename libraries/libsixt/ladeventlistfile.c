@@ -32,6 +32,13 @@ void freeLADEventListFile(LADEventListFile** const file,
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
+      // If the file was opened in READWRITE mode, calculate
+      // the check sum an append it to the FITS header.
+      int mode;
+      fits_file_mode((*file)->fptr, &mode, status);
+      if (READWRITE==mode) {
+	fits_write_chksum((*file)->fptr, status);
+      }
       fits_close_file((*file)->fptr, status);
     }
     free(*file);

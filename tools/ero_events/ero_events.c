@@ -277,7 +277,16 @@ int ero_events_main()
 
   // Close the files.
   destroyPatternFile(&plf, &status);
-  if (NULL!=fptr) fits_close_file(fptr, &status);
+  if (NULL!=fptr) {
+    // If the file was opened in READWRITE mode, calculate
+    // the check sum an append it to the FITS header.
+    int mode;
+    fits_file_mode(fptr, &mode, &status);
+    if (READWRITE==mode) {
+      fits_write_chksum(fptr, &status);
+    }
+    fits_close_file(fptr, &status);
+  }
   
   // Release memory.
   wcsfree(&wcs);
