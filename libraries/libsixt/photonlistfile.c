@@ -28,6 +28,13 @@ void freePhotonListFile(PhotonListFile** const plf, int* const status)
 {
   if (NULL!=*plf) {
     if (NULL!=(*plf)->fptr) {
+      // If the file was opened in READWRITE mode, calculate
+      // the check sum an append it to the FITS header.
+      int mode;
+      fits_file_mode((*plf)->fptr, &mode, status);
+      if (READWRITE==mode) {
+	fits_write_chksum((*plf)->fptr, status);
+      }
       fits_close_file((*plf)->fptr, status);
       headas_chat(5, "closed photon list file (containing %ld rows).\n", 
 		  (*plf)->nrows);
