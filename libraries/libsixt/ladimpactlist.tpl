@@ -19,7 +19,7 @@ TUNIT#  	                /
 TTYPE#  	MODULE          / Affected Module
 TFORM#  	J   		/
 TUNIT#  	                / 
-TTYPE#  	Element         / Affected Element
+TTYPE#  	ELEMENT         / Affected Element
 TFORM#  	J   		/
 TUNIT#  	                / 
 TTYPE#  	X               / X coordinate of photon impact
