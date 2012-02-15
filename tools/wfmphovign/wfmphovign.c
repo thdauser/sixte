@@ -1,30 +1,33 @@
-#include "phovign.h"
+#include "wfmphovign.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int phovign_main() {
+int wfmphovign_main() {
   struct Parameters par;
 
   AttitudeCatalog* ac=NULL;
   PhotonListFile* plif=NULL;
-  PhotonListFile* plof=NULL;
+
+  fitsfile* ofptr=NULL;
+  long onrows=0;
+  int cenergy, cra, cdec;
 
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL:
-  set_toolname("phovign");
-  set_toolversion("0.04");
+  set_toolname("wfmphovign");
+  set_toolversion("0.05");
 
 
-  do {  // Beginning of the ERROR handling loop (will at most be run once)
+  do { // Beginning of the ERROR handling loop (will at most be run once).
 
     // --- Initialization ---
 
     // Read parameters using PIL library.
-    if ((status=phovign_getpar(&par))) break;
+    if ((status=wfmphovign_getpar(&par))) break;
 
     headas_chat(3, "initialize ...\n");
 
@@ -89,19 +92,64 @@ int phovign_main() {
 
     headas_chat(3, "apply vignetting ...\n");
 
-    // Open the photon list files.
+    // Open the input photon list file.
     plif=openPhotonListFile(inputlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
-    plof=openNewPhotonListFile(outputlist_filename, par.clobber,
-			       &status);
+
+    // Open the output photon list file.
+    // Check if the file already exists.
+    int exists;
+    fits_file_exists(outputlist_filename, &exists, &status);
+    CHECK_STATUS_BREAK(status);
+    if (0!=exists) {
+      if (0!=par.clobber) {
+	// Delete the file.
+	remove(outputlist_filename);
+      } else {
+	// Throw an error.
+	char msg[MAXMSG];
+	sprintf(msg, "file '%s' already exists", outputlist_filename);
+	SIXT_ERROR(msg);
+	status=EXIT_FAILURE;
+	break;
+      }
+    }
+
+    // Create a new empty photon list FITS file.
+    fits_create_file(&ofptr, outputlist_filename, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Create the binary table for the photon list.
+    char *ttype[] = { "ENERGY", "RA", "DEC" };
+    char *tform[] = { "E", "E", "E" };
+    char *tunit[] = { "keV", "deg", "deg" };
+    fits_create_tbl(ofptr, BINARY_TBL, 0, 3, ttype, tform, tunit, 
+		    "PHOTONS", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the column numbers in the output file.
+    fits_get_colnum(ofptr, CASEINSEN, "ENERGY", &cenergy, &status); 
+    fits_get_colnum(ofptr, CASEINSEN, "RA", &cra, &status);
+    fits_get_colnum(ofptr, CASEINSEN, "DEC", &cdec, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Add header information about program parameters.
+    // The second parameter "1" means that the headers are written
+    // to the first extension.
+    HDpar_stamp(ofptr, 1, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Move back to the second HDU.
+    int hdu_type;
+    fits_movabs_hdu(ofptr, 2, &hdu_type, &status);
+    CHECK_STATUS_BREAK(status);
+    
     // Copy FITS header keywords.
     char attitude[MAXMSG], comment[MAXMSG];
     fits_read_key(plif->fptr, TSTRING, "ATTITUDE", 
 		  attitude, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(plof->fptr, TSTRING, "ATTITUDE",
+    fits_update_key(ofptr, TSTRING, "ATTITUDE",
 		    attitude, comment, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -109,17 +157,16 @@ int phovign_main() {
     fits_read_key(plif->fptr, TDOUBLE, "MJDREF", 
 		  &dbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(plof->fptr, TDOUBLE, "MJDREF",
+    fits_update_key(ofptr, TDOUBLE, "MJDREF",
 		    &dbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
 
     fits_read_key(plif->fptr, TDOUBLE, "TIMEZERO", 
 		  &dbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(plof->fptr, TDOUBLE, "TIMEZERO", 
+    fits_update_key(ofptr, TDOUBLE, "TIMEZERO", 
 		    &dbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
-
 
     // Scan the entire photon list.
     int progress=0;  
@@ -142,8 +189,22 @@ int phovign_main() {
 
       // Delete the photon from the FITS file.
       if (cosine>=rnd) {
-	// Write the photon to the output file.
-	status=addPhoton2File(plof, &photon);
+	// Append the photon to the output file.
+
+	// Insert a new, empty row to the table:
+	fits_insert_rows(ofptr, onrows, 1, &status);
+	CHECK_STATUS_BREAK(status);
+	onrows++;
+	
+	// Store the data in the FITS file.
+	fits_write_col(ofptr, TFLOAT, cenergy, 
+		       onrows, 1, 1, &photon.energy, &status);
+	float fbuffer=photon.ra * 180./M_PI;
+	fits_write_col(ofptr, TFLOAT, cra, 
+		       onrows, 1, 1, &fbuffer, &status);
+	fbuffer=photon.dec * 180./M_PI;
+	fits_write_col(ofptr, TFLOAT, cdec, 
+		       onrows, 1, 1, &fbuffer, &status);
 	CHECK_STATUS_BREAK(status);
       }
 
@@ -173,7 +234,10 @@ int phovign_main() {
   HDmtFree();
 
   // Close the FITS files.
-  freePhotonListFile(&plof, &status);
+  if (NULL!=ofptr) {
+    fits_close_file(ofptr, &status);
+    ofptr=NULL;
+  }
   freePhotonListFile(&plif, &status);
   freeAttitudeCatalog(&ac);
 
@@ -183,7 +247,7 @@ int phovign_main() {
 }
 
 
-int phovign_getpar(struct Parameters* par)
+int wfmphovign_getpar(struct Parameters* par)
 {
   // String input buffer.
   char* sbuffer=NULL;

@@ -1,12 +1,12 @@
-#ifndef PHOVIGN_H
-#define PHOVIGN_H 1
+#ifndef WFMPHOVIGN_H
+#define WFMPHOVIGN_H 1
 
 
 #include "sixt.h"
 #include "attitudecatalog.h"
 #include "photonlistfile.h"
 
-#define TOOLSUB phovign_main
+#define TOOLSUB wfmphovign_main
 #include "headas_main.c"
 
 
@@ -30,7 +30,7 @@ struct Parameters {
 
 
 /** Reads the program parameters using PIL. */
-int phovign_getpar(struct Parameters* parameters);
+int wfmphovign_getpar(struct Parameters* parameters);
 
 
-#endif /* PHOVIGN_H */
+#endif /* WFMPHOVIGN_H */

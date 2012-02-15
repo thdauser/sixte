@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixt], [0.18], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixt], [0.19], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
@@ -207,7 +207,7 @@ AC_CONFIG_FILES([Makefile
 		tools/runsixt/Makefile
 		tools/phogen/Makefile
 		tools/phoimg/Makefile
-		tools/phovign/Makefile
+		tools/wfmphovign/Makefile
 		tools/ladsim/Makefile
 		tools/ladspec/Makefile
 		tools/genlc/Makefile
