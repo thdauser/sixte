@@ -35,7 +35,7 @@ TUNIT#  s               / Unit of column TIME
 TTYPE#  FRAME           / Frame counter
 TFORM#  J               / Format of column FRAME
 TUNIT#                  / Unit of column FRAME
-TTYPE#  Signal          / Measured signal
+TTYPE#  SIGNAL          / Measured signal
 TFORM#  E               / 
 TUNIT#  keV             / 
 TTYPE#  PANEL           / Affected panel
@@ -44,10 +44,10 @@ TUNIT#                  /
 TTYPE#  MODULE          / Affected module
 TFORM#  J   		/
 TUNIT#                  / 
-TTYPE#  Element         / Affected element
+TTYPE#  ELEMENT         / Affected element
 TFORM#  J   		/
 TUNIT#                  / 
-TTYPE#  Anode           / Affected anode
+TTYPE#  ANODE           / Affected anode
 TFORM#  J   		/
 TUNIT#                  / 
 TTYPE#  RA              / Back-projected right ascension
