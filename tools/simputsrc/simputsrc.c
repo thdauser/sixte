@@ -534,7 +534,7 @@ int simputsrc_main()
     // -- END of creating PSD
 
     // -- Create a new SIMPUT catalog.
-    cat=openSimputCatalog(par.Simput, READWRITE, 0, &status);
+    cat=openSimputCatalog(par.Simput, READWRITE, 0, 0, 0, 0, &status);
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.

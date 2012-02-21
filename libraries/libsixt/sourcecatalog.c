@@ -54,7 +54,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   simputSetRndGen(sixt_get_random_number);
 
   // Use the routines from the SIMPUT library to load the catalog.
-  cat->simput = openSimputCatalog(filename, READONLY, 0, status);
+  cat->simput = openSimputCatalog(filename, READONLY, 0, 0, 0, 0, status);
   CHECK_STATUS_RET(*status, cat);
 
   // Determine the number of point-like and the number of 

@@ -53,14 +53,14 @@ int simputmerge_main()
     strcpy(infilenames[1], par.Infile2);
     int ii;
     for (ii=0; ii<2; ii++) {
-      incat[ii] = openSimputCatalog(infilenames[ii], READONLY, 0, &status);
+      incat[ii] = openSimputCatalog(infilenames[ii], READONLY, 0, 0, 0, 0, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
 
     // Get an empty output catalog.
     remove(par.Outfile);
-    outcat = openSimputCatalog(par.Outfile, READWRITE, 0, &status);
+    outcat = openSimputCatalog(par.Outfile, READWRITE, 0, 0, 0, 0, &status);
     CHECK_STATUS_BREAK(status);
 
     // Smallest still available SRC_ID.
