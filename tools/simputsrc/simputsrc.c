@@ -451,7 +451,7 @@ int simputsrc_main()
 
     // -- Create PSD if necessary
 
-    if(par.LFQ != 0) {
+    if((par.LFQ != 0) || (par.HBOQ != 0) || (par.Q1Q != 0) || (par.Q2Q != 0) || (par.Q3Q != 0)) {
       psd = getSimputPSD(&status);
       CHECK_STATUS_BREAK(status);
       psd->nentries = par.PSDnpt;
@@ -475,11 +475,13 @@ int simputsrc_main()
       float* LQ3 = NULL;
 
       // zero order Lorentzian
-      Lzero = (float*) calloc(par.PSDnpt, sizeof(float));
-      float zNorm = par.LFrms / sqrt(0.5 - (atan(par.LFQ * (-1)) / M_PI));
-      for(ii = 0; ii < par.PSDnpt; ii++) {
-        Lzero[ii] = (1 / M_PI) * ((pow(zNorm, 2) * par.LFQ * 1e-5) / (pow(1e-5, 2) + (pow(par.LFQ, 2) * pow((psd->frequency[ii] - 1e-5), 2))));
-        psd->power[ii] += Lzero[ii];
+      if(par.LFQ != 0) {
+        Lzero = (float*) calloc(par.PSDnpt, sizeof(float));
+        float zNorm = par.LFrms / sqrt(0.5 - (atan(par.LFQ * (-1)) / M_PI));
+        for(ii = 0; ii < par.PSDnpt; ii++) {
+          Lzero[ii] = (1 / M_PI) * ((pow(zNorm, 2) * par.LFQ * 1e-5) / (pow(1e-5, 2) + (pow(par.LFQ, 2) * pow((psd->frequency[ii] - 1e-5), 2))));
+          psd->power[ii] += Lzero[ii];
+        }
       }
 
       // HBO Lorentzian
