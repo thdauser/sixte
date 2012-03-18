@@ -8,8 +8,6 @@
 #include "heasp.h"
 #endif
 
-#include "extendedsources.h"
-#include "pointsources.h"
 #include "rmf.h"
 #include "vector.h"
 
