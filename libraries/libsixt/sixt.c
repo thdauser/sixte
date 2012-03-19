@@ -27,7 +27,7 @@ void strtoupper(char* const string)
   while (string[count] != '\0') {
     string[count] = toupper(string[count]);
     count++;
-  };
+  }
 }
 
 

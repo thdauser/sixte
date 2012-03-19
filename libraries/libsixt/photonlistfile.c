@@ -213,7 +213,6 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
 }
 
 
-
 int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
 {
   int status=EXIT_SUCCESS;

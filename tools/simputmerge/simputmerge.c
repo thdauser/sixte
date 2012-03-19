@@ -103,9 +103,9 @@ int simputmerge_main()
 	}
 	ids[nids++] = src_id;
 
-	// Handle spectrum, image, and lightcur extensions.
+	// Handle spectrum, image, and timing extensions.
 	char spectrum[MAXFILENAME];
-	char lightcur[MAXFILENAME];
+	char timing[MAXFILENAME];
 	char image[MAXFILENAME];
 
 	// Check whether the extensions should remain in their current
@@ -129,11 +129,11 @@ int simputmerge_main()
 	    strcpy(image, insrc->image);
 	  }
 	  // Light curve.
-	  if ('['==insrc->lightcur[0]) {
-	    strcpy(lightcur, infilenames[ii]);
-	    strcat(lightcur, insrc->lightcur);
+	  if ('['==insrc->timing[0]) {
+	    strcpy(timing, infilenames[ii]);
+	    strcat(timing, insrc->timing);
 	  } else {
-	    strcpy(lightcur, insrc->lightcur);
+	    strcpy(timing, insrc->timing);
 	  }
 	  // TODO What happens if the input file resides in another 
 	  // directory than the output file.
@@ -196,11 +196,11 @@ int simputmerge_main()
 	  }
 
 	  // Light curve extensions.
-	  if ((strlen(insrc->lightcur)>0) &&
-	      (0!=strcmp(insrc->lightcur, "NULL"))) {
+	  if ((strlen(insrc->timing)>0) &&
+	      (0!=strcmp(insrc->timing, "NULL"))) {
 	    // Check if this reference has already been used.
 	    for (kk=0; kk<nlcextrefs[ii]; kk++) {
-	      if (0==strcmp(lcextrefs[ii][kk], insrc->lightcur)) {
+	      if (0==strcmp(lcextrefs[ii][kk], insrc->timing)) {
 		break;
 	      }
 	    }
@@ -211,15 +211,15 @@ int simputmerge_main()
 				(nlcextrefs[ii]+1)*sizeof(char*));
 	      CHECK_NULL_BREAK(lcextrefs[ii], status, "memory allocation failed");
 	      lcextrefs[ii][kk] = 
-		(char*)malloc((strlen(insrc->lightcur)+1)*sizeof(char));
+		(char*)malloc((strlen(insrc->timing)+1)*sizeof(char));
 	      CHECK_NULL_BREAK(lcextrefs[ii][kk], status, "memory allocation failed");
 	      nlcextrefs[ii]++;
-	      strcpy(lcextrefs[ii][kk], insrc->lightcur);
+	      strcpy(lcextrefs[ii][kk], insrc->timing);
 	    }
 	    // Remove the preceeding file path and name.
-	    strcpy(lightcur, strchr(insrc->lightcur, '['));  
+	    strcpy(timing, strchr(insrc->timing, '['));  
 	  } else {
-	    strcpy(lightcur, "");
+	    strcpy(timing, "");
 	  }
 	}
 	// END of extensions should be copied to the new output file.
@@ -234,7 +234,7 @@ int simputmerge_main()
 					      insrc->e_min,
 					      insrc->e_max,
 					      insrc->eflux,
-					      spectrum, image, lightcur,
+					      spectrum, image, timing,
 					      &status);
 	CHECK_STATUS_BREAK(status);
 
