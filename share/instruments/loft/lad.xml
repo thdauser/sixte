@@ -6,7 +6,7 @@
   </telescope>
 
   <detector type="SDD">
-    <delay time="0." rms="1.e-5"/>
+    <delay time="0." rms="0."/>
     <cte value="1."/>
     <loop variable="$ii" start="0" end="5" increment="1">
       <panel id="$ii" nx="3" ny="7">
@@ -17,7 +17,7 @@
         <loop variable="$jj" start="0" end="6" increment="1">
           <loop variable="$kk" start="0" end="2" increment="1">
             <module id="$jj*3+$kk" nx="4" ny="4">
-              <delay time="1.e-5" rms="2.e-5"/>
+              <delay time="0." rms="0."/>
               <border x="0." y="0."/>
               <loop variable="$ll" start="0" end="3" increment="1">
                 <loop variable="$mm" start="0" end="3" increment="1">

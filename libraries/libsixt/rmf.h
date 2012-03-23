@@ -5,7 +5,13 @@
 
 #ifndef HEASP_H
 #define HEASP_H 1
+
+#ifndef HEASP_CPP
 #include "heasp.h"
+#else
+#include "Cheasp.h"
+#endif
+
 #endif
 
 
@@ -23,7 +29,7 @@
     response file. If the flag 'NORMALIZE_RMF' is set, the RSP is
     renormalized to an RMF in such a way that the sum of each matrix
     row is 1. */
-struct RMF* loadRMF(const char* const filename, int* const status);
+struct RMF* loadRMF(char* filename, int* const status);
 
 /** Destructor for the RMF data structure. Warning: As there is no
     internal destructor for the RMF data structure in the HEASP

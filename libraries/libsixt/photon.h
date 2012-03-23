@@ -3,11 +3,6 @@
 
 #include "sixt.h"
 
-#ifndef HEASP_H
-#define HEASP_H 1
-#include "heasp.h"
-#endif
-
 #include "rmf.h"
 #include "vector.h"
 

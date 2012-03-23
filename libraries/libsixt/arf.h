@@ -5,7 +5,13 @@
 
 #ifndef HEASP_H
 #define HEASP_H 1
+
+#ifndef HEASP_CPP
 #include "heasp.h"
+#else
+#include "Cheasp.h"
+#endif
+
 #endif
 
 
@@ -24,7 +30,7 @@
 struct ARF* getARF(int* const status);
 
 /** Load an ARF from a response file. */
-struct ARF* loadARF(const char* const filename, int* const status);
+struct ARF* loadARF(char* filename, int* const status);
 
 /** Destructor for the ARF data structure. Warning: As there is no
     internal destructor for the ARF data structure in the HEASP
