@@ -1,6 +1,15 @@
 #include "ladsim.h"
 
 
+struct LADSignalListItem {
+  /** Signal entry. */
+  LADSignal* signal;
+  
+  /** Pointer to the next item. */
+  struct LADSignalListItem* next;
+};
+
+
 static inline int ladphimg(const LAD* const lad,
 			   AttitudeCatalog* const ac,
 			   Photon* const ph,
@@ -254,7 +263,7 @@ static inline int ladphdet(const LAD* const lad,
 
   // Check if the bin is at the border of the ASIC and whether
   // the neighboring ASIC has to be read out, too.
-  int asic2 = -1;
+  int asic2=-1;
   if ((pin<2) && (asic!=0) && (asic!=element->nasics/2)) {
     asic2 = asic-1;
   } else if ((pin>lad->asic_channels-3) && 
@@ -295,128 +304,159 @@ static inline int ladphdet(const LAD* const lad,
 }
 
 
+/** Return recombined events from the detected signals. */
 static inline int ladevrecomb(const LAD* const lad,
-			      LADSignal* const sig,
-			      LADEvent* const ev,
+			      LADSignal* const signal,
+			      LADEvent* const event,
 			      int* const status)
 {
-  // TODO Pile-up events are not recombined properly, if there
-  // are other events in the time interval between both partners,
-  // which affect a different panel/element/module/anode.
+  // List of raw event signals.
+  static struct LADSignalListItem* first=NULL;
 
-  // List of contributing raw events.
-  static LADSignal** list=NULL;
-  static long nlist=0;
-  const long maxnlist=10;
-  
-  // Number of recombined events (0 or 1).
-  int nevents=0;
-
-  // Allocate memory.
-  if(NULL==list) {
-    list=(LADSignal**)malloc(maxnlist*sizeof(LADSignal*));
-    CHECK_NULL_RET(list, *status, "memory allocation for list failed", nevents);
-  }
-
-  // Check if the new signal seems to belong to the same photon event.
-  int different=0;
-  if ((nlist>0)&&(NULL!=sig)) {
-    if ((fabs(sig->time-list[0]->time)>lad->coincidencetime) ||
-	(sig->panel!=list[0]->panel) ||
-	(sig->module!=list[0]->module) ||
-	(sig->element!=list[0]->element) ||
-	(abs(sig->anode-list[nlist-1]->anode)>1)) {
-      different=1;
-    }
-
-    // Check for the different (bottom and top) anode lines.
-    long nanodes = 
-      lad->panel[sig->panel]->module[sig->module]->
-      element[sig->element]->nanodes;
-    if (((sig->anode>=nanodes/2)&&(list[0]->anode< nanodes/2)) ||
-	((sig->anode< nanodes/2)&&(list[0]->anode>=nanodes/2))) {
-      different=1;
+  // Flag if an event is complete (there will be no further
+  // signal contributions).
+  int complete=0;
+  if (NULL!=first) {
+    if (NULL==signal) {
+      complete=1;
+    } else if (signal->time-first->signal->time>lad->coincidencetime) {
+      complete=1;
     }
   }
 
-  // If the new signal belongs to a different photon event
-  // or the end of the input list has been reached, perform 
-  // a pattern analysis.
-  if ((1==different) || ((NULL==sig)&&(nlist>0))) { 
-
+  // Produce a new event.
+  if (1==complete) {
     // Create a new empty event.
     LADEvent* emptyev=getLADEvent(status);
-    CHECK_STATUS_RET(*status, nevents);
-    copyLADEvent(ev, emptyev);
+    CHECK_STATUS_RET(*status, 0);
+    copyLADEvent(event, emptyev);
     freeLADEvent(&emptyev);
 
     // Construct a combined event for output.
-    ev->panel   = list[0]->panel;
-    ev->module  = list[0]->module;
-    ev->element = list[0]->element;
-    ev->time    = list[0]->time;
+    event->panel   = first->signal->panel;
+    event->module  = first->signal->module;
+    event->element = first->signal->element;
+    event->anode   = first->signal->anode;
+    event->time    = first->signal->time;
+    event->signal  = first->signal->signal;
+    // Set PH_IDs and SRC_IDs.
+    long jj;
+    for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
+      event->ph_id[jj] =first->signal->ph_id[jj];
+      event->src_id[jj]=first->signal->src_id[jj];		
+    }
 
+    // Delete the first element from the list.
+    struct LADSignalListItem* next=first->next;
+    freeLADSignal(&(first->signal));
+    free(first);
+    first=next;
+
+    // Search the list in order to find adjacent signals.
+    float maxsignal=event->signal;
+
+    long nanodes = 
+      lad->panel[event->panel]->module[event->module]->
+      element[event->element]->nanodes;
+    long* anodes=malloc(nanodes/2*sizeof(long));
+    CHECK_NULL_RET(anodes, *status, "memory allocation for list failed", 0);
     long ii;
-    long maxidx=0;
-    for (ii=0; ii<nlist; ii++) {
-      // Search the anode with the maximum signal.
-      if (list[ii]->signal>list[maxidx]->signal) {
-	maxidx=ii;
-      }
-	
-      // Sum the signal contributions.
-      ev->signal += list[ii]->signal;
+    for (ii=1; ii<nanodes/2; ii++) {
+      anodes[ii]=-1;
+    }
+    anodes[0]=event->anode;
 
-      // Set PH_IDs and SRC_IDs.
-      long jj;
-      for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
-	long kk;
-	for (kk=0; kk<NLADEVENTPHOTONS; kk++) {
-	  if (list[ii]->ph_id[jj]==ev->ph_id[kk]) break;
-	  if (0==ev->ph_id[kk]) {
-	    ev->ph_id[kk] =list[ii]->ph_id[jj];
-	    ev->src_id[kk]=list[ii]->src_id[jj];		
-	    break;
+    int new=1;
+    while(1==new) {
+      new=0;
+
+      struct LADSignalListItem** item=&first;
+      while (NULL!=(*item)) {
+
+	// Check if the regarded signal in the list seems to belong to 
+	// the same photon event.
+	// Check for the panel, module, and element.
+	if (((*item)->signal->panel==event->panel) &&
+	    ((*item)->signal->module==event->module) &&
+	    ((*item)->signal->element==event->element)) {
+	  // Check for the anode, considering the different (bottom and top) 
+	  // anode lines.
+	  if ((((*item)->signal->anode>=nanodes/2)&&(event->anode>=nanodes/2)) ||
+	      (((*item)->signal->anode< nanodes/2)&&(event->anode< nanodes/2))) {
+	    for (ii=0; ii<nanodes/2; ii++) {
+	      if (anodes[ii]==-1) break;
+	      if (((*item)->signal->anode==anodes[ii]-1) || 
+		  ((*item)->signal->anode==anodes[ii]+1)) {
+		// Add the signal to the event.
+		event->signal += (*item)->signal->signal;
+		if ((*item)->signal->signal>maxsignal) {
+		  maxsignal=(*item)->signal->signal;
+		  event->anode = (*item)->signal->anode;
+		}
+		long jj;
+		for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
+		  long kk;
+		  for (kk=0; kk<NLADEVENTPHOTONS; kk++) {
+		    if ((*item)->signal->ph_id[jj]==event->ph_id[kk]) break;
+		    if (0==event->ph_id[kk]) {
+		      event->ph_id[kk] =(*item)->signal->ph_id[jj];
+		      event->src_id[kk]=(*item)->signal->src_id[jj];		
+		      break;
+		    }
+		  }
+		}
+		for (ii=0; ii<nanodes/2; ii++) {
+		  if (anodes[ii]==-1) {
+		    anodes[ii]=(*item)->signal->anode;
+		    break;
+		  }
+		}
+	      
+		// Delete the signal entry from the list.
+		next=(*item)->next;
+		freeLADSignal(&((*item)->signal));
+		free((*item));
+		(*item)=next;
+
+		new=1;
+		break;
+	      }
+	    }
+	    // END of loop over all anodes belonging to this signal.
 	  }
-	}
+	} 
+	// End of check for adjacent signal.
+	if (1==new) break;
+
+	// Move to the next signal in the list.
+	item=&((*item)->next);
       }
+      // End of loop over all signals in the cache.
     }
-    ev->anode = list[maxidx]->anode;
-    nevents=1;
+    // End of searching adjacent signals.
 
-    // Release the buffer.
-    for (ii=0; ii<nlist; ii++) {
-      freeLADSignal(&list[ii]);
-    }
-    nlist=0;
+    return(1);
   }
 
-  // Add the new raw event to the list.
-  if (NULL!=sig) {
-    if (nlist==maxnlist) {
-      SIXT_ERROR("too many signals for buffer");
-      *status=EXIT_FAILURE;
-      return(nevents);
-    }
-    LADSignal* sig2=getLADSignal(status);
-    CHECK_STATUS_RET(*status, nevents);
-    copyLADSignal(sig2, sig);
-    list[nlist]=sig2;
-    nlist++;
 
-  } else {
-    // This has been the last signal. Therefore clean up and
-    // release allocated memory.
-    long ii;
-    for (ii=0; ii<nlist; ii++) {
-      freeLADSignal(&list[ii]);
+  if (NULL!=signal) {
+    // Move to the end of the list.
+    struct LADSignalListItem** item=&first;
+    while (NULL!=(*item)) {
+      item=&((*item)->next);
     }
-    nlist=0;
-    free(list);
-    list=NULL;
+
+    // Append the new signal to the end of the list.
+    (*item)=(struct LADSignalListItem*)malloc(sizeof(struct LADSignalListItem));
+    CHECK_NULL_RET((*item), *status, 
+		   "memory allocation for signal list entry failed", 0);
+    (*item)->signal=(LADSignal*)malloc(sizeof(LADSignal));
+    CHECK_NULL_RET((*item)->signal, *status, 
+		   "memory allocation for signal entry failed", 0);
+    (*item)->next=NULL;
+    copyLADSignal((*item)->signal, signal);
   }
-
-  return(nevents);
+  return(0);
 }
 
 
@@ -452,7 +492,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.13");
+  set_toolversion("0.14");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -831,16 +871,16 @@ int ladsim_main()
 
 	// Recombine neighboring signals to events.
 	LADEvent ev;
-	int isev=ladevrecomb(lad, &(signals[ii]), &ev, &status);
-	CHECK_STATUS_BREAK(status);
+	while (ladevrecomb(lad, &(signals[ii]), &ev, &status)>0) {
+	  CHECK_STATUS_BREAK(status);
 
-	// Add the event to the output file.
-	if (1==isev) {
+	  // Add the event to the output file.
 	  addLADEvent2File(elf, &ev, &status);
 	  CHECK_STATUS_BREAK(status);
 	}
-
+	CHECK_STATUS_BREAK(status);
       }
+      CHECK_STATUS_BREAK(status);
       // END of loop over all signals.
 
       // Program progress output.
@@ -856,14 +896,14 @@ int ladsim_main()
 
     // Call recombination routine one last time to finish up.
     LADEvent ev;
-    int isev=ladevrecomb(lad, NULL, &ev, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Add the event to the output file.
-    if (1==isev) {
+    while(ladevrecomb(lad, NULL, &ev, &status)>0) {
+      CHECK_STATUS_BREAK(status);
+      
+      // Add the event to the output file.
       addLADEvent2File(elf, &ev, &status);
       CHECK_STATUS_BREAK(status);
     }
+    CHECK_STATUS_BREAK(status);
 
     // Progress output.
     headas_chat(2, "\r%.1lf %%\n", 100.);

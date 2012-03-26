@@ -75,7 +75,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.10");
+  set_toolversion("0.11");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -251,7 +251,7 @@ int simputsrc_main()
 
       // Construct the shell command to run ISIS.
       char command[MAXMSG];
-      strcpy(command, "/data/system/software/local/bin/isis ");
+      strcpy(command, "isis ");
       strcat(command, cmdfilename);
 
       // Run ISIS.

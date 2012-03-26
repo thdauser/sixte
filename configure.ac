@@ -24,7 +24,8 @@ LT_INIT #([disable-shared]) #([shared])
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -I$HEADAS/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -DCORRECT_RMF_FIRST_CHANNEL"
+CFLAGS="$CFLAGS -I$HEADAS/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS"
+# -DHEASP_CPP (required for HEADAS versions >=6.12)
 
 # Linker Flags:
 LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall"
@@ -35,7 +36,7 @@ AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 ####################################
 # cfitsio
 AC_SEARCH_LIBS(ffopen, 
-	[cfitsio_3.27 cfitsio_3.25 cfitsio_3.24 cfitsio_3.22 cfitsio_3.18 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
+	[cfitsio_3.29 cfitsio_3.27 cfitsio_3.25 cfitsio_3.24 cfitsio_3.22 cfitsio_3.18 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
 	[], [AC_MSG_ERROR([No supported version of cfitsio library found!])], [])
 
 ####################################
@@ -126,6 +127,25 @@ fi
 AC_SEARCH_LIBS(headas_init, hdinit $my_hdinit, [],
           [AC_MSG_ERROR([No hdinit library found!])], [])
 AC_SUBST(lib_hdinit)
+#################################### 
+# CCfits
+lib_ccfits="no"
+AC_MSG_CHECKING([for versioned CCfits in \$HEADAS])
+my_ccfits=`ls "${HEADAS}"/lib/libCCfits*.so 2> /dev/null`
+if ! test -z "$my_ccfits"
+then
+   my_ccfits=`basename "$my_ccfits"`
+   my_ccfits=`expr "$my_ccfits" : 'lib\(CCfits_.*\)\.so'`
+fi
+if ! test -z "$my_ccfits"
+then
+   AC_MSG_RESULT([yes ($my_ccfits)])
+else
+   AC_MSG_RESULT([no])
+fi
+AC_SEARCH_LIBS(_ZN6CCfits3HDU11copyAllKeysEPKS0_, CCfits $my_ccfits, [],
+              [AC_MSG_ERROR([No CCfits library found!])], [])
+AC_SUBST(lib_ccfits)
 #################################### 
 # HDSP
 lib_hdsp="no"

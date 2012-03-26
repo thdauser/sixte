@@ -40,13 +40,13 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     telemetrypacket.c htrstelstream.c comadetector.c	\
 		     comaeventfile.c psf.c vignetting.c codedmask.c	\
 		     attitudecatalog.c attitudefile.c sixt.c vector.c	\
-		     sourceimage.c photon.c spectrum.c fits_pha.c	\
-		     check_fov.c photonlistfile.c rmf.c arf.c		\
-		     kdtreeelement.c sourcecatalog.c source.c		\
-		     linkedpholist.c erodetbkgrndgen.c phgen.c phimg.c	\
-		     phdet.c phproj.c phpat.c event.c pattern.c		\
-		     ladsignal.c ladevent.c ladimpact.c lad.c		\
-		     lad_init.c xmlbuffer.c
+		     photon.c fits_pha.c check_fov.c photonlistfile.c	\
+		     rmf.c arf.c kdtreeelement.c sourcecatalog.c	\
+		     source.c linkedpholist.c erodetbkgrndgen.c		\
+		     phgen.c phimg.c phdet.c phproj.c phpat.c event.c	\
+		     pattern.c ladsignal.c ladevent.c ladimpact.c	\
+		     lad.c lad_init.c xmlbuffer.c spectrum.c		\
+		     sourceimage.c
 
 
 ############ HEADERS #################
@@ -64,9 +64,9 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  comadetector.h comaeventfile.h comaevent.h psf.h	\
 		  vignetting.h codedmask.h attitudecatalog.h		\
 		  attitudefile.h telescope.h sixt.h point.h vector.h	\
-		  sourceimage.h photon.h spectrum.h fits_pha.h		\
-		  check_fov.h photonlistfile.h rmf.h arf.h		\
-		  kdtreeelement.h sourcecatalog.h source.h		\
+		  photon.h fits_pha.h check_fov.h photonlistfile.h	\
+		  rmf.h arf.h kdtreeelement.h sourcecatalog.h source.h	\
 		  linkedpholist.h erodetbkgrndgen.h phgen.h phimg.h	\
-		  phdet.h phproj.h phpat.h lad.h xmlbuffer.h
+		  phdet.h phproj.h phpat.h lad.h xmlbuffer.h		\
+		  spectrum.h sourceimage.h
 

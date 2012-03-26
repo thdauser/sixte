@@ -1,10 +1,8 @@
 #include "rmf.h"
 
 
-struct RMF* loadRMF(const char* const filename, int* const status) 
+struct RMF* loadRMF(char* filename, int* const status) 
 {
-  fitsfile* fptr=NULL;
-
   struct RMF* rmf = (struct RMF*)malloc(sizeof(struct RMF));
   if (NULL==rmf) {
     *status=EXIT_FAILURE;
@@ -12,14 +10,21 @@ struct RMF* loadRMF(const char* const filename, int* const status)
     return(rmf);
   }
 
+#ifndef HEASP_CPP
   // Load the RMF from the FITS file using the HEAdas RMF access routines
   // (part of libhdsp).
+  fitsfile* fptr=NULL;
   fits_open_file(&fptr, filename, READONLY, status);
   CHECK_STATUS_RET(*status, rmf);
   
   // Read the 'SPECRESP MATRIX' or 'MATRIX' extension:
   *status=ReadRMFMatrix(fptr, 0, rmf);
   CHECK_STATUS_RET(*status, rmf);
+#else
+  // Read the 'SPECRESP MATRIX' or 'MATRIX' extension:
+  *status=ReadRMFMatrix(filename, 0, rmf);
+  CHECK_STATUS_RET(*status, rmf);
+#endif
 
   // Print some information:
   headas_chat(5, "RMF loaded with %ld energy bins and %ld channels\n",
@@ -50,14 +55,20 @@ struct RMF* loadRMF(const char* const filename, int* const status)
     SIXT_WARNING("RMF is not normalized");
   }
 
+
   // Read the EBOUNDS extension:
+#ifndef HEASP_CPP
   *status=ReadRMFEbounds(fptr, 0, rmf);
   CHECK_STATUS_RET(*status, rmf);
 
   // Close the open FITS file.
   fits_close_file(fptr, status);
   CHECK_STATUS_RET(*status, rmf);
-  
+#else
+  *status=ReadRMFEbounds(filename, 0, rmf);
+  CHECK_STATUS_RET(*status, rmf);
+#endif
+
   return(rmf);
 }
 
@@ -130,7 +141,7 @@ void returnRMFChannel(struct RMF *rmf, const float energy,
 {
   ReturnChannel(rmf, energy, 1, channel);
 
-#ifdef CORRECT_RMF_FIRST_CHANNEL
+#ifndef HEASP_CPP
   // Due to a bug in the HEAdas heasp ReturnChannel() routine,
   // we have to subtract the FirstChannel in order to get the
   // right value.

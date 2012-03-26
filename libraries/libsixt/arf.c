@@ -22,15 +22,15 @@ struct ARF* getARF(int* const status)
 }
 
 
-struct ARF* loadARF(const char* const filename, int* const status) 
+struct ARF* loadARF(char* filename, int* const status) 
 {
-  fitsfile* fptr=NULL;
-
   struct ARF* arf = getARF(status);
   CHECK_STATUS_RET(*status, arf);
 
   // Load the ARF from the FITS file using the HEAdas ARF access
   // routines (part of libhdsp).
+#ifndef HEASP_CPP
+  fitsfile* fptr=NULL;
   fits_open_file(&fptr, filename, READONLY, status);
   CHECK_STATUS_RET(*status, arf);
   
@@ -38,13 +38,18 @@ struct ARF* loadARF(const char* const filename, int* const status)
   *status=ReadARF(fptr, 0, arf);
   CHECK_STATUS_RET(*status, arf);
 
+  // Close the open FITS file.
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, arf);
+#else
+  *status=ReadARF(filename, 0, arf);
+  CHECK_STATUS_RET(*status, arf);
+#endif
+
   // Print some information:
   headas_chat(5, "ARF loaded with %ld energy bins\n",
 	      arf->NumberEnergyBins);
 
-  // Close the open FITS file.
-  fits_close_file(fptr, status);
-  
   return(arf);
 }
 
