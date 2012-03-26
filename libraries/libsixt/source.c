@@ -74,7 +74,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     *list_next = newLinkedPhoListElement(status);
     CHECK_STATUS_BREAK(*status);
     Photon* ph = &((*list_next)->photon);
-    list_next =  &((*list_next)->next);
+    list_next  =  &((*list_next)->next);
 
     // Set the photon properties.
     ph->time = *(src->t_next_photon);
@@ -82,12 +82,12 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     CHECK_STATUS_RET(*status, list);
  
     // Copy the source identifiers.
-    ph->src_id = simputsrc->src_id;
+    ph->src_id=simputsrc->src_id;
 
     // Set Photon ID to default value of 0. The proper value is
     // updated later, when the photon is inserted in the photon
     // list file.
-    ph->ph_id = 0;
+    ph->ph_id=0;
 
     // Determine the photon energy.
     ph->energy = 

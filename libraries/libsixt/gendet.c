@@ -193,9 +193,9 @@ int addGenDetPhotonImpact(GenDet* const det,
     }
 
     // Determine the corresponding detected energy.
-    // NOTE: In this simulation the collected charge is represented by the nominal
-    // photon energy [keV], which corresponds to the PHA channel according 
-    // to the EBOUNDS table.
+    // NOTE: In this simulation the collected charge is represented 
+    // by the nominal photon energy [keV], which corresponds to the 
+    // PHA channel according to the EBOUNDS table.
     energy=getEBOUNDSEnergy(channel, det->rmf, 0);
     assert(energy>=0.);
 

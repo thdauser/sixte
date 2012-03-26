@@ -33,7 +33,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // Beginning of ERROR HANDLING Loop.

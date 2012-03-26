@@ -13,6 +13,8 @@ int phgen(AttitudeCatalog* const ac,
 {
   // Photon list buffer.
   static LinkedPhoListElement* pholist=NULL;
+  // Counter for the photon IDs.
+  static long long ph_id=0;
 
   // Current time.
   static double time=0.;
@@ -55,6 +57,10 @@ int phgen(AttitudeCatalog* const ac,
   LinkedPhoListElement* next=pholist->next;
   free(pholist);
   pholist = next;
+
+  // Set the photon ID.
+  ph->ph_id=++ph_id;
+
   return(1);
 }
 

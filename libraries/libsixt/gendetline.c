@@ -15,7 +15,8 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
   line = (GenDetLine*)malloc(sizeof(GenDetLine));
   if (NULL==line) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenDetLine failed!\n", *status);
+    HD_ERROR_THROW("Error: Memory allocation for GenDetLine failed!\n", 
+		   *status);
     return(line);
   }
 
