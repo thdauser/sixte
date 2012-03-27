@@ -435,6 +435,9 @@ static inline int ladevrecomb(const LAD* const lad,
     }
     // End of searching adjacent signals.
 
+    // Release memory.
+    free(anodes);
+
     return(1);
   }
 
@@ -492,7 +495,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.14");
+  set_toolversion("0.15");
 
 
   do { // Beginning of ERROR HANDLING Loop.
