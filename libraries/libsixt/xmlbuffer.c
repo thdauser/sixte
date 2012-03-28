@@ -139,7 +139,8 @@ static void expandXMLElementStart(void* data, const char* el,
       // END of loop over all attributes.
       
       // Check if parameters are set to valid values.
-      if ((mydata->loop_end-mydata->loop_start)*mydata->loop_increment<=0) {
+      if (((mydata->loop_end-mydata->loop_start)*mydata->loop_increment<0) ||
+	  (0==mydata->loop_increment)){
 	mydata->status = EXIT_FAILURE;
 	HD_ERROR_THROW("Error: Invalid XML loop parameters!\n", mydata->status);
 	return;
