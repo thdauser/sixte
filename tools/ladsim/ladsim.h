@@ -14,6 +14,7 @@
 #include "ladeventlistfile.h"
 #include "ladimpactlistfile.h"
 #include "ladsignallistfile.h"
+#include "linkedladsiglist.h"
 #include "rmf.h"
 #include "sourcecatalog.h"
 #include "vector.h"

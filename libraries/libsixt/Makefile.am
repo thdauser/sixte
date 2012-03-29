@@ -42,11 +42,11 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     attitudecatalog.c attitudefile.c sixt.c vector.c	\
 		     photon.c fits_pha.c check_fov.c photonlistfile.c	\
 		     rmf.c arf.c kdtreeelement.c sourcecatalog.c	\
-		     source.c linkedpholist.c erodetbkgrndgen.c		\
-		     phgen.c phimg.c phdet.c phproj.c phpat.c event.c	\
-		     pattern.c ladsignal.c ladevent.c ladimpact.c	\
-		     lad.c lad_init.c xmlbuffer.c spectrum.c		\
-		     sourceimage.c
+		     source.c linkedpholist.c linkedladsiglist.c	\
+		     erodetbkgrndgen.c phgen.c phimg.c phdet.c		\
+		     phproj.c phpat.c event.c pattern.c ladsignal.c	\
+		     ladevent.c ladimpact.c lad.c lad_init.c		\
+		     xmlbuffer.c spectrum.c sourceimage.c
 
 
 ############ HEADERS #################
@@ -66,7 +66,7 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  attitudefile.h telescope.h sixt.h point.h vector.h	\
 		  photon.h fits_pha.h check_fov.h photonlistfile.h	\
 		  rmf.h arf.h kdtreeelement.h sourcecatalog.h source.h	\
-		  linkedpholist.h erodetbkgrndgen.h phgen.h phimg.h	\
-		  phdet.h phproj.h phpat.h lad.h xmlbuffer.h		\
-		  spectrum.h sourceimage.h
+		  linkedpholist.h linkedladsiglist.h erodetbkgrndgen.h	\
+		  phgen.h phimg.h phdet.h phproj.h phpat.h lad.h	\
+		  xmlbuffer.h spectrum.h sourceimage.h
 

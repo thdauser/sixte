@@ -126,9 +126,16 @@ static inline int ladphimg(const LAD* const lad,
 
 static inline int ladphdet(const LAD* const lad,
 			   LADImpact* const imp,
-			   LADSignal* const signals)
+			   LADSignal* const sig,
+			   int* const status)
 {
-  // Photon detection process according to Campana (2011).
+  // The charge distribution among the neighboring anodes implemented 
+  // in this function follows the approach of Campana (2011).
+
+  // Buffered list for LADSignals.
+  static LinkedLADSigListElement* siglist=NULL;
+
+  // Element on the LAD.
   LADElement* element = 
     lad->panel[imp->panel]->module[imp->module]->element[imp->element];
 
@@ -149,158 +156,192 @@ static inline int ladphdet(const LAD* const lad,
     sqrt(2.*kB*lad->temperature*imp->position.x/lad->efield + 
 	 pow(sigma0,2.));
 
-  // Drift time.
-  double drifttime = imp->position.x / vD;
+  // Maximum drift time of a charge cloud.
+  double tmax = element->xdim/2 / vD;
 
-  // Determine the index of the closest anode strip.
-  float xwidth = element->xdim - 2.*element->xborder;
-  double y0;
-  if (imp->position.x<0.5*xwidth) {
-    y0=imp->position.y/anode_pitch;
-  } else {
-    y0=imp->position.y/anode_pitch + element->nanodes/2;
-  }
-  long center_anode=((long)(y0+1)) -1;
+  // Determine if the new impact has to be added to the buffered list.
+  if ((NULL==siglist) || (imp->time-siglist->signal.time<1.5*tmax)) {
+    // Calculate the charge contributions on the individual anodes
+    // and add the signals to the buffered list.
 
-  // Determine the measured detector channel (PHA channel) according 
-  // to the RMF.
-  // The channel is obtained from the RMF using the corresponding
-  // HEAdas routine which is based on drawing a random number.
-  long channel;
-  returnRMFChannel(lad->rmf, imp->energy, &channel);
+    // Drift time.
+    double drifttime = imp->position.x / vD;
 
-  // Check if the photon is really measured. If the
-  // PHA channel returned by the HEAdas RMF function is '-1', 
-  // the photon is not detected.
-  // This can happen, if the RMF actually is an RSP, i.e. it 
-  // includes ARF contributions, e.g., 
-  // the detector quantum efficiency and filter transmission.
-  if (channel<0) {
-    headas_chat(5, "### undetected photon\n");
-    return(0); // Photon is not detected.
-  } else if (channel<lad->rmf->FirstChannel) {
-    headas_printf("### wrong channel number !\n");
-    return(0);
-  }
-
-  // Determine the signal corresponding to the channel according 
-  // to the EBOUNDS table.
-  float signal = getEBOUNDSEnergy(channel, lad->rmf, 0);
-  assert(signal>=0.);
-
-  // Determine which half of the anodes (bottom or top) is affected.
-  long min_anode, max_anode;
-  if (center_anode < element->nanodes/2) {
-    min_anode=MAX(0                   , center_anode-2);
-    max_anode=MIN(element->nanodes/2-1, center_anode+2);
-  } else {
-    min_anode=MAX(element->nanodes/2, center_anode-2);
-    max_anode=MIN(element->nanodes-1, center_anode+2);
-  }
-  int n_anodes=max_anode-min_anode+1;
-  assert(n_anodes<=5);
-    
-  // Loop over adjacent anodes.
-  int ii, jj=0; // (lies within [0,4])
-  for (ii=0; ii<n_anodes; ii++) {
-
-    // Determine the signal fraction at this anode.
-    double yi=(ii+min_anode)*1.0;
-    double fraction=0.;
-    if (ii>0) {
-      fraction =gaussint((yi-y0)*anode_pitch/sigma);
+    // Determine the index of the closest anode strip.
+    float xwidth = element->xdim - 2.*element->xborder;
+    double y0;
+    if (imp->position.x<0.5*xwidth) {
+      y0=imp->position.y/anode_pitch;
     } else {
-      fraction =1.;
+      y0=imp->position.y/anode_pitch + element->nanodes/2;
     }
-    if (ii<n_anodes-1) {
-      fraction -=gaussint((yi-y0+1.0)*anode_pitch/sigma);
-    }
-    signals[jj].signal = fraction*signal;
+    long center_anode=((long)(y0+1)) -1;
 
-    // Apply thresholds.
-    if (NULL!=lad->threshold_readout_lo_keV) {
-      if (signals[jj].signal < *(lad->threshold_readout_lo_keV)) {
-	continue;
-      }
-    }
-    if (NULL!=lad->threshold_readout_up_keV) {
-      if (signals[jj].signal > *(lad->threshold_readout_up_keV)) {
-	continue;
-      }
-    }
+    // Determine the measured detector channel (PHA channel) according 
+    // to the RMF.
+    // The channel is obtained from the RMF using the corresponding
+    // HEAdas routine which is based on drawing a random number.
+    long channel;
+    returnRMFChannel(lad->rmf, imp->energy, &channel);
 
-    // Determine the point of time at which the charge is 
-    // collected on the anode.
-    signals[jj].time = imp->time + drifttime;
-
-    signals[jj].panel   = imp->panel;
-    signals[jj].module  = imp->module;
-    signals[jj].element = imp->element;
-    signals[jj].anode   = ii+min_anode;
-    signals[jj].ph_id[0]  = imp->ph_id;
-    signals[jj].src_id[0] = imp->src_id;
-    int kk;
-    for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
-      signals[jj].ph_id[kk] = 0;
-      signals[jj].src_id[kk]= 0;
-    }
-
-    // Increment counter for signal buffer.
-    jj++;
-
-  }
-  // END of loop over adjacent anodes.
-
-  // If no signal is above the threshold, we can skip here.
-  if (jj==0) return(0);
-
-
-  // Apply the ASIC dead time.
-  // Determine the ASIC and the pin of the ASIC to which the 
-  // central anode is attached.
-  int asic=(int)(center_anode/lad->asic_channels);
-  int pin =      center_anode%lad->asic_channels;
-
-  // Check if the bin is at the border of the ASIC and whether
-  // the neighboring ASIC has to be read out, too.
-  int asic2=-1;
-  if ((pin<2) && (asic!=0) && (asic!=element->nasics/2)) {
-    asic2 = asic-1;
-  } else if ((pin>lad->asic_channels-3) && 
-	     (asic!=element->nasics/2-1) &&
-	     (asic!=element->nasics-1)) {
-    asic2 = asic+1;
-  }
-
-  // Check if the event happens after the coincidence time, but
-  // during the dead time.
-  if (element->asic_readout_time[asic]>0.) {
-    if ((signals[0].time-element->asic_readout_time[asic]>lad->coincidencetime) &&
-	(signals[0].time-element->asic_readout_time[asic]<
-	 lad->coincidencetime+lad->deadtime)) {
+    // Check if the photon is really measured. If the
+    // PHA channel returned by the HEAdas RMF function is '-1', 
+    // the photon is not detected.
+    // This can happen, if the RMF actually is an RSP, i.e. it 
+    // includes ARF contributions, e.g., 
+    // the detector quantum efficiency and filter transmission.
+    if (channel<0) {
+      headas_chat(5, "### undetected photon\n");
+      return(0); // Photon is not detected.
+    } else if (channel<lad->rmf->FirstChannel) {
+      headas_printf("### wrong channel number !\n");
       return(0);
     }
-  } else if (asic2>=0) {
-    if (element->asic_readout_time[asic2]>0.) {
-      if ((signals[0].time-element->asic_readout_time[asic2]>lad->coincidencetime) &&
-	  (signals[0].time-element->asic_readout_time[asic2]<
-	   lad->coincidencetime+lad->deadtime)) {
+
+    // Determine the signal corresponding to the channel according 
+    // to the EBOUNDS table.
+    float signal = getEBOUNDSEnergy(channel, lad->rmf, 0);
+    assert(signal>=0.);
+
+    // Determine which half of the anodes (bottom or top) is affected.
+    long min_anode, max_anode;
+    if (center_anode < element->nanodes/2) {
+      min_anode=MAX(0                   , center_anode-2);
+      max_anode=MIN(element->nanodes/2-1, center_anode+2);
+    } else {
+      min_anode=MAX(element->nanodes/2, center_anode-2);
+      max_anode=MIN(element->nanodes-1, center_anode+2);
+    }
+    int n_anodes=max_anode-min_anode+1;
+    assert(n_anodes<=5);
+    
+    // Loop over adjacent anodes.
+    int ii; // (lies within [0,4])
+    for (ii=0; ii<n_anodes; ii++) {
+
+      LADSignal newsignal;
+      
+      // Determine the signal fraction at this anode.
+      double yi=(ii+min_anode)*1.0;
+      double fraction=0.;
+      if (ii>0) {
+	fraction =gaussint((yi-y0)*anode_pitch/sigma);
+      } else {
+	fraction =1.;
+      }
+      if (ii<n_anodes-1) {
+	fraction -=gaussint((yi-y0+1.0)*anode_pitch/sigma);
+      }
+      newsignal.signal = fraction*signal;
+
+      // Apply thresholds.
+      if (NULL!=lad->threshold_readout_lo_keV) {
+	if (newsignal.signal < *(lad->threshold_readout_lo_keV)) {
+	  continue;
+	}
+      }
+      if (NULL!=lad->threshold_readout_up_keV) {
+	if (newsignal.signal > *(lad->threshold_readout_up_keV)) {
+	  continue;
+	}
+      }
+
+      // Determine the point of time at which the charge is 
+      // collected on the anode.
+      newsignal.time = imp->time + drifttime;
+
+      newsignal.panel   = imp->panel;
+      newsignal.module  = imp->module;
+      newsignal.element = imp->element;
+      newsignal.anode   = ii+min_anode;
+      newsignal.ph_id[0]  = imp->ph_id;
+      newsignal.src_id[0] = imp->src_id;
+      int kk;
+      for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
+	newsignal.ph_id[kk] = 0;
+	newsignal.src_id[kk]= 0;
+      }
+
+      // Insert in the time-ordered list.
+      LinkedLADSigListElement** el=&siglist;
+      while(NULL!=*el) {
+	if (newsignal.time<(*el)->signal.time) break;
+	el = &((*el)->next);
+      }
+      LinkedLADSigListElement* newel=newLinkedLADSigListElement(status);
+      CHECK_STATUS_RET(*status, 0);
+
+      copyLADSignal(&(newel->signal), &newsignal);
+      newel->next=*el;
+      *el=newel;      
+    }
+    // END of loop over adjacent anodes.
+    
+    return(0);
+
+  } else {
+
+    // Return the first element from the time-ordered list.
+
+    // Apply the ASIC dead time.
+    // Determine the ASIC and the pin of the ASIC the 
+    // anode is attached to.
+    int asic=(int)(siglist->signal.anode/lad->asic_channels);
+    int pin =      siglist->signal.anode%lad->asic_channels;
+    
+    // Check if the bin is at the border of the ASIC and whether
+    // the neighboring ASIC has to be read out, too.
+    int asic2=-1;
+    if ((0==pin) && (asic!=0) && (asic!=element->nasics/2)) {
+      asic2 = asic-1;
+    } else if ((pin>lad->asic_channels-2) && 
+	       (asic!=element->nasics/2-1) &&
+	       (asic!=element->nasics-1)) {
+      asic2 = asic+1;
+    }
+
+    // Check if the event happens after the coincidence time, but
+    // during the dead time.
+    if (element->asic_readout_time[asic]>0.) {
+      if ((siglist->signal.time-element->asic_readout_time[asic]>
+	   lad->coincidencetime) &&
+	  (siglist->signal.time-element->asic_readout_time[asic]<
+	 lad->coincidencetime+lad->deadtime)) {
 	return(0);
       }
-    }
-  }
-
-  // Set the time of this ASIC readout.
-  if ((element->asic_readout_time[asic]==0.) ||
-      (signals[0].time-element->asic_readout_time[asic]>lad->coincidencetime)) {
-    element->asic_readout_time[asic]=signals[0].time;
+    } 
     if (asic2>=0) {
-      element->asic_readout_time[asic2]=signals[0].time;
+      if (element->asic_readout_time[asic2]>0.) {
+	if ((siglist->signal.time-element->asic_readout_time[asic2]>
+	     lad->coincidencetime) &&
+	    (siglist->signal.time-element->asic_readout_time[asic2]<
+	     lad->coincidencetime+lad->deadtime)) {
+	  return(0);
+	}
+      }
     }
-  }
-  // END of dead time application.
+    
+    // Set the time of this ASIC readout. // TODO
+    if ((element->asic_readout_time[asic]==0.) ||
+	(siglist->signal.time-element->asic_readout_time[asic]>
+	 lad->coincidencetime)) {
+      element->asic_readout_time[asic]=siglist->signal.time;
+      if (asic2>=0) {
+	element->asic_readout_time[asic2]=siglist->signal.time;
+      }
+    }
+    // END of dead time application.
 
-  return(jj);
+    // Return the signal.
+    copyLADSignal(sig, &(siglist->signal));
+
+    // Delete the element from the buffered list.
+    LinkedLADSigListElement* next=siglist->next;
+    free (siglist);
+    siglist=next;
+
+    return(1);
+  }
 }
 
 
@@ -840,51 +881,45 @@ int ladsim_main()
 	CHECK_STATUS_BREAK(status);
       }
 
-      // Photon imaging.
+      // Photon transmission / absorption in the collimator.
       LADImpact imp;
-      int isimg=ladphimg(lad, ac, &ph, &imp, &status);
-      CHECK_STATUS_BREAK(status);
-
-      // If the photon is not imaged but lost in the collimator,
-      // continue with the next one.
-      if (0==isimg) continue;
-
-      // If requested write the impact to the output file.
-      if (NULL!=ilf) {
-	addLADImpact2File(ilf, &imp, &status);	    
+      while (ladphimg(lad, ac, &ph, &imp, &status)) {
 	CHECK_STATUS_BREAK(status);
-      }
 
-      // Photon Detection.
-      LADSignal signals[5];
-      int ndet=ladphdet(lad, &imp, signals);
-      assert(ndet<=5);
-
-      // If the photon is not detected but lost,
-      // continue with the next one.
-      if (0==ndet) continue;
-
-      // Write the signals to the output file.
-      int ii;
-      for (ii=0; ii<ndet; ii++) {
-	if (NULL!=slf) {
-	  addLADSignal2File(slf, &(signals[ii]), &status);
+	// If requested write the impact to the output file.
+	if (NULL!=ilf) {
+	  addLADImpact2File(ilf, &imp, &status);	    
 	  CHECK_STATUS_BREAK(status);
 	}
 
-	// Recombine neighboring signals to events.
-	LADEvent ev;
-	while (ladevrecomb(lad, &(signals[ii]), &ev, &status)>0) {
+	// Determine the signal at the individual anodes.
+	LADSignal signal;
+	while (ladphdet(lad, &imp, &signal, &status)) {
 	  CHECK_STATUS_BREAK(status);
-
-	  // Add the event to the output file.
-	  addLADEvent2File(elf, &ev, &status);
+	  
+	  // Write the detected signal to the output file.
+	  if (NULL!=slf) {
+	    addLADSignal2File(slf, &signal, &status);
+	    CHECK_STATUS_BREAK(status);
+	  }
+	    
+	  // Recombine neighboring signals to events.
+	  LADEvent ev;
+	  while (ladevrecomb(lad, &signal, &ev, &status)>0) {
+	    CHECK_STATUS_BREAK(status);
+	    
+	    // Add the event to the output file.
+	    addLADEvent2File(elf, &ev, &status);
+	    CHECK_STATUS_BREAK(status);
+	  }
 	  CHECK_STATUS_BREAK(status);
+	  // END of loop over all events.
 	}
 	CHECK_STATUS_BREAK(status);
+	// END of loop over all signals.
       }
       CHECK_STATUS_BREAK(status);
-      // END of loop over all signals.
+      // END of loop over photons transmitted through the collimator.
 
       // Program progress output.
       while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
