@@ -12,7 +12,7 @@ struct LADSignalListItem {
 
 static inline LADImpact* ladphimg(const LAD* const lad,
 				  AttitudeCatalog* const ac,
-				  Photon* const ph,				  
+				  Photon* const ph,
 				  int* const status)
 {
   assert(ph!=NULL);
@@ -244,6 +244,11 @@ static inline int ladphdet(const LAD* const lad,
     
     // Loop over adjacent anodes.
     int ii; // (lies within [0,4])
+    // The following link to the element in the time-ordered 
+    // list has to be defined outside of the loop. Otherwise
+    // the search for the regarded point of time will start 
+    // from the beginning for each loop repetition.
+    LinkedLADSigListElement** el=&siglist;
     for (ii=0; ii<n_anodes; ii++) {
 
       LADSignal newsignal;
@@ -290,7 +295,6 @@ static inline int ladphdet(const LAD* const lad,
       }
 
       // Insert in the time-ordered list.
-      LinkedLADSigListElement** el=&siglist;
       while(NULL!=*el) {
 	if (newsignal.time<(*el)->signal.time) break;
 	el = &((*el)->next);
@@ -571,7 +575,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.16");
+  set_toolversion("0.17");
 
 
   do { // Beginning of ERROR HANDLING Loop.
