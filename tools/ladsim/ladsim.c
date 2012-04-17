@@ -569,13 +569,16 @@ int ladsim_main()
   // Recombined event list file.
   LADEventListFile* elf=NULL;
 
+  // Output file for progress status.
+  FILE* progressfile=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.17");
+  set_toolversion("0.18");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -647,6 +650,17 @@ int ladsim_main()
     } else {
       // Determine the seed from the system clock.
       seed = (int)time(NULL);
+    }
+
+    // Set the progress status output file.
+    strcpy(ucase_buffer, par.ProgressFile);
+    strtoupper(ucase_buffer);
+    if (0!=strcmp(ucase_buffer, "STDOUT")) {
+      progressfile=fopen(par.ProgressFile, "w+");
+      char msg[MAXMSG];
+      sprintf(msg, "could not open file '%s' for output of progress status",
+	      par.ProgressFile);
+      CHECK_NULL_BREAK(progressfile, status, msg);
     }
 
     // Initialize HEADAS random number generator.
@@ -981,16 +995,26 @@ int ladsim_main()
       // Program progress output.
       while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
 	progress++;
-	headas_chat(2, "\r%.1lf %%", progress*1./10.);
-	fflush(NULL);
+	if (NULL==progressfile) {
+	  headas_chat(2, "\r%.1lf %%", progress*1./10.);
+	  fflush(NULL);
+	} else {
+	  fprintf(progressfile, "\r%.1lf %%", progress*1./10.);
+	  fflush(progressfile);	
+	}
       }
 
     } while(1); // END of photon processing loop.
     CHECK_STATUS_BREAK(status);
 
     // Progress output.
-    headas_chat(2, "\r%.1lf %%\n", 100.);
-    fflush(NULL);
+    if (NULL==progressfile) {
+      headas_chat(2, "\r%.1lf %%\n", 100.);
+      fflush(NULL);
+    } else {
+      fprintf(progressfile, "\r%.1lf %%\n", 100.);
+      fflush(progressfile);	
+    }
 
     // --- End of simulation process ---
 
@@ -1009,6 +1033,11 @@ int ladsim_main()
   freeSourceCatalog(&srccat, &status);
   freeAttitudeCatalog(&ac);
   freeLAD(&lad);
+
+  if (NULL!=progressfile) {
+    fclose(progressfile);
+    progressfile=NULL;
+  }
 
   // Release HEADAS random number generator:
   HDmtFree();
@@ -1136,6 +1165,14 @@ int ladsim_getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
+
+  status=ape_trad_query_string("ProgressFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("Error reading the name of the progress status file!\n", status);
+    return(status);
+  } 
+  strcpy(par->ProgressFile, sbuffer);
+  free(sbuffer);
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {

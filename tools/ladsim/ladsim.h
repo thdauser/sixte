@@ -22,9 +22,11 @@
 #define TOOLSUB ladsim_main
 #include "headas_main.c"
 
+
 // Flag whether the Open Area Ratio of the collimator on the LAD
 // should be determined at the beginning of the simulation.
 #define LAD_OAR 1
+
 
 struct Parameters {
   char Prefix[MAXFILENAME];
@@ -34,11 +36,11 @@ struct Parameters {
   char EventList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
+  char Simput[MAXFILENAME];
+  char ProgressFile[MAXFILENAME];
 
   /** [deg] */
   float RA, Dec;
-
-  char Simput[MAXFILENAME];
 
   double MJDREF;
   double TIMEZERO;
