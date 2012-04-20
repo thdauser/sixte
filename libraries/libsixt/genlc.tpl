@@ -11,6 +11,6 @@ TIMEUNIT        String          / time unit
 TTYPE#  TIME            / Time
 TFORM#  D               / 
 TUNIT#  s               / 
-TTYPE#  RATE            / Count rate
-TFORM#  D               / 
-TUNIT#  counts/s        / 
+TTYPE#  COUNTS          / Counts
+TFORM#  J               / 
+TUNIT#  counts          / 

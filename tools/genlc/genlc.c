@@ -20,7 +20,7 @@ int genlc_main() {
 
   // Register HEATOOL:
   set_toolname("genlc");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -99,7 +99,7 @@ int genlc_main() {
     remove(par.LightCurve);
     char buffer[MAXFILENAME];
     sprintf(buffer, "%s(%s%s)", par.LightCurve, SIXT_DATA_PATH, 
-	    "/templates/ladlc.tpl");
+	    "/templates/genlc.tpl");
     fits_create_file(&outfptr, buffer, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -109,9 +109,9 @@ int genlc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Get column numbers.
-    int cotime, crate;
+    int cotime, ccounts;
     fits_get_colnum(outfptr, CASEINSEN, "TIME", &cotime, &status);
-    fits_get_colnum(outfptr, CASEINSEN, "RATE", &crate, &status);
+    fits_get_colnum(outfptr, CASEINSEN, "COUNTS", &ccounts, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
@@ -129,9 +129,8 @@ int genlc_main() {
       fits_write_col(outfptr, TDOUBLE, cotime, ii+1, 1, 1, 
 		     &dbuffer, &status);
       CHECK_STATUS_BREAK(status);
-      dbuffer = counts[ii]/par.dt;
-      fits_write_col(outfptr, TDOUBLE, crate, ii+1, 1, 1, 
-		     &dbuffer, &status);
+      fits_write_col(outfptr, TLONG, ccounts, ii+1, 1, 1, 
+		     &(counts[ii]), &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
