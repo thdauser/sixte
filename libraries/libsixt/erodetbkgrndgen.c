@@ -1,10 +1,12 @@
 #include "erodetbkgrndgen.h"
 
 static eroBackgroundInput bkginputdata;
+static eroBackgroundRateFct bkgratefct;
+static struct rateCurrentInterval rCurr = {0L, 0., NULL, 0L};
 
 /* internal functions */
 
-int calcEvents(double *hit_time, long numrows) {
+int calcEvents(const double* const hit_time, const long numrows) {
   int cc = 0;
   int numevents = 0;
 
@@ -17,13 +19,13 @@ int calcEvents(double *hit_time, long numrows) {
   return numevents;
 }
 
-inline double calcEventRate(double *hit_time,
-                            long numrows,
-                            int numevents,
-                            double interval) {
+inline double calcEventRate(const double* const hit_time,
+                            const long numrows,
+                            const int numevents,
+                            const double interval) {
   double eventrate = (double)numevents;
 
-  eventrate /= hit_time[numrows - 1];
+  eventrate /= (hit_time[numrows - 1] - hit_time[0]);
   eventrate *= interval;
 
   return eventrate;
@@ -33,9 +35,17 @@ inline double calcEventRate(double *hit_time,
 
 /* external functions */
 
-void eroBkgInitialize(const char *filename,
-                      int *status) {
+void eroBkgInitialize(const char* const filename,
+                      int* const status) {
 
+  bkgratefct.numelements = 0L;
+  bkgratefct.time = NULL;
+  bkgratefct.rate = NULL;
+  bkgratefct.currenttime = NULL;
+  bkgratefct.currentrate = NULL;
+  bkgratefct.intervalsum = 0.;
+
+  bkginputdata.numrows = 0L;
   bkginputdata.timecolname = "TIME CCD";
   bkginputdata.energycolname = "PI CCD";
   bkginputdata.xcolname = "X";
@@ -70,15 +80,15 @@ void eroBkgInitialize(const char *filename,
   bkginputdata.numevents = calcEvents(bkginputdata.hit_time, bkginputdata.numrows);
                                        
   bkginputdata.eventsperinterval = calcEventRate(bkginputdata.hit_time,
-                                                  bkginputdata.numrows,
-                                                  bkginputdata.numevents,
-                                                  bkginputdata.interval);
+                                                 bkginputdata.numrows,
+                                                 bkginputdata.numevents,
+                                                 bkginputdata.interval);
 
   bkginputdata.randgen = gsl_rng_alloc(gsl_rng_ranlux);
   gsl_rng_set(bkginputdata.randgen, rand() * ((int)time_struct.time + (unsigned int)time_struct.millitm));
 }
 
-void eroBkgFree(eroBackgroundOutput *struct_to_free) {
+void eroBkgFree(eroBackgroundOutput* struct_to_free) {
 	if(struct_to_free->numhits != 0) {
 		free(struct_to_free->hit_xpos);
 		free(struct_to_free->hit_ypos);
@@ -88,7 +98,7 @@ void eroBkgFree(eroBackgroundOutput *struct_to_free) {
   free(struct_to_free);
 }
 
-void eroBkgCleanUp(int *status) {
+void eroBkgCleanUp(int* const status) {
 	fits_close_file(bkginputdata.inputfptr, status);
 	fits_report_error(stderr, *status);
 	bkginputdata.inputfptr = NULL;
@@ -101,9 +111,101 @@ void eroBkgCleanUp(int *status) {
 	free(bkginputdata.hit_energy);
 }
 
-eroBackgroundOutput *eroBkgGetBackgroundList(double interval) {
-	eroBackgroundOutput *bkgresultlist = NULL;
+void eroBkgSetRateFct(const char* const filename, int* const status) {
+  SimputLC* rate_lc = getSimputLC(status);
+
+  if(filename != NULL) {
+    rate_lc =  loadSimputLC(filename, status);
+    bkgratefct.numelements = rate_lc->nentries;
+    if(bkgratefct.time != NULL) {
+      free(bkgratefct.time);
+    }
+    bkgratefct.time = (double*) malloc(rate_lc->nentries * sizeof(double));
+    memcpy(bkgratefct.time, rate_lc->time, rate_lc->nentries * sizeof(double));
+
+    if(bkgratefct.rate != NULL) {
+      free(bkgratefct.rate);
+    }
+    bkgratefct.rate = (float*) malloc(rate_lc->nentries * sizeof(float));
+    memcpy(bkgratefct.rate, rate_lc->flux, rate_lc->nentries * sizeof(float));
+
+    bkgratefct.currenttime = bkgratefct.time;
+    bkgratefct.currentrate = bkgratefct.rate;
+  } else {
+    SIXT_ERROR("no simput filename specified for rate function!");
+  }
+  freeSimputLC(&rate_lc);
+}
+
+void eroBkgGetRate(double interval) {
+  double startfraction = 0.;
+  const double startinterval = interval;
+
+  /** if we are not at EOF: check if we start in the middle of a time slice */
+  if((bkgratefct.intervalsum > 0) && (bkgratefct.currenttime <= &bkgratefct.time[bkgratefct.numelements - 1])) {
+    startfraction = *(bkgratefct.currenttime + 1) - (bkgratefct.time[0] + bkgratefct.intervalsum);
+  }
+  bkgratefct.intervalsum += interval;
+
+  /** free rate structure if it contains data from recent calculations */
+  if(rCurr.rate != NULL) {
+    free(rCurr.rate);
+    rCurr.rate = NULL;
+    rCurr.ratesize = 0L;
+    rCurr.numelements = 0L;
+  }
+
+  /** if we start in the middle of a time slice, we have to take a certain fraction of the rate into account */
+  if(startfraction > 0) {
+    rCurr.rate = (float*) realloc(rCurr.rate, 10 * sizeof(float));
+    rCurr.rate[0] = *bkgratefct.currentrate;
+    if(startfraction < startinterval) {
+      rCurr.rate[0] *= startfraction / startinterval;
+    }
+    rCurr.numelements++;
+    interval -= startfraction;
+  }
+
+  /** if we are still not at EOF, begin looping over the rate entries until the requested interval has been covered */
+  while((interval > 0) && (bkgratefct.currentrate <= &bkgratefct.rate[bkgratefct.numelements - 1])) {
+    if(rCurr.numelements >= rCurr.ratesize) {
+      rCurr.rate = (float*) realloc(rCurr.rate, (rCurr.numelements + 50) * sizeof(float));
+      rCurr.ratesize = rCurr.numelements + 50;
+    }
+    interval -= *(bkgratefct.currenttime + 1) - *bkgratefct.currenttime;
+    if(interval < 0) {
+      rCurr.rate[rCurr.numelements] = *bkgratefct.currentrate;
+      rCurr.rate[rCurr.numelements] *= (interval + (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime)) / startinterval;
+    } else {
+      rCurr.rate[rCurr.numelements] = *bkgratefct.currentrate;
+      rCurr.rate[rCurr.numelements] *= (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime) / startinterval;
+      bkgratefct.currenttime++;
+      bkgratefct.currentrate++;
+    }
+    rCurr.numelements++;
+  }
+
+  if(rCurr.numelements == 0) {
+    rCurr.numelements = 1L;
+    rCurr.rate = (float*) realloc(rCurr.rate, rCurr.numelements * sizeof(float));
+    if((interval != 0) && (bkgratefct.currentrate <= &bkgratefct.rate[bkgratefct.numelements - 1])) {
+      rCurr.rate[0] = *bkgratefct.currentrate;
+    } else {
+      rCurr.rate[0] = 1;
+      rCurr.ratesize = rCurr.numelements;
+    }
+  } else {
+    rCurr.rate = (float*) realloc(rCurr.rate, rCurr.numelements * sizeof(float));
+    rCurr.ratesize = rCurr.numelements;
+  }
+}
+
+eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
+  int cc = 0;
+	eroBackgroundOutput* bkgresultlist = NULL;
   bkgresultlist = (eroBackgroundOutput*) realloc(bkgresultlist, sizeof(eroBackgroundOutput));
+  bkgresultlist->numevents = 0;
+  bkgresultlist->numhits = 0;
 
   if(interval > 0) {
     bkginputdata.interval = interval;
@@ -112,16 +214,24 @@ eroBackgroundOutput *eroBkgGetBackgroundList(double interval) {
                                                   bkginputdata.numevents,
                                                   bkginputdata.interval);
   } else {
-    printf("background generation error: invalid interval specified: %f\nreturning NULL pointer...\n", interval);
+    SIXT_ERROR("invalid interval for background generation specified!");
     free(bkgresultlist);
     bkgresultlist = NULL;
     return bkgresultlist;
   }
   
-  bkgresultlist->numevents = gsl_ran_poisson(bkginputdata.randgen, bkginputdata.eventsperinterval);
+  if(bkgratefct.numelements == 0) {
+    bkgresultlist->numevents = gsl_ran_poisson(bkginputdata.randgen, bkginputdata.eventsperinterval);
+  } else {
+    eroBkgGetRate(interval);
+    for(cc = 0; cc < rCurr.numelements; cc++) {
+      bkgresultlist->numevents += gsl_ran_poisson(bkginputdata.randgen, bkginputdata.eventsperinterval * rCurr.rate[cc]);
+    }
+  }
+
   bkgresultlist->numhits = 0;
   if(bkgresultlist->numevents > 0) {
-    int cc = 0, rand = 0, arrsize = bkgresultlist->numevents;
+    int rand = 0, arrsize = bkgresultlist->numevents;
     bkgresultlist->hit_energy = (double*) malloc(arrsize * sizeof(double));
     bkgresultlist->hit_time = (double*) malloc(arrsize * sizeof(double));
     bkgresultlist->hit_xpos = (double*) malloc(arrsize * sizeof(double));
