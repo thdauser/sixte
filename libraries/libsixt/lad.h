@@ -5,6 +5,7 @@
 #include "arf.h"
 #include "point.h"
 #include "rmf.h"
+#include "vignetting.h"
 #include "xmlbuffer.h"
 
 
@@ -116,6 +117,9 @@ typedef struct {
       file the diameter is given in [deg], but it is converted to
       [rad] when parsing the XML file. */
   float fov_diameter;
+
+  /** Vignetting function of the collimator. */
+  Vignetting* vignetting;
 
   /** ARF containing the on-axis effective area of the instrument. */
   char* arf_filename;

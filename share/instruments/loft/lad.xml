@@ -2,7 +2,7 @@
 <instrument type="LOFT LAD">
   <telescope>
     <fov diameter="1.5"/>
-<!--    <vignetting filename="vignetting_lad.fits"/> -->
+    <vignetting filename="lad.vignetting.fits"/>
   </telescope>
 
   <detector type="SDD">

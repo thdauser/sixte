@@ -279,7 +279,8 @@ static void addElement2Module(LADModule* const module,
 
   // Extend the LAD element array.
   module->element = 
-    (LADElement**)realloc(module->element, (module->nelements+1)*sizeof(LADElement*));
+    (LADElement**)realloc(module->element, 
+			  (module->nelements+1)*sizeof(LADElement*));
   CHECK_NULL_VOID(module->element, *status, 
 		  "memory allocation for new LADElement failed");
   module->nelements++;
@@ -422,7 +423,8 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     getXMLAttributeString(attr, "FILENAME", filename);
 
     // Store the file name of the ARF.
-    xmlparsedata->lad->arf_filename=(char*)malloc((strlen(filename)+1)*sizeof(char));
+    xmlparsedata->lad->arf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
     CHECK_NULL_VOID(xmlparsedata->lad->arf_filename, 
 		      xmlparsedata->status,
 		      "memory allocation for ARF file name failed");
@@ -441,7 +443,8 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     getXMLAttributeString(attr, "FILENAME", filename);
     
     // Store the file name of the RMF.
-    xmlparsedata->lad->rmf_filename=(char*)malloc((strlen(filename)+1)*sizeof(char));
+    xmlparsedata->lad->rmf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
     CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename, 
 		      xmlparsedata->status,
 		      "memory allocation for RMF file name failed");
@@ -453,6 +456,19 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     strcat(filepathname, filename);
     xmlparsedata->lad->rmf = loadRMF(filepathname, &xmlparsedata->status);
 
+  } else if (!strcmp(Uelement, "VIGNETTING")) {
+
+    // Determine the filename of the collimator vignetting function.
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Load the vignetting function.
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->lad->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->lad->vignetting =
+      newVignetting(filepathname, &xmlparsedata->status);
+  
   } else {
     char msg[MAXMSG];
     sprintf(msg, "unknown XML element '%s'", Uelement);

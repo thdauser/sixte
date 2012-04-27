@@ -38,10 +38,25 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 		     ph->time, status);
     CHECK_STATUS_RET(*status, NULL);
 
+    // Calculate the off-axis angle ([rad]).
+    double cos_theta=scalar_product(&telescope.nz, &photon_direction);
+    double p;
+
+    // Apply the collimator vignetting function (if available).
+    if (NULL!=lad->vignetting) {
+      double theta=acos(cos_theta);
+      p = sixt_get_random_number();
+      if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
+	// The photon does not hit the detector at all,
+	// because it is absorbed by the collimator.
+	return(NULL);
+      }
+    }
+
     // Apply the geometric vignetting corresponding to the projected
     // detector surface.
-    double p = sixt_get_random_number();
-    if (p > scalar_product(&photon_direction, &telescope.nz)) {
+    p = sixt_get_random_number();
+    if (p > cos_theta) {
       // Photon is not detected, since it misses the detector.
       return(NULL);
     }
@@ -578,7 +593,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.18");
+  set_toolversion("0.19");
 
 
   do { // Beginning of ERROR HANDLING Loop.

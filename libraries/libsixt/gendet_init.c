@@ -390,7 +390,8 @@ static void GenDetXMLElementStart(void* parsedata, const char* el,
 
   } else if (!strcmp(Uelement, "FOV")) {
 
-    xmlparsedata->det->fov_diameter=getXMLAttributeFloat(attr, "DIAMETER")*M_PI/180.;
+    xmlparsedata->det->fov_diameter=
+      getXMLAttributeFloat(attr, "DIAMETER")*M_PI/180.;
 
   } else if (!strcmp(Uelement, "CTE")) {
     xmlparsedata->det->cte=getXMLAttributeFloat(attr, "VALUE");
