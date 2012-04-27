@@ -20,6 +20,7 @@ LAD* newLAD(int* const status)
   lad->panel  =NULL;
   lad->npanels=0;
   lad->fov_diameter=0.;
+  lad->vignetting  =NULL;
   lad->arf         =NULL;
   lad->arf_filename=NULL;
   lad->rmf         =NULL;
@@ -47,6 +48,9 @@ void freeLAD(LAD** const lad)
 	freeLADPanel(&((*lad)->panel[ii]));
       }
       free((*lad)->panel);
+    }
+    if (NULL!=(*lad)->vignetting) {
+      destroyVignetting(&((*lad)->vignetting));
     }
     if (NULL!=(*lad)->arf) {
       freeARF((*lad)->arf);
