@@ -40,22 +40,10 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
     // Calculate the off-axis angle ([rad]).
     double cos_theta=scalar_product(&telescope.nz, &photon_direction);
-    double p;
-
-    // Apply the collimator vignetting function (if available).
-    if (NULL!=lad->vignetting) {
-      double theta=acos(cos_theta);
-      p = sixt_get_random_number();
-      if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
-	// The photon does not hit the detector at all,
-	// because it is absorbed by the collimator.
-	return(NULL);
-      }
-    }
 
     // Apply the geometric vignetting corresponding to the projected
     // detector surface.
-    p = sixt_get_random_number();
+    double p = sixt_get_random_number();
     if (p > cos_theta) {
       // Photon is not detected, since it misses the detector.
       return(NULL);
@@ -122,13 +110,25 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     imp->position.y = 
       entrance_position.y + deviation.y * length;
     
-    // Check if the impact position still is inside the hole.
-    // Otherwise the photon has been absorbed by the walls of the hole.
-    // Make sure that it is the SAME hole as before.
-    long col2, row2;
-    LADCollimatorHoleIdx(imp->position, &col2, &row2);
-    if ((col1!=col2)||(row1!=row2)) {
-      return(NULL);
+    // Apply the collimator vignetting function (if available).
+    if (NULL!=lad->vignetting) {
+      double theta=acos(cos_theta);
+      p = sixt_get_random_number();
+      if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
+	// The photon does not hit the detector at all,
+	// because it is absorbed by the collimator.
+	return(NULL);
+      }
+    } else {
+      // If no explicit vignetting function is specified,
+      // check if the impact position still is inside the hole.
+      // Otherwise the photon has been absorbed by the walls of the hole.
+      // Make sure that it is the SAME hole as before.
+      long col2, row2;
+      LADCollimatorHoleIdx(imp->position, &col2, &row2);
+      if ((col1!=col2)||(row1!=row2)) {
+	return(NULL);
+      }
     }
 
     // Check if the impact position still is on the active area of the SDD.
