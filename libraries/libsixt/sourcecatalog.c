@@ -43,7 +43,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 {
   headas_chat(3, "load source catalog from file '%s' ...\n", filename);
 
-  SourceCatalog* cat = newSourceCatalog(status);
+  SourceCatalog* cat=newSourceCatalog(status);
   CHECK_STATUS_RET(*status, cat);
 
   // Set reference to ARF for SIMPUT library.
@@ -54,7 +54,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   simputSetRndGen(sixt_get_random_number);
 
   // Use the routines from the SIMPUT library to load the catalog.
-  cat->simput = openSimputCatalog(filename, READONLY, 0, 0, 0, 0, status);
+  cat->simput=openSimputCatalog(filename, READONLY, 0, 0, 0, 0, status);
   CHECK_STATUS_RET(*status, cat);
 
   // Determine the number of point-like and the number of 
@@ -68,7 +68,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
     CHECK_STATUS_BREAK(*status);
 
     // Determine the extension.
-    float extension = getSimputSourceExtension(src, status);
+    float extension=getSimputSourceExtension(cat->simput, src, status);
     CHECK_STATUS_BREAK(*status);
     if (extension>0.) {
       // This is an extended source.
@@ -103,7 +103,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
     SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
-    float extension = getSimputSourceExtension(src, status);
+    float extension = getSimputSourceExtension(cat->simput, src, status);
     CHECK_STATUS_BREAK(*status);
 
     if (extension>0.) {
@@ -175,7 +175,8 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
 		     cos(close_mult*(fov*0.5 + cat->extsources[ii].extension)))) {
       // Generate photons for this particular source.
       LinkedPhoListElement* newlist = 
-	getXRayPhotons(&(cat->extsources[ii]), cat->simput, t0, t1, mjdref, status);
+	getXRayPhotons(&(cat->extsources[ii]), cat->simput, 
+		       t0, t1, mjdref, status);
       CHECK_STATUS_RET(*status, list);
 
       // Merge the new photons into the existing list.

@@ -54,14 +54,14 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 
     int failed=0;
     *(src->t_next_photon) = 
-      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status);
+      getSimputPhotonTime(simputcat, simputsrc, t0, mjdref, &failed, status);
     CHECK_STATUS_RET(*status, list);
     if (1==failed) return(list);
 
   } else if (*(src->t_next_photon) < t0) {
     int failed=0;
     *(src->t_next_photon) = 
-      getSimputPhotonTime(simputsrc, t0, mjdref, &failed, status);
+      getSimputPhotonTime(simputcat, simputsrc, t0, mjdref, &failed, status);
     CHECK_STATUS_RET(*status, list);
     if (1==failed) return(list);
   }
@@ -78,7 +78,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 
     // Set the photon properties.
     ph->time = *(src->t_next_photon);
-    getSimputPhotonCoord(simputsrc, &ph->ra, &ph->dec, status);
+    getSimputPhotonCoord(simputcat, simputsrc, &ph->ra, &ph->dec, status);
     CHECK_STATUS_RET(*status, list);
  
     // Copy the source identifiers.
@@ -91,13 +91,15 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 
     // Determine the photon energy.
     ph->energy = 
-      getSimputPhotonEnergy(simputsrc, *(src->t_next_photon), mjdref, status);
+      getSimputPhotonEnergy(simputcat, simputsrc, 
+			    *(src->t_next_photon), mjdref, status);
     CHECK_STATUS_BREAK(*status);
 
     // Determine the arrival time of the next (future) photon.
     int failed=0;
     *(src->t_next_photon) = 
-      getSimputPhotonTime(simputsrc, *(src->t_next_photon), mjdref, 
+      getSimputPhotonTime(simputcat, simputsrc, 
+			  *(src->t_next_photon), mjdref, 
 			  &failed, status);
     CHECK_STATUS_BREAK(*status);
     if (1==failed) return(list);
