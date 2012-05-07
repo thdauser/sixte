@@ -30,6 +30,7 @@ LAD* newLAD(int* const status)
   lad->efield      =0.;
   lad->mobility    =0.;
   lad->deadtime    =0.;
+  lad->edeadtime   =0.;
   lad->coincidencetime=0.;
   lad->threshold_readout_lo_keV=NULL;
   lad->threshold_readout_up_keV=NULL;
@@ -186,6 +187,7 @@ LADElement* newLADElement(int* const status)
   element->nanodes  =0;
   element->nasics   =0;
   element->asic_readout_time=NULL;
+  element->asic_deadtime=NULL;
 
   return(element);
 }
@@ -196,6 +198,9 @@ void freeLADElement(LADElement** const element)
   if (NULL!=*element) {
     if (NULL!=(*element)->asic_readout_time) {
       free((*element)->asic_readout_time);
+    }
+    if (NULL!=(*element)->asic_deadtime) {
+      free((*element)->asic_deadtime);
     }
     free(*element);
     *element=NULL;

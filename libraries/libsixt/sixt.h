@@ -115,6 +115,12 @@
     files 'headas_rand.h' and 'headas_rand.c'. */
 double sixt_get_random_number();
 
+/** This routine produces two Gaussian distributed random numbers. The
+    standard deviation of the Gaussian distribution sigma is assumed
+    to be unity. The two numbers are returned via the pointer function
+    arguments. */
+void sixt_get_gauss_random_numbers(double* const x, double* const y);
+
 /** Returns a random value on the basis of an exponential distribution
     with a given average distance. In the simulation this function is
     used to calculate the temporal differences between individual

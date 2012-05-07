@@ -43,9 +43,13 @@ typedef struct {
   /** Number of ASICs. */
   int nasics;
 
-  /** Array for all ASICs, which contains the point of time, when the
+  /** Array for all ASICs that contains the point of time, when the
       last read-out of this ASIC was triggered by the MBEE. */
   double* asic_readout_time;
+
+  /** Array for all ASICs that contains the dead time [s] due to the
+      ADC conversion in the ASIC. */
+  double* asic_deadtime;
 
 } LADElement;
 
@@ -142,7 +146,11 @@ typedef struct {
   float mobility; 
 
   /** Dead time [s] due to the ADC conversion in the ASIC. */
-  float deadtime;
+  double deadtime;
+
+  /** Uncertainty (1 sigma) on the dead time knowledge of a single
+      ASIC [s]. */
+  double edeadtime;
 
   /** Length of the coincidence time window opened after an anode
       trigger [s]. If a neighboring anode also measures a charge

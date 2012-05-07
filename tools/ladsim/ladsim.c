@@ -369,7 +369,7 @@ static inline int ladphdet(const LAD* const lad,
       if (((*sig)->time-element->asic_readout_time[asic]>
 	   lad->coincidencetime) &&
 	  ((*sig)->time-element->asic_readout_time[asic]<
-	 lad->coincidencetime+lad->deadtime)) {
+	 lad->coincidencetime+element->asic_deadtime[asic])) {
 	freeLADSignal(sig);
 	return(0);
       }
@@ -379,7 +379,7 @@ static inline int ladphdet(const LAD* const lad,
 	if (((*sig)->time-element->asic_readout_time[asic2]>
 	     lad->coincidencetime) &&
 	    ((*sig)->time-element->asic_readout_time[asic2]<
-	     lad->coincidencetime+lad->deadtime)) {
+	     lad->coincidencetime+element->asic_deadtime[asic2])) {
 	  freeLADSignal(sig);
 	  return(0);
 	}
@@ -597,7 +597,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.20");
+  set_toolversion("0.21");
 
 
   do { // Beginning of ERROR HANDLING Loop.

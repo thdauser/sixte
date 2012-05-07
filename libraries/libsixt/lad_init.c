@@ -198,11 +198,26 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	lad->panel[ii]->module[jj]->element[kk]->asic_readout_time=
 	  (double*)malloc(lad->panel[ii]->module[jj]->element[kk]->nasics*
 			  sizeof(double));
-	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk]->asic_readout_time, 
-			*status, "cannot allocate memory for ASIC read-out times");
+	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk]->
+			asic_readout_time, *status, 
+			"cannot allocate memory for ASIC read-out times");
 	int ll;
 	for (ll=0; ll<lad->panel[ii]->module[jj]->element[kk]->nasics; ll++) {
 	  lad->panel[ii]->module[jj]->element[kk]->asic_readout_time[ll]=0.;
+	}
+
+	// Allocate memory for the dead times of the individual ASICs.
+	lad->panel[ii]->module[jj]->element[kk]->asic_deadtime=
+	  (double*)malloc(lad->panel[ii]->module[jj]->element[kk]->nasics*
+			  sizeof(double));
+	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk]->
+			asic_deadtime, *status, 
+			"cannot allocate memory for ASIC dead times");
+	for (ll=0; ll<lad->panel[ii]->module[jj]->element[kk]->nasics; ll++) {
+	  double grand1, grand2;
+	  sixt_get_gauss_random_numbers(&grand1, &grand2);
+	  lad->panel[ii]->module[jj]->element[kk]->asic_deadtime[ll]=
+	    lad->deadtime+lad->edeadtime*grand1;
 	}
 	
 	headas_chat(5, "   element %ld has %ld anodes and %d ASICs \n", 
@@ -385,6 +400,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the dead time.
     xmlparsedata->lad->deadtime = 
       getXMLAttributeFloat(attr, "DEADTIME");
+    // Determine the error on the dead time
+    xmlparsedata->lad->edeadtime = 
+      getXMLAttributeFloat(attr, "EDEADTIME");
     // Determine the length of the coincidence time window.
     xmlparsedata->lad->coincidencetime = 
       getXMLAttributeFloat(attr, "COINCIDENCETIME");
@@ -395,8 +413,10 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "THRESHOLD")) {
 
     // Determine the lower and the upper read-out threshold.
-    float threshold_readout_lo_keV = getXMLAttributeFloat(attr, "READOUT_LO_KEV");
-    float threshold_readout_up_keV = getXMLAttributeFloat(attr, "READOUT_UP_KEV");
+    float threshold_readout_lo_keV = 
+      getXMLAttributeFloat(attr, "READOUT_LO_KEV");
+    float threshold_readout_up_keV = 
+      getXMLAttributeFloat(attr, "READOUT_UP_KEV");
     
     if (0.<threshold_readout_lo_keV) {
       xmlparsedata->lad->threshold_readout_lo_keV = 
