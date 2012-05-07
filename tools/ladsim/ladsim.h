@@ -25,7 +25,7 @@
 
 // Flag whether the Open Area Ratio of the collimator on the LAD
 // should be determined at the beginning of the simulation.
-#define LAD_OAR 1
+//#define LAD_OAR 1
 
 
 struct Parameters {

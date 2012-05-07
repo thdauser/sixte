@@ -46,9 +46,6 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   SourceCatalog* cat=newSourceCatalog(status);
   CHECK_STATUS_RET(*status, cat);
 
-  // Set reference to ARF for SIMPUT library.
-  simputSetARF(arf);
-
   // Set refernce to the random number generator to be used by the
   // SIMPUT library routines.
   simputSetRndGen(sixt_get_random_number);
@@ -56,6 +53,9 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // Use the routines from the SIMPUT library to load the catalog.
   cat->simput=openSimputCatalog(filename, READONLY, 0, 0, 0, 0, status);
   CHECK_STATUS_RET(*status, cat);
+
+  // Set reference to ARF for SIMPUT library.
+  simputSetARF(cat->simput, arf);
 
   // Determine the number of point-like and the number of 
   // extended sources.

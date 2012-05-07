@@ -25,6 +25,7 @@ LAD* newLAD(int* const status)
   lad->arf_filename=NULL;
   lad->rmf         =NULL;
   lad->rmf_filename=NULL;
+  lad->background_filename=NULL;
   lad->temperature =0.;
   lad->efield      =0.;
   lad->mobility    =0.;
@@ -63,6 +64,9 @@ void freeLAD(LAD** const lad)
     }
     if (NULL!=(*lad)->rmf_filename) {
       free((*lad)->rmf_filename);
+    }
+    if (NULL!=(*lad)->background_filename) {
+      free((*lad)->background_filename);
     }
     if (NULL!=(*lad)->threshold_readout_lo_keV) {
       free((*lad)->threshold_readout_lo_keV);

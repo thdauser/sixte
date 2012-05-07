@@ -33,12 +33,12 @@
 
   <arf filename="LOFT_Requirement_v4.arf"/>
   <rmf filename="LOFT_Requirement_v4.rmf"/>
+  <background filename="lad_background.simput"/>
   <temperature value="300"/>
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
   <asic deadtime="102.e-6" coincidencetime="150.e-9" channels="16"/>
   <threshold readout_lo_keV="0.1" readout_up_keV="50."/>
-<!--  <background filename="loft_background.fits"/> -->
 
   <readout mode="event">
     <time_width value="1.e-5"/>

@@ -25,7 +25,7 @@ typedef struct {
   /** Impact position of the photon on the element [m]. */
   struct Point2d position;
 
-  /** Photon energy. */
+  /** Photon energy [keV]. */
   float energy;
 
   /** Arrival time of the photon [s]. */

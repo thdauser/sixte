@@ -456,6 +456,20 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     strcat(filepathname, filename);
     xmlparsedata->lad->rmf = loadRMF(filepathname, &xmlparsedata->status);
 
+  } else if (!strcmp(Uelement, "BACKGROUND")) {
+    
+    // Determine the filename of the detector RMF.
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    
+    // Store the file name of the RMF.
+    xmlparsedata->lad->background_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->lad->background_filename, 
+		      xmlparsedata->status,
+		      "memory allocation for background file name failed");
+    strcpy(xmlparsedata->lad->background_filename, filename);
+
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
     // Determine the filename of the collimator vignetting function.
