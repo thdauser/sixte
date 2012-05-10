@@ -597,7 +597,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.21");
+  set_toolversion("0.22");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -747,8 +747,12 @@ int ladsim_main()
     // If specified, load the background model.
     if (NULL!=lad->background_filename) {
       if (0!=strlen(lad->background_filename)) {
+	// Open the SIMPUT catalog file.
+	char filepathname[MAXFILENAME];
+	strcpy(filepathname, lad->filepath);
+	strcat(filepathname, lad->background_filename);
 	backgroundcatalog=
-	  openSimputCatalog(lad->background_filename, READONLY, 
+	  openSimputCatalog(filepathname, READONLY, 
 			    0, 0, 0, 0, &status);
 	CHECK_STATUS_BREAK(status);
 
