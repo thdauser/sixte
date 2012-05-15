@@ -743,7 +743,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.23");
+  set_toolversion("0.24");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -1076,7 +1076,7 @@ int ladsim_main()
     // Loop over photon generation and processing
     // till the time of the photon exceeds the requested
     // exposure time.
-    // Simulation progress status (running from 0 to 1000).
+    // Simulation progress status (running from 0 to 100).
     int progress=0;
     double bkg_time=par.TIMEZERO, last_loop=0;
     do {
@@ -1183,13 +1183,14 @@ int ladsim_main()
       if (1==last_loop) break;
 	
       // Program progress output.
-      while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TIMEZERO)*100./par.Exposure)>progress) {
 	progress++;
 	if (NULL==progressfile) {
-	  headas_chat(2, "\r%.1lf %%", progress*1./10.);
+	  headas_chat(2, "\r%.1lf %%", progress*1.);
 	  fflush(NULL);
 	} else {
-	  fprintf(progressfile, "\r%.1lf %%", progress*1./10.);
+	  rewind(progressfile);
+	  fprintf(progressfile, "%.2lf", progress*1./100.);
 	  fflush(progressfile);	
 	}
       }
@@ -1202,7 +1203,8 @@ int ladsim_main()
       headas_chat(2, "\r%.1lf %%\n", 100.);
       fflush(NULL);
     } else {
-      fprintf(progressfile, "\r%.1lf %%\n", 100.);
+      rewind(progressfile);
+      fprintf(progressfile, "%.2lf", 1.);
       fflush(progressfile);	
     }
 
