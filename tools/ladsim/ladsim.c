@@ -1073,11 +1073,20 @@ int ladsim_main()
 
     headas_chat(3, "start simulation ...\n");
 
+    // Simulation progress status (running from 0 to 100).
+    int progress=0;
+    if (NULL==progressfile) {
+      headas_chat(2, "\r%.1lf %%", 0.);
+      fflush(NULL);
+    } else {
+      rewind(progressfile);
+      fprintf(progressfile, "%.2lf", 0.);
+      fflush(progressfile);	
+    }
+
     // Loop over photon generation and processing
     // till the time of the photon exceeds the requested
     // exposure time.
-    // Simulation progress status (running from 0 to 100).
-    int progress=0;
     double bkg_time=par.TIMEZERO, last_loop=0;
     do {
 
