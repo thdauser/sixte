@@ -42,7 +42,7 @@ int phgen(AttitudeCatalog* const ac,
       genFoVXRayPhotons(srccat, &pointing, fov,
 			time, t1, mjdref, status);
     CHECK_STATUS_BREAK(*status);
-      
+    
     // Increase the time.
     time+=dt;
   }

@@ -23,7 +23,7 @@ int ladspec_main() {
 
   // Register HEATOOL:
   set_toolname("ladspec");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -40,6 +40,17 @@ int ladspec_main() {
     elf=openLADEventListFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Determine the random number generator seed.
+    int seed;
+    if (-1!=par.Seed) {
+      seed = par.Seed;
+    } else {
+      // Determine the seed from the system clock.
+      seed = (int)time(NULL);
+    }
+
+    // Initialize HEADAS random number generator.
+    HDmtInit(seed);
     // Determine the detector XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_LADXMLFile(xml_filename, par.XMLFile);
@@ -151,9 +162,9 @@ int ladspec_main() {
 
   // Release memory.
   if (NULL!=spec) free(spec);
-  freeLAD(&lad);
+  freeLAD(&lad, &status);
 
-  if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 
@@ -192,6 +203,12 @@ int ladspec_getpar(struct Parameters* par)
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
+  status=ape_trad_query_int("seed", &par->Seed);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the seed for the random number generator");
+    return(status);
+  }
+
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the clobber parameter");
@@ -200,6 +217,3 @@ int ladspec_getpar(struct Parameters* par)
 
   return(status);
 }
-
-
-

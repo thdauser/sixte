@@ -134,7 +134,7 @@ typedef struct {
   struct RMF* rmf;
 
   /** Definition of the detector background. */
-  char* background_filename;
+  SimputCatalog* backgroundcatalog;
 
   /** Temperature of the SDDs [K]. */
   float temperature;
@@ -191,7 +191,7 @@ LAD* newLAD(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the LAD data structure to NULL. */
-void freeLAD(LAD** const lad);
+void freeLAD(LAD** const lad, int* const status);
 
 
 /** Constructor. Allocates memory for a new LADPanel data structure. */

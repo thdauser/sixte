@@ -217,7 +217,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	  double grand1, grand2;
 	  sixt_get_gauss_random_numbers(&grand1, &grand2);
 	  lad->panel[ii]->module[jj]->element[kk]->asic_deadtime[ll]=
-	    lad->deadtime+lad->edeadtime*grand1;
+	    lad->deadtime + lad->edeadtime*grand1;
 	}
 	
 	headas_chat(5, "   element %ld has %ld anodes and %d ASICs \n", 
@@ -438,7 +438,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "ARF")) {
     
-    // Determine the filename of the instrument ARF.
+    // Determine the file name of the instrument ARF.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
 
@@ -458,7 +458,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "RMF")) {
     
-    // Determine the filename of the detector RMF.
+    // Determine the file name of the detector RMF.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
     
@@ -478,21 +478,21 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "BACKGROUND")) {
     
-    // Determine the filename of the detector RMF.
+    // Determine the file name of the background catalog.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
     
-    // Store the file name of the RMF.
-    xmlparsedata->lad->background_filename=
-      (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->lad->background_filename, 
-		      xmlparsedata->status,
-		      "memory allocation for background file name failed");
-    strcpy(xmlparsedata->lad->background_filename, filename);
+    // Open the background SIMPUT catalog file.
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->lad->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->lad->backgroundcatalog=
+      openSimputCatalog(filepathname, READONLY, 
+			    0, 0, 0, 0, &xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
-    // Determine the filename of the collimator vignetting function.
+    // Determine the file name of the collimator vignetting function.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
 

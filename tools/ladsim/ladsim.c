@@ -146,29 +146,178 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
 
 /** Detection routine for the charge signals on the LAD anodes. The
-    function return value is 1, if the function has (tried to) add the
-    signals from the new impact to the internal cache, or the internal
-    cache is empty. Otherwise the function returns 0. I.e., if the
-    return value is 0, the function has to be called again in order to
-    read all events from the cache. */
+    function has to be called with impact times in chronological
+    order. At the end of the simulation it has to be called with a
+    negative impact energy in order to read the remaining events from
+    the internal cache. The function return value is 1, if the
+    function has (tried to) add the signals from the new impact to the
+    internal cache, or the internal cache is empty. Otherwise the
+    function returns 0. I.e., if the return value is 0, the function
+    has to be called again in order to read all events from the
+    cache. */
 static inline int ladphdet(const LAD* const lad,
 			   LADImpact* const imp,
 			   LADSignal** const sig,
+			   const double timezero,
+			   const double mjdref,
 			   int* const status)
 {
   // The charge distribution among the neighboring anodes implemented 
-  // in this function follows the approach of Campana (2011).
+  // in this function follows the approach of Campana et al. (2011).
 
   // Buffered list for LADSignals.
   static LinkedLADSigListElement* siglist=NULL;
+
+  // Background source.
+  static SimputSource* backgroundsource=NULL;
+  static struct ARF* backgroundarf=NULL;
+  static double t_next_bkg=0.;
+
+  // Make sure that there is a photon impact.
+  assert(NULL!=imp);
+
+
+  // --- Insert background events.
+  
+  if (NULL!=lad->backgroundcatalog) {
+
+    // Check if the background ARF is defined.
+    if (NULL==backgroundarf) {
+      // Get an empty ARF.
+      backgroundarf=getARF(status);
+      CHECK_STATUS_RET(*status, 1);
+
+      // Allocate memory.
+      const long narfbins=100000;
+      backgroundarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_RET(backgroundarf->LowEnergy, *status, 
+		     "memory allocation for background ARF failed", 1);
+      backgroundarf->HighEnergy=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_RET(backgroundarf->HighEnergy, *status, 
+		     "memory allocation for background ARF failed", 1);
+      backgroundarf->EffArea=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_RET(backgroundarf->EffArea, *status, 
+		     "memory allocation for background ARF failed", 1);
+      backgroundarf->NumberEnergyBins=narfbins;
+
+      // Set up a simple ARF.
+      float sensitive_area=
+	lad->npanels*lad->panel[0]->nmodules*
+	lad->panel[0]->module[0]->nelements*
+	(lad->panel[0]->module[0]->element[0]->xdim - 
+	 2.*lad->panel[0]->module[0]->element[0]->xborder)*
+	(lad->panel[0]->module[0]->element[0]->ydim - 
+	 2.*lad->panel[0]->module[0]->element[0]->yborder)*
+	1.e4; // Total sensitive area [cm^2].
+      headas_chat(5, "background ARF with %lf cm^2\n", backgroundarf->EffArea);
+      long ii;
+      for (ii=0; ii<narfbins; ii++) {
+	backgroundarf->LowEnergy[ii] =1000./narfbins*ii;
+	backgroundarf->HighEnergy[ii]=1000./narfbins*(ii+1); // [keV]
+	backgroundarf->EffArea[ii]   =sensitive_area;
+      }
+
+      // Set reference to background ARF for SIMPUT library.
+      simputSetARF(lad->backgroundcatalog, backgroundarf);
+    }
+
+    // Check if the background source is defined.
+    if (NULL==backgroundsource) {
+      // Set reference to the background source.
+      backgroundsource=loadSimputSource(lad->backgroundcatalog, 1, status);
+      CHECK_STATUS_RET(*status, 1);
+
+      t_next_bkg=timezero;
+    }
+
+    while (t_next_bkg<imp->time) {
+
+      LinkedLADSigListElement** el=&siglist;
+
+      // Produce a background event.
+      LADSignal newsignal;
+      CHECK_STATUS_BREAK(*status);
+      
+      // Time.
+      newsignal.time=t_next_bkg;
+
+      // Energy.
+      newsignal.signal=
+	getSimputPhotonEnergy(lad->backgroundcatalog, backgroundsource,
+			      newsignal.time, mjdref, status);
+      CHECK_STATUS_BREAK(*status);
+
+      // Position.
+      newsignal.panel=(long)(sixt_get_random_number()*lad->npanels);
+      newsignal.module=
+	(long)(sixt_get_random_number()*
+	       lad->panel[newsignal.panel]->nmodules);
+      newsignal.element=
+	(long)(sixt_get_random_number()*
+	       lad->panel[newsignal.panel]->
+	       module[newsignal.module]->nelements);
+      newsignal.anode=
+	(long)(sixt_get_random_number()*
+	       lad->panel[newsignal.panel]->
+	       module[newsignal.module]->
+	       element[newsignal.element]->nanodes);
+      /*
+      // TODO Multiple anodes.
+      // Pointer to the element.
+      LADElement* element = 
+	lad->panel[newsignal->panel]->
+	module[newsignal->module]->
+	element[newsignal->element];
+      // Determine the sensitive area of the element.
+      float xwidth = element->xdim - 2.*element->xborder;
+      float ywidth = element->ydim - 2.*element->yborder;
+      // Get a random position on the element.
+      bkgimp->position.x=sixt_get_random_number()*xwidth;
+      bkgimp->position.y=sixt_get_random_number()*ywidth;
+      */
+
+      int kk;
+      for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
+	newsignal.ph_id[kk] = 0;
+	newsignal.src_id[kk]= 0;
+      }
+      
+      // Insert the background event into the time-ordered cache.
+      while(NULL!=*el) {
+	if (newsignal.time<(*el)->signal.time) break;
+	el = &((*el)->next);
+      }
+      LinkedLADSigListElement* newel=newLinkedLADSigListElement(status);
+      CHECK_STATUS_RET(*status, 1);
+      copyLADSignal(&(newel->signal), &newsignal);
+      newel->next=*el;
+      *el=newel;
+
+      // Determine the time of the next background event.
+      int failed=0;
+      t_next_bkg=
+	getSimputPhotonTime(lad->backgroundcatalog, backgroundsource,
+			    t_next_bkg, mjdref, &failed, status);
+      CHECK_STATUS_BREAK(*status);
+      if (0!=failed) {
+	SIXT_ERROR("failed producing background event");
+	*status=EXIT_FAILURE;
+	break;
+      }
+    }
+    CHECK_STATUS_RET(*status, 1);
+    // END of loop of producing background events.
+  }
+
+
+  // --- Process the actual impact.
 
   // Flag whether a signal has to be returned, or whether the new
   // impact has to be converted into a signal and added to the
   // time-ordered buffer.
   int addimp=0;
-  
-  if (NULL!=imp) {
 
+  if (imp->energy>0.) {
     // Element on the LAD.
     LADElement* element = 
       lad->panel[imp->panel]->module[imp->module]->element[imp->element];
@@ -344,7 +493,8 @@ static inline int ladphdet(const LAD* const lad,
 
     // Element on the LAD.
     LADElement* element = 
-      lad->panel[(*sig)->panel]->module[(*sig)->module]->element[(*sig)->element];
+      lad->panel[(*sig)->panel]->module[(*sig)->module]->
+      element[(*sig)->element];
 
     // Apply the ASIC dead time.
     // Determine the ASIC and the pin of the ASIC the 
@@ -572,10 +722,6 @@ int ladsim_main()
   // Catalog of input X-ray sources.
   SourceCatalog* srccat=NULL;
 
-  // Background SIMPUT catalog.
-  SimputCatalog* backgroundcatalog=NULL;
-  SimputSource* backgroundsource=NULL;
-
   // Photon list file.
   PhotonListFile* plf=NULL;
 
@@ -597,7 +743,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.22");
+  set_toolversion("0.23");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -743,27 +889,6 @@ int ladsim_main()
     // Load the SIMPUT X-ray source catalog.
     srccat=loadSourceCatalog(par.Simput, lad->arf, &status);
     CHECK_STATUS_BREAK(status);
-
-    // If specified, load the background model.
-    if (NULL!=lad->background_filename) {
-      if (0!=strlen(lad->background_filename)) {
-	// Open the SIMPUT catalog file.
-	char filepathname[MAXFILENAME];
-	strcpy(filepathname, lad->filepath);
-	strcat(filepathname, lad->background_filename);
-	backgroundcatalog=
-	  openSimputCatalog(filepathname, READONLY, 
-			    0, 0, 0, 0, &status);
-	CHECK_STATUS_BREAK(status);
-
-	// Set reference to ARF for SIMPUT library.
-	simputSetARF(backgroundcatalog, lad->arf);
-
-	// Set reference to the background source.
-	backgroundsource=loadSimputSource(backgroundcatalog, 1, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
 
 
 #ifdef LAD_OAR
@@ -953,21 +1078,7 @@ int ladsim_main()
     // exposure time.
     // Simulation progress status (running from 0 to 1000).
     int progress=0;
-    // Time variable for detector background generation.
-    double t_next_bkg=par.TIMEZERO;
-    if (NULL!=backgroundcatalog) {
-      int failed=0;
-      t_next_bkg=
-	getSimputPhotonTime(backgroundcatalog, backgroundsource,
-			    t_next_bkg, par.MJDREF, &failed, &status);
-      CHECK_STATUS_BREAK(status);
-      if (0!=failed) {
-	SIXT_ERROR("failed producing background event");
-	status=EXIT_FAILURE;
-	break;
-      }
-    }
-
+    double bkg_time=par.TIMEZERO, last_loop=0;
     do {
 
       // Photon generation.
@@ -983,9 +1094,11 @@ int ladsim_main()
       }
       
       // If a photon has been generated within the regarded time interval.
-      LADImpact* phimp=NULL;
-      double t_ref_bkg;
+      LADImpact* imp=NULL;
       if (0!=isph) {
+
+	bkg_time=ph.time;
+	
 	// If requested write the photon to the output file.
 	if (NULL!=plf) {
 	  status=addPhoton2File(plf, &ph);
@@ -993,137 +1106,81 @@ int ladsim_main()
 	}
 
 	// Photon transmission / absorption in the collimator.
-	phimp=ladphimg(lad, ac, &ph, &status);
+	imp=ladphimg(lad, ac, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// If the photon is not transmitted but lost in the collimator,
 	// continue with the next one.
-	if (NULL==phimp) continue;
+	if (NULL==imp) continue;
 
-	// Produce background impacts until the time of this impact.
-	t_ref_bkg=phimp->time;
+	// If requested, write the impact to the output file.
+	if (NULL!=ilf) {
+	  addLADImpact2File(ilf, imp, &status);	    
+	  CHECK_STATUS_BREAK(status);
+	}
 
       } else {
-	// Produce background impacts until the end of the simulated interval.
-	t_ref_bkg=par.TIMEZERO+par.Exposure;
+	// No photon has been produced within the regarded time interval.
+	// So we have to finalize the simulation, i.e. get all remaining
+	// events from the internal caches.
+	imp=getLADImpact(&status);
+	CHECK_STATUS_BREAK(status);
+	
+	if (bkg_time+par.dt<par.TIMEZERO+par.Exposure) {
+	  bkg_time+=par.dt;
+	} else {
+	  bkg_time=par.TIMEZERO+par.Exposure;
+	  last_loop=1;
+	}
+	imp->time=bkg_time;
+	imp->energy=-1.;
       }
 
-
-      int done_imp=0;
+      
+      // Determine the signals at the individual anodes.
       do {
-	
-	LADImpact* imp=NULL;
-
-	if ((NULL!=backgroundcatalog)&&(t_next_bkg<t_ref_bkg)) {
-	  
-	  // Produce a background event.
-	  LADImpact* bkgimp=getLADImpact(&status);
-	  CHECK_STATUS_BREAK(status);
-	  
-	  // Set the impact properties.
-	  // Time.
-	  bkgimp->time=t_next_bkg;
-
-	  // Energy.
-	  bkgimp->energy=
-	    getSimputPhotonEnergy(backgroundcatalog, backgroundsource,
-				  bkgimp->time, par.MJDREF, &status);
-	  CHECK_STATUS_BREAK(status);
-
-	  // Position.
-	  bkgimp->panel=(long)(sixt_get_random_number()*lad->npanels);
-	  bkgimp->module=
-	    (long)(sixt_get_random_number()*
-		   lad->panel[bkgimp->panel]->nmodules);
-	  bkgimp->element=
-	    (long)(sixt_get_random_number()*
-		   lad->panel[bkgimp->panel]->
-		   module[bkgimp->module]->nelements);
-	  // Pointer to the element.
-	  LADElement* element = 
-	    lad->panel[bkgimp->panel]->module[bkgimp->module]->
-	    element[bkgimp->element];
-	  // Determine the sensitive area of the element.
-	  float xwidth = element->xdim - 2.*element->xborder;
-	  float ywidth = element->ydim - 2.*element->yborder;
-	  // Get a random position on the element.
-	  bkgimp->position.x=sixt_get_random_number()*xwidth;
-	  bkgimp->position.y=sixt_get_random_number()*ywidth;
-
-	  // The next impact to be processed is the background event.
-	  imp = bkgimp;
-	  
-	  // Determine the time of the subsequent background event.
-	  int failed=0;
-	  t_next_bkg=
-	    getSimputPhotonTime(backgroundcatalog, backgroundsource,
-				t_next_bkg, par.MJDREF, &failed, &status);
-	  CHECK_STATUS_BREAK(status);
-	  if (0!=failed) {
-	    SIXT_ERROR("failed producing background event");
-	    status=EXIT_FAILURE;
-	    break;
-	  }
-
-	} else {
-	  // The next impact to be processed is the photon impact.
-	  imp = phimp;
-	  done_imp = 1;
-	}
-
-	if (NULL!=imp) {
-	  // If requested, write the impact to the output file.
-	  if (NULL!=ilf) {
-	    addLADImpact2File(ilf, imp, &status);	    
-	    CHECK_STATUS_BREAK(status);
-	  }
-	}
-
-	
-	// Determine the signals at the individual anodes.
-	do {
-	  LADSignal* signal=NULL;
-	  int done_det=ladphdet(lad, imp, &signal, &status);
-	  CHECK_STATUS_BREAK(status);
-	  
-	  if (1==done_det) {
-	    break;
-	    assert(NULL==signal);
-	  }
-	  if (NULL==signal) continue;
-
-	  // Write the detected signal to the output file.
-	  if (NULL!=slf) {
-	    addLADSignal2File(slf, signal, &status);
-	    CHECK_STATUS_BREAK(status);
-	  }
-	
-	  // Recombine neighboring signals to events.
-	  LADEvent* ev;
-	  while ((ev=ladevrecomb(lad, signal, &status))) {
-	    CHECK_STATUS_BREAK(status);
-	  
-	    // Add the event to the output file.
-	    addLADEvent2File(elf, ev, &status);
-	    CHECK_STATUS_BREAK(status);
-
-	    freeLADEvent(&ev);
-	  }
-	  CHECK_STATUS_BREAK(status);
-	  // END of loop over all events.
-
-	  freeLADSignal(&signal);
-	} while(1);
+	LADSignal* signal=NULL;
+	int done_det=ladphdet(lad, imp, &signal, 
+			      par.TIMEZERO, par.MJDREF, &status);
 	CHECK_STATUS_BREAK(status);
-	// END of loop over all signals.
+	  
+	if (1==done_det) {
+	  break;
+	  assert(NULL==signal);
+	}
+	if (NULL==signal) continue;
 
-	freeLADImpact(&imp);
+	// Write the detected signal to the output file.
+	if (NULL!=slf) {
+	  addLADSignal2File(slf, signal, &status);
+	  CHECK_STATUS_BREAK(status);
+	}
+	
+	// Recombine neighboring signals to events.
+	LADEvent* ev;
+	while ((ev=ladevrecomb(lad, signal, &status))) {
+	  CHECK_STATUS_BREAK(status);
+	  
+	  // Add the event to the output file.
+	  addLADEvent2File(elf, ev, &status);
+	  CHECK_STATUS_BREAK(status);
+	  
+	  freeLADEvent(&ev);
+	}
+	CHECK_STATUS_BREAK(status);
+	// END of loop over all events.
 
-      } while (0==done_imp); 
+	// Release memory.
+	freeLADSignal(&signal);
+
+      } while(1);
       CHECK_STATUS_BREAK(status);
-      // END of loop over all impacts (background + photon).
+      // END of loop over all signals.
+      
+      // Release memory.
+      freeLADImpact(&imp);
 
-      if (0==isph) break;
+      if (1==last_loop) break;
 	
       // Program progress output.
       while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
@@ -1164,10 +1221,8 @@ int ladsim_main()
   freeLADImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
-  freeSimputCatalog(&backgroundcatalog, &status);
-  freeSimputSource(&backgroundsource);
   freeAttitudeCatalog(&ac);
-  freeLAD(&lad);
+  freeLAD(&lad, &status);
 
   if (NULL!=progressfile) {
     fclose(progressfile);
@@ -1304,7 +1359,8 @@ int ladsim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("ProgressFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the progress status file!\n", status);
+    HD_ERROR_THROW("Error reading the name of the progress status file!\n", 
+		   status);
     return(status);
   } 
   strcpy(par->ProgressFile, sbuffer);

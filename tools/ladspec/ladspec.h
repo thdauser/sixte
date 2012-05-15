@@ -16,6 +16,8 @@ struct Parameters {
   char Spectrum[MAXFILENAME];
   char XMLFile[MAXFILENAME];
 
+  int Seed;
+  
   char clobber;
 };
 
