@@ -27,13 +27,16 @@ int runsixt_main()
   // Pattern list file.
   PatternFile* patf=NULL;
 
+  // Output file for progress status.
+  FILE* progressfile=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -112,6 +115,17 @@ int runsixt_main()
 
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
+
+    // Set the progress status output file.
+    strcpy(ucase_buffer, par.ProgressFile);
+    strtoupper(ucase_buffer);
+    if (0!=strcmp(ucase_buffer, "STDOUT")) {
+      progressfile=fopen(par.ProgressFile, "w+");
+      char msg[MAXMSG];
+      sprintf(msg, "could not open file '%s' for output of progress status",
+	      par.ProgressFile);
+      CHECK_NULL_BREAK(progressfile, status, msg);
+    }
 
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
@@ -324,11 +338,20 @@ int runsixt_main()
 
     headas_chat(3, "start simulation ...\n");
 
+    // Simulation progress status (running from 0 to 100).
+    int progress=0;
+    if (NULL==progressfile) {
+      headas_chat(2, "\r%.1lf %%", 0.);
+      fflush(NULL);
+    } else {
+      rewind(progressfile);
+      fprintf(progressfile, "%.2lf", 0.);
+      fflush(progressfile);	
+    }
+
     // Loop over photon generation and processing
     // till the time of the photon exceeds the requested
     // exposure time.
-    // Simulation progress status (running from 0 to 1000).
-    int progress=0;
     do {
 
       // Photon generation.
@@ -363,18 +386,31 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TIMEZERO)*100./par.Exposure)>progress) {
 	progress++;
-	headas_chat(2, "\r%.1lf %%", progress*1./10.);
-	fflush(NULL);
+	if (NULL==progressfile) {
+	  headas_chat(2, "\r%.1lf %%", progress*1.);
+	  fflush(NULL);
+	} else {
+	  rewind(progressfile);
+	  fprintf(progressfile, "%.2lf", progress*1./100.);
+	  fflush(progressfile);	
+	}
       }
 
-    } while(1); // END of photon processing loop.
+    } while(1);
     CHECK_STATUS_BREAK(status);
+    // END of photon processing loop.
 
     // Progress output.
-    headas_chat(2, "\r%.1lf %%\n", 100.);
-    fflush(NULL);
+    if (NULL==progressfile) {
+      headas_chat(2, "\r%.1lf %%\n", 100.);
+      fflush(NULL);
+    } else {
+      rewind(progressfile);
+      fprintf(progressfile, "%.2lf", 1.);
+      fflush(progressfile);	
+    }
 
     // Reset internal line counter of the impact list file.
     ilf->row=0;
@@ -426,6 +462,11 @@ int runsixt_main()
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 
+  if (NULL!=progressfile) {
+    fclose(progressfile);
+    progressfile=NULL;
+  }
+
   // Release HEADAS random number generator:
   HDmtFree();
 
@@ -446,7 +487,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Prefix", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the prefix for the output files!\n", 
+    HD_ERROR_THROW("failed reading the prefix for the output files!\n", 
 		   status);
     return(status);
   }
@@ -455,7 +496,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("PhotonList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the photon list!\n", status);
+    HD_ERROR_THROW("failed reading the name of the photon list!\n", status);
     return(status);
   } 
   strcpy(par->PhotonList, sbuffer);
@@ -463,7 +504,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("ImpactList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the impact list!\n", status);
+    HD_ERROR_THROW("failed reading the name of the impact list!\n", status);
     return(status);
   } 
   strcpy(par->ImpactList, sbuffer);
@@ -471,7 +512,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
+    HD_ERROR_THROW("failed reading the name of the event list!\n", status);
     return(status);
   } 
   strcpy(par->EventList, sbuffer);
@@ -479,7 +520,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the pattern list!\n", status);
+    HD_ERROR_THROW("failed reading the name of the pattern list!\n", status);
     return(status);
   } 
   strcpy(par->PatternList, sbuffer);
@@ -487,7 +528,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the mission!\n", status);
+    HD_ERROR_THROW("failed reading the name of the mission!\n", status);
     return(status);
   } 
   strcpy(par->Mission, sbuffer);
@@ -495,7 +536,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Instrument", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument!\n", status);
+    HD_ERROR_THROW("failed reading the name of the instrument!\n", status);
     return(status);
   } 
   strcpy(par->Instrument, sbuffer);
@@ -503,7 +544,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mode", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument mode!\n", status);
+    HD_ERROR_THROW("failed reading the name of the instrument mode!\n", status);
     return(status);
   } 
   strcpy(par->Mode, sbuffer);
@@ -511,7 +552,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    HD_ERROR_THROW("failed reading the name of the XML file!\n", status);
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
@@ -519,7 +560,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the attitude!\n", status);
+    HD_ERROR_THROW("failed reading the name of the attitude!\n", status);
     return(status);
   } 
   strcpy(par->Attitude, sbuffer);
@@ -527,21 +568,21 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the right ascension of the telescope "
+    HD_ERROR_THROW("failed reading the right ascension of the telescope "
 		   "pointing!\n", status);
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the declination of the telescope "
+    HD_ERROR_THROW("failed reading the declination of the telescope "
 		   "pointing!\n", status);
     return(status);
   } 
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the SIMPUT file!\n", status);
+    HD_ERROR_THROW("failed reading the name of the SIMPUT file!\n", status);
     return(status);
   } 
   strcpy(par->Simput, sbuffer);
@@ -549,19 +590,19 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading MJDREF!\n", status);
+    HD_ERROR_THROW("failed reading MJDREF!\n", status);
     return(status);
   } 
 
   status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
+    HD_ERROR_THROW("failed reading TIMEZERO!\n", status);
     return(status);
   } 
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    HD_ERROR_THROW("failed reading the exposure time!\n", status);
     return(status);
   } 
 
@@ -577,9 +618,18 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   }
 
+  status=ape_trad_query_string("ProgressFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("failed reading the name of the progress status file!\n", 
+		   status);
+    return(status);
+  } 
+  strcpy(par->ProgressFile, sbuffer);
+  free(sbuffer);
+
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    HD_ERROR_THROW("failed reading the clobber parameter!\n", status);
     return(status);
   }
 

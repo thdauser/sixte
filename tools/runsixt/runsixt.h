@@ -27,12 +27,13 @@ struct Parameters {
   char ImpactList[MAXFILENAME];
   char EventList[MAXFILENAME];
   char PatternList[MAXFILENAME];
+  char XMLFile[MAXFILENAME];
+  char Attitude[MAXFILENAME];
+  char ProgressFile[MAXFILENAME];
 
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
-  char XMLFile[MAXFILENAME];
-  char Attitude[MAXFILENAME];
 
   /** [deg] */
   float RA, Dec;
