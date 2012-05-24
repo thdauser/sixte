@@ -21,6 +21,10 @@
 #include "headas_main.c"
 
 
+/** Maximum number of SIMPUT catalogs. */
+#define MAX_N_SIMPUT 5
+
+
 struct Parameters {
   char Prefix[MAXFILENAME];
   char PhotonList[MAXFILENAME];
@@ -39,6 +43,10 @@ struct Parameters {
   float RA, Dec;
 
   char Simput[MAXFILENAME];
+  char Simput2[MAXFILENAME];
+  char Simput3[MAXFILENAME];
+  char Simput4[MAXFILENAME];
+  char Simput5[MAXFILENAME];
 
   double MJDREF;
   double TIMEZERO;

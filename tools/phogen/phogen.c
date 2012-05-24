@@ -111,7 +111,7 @@ int phogen_main()
     // END of setting up the attitude.
 
     // Load the SIMPUT X-ray source catalog.
-    srccat = loadSourceCatalog(par.Simput, det->arf, &status);
+    srccat=loadSourceCatalog(par.Simput, det->arf, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of Initialization ---
@@ -145,8 +145,9 @@ int phogen_main()
 
       // Photon generation.
       Photon ph;
-      int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
-		     par.dt, det->fov_diameter, &ph, &status);
+      int isph=phgen(ac, &srccat, 1, par.TIMEZERO, 
+		     par.Exposure, par.MJDREF, par.dt, 
+		     det->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
       // If no photon has been generated, break the loop.

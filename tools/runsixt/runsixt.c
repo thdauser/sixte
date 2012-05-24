@@ -13,7 +13,11 @@ int runsixt_main()
   AttitudeCatalog* ac=NULL;
 
   // Catalog of input X-ray sources.
-  SourceCatalog* srccat=NULL;
+  SourceCatalog* srccat[MAX_N_SIMPUT];
+  unsigned int ii;
+  for (ii=0; ii<MAX_N_SIMPUT; ii++) {
+    srccat[ii]=NULL;
+  }
 
   // Photon list file.
   PhotonListFile* plf=NULL;
@@ -36,7 +40,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -184,9 +188,49 @@ int runsixt_main()
     }
     // END of setting up the attitude.
 
-    // Load the SIMPUT X-ray source catalog.
-    srccat = loadSourceCatalog(par.Simput, det->arf, &status);
+    // Load the SIMPUT X-ray source catalogs.
+    srccat[0] = loadSourceCatalog(par.Simput, det->arf, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Optional 2nd catalog.
+    if (strlen(par.Simput2)>0) {
+      strcpy(ucase_buffer, par.Simput2);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	srccat[1] = loadSourceCatalog(par.Simput2, det->arf, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
+
+    // Optional 3rd catalog.
+    if (strlen(par.Simput3)>0) {
+      strcpy(ucase_buffer, par.Simput3);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	srccat[2] = loadSourceCatalog(par.Simput3, det->arf, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
+
+    // Optional 4th catalog.
+    if (strlen(par.Simput4)>0) {
+      strcpy(ucase_buffer, par.Simput4);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	srccat[3] = loadSourceCatalog(par.Simput4, det->arf, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
+
+    // Optional 5th catalog.
+    if (strlen(par.Simput5)>0) {
+      strcpy(ucase_buffer, par.Simput5);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	srccat[4] = loadSourceCatalog(par.Simput5, det->arf, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
 
     // --- End of Initialization ---
 
@@ -356,8 +400,9 @@ int runsixt_main()
 
       // Photon generation.
       Photon ph;
-      int isph=phgen(ac, srccat, par.TIMEZERO, par.Exposure, par.MJDREF, 
-		     par.dt, det->fov_diameter, &ph, &status);
+      int isph=phgen(ac, srccat, MAX_N_SIMPUT, par.TIMEZERO, 
+		     par.Exposure, par.MJDREF, par.dt, 
+		     det->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
       // If no photon has been generated, break the loop.
@@ -458,7 +503,9 @@ int runsixt_main()
   freeEventListFile(&elf, &status);
   freeImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
-  freeSourceCatalog(&srccat, &status);
+  for (ii=0; ii<MAX_N_SIMPUT; ii++) {
+    freeSourceCatalog(&(srccat[ii]), &status);
+  }
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 
@@ -586,6 +633,38 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   } 
   strcpy(par->Simput, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_file_name("Simput2", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("failed reading the name of the second SIMPUT file!\n", status);
+    return(status);
+  } 
+  strcpy(par->Simput2, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_file_name("Simput3", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("failed reading the name of the third SIMPUT file!\n", status);
+    return(status);
+  } 
+  strcpy(par->Simput3, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_file_name("Simput4", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("failed reading the name of the forth SIMPUT file!\n", status);
+    return(status);
+  } 
+  strcpy(par->Simput4, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_file_name("Simput5", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    HD_ERROR_THROW("failed reading the name of the fifth SIMPUT file!\n", status);
+    return(status);
+  } 
+  strcpy(par->Simput5, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);

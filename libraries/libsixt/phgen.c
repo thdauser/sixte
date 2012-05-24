@@ -2,7 +2,8 @@
 
 
 int phgen(AttitudeCatalog* const ac,
-	  SourceCatalog* const srccat,
+	  SourceCatalog** const srccat,
+	  const unsigned int ncat,
 	  const double t0, 
 	  const double exposure,
 	  const double mjdref,
@@ -36,12 +37,19 @@ int phgen(AttitudeCatalog* const ac,
 		time, ra*180./M_PI, dec*180./M_PI);
     fflush(NULL);
     
-    // Get photons for all sources in the catalog.
+    // Generate new photons for all specified catalogs.
     double t1 = MIN(time+dt, t0+exposure);
-    pholist =
-      genFoVXRayPhotons(srccat, &pointing, fov,
-			time, t1, mjdref, status);
-    CHECK_STATUS_BREAK(*status);
+    unsigned int ii;
+    for (ii=0; ii<ncat; ii++) {
+      // Get photons for all sources in the catalog.
+      LinkedPhoListElement* newlist=
+	genFoVXRayPhotons(srccat[0], &pointing, fov,
+			  time, t1, mjdref, status);
+      CHECK_STATUS_BREAK(*status);
+      
+      // Merge the photon lists.
+      pholist=mergeLinkedPhoLists(pholist, newlist);
+    }
     
     // Increase the time.
     time+=dt;

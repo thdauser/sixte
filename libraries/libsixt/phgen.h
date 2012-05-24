@@ -14,7 +14,8 @@
 
 
 int phgen(AttitudeCatalog* const ac,
-	  SourceCatalog* const srccat,
+	  SourceCatalog** const srccat,
+	  const unsigned int ncat,
 	  const double t0, 
 	  const double exposure,
 	  const double mjdref,
