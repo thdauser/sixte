@@ -33,9 +33,6 @@ int gendetsim_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Start time for the simulation.
-    double t0 = par.TIMEZERO;
-
     // Determine the appropriate detector XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile,
@@ -47,6 +44,9 @@ int gendetsim_main() {
     det=newGenDet(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Set the start time for the detector simulation.
+    setGenDetStartTime(det, par.TIMEZERO);
+    
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
@@ -90,13 +90,38 @@ int gendetsim_main() {
     }
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
-    double dbuffer=0.;
-    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
+    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &par.TIMEZERO,
 		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
-    // Photon detection.
-    phdetGenDet(det, ilf, elf, t0, par.Exposure, &status);
+    // Store the number of simulated input photons in the FITS header
+    // of the output event file.
+    fits_update_key(elf->fptr, TLONG, "NPHOTONS", 
+		    &ilf->nrows, "number of input photons", 
+		    &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Loop over all impacts in the FITS file.
+    while (ilf->row<ilf->nrows) {
+
+      Impact impact;
+      getNextImpactFromFile(ilf, &impact, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Check whether we are still within the requested time interval.
+      if (impact.time < par.TIMEZERO) continue;
+      if (impact.time > par.TIMEZERO+par.Exposure) break;
+
+      // Photon detection.
+      phdetGenDet(det, &impact, elf, par.TIMEZERO, par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
+
+    };
+    CHECK_STATUS_BREAK(status);
+    // End of loop over all impacts in the input file.
+
+    // Finalize the photon detection.
+    phdetGenDet(det, NULL, elf, par.TIMEZERO, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.

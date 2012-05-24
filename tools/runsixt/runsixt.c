@@ -77,8 +77,7 @@ int runsixt_main()
     strcpy(ucase_buffer, par.ImpactList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(impactlist_filename, par.Prefix);
-      strcat(impactlist_filename, "impacts.fits");
+      strcpy(impactlist_filename, "");
     } else {
       strcpy(impactlist_filename, par.Prefix);
       strcat(impactlist_filename, par.ImpactList);
@@ -141,7 +140,10 @@ int runsixt_main()
     // Load the detector configuration.
     det=newGenDet(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
-
+    
+    // Set the start time for the detector simulation.
+    setGenDetStartTime(det, par.TIMEZERO);
+    
     // Set up the Attitude.
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);
@@ -244,8 +246,10 @@ int runsixt_main()
     }
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
+    if (strlen(impactlist_filename)>0) {
+      ilf=openNewImpactListFile(impactlist_filename, par.clobber, &status);
+      CHECK_STATUS_BREAK(status);
+    }
 
     // Open the output event list file.
     elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
@@ -411,7 +415,7 @@ int runsixt_main()
       // Check if the photon still is within the requested exposre time.
       if (ph.time>par.TIMEZERO+par.Exposure) break;
 
-      // If requested write the photon to the output file.
+      // If requested, write the photon to the output file.
       if (NULL!=plf) {
 	status=addPhoton2File(plf, &ph);
 	CHECK_STATUS_BREAK(status);
@@ -426,8 +430,14 @@ int runsixt_main()
       // continue with the next one.
       if (0==isimg) continue;
 
-      // Write the impact to the output file.
-      addImpact2File(ilf, &imp, &status);
+      // If requested, write the impact to the output file.
+      if (NULL!=ilf) {
+	addImpact2File(ilf, &imp, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+
+      // Photon Detection.
+      phdetGenDet(det, &imp, elf, par.TIMEZERO, par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
@@ -447,6 +457,10 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
     // END of photon processing loop.
 
+    // Finalize the photon detection.
+    phdetGenDet(det, NULL, elf, par.TIMEZERO, par.Exposure, &status);
+    CHECK_STATUS_BREAK(status);
+      
     // Progress output.
     if (NULL==progressfile) {
       headas_chat(2, "\r%.1lf %%\n", 100.);
@@ -456,15 +470,6 @@ int runsixt_main()
       fprintf(progressfile, "%.2lf", 1.);
       fflush(progressfile);	
     }
-
-    // Reset internal line counter of the impact list file.
-    ilf->row=0;
-
-    // Photon Detection.
-    headas_chat(3, "start detection process ...\n");
-    phdetGenDet(det, ilf, elf, par.TIMEZERO, par.Exposure, &status);
-    CHECK_STATUS_BREAK(status);
-
 
     // Perform a pattern analysis, only if split events are simulated.
     if (GS_NONE!=det->split->type) {
@@ -481,7 +486,9 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
     }
     
-    // Close the event list file in order to save memory.
+    // Close files in order to save memory.
+    freePhotonListFile(&plf, &status);
+    freeImpactListFile(&ilf, &status);
     freeEventListFile(&elf, &status);
 
     // Run the event projection.

@@ -14,7 +14,7 @@
 
 
 void phdetGenDet(GenDet* const det,
-		 ImpactListFile* const ilf,
+		 Impact* const impact,
 		 EventListFile* const elf,
 		 const double t0,
 		 const double exposure,
