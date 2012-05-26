@@ -644,7 +644,8 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput2", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the second SIMPUT file!\n", status);
+    HD_ERROR_THROW("failed reading the name of the second SIMPUT file!\n", 
+		   status);
     return(status);
   } 
   strcpy(par->Simput2, sbuffer);
@@ -652,7 +653,8 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput3", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the third SIMPUT file!\n", status);
+    HD_ERROR_THROW("failed reading the name of the third SIMPUT file!\n", 
+		   status);
     return(status);
   } 
   strcpy(par->Simput3, sbuffer);
@@ -660,7 +662,8 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput4", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the forth SIMPUT file!\n", status);
+    HD_ERROR_THROW("failed reading the name of the forth SIMPUT file!\n", 
+		   status);
     return(status);
   } 
   strcpy(par->Simput4, sbuffer);
@@ -668,7 +671,8 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput5", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the fifth SIMPUT file!\n", status);
+    HD_ERROR_THROW("failed reading the name of the fifth SIMPUT file!\n", 
+		   status);
     return(status);
   } 
   strcpy(par->Simput5, sbuffer);

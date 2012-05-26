@@ -200,7 +200,6 @@ Vignetting* newVignetting(const char* const filename, int* const status)
 }
 
 
-
 void destroyVignetting(Vignetting** const vi) {
   if (NULL!=*vi) {
     if (NULL!=(*vi)->energ_lo) free((*vi)->energ_lo);
@@ -226,7 +225,6 @@ void destroyVignetting(Vignetting** const vi) {
     *vi=NULL;
   }
 }
-
 
 
 float get_Vignetting_Factor(const Vignetting* const vi, const float energy, 

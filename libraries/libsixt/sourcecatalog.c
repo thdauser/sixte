@@ -153,6 +153,8 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
 					const double mjdref,
 					int* const status)
 {
+  assert(NULL!=cat);
+
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_mult = 1.2; 

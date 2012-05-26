@@ -41,9 +41,11 @@ int phgen(AttitudeCatalog* const ac,
     double t1 = MIN(time+dt, t0+exposure);
     unsigned int ii;
     for (ii=0; ii<ncat; ii++) {
+      if (NULL==srccat[ii]) continue;
+
       // Get photons for all sources in the catalog.
       LinkedPhoListElement* newlist=
-	genFoVXRayPhotons(srccat[0], &pointing, fov,
+	genFoVXRayPhotons(srccat[ii], &pointing, fov,
 			  time, t1, mjdref, status);
       CHECK_STATUS_BREAK(*status);
       

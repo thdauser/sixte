@@ -2,12 +2,12 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.36], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.37], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
 
-# Check if HEADAS is available.
+# Check if the environment variable $HEADAS is available.
 if test -z "$HEADAS"; then
    AC_MSG_WARN([HEADAS is not defined - the build might fail!])
 fi

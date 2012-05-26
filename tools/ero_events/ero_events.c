@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -107,7 +107,6 @@ int ero_events_main()
     float frametime=50.0;
     fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametime,
 		    "[ms] nominal frame time", &status);
-
     float timezero=0.0;
     fits_update_key(fptr, TFLOAT, "TIMEZERO", &timezero,
 		    "clock correction", &status);
@@ -128,8 +127,8 @@ int ero_events_main()
     wcs.crpix[1] = 0.;
     wcs.crval[0] = par.RefRA;
     wcs.crval[1] = par.RefDec;    
-    wcs.cdelt[0] = 0.001/3600.;
-    wcs.cdelt[1] = 0.001/3600.;
+    wcs.cdelt[0] = 0.05/3600.;
+    wcs.cdelt[1] = 0.05/3600.;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
     strcpy(wcs.ctype[0], "RA---");
