@@ -288,7 +288,8 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       // Apply the bad pixel map (if available) with the bad pixel values weighted 
       // by the waiting time.
       if (NULL!=det->badpixmap) {
-	applyBadPixMap(det->badpixmap, clwait->time, encounterGenDetBadPix, det->line);
+	applyBadPixMap(det->badpixmap, clwait->time, encounterGenDetBadPix, 
+		       det->line);
       }
       break;
     case CL_LINESHIFT:

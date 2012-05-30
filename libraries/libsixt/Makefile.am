@@ -14,6 +14,7 @@ dist_fitstemplates_DATA += htrs.eventlist.tpl
 dist_fitstemplates_DATA += impactlist.tpl
 dist_fitstemplates_DATA += ladimpactlist.tpl
 dist_fitstemplates_DATA += photonlist.tpl 
+dist_fitstemplates_DATA += gti.tpl
 
 # Directory where to install the XML files.
 xmldir = $(pkgdatadir)/xml
@@ -46,7 +47,7 @@ libsixt_la_SOURCES = genericdetector.c squarepixels.c eventfile.c	\
 		     erodetbkgrndgen.c phgen.c phimg.c phdet.c		\
 		     phproj.c phpat.c event.c pattern.c ladsignal.c	\
 		     ladevent.c ladimpact.c lad.c lad_init.c		\
-		     xmlbuffer.c spectrum.c sourceimage.c
+		     xmlbuffer.c spectrum.c sourceimage.c gti.c
 
 
 ############ HEADERS #################
@@ -68,5 +69,5 @@ include_HEADERS = genericdetector.h squarepixels.h hexagonalpixels.h	\
 		  rmf.h arf.h kdtreeelement.h sourcecatalog.h source.h	\
 		  linkedpholist.h linkedladsiglist.h erodetbkgrndgen.h	\
 		  phgen.h phimg.h phdet.h phproj.h phpat.h lad.h	\
-		  xmlbuffer.h spectrum.h sourceimage.h
+		  xmlbuffer.h spectrum.h sourceimage.h gti.h
 
