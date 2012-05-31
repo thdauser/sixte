@@ -10,15 +10,23 @@
 #include "attitudecatalog.h"
 #include "check_fov.h"
 #include "gti.h"
+#include "simput.h"
 
 #define TOOLSUB ero_gti_main
 #include "headas_main.c"
+
+
+/** Margin around the FOV [rad]. */
+const double margin=0.5*M_PI/180.; 
 
 
 /* Program parameters */
 struct Parameters {
   /** Attitude file. */
   char Attitude[MAXFILENAME];
+
+  /** Source catalog. */
+  char Simput[MAXFILENAME];
 
   /** GTI file. */
   char GTIfile[MAXFILENAME];
@@ -27,14 +35,8 @@ struct Parameters {
   double Exposure;
   double dt; 
 
-  /** Source position [rad]. */
-  double ra, dec;  
-
   /** [rad]. */
   double fov_diameter;
-
-  /** Diameter of the source extension [rad]. */
-  double src_diameter;
 
   char clobber;
 };
@@ -49,6 +51,7 @@ int ero_gti_main()
   struct Parameters par;
 
   AttitudeCatalog* ac=NULL;
+  SimputCatalog* cat=NULL;
   GTI* gti=NULL;
 
   // Error status.
@@ -57,7 +60,7 @@ int ero_gti_main()
 
   // Register HEATOOL:
   set_toolname("ero_gti");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -71,25 +74,95 @@ int ero_gti_main()
     ac=loadAttitudeCatalog(par.Attitude, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Determine a vector pointing towards the source.
-    Vector srcpos=unit_vector(par.ra, par.dec);
+    // Load the SIMPUT source catalog.
+    cat=openSimputCatalog(par.Simput, READONLY, 0, 0, 0, 0, &status);
+    CHECK_STATUS_BREAK(status);
 
-    // Determine the diameter of the search radius (minimum cos-value).
-    // (angle(telescope,source) <= 1/2 * diameter)
-    const double min_align = cos(0.5*(par.fov_diameter+par.src_diameter)); 
-    double field_min_align;
-    if (0.5*(par.fov_diameter+par.src_diameter) > M_PI) {
-      field_min_align = -1.; 
+    // Check if the catalog contains any sources.
+    if (0==cat->nentries) {
+      SIXT_ERROR("SIMPUT catalog is empty");
+      status=EXIT_FAILURE;
+      break;
     }
 
-    // Get a new GTI collection.
+    // Set up a new GTI collection.
     gti=newGTI(&status);
     CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
 
 
-    // --- Beginning of GTI calculation
+    // --- Beginning of source localization calculation ---
+
+    headas_chat(3, "determine the search cone ...\n");
+
+    // Determine a reference vector and a cone opening angle
+    // including all sources in the catalog.
+    Vector refpos;
+    double cone_radius=0.; // [rad]
+
+    // Get the first source in the catalog.
+    SimputSource* src=loadCacheSimputSource(cat, 1, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine its position and angular extension.
+    refpos=unit_vector(src->ra, src->dec);
+    cone_radius=getSimputSourceExtension(cat, src, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Loop over all sources in the catalog.
+    unsigned long ii;
+    for (ii=1; ii<cat->nentries; ii++) {
+      // Get the next source in the catalog.
+      SimputSource* src=loadCacheSimputSource(cat, ii+1, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine its position and angular extension.
+      Vector srcpos=unit_vector(src->ra, src->dec);
+      float extension=getSimputSourceExtension(cat, src, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine the angle between the reference direction and 
+      // the source position.
+      double angular_distance=acos(scalar_product(&refpos, &srcpos));
+      
+      // Check if the search radius has to be enlarged.
+      if (angular_distance+extension>cone_radius) {
+	double delta1=extension+angular_distance-cone_radius;
+
+	// If the difference is small, simply enlarge the opening
+	// angle of the search cone.
+	if (delta1 < 1./3600.*M_PI/180.) {
+	  cone_radius+=delta1;
+	} else {
+	  double delta2=extension-angular_distance-cone_radius;
+	  if (delta2<0.) {
+	    delta2=0.;
+	  }
+	  refpos=interpolateCircleVector(refpos, srcpos, 
+					 (delta1-delta2)*0.5/angular_distance);
+	  cone_radius+=0.5*(delta1+delta2);
+	}
+      }
+    }
+
+    // Print some informational data.
+    double ra, dec;
+    calculate_ra_dec(refpos, &ra, &dec);
+    headas_chat(5, "ra=%lf deg, dec=%lf deg, cone radius=%lf deg\n", 
+		ra*180./M_PI, dec*180./M_PI, cone_radius*180./M_PI);
+
+    // Determine the diameter of the search radius (minimum cos-value).
+    // (angle(telescope,source) <= 1/2 * diameter)
+    double search_angle=0.5*par.fov_diameter+cone_radius+margin;
+    double min_align; 
+    if (search_angle <= M_PI) {
+      min_align=cos(search_angle);
+    } else {
+      min_align = -1.; 
+    }      
+
+    // --- Beginning of GTI calculation ---
 
     headas_chat(3, "calculate the GTIs ...\n");
 
@@ -107,8 +180,8 @@ int ero_gti_main()
       Vector telescope_nz=getTelescopeNz(ac, time, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Check if the source lies within the FOV.
-      if (check_fov(&srcpos, &telescope_nz, min_align)==0) {
+      // Check if the FOV touches the search cone.
+      if (check_fov(&refpos, &telescope_nz, min_align)==0) {
 	// Source lies inside the FOV.
 	if (0==ininterval) {
 	  ininterval=1;
@@ -155,6 +228,11 @@ int ero_gti_getpar(struct Parameters *par)
     SIXT_ERROR("failed reading the name of the attitude file");
   }
   
+  // Get the filename of the SIMPUT file.
+  else if ((status = PILGetFname("Simput", par->Simput))) {
+    SIXT_ERROR("failed reading the name of the SIMPUT file");
+  }
+  
   // Get the filename of the output GTI file (FITS file).
   else if ((status = PILGetFname("GTIfile", par->GTIfile))) {
     SIXT_ERROR("failed reading the name of the GTI file");
@@ -180,29 +258,11 @@ int ero_gti_getpar(struct Parameters *par)
     SIXT_ERROR("failed reading the 'dt' parameter");
   }
 
-  // Get the position of the source.
-  else if ((status = PILGetReal("ra", &par->ra))) {
-    SIXT_ERROR("failed reading the right ascension");
-  }
-  else if ((status = PILGetReal("dec", &par->dec))) {
-    SIXT_ERROR("Error reading the declination");
-  }
-
-  // Read the diameter of the source [deg].
-  else if ((status = PILGetReal("src_diameter", &par->src_diameter))) {
-    SIXT_ERROR("failed reading the diameter of the source");
-  }
-
   else if ((status=ape_trad_query_bool("clobber", &par->clobber))) {
     SIXT_ERROR("failed reading the clobber parameter");
   }
 
-  // Convert angles from [deg] to [rad].
-  par->ra  *= M_PI/180.;
-  par->ra  *= M_PI/180.;
-  par->src_diameter *= M_PI/180.;
-
-  // Convert angles from [arc min] to [rad].
+  // Convert FOV diameter from [arc min] to [rad].
   par->fov_diameter *= M_PI/(60.*180.); 
   
   return(status);

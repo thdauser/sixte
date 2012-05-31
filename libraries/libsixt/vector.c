@@ -95,27 +95,27 @@ Vector interpolateCircleVector(const Vector v1,
   Vector r; // Return value. 
 
   // Calculate cosine of angle between x1 and x2 (v1 and v2) [rad].
-  double cosine_value = scalar_product(&x1, &x2);
+  double cosine_value=scalar_product(&x1, &x2);
 
-  if (fabs(cosine_value) < cos(0.1/3600*M_PI/180.)) { 
-    // The misalignment between the 2 vectors is more than 1 arcsec.
+  if (fabs(cosine_value) < cos(0.1/3600.*M_PI/180.)) { 
+    // The misalignment between the 2 vectors is more than 0.1 arcsec.
     // This is important to check for the subsequent algorithm, 
     // because the vectors should not be aligned parallel or 
     // anti-parallel.
 
     // Angle between x1 and x2:
-    double phi = acos(cosine_value); 
+    double phi=acos(cosine_value); 
 
     // Calculate the second base vector spanning the plane of 
     // the circle.
-    Vector d = { .x=x2.x-cosine_value*x1.x, 
-		 .y=x2.y-cosine_value*x1.y, 
-		 .z=x2.z-cosine_value*x1.z };
-    x2 = normalize_vector(d); 
+    Vector d={ .x=x2.x-cosine_value*x1.x, 
+	       .y=x2.y-cosine_value*x1.y, 
+	       .z=x2.z-cosine_value*x1.z };
+    x2=normalize_vector(d); 
     
     // Determine the angle corresponding to the phase.
-    double sinphasephi = sin(phase*phi);
-    double cosphasephi = cos(phase*phi);
+    double sinphasephi=sin(phase*phi);
+    double cosphasephi=cos(phase*phi);
     r.x = cosphasephi*x1.x + sinphasephi*x2.x;
     r.y = cosphasephi*x1.y + sinphasephi*x2.y;
     r.z = cosphasephi*x1.z + sinphasephi*x2.z;
@@ -132,7 +132,6 @@ Vector interpolateCircleVector(const Vector v1,
 
   return(r);
 }
-
 
 
 void calculate_ra_dec(const Vector v, double* const ra, double* const dec)

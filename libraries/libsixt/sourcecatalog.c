@@ -59,9 +59,9 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 
   // Determine the number of point-like and the number of 
   // extended sources.
-  long nextended  = 0;
-  long npointlike = 0;
-  long ii;
+  unsigned long nextended =0;
+  unsigned long npointlike=0;
+  unsigned long ii;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
     SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
@@ -82,12 +82,12 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 
   // Allocate memory for an array of the point-like sources, 
   // which will be converted into a KDTree afterwards.
-  Source* list = (Source*)malloc(npointlike*sizeof(Source));
+  Source* list=(Source*)malloc(npointlike*sizeof(Source));
   CHECK_NULL_RET(list, *status,
 		 "memory allocation for source list failed", cat);
 
   // Allocate memory for the array of the extended sources.
-  cat->extsources = (Source*)malloc(nextended*sizeof(Source));
+  cat->extsources=(Source*)malloc(nextended*sizeof(Source));
   CHECK_NULL_RET(list, *status,
 		 "memory allocation for source list failed", cat);
 
@@ -96,14 +96,14 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   CHECK_STATUS_RET(*status, cat);
 
   // Loop over all entries in the SIMPUT source catalog.
-  long cpointlike =0;
+  unsigned long cpointlike =0;
   cat->nextsources=0;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
     SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
-    float extension = getSimputSourceExtension(cat->simput, src, status);
+    float extension=getSimputSourceExtension(cat->simput, src, status);
     CHECK_STATUS_BREAK(*status);
 
     if (extension>0.) {
@@ -125,7 +125,6 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
       list[cpointlike-1].ra  = src->ra;
       list[cpointlike-1].dec = src->dec;
       list[cpointlike-1].row = ii+1;
-      
     }
   } 
   CHECK_STATUS_RET(*status, cat);

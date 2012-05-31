@@ -191,7 +191,7 @@ int runsixt_main()
     // END of setting up the attitude.
 
     // Load the SIMPUT X-ray source catalogs.
-    srccat[0] = loadSourceCatalog(par.Simput, det->arf, &status);
+    srccat[0]=loadSourceCatalog(par.Simput, det->arf, &status);
     CHECK_STATUS_BREAK(status);
 
     // Optional 2nd catalog.
@@ -199,7 +199,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput2);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[1] = loadSourceCatalog(par.Simput2, det->arf, &status);
+	srccat[1]=loadSourceCatalog(par.Simput2, det->arf, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -209,7 +209,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput3);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[2] = loadSourceCatalog(par.Simput3, det->arf, &status);
+	srccat[2]=loadSourceCatalog(par.Simput3, det->arf, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -219,7 +219,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput4);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[3] = loadSourceCatalog(par.Simput4, det->arf, &status);
+	srccat[3]=loadSourceCatalog(par.Simput4, det->arf, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -229,7 +229,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput5);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[4] = loadSourceCatalog(par.Simput5, det->arf, &status);
+	srccat[4]=loadSourceCatalog(par.Simput5, det->arf, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -710,8 +710,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("ProgressFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the progress status file!\n", 
-		   status);
+    SIXT_ERROR("failed reading the name of the progress status file");
     return(status);
   } 
   strcpy(par->ProgressFile, sbuffer);
@@ -719,7 +718,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
