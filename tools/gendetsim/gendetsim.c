@@ -113,7 +113,7 @@ int gendetsim_main() {
       if (impact.time > par.TIMEZERO+par.Exposure) break;
 
       // Photon detection.
-      phdetGenDet(det, &impact, elf, par.TIMEZERO, par.Exposure, &status);
+      phdetGenDet(det, &impact, elf, par.TIMEZERO+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
 
     };
@@ -121,7 +121,7 @@ int gendetsim_main() {
     // End of loop over all impacts in the input file.
 
     // Finalize the photon detection.
-    phdetGenDet(det, NULL, elf, par.TIMEZERO, par.Exposure, &status);
+    phdetGenDet(det, NULL, elf, par.TIMEZERO+par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.

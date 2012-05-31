@@ -6,6 +6,7 @@
 #include "attitudecatalog.h"
 #include "eventlistfile.h"
 #include "gendet.h"
+#include "gti.h"
 #include "impactlistfile.h"
 #include "patternfile.h"
 #include "phdet.h"
@@ -33,6 +34,7 @@ struct Parameters {
   char PatternList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
+  char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
 
   char Mission[MAXMSG];

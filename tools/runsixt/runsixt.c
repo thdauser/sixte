@@ -12,9 +12,12 @@ int runsixt_main()
   // Attitude.
   AttitudeCatalog* ac=NULL;
 
+  // GTI collection.
+  GTI* gti=NULL;
+
   // Catalog of input X-ray sources.
   SourceCatalog* srccat[MAX_N_SIMPUT];
-  unsigned int ii;
+  unsigned long ii;
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     srccat[ii]=NULL;
   }
@@ -40,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.09");
+  set_toolversion("0.10");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -141,13 +144,10 @@ int runsixt_main()
     det=newGenDet(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
     
-    // Set the start time for the detector simulation.
-    setGenDetStartTime(det, par.TIMEZERO);
-    
     // Set up the Attitude.
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);
-    if (0==strcmp(ucase_buffer, "NONE")) {
+    if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
       // Set up a simple pointing attitude.
 
       // First allocate memory.
@@ -189,6 +189,16 @@ int runsixt_main()
       }
     }
     // END of setting up the attitude.
+
+    // Optional GTI file.
+    if (strlen(par.GTIfile)>0) {
+      strcpy(ucase_buffer, par.GTIfile);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	gti=loadGTI(par.GTIfile, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
 
     // Load the SIMPUT X-ray source catalogs.
     srccat[0]=loadSourceCatalog(par.Simput, det->arf, &status);
@@ -386,8 +396,27 @@ int runsixt_main()
 
     headas_chat(3, "start simulation ...\n");
 
+    // Current bin in the GTI collection.
+    unsigned long gtibin=0;
+
+    // Set the start time for the detector model.
+    if (NULL==gti) {
+      setGenDetStartTime(det, par.TIMEZERO);
+    } else {
+      while(gti->stop[gtibin]<=par.TIMEZERO) {
+	gtibin++;
+	if (gtibin>=gti->nentries) {
+	  SIXT_ERROR("GTI outside specified time interval");
+	  status=EXIT_FAILURE;
+	  break;
+	}
+      }
+      if (gtibin>=gti->nentries) break;
+      setGenDetStartTime(det, MAX(par.TIMEZERO, gti->start[gtibin]));
+    }
+    
     // Simulation progress status (running from 0 to 100).
-    int progress=0;
+    unsigned int progress=0;
     if (NULL==progressfile) {
       headas_chat(2, "\r%.1lf %%", 0.);
       fflush(NULL);
@@ -415,6 +444,24 @@ int runsixt_main()
       // Check if the photon still is within the requested exposre time.
       if (ph.time>par.TIMEZERO+par.Exposure) break;
 
+      // Check if the photon still lies within the current GTI bin.
+      if (NULL!=gti) {
+	while (ph.time>gti->stop[gtibin]) {
+	  // Clear the detector.
+	  phdetGenDet(det, NULL, elf, gti->stop[gtibin], &status);
+	  long jj;
+	  for(jj=0; jj<det->pixgrid->ywidth; jj++) {
+	    GenDetClearLine(det, jj);
+	  }
+
+	  // Proceed to the next GTI bin.
+	  gtibin++;
+	  if (gtibin>=gti->nentries) break;
+	  setGenDetStartTime(det, gti->start[gtibin]);
+	}
+	if (gtibin>=gti->nentries) break;
+      }
+	
       // If requested, write the photon to the output file.
       if (NULL!=plf) {
 	status=addPhoton2File(plf, &ph);
@@ -437,11 +484,11 @@ int runsixt_main()
       }
 
       // Photon Detection.
-      phdetGenDet(det, &imp, elf, par.TIMEZERO, par.Exposure, &status);
+      phdetGenDet(det, &imp, elf, par.TIMEZERO+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      while ((int)((ph.time-par.TIMEZERO)*100./par.Exposure)>progress) {
+      while ((unsigned int)((ph.time-par.TIMEZERO)*100./par.Exposure)>progress) {
 	progress++;
 	if (NULL==progressfile) {
 	  headas_chat(2, "\r%.1lf %%", progress*1.);
@@ -458,8 +505,15 @@ int runsixt_main()
     // END of photon processing loop.
 
     // Finalize the photon detection.
-    phdetGenDet(det, NULL, elf, par.TIMEZERO, par.Exposure, &status);
-    CHECK_STATUS_BREAK(status);
+    if (NULL==gti) {
+      phdetGenDet(det, NULL, elf, par.TIMEZERO+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
+    } else {
+      phdetGenDet(det, NULL, elf, 
+		  MIN(par.TIMEZERO+par.Exposure, gti->stop[gti->nentries-1]), 
+		  &status);
+      CHECK_STATUS_BREAK(status);
+    }
       
     // Progress output.
     if (NULL==progressfile) {
@@ -513,6 +567,7 @@ int runsixt_main()
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&(srccat[ii]), &status);
   }
+  freeGTI(&gti);
   freeAttitudeCatalog(&ac);
   destroyGenDet(&det, &status);
 
@@ -541,8 +596,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Prefix", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the prefix for the output files!\n", 
-		   status);
+    SIXT_ERROR("failed reading the prefix for the output files");
     return(status);
   }
   strcpy(par->Prefix, sbuffer);
@@ -550,7 +604,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("PhotonList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the photon list!\n", status);
+    SIXT_ERROR("failed reading the name of the photon list");
     return(status);
   } 
   strcpy(par->PhotonList, sbuffer);
@@ -558,7 +612,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("ImpactList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the impact list!\n", status);
+    SIXT_ERROR("failed reading the name of the impact list");
     return(status);
   } 
   strcpy(par->ImpactList, sbuffer);
@@ -566,7 +620,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the event list!\n", status);
+    SIXT_ERROR("failed reading the name of the event list");
     return(status);
   } 
   strcpy(par->EventList, sbuffer);
@@ -574,7 +628,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the pattern list!\n", status);
+    SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
   } 
   strcpy(par->PatternList, sbuffer);
@@ -582,7 +636,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the mission!\n", status);
+    SIXT_ERROR("failed reading the name of the mission");
     return(status);
   } 
   strcpy(par->Mission, sbuffer);
@@ -590,7 +644,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Instrument", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the instrument!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument");
     return(status);
   } 
   strcpy(par->Instrument, sbuffer);
@@ -598,7 +652,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mode", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the instrument mode!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
   } 
   strcpy(par->Mode, sbuffer);
@@ -606,7 +660,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the XML file!\n", status);
+    SIXT_ERROR("failed reading the name of the XML file");
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
@@ -614,7 +668,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the attitude!\n", status);
+    SIXT_ERROR("failed reading the name of the attitude");
     return(status);
   } 
   strcpy(par->Attitude, sbuffer);
@@ -622,21 +676,21 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the right ascension of the telescope "
-		   "pointing!\n", status);
+    SIXT_ERROR("failed reading the right ascension of the telescope "
+	       "pointing");
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the declination of the telescope "
-		   "pointing!\n", status);
+    SIXT_ERROR("failed reading the declination of the telescope "
+	       "pointing");
     return(status);
   } 
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the SIMPUT file!\n", status);
+    SIXT_ERROR("failed reading the name of the SIMPUT file");
     return(status);
   } 
   strcpy(par->Simput, sbuffer);
@@ -644,8 +698,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput2", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the second SIMPUT file!\n", 
-		   status);
+    SIXT_ERROR("failed reading the name of the second SIMPUT file");
     return(status);
   } 
   strcpy(par->Simput2, sbuffer);
@@ -653,8 +706,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput3", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the third SIMPUT file!\n", 
-		   status);
+    SIXT_ERROR("failed reading the name of the third SIMPUT file");
     return(status);
   } 
   strcpy(par->Simput3, sbuffer);
@@ -662,8 +714,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput4", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the forth SIMPUT file!\n", 
-		   status);
+    SIXT_ERROR("failed reading the name of the forth SIMPUT file");
     return(status);
   } 
   strcpy(par->Simput4, sbuffer);
@@ -671,28 +722,35 @@ int runsixt_getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("Simput5", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the name of the fifth SIMPUT file!\n", 
-		   status);
+    SIXT_ERROR("failed reading the name of the fifth SIMPUT file");
     return(status);
   } 
   strcpy(par->Simput5, sbuffer);
   free(sbuffer);
 
+  status=ape_trad_query_string("GTIfile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the GTI file");
+    return(status);
+  } 
+  strcpy(par->GTIfile, sbuffer);
+  free(sbuffer);
+
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading MJDREF!\n", status);
+    SIXT_ERROR("failed reading MJDREF");
     return(status);
   } 
 
   status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading TIMEZERO!\n", status);
+    SIXT_ERROR("failed reading TIMEZERO");
     return(status);
   } 
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("failed reading the exposure time!\n", status);
+    SIXT_ERROR("failed reading the exposure time");
     return(status);
   } 
 

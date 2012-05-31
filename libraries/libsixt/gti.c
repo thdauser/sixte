@@ -40,13 +40,13 @@ GTI* loadGTI(const char* const filename, int* const status)
 
   do { // Beginning of Error handling loop.
 
-    // Open the FITS file table for reading:
-    fits_open_table(&fptr, filename, READONLY, status);
+    // Open the FITS file for reading:
+    fits_open_file(&fptr, filename, READONLY, status);
     CHECK_STATUS_BREAK(*status);
 
-    // Get the HDU type.
+    // Move to the second HDU (GTI table).
     int hdutype;
-    fits_get_hdu_type(fptr, &hdutype, status);
+    fits_movabs_hdu(fptr, 2, &hdutype, status);
     CHECK_STATUS_BREAK(*status);
     
     // Image HDU results in an error message.
@@ -71,10 +71,15 @@ GTI* loadGTI(const char* const filename, int* const status)
     CHECK_STATUS_BREAK(*status);
 
     // Allocate memory.
+    gti=newGTI(status);
+    CHECK_NULL_BREAK(gti, *status, 
+		     "memory allocation for GTI data structure failed");
     gti->start=(double*)malloc(nrows*sizeof(double));
-    CHECK_NULL_BREAK(gti->start, *status, "memory allocation failed");
+    CHECK_NULL_BREAK(gti->start, *status, 
+		     "memory allocation for GTI data structure failed");
     gti->stop =(double*)malloc(nrows*sizeof(double));
-    CHECK_NULL_BREAK(gti->stop , *status, "memory allocation failed");
+    CHECK_NULL_BREAK(gti->stop , *status, 
+		     "memory allocation for GTI data structure failed");
     
     // Read the data from the table.
     int anynul = 0;

@@ -115,9 +115,9 @@ void destroyGenDet(GenDet** const det, int* const status)
       free((*det)->telescope);
     }
     if (NULL!=(*det)->line) {
-      int i;
-      for (i=0; i<(*det)->pixgrid->ywidth; i++) {
-	destroyGenDetLine(&(*det)->line[i]);
+      int ii;
+      for (ii=0; ii<(*det)->pixgrid->ywidth; ii++) {
+	destroyGenDetLine(&(*det)->line[ii]);
       }
       free((*det)->line);
     }
