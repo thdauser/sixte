@@ -111,7 +111,7 @@ int ero_gti_main()
     CHECK_STATUS_BREAK(status);
 
     // Loop over all sources in the catalog.
-    unsigned long ii;
+    long ii;
     for (ii=1; ii<cat->nentries; ii++) {
       // Get the next source in the catalog.
       SimputSource* src=loadCacheSimputSource(cat, ii+1, &status);

@@ -61,7 +61,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // extended sources.
   unsigned long nextended =0;
   unsigned long npointlike=0;
-  unsigned long ii;
+  long ii;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
     SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
