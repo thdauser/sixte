@@ -92,11 +92,11 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 		 "memory allocation for source list failed", cat);
 
   // Empty template object.
-  Source* templatesrc = newSource(status);
+  Source* templatesrc=newSource(status);
   CHECK_STATUS_RET(*status, cat);
 
   // Loop over all entries in the SIMPUT source catalog.
-  unsigned long cpointlike =0;
+  unsigned long cpointlike=0;
   cat->nextsources=0;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
@@ -131,11 +131,26 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // END of loop over all entries in the FITS table.
 
   // Build a KDTree from the source list (array of Source objects).
-  cat->tree = buildKDTree2(list, npointlike, 0, status);
+  cat->tree=buildKDTree2(list, npointlike, 0, status);
   CHECK_STATUS_RET(*status, cat);
 
   // In a later development stage this could be directly stored in 
   // a memory-mapped space.
+
+  // Load spectra into the internal cache used by the SIMPUT library.
+  // We therefore assume that all spectra are contained in a particular
+  // FITS file HDU, which can be found be tracing the location of the 
+  // spectrum assigned to the first source in the catalog.
+  char specfilename[MAXFILENAME];
+  SimputSource* src=loadCacheSimputSource(cat->simput, 1, status);
+  CHECK_STATUS_RET(*status, cat);
+  strcpy(specfilename, src->spectrum);
+  if ('['!=specfilename[0]) {
+    char *search=strchr(specfilename, ']');
+    *(search+1)='\0';
+    loadCacheAllSimputMIdpSpec(cat->simput, specfilename, status);
+    CHECK_STATUS_RET(*status, cat);
+  }
 
   // Release memory.
   if (templatesrc) free(templatesrc);
