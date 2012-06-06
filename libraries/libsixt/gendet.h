@@ -134,6 +134,10 @@ typedef struct {
       ray detector background. */
   int erobackground;
 
+  /** Flag, whether the background model for the cosmic ray detector
+      background should be used, if available. */
+  int usebackground;
+
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or
       by a timing clock (GENDET_TIME_TRIGGERED). */
@@ -174,8 +178,11 @@ typedef struct {
 
 /** Constructor. Allocates memory for a new GenDet data structure and
     initializes it with the values from the specified XML definition
-    file. */
-GenDet* newGenDet(const char* const filename, int* const status);
+    file. The second parameter determines, whether the cosmic ray
+    detector background model should be activated. */
+GenDet* newGenDet(const char* const filename, 
+		  const int usebackground, 
+		  int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */

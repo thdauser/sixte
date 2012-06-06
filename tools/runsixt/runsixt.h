@@ -41,6 +41,8 @@ struct Parameters {
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
 
+  char Background;
+
   /** [deg] */
   float RA, Dec;
 

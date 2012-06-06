@@ -41,7 +41,7 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Load the detector configuration.
-    det=newGenDet(xml_filename, &status);
+    det=newGenDet(xml_filename, 1, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the start time for the detector simulation.

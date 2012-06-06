@@ -6,7 +6,9 @@
 ////////////////////////////////////////////////////////////////////
 
 
-GenDet* newGenDet(const char* const filename, int* const status) 
+GenDet* newGenDet(const char* const filename, 
+		  const int usebackground, 
+		  int* const status) 
 {
   // Allocate memory.
   GenDet* det=(GenDet*)malloc(sizeof(GenDet));
@@ -32,20 +34,21 @@ GenDet* newGenDet(const char* const filename, int* const status)
   det->filename  =NULL;
 
   // Set initial values.
+  det->usebackground = usebackground;
   det->erobackground = 0;
   det->frametime     = 0.;
   det->anyphoton     = 0;
 
   // Get empty GenPixGrid.
-  det->pixgrid = newGenPixGrid(status);
+  det->pixgrid=newGenPixGrid(status);
   if (EXIT_SUCCESS!=*status) return(det);
 
   // Get empty ClockList.
-  det->clocklist = newClockList(status);
+  det->clocklist=newClockList(status);
   if (EXIT_SUCCESS!=*status) return(det);
 
   // Get empty split model.
-  det->split = newGenSplit(status);
+  det->split=newGenSplit(status);
   if (EXIT_SUCCESS!=*status) return(det);
 
   // Split the reference to the XML detector definition file
@@ -100,7 +103,7 @@ GenDet* newGenDet(const char* const filename, int* const status)
   }
   int ii;
   for (ii=0; ii<det->pixgrid->ywidth; ii++) {
-    det->line[ii] = newGenDetLine(det->pixgrid->xwidth, status);
+    det->line[ii]=newGenDetLine(det->pixgrid->xwidth, status);
     if (EXIT_SUCCESS!=*status) return(det);
   }
 
@@ -248,7 +251,8 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       // If there has been no photon interaction during the last frame
       // and if no background model is activated, jump over the next empty frames
       // until there is a new photon impact.
-      if ((0==det->erobackground)&&(0==det->anyphoton)) {
+      if (((0==det->erobackground)||(0==det->usebackground))&&
+	  (0==det->anyphoton)) {
 	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
 	det->clocklist->time       +=nframes*det->frametime;
 	det->clocklist->frame      +=nframes;
@@ -263,8 +267,9 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       // A waiting period is finished.
       clwait = (CLWait*)element;
 
-      // Insert cosmic ray background events, if the appropriate model is defined.
-      if (1==det->erobackground) {
+      // Insert cosmic ray background events, 
+      // if the appropriate model is defined and should be used.
+      if ((1==det->erobackground)&&(1==det->usebackground)) {
 	// Get background events for the required time interval (has
 	// to be given in [s]).
 	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
@@ -281,7 +286,7 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
 			     list->hit_energy[ii],
 			     -1, -1, time, elf, status);
 	  CHECK_STATUS_BREAK(*status);
-	} 
+	}
 	eroBkgFree(list);
       }
 

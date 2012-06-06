@@ -141,7 +141,7 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the detector configuration.
-    det=newGenDet(xml_filename, &status);
+    det=newGenDet(xml_filename, par.Background, &status);
     CHECK_STATUS_BREAK(status);
     
     // Set up the Attitude.
@@ -670,6 +670,12 @@ int runsixt_getpar(struct Parameters* const par)
   } 
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
+
+  status=ape_trad_query_bool("Background", &par->Background);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the background flag");
+    return(status);
+  }
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {

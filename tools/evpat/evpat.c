@@ -49,7 +49,7 @@ int evpat_main()
     strcpy(pattern_filename, par.PatternList);
 
     // Load the detector configuration.
-    det=newGenDet(xml_filename, &status);
+    det=newGenDet(xml_filename, 1, &status);
     CHECK_STATUS_BREAK(status);
 
 
