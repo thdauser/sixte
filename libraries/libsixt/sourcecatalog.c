@@ -144,13 +144,15 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   char specfilename[MAXFILENAME];
   SimputSource* src=loadCacheSimputSource(cat->simput, 1, status);
   CHECK_STATUS_RET(*status, cat);
-  strcpy(specfilename, src->spectrum);
-  if ('['!=specfilename[0]) {
-    char *search=strchr(specfilename, ']');
-    *(search+1)='\0';
-    loadCacheAllSimputMIdpSpec(cat->simput, specfilename, status);
-    CHECK_STATUS_RET(*status, cat);
+
+  if ('['==src->spectrum[0]) {
+    strcpy(specfilename, filename);
+  } else {
+    strcpy(specfilename, "");
   }
+  strcat(specfilename, src->spectrum);
+  char *search=strchr(specfilename, ']');
+  *(search+1)='\0';
 
   // Release memory.
   if (templatesrc) free(templatesrc);
@@ -196,7 +198,7 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
       CHECK_STATUS_RET(*status, list);
 
       // Merge the new photons into the existing list.
-      list = mergeLinkedPhoLists(list, newlist);
+      list=mergeLinkedPhoLists(list, newlist);
     }
   }
 

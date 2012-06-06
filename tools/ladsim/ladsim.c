@@ -1093,8 +1093,9 @@ int ladsim_main()
       // Photon generation.
       // Get a new photon from the generation routine.
       Photon ph;
-      int isph=phgen(ac, &srccat, 1, par.TIMEZERO, par.Exposure, par.MJDREF, 
-		     par.dt, lad->fov_diameter, &ph, &status);
+      int isph=phgen(ac, &srccat, 1, 
+		     par.TIMEZERO, par.TIMEZERO+par.Exposure, 
+		     par.MJDREF, par.dt, lad->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check if the photon still is within the requested exposure time.

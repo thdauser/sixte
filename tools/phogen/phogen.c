@@ -145,8 +145,9 @@ int phogen_main()
 
       // Photon generation.
       Photon ph;
-      int isph=phgen(ac, &srccat, 1, par.TIMEZERO, 
-		     par.Exposure, par.MJDREF, par.dt, 
+      int isph=phgen(ac, &srccat, 1, 
+		     par.TIMEZERO, par.TIMEZERO+par.Exposure, 
+		     par.MJDREF, par.dt, 
 		     det->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 

@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.10");
+  set_toolversion("0.11");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -396,25 +396,6 @@ int runsixt_main()
 
     headas_chat(3, "start simulation ...\n");
 
-    // Current bin in the GTI collection.
-    unsigned long gtibin=0;
-
-    // Set the start time for the detector model.
-    if (NULL==gti) {
-      setGenDetStartTime(det, par.TIMEZERO);
-    } else {
-      while(gti->stop[gtibin]<=par.TIMEZERO) {
-	gtibin++;
-	if (gtibin>=gti->nentries) {
-	  SIXT_ERROR("GTI outside specified time interval");
-	  status=EXIT_FAILURE;
-	  break;
-	}
-      }
-      if (gtibin>=gti->nentries) break;
-      setGenDetStartTime(det, MAX(par.TIMEZERO, gti->start[gtibin]));
-    }
-    
     // Simulation progress status (running from 0 to 100).
     unsigned int progress=0;
     if (NULL==progressfile) {
@@ -426,94 +407,118 @@ int runsixt_main()
       fflush(progressfile);	
     }
 
-    // Loop over photon generation and processing
-    // till the time of the photon exceeds the requested
-    // exposure time.
+    // Determine the total length of the time interval to
+    // be simulated.
+    double totalsimtime=0.;
+    double simtime=0.;
+    if (NULL==gti) {
+      simtime=par.Exposure;
+    } else {
+      unsigned long ii; 
+      for (ii=0; ii<gti->nentries; ii++) {
+	totalsimtime+=gti->stop[ii]-gti->start[ii];
+      }
+    }
+
+
+    // Current bin in the GTI collection.
+    unsigned long gtibin=0;
+    // Loop over all intervals in the GTI collection.
     do {
+      // Currently regarded interval.
+      double t0, t1;
+      
+      // Determine the currently regarded interval.
+      if (NULL==gti) {
+	t0=par.TIMEZERO;
+	t1=par.Exposure;
+      } else {
+	t0=gti->start[gtibin];
+	t1=gti->stop[gtibin];
+      }
 
-      // Photon generation.
-      Photon ph;
-      int isph=phgen(ac, srccat, MAX_N_SIMPUT, par.TIMEZERO, 
-		     par.Exposure, par.MJDREF, par.dt, 
-		     det->fov_diameter, &ph, &status);
-      CHECK_STATUS_BREAK(status);
+      // Set the start time for the detector model.
+      setGenDetStartTime(det, t0);
 
-      // If no photon has been generated, break the loop.
-      if (0==isph) break;
+      // Loop over photon generation and processing
+      // till the time of the photon exceeds the requested
+      // time interval.
+      do {
 
-      // Check if the photon still is within the requested exposre time.
-      if (ph.time>par.TIMEZERO+par.Exposure) break;
+	// Photon generation.
+	Photon ph;
+	int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1,
+		       par.MJDREF, par.dt, 
+		       det->fov_diameter, &ph, &status);
+	CHECK_STATUS_BREAK(status);
 
-      // Check if the photon still lies within the current GTI bin.
-      if (NULL!=gti) {
-	while (ph.time>gti->stop[gtibin]) {
-	  // Clear the detector.
-	  phdetGenDet(det, NULL, elf, gti->stop[gtibin], &status);
-	  long jj;
-	  for(jj=0; jj<det->pixgrid->ywidth; jj++) {
-	    GenDetClearLine(det, jj);
-	  }
+	// If no photon has been generated, break the loop.
+	if (0==isph) break;
 
-	  // Proceed to the next GTI bin.
-	  gtibin++;
-	  if (gtibin>=gti->nentries) break;
-	  setGenDetStartTime(det, gti->start[gtibin]);
+	// Check if the photon still is within the requested
+	// exposre time.
+	assert(ph.time<=t1);
+
+	// If requested, write the photon to the output file.
+	if (NULL!=plf) {
+	  status=addPhoton2File(plf, &ph);
+	  CHECK_STATUS_BREAK(status);
 	}
+
+	// Photon imaging.
+	Impact imp;
+	int isimg=phimg(det, ac, &ph, &imp, &status);
+	CHECK_STATUS_BREAK(status);
+
+	// If the photon is not imaged but lost in the optical system,
+	// continue with the next one.
+	if (0==isimg) continue;
+
+	// If requested, write the impact to the output file.
+	if (NULL!=ilf) {
+	  addImpact2File(ilf, &imp, &status);
+	  CHECK_STATUS_BREAK(status);
+	}
+
+	// Photon Detection.
+	phdetGenDet(det, &imp, elf, t1, &status);
+	CHECK_STATUS_BREAK(status);
+
+	// Program progress output.
+	while((unsigned int)((ph.time-t1+simtime)*100./totalsimtime)>progress) {
+	  progress++;
+	  if (NULL==progressfile) {
+	    headas_chat(2, "\r%.1lf %%", progress*1.);
+	    fflush(NULL);
+	  } else {
+	    rewind(progressfile);
+	    fprintf(progressfile, "%.2lf", progress*1./100.);
+	    fflush(progressfile);	
+	  }
+	}
+
+      } while(1);
+      CHECK_STATUS_BREAK(status);
+      // END of photon processing loop for the current interval.
+
+      // Clear the detector.
+      phdetGenDet(det, NULL, elf, t1, &status);
+      long jj;
+      for(jj=0; jj<det->pixgrid->ywidth; jj++) {
+	GenDetClearLine(det, jj);
+      }
+
+      // Proceed to the next GTI interval.
+      if (NULL!=gti) {
+	simtime+=gti->stop[gtibin]-gti->start[gtibin];
+	gtibin++;
 	if (gtibin>=gti->nentries) break;
       }
-	
-      // If requested, write the photon to the output file.
-      if (NULL!=plf) {
-	status=addPhoton2File(plf, &ph);
-	CHECK_STATUS_BREAK(status);
-      }
 
-      // Photon imaging.
-      Impact imp;
-      int isimg=phimg(det, ac, &ph, &imp, &status);
-      CHECK_STATUS_BREAK(status);
-
-      // If the photon is not imaged but lost in the optical system,
-      // continue with the next one.
-      if (0==isimg) continue;
-
-      // If requested, write the impact to the output file.
-      if (NULL!=ilf) {
-	addImpact2File(ilf, &imp, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-
-      // Photon Detection.
-      phdetGenDet(det, &imp, elf, par.TIMEZERO+par.Exposure, &status);
-      CHECK_STATUS_BREAK(status);
-
-      // Program progress output.
-      while ((unsigned int)((ph.time-par.TIMEZERO)*100./par.Exposure)>progress) {
-	progress++;
-	if (NULL==progressfile) {
-	  headas_chat(2, "\r%.1lf %%", progress*1.);
-	  fflush(NULL);
-	} else {
-	  rewind(progressfile);
-	  fprintf(progressfile, "%.2lf", progress*1./100.);
-	  fflush(progressfile);	
-	}
-      }
-
-    } while(1);
+    } while (NULL!=gti);
     CHECK_STATUS_BREAK(status);
-    // END of photon processing loop.
-
-    // Finalize the photon detection.
-    if (NULL==gti) {
-      phdetGenDet(det, NULL, elf, par.TIMEZERO+par.Exposure, &status);
-      CHECK_STATUS_BREAK(status);
-    } else {
-      phdetGenDet(det, NULL, elf, 
-		  MIN(par.TIMEZERO+par.Exposure, gti->stop[gti->nentries-1]), 
-		  &status);
-      CHECK_STATUS_BREAK(status);
-    }
+    // End of loop over the individual GTI intervals.
+    
       
     // Progress output.
     if (NULL==progressfile) {

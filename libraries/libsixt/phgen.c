@@ -4,8 +4,8 @@
 int phgen(AttitudeCatalog* const ac,
 	  SourceCatalog** const srccat,
 	  const unsigned int ncat,
-	  const double t0, 
-	  const double exposure,
+	  const double t0,
+	  const double tend,
 	  const double mjdref,
 	  const double dt,
 	  const float fov,
@@ -25,7 +25,7 @@ int phgen(AttitudeCatalog* const ac,
 
   // If the photon list is empty generate new photons from the 
   // given source catalog.
-  while((NULL==pholist)&&(time<t0+exposure)) {
+  while((NULL==pholist)&&(time<tend)) {
     // Determine the telescope pointing at the current point of time.
     Vector pointing = getTelescopeNz(ac, time, status);
     CHECK_STATUS_BREAK(*status);
@@ -38,7 +38,7 @@ int phgen(AttitudeCatalog* const ac,
     fflush(NULL);
     
     // Generate new photons for all specified catalogs.
-    double t1 = MIN(time+dt, t0+exposure);
+    double t1=MIN(time+dt, tend);
     unsigned int ii;
     for (ii=0; ii<ncat; ii++) {
       if (NULL==srccat[ii]) continue;
