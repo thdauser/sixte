@@ -146,9 +146,14 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   CHECK_STATUS_RET(*status, cat);
 
   if ('['==src->spectrum[0]) {
-    strcpy(specfilename, filename);
+    strcpy(specfilename, *src->filepath);
+    strcat(specfilename, *src->filename);
   } else {
-    strcpy(specfilename, "");
+    if ('/'!=src->spectrum[0]) {
+      strcpy(specfilename, *src->filepath);
+    } else {
+      strcpy(specfilename, "");
+    }
   }
   strcat(specfilename, src->spectrum);
   char *search=strchr(specfilename, ']');
