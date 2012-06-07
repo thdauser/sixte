@@ -154,6 +154,10 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   char *search=strchr(specfilename, ']');
   *(search+1)='\0';
 
+  headas_chat(3, "load spectra from file '%s' into cache ...\n", specfilename);
+  loadCacheAllSimputMIdpSpec(cat->simput, specfilename, status);
+  CHECK_STATUS_RET(*status, cat);
+
   // Release memory.
   if (templatesrc) free(templatesrc);
   if (list) free(list);

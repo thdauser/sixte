@@ -337,7 +337,7 @@ static inline int ladphdet(const LAD* const lad,
     // and add the signals to the buffered list.
 
     // Element on the LAD.
-    LADElement* element = 
+    LADElement* element= 
       lad->panel[imp->panel]->module[imp->module]->element[imp->element];
 
     // Determine the anode pitch [m].
@@ -346,17 +346,17 @@ static inline int ladphdet(const LAD* const lad,
 
     // Determine the parameters of the charge cloud.
     // Boltzmann constant.
-    const double kB = 8.6173324e-5; // [eV/K]
+    const double kB=8.6173324e-5; // [eV/K]
     // Drift velocity.
-    double vD = lad->mobility * lad->efield;
+    double vD=lad->mobility * lad->efield;
     // Charge cloud dispersion.
-    const double sigma0 = 20.e-6; // (according to Campana, 2011) [m]
-    double sigma = 
+    const double sigma0=20.e-6; // (according to Campana, 2011) [m]
+    double sigma= 
       sqrt(2.*kB*lad->temperature*imp->position.x/lad->efield + 
 	   pow(sigma0,2.));
 
     // Drift time.
-    double drifttime = imp->position.x / vD;
+    double drifttime=imp->position.x / vD;
 
     // Determine the index of the closest anode strip.
     float xwidth = element->xdim - 2.*element->xborder;
