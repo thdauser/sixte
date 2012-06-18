@@ -252,7 +252,7 @@ int ero_exposure_main()
     for (time=par.t0; time<par.t0+par.timespan; time+=par.dt) {
       
       // Print the current time (program status information for the user).
-      headas_printf("\rtime: %.1lf s ", time);
+      headas_chat(5, "\rtime: %.1lf s ", time);
       fflush(NULL);
 
       // Determine the telescope pointing direction at the current time.

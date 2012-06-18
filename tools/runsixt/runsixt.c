@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.11");
+  set_toolversion("0.12");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -163,9 +163,9 @@ int runsixt_main()
 
       // Set the values of the entries.
       ac->nentries=1;
-      ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = par.TIMEZERO;
-      ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+      ac->entry[0]=defaultAttitudeEntry();
+      ac->entry[0].time=par.TSTART;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
       ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
@@ -177,13 +177,13 @@ int runsixt_main()
       
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TIMEZERO) || 
-	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
+      if ((ac->entry[0].time > par.TSTART) || 
+	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
 		"specified period from %lf to %lf!", 
-		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+		par.TSTART, par.TSTART+par.Exposure);
 	SIXT_ERROR(msg);
 	break;
       }
@@ -274,7 +274,7 @@ int runsixt_main()
     // photon list.
     if (1==ac->nentries) {
       // Determine the telescope pointing direction and roll angle.
-      Vector pointing=getTelescopeNz(ac, par.TIMEZERO, &status);
+      Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
     
       // Direction.
@@ -282,7 +282,7 @@ int runsixt_main()
       calculate_ra_dec(pointing, &ra, &dec);
     
       // Roll angle.
-      float rollangle=getRollAngle(ac, par.TIMEZERO, &status);
+      float rollangle=getRollAngle(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
 
       // Store the RA and Dec information in the FITS header.
@@ -352,13 +352,15 @@ int runsixt_main()
     }
 
     // Timing keywords.
-    double dbuffer=0.;
+    double buffer_tstop =par.TSTART+par.Exposure;
     // Photon list file.
     if (NULL!=plf) {
       fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		      "time offset", &status);
+      fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		      "start time", &status);
+      fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+		      "stop time", &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -366,8 +368,10 @@ int runsixt_main()
     if (NULL!=ilf) {
       fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		      "time offset", &status);
+      fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		      "start time", &status);
+      fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+		      "stop time", &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -375,18 +379,20 @@ int runsixt_main()
     if (NULL!=elf) {
       fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
-      fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		      "time offset", &status);
+      fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		      "start time", &status);
+      fits_update_key(elf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+		      "stop time", &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Pattern list file.
     fits_update_key(patf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
-    fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    fits_update_key(patf->fptr, TDOUBLE, "EXPOSURE", &par.Exposure,
-		    "exposure time [s]", &status);
+    fits_update_key(patf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		    "start time", &status);
+    fits_update_key(patf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+		    "stop time", &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of opening files ---
@@ -430,7 +436,7 @@ int runsixt_main()
       
       // Determine the currently regarded interval.
       if (NULL==gti) {
-	t0=par.TIMEZERO;
+	t0=par.TSTART;
 	t1=par.Exposure;
       } else {
 	t0=gti->start[gtibin];
@@ -552,7 +558,7 @@ int runsixt_main()
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
-    phproj(det, ac, patf, par.TIMEZERO, par.Exposure, &status);
+    phproj(det, ac, patf, par.TSTART, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of simulation process ---
@@ -753,9 +759,9 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   } 
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading TIMEZERO");
+    SIXT_ERROR("failed reading TSTART");
     return(status);
   } 
 

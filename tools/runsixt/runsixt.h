@@ -53,7 +53,7 @@ struct Parameters {
   char Simput5[MAXFILENAME];
 
   double MJDREF;
-  double TIMEZERO;
+  double TSTART;
   double Exposure;
   double dt;
 
