@@ -75,7 +75,7 @@ int simputsrc_main()
 
   // Register HEATOOL
   set_toolname("simputsrc");
-  set_toolversion("0.11");
+  set_toolversion("0.12");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -525,7 +525,7 @@ int simputsrc_main()
       }
 
       if ((psd->frequency != NULL) && (psd->power != NULL)) {
-        saveSimputPSD(psd, par.Simput, "LIGHTCUR", 1, &status);
+        saveSimputPSD(psd, par.Simput, "TIMING", 1, &status);
         CHECK_STATUS_BREAK(status);
       }
 
@@ -536,7 +536,7 @@ int simputsrc_main()
     // -- END of creating PSD
 
     // -- Create a new SIMPUT catalog.
-    cat=openSimputCatalog(par.Simput, READWRITE, 0, 0, 0, 0, &status);
+    cat=openSimputCatalog(par.Simput, READWRITE, 32, 32, 32, 32, &status);
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.
@@ -553,11 +553,12 @@ int simputsrc_main()
       strcpy(src_name, "");
     }
 
-    // Get a new source entry. Check if PSD is present and add to catalog if necessary.
-    if(psd != NULL) {
+    // Get a new source entry. Check if PSD is present and add 
+    // to catalog if necessary.
+    if (psd != NULL) {
       src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
           par.Emin, par.Emax, totalFlux,
-          "[SPECTRUM,1]", "", "[LIGHTCUR,1]", &status);
+          "[SPECTRUM,1]", "", "[TIMING,1]", &status);
       CHECK_STATUS_BREAK(status);
     } else {
       src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
