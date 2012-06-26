@@ -16,10 +16,6 @@
 #include "headas_main.c"
 
 
-/** Margin around the FOV [rad]. */
-const double margin=0.5*M_PI/180.; 
-
-
 /* Program parameters */
 struct Parameters {
   /** Attitude file. */
@@ -60,7 +56,7 @@ int ero_gti_main()
 
   // Register HEATOOL:
   set_toolname("ero_gti");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -154,7 +150,7 @@ int ero_gti_main()
 
     // Determine the diameter of the search radius (minimum cos-value).
     // (angle(telescope,source) <= 1/2 * diameter)
-    double search_angle=0.5*par.fov_diameter+cone_radius+margin;
+    double search_angle=0.5*par.fov_diameter+cone_radius;
     double min_align; 
     if (search_angle <= M_PI) {
       min_align=cos(search_angle);
