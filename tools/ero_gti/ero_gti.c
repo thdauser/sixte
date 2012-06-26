@@ -173,7 +173,7 @@ int ero_gti_main()
     for (time=par.TIMEZERO; time<par.TIMEZERO+par.Exposure; time+=par.dt) {
       
       // Print the current time (program status information for the user).
-      headas_printf("\rtime: %.1lf s ", time);
+      headas_chat(5, "\rtime: %.1lf s ", time);
       fflush(NULL);
 
       // Determine the telescope pointing direction at the current time.
