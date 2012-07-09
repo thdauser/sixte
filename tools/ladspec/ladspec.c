@@ -23,7 +23,7 @@ int ladspec_main() {
 
   // Register HEATOOL:
   set_toolname("ladspec");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -90,10 +90,11 @@ int ladspec_main() {
       long pha=getEBOUNDSChannel(event.signal, lad->rmf);
       
       // Add the event to the spectrum.
-      assert(pha-lad->rmf->FirstChannel>=0);
-      assert(pha<lad->rmf->NumberChannels);      
-      spec[pha-lad->rmf->FirstChannel]++;
-
+      long idx=pha-lad->rmf->FirstChannel;
+      if(idx>=0) {
+	assert(idx<lad->rmf->NumberChannels);      
+	spec[idx]++;
+      }
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over all events in the input file.

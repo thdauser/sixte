@@ -352,11 +352,14 @@ int runsixt_main()
     }
 
     // Timing keywords.
-    double buffer_tstop =par.TSTART+par.Exposure;
+    double buffer_tstop=par.TSTART+par.Exposure;
+    double buffer_timezero=0.;
     // Photon list file.
     if (NULL!=plf) {
       fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
+      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
+		      "time offset", &status);
       fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
 		      "start time", &status);
       fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
@@ -368,6 +371,8 @@ int runsixt_main()
     if (NULL!=ilf) {
       fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
+      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
+		      "time offset", &status);
       fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
 		      "start time", &status);
       fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
@@ -379,6 +384,8 @@ int runsixt_main()
     if (NULL!=elf) {
       fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		      "reference MJD", &status);
+      fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
+		      "time offset", &status);
       fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
 		      "start time", &status);
       fits_update_key(elf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
@@ -389,6 +396,8 @@ int runsixt_main()
     // Pattern list file.
     fits_update_key(patf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
+    fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
+		    "time offset", &status);
     fits_update_key(patf->fptr, TDOUBLE, "TSTART", &par.TSTART,
 		    "start time", &status);
     fits_update_key(patf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,

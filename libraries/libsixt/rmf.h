@@ -48,7 +48,9 @@ void returnRMFChannel(struct RMF *rmf, const float energy,
     specified energy lies within. The energy has to be given in the
     same units as the EBOUNDS are, which usually is [keV]. Note that
     the routine is NOT doing an RMF randomization of the measured
-    channel. */
+    channel. In case the channel cannot be determined, because there
+    is no RMF available or the desired energy lies outside the covered
+    range, a negative value is returned. */
 long getEBOUNDSChannel(const float energy, const struct RMF* const rmf);
 
 /** Determine the charge corresponding to a particular PHA channel

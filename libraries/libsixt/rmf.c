@@ -83,15 +83,16 @@ void freeRMF(struct RMF* const rmf)
 
 long getEBOUNDSChannel(const float energy, const struct RMF* const rmf)
 {
-  // In case there is no RMF, just return the channel 0.
-  if (NULL==rmf) return(0);
+  // In case there is no RMF, just return a negativ number (-1).
+  if (NULL==rmf) return(-1);
 
   // Check if the charge is outside the range of the energy bins defined
   // in the EBOUNDS table. In that case the return value of this function is '-1'.
   if (rmf->ChannelLowEnergy[0] > energy) {
-    return(0); // TODO
+    return(-1);
   } else if (rmf->ChannelHighEnergy[rmf->NumberChannels-1] < energy) {
-    return(rmf->NumberChannels - 1 + rmf->FirstChannel);
+    return(-1);
+    //return(rmf->NumberChannels - 1 + rmf->FirstChannel);
   }
   
   // Perform a binary search to obtain the detector PHA channel 
