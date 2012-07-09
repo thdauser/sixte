@@ -23,6 +23,7 @@ struct Parameters {
 
   /** Source catalog. */
   char Simput[MAXFILENAME];
+  double RA, DEC;
 
   /** GTI file. */
   char GTIfile[MAXFILENAME];
@@ -56,7 +57,7 @@ int ero_gti_main()
 
   // Register HEATOOL:
   set_toolname("ero_gti");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -70,16 +71,22 @@ int ero_gti_main()
     ac=loadAttitudeCatalog(par.Attitude, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the SIMPUT source catalog.
-    cat=openSimputCatalog(par.Simput, READONLY, 0, 0, 0, 0, &status);
-    CHECK_STATUS_BREAK(status);
+    // Load the SIMPUT source catalog, if available.
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.Simput);
+    strtoupper(ucase_buffer);
+    if ((strlen(par.Simput)>0)&&(0!=strcmp(ucase_buffer,"NONE"))) {
+      cat=openSimputCatalog(par.Simput, READONLY, 0, 0, 0, 0, &status);
+      CHECK_STATUS_BREAK(status);
 
-    // Check if the catalog contains any sources.
-    if (0==cat->nentries) {
-      SIXT_ERROR("SIMPUT catalog is empty");
-      status=EXIT_FAILURE;
-      break;
+      // Check if the catalog contains any sources.
+      if (0==cat->nentries) {
+	SIXT_ERROR("SIMPUT catalog is empty");
+	status=EXIT_FAILURE;
+	break;
+      }
     }
+    // Otherwise use the specified RA and Dec source position.
 
     // Set up a new GTI collection.
     gti=newGTI(&status);
@@ -97,50 +104,58 @@ int ero_gti_main()
     Vector refpos;
     double cone_radius=0.; // [rad]
 
-    // Get the first source in the catalog.
-    SimputSource* src=loadCacheSimputSource(cat, 1, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Determine its position and angular extension.
-    refpos=unit_vector(src->ra, src->dec);
-    cone_radius=getSimputSourceExtension(cat, src, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Loop over all sources in the catalog.
-    long ii;
-    for (ii=1; ii<cat->nentries; ii++) {
-      // Get the next source in the catalog.
-      SimputSource* src=loadCacheSimputSource(cat, ii+1, &status);
+    // If a SIMPUT catalog has been specified.
+    if (NULL!=cat) {
+      // Get the first source in the catalog.
+      SimputSource* src=loadCacheSimputSource(cat, 1, &status);
       CHECK_STATUS_BREAK(status);
 
       // Determine its position and angular extension.
-      Vector srcpos=unit_vector(src->ra, src->dec);
-      float extension=getSimputSourceExtension(cat, src, &status);
+      refpos=unit_vector(src->ra, src->dec);
+      cone_radius=getSimputSourceExtension(cat, src, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Determine the angle between the reference direction and 
-      // the source position.
-      double angular_distance=acos(scalar_product(&refpos, &srcpos));
-      
-      // Check if the search radius has to be enlarged.
-      if (angular_distance+extension>cone_radius) {
-	double delta1=extension+angular_distance-cone_radius;
+      // Loop over all sources in the catalog.
+      long ii;
+      for (ii=1; ii<cat->nentries; ii++) {
+	// Get the next source in the catalog.
+	SimputSource* src=loadCacheSimputSource(cat, ii+1, &status);
+	CHECK_STATUS_BREAK(status);
 
-	// If the difference is small, simply enlarge the opening
-	// angle of the search cone.
-	if (delta1 < 1./3600.*M_PI/180.) {
-	  cone_radius+=delta1;
-	} else {
-	  double delta2=extension-angular_distance-cone_radius;
-	  if (delta2<0.) {
-	    delta2=0.;
+	// Determine its position and angular extension.
+	Vector srcpos=unit_vector(src->ra, src->dec);
+	float extension=getSimputSourceExtension(cat, src, &status);
+	CHECK_STATUS_BREAK(status);
+	
+	// Determine the angle between the reference direction and 
+	// the source position.
+	double angular_distance=acos(scalar_product(&refpos, &srcpos));
+      
+	// Check if the search radius has to be enlarged.
+	if (angular_distance+extension>cone_radius) {
+	  double delta1=extension+angular_distance-cone_radius;
+	  
+	  // If the difference is small, simply enlarge the opening
+	  // angle of the search cone.
+	  if (delta1 < 1./3600.*M_PI/180.) {
+	    cone_radius+=delta1;
+	  } else {
+	    double delta2=extension-angular_distance-cone_radius;
+	    if (delta2<0.) {
+	      delta2=0.;
+	    }
+	    refpos=interpolateCircleVector(refpos, srcpos, 
+					   (delta1-delta2)*0.5/angular_distance);
+	    cone_radius+=0.5*(delta1+delta2);
 	  }
-	  refpos=interpolateCircleVector(refpos, srcpos, 
-					 (delta1-delta2)*0.5/angular_distance);
-	  cone_radius+=0.5*(delta1+delta2);
 	}
       }
+    } else {
+      // Determine the reference position from the explicitly 
+      // specified RA and Dec.
+      refpos=unit_vector(par.RA *M_PI/180., par.DEC*M_PI/180.);
     }
+
 
     // Print some informational data.
     double ra, dec;
@@ -227,6 +242,14 @@ int ero_gti_getpar(struct Parameters *par)
   // Get the filename of the SIMPUT file.
   else if ((status = PILGetFname("Simput", par->Simput))) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
+  }
+
+  // Get the source position specified by RA and Dec.
+  else if ((status = PILGetReal("RA", &par->RA))) {
+    SIXT_ERROR("failed reading the right ascension of the source");
+  }
+  else if ((status = PILGetReal("DEC", &par->DEC))) {
+    SIXT_ERROR("failed reading the declination of the source");
   }
   
   // Get the filename of the output GTI file (FITS file).
