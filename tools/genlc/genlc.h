@@ -20,7 +20,10 @@ struct Parameters {
 
   /** Time resolution [s]. */
   double dt; 
-  
+
+  /** Lower and upper boundary of the regarded energy band [keV]. */
+  float Emin, Emax;
+
   char clobber;
 };
 
