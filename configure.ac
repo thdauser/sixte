@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.45], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.46], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
@@ -186,7 +186,7 @@ AC_SEARCH_LIBS(getSimputSource, [simput], [],
 #################################### 
 # Check for header files:
 AC_HEADER_STDC
-AC_CHECK_HEADERS([limit.h math.h malloc.h stdio.h stdlib.h stdarg.h string.h])
+AC_CHECK_HEADERS([limit.h math.h stdio.h stdlib.h stdarg.h string.h])
 #AC_CHECK_HEADERS([headas.h headas_error.h]) 
 # -> problem: not accepted by preprocessor (but by compiler)!
 
