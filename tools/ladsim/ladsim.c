@@ -189,11 +189,11 @@ static inline int ladphdet(const LAD* const lad,
 
       // Allocate memory. Use a logarithmic energy grid for this ARF.
       // So the number of required bins is determined as 
-      // log(Emax/Emin)/log(factor) + 1
+      // log(Emax/Emin)/log(factor)
       // For Emin=0.01, Emax=1000., factor=1.01 a total number of
       // 1158 bins is required.
-      const long narfbins=1158;
-      const float arfEmin=0.01; // lower boundary for the energy grid.
+      const long narfbins=704;
+      const float arfEmin=0.9; // lower boundary for the energy grid.
       const float arffactor=1.01;
       backgroundarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
       CHECK_NULL_RET(backgroundarf->LowEnergy, *status, 
