@@ -187,8 +187,14 @@ static inline int ladphdet(const LAD* const lad,
       backgroundarf=getARF(status);
       CHECK_STATUS_RET(*status, 1);
 
-      // Allocate memory.
-      const long narfbins=100000;
+      // Allocate memory. Use a logarithmic energy grid for this ARF.
+      // So the number of required bins is determined as 
+      // log(Emax/Emin)/log(factor) + 1
+      // For Emin=0.01, Emax=1000., factor=1.01 a total number of
+      // 1158 bins is required.
+      const long narfbins=1158;
+      const float arfEmin=0.01; // lower boundary for the energy grid.
+      const float arffactor=1.01;
       backgroundarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
       CHECK_NULL_RET(backgroundarf->LowEnergy, *status, 
 		     "memory allocation for background ARF failed", 1);
@@ -212,8 +218,8 @@ static inline int ladphdet(const LAD* const lad,
       headas_chat(5, "background ARF with %lf cm^2\n", backgroundarf->EffArea);
       long ii;
       for (ii=0; ii<narfbins; ii++) {
-	backgroundarf->LowEnergy[ii] =1000./narfbins*ii;
-	backgroundarf->HighEnergy[ii]=1000./narfbins*(ii+1); // [keV]
+	backgroundarf->LowEnergy[ii] =arfEmin*pow(arffactor,ii); // [keV]
+	backgroundarf->HighEnergy[ii]=arfEmin*pow(arffactor,ii+1);
 	backgroundarf->EffArea[ii]   =sensitive_area;
       }
 
@@ -743,7 +749,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.24");
+  set_toolversion("0.25");
 
 
   do { // Beginning of ERROR HANDLING Loop.
