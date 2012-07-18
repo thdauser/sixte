@@ -36,7 +36,7 @@ ero_events
 ero_fits2tm
 ero_split_photonfile
 ero_merge_eventfiles
-ero_gti
+ero_vis
 photonmerge
 hexagonal_pixel_intensity
 htrs_psfgen

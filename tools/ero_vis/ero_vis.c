@@ -12,7 +12,7 @@
 #include "gti.h"
 #include "simput.h"
 
-#define TOOLSUB ero_gti_main
+#define TOOLSUB ero_vis_main
 #include "headas_main.c"
 
 
@@ -39,10 +39,10 @@ struct Parameters {
 };
 
 
-int ero_gti_getpar(struct Parameters *parameters);
+int ero_vis_getpar(struct Parameters *parameters);
 
 
-int ero_gti_main() 
+int ero_vis_main()
 {
   // Program parameters.
   struct Parameters par;
@@ -56,7 +56,7 @@ int ero_gti_main()
 
 
   // Register HEATOOL:
-  set_toolname("ero_gti");
+  set_toolname("ero_vis");
   set_toolversion("0.04");
   
 
@@ -65,7 +65,7 @@ int ero_gti_main()
     // --- Initialization ---
 
     // Read the program parameters using PIL library.
-    if ((status=ero_gti_getpar(&par))) break;
+    if ((status=ero_vis_getpar(&par))) break;
 
     // Get the telescope attitude data.
     ac=loadAttitudeCatalog(par.Attitude, &status);
@@ -175,7 +175,7 @@ int ero_gti_main()
 
     // --- Beginning of GTI calculation ---
 
-    headas_chat(3, "calculate the GTIs ...\n");
+    headas_chat(3, "calculate the visibility GTIs ...\n");
 
     // LOOP over the given time interval in steps of dt.
     double time;
@@ -230,7 +230,7 @@ int ero_gti_main()
 }
 
 
-int ero_gti_getpar(struct Parameters *par)
+int ero_vis_getpar(struct Parameters *par)
 {
   int status=EXIT_SUCCESS; // Error status
   

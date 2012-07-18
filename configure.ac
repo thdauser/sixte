@@ -234,7 +234,7 @@ AC_CONFIG_FILES([Makefile
 		tools/psfgen/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/ero_exposure/Makefile
-		tools/ero_gti/Makefile
+		tools/ero_vis/Makefile
 		tools/ero_events/Makefile
 		tools/ero_fits2tm/Makefile
 		tools/comaexp/Makefile
