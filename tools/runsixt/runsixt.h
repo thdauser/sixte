@@ -23,7 +23,7 @@
 
 
 /** Maximum number of SIMPUT catalogs. */
-#define MAX_N_SIMPUT 5
+#define MAX_N_SIMPUT 6
 
 
 struct Parameters {
@@ -51,6 +51,7 @@ struct Parameters {
   char Simput3[MAXFILENAME];
   char Simput4[MAXFILENAME];
   char Simput5[MAXFILENAME];
+  char Simput6[MAXFILENAME];
 
   double MJDREF;
   double TSTART;

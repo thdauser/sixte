@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.12");
+  set_toolversion("0.13");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -229,8 +229,8 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput4);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[3]=loadSourceCatalog(par.Simput4, det->arf, &status);
-	CHECK_STATUS_BREAK(status);
+      	srccat[3]=loadSourceCatalog(par.Simput4, det->arf, &status);
+      	CHECK_STATUS_BREAK(status);
       }
     }
 
@@ -239,8 +239,18 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput5);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[4]=loadSourceCatalog(par.Simput5, det->arf, &status);
-	CHECK_STATUS_BREAK(status);
+      	srccat[4]=loadSourceCatalog(par.Simput5, det->arf, &status);
+      	CHECK_STATUS_BREAK(status);
+      }
+    }
+
+    // Optional 6th catalog.
+    if (strlen(par.Simput6)>0) {
+      strcpy(ucase_buffer, par.Simput6);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+      	srccat[5]=loadSourceCatalog(par.Simput6, det->arf, &status);
+      	CHECK_STATUS_BREAK(status);
       }
     }
 
@@ -752,6 +762,14 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   } 
   strcpy(par->Simput5, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_file_name("Simput6", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the sixth SIMPUT file");
+    return(status);
+  }
+  strcpy(par->Simput6, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("GTIfile", &sbuffer);
