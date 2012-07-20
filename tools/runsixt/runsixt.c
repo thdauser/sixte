@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.13");
+  set_toolversion("0.14");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -437,7 +437,7 @@ int runsixt_main()
     double totalsimtime=0.;
     double simtime=0.;
     if (NULL==gti) {
-      simtime=par.Exposure;
+      totalsimtime=par.Exposure;
     } else {
       unsigned long ii; 
       for (ii=0; ii<gti->nentries; ii++) {
@@ -510,7 +510,7 @@ int runsixt_main()
 	CHECK_STATUS_BREAK(status);
 
 	// Program progress output.
-	while((unsigned int)((ph.time-t1+simtime)*100./totalsimtime)>progress) {
+	while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
 	  progress++;
 	  if (NULL==progressfile) {
 	    headas_chat(2, "\r%.1lf %%", progress*1.);
