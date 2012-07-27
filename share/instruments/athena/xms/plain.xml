@@ -15,7 +15,7 @@
 <threshold_readout_lo_keV value="100.e-3"/>
 <threshold_event_lo_keV value="100.e-3"/>
 <threshold_split_lo_keV value="100.e-3"/>
-<readout mode="time"/>
+<readout mode="event"/>
 
 </detector>
 </instrument>
