@@ -3,7 +3,7 @@
 <telescope>
 <focallength value="12.0"/>
 <fov diameter="0.5"/>
-<psf filename="psf.gauss10arcsec12m.fits"/>
+<psf filename="../psf.gauss10arcsec12m.fits"/>
 <vignetting filename="../athena.vignetting.fits"/>
 </telescope>
 
