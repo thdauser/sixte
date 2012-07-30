@@ -290,8 +290,8 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
 	eroBkgFree(list);
       }
 
-      // Apply the bad pixel map (if available) with the bad pixel values weighted 
-      // by the waiting time.
+      // Apply the bad pixel map (if available) with the bad pixel 
+      // values weighted by the waiting time.
       if (NULL!=det->badpixmap) {
 	applyBadPixMap(det->badpixmap, clwait->time, encounterGenDetBadPix, 
 		       det->line);
@@ -464,13 +464,13 @@ void encounterGenDetBadPix(void* const data,
 			   const float value) 
 {
   // Array of pointers to pixel lines.
-  GenDetLine** line = (GenDetLine**)data;
+  GenDetLine** line=(GenDetLine**)data;
 
   // Check if the bad pixel type.
   if (value < 0.) { // The pixel is a cold one.
     // Delete the charge in the pixel.
-    line[y]->charge[x] = 0.;
-  } else if (value > 0.) { // The pixel is a hot one.
+    line[y]->charge[x]=0.;
+  } else if (value>0.) { // The pixel is a hot one.
     // Add additional charge to the pixel.
     addGenDetCharge2Pixel(line[y], x, value, -1, -1);
   }
