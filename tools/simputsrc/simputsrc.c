@@ -556,14 +556,14 @@ int simputsrc_main()
     // Get a new source entry. Check if PSD is present and add 
     // to catalog if necessary.
     if (psd != NULL) {
-      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
-          par.Emin, par.Emax, totalFlux,
-          "[SPECTRUM,1]", "", "[TIMING,1]", &status);
+      src=getSimputSourceV(1, src_name, par.RA*M_PI/180., par.Dec*M_PI/180.,
+			   0., 1., par.Emin, par.Emax, totalFlux,
+			   "[SPECTRUM,1]", "", "[TIMING,1]", &status);
       CHECK_STATUS_BREAK(status);
     } else {
-      src=getSimputSourceV(1, src_name, par.RA, par.Dec, 0., 1.,
-          par.Emin, par.Emax, totalFlux,
-          "[SPECTRUM,1]", "", "", &status);
+      src=getSimputSourceV(1, src_name, par.RA*M_PI/180., par.Dec*M_PI/180.,
+			   0., 1., par.Emin, par.Emax, totalFlux,
+			   "[SPECTRUM,1]", "", "", &status);
       CHECK_STATUS_BREAK(status);
     }
 

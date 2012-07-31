@@ -52,8 +52,7 @@ BadPixMap* loadBadPixMap(const char* const filename,
       input_buffer=(float*)malloc(map->xwidth*map->ywidth*sizeof(float));
       if(NULL==input_buffer) {
 	*status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: could not allocate memory to store the "
-		       "BadPixMap!\n", *status);
+	SIXT_ERROR("memory allocation for BadPixMap failed");
 	break;
       }
 
@@ -77,7 +76,7 @@ BadPixMap* loadBadPixMap(const char* const filename,
     map->pixels = (float**)malloc(map->xwidth*sizeof(float*));
     if (NULL==map->pixels) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Memory allocation for BadPixMap failed!\n", *status);
+      SIXT_ERROR("memory allocation for BadPixMap failed");
       return(map);
     }
     int ii;
@@ -85,7 +84,7 @@ BadPixMap* loadBadPixMap(const char* const filename,
       map->pixels[ii] = (float*)malloc(map->ywidth*sizeof(float));
       if (NULL==map->pixels[ii]) {
 	*status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Memory allocation for BadPixMap failed!\n", *status);
+	SIXT_ERROR("memory allocation for BadPixMap failed");
 	return(map);
       }
     }
@@ -93,7 +92,7 @@ BadPixMap* loadBadPixMap(const char* const filename,
     map->anybadpix = (int*)malloc(map->xwidth*sizeof(int));
     if (NULL==map->anybadpix) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Memory allocation for BadPixMap failed!\n", *status);
+      SIXT_ERROR("memory allocation for BadPixMap failed");
       return(map);
     }
     for (ii=0; ii<map->xwidth; ii++) {
@@ -130,7 +129,6 @@ BadPixMap* loadBadPixMap(const char* const filename,
   if (EXIT_SUCCESS!=*status) return(map);
   // END of loading the data from the FITS file.
 
-
   return(map);
 }
 
@@ -154,7 +152,6 @@ void destroyBadPixMap(BadPixMap** const map)
     *map=NULL;
   }
 }
-
 
 
 void applyBadPixMap(const BadPixMap* const map, const double timespan,

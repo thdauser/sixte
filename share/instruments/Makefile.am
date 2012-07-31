@@ -18,6 +18,9 @@ athenadir = $(xmldir)/athena
 # WFI
 athenawfidir = $(athenadir)/wfi
 dist_athenawfi_DATA = athena/wfi/fullframe.xml 
+# XMS
+athenaxmsdir = $(athenadir)/xms
+dist_athenaxms_DATA = athena/xms/plain.xml
 
 # SRG
 srgdir = $(xmldir)/srg
