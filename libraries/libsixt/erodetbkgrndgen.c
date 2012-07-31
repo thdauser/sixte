@@ -19,10 +19,22 @@ int calcEvents(const double* const hit_time, const long numrows) {
   return numevents;
 }
 
+void fillEventList(const double* const hit_time, const long numrows, size_t* const eventlist) {
+  int cc = 0, dd = 0;
+
+  eventlist[dd] = cc;
+  for(cc = 0; cc < (numrows - 1); cc++) {
+    if(hit_time[cc] != hit_time[cc + 1]) {
+      dd++;
+      eventlist[dd] = cc + 1;
+    }
+  }
+}
+
 inline double calcEventRate(const double* const hit_time,
-                            const long numrows,
-                            const int numevents,
-                            const double interval) {
+                                   const long numrows,
+                                   const int numevents,
+                                   const double interval) {
   double eventrate = (double)numevents;
 
   eventrate /= (hit_time[numrows - 1] - hit_time[0]);
@@ -45,6 +57,7 @@ void eroBkgInitialize(const char* const filename,
   bkgratefct.currentrate = NULL;
   bkgratefct.intervalsum = 0.;
 
+  bkginputdata.eventlist = NULL;
   bkginputdata.numrows = 0L;
   bkginputdata.timecolname = "TIME CCD";
   bkginputdata.energycolname = "PI CCD";
@@ -78,7 +91,9 @@ void eroBkgInitialize(const char* const filename,
   fits_report_error(stderr, *status);
 
   bkginputdata.numevents = calcEvents(bkginputdata.hit_time, bkginputdata.numrows);
-                                       
+  bkginputdata.eventlist = (size_t*) calloc(bkginputdata.numevents, sizeof(size_t));
+  fillEventList(bkginputdata.hit_time, bkginputdata.numrows, bkginputdata.eventlist);
+
   bkginputdata.eventsperinterval = calcEventRate(bkginputdata.hit_time,
                                                  bkginputdata.numrows,
                                                  bkginputdata.numevents,
@@ -231,28 +246,29 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
 
   bkgresultlist->numhits = 0;
   if(bkgresultlist->numevents > 0) {
-    int rand = 0, arrsize = bkgresultlist->numevents;
+    int rand = 0, hitcnt = 0, arrsize = bkgresultlist->numevents;
     bkgresultlist->hit_energy = (double*) malloc(arrsize * sizeof(double));
     bkgresultlist->hit_time = (double*) malloc(arrsize * sizeof(double));
     bkgresultlist->hit_xpos = (double*) malloc(arrsize * sizeof(double));
     bkgresultlist->hit_ypos = (double*) malloc(arrsize * sizeof(double));
 
     for(cc = 0; cc < bkgresultlist->numevents; cc++) {
-      rand = (int)floor((bkginputdata.numrows - 1) * gsl_ran_flat(bkginputdata.randgen, 0, 1));
-      while((rand < (bkginputdata.numrows - 1)) && (bkginputdata.hit_time[rand] == bkginputdata.hit_time[rand + 1])) {
-        rand++;
-      }
-      rand++;
-      if(rand >= (bkginputdata.numrows - 1)) {
-        rand = 0;
-      }
+      rand = (int)floor((bkginputdata.numevents - 1) * gsl_ran_flat(bkginputdata.randgen, 0, 1));
       do {
-        bkgresultlist->hit_energy[bkgresultlist->numhits] = bkginputdata.hit_energy[rand];
-        bkgresultlist->hit_time[bkgresultlist->numhits] = bkginputdata.hit_time[rand];
-        bkgresultlist->hit_xpos[bkgresultlist->numhits] = bkginputdata.hit_xpos[rand];
-        bkgresultlist->hit_ypos[bkgresultlist->numhits] = bkginputdata.hit_ypos[rand];
+        bkgresultlist->hit_energy[bkgresultlist->numhits] = bkginputdata.hit_energy[bkginputdata.eventlist[rand] + hitcnt];
+        bkgresultlist->hit_time[bkgresultlist->numhits] = bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt];
+        bkgresultlist->hit_xpos[bkgresultlist->numhits] = bkginputdata.hit_xpos[bkginputdata.eventlist[rand] + hitcnt];
+        bkgresultlist->hit_ypos[bkgresultlist->numhits] = bkginputdata.hit_ypos[bkginputdata.eventlist[rand] + hitcnt];
         bkgresultlist->numhits++;
-        rand++;
+        if(&bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt] != &bkginputdata.hit_time[bkginputdata.numrows - 1]) {
+          if(bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt + 1] != bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt]) {
+            hitcnt = 0;
+          } else {
+            hitcnt++;
+          }
+        } else {
+          hitcnt = 0;
+        }
         if(bkgresultlist->numhits == arrsize) {
           arrsize += 50;
           bkgresultlist->hit_energy = (double*) realloc(bkgresultlist->hit_energy, arrsize * sizeof(double));
@@ -260,7 +276,7 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
           bkgresultlist->hit_xpos = (double*) realloc(bkgresultlist->hit_xpos, arrsize * sizeof(double));
           bkgresultlist->hit_ypos = (double*) realloc(bkgresultlist->hit_ypos, arrsize * sizeof(double));
         }
-      } while((rand < bkginputdata.numrows) && (bkginputdata.hit_time[rand - 1] == bkginputdata.hit_time[rand]));
+      } while(hitcnt > 0);
     }
 
     if(bkgresultlist->numhits < arrsize) {
