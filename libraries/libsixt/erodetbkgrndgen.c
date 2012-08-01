@@ -8,7 +8,7 @@ static struct rateCurrentInterval rCurr = {0L, 0., NULL, 0L};
 
 int calcEvents(const double* const hit_time, const long numrows) {
   int cc = 0;
-  int numevents = 0;
+  int numevents = 1;
 
   for(cc = 0; cc < (numrows - 1); cc++) {
     if(hit_time[cc] != hit_time[cc + 1]) {
