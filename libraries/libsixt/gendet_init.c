@@ -49,33 +49,31 @@ void parseGenDetXML(GenDet* const det,
   det->pixgrid->yborder= 0.;
   det->readout_trigger = 0;
   det->cte             = 1.;
-  det->threshold_readout_lo_PHA    = -1;
-  det->threshold_readout_up_PHA    = -1;
-  det->threshold_readout_lo_keV    =  0.;
-  det->threshold_readout_up_keV    = -1.;
-  det->threshold_event_lo_keV      =  0.;
-  det->threshold_split_lo_keV      =  0.;
-  det->threshold_split_lo_fraction =  0.;
-  det->fov_diameter = 0.;
-  det->focal_length = 0.;
+  det->threshold_readout_lo_keV   =0.;
+  det->threshold_pattern_up_keV   =0.;
+  det->threshold_event_lo_keV     =0.;
+  det->threshold_split_lo_keV     =0.;
+  det->threshold_split_lo_fraction=0.;
+  det->fov_diameter=0.;
+  det->focal_length=0.;
 
 
   // Read the XML data from the file.
   // Open the specified file.
-  FILE* xmlfile = fopen(filename, "r");
+  FILE* xmlfile=fopen(filename, "r");
   if (NULL==xmlfile) {
     *status = EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "Error: Failed opening GenDet definition XML "
-	    "file '%s' for read access!\n", filename);
-    HD_ERROR_THROW(msg, *status);
+    sprintf(msg, "failed opening GenDet definition XML "
+	    "file '%s' for read access", filename);
+    SIXT_ERROR(msg);
     return;
   }
 
   // The data is read from the XML file and stored in xmlbuffer
   // without any modifications.
-  struct XMLBuffer* xmlbuffer = newXMLBuffer(status);
-  if (EXIT_SUCCESS!=*status) return;
+  struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
+  CHECK_STATUS_VOID(*status);
 
   // Input buffer with an additional byte at the end for the 
   // termination of the string.
@@ -90,7 +88,7 @@ void parseGenDetXML(GenDet* const det,
     len = fread(buffer, 1, buffer_size, xmlfile);
     buffer[len]='\0'; // Terminate the string.
     addString2XMLBuffer(xmlbuffer, buffer, status);
-    if (EXIT_SUCCESS!=*status) return;
+    CHECK_STATUS_VOID(*status);
   } while (!feof(xmlfile));
 
   // Close the file handler to the XML file.
@@ -103,7 +101,7 @@ void parseGenDetXML(GenDet* const det,
   // searches for loop tags. It replaces the loop tags by repeating
   // the contained XML code.
   expandXML(xmlbuffer, status);
-  if (EXIT_SUCCESS!=*status) return;
+  CHECK_STATUS_VOID(*status);
 
 
   // Parse XML code in the xmlbuffer using the expat library.
@@ -227,26 +225,6 @@ void parseGenDetXML(GenDet* const det,
   }
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
-
-  // If any thresholds have been specified in terms of PHA value,
-  // set the corresponding charge threshold to the [keV] values
-  // according to the RMF. If a charge threshold is given in addition,
-  // its value is overwritten by the charge corresponding to the PHA 
-  // specification. I.e., the PHA thresholds have a higher priority.
-  if (NULL!=det->rmf) {
-    if (det->threshold_readout_lo_PHA>-1) {
-      det->threshold_readout_lo_keV = 
-	getEBOUNDSEnergy(det->threshold_readout_lo_PHA, det->rmf, -1);
-      headas_chat(3, "set lower readout threshold to %.3lf keV (PHA %ld)\n", 
-		  det->threshold_readout_lo_keV, det->threshold_readout_lo_PHA);
-    }
-    if (det->threshold_readout_up_PHA>-1) {
-      det->threshold_readout_up_keV = 
-	getEBOUNDSEnergy(det->threshold_readout_up_PHA, det->rmf,  1);
-      headas_chat(3, "set upper readout threshold to %.3lf keV (PHA %ld)\n", 
-		  det->threshold_readout_up_keV, det->threshold_readout_up_PHA);
-    }
-  }
 }
 
 
@@ -466,26 +444,12 @@ static void GenDetXMLElementStart(void* parsedata, const char* el,
     headas_chat(3, "lower readout threshold: %.3lf keV\n", 
 		xmlparsedata->det->threshold_readout_lo_keV);
 	
-  } else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_KEV")) {
+  } else if (!strcmp(Uelement, "THRESHOLD_PATTERN_UP_KEV")) {
 
-    xmlparsedata->det->threshold_readout_up_keV = 
+    xmlparsedata->det->threshold_pattern_up_keV = 
       getXMLAttributeFloat(attr, "VALUE");
-    headas_chat(3, "upper readout threshold: %.3lf keV\n", 
-		xmlparsedata->det->threshold_readout_up_keV);
-
-  } else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_PHA")) {
-
-    xmlparsedata->det->threshold_readout_lo_PHA = 
-      getXMLAttributeLong(attr, "VALUE");
-    headas_chat(3, "lower readout threshold: %ld PHA\n", 
-		xmlparsedata->det->threshold_readout_lo_PHA);
-
-  } else if (!strcmp(Uelement, "THRESHOLD_READOUT_UP_PHA")) {
-
-    xmlparsedata->det->threshold_readout_up_PHA = 
-      getXMLAttributeLong(attr, "VALUE");
-    headas_chat(3, "upper readout threshold: %ld PHA\n", 
-		xmlparsedata->det->threshold_readout_up_PHA);
+    headas_chat(3, "upper pattern threshold: %.3lf keV\n", 
+		xmlparsedata->det->threshold_pattern_up_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
 

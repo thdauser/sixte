@@ -222,101 +222,6 @@ int addGenDetPhotonImpact(GenDet* const det,
 }
 
 
-void operateGenDetClock(GenDet* const det, EventListFile* const elf,
-			const double time, int* const status)
-{
-  // Check if the detector operation setup is time-triggered.
-  if (GENDET_TIME_TRIGGERED!=det->readout_trigger) return;
-
-  // Get the next element from the clock list.
-  CLType type;
-  void* element=NULL;
-  do {
-    CLReadoutLine* clreadoutline=NULL;
-    CLClearLine*   clclearline  =NULL;
-    CLWait* clwait              =NULL;
-
-    getClockListElement(det->clocklist, time, &type, &element, status);
-    if (EXIT_SUCCESS!=*status) return;
-
-    switch (type) {
-    case CL_NONE:
-      // No operation has to be performed. The clock list is
-      // currently in a wait status.
-      break;
-    case CL_NEWFRAME:
-      // The clock list has internally increased the frame counter and readout 
-      // time. 
-
-      // If there has been no photon interaction during the last frame
-      // and if no background model is activated, jump over the next empty frames
-      // until there is a new photon impact.
-      if (((0==det->erobackground)||(0==det->usebackground))&&
-	  (0==det->anyphoton)) {
-	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
-	det->clocklist->time       +=nframes*det->frametime;
-	det->clocklist->frame      +=nframes;
-	det->clocklist->readout_time=det->clocklist->time;
-      }
-
-      // Reset the flag.
-      det->anyphoton=0;
-
-      break;
-    case CL_WAIT:
-      // A waiting period is finished.
-      clwait = (CLWait*)element;
-
-      // Insert cosmic ray background events, 
-      // if the appropriate model is defined and should be used.
-      if ((1==det->erobackground)&&(1==det->usebackground)) {
-	// Get background events for the required time interval (has
-	// to be given in [s]).
-	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
-	int ii;
-	for(ii = 0; ii<list->numhits; ii++) {
-	  // Position of the event.
-	  struct Point2d position = {
-	    .x = list->hit_xpos[ii] *0.001,
-	    .y = list->hit_ypos[ii] *0.001
-	  };
-
-	  makeGenSplitEvents(det, &position,
-			     // Energy of the event in [keV].
-			     list->hit_energy[ii],
-			     -1, -1, time, elf, status);
-	  CHECK_STATUS_BREAK(*status);
-	}
-	eroBkgFree(list);
-      }
-
-      // Apply the bad pixel map (if available) with the bad pixel 
-      // values weighted by the waiting time.
-      if (NULL!=det->badpixmap) {
-	applyBadPixMap(det->badpixmap, clwait->time, encounterGenDetBadPix, 
-		       det->line);
-      }
-      break;
-    case CL_LINESHIFT:
-      GenDetLineShift(det);
-      break;
-    case CL_READOUTLINE:
-      clreadoutline=(CLReadoutLine*)element;
-      GenDetReadoutLine(det, clreadoutline->lineindex, 
-			clreadoutline->readoutindex, 
-			elf,
-			status);
-      break;
-    case CL_CLEARLINE:
-      clclearline = (CLClearLine*)element;
-      GenDetClearLine(det, clclearline->lineindex);
-      break;
-    }
-    CHECK_STATUS_VOID(*status);
-  } while(type!=CL_NONE);
-}
-
-
 void GenDetLineShift(GenDet* const det)
 {
   headas_chat(5, "lineshift\n");
@@ -396,11 +301,6 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       if (event->signal<=det->threshold_readout_lo_keV) {
 	break;
       }
-      if (det->threshold_readout_up_keV >= 0.) {
-	if (event->signal>=det->threshold_readout_up_keV) {
-	  break;
-	}
-      }
     
       // Apply the detector response if available.
       if (NULL!=det->rmf) {
@@ -459,18 +359,132 @@ void GenDetClearLine(GenDet* const det, const int lineindex) {
 }
 
 
+void operateGenDetClock(GenDet* const det, EventListFile* const elf,
+			const double time, int* const status)
+{
+  // Check if the detector operation setup is time-triggered.
+  if (GENDET_TIME_TRIGGERED!=det->readout_trigger) return;
+
+  // Get the next element from the clock list.
+  CLType type;
+  void* element=NULL;
+  do {
+    CLReadoutLine* clreadoutline=NULL;
+    CLClearLine*   clclearline  =NULL;
+    CLWait* clwait              =NULL;
+
+    getClockListElement(det->clocklist, time, &type, &element, status);
+    if (EXIT_SUCCESS!=*status) return;
+
+    switch (type) {
+    case CL_NONE:
+      // No operation has to be performed. The clock list is
+      // currently in a wait status.
+      break;
+    case CL_NEWFRAME:
+      // The clock list has internally increased the frame counter and readout 
+      // time. 
+
+      // If there has been no photon interaction during the last frame
+      // and if no background model is activated, jump over the next empty frames
+      // until there is a new photon impact.
+      if (((0==det->erobackground)||(0==det->usebackground))&&
+	  (0==det->anyphoton)) {
+	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
+	det->clocklist->time       +=nframes*det->frametime;
+	det->clocklist->frame      +=nframes;
+	det->clocklist->readout_time=det->clocklist->time;
+      }
+
+      // Reset the flag.
+      det->anyphoton=0;
+
+      break;
+    case CL_WAIT:
+      // A waiting period is finished.
+      clwait = (CLWait*)element;
+
+      // Insert cosmic ray background events, 
+      // if the appropriate model is defined and should be used.
+      if ((1==det->erobackground)&&(1==det->usebackground)) {
+	// Get background events for the required time interval (has
+	// to be given in [s]).
+	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
+	int ii;
+	for(ii = 0; ii<list->numhits; ii++) {
+
+	  // Add the signal to the detector without
+	  // regarding charge cloud splitting effects,
+	  // since this is also not done by Tenzer et al. (2010)
+	  // and Boller (2011).
+	  // Please note that the detector response matrix is
+	  // NOT applied to the particle-induced background events,
+	  // since the response is not available for the therefore
+	  // necessary high energies.
+	  // It is important that the high-energetic particle events
+	  // are only thrown away after the pattern recognition. 
+	  // Otherwise many invalid particle patterns will be reduced
+	  // to apparently valid event patterns, such that the overall
+	  // background is too high. 
+	  int x=getGenDetAffectedColumn(det->pixgrid, 
+					list->hit_xpos[ii]*0.001);
+	  int y=getGenDetAffectedLine  (det->pixgrid, 
+					list->hit_ypos[ii]*0.001);
+	  addGenDetCharge2Pixel(det->line[y], x, 
+				list->hit_energy[ii], -1, -1);
+
+	  // Call the event trigger routine.
+	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
+	    GenDetReadoutPixel(det, y, y, x, time, elf, status);
+	    CHECK_STATUS_BREAK(*status);
+	    
+	    // In event-triggered mode each event occupies its own frame.
+	    det->clocklist->frame++;
+	  }
+
+	}
+	eroBkgFree(list);
+      }
+
+      // Apply the bad pixel map (if available) with the bad pixel 
+      // values weighted with the waiting time.
+      if (NULL!=det->badpixmap) {
+	applyBadPixMap(det->badpixmap, clwait->time, 
+		       encounterGenDetBadPix, det->line);
+      }
+      break;
+    case CL_LINESHIFT:
+      GenDetLineShift(det);
+      break;
+    case CL_READOUTLINE:
+      clreadoutline=(CLReadoutLine*)element;
+      GenDetReadoutLine(det, clreadoutline->lineindex, 
+			clreadoutline->readoutindex, 
+			elf,
+			status);
+      break;
+    case CL_CLEARLINE:
+      clclearline = (CLClearLine*)element;
+      GenDetClearLine(det, clclearline->lineindex);
+      break;
+    }
+    CHECK_STATUS_VOID(*status);
+  } while(type!=CL_NONE);
+}
+
+
 void encounterGenDetBadPix(void* const data, 
 			   const int x, const int y, 
 			   const float value) 
 {
   // Array of pointers to pixel lines.
-  GenDetLine** line=(GenDetLine**)data;
+  GenDetLine** line = (GenDetLine**)data;
 
   // Check if the bad pixel type.
   if (value < 0.) { // The pixel is a cold one.
     // Delete the charge in the pixel.
-    line[y]->charge[x]=0.;
-  } else if (value>0.) { // The pixel is a hot one.
+    line[y]->charge[x] = 0.;
+  } else if (value > 0.) { // The pixel is a hot one.
     // Add additional charge to the pixel.
     addGenDetCharge2Pixel(line[y], x, value, -1, -1);
   }

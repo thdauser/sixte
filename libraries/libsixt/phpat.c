@@ -61,6 +61,9 @@ void phpat(GenDet* const det,
   Event** neighborlist=NULL;
   long nneighborlist=0;
 
+  // Flag, if we analyse the eROSITA-CCD.
+  int iseROSITA;
+
 
   // Error handling loop.
   do {
@@ -82,7 +85,12 @@ void phpat(GenDet* const det,
 		  telescope, comment, status);
     CHECK_STATUS_BREAK(*status);
     strtoupper(telescope);
-      
+    if (!strcmp(telescope, "EROSITA")) {
+      iseROSITA=1;
+    } else {
+      iseROSITA=0;
+    }
+    
 
     // Loop over all events in the input list.
     for (ii=0; ii<=elf->nrows; ii++) {
@@ -146,7 +154,7 @@ void phpat(GenDet* const det,
 	    float split_threshold;
 	    // For eROSITA we need a special treatment (according to
 	    // a prescription of K. Dennerl).
-	    if (!strcmp(telescope, "EROSITA")) {
+	    if (1==iseROSITA) {
 	      if (det->threshold_split_lo_fraction > 0.) {
 		float vertical=0., horizontal=0.;
 		long ll;
@@ -185,7 +193,7 @@ void phpat(GenDet* const det,
 
 	    // Check if the split threshold is above the event threshold.
 	    if (split_threshold > det->threshold_event_lo_keV) {
-	      printf("*** warning: split threshold is above event threshold\n");
+	      SIXT_WARNING("split threshold is above event threshold");
 	    }
 
 	    // Find all neighboring events above the split threshold.
@@ -382,21 +390,6 @@ void phpat(GenDet* const det,
 	    }
 	    // END of determine the pattern type.
 
-	    // Update the pattern statistics.
-	    if (pattern->type<0) {
-	      statistics.ninvalids++;
-	      if (pattern->pileup>0) {
-		statistics.npinvalids++;
-	      }
-	    } else {
-	      statistics.nvalids++;
-	      statistics.ngrade[pattern->type]++;
-	      if (pattern->pileup>0) {
-		statistics.npvalids++;
-		statistics.npgrade[pattern->type]++;
-	      }
-	    }	      
-
 	    // Remove processed events from neighbor list.
 	    for (kk=0; kk<nneighborlist; kk++) {
 	      freeEvent(&neighborlist[kk]);
@@ -404,9 +397,30 @@ void phpat(GenDet* const det,
 	    }
 	    nneighborlist=0;
 
-	    // Add the new pattern to the output file.
-	    addPattern2File(plf, pattern, status);	  
-	    CHECK_STATUS_BREAK(*status);
+	    // Check if the total signal of the pattern is below 
+	    // the upper pattern threshold.
+	    if ((det->threshold_pattern_up_keV==0.) ||
+		(pattern->signal<=det->threshold_pattern_up_keV) ) {
+
+	      // Update the pattern statistics.
+	      if (pattern->type<0) {
+		statistics.ninvalids++;
+		if (pattern->pileup>0) {
+		  statistics.npinvalids++;
+		}
+	      } else {
+		statistics.nvalids++;
+		statistics.ngrade[pattern->type]++;
+		if (pattern->pileup>0) {
+		  statistics.npvalids++;
+		  statistics.npgrade[pattern->type]++;
+		}
+	      }	      
+
+	      // Add the new pattern to the output file.
+	      addPattern2File(plf, pattern, status);	  
+	      CHECK_STATUS_BREAK(*status);
+	    }
 
 	    // Release memory.
 	    freePattern(&pattern);

@@ -103,16 +103,11 @@ typedef struct {
       instead of the PSF. */
   CodedMask* coded_mask;
 
-  /** Lower and upper readout threshold in units of [keV]. These
-      thresholds are applied in the read-out routine before converting
-      the pixel charge to a PHA value. Pixel charges below this
-      threshold will be discarded. */
-  float threshold_readout_lo_keV, threshold_readout_up_keV;
-  /** Lower and upper readout threshold in units of [PHA
-      channel]. These thresholds are converted to the corresponding
-      charge values [keV] according to the EBOUNDS table in the
-      detector response file. */
-  long threshold_readout_lo_PHA, threshold_readout_up_PHA;
+  /** Lower readout threshold in units of [keV]. This threshold is
+      applied in the read-out routine before converting the pixel
+      charge to a PHA value. Pixel charges below this threshold will
+      be discarded. */
+  float threshold_readout_lo_keV;
 
   /** Lower primary event threshold given in unit of [keV]. This value
       is used in the pattern recognition algorithm to find pixels with
@@ -126,6 +121,10 @@ typedef struct {
       main pixel. This value is used in the pattern recognition
       algorithm. */
   float threshold_split_lo_fraction;
+
+  /** Upper threshold for a valid event pattern [keV]. Patterns with a
+      total signal above this value are discarded. */
+  float threshold_pattern_up_keV;
 
   /** Split model. */
   GenSplit* split;
