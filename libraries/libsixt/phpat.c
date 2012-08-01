@@ -36,6 +36,7 @@ static int isNeighbor(const Event* const e1, const Event* const e2) {
 void phpat(GenDet* const det,
 	   EventListFile* const elf,
 	   PatternFile* const plf,
+	   const char skip_invalids,
 	   int* const status)
 {
   // Pattern / grade statistics.
@@ -417,10 +418,14 @@ void phpat(GenDet* const det,
 		}
 	      }	      
 
-	      // Add the new pattern to the output file.
-	      addPattern2File(plf, pattern, status);	  
-	      CHECK_STATUS_BREAK(*status);
-	    }
+	      // If the pattern is invalid, check if it should be
+	      // added to the output file or not.
+	      if ((0==skip_invalids) || (pattern->type>=0)) {
+		// Add the new pattern to the output file.
+		addPattern2File(plf, pattern, status);	  
+		CHECK_STATUS_BREAK(*status);
+	      }
+	    } // End of application of upper threshold.
 
 	    // Release memory.
 	    freePattern(&pattern);

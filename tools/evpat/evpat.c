@@ -21,7 +21,7 @@ int evpat_main()
 
   // Register HEATOOL:
   set_toolname("evpat");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -84,7 +84,7 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.
-    phpat(det, elf, plf, &status);
+    phpat(det, elf, plf, par.SkipInvalids, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -114,7 +114,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the input event list!\n", status);
+    SIXT_ERROR("failed reading the name of the input event list");
     return(status);
   } 
   strcpy(par->EventList, sbuffer);
@@ -122,7 +122,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the output pattern list!\n", status);
+    SIXT_ERROR("failed reading the name of the output pattern list");
     return(status);
   } 
   strcpy(par->PatternList, sbuffer);
@@ -130,7 +130,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the mission!\n", status);
+    SIXT_ERROR("failed reading the name of the mission");
     return(status);
   } 
   strcpy(par->Mission, sbuffer);
@@ -138,7 +138,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Instrument", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument");
     return(status);
   } 
   strcpy(par->Instrument, sbuffer);
@@ -146,7 +146,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mode", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument mode!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
   } 
   strcpy(par->Mode, sbuffer);
@@ -154,15 +154,21 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    SIXT_ERROR("failed reading the name of the XML file");
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
+  status=ape_trad_query_bool("SkipInvalids", &par->SkipInvalids);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the SkipInvalids parameter");
+    return(status);
+  }
+
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 

@@ -28,6 +28,9 @@ struct Parameters {
   char EventList[MAXFILENAME];
   char PatternList[MAXFILENAME];
 
+  /** Skip invalid patterns when producing the output file. */
+  char SkipInvalids;
+
   char clobber;
 };
 

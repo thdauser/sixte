@@ -17,6 +17,7 @@
 void phpat(GenDet* const det,
 	   EventListFile* const elf,
 	   PatternFile* const plf,
+	   const char skip_invalids,
 	   int* const status);
 
 

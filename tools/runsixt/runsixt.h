@@ -60,6 +60,9 @@ struct Parameters {
 
   int Seed;
   
+  /** Skip invalid patterns when producing the output file. */
+  char SkipInvalids;
+
   char clobber;
 };
 

@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.14");
+  set_toolversion("0.15");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -559,7 +559,7 @@ int runsixt_main()
     if (GS_NONE!=det->split->type) {
       // Pattern analysis.
       headas_chat(3, "start event pattern analysis ...\n");
-      phpat(det, elf, patf, &status);
+      phpat(det, elf, patf, par.SkipInvalids, &status);
       CHECK_STATUS_BREAK(status);
 
     } else {
@@ -803,6 +803,12 @@ int runsixt_getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading dt");
     return(status);
   } 
+
+  status=ape_trad_query_bool("SkipInvalids", &par->SkipInvalids);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the SkipInvalids parameter");
+    return(status);
+  }
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
