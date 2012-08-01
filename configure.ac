@@ -186,7 +186,7 @@ AC_SEARCH_LIBS(getSimputSource, [simput], [],
 #################################### 
 # Check for header files:
 AC_HEADER_STDC
-AC_CHECK_HEADERS([limit.h math.h malloc.h stdio.h stdlib.h stdarg.h string.h])
+AC_CHECK_HEADERS([limit.h math.h stdio.h stdlib.h stdarg.h string.h])
 #AC_CHECK_HEADERS([headas.h headas_error.h]) 
 # -> problem: not accepted by preprocessor (but by compiler)!
 

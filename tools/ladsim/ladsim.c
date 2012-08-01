@@ -43,7 +43,7 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
     // Apply the geometric vignetting corresponding to the projected
     // detector surface.
-    double p = sixt_get_random_number();
+    double p=sixt_get_random_number();
     if (p > cos_theta) {
       // Photon is not detected, since it misses the detector.
       return(NULL);
@@ -53,28 +53,28 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     LADImpact* imp=getLADImpact(status);
     CHECK_STATUS_RET(*status, NULL);    
 
-    imp->time   = ph->time;
-    imp->energy = ph->energy;
-    imp->ph_id  = ph->ph_id;
-    imp->src_id = ph->src_id;
+    imp->time  =ph->time;
+    imp->energy=ph->energy;
+    imp->ph_id =ph->ph_id;
+    imp->src_id=ph->src_id;
     
     // Determine the photon impact position on the detector:
     // Randomly select a panel, module, and element.
-    imp->panel   = 
+    imp->panel  = 
       (long)(sixt_get_random_number()*lad->npanels);
-    imp->module  = 
+    imp->module = 
       (long)(sixt_get_random_number()*lad->panel[imp->panel]->nmodules);
-    imp->element = 	
+    imp->element= 	
       (long)(sixt_get_random_number()*
 	     lad->panel[imp->panel]->module[imp->module]->nelements);
     
     // Pointer to the element.
-    LADElement* element = 
+    LADElement* element= 
       lad->panel[imp->panel]->module[imp->module]->element[imp->element];
     
     // Determine the sensitive area of the element.
-    float xwidth = element->xdim - 2.*element->xborder;
-    float ywidth = element->ydim - 2.*element->yborder;
+    float xwidth=element->xdim - 2.*element->xborder;
+    float ywidth=element->ydim - 2.*element->yborder;
     
     // Determine the entrance position into a collimator hole ([m]).
     long col1, row1;
@@ -95,25 +95,25 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     // Determine the photon direction with respect to the telescope
     // coordinate system.
     Vector deviation;
-    deviation.x = scalar_product(&telescope.nx, &photon_direction);
-    deviation.y = scalar_product(&telescope.ny, &photon_direction);
-    deviation.z = scalar_product(&telescope.nz, &photon_direction);
+    deviation.x=scalar_product(&telescope.nx, &photon_direction);
+    deviation.y=scalar_product(&telescope.ny, &photon_direction);
+    deviation.z=scalar_product(&telescope.nz, &photon_direction);
     
     // Determine the length of the vector to reach from the entrance 
     // position on top of the collimator to the bottom.
     // (The collimator has a thickness of 2 mm.)
-    double length = 2.0e-3 / deviation.z;
+    double length=2.0e-3 / deviation.z;
     
     // Add the off-axis deviation to the entrance position.
-    imp->position.x = 
+    imp->position.x= 
       entrance_position.x + deviation.x * length;
-    imp->position.y = 
+    imp->position.y= 
       entrance_position.y + deviation.y * length;
     
     // Apply the collimator vignetting function (if available).
     if (NULL!=lad->vignetting) {
       double theta=acos(cos_theta);
-      p = sixt_get_random_number();
+      p=sixt_get_random_number();
       if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
 	// The photon does not hit the detector at all,
 	// because it is absorbed by the collimator.

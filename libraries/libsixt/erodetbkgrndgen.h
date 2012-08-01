@@ -38,6 +38,8 @@ typedef struct eroBackgroundInput {
   double *hit_ypos;
   double *hit_time;
   double *hit_energy;
+
+  size_t *eventlist;
 } eroBackgroundInput;
 
 /** structure which contains the output data and
@@ -98,8 +100,10 @@ int calcEvents(const double* const hit_time, const long numrows);
 
 /** calculate event rate out of interval and number of events */
 double calcEventRate(const double* hit_time,
-                     const long numrows,
-                     const int numevents,
-                     const double interval);
+                            const long numrows,
+                            const int numevents,
+                            const double interval);
+
+void fillEventList(const double* const hit_time, const long numrows, size_t* const eventlist);
 
 #endif   /* _ERODETBKGRNDGEN_H_ */
