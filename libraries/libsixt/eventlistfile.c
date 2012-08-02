@@ -71,7 +71,8 @@ EventListFile* openNewEventListFile(const char* const filename,
 
   // Create a new event list FITS file from the template file.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/eventlist.tpl");
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
+	  "/templates/eventlist.tpl");
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 

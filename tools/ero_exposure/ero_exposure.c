@@ -43,6 +43,8 @@ struct Parameters {
 
   /** Number of interim maps to be stored. */
   int intermaps;
+
+  char clobber;
 };
 
 
@@ -53,6 +55,7 @@ void saveExpoMap(float** const map,
 		 const char* const filename,
 		 const long naxis1, const long naxis2,
 		 struct wcsprm* const wcs,
+		 const char clobber,
 		 int* const status) 
 {
   // 1d image buffer for storing in FITS image.
@@ -65,10 +68,32 @@ void saveExpoMap(float** const map,
   char* headerstr=NULL;
 
   // Store the exposure map in a FITS file image.
-  headas_chat(4, "\nstore exposure map in FITS image '%s' ...\n", 
+  headas_chat(3, "\nstore exposure map in FITS image '%s' ...\n", 
 	      filename);
 
   do { // Beginning of error handling loop.
+
+    // Check if the file already exists.
+    int exists;
+    fits_file_exists(filename, &exists, status);
+    CHECK_STATUS_VOID(*status);
+    if (0!=exists) {
+      if (0!=clobber) {
+	// Delete the file.
+	remove(filename);
+      } else {
+	// Throw an error.
+	char msg[MAXMSG];
+	sprintf(msg, "file '%s' already exists", filename);
+	SIXT_ERROR(msg);
+	*status=EXIT_FAILURE;
+	return;
+      }
+    }
+
+    // Create a new FITS-file (remove existing one before):
+    fits_create_file(&fptr, filename, status);
+    CHECK_STATUS_BREAK(*status);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
     map1d=(float*)malloc(naxis1*naxis2*sizeof(float));
@@ -81,11 +106,6 @@ void saveExpoMap(float** const map,
 	map1d[x + y*naxis1] = map[x][y];
       }
     }
-
-    // Create a new FITS-file (remove existing one before):
-    remove(filename);
-    fits_create_file(&fptr, filename, status);
-    CHECK_STATUS_BREAK(*status);
 
     // Create an image in the FITS-file (primary HDU):
     long naxes[2] = { naxis1, naxis2 };
@@ -154,7 +174,7 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -379,7 +399,7 @@ int ero_exposure_main()
 
 	  // Save the interim map.
 	  saveExpoMap(expoMap, filename, par.ra_bins, par.dec_bins, 
-		      &wcs, &status);
+		      &wcs, par.clobber, &status);
 	  CHECK_STATUS_BREAK(status);
 
 	  intermaps++;
@@ -393,8 +413,8 @@ int ero_exposure_main()
     // END of generating the exposure map.
 
     // Store the exposure map in the output file.
-    saveExpoMap(expoMap, par.Exposuremap,
-		par.ra_bins, par.dec_bins, &wcs, &status);
+    saveExpoMap(expoMap, par.Exposuremap, par.ra_bins, par.dec_bins, 
+		&wcs, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -545,9 +565,16 @@ int ero_exposure_getpar(struct Parameters *par)
     SIXT_ERROR("failed reading the projection type");
     return(status);
   }
+
   status=ape_trad_query_int("intermaps", &par->intermaps);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the number of inter-maps");
+    return(status);
+  }
+
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
