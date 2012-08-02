@@ -43,7 +43,7 @@ struct Parameters {
 
   char Background;
 
-  /** [deg] */
+  /** Telescope pointing direction [deg]. */
   float RA, Dec;
 
   char Simput[MAXFILENAME];

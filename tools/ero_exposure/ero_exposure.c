@@ -21,9 +21,12 @@ struct Parameters {
   char Vignetting[MAXFILENAME];  // filename of the vignetting file
   char Exposuremap[MAXFILENAME]; // output: exposure map
   
+  /** Telescope Pointing direction [deg]. */
+  float RA, Dec;
+
   double t0;
   double timespan;
-  /** Step width for the exposure map calculation. */
+  /** Step width for the exposure map calculation [s]. */
   double dt; 
 
   double fov_diameter;
@@ -151,10 +154,10 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
   
 
-  do {  // Beginning of the ERROR handling loop.
+  do { // Beginning of the ERROR handling loop.
 
     // --- Initialization ---
     // Read the program parameters using PIL library.
@@ -174,16 +177,16 @@ int ero_exposure_main()
 	  }
 	} else {
 	  status = EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
+	  SIXT_ERROR("memory allocation for exposure map failed");
 	  break;
 	}
       }
     } else {
       status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for exposure map failed!\n", status);
+      SIXT_ERROR("memory allocation for exposure map failed");
       break;
     }
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Set up the WCS data structure.
     if (0!=wcsini(1, 2, &wcs)) {
@@ -230,9 +233,54 @@ int ero_exposure_main()
     // Gaussian distribution.
     HDmtInit(1);
 
-    // Get the telescope attitude data.
-    ac=loadAttitudeCatalog(par.Attitude, &status);
-    CHECK_STATUS_BREAK(status);
+
+    // Set up the Attitude.
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.Attitude);
+    strtoupper(ucase_buffer);
+    if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
+      // Set up a simple pointing attitude.
+
+      // First allocate memory.
+      ac=getAttitudeCatalog(&status);
+      CHECK_STATUS_BREAK(status);
+
+      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
+      if (NULL==ac->entry) {
+	status=EXIT_FAILURE;
+	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	break;
+      }
+
+      // Set the values of the entries.
+      ac->nentries=1;
+      ac->entry[0]=defaultAttitudeEntry();
+      ac->entry[0].time=par.t0;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+
+      Vector vz = {0., 0., 1.};
+      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
+
+    } else {
+      // Load the attitude from the given file.
+      ac=loadAttitudeCatalog(par.Attitude, &status);
+      CHECK_STATUS_BREAK(status);
+      
+      // Check if the required time interval for the simulation
+      // is a subset of the time described by the attitude file.
+      if ((ac->entry[0].time > par.t0) || 
+	  (ac->entry[ac->nentries-1].time < par.t0+par.timespan)) {
+	status=EXIT_FAILURE;
+	char msg[MAXMSG];
+	sprintf(msg, "attitude data does not cover the "
+		"specified period from %lf to %lf!", 
+		par.t0, par.t0+par.timespan);
+	SIXT_ERROR(msg);
+	break;
+      }
+    }
+    // END of setting up the attitude.
+
 
     // Load the Vignetting data.
     if (0<strlen(par.Vignetting)) {
@@ -382,77 +430,126 @@ int ero_exposure_main()
 
 int ero_exposure_getpar(struct Parameters *par)
 {
-  int ra_bins, dec_bins;    // Buffer
-  int status=EXIT_SUCCESS;  // Error status
+  // String input buffer.
+  char* sbuffer=NULL;
+
+  // Error status.
+  int status=EXIT_SUCCESS; 
+
+  // Read all parameters via the ape_trad_ routines.
   
-  // Get the filename of the input attitude file (FITS file)
-  if ((status = PILGetFname("Attitude", par->Attitude))) {
-    HD_ERROR_THROW("Error reading the filename of the attitude file!\n", status);
+  status=ape_trad_query_string("Attitude", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the attitude file");
+    return(status);
+  } 
+  strcpy(par->Attitude, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_float("RA", &par->RA);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the right ascension of the telescope "
+	       "pointing");
+    return(status);
+  } 
+
+  status=ape_trad_query_float("Dec", &par->Dec);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the declination of the telescope "
+	       "pointing");
+    return(status);
+  } 
+
+  // Get the filename of the vignetting data file (FITS file).
+  status=ape_trad_query_string("Vignetting", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the vignetting file");
+    return(status);
   }
-  
-  // Get the filename of the vignetting data file (FITS file)
-  else if ((status = PILGetString("Vignetting", 
-				  par->Vignetting))) {
-    HD_ERROR_THROW("Error reading the filename of the vignetting file!\n", status);
+  strcpy(par->Vignetting, sbuffer);
+  free(sbuffer);
+
+  // Get the filename of the output exposure map (FITS file).
+  status=ape_trad_query_file_name("Exposuremap", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the filename of the exposure map");
+    return(status);
+  }
+  strcpy(par->Exposuremap, sbuffer);
+  free(sbuffer);
+
+  // Read the diameter of the FOV (in arcmin).
+  status=ape_trad_query_double("fov_diameter", &par->fov_diameter);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the diameter of the FOV");
+    return(status);
   }
 
-  // Get the filename of the output exposure map (FITS file)
-  else if ((status = PILGetFname("Exposuremap", par->Exposuremap))) {
-    HD_ERROR_THROW("Error reading the filename of the exposure map!\n", status);
+  // Get the start time of the exposure map calculation.
+  status=ape_trad_query_double("t0", &par->t0);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the 't0' parameter");
+    return(status);
   }
 
-  // Read the diameter of the FOV (in arcmin)
-  else if ((status = PILGetReal("fov_diameter", &par->fov_diameter))) {
-    HD_ERROR_THROW("Error reading the diameter of the FOV!\n", status);
+  // Get the timespan for the exposure map calculation.
+  status=ape_trad_query_double("timespan", &par->timespan);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the 'timespan' parameter");
+    return(status);
   }
 
-  // Get the start time of the exposure map calculation
-  else if ((status = PILGetReal("t0", &par->t0))) {
-    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
-  }
-
-  // Get the timespan for the exposure map calculation
-  else if ((status = PILGetReal("timespan", &par->timespan))) {
-    HD_ERROR_THROW("Error reading the 'timespan' parameter!\n", status);
-  }
-
-  // Get the time step for the exposure map calculation
-  else if ((status = PILGetReal("dt", &par->dt))) {
-    HD_ERROR_THROW("Error reading the 'dt' parameter!\n", status);
+  // Get the time step for the exposure map calculation.
+  status=ape_trad_query_double("dt", &par->dt);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the 'dt' parameter");
+    return(status);
   }
 
   // Get the position of the desired section of the sky 
   // (right ascension and declination range).
-  else if ((status = PILGetReal("ra1", &par->ra1))) {
-    HD_ERROR_THROW("Error reading the 'ra1' parameter!\n", status);
+  status=ape_trad_query_double("ra1", &par->ra1);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the 'ra1' parameter");
+    return(status);
   }
-  else if ((status = PILGetReal("ra2", &par->ra2))) {
-    HD_ERROR_THROW("Error reading the 'ra2' parameter!\n", status);
+  status=ape_trad_query_double("ra2", &par->ra2);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the 'ra2' parameter");
+    return(status);
   }
-  else if ((status = PILGetReal("dec1", &par->dec1))) {
-    HD_ERROR_THROW("Error reading the 'dec1' parameter!\n", status);
+  status=ape_trad_query_double("dec1", &par->dec1);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the 'dec1' parameter");
+    return(status);
   }
-  else if ((status = PILGetReal("dec2", &par->dec2))) {
-    HD_ERROR_THROW("Error reading the 'dec2' parameter!\n", status);
+  status=ape_trad_query_double("dec2", &par->dec2);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the 'dec2' parameter");
+    return(status);
   }
   // Get the number of x- and y-bins for the exposure map.
-  else if ((status = PILGetInt("ra_bins", &ra_bins))) {
-    HD_ERROR_THROW("Error reading the number of RA bins!\n", status);
+  status=ape_trad_query_long("ra_bins", &par->ra_bins);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the number of RA bins");
+    return(status);
   }
-  else if ((status = PILGetInt("dec_bins", &dec_bins))) {
-    HD_ERROR_THROW("Error reading the number of DEC bins!\n", status);
-  }
-
-  else if ((status = PILGetInt("projection", &par->projection))) {
-    HD_ERROR_THROW("Error reading the projection type!\n", status);
-  }
-  else if ((status = PILGetInt("intermaps", &par->intermaps))) {
-    HD_ERROR_THROW("Error reading the number of inter-maps!\n", status);
+  status=ape_trad_query_long("dec_bins", &par->dec_bins);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the number of DEC bins");
+    return(status);
   }
 
-  // Convert Integer types to Long.
-  par->ra_bins  = (long)ra_bins;
-  par->dec_bins = (long)dec_bins;
+  status=ape_trad_query_int("projection", &par->projection);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the projection type");
+    return(status);
+  }
+  status=ape_trad_query_int("intermaps", &par->intermaps);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the number of inter-maps");
+    return(status);
+  }
 
   // Convert angles from [deg] to [rad].
   par->ra1  *= M_PI/180.;
