@@ -178,7 +178,7 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -344,10 +344,6 @@ int ero_exposure_main()
     double time;
     for (time=par.t0; time<par.t0+par.timespan; time+=par.dt) {
       
-      // Print the current time (program status information for the user).
-      headas_chat(5, "\rtime: %.1lf s ", time);
-      fflush(NULL);
-
       // Determine the telescope pointing direction at the current time.
       Vector telescope_nz = getTelescopeNz(ac, time, &status);
       CHECK_STATUS_BREAK(status);
