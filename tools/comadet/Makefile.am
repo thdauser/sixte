@@ -1,6 +1,7 @@
 AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall -Werror
 
+
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
@@ -8,6 +9,7 @@ pfilesdir = @PFILESDIR@
 dist_pfiles_DATA = comadet.par
 
 AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
+
 
 ############ BINARIES #################
 
@@ -17,4 +19,8 @@ bin_PROGRAMS = comadet
 
 comadet_SOURCES = comadet.c comadet.h
 comadet_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+comadet_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+comadet_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+comadet_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+comadet_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
 

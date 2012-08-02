@@ -1,0 +1,3 @@
+[submodule "simput"]
+	path = simput
+	url = ssh://crux/data/git/simput.git/

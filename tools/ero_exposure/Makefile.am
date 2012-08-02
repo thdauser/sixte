@@ -1,10 +1,6 @@
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall
 #AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
 
 
 ########## PIL .par-FILES##############
@@ -22,4 +18,8 @@ bin_PROGRAMS = ero_exposure
 
 ero_exposure_SOURCES = ero_exposure.c
 ero_exposure_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+ero_exposure_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+ero_exposure_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+ero_exposure_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+ero_exposure_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
 

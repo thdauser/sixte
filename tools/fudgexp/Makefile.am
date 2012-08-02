@@ -1,10 +1,6 @@
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
 
 
 ########## DIRECTORIES ###############
@@ -20,6 +16,10 @@ dist_pfiles_DATA = fudgexp.par
 # in the 'bin' directory.
 bin_PROGRAMS = fudgexp
 
-fudgexp_SOURCES = fudgexp.c fudgexp.h
-fudgexp_LDADD   = @top_builddir@/libraries/libsixt/libsixt.la
+fudgexp_SOURCES= fudgexp.c fudgexp.h
+fudgexp_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+fudgexp_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+fudgexp_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+fudgexp_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+fudgexp_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
 

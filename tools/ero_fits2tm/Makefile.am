@@ -1,12 +1,6 @@
-#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
-
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
 
 
 ########## DIRECTORIES ###############
@@ -22,6 +16,11 @@ dist_pfiles_DATA = ero_fits2tm.par
 # in the 'bin' directory.
 bin_PROGRAMS = ero_fits2tm
 
-ero_fits2tm_SOURCES = ero_fits2tm.c
+ero_fits2tm_SOURCES= ero_fits2tm.c
 ero_fits2tm_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+ero_fits2tm_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+ero_fits2tm_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+ero_fits2tm_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+ero_fits2tm_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
+
 

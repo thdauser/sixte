@@ -17,4 +17,8 @@ bin_PROGRAMS = htrssim
 
 htrssim_SOURCES = htrssim.c htrssim.h
 htrssim_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+htrssim_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+htrssim_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+htrssim_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+htrssim_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
 

@@ -1,8 +1,9 @@
-AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/simput/libsimput 
+AM_CFLAGS += -I@top_srcdir@/simput/extlib/cfitsio 
+AM_CFLAGS += -I@top_srcdir@/simput/extlib/wcslib/C
+AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
 
 
 ########## DIRECTORIES ###############
@@ -18,7 +19,10 @@ dist_pfiles_DATA = gendetsim.par
 # in the 'bin' directory.
 bin_PROGRAMS = gendetsim
 
-gendetsim_SOURCES = gendetsim.c gendetsim.h
-gendetsim_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
-
+gendetsim_SOURCES= gendetsim.c gendetsim.h
+gendetsim_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+gendetsim_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+gendetsim_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+gendetsim_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+gendetsim_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
 

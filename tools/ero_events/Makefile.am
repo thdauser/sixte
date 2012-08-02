@@ -1,5 +1,4 @@
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall -Werror
 
 ########## DIRECTORIES ###############
@@ -16,6 +15,10 @@ AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
 # in the 'bin' directory.
 bin_PROGRAMS = ero_events
 
-ero_events_SOURCES = ero_events.c ero_events.h
-ero_events_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+ero_events_SOURCES= ero_events.c ero_events.h
+ero_events_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+ero_events_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+ero_events_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+ero_events_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+ero_events_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
 

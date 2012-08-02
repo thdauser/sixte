@@ -1,3 +1,7 @@
+AM_CFLAGS  = -I@top_srcdir@/simput/libsimput 
+AM_CFLAGS += -I@top_srcdir@/simput/extlib/cfitsio 
+AM_CFLAGS += -I@top_srcdir@/simput/extlib/wcslib/C
+
 ########## DIRECTORIES ###############
 
 # Directory where to install the FITS template files.
@@ -23,7 +27,7 @@ dist_xml_DATA += htrs.xml
 dist_xml_DATA += comadet.xml
 dist_xml_DATA += aciss3.xml
 
-AM_CFLAGS = -DSIXT_DATA_PATH='"$(pkgdatadir)"'
+AM_CFLAGS += -DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 ########### LIBRARIES #################
 

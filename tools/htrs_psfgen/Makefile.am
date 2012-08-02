@@ -1,18 +1,12 @@
-#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
-
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
 
 
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
-pfilesdir = @PFILESDIR@
+#pfilesdir = @PFILESDIR@
 #dist_pfiles_DATA = htrs_psfgen.par
 
 
@@ -22,5 +16,9 @@ pfilesdir = @PFILESDIR@
 # in the 'bin' directory.
 bin_PROGRAMS = htrs_psfgen
 
-htrs_psfgen_SOURCES = htrs_psfgen.c
+htrs_psfgen_SOURCES= htrs_psfgen.c
 htrs_psfgen_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+htrs_psfgen_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+htrs_psfgen_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+htrs_psfgen_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+htrs_psfgen_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.50], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.51], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
@@ -30,13 +30,12 @@ CFLAGS="$CFLAGS -I$HEADAS/include -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SO
 # Linker Flags:
 LDFLAGS="$LDFLAGS -L$HEADAS/lib -g -W -Wall"
 
-# Check for libraries:  (objdump -R/-T libncurses...)
+# Check for libraries: (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 
 ####################################
 # cfitsio
-AC_SEARCH_LIBS(ffopen, 
-	[cfitsio_3.29 cfitsio_3.27 cfitsio_3.25 cfitsio_3.24 cfitsio_3.22 cfitsio_3.18 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
+AC_SEARCH_LIBS(ffopen, [cfitsio], 
 	[], [AC_MSG_ERROR([No supported version of cfitsio library found!])], [])
 
 ####################################
@@ -165,10 +164,6 @@ fi
 AC_SEARCH_LIBS(ReadRMFMatrix, hdsp $my_hdsp, [],
               [AC_MSG_ERROR([No hdsp library found!])], [])
 AC_SUBST(lib_hdsp)
-#################################### 
-# WCS Library:
-AC_SEARCH_LIBS(wcsbth, [wcs_6.11 wcs_6.10 wcs_6.9 wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
-		       [AC_MSG_ERROR([No WCS library found!])], [])
 
 #################################### 
 # GSL Libraries:
@@ -176,12 +171,6 @@ AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])
 AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
-
-
-####################################
-# SIMPUT
-AC_SEARCH_LIBS(getSimputSource, [simput], [], 
-	       [AC_MSG_ERROR([No supported version of SIMPUT library found!])], [])
 
 #################################### 
 # Check for header files:
@@ -259,5 +248,8 @@ AC_CONFIG_FILES([Makefile
 		tools/mmap/Makefile
 		share/Makefile
 		share/instruments/Makefile])
+
+AC_CONFIG_SUBDIRS([simput])
+
 AC_OUTPUT
 

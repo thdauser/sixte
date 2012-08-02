@@ -1,10 +1,6 @@
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
-AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
+AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
 
 
 ########## DIRECTORIES ###############
@@ -22,4 +18,8 @@ bin_PROGRAMS = xms_pixtemp
 
 xms_pixtemp_SOURCES = xms_pixtemp.c xms_pixtemp.h
 xms_pixtemp_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+xms_pixtemp_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+xms_pixtemp_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+xms_pixtemp_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+xms_pixtemp_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
 

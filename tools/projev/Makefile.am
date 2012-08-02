@@ -1,12 +1,9 @@
-#CFLAGS = -g -W -Wall -O0       # activate this line for debug mode -> now in configure.ac
-
-# If CFLAGS is overwritten, the -I${HEADAS}/include flag has to be reset manually:
-AM_CFLAGS  = -I${HEADAS}/include 
+AM_CFLAGS  = -I@top_srcdir@/simput/libsimput 
+AM_CFLAGS += -I@top_srcdir@/simput/extlib/cfitsio 
+AM_CFLAGS += -I@top_srcdir@/simput/extlib/wcslib/C
 AM_CFLAGS += -I@top_srcdir@/libraries/libsixt 
 AM_CFLAGS += -Wall 
 #AM_CFLAGS += -Wall -Werror
-
-#LDADD = ...    add additional libraries
 
 
 ########## PIL .par-FILES##############
@@ -22,5 +19,9 @@ dist_pfiles_DATA = projev.par
 # in the 'bin' directory.
 bin_PROGRAMS = projev
 
-projev_SOURCES = projev.c
-projev_LDADD = @top_builddir@/libraries/libsixt/libsixt.la
+projev_SOURCES= projev.c
+projev_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
+projev_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
+projev_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
+projev_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
+projev_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
