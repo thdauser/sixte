@@ -20,6 +20,7 @@ struct Parameters {
   char Attitude[MAXFILENAME];    // filename of the attitude file
   char Vignetting[MAXFILENAME];  // filename of the vignetting file
   char Exposuremap[MAXFILENAME]; // output: exposure map
+  char ProgressFile[MAXFILENAME];
   
   /** Telescope Pointing direction [deg]. */
   float RA, Dec;
@@ -168,13 +169,16 @@ int ero_exposure_main()
   // WCS data structure used for projection.
   struct wcsprm wcs = { .flag=-1 };
 
+  // Output file for progress status.
+  FILE* progressfile=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -253,9 +257,19 @@ int ero_exposure_main()
     // Gaussian distribution.
     HDmtInit(1);
 
+    // Set the progress status output file.
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.ProgressFile);
+    strtoupper(ucase_buffer);
+    if (0!=strcmp(ucase_buffer, "STDOUT")) {
+      progressfile=fopen(par.ProgressFile, "w+");
+      char msg[MAXMSG];
+      sprintf(msg, "could not open file '%s' for output of progress status",
+	      par.ProgressFile);
+      CHECK_NULL_BREAK(progressfile, status, msg);
+    }
 
     // Set up the Attitude.
-    char ucase_buffer[MAXFILENAME];
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);
     if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
@@ -313,6 +327,17 @@ int ero_exposure_main()
 
     // --- Beginning of Exposure Map calculation
     headas_chat(3, "calculate the exposure map ...\n");
+
+    // Simulation progress status (running from 0 to 100).
+    unsigned int progress=0;
+    if (NULL==progressfile) {
+      headas_chat(2, "\r%.1lf %%", 0.);
+      fflush(NULL);
+    } else {
+      rewind(progressfile);
+      fprintf(progressfile, "%.2lf", 0.);
+      fflush(progressfile);	
+    }
 
     // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
     int intermaps=0;
@@ -406,10 +431,33 @@ int ero_exposure_main()
 	}
       }
       // END of saving an interim map.
+
+      // Program progress output.
+      while((unsigned int)((time-par.t0)*100./par.timespan)>progress) {
+	progress++;
+	if (NULL==progressfile) {
+	  headas_chat(2, "\r%.1lf %%", progress*1.);
+	  fflush(NULL);
+	} else {
+	  rewind(progressfile);
+	  fprintf(progressfile, "%.2lf", progress*1./100.);
+	  fflush(progressfile);	
+	}
+      }
     } 
     CHECK_STATUS_BREAK(status);
     // END of LOOP over the specified time interval.
     
+    // Progress output.
+    if (NULL==progressfile) {
+      headas_chat(2, "\r%.1lf %%\n", 100.);
+      fflush(NULL);
+    } else {
+      rewind(progressfile);
+      fprintf(progressfile, "%.2lf", 1.);
+      fflush(progressfile);	
+    }
+
     // END of generating the exposure map.
 
     // Store the exposure map in the output file.
@@ -571,6 +619,14 @@ int ero_exposure_getpar(struct Parameters *par)
     SIXT_ERROR("failed reading the number of inter-maps");
     return(status);
   }
+
+  status=ape_trad_query_string("ProgressFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the progress status file");
+    return(status);
+  } 
+  strcpy(par->ProgressFile, sbuffer);
+  free(sbuffer);
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
