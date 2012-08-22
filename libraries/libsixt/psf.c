@@ -12,13 +12,20 @@ int get_psf_pos(struct Point2d* const position,
   if (NULL==psf) return(0);
 
   // Determine the direction of origin of the photon.
-  Vector photon_direction = unit_vector(photon.ra, photon.dec);
+  Vector photon_direction=unit_vector(photon.ra, photon.dec);
   
   // Calculate the off-axis angle ([rad]).
-  double theta = acos(scalar_product(&telescope.nz, &photon_direction));
-  // and the azimuthal angle ([rad]) of the source position.
-  double phi = atan2(scalar_product(&telescope.ny, &photon_direction), 
-		     scalar_product(&telescope.nx, &photon_direction));
+  double cos_theta=scalar_product(&telescope.nz, &photon_direction);
+  // Avoid numerical problems with numbers slightly larger than 1.
+  if ((cos_theta>1.0) && (cos_theta-1.0<1.e-10)) {
+    cos_theta=1.0;
+  }
+  assert(cos_theta<=1.0);
+  double theta=acos(cos_theta);
+
+  // Calculate the azimuthal angle ([rad]) of the source position.
+  double phi=atan2(scalar_product(&telescope.ny, &photon_direction), 
+		   scalar_product(&telescope.nx, &photon_direction));
 
   // Get a random number to determine a random hitting position.
   double rnd = sixt_get_random_number();

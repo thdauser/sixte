@@ -1,7 +1,14 @@
-AM_CFLAGS  = -I@top_srcdir@/libraries/libsixt 
-AM_CFLAGS += -Wall 
-#AM_CFLAGS += -Wall -Werror
-
+AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
+AM_CFLAGS+=-I@top_srcdir@/extlib/ape/include
+AM_CFLAGS+=-I@top_srcdir@/extlib/heainit
+AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
+AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
+AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
+AM_CFLAGS+=-Wall 
+#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -9,16 +16,14 @@ AM_CFLAGS += -Wall
 #pfilesdir = @PFILESDIR@
 #dist_pfiles_DATA = htrs_psfgen.par
 
-
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS = htrs_psfgen
+bin_PROGRAMS=htrs_psfgen
 
-htrs_psfgen_SOURCES= htrs_psfgen.c
-htrs_psfgen_LDADD  = @top_builddir@/libraries/libsixt/libsixt.la
-htrs_psfgen_LDADD += @top_builddir@/simput/libsimput/libsimput.la 
-htrs_psfgen_LDADD += @top_builddir@/simput/extlib/cfitsio/libcfitsio.a 
-htrs_psfgen_LDADD += @top_builddir@/simput/extlib/wcslib/C/libwcs-4.13.4.a
-htrs_psfgen_LDADD += @top_builddir@/simput/extlib/fftw/libfftw3.la
+htrs_psfgen_SOURCES=htrs_psfgen.c
+htrs_psfgen_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

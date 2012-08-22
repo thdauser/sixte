@@ -8,7 +8,7 @@
 #include "sixt.h"
 #include "patternfile.h"
 #include "pattern.h"
-#include <wcslib/wcslib.h>
+#include "wcslib.h"
 
 #define TOOLSUB imgev_main
 #include "headas_main.c"

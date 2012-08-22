@@ -16,7 +16,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <expat.h>
-#include <wcslib/wcshdr.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -28,6 +27,7 @@
 #include "headas.h"
 #include "headas_error.h"
 #include "headas_rand.h"
+#include "wcshdr.h"
 
 
 /////////////////////////////////////////////////////////////////

@@ -4,7 +4,7 @@
 #include "sixt.h"
 #include "photon.h"
 #include "photonlistfile.h"
-#include <wcslib/wcslib.h>
+#include "wcslib.h"
 
 #define TOOLSUB fudgexp_main
 #include "headas_main.c"
