@@ -6,8 +6,6 @@
 
 #include "sixt.h"
 
-#include <wcslib/wcslib.h>
-
 #include "vector.h"
 #include "point.h"
 #include "telescope.h"
