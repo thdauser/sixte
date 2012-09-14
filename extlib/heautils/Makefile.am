@@ -4,7 +4,7 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/ape/include
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-lib_LTLIBRARIES=libhdutils.la
+noinst_LTLIBRARIES=libhdutils.la
 
 # Sources:
 libhdutils_la_SOURCES=headas_sort.c headas_lock.c headas_history.c	\

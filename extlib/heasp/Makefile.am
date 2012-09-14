@@ -6,7 +6,7 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-lib_LTLIBRARIES=libhdsp.la
+noinst_LTLIBRARIES=libhdsp.la
 
 # Sources:
 libhdsp_la_SOURCES=WriteRMF.c WritePHA.c WriteARF.c SPutils.c		\

@@ -27,3 +27,4 @@ phogen_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
 phogen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 phogen_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 phogen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+#phogen_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a 

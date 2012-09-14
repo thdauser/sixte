@@ -3,7 +3,7 @@ AM_CFLAGS=-I@top_srcdir@/extlib/ape/include
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-lib_LTLIBRARIES=libape.la
+noinst_LTLIBRARIES=libape.la
 
 # Sources:
 libape_la_SOURCES=ape_trad.c ape_util.c ape_test.c ape_session.c	\
