@@ -5,13 +5,7 @@
 
 #ifndef HEASP_H
 #define HEASP_H 1
-
-#ifndef HEASP_CPP
 #include "heasp.h"
-#else
-#include "Cheasp.h"
-#endif
-
 #endif
 
 

@@ -7,11 +7,6 @@ AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'bui
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
 
-# Check if the environment variable $HEADAS is available.
-if test -z "$HEADAS"; then
-   AC_MSG_WARN([HEADAS is not defined - the build might fail!])
-fi
-
 # Check for programs:
 AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
 AC_PROG_FC # Search for a Fortran compiler.
@@ -26,7 +21,6 @@ LT_INIT #([disable-shared]) #([shared])
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
 CFLAGS="$CFLAGS -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
-# -DHEASP_CPP (required for HEADAS versions >=6.12)
 
 # Linker Flags:
 LDFLAGS="$LDFLAGS -g -W -Wall"
@@ -55,9 +49,6 @@ AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 # Check for header files:
 AC_HEADER_STDC
 AC_CHECK_HEADERS([limit.h math.h stdio.h stdlib.h stdarg.h string.h])
-#AC_CHECK_HEADERS([headas.h headas_error.h]) 
-# -> problem: not accepted by preprocessor (but by compiler)!
-
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
