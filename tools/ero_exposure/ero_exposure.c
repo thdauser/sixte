@@ -637,7 +637,7 @@ int ero_exposure_getpar(struct Parameters *par)
   par->dec2 *= M_PI/180.;
 
   // Convert angles from [arc min] to [rad].
-  par->fov_diameter *= M_PI/(60.*180.); 
+  par->fov_diameter *= M_PI/180.; 
   
   return(status);
 }

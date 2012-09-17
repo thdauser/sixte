@@ -39,6 +39,11 @@ AC_SEARCH_LIBS(ffopen,
 	[cfitsio_3.29 cfitsio_3.27 cfitsio_3.25 cfitsio_3.24 cfitsio_3.22 cfitsio_3.18 cfitsio_3.12 cfitsio_3.07 cfitsio_3.04 cfitsio], 
 	[], [AC_MSG_ERROR([No supported version of cfitsio library found!])], [])
 
+#################################### 
+# WCS Library:
+AC_SEARCH_LIBS(wcspih, [wcs_6.11 wcs_6.10 wcs_6.9 wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
+                       [AC_MSG_ERROR([No WCS library found!])], [])
+
 ####################################
 # expat
 AC_SEARCH_LIBS(XML_Parse, [expat], 
@@ -165,10 +170,6 @@ fi
 AC_SEARCH_LIBS(ReadRMFMatrix, hdsp $my_hdsp, [],
               [AC_MSG_ERROR([No hdsp library found!])], [])
 AC_SUBST(lib_hdsp)
-#################################### 
-# WCS Library:
-AC_SEARCH_LIBS(wcsbth, [wcs_6.11 wcs_6.10 wcs_6.9 wcs-4.4.4 wcs-4.3.3 wcs-4.3], [], \
-		       [AC_MSG_ERROR([No WCS library found!])], [])
 
 #################################### 
 # GSL Libraries:
@@ -176,7 +177,6 @@ AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])
 AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
-
 
 ####################################
 # SIMPUT

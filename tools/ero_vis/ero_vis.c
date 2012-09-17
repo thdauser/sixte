@@ -281,8 +281,8 @@ int ero_vis_getpar(struct Parameters *par)
     SIXT_ERROR("failed reading the clobber parameter");
   }
 
-  // Convert FOV diameter from [arc min] to [rad].
-  par->fov_diameter *= M_PI/(60.*180.); 
+  // Convert FOV diameter from [deg] to [rad].
+  par->fov_diameter *= M_PI/180.; 
   
   return(status);
 }
