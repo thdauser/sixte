@@ -10,7 +10,6 @@ struct RMF* loadRMF(char* filename, int* const status)
     return(rmf);
   }
 
-#ifndef HEASP_CPP
   // Load the RMF from the FITS file using the HEAdas RMF access routines
   // (part of libhdsp).
   fitsfile* fptr=NULL;
@@ -20,11 +19,6 @@ struct RMF* loadRMF(char* filename, int* const status)
   // Read the 'SPECRESP MATRIX' or 'MATRIX' extension:
   *status=ReadRMFMatrix(fptr, 0, rmf);
   CHECK_STATUS_RET(*status, rmf);
-#else
-  // Read the 'SPECRESP MATRIX' or 'MATRIX' extension:
-  *status=ReadRMFMatrix(filename, 0, rmf);
-  CHECK_STATUS_RET(*status, rmf);
-#endif
 
   // Print some information:
   headas_chat(5, "RMF loaded with %ld energy bins and %ld channels\n",
@@ -57,17 +51,12 @@ struct RMF* loadRMF(char* filename, int* const status)
 
 
   // Read the EBOUNDS extension:
-#ifndef HEASP_CPP
   *status=ReadRMFEbounds(fptr, 0, rmf);
   CHECK_STATUS_RET(*status, rmf);
 
   // Close the open FITS file.
   fits_close_file(fptr, status);
   CHECK_STATUS_RET(*status, rmf);
-#else
-  *status=ReadRMFEbounds(filename, 0, rmf);
-  CHECK_STATUS_RET(*status, rmf);
-#endif
 
   return(rmf);
 }
@@ -142,10 +131,8 @@ void returnRMFChannel(struct RMF *rmf, const float energy,
 {
   ReturnChannel(rmf, energy, 1, channel);
 
-#ifndef HEASP_CPP
   // Due to a bug in the HEAdas heasp ReturnChannel() routine,
   // we have to subtract the FirstChannel in order to get the
   // right value.
   *channel -= rmf->FirstChannel;
-#endif 
 }

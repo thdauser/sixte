@@ -1,0 +1,3 @@
+[submodule "extlib/simput"]
+	path = extlib/simput
+	url = ssh://crux/data/git/simput.git/

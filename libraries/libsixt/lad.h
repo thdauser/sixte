@@ -5,6 +5,7 @@
 #include "arf.h"
 #include "point.h"
 #include "rmf.h"
+#include "simput.h"
 #include "vignetting.h"
 #include "xmlbuffer.h"
 

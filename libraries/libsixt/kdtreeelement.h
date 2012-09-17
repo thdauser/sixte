@@ -3,6 +3,7 @@
 
 #include "sixt.h"
 #include "check_fov.h"
+#include "simput.h"
 #include "source.h"
 
 

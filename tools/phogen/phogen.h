@@ -9,6 +9,7 @@
 #include "photonlistfile.h"
 #include "simput.h"
 #include "vector.h"
+#include "simput.h"
 #include "sourcecatalog.h"
 
 #define TOOLSUB phogen_main

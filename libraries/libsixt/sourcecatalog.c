@@ -157,6 +157,8 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   }
   strcat(specfilename, src->spectrum);
   char *search=strchr(specfilename, ']');
+  CHECK_NULL_RET(search, *status, 
+		 "no valid reference to source spectrum", cat) 
   *(search+1)='\0';
 
   headas_chat(3, "load spectra from file '%s' into cache ...\n", specfilename);
