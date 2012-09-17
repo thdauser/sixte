@@ -11,7 +11,6 @@
 #include "telescope.h"
 #include "attitudecatalog.h"
 #include "check_fov.h"
-//#include "wcslib.h"
 
 #define TOOLSUB comaexp_main
 #include "headas_main.c"
@@ -31,11 +30,15 @@ struct Parameters {
 
   double t0;
   double timespan;
-  double dt; /**< Step width for the exposure map calculation. */
+  /** Step width for the exposure map calculation [s]. */
+  double dt; 
 
-  double ra1 , ra2;  /**< Desired right ascension range [rad]. */
-  double dec1, dec2; /**< Desired declination range [rad]. */
-  long ra_bins, dec_bins; /**< Number of bins in right ascension and declination. */
+  /** Desired right ascension range [rad]. */
+  double ra1 , ra2;  
+  /** Desired declination range [rad]. */
+  double dec1, dec2; 
+  /** Number of bins in right ascension and declination. */
+  long ra_bins, dec_bins; 
 };
 
 
