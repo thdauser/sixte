@@ -1,3 +1,3 @@
 [submodule "extlib/simput"]
 	path = extlib/simput
-	url = ssh://crux/data/git/simput.git/
+	url = http://www.sternwarte.uni-erlangen.de/git.public/simput.git/
