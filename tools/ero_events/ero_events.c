@@ -217,8 +217,15 @@ int ero_events_main()
       double world[2] = { pattern.ra*180./M_PI, pattern.dec*180./M_PI };
       double imgcrd[2], pixcrd[2];
       double phi, theta;
-      wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &status);
-      CHECK_STATUS_BREAK(status);
+      int wcsstatus=0;
+      wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &wcsstatus);
+      if (0!=wcsstatus) {
+	char msg[MAXMSG];
+	sprintf("WCS coordinate conversion failed (error code %d)", wcsstatus);
+	SIXT_ERROR(msg);
+	status=EXIT_FAILURE;
+	break;
+      }
       long x = (long)pixcrd[0]; 
       if (pixcrd[0] < 0.) x--;
       long y = (long)pixcrd[1]; 

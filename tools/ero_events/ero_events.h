@@ -5,6 +5,7 @@
 #include "sixt.h"
 #include "pattern.h"
 #include "patternfile.h"
+#include "wcs.h"
 
 #define TOOLSUB ero_events_main
 #include "headas_main.c"
