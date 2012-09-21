@@ -808,7 +808,8 @@ int ladsim_main()
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(eventlist_filename, "events.fits");
+      strcpy(eventlist_filename, par.Prefix);
+      strcat(eventlist_filename, "events.fits");
     } else {
       strcpy(eventlist_filename, par.Prefix);
       strcat(eventlist_filename, par.EventList);
@@ -817,10 +818,10 @@ int ladsim_main()
     // Determine the random number generator seed.
     int seed;
     if (-1!=par.Seed) {
-      seed = par.Seed;
+      seed=par.Seed;
     } else {
       // Determine the seed from the system clock.
-      seed = (int)time(NULL);
+      seed=(int)time(NULL);
     }
 
     // Initialize HEADAS random number generator.
