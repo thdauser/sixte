@@ -215,13 +215,13 @@ static inline int ladphdet(const LAD* const lad,
 	(lad->panel[0]->module[0]->element[0]->ydim - 
 	 2.*lad->panel[0]->module[0]->element[0]->yborder)*
 	1.e4; // Total sensitive area [cm^2].
-      headas_chat(5, "background ARF with %lf cm^2\n", backgroundarf->EffArea);
       long ii;
       for (ii=0; ii<narfbins; ii++) {
 	backgroundarf->LowEnergy[ii] =arfEmin*pow(arffactor,ii); // [keV]
 	backgroundarf->HighEnergy[ii]=arfEmin*pow(arffactor,ii+1);
 	backgroundarf->EffArea[ii]   =sensitive_area;
       }
+      headas_chat(5, "background ARF with %.2f cm^2\n", sensitive_area);
 
       // Set reference to background ARF for SIMPUT library.
       simputSetARF(lad->backgroundcatalog, backgroundarf);
