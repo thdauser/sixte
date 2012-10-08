@@ -257,7 +257,7 @@ void getPatternFromFile(const PatternFile* const file,
 		&inull, &pattern->type, &anynul, status);
   fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
 		&inull, &pattern->pileup, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->csignals, row, 1, 9, 
+  fits_read_col(file->fptr, TFLOAT, file->csignals, row, 1, 9, 
 		&lnull, &pattern->signals, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
@@ -302,7 +302,7 @@ void updatePatternInFile(const PatternFile* const file,
 		 1, 1, &pattern->pileup, status);
   fits_write_col(file->fptr, TINT, file->ctype, row, 
 		 1, 1, &pattern->type, status);
-  fits_write_col(file->fptr, TLONG, file->csignals, row, 
+  fits_write_col(file->fptr, TFLOAT, file->csignals, row, 
 		 1, 9, &pattern->signals, status);
   CHECK_STATUS_VOID(*status);
 }
