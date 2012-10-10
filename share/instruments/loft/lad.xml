@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<!-- LOFT LAD version 1.0 -->
 <instrument type="LOFT LAD">
   <telescope>
     <fov diameter="1.5"/>
