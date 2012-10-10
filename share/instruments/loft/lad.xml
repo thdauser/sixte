@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- LOFT LAD version 1.0 -->
+<!-- LOFT LAD version 1.1 -->
 <instrument type="LOFT LAD">
   <telescope>
     <fov diameter="1.5"/>
@@ -39,7 +39,11 @@
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
   <asic deadtime="102.e-6" edeadtime="2.5e-6" coincidencetime="150.e-9" channels="16"/>
-  <threshold readout_lo_keV="0.1" readout_up_keV="50."/>
+  <!-- The lower readout threshold is on purpose set to
+       zero. Otherwise charge would be lost in split events, which,
+       however, is already taken into account in the implemented
+       RMF. -->
+  <threshold readout_lo_keV="0.0" readout_up_keV="50."/>
 
   <readout mode="event">
     <time_width value="1.e-5"/>

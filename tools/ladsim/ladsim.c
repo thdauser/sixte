@@ -325,12 +325,12 @@ static inline int ladphdet(const LAD* const lad,
 
   if (imp->energy>0.) {
     // Element on the LAD.
-    LADElement* element = 
+    LADElement* element=
       lad->panel[imp->panel]->module[imp->module]->element[imp->element];
     // Drift velocity.
-    double vD = lad->mobility * lad->efield;
+    double vD=lad->mobility * lad->efield;
     // Maximum drift time of a charge cloud.
-    double tmax = element->xdim/2 / vD;
+    double tmax=element->xdim/2 / vD;
 
     // Determine if the new impact has to be added to the buffered list.
     if ((NULL==siglist) || (imp->time-siglist->signal.time<=tmax)) {
@@ -347,7 +347,7 @@ static inline int ladphdet(const LAD* const lad,
       lad->panel[imp->panel]->module[imp->module]->element[imp->element];
 
     // Determine the anode pitch [m].
-    float anode_pitch = 
+    float anode_pitch=
       (element->ydim - 2.*element->yborder)/(element->nanodes/2);
 
     // Determine the parameters of the charge cloud.
@@ -365,7 +365,7 @@ static inline int ladphdet(const LAD* const lad,
     double drifttime=imp->position.x / vD;
 
     // Determine the index of the closest anode strip.
-    float xwidth = element->xdim - 2.*element->xborder;
+    float xwidth=element->xdim - 2.*element->xborder;
     double y0;
     if (imp->position.x<0.5*xwidth) {
       y0=imp->position.y/anode_pitch;
@@ -397,7 +397,7 @@ static inline int ladphdet(const LAD* const lad,
 
     // Determine the signal corresponding to the channel according 
     // to the EBOUNDS table.
-    float signal = getEBOUNDSEnergy(channel, lad->rmf, 0);
+    float signal=getEBOUNDSEnergy(channel, lad->rmf, 0);
     assert(signal>=0.);
 
     // Determine which half of the anodes (bottom or top) is affected.
@@ -434,23 +434,23 @@ static inline int ladphdet(const LAD* const lad,
       if (ii<n_anodes-1) {
 	fraction -=gaussint((yi-y0+1.0)*anode_pitch/sigma);
       }
-      newsignal.signal = fraction*signal;
+      newsignal.signal=fraction*signal;
 
       // Apply thresholds.
       if (NULL!=lad->threshold_readout_lo_keV) {
-	if (newsignal.signal < *(lad->threshold_readout_lo_keV)) {
+	if (newsignal.signal <= *(lad->threshold_readout_lo_keV)) {
 	  continue;
 	}
       }
       if (NULL!=lad->threshold_readout_up_keV) {
-	if (newsignal.signal > *(lad->threshold_readout_up_keV)) {
+	if (newsignal.signal >= *(lad->threshold_readout_up_keV)) {
 	  continue;
 	}
       }
 
       // Determine the point of time at which the charge is 
       // collected on the anode.
-      newsignal.time = imp->time + drifttime;
+      newsignal.time=imp->time + drifttime;
 
       newsignal.panel   = imp->panel;
       newsignal.module  = imp->module;
