@@ -34,7 +34,7 @@
 
   <arf filename="LAD_Requirements_v5.1.arf"/>
   <rmf filename="LAD_Requirements_v5.1.rmf"/>
-  <background filename="lad_background.simput"/>
+  <background filename="lad_background_v6.simput"/>
   <temperature value="300"/>
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
