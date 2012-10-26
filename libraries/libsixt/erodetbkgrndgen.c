@@ -127,10 +127,10 @@ void eroBkgCleanUp(int* const status) {
 }
 
 void eroBkgSetRateFct(const char* const filename, int* const status) {
-  SimputLC* rate_lc = getSimputLC(status);
+  SimputLC* rate_lc=NULL;
 
   if(filename != NULL) {
-    rate_lc =  loadSimputLC(filename, status);
+    rate_lc = loadSimputLC(filename, status);
     bkgratefct.numelements = rate_lc->nentries;
     if(bkgratefct.time != NULL) {
       free(bkgratefct.time);
@@ -146,10 +146,11 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
 
     bkgratefct.currenttime = bkgratefct.time;
     bkgratefct.currentrate = bkgratefct.rate;
+
+    freeSimputLC(&rate_lc);
   } else {
     SIXT_ERROR("no simput filename specified for rate function!");
   }
-  freeSimputLC(&rate_lc);
 }
 
 void eroBkgGetRate(double interval) {

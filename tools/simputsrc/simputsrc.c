@@ -65,8 +65,8 @@ int simputsrc_main()
 
   // SIMPUT data structures.
   SimputMIdpSpec* simputspec=NULL;
-  SimputSource* src=NULL;
-  SimputCatalog* cat=NULL;
+  SimputSrc* src=NULL;
+  SimputCtlg* cat=NULL;
   SimputPSD* psd = NULL;
 
   // Error status.
@@ -261,7 +261,7 @@ int simputsrc_main()
     } // END of running ISIS.
 
     // Add the spectra and insert the total spectrum in the SIMPUT file.
-    simputspec=getSimputMIdpSpec(&status);
+    simputspec=newSimputMIdpSpec(&status);
     CHECK_STATUS_BREAK(status);
 
     // Read the spectrum from the file(s).
@@ -452,7 +452,7 @@ int simputsrc_main()
     // -- Create PSD if necessary
 
     if((par.LFQ != 0) || (par.HBOQ != 0) || (par.Q1Q != 0) || (par.Q2Q != 0) || (par.Q3Q != 0)) {
-      psd = getSimputPSD(&status);
+      psd=newSimputPSD(&status);
       CHECK_STATUS_BREAK(status);
       psd->nentries = par.PSDnpt;
 
@@ -536,7 +536,7 @@ int simputsrc_main()
     // -- END of creating PSD
 
     // -- Create a new SIMPUT catalog.
-    cat=openSimputCatalog(par.Simput, READWRITE, 32, 32, 32, 32, &status);
+    cat=openSimputCtlg(par.Simput, READWRITE, 32, 32, 32, 32, &status);
     CHECK_STATUS_BREAK(status);
 
     // Insert a point-like source.
@@ -556,18 +556,18 @@ int simputsrc_main()
     // Get a new source entry. Check if PSD is present and add 
     // to catalog if necessary.
     if (psd != NULL) {
-      src=getSimputSourceV(1, src_name, par.RA*M_PI/180., par.Dec*M_PI/180.,
-			   0., 1., par.Emin, par.Emax, totalFlux,
-			   "[SPECTRUM,1]", "", "[TIMING,1]", &status);
+      src=newSimputSrcV(1, src_name, par.RA*M_PI/180., par.Dec*M_PI/180.,
+			0., 1., par.Emin, par.Emax, totalFlux,
+			"[SPECTRUM,1]", "", "[TIMING,1]", &status);
       CHECK_STATUS_BREAK(status);
     } else {
-      src=getSimputSourceV(1, src_name, par.RA*M_PI/180., par.Dec*M_PI/180.,
-			   0., 1., par.Emin, par.Emax, totalFlux,
-			   "[SPECTRUM,1]", "", "", &status);
+      src=newSimputSrcV(1, src_name, par.RA*M_PI/180., par.Dec*M_PI/180.,
+			0., 1., par.Emin, par.Emax, totalFlux,
+			"[SPECTRUM,1]", "", "", &status);
       CHECK_STATUS_BREAK(status);
     }
 
-    appendSimputSource(cat, src, &status);
+    appendSimputSrc(cat, src, &status);
     CHECK_STATUS_BREAK(status);
 
     // -- END of creating the source catalog.
@@ -612,8 +612,8 @@ int simputsrc_main()
   // Release memory.
   freeSimputMIdpSpec(&simputspec);
   freeSimputPSD(&psd);
-  freeSimputSource(&src);
-  freeSimputCatalog(&cat, &status);
+  freeSimputSrc(&src);
+  freeSimputCtlg(&cat, &status);
 
   if (NULL!=flux) {
     free(flux);

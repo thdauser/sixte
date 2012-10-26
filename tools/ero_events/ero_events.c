@@ -221,7 +221,9 @@ int ero_events_main()
       wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &wcsstatus);
       if (0!=wcsstatus) {
 	char msg[MAXMSG];
-	sprintf("WCS coordinate conversion failed (error code %d)", wcsstatus);
+	sprintf(msg, 
+		"WCS coordinate conversion failed (error code %d)", 
+		wcsstatus);
 	SIXT_ERROR(msg);
 	status=EXIT_FAILURE;
 	break;

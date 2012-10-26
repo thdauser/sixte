@@ -169,8 +169,8 @@ static inline int ladphdet(const LAD* const lad,
   static LinkedLADSigListElement* siglist=NULL;
 
   // Background source.
-  static SimputSource* backgroundsource=NULL;
-  static struct ARF* backgroundarf=NULL;
+  static SimputSrc* bkgsrc=NULL;
+  static struct ARF* bkgarf=NULL;
   static double t_next_bkg=0.;
 
   // Make sure that there is a photon impact.
@@ -179,12 +179,12 @@ static inline int ladphdet(const LAD* const lad,
 
   // --- Insert background events.
   
-  if (NULL!=lad->backgroundcatalog) {
+  if (NULL!=lad->bkgctlg) {
 
     // Check if the background ARF is defined.
-    if (NULL==backgroundarf) {
+    if (NULL==bkgarf) {
       // Get an empty ARF.
-      backgroundarf=getARF(status);
+      bkgarf=getARF(status);
       CHECK_STATUS_RET(*status, 1);
 
       // Allocate memory. Use a logarithmic energy grid for this ARF.
@@ -195,16 +195,16 @@ static inline int ladphdet(const LAD* const lad,
       const long narfbins=704;
       const float arfEmin=0.9; // lower boundary for the energy grid.
       const float arffactor=1.01;
-      backgroundarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_RET(backgroundarf->LowEnergy, *status, 
+      bkgarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_RET(bkgarf->LowEnergy, *status, 
 		     "memory allocation for background ARF failed", 1);
-      backgroundarf->HighEnergy=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_RET(backgroundarf->HighEnergy, *status, 
+      bkgarf->HighEnergy=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_RET(bkgarf->HighEnergy, *status, 
 		     "memory allocation for background ARF failed", 1);
-      backgroundarf->EffArea=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_RET(backgroundarf->EffArea, *status, 
+      bkgarf->EffArea=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_RET(bkgarf->EffArea, *status, 
 		     "memory allocation for background ARF failed", 1);
-      backgroundarf->NumberEnergyBins=narfbins;
+      bkgarf->NumberEnergyBins=narfbins;
 
       // Set up a simple ARF.
       float sensitive_area=
@@ -215,22 +215,22 @@ static inline int ladphdet(const LAD* const lad,
 	(lad->panel[0]->module[0]->element[0]->ydim - 
 	 2.*lad->panel[0]->module[0]->element[0]->yborder)*
 	1.e4; // Total sensitive area [cm^2].
-      headas_chat(5, "background ARF with %lf cm^2\n", backgroundarf->EffArea);
+      headas_chat(5, "background ARF with %lf cm^2\n", bkgarf->EffArea);
       long ii;
       for (ii=0; ii<narfbins; ii++) {
-	backgroundarf->LowEnergy[ii] =arfEmin*pow(arffactor,ii); // [keV]
-	backgroundarf->HighEnergy[ii]=arfEmin*pow(arffactor,ii+1);
-	backgroundarf->EffArea[ii]   =sensitive_area;
+	bkgarf->LowEnergy[ii] =arfEmin*pow(arffactor,ii); // [keV]
+	bkgarf->HighEnergy[ii]=arfEmin*pow(arffactor,ii+1);
+	bkgarf->EffArea[ii]   =sensitive_area;
       }
 
       // Set reference to background ARF for SIMPUT library.
-      simputSetARF(lad->backgroundcatalog, backgroundarf);
+      setSimputARF(lad->bkgctlg, bkgarf);
     }
 
     // Check if the background source is defined.
-    if (NULL==backgroundsource) {
+    if (NULL==bkgsrc) {
       // Set reference to the background source.
-      backgroundsource=loadSimputSource(lad->backgroundcatalog, 1, status);
+      bkgsrc=loadSimputSrc(lad->bkgctlg, 1, status);
       CHECK_STATUS_RET(*status, 1);
 
       t_next_bkg=timezero;
@@ -248,9 +248,11 @@ static inline int ladphdet(const LAD* const lad,
       newsignal.time=t_next_bkg;
 
       // Energy.
-      newsignal.signal=
-	getSimputPhotonEnergy(lad->backgroundcatalog, backgroundsource,
-			      newsignal.time, mjdref, status);
+      double ra, dec;
+      getSimputPhotonEnergyCoord(lad->bkgctlg, bkgsrc,
+				 newsignal.time, mjdref, 
+				 &newsignal.signal, &ra, &dec,
+				 status);
       CHECK_STATUS_BREAK(*status);
 
       // Position.
@@ -300,10 +302,9 @@ static inline int ladphdet(const LAD* const lad,
       *el=newel;
 
       // Determine the time of the next background event.
-      int failed=0;
-      t_next_bkg=
-	getSimputPhotonTime(lad->backgroundcatalog, backgroundsource,
-			    t_next_bkg, mjdref, &failed, status);
+      int failed=
+	getSimputPhotonTime(lad->bkgctlg, bkgsrc, t_next_bkg, 
+			    mjdref, &t_next_bkg, status);
       CHECK_STATUS_BREAK(*status);
       if (0!=failed) {
 	SIXT_ERROR("failed producing background event");

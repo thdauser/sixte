@@ -10,8 +10,8 @@ int simputmerge_main()
   char infilenames[2][MAXFILENAME];
 
   // SIMPUT source catalogs.
-  SimputCatalog* incat[2]={NULL, NULL};
-  SimputCatalog* outcat  = NULL;
+  SimputCtlg* incat[2]={NULL, NULL};
+  SimputCtlg* outcat  = NULL;
 
   // Array of already used IDs.
   long* ids=NULL;
@@ -53,14 +53,14 @@ int simputmerge_main()
     strcpy(infilenames[1], par.Infile2);
     int ii;
     for (ii=0; ii<2; ii++) {
-      incat[ii] = openSimputCatalog(infilenames[ii], READONLY, 0, 0, 0, 0, &status);
+      incat[ii]=openSimputCtlg(infilenames[ii], READONLY, 0, 0, 0, 0, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
 
     // Get an empty output catalog.
     remove(par.Outfile);
-    outcat = openSimputCatalog(par.Outfile, READWRITE, 0, 0, 0, 0, &status);
+    outcat=openSimputCtlg(par.Outfile, READWRITE, 0, 0, 0, 0, &status);
     CHECK_STATUS_BREAK(status);
 
     // Smallest still available SRC_ID.
@@ -73,7 +73,7 @@ int simputmerge_main()
 
 	// Check if the SRC_ID of the new source is already contained 
 	// in the output catalog. The SRC_ID entry must be unique.
-	SimputSource* insrc = loadCacheSimputSource(incat[ii], jj+1, &status);
+	SimputSrc* insrc=getSimputSrc(incat[ii], jj+1, &status);
 	CHECK_STATUS_BREAK(status);
 	long src_id = insrc->src_id;
 	if (src_id<min_src_id) {
@@ -225,20 +225,20 @@ int simputmerge_main()
 	// END of extensions should be copied to the new output file.
 
 	// Copy the entry from the input to the output catalog.
-	SimputSource* outsrc=getSimputSourceV(src_id, 
-					      insrc->src_name,
-					      insrc->ra,
-					      insrc->dec,
-					      insrc->imgrota,
-					      insrc->imgscal,
-					      insrc->e_min,
-					      insrc->e_max,
-					      insrc->eflux,
-					      spectrum, image, timing,
-					      &status);
+	SimputSrc* outsrc=newSimputSrcV(src_id, 
+					insrc->src_name,
+					insrc->ra,
+					insrc->dec,
+					insrc->imgrota,
+					insrc->imgscal,
+					insrc->e_min,
+					insrc->e_max,
+					insrc->eflux,
+					spectrum, image, timing,
+					&status);
 	CHECK_STATUS_BREAK(status);
 
-	appendSimputSource(outcat, outsrc, &status);
+	appendSimputSrc(outcat, outsrc, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// Output of progress.
@@ -379,9 +379,9 @@ int simputmerge_main()
   // Release memory.
   if (NULL!=ids) free(ids);
   
-  freeSimputCatalog(&incat[0], &status);
-  freeSimputCatalog(&incat[1], &status);
-  freeSimputCatalog(&outcat, &status);
+  freeSimputCtlg(&incat[0], &status);
+  freeSimputCtlg(&incat[1], &status);
+  freeSimputCtlg(&outcat, &status);
 
   freeSimputMIdpSpec(&spec);
   freeSimputImg(&img);

@@ -31,7 +31,7 @@ void freeSource(Source** const src)
 
 
 LinkedPhoListElement* getXRayPhotons(Source* const src, 
-				     SimputCatalog* const simputcat,
+				     SimputCtlg* const simputcat,
 				     const double t0, const double t1,
 				     const double mjdref,
 				     int* const status)
@@ -42,7 +42,7 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
   LinkedPhoListElement** list_next=&list;
 
   // Load the source data from the SIMPUT catalog.
-  SimputSource* simputsrc=loadCacheSimputSource(simputcat, src->row, status);
+  SimputSrc* simputsrc=getSimputSrc(simputcat, src->row, status);
   CHECK_STATUS_RET(*status, list);
 
   // Photon arrival time.
@@ -52,16 +52,16 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     CHECK_NULL(src->t_next_photon, *status,
 	       "memory allocation for 't_next_photon' (double) failed");
 
-    int failed=0;
-    *(src->t_next_photon)= 
-      getSimputPhotonTime(simputcat, simputsrc, t0, mjdref, &failed, status);
+    int failed=
+      getSimputPhotonTime(simputcat, simputsrc, t0, mjdref, 
+			  src->t_next_photon, status);
     CHECK_STATUS_RET(*status, list);
     if (1==failed) return(list);
 
   } else if (*(src->t_next_photon) < t0) {
-    int failed=0;
-    *(src->t_next_photon)= 
-      getSimputPhotonTime(simputcat, simputsrc, t0, mjdref, &failed, status);
+    int failed=
+      getSimputPhotonTime(simputcat, simputsrc, t0, mjdref, 
+			  src->t_next_photon, status);
     CHECK_STATUS_RET(*status, list);
     if (1==failed) return(list);
   }
@@ -76,9 +76,11 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     Photon* ph=&((*list_next)->photon);
     list_next = &((*list_next)->next);
 
-    // Set the photon properties.
+    // Determine the photon properties.
     ph->time=*(src->t_next_photon);
-    getSimputPhotonCoord(simputcat, simputsrc, &ph->ra, &ph->dec, status);
+    getSimputPhotonEnergyCoord(simputcat, simputsrc, 
+			       *(src->t_next_photon), mjdref,
+			       &ph->energy, &ph->ra, &ph->dec, status);
     CHECK_STATUS_RET(*status, list);
  
     // Copy the source identifiers.
@@ -89,18 +91,11 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
     // list file.
     ph->ph_id=0;
 
-    // Determine the photon energy.
-    ph->energy = 
-      getSimputPhotonEnergy(simputcat, simputsrc, 
-			    *(src->t_next_photon), mjdref, status);
-    CHECK_STATUS_BREAK(*status);
-
     // Determine the arrival time of the next (future) photon.
-    int failed=0;
-    *(src->t_next_photon)= 
+    int failed= 
       getSimputPhotonTime(simputcat, simputsrc, 
 			  *(src->t_next_photon), mjdref, 
-			  &failed, status);
+			  src->t_next_photon, status);
     CHECK_STATUS_BREAK(*status);
     if (1==failed) return(list);
   }
@@ -157,5 +152,4 @@ void quicksortSources(Source* const list, const long left,
     quicksortSources(list, pivotNewIndex+1, right, axis);
   }
 }
-
 

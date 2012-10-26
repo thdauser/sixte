@@ -82,7 +82,7 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
 					const double min_align, 
 					const double t0, const double t1,
 					const double mjdref,
-					SimputCatalog* const simputcat,
+					SimputCtlg* const simputcat,
 					int* const status)
 {
   // Check if the kd-Tree exists.
@@ -94,7 +94,7 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
   Vector location = unit_vector(node->src->ra, node->src->dec);
   if (0==check_fov(&location, ref, min_align)) {
     // Generate photons for this particular source.
-    list = getXRayPhotons(node->src, simputcat, t0, t1, mjdref, status);
+    list=getXRayPhotons(node->src, simputcat, t0, t1, mjdref, status);
     CHECK_STATUS_RET(*status, list);
   }
 

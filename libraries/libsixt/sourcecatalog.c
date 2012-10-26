@@ -29,7 +29,7 @@ void freeSourceCatalog(SourceCatalog** const cat, int* const status)
     }
     // Free the SIMPUT source catalog.
     if (NULL!=(*cat)->simput) {
-      freeSimputCatalog(&((*cat)->simput), status);
+      freeSimputCtlg(&((*cat)->simput), status);
     }
     free(*cat);
     *cat=NULL;
@@ -48,14 +48,14 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 
   // Set refernce to the random number generator to be used by the
   // SIMPUT library routines.
-  simputSetRndGen(sixt_get_random_number);
+  setSimputRndGen(sixt_get_random_number);
 
   // Use the routines from the SIMPUT library to load the catalog.
-  cat->simput=openSimputCatalog(filename, READONLY, 0, 0, 0, 0, status);
+  cat->simput=openSimputCtlg(filename, READONLY, 0, 0, 0, 0, status);
   CHECK_STATUS_RET(*status, cat);
 
   // Set reference to ARF for SIMPUT library.
-  simputSetARF(cat->simput, arf);
+  setSimputARF(cat->simput, arf);
 
   // Determine the number of point-like and the number of 
   // extended sources.
@@ -64,11 +64,11 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   long ii;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
-    SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
+    SimputSrc* src=getSimputSrc(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
     // Determine the extension.
-    float extension=getSimputSourceExtension(cat->simput, src, status);
+    float extension=getSimputSrcExt(cat->simput, src, 0., 0., status);
     CHECK_STATUS_BREAK(*status);
     if (extension>0.) {
       // This is an extended source.
@@ -100,10 +100,10 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   cat->nextsources=0;
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
-    SimputSource* src=loadCacheSimputSource(cat->simput, ii+1, status);
+    SimputSrc* src=getSimputSrc(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
-    float extension=getSimputSourceExtension(cat->simput, src, status);
+    float extension=getSimputSrcExt(cat->simput, src, 0., 0., status);
     CHECK_STATUS_BREAK(*status);
 
     if (extension>0.) {
@@ -141,28 +141,20 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // We therefore assume that all spectra are contained in a particular
   // FITS file HDU, which can be found be tracing the location of the 
   // spectrum assigned to the first source in the catalog.
-  char specfilename[MAXFILENAME];
-  SimputSource* src=loadCacheSimputSource(cat->simput, 1, status);
+  SimputSrc* src=getSimputSrc(cat->simput, 1, status);
   CHECK_STATUS_RET(*status, cat);
 
-  if ('['==src->spectrum[0]) {
-    strcpy(specfilename, *src->filepath);
-    strcat(specfilename, *src->filename);
-  } else {
-    if ('/'!=src->spectrum[0]) {
-      strcpy(specfilename, *src->filepath);
-    } else {
-      strcpy(specfilename, "");
-    }
-  }
-  strcat(specfilename, src->spectrum);
-  char *search=strchr(specfilename, ']');
+  char specref[MAXFILENAME];
+  getSimputSrcSpecRef(cat->simput, src, 0., 0., specref, status);
+  CHECK_STATUS_RET(*status, 0);
+
+  char *search=strchr(specref, ']');
   CHECK_NULL_RET(search, *status, 
 		 "no valid reference to source spectrum", cat) 
   *(search+1)='\0';
 
-  headas_chat(3, "load spectra from file '%s' into cache ...\n", specfilename);
-  loadCacheAllSimputMIdpSpec(cat->simput, specfilename, status);
+  headas_chat(3, "load spectra from file '%s' into cache ...\n", specref);
+  loadCacheAllSimputMIdpSpec(cat->simput, specref, status);
   CHECK_STATUS_RET(*status, cat);
 
   // Release memory.

@@ -48,7 +48,7 @@ int ero_vis_main()
   struct Parameters par;
 
   AttitudeCatalog* ac=NULL;
-  SimputCatalog* cat=NULL;
+  SimputCtlg* cat=NULL;
   GTI* gti=NULL;
 
   // Error status.
@@ -76,7 +76,7 @@ int ero_vis_main()
     strcpy(ucase_buffer, par.Simput);
     strtoupper(ucase_buffer);
     if ((strlen(par.Simput)>0)&&(0!=strcmp(ucase_buffer,"NONE"))) {
-      cat=openSimputCatalog(par.Simput, READONLY, 0, 0, 0, 0, &status);
+      cat=openSimputCtlg(par.Simput, READONLY, 0, 0, 0, 0, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check if the catalog contains any sources.
@@ -107,24 +107,24 @@ int ero_vis_main()
     // If a SIMPUT catalog has been specified.
     if (NULL!=cat) {
       // Get the first source in the catalog.
-      SimputSource* src=loadCacheSimputSource(cat, 1, &status);
+      SimputSrc* src=getSimputSrc(cat, 1, &status);
       CHECK_STATUS_BREAK(status);
 
       // Determine its position and angular extension.
       refpos=unit_vector(src->ra, src->dec);
-      cone_radius=getSimputSourceExtension(cat, src, &status);
+      cone_radius=getSimputSrcExt(cat, src, 0., 0., &status);
       CHECK_STATUS_BREAK(status);
 
       // Loop over all sources in the catalog.
       long ii;
       for (ii=1; ii<cat->nentries; ii++) {
 	// Get the next source in the catalog.
-	SimputSource* src=loadCacheSimputSource(cat, ii+1, &status);
+	SimputSrc* src=getSimputSrc(cat, ii+1, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// Determine its position and angular extension.
 	Vector srcpos=unit_vector(src->ra, src->dec);
-	float extension=getSimputSourceExtension(cat, src, &status);
+	float extension=getSimputSrcExt(cat, src, 0., 0., &status);
 	CHECK_STATUS_BREAK(status);
 	
 	// Determine the angle between the reference direction and 

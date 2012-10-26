@@ -135,7 +135,7 @@ typedef struct {
   struct RMF* rmf;
 
   /** Definition of the detector background. */
-  SimputCatalog* backgroundcatalog;
+  SimputCtlg* bkgctlg;
 
   /** Temperature of the SDDs [K]. */
   float temperature;

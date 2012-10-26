@@ -486,9 +486,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->lad->backgroundcatalog=
-      openSimputCatalog(filepathname, READONLY, 
-			    0, 0, 0, 0, &xmlparsedata->status);
+    xmlparsedata->lad->bkgctlg=
+      openSimputCtlg(filepathname, READONLY, 
+		     0, 0, 0, 0, &xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
