@@ -137,11 +137,12 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // In a later development stage this could be directly stored in 
   // a memory-mapped space.
 
-  /*
+
   // Load spectra into the internal cache used by the SIMPUT library.
-  // We therefore assume that all spectra are contained in a particular
-  // FITS file HDU, which can be found be tracing the location of the 
-  // spectrum assigned to the first source in the catalog.
+  // This works only if all spectra are contained as mission-independent
+  // spectra in a single binary-table FITS file HDU, which can be found 
+  // be tracing the location of the spectrum assigned to the first source 
+  // in the catalog.
   SimputSrc* src=getSimputSrc(cat->simput, 1, status);
   CHECK_STATUS_RET(*status, cat);
 
@@ -154,10 +155,10 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 		 "no valid reference to source spectrum", cat) 
   *(search+1)='\0';
 
-  headas_chat(3, "load spectra from file '%s' into cache ...\n", specref);
+  headas_chat(3, "try to load all spectra ('%s') into cache ...\n", specref);
   loadCacheAllSimputMIdpSpec(cat->simput, specref, status);
   CHECK_STATUS_RET(*status, cat);
-  */
+
 
   // Release memory.
   if (templatesrc) free(templatesrc);
