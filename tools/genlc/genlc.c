@@ -98,7 +98,7 @@ int genlc_main() {
       if (csignal>0) {
 	float signal;
 	float fnull=0.0;
-	fits_read_col(infptr, TDOUBLE, csignal, ii+1, 1, 1, 
+	fits_read_col(infptr, TFLOAT, csignal, ii+1, 1, 1, 
 		      &fnull, &signal, &anynul, &status);
 	CHECK_STATUS_BREAK(status);
 
