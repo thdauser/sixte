@@ -1,4 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
@@ -25,7 +25,7 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS=genlc
 
 genlc_SOURCES=genlc.c genlc.h
-genlc_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+genlc_LDADD =@top_builddir@/libsixt/libsixt.la
 genlc_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 genlc_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 genlc_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

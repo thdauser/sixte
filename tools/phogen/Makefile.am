@@ -1,4 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
@@ -23,7 +23,7 @@ dist_pfiles_DATA = phogen.par
 bin_PROGRAMS=phogen
 
 phogen_SOURCES=phogen.c phogen.h
-phogen_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+phogen_LDADD =@top_builddir@/libsixt/libsixt.la
 phogen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 phogen_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 phogen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

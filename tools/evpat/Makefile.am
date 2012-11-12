@@ -1,4 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
@@ -23,7 +23,7 @@ dist_pfiles_DATA=evpat.par
 bin_PROGRAMS=evpat
 
 evpat_SOURCES=evpat.c evpat.h
-evpat_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+evpat_LDADD =@top_builddir@/libsixt/libsixt.la
 evpat_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 evpat_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 evpat_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

@@ -1,4 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
@@ -23,7 +23,7 @@ dist_pfiles_DATA=ero_split_photonfile.par
 bin_PROGRAMS=ero_split_photonfile
 
 ero_split_photonfile_SOURCES=ero_split_photonfile.c ero_split_photonfile.h
-ero_split_photonfile_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+ero_split_photonfile_LDADD =@top_builddir@/libsixt/libsixt.la
 ero_split_photonfile_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 ero_split_photonfile_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 ero_split_photonfile_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

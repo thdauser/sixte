@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instrument name="eROSITA">
 
-<telescope name="eROSITA">
+<telescope>
   <fov diameter="1.02"/>
   <focallength value="1.6"/>
   <vignetting filename="erosita.vignetting.fits"/>
@@ -35,4 +35,5 @@
     <newframe/>
   </readout>
 </detector>
+
 </instrument>

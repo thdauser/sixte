@@ -1,4 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
@@ -24,7 +24,7 @@ dist_pfiles_DATA=fudgexp.par
 bin_PROGRAMS=fudgexp
 
 fudgexp_SOURCES=fudgexp.c fudgexp.h
-fudgexp_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+fudgexp_LDADD =@top_builddir@/libsixt/libsixt.la
 fudgexp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 fudgexp_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 fudgexp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

@@ -1,4 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
@@ -24,7 +24,7 @@ dist_pfiles_DATA=comaexp.par
 bin_PROGRAMS=comaexp
 
 comaexp_SOURCES=comaexp.c
-comaexp_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+comaexp_LDADD =@top_builddir@/libsixt/libsixt.la
 comaexp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 comaexp_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 comaexp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

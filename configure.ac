@@ -2,10 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.52], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.53], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
-AC_CONFIG_SRCDIR([libraries/libsixt/sixt.h])
+AC_CONFIG_SRCDIR([libsixt/sixt.h])
 
 # Check for programs:
 AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
@@ -80,8 +80,7 @@ AC_CONFIG_HEADER([config.h])
 # Create the following Makefiles (including subdirectories).
 # A Makefile that is not listed here will not be created by 'automake'!
 AC_CONFIG_FILES([Makefile
-		libraries/Makefile
-		libraries/libsixt/Makefile
+		libsixt/Makefile
 		tools/Makefile
 		tools/runsixt/Makefile
 		tools/phogen/Makefile

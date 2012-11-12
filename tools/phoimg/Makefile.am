@@ -1,4 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/libraries/libsixt
+AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
@@ -23,7 +23,7 @@ dist_pfiles_DATA=phoimg.par
 bin_PROGRAMS=phoimg
 
 phoimg_SOURCES=phoimg.c phoimg.h
-phoimg_LDADD =@top_builddir@/libraries/libsixt/libsixt.la
+phoimg_LDADD =@top_builddir@/libsixt/libsixt.la
 phoimg_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
 phoimg_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 phoimg_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
