@@ -6,106 +6,49 @@
 ////////////////////////////////////////////////////////////////////
 
 
-GenDet* newGenDet(const char* const filename, 
-		  const int usebackground, 
-		  int* const status) 
+GenDet* newGenDet(int* const status) 
 {
   // Allocate memory.
   GenDet* det=(GenDet*)malloc(sizeof(GenDet));
   if (NULL==det) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenDet failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for GenDet failed");
     return(det);
   }
 
   // Initialize all pointers with NULL.
-  det->telescope=NULL;
   det->pixgrid=NULL;
   det->split  =NULL;
-  det->line=NULL;
-  det->psf =NULL;
-  det->vignetting=NULL;
-  det->coded_mask=NULL;
-  det->arf =NULL;
-  det->rmf =NULL;
-  det->clocklist =NULL;
-  det->badpixmap =NULL;
-  det->filepath  =NULL;
-  det->filename  =NULL;
+  det->line   =NULL;
+  det->rmf    =NULL;
+  det->elf    =NULL;
+  det->clocklist=NULL;
+  det->badpixmap=NULL;
 
   // Set initial values.
-  det->usebackground = usebackground;
-  det->erobackground = 0;
-  det->frametime     = 0.;
-  det->anyphoton     = 0;
+  det->ignore_bkg   =0;
+  det->erobackground=0;
+  det->anyphoton    =0;
+  det->frametime    =0.;
+  det->cte          =1.;
+  det->threshold_readout_lo_keV=0.;
+  det->threshold_event_lo_keV  =0.;
+  det->threshold_split_lo_keV  =0.;
+  det->threshold_split_lo_fraction=0.;
+  det->threshold_pattern_up_keV=0.;
+  det->readout_trigger =0;
 
   // Get empty GenPixGrid.
   det->pixgrid=newGenPixGrid(status);
-  if (EXIT_SUCCESS!=*status) return(det);
-
+  CHECK_STATUS_RET(*status, det);
+  
   // Get empty ClockList.
   det->clocklist=newClockList(status);
-  if (EXIT_SUCCESS!=*status) return(det);
+  CHECK_STATUS_RET(*status, det);
 
   // Get empty split model.
   det->split=newGenSplit(status);
-  if (EXIT_SUCCESS!=*status) return(det);
-
-  // Split the reference to the XML detector definition file
-  // into path and filename. This has to be done before
-  // calling the parser routine for the XML file.
-  char filename2[MAXFILENAME];
-  char rootname[MAXFILENAME];
-  // Make a local copy of the filename variable in order to avoid
-  // compiler warnings due to discarded const qualifier at the 
-  // subsequent function call.
-  strcpy(filename2, filename);
-  fits_parse_rootname(filename2, rootname, status);
   CHECK_STATUS_RET(*status, det);
-
-  // Split rootname into the file path and the file name.
-  char* lastslash = strrchr(rootname, '/');
-  if (NULL==lastslash) {
-    det->filepath=(char*)malloc(sizeof(char));
-    CHECK_NULL_RET(det->filepath, *status, 
-		   "memory allocation for filepath failed", det);
-    det->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(det->filename, *status, 
-		   "memory allocation for filename failed", det);
-    strcpy(det->filepath, "");
-    strcpy(det->filename, rootname);
-  } else {
-    lastslash++;
-    det->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
-    CHECK_NULL_RET(det->filename, *status, 
-		   "memory allocation for filename failed", det);
-    strcpy(det->filename, lastslash);
-      
-    *lastslash='\0';
-    det->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(det->filepath, *status, 
-		   "memory allocation for filepath failed", det);
-    strcpy(det->filepath, rootname);
-  }
-  // END of storing the filename and filepath.
-
-
-  // Read in the XML definition of the detector.
-  parseGenDetXML(det, filename, status);
-  if (EXIT_SUCCESS!=*status) return(det);
-    
-  // Allocate memory for the pixels.
-  det->line=(GenDetLine**)malloc(det->pixgrid->ywidth*sizeof(GenDetLine*));
-  if (NULL==det->line) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenDet failed!\n", *status);
-    return(det);
-  }
-  int ii;
-  for (ii=0; ii<det->pixgrid->ywidth; ii++) {
-    det->line[ii]=newGenDetLine(det->pixgrid->xwidth, status);
-    if (EXIT_SUCCESS!=*status) return(det);
-  }
 
   return(det);
 }
@@ -114,23 +57,12 @@ GenDet* newGenDet(const char* const filename,
 void destroyGenDet(GenDet** const det, int* const status)
 {
   if (NULL!=*det) {
-    if (NULL!=(*det)->telescope) {
-      free((*det)->telescope);
-    }
     if (NULL!=(*det)->line) {
       int ii;
       for (ii=0; ii<(*det)->pixgrid->ywidth; ii++) {
 	destroyGenDetLine(&(*det)->line[ii]);
       }
       free((*det)->line);
-    }
-
-    if (NULL!=(*det)->filepath) {
-      free((*det)->filepath);
-    }
-
-    if (NULL!=(*det)->filename) {
-      free((*det)->filename);
     }
 
     // Destroy the ClockList.
@@ -145,15 +77,6 @@ void destroyGenDet(GenDet** const det, int* const status)
     // Destroy the BadPixMap.
     destroyBadPixMap(&(*det)->badpixmap);
 
-    // Destroy the PSF.
-    destroyPSF(&(*det)->psf);
-
-    // Destroy the CodedMask.
-    destroyCodedMask(&(*det)->coded_mask);
-
-    // Destroy the vignetting Function.
-    destroyVignetting(&(*det)->vignetting);
-
     // Free the cosmic ray background model.
     if (1==(*det)->erobackground) {
       eroBkgCleanUp(status);
@@ -167,11 +90,10 @@ void destroyGenDet(GenDet** const det, int* const status)
 
 int addGenDetPhotonImpact(GenDet* const det, 
 			  const Impact* const impact, 
-			  EventListFile* const elf,
 			  int* const status)
 {
   // Call the detector operating clock routine.
-  operateGenDetClock(det, elf, impact->time, status);
+  operateGenDetClock(det, impact->time, status);
   if (EXIT_SUCCESS!=*status) return(0);
 
   // Determine the detected energy.
@@ -211,7 +133,7 @@ int addGenDetPhotonImpact(GenDet* const det,
   // Create split events.
   int npixels=makeGenSplitEvents(det, &impact->position, energy, 
 				 impact->ph_id, impact->src_id, 
-				 impact->time, elf, status);
+				 impact->time, status);
   CHECK_STATUS_RET(*status, npixels);
 
   // Set the flag that there has been a photon interaction.
@@ -260,17 +182,40 @@ void GenDetLineShift(GenDet* const det)
 }
 
 
+void setGenDetEventListFile(GenDet* const det,
+			    EventListFile* const elf)
+{
+  det->elf=elf;
+}
+
+
+void setGenDetIgnoreBkg(GenDet* const det, const int ignore)
+{
+  if (0==ignore) {
+    det->ignore_bkg=0;
+  } else {
+    det->ignore_bkg=1;
+  }
+}
+
+
 static inline void GenDetReadoutPixel(GenDet* const det, 
 				      const int lineindex, 
 				      const int readoutindex,
 				      const int xindex,
 				      const double time,
-				      EventListFile* const elf,
 				      int* const status)
 {
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
-  GenDetLine* line = det->line[lineindex];
+  GenDetLine* line=det->line[lineindex];
+
+  // Check if an output event file is defined.
+  if (NULL==det->elf) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no event file specified (needed for event detection)");
+    return;
+  }
 
   if (line->charge[xindex]>0.) {
 
@@ -284,17 +229,17 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       CHECK_STATUS_BREAK(*status);
     
       // Readout the signal from the pixel array ...
-      event->signal = line->charge[xindex];
+      event->signal=line->charge[xindex];
       // ... and delete the pixel value.
-      line->charge[xindex] = 0.;
+      line->charge[xindex]=0.;
     
       // Copy the information about the original photons.
       int jj;
       for(jj=0; jj<NEVENTPHOTONS; jj++) {
-	event->ph_id[jj]  = line->ph_id[xindex][jj];
-	event->src_id[jj] = line->src_id[xindex][jj];
-	line->ph_id[xindex][jj]  = 0;
-	line->src_id[xindex][jj] = 0;
+	event->ph_id[jj]  =line->ph_id[xindex][jj];
+	event->src_id[jj] =line->src_id[xindex][jj];
+	line->ph_id[xindex][jj] =0;
+	line->src_id[xindex][jj]=0;
       }
       
       // Apply the charge thresholds.
@@ -316,7 +261,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       event->frame=det->clocklist->frame; // Frame of detection.
 
       // Store the event in the output event file.
-      addEvent2File(elf, event, status);
+      addEvent2File(det->elf, event, status);
       CHECK_STATUS_BREAK(*status);
 
     } while(0); // END of error handling loop.
@@ -330,19 +275,18 @@ static inline void GenDetReadoutPixel(GenDet* const det,
 void GenDetReadoutLine(GenDet* const det, 
 		       const int lineindex, 
 		       const int readoutindex, 
-		       EventListFile* const elf,
 		       int* const status)
 {
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
-  GenDetLine* line = det->line[lineindex];
+  GenDetLine* line=det->line[lineindex];
 
   if (0!=line->anycharge) {
     int ii;
     for (ii=0; ii<line->xwidth; ii++) {
 
       GenDetReadoutPixel(det, lineindex, readoutindex, ii,
-			 det->clocklist->readout_time, elf, status);
+			 det->clocklist->readout_time, status);
       CHECK_STATUS_BREAK(*status);
     }
     CHECK_STATUS_VOID(*status);
@@ -359,8 +303,9 @@ void GenDetClearLine(GenDet* const det, const int lineindex) {
 }
 
 
-void operateGenDetClock(GenDet* const det, EventListFile* const elf,
-			const double time, int* const status)
+void operateGenDetClock(GenDet* const det,
+			const double time,
+			int* const status)
 {
   // Check if the detector operation setup is time-triggered.
   if (GENDET_TIME_TRIGGERED!=det->readout_trigger) return;
@@ -388,7 +333,7 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       // If there has been no photon interaction during the last frame
       // and if no background model is activated, jump over the next empty frames
       // until there is a new photon impact.
-      if (((0==det->erobackground)||(0==det->usebackground))&&
+      if (((0==det->erobackground)||(1==det->ignore_bkg))&&
 	  (0==det->anyphoton)) {
 	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
 	det->clocklist->time       +=nframes*det->frametime;
@@ -402,11 +347,11 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       break;
     case CL_WAIT:
       // A waiting period is finished.
-      clwait = (CLWait*)element;
+      clwait=(CLWait*)element;
 
       // Insert cosmic ray background events, 
       // if the appropriate model is defined and should be used.
-      if ((1==det->erobackground)&&(1==det->usebackground)) {
+      if ((1==det->erobackground)&&(0==det->ignore_bkg)) {
 	// Get background events for the required time interval (has
 	// to be given in [s]).
 	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
@@ -435,7 +380,7 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
 
 	  // Call the event trigger routine.
 	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
-	    GenDetReadoutPixel(det, y, y, x, time, elf, status);
+	    GenDetReadoutPixel(det, y, y, x, time, status);
 	    CHECK_STATUS_BREAK(*status);
 	    
 	    // In event-triggered mode each event occupies its own frame.
@@ -460,7 +405,6 @@ void operateGenDetClock(GenDet* const det, EventListFile* const elf,
       clreadoutline=(CLReadoutLine*)element;
       GenDetReadoutLine(det, clreadoutline->lineindex, 
 			clreadoutline->readoutindex, 
-			elf,
 			status);
       break;
     case CL_CLEARLINE:
@@ -544,7 +488,6 @@ int makeGenSplitEvents(GenDet* const det,
 		       const float signal,
 		       const long ph_id, const long src_id,
 		       const double time,
-		       EventListFile* const elf, 
 		       int* const status)
 {
   // Number of affected pixels.
@@ -754,7 +697,7 @@ int makeGenSplitEvents(GenDet* const det,
 
       // Call the event trigger routine.
       if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
-	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, elf, status);
+	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, status);
 	CHECK_STATUS_BREAK(*status);
 
 	// In event-triggered mode each event occupies its own frame.

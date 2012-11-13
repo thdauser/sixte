@@ -4,7 +4,7 @@
 #include "sixt.h"
 
 #include "attitudecatalog.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "phgen.h"
 #include "photonlistfile.h"
 #include "simput.h"

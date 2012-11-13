@@ -34,9 +34,20 @@ GenPixGrid* newGenPixGrid(int* const status)
 
   // Initialize all pointers with NULL.
 
+  // Initialize values.
+  grid->xwidth=0;
+  grid->ywidth=0;
+  grid->xrpix =0.;
+  grid->yrpix =0.;
+  grid->xrval =0.;
+  grid->yrval =0.;
+  grid->xdelt =0.;
+  grid->ydelt =0.;
+  grid->xborder=0.;
+  grid->yborder=0.;
+
   return(grid);
 }
-
 
 
 void destroyGenPixGrid(GenPixGrid** const grid)
@@ -46,7 +57,6 @@ void destroyGenPixGrid(GenPixGrid** const grid)
     *grid=NULL;
   }
 }
-
 
 
 static inline int getAffectedIndex(const double x, const float rpix, 
@@ -68,7 +78,6 @@ static inline int getAffectedIndex(const double x, const float rpix,
 }
 
 
-
 int getGenDetAffectedLine(const GenPixGrid* const grid, const double y)
 {
   return(getAffectedIndex(y, grid->yrpix, grid->yrval, grid->ydelt, 
@@ -76,11 +85,9 @@ int getGenDetAffectedLine(const GenPixGrid* const grid, const double y)
 }
 
 
-
 int getGenDetAffectedColumn(const GenPixGrid* const grid, const double x)
 {
   return(getAffectedIndex(x, grid->xrpix, grid->xrval, grid->xdelt, 
 			  grid->xborder, grid->xwidth));
 }
-
 

@@ -5,7 +5,7 @@
 #include "sixt.h"
 #include "event.h"
 #include "eventlistfile.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "pattern.h"
 #include "patternfile.h"
 #include "phpat.h"

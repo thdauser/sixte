@@ -4,7 +4,7 @@
 
 #include "sixt.h"
 #include "eventlistfile.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "impactlistfile.h"
 #include "phdet.h"
 

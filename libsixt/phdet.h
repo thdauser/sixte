@@ -2,7 +2,7 @@
 #define PHDET_H 1
 
 #include "sixt.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "impact.h"
 #include "impactlistfile.h"
 #include "eventlistfile.h"
@@ -13,11 +13,10 @@
 /////////////////////////////////////////////////////////////////
 
 
-void phdetGenDet(GenDet* const det,
-		 Impact* const impact,
-		 EventListFile* const elf,
-		 const double tend,
-		 int* const status);
+void phdetGenInst(GenInst* const inst,
+		  Impact* const impact,
+		  const double tend,
+		  int* const status);
 
 
 #endif /* PHDET_H */

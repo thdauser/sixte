@@ -5,7 +5,7 @@
 
 #include "attitudecatalog.h"
 #include "eventlistfile.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "gti.h"
 #include "impactlistfile.h"
 #include "patternfile.h"

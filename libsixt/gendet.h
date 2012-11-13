@@ -2,10 +2,8 @@
 #define GENDET_H 1
 
 #include "sixt.h"
-#include "arf.h"
 #include "badpixmap.h"
 #include "clocklist.h"
-#include "codedmask.h"
 #include "erodetbkgrndgen.h"
 #include "event.h"
 #include "eventlistfile.h"
@@ -14,9 +12,7 @@
 #include "genpixgrid.h"
 #include "impact.h"
 #include "point.h"
-#include "psf.h"
 #include "rmf.h"
-#include "vignetting.h"
 #include "xmlbuffer.h"
 
 
@@ -69,10 +65,6 @@ typedef struct {
     detector are defined in a detector specific XML file. */
 typedef struct {
 
-  /** Telescope name, which is stored in the 'TELESCOP' header
-      keyword in FITS files. */
-  char* telescope;
-
   /** Detector pixel dimensions. */
   GenPixGrid* pixgrid;
 
@@ -85,23 +77,6 @@ typedef struct {
       for the X-ray sources, the ARF contributions have to be removed
       by normalizing the RSP matrix. */
   struct RMF* rmf;
-  /** Detector and telescope ARF containing the effective area. */
-  struct ARF* arf;
-
-  /** Telescope PSF. */
-  PSF* psf;
-  /** Telescope vignetting function. */
-  Vignetting* vignetting;
-  /** Focal length of the X-ray telescope [m]. */
-  float focal_length;
-  /** Diameter of the FoV [rad]. In the XML file the diameter is given
-      in [deg], but it is converted to [rad] when parsing the XML
-      file. */
-  float fov_diameter;
-  /** If the telescope is a coded mask telescope and not an imaging
-      telescope, we have to specify the coded mask pattern file
-      instead of the PSF. */
-  CodedMask* coded_mask;
 
   /** Lower readout threshold in units of [keV]. This threshold is
       applied in the read-out routine before converting the pixel
@@ -134,8 +109,8 @@ typedef struct {
   int erobackground;
 
   /** Flag, whether the background model for the cosmic ray detector
-      background should be used, if available. */
-  int usebackground;
+      background should be ignored (if it is available). */
+  int ignore_bkg;
 
   /** Flag for detector readout trigger. The readout can be triggered
       either by an incoming photon event (GENDET_EVENT_TRIGGERED) or
@@ -160,12 +135,10 @@ typedef struct {
   /** Bad pixel map. */
   BadPixMap* badpixmap;
 
-  /** File name (without path contributions) of the FITS file
-      containing the XML detector definition. */
-  char* filename;
-
-  /** Path to the FITS file containing the XML detector definition. */
-  char* filepath;
+  /** Output EventListFile. Note that this FITS file is not closed
+      when the GenDet data struct is destroyed. It has to be closed
+      manually. */
+  EventListFile* elf;
 
 } GenDet;
 
@@ -179,9 +152,7 @@ typedef struct {
     initializes it with the values from the specified XML definition
     file. The second parameter determines, whether the cosmic ray
     detector background model should be activated. */
-GenDet* newGenDet(const char* const filename, 
-		  const int usebackground, 
-		  int* const status);
+GenDet* newGenDet(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */
@@ -189,13 +160,15 @@ void destroyGenDet(GenDet** const det, int* const status);
 
 /** Add a new photon impact to the detector. The function return value
     is the number of affected valid detector pixels. */
-int addGenDetPhotonImpact(GenDet* const det, const Impact* const impact, 
-			  EventListFile* const elf, int* const status);
+int addGenDetPhotonImpact(GenDet* const det, 
+			  const Impact* const impact, 
+			  int* const status);
 
 /** Operate the time-triggered elements of the GenDet detector up to
     the specified point of time. */
-void operateGenDetClock(GenDet* const det, EventListFile* const elf,
-			const double time, int* const status);
+void operateGenDetClock(GenDet* const det, 
+			const double time, 
+			int* const status);
 
 /** Set the current detector time in the clocklist to the specified
     value. The default value for the start time is 0. */
@@ -210,12 +183,11 @@ void setGenDetStartTime(GenDet* const det, const double t0);
 void GenDetLineShift(GenDet* const det);
 
 /** Read-out a particular line of the GenDet pixel array and store the
-    charges in the output event file. After read-out the charges
+    charges in the output EventListFile. After read-out the charges
     in the pixels are deleted. */
 void GenDetReadoutLine(GenDet* const det, 
 		       const int lineindex, 
 		       const int readoutindex, 
-		       EventListFile* const elf,
 		       int* const status);
 
 /** Clear a particular line of the GenDet pixel array. */
@@ -243,12 +215,19 @@ int makeGenSplitEvents(GenDet* const det,
 		       const float charge,
 		       const long ph_id, const long src_id,
 		       const double time,
-		       EventListFile* const elf,
 		       int* const status);
 
 /** Parse the GenDet definition from an XML file. */
-void parseGenDetXML(GenDet* const det, const char* const filename, 
+void parseGenDetXML(GenDet* const det, 
+		    const char* const filename, 
 		    int* const status);
+
+/** Assign an output EventListFile. */
+void setGenDetEventListFile(GenDet* const det,
+			    EventListFile* const elf);
+
+/** Set the ignore_bkg flag. */
+void setGenDetIgnoreBkg(GenDet* const det, const int ignore);
 
 
 #endif /* GENDET_H */

@@ -1,11 +1,10 @@
 #include "phdet.h"
 
 
-void phdetGenDet(GenDet* const det,
-		 Impact* const impact,
-		 EventListFile* const elf,
-		 const double tend,
-		 int* const status)
+void phdetGenInst(GenInst* const inst,
+		  Impact* const impact,
+		  const double tend,
+		  int* const status)
 {
   // Total number of detected photons. Only the number of
   // photons absorbed by valid pixels inside the detector is
@@ -18,7 +17,7 @@ void phdetGenDet(GenDet* const det,
     // Add the impact to the detector array. If it is absorbed
     // by at least one valid pixel, increase the counter for
     // the number of detected photons.
-    if (addGenDetPhotonImpact(det, impact, elf, status) > 0) {
+    if (addGenDetPhotonImpact(inst->det, impact, status) > 0) {
       n_detected_photons++;
     }
     CHECK_STATUS_VOID(*status);
@@ -27,7 +26,7 @@ void phdetGenDet(GenDet* const det,
     // If no impact has been given as parameter, finalize the GenDet. 
     // Perform the time-triggered operations without adding any new 
     // signal charges.
-    operateGenDetClock(det, elf, tend, status);
+    operateGenDetClock(inst->det, tend, status);
     CHECK_STATUS_VOID(*status);
   }
 }

@@ -375,6 +375,7 @@ void copyEvents2PatternFile(const EventListFile* const elf,
 
   // Free memory.
   freeEvent(&event);
+  freePattern(&pattern);
 }
 
 

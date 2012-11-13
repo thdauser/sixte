@@ -6,8 +6,8 @@ int phogen_main()
   // Program parameters.
   struct Parameters par;
 
-  // Detector setup.
-  GenDet* det=NULL;
+  // Instrument setup.
+  GenInst* inst=NULL;
 
   // Attitude.
   AttitudeCatalog* ac=NULL;
@@ -23,7 +23,7 @@ int phogen_main()
 
   // Register HEATOOL.
   set_toolname("phogen");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -52,16 +52,19 @@ int phogen_main()
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
 
-    // Determine the appropriate detector XML definition file.
+    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile, 
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the detector configuration.
-    det=newGenDet(xml_filename, 1, &status);
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
+    
+    // Use the background if available.
+    setGenInstIgnoreBkg(inst, 0);
 
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
@@ -111,7 +114,7 @@ int phogen_main()
     // END of setting up the attitude.
 
     // Load the SIMPUT X-ray source catalog.
-    srccat=loadSourceCatalog(par.Simput, det->arf, &status);
+    srccat=loadSourceCatalog(par.Simput, inst->tel->arf, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of Initialization ---
@@ -148,7 +151,7 @@ int phogen_main()
       int isph=phgen(ac, &srccat, 1, 
 		     par.TIMEZERO, par.TIMEZERO+par.Exposure, 
 		     par.MJDREF, par.dt, 
-		     det->fov_diameter, &ph, &status);
+		     inst->tel->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
       // If no photon has been generated, break the loop.
@@ -188,12 +191,12 @@ int phogen_main()
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
   freeAttitudeCatalog(&ac);
-  destroyGenDet(&det, &status);
+  destroyGenInst(&inst, &status);
 
   // Release HEADAS random number generator:
   HDmtFree();
 
-  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 
@@ -205,7 +208,7 @@ int phogen_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 

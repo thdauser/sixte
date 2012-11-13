@@ -11,9 +11,9 @@ int phoimg_main() {
   PhotonListFile* plf=NULL;
   ImpactListFile* ilf=NULL;
 
-  // Detector data structure including telescope information like the PSF,
+  // Instrument data structure including telescope information like the PSF,
   // vignetting function, focal length, and FOV diameter.
-  GenDet* det=NULL;
+  GenInst* inst=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -21,7 +21,7 @@ int phoimg_main() {
 
   // Register HEATOOL:
   set_toolname("phoimg");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -53,16 +53,19 @@ int phoimg_main() {
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
 
-    // Determine the appropriate detector XML definition file.
+    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the detector configuration.
-    det=newGenDet(xml_filename, 1, &status);
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Use the background if available.
+    setGenInstIgnoreBkg(inst, 0);
 
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
@@ -153,7 +156,7 @@ int phoimg_main() {
 
       // Photon Imaging.
       Impact impact;
-      int isimg=phimg(det, ac, &photon, &impact, &status);
+      int isimg=phimg(inst, ac, &photon, &impact, &status);
       CHECK_STATUS_BREAK(status);
 
       // If the photon is not imaged but lost in the optical system,
@@ -194,7 +197,7 @@ int phoimg_main() {
   freePhotonListFile(&plf, &status);
 
   freeAttitudeCatalog(&ac);
-  destroyGenDet(&det, &status);
+  destroyGenInst(&inst, &status);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
 

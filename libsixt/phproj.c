@@ -1,7 +1,7 @@
 #include "phproj.h"
 
 
-void phproj(GenDet* const det,
+void phproj(GenInst* const inst,
 	    AttitudeCatalog* const ac,
 	    PatternFile* const plf,
 	    const double t0,
@@ -31,27 +31,27 @@ void phproj(GenDet* const det,
     // Exact position on the detector:
     struct Point2d detpos;
     detpos.x = // in [m]
-      (pattern.rawx*1.-det->pixgrid->xrpix+0.5+sixt_get_random_number())*
-      det->pixgrid->xdelt + 
-      det->pixgrid->xrval;
+      (pattern.rawx*1.-inst->det->pixgrid->xrpix+0.5+sixt_get_random_number())*
+      inst->det->pixgrid->xdelt + 
+      inst->det->pixgrid->xrval;
     detpos.y = // in [m]
-      (pattern.rawy*1.-det->pixgrid->yrpix+0.5+sixt_get_random_number())*
-      det->pixgrid->ydelt + 
-      det->pixgrid->yrval;
+      (pattern.rawy*1.-inst->det->pixgrid->yrpix+0.5+sixt_get_random_number())*
+      inst->det->pixgrid->ydelt + 
+      inst->det->pixgrid->yrval;
     
     // Determine the source position on the sky using the telescope 
     // axis pointing vector and a vector from the point of the intersection 
     // of the optical axis with the sky plane to the source position.
     Vector srcpos;
     srcpos.x = nz.x 
-      +detpos.x/det->focal_length*nx.x
-      +detpos.y/det->focal_length*ny.x;
+      +detpos.x/inst->tel->focal_length*nx.x
+      +detpos.y/inst->tel->focal_length*ny.x;
     srcpos.y = nz.y 
-      +detpos.x/det->focal_length*nx.y
-      +detpos.y/det->focal_length*ny.y;
+      +detpos.x/inst->tel->focal_length*nx.y
+      +detpos.y/inst->tel->focal_length*ny.y;
     srcpos.z = nz.z 
-      +detpos.x/det->focal_length*nx.z
-      +detpos.y/det->focal_length*ny.z;
+      +detpos.x/inst->tel->focal_length*nx.z
+      +detpos.y/inst->tel->focal_length*ny.z;
     srcpos = normalize_vector(srcpos);
 
     // Determine the equatorial coordinates RA and DEC

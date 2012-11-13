@@ -5,7 +5,7 @@
 #include "attitudecatalog.h"
 #include "pattern.h"
 #include "patternfile.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "point.h"
 #include "vector.h"
 
@@ -15,7 +15,7 @@
 /////////////////////////////////////////////////////////////////
 
 
-void phproj(GenDet* const det,
+void phproj(GenInst* const inst,
 	    AttitudeCatalog* const ac,
 	    PatternFile* const plf,
 	    const double t0,

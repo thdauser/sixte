@@ -12,8 +12,8 @@ int evpat_main()
   // Output pattern file.
   PatternFile* plf=NULL;
 
-  // Detector.
-  GenDet* det=NULL;
+  // Instrument.
+  GenInst* inst=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -21,7 +21,7 @@ int evpat_main()
 
   // Register HEATOOL:
   set_toolname("evpat");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -33,12 +33,19 @@ int evpat_main()
     // Read parameters using PIL library:
     if ((status=getpar(&par))) break;
 
-    // Determine the appropriate detector XML definition file.
+    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile, 
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
+
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Use the background if available.
+    setGenInstIgnoreBkg(inst, 0);
 
     // Determine the event list file name.
     char eventlist_filename[MAXFILENAME];
@@ -47,10 +54,6 @@ int evpat_main()
     // Determine the pattern output file.
     char pattern_filename[MAXFILENAME];
     strcpy(pattern_filename, par.PatternList);
-
-    // Load the detector configuration.
-    det=newGenDet(xml_filename, 1, &status);
-    CHECK_STATUS_BREAK(status);
 
 
     headas_chat(3, "start pattern recombination ...\n");
@@ -64,8 +67,8 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Set header keywords.
-    if (NULL!=det->telescope) {
-      fits_update_key(plf->fptr, TSTRING, "TELESCOP", det->telescope,
+    if (NULL!=inst->tel->telescope) {
+      fits_update_key(plf->fptr, TSTRING, "TELESCOP", inst->tel->telescope,
 		      "telescope name", &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -84,7 +87,7 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.
-    phpat(det, elf, plf, par.SkipInvalids, &status);
+    phpat(inst->det, elf, plf, par.SkipInvalids, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -97,9 +100,10 @@ int evpat_main()
   freeEventListFile(&elf, &status);
   destroyPatternFile(&plf, &status);
  
-  destroyGenDet(&det, &status);
+  destroyGenInst(&inst, &status);
 
-  if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
+
   return(status);
 }
 

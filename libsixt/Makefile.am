@@ -41,21 +41,23 @@ lib_LTLIBRARIES=libsixt.la
 
 # Sources:
 libsixt_la_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
-		   impactlistfile.c ladimpactlistfile.c htrsdetector.c	\
-		   gendet.c gendet_init.c genpixgrid.c gendetline.c	\
+		   impactlistfile.c ladimpactlistfile.c			\
+		   htrsdetector.c geninst.c gendet.c gentel.c		\
+		   geninst_init.c genpixgrid.c gendetline.c		\
 		   eventlistfile.c ladsignallistfile.c			\
 		   ladeventlistfile.c patternfile.c clocklist.c		\
 		   badpixmap.c htrseventfile.c hexagonalpixels.c	\
 		   arcpixels.c telemetrypacket.c htrstelstream.c	\
 		   comadetector.c comaeventfile.c psf.c vignetting.c	\
-		   codedmask.c attitudecatalog.c attitudefile.c sixt.c	\
-		   vector.c photon.c fits_pha.c check_fov.c		\
+		   codedmask.c attitudecatalog.c attitudefile.c		\
+		   sixt.c vector.c photon.c fits_pha.c check_fov.c	\
 		   photonlistfile.c rmf.c arf.c kdtreeelement.c		\
 		   sourcecatalog.c source.c linkedpholist.c		\
 		   linkedladsiglist.c erodetbkgrndgen.c phgen.c		\
 		   phimg.c phdet.c phproj.c phpat.c event.c pattern.c	\
-		   ladsignal.c ladevent.c ladimpact.c lad.c lad_init.c	\
-		   xmlbuffer.c spectrum.c sourceimage.c gti.c
+		   ladsignal.c ladevent.c ladimpact.c lad.c		\
+		   lad_init.c xmlbuffer.c spectrum.c sourceimage.c	\
+		   gti.c
 
 libsixt_la_LIBADD =@top_builddir@/extlib/heainit/libhdinit.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/heaio/libhdio.la
@@ -71,11 +73,12 @@ libsixt_la_LIBADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		gaussianchargecloud.h exponentialchargecloud.h		\
 		arcpixels.h eventfile.h impactlistfile.h		\
-		ladimpactlistfile.h impact.h gendet.h genpixgrid.h	\
-		gendetline.h clocklist.h event.h ladsignal.h		\
-		ladevent.h ladimpact.h pattern.h eventlistfile.h	\
-		ladsignallistfile.h ladeventlistfile.h patternfile.h	\
-		badpixmap.h htrsdetector.h htrseventfile.h htrsevent.h	\
+		ladimpactlistfile.h impact.h geninst.h gendet.h		\
+		gentel.h genpixgrid.h gendetline.h clocklist.h		\
+		event.h ladsignal.h ladevent.h ladimpact.h pattern.h	\
+		eventlistfile.h ladsignallistfile.h			\
+		ladeventlistfile.h patternfile.h badpixmap.h		\
+		htrsdetector.h htrseventfile.h htrsevent.h		\
 		telemetrypacket.h htrstelstream.h comadetector.h	\
 		comaeventfile.h comaevent.h psf.h vignetting.h		\
 		codedmask.h attitudecatalog.h attitudefile.h		\

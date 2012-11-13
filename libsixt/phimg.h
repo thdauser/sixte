@@ -4,7 +4,7 @@
 #include "sixt.h"
 #include "attitudecatalog.h"
 #include "check_fov.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "photon.h"
 #include "impact.h"
 
@@ -14,7 +14,7 @@
 /////////////////////////////////////////////////////////////////
 
 
-int phimg(const GenDet* const det,
+int phimg(const GenInst* const inst,
 	  AttitudeCatalog* const ac,
 	  Photon* const ph,
 	  Impact* const imp,

@@ -8,7 +8,7 @@
 #include "sixt.h"
 #include "attitudecatalog.h"
 #include "patternfile.h"
-#include "gendet.h"
+#include "geninst.h"
 #include "phproj.h"
 
 #define TOOLSUB projev_main
@@ -47,10 +47,12 @@ int projev_main() {
 
   // Input pattern list file.
   PatternFile* plf=NULL;
+
   // Attitude catalog.
   AttitudeCatalog* ac=NULL;
-  // Detector data structure (containing the focal length, FoV, ...).
-  GenDet* det=NULL;
+
+  // Instrument data structure (containing the focal length, FoV, ...).
+  GenInst* inst=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;   
@@ -58,7 +60,7 @@ int projev_main() {
 
   // Register HEATOOL:
   set_toolname("projev");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -72,7 +74,7 @@ int projev_main() {
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
-    double t0 = par.TIMEZERO;
+    double t0=par.TIMEZERO;
 
     // Determine the random number seed.
     int seed;
@@ -86,16 +88,19 @@ int projev_main() {
     // Initialize HEADAS random number generator.
     HDmtInit(seed);
 
-    // Determine the appropriate detector XML definition file.
+    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile, 
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the detector configuration.
-    det=newGenDet(xml_filename, 1, &status);
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Use the background if available.
+    setGenInstIgnoreBkg(inst, 0);
 
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
@@ -156,7 +161,7 @@ int projev_main() {
     headas_chat(5, "start sky projection process ...\n");
 
     // Run the pattern projection.
-    phproj(det, ac, plf, t0, par.Exposure, &status);
+    phproj(inst, ac, plf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -168,8 +173,8 @@ int projev_main() {
   // Release HEADAS random number generator.
   HDmtFree();
 
-  // Destroy the detector data structure.
-  destroyGenDet(&det, &status);
+  // Destroy the GenInst data structure.
+  destroyGenInst(&inst, &status);
   
   // Close the files.
   destroyPatternFile(&plf, &status);
@@ -177,7 +182,8 @@ int projev_main() {
   // Release memory of AttitudeCatalog
   freeAttitudeCatalog(&ac);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
+
   return(status);
 }
 

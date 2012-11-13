@@ -7,8 +7,10 @@ int gendetsim_main() {
 
   // Containing all programm parameters read by PIL
   struct Parameters par; 
-  // Detector data structure (containing the pixel array, its width, ...).
-  GenDet* det=NULL;
+
+  // Instrument data structure (containing the pixel array, its width, ...).
+  GenInst* inst=NULL;
+
   // Input impact list.
   ImpactListFile* ilf=NULL;
 
@@ -21,7 +23,8 @@ int gendetsim_main() {
 
   // Register HEATOOL:
   set_toolname("gendetsim");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
+
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
 
@@ -33,19 +36,22 @@ int gendetsim_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Determine the appropriate detector XML definition file.
+    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the detector configuration.
-    det=newGenDet(xml_filename, 1, &status);
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Set the start time for the detector simulation.
-    setGenDetStartTime(det, par.TIMEZERO);
+    // Use the background if available.
+    setGenInstIgnoreBkg(inst, 0);
+
+    // Set the start time for the simulation.
+    setGenInstStartTime(inst, par.TIMEZERO);
     
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
@@ -83,8 +89,8 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    if (NULL!=det->telescope) {
-      fits_update_key(elf->fptr, TSTRING, "TELESCOP", det->telescope,
+    if (NULL!=inst->tel->telescope) {
+      fits_update_key(elf->fptr, TSTRING, "TELESCOP", inst->tel->telescope,
 		      "telescope name", &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -101,6 +107,9 @@ int gendetsim_main() {
 		    &status);
     CHECK_STATUS_BREAK(status);
 
+    // Define the event list file as output file.
+    setGenInstEventListFile(inst, elf);
+
     // Loop over all impacts in the FITS file.
     while (ilf->row<ilf->nrows) {
 
@@ -113,7 +122,7 @@ int gendetsim_main() {
       if (impact.time > par.TIMEZERO+par.Exposure) break;
 
       // Photon detection.
-      phdetGenDet(det, &impact, elf, par.TIMEZERO+par.Exposure, &status);
+      phdetGenInst(inst, &impact, par.TIMEZERO+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
 
     };
@@ -121,7 +130,7 @@ int gendetsim_main() {
     // End of loop over all impacts in the input file.
 
     // Finalize the photon detection.
-    phdetGenDet(det, NULL, elf, par.TIMEZERO+par.Exposure, &status);
+    phdetGenInst(inst, NULL, par.TIMEZERO+par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -135,8 +144,8 @@ int gendetsim_main() {
   // Release HEADAS random number generator.
   HDmtFree();
 
-  // Destroy the detector data structure.
-  destroyGenDet(&det, &status);
+  // Destroy the GenInst data structure.
+  destroyGenInst(&inst, &status);
 
   // Close the event list FITS file.
   freeEventListFile(&elf, &status);
@@ -144,7 +153,8 @@ int gendetsim_main() {
   // Close the impact list FITS file.
   freeImpactListFile(&ilf, &status);
 
-  if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
+
   return(status);
 }
 

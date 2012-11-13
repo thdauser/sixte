@@ -6,8 +6,8 @@ int runsixt_main()
   // Program parameters.
   struct Parameters par;
   
-  // Detector setup.
-  GenDet* det=NULL;
+  // Instrument setup.
+  GenInst* inst=NULL;
 
   // Attitude.
   AttitudeCatalog* ac=NULL;
@@ -133,17 +133,21 @@ int runsixt_main()
       CHECK_NULL_BREAK(progressfile, status, msg);
     }
 
-    // Determine the appropriate detector XML definition file.
+    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile, 
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the detector configuration.
-    det=newGenDet(xml_filename, par.Background, &status);
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
     
+    // Set the usage of the detector background according to
+    // the respective program parameter.
+    setGenInstIgnoreBkg(inst, !par.Background);
+
     // Set up the Attitude.
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);
@@ -201,7 +205,7 @@ int runsixt_main()
     }
 
     // Load the SIMPUT X-ray source catalogs.
-    srccat[0]=loadSourceCatalog(par.Simput, det->arf, &status);
+    srccat[0]=loadSourceCatalog(par.Simput, inst->tel->arf, &status);
     CHECK_STATUS_BREAK(status);
 
     // Optional 2nd catalog.
@@ -209,7 +213,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput2);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[1]=loadSourceCatalog(par.Simput2, det->arf, &status);
+	srccat[1]=loadSourceCatalog(par.Simput2, inst->tel->arf, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -219,7 +223,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput3);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[2]=loadSourceCatalog(par.Simput3, det->arf, &status);
+	srccat[2]=loadSourceCatalog(par.Simput3, inst->tel->arf, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -229,7 +233,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput4);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-      	srccat[3]=loadSourceCatalog(par.Simput4, det->arf, &status);
+      	srccat[3]=loadSourceCatalog(par.Simput4, inst->tel->arf, &status);
       	CHECK_STATUS_BREAK(status);
       }
     }
@@ -239,7 +243,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput5);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-      	srccat[4]=loadSourceCatalog(par.Simput5, det->arf, &status);
+      	srccat[4]=loadSourceCatalog(par.Simput5, inst->tel->arf, &status);
       	CHECK_STATUS_BREAK(status);
       }
     }
@@ -249,7 +253,7 @@ int runsixt_main()
       strcpy(ucase_buffer, par.Simput6);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-      	srccat[5]=loadSourceCatalog(par.Simput6, det->arf, &status);
+      	srccat[5]=loadSourceCatalog(par.Simput6, inst->tel->arf, &status);
       	CHECK_STATUS_BREAK(status);
       }
     }
@@ -274,6 +278,9 @@ int runsixt_main()
     // Open the output event list file.
     elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Define the event list file as output file.
+    setGenInstEventListFile(inst, elf);
 
     // Open the output pattern list file.
     patf=openNewPatternFile(patternlist_filename, par.clobber, &status);
@@ -462,8 +469,8 @@ int runsixt_main()
 	t1=gti->stop[gtibin];
       }
 
-      // Set the start time for the detector model.
-      setGenDetStartTime(det, t0);
+      // Set the start time for the instrument model.
+      setGenInstStartTime(inst, t0);
 
       // Loop over photon generation and processing
       // till the time of the photon exceeds the requested
@@ -474,7 +481,7 @@ int runsixt_main()
 	Photon ph;
 	int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1,
 		       par.MJDREF, par.dt, 
-		       det->fov_diameter, &ph, &status);
+		       inst->tel->fov_diameter, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// If no photon has been generated, break the loop.
@@ -492,7 +499,7 @@ int runsixt_main()
 
 	// Photon imaging.
 	Impact imp;
-	int isimg=phimg(det, ac, &ph, &imp, &status);
+	int isimg=phimg(inst, ac, &ph, &imp, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// If the photon is not imaged but lost in the optical system,
@@ -506,7 +513,7 @@ int runsixt_main()
 	}
 
 	// Photon Detection.
-	phdetGenDet(det, &imp, elf, t1, &status);
+	phdetGenInst(inst, &imp, t1, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// Program progress output.
@@ -526,11 +533,11 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
       // END of photon processing loop for the current interval.
 
-      // Clear the detector.
-      phdetGenDet(det, NULL, elf, t1, &status);
+      // Clear the detectors.
+      phdetGenInst(inst, NULL, t1, &status);
       long jj;
-      for(jj=0; jj<det->pixgrid->ywidth; jj++) {
-	GenDetClearLine(det, jj);
+      for(jj=0; jj<inst->det->pixgrid->ywidth; jj++) {
+	GenDetClearLine(inst->det, jj);
       }
 
       // Proceed to the next GTI interval.
@@ -556,10 +563,10 @@ int runsixt_main()
     }
 
     // Perform a pattern analysis, only if split events are simulated.
-    if (GS_NONE!=det->split->type) {
+    if (GS_NONE!=inst->det->split->type) {
       // Pattern analysis.
       headas_chat(3, "start event pattern analysis ...\n");
-      phpat(det, elf, patf, par.SkipInvalids, &status);
+      phpat(inst->det, elf, patf, par.SkipInvalids, &status);
       CHECK_STATUS_BREAK(status);
 
     } else {
@@ -577,7 +584,7 @@ int runsixt_main()
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
-    phproj(det, ac, patf, par.TSTART, par.Exposure, &status);
+    phproj(inst, ac, patf, par.TSTART, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of simulation process ---
@@ -599,7 +606,7 @@ int runsixt_main()
   }
   freeGTI(&gti);
   freeAttitudeCatalog(&ac);
-  destroyGenDet(&det, &status);
+  destroyGenInst(&inst, &status);
 
   if (NULL!=progressfile) {
     fclose(progressfile);
@@ -609,7 +616,8 @@ int runsixt_main()
   // Release HEADAS random number generator:
   HDmtFree();
 
-  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
+
   return(status);
 }
 
