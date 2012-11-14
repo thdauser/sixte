@@ -640,6 +640,7 @@ int erosim_main()
     // Use parallel computation via OpenMP.
 #pragma omp parallel for reduction(+:status)
     for (ii=0; ii<7; ii++) {
+      status=EXIT_SUCCESS;
       // Perform a pattern analysis, only if split events are simulated.
       if (GS_NONE!=subinst[ii]->det->split->type) {
 	// Pattern analysis.
@@ -660,7 +661,6 @@ int erosim_main()
     for (ii=0; ii<7; ii++) {
       freePhotonListFile(&plf[ii], &status);
       freeImpactListFile(&ilf[ii], &status);
-      freeEventListFile(&elf[ii], &status);
     }
 
     // Run the event projection.
@@ -682,14 +682,14 @@ int erosim_main()
 
   // Release memory.
   for (ii=0; ii<7; ii++) {
-    destroyPatternFile(&patf[ii], &status);
-    freeEventListFile(&elf[ii], &status);
-    freeImpactListFile(&ilf[ii], &status);
-    freePhotonListFile(&plf[ii], &status);
-    destroyGenInst(&subinst[ii], &status);
+    destroyGenInst    (&subinst[ii], &status);
+    destroyPatternFile(&patf[ii],    &status);
+    freeEventListFile (&elf[ii],     &status);
+    freeImpactListFile(&ilf[ii],     &status);
+    freePhotonListFile(&plf[ii],     &status);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
-    freeSourceCatalog(&(srccat[ii]), &status);
+    freeSourceCatalog(&srccat[ii], &status);
   }
   freeGTI(&gti);
   freeAttitudeCatalog(&ac);

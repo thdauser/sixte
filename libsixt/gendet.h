@@ -156,7 +156,7 @@ GenDet* newGenDet(int* const status);
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */
-void destroyGenDet(GenDet** const det, int* const status);
+void destroyGenDet(GenDet** const det);
 
 /** Add a new photon impact to the detector. The function return value
     is the number of affected valid detector pixels. */

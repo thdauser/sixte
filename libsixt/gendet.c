@@ -54,7 +54,7 @@ GenDet* newGenDet(int* const status)
 }
 
 
-void destroyGenDet(GenDet** const det, int* const status)
+void destroyGenDet(GenDet** const det)
 {
   if (NULL!=*det) {
     if (NULL!=(*det)->line) {
@@ -76,11 +76,6 @@ void destroyGenDet(GenDet** const det, int* const status)
 
     // Destroy the BadPixMap.
     destroyBadPixMap(&(*det)->badpixmap);
-
-    // Free the cosmic ray background model.
-    if (1==(*det)->erobackground) {
-      eroBkgCleanUp(status);
-    }
 
     free(*det);
     *det=NULL;

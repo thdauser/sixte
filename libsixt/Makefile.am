@@ -48,21 +48,20 @@ lib_LTLIBRARIES=libsixt.la
 libsixt_la_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
 		   impactlistfile.c ladimpactlistfile.c			\
 		   htrsdetector.c geninst.c gendet.c gentel.c		\
-		   geninst_init.c genpixgrid.c gendetline.c		\
-		   eventlistfile.c ladsignallistfile.c			\
-		   ladeventlistfile.c patternfile.c clocklist.c		\
-		   badpixmap.c htrseventfile.c hexagonalpixels.c	\
-		   arcpixels.c telemetrypacket.c htrstelstream.c	\
-		   comadetector.c comaeventfile.c psf.c vignetting.c	\
-		   codedmask.c attitudecatalog.c attitudefile.c		\
-		   sixt.c vector.c photon.c fits_pha.c check_fov.c	\
-		   photonlistfile.c rmf.c arf.c kdtreeelement.c		\
-		   sourcecatalog.c source.c linkedpholist.c		\
-		   linkedladsiglist.c erodetbkgrndgen.c phgen.c		\
-		   phimg.c phdet.c phproj.c phpat.c event.c pattern.c	\
-		   ladsignal.c ladevent.c ladimpact.c lad.c		\
-		   lad_init.c xmlbuffer.c spectrum.c gti.c		\
-		   sourceimage.c
+		   genpixgrid.c gendetline.c eventlistfile.c		\
+		   ladsignallistfile.c ladeventlistfile.c		\
+		   patternfile.c clocklist.c badpixmap.c		\
+		   htrseventfile.c hexagonalpixels.c arcpixels.c	\
+		   telemetrypacket.c htrstelstream.c comadetector.c	\
+		   comaeventfile.c psf.c vignetting.c codedmask.c	\
+		   attitudecatalog.c attitudefile.c sixt.c vector.c	\
+		   photon.c fits_pha.c check_fov.c photonlistfile.c	\
+		   rmf.c arf.c kdtreeelement.c sourcecatalog.c		\
+		   source.c linkedpholist.c linkedladsiglist.c		\
+		   erodetbkgrndgen.c phgen.c phimg.c phdet.c phproj.c	\
+		   phpat.c event.c pattern.c ladsignal.c ladevent.c	\
+		   ladimpact.c lad.c lad_init.c xmlbuffer.c		\
+		   spectrum.c gti.c sourceimage.c
 
 libsixt_la_LIBADD =@top_builddir@/extlib/heainit/libhdinit.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/heaio/libhdio.la
