@@ -90,8 +90,9 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge = getEBOUNDSEnergy(channel, hd->generic.rmf, 0);
-  
+  float charge=getEBOUNDSEnergy(channel, hd->generic.rmf, 0, &status);
+  CHECK_STATUS_RET(status, 0);
+
   if (charge > 0.) {
 
 #ifdef HTRS_HEXPIXELS
@@ -99,8 +100,8 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
     int pixel[2];
     int npixels=0; // Number of VALID split partners.
     double fraction[2];
-    int nsplits = getHexagonalPixelSplits(&hd->pixels, &hd->generic, 
-					  impact->position, pixel, fraction);
+    int nsplits=getHexagonalPixelSplits(&hd->pixels, &hd->generic, 
+					impact->position, pixel, fraction);
     // Loop over all split partners.
     int pixel_counter;
     for (pixel_counter=0; pixel_counter<nsplits; pixel_counter++) {

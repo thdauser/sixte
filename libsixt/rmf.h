@@ -56,8 +56,10 @@ long getEBOUNDSChannel(const float energy, const struct RMF* const rmf);
     (usually [keV]). The boundary flag determines, whether the lower
     (-1), randomized mean (0), or upper (else) boundary of the energy
     bin are returned. */
-float getEBOUNDSEnergy(long channel, const struct RMF* const rmf, 
-		       const int boundary);
+float getEBOUNDSEnergy(long channel,
+		       const struct RMF* const rmf, 
+		       const int boundary,
+		       int* const status);
 
 
 #endif /* RMF_H */

@@ -94,7 +94,7 @@ int addGenDetPhotonImpact(GenDet* const det,
 {
   // Call the detector operating clock routine.
   operateGenDetClock(det, impact->time, status);
-  if (EXIT_SUCCESS!=*status) return(0);
+  CHECK_STATUS_RET(*status, 0);
 
   // Determine the detected energy.
   float energy;
@@ -121,7 +121,8 @@ int addGenDetPhotonImpact(GenDet* const det,
     // NOTE: In this simulation the collected charge is represented 
     // by the nominal photon energy [keV], which corresponds to the 
     // PHA channel according to the EBOUNDS table.
-    energy=getEBOUNDSEnergy(channel, det->rmf, 0);
+    energy=getEBOUNDSEnergy(channel, det->rmf, 0, status);
+    CHECK_STATUS_RET(*status, 0);
     assert(energy>=0.);
 
   } else {

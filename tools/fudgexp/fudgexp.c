@@ -178,7 +178,8 @@ int fudgexp_main() {
       }
       
       // Determine whether the photon should be discarded.
-      double p = sixt_get_random_number();
+      double p=sixt_get_random_number(&status);
+      CHECK_STATUS_BREAK(status);
       long xx = (long)(pixcrd[0]-0.5);
       long yy = (long)(pixcrd[1]-0.5);
       if ((xx<0)||(xx>=naxes[0]) || (yy<0)||(yy>=naxes[1]) || 

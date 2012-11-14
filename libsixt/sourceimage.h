@@ -103,7 +103,8 @@ int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr);
 
 /** Determine a random pixel according to the probability distribution
     given by the SourceImage. */
-void getRandomSourceImagePixel(SourceImage* si, int* x, int* y);
+void getRandomSourceImagePixel(SourceImage* si, int* x, int* y,
+			       int* const status);
 
 
 #endif /* SOURCEIMAGE_H */

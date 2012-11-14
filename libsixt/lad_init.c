@@ -215,7 +215,8 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 			"cannot allocate memory for ASIC dead times");
 	for (ll=0; ll<lad->panel[ii]->module[jj]->element[kk]->nasics; ll++) {
 	  double grand1, grand2;
-	  sixt_get_gauss_random_numbers(&grand1, &grand2);
+	  sixt_get_gauss_random_numbers(&grand1, &grand2, status);
+	  CHECK_STATUS_VOID(*status);
 	  lad->panel[ii]->module[jj]->element[kk]->asic_deadtime[ll]=
 	    lad->deadtime + lad->edeadtime*grand1;
 	}

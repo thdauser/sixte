@@ -442,9 +442,11 @@ int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr)
 }
 
 
-void getRandomSourceImagePixel(SourceImage* si, int* x, int* y) 
+void getRandomSourceImagePixel(SourceImage* si, int* x, int* y, 
+			       int* const status) 
 {
-  double rnd = sixt_get_random_number();
+  double rnd=sixt_get_random_number(status);
+  CHECK_STATUS_VOID(*status);
 
   // Perform a binary search to obtain the x-coordinate.
   int high = si->naxis1-1;

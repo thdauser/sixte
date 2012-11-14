@@ -7,6 +7,11 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 
+if RCL
+AM_CFLAGS+=-I$(RCL_INC) -DUSE_RCL
+AM_LDFLAGS=-L$(RCL_LIB) -lrcl
+endif
+
 ########## DIRECTORIES ###############
 
 # Directory where to install the FITS template files.
@@ -56,8 +61,8 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
 		   linkedladsiglist.c erodetbkgrndgen.c phgen.c		\
 		   phimg.c phdet.c phproj.c phpat.c event.c pattern.c	\
 		   ladsignal.c ladevent.c ladimpact.c lad.c		\
-		   lad_init.c xmlbuffer.c spectrum.c sourceimage.c	\
-		   gti.c
+		   lad_init.c xmlbuffer.c spectrum.c gti.c		\
+		   sourceimage.c
 
 libsixt_la_LIBADD =@top_builddir@/extlib/heainit/libhdinit.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/heaio/libhdio.la
@@ -87,5 +92,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		kdtreeelement.h sourcecatalog.h source.h		\
 		linkedpholist.h linkedladsiglist.h erodetbkgrndgen.h	\
 		phgen.h phimg.h phdet.h phproj.h phpat.h lad.h		\
-		xmlbuffer.h spectrum.h sourceimage.h gti.h
+		xmlbuffer.h spectrum.h gti.h sourceimage.h
 

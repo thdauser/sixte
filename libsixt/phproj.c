@@ -31,13 +31,15 @@ void phproj(GenInst* const inst,
     // Exact position on the detector:
     struct Point2d detpos;
     detpos.x = // in [m]
-      (pattern.rawx*1.-inst->det->pixgrid->xrpix+0.5+sixt_get_random_number())*
+      (pattern.rawx*1.-inst->det->pixgrid->xrpix+0.5+sixt_get_random_number(status))*
       inst->det->pixgrid->xdelt + 
       inst->det->pixgrid->xrval;
+    CHECK_STATUS_BREAK(*status);
     detpos.y = // in [m]
-      (pattern.rawy*1.-inst->det->pixgrid->yrpix+0.5+sixt_get_random_number())*
+      (pattern.rawy*1.-inst->det->pixgrid->yrpix+0.5+sixt_get_random_number(status))*
       inst->det->pixgrid->ydelt + 
       inst->det->pixgrid->yrval;
+    CHECK_STATUS_BREAK(*status);
     
     // Determine the source position on the sky using the telescope 
     // axis pointing vector and a vector from the point of the intersection 

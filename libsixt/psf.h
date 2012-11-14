@@ -90,7 +90,8 @@ int get_psf_pos(/** Output: coordinates of the photon on the detector
 		const Vignetting* const vignetting, 
 		/** PSF with data for different photon energies and
 		    off-axis angles. */
-		const PSF* const psf);
+		const PSF* const psf,
+		int* const status);
 
 /** Release the memory of the PSF storage. */
 void destroyPSF(PSF** const psf);

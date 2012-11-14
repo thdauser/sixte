@@ -202,13 +202,15 @@ int getCodedMaskImpactPos(struct Point2d* const position,
 			  const Photon* const photon, 
 			  const CodedMask* const mask, 
 			  const struct Telescope* const telescope,
-			  const float focal_length)
+			  const float focal_length,
+			  int* const status)
 {
   // Check if a CodedMask is specified. If not, break the function.
   if (NULL==mask) return(0);
 
   // Get a random number.
-  double rand = sixt_get_random_number();
+  double rand=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0);
 
   if (rand>mask->transparency) {
     // The photon is absorbed by an opaque pixel.
@@ -232,13 +234,17 @@ int getCodedMaskImpactPos(struct Point2d* const position,
   double radius = sqrt(pow(scpx,2.)+pow(scpy,2.));
   // Determine the azimuthal angle of the photon within the detector plane
   // with respect to the detector nx axis.
-  double alpha = atan2(scpy, scpx);
+  double alpha=atan2(scpy, scpx);
 
   // Determine the impact position in the mask plane.
-  position->x = ((double)(mask->transparent_pixels[pixel][0])
-		 -mask->crpix1+0.5+sixt_get_random_number())*mask->cdelt1 + mask->crval1;
-  position->y = ((double)(mask->transparent_pixels[pixel][1])
-		 -mask->crpix2+0.5+sixt_get_random_number())*mask->cdelt2 + mask->crval2;
+  position->x=
+    ((double)(mask->transparent_pixels[pixel][0])
+     -mask->crpix1+0.5+sixt_get_random_number(status))*mask->cdelt1 + mask->crval1;
+  CHECK_STATUS_RET(*status, 0);
+  position->y=
+    ((double)(mask->transparent_pixels[pixel][1])
+     -mask->crpix2+0.5+sixt_get_random_number(status))*mask->cdelt2 + mask->crval2;
+  CHECK_STATUS_RET(*status, 0);
 
   // Shift the position to obtain the position in the detector plane.
   // The shift is necessary because of the photon's off-axis position.

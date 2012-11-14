@@ -34,8 +34,11 @@ int phimg(const GenInst* const inst,
     // Function returns 0, if the photon does not fall on the detector. 
     // If it hits the detector, the return value is 1.
     struct Point2d position;
-    if (get_psf_pos(&position, *ph, telescope, inst->tel->focal_length, 
-		    inst->tel->vignetting, inst->tel->psf)) {
+    int get_psf_pos_retval=
+      get_psf_pos(&position, *ph, telescope, inst->tel->focal_length, 
+		  inst->tel->vignetting, inst->tel->psf, status);
+    CHECK_STATUS_RET(*status, 0);
+    if (get_psf_pos_retval!=0) {
       // Check whether the photon hits the detector within the FOV. 
       // (Due to the effects of the mirrors it might have been scattered over 
       // the edge of the FOV, although the source is inside the FOV.)

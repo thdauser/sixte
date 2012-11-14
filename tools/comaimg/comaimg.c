@@ -161,7 +161,11 @@ int comaimg_main() {
 	// Convolution with PSF:
 	// Function returns 0, if the photon does not fall on the detector. 
 	// If it hits the detector, the return value is 1.
-	if (1==getCodedMaskImpactPos(&position, &photon, mask, &telescope, focal_length)) {
+	int retval=
+	  getCodedMaskImpactPos(&position, &photon, mask, 
+				&telescope, focal_length, &status);
+	CHECK_STATUS_BREAK(status);
+	if (1==retval) {
 	  // Check whether the photon hits the detector within the FOV. 
 	  // (Due to the effects of the mirrors it might have been scattered over 
 	  // the edge of the FOV, although the source is inside the FOV.)

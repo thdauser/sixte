@@ -43,7 +43,8 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
     // Apply the geometric vignetting corresponding to the projected
     // detector surface.
-    double p=sixt_get_random_number();
+    double p=sixt_get_random_number(status);
+    CHECK_STATUS_RET(*status, NULL);
     if (p > cos_theta) {
       // Photon is not detected, since it misses the detector.
       return(NULL);
@@ -61,12 +62,15 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     // Determine the photon impact position on the detector:
     // Randomly select a panel, module, and element.
     imp->panel  = 
-      (long)(sixt_get_random_number()*lad->npanels);
+      (long)(sixt_get_random_number(status)*lad->npanels);
+    CHECK_STATUS_RET(*status, NULL);
     imp->module = 
-      (long)(sixt_get_random_number()*lad->panel[imp->panel]->nmodules);
+      (long)(sixt_get_random_number(status)*lad->panel[imp->panel]->nmodules);
+    CHECK_STATUS_RET(*status, NULL);
     imp->element= 	
-      (long)(sixt_get_random_number()*
+      (long)(sixt_get_random_number(status)*
 	     lad->panel[imp->panel]->module[imp->module]->nelements);
+    CHECK_STATUS_RET(*status, NULL);
     
     // Pointer to the element.
     LADElement* element= 
@@ -81,8 +85,10 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     struct Point2d entrance_position;
     do {
       // Get a random position on the sensitive area of the element.
-      entrance_position.x=sixt_get_random_number()*xwidth;
-      entrance_position.y=sixt_get_random_number()*ywidth;
+      entrance_position.x=sixt_get_random_number(status)*xwidth;
+      CHECK_STATUS_RET(*status, NULL);
+      entrance_position.y=sixt_get_random_number(status)*ywidth;
+      CHECK_STATUS_RET(*status, NULL);
 	
       // Check if the random position lies within a hole opening.
       LADCollimatorHoleIdx(entrance_position, &col1, &row1);
@@ -113,7 +119,8 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     // Apply the collimator vignetting function (if available).
     if (NULL!=lad->vignetting) {
       double theta=acos(cos_theta);
-      p=sixt_get_random_number();
+      p=sixt_get_random_number(status);
+      CHECK_STATUS_RET(*status, NULL);
       if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
 	// The photon does not hit the detector at all,
 	// because it is absorbed by the collimator.
@@ -256,19 +263,24 @@ static inline int ladphdet(const LAD* const lad,
       CHECK_STATUS_BREAK(*status);
 
       // Position.
-      newsignal.panel=(long)(sixt_get_random_number()*lad->npanels);
+      newsignal.panel=(long)(sixt_get_random_number(status)*lad->npanels);
+      CHECK_STATUS_BREAK(*status);
       newsignal.module=
-	(long)(sixt_get_random_number()*
+	(long)(sixt_get_random_number(status)*
 	       lad->panel[newsignal.panel]->nmodules);
+      CHECK_STATUS_BREAK(*status);
       newsignal.element=
-	(long)(sixt_get_random_number()*
+	(long)(sixt_get_random_number(status)*
 	       lad->panel[newsignal.panel]->
 	       module[newsignal.module]->nelements);
+      CHECK_STATUS_BREAK(*status);
       newsignal.anode=
-	(long)(sixt_get_random_number()*
+	(long)(sixt_get_random_number(status)*
 	       lad->panel[newsignal.panel]->
 	       module[newsignal.module]->
 	       element[newsignal.element]->nanodes);
+      CHECK_STATUS_BREAK(*status);
+
       /*
       // TODO Multiple anodes.
       // Pointer to the element.
@@ -398,7 +410,8 @@ static inline int ladphdet(const LAD* const lad,
 
     // Determine the signal corresponding to the channel according 
     // to the EBOUNDS table.
-    float signal=getEBOUNDSEnergy(channel, lad->rmf, 0);
+    float signal=getEBOUNDSEnergy(channel, lad->rmf, 0, status);
+    CHECK_STATUS_RET(*status, 1);
     assert(signal>=0.);
 
     // Determine which half of the anodes (bottom or top) is affected.
@@ -915,8 +928,10 @@ int ladsim_main()
       do {
 	try++;
 	// Get a random position on the element.
-	position.x=sixt_get_random_number()*xwidth;
-	position.y=sixt_get_random_number()*ywidth;
+	position.x=sixt_get_random_number(&status)*xwidth;
+	CHECK_STATUS_BREAK(status);
+	position.y=sixt_get_random_number(&status)*ywidth;
+	CHECK_STATUS_BREAK(status);
 	
 	// Determine the indices of the respective hole.
 	LADCollimatorHoleIdx(position, &col, &row);

@@ -1,28 +1,63 @@
 #include "sixt.h"
 
 
-double sixt_get_random_number()
+#ifdef USE_RCL
+// Use the Remeis random number server.
+#include <rcl.h>
+#endif
+
+
+double sixt_get_random_number(int* const status)
 {
-  // Return a value out of the interval [0,1):
+  // Return a random value out of the interval [0,1).
+
+#ifdef USE_RCL
+
+  // Use the Remeis random number server running on leo.
+  // The library for accessing the server is maintained
+  // by Fritz-Walter Schwarm.
+  int rcl_status=0;
+  double rand=rcl_rand_net_get_double("leo", "rand", &rcl_status);
+
+  if(RCL_RANDOM_SUCCESS!=rcl_status) {
+    SIXT_ERROR("failed getting random number from RCL");
+    *status=EXIT_FAILURE;
+  }
+
+  return(rand);  
+
+#else
+
+  // Use the HEAdas random number generator.
   return(HDmtDrand());
+
+  // Status variable is not needed.
+  (void)(*status);
+
+#endif
 }
 
 
-void sixt_get_gauss_random_numbers(double* const x, double* const y)
+void sixt_get_gauss_random_numbers(double* const x, 
+				   double* const y, 
+				   int* const status)
 {
-  double sqrt_2rho = sqrt(-log(sixt_get_random_number())*2.);
-  double phi = sixt_get_random_number()*2.*M_PI;
+  double sqrt_2rho=sqrt(-log(sixt_get_random_number(status))*2.);
+  CHECK_STATUS_VOID(*status);
+  double phi=sixt_get_random_number(status)*2.*M_PI;
+  CHECK_STATUS_VOID(*status);
 
-  *x = sqrt_2rho * cos(phi);
-  *y = sqrt_2rho * sin(phi);
+  *x=sqrt_2rho * cos(phi);
+  *y=sqrt_2rho * sin(phi);
 }
 
 
-double rndexp(const double avgdist)
+double rndexp(const double avgdist, int* const status)
 {
   assert(avgdist>0.);
 
-  double rand = sixt_get_random_number();
+  double rand=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0.);
   if (rand < 1.E-15) {
     rand = 1.E-15;
   }
@@ -34,8 +69,8 @@ double rndexp(const double avgdist)
 void strtoupper(char* const string) 
 {
   int count=0;
-  while (string[count] != '\0') {
-    string[count] = toupper(string[count]);
+  while (string[count]!='\0') {
+    string[count]=toupper(string[count]);
     count++;
   }
 }

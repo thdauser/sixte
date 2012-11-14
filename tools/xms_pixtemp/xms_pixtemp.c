@@ -13,28 +13,29 @@ int xms_pixtemp_main() {
   set_toolname("xms_pixtemp");
   set_toolversion("0.02");
 
+
   do { // ERROR handling loop
 
     // Read parameters by PIL:
-    status = xms_pixtemp_getpar(&parameters);
-    if (EXIT_SUCCESS!=status) break;
+    status=xms_pixtemp_getpar(&parameters);
+    CHECK_STATUS_BREAK(status);
 
     // Initialize HEADAS random number generator.
     HDmtInit(1);
 
     // Open the event file.
     elf=openEventListFile(parameters.EventList, READWRITE, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Read the EBOUNDS from the detector response file.
     struct RMF* rmf = loadRMF(parameters.RSP, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Open the output file.
     output_file = fopen(parameters.OutputFile, "w+");
     if (NULL==output_file) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error opening the output file!\n", status);
+      status=EXIT_FAILURE;
+      SIXT_ERROR("opening the output file failed");
       break;
     }
 
@@ -49,7 +50,9 @@ int xms_pixtemp_main() {
 
       /*      if ((1==event.array) && // Only events from the inner array.
 	      (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) { */
-      fprintf(output_file, " %lf\t%lf\n", event.time, getEBOUNDSEnergy(event.pha, rmf, 0));
+      fprintf(output_file, " %lf\t%lf\n", event.time, 
+	      getEBOUNDSEnergy(event.pha, rmf, 0, &status));
+      CHECK_STATUS_BREAK(status);
       /* } */
 
     } // End of loop over all events in the event file

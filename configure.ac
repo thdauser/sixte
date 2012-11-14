@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.54], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.55], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
@@ -25,6 +25,15 @@ CFLAGS="$CFLAGS -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHT
 # Linker Flags:
 LDFLAGS="$LDFLAGS -g -W -Wall"
 
+####################################
+# Conditional usage of RCL library (Remeis random number server).
+AC_ARG_ENABLE([rcl], 
+              [AS_HELP_STRING([--enable-rcl], 
+	          [enable usage of RCL library])],
+	          [rcl=true], [rcl=false])
+AM_CONDITIONAL([RCL], [test x$rcl = xtrue])
+
+####################################
 # Check for libraries: (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 

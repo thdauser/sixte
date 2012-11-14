@@ -103,8 +103,10 @@ long getEBOUNDSChannel(const float energy, const struct RMF* const rmf)
 }
 
 
-float getEBOUNDSEnergy(long channel, const struct RMF* const rmf, 
-		       const int boundary)
+float getEBOUNDSEnergy(long channel, 
+		       const struct RMF* const rmf, 
+		       const int boundary,
+		       int* const status)
 {
   // Subtract the channel offset (EBOUNDS may either start at 0 or at 1).
   channel -= rmf->FirstChannel;
@@ -116,8 +118,8 @@ float getEBOUNDSEnergy(long channel, const struct RMF* const rmf,
   // to the specified PHA channel according to the EBOUNDS table.
   if (0==boundary) {
     return(rmf->ChannelLowEnergy[channel] +
-	   sixt_get_random_number()*(rmf->ChannelHighEnergy[channel]-
-				     rmf->ChannelLowEnergy[channel]));
+	   sixt_get_random_number(status)*
+	   (rmf->ChannelHighEnergy[channel]-rmf->ChannelLowEnergy[channel]));
   } else if (-1==boundary) {
     return(rmf->ChannelLowEnergy[channel]);
   } else {

@@ -6,7 +6,8 @@ int get_psf_pos(struct Point2d* const position,
 		const struct Telescope telescope, 
 		const float focal_length,
 		const Vignetting* const vignetting, 
-		const PSF* const psf)
+		const PSF* const psf,
+		int* const status)
 {
   // Check if there is PSF specified. If not, break the function.
   if (NULL==psf) return(0);
@@ -28,7 +29,8 @@ int get_psf_pos(struct Point2d* const position,
 		   scalar_product(&telescope.nx, &photon_direction));
 
   // Get a random number to determine a random hitting position.
-  double rnd = sixt_get_random_number();
+  double rnd=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0);
   if (rnd > get_Vignetting_Factor(vignetting, photon.energy, theta, phi)) {
     // The photon does not hit the detector at all (e.g. it is absorbed).
     return(0);
@@ -51,19 +53,25 @@ int get_psf_pos(struct Point2d* const position,
   // Perform a linear interpolation between the next fitting PSF images.
   // (Randomly choose one of the neighboring data sets.)
   if (index1 < psf->nenergies-1) {
-    if (sixt_get_random_number() < (photon.energy-psf->energies[index1])/
+    rnd=sixt_get_random_number(status);
+    CHECK_STATUS_RET(*status, 0);
+    if (rnd < (photon.energy-psf->energies[index1])/
 	(psf->energies[index1+1]-psf->energies[index1])) {
       index1++;
     }
   }
   if (index2 < psf->nthetas-1) {
-    if (sixt_get_random_number() < (theta-psf->thetas[index2])/
+    rnd=sixt_get_random_number(status);
+    CHECK_STATUS_RET(*status, 0);
+    if (rnd < (theta-psf->thetas[index2])/
 	(psf->thetas[index2+1]-psf->thetas[index2])) {
       index2++;
     }
   }
   if (index3 < psf->nphis-1) {
-    if (sixt_get_random_number() < (phi-psf->phis[index3])/
+    rnd=sixt_get_random_number(status);
+    CHECK_STATUS_RET(*status, 0);
+    if (rnd < (phi-psf->phis[index3])/
 	(psf->phis[index3+1]-psf->phis[index3])) {
       index3++;
     }
@@ -71,13 +79,14 @@ int get_psf_pos(struct Point2d* const position,
 
   // Set a pointer to the PSF image used for the determination of the photon
   // impact position in order to enable faster access.
-  PSF_Item* psf_item = &psf->data[index1][index2][index3];
+  PSF_Item* psf_item=&psf->data[index1][index2][index3];
 
   // Get a random position from the best fitting PSF image.
 
   // Perform a binary search to determine a random position:
   // -> one binary search for each of the 2 coordinates x and y
-  rnd = sixt_get_random_number();
+  rnd=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0);
 
   // This section is only necessary for PSFs that are not normalized to 1,
   // i.e., contain some vignetting effects. According to the OGIP recommmendation 
@@ -128,11 +137,15 @@ int get_psf_pos(struct Point2d* const position,
   // Add the relative position obtained from the PSF image (randomized pixel 
   // indices x1 and y1).
   double x2 = distance + 
-    ((double)x1 -psf_item->crpix1 +0.5 +sixt_get_random_number())*psf_item->cdelt1 
+    ((double)x1 -psf_item->crpix1 +0.5 
+     +sixt_get_random_number(status))*psf_item->cdelt1 
     + psf_item->crval1; // [m]
+  CHECK_STATUS_RET(*status, 0);
   double y2 = 
-    ((double)y1 -psf_item->crpix2 +0.5 +sixt_get_random_number())*psf_item->cdelt2 
+    ((double)y1 -psf_item->crpix2 +0.5 
+     +sixt_get_random_number(status))*psf_item->cdelt2 
     + psf_item->crval2; // [m]
+  CHECK_STATUS_RET(*status, 0);
 
   // Rotate the postition [m] according to the azimuthal angle.
   position->x = cos(phi)*x2 - sin(phi)*y2;
@@ -140,7 +153,6 @@ int get_psf_pos(struct Point2d* const position,
 
   return(1);  
 }
-
 
 
 void destroyPSF(PSF** const psf)
@@ -240,7 +252,8 @@ static void sortDList(double* const list, const int nvalues)
 }
 
 
-PSF* newPSF(const char* const filename, const float focal_length, 
+PSF* newPSF(const char* const filename, 
+	    const float focal_length, 
 	    int* const status)
 {
   PSF* psf=NULL;
@@ -248,13 +261,13 @@ PSF* newPSF(const char* const filename, const float focal_length,
   double* data=NULL;     // Input buffer (1D array)
   long count, count2, count3;
   
-  do {  // Beginning of ERROR handling loop.
+  do { // Beginning of ERROR handling loop.
 
     // Allocate memory for PSF data structure:
-    psf = (PSF*)malloc(sizeof(PSF));
+    psf=(PSF*)malloc(sizeof(PSF));
     if (NULL==psf) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for PSF structure failed!\n", *status);
+      SIXT_ERROR("memory allocation for PSF structure failed");
       break;
     }
 
@@ -451,9 +464,9 @@ PSF* newPSF(const char* const filename, const float focal_length,
 
 	} else if ((strcmp(cunit1, "m")) || (strcmp(cunit2, "m"))) {
 	  // Neither [arcsec] nor [m]
-	  *status = EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: PSF pixel width must be given either in [m] "
-			 "or in [arcsec]!\n", *status);
+	  *status=EXIT_FAILURE;
+	  SIXT_ERROR("PSF pixel width must be given either in [m] "
+		     "or in [arcsec]!\n");
 	  break;
 	}
 
@@ -466,18 +479,18 @@ PSF* newPSF(const char* const filename, const float focal_length,
 	    psf->data[index1][index2][index3].data[count] = (double *)
 	      malloc(psf->data[index1][index2][index3].naxis2*sizeof(double));
 	    if (NULL==psf->data[index1][index2][index3].data[count]) {
-	      *status = EXIT_FAILURE;
-	      HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", *status);  
+	      *status=EXIT_FAILURE;
+	      SIXT_ERROR("not enough memory to store PSF data");  
 	      break;
 	    }
 	  }
 	} else { 
-	  *status = EXIT_FAILURE; 
-	  HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", *status);  
+	  *status=EXIT_FAILURE; 
+	  SIXT_ERROR("not enough memory to store PSF data");
 	  break;
 	}
 	// Check if all memory was allocated successfully
-	if (*status != EXIT_SUCCESS) break;
+	CHECK_STATUS_BREAK(*status);
 
 
 	// Allocate memory for input buffer (1D array)
@@ -485,8 +498,8 @@ PSF* newPSF(const char* const filename, const float focal_length,
 			      *psf->data[index1][index2][index3].naxis2
 			      *sizeof(double));
 	if (NULL==data) {
-	  *status = EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: not enough memory for PSF input buffer!\n", *status);
+	  *status=EXIT_FAILURE;
+	  SIXT_ERROR("not enough memory for PSF input buffer");
 	  break;
 	}
 
@@ -548,7 +561,6 @@ PSF* newPSF(const char* const filename, const float focal_length,
 
   return(psf);
 }
-
 
 
 int savePSFImage(const PSF* const psf, const char* const filename, int* const status)

@@ -101,28 +101,34 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** This routine returns a random number created by the HEAdas random
-    number generator. It is basically a wrapper around the HEAdas
-    routine HDmtDrand(). The return values lie in the interval
-    [0,1). The function requires HDmtInit() to be called once before
-    usage in order to initialize the HEAdas random number
-    generator. When the random number generator is not needed any
-    more, it can be realeased with HDmtFree(). Information can be
-    found in the HEAdas developer's guide or directly in the source
-    files 'headas_rand.h' and 'headas_rand.c'. */
-double sixt_get_random_number();
+/** This routine returns a random number. The values are either
+    obtained from the Remeis random number server or are created by
+    the HEAdas random number generator. The routine is basically a
+    wrapper around the respective library routines, either the
+    rcl_rand_ndg() or the HEAdas routine HDmtDrand(). The return value
+    lies in the interval [0,1). 
+
+    In case the HEAdas random number generator is used, the function
+    requires HDmtInit() to be called once before usage for
+    initialization. When the HEAdas random number generator is not
+    needed any more, it can be realeased with HDmtFree(). Information
+    can be found in the HEAdas developer's guide or directly in the
+    source files 'headas_rand.h' and 'headas_rand.c'. */
+double sixt_get_random_number(int* const status);
 
 /** This routine produces two Gaussian distributed random numbers. The
     standard deviation of the Gaussian distribution sigma is assumed
     to be unity. The two numbers are returned via the pointer function
     arguments. */
-void sixt_get_gauss_random_numbers(double* const x, double* const y);
+void sixt_get_gauss_random_numbers(double* const x, 
+				   double* const y,
+				   int* const status);
 
 /** Returns a random value on the basis of an exponential distribution
     with a given average distance. In the simulation this function is
     used to calculate the temporal differences between individual
     photons from a source. The photons have Poisson statistics. */
-double rndexp(const double avg);
+double rndexp(const double avg, int* const status);
 
 /** Convert a squence of chars into captial letters. The sequence has
     to be terminated by a '\0' mark. */

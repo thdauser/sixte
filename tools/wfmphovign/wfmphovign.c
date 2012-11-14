@@ -185,7 +185,8 @@ int wfmphovign_main() {
       Vector phodir=unit_vector(photon.ra, photon.dec);
 
       double cosine=nz.x*phodir.x + nz.y*phodir.y + nz.z*phodir.z;
-      double rnd=sixt_get_random_number();
+      double rnd=sixt_get_random_number(&status);
+      CHECK_STATUS_BREAK(status);
 
       // Delete the photon from the FITS file.
       if (cosine>=rnd) {

@@ -54,9 +54,9 @@ int ero_split_photonfile_main() {
       sprintf(filename, "%s%d.fits", 
 	      parameters.output_prefix, filecounter);
       outputfiles[filecounter]=openNewPhotonListFile(filename, 0, &status);
-      if (EXIT_SUCCESS!=status) break;
+      CHECK_STATUS_BREAK(status);
     }
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
 
     // Copy header keywords.
@@ -93,22 +93,23 @@ int ero_split_photonfile_main() {
     int rnd_file;
     while (inputfile->row<inputfile->nrows) {
 
-      if (EXIT_SUCCESS!=status) break;
+      CHECK_STATUS_BREAK(status);
       
       // Read an entry from the photon list:
       status = PhotonListFile_getNextRow(inputfile, &photon);
-      if (status!=EXIT_SUCCESS) break;
+      CHECK_STATUS_BREAK(status);
       
       // Get a random file index [0-6].
-      rnd_file = (int)(sixt_get_random_number()*7.);
+      rnd_file=(int)(sixt_get_random_number(&status)*7.);
+      CHECK_STATUS_BREAK(status);
       assert(rnd_file>=0);
       assert(rnd_file<=6);
 
       // Append the photon to the randomly chosen file.
       status = addPhoton2File(outputfiles[rnd_file], &photon);
-      if (status!=EXIT_SUCCESS) break;
+      CHECK_STATUS_BREAK(status);
     }
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
     // END of loop over all entries in the input photon list file.
 
   } while(0); // End of error handling loop
