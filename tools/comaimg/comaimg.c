@@ -1,18 +1,12 @@
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
 #include "comaimg.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
 int comaimg_main() {
-  struct Parameters parameters;
+  struct Parameters par;
 
-  AttitudeCatalog* attitudecatalog=NULL;
+  AttitudeCatalog* ac=NULL;
   struct Telescope telescope; // Telescope data.
   PhotonListFile* photonlistfile=NULL;
   ImpactListFile* impactlistfile=NULL;
@@ -32,9 +26,9 @@ int comaimg_main() {
     // --- Initialization ---
 
     // Read parameters using PIL library.
-    if ((status=comaimg_getpar(&parameters))) break;
+    if ((status=comaimg_getpar(&par))) break;
 
-    float focal_length = parameters.mask_distance;
+    float focal_length = par.mask_distance;
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
@@ -45,23 +39,23 @@ int comaimg_main() {
     HDmtInit(1);
 
     // Open the FITS file with the input photon list:
-    photonlistfile=openPhotonListFile(parameters.photonlist_filename, 
+    photonlistfile=openPhotonListFile(par.photonlist_filename, 
 				      READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the attitude file specified in the header keywords of the photon list.
     char comment[MAXMSG];
     fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
-		  &parameters.attitude_filename, comment, &status);
-    attitudecatalog=loadAttitudeCatalog(parameters.attitude_filename, &status);
+		  &par.attitude_filename, comment, &status);
+    ac=loadAttitudeCatalog(par.attitude_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Load the coded mask from the file.
-    mask = getCodedMaskFromFile(parameters.mask_filename, &status);
+    mask = getCodedMaskFromFile(par.mask_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
-    impactlistfile = openNewImpactListFile(parameters.impactlist_filename, 
+    impactlistfile = openNewImpactListFile(par.impactlist_filename, 
 					   0, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -72,7 +66,7 @@ int comaimg_main() {
 		    &refycrvl, "", &status);
     // Add attitude filename.
     fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", 
-		    parameters.attitude_filename,
+		    par.attitude_filename,
 		    "name of the attitude FITS file", &status);
     CHECK_STATUS_BREAK(status);
     
@@ -117,7 +111,7 @@ int comaimg_main() {
       Vector photon_direction = unit_vector(photon.ra, photon.dec);
    
       // Determine telescope pointing direction at the current time.
-      telescope.nz = getTelescopeNz(attitudecatalog, photon.time, &status);
+      telescope.nz = getTelescopeNz(ac, photon.time, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check whether the photon is inside the FOV:
@@ -137,10 +131,10 @@ int comaimg_main() {
 	// Determine the current nx: perpendicular to telescope axis nz
 	// and in the direction of the satellite motion.
 	telescope.nx = 
-	  normalize_vector(interpolate_vec(attitudecatalog->entry[attitude_counter].nx, 
-					   attitudecatalog->entry[attitude_counter].time, 
-					   attitudecatalog->entry[attitude_counter+1].nx, 
-					   attitudecatalog->entry[attitude_counter+1].time, 
+	  normalize_vector(interpolate_vec(ac->entry[attitude_counter].nx, 
+					   ac->entry[attitude_counter].time, 
+					   ac->entry[attitude_counter+1].nx, 
+					   ac->entry[attitude_counter+1].time, 
 					   photon.time));
 	
 	// Remove the component along the vertical direction nz 
@@ -203,7 +197,7 @@ int comaimg_main() {
   freeImpactListFile(&impactlistfile, &status);
   freePhotonListFile(&photonlistfile, &status);
 
-  freeAttitudeCatalog(&attitudecatalog);
+  freeAttitudeCatalog(&ac);
   destroyCodedMask(&mask);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
@@ -212,31 +206,30 @@ int comaimg_main() {
 
 
 
-int comaimg_getpar(struct Parameters* parameters)
+int comaimg_getpar(struct Parameters* par)
 {
   int status=EXIT_SUCCESS; // Error status.
 
   // Get the filename of the input photon list (FITS file).
-  if ((status = PILGetFname("photonlist_filename", parameters->photonlist_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the photon list!\n", status);
+  if ((status = PILGetFname("photonlist_filename", par->photonlist_filename))) {
+    SIXT_ERROR("failed reading the filename of the photon list");
   }
   
   // Get the filename of the Coded Mask file (FITS image file).
-  else if ((status = PILGetFname("mask_filename", parameters->mask_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the Coded Mask!\n", status);
+  else if ((status = PILGetFname("mask_filename", par->mask_filename))) {
+    SIXT_ERROR("failed reading the filename of the coded mask");
   }
 
   // Get the filename of the impact list file (FITS output file).
-  else if ((status = PILGetFname("impactlist_filename", parameters->impactlist_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the impact list output file!\n", status);
+  else if ((status = PILGetFname("impactlist_filename", par->impactlist_filename))) {
+    SIXT_ERROR("failed reading the filename of the impact list output file");
   }
 
   // Read the distance between the coded mask and the detector plane [m].
-  else if ((status = PILGetReal("mask_distance", &parameters->mask_distance))) {
-    HD_ERROR_THROW("Error reading the distance between the mask and the detector plane!\n", 
-		   status);
+  else if ((status = PILGetReal("mask_distance", &par->mask_distance))) {
+    SIXT_ERROR("failed reading the distance between the mask and the detector");
   }
-  if (EXIT_SUCCESS!=status) return(status);
+  CHECK_STATUS_RET(status, status);
 
   return(status);
 }

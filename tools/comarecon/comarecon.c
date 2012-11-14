@@ -10,7 +10,7 @@
 ////////////////////////////////////
 /** Main procedure. */
 int comarecon_main() {
-  struct Parameters parameters;
+  struct Parameters par;
   
   CoMaEventFile* eventfile=NULL;
   SquarePixels* detector_pixels=NULL;
@@ -30,41 +30,41 @@ int comarecon_main() {
     // --- Initialization ---
 
     // Read the program parameters using the PIL library.
-    if ((status=comarecon_getpar(&parameters))) break;
+    if ((status=comarecon_getpar(&par))) break;
     
     // Open the event file.
-    eventfile = openCoMaEventFile(parameters.eventlist_filename, READONLY, &status);
-    if (EXIT_SUCCESS!=status) break;
+    eventfile=openCoMaEventFile(par.eventlist_filename, READONLY, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the coded mask from the file.
-    mask = getCodedMaskFromFile(parameters.mask_filename, &status);
-    if(EXIT_SUCCESS!=status) break;
+    mask = getCodedMaskFromFile(par.mask_filename, &status);
+    CHECK_STATUS_BREAK(status);
     
     // DETECTOR setup.
     struct SquarePixelsParameters spp = {
-      .xwidth = parameters.width,
-      .ywidth = parameters.width,
-      .xpixelwidth = parameters.pixelwidth,
-      .ypixelwidth = parameters.pixelwidth 
+      .xwidth = par.width,
+      .ywidth = par.width,
+      .xpixelwidth = par.pixelwidth,
+      .ypixelwidth = par.pixelwidth 
     };
     detector_pixels=newSquarePixels(&spp, &status);
-    if(EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
     // END of DETECTOR CONFIGURATION SETUP    
 
     // SKY IMAGE setup.
-    float delta = atan(parameters.pixelwidth/parameters.mask_distance);
+    float delta = atan(par.pixelwidth/par.mask_distance);
     struct SourceImageParameters sip = {
-      .naxis1 = 2*parameters.width -1,
-      .naxis2 = 2*parameters.width -1,
+      .naxis1 = 2*par.width -1,
+      .naxis2 = 2*par.width -1,
       .cdelt1 = delta,
       .cdelt2 = delta,
       .crval1 = 0.,
       .crval2 = 0.,
-      .crpix1 = parameters.width*1.,
-      .crpix2 = parameters.width*1.
+      .crpix1 = par.width*1.,
+      .crpix2 = par.width*1.
     };
     sky_pixels=getEmptySourceImage(&sip, &status);
-    if(EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
     // END of SKY IMAGE CONFIGURATION SETUP    
     
     // --- END of Initialization ---
@@ -77,16 +77,16 @@ int comarecon_main() {
     CoMaEvent event;
 
     // Loop over all events in the FITS file.
-    while ((EXIT_SUCCESS==status)&&(0==EventFileEOF(&eventfile->generic))) {
+    while (0==EventFileEOF(&eventfile->generic)) {
 
       status=CoMaEventFile_getNextRow(eventfile, &event);
-      if(EXIT_SUCCESS!=status) break;
+      CHECK_STATUS_BREAK(status);
 
       // Add the event to the SquarePixels array.
       detector_pixels->array[event.rawx][event.rawy].charge += 1.0;
 
     } // END of scanning the impact list.
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Perform the image reconstruction algorithm.
     // We calculate the correlation S = D * A, instead of S = D * G as
@@ -114,8 +114,8 @@ int comarecon_main() {
 
 
     // Write the reconstructed source function to the output FITS file.
-    saveSourceImage(sky_pixels, parameters.image_filename, &status);
-    if(EXIT_SUCCESS!=status) break;
+    saveSourceImage(sky_pixels, par.image_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
   } while(0);  // END of the error handling loop.
 
@@ -128,59 +128,59 @@ int comarecon_main() {
   free_SourceImage(sky_pixels);
 
   // Close the FITS files.
-  status += closeCoMaEventFile(eventfile);
+  status=closeCoMaEventFile(eventfile);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
   return(status);
 }
 
 
 
-int comarecon_getpar(struct Parameters* parameters)
+int comarecon_getpar(struct Parameters* par)
 {
   int status=EXIT_SUCCESS; // Error status.
 
   // Get the filename of the mask reconstruction file (FITS input file).
   if ((status = PILGetFname("mask_filename", 
-			    parameters->mask_filename))) {
+			    par->mask_filename))) {
     HD_ERROR_THROW("Error reading the filename of the mask reconstruction image "
 		   "file!\n", status);
   }
 
   // Get the filename of the event list file (FITS input file).
   else if ((status = PILGetFname("eventlist_filename", 
-				 parameters->eventlist_filename))) {
+				 par->eventlist_filename))) {
     HD_ERROR_THROW("Error reading the filename of the event list input "
 		   "file!\n", status);
   }
 
   // Get the filename of the image file (FITS output file).
   else if ((status = PILGetFname("image_filename", 
-				 parameters->image_filename))) {
+				 par->image_filename))) {
     HD_ERROR_THROW("Error reading the filename of the image output "
 		   "file!\n", status);
   }
 
   // Read the width of the detector in [pixel].
-  else if ((status = PILGetInt("width", &parameters->width))) {
+  else if ((status = PILGetInt("width", &par->width))) {
     HD_ERROR_THROW("Error reading the detector width!\n", status);
   }
 
   // Read the width of one detector pixel in [m].
-  else if ((status = PILGetReal("pixelwidth", &parameters->pixelwidth))) {
+  else if ((status = PILGetReal("pixelwidth", &par->pixelwidth))) {
     HD_ERROR_THROW("Error reading the width detector pixels!\n", status);
   }
 
   // Read the distance between the coded mask and the detector plane [m].
-  else if ((status = PILGetReal("mask_distance", &parameters->mask_distance))) {
+  else if ((status = PILGetReal("mask_distance", &par->mask_distance))) {
     HD_ERROR_THROW("Error reading the distance between the mask and the detector plane!\n", 
 		   status);
   }
-  if (EXIT_SUCCESS!=status) return(status);
+  CHECK_STATUS_RET(status, status);
 
   // Set the event list template file:
-  strcpy(parameters->eventlist_template, SIXT_DATA_PATH);
-  strcat(parameters->eventlist_template, "/coma.eventlist.tpl");
+  strcpy(par->eventlist_template, SIXT_DATA_PATH);
+  strcat(par->eventlist_template, "/coma.eventlist.tpl");
 
   return(status);
 }

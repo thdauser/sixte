@@ -1,16 +1,10 @@
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
 #include "comadet.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
 int comadet_main() {
-  struct Parameters parameters;
+  struct Parameters par;
   
   ImpactListFile* impactlistfile=NULL;
   CoMaDetector* detector=NULL;
@@ -28,23 +22,23 @@ int comadet_main() {
     // --- Initialization ---
 
     // Read the program parameters using the PIL library.
-    if ((status=comadet_getpar(&parameters))) break;
+    if ((status=comadet_getpar(&par))) break;
     
     // Open the impact list FITS file.
-    impactlistfile = openImpactListFile(parameters.impactlist_filename,
+    impactlistfile = openImpactListFile(par.impactlist_filename,
 					READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
     
     // DETECTOR setup.
     struct CoMaDetectorParameters cdp = {
       .pixels = 
-      { .xwidth = parameters.width,
-	.ywidth = parameters.width,
-	.xpixelwidth = parameters.pixelwidth,
-	.ypixelwidth = parameters.pixelwidth 
+      { .xwidth = par.width,
+	.ywidth = par.width,
+	.xpixelwidth = par.pixelwidth,
+	.ypixelwidth = par.pixelwidth 
       },
-      .eventfile_filename = parameters.eventlist_filename /* String address!! */,
-      .eventfile_template = parameters.eventlist_template
+      .eventfile_filename = par.eventlist_filename /* String address!! */,
+      .eventfile_template = par.eventlist_template
     };
     detector=getCoMaDetector(&cdp, &status);
     if(EXIT_SUCCESS!=status) break;
@@ -84,44 +78,44 @@ int comadet_main() {
   // Close the FITS files.
   freeImpactListFile(&impactlistfile, &status);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
   return(status);
 }
 
 
 
-int comadet_getpar(struct Parameters* parameters)
+int comadet_getpar(struct Parameters* par)
 {
   int status=EXIT_SUCCESS; // Error status.
 
   // Get the filename of the impact list file (FITS input file).
   if ((status = PILGetFname("impactlist_filename", 
-			    parameters->impactlist_filename))) {
+			    par->impactlist_filename))) {
     HD_ERROR_THROW("Error reading the filename of the impact list intput "
 		   "file!\n", status);
   }
 
   // Get the filename of the event list file (FITS output file).
   else if ((status = PILGetFname("eventlist_filename", 
-				 parameters->eventlist_filename))) {
+				 par->eventlist_filename))) {
     HD_ERROR_THROW("Error reading the filename of the event list output "
 		   "file!\n", status);
   }
 
   // Read the width of the detector in [pixel].
-  else if ((status = PILGetInt("width", &parameters->width))) {
+  else if ((status = PILGetInt("width", &par->width))) {
     HD_ERROR_THROW("Error reading the detector width!\n", status);
   }
 
   // Read the width of one detector pixel in [m].
-  else if ((status = PILGetReal("pixelwidth", &parameters->pixelwidth))) {
+  else if ((status = PILGetReal("pixelwidth", &par->pixelwidth))) {
     HD_ERROR_THROW("Error reading the width detector pixels!\n", status);
   }
-  if (EXIT_SUCCESS!=status) return(status);
+  CHECK_STATUS_RET(status, status);
 
   // Set the event list template file:
-  strcpy(parameters->eventlist_template, SIXT_DATA_PATH);
-  strcat(parameters->eventlist_template, "/coma.eventlist.tpl");
+  strcpy(par->eventlist_template, SIXT_DATA_PATH);
+  strcat(par->eventlist_template, "/coma.eventlist.tpl");
 
   return(status);
 }
