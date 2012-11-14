@@ -48,10 +48,10 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Use the background if available.
-    setGenInstIgnoreBkg(inst, 0);
+    setGenDetIgnoreBkg(inst->det, 0);
 
     // Set the start time for the simulation.
-    setGenInstStartTime(inst, par.TIMEZERO);
+    setGenDetStartTime(inst->det, par.TIMEZERO);
     
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
@@ -108,7 +108,7 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Define the event list file as output file.
-    setGenInstEventListFile(inst, elf);
+    setGenDetEventListFile(inst->det, elf);
 
     // Loop over all impacts in the FITS file.
     while (ilf->row<ilf->nrows) {
@@ -154,7 +154,6 @@ int gendetsim_main() {
   freeImpactListFile(&ilf, &status);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-
   return(status);
 }
 

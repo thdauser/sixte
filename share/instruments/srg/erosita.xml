@@ -3,6 +3,7 @@
 <instrument name="eROSITA">
 
 <telescope>
+  <arf filename="erosita_iv_1telonaxis_ff.arf"/>
   <fov diameter="1.02"/>
   <focallength value="1.6"/>
   <vignetting filename="erosita.vignetting.fits"/>
@@ -14,7 +15,6 @@
   <pixelborder x="0." y="0."/>
   <wcs xrpix="192.5" yrpix="192.5" xrval="0." yrval="0." 
        xdelt="75.e-6" ydelt="75.e-6"/>
-  <arf filename="erosita_iv_1telonaxis_ff.arf"/>
   <rmf filename="erosita_iv_1telonaxis_ff.rmf"/>
   <cte value="1"/>
   <split type="exponential" par1="0.355"/>

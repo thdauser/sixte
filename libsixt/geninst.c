@@ -131,21 +131,3 @@ GenInst* loadGenInst(const char* const filename, int* const status)
   return(inst);
 }
 
-
-void setGenInstEventListFile(GenInst* const inst,
-			     EventListFile* const elf)
-{
-  setGenDetEventListFile(inst->det, elf);
-}
-
-
-void setGenInstIgnoreBkg(GenInst* const inst, const int ignore)
-{
-  setGenDetIgnoreBkg(inst->det, ignore);
-}
-
-
-void setGenInstStartTime(GenInst* const inst, const double t0)
-{
-  setGenDetStartTime(inst->det, t0);
-}

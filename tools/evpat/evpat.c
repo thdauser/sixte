@@ -44,9 +44,6 @@ int evpat_main()
     inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Use the background if available.
-    setGenInstIgnoreBkg(inst, 0);
-
     // Determine the event list file name.
     char eventlist_filename[MAXFILENAME];
     strcpy(eventlist_filename, par.EventList);

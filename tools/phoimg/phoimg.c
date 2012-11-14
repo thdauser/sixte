@@ -64,9 +64,6 @@ int phoimg_main() {
     inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Use the background if available.
-    setGenInstIgnoreBkg(inst, 0);
-
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
     strcpy(ucase_buffer, par.Attitude);
@@ -200,7 +197,6 @@ int phoimg_main() {
   destroyGenInst(&inst, &status);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-
   return(status);
 }
 

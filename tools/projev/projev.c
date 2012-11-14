@@ -99,9 +99,6 @@ int projev_main() {
     inst=loadGenInst(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Use the background if available.
-    setGenInstIgnoreBkg(inst, 0);
-
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
     strcpy(ucase_buffer, par.Attitude);

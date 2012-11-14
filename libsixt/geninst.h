@@ -53,16 +53,5 @@ void destroyGenInst(GenInst** const det, int* const status);
 /** Parse the GenInst definition from an XML file. */
 GenInst* loadGenInst(const char* const filename, int* const status);
 
-/** Assign an event file to the underlying GenDet data structure. */
-void setGenInstEventListFile(GenInst* const inst,
-			     EventListFile* const elf);
-
-/** Set the background ignore flag of the underlying GenDet data
-    structure. */
-void setGenInstIgnoreBkg(GenInst* const inst, const int ignore);
-
-/** Set the start time for the underlying GenDet data structure. */
-void setGenInstStartTime(GenInst* const inst, const double t0);
-
 
 #endif /* GENINST_H */
