@@ -156,7 +156,7 @@ int phoimg_main() {
 
       // Photon Imaging.
       Impact impact;
-      int isimg=phimg(inst, ac, &photon, &impact, &status);
+      int isimg=phimg(inst->tel, ac, &photon, &impact, &status);
       CHECK_STATUS_BREAK(status);
 
       // If the photon is not imaged but lost in the optical system,

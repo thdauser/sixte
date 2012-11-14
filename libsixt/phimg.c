@@ -1,7 +1,7 @@
 #include "phimg.h"
 
 
-int phimg(const GenInst* const inst,
+int phimg(const GenTel* const tel,
 	  AttitudeCatalog* const ac,
 	  Photon* const ph,
 	  Impact* const imp,
@@ -9,7 +9,7 @@ int phimg(const GenInst* const inst,
 {
   // Calculate the minimum cos-value for sources inside the FOV: 
   // (angle(x0,source) <= 1/2 * diameter)
-  const double fov_min_align=cos(inst->tel->fov_diameter/2.); 
+  const double fov_min_align=cos(tel->fov_diameter/2.); 
 
   // Determine the telescope pointing direction at the current time.
   struct Telescope telescope;
@@ -35,15 +35,15 @@ int phimg(const GenInst* const inst,
     // If it hits the detector, the return value is 1.
     struct Point2d position;
     int get_psf_pos_retval=
-      get_psf_pos(&position, *ph, telescope, inst->tel->focal_length, 
-		  inst->tel->vignetting, inst->tel->psf, status);
+      get_psf_pos(&position, *ph, telescope, tel->focal_length, 
+		  tel->vignetting, tel->psf, status);
     CHECK_STATUS_RET(*status, 0);
     if (get_psf_pos_retval!=0) {
       // Check whether the photon hits the detector within the FOV. 
       // (Due to the effects of the mirrors it might have been scattered over 
       // the edge of the FOV, although the source is inside the FOV.)
-      if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
-	  tan(inst->tel->fov_diameter)*inst->tel->focal_length) {
+      if (sqrt(pow(position.x,2.)+pow(position.y,2.)) <
+	  tan(tel->fov_diameter)*tel->focal_length) {
 	
 	// New impact.
 	imp->time     = ph->time;

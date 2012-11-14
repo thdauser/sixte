@@ -103,7 +103,6 @@ int evpat_main()
   destroyGenInst(&inst, &status);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-
   return(status);
 }
 

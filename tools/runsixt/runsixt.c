@@ -499,7 +499,7 @@ int runsixt_main()
 
 	// Photon imaging.
 	Impact imp;
-	int isimg=phimg(inst, ac, &ph, &imp, &status);
+	int isimg=phimg(inst->tel, ac, &ph, &imp, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// If the photon is not imaged but lost in the optical system,
@@ -513,7 +513,7 @@ int runsixt_main()
 	}
 
 	// Photon Detection.
-	phdetGenInst(inst, &imp, t1, &status);
+	phdetGenDet(inst->det, &imp, t1, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// Program progress output.
@@ -534,7 +534,7 @@ int runsixt_main()
       // END of photon processing loop for the current interval.
 
       // Clear the detectors.
-      phdetGenInst(inst, NULL, t1, &status);
+      phdetGenDet(inst->det, NULL, t1, &status);
       long jj;
       for(jj=0; jj<inst->det->pixgrid->ywidth; jj++) {
 	GenDetClearLine(inst->det, jj);
