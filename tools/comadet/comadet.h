@@ -13,9 +13,9 @@
 
 
 struct Parameters {
-  char impactlist_filename[MAXMSG];
-  char eventlist_filename[MAXMSG];
-  char eventlist_template[MAXMSG];
+  char ImpactList[MAXMSG];
+  char EventList[MAXMSG];
+  char EventListTemplate[MAXMSG];
 
   /** Detector width in [pixel]. */
   int width;

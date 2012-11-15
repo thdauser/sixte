@@ -29,7 +29,6 @@ CodedMask* getCodedMask(int* const status)
 }
 
 
-
 void destroyCodedMask(CodedMask** const mask)
 {
   if (NULL!=(*mask)) {
@@ -55,7 +54,6 @@ void destroyCodedMask(CodedMask** const mask)
     *mask=NULL;
   }
 }
-
 
 
 CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
@@ -195,7 +193,6 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 
   return(mask);
 }
-
 
 
 int getCodedMaskImpactPos(struct Point2d* const position, 

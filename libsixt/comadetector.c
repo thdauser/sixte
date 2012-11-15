@@ -7,28 +7,27 @@ CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
   // Allocate memory for the CoMaDetector object.
   CoMaDetector* det=(CoMaDetector*)malloc(sizeof(CoMaDetector));
   if (NULL==det) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not allocate memory for CoMaDetector "
-		   "object!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not allocate memory for CoMaDetector");
     return(det);
   }
+
   // Set initial values.
   det->pixels    = NULL;
   det->eventfile = NULL;
 
   // Call the initialization routines of the underlying data structures.
-  det->pixels = newSquarePixels(&parameters->pixels, status);
-  if (EXIT_SUCCESS!=*status) return(det);
+  det->pixels=newSquarePixels(&parameters->pixels, status);
+  CHECK_STATUS_RET(*status, det);
 
   // Create and open new event list file.
-  det->eventfile = openNewCoMaEventFile(parameters->eventfile_filename,
-					parameters->eventfile_template,
-					status);
-  if (EXIT_SUCCESS!=*status) return(det);
+  det->eventfile=openNewCoMaEventFile(parameters->eventfile_filename,
+				      parameters->eventfile_template,
+				      status);
+  CHECK_STATUS_RET(*status, det);
 
   return(det);
 }
-
 
 
 void freeCoMaDetector(CoMaDetector* det) 
@@ -41,7 +40,6 @@ void freeCoMaDetector(CoMaDetector* det)
     free(det);
   }
 }
-
 
 
 int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
@@ -57,7 +55,7 @@ int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
 			.rawy   = y };
 
     // Add event to event file.
-    status = addCoMaEvent2File(det->eventfile, &event);
+    status=addCoMaEvent2File(det->eventfile, &event);
     if (EXIT_SUCCESS!=status) return(status);
   }
 

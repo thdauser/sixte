@@ -19,13 +19,19 @@
 
 
 struct Parameters {
-  char attitude_filename[MAXMSG];   // input: attitude file
-  char photonlist_filename[MAXMSG]; // input: photon list
-  char mask_filename[MAXMSG];       // input: coded mask file
-  char impactlist_filename[MAXMSG]; // output: impact list
+  char Attitude[MAXMSG];   // input: attitude file
+  char PhotonList[MAXMSG]; // input: photon list
+  char Mask[MAXMSG];       // input: coded mask file
+  char ImpactList[MAXMSG]; // output: impact list
+
+  /** [deg] */
+  float RA, Dec;
+
+  /** Exposure time. */
+  double Exposure;
 
   // Distance between the coded mask and the detector plane ([m]).
-  double mask_distance;  
+  double MaskDistance;  
 };
 
 

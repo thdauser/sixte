@@ -34,7 +34,9 @@ typedef struct {
     of rows in the FITS table and initializes the CoMaEventFile data
     structure. The access_mode parameter can be either READONLY or
     READWRITE. */
-CoMaEventFile* openCoMaEventFile(char* filename, int access_mode, int* status);
+CoMaEventFile* openCoMaEventFile(char* const filename, 
+				 const int access_mode, 
+				 int* const status);
 
 /** Create and open a new FITS event file for the HTRS detector from a
     given FITS template. If the file already exists, the old file is
@@ -42,8 +44,9 @@ CoMaEventFile* openCoMaEventFile(char* filename, int access_mode, int* status);
     file the function also initializes the CoMaEventFile data
     structure by calling openCoMaEventFile(). The access_mode
     parameter is always READWRITE. */
-CoMaEventFile* openNewCoMaEventFile(char* filename, char* template, 
-				    int* status);
+CoMaEventFile* openNewCoMaEventFile(char* const filename, 
+				    char* const template, 
+				    int* const status);
 
 /** Close an open Coded Mask event list FITS file. */
 int closeCoMaEventFile(CoMaEventFile* ef);

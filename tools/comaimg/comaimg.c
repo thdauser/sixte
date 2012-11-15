@@ -8,8 +8,8 @@ int comaimg_main() {
 
   AttitudeCatalog* ac=NULL;
   struct Telescope telescope; // Telescope data.
-  PhotonListFile* photonlistfile=NULL;
-  ImpactListFile* impactlistfile=NULL;
+  PhotonListFile* plf=NULL;
+  ImpactListFile* ilf=NULL;
   double refxcrvl=0., refycrvl=0.;
   CodedMask* mask=NULL;
 
@@ -18,7 +18,7 @@ int comaimg_main() {
 
   // Register HEATOOL:
   set_toolname("comaimg");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -28,46 +28,76 @@ int comaimg_main() {
     // Read parameters using PIL library.
     if ((status=comaimg_getpar(&par))) break;
 
-    float focal_length = par.mask_distance;
+    float focal_length=par.MaskDistance;
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align = cos(M_PI/3.);
+    const double fov_min_align=cos(M_PI/3.);
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
 
     // Open the FITS file with the input photon list:
-    photonlistfile=openPhotonListFile(par.photonlist_filename, 
-				      READONLY, &status);
+    plf=openPhotonListFile(par.PhotonList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Open the attitude file specified in the header keywords of the photon list.
-    char comment[MAXMSG];
-    fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
-		  &par.attitude_filename, comment, &status);
-    ac=loadAttitudeCatalog(par.attitude_filename, &status);
-    CHECK_STATUS_BREAK(status);
+
+    // Set up the Attitude.
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.Attitude);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer, "NONE")) {
+      // Set up a simple pointing attitude.
+
+      // First allocate memory.
+      ac=getAttitudeCatalog(&status);
+      CHECK_STATUS_BREAK(status);
+
+      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
+      if (NULL==ac->entry) {
+	status=EXIT_FAILURE;
+	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	break;
+      }
+
+      // Set the values of the entries.
+      ac->nentries=1;
+      ac->entry[0]=defaultAttitudeEntry();
+      ac->entry[0].time=0.;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+
+      Vector vz={0., 0., 1.};
+      ac->entry[0].nx=vector_product(vz, ac->entry[0].nz);
+
+    } else {
+      // Load the attitude from the given file.
+      ac=loadAttitudeCatalog(par.Attitude, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Check if the required time interval for the simulation
+      // is a subset of the time described by the attitude file.
+      if ((ac->entry[0].time > 0.) || 
+	  (ac->entry[ac->nentries-1].time < par.Exposure)) {
+	status=EXIT_FAILURE;
+	SIXT_ERROR("attitude data does not cover the specified period");
+	break;
+      }
+    }
+    // END of setting up the attitude.
+
 
     // Load the coded mask from the file.
-    mask = getCodedMaskFromFile(par.mask_filename, &status);
+    mask=getCodedMaskFromFile(par.Mask, &status);
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
-    impactlistfile = openNewImpactListFile(par.impactlist_filename, 
-					   0, &status);
+    ilf=openNewImpactListFile(par.ImpactList, 0, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write WCS header keywords.
-    fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", 
-		    &refxcrvl, "", &status);
-    fits_update_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", 
-		    &refycrvl, "", &status);
-    // Add attitude filename.
-    fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", 
-		    par.attitude_filename,
-		    "name of the attitude FITS file", &status);
+    fits_update_key(ilf->fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status);
+    fits_update_key(ilf->fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status);
     CHECK_STATUS_BREAK(status);
     
     // --- END of Initialization ---
@@ -81,43 +111,29 @@ int comaimg_main() {
     // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
     long attitude_counter=0;  // counter for AttitudeCatalog
 
-    // SCAN PHOTON LIST    
-    for(photonlistfile->row=0; 
-	(photonlistfile->row<photonlistfile->nrows)&&(EXIT_SUCCESS==status); 
-	photonlistfile->row++) {
+    // SCAN PHOTON LIST 
+    while (plf->row < plf->nrows) {
+   
+      Photon photon={.time=0.};
       
       // Read an entry from the photon list:
-      int anynul = 0;
-      Photon photon = { .time=0., .energy=0., .ra=0., .dec=0. };
-      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->ctime, 
-		    photonlistfile->row+1, 1, 1, &photon.time, &photon.time, 
-		    &anynul, &status);
-      fits_read_col(photonlistfile->fptr, TFLOAT, photonlistfile->cenergy, 
-		    photonlistfile->row+1, 1, 1, &photon.energy, &photon.energy, 
-		    &anynul, &status);
-      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->cra, 
-		    photonlistfile->row+1, 1, 1, &photon.ra, &photon.ra, 
-		    &anynul, &status);
-      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->cdec, 
-		    photonlistfile->row+1, 1, 1, &photon.dec, &photon.dec, 
-		    &anynul, &status);
+      status=PhotonListFile_getNextRow(plf, &photon);
       CHECK_STATUS_BREAK(status);
 
-      // Rescale from [deg] -> [rad]
-      photon.ra  = photon.ra *M_PI/180.;
-      photon.dec = photon.dec*M_PI/180.;
+      // Check whether we are within the requested time interval.
+      if (photon.time > par.Exposure) break;
 
       // Determine the unit vector pointing in the direction of the photon.
-      Vector photon_direction = unit_vector(photon.ra, photon.dec);
+      Vector phodir=unit_vector(photon.ra, photon.dec);
    
       // Determine telescope pointing direction at the current time.
-      telescope.nz = getTelescopeNz(ac, photon.time, &status);
+      telescope.nz=getTelescopeNz(ac, photon.time, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check whether the photon is inside the FOV:
       // Compare the photon direction to the unit vector specifiing the 
       // direction of the telescope axis:
-      if (check_fov(&photon_direction, &telescope.nz, fov_min_align)==0) {
+      if (check_fov(&phodir, &telescope.nz, fov_min_align)==0) {
 	// Photon is inside the FOV!
 	
 	// Determine telescope data like direction etc. (attitude).
@@ -165,19 +181,20 @@ int comaimg_main() {
 	  // the edge of the FOV, although the source is inside the FOV.)
 	  //if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
 	  //    tan(telescope.fov_diameter)*telescope.focal_length) {
-	    
-	  // Insert the impact position with the photon data into the impact list:
-	  fits_insert_rows(impactlistfile->fptr, impactlistfile->row++, 1, &status);
-	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->ctime, 
-			 impactlistfile->row, 1, 1, &photon.time, &status);
-	  fits_write_col(impactlistfile->fptr, TFLOAT, impactlistfile->cenergy, 
-			 impactlistfile->row, 1, 1, &photon.energy, &status);
-	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cx, 
-			 impactlistfile->row, 1, 1, &position.x, &status);
-	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cy, 
-			 impactlistfile->row, 1, 1, &position.y, &status);
+	  
+	  // New impact.
+	  Impact impact;
+	  impact.time  =photon.time;
+	  impact.energy=photon.energy;
+	  impact.position.x=position.x;
+	  impact.position.y=position.y;
+	  impact.ph_id     =photon.ph_id;
+	  impact.src_id    =photon.src_id;
+
+	  // Write the impact to the output file.
+	  addImpact2File(ilf, &impact, &status);
 	  CHECK_STATUS_BREAK(status);
-	  impactlistfile->nrows++;
+
 	  //}
 	} // END getCodedMaskImpactPos(...)
       } // End of FOV check.
@@ -194,8 +211,8 @@ int comaimg_main() {
   HDmtFree();
 
   // Close the FITS files.
-  freeImpactListFile(&impactlistfile, &status);
-  freePhotonListFile(&photonlistfile, &status);
+  freeImpactListFile(&ilf, &status);
+  freePhotonListFile(&plf, &status);
 
   freeAttitudeCatalog(&ac);
   destroyCodedMask(&mask);
@@ -205,31 +222,73 @@ int comaimg_main() {
 }
 
 
-
 int comaimg_getpar(struct Parameters* par)
 {
-  int status=EXIT_SUCCESS; // Error status.
+  // String input buffer.
+  char* sbuffer=NULL;
+
+  // Error status.
+  int status=EXIT_SUCCESS;
 
   // Get the filename of the input photon list (FITS file).
-  if ((status = PILGetFname("photonlist_filename", par->photonlist_filename))) {
+  status=ape_trad_query_string("PhotonList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the filename of the photon list");
+    return(status);
   }
+  strcpy(par->PhotonList, sbuffer);
+  free(sbuffer);
   
   // Get the filename of the Coded Mask file (FITS image file).
-  else if ((status = PILGetFname("mask_filename", par->mask_filename))) {
+  status=ape_trad_query_string("Mask", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the filename of the coded mask");
+    return(status);
   }
+  strcpy(par->Mask, sbuffer);
+  free(sbuffer);
 
   // Get the filename of the impact list file (FITS output file).
-  else if ((status = PILGetFname("impactlist_filename", par->impactlist_filename))) {
-    SIXT_ERROR("failed reading the filename of the impact list output file");
+  status=ape_trad_query_string("ImpactList", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the filename of the impact list");
+    return(status);
   }
+  strcpy(par->ImpactList, sbuffer);
+  free(sbuffer);
 
   // Read the distance between the coded mask and the detector plane [m].
-  else if ((status = PILGetReal("mask_distance", &par->mask_distance))) {
+  status=ape_trad_query_double("MaskDistance", &par->MaskDistance);
+  if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the distance between the mask and the detector");
+    return(status);
   }
-  CHECK_STATUS_RET(status, status);
+
+  status=ape_trad_query_string("Attitude", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the attitude file");
+    return(status);
+  } 
+  strcpy(par->Attitude, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_float("RA", &par->RA);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
+    return(status);
+  } 
+
+  status=ape_trad_query_float("Dec", &par->Dec);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the declination of the telescope pointing");
+    return(status);
+  } 
+
+  status=ape_trad_query_double("Exposure", &par->Exposure);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the exposure time");
+    return(status);
+  } 
 
   return(status);
 }
