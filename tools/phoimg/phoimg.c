@@ -208,13 +208,13 @@ int phoimg_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 
   status=ape_trad_query_file_name("PhotonList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the photon list!\n", status);
+    SIXT_ERROR("failed reading the name of the photon list");
     return(status);
   } 
   strcpy(par->PhotonList, sbuffer);
@@ -222,7 +222,7 @@ int phoimg_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("ImpactList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the impact list!\n", status);
+    SIXT_ERROR("failed reading the name of the impact list");
     return(status);
   } 
   strcpy(par->ImpactList, sbuffer);
@@ -230,7 +230,7 @@ int phoimg_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the mission!\n", status);
+    SIXT_ERROR("failed reading the name of the mission");
     return(status);
   } 
   strcpy(par->Mission, sbuffer);
@@ -238,7 +238,7 @@ int phoimg_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Instrument", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument");
     return(status);
   } 
   strcpy(par->Instrument, sbuffer);
@@ -246,7 +246,7 @@ int phoimg_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Mode", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument mode!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
   } 
   strcpy(par->Mode, sbuffer);
@@ -254,7 +254,7 @@ int phoimg_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    SIXT_ERROR("failed reading the name of the XML file");
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
@@ -262,7 +262,7 @@ int phoimg_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the attitude!\n", status);
+    SIXT_ERROR("failed reading the name of the attitude file");
     return(status);
   } 
   strcpy(par->Attitude, sbuffer);
@@ -270,44 +270,43 @@ int phoimg_getpar(struct Parameters* par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the right ascension of the "
-		   "telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the declination of the telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
   } 
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading MJDREF!\n", status);
+    SIXT_ERROR("failed reading MJDREF");
     return(status);
   } 
 
   status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
+    SIXT_ERROR("failed reading TIMEZERO");
     return(status);
   } 
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    SIXT_ERROR("failed reading the exposure time");
     return(status);
   } 
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 

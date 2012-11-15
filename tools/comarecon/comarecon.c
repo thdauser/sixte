@@ -16,7 +16,7 @@ int comarecon_main() {
 
   // Register HEATOOL:
   set_toolname("comarecon");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -27,11 +27,11 @@ int comarecon_main() {
     if ((status=comarecon_getpar(&par))) break;
     
     // Open the event file.
-    eventfile=openCoMaEventFile(par.eventlist_filename, READONLY, &status);
+    eventfile=openCoMaEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Load the coded mask from the file.
-    mask = getCodedMaskFromFile(par.mask_filename, &status);
+    mask=getCodedMaskFromFile(par.Mask, &status);
     CHECK_STATUS_BREAK(status);
     
     // DETECTOR setup.
@@ -46,7 +46,7 @@ int comarecon_main() {
     // END of DETECTOR CONFIGURATION SETUP    
 
     // SKY IMAGE setup.
-    float delta = atan(par.pixelwidth/par.mask_distance);
+    float delta = atan(par.pixelwidth/par.MaskDistance);
     struct SourceImageParameters sip = {
       .naxis1 = 2*par.width -1,
       .naxis2 = 2*par.width -1,
@@ -68,16 +68,16 @@ int comarecon_main() {
 
     // Beginning of actual detector simulation (after loading required data):
     headas_chat(5, "start image reconstruction process ...\n");
-    CoMaEvent event;
 
     // Loop over all events in the FITS file.
     while (0==EventFileEOF(&eventfile->generic)) {
 
+      CoMaEvent event;
       status=CoMaEventFile_getNextRow(eventfile, &event);
       CHECK_STATUS_BREAK(status);
 
       // Add the event to the SquarePixels array.
-      detector_pixels->array[event.rawx][event.rawy].charge += 1.0;
+      detector_pixels->array[event.rawx][event.rawy].charge+=1.0;
 
     } // END of scanning the impact list.
     CHECK_STATUS_BREAK(status);
@@ -108,7 +108,7 @@ int comarecon_main() {
 
 
     // Write the reconstructed source function to the output FITS file.
-    saveSourceImage(sky_pixels, par.image_filename, &status);
+    saveSourceImage(sky_pixels, par.Image, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0);  // END of the error handling loop.
@@ -129,52 +129,40 @@ int comarecon_main() {
 }
 
 
-
 int comarecon_getpar(struct Parameters* par)
 {
   int status=EXIT_SUCCESS; // Error status.
 
   // Get the filename of the mask reconstruction file (FITS input file).
-  if ((status = PILGetFname("mask_filename", 
-			    par->mask_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the mask reconstruction image "
-		   "file!\n", status);
+  if ((status=PILGetFname("Mask", par->Mask))) {
+    SIXT_ERROR("failed reading the filename of the mask reconstruction image");
   }
 
   // Get the filename of the event list file (FITS input file).
-  else if ((status = PILGetFname("eventlist_filename", 
-				 par->eventlist_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the event list input "
-		   "file!\n", status);
+  else if ((status=PILGetFname("EventList", par->EventList))) {
+    SIXT_ERROR("failed reading the filename of the event list");
   }
 
   // Get the filename of the image file (FITS output file).
-  else if ((status = PILGetFname("image_filename", 
-				 par->image_filename))) {
-    HD_ERROR_THROW("Error reading the filename of the image output "
-		   "file!\n", status);
+  else if ((status=PILGetFname("Image", par->Image))) {
+    SIXT_ERROR("failed reading the filename of the output image");
   }
 
   // Read the width of the detector in [pixel].
-  else if ((status = PILGetInt("width", &par->width))) {
-    HD_ERROR_THROW("Error reading the detector width!\n", status);
+  else if ((status=PILGetInt("Width", &par->width))) {
+    SIXT_ERROR("failed reading the detector width");
   }
 
   // Read the width of one detector pixel in [m].
-  else if ((status = PILGetReal("pixelwidth", &par->pixelwidth))) {
-    HD_ERROR_THROW("Error reading the width detector pixels!\n", status);
+  else if ((status=PILGetReal("Pixelwidth", &par->pixelwidth))) {
+    SIXT_ERROR("failed reading the width of the detector pixels");
   }
 
   // Read the distance between the coded mask and the detector plane [m].
-  else if ((status = PILGetReal("mask_distance", &par->mask_distance))) {
-    HD_ERROR_THROW("Error reading the distance between the mask and the detector plane!\n", 
-		   status);
+  else if ((status=PILGetReal("MaskDistance", &par->MaskDistance))) {
+    SIXT_ERROR("failed reading the distance between the mask and the detector");
   }
   CHECK_STATUS_RET(status, status);
-
-  // Set the event list template file:
-  strcpy(par->eventlist_template, SIXT_DATA_PATH);
-  strcat(par->eventlist_template, "/coma.eventlist.tpl");
 
   return(status);
 }

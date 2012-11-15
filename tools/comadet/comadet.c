@@ -27,12 +27,12 @@ int comadet_main() {
     CHECK_STATUS_RET(status, status);
     
     // Open the impact list FITS file.
-    ilf=openImpactListFile(par.impactlist_filename, READONLY, &status);
+    ilf=openImpactListFile(par.ImpactList, READONLY, &status);
     CHECK_STATUS_RET(status, status);
     
     // Set the event list template file:
-    strcpy(par.eventlist_template, SIXT_DATA_PATH);
-    strcat(par.eventlist_template, "/coma.eventlist.tpl");
+    strcpy(par.EventListTemplate, SIXT_DATA_PATH);
+    strcat(par.EventListTemplate, "/templates/coma.eventlist.tpl");
 
     // DETECTOR setup.
     struct CoMaDetectorParameters cdp = {
@@ -42,8 +42,8 @@ int comadet_main() {
 	.xpixelwidth = par.pixelwidth,
 	.ypixelwidth = par.pixelwidth 
       },
-      .eventfile_filename=par.eventlist_filename /* String address!! */,
-      .eventfile_template=par.eventlist_template
+      .eventfile_filename=par.EventList /* String address!! */,
+      .eventfile_template=par.EventListTemplate
     };
     detector=getCoMaDetector(&cdp, &status);
     CHECK_STATUS_RET(status, status);
@@ -94,12 +94,12 @@ int comadet_getpar(struct Parameters* par)
   int status=EXIT_SUCCESS; // Error status.
 
   // Get the filename of the impact list file (FITS input file).
-  if ((status=PILGetFname("Impactlist", par->impactlist_filename))) {
+  if ((status=PILGetFname("Impactlist", par->ImpactList))) {
     SIXT_ERROR("failed reading the filename of the impact list");
   }
 
   // Get the filename of the event list file (FITS output file).
-  else if ((status=PILGetFname("EventList", par->eventlist_filename))) {
+  else if ((status=PILGetFname("EventList", par->EventList))) {
     SIXT_ERROR("failed reading the filename of the event list output");
   }
 

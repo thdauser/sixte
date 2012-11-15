@@ -1,5 +1,5 @@
-ImpactList,f,lq,"impacts_1Crab.fits",,,"impact list file (FITS input file)"
-EventList,f,lq,"events_1Crab.fits",,,"event list file (FITS output file)"
+ImpactList,f,lq,"impacts.fits",,,"impact list file (FITS input file)"
+EventList,f,lq,"events.fits",,,"event list file (FITS output file)"
 Width,i,lq,139,0,10000,"width of the detector (pixels) "
 Pixelwidth,r,lq,0.0013,0.0,100.0,"width of one detector pixel (m)"
 chatter,i,lh,5,,,"chatter: control verbosity of the program"

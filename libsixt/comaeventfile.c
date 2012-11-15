@@ -1,47 +1,49 @@
 #include "comaeventfile.h"
 
 
-CoMaEventFile* openCoMaEventFile(char* filename, int access_mode, int* status)
+CoMaEventFile* openCoMaEventFile(char* const filename, 
+				 const int access_mode, 
+				 int* const status)
 {
   CoMaEventFile* ef=(CoMaEventFile*)malloc(sizeof(CoMaEventFile));
   if (NULL==ef) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not allocate memory for CoMaEventFile "
-		   "object!\n", *status);
+    SIXT_ERROR("could not allocate memory for CoMaEventFile");
     return(ef);
   }
-  
+
   // Call the corresponding routine of the underlying structure.
-  *status = openEventFile(&ef->generic, filename, access_mode);
-  if (EXIT_SUCCESS!=*status) return(ef);
+  *status=openEventFile(&ef->generic, filename, access_mode);
+  CHECK_STATUS_RET(*status, ef);
 
   // Determine the CoMa-specific elements of the event list.
   // Determine the individual column numbers:
   // REQUIRED columns:
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "TIME", &ef->ctime, status)) 
-    return(ef);
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "CHARGE", &ef->ccharge, 
-		     status)) 
-    return(ef);
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWX", &ef->crawx, status)) 
-    return(ef);
-  if(fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWY", &ef->crawy, status)) 
-    return(ef);
+  fits_get_colnum(ef->generic.fptr, CASEINSEN, "TIME", &ef->ctime, status);
+  fits_get_colnum(ef->generic.fptr, CASEINSEN, "CHARGE", &ef->ccharge, status);
+  fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWX", &ef->crawx, status); 
+  fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWY", &ef->crawy, status);
+  CHECK_STATUS_RET(*status, ef);
 
   return(ef);
 }
 
 
-
-CoMaEventFile* openNewCoMaEventFile(char* filename, char* template, int* status)
+CoMaEventFile* openNewCoMaEventFile(char* const filename, 
+				    char* const template, 
+				    int* const status)
 {
+  printf("*** %s \n\n", template);
+
   // Remove old file if it exists.
   remove(filename);
+
   // Create a new event list FITS file from a FITS template.
   fitsfile* fptr=NULL;
   char buffer[MAXMSG];
   sprintf(buffer, "%s(%s)", filename, template);
-  if (fits_create_file(&fptr, buffer, status)) return(NULL);
+  fits_create_file(&fptr, buffer, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Set the time-keyword in the Event List Header.
   // See also: Stevens, "Advanced Programming in the UNIX environment", 
@@ -54,22 +56,21 @@ CoMaEventFile* openNewCoMaEventFile(char* filename, char* template, int* status)
       if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
 		   current_time_utc) > 0) {
 	// Return value should be == 19 !
-	if (fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
-			    "Start Time (UTC) of exposure", status)) 
-	  return(NULL);
+	fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
+			"Start Time (UTC) of exposure", status);
+	CHECK_STATUS_RET(*status, NULL);
       }
     }
   } // END of writing time information to Event File FITS header.
 
   // Close the newly created file again. It will be immediately re-opened
   // by the standard constructor.
-  if (fits_close_file(fptr, status)) return(NULL);
-
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Open the newly created FITS file.
   return(openCoMaEventFile(filename, READWRITE, status));
 }
-
 
 
 int closeCoMaEventFile(CoMaEventFile* ef)
@@ -77,7 +78,6 @@ int closeCoMaEventFile(CoMaEventFile* ef)
   // Call the corresponding routine of the underlying structure.
   return(closeEventFile(&ef->generic));
 }
-
 
 
 int addCoMaEvent2File(CoMaEventFile* ef, CoMaEvent* event)
@@ -101,7 +101,6 @@ int addCoMaEvent2File(CoMaEventFile* ef, CoMaEvent* event)
 
   return(status);
 }
-
 
 
 int CoMaEventFile_getNextRow(CoMaEventFile* ef, CoMaEvent* event)
