@@ -58,7 +58,6 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
 }
 
 
-
 void clearLineSquarePixels(SquarePixels* const sp, const int line) 
 {
   int x;
@@ -70,7 +69,6 @@ void clearLineSquarePixels(SquarePixels* const sp, const int line)
 }
 
 
-
 void clearSquarePixels(SquarePixels* const sp) 
 {
   int line;
@@ -78,7 +76,6 @@ void clearSquarePixels(SquarePixels* const sp)
     clearLineSquarePixels(sp, line);
   }
 }
-
 
 
 void destroySquarePixels(SquarePixels** const sp) 
@@ -105,7 +102,6 @@ void destroySquarePixels(SquarePixels** const sp)
 }
 
 
-
 /** Determines the minimum distance value out of an array with 4
     entries and returns the corresponding index. */
 static inline int getMinimumDistance(double array[]) 
@@ -123,7 +119,6 @@ static inline int getMinimumDistance(double array[])
 
   return(index);
 }
-
 
 
 int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc, 

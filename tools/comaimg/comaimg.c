@@ -8,8 +8,8 @@ int comaimg_main() {
 
   AttitudeCatalog* ac=NULL;
   struct Telescope telescope; // Telescope data.
-  PhotonListFile* photonlistfile=NULL;
-  ImpactListFile* impactlistfile=NULL;
+  PhotonListFile* plf=NULL;
+  ImpactListFile* ilf=NULL;
   double refxcrvl=0., refycrvl=0.;
   CodedMask* mask=NULL;
 
@@ -18,7 +18,7 @@ int comaimg_main() {
 
   // Register HEATOOL:
   set_toolname("comaimg");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -28,24 +28,23 @@ int comaimg_main() {
     // Read parameters using PIL library.
     if ((status=comaimg_getpar(&par))) break;
 
-    float focal_length = par.mask_distance;
+    float focal_length=par.mask_distance;
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align = cos(M_PI/3.);
+    const double fov_min_align=cos(M_PI/3.);
     
     // Initialize HEADAS random number generator and GSL generator for 
     // Gaussian distribution.
     HDmtInit(1);
 
     // Open the FITS file with the input photon list:
-    photonlistfile=openPhotonListFile(par.photonlist_filename, 
-				      READONLY, &status);
+    plf=openPhotonListFile(par.photonlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the attitude file specified in the header keywords of the photon list.
     char comment[MAXMSG];
-    fits_read_key(photonlistfile->fptr, TSTRING, "ATTITUDE", 
+    fits_read_key(plf->fptr, TSTRING, "ATTITUDE", 
 		  &par.attitude_filename, comment, &status);
     ac=loadAttitudeCatalog(par.attitude_filename, &status);
     CHECK_STATUS_BREAK(status);
@@ -55,17 +54,16 @@ int comaimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
-    impactlistfile = openNewImpactListFile(par.impactlist_filename, 
-					   0, &status);
+    ilf=openNewImpactListFile(par.impactlist_filename, 0, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write WCS header keywords.
-    fits_update_key(impactlistfile->fptr, TDOUBLE, "REFXCRVL", 
+    fits_update_key(ilf->fptr, TDOUBLE, "REFXCRVL", 
 		    &refxcrvl, "", &status);
-    fits_update_key(impactlistfile->fptr, TDOUBLE, "REFYCRVL", 
+    fits_update_key(ilf->fptr, TDOUBLE, "REFYCRVL", 
 		    &refycrvl, "", &status);
     // Add attitude filename.
-    fits_update_key(impactlistfile->fptr, TSTRING, "ATTITUDE", 
+    fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", 
 		    par.attitude_filename,
 		    "name of the attitude FITS file", &status);
     CHECK_STATUS_BREAK(status);
@@ -82,24 +80,22 @@ int comaimg_main() {
     long attitude_counter=0;  // counter for AttitudeCatalog
 
     // SCAN PHOTON LIST    
-    for(photonlistfile->row=0; 
-	(photonlistfile->row<photonlistfile->nrows)&&(EXIT_SUCCESS==status); 
-	photonlistfile->row++) {
+    for(plf->row=0; plf->row<plf->nrows; plf->row++) {
       
       // Read an entry from the photon list:
       int anynul = 0;
       Photon photon = { .time=0., .energy=0., .ra=0., .dec=0. };
-      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->ctime, 
-		    photonlistfile->row+1, 1, 1, &photon.time, &photon.time, 
+      fits_read_col(plf->fptr, TDOUBLE, plf->ctime, 
+		    plf->row+1, 1, 1, &photon.time, &photon.time, 
 		    &anynul, &status);
-      fits_read_col(photonlistfile->fptr, TFLOAT, photonlistfile->cenergy, 
-		    photonlistfile->row+1, 1, 1, &photon.energy, &photon.energy, 
+      fits_read_col(plf->fptr, TFLOAT, plf->cenergy, 
+		    plf->row+1, 1, 1, &photon.energy, &photon.energy, 
 		    &anynul, &status);
-      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->cra, 
-		    photonlistfile->row+1, 1, 1, &photon.ra, &photon.ra, 
+      fits_read_col(plf->fptr, TDOUBLE, plf->cra, 
+		    plf->row+1, 1, 1, &photon.ra, &photon.ra, 
 		    &anynul, &status);
-      fits_read_col(photonlistfile->fptr, TDOUBLE, photonlistfile->cdec, 
-		    photonlistfile->row+1, 1, 1, &photon.dec, &photon.dec, 
+      fits_read_col(plf->fptr, TDOUBLE, plf->cdec, 
+		    plf->row+1, 1, 1, &photon.dec, &photon.dec, 
 		    &anynul, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -111,7 +107,7 @@ int comaimg_main() {
       Vector photon_direction = unit_vector(photon.ra, photon.dec);
    
       // Determine telescope pointing direction at the current time.
-      telescope.nz = getTelescopeNz(ac, photon.time, &status);
+      telescope.nz=getTelescopeNz(ac, photon.time, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check whether the photon is inside the FOV:
@@ -167,17 +163,17 @@ int comaimg_main() {
 	  //    tan(telescope.fov_diameter)*telescope.focal_length) {
 	    
 	  // Insert the impact position with the photon data into the impact list:
-	  fits_insert_rows(impactlistfile->fptr, impactlistfile->row++, 1, &status);
-	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->ctime, 
-			 impactlistfile->row, 1, 1, &photon.time, &status);
-	  fits_write_col(impactlistfile->fptr, TFLOAT, impactlistfile->cenergy, 
-			 impactlistfile->row, 1, 1, &photon.energy, &status);
-	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cx, 
-			 impactlistfile->row, 1, 1, &position.x, &status);
-	  fits_write_col(impactlistfile->fptr, TDOUBLE, impactlistfile->cy, 
-			 impactlistfile->row, 1, 1, &position.y, &status);
+	  fits_insert_rows(ilf->fptr, ilf->row++, 1, &status);
+	  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
+			 ilf->row, 1, 1, &photon.time, &status);
+	  fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
+			 ilf->row, 1, 1, &photon.energy, &status);
+	  fits_write_col(ilf->fptr, TDOUBLE, ilf->cx, 
+			 ilf->row, 1, 1, &position.x, &status);
+	  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy, 
+			 ilf->row, 1, 1, &position.y, &status);
 	  CHECK_STATUS_BREAK(status);
-	  impactlistfile->nrows++;
+	  ilf->nrows++;
 	  //}
 	} // END getCodedMaskImpactPos(...)
       } // End of FOV check.
@@ -194,8 +190,8 @@ int comaimg_main() {
   HDmtFree();
 
   // Close the FITS files.
-  freeImpactListFile(&impactlistfile, &status);
-  freePhotonListFile(&photonlistfile, &status);
+  freeImpactListFile(&ilf, &status);
+  freePhotonListFile(&plf, &status);
 
   freeAttitudeCatalog(&ac);
   destroyCodedMask(&mask);
@@ -205,28 +201,27 @@ int comaimg_main() {
 }
 
 
-
 int comaimg_getpar(struct Parameters* par)
 {
   int status=EXIT_SUCCESS; // Error status.
 
   // Get the filename of the input photon list (FITS file).
-  if ((status = PILGetFname("photonlist_filename", par->photonlist_filename))) {
+  if ((status = PILGetFname("PhotonList", par->photonlist_filename))) {
     SIXT_ERROR("failed reading the filename of the photon list");
   }
   
   // Get the filename of the Coded Mask file (FITS image file).
-  else if ((status = PILGetFname("mask_filename", par->mask_filename))) {
+  else if ((status = PILGetFname("Mask", par->mask_filename))) {
     SIXT_ERROR("failed reading the filename of the coded mask");
   }
 
   // Get the filename of the impact list file (FITS output file).
-  else if ((status = PILGetFname("impactlist_filename", par->impactlist_filename))) {
+  else if ((status = PILGetFname("ImpactList", par->impactlist_filename))) {
     SIXT_ERROR("failed reading the filename of the impact list output file");
   }
 
   // Read the distance between the coded mask and the detector plane [m].
-  else if ((status = PILGetReal("mask_distance", &par->mask_distance))) {
+  else if ((status = PILGetReal("MaskDistance", &par->mask_distance))) {
     SIXT_ERROR("failed reading the distance between the mask and the detector");
   }
   CHECK_STATUS_RET(status, status);

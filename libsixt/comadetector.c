@@ -30,7 +30,6 @@ CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
 }
 
 
-
 void freeCoMaDetector(CoMaDetector* det) 
 {
   if (NULL!=det) {
@@ -41,7 +40,6 @@ void freeCoMaDetector(CoMaDetector* det)
     free(det);
   }
 }
-
 
 
 int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
@@ -57,7 +55,7 @@ int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
 			.rawy   = y };
 
     // Add event to event file.
-    status = addCoMaEvent2File(det->eventfile, &event);
+    status=addCoMaEvent2File(det->eventfile, &event);
     if (EXIT_SUCCESS!=status) return(status);
   }
 
