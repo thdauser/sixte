@@ -6,8 +6,8 @@
   <arf filename="erosita_iv_1telonaxis_ff.arf"/>
   <fov diameter="1.02"/>
   <focallength value="1.6"/>
-  <vignetting filename="erosita.vignetting.fits"/>
-  <psf filename="erosita.psf.7.5mum.fits"/>
+  <vignetting filename="erosita_vignetting_v2.fits"/>
+  <psf filename="erosita_psf_v2.fits"/>
 </telescope>
 
 <detector>
