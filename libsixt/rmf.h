@@ -32,8 +32,11 @@ struct RMF* loadRMF(char* filename, int* const status);
 void freeRMF(struct RMF* const rmf);
 
 /** Returns a randomly selected channel for a photon of the given
-    input energy. */
-void returnRMFChannel(struct RMF *rmf, const float energy, 
+    input energy. The channel number can start at 0, 1, or any other
+    positive value defined in the RMF. The return value '-1' means
+    that no appropriate channel could be determined. */
+void returnRMFChannel(struct RMF *rmf, 
+		      const float energy, 
 		      long* const channel);
 
 /** Determines the PHA channel corresponding to a given energy

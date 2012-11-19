@@ -39,36 +39,37 @@ double sixt_get_random_number(int* const status)
 
 void sixt_init_rng(const int seed, int* const status)
 {
+  // Initialize HEAdasS random number generator.
+  // Note that this has to be done in any case, even
+  // if the RCL random number server is used, because
+  // the HEAdas routines (like heasp) rely on HDmtDrand().
+  HDmtInit(seed);
+
 #ifdef USE_RCL
 
   // Call the RCL random number generator specifying the
   // server and method.
-  rcl_rand_net_get_double("draco", "rand", status);
-  CHECK_STATUS_VOID(*status);
+  int rcl_status=0;
+  rcl_rand_net_get_double("draco", "rand", &rcl_status);
 
-  return;
+  if(RCL_RANDOM_SUCCESS!=rcl_status) {
+    SIXT_ERROR("failed getting random number from RCL");
+    *status=EXIT_FAILURE;
+  }
 
-  (void)seed;
 #else 
 
-  // Initialize HEADAS random number generator.
-  HDmtInit(seed);
-
-  return;
-
+  // The status variable is not used.
   (void)(*status);
+
 #endif
 }
 
 
 void sixt_destroy_rng()
 {
-#ifndef USE_RCL
-
   // Release HEADAS random number generator:
   HDmtFree();
-  
-#endif
 }
 
 
