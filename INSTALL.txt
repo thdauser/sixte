@@ -36,8 +36,26 @@ available. In order to continue type:
  make install
 
 The simulation package uses several FITS template files to create FITS
-files. These templates are stored in ${prefix}/share/sixt/templates
+files. These templates are stored in ${prefix}/share/sixte/templates
 during the installation. The instrument XML definition files are
-maintained in the directory ${prefix}/share/sixt/instruments.
+maintained in the directory ${prefix}/share/sixte/instruments.
+
+For parameter input the simulation software uses the PIL / APE library
+and therefore requires a .par file for each simulation task. These
+files are installed in the directory specified by PFILESDIR. In order
+to make them available to the simulation, you have to set an
+environment variable called $PFILES pointing to this directory. 
+
+In a C-shell environment you can do this with the following command:
+
+setenv PFILES $HOME/pfiles
+
+In a Bash environment the corresponding command is:
+
+export PFILES=$HOME/pfiles
+
+If you have HEAsoft installed on your system, this variable might
+already exist. In that case make sure that it contains the path
+specified by PFILESDIR.
 
 If everything worked properly you can now use the software.
