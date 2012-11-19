@@ -1,12 +1,19 @@
-AM_CFLAGS =-I@top_srcdir@/libsixt 
-AM_CFLAGS+=-Wall
+AM_CFLAGS =-I@top_srcdir@/libsixt
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
+AM_CFLAGS+=-I@top_srcdir@/extlib/ape/include
+AM_CFLAGS+=-I@top_srcdir@/extlib/heainit
+AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
+AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
+AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
+AM_CFLAGS+=-Wall 
 
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
 pfilesdir=@PFILESDIR@
 dist_pfiles_DATA=orbatt.par
-
 
 ############ BINARIES #################
 
@@ -15,5 +22,7 @@ dist_pfiles_DATA=orbatt.par
 bin_PROGRAMS=orbatt
 
 orbatt_SOURCES=orbatt.c
-orbatt_LDADD  =@top_builddir@/libsixt/libsixt.la
-
+orbatt_LDADD =@top_builddir@/libsixt/libsixt.la
+orbatt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
+orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

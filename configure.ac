@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.57], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.58], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
@@ -124,6 +124,7 @@ AC_CONFIG_FILES([Makefile
 		tools/simputmerge/Makefile
 		tools/simputsrc/Makefile
 		tools/fudgexp/Makefile
+		tools/orbatt/Makefile
 		tools/mmap/Makefile
 		share/Makefile
 		share/instruments/Makefile
