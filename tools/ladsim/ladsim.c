@@ -19,7 +19,7 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
   // Calculate the minimum cos-value for sources inside the FOV: 
   // (angle(x0,source) <= 1/2 * diameter)
-  const double fov_min_align = cos(lad->fov_diameter/2.); 
+  const double fov_min_align=cos(lad->fov_diameter/2.); 
 
   // Determine telescope pointing direction at the current time.
   struct Telescope telescope;
@@ -838,8 +838,9 @@ int ladsim_main()
       seed=(int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
     strcpy(ucase_buffer, par.ProgressFile);
@@ -1264,8 +1265,8 @@ int ladsim_main()
     progressfile=NULL;
   }
 
-  // Release HEADAS random number generator:
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
   return(status);

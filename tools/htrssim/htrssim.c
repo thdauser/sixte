@@ -38,20 +38,20 @@ int htrssim_main() {
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
     
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
-    HDmtInit(-1);
-
+    // Initialize the random number generator.
+    sixt_init_rng((int)time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Open the impact list FITS file.
     impactlistfile = openImpactListFile(parameters.impactlist_filename, 
 					READONLY, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
 
     // Detector settings.
-    // Store the settings for the HTRSDetector in the corresponding data structure
-    // and call the initialization routine in order to allocate memory etc.
+    // Store the settings for the HTRSDetector in the corresponding 
+    // data structure and call the initialization routine in order 
+    // to allocate memory etc.
 #ifdef HTRS_HEXPIXELS
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .npixels = 37,
@@ -197,16 +197,16 @@ int htrssim_main() {
   // --- Cleaning up ---
   headas_chat(5, "\ncleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
-
   // Close the FITS files.
   freeImpactListFile(&impactlistfile, &status);
 
   // Release memory of detector.
   status+=cleanupHTRSDetector(&detector);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
+  // Clean up the random number generator.
+  sixt_destroy_rng();
+
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
   return(status);
 }
 

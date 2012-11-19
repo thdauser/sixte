@@ -130,8 +130,9 @@ int erosim_main()
       seed=(int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
     strcpy(ucase_buffer, par.ProgressFile);
@@ -699,8 +700,8 @@ int erosim_main()
     progressfile=NULL;
   }
 
-  // Release HEADAS random number generator:
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);

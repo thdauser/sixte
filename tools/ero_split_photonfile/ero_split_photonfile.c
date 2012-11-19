@@ -27,7 +27,7 @@ int ero_split_photonfile_main() {
   PhotonListFile* outputfiles[7];
   int filecounter;
 
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
   // Register HEATOOL
   set_toolname("ero_split_photonfile");
@@ -36,12 +36,12 @@ int ero_split_photonfile_main() {
   do { // ERROR handling loop
 
     // Read parameters by PIL.
-    status = ero_split_photonfile_getpar(&parameters);
+    status=ero_split_photonfile_getpar(&parameters);
     if (EXIT_SUCCESS!=status) break;
     
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
-    HDmtInit(-1);
+    // Initialize the random number generator.
+    sixt_init_rng((int)time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Open the INPUT file.
     inputfile=openPhotonListFile(parameters.input_filename, 
@@ -117,15 +117,15 @@ int ero_split_photonfile_main() {
 
   // --- Clean Up ---
 
-  // Release HEADAS random number generator.
-  HDmtFree();
-
   // Close the photon list files:
   freePhotonListFile(&inputfile, &status);
   for(filecounter=0; filecounter<7; filecounter++) {
     freePhotonListFile(&outputfiles[filecounter], &status);
   }
   
+  // Clean up the random number generator.
+  sixt_destroy_rng();
+
   return(status);
 }
 

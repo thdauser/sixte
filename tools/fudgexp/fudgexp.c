@@ -67,18 +67,19 @@ int fudgexp_main() {
 
     // Read parameters by PIL:
     status = fudgexp_getpar(&par);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
-    // Initialize HEADAS random number generator.
-    HDmtInit((int)time(NULL));
+    // Initialize the random number generator.
+    sixt_init_rng((int)time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Open the photon list.
     plf=openPhotonListFile(par.PhotonList, READWRITE, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Load the exposure map.
     fits_open_file(&fptr, par.ExposureMap, READONLY, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Read the WCS header keywords.
     // Read the entire header into the string buffer.
@@ -217,8 +218,8 @@ int fudgexp_main() {
 
   wcsfree(wcs);
 
-  // Release HEADAS random number generator:
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   return(status);
 }

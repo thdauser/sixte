@@ -253,9 +253,9 @@ int ero_exposure_main()
 	     par.fov_diameter)/2.);
     }
 
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
-    HDmtInit(1);
+    // Initialize the random number generator.
+    sixt_init_rng((int)time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
     char ucase_buffer[MAXFILENAME];
@@ -467,8 +467,8 @@ int ero_exposure_main()
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Release memory.
   freeAttitudeCatalog(&ac);

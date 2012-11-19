@@ -244,8 +244,8 @@ int comaexp_main()
     imagebuffer1d=(float*)malloc(fovImgPar.ra_bins*fovImgPar.dec_bins*
 				 sizeof(float));
     if (NULL==imagebuffer1d) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for image buffer failed!\n", status);
+      status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for image buffer failed");
       break;
     }      
     int anynul;
@@ -257,20 +257,20 @@ int comaexp_main()
     long inc[2] = {1, 1};
     fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value, 
 		     imagebuffer1d, &anynul, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Convert the 1-dimensional image to 2-d.
-    fovImg = (float**)malloc(fovImgPar.ra_bins*sizeof(float*));
+    fovImg=(float**)malloc(fovImgPar.ra_bins*sizeof(float*));
     if (NULL==fovImg) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for FoV image failed!\n", status);
+      status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for FoV image failed");
       break;
     }      
     for (x=0; x<fovImgPar.ra_bins; x++) {
       fovImg[x] = (float*)malloc(fovImgPar.dec_bins*sizeof(float));
       if (NULL==fovImg[x]) {
-	status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: memory allocation for FoV image failed!\n", status);
+	status=EXIT_FAILURE;
+	SIXT_ERROR("memory allocation for FoV image failed");
 	break;
       }      
       for (y=0; y<fovImgPar.dec_bins; y++) {
@@ -278,7 +278,7 @@ int comaexp_main()
 	fovImg[x][y]=imagebuffer1d[y*fovImgPar.ra_bins+x];
       }
     }
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Release memory.
     free(imagebuffer1d);
@@ -286,24 +286,23 @@ int comaexp_main()
 	
     // Close the file.
     fits_close_file(fptr, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
     fptr=NULL;
 
-
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
-    HDmtInit(1);
+    // Initialize the random number generator.
+    sixt_init_rng(time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Get the satellite catalog with the telescope attitude data:
-    if (NULL==(ac=loadAttitudeCatalog(parameters.attitude_filename,
-				      &status))) break;
+    ac=loadAttitudeCatalog(parameters.attitude_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Pre-calculate the carteesian coordinate vectors of 
     // the positions of the individual pixels in the exposure map.
     for (x=0; x<expMapPar.ra_bins; x++) {
       for (y=0; y<expMapPar.dec_bins; y++) {
-	double pixelra  = (x-(expMapPar.rpix1-1.0))*expMapPar.delt1 + expMapPar.rval1;
-	double pixeldec = (y-(expMapPar.rpix2-1.0))*expMapPar.delt2 + expMapPar.rval2;
+	double pixelra =(x-(expMapPar.rpix1-1.0))*expMapPar.delt1 + expMapPar.rval1;
+	double pixeldec=(y-(expMapPar.rpix2-1.0))*expMapPar.delt2 + expMapPar.rval2;
 			
 	// Check if the requested projection method is Hammer-Aitoff.
 	if (1==parameters.projection) {
@@ -517,8 +516,8 @@ int comaexp_main()
     // Convert the exposure map to a 1d-array to store it in the FITS image.
     imagebuffer1d = (float*)malloc(parameters.ra_bins*parameters.dec_bins*sizeof(float));
     if (NULL==imagebuffer1d) {
-      status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for 1d exposure map failed!\n", status);
+      status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for 1d exposure map failed");
       break;
     }
     for (x=0; x<parameters.ra_bins; x++) {
@@ -592,8 +591,8 @@ int comaexp_main()
   // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Close the exposure map FITS file.
   if(NULL!=fptr) fits_close_file(fptr, &status);

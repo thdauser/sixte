@@ -49,8 +49,10 @@ int ladspec_main() {
       seed = (int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Determine the detector XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_LADXMLFile(xml_filename, par.XMLFile);
@@ -164,6 +166,9 @@ int ladspec_main() {
   // Release memory.
   if (NULL!=spec) free(spec);
   freeLAD(&lad, &status);
+
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);

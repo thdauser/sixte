@@ -48,8 +48,9 @@ int wfmphovign_main() {
       seed = (int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
@@ -231,8 +232,8 @@ int wfmphovign_main() {
   // --- cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Close the FITS files.
   if (NULL!=ofptr) {
@@ -243,7 +244,6 @@ int wfmphovign_main() {
   freeAttitudeCatalog(&ac);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-
   return(status);
 }
 

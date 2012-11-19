@@ -1,4 +1,5 @@
 #include "sixt.h"
+#include "headas_rand.h"
 
 
 #ifdef USE_RCL
@@ -17,7 +18,7 @@ double sixt_get_random_number(int* const status)
   // The library for accessing the server is maintained
   // by Fritz-Walter Schwarm.
   int rcl_status=0;
-  double rand=rcl_rand_net_get_double("leo", "rand", &rcl_status);
+  double rand=rcl_rand_net_get_double(NULL, NULL, &rcl_status);
 
   if(RCL_RANDOM_SUCCESS!=rcl_status) {
     SIXT_ERROR("failed getting random number from RCL");
@@ -25,7 +26,6 @@ double sixt_get_random_number(int* const status)
   }
 
   return(rand);  
-
 #else
 
   // Use the HEAdas random number generator.
@@ -33,7 +33,41 @@ double sixt_get_random_number(int* const status)
 
   // Status variable is not needed.
   (void)(*status);
+#endif
+}
 
+
+void sixt_init_rng(const int seed, int* const status)
+{
+#ifdef USE_RCL
+
+  // Call the RCL random number generator specifying the
+  // server and method.
+  rcl_rand_net_get_double("draco", "rand", status);
+  CHECK_STATUS_VOID(*status);
+
+  return;
+
+  (void)seed;
+#else 
+
+  // Initialize HEADAS random number generator.
+  HDmtInit(seed);
+
+  return;
+
+  (void)(*status);
+#endif
+}
+
+
+void sixt_destroy_rng()
+{
+#ifndef USE_RCL
+
+  // Release HEADAS random number generator:
+  HDmtFree();
+  
 #endif
 }
 
