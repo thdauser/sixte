@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -44,7 +44,7 @@ int ero_events_main()
 
     // Open the input pattern file.
     plf=openPatternFile(par.PatternList, READONLY, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Create and open the output eROSITA event file.
     // Remove old file, if it exists.
@@ -62,12 +62,12 @@ int ero_events_main()
 		"from template '%s' ...\n", 
 		par.eroEventList, template);
     fits_create_file(&fptr, buffer, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Move to the binary table HDU.
     int hdutype;
     fits_movabs_hdu(fptr, 2, &hdutype, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Set the time-keyword in the Event List Header.
     // See also: Stevens, "Advanced Programming in the UNIX environment",
@@ -107,13 +107,35 @@ int ero_events_main()
     float frametime=50.0;
     fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametime,
 		    "[ms] nominal frame time", &status);
-    float timezero=0.0;
-    fits_update_key(fptr, TFLOAT, "TIMEZERO", &timezero,
-		    "clock correction", &status);
-    fits_update_key(fptr, TSTRING, "TIMEUNIT", "s",
-		    "Time unit", &status);
-    fits_update_key(fptr, TSTRING, "TIMESYS", "TT",
-		    "Time system (Terrestial Time)", &status);
+
+    // Copy keywords from the input file.
+    char comment[MAXMSG];
+    float fbuffer=0.0;
+    fits_read_key(plf->fptr, TFLOAT, "TIMEZERO", &fbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TFLOAT, "TIMEZERO", &fbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    char sbuffer[MAXMSG];
+    fits_read_key(plf->fptr, TSTRING, "TIMEUNIT", sbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TSTRING, "TIMEUNIT", sbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    fits_read_key(plf->fptr, TSTRING, "TIMESYS", sbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TSTRING, "TIMESYS", sbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    double dbuffer=0.0;
+    fits_read_key(plf->fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    fits_read_key(plf->fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set up the WCS data structure.
@@ -186,9 +208,12 @@ int ero_events_main()
       fits_insert_rows(fptr, row, 1, &status);
       CHECK_STATUS_BREAK(status);
 
-      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, &pattern.time, &status);
-      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &pattern.frame, &status);
-      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &pattern.pha, &status);
+      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, 
+		     &pattern.time, &status);
+      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, 
+		     &pattern.frame, &status);
+      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, 
+		     &pattern.pha, &status);
 
       float energy = pattern.signal * 1000.; // [eV]
       fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &energy, &status);
@@ -315,7 +340,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the input pattern list!\n", status);
+    SIXT_ERROR("failed reading the name of the input pattern list");
     return(status);
   } 
   strcpy(par->PatternList, sbuffer);
@@ -323,7 +348,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("eroEventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the output event list!\n", status);
+    SIXT_ERROR("failed reading the name of the output event list");
     return(status);
   } 
   strcpy(par->eroEventList, sbuffer);
@@ -331,13 +356,13 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_int("CCDNr", &par->CCDNr);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the CCDNr parameter!\n", status);
+    SIXT_ERROR("failed reading the CCDNr parameter");
     return(status);
   }
 
   status=ape_trad_query_string("Projection", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the projection type!\n", status);
+    SIXT_ERROR("failed reading the name of the projection type");
     return(status);
   } 
   strcpy(par->Projection, sbuffer);
@@ -345,19 +370,19 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_float("RefRA", &par->RefRA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading RefRA!\n", status);
+    SIXT_ERROR("failed reading RefRA");
     return(status);
   } 
 
   status=ape_trad_query_float("RefDec", &par->RefDec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading RefDEC!\n", status);
+    SIXT_ERROR("failed reading RefDEC");
     return(status);
   } 
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 

@@ -93,8 +93,8 @@ double rndexp(const double avgdist, int* const status)
 
   double rand=sixt_get_random_number(status);
   CHECK_STATUS_RET(*status, 0.);
-  if (rand < 1.E-15) {
-    rand = 1.E-15;
+  if (rand<1.e-15) {
+    rand=1.e-15;
   }
 
   return(-log(rand)*avgdist);

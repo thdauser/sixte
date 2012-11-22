@@ -14,8 +14,8 @@ OBS_ID          String          / Observation Identifier
 EXP_ID          String          / Exposure Identifier
 OBSERVER        String          / Name of PI
 OBJECT          String          / Name of observed Object
-RA_OBJ          Real            / Source right ascension in degrees
-DEC_OBJ         Real            / Source declination in degrees
+RA_OBJ          0.0             / Source right ascension in degrees
+DEC_OBJ         0.0             / Source declination in degrees
 DATE-OBS        UTC_format      / Date of the start of the observation
 #DATE-END        UTC_format      / Date of the end of the observation
 TSTART          Real            / Start time of the observation
