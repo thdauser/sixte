@@ -52,7 +52,7 @@ int erosim_main()
 
   // Register HEATOOL
   set_toolname("erosim");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -153,8 +153,44 @@ int erosim_main()
 
     // Load the configurations of all seven sub-instruments.
     for (ii=0; ii<7; ii++) {
-      // Note that it is assumed that all of them are identical.
-      subinst[ii]=loadGenInst(xml_filename, &status);
+      // Check if a particular XML file is given for this 
+      // sub-instrument. If not, use the default XML file.
+      char buffer[MAXFILENAME];
+      char ubuffer[MAXFILENAME];
+      switch (ii) {
+      case 0:
+	strcpy(buffer, par.XMLFile1);
+	break;
+      case 1:
+	strcpy(buffer, par.XMLFile2);
+	break;
+      case 2:
+	strcpy(buffer, par.XMLFile3);
+	break;
+      case 3:
+	strcpy(buffer, par.XMLFile4);
+	break;
+      case 4:
+	strcpy(buffer, par.XMLFile5);
+	break;
+      case 5:
+	strcpy(buffer, par.XMLFile6);
+	break;
+      case 6:
+	strcpy(buffer, par.XMLFile7);
+	break;
+      default:
+	break;
+      }
+      strcpy(ubuffer, buffer);
+      strtoupper(ubuffer);
+      if (0==strcmp(ubuffer, "NONE")) {
+	strcpy(buffer, xml_filename);
+      }
+
+      // Load the instrument configuration either with the
+      // specific (if available) or the default XML file.
+      subinst[ii]=loadGenInst(buffer, &status);
       CHECK_STATUS_BREAK(status);
 
       // Set the usage of the detector background according to
@@ -764,6 +800,62 @@ int erosim_getpar(struct Parameters* const par)
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile1", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile1, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile2", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile2, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile3", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile3, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile4", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile4, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile5", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile5, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile6", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile6, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile7", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  } 
+  strcpy(par->XMLFile7, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_bool("Background", &par->Background);

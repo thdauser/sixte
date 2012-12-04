@@ -33,10 +33,18 @@ struct Parameters {
   char ImpactList[MAXFILENAME];
   char EventList[MAXFILENAME];
   char PatternList[MAXFILENAME];
-  char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
   char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
+
+  char XMLFile[MAXFILENAME];
+  char XMLFile1[MAXFILENAME];
+  char XMLFile2[MAXFILENAME];
+  char XMLFile3[MAXFILENAME];
+  char XMLFile4[MAXFILENAME];
+  char XMLFile5[MAXFILENAME];
+  char XMLFile6[MAXFILENAME];
+  char XMLFile7[MAXFILENAME];
 
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
