@@ -48,20 +48,35 @@ void getGenDetAffectedPixel(const GenPixGrid* const grid,
 			    const double x,
 			    const double y,
 			    int* const xi,
-			    int* const yi)
+			    int* const yi,
+			    double* const xp,
+			    double* const yp)
 {
-  // Calculate the integer indices.
-  *xi=((int)((x+ (grid->xrpix-0.5)*grid->xdelt -grid->xrval)
-	     /grid->xdelt +1.))-1;
-  *yi=((int)((y+ (grid->yrpix-0.5)*grid->ydelt -grid->yrval)
-	     /grid->ydelt +1.))-1;
-  //                       |----|----> avoid (int)(-0.5) = 0
+  // Calculate the distance to the reference point [m].
+  double xd=x-grid->xrval;
+  double yd=y-grid->yrval;
+
+  // Rotate around the reference point [m].
+  double cosrota=cos(grid->rota);
+  double sinrota=sin(grid->rota);
+  double xr=xd*cosrota - yd*sinrota;
+  double yr=xd*sinrota + yd*cosrota;
+
+  // Calculate the real valued pixel indices.
+  double xb=xr/grid->xdelt + (grid->xrpix-0.5);
+  double yb=yr/grid->ydelt + (grid->yrpix-0.5);
+
+  // Calculate the integer pixel indices.
+  *xi=((int)(xb +1.))-1;
+  *yi=((int)(yb +1.))-1;
+  //             |----|---->  avoid (int)(-0.5) = 0
 
 
   // Check if this is a valid pixel.
   if ((*xi>=grid->xwidth) || (*xi<0) || (*yi>=grid->ywidth) || (*yi<0)) { 
     *xi=-1; 
     *yi=-1;
+    return;
   } 
 
   // Check if the impact is located on the pixel border. 
@@ -70,6 +85,7 @@ void getGenDetAffectedPixel(const GenPixGrid* const grid,
 	(x-grid->xrval+(*xi-grid->xrpix+0.5)*grid->xdelt<grid->xborder)) {
       *xi=-1;
       *yi=-1;
+      return;
     }
   }
   else if (grid->yborder>0.) {
@@ -77,6 +93,14 @@ void getGenDetAffectedPixel(const GenPixGrid* const grid,
 	(y-grid->yrval+(*yi-grid->yrpix+0.5)*grid->ydelt<grid->yborder)) {
       *xi=-1;
       *yi=-1;
+      return;
     }
   }
+
+
+  // Calculate the relative position with respect to the left 
+  // and lower pixel boundaries.
+  *xp=xb-1.0*(*xi);
+  *yp=yb-1.0*(*yi);
 }
+

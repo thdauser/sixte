@@ -351,6 +351,8 @@ void operateGenDetClock(GenDet* const det,
 	// Get background events for the required time interval (has
 	// to be given in [s]).
 	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
+	double cosrota=cos(det->pixgrid->rota);
+	double sinrota=sin(det->pixgrid->rota);
 	int ii;
 	for(ii = 0; ii<list->numhits; ii++) {
 
@@ -367,11 +369,16 @@ void operateGenDetClock(GenDet* const det,
 	  // Otherwise many invalid particle patterns will be reduced
 	  // to apparently valid event patterns, such that the overall
 	  // background is too high. 
+	  double xh=
+	    list->hit_xpos[ii]*0.001*cosrota+
+	    list->hit_ypos[ii]*0.001*sinrota;
+	  double yh=
+	    -list->hit_xpos[ii]*0.001*sinrota+
+	    list->hit_ypos[ii]*0.001*cosrota;	    
 	  int x, y;
-	  getGenDetAffectedPixel(det->pixgrid, 
-				 list->hit_xpos[ii]*0.001,
-				 list->hit_ypos[ii]*0.001,
-				 &x, &y);
+	  double xr, yr;
+	  getGenDetAffectedPixel(det->pixgrid, xh, yh,
+				 &x, &y, &xr, &yr);
 	  // Check if the pixel indices are valid or if the 
 	  // specified position lies outside the pixel area.
 	  if ((x<0) || (y<0)) continue;
@@ -505,8 +512,9 @@ int makeGenSplitEvents(GenDet* const det,
     npixels=1;
 
     // Determine the affected detector line and column.
+    double xr, yr;
     getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
-			   &(x[0]), &(y[0]));
+			   &(x[0]), &(y[0]), &xr, &yr);
 
     // Check if the returned values are valid line and column indices.
     if ((x[0]<0) || (y[0]<0)) {
@@ -527,8 +535,9 @@ int makeGenSplitEvents(GenDet* const det,
     const float ccsize=ccsigma*3.;
 
     // Calculate pixel indices (integer) of the central affected pixel:
+    double xr, yr;
     getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
-			   &(x[0]), &(y[0]));
+			   &(x[0]), &(y[0]), &xr, &yr);
   
     // Check if the impact position lies inside the detector pixel array.
     if ((x[0]<0) || (y[0]<0)) {
@@ -536,66 +545,61 @@ int makeGenSplitEvents(GenDet* const det,
     }
 
     // Calculate the distances from the impact center position to the 
-    // borders of the surrounding pixel (in [m]):
+    // borders of the surrounding pixel (in [m]).
     double distances[4] = {
       // Distance to right pixel edge.
-      (x[0]-det->pixgrid->xrpix+1.5)*det->pixgrid->xdelt + 
-      det->pixgrid->xrval - position->x,
+      (1.0-xr)*det->pixgrid->xdelt,
       // Distance to upper edge.
-      (y[0]-det->pixgrid->yrpix+1.5)*det->pixgrid->ydelt + 
-      det->pixgrid->yrval - position->y,
+      (1.0-yr)*det->pixgrid->ydelt,
       // Distance to left pixel edge.
-      position->x - ((x[0]-det->pixgrid->xrpix+0.5)*det->pixgrid->xdelt + 
-		     det->pixgrid->xrval),
+      xr*det->pixgrid->xdelt,
       // distance to lower edge
-      position->y - ((y[0]-det->pixgrid->yrpix+0.5)*det->pixgrid->ydelt + 
-		     det->pixgrid->yrval)
+      yr*det->pixgrid->ydelt
     };
 
-    int mindist = getMinimumDistance(distances);
+    int mindist=getMinimumDistance(distances);
     if (distances[mindist] < ccsize) {
       // Not a single event!
-      x[1] = x[0] + xe[mindist];
-      y[1] = y[0] + ye[mindist];
+      x[1]=x[0] + xe[mindist];
+      y[1]=y[0] + ye[mindist];
 
-      double mindistgauss = gaussint(distances[mindist]/ccsigma);
+      double mindistgauss=gaussint(distances[mindist]/ccsigma);
 
       // Search for the next to minimum distance to an edge.
-      double minimum = distances[mindist];
-      distances[mindist] = -1.;
-      int secmindist = getMinimumDistance(distances);
-      distances[mindist] = minimum;
+      double minimum=distances[mindist];
+      distances[mindist]=-1.;
+      int secmindist=getMinimumDistance(distances);
+      distances[mindist]=minimum;
 
-      if (distances[secmindist] < ccsize) {
+      if (distances[secmindist]<ccsize) {
 	// Quadruple!
-	npixels = 4;
+	npixels=4;
 
-	x[2] = x[0] + xe[secmindist];
-	y[2] = y[0] + ye[secmindist];
-	x[3] = x[1] + xe[secmindist];
-	y[3] = y[1] + ye[secmindist];
+	x[2]=x[0] + xe[secmindist];
+	y[2]=y[0] + ye[secmindist];
+	x[3]=x[1] + xe[secmindist];
+	y[3]=y[1] + ye[secmindist];
 
 	// Calculate the different signal fractions in the 4 affected pixels.
-	double secmindistgauss = gaussint(distances[secmindist]/ccsigma);
-	fraction[0] = (1.-mindistgauss)*(1.-secmindistgauss);
-	fraction[1] =     mindistgauss *(1.-secmindistgauss);
-	fraction[2] = (1.-mindistgauss)*    secmindistgauss ;
-	fraction[3] =     mindistgauss *    secmindistgauss ;
+	double secmindistgauss=gaussint(distances[secmindist]/ccsigma);
+	fraction[0]=(1.-mindistgauss)*(1.-secmindistgauss);
+	fraction[1]=    mindistgauss *(1.-secmindistgauss);
+	fraction[2]=(1.-mindistgauss)*    secmindistgauss ;
+	fraction[3]=    mindistgauss *    secmindistgauss ;
 
       } else {
 	// Double!
-	npixels = 2;
+	npixels=2;
 
-	fraction[0] = 1. - mindistgauss;
-	fraction[1] =      mindistgauss;
+	fraction[0]=1. - mindistgauss;
+	fraction[1]=     mindistgauss;
 
       } // END of Double or Quadruple.
 
     } else {
       // Single event!
-      npixels = 1;
-      fraction[0] = 1.;
-      
+      npixels=1;
+      fraction[0]=1.;      
     } 
     // END of check for Single event.
 
@@ -607,9 +611,10 @@ int makeGenSplitEvents(GenDet* const det,
     // (concept proposed by Konrad Dennerl).
     npixels=4;
 
-    // Calculate pixel indices (integer) of central affected pixel:
+    // Calculate pixel indices (integer) of central affected pixel.
+    double xr, yr;
     getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
-			   &(x[0]), &(y[0]));
+			   &(x[0]), &(y[0]), &xr, &yr);
   
     // Check if the impact position lies inside the detector pixel array.
     if ((x[0]<0) || (y[0]<0)) {
@@ -617,26 +622,22 @@ int makeGenSplitEvents(GenDet* const det,
     }
 
     // Calculate the distances from the impact center position to the 
-    // borders of the surrounding pixel (in units [fraction of a pixel edge]):
+    // borders of the surrounding pixel (in units [fraction of a pixel edge]).
     double distances[4] = {
       // Distance to right pixel edge.
-      x[0]-det->pixgrid->xrpix+1.5 + 
-      (det->pixgrid->xrval - position->x)/det->pixgrid->xdelt,
+      (1.0-xr),
       // Distance to upper edge.
-      y[0]-det->pixgrid->yrpix+1.5 + 
-      (det->pixgrid->yrval - position->y)/det->pixgrid->ydelt,
+      (1.0-yr),
       // Distance to left pixel edge.
-      (position->x - det->pixgrid->xrval)/det->pixgrid->xdelt - 
-      (x[0]-det->pixgrid->xrpix+0.5),
+      xr,
       // distance to lower edge
-      (position->y - det->pixgrid->yrval)/det->pixgrid->ydelt - 
-      (y[0]-det->pixgrid->yrpix+0.5)
+      yr
     };
 
     // Search for the minimum distance to the edges.
-    int mindist = getMinimumDistance(distances);
-    x[1] = x[0] + xe[mindist];
-    y[1] = y[0] + ye[mindist];
+    int mindist=getMinimumDistance(distances);
+    x[1]=x[0] + xe[mindist];
+    y[1]=y[0] + ye[mindist];
 
     // Search for the next to minimum distance to the edges.
     double minimum = distances[mindist];

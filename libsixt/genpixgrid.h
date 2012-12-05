@@ -52,12 +52,16 @@ void destroyGenPixGrid(GenPixGrid** const grid);
 /** Return the x- and y-indices of the detector pixel corresponding to
     the specified x and y values. If the position is located outside
     the pixel area or on a pixel border, the returned indices are
-    -1. */
+    -1. The function also returns the relative position within the
+    pixel. The latter values are required for the calculation of split
+    events. */
 void getGenDetAffectedPixel(const GenPixGrid* const grid, 
 			    const double x, 
 			    const double y,
 			    int* const xi, 
-			    int* const yi);
+			    int* const yi,
+			    double* const xp, 
+			    double* const yp);
 
 
 #endif /* GENPIXGRID_H */
