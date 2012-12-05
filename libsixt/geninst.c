@@ -283,13 +283,6 @@ void parseGenInstXML(GenInst* const inst,
     headas_printf("*** warning: no specification of y reference pixel\n");
   }
 
-  if (0.==inst->det->pixgrid->xrval) {
-    headas_printf("*** warning: no specification of x reference value\n");
-  }
-  if (0.==inst->det->pixgrid->yrval) {
-    headas_printf("*** warning: no specification of y reference value\n");
-  }
-
   if (0.==inst->det->pixgrid->xdelt) {
     headas_printf("*** warning: no specification of pixel x-width\n");
   }
@@ -407,17 +400,27 @@ static void GenInstXMLElementStart(void* parsedata,
       
   } else if (!strcmp(Uelement, "DIMENSIONS")) {
 
-    xmlparsedata->inst->det->pixgrid->xwidth=getXMLAttributeInt(attr, "XWIDTH");
-    xmlparsedata->inst->det->pixgrid->ywidth=getXMLAttributeInt(attr, "YWIDTH");
+    xmlparsedata->inst->det->pixgrid->xwidth=
+      getXMLAttributeInt(attr, "XWIDTH");
+    xmlparsedata->inst->det->pixgrid->ywidth=
+      getXMLAttributeInt(attr, "YWIDTH");
       
   } else if (!strcmp(Uelement, "WCS")) {
 
-    xmlparsedata->inst->det->pixgrid->xrpix=getXMLAttributeFloat(attr, "XRPIX");
-    xmlparsedata->inst->det->pixgrid->yrpix=getXMLAttributeFloat(attr, "YRPIX");
-    xmlparsedata->inst->det->pixgrid->xrval=getXMLAttributeFloat(attr, "XRVAL");
-    xmlparsedata->inst->det->pixgrid->yrval=getXMLAttributeFloat(attr, "YRVAL");
-    xmlparsedata->inst->det->pixgrid->xdelt=getXMLAttributeFloat(attr, "XDELT");
-    xmlparsedata->inst->det->pixgrid->ydelt=getXMLAttributeFloat(attr, "YDELT");
+    xmlparsedata->inst->det->pixgrid->xrpix=
+      getXMLAttributeFloat(attr, "XRPIX");
+    xmlparsedata->inst->det->pixgrid->yrpix=
+      getXMLAttributeFloat(attr, "YRPIX");
+    xmlparsedata->inst->det->pixgrid->xrval=
+      getXMLAttributeFloat(attr, "XRVAL");
+    xmlparsedata->inst->det->pixgrid->yrval=
+      getXMLAttributeFloat(attr, "YRVAL");
+    xmlparsedata->inst->det->pixgrid->xdelt=
+      getXMLAttributeFloat(attr, "XDELT");
+    xmlparsedata->inst->det->pixgrid->ydelt=
+      getXMLAttributeFloat(attr, "YDELT");
+    xmlparsedata->inst->det->pixgrid->rota=
+      getXMLAttributeFloat(attr, "ROTA")*M_PI/180.;
 	
   } else if (!strcmp(Uelement, "PIXELBORDER")) {
 

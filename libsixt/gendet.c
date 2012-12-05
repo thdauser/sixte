@@ -367,10 +367,16 @@ void operateGenDetClock(GenDet* const det,
 	  // Otherwise many invalid particle patterns will be reduced
 	  // to apparently valid event patterns, such that the overall
 	  // background is too high. 
-	  int x=getGenDetAffectedColumn(det->pixgrid, 
-					list->hit_xpos[ii]*0.001);
-	  int y=getGenDetAffectedLine  (det->pixgrid, 
-					list->hit_ypos[ii]*0.001);
+	  int x, y;
+	  getGenDetAffectedPixel(det->pixgrid, 
+				 list->hit_xpos[ii]*0.001,
+				 list->hit_ypos[ii]*0.001,
+				 &x, &y);
+	  // Check if the pixel indices are valid or if the 
+	  // specified position lies outside the pixel area.
+	  if ((x<0) || (y<0)) continue;
+
+	  // Add the signal to the pixel.
 	  addGenDetCharge2Pixel(det->line[y], x, 
 				list->hit_energy[ii], -1, -1);
 
@@ -435,12 +441,7 @@ GenSplit* newGenSplit(int* const status)
 {
   // Allocate memory.
   GenSplit* split=(GenSplit*)malloc(sizeof(GenSplit));
-  if (NULL==split) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenSplit failed!\n", 
-		   *status);
-    return(split);
-  }
+  CHECK_NULL(split, *status, "memory allocation for GenSplit failed");
 
   // Initialize all pointers with NULL.
 
@@ -504,8 +505,8 @@ int makeGenSplitEvents(GenDet* const det,
     npixels=1;
 
     // Determine the affected detector line and column.
-    x[0]=getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0]=getGenDetAffectedLine  (det->pixgrid, position->y);
+    getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
+			   &(x[0]), &(y[0]));
 
     // Check if the returned values are valid line and column indices.
     if ((x[0]<0) || (y[0]<0)) {
@@ -526,11 +527,11 @@ int makeGenSplitEvents(GenDet* const det,
     const float ccsize=ccsigma*3.;
 
     // Calculate pixel indices (integer) of the central affected pixel:
-    x[0]=getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0]=getGenDetAffectedLine  (det->pixgrid, position->y);
+    getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
+			   &(x[0]), &(y[0]));
   
     // Check if the impact position lies inside the detector pixel array.
-    if ((0>x[0]) || (0>y[0])) {
+    if ((x[0]<0) || (y[0]<0)) {
       return(0);
     }
 
@@ -588,7 +589,7 @@ int makeGenSplitEvents(GenDet* const det,
 	fraction[0] = 1. - mindistgauss;
 	fraction[1] =      mindistgauss;
 
-      } // END of double or Quadruple
+      } // END of Double or Quadruple.
 
     } else {
       // Single event!
@@ -596,7 +597,7 @@ int makeGenSplitEvents(GenDet* const det,
       fraction[0] = 1.;
       
     } 
-    // END of check for single event
+    // END of check for Single event.
 
     // END of Gaussian split model.
 
@@ -607,11 +608,11 @@ int makeGenSplitEvents(GenDet* const det,
     npixels=4;
 
     // Calculate pixel indices (integer) of central affected pixel:
-    x[0] = getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0] = getGenDetAffectedLine  (det->pixgrid, position->y);
+    getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
+			   &(x[0]), &(y[0]));
   
     // Check if the impact position lies inside the detector pixel array.
-    if ((0>x[0]) || (0>y[0])) {
+    if ((x[0]<0) || (y[0]<0)) {
       return(0);
     }
 
