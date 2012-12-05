@@ -804,7 +804,7 @@ int erosim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile1", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
+    SIXT_ERROR("failed reading the name of the XML file 1");
     return(status);
   } 
   strcpy(par->XMLFile1, sbuffer);
@@ -812,7 +812,7 @@ int erosim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile2", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
+    SIXT_ERROR("failed reading the name of the XML file 2");
     return(status);
   } 
   strcpy(par->XMLFile2, sbuffer);
@@ -820,7 +820,7 @@ int erosim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile3", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
+    SIXT_ERROR("failed reading the name of the XML file 3");
     return(status);
   } 
   strcpy(par->XMLFile3, sbuffer);
@@ -828,7 +828,7 @@ int erosim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile4", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
+    SIXT_ERROR("failed reading the name of the XML file 4");
     return(status);
   } 
   strcpy(par->XMLFile4, sbuffer);
@@ -836,7 +836,7 @@ int erosim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile5", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
+    SIXT_ERROR("failed reading the name of the XML file 5");
     return(status);
   } 
   strcpy(par->XMLFile5, sbuffer);
@@ -844,7 +844,7 @@ int erosim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile6", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
+    SIXT_ERROR("failed reading the name of the XML file 6");
     return(status);
   } 
   strcpy(par->XMLFile6, sbuffer);
@@ -852,7 +852,7 @@ int erosim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile7", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
+    SIXT_ERROR("failed reading the name of the XML file 7");
     return(status);
   } 
   strcpy(par->XMLFile7, sbuffer);

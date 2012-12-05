@@ -1,10 +1,3 @@
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
-
 #include "sixt.h"
 #include "patternfile.h"
 #include "pattern.h"
@@ -104,11 +97,11 @@ int imgev_main() {
     strcpy(wcs.ctype[0], par.ctype1);
     strcpy(wcs.ctype[1], par.ctype2);
 
-
     // --- END of Initialization ---
 
 
     // --- Beginning Image Binning ---
+
     headas_chat(5, "image binning ...\n");
 
     // LOOP over all patterns in the FITS table.
@@ -152,7 +145,7 @@ int imgev_main() {
     for (ii=0; ii<par.naxis1; ii++) {
       long jj;
       for (jj=0; jj<par.naxis2; jj++) {
-	img1d[ii + jj*par.naxis1] = img[ii][jj];
+	img1d[ii + jj*par.naxis1]=img[ii][jj];
       }
     }
 
@@ -162,7 +155,7 @@ int imgev_main() {
     CHECK_STATUS_BREAK(status);
 
     // Create an image in the FITS-file (primary HDU):
-    long naxes[2] = { par.naxis1, par.naxis2 };
+    long naxes[2]={ par.naxis1, par.naxis2 };
     fits_create_img(imgfptr, LONG_IMG, 2, naxes, &status);
     //                                 |-> naxis
     CHECK_STATUS_BREAK(status);
@@ -178,10 +171,10 @@ int imgev_main() {
     while (strlen(strptr)>0) {
       char strbuffer[81];
       strncpy(strbuffer, strptr, 80);
-      strbuffer[80] = '\0';
+      strbuffer[80]='\0';
       fits_write_record(imgfptr, strbuffer, &status);
       CHECK_STATUS_BREAK(status);
-      strptr += 80;
+      strptr+=80;
     }
     CHECK_STATUS_BREAK(status);
 
@@ -222,7 +215,7 @@ int imgev_main() {
   }
   if (NULL!=img1d) free(img1d);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 
@@ -233,7 +226,7 @@ static int imgev_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 
