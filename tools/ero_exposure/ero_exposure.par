@@ -1,7 +1,7 @@
 Attitude,s,h,"none",,,"attitude file (overwrites RA and Dec)"
 RA,r,lq,0.0,0.0,360.0,"right ascension of telescope pointing (degree)"
 Dec,r,lq,0.0,-90.0,90.0,"declination of telescope pointing (degree)"
-Vignetting,s,lq,"erosita.vignetting.fits",,,"Vignetting data file (FITS input file)"
+Vignetting,s,lq,"erosita_vignetting_v2.fits",,,"Vignetting data file (FITS input file)"
 Exposuremap,f,lq,"exposure.fits",,,"exposure map file (FITS output file) "
 t0,r,lq,0.0,,,"t0 - start time (s) "
 timespan,r,lq,15724800.0,0.0,1000000000.0,"time interval for the exposure map calculation (s) "

@@ -317,9 +317,13 @@ int ero_exposure_main()
 
 
     // Load the Vignetting data.
-    if (0<strlen(par.Vignetting)) {
-      vignetting=newVignetting(par.Vignetting, &status);
-      CHECK_STATUS_BREAK(status);
+    if (strlen(par.Vignetting)>0) {
+      strcpy(ucase_buffer, par.Vignetting);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	vignetting=newVignetting(par.Vignetting, &status);
+	CHECK_STATUS_BREAK(status);
+      }
     }
 
     // --- END of Initialization ---
@@ -391,15 +395,15 @@ int ero_exposure_main()
 	    // Pixel lies inside the FOV!
 	
 	    // Calculate the off-axis angle ([rad])
-	    double delta = acos(scalar_product(&telescope_nz, &pixpos));
+	    double delta=acos(scalar_product(&telescope_nz, &pixpos));
 	
 	    // Add the exposure time step weighted with the vignetting
 	    // factor for this particular off-axis angle at 1 keV.
-	    double addvalue = par.dt;
+	    double addvalue=par.dt;
 	    if (NULL!=vignetting) {
-	      addvalue *= get_Vignetting_Factor(vignetting, 1., delta, 0.);
+	      addvalue*=get_Vignetting_Factor(vignetting, 1., delta, 0.);
 	    }
-	    expoMap[x][y] += addvalue;
+	    expoMap[x][y]+=addvalue;
 	  }
 	}
 	CHECK_STATUS_BREAK(status);  
