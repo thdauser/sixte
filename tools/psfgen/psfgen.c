@@ -26,15 +26,13 @@ int psfgen_main()
   double rc;
   double alpha;
 
-  // Buffer for error output messages.
-  char msg[MAXMSG];        
   // Error status.
   int status=EXIT_SUCCESS;  
 
 
   // HEATOOLs: register program
   set_toolname("psfgen");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
   do { // Beginning of outer ERROR handling loop
 
@@ -42,7 +40,7 @@ int psfgen_main()
     psf=(PSF*)malloc(sizeof(PSF));
     if (NULL==psf) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for PSF data structure failed!", status);
+      SIXT_ERROR("memory allocation for PSF data structure failed");
       break;
     }
     psf->data    =NULL;
@@ -52,35 +50,29 @@ int psfgen_main()
 
 
     if ((status = PILGetInt("psf_width", &psf_width))) {
-      sprintf(msg, "Error reading the width of the PSF!\n");
-      HD_ERROR_THROW(msg,status);
+      SIXT_ERROR("failed reading the width of the PSF");
       break;
     }
     if ((status = PILGetReal("psf_pixelwidth", &psf_pixelwidth))) {
-      sprintf(msg, "Error reading the width of the PSF pixels!\n");
-      HD_ERROR_THROW(msg,status);
+      SIXT_ERROR("failed reading the width of the PSF pixels");
       break;
     }
     if ((status = PILGetReal("focal_length", &focal_length))) {
-      sprintf(msg, "Error reading the focal length of the telescope!\n");
-      HD_ERROR_THROW(msg,status);
+      SIXT_ERROR("failed reading the focal length of the telescope");
       break;
     }
     if ((status = PILGetFname("psf_filename", psf_filename))) {
-      sprintf(msg, "Error reading the name of PSF the output file!\n");
-      HD_ERROR_THROW(msg,status);
+      SIXT_ERROR("failed reading the name of PSF the output file");
       break;
     }
     int type;
     if ((status = PILGetInt("type", &type))) {
-      sprintf(msg, "Error reading the PSF type!\n");
-      HD_ERROR_THROW(msg,status);
+      SIXT_ERROR("failed reading the PSF type");
       break;
     }
     if (type == 1) {  // Simple Gaussian PSF
       if ((status = PILGetReal("hew", &hew))) {
-	sprintf(msg, "Error reading the HEW!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the HEW");
 	break;
       }
       hew = hew/(3600.);  // Rescaling from [arc sec] -> [deg]
@@ -92,13 +84,11 @@ int psfgen_main()
     
     else if (type == 2) { // King profile.
       if ((status = PILGetReal("rc_a", &rc))) {
-	sprintf(msg, "Error reading the King parameter rc!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter rc");
 	break;
       }
       if ((status = PILGetReal("alpha_x", &alpha))) {
-	sprintf(msg, "Error reading the King parameter alpha!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter alpha");
 	break;
       }
       psf->nenergies = 1;
@@ -112,43 +102,35 @@ int psfgen_main()
       double alpha_x, alpha_y, alpha_z, alpha_w = 0.;
       
       if ((status = PILGetReal("rc_a", &rc_a))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter rc_a");
 	break;
       }
       if ((status = PILGetReal("rc_b", &rc_b))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter rc_b");
 	break;
       }
       if ((status = PILGetReal("rc_c", &rc_c))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter rc_c");
 	break;
       }
       if ((status = PILGetReal("rc_d", &rc_d))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter rc_d");
 	break;
       }
       if ((status = PILGetReal("alpha_x", &alpha_x))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter alpha_x");
 	break;
       }
       if ((status = PILGetReal("alpha_y", &alpha_y))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter alpha_y");
 	break;
       }
       if ((status = PILGetReal("alpha_z", &alpha_z))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter alpha_z");
 	break;
       }
       if ((status = PILGetReal("alpha_w", &alpha_w))) {
-	sprintf(msg, "Error reading the King parameter file!\n");
-	HD_ERROR_THROW(msg,status);
+	SIXT_ERROR("failed reading the King parameter alpha_w");
 	break;
       }
       
@@ -166,9 +148,8 @@ int psfgen_main()
     } // End of type 3, King profile
 			
     else { // invalid PSF type
-      status = EXIT_FAILURE;
-      sprintf(msg, "Error: Invalid PSF type!\n");
-      HD_ERROR_THROW(msg,status);
+      status=EXIT_FAILURE;
+      SIXT_ERROR("invalid PSF type");
       break;
     }
 
@@ -219,7 +200,7 @@ int psfgen_main()
     } else { status = EXIT_FAILURE; }
     // Check if all necessary memory has been allocated successfully:
     if (status != EXIT_SUCCESS) {
-      HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+      SIXT_ERROR("not enough memory to store PSF data");  
       break;
     }
 
@@ -234,7 +215,7 @@ int psfgen_main()
       psf->thetas   = (double*)malloc(sizeof(double));
       psf->phis     = (double*)malloc(sizeof(double));
       if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
-	HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+	SIXT_ERROR("not enough memory to store PSF data");  
 	break;
       }
       psf->energies[0] = 1.;
@@ -266,7 +247,7 @@ int psfgen_main()
       psf->thetas   = (double*)malloc(sizeof(double));
       psf->phis     = (double*)malloc(sizeof(double));
       if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
-	HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+	SIXT_ERROR("not enough memory to store PSF data");  
 	break;
       }
       psf->energies[0] = 1.;
@@ -296,12 +277,13 @@ int psfgen_main()
     }
 
     else if (type == 3) {
-      // Create a PSF with the King Profile with rc, the King core radius and alpha, the King slope
+      // Create a PSF with the King Profile with rc, 
+      // the King core radius and alpha, the King slope
       psf->energies = (double*)malloc(sizeof(double));
       psf->thetas   = (double*)malloc(sizeof(double));
       psf->phis     = (double*)malloc(sizeof(double));
       if ((NULL==psf->energies) || (NULL==psf->thetas) || (NULL==psf->phis)) {
-	HD_ERROR_THROW("Error: not enough memory to store PSF data!\n", status);  
+	SIXT_ERROR("not enough memory to store PSF data");  
 	break;
       }
       psf->energies[0] = 1.;
