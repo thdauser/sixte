@@ -23,12 +23,12 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
   // Determine telescope pointing direction at the current time.
   struct Telescope telescope;
-  telescope.nz = getTelescopeNz(ac, ph->time, status);
+  telescope.nz=getTelescopeNz(ac, ph->time, status);
   CHECK_STATUS_RET(*status, NULL);
 
   // Compare the photon direction to the direction of the telescope
   // axis to check whether the photon is inside the FOV.
-  Vector photon_direction = unit_vector(ph->ra, ph->dec);
+  Vector photon_direction=unit_vector(ph->ra, ph->dec);
   if (check_fov(&photon_direction, &telescope.nz, fov_min_align)==0) {
     // Photon is inside the FOV!
     
@@ -522,15 +522,15 @@ static inline int ladphdet(const LAD* const lad,
     int asic=(int)((*sig)->anode/lad->asic_channels);
     int pin =      (*sig)->anode%lad->asic_channels;
     
-    // Check if the bin is at the border of the ASIC and whether
+    // Check if the pin is at the border of the ASIC and whether
     // the neighboring ASIC has to be read out, too.
     int asic2=-1;
     if ((0==pin) && (asic!=0) && (asic!=element->nasics/2)) {
-      asic2 = asic-1;
+      asic2=asic-1;
     } else if ((pin>lad->asic_channels-2) && 
 	       (asic!=element->nasics/2-1) &&
 	       (asic!=element->nasics-1)) {
-      asic2 = asic+1;
+      asic2=asic+1;
     }
 
     // Check if the event happens after the coincidence time, but

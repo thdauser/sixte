@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- LOFT LAD version 1.11 -->
+<!-- LOFT LAD version 1.12 -->
 <instrument type="LOFT LAD">
   <telescope>
     <fov diameter="1.5"/>
@@ -36,7 +36,7 @@
   <temperature value="300"/>
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
-  <asic deadtime="102.e-6" edeadtime="0.0" coincidencetime="150.e-9" channels="16"/>
+  <asic deadtime="41.e-6" edeadtime="0.0" coincidencetime="150.e-9" channels="112"/>
   <!-- The lower readout threshold is on purpose set to
        zero. Otherwise charge would be lost in split events, which,
        however, is already taken into account in the implemented
