@@ -52,7 +52,7 @@ int nustarsim_main()
 
   // Register HEATOOL
   set_toolname("nustarsim");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -102,7 +102,7 @@ int nustarsim_main()
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
     strcpy(eventlist_filename_template, par.Prefix);
-    strcat(eventlist_filename_template, "ccd%d_");
+    strcat(eventlist_filename_template, "module%d_");
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcat(eventlist_filename_template, "events.fits");
     } else {
@@ -114,7 +114,7 @@ int nustarsim_main()
     strcpy(ucase_buffer, par.PatternList);
     strtoupper(ucase_buffer);
     strcpy(patternlist_filename_template, par.Prefix);
-    strcat(patternlist_filename_template, "ccd%d_");
+    strcat(patternlist_filename_template, "module%d_");
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcat(patternlist_filename_template, "pattern.fits");
     } else {
@@ -181,6 +181,11 @@ int nustarsim_main()
       // Set the usage of the detector background according to
       // the respective program parameter.
       setGenDetIgnoreBkg(subinst[ii]->det, !par.Background);
+
+      // Make sure that no split model is selected.
+      // This option is currently not supported for the NuSTAR
+      // instrument model.
+      assert(GS_NONE==subinst[ii]->det->split->type);
     }
     CHECK_STATUS_BREAK(status);
     
@@ -598,6 +603,19 @@ int nustarsim_main()
 	// continue with the next one.
 	if (0==isimg) continue;
 
+	// Skip if the impact position is located in the gap of 
+	// the 2x2 module. Note that this approach does not work
+	// properly if split events between neighboring pixels are
+	// enabled. In this case there needs to be a particular
+	// check in the detection routine on the affected pixels.
+	const double detector_offset=3300.e-6;
+	if (((imp.position.x>=-300.e-6-detector_offset)&&
+	     (imp.position.x<=300.e-6-detector_offset))||
+	    ((imp.position.y>=-300.e-6-detector_offset)&&
+	     (imp.position.y<=300.e-6-detector_offset))) {
+	  continue;
+	}
+
 	// If requested, write the impact to the output file.
 	if (NULL!=ilf[ii]) {
 	  addImpact2File(ilf[ii], &imp, &status);
@@ -663,19 +681,77 @@ int nustarsim_main()
 #pragma omp parallel for reduction(+:status)
     for (ii=0; ii<2; ii++) {
       status=EXIT_SUCCESS;
-      // Perform a pattern analysis, only if split events are simulated.
-      if (GS_NONE!=subinst[ii]->det->split->type) {
-	// Pattern analysis.
-	headas_chat(3, "start event pattern analysis ...\n");
-	phpat(subinst[ii]->det, elf[ii], patf[ii], par.SkipInvalids, &status);
-	//CHECK_STATUS_BREAK(status);
-      } else {
-	// If no split events are simulated, simply copy the event lists
-	// to pattern lists.
-	headas_chat(3, "copy events to pattern files ...\n");
-	copyEvents2PatternFile(elf[ii], patf[ii], &status);
-	//CHECK_STATUS_BREAK(status);
+
+      // Apply dead time, while producing a pattern list from 
+      // the event list. The event list contains all events 
+      // neglecting dead time, while the pattern list contains
+      // only events after the dead time application.
+      headas_chat(3, "apply dead time ...\n");
+      double last_time=0.;
+      
+      // Loop over all rows in the event file.
+      long row;
+      for (row=0; row<elf[ii]->nrows; row++) {
+	// Buffers.
+	Event event;
+	Pattern pattern;
+	
+	// Read an event from the input list.
+	getEventFromFile(elf[ii], row+1, &event, &status);
+	CHECK_STATUS_BREAK(status);
+    
+	// Make sure that the event is not located in the gap
+	// between the 2x2 hybrids.
+	assert(event.rawx!=32);
+	assert(event.rawy!=32);
+	
+	if (0==row) {
+	  last_time=event.time;
+	} else {
+	  if (event.time-last_time>2.5e-3) {
+	    last_time=pattern.time;
+
+	    // Copy event data to pattern.
+	    pattern.rawx   =event.rawx;
+	    pattern.rawy   =event.rawy;
+	    pattern.time   =event.time;
+	    pattern.frame  =event.frame;
+	    pattern.pha    =event.pha;
+	    pattern.signal =event.signal;
+	    pattern.ra     =0.;
+	    pattern.dec    =0.;
+	    pattern.npixels=1;
+	    pattern.type   =0;
+    
+	    pattern.pileup =0;
+	    int jj;
+	    for (jj=0; (jj<NEVENTPHOTONS)&&(jj<NPATTERNPHOTONS); jj++){
+	      pattern.ph_id[jj] =event.ph_id[jj];
+	      pattern.src_id[jj]=event.src_id[jj];
+
+	      if ((jj>0)&&(pattern.ph_id[jj]!=0)) {
+		pattern.pileup=1;
+	      }
+	    }
+	    
+	    pattern.signals[0]=0.;
+	    pattern.signals[1]=0.;
+	    pattern.signals[2]=0.;
+	    pattern.signals[3]=0.;
+	    pattern.signals[4]=event.signal;
+	    pattern.signals[5]=0.;
+	    pattern.signals[6]=0.;
+	    pattern.signals[7]=0.;
+	    pattern.signals[8]=0.;
+
+	    // Add the new pattern to the output file.
+	    addPattern2File(patf[ii], &pattern, &status);	  
+	    CHECK_STATUS_BREAK(status);
+	  }
+	}
       }
+      //CHECK_STATUS_BREAK(status);
+      // END of loop over all events in the list.
     }
     CHECK_STATUS_BREAK(status);
     
