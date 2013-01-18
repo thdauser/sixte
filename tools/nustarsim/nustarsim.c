@@ -709,7 +709,7 @@ int nustarsim_main()
 	  last_time=event.time;
 	} else {
 	  if (event.time-last_time>2.5e-3) {
-	    last_time=pattern.time;
+	    last_time=event.time;
 
 	    // Copy event data to pattern.
 	    pattern.rawx   =event.rawx;
