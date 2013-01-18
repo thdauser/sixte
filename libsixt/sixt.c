@@ -223,7 +223,9 @@ void sixt_get_XMLFile(char* const filename,
 
     } else {
       *status=EXIT_FAILURE;
-      SIXT_ERROR("selected mission is not supported");
+      char msg[MAXMSG];
+      sprintf(msg, "selected mission ('%s') is not supported", Mission);
+      SIXT_ERROR(msg);
       return;
     }
     
