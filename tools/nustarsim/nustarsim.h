@@ -1,5 +1,5 @@
-#ifndef EROSIM_H
-#define EROSIM_H 1
+#ifndef NUSTARSIM_H
+#define NUSTARSIM_H 1
 
 #include "sixt.h"
 
@@ -19,7 +19,7 @@
 #include "sourcecatalog.h"
 #include "vector.h"
 
-#define TOOLSUB erosim_main
+#define TOOLSUB nustarsim_main
 #include "headas_main.c"
 
 
@@ -40,11 +40,6 @@ struct Parameters {
   char XMLFile[MAXFILENAME];
   char XMLFile1[MAXFILENAME];
   char XMLFile2[MAXFILENAME];
-  char XMLFile3[MAXFILENAME];
-  char XMLFile4[MAXFILENAME];
-  char XMLFile5[MAXFILENAME];
-  char XMLFile6[MAXFILENAME];
-  char XMLFile7[MAXFILENAME];
 
   char Background;
 
@@ -72,8 +67,8 @@ struct Parameters {
 };
 
 
-int erosim_getpar(struct Parameters* const par);
+int nustarsim_getpar(struct Parameters* const par);
 
 
-#endif /* EROSIM_H */
+#endif /* NUSTARSIM_H */
 

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.60], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.61], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
@@ -107,6 +107,7 @@ AC_CONFIG_FILES([Makefile
 		tools/erosim/Makefile
 		tools/comaexp/Makefile
 		tools/ero_split_photonfile/Makefile
+		tools/nustarsim/Makefile
 		tools/photonmerge/Makefile
 		tools/htrssim/Makefile
 		tools/htrs_psfgen/Makefile

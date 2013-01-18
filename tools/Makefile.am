@@ -6,4 +6,4 @@ SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         htrs_pixel_intensity htrs_fits2tm htrs_digital_shaper comaimg	\
         comadet comarecon mmap runsixt projev imgev wfmphovign		\
         simputmerge simputsrc ladsim erosim ladspec genlc fudgexp	\
-        evpat orbatt
+        evpat orbatt nustarsim

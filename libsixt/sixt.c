@@ -211,6 +211,16 @@ void sixt_get_XMLFile(char* const filename,
 	return;
       }
       
+    } else if (0==strcmp(Mission, "NUSTAR")) {
+      strcat(filename, "/nustar");
+      if (0==strcmp(Instrument, "NUSTAR")) {
+	strcat(filename, "/nustar.xml");
+      } else {
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("selected instrument is not supported");
+	return;
+      }
+
     } else {
       *status=EXIT_FAILURE;
       SIXT_ERROR("selected mission is not supported");

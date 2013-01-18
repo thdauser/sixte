@@ -1,22 +1,22 @@
-#include "erosim.h"
+#include "nustarsim.h"
 
 
-int erosim_main() 
+int nustarsim_main() 
 {
   // Program parameters.
   struct Parameters par;
   
   // Individual sub-instruments.
-  GenInst* subinst[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  GenInst* subinst[2]={NULL, NULL};
 
-  // Fake telescope ARF with the composite effective area of all
-  // 7 sub-telescopes. This is used for the photon generation
+  // Fake telescope ARF with the composite effective area of both
+  // sub-telescopes. This is used for the photon generation
   // from the SIMPUT catalog.
-  struct ARF* arf7=NULL;
+  struct ARF* arf2=NULL;
   
-  // FoV of the combined 7 telescopes. If there is not misalignment,
+  // FoV of the two telescopes combined. If there is not misalignment,
   // it corresponds to the FoV of a single sub-telescope.
-  float fov7;
+  float fov2;
 
   // Attitude.
   AttitudeCatalog* ac=NULL;
@@ -32,16 +32,16 @@ int erosim_main()
   }
 
   // Photon list files.
-  PhotonListFile* plf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  PhotonListFile* plf[2]={NULL, NULL};
 
   // Impact list file.
-  ImpactListFile* ilf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  ImpactListFile* ilf[2]={NULL, NULL};
 
   // Event list file.
-  EventListFile* elf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  EventListFile* elf[2]={NULL, NULL};
 
   // Pattern list file.
-  PatternFile* patf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  PatternFile* patf[2]={NULL, NULL};
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -51,8 +51,8 @@ int erosim_main()
 
 
   // Register HEATOOL
-  set_toolname("erosim");
-  set_toolversion("0.02");
+  set_toolname("nustarsim");
+  set_toolversion("0.01");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -60,7 +60,7 @@ int erosim_main()
     // ---- Initialization ----
     
     // Read the parameters using PIL.
-    status=erosim_getpar(&par);
+    status=nustarsim_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
@@ -148,11 +148,11 @@ int erosim_main()
     // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
     sixt_get_XMLFile(xml_filename, par.XMLFile, 
-		     "SRG", "eROSITA", "", &status);
+		     "NUSTAR", "NUSTAR", "", &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the configurations of all seven sub-instruments.
-    for (ii=0; ii<7; ii++) {
+    // Load the configurations of both sub-instruments.
+    for (ii=0; ii<2; ii++) {
       // Check if a particular XML file is given for this 
       // sub-instrument. If not, use the default XML file.
       char buffer[MAXFILENAME];
@@ -163,21 +163,6 @@ int erosim_main()
 	break;
       case 1:
 	strcpy(buffer, par.XMLFile2);
-	break;
-      case 2:
-	strcpy(buffer, par.XMLFile3);
-	break;
-      case 3:
-	strcpy(buffer, par.XMLFile4);
-	break;
-      case 4:
-	strcpy(buffer, par.XMLFile5);
-	break;
-      case 5:
-	strcpy(buffer, par.XMLFile6);
-	break;
-      case 6:
-	strcpy(buffer, par.XMLFile7);
 	break;
       default:
 	break;
@@ -200,29 +185,29 @@ int erosim_main()
     CHECK_STATUS_BREAK(status);
     
     // Determine a fake ARF with the combined effective area of
-    // all seven sub-telescopes.
-    arf7=(struct ARF*)malloc(sizeof(struct ARF));
-    CHECK_NULL_BREAK(arf7, status, "memory allocation for fake ARF failed");
-    arf7->NumberEnergyBins=subinst[0]->tel->arf->NumberEnergyBins;
-    arf7->LowEnergy= (float*)malloc(arf7->NumberEnergyBins*sizeof(float));
-    arf7->HighEnergy=(float*)malloc(arf7->NumberEnergyBins*sizeof(float));
-    arf7->EffArea=   (float*)malloc(arf7->NumberEnergyBins*sizeof(float));
+    // both sub-telescopes.
+    arf2=(struct ARF*)malloc(sizeof(struct ARF));
+    CHECK_NULL_BREAK(arf2, status, "memory allocation for fake ARF failed");
+    arf2->NumberEnergyBins=subinst[0]->tel->arf->NumberEnergyBins;
+    arf2->LowEnergy= (float*)malloc(arf2->NumberEnergyBins*sizeof(float));
+    arf2->HighEnergy=(float*)malloc(arf2->NumberEnergyBins*sizeof(float));
+    arf2->EffArea=   (float*)malloc(arf2->NumberEnergyBins*sizeof(float));
     long kk;
-    for (kk=0; kk<arf7->NumberEnergyBins; kk++) {
-      arf7->LowEnergy[kk] =subinst[0]->tel->arf->LowEnergy[kk];
-      arf7->HighEnergy[kk]=subinst[0]->tel->arf->HighEnergy[kk];
-      arf7->EffArea[kk]   =subinst[0]->tel->arf->EffArea[kk] *7.0; // Factor 7 !
+    for (kk=0; kk<arf2->NumberEnergyBins; kk++) {
+      arf2->LowEnergy[kk] =subinst[0]->tel->arf->LowEnergy[kk];
+      arf2->HighEnergy[kk]=subinst[0]->tel->arf->HighEnergy[kk];
+      arf2->EffArea[kk]   =subinst[0]->tel->arf->EffArea[kk] *2.0; // Factor 2 !
     }
-    strcpy(arf7->ARFVersion, subinst[0]->tel->arf->ARFVersion);
-    strcpy(arf7->Telescope , subinst[0]->tel->arf->Telescope );
-    strcpy(arf7->Instrument, subinst[0]->tel->arf->Instrument);
-    strcpy(arf7->Detector  , subinst[0]->tel->arf->Detector  );
-    strcpy(arf7->Filter    , subinst[0]->tel->arf->Filter    );
-    strcpy(arf7->ARFExtensionName, subinst[0]->tel->arf->ARFExtensionName);
+    strcpy(arf2->ARFVersion, subinst[0]->tel->arf->ARFVersion);
+    strcpy(arf2->Telescope , subinst[0]->tel->arf->Telescope );
+    strcpy(arf2->Instrument, subinst[0]->tel->arf->Instrument);
+    strcpy(arf2->Detector  , subinst[0]->tel->arf->Detector  );
+    strcpy(arf2->Filter    , subinst[0]->tel->arf->Filter    );
+    strcpy(arf2->ARFExtensionName, subinst[0]->tel->arf->ARFExtensionName);
     
     // The FoV is the same as for an individual sub-telescope.
     // We ignore any misalignment for the moment.
-    fov7=subinst[0]->tel->fov_diameter;
+    fov2=subinst[0]->tel->fov_diameter;
     
     // Set up the Attitude.
     strcpy(ucase_buffer, par.Attitude);
@@ -281,7 +266,7 @@ int erosim_main()
     }
 
     // Load the SIMPUT X-ray source catalogs.
-    srccat[0]=loadSourceCatalog(par.Simput, arf7, &status);
+    srccat[0]=loadSourceCatalog(par.Simput, arf2, &status);
     CHECK_STATUS_BREAK(status);
 
     // Optional 2nd catalog.
@@ -289,7 +274,7 @@ int erosim_main()
       strcpy(ucase_buffer, par.Simput2);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[1]=loadSourceCatalog(par.Simput2, arf7, &status);
+	srccat[1]=loadSourceCatalog(par.Simput2, arf2, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -299,7 +284,7 @@ int erosim_main()
       strcpy(ucase_buffer, par.Simput3);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	srccat[2]=loadSourceCatalog(par.Simput3, arf7, &status);
+	srccat[2]=loadSourceCatalog(par.Simput3, arf2, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -309,7 +294,7 @@ int erosim_main()
       strcpy(ucase_buffer, par.Simput4);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-      	srccat[3]=loadSourceCatalog(par.Simput4, arf7, &status);
+      	srccat[3]=loadSourceCatalog(par.Simput4, arf2, &status);
       	CHECK_STATUS_BREAK(status);
       }
     }
@@ -319,7 +304,7 @@ int erosim_main()
       strcpy(ucase_buffer, par.Simput5);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-      	srccat[4]=loadSourceCatalog(par.Simput5, arf7, &status);
+      	srccat[4]=loadSourceCatalog(par.Simput5, arf2, &status);
       	CHECK_STATUS_BREAK(status);
       }
     }
@@ -329,7 +314,7 @@ int erosim_main()
       strcpy(ucase_buffer, par.Simput6);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-      	srccat[5]=loadSourceCatalog(par.Simput6, arf7, &status);
+      	srccat[5]=loadSourceCatalog(par.Simput6, arf2, &status);
       	CHECK_STATUS_BREAK(status);
       }
     }
@@ -341,7 +326,7 @@ int erosim_main()
 
     // Open the output photon list files.
     if (strlen(photonlist_filename_template)>0) {
-      for (ii=0; ii<7; ii++) {
+      for (ii=0; ii<2; ii++) {
 	char photonlist_filename[MAXFILENAME];
 	sprintf(photonlist_filename, photonlist_filename_template, ii);
 	plf[ii]=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
@@ -352,7 +337,7 @@ int erosim_main()
 
     // Open the output impact list files.
     if (strlen(impactlist_filename_template)>0) {
-      for (ii=0; ii<7; ii++) {
+      for (ii=0; ii<2; ii++) {
 	char impactlist_filename[MAXFILENAME];
 	sprintf(impactlist_filename, impactlist_filename_template, ii);
 	ilf[ii]=openNewImpactListFile(impactlist_filename, par.clobber, &status);
@@ -362,7 +347,7 @@ int erosim_main()
     }
 
     // Open the output event list files.
-    for (ii=0; ii<7; ii++) {
+    for (ii=0; ii<2; ii++) {
       // Open the file.
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
@@ -376,7 +361,7 @@ int erosim_main()
     CHECK_STATUS_BREAK(status);
 
     // Open the output pattern list files.
-    for (ii=0; ii<7; ii++) {
+    for (ii=0; ii<2; ii++) {
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
       patf[ii]=openNewPatternFile(patternlist_filename, par.clobber, &status);
@@ -405,7 +390,7 @@ int erosim_main()
       dec*= 180./M_PI;
       rollangle*= 180./M_PI;
 
-      for (ii=0; ii<7; ii++) {
+      for (ii=0; ii<2; ii++) {
 	// Photon list file.
 	if (NULL!=plf[ii]) {
 	  fits_update_key(plf[ii]->fptr, TDOUBLE, "RA_PNT", &ra,
@@ -450,7 +435,7 @@ int erosim_main()
 	
     } else {
       // An explicit attitude file is given.
-      for (ii=0; ii<7; ii++) {
+      for (ii=0; ii<2; ii++) {
 	if (NULL!=plf[ii]) {
 	  fits_update_key(plf[ii]->fptr, TSTRING, "ATTITUDE", par.Attitude,
 			  "attitude file", &status);
@@ -470,7 +455,7 @@ int erosim_main()
     // Timing keywords.
     double buffer_tstop=par.TSTART+par.Exposure;
     double buffer_timezero=0.;
-    for (ii=0; ii<7; ii++) {
+    for (ii=0; ii<2; ii++) {
       // Photon list file.
       if (NULL!=plf[ii]) {
 	fits_update_key(plf[ii]->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
@@ -570,7 +555,7 @@ int erosim_main()
       }
 
       // Set the start time for the detector models.
-      for (ii=0; ii<7; ii++) {
+      for (ii=0; ii<2; ii++) {
 	setGenDetStartTime(subinst[ii]->det, t0);
       }
 
@@ -583,7 +568,7 @@ int erosim_main()
 	Photon ph;
 	int isph=phgen(ac, srccat, MAX_N_SIMPUT, 
 		       t0, t1, par.MJDREF, par.dt, 
-		       fov7, &ph, &status);
+		       fov2, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// If no photon has been generated, break the loop.
@@ -593,10 +578,10 @@ int erosim_main()
 	// exposre time.
 	assert(ph.time<=t1);
 
-	// Randomly assign the photon to one of the 7 sub-telescopes.
-	ii=(unsigned int)(sixt_get_random_number(&status)*7.0);
+	// Randomly assign the photon to one of both sub-telescopes.
+	ii=(unsigned int)(sixt_get_random_number(&status)*2.0);
 	CHECK_STATUS_BREAK(status);
-	assert(ii<7);
+	assert(ii<2);
 
 	// If requested, write the photon to the output file.
 	if (NULL!=plf[ii]) {
@@ -641,7 +626,7 @@ int erosim_main()
       // END of photon processing loop for the current interval.
 
       // Clear the detectors.
-      for (ii=0; ii<7; ii++) {
+      for (ii=0; ii<2; ii++) {
 	phdetGenDet(subinst[ii]->det, NULL, t1, &status);
 	CHECK_STATUS_BREAK(status);
 	long jj;
@@ -676,7 +661,7 @@ int erosim_main()
 
     // Use parallel computation via OpenMP.
 #pragma omp parallel for reduction(+:status)
-    for (ii=0; ii<7; ii++) {
+    for (ii=0; ii<2; ii++) {
       status=EXIT_SUCCESS;
       // Perform a pattern analysis, only if split events are simulated.
       if (GS_NONE!=subinst[ii]->det->split->type) {
@@ -695,14 +680,14 @@ int erosim_main()
     CHECK_STATUS_BREAK(status);
     
     // Close files in order to save memory.
-    for (ii=0; ii<7; ii++) {
+    for (ii=0; ii<2; ii++) {
       freePhotonListFile(&plf[ii], &status);
       freeImpactListFile(&ilf[ii], &status);
     }
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
-    for (ii=0; ii<7; ii++) {
+    for (ii=0; ii<2; ii++) {
       phproj(subinst[ii], ac, patf[ii], par.TSTART, par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -718,7 +703,7 @@ int erosim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  for (ii=0; ii<7; ii++) {
+  for (ii=0; ii<2; ii++) {
     destroyGenInst    (&subinst[ii], &status);
     destroyPatternFile(&patf[ii],    &status);
     freeEventListFile (&elf[ii],     &status);
@@ -744,7 +729,7 @@ int erosim_main()
 }
 
 
-int erosim_getpar(struct Parameters* const par)
+int nustarsim_getpar(struct Parameters* const par)
 {
   // String input buffer.
   char* sbuffer=NULL;
@@ -816,46 +801,6 @@ int erosim_getpar(struct Parameters* const par)
     return(status);
   } 
   strcpy(par->XMLFile2, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XMLFile3", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file 3");
-    return(status);
-  } 
-  strcpy(par->XMLFile3, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XMLFile4", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file 4");
-    return(status);
-  } 
-  strcpy(par->XMLFile4, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XMLFile5", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file 5");
-    return(status);
-  } 
-  strcpy(par->XMLFile5, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XMLFile6", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file 6");
-    return(status);
-  } 
-  strcpy(par->XMLFile6, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XMLFile7", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file 7");
-    return(status);
-  } 
-  strcpy(par->XMLFile7, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_bool("Background", &par->Background);
@@ -994,5 +939,4 @@ int erosim_getpar(struct Parameters* const par)
 
   return(status);
 }
-
 
