@@ -52,7 +52,7 @@ int nustarsim_main()
 
   // Register HEATOOL
   set_toolname("nustarsim");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -682,13 +682,17 @@ int nustarsim_main()
     for (ii=0; ii<2; ii++) {
       status=EXIT_SUCCESS;
 
-      // Apply dead time, while producing a pattern list from 
-      // the event list. The event list contains all events 
-      // neglecting dead time, while the pattern list contains
+      // Apply dead time, charge pump reset, and shield anticoincidence 
+      // intervals, while producing a pattern list from the event list. 
+      // The event list contains all events neglecting dead time, charge 
+      // pump resets, and shield vetos, while the pattern list contains
       // only events after the dead time application.
       headas_chat(3, "apply dead time ...\n");
       double last_time=0.;
-      
+      double veto_time=0.;
+      const double veto_interval=500.e-6;
+      const double veto_rate=28.;
+
       // Loop over all rows in the event file.
       long row;
       for (row=0; row<elf[ii]->nrows; row++) {
@@ -705,50 +709,71 @@ int nustarsim_main()
 	assert(event.rawx!=32);
 	assert(event.rawy!=32);
 	
+	// Check if the event falls within an interval of charge
+	// pump reset. Resets take place every millisecond and 
+	// last for 20mus.
+	double dt=event.time - ((long)(event.time*1000.))*0.001;
+	if (dt<0.02e-3) continue;
+
+	// Apply the shield veto time.
+	while (event.time-veto_time>veto_interval) {
+	  veto_time+=rndexp(1./veto_rate, &status);
+	  CHECK_STATUS_BREAK(status);
+	}
+	CHECK_STATUS_BREAK(status);
+	
+	if ((event.time-veto_time>=0.) &&
+	    (event.time-veto_time<=veto_interval)) {
+	  continue;
+	}
+	
+
+	// Apply the dead time (event processing time).
 	if (0==row) {
 	  last_time=event.time;
-	} else {
-	  if (event.time-last_time>2.5e-3) {
-	    last_time=event.time;
+	} else if (event.time-last_time<=2.5e-3) {
+	  continue;
+	}
 
-	    // Copy event data to pattern.
-	    pattern.rawx   =event.rawx;
-	    pattern.rawy   =event.rawy;
-	    pattern.time   =event.time;
-	    pattern.frame  =event.frame;
-	    pattern.pha    =event.pha;
-	    pattern.signal =event.signal;
-	    pattern.ra     =0.;
-	    pattern.dec    =0.;
-	    pattern.npixels=1;
-	    pattern.type   =0;
+	// The event is detected.
+	last_time=event.time;
+
+	// Copy event data to pattern.
+	pattern.rawx   =event.rawx;
+	pattern.rawy   =event.rawy;
+	pattern.time   =event.time;
+	pattern.frame  =event.frame;
+	pattern.pha    =event.pha;
+	pattern.signal =event.signal;
+	pattern.ra     =0.;
+	pattern.dec    =0.;
+	pattern.npixels=1;
+	pattern.type   =0;
     
-	    pattern.pileup =0;
-	    int jj;
-	    for (jj=0; (jj<NEVENTPHOTONS)&&(jj<NPATTERNPHOTONS); jj++){
-	      pattern.ph_id[jj] =event.ph_id[jj];
-	      pattern.src_id[jj]=event.src_id[jj];
-
-	      if ((jj>0)&&(pattern.ph_id[jj]!=0)) {
-		pattern.pileup=1;
-	      }
-	    }
-	    
-	    pattern.signals[0]=0.;
-	    pattern.signals[1]=0.;
-	    pattern.signals[2]=0.;
-	    pattern.signals[3]=0.;
-	    pattern.signals[4]=event.signal;
-	    pattern.signals[5]=0.;
-	    pattern.signals[6]=0.;
-	    pattern.signals[7]=0.;
-	    pattern.signals[8]=0.;
-
-	    // Add the new pattern to the output file.
-	    addPattern2File(patf[ii], &pattern, &status);	  
-	    CHECK_STATUS_BREAK(status);
+	pattern.pileup =0;
+	int jj;
+	for (jj=0; (jj<NEVENTPHOTONS)&&(jj<NPATTERNPHOTONS); jj++){
+	  pattern.ph_id[jj] =event.ph_id[jj];
+	  pattern.src_id[jj]=event.src_id[jj];
+	  
+	  if ((jj>0)&&(pattern.ph_id[jj]!=0)) {
+	    pattern.pileup=1;
 	  }
 	}
+	    
+	pattern.signals[0]=0.;
+	pattern.signals[1]=0.;
+	pattern.signals[2]=0.;
+	pattern.signals[3]=0.;
+	pattern.signals[4]=event.signal;
+	pattern.signals[5]=0.;
+	pattern.signals[6]=0.;
+	pattern.signals[7]=0.;
+	pattern.signals[8]=0.;
+	
+	// Add the new pattern to the output file.
+	addPattern2File(patf[ii], &pattern, &status);	  
+	CHECK_STATUS_BREAK(status);
       }
       //CHECK_STATUS_BREAK(status);
       // END of loop over all events in the list.
