@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
-<!-- SRG eROSITA version 1.1 -->
+<!-- SRG eROSITA version 1.2 -->
 <instrument name="eROSITA">
 
 <telescope>
   <arf filename="erosita_iv_1telonaxis_ff.arf"/>
   <fov diameter="1.02"/>
   <focallength value="1.6"/>
-  <vignetting filename="erosita_vignetting_v2.fits"/>
-  <psf filename="erosita_psf_v2.fits"/>
+  <vignetting filename="erosita_vignetting_v2.1.fits"/>
+  <psf filename="erosita_psf_v2.1.fits"/>
 </telescope>
 
 <detector>
