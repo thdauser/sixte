@@ -715,6 +715,7 @@ int nustarsim_main()
 	double dt=event.time - ((long)(event.time*1000.))*0.001;
 	if (dt<0.02e-3) continue;
 
+
 	// Apply the shield veto time.
 	while (event.time-veto_time>veto_interval) {
 	  veto_time+=rndexp(1./veto_rate, &status);
