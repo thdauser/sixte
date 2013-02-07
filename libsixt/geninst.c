@@ -435,6 +435,7 @@ static void GenInstXMLElementStart(void* parsedata,
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->det->rmf=loadRMF(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "ARF")) {
 
@@ -444,6 +445,7 @@ static void GenInstXMLElementStart(void* parsedata,
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->tel->arf=loadARF(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "PSF")) {
     
@@ -463,6 +465,7 @@ static void GenInstXMLElementStart(void* parsedata,
     xmlparsedata->inst->tel->psf= 
       newPSF(filepathname, xmlparsedata->inst->tel->focal_length, 
 	     &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "CODEDMASK")) {
 
@@ -473,6 +476,7 @@ static void GenInstXMLElementStart(void* parsedata,
     strcat(filepathname, filename);
     xmlparsedata->inst->tel->coded_mask = 
       getCodedMaskFromFile(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
@@ -483,6 +487,7 @@ static void GenInstXMLElementStart(void* parsedata,
     strcat(filepathname, filename);
     xmlparsedata->inst->tel->vignetting =
       newVignetting(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "FOCALLENGTH")) {
 
@@ -522,6 +527,19 @@ static void GenInstXMLElementStart(void* parsedata,
     }
 
     xmlparsedata->inst->det->erobackground=1;
+
+  } else if (!strcmp(Uelement, "PHABACKGROUND")) {
+
+    if (0==eroBkgInitialized) {
+      char filename[MAXFILENAME];
+      getXMLAttributeString(attr, "FILENAME", filename);
+      char filepathname[MAXFILENAME];
+      strcpy(filepathname, xmlparsedata->inst->filepath);
+      strcat(filepathname, filename);
+      xmlparsedata->inst->det->phabkg=
+	newPHABkg(filepathname, &xmlparsedata->status);
+      CHECK_STATUS_VOID(xmlparsedata->status);
+    }
 
   } else if (!strcmp(Uelement, "SPLIT")) {
 

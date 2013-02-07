@@ -19,7 +19,9 @@ int calcEvents(const double* const hit_time, const long numrows) {
   return numevents;
 }
 
-void fillEventList(const double* const hit_time, const long numrows, size_t* const eventlist) {
+void fillEventList(const double* const hit_time, 
+		   const long numrows, 
+		   size_t* const eventlist) {
   int cc = 0, dd = 0;
 
   eventlist[dd] = cc;
@@ -32,9 +34,9 @@ void fillEventList(const double* const hit_time, const long numrows, size_t* con
 }
 
 inline double calcEventRate(const double* const hit_time,
-                                   const long numrows,
-                                   const int numevents,
-                                   const double interval) {
+			    const long numrows,
+			    const int numevents,
+			    const double interval) {
   double eventrate = (double)numevents;
 
   eventrate /= (hit_time[numrows - 1] - hit_time[0]);

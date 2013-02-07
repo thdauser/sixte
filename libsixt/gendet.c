@@ -22,6 +22,7 @@ GenDet* newGenDet(int* const status)
   det->line   =NULL;
   det->rmf    =NULL;
   det->elf    =NULL;
+  det->phabkg =NULL;
   det->clocklist=NULL;
   det->badpixmap=NULL;
 
@@ -65,18 +66,12 @@ void destroyGenDet(GenDet** const det)
       free((*det)->line);
     }
 
-    // Destroy the ClockList.
     destroyClockList(&(*det)->clocklist);
-
-    // Destroy the GenPixGrid.
     destroyGenPixGrid(&(*det)->pixgrid);
-
-    // Destroy the split model.
     destroyGenSplit(&(*det)->split);
-
-    // Destroy the BadPixMap.
     destroyBadPixMap(&(*det)->badpixmap);
-
+    destroyPHABkg(&(*det)->phabkg);
+    
     free(*det);
     *det=NULL;
   }
@@ -315,7 +310,7 @@ void operateGenDetClock(GenDet* const det,
     CLWait* clwait              =NULL;
 
     getClockListElement(det->clocklist, time, &type, &element, status);
-    if (EXIT_SUCCESS!=*status) return;
+    CHECK_STATUS_VOID(*status);
 
     switch (type) {
     case CL_NONE:
@@ -329,7 +324,7 @@ void operateGenDetClock(GenDet* const det,
       // If there has been no photon interaction during the last frame
       // and if no background model is activated, jump over the next empty frames
       // until there is a new photon impact.
-      if (((0==det->erobackground)||(1==det->ignore_bkg))&&
+      if ((((0==det->erobackground)&&(NULL==det->phabkg))||(1==det->ignore_bkg))&&
 	  (0==det->anyphoton)) {
 	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
 	det->clocklist->time       +=nframes*det->frametime;
@@ -345,6 +340,63 @@ void operateGenDetClock(GenDet* const det,
       // A waiting period is finished.
       clwait=(CLWait*)element;
 
+      // Insert background events, if the appropriate PHA background
+      // model is defined and should be used.
+      if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+	// Get background events for the required time interval (has
+	// to be given in [s]). The area of the detector within the 
+	// (circular) FoV has to be specified in order to determine
+	// the absolute background event rate.
+	unsigned int nevts;
+	long* bkgphas=
+	  PHABkgGetEvents(det->phabkg, clwait->time,  
+			  det->pixgrid->xwidth*det->pixgrid->xdelt*
+			  det->pixgrid->ywidth*det->pixgrid->ydelt*
+			  M_PI/4.0,
+			  &nevts, status);
+	CHECK_STATUS_VOID(*status);
+
+	unsigned int ii;
+	for (ii=0; ii<nevts; ii++) {
+	  // Determine the corresponding signal.
+	  if (NULL==det->rmf) {
+	    SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+	    *status=EXIT_FAILURE;
+	    return;
+	  }
+	  float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
+	  CHECK_STATUS_VOID(*status);
+	  
+	  // Determine a random pixel. Only pixels within the FoV are
+	  // considered. This selection is also taken into account for 
+	  // the determination of the absolute background rate.
+	  // (Note that charge cloud splitting effects are neglected.)
+	  int x, y;
+	  do {
+	    x=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	    CHECK_STATUS_VOID(*status);
+	    y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+	    CHECK_STATUS_VOID(*status);
+	  } while (pow(x-det->pixgrid->xwidth/2,2.0)+
+		   pow(y-det->pixgrid->ywidth/2, 2.0)>
+		   pow(det->pixgrid->xwidth/2, 2.0));
+
+	  // Add the signal to the pixel.
+	  addGenDetCharge2Pixel(det->line[y], x, energy, -1, -1);
+
+	  // Call the event trigger routine.
+	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
+	    GenDetReadoutPixel(det, y, y, x, time, status);
+	    CHECK_STATUS_VOID(*status);
+	    
+	    // In event-triggered mode each event occupies its own frame.
+	    det->clocklist->frame++;
+	  }
+
+	}
+	free(bkgphas);
+      }
+
       // Insert cosmic ray background events, 
       // if the appropriate model is defined and should be used.
       if ((1==det->erobackground)&&(0==det->ignore_bkg)) {
@@ -354,7 +406,7 @@ void operateGenDetClock(GenDet* const det,
 	double cosrota=cos(det->pixgrid->rota);
 	double sinrota=sin(det->pixgrid->rota);
 	int ii;
-	for(ii = 0; ii<list->numhits; ii++) {
+	for(ii=0; ii<list->numhits; ii++) {
 
 	  // Add the signal to the detector without
 	  // regarding charge cloud splitting effects,
@@ -390,7 +442,7 @@ void operateGenDetClock(GenDet* const det,
 	  // Call the event trigger routine.
 	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
 	    GenDetReadoutPixel(det, y, y, x, time, status);
-	    CHECK_STATUS_BREAK(*status);
+	    CHECK_STATUS_VOID(*status);
 	    
 	    // In event-triggered mode each event occupies its own frame.
 	    det->clocklist->frame++;
@@ -415,6 +467,7 @@ void operateGenDetClock(GenDet* const det,
       GenDetReadoutLine(det, clreadoutline->lineindex, 
 			clreadoutline->readoutindex, 
 			status);
+      CHECK_STATUS_VOID(*status);	    
       break;
     case CL_CLEARLINE:
       clclearline = (CLClearLine*)element;

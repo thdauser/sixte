@@ -49,7 +49,7 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
 		   impactlistfile.c ladimpactlistfile.c			\
 		   htrsdetector.c geninst.c gendet.c gentel.c		\
 		   genpixgrid.c gendetline.c eventlistfile.c		\
-		   ladsignallistfile.c ladeventlistfile.c		\
+		   ladsignallistfile.c ladeventlistfile.c phabkg.c	\
 		   patternfile.c clocklist.c badpixmap.c		\
 		   htrseventfile.c hexagonalpixels.c arcpixels.c	\
 		   telemetrypacket.c htrstelstream.c comadetector.c	\
@@ -80,7 +80,7 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		ladimpactlistfile.h impact.h geninst.h gendet.h		\
 		gentel.h genpixgrid.h gendetline.h clocklist.h		\
 		event.h ladsignal.h ladevent.h ladimpact.h pattern.h	\
-		eventlistfile.h ladsignallistfile.h			\
+		eventlistfile.h ladsignallistfile.h phabkg.h		\
 		ladeventlistfile.h patternfile.h badpixmap.h		\
 		htrsdetector.h htrseventfile.h htrsevent.h		\
 		telemetrypacket.h htrstelstream.h comadetector.h	\

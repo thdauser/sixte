@@ -54,12 +54,12 @@ LADImpactListFile* openLADImpactListFile(const char* const filename,
   headas_chat(5, "open impact list file '%s' ...\n", filename);
 
   // Open the FITS file table for reading:
-  fits_open_table(&file->fptr, filename, mode, status);;
+  fits_open_table(&file->fptr, filename, mode, status);
   CHECK_STATUS_RET(*status, file);
 
   // Get the HDU type.
   int hdutype;
-  if (fits_get_hdu_type(file->fptr, &hdutype, status)) return(file);;
+  if (fits_get_hdu_type(file->fptr, &hdutype, status)) return(file);
   // Image HDU results in an error message.
   if (IMAGE_HDU==hdutype) {
     *status=EXIT_FAILURE;

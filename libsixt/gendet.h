@@ -11,6 +11,7 @@
 #include "genericdetector.h"
 #include "genpixgrid.h"
 #include "impact.h"
+#include "phabkg.h"
 #include "point.h"
 #include "rmf.h"
 #include "xmlbuffer.h"
@@ -108,8 +109,13 @@ typedef struct {
       ray detector background. */
   int erobackground;
 
-  /** Flag, whether the background model for the cosmic ray detector
-      background should be ignored (if it is available). */
+  /** Model for detector background according to a given PHA file. */
+  PHABkg* phabkg;
+  
+  /** Flag, whether the detector background models (either
+      eROSITA-specific model for the cosmic ray detector background or
+      the generic PHA detector background model) should be ignored (if
+      they are available). */
   int ignore_bkg;
 
   /** Flag for detector readout trigger. The readout can be triggered
