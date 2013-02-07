@@ -20,7 +20,7 @@ int genlc_main() {
 
   // Register HEATOOL:
   set_toolname("genlc");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -52,9 +52,9 @@ int genlc_main() {
       fits_get_colnum(infptr, CASEINSEN, "ENERGY", &csignal, &opt_status);
       fits_clear_errmark();
       if (EXIT_SUCCESS!=opt_status) {
-	fits_get_colnum(infptr, CASEINSEN, "SIGNAL", &csignal, &status);	
+	fits_get_colnum(infptr, CASEINSEN, "SIGNAL", &csignal, &status);
+	CHECK_STATUS_BREAK(status);
       }
-      CHECK_STATUS_BREAK(status);
     }
 
     // Determine the number of rows in the input file.
@@ -69,7 +69,8 @@ int genlc_main() {
     headas_chat(5, "create empty light curve with %ld bins ...\n",
 		nbins);
     counts=(long*)malloc(nbins*sizeof(long));
-    CHECK_NULL_BREAK(counts, status, "memory allocation for light curve failed");
+    CHECK_NULL_BREAK(counts, status, 
+		     "memory allocation for light curve failed");
 
     // Initialize the light curve with 0.
     long ii; 
@@ -94,6 +95,10 @@ int genlc_main() {
 		    &dnull, &time, &anynul, &status);
       CHECK_STATUS_BREAK(status);
 
+      // If the event was detected before the start of the light
+      // curve, we have to neglect it.
+      if (time<par.TIMEZERO) continue;
+
       // If necessary, read the energy/signal of the next event.
       if (csignal>0) {
 	float signal;
@@ -108,8 +113,8 @@ int genlc_main() {
       }
       
       // Determine the respective bin in the light curve.
-      long bin=((long)(time/par.dt+1.0))-1;
-
+      long bin=((long)((time-par.TIMEZERO)/par.dt+1.0))-1;
+		
       // If the event exceeds the end of the light curve, simply neglect it.
       if (bin>=nbins) continue;
       
@@ -153,7 +158,7 @@ int genlc_main() {
     for (ii=0; ii<nbins; ii++) {
       // Convert the count histogram to a light curve with
       // time and rate entries.
-      double dbuffer=(ii+1)*par.dt;
+      double dbuffer=(ii+1)*par.dt + par.TIMEZERO;
       fits_write_col(outfptr, TDOUBLE, cotime, ii+1, 1, 1, 
 		     &dbuffer, &status);
       CHECK_STATUS_BREAK(status);
@@ -176,7 +181,7 @@ int genlc_main() {
   // Release memory.
   if (NULL!=counts) free(counts);
 
-  if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 
@@ -206,6 +211,12 @@ int genlc_getpar(struct Parameters* par)
   } 
   strcpy(par->LightCurve, sbuffer);
   free(sbuffer);
+
+  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the start time of the light curve");
+    return(status);
+  } 
 
   status=ape_trad_query_double("length", &par->length);
   if (EXIT_SUCCESS!=status) {

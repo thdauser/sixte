@@ -14,6 +14,9 @@
 struct Parameters {
   char EventList[MAXFILENAME];
   char LightCurve[MAXFILENAME];
+
+  /** Start time [s]. */
+  double TIMEZERO;
   
   /** Length of the light curve [s]. */
   double length; 
