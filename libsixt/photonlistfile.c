@@ -84,10 +84,13 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
   fits_get_colnum(plf->fptr, CASEINSEN, "DEC", &plf->cdec, status);
   CHECK_STATUS_RET(*status, plf);
-  fits_get_colnum(plf->fptr, CASEINSEN, "PH_ID", &plf->cph_id, status);
-  CHECK_STATUS_RET(*status, plf);
-  fits_get_colnum(plf->fptr, CASEINSEN, "SRC_ID", &plf->csrc_id, status);
-  CHECK_STATUS_RET(*status, plf);
+
+  // Optional columns:
+  int opt_status=EXIT_SUCCESS;
+  fits_write_errmark();
+  fits_get_colnum(plf->fptr, CASEINSEN, "PH_ID", &plf->cph_id, &opt_status);
+  fits_get_colnum(plf->fptr, CASEINSEN, "SRC_ID", &plf->csrc_id, &opt_status);
+  fits_clear_errmark();
 
   return(plf);
 }
@@ -155,8 +158,8 @@ int PhotonListFile_getNextRow(PhotonListFile* const plf, Photon* const ph)
 
   // Check if there is still a row available.
   if (plf->row > plf->nrows) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: photon list file contains no further entries!\n", status);
+    status=EXIT_FAILURE;
+    SIXT_ERROR("photon list file contains no further entries");
     return(status);
   }
 
@@ -171,7 +174,7 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
 			  Photon* const ph, const long row)
 {
   int status=EXIT_SUCCESS;
-  int anynul = 0;
+  int anynul=0;
 
   // Check if there is still a row available.
   if (row > plf->nrows) {
@@ -180,24 +183,38 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
   }
 
   // Read in the data.
-  ph->time = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->ctime, row, 1, 1, 
-		    &ph->time, &ph->time, &anynul, &status)) return(status);
-  ph->energy = 0.;
-  if (fits_read_col(plf->fptr, TFLOAT, plf->cenergy, row, 1, 1, 
-		    &ph->energy, &ph->energy, &anynul, &status)) return(status);
-  ph->ra = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->cra, row, 1, 1, 
-		    &ph->ra, &ph->ra, &anynul, &status)) return(status);
-  ph->dec = 0.;
-  if (fits_read_col(plf->fptr, TDOUBLE, plf->cdec, row, 1, 1, 
-		    &ph->dec, &ph->dec, &anynul, &status)) return(status);
-  ph->ph_id = 0;
-  if (fits_read_col(plf->fptr, TLONG, plf->cph_id, row, 1, 1, 
-		    &ph->ph_id, &ph->ph_id, &anynul, &status)) return(status);
-  ph->src_id = 0;
-  if (fits_read_col(plf->fptr, TLONG, plf->csrc_id, row, 1, 1, 
-		    &ph->src_id, &ph->src_id, &anynul, &status)) return(status);
+  ph->time=0.;
+  fits_read_col(plf->fptr, TDOUBLE, plf->ctime, row, 1, 1, 
+		    &ph->time, &ph->time, &anynul, &status);
+
+  ph->energy=0.;
+  fits_read_col(plf->fptr, TFLOAT, plf->cenergy, row, 1, 1, 
+		&ph->energy, &ph->energy, &anynul, &status);
+
+  ph->ra=0.;
+  fits_read_col(plf->fptr, TDOUBLE, plf->cra, row, 1, 1, 
+		&ph->ra, &ph->ra, &anynul, &status);
+  ph->ra *=M_PI/180.; // Convert from [deg] to [rad].
+
+  ph->dec=0.;
+  fits_read_col(plf->fptr, TDOUBLE, plf->cdec, row, 1, 1, 
+		&ph->dec, &ph->dec, &anynul, &status);
+  ph->dec*=M_PI/180.; // Convert from [deg] to [rad].
+
+  // Optional columns: read values only if column exists.
+  ph->ph_id=0;
+  if (0!=plf->cph_id) {
+    fits_read_col(plf->fptr, TLONG, plf->cph_id, row, 1, 1, 
+		  &ph->ph_id, &ph->ph_id, &anynul, &status);
+  }
+
+  ph->src_id=0;
+  if (0!=plf->csrc_id) {
+    fits_read_col(plf->fptr, TLONG, plf->csrc_id, row, 1, 1, 
+		  &ph->src_id, &ph->src_id, &anynul, &status);
+  }
+
+  CHECK_STATUS_RET(status, status);
 
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
@@ -205,10 +222,6 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
     return(EXIT_FAILURE);
   }
 
-  // Convert from [deg] to [rad].
-  ph->ra  *= M_PI/180.;
-  ph->dec *= M_PI/180.;
-  
   return(status);
 }
 
@@ -218,11 +231,12 @@ int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
   int status=EXIT_SUCCESS;
 
   // Convert from [rad] -> [deg]:
-  double ra  = ph->ra  * 180./M_PI;
-  double dec = ph->dec * 180./M_PI;
+  double ra =ph->ra *180./M_PI;
+  double dec=ph->dec*180./M_PI;
 
   // Insert a new, empty row to the table:
-  if (fits_insert_rows(plf->fptr, plf->row, 1, &status)) return(status);
+  fits_insert_rows(plf->fptr, plf->row, 1, &status);
+  CHECK_STATUS_RET(status, status);
   plf->row++;
   plf->nrows++;
 
@@ -233,18 +247,25 @@ int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
   }
   
   // Store the data in the FITS file.
-  if (fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
-		     plf->row, 1, 1, &ph->time, &status)) return(status);
-  if (fits_write_col(plf->fptr, TFLOAT, plf->cenergy, 
-		     plf->row, 1, 1, &ph->energy, &status)) return(status);
-  if (fits_write_col(plf->fptr, TDOUBLE, plf->cra, 
-		     plf->row, 1, 1, &ra, &status)) return(status);
-  if (fits_write_col(plf->fptr, TDOUBLE, plf->cdec, 
-		     plf->row, 1, 1, &dec, &status)) return(status);
-  if (fits_write_col(plf->fptr, TLONG, plf->cph_id, 
-		     plf->row, 1, 1, &ph->ph_id, &status)) return(status);
-  if (fits_write_col(plf->fptr, TLONG, plf->csrc_id, 
-		     plf->row, 1, 1, &ph->src_id, &status)) return(status);
+  fits_write_col(plf->fptr, TDOUBLE, plf->ctime, 
+		 plf->row, 1, 1, &ph->time, &status);
+  fits_write_col(plf->fptr, TFLOAT, plf->cenergy, 
+		 plf->row, 1, 1, &ph->energy, &status);
+  fits_write_col(plf->fptr, TDOUBLE, plf->cra, 
+		 plf->row, 1, 1, &ra, &status);
+  fits_write_col(plf->fptr, TDOUBLE, plf->cdec, 
+		 plf->row, 1, 1, &dec, &status);
+
+  // Optional columns: write values only if column exists.
+  if (0!=plf->cph_id) {
+    fits_write_col(plf->fptr, TLONG, plf->cph_id, 
+		   plf->row, 1, 1, &ph->ph_id, &status);
+  }
+  if (0!=plf->csrc_id) {
+    fits_write_col(plf->fptr, TLONG, plf->csrc_id, 
+		   plf->row, 1, 1, &ph->src_id, &status);
+  }
+  CHECK_STATUS_RET(status, status);
 
   return(status);
 }
