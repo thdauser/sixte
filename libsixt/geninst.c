@@ -431,6 +431,13 @@ static void GenInstXMLElementStart(void* parsedata,
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for RMF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -441,6 +448,13 @@ static void GenInstXMLElementStart(void* parsedata,
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for ARF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -459,6 +473,13 @@ static void GenInstXMLElementStart(void* parsedata,
     }
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for PSF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -471,6 +492,13 @@ static void GenInstXMLElementStart(void* parsedata,
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for coded mask");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -482,6 +510,13 @@ static void GenInstXMLElementStart(void* parsedata,
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for vignetting");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -506,6 +541,13 @@ static void GenInstXMLElementStart(void* parsedata,
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for bad pixel map");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -518,6 +560,13 @@ static void GenInstXMLElementStart(void* parsedata,
     if (0==eroBkgInitialized) {
       char filename[MAXFILENAME];
       getXMLAttributeString(attr, "FILENAME", filename);
+
+      // Check if a file name has been specified.
+      if (strlen(filename)==0) {
+	SIXT_ERROR("no file specified for eROSITA detector background");
+	xmlparsedata->status=EXIT_FAILURE;
+      }
+
       char filepathname[MAXFILENAME];
       strcpy(filepathname, xmlparsedata->inst->filepath);
       strcat(filepathname, filename);
@@ -533,6 +582,13 @@ static void GenInstXMLElementStart(void* parsedata,
     if (0==eroBkgInitialized) {
       char filename[MAXFILENAME];
       getXMLAttributeString(attr, "FILENAME", filename);
+
+      // Check if a file name has been specified.
+      if (strlen(filename)==0) {
+	SIXT_ERROR("no file specified for PHA detector background");
+	xmlparsedata->status=EXIT_FAILURE;
+      }
+
       char filepathname[MAXFILENAME];
       strcpy(filepathname, xmlparsedata->inst->filepath);
       strcat(filepathname, filename);
