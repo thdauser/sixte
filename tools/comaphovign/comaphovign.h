@@ -1,12 +1,12 @@
-#ifndef WFMPHOVIGN_H
-#define WFMPHOVIGN_H 1
+#ifndef COMAPHOVIGN_H
+#define COMAPHOVIGN_H 1
 
 
 #include "sixt.h"
 #include "attitudecatalog.h"
 #include "photonlistfile.h"
 
-#define TOOLSUB wfmphovign_main
+#define TOOLSUB comaphovign_main
 #include "headas_main.c"
 
 
@@ -30,7 +30,7 @@ struct Parameters {
 
 
 /** Reads the program parameters using PIL. */
-int wfmphovign_getpar(struct Parameters* parameters);
+int comaphovign_getpar(struct Parameters* parameters);
 
 
-#endif /* WFMPHOVIGN_H */
+#endif /* COMAPHOVIGN_H */

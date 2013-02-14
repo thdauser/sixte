@@ -20,7 +20,7 @@ typedef struct {
   /** PHA channel numbers. */
   long* channel;
   
-  /** Background event rate distribution (counts/s/bin/cm^2). */
+  /** Background event rate distribution [counts/s/bin/cm^2]. */
   float* distribution;
 
   /** GSL random number generator. */
@@ -40,7 +40,7 @@ typedef struct {
     channels in the EBOUNDS extension of the RMF. The entries in the
     RATE column represent the background event rate in this particular
     energy channel per second and per illuminated detector area
-    (counts/s/bin/cm^2). */
+    [counts/s/bin/cm^2]. */
 PHABkg* newPHABkg(const char* const filename, int* const status);
 
 /** Destructor. */

@@ -1,9 +1,9 @@
-#include "wfmphovign.h"
+#include "comaphovign.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int wfmphovign_main() {
+int comaphovign_main() {
   struct Parameters par;
 
   AttitudeCatalog* ac=NULL;
@@ -18,8 +18,8 @@ int wfmphovign_main() {
 
 
   // Register HEATOOL:
-  set_toolname("wfmphovign");
-  set_toolversion("0.05");
+  set_toolname("comaphovign");
+  set_toolversion("0.06");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -27,7 +27,7 @@ int wfmphovign_main() {
     // --- Initialization ---
 
     // Read parameters using PIL library.
-    if ((status=wfmphovign_getpar(&par))) break;
+    if ((status=comaphovign_getpar(&par))) break;
 
     headas_chat(3, "initialize ...\n");
 
@@ -42,10 +42,10 @@ int wfmphovign_main() {
     // Determine the random number seed.
     int seed;
     if (-1!=par.Seed) {
-      seed = par.Seed;
+      seed=par.Seed;
     } else {
       // Determine the seed from the system clock.
-      seed = (int)time(NULL);
+      seed=(int)time(NULL);
     }
 
     // Initialize the random number generator.
@@ -248,7 +248,7 @@ int wfmphovign_main() {
 }
 
 
-int wfmphovign_getpar(struct Parameters* par)
+int comaphovign_getpar(struct Parameters* par)
 {
   // String input buffer.
   char* sbuffer=NULL;
