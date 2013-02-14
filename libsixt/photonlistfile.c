@@ -86,9 +86,10 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
 
   // Optional columns:
-  int opt_status=EXIT_SUCCESS;
   fits_write_errmark();
+  int opt_status=EXIT_SUCCESS;
   fits_get_colnum(plf->fptr, CASEINSEN, "PH_ID", &plf->cph_id, &opt_status);
+  opt_status=EXIT_SUCCESS;
   fits_get_colnum(plf->fptr, CASEINSEN, "SRC_ID", &plf->csrc_id, &opt_status);
   fits_clear_errmark();
 
