@@ -151,14 +151,14 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   CHECK_STATUS_RET(*status, 0);
 
   char *search=strchr(specref, ']');
-  CHECK_NULL_RET(search, *status, 
-		 "no valid reference to source spectrum", cat) 
-  *(search+1)='\0';
-
-  headas_chat(3, "try to load all spectra ('%s') into cache ...\n", specref);
-  loadCacheAllSimputMIdpSpec(cat->simput, specref, status);
-  CHECK_STATUS_RET(*status, cat);
-
+  if (NULL==search) {
+    SIXT_WARNING("no valid reference to source spectrum");
+  } else {
+    *(search+1)='\0';
+    headas_chat(3, "try to load all spectra ('%s') into cache ...\n", specref);
+    loadCacheAllSimputMIdpSpec(cat->simput, specref, status);
+    CHECK_STATUS_RET(*status, cat);
+  }
 
   // Release memory.
   if (templatesrc) free(templatesrc);
