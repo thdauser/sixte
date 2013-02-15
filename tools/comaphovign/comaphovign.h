@@ -18,6 +18,11 @@ struct Parameters {
   /** [deg] */
   float RA, Dec;
 
+  /** Flag whether the time information of the photons should be
+      copied to the output file. The time column might be omitted in
+      order to save memory. */
+  char TimeColumn;
+
   int Seed;
   
   char clobber;

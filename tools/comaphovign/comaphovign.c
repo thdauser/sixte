@@ -11,7 +11,7 @@ int comaphovign_main() {
 
   fitsfile* ofptr=NULL;
   long onrows=0;
-  int cenergy, cra, cdec;
+  int cenergy, cra, cdec, ctime;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -19,7 +19,7 @@ int comaphovign_main() {
 
   // Register HEATOOL:
   set_toolname("comaphovign");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -72,9 +72,9 @@ int comaphovign_main() {
 
       // Set the values of the entries.
       ac->nentries=1;
-      ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = 0.;
-      ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+      ac->entry[0]=defaultAttitudeEntry();
+      ac->entry[0].time=0.;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
       ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
@@ -128,10 +128,20 @@ int comaphovign_main() {
 		    "PHOTONS", &status);
     CHECK_STATUS_BREAK(status);
 
+    // Check if the time information should be stored in the 
+    // output file.
+    if (0!=par.TimeColumn) {
+      fits_insert_col(ofptr, 1, "TIME", "D", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     // Determine the column numbers in the output file.
     fits_get_colnum(ofptr, CASEINSEN, "ENERGY", &cenergy, &status); 
     fits_get_colnum(ofptr, CASEINSEN, "RA", &cra, &status);
     fits_get_colnum(ofptr, CASEINSEN, "DEC", &cdec, &status);
+    if (0!=par.TimeColumn) {
+      fits_get_colnum(ofptr, CASEINSEN, "TIME", &ctime, &status);
+    }
     CHECK_STATUS_BREAK(status);
 
     // Add header information about program parameters.
@@ -199,6 +209,10 @@ int comaphovign_main() {
 	onrows++;
 	
 	// Store the data in the FITS file.
+	if (0!=par.TimeColumn) {
+	  fits_write_col(ofptr, TDOUBLE, ctime, 
+			 onrows, 1, 1, &photon.time, &status);
+	}
 	fits_write_col(ofptr, TFLOAT, cenergy, 
 		       onrows, 1, 1, &photon.energy, &status);
 	float fbuffer=photon.ra * 180./M_PI;
@@ -284,28 +298,31 @@ int comaphovign_getpar(struct Parameters* par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the right ascension of the "
-		   "telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the declination of the "
-		   "telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
   } 
 
+  status=ape_trad_query_bool("TimeColumn", &par->TimeColumn);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the TimeColumn parameter");
+    return(status);
+  }
+
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random "
-		   "number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
