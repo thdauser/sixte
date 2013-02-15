@@ -147,7 +147,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   CHECK_STATUS_RET(*status, cat);
 
   char specref[MAXFILENAME];
-  getSimputSrcSpecRef(cat->simput, src, 0., 0., specref, status);
+  getSimputSrcSpecRef(cat->simput, src, 0., -1.0, specref, status);
   CHECK_STATUS_RET(*status, 0);
 
   char *search=strchr(specref, ']');
