@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<!-- NuSTAR version 1.1 -->
 <instrument>
 <telescope>
 <focallength value="10.14"/>
@@ -8,8 +9,8 @@
 </telescope>
 
 <detector type="CdZnTe" mode="standard">
-<dimensions xwidth="65" ywidth="65"/>
-<wcs xrpix="38.5" yrpix="38.5" xrval="0." yrval="0." xdelt="600.e-6" ydelt="600.e-6"/>
+<dimensions xwidth="325" ywidth="325"/>
+<wcs xrpix="190.5" yrpix="190.5" xrval="0." yrval="0." xdelt="120.e-6" ydelt="120.e-6"/>
 <rmf filename="nustar_v2.0.rmf"/>
 <threshold_readout_lo_keV value="0.0"/>
 <threshold_event_lo_keV value="0.0"/>

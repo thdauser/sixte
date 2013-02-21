@@ -391,9 +391,9 @@ int nustarsim_main()
       CHECK_STATUS_BREAK(status);
 
       // Store the RA and Dec information in the FITS header.
-      ra *= 180./M_PI;
-      dec*= 180./M_PI;
-      rollangle*= 180./M_PI;
+      ra *=180./M_PI;
+      dec*=180./M_PI;
+      rollangle*=180./M_PI;
 
       for (ii=0; ii<2; ii++) {
 	// Photon list file.
