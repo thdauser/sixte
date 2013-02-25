@@ -179,13 +179,13 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
-  const double close_mult = 1.2; 
-  const double close_fov_min_align = cos(close_mult*fov/2.); 
+  const double close_mult=1.2; 
+  const double close_fov_min_align=cos(close_mult*fov/2.); 
 
   // Perform a range search over all sources in the KDTree and 
   // generate new photons for the sources within the FoV.
   // The kdTree only contains point-like sources.
-  LinkedPhoListElement* list = 
+  LinkedPhoListElement* list=
     KDTreeRangeSearch(cat->tree, 0, pointing, close_fov_min_align, 
 		      t0, t1, mjdref, cat->simput, status);
 
@@ -198,7 +198,7 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
     if (0==check_fov(&location, pointing, 
 		     cos(close_mult*(fov*0.5 + cat->extsources[ii].extension)))) {
       // Generate photons for this particular source.
-      LinkedPhoListElement* newlist = 
+      LinkedPhoListElement* newlist=
 	getXRayPhotons(&(cat->extsources[ii]), cat->simput, 
 		       t0, t1, mjdref, status);
       CHECK_STATUS_RET(*status, list);

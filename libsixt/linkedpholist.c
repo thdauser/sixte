@@ -2,12 +2,13 @@
 
 LinkedPhoListElement* newLinkedPhoListElement(int* const status)
 {
-  LinkedPhoListElement* el = (LinkedPhoListElement*)malloc(sizeof(LinkedPhoListElement));
+  LinkedPhoListElement* el=
+    (LinkedPhoListElement*)malloc(sizeof(LinkedPhoListElement));
   CHECK_NULL(el, *status,
 	     "memory allocation for LinkedPhoListElement failed");
   
   // Initialize pointers with NULL.
-  el->next   = NULL;
+  el->next=NULL;
 
   return(el);
 }
@@ -29,8 +30,8 @@ void freeLinkedPhoList(LinkedPhoListElement** const list)
 LinkedPhoListElement* mergeLinkedPhoLists(LinkedPhoListElement* list1, 
 					  LinkedPhoListElement* list2)
 {
-  LinkedPhoListElement* start    = NULL;
-  LinkedPhoListElement** current = &start;
+  LinkedPhoListElement* start   =NULL;
+  LinkedPhoListElement** current=&start;
 
   if (NULL==list1) return(list2);
   if (NULL==list2) return(list1);

@@ -3,16 +3,16 @@
 
 Source* newSource(int* const status)
 {
-  Source* src = (Source*)malloc(sizeof(Source));
+  Source* src=(Source*)malloc(sizeof(Source));
   CHECK_NULL(src, *status, 
 	     "memory allocation for Source failed");
 
   // Initalize pointers with NULL.
-  src->t_next_photon = NULL;
-  src->ra            = 0.;
-  src->dec           = 0.;
-  src->extension     = 0.;
-  src->row           = 0;
+  src->t_next_photon=NULL;
+  src->ra           =0.;
+  src->dec          =0.;
+  src->extension    =0.;
+  src->row          =0;
 
   return(src);
 }

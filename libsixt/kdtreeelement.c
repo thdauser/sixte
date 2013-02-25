@@ -88,10 +88,10 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
   // Check if the kd-Tree exists.
   if (NULL==node) return(NULL);
   
-  LinkedPhoListElement* list = NULL;
+  LinkedPhoListElement* list=NULL;
 
   // Check if the current node lies within the search radius.
-  Vector location = unit_vector(node->src->ra, node->src->dec);
+  Vector location=unit_vector(node->src->ra, node->src->dec);
   if (0==check_fov(&location, ref, min_align)) {
     // Generate photons for this particular source.
     list=getXRayPhotons(node->src, simputcat, t0, t1, mjdref, status);
@@ -103,12 +103,12 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
     return(list);
   }
 
-  int axis = depth % 3;
+  int axis=depth % 3;
 
   // Check which branch to search first.
   KDTreeElement* near;
   KDTreeElement* far;
-  double distance2edge = 
+  double distance2edge=
     getVectorDimensionValue(ref, axis)-getVectorDimensionValue(&location, axis);
   if (distance2edge < 0.) {
     near = node->left;
@@ -121,12 +121,12 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
   // Descend into near tree if it exists, and then check
   // against current node.
   if (NULL!=near) {
-    LinkedPhoListElement* near_list = 
+    LinkedPhoListElement* near_list=
       KDTreeRangeSearch(near, depth+1, ref, min_align, 
 			t0, t1, mjdref, simputcat, status);
 
     // Merge the new photons into the existing list.
-    list = mergeLinkedPhoLists(list, near_list);
+    list=mergeLinkedPhoLists(list, near_list);
   } 
   // END of (NULL!=near)
 
