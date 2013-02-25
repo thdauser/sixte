@@ -52,7 +52,7 @@ int nustarsim_main()
 
   // Register HEATOOL
   set_toolname("nustarsim");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -611,8 +611,8 @@ int nustarsim_main()
 	const double detector_offset=3300.e-6;
 	if (((imp.position.x>=-300.e-6-detector_offset)&&
 	     (imp.position.x<=300.e-6-detector_offset))||
-	    ((imp.position.y>=-300.e-6-detector_offset)&&
-	     (imp.position.y<=300.e-6-detector_offset))) {
+	    ((imp.position.y>=-300.e-6+detector_offset)&&
+	     (imp.position.y<=300.e-6+detector_offset))) {
 	  continue;
 	}
 
@@ -706,8 +706,8 @@ int nustarsim_main()
     
 	// Make sure that the event is not located in the gap
 	// between the 2x2 hybrids.
-	assert(event.rawx!=32);
-	assert(event.rawy!=32);
+	assert((event.rawx<160)||(event.rawx>164));
+	assert((event.rawy<160)||(event.rawy>164));
 	
 	// Check if the event falls within an interval of charge
 	// pump reset. Resets take place every millisecond and 
