@@ -5,6 +5,7 @@ CoMaEventFile* openCoMaEventFile(char* const filename,
 				 const int access_mode, 
 				 int* const status)
 {
+  //Memory-allocation
   CoMaEventFile* ef=(CoMaEventFile*)malloc(sizeof(CoMaEventFile));
   if (NULL==ef) {
     *status=EXIT_FAILURE;
@@ -12,13 +13,13 @@ CoMaEventFile* openCoMaEventFile(char* const filename,
     return(ef);
   }
 
-  // Call the corresponding routine of the underlying structure.
+  //Call the corresponding routine of the underlying structure.
   *status=openEventFile(&ef->generic, filename, access_mode);
   CHECK_STATUS_RET(*status, ef);
 
-  // Determine the CoMa-specific elements of the event list.
-  // Determine the individual column numbers:
-  // REQUIRED columns:
+  //Determine the CoMa-specific elements of the event list.
+  //Determine the individual column numbers:
+  //REQUIRED columns:
   fits_get_colnum(ef->generic.fptr, CASEINSEN, "TIME", &ef->ctime, status);
   fits_get_colnum(ef->generic.fptr, CASEINSEN, "CHARGE", &ef->ccharge, status);
   fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWX", &ef->crawx, status); 
@@ -87,7 +88,9 @@ int addCoMaEvent2File(CoMaEventFile* ef, CoMaEvent* event)
   // Insert a new, empty row to the table:
   if (fits_insert_rows(ef->generic.fptr, ef->generic.row, 1, &status)) 
     return(status);
+  //set internal row counter one element further
   ef->generic.row++;
+  //increase number of data-sets in the event-file
   ef->generic.nrows++;
 
   if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 

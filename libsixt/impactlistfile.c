@@ -109,7 +109,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
     }
   }
 
-  // Create a new event list FITS file from the template.
+  // Create a new impact list FITS file from the template.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/impactlist.tpl");
   fits_create_file(&file->fptr, buffer, status);
@@ -132,7 +132,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
       }
     }
   } 
-  // END of writing time information to Event File FITS header.
+  // END of writing time information to Impact File FITS header.
 
   // Add header information about program parameters.
   // The second parameter "1" means that the headers are written

@@ -61,7 +61,8 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
 		   erodetbkgrndgen.c phgen.c phimg.c phdet.c phproj.c	\
 		   phpat.c event.c pattern.c ladsignal.c ladevent.c	\
 		   ladimpact.c lad.c lad_init.c xmlbuffer.c		\
-		   spectrum.c gti.c sourceimage.c
+		   spectrum.c gti.c sourceimage.c det_phi_max.c		\
+		   attitudecatalog2.c reconstruction.c
 
 libsixt_la_LIBADD =@top_builddir@/extlib/heainit/libhdinit.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/heaio/libhdio.la
@@ -91,5 +92,6 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		kdtreeelement.h sourcecatalog.h source.h		\
 		linkedpholist.h linkedladsiglist.h erodetbkgrndgen.h	\
 		phgen.h phimg.h phdet.h phproj.h phpat.h lad.h		\
-		xmlbuffer.h spectrum.h gti.h sourceimage.h
+		xmlbuffer.h spectrum.h gti.h sourceimage.h		\
+		det_phi_max.h attitudecatalog2.c reconstruction.h			
 

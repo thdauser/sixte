@@ -3,6 +3,7 @@
 
 SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const status)
 {
+  //Memory-allocation
   SquarePixels* sp=(SquarePixels*)malloc(sizeof(SquarePixels));
   if (NULL==sp) {
     *status=EXIT_FAILURE;
@@ -10,11 +11,11 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
 		   "data structure!\n", *status);
     return(sp);
   }
-  // Set initial values.
+  //Set initial values.
   sp->array=NULL;
   sp->line2readout=NULL;
 
-  // Set the array dimensions:
+  //Set the array dimensions via SquarePixelsParameters:
   sp->xwidth = spp->xwidth;
   sp->ywidth = spp->ywidth;
   sp->xoffset = spp->xwidth/2;
@@ -22,7 +23,8 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
   sp->xpixelwidth = spp->xpixelwidth;
   sp->ypixelwidth = spp->ypixelwidth;
 
-  // Get the memory for the pixels:
+  //Get the memory for the pixels(xwidth x ywidth):
+  //Rows:size of one pixel * number of pixels in x-direction
   sp->array = (SquarePixel**)malloc(sp->xwidth*sizeof(SquarePixel*));
   if (NULL==sp->array) {
     *status = EXIT_FAILURE;
@@ -31,6 +33,8 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
     return(sp);
   } else {
     int count;
+    //Columns:size of one pixel * number of pixels in y-direction,
+    //for each column
     for(count=0; count<sp->xwidth; count++) {
       sp->array[count] = (SquarePixel*)malloc(sp->ywidth*sizeof(SquarePixel));
       if (NULL==sp->array[count]) {
@@ -51,7 +55,8 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
     return(sp);
   }
 
-  // Clear the pixels.
+  //Clear the pixels.
+  //First row:clears all columns, next row: all columns, ...
   clearSquarePixels(sp);
 
   return(sp);
@@ -321,6 +326,10 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
 
 int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 {
+  //position.x and .y is with reference to the middle of the detector and in meters
+  //first: determine position in terms of pixels
+  //second: shift position because of different origin
+  //third: ensure that there will be no error with the type-cast (int rounds to lower value)
   *x = (int)(position.x/sp->xpixelwidth + sp->xwidth*0.5 +1.)-1;
   *y = (int)(position.y/sp->ypixelwidth + sp->ywidth*0.5 +1.)-1;
  

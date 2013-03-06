@@ -74,5 +74,14 @@ int getCodedMaskImpactPos(struct Point2d* const position,
 			  const float focal_length,
 			  int* const status);
 
+int getImpactPos (struct Point2d* const position,
+		  const Vector* const phodir,
+		  const CodedMask* const mask, 
+		  const struct Telescope* const telescope,
+		  const float distance,
+		  const float x_det,
+		  const float y_det,
+		  int* const status);
+
 
 #endif /* CODEDMASK_H */

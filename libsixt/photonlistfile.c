@@ -49,6 +49,7 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 				   const int access_mode,
 				   int* const status)
 {
+
   PhotonListFile* plf=newPhotonListFile(status);
   CHECK_STATUS_RET(*status, plf);
   
@@ -88,7 +89,6 @@ PhotonListFile* openPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
   fits_get_colnum(plf->fptr, CASEINSEN, "SRC_ID", &plf->csrc_id, status);
   CHECK_STATUS_RET(*status, plf);
-
   return(plf);
 }
 
@@ -198,7 +198,7 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
   ph->src_id = 0;
   if (fits_read_col(plf->fptr, TLONG, plf->csrc_id, row, 1, 1, 
 		    &ph->src_id, &ph->src_id, &anynul, &status)) return(status);
-
+  
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     SIXT_ERROR("reading from event list failed");
