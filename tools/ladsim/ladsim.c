@@ -167,6 +167,7 @@ static inline int ladphdet(const LAD* const lad,
 			   LADSignal** const sig,
 			   const double timezero,
 			   const double mjdref,
+			   long* nbkgevts,
 			   int* const status)
 {
   // The charge distribution among the neighboring anodes implemented 
@@ -312,6 +313,9 @@ static inline int ladphdet(const LAD* const lad,
       copyLADSignal(&(newel->signal), &newsignal);
       newel->next=*el;
       *el=newel;
+
+      // Count the number of background events.
+      (*nbkgevts)++;
 
       // Determine the time of the next background event.
       int failed=
@@ -757,6 +761,10 @@ int ladsim_main()
   // Output file for progress status.
   FILE* progressfile=NULL;
 
+  // Number of simulated background events.
+  long nbkgevts=0;
+
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
@@ -1174,8 +1182,8 @@ int ladsim_main()
       // Determine the signals at the individual anodes.
       do {
 	LADSignal* signal=NULL;
-	int done_det=ladphdet(lad, imp, &signal, 
-			      par.TIMEZERO, par.MJDREF, &status);
+	int done_det=ladphdet(lad, imp, &signal, par.TIMEZERO, par.MJDREF,
+			      &nbkgevts, &status);
 	CHECK_STATUS_BREAK(status);
 	  
 	if (1==done_det) {
@@ -1268,7 +1276,10 @@ int ladsim_main()
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
+  if (status==EXIT_SUCCESS) {
+    printf("number of background events: %ld\n", nbkgevts);
+    headas_chat(3, "finished successfully!\n\n");
+  }
   return(status);
 }
 
