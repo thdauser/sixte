@@ -8,12 +8,11 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
-pfilesdir=PFILESDIR@
+pfilesdir=@PFILESDIR@
 dist_pfiles_DATA=photonmerge.par
 
 ############ BINARIES #################
