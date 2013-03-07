@@ -378,4 +378,3 @@ void copyEvents2PatternFile(const EventListFile* const elf,
   freePattern(&pattern);
 }
 
-

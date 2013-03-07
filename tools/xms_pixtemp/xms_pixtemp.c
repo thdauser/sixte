@@ -20,19 +20,20 @@ int xms_pixtemp_main() {
     status=xms_pixtemp_getpar(&parameters);
     CHECK_STATUS_BREAK(status);
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(1);
+    // Initialize the random number generator.
+    sixt_init_rng((int)time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Open the event file.
     elf=openEventListFile(parameters.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read the EBOUNDS from the detector response file.
-    struct RMF* rmf = loadRMF(parameters.RSP, &status);
+    struct RMF* rmf=loadRMF(parameters.RSP, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the output file.
-    output_file = fopen(parameters.OutputFile, "w+");
+    output_file=fopen(parameters.OutputFile, "w+");
     if (NULL==output_file) {
       status=EXIT_FAILURE;
       SIXT_ERROR("opening the output file failed");
@@ -71,8 +72,8 @@ int xms_pixtemp_main() {
     output_file=NULL;
   }
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   return(status);
 }

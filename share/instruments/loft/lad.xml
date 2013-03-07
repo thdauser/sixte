@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- LOFT LAD version 1.11 -->
+<!-- LOFT LAD version 1.12 -->
 <instrument type="LOFT LAD">
   <telescope>
     <fov diameter="1.5"/>
@@ -18,8 +18,6 @@
         <loop variable="$jj" start="0" end="6" increment="1">
           <loop variable="$kk" start="0" end="2" increment="1">
             <module id="$jj*3+$kk" nx="4" ny="4">
-              <delay time="0." rms="0."/>
-              <border x="0." y="0."/>
               <loop variable="$ll" start="0" end="3" increment="1">
                 <loop variable="$mm" start="0" end="3" increment="1">
                   <element id="$ll*4+$mm" xdim="0.0725" ydim="0.12084" nanodes="224" xborder="0.00125" yborder="0.00615">
@@ -38,7 +36,7 @@
   <temperature value="300"/>
   <efield value="3.6e+4"/>
   <mobility value="3.e-2"/>
-  <asic deadtime="102.e-6" edeadtime="0.0" coincidencetime="150.e-9" channels="16"/>
+  <asic deadtime="41.e-6" edeadtime="0.0" coincidencetime="150.e-9" channels="112"/>
   <!-- The lower readout threshold is on purpose set to
        zero. Otherwise charge would be lost in split events, which,
        however, is already taken into account in the implemented

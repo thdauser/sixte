@@ -28,7 +28,7 @@ imgev
 evpat
 phogen
 phoimg
-wfmphovign
+comaphovign
 psfgen
 xms_pixtemp
 ero_exposure
@@ -38,6 +38,7 @@ ero_split_photonfile
 ero_merge_eventfiles
 ero_vis
 erosim
+nustarsim
 photonmerge
 hexagonal_pixel_intensity
 htrs_psfgen

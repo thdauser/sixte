@@ -8,21 +8,22 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
+#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
 pfilesdir=@PFILESDIR@
-dist_pfiles_DATA=orbatt.par
+dist_pfiles_DATA=nustarsim.par
 
 ############ BINARIES #################
 
-# The following line lists the programs that should be created and stored
-# in the 'bin' directory.
-bin_PROGRAMS=orbatt
+# The following line lists the programs that should be created and
+# stored in the 'bin' directory.
+bin_PROGRAMS=nustarsim
 
-orbatt_SOURCES=orbatt.c
-orbatt_LDADD =@top_builddir@/libsixt/libsixt.la
-orbatt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+nustarsim_SOURCES=nustarsim.c nustarsim.h
+nustarsim_LDADD =@top_builddir@/libsixt/libsixt.la
+nustarsim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+nustarsim_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
+nustarsim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

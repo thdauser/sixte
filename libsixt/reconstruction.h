@@ -7,6 +7,11 @@
 /////////////////////////////////////////////
 // Type Declarations.
 /////////////////////////////////////////////
+typedef struct {
+  double** Rmap; //the reconstruction-array data built from mask-array-data.
+  double open_fraction; //Transparency of the mask.
+                        //Ratio #(transparent pixels)/#(all pixels)
+}ReconArray;
 
 typedef struct {
   double** Rmap; //the reconstruction-array data built from mask-array-data.
@@ -16,7 +21,7 @@ typedef struct {
   double cdelt1, cdelt2; // Width of one pixel [m]
   double crpix1, crpix2; // Reference pixel [pixel]
   double crval1, crval2; // Value at reference pixel [m]
-} ReconArray;
+} ReconArrayFits;
 
 
 /////////////////////////////////////////////
@@ -25,7 +30,11 @@ typedef struct {
 
 ReconArray* newReconArray(int* const status);
 
+ReconArrayFits* newReconArrayForFits(int* const status);
+
 ReconArray* getReconArray(const CodedMask* const mask, int* const status);
+
+ReconArrayFits* getReconArrayForFits(const CodedMask* const mask, int* const status);
 
 void FreeReconArray(ReconArray* recon);
 

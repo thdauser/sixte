@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- NuSTAR version 1.2 -->
+<instrument>
+<telescope>
+<focallength value="10.14"/>
+<fov diameter="0.2"/>
+<psf filename="psf.fits"/>
+<arf filename="nustar_v2.0_infinite_1module.arf"/>
+</telescope>
+
+<detector type="CdZnTe" mode="standard">
+<dimensions xwidth="325" ywidth="325"/>
+<wcs xrpix="190.5" yrpix="135.5" xrval="0." yrval="0." xdelt="120.e-6" ydelt="120.e-6"/>
+<rmf filename="nustar_v2.0.rmf"/>
+<threshold_readout_lo_keV value="0.0"/>
+<threshold_event_lo_keV value="0.0"/>
+<readout mode="event"/>
+
+</detector>
+</instrument>

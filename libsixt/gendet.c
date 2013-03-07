@@ -22,6 +22,7 @@ GenDet* newGenDet(int* const status)
   det->line   =NULL;
   det->rmf    =NULL;
   det->elf    =NULL;
+  det->phabkg =NULL;
   det->clocklist=NULL;
   det->badpixmap=NULL;
 
@@ -65,18 +66,12 @@ void destroyGenDet(GenDet** const det)
       free((*det)->line);
     }
 
-    // Destroy the ClockList.
     destroyClockList(&(*det)->clocklist);
-
-    // Destroy the GenPixGrid.
     destroyGenPixGrid(&(*det)->pixgrid);
-
-    // Destroy the split model.
     destroyGenSplit(&(*det)->split);
-
-    // Destroy the BadPixMap.
     destroyBadPixMap(&(*det)->badpixmap);
-
+    destroyPHABkg(&(*det)->phabkg);
+    
     free(*det);
     *det=NULL;
   }
@@ -315,7 +310,7 @@ void operateGenDetClock(GenDet* const det,
     CLWait* clwait              =NULL;
 
     getClockListElement(det->clocklist, time, &type, &element, status);
-    if (EXIT_SUCCESS!=*status) return;
+    CHECK_STATUS_VOID(*status);
 
     switch (type) {
     case CL_NONE:
@@ -329,7 +324,7 @@ void operateGenDetClock(GenDet* const det,
       // If there has been no photon interaction during the last frame
       // and if no background model is activated, jump over the next empty frames
       // until there is a new photon impact.
-      if (((0==det->erobackground)||(1==det->ignore_bkg))&&
+      if ((((0==det->erobackground)&&(NULL==det->phabkg))||(1==det->ignore_bkg))&&
 	  (0==det->anyphoton)) {
 	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
 	det->clocklist->time       +=nframes*det->frametime;
@@ -345,14 +340,73 @@ void operateGenDetClock(GenDet* const det,
       // A waiting period is finished.
       clwait=(CLWait*)element;
 
+      // Insert background events, if the appropriate PHA background
+      // model is defined and should be used.
+      if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+	// Get background events for the required time interval (has
+	// to be given in [s]). The area of the detector within the 
+	// (circular) FoV has to be specified in order to determine
+	// the absolute background event rate.
+	unsigned int nevts;
+	long* bkgphas=
+	  PHABkgGetEvents(det->phabkg, clwait->time,  
+			  det->pixgrid->xwidth*det->pixgrid->xdelt*
+			  det->pixgrid->ywidth*det->pixgrid->ydelt*
+			  M_PI/4.0,
+			  &nevts, status);
+	CHECK_STATUS_VOID(*status);
+
+	unsigned int ii;
+	for (ii=0; ii<nevts; ii++) {
+	  // Determine the corresponding signal.
+	  if (NULL==det->rmf) {
+	    SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+	    *status=EXIT_FAILURE;
+	    return;
+	  }
+	  float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
+	  CHECK_STATUS_VOID(*status);
+	  
+	  // Determine a random pixel. Only pixels within the FoV are
+	  // considered. This selection is also taken into account for 
+	  // the determination of the absolute background rate.
+	  // (Note that charge cloud splitting effects are neglected.)
+	  int x, y;
+	  do {
+	    x=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	    CHECK_STATUS_VOID(*status);
+	    y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+	    CHECK_STATUS_VOID(*status);
+	  } while (pow(x-det->pixgrid->xwidth/2,2.0)+
+		   pow(y-det->pixgrid->ywidth/2, 2.0)>
+		   pow(det->pixgrid->xwidth/2, 2.0));
+
+	  // Add the signal to the pixel.
+	  addGenDetCharge2Pixel(det->line[y], x, energy, -1, -1);
+
+	  // Call the event trigger routine.
+	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
+	    GenDetReadoutPixel(det, y, y, x, time, status);
+	    CHECK_STATUS_VOID(*status);
+	    
+	    // In event-triggered mode each event occupies its own frame.
+	    det->clocklist->frame++;
+	  }
+
+	}
+	free(bkgphas);
+      }
+
       // Insert cosmic ray background events, 
       // if the appropriate model is defined and should be used.
       if ((1==det->erobackground)&&(0==det->ignore_bkg)) {
 	// Get background events for the required time interval (has
 	// to be given in [s]).
 	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
+	double cosrota=cos(det->pixgrid->rota);
+	double sinrota=sin(det->pixgrid->rota);
 	int ii;
-	for(ii = 0; ii<list->numhits; ii++) {
+	for(ii=0; ii<list->numhits; ii++) {
 
 	  // Add the signal to the detector without
 	  // regarding charge cloud splitting effects,
@@ -367,17 +421,28 @@ void operateGenDetClock(GenDet* const det,
 	  // Otherwise many invalid particle patterns will be reduced
 	  // to apparently valid event patterns, such that the overall
 	  // background is too high. 
-	  int x=getGenDetAffectedColumn(det->pixgrid, 
-					list->hit_xpos[ii]*0.001);
-	  int y=getGenDetAffectedLine  (det->pixgrid, 
-					list->hit_ypos[ii]*0.001);
+	  double xh=
+	    list->hit_xpos[ii]*0.001*cosrota+
+	    list->hit_ypos[ii]*0.001*sinrota;
+	  double yh=
+	    -list->hit_xpos[ii]*0.001*sinrota+
+	    list->hit_ypos[ii]*0.001*cosrota;	    
+	  int x, y;
+	  double xr, yr;
+	  getGenDetAffectedPixel(det->pixgrid, xh, yh,
+				 &x, &y, &xr, &yr);
+	  // Check if the pixel indices are valid or if the 
+	  // specified position lies outside the pixel area.
+	  if ((x<0) || (y<0)) continue;
+
+	  // Add the signal to the pixel.
 	  addGenDetCharge2Pixel(det->line[y], x, 
 				list->hit_energy[ii], -1, -1);
 
 	  // Call the event trigger routine.
 	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
 	    GenDetReadoutPixel(det, y, y, x, time, status);
-	    CHECK_STATUS_BREAK(*status);
+	    CHECK_STATUS_VOID(*status);
 	    
 	    // In event-triggered mode each event occupies its own frame.
 	    det->clocklist->frame++;
@@ -402,6 +467,7 @@ void operateGenDetClock(GenDet* const det,
       GenDetReadoutLine(det, clreadoutline->lineindex, 
 			clreadoutline->readoutindex, 
 			status);
+      CHECK_STATUS_VOID(*status);	    
       break;
     case CL_CLEARLINE:
       clclearline = (CLClearLine*)element;
@@ -435,12 +501,7 @@ GenSplit* newGenSplit(int* const status)
 {
   // Allocate memory.
   GenSplit* split=(GenSplit*)malloc(sizeof(GenSplit));
-  if (NULL==split) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenSplit failed!\n", 
-		   *status);
-    return(split);
-  }
+  CHECK_NULL(split, *status, "memory allocation for GenSplit failed");
 
   // Initialize all pointers with NULL.
 
@@ -504,8 +565,9 @@ int makeGenSplitEvents(GenDet* const det,
     npixels=1;
 
     // Determine the affected detector line and column.
-    x[0]=getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0]=getGenDetAffectedLine  (det->pixgrid, position->y);
+    double xr, yr;
+    getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
+			   &(x[0]), &(y[0]), &xr, &yr);
 
     // Check if the returned values are valid line and column indices.
     if ((x[0]<0) || (y[0]<0)) {
@@ -526,77 +588,73 @@ int makeGenSplitEvents(GenDet* const det,
     const float ccsize=ccsigma*3.;
 
     // Calculate pixel indices (integer) of the central affected pixel:
-    x[0]=getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0]=getGenDetAffectedLine  (det->pixgrid, position->y);
+    double xr, yr;
+    getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
+			   &(x[0]), &(y[0]), &xr, &yr);
   
     // Check if the impact position lies inside the detector pixel array.
-    if ((0>x[0]) || (0>y[0])) {
+    if ((x[0]<0) || (y[0]<0)) {
       return(0);
     }
 
     // Calculate the distances from the impact center position to the 
-    // borders of the surrounding pixel (in [m]):
+    // borders of the surrounding pixel (in [m]).
     double distances[4] = {
       // Distance to right pixel edge.
-      (x[0]-det->pixgrid->xrpix+1.5)*det->pixgrid->xdelt + 
-      det->pixgrid->xrval - position->x,
+      (1.0-xr)*det->pixgrid->xdelt,
       // Distance to upper edge.
-      (y[0]-det->pixgrid->yrpix+1.5)*det->pixgrid->ydelt + 
-      det->pixgrid->yrval - position->y,
+      (1.0-yr)*det->pixgrid->ydelt,
       // Distance to left pixel edge.
-      position->x - ((x[0]-det->pixgrid->xrpix+0.5)*det->pixgrid->xdelt + 
-		     det->pixgrid->xrval),
+      xr*det->pixgrid->xdelt,
       // distance to lower edge
-      position->y - ((y[0]-det->pixgrid->yrpix+0.5)*det->pixgrid->ydelt + 
-		     det->pixgrid->yrval)
+      yr*det->pixgrid->ydelt
     };
 
-    int mindist = getMinimumDistance(distances);
+    int mindist=getMinimumDistance(distances);
     if (distances[mindist] < ccsize) {
       // Not a single event!
-      x[1] = x[0] + xe[mindist];
-      y[1] = y[0] + ye[mindist];
+      x[1]=x[0] + xe[mindist];
+      y[1]=y[0] + ye[mindist];
 
-      double mindistgauss = gaussint(distances[mindist]/ccsigma);
+      double mindistgauss=gaussint(distances[mindist]/ccsigma);
 
       // Search for the next to minimum distance to an edge.
-      double minimum = distances[mindist];
-      distances[mindist] = -1.;
-      int secmindist = getMinimumDistance(distances);
-      distances[mindist] = minimum;
+      double minimum=distances[mindist];
+      distances[mindist]=-1.;
+      int secmindist=getMinimumDistance(distances);
+      distances[mindist]=minimum;
 
-      if (distances[secmindist] < ccsize) {
+      if (distances[secmindist]<ccsize) {
 	// Quadruple!
-	npixels = 4;
+	npixels=4;
 
-	x[2] = x[0] + xe[secmindist];
-	y[2] = y[0] + ye[secmindist];
-	x[3] = x[1] + xe[secmindist];
-	y[3] = y[1] + ye[secmindist];
+	x[2]=x[0] + xe[secmindist];
+	y[2]=y[0] + ye[secmindist];
+	x[3]=x[1] + xe[secmindist];
+	y[3]=y[1] + ye[secmindist];
 
 	// Calculate the different signal fractions in the 4 affected pixels.
-	double secmindistgauss = gaussint(distances[secmindist]/ccsigma);
-	fraction[0] = (1.-mindistgauss)*(1.-secmindistgauss);
-	fraction[1] =     mindistgauss *(1.-secmindistgauss);
-	fraction[2] = (1.-mindistgauss)*    secmindistgauss ;
-	fraction[3] =     mindistgauss *    secmindistgauss ;
+	double secmindistgauss=gaussint(distances[secmindist]/ccsigma);
+	fraction[0]=(1.-mindistgauss)*(1.-secmindistgauss);
+	fraction[1]=    mindistgauss *(1.-secmindistgauss);
+	fraction[2]=(1.-mindistgauss)*    secmindistgauss ;
+	fraction[3]=    mindistgauss *    secmindistgauss ;
 
       } else {
 	// Double!
-	npixels = 2;
+	npixels=2;
 
-	fraction[0] = 1. - mindistgauss;
-	fraction[1] =      mindistgauss;
+	fraction[0]=1. - mindistgauss;
+	fraction[1]=     mindistgauss;
 
-      } // END of double or Quadruple
+      } // END of Double or Quadruple.
 
     } else {
       // Single event!
-      npixels = 1;
-      fraction[0] = 1.;
-      
+      npixels=1;
+      fraction[0]=1.;      
     } 
-    // END of check for single event
+    // END of check for Single event.
 
     // END of Gaussian split model.
 
@@ -606,36 +664,33 @@ int makeGenSplitEvents(GenDet* const det,
     // (concept proposed by Konrad Dennerl).
     npixels=4;
 
-    // Calculate pixel indices (integer) of central affected pixel:
-    x[0] = getGenDetAffectedColumn(det->pixgrid, position->x);
-    y[0] = getGenDetAffectedLine  (det->pixgrid, position->y);
+    // Calculate pixel indices (integer) of central affected pixel.
+    double xr, yr;
+    getGenDetAffectedPixel(det->pixgrid, position->x, position->y,
+			   &(x[0]), &(y[0]), &xr, &yr);
   
     // Check if the impact position lies inside the detector pixel array.
-    if ((0>x[0]) || (0>y[0])) {
+    if ((x[0]<0) || (y[0]<0)) {
       return(0);
     }
 
     // Calculate the distances from the impact center position to the 
-    // borders of the surrounding pixel (in units [fraction of a pixel edge]):
+    // borders of the surrounding pixel (in units [fraction of a pixel edge]).
     double distances[4] = {
       // Distance to right pixel edge.
-      x[0]-det->pixgrid->xrpix+1.5 + 
-      (det->pixgrid->xrval - position->x)/det->pixgrid->xdelt,
+      (1.0-xr),
       // Distance to upper edge.
-      y[0]-det->pixgrid->yrpix+1.5 + 
-      (det->pixgrid->yrval - position->y)/det->pixgrid->ydelt,
+      (1.0-yr),
       // Distance to left pixel edge.
-      (position->x - det->pixgrid->xrval)/det->pixgrid->xdelt - 
-      (x[0]-det->pixgrid->xrpix+0.5),
+      xr,
       // distance to lower edge
-      (position->y - det->pixgrid->yrval)/det->pixgrid->ydelt - 
-      (y[0]-det->pixgrid->yrpix+0.5)
+      yr
     };
 
     // Search for the minimum distance to the edges.
-    int mindist = getMinimumDistance(distances);
-    x[1] = x[0] + xe[mindist];
-    y[1] = y[0] + ye[mindist];
+    int mindist=getMinimumDistance(distances);
+    x[1]=x[0] + xe[mindist];
+    y[1]=y[0] + ye[mindist];
 
     // Search for the next to minimum distance to the edges.
     double minimum = distances[mindist];

@@ -8,6 +8,9 @@ void phproj(GenInst* const inst,
 	    const double exposure,
 	    int* const status)
 {
+  const double cosrota=cos(inst->det->pixgrid->rota);
+  const double sinrota=sin(inst->det->pixgrid->rota);
+
   // LOOP over all patterns in the FITS table.
   long row;
   for (row=0; row<plf->nrows; row++) {
@@ -28,20 +31,22 @@ void phproj(GenInst* const inst,
     CHECK_STATUS_BREAK(*status);
 
     // Determine RA and DEC of the photon origin.
-    // Exact position on the detector:
-    struct Point2d detpos;
-    detpos.x = // in [m]
+    // Exact position on the detector.
+    double xb=
       (pattern.rawx*1.-inst->det->pixgrid->xrpix
-       +0.5+sixt_get_random_number(status))*
-      inst->det->pixgrid->xdelt + 
-      inst->det->pixgrid->xrval;
+       +0.5+sixt_get_random_number(status))*inst->det->pixgrid->xdelt;
     CHECK_STATUS_BREAK(*status);
-    detpos.y = // in [m]
+    double yb=
       (pattern.rawy*1.-inst->det->pixgrid->yrpix
-       +0.5+sixt_get_random_number(status))*
-      inst->det->pixgrid->ydelt + 
-      inst->det->pixgrid->yrval;
+       +0.5+sixt_get_random_number(status))*inst->det->pixgrid->ydelt;
     CHECK_STATUS_BREAK(*status);
+    
+    double xr= cosrota*xb + sinrota*yb;
+    double yr=-sinrota*xb + cosrota*yb;
+    
+    struct Point2d detpos;
+    detpos.x=xr + inst->det->pixgrid->xrval; // in [m]      
+    detpos.y=yr + inst->det->pixgrid->yrval; // in [m]
     
     // Determine the source position on the sky using the telescope 
     // axis pointing vector and a vector from the point of the intersection 

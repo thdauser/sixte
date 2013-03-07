@@ -253,9 +253,9 @@ int ero_exposure_main()
 	     par.fov_diameter)/2.);
     }
 
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
-    HDmtInit(1);
+    // Initialize the random number generator.
+    sixt_init_rng((int)time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
     char ucase_buffer[MAXFILENAME];
@@ -317,9 +317,13 @@ int ero_exposure_main()
 
 
     // Load the Vignetting data.
-    if (0<strlen(par.Vignetting)) {
-      vignetting=newVignetting(par.Vignetting, &status);
-      CHECK_STATUS_BREAK(status);
+    if (strlen(par.Vignetting)>0) {
+      strcpy(ucase_buffer, par.Vignetting);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	vignetting=newVignetting(par.Vignetting, &status);
+	CHECK_STATUS_BREAK(status);
+      }
     }
 
     // --- END of Initialization ---
@@ -391,15 +395,15 @@ int ero_exposure_main()
 	    // Pixel lies inside the FOV!
 	
 	    // Calculate the off-axis angle ([rad])
-	    double delta = acos(scalar_product(&telescope_nz, &pixpos));
+	    double delta=acos(scalar_product(&telescope_nz, &pixpos));
 	
 	    // Add the exposure time step weighted with the vignetting
 	    // factor for this particular off-axis angle at 1 keV.
-	    double addvalue = par.dt;
+	    double addvalue=par.dt;
 	    if (NULL!=vignetting) {
-	      addvalue *= get_Vignetting_Factor(vignetting, 1., delta, 0.);
+	      addvalue*=get_Vignetting_Factor(vignetting, 1., delta, 0.);
 	    }
-	    expoMap[x][y] += addvalue;
+	    expoMap[x][y]+=addvalue;
 	  }
 	}
 	CHECK_STATUS_BREAK(status);  
@@ -467,8 +471,8 @@ int ero_exposure_main()
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Release memory.
   freeAttitudeCatalog(&ac);

@@ -1,12 +1,12 @@
-#ifndef WFMPHOVIGN_H
-#define WFMPHOVIGN_H 1
+#ifndef COMAPHOVIGN_H
+#define COMAPHOVIGN_H 1
 
 
 #include "sixt.h"
 #include "attitudecatalog.h"
 #include "photonlistfile.h"
 
-#define TOOLSUB wfmphovign_main
+#define TOOLSUB comaphovign_main
 #include "headas_main.c"
 
 
@@ -17,6 +17,11 @@ struct Parameters {
 
   /** [deg] */
   float RA, Dec;
+
+  /** Flag whether the time information of the photons should be
+      copied to the output file. The time column might be omitted in
+      order to save memory. */
+  char TimeColumn;
 
   int Seed;
   
@@ -30,7 +35,7 @@ struct Parameters {
 
 
 /** Reads the program parameters using PIL. */
-int wfmphovign_getpar(struct Parameters* parameters);
+int comaphovign_getpar(struct Parameters* parameters);
 
 
-#endif /* WFMPHOVIGN_H */
+#endif /* COMAPHOVIGN_H */

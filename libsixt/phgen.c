@@ -27,7 +27,7 @@ int phgen(AttitudeCatalog* const ac,
   // given source catalog.
   while((NULL==pholist)&&(time<tend)) {
     // Determine the telescope pointing at the current point of time.
-    Vector pointing = getTelescopeNz(ac, time, status);
+    Vector pointing=getTelescopeNz(ac, time, status);
     CHECK_STATUS_BREAK(*status);
 
     // Display the program progress status.
@@ -66,7 +66,7 @@ int phgen(AttitudeCatalog* const ac,
   // Delete the processed element.
   LinkedPhoListElement* next=pholist->next;
   free(pholist);
-  pholist = next;
+  pholist=next;
 
   // Set the photon ID.
   ph->ph_id=++ph_id;

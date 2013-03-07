@@ -14,16 +14,16 @@ AM_CFLAGS+=-Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir=@PFILESDIR@
-dist_pfiles_DATA=wfmphovign.par
+dist_pfiles_DATA=comaphovign.par
 
 ############ BINARIES #################
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS=wfmphovign
+bin_PROGRAMS=comaphovign
 
-wfmphovign_SOURCES=wfmphovign.c wfmphovign.h
-wfmphovign_LDADD =@top_builddir@/libsixt/libsixt.la
-wfmphovign_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
-wfmphovign_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-wfmphovign_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+comaphovign_SOURCES=comaphovign.c comaphovign.h
+comaphovign_LDADD =@top_builddir@/libsixt/libsixt.la
+comaphovign_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+comaphovign_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
+comaphovign_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la

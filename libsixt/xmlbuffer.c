@@ -8,7 +8,7 @@ void addString2XMLBuffer(struct XMLBuffer* const buffer,
   // Check if a valid buffer is specified.
   if (NULL==buffer) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: NULL pointer to XMLBuffer!\n", *status);
+    SIXT_ERROR("NULL pointer to XMLBuffer");
     return;
   }
     
@@ -18,7 +18,7 @@ void addString2XMLBuffer(struct XMLBuffer* const buffer,
     buffer->text=(char*)malloc((MAXMSG+1)*sizeof(char));
     if (NULL==buffer->text) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
+      SIXT_ERROR("memory allocation for XMLBuffer failed");
       return;
     }
     buffer->text[0]='\0';
@@ -32,7 +32,7 @@ void addString2XMLBuffer(struct XMLBuffer* const buffer,
     buffer->text=(char*)realloc(buffer->text, (new_length+1)*sizeof(char));
     if (NULL==buffer->text) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
+      SIXT_ERROR("memory allocation for XMLBuffer failed");
       return;
     }
     buffer->maxlength=new_length;
@@ -48,11 +48,11 @@ static void copyXMLBuffer(struct XMLBuffer* const destination,
 			  int* const status)
 {
   // Adapt memory size.
-  destination->text = (char*)realloc(destination->text,
-				     (source->maxlength+1)*sizeof(char));
+  destination->text=(char*)realloc(destination->text,
+				   (source->maxlength+1)*sizeof(char));
   if (NULL==destination->text) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: memory allocation for XMLBuffer failed!\n", *status);
+    SIXT_ERROR("memory allocation for XMLBuffer failed");
     return;
   }
   destination->maxlength=source->maxlength;
@@ -64,10 +64,11 @@ static void copyXMLBuffer(struct XMLBuffer* const destination,
 
 struct XMLBuffer* newXMLBuffer(int* const status)
 {
-  struct XMLBuffer* buffer=(struct XMLBuffer*)malloc(sizeof(struct XMLBuffer));
+  struct XMLBuffer* buffer=
+    (struct XMLBuffer*)malloc(sizeof(struct XMLBuffer));
   if (NULL==buffer) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for XMLBuffer failed!\n", *status);
+    SIXT_ERROR("memory allocation for XMLBuffer failed");
     return(buffer);
   }
 
@@ -142,7 +143,7 @@ static void expandXMLElementStart(void* data, const char* el,
       if (((mydata->loop_end-mydata->loop_start)*mydata->loop_increment<0) ||
 	  (0==mydata->loop_increment)){
 	mydata->status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: Invalid XML loop parameters!\n", mydata->status);
+	SIXT_ERROR("invalid XML loop parameters");
 	return;
       }
       mydata->loop_depth++;
@@ -167,7 +168,7 @@ static void expandXMLElementStart(void* data, const char* el,
   char buffer[MAXMSG];
   if (sprintf(buffer, "<%s", el) >= MAXMSG) {
     mydata->status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: XML element string too long!\n", EXIT_FAILURE);
+    SIXT_ERROR("XML element string too long");
     return;
   }
   addString2XMLBuffer(output, buffer, &mydata->status);
@@ -177,7 +178,7 @@ static void expandXMLElementStart(void* data, const char* el,
   while(attr[ii]) {
     if (sprintf(buffer, " %s=\"%s\"", attr[ii], attr[ii+1]) >= MAXMSG) {
       mydata->status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: XML element string too long!\n", EXIT_FAILURE);
+      SIXT_ERROR("XML element string too long");
       return;
     }
     addString2XMLBuffer(output, buffer, &mydata->status);
@@ -207,17 +208,19 @@ static void replaceInXMLBuffer(struct XMLBuffer* const buffer,
     // Get the length of the tail.
     int len_tail = strlen(occurence)-len_old;
 
-    // String tail after the first occurence of the old string in the buffer text.
+    // String tail after the first occurence of the old string 
+    // in the buffer text.
     char* tail=(char*)malloc((1+len_tail)*sizeof(char));
     if (NULL==tail) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Memory allocation for string buffer in XML "
-		     "pre-parsing failed!\n", *status);
+      SIXT_ERROR("memory allocation for string buffer in XML "
+		 "pre-parsing failed");
       return;
     }
     // Copy the tail of the string without the old string to the buffer.
     strcpy(tail, &occurence[len_old]);
-    // Truncate the buffer string directly before the occurence of the old string.
+    // Truncate the buffer string directly before the occurence 
+    // of the old string.
     occurence[0] = '\0';
     // Append the new string to the truncated buffer string.
     addString2XMLBuffer(buffer, new, status);
@@ -397,17 +400,19 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
     // Get the length of the tail.
     int len_tail = strlen(end)-1;
 
-    // String tail after the first occurrence of the old string in the buffer text.
+    // String tail after the first occurrence of the old string 
+    // in the buffer text.
     char* tail=(char*)malloc((1+len_tail)*sizeof(char));
     if (NULL==tail) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Memory allocation for string buffer in XML "
-		     "pre-parsing failed!\n", *status);
+      SIXT_ERROR("memory allocation for string buffer in XML "
+		 "pre-parsing failed");
       return;
     }
     // Copy the tail of the string without the old string to the buffer.
     strcpy(tail, &end[1]);
-    // Truncate the buffer string directly before the occurrence of the old string.
+    // Truncate the buffer string directly before the occurrence 
+    // of the old string.
     start[0] = '\0';
     // Append the new string to the truncated buffer string.
     addString2XMLBuffer(buffer, svalue, status);
@@ -493,7 +498,7 @@ static void expandXMLElementEnd(void* data, const char* el)
   char buffer[MAXMSG];
   if (sprintf(buffer, "</%s>", el) >= MAXMSG) {
     mydata->status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: XML string element too long!\n", EXIT_FAILURE);
+    SIXT_ERROR("XML string element too long");
     return;
   }
   addString2XMLBuffer(output, buffer, &mydata->status);
@@ -512,7 +517,7 @@ void expandXML(struct XMLBuffer* const buffer, int* const status)
     XML_Parser parser = XML_ParserCreate(NULL);
     if (NULL==parser) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: Could not allocate memory for XML parser!\n", *status);
+      SIXT_ERROR("could not allocate memory for XML parser");
       return;
     }
 
@@ -541,7 +546,7 @@ void expandXML(struct XMLBuffer* const buffer, int* const status)
       sprintf(msg, "Error: Parsing XML code failed:\n%s\n", 
 	      XML_ErrorString(XML_GetErrorCode(parser)));
       printf("%s", buffer->text);
-      HD_ERROR_THROW(msg, *status);
+      SIXT_ERROR(msg);
       return;
     }
     // Check for errors.

@@ -283,13 +283,6 @@ void parseGenInstXML(GenInst* const inst,
     headas_printf("*** warning: no specification of y reference pixel\n");
   }
 
-  if (0.==inst->det->pixgrid->xrval) {
-    headas_printf("*** warning: no specification of x reference value\n");
-  }
-  if (0.==inst->det->pixgrid->yrval) {
-    headas_printf("*** warning: no specification of y reference value\n");
-  }
-
   if (0.==inst->det->pixgrid->xdelt) {
     headas_printf("*** warning: no specification of pixel x-width\n");
   }
@@ -407,17 +400,27 @@ static void GenInstXMLElementStart(void* parsedata,
       
   } else if (!strcmp(Uelement, "DIMENSIONS")) {
 
-    xmlparsedata->inst->det->pixgrid->xwidth=getXMLAttributeInt(attr, "XWIDTH");
-    xmlparsedata->inst->det->pixgrid->ywidth=getXMLAttributeInt(attr, "YWIDTH");
+    xmlparsedata->inst->det->pixgrid->xwidth=
+      getXMLAttributeInt(attr, "XWIDTH");
+    xmlparsedata->inst->det->pixgrid->ywidth=
+      getXMLAttributeInt(attr, "YWIDTH");
       
   } else if (!strcmp(Uelement, "WCS")) {
 
-    xmlparsedata->inst->det->pixgrid->xrpix=getXMLAttributeFloat(attr, "XRPIX");
-    xmlparsedata->inst->det->pixgrid->yrpix=getXMLAttributeFloat(attr, "YRPIX");
-    xmlparsedata->inst->det->pixgrid->xrval=getXMLAttributeFloat(attr, "XRVAL");
-    xmlparsedata->inst->det->pixgrid->yrval=getXMLAttributeFloat(attr, "YRVAL");
-    xmlparsedata->inst->det->pixgrid->xdelt=getXMLAttributeFloat(attr, "XDELT");
-    xmlparsedata->inst->det->pixgrid->ydelt=getXMLAttributeFloat(attr, "YDELT");
+    xmlparsedata->inst->det->pixgrid->xrpix=
+      getXMLAttributeFloat(attr, "XRPIX");
+    xmlparsedata->inst->det->pixgrid->yrpix=
+      getXMLAttributeFloat(attr, "YRPIX");
+    xmlparsedata->inst->det->pixgrid->xrval=
+      getXMLAttributeFloat(attr, "XRVAL");
+    xmlparsedata->inst->det->pixgrid->yrval=
+      getXMLAttributeFloat(attr, "YRVAL");
+    xmlparsedata->inst->det->pixgrid->xdelt=
+      getXMLAttributeFloat(attr, "XDELT");
+    xmlparsedata->inst->det->pixgrid->ydelt=
+      getXMLAttributeFloat(attr, "YDELT");
+    xmlparsedata->inst->det->pixgrid->rota=
+      getXMLAttributeFloat(attr, "ROTA")*M_PI/180.;
 	
   } else if (!strcmp(Uelement, "PIXELBORDER")) {
 
@@ -428,19 +431,35 @@ static void GenInstXMLElementStart(void* parsedata,
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for RMF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->det->rmf=loadRMF(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "ARF")) {
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for ARF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->tel->arf=loadARF(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "PSF")) {
     
@@ -454,32 +473,56 @@ static void GenInstXMLElementStart(void* parsedata,
     }
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for PSF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->tel->psf= 
       newPSF(filepathname, xmlparsedata->inst->tel->focal_length, 
 	     &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "CODEDMASK")) {
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for coded mask");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->tel->coded_mask = 
       getCodedMaskFromFile(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for vignetting");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->tel->vignetting =
       newVignetting(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "FOCALLENGTH")) {
 
@@ -498,6 +541,13 @@ static void GenInstXMLElementStart(void* parsedata,
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for bad pixel map");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -510,6 +560,13 @@ static void GenInstXMLElementStart(void* parsedata,
     if (0==eroBkgInitialized) {
       char filename[MAXFILENAME];
       getXMLAttributeString(attr, "FILENAME", filename);
+
+      // Check if a file name has been specified.
+      if (strlen(filename)==0) {
+	SIXT_ERROR("no file specified for eROSITA detector background");
+	xmlparsedata->status=EXIT_FAILURE;
+      }
+
       char filepathname[MAXFILENAME];
       strcpy(filepathname, xmlparsedata->inst->filepath);
       strcat(filepathname, filename);
@@ -519,6 +576,26 @@ static void GenInstXMLElementStart(void* parsedata,
     }
 
     xmlparsedata->inst->det->erobackground=1;
+
+  } else if (!strcmp(Uelement, "PHABACKGROUND")) {
+
+    if (0==eroBkgInitialized) {
+      char filename[MAXFILENAME];
+      getXMLAttributeString(attr, "FILENAME", filename);
+
+      // Check if a file name has been specified.
+      if (strlen(filename)==0) {
+	SIXT_ERROR("no file specified for PHA detector background");
+	xmlparsedata->status=EXIT_FAILURE;
+      }
+
+      char filepathname[MAXFILENAME];
+      strcpy(filepathname, xmlparsedata->inst->filepath);
+      strcat(filepathname, filename);
+      xmlparsedata->inst->det->phabkg=
+	newPHABkg(filepathname, &xmlparsedata->status);
+      CHECK_STATUS_VOID(xmlparsedata->status);
+    }
 
   } else if (!strcmp(Uelement, "SPLIT")) {
 

@@ -76,7 +76,8 @@ long getEBOUNDSChannel(const float energy, const struct RMF* const rmf)
   if (NULL==rmf) return(-1);
 
   // Check if the charge is outside the range of the energy bins defined
-  // in the EBOUNDS table. In that case the return value of this function is '-1'.
+  // in the EBOUNDS table. In that case the return value of this function 
+  // is '-1'.
   if (rmf->ChannelLowEnergy[0] > energy) {
     return(-1);
   } else if (rmf->ChannelHighEnergy[rmf->NumberChannels-1] < energy) {
@@ -128,13 +129,9 @@ float getEBOUNDSEnergy(long channel,
 }
 
 
-void returnRMFChannel(struct RMF *rmf, const float energy, 
+void returnRMFChannel(struct RMF *rmf, 
+		      const float energy, 
 		      long* const channel)
 {
   ReturnChannel(rmf, energy, 1, channel);
-
-  // Due to a bug in the HEAdas heasp ReturnChannel() routine,
-  // we have to subtract the FirstChannel in order to get the
-  // right value.
-  *channel -= rmf->FirstChannel;
 }

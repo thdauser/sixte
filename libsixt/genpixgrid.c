@@ -2,22 +2,6 @@
 
 
 ////////////////////////////////////////////////////////////////////
-// Static function declarations
-////////////////////////////////////////////////////////////////////
-
-
-/** Return the index of the bin affected by the specified
-    x-position. The bin grid is defined by the following WCS compliant
-    values: reference pixel (rpix), reference value (rval), and pixel
-    delta (delt). If the specified x-value is outside the bins, the
-    function return value is -1. If the photon impact lies on the
-    pixel border the return valus is -1. */
-static inline int getAffectedIndex(const double x, const float rpix, 
-				   const float rval, const float delt, 
-				   const float border, const int width);
-
-
-////////////////////////////////////////////////////////////////////
 // Program Code
 ////////////////////////////////////////////////////////////////////
 
@@ -27,8 +11,8 @@ GenPixGrid* newGenPixGrid(int* const status)
   // Allocate memory.
   GenPixGrid* grid=(GenPixGrid*)malloc(sizeof(GenPixGrid));
   if (NULL==grid) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for GenPixGrid failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for GenPixGrid failed");
     return(grid);
   }
 
@@ -43,6 +27,7 @@ GenPixGrid* newGenPixGrid(int* const status)
   grid->yrval =0.;
   grid->xdelt =0.;
   grid->ydelt =0.;
+  grid->rota  =0.;
   grid->xborder=0.;
   grid->yborder=0.;
 
@@ -59,35 +44,63 @@ void destroyGenPixGrid(GenPixGrid** const grid)
 }
 
 
-static inline int getAffectedIndex(const double x, const float rpix, 
-				   const float rval, const float delt, 
-				   const float border, const int width)
+void getGenDetAffectedPixel(const GenPixGrid* const grid, 
+			    const double x,
+			    const double y,
+			    int* const xi,
+			    int* const yi,
+			    double* const xp,
+			    double* const yp)
 {
-  int index = ((int)((x+ (rpix-0.5)*delt -rval)/delt +1.))-1;
-  //                  avoid (int)(-0.5) = 0     <-----|----|
-  if (index>=width) { 
-    index=-1; 
-  } else if (border>0.) {
-    // Check if the impact is located on the pixel border. 
-    if ((rval+(index-rpix+1.5)*delt-x<border) ||
-	(x-rval+(index-rpix+0.5)*delt<border)) {
-      index=-1;
+  // Calculate the distance to the reference point [m].
+  double xd=x-grid->xrval;
+  double yd=y-grid->yrval;
+
+  // Rotate around the reference point [m].
+  double cosrota=cos(grid->rota);
+  double sinrota=sin(grid->rota);
+  double xr=xd*cosrota - yd*sinrota;
+  double yr=xd*sinrota + yd*cosrota;
+
+  // Calculate the real valued pixel indices.
+  double xb=xr/grid->xdelt + (grid->xrpix-0.5);
+  double yb=yr/grid->ydelt + (grid->yrpix-0.5);
+
+  // Calculate the integer pixel indices.
+  *xi=((int)(xb +1.))-1;
+  *yi=((int)(yb +1.))-1;
+  //             |----|---->  avoid (int)(-0.5) = 0
+
+
+  // Check if this is a valid pixel.
+  if ((*xi>=grid->xwidth) || (*xi<0) || (*yi>=grid->ywidth) || (*yi<0)) { 
+    *xi=-1; 
+    *yi=-1;
+    return;
+  } 
+
+  // Check if the impact is located on the pixel border. 
+  else if (grid->xborder>0.) {
+    if ((grid->xrval+(*xi-grid->xrpix+1.5)*grid->xdelt-x<grid->xborder) ||
+	(x-grid->xrval+(*xi-grid->xrpix+0.5)*grid->xdelt<grid->xborder)) {
+      *xi=-1;
+      *yi=-1;
+      return;
     }
   }
-  return(index);
-}
+  else if (grid->yborder>0.) {
+    if ((grid->yrval+(*yi-grid->yrpix+1.5)*grid->ydelt-y<grid->yborder) ||
+	(y-grid->yrval+(*yi-grid->yrpix+0.5)*grid->ydelt<grid->yborder)) {
+      *xi=-1;
+      *yi=-1;
+      return;
+    }
+  }
 
 
-int getGenDetAffectedLine(const GenPixGrid* const grid, const double y)
-{
-  return(getAffectedIndex(y, grid->yrpix, grid->yrval, grid->ydelt, 
-			  grid->yborder, grid->ywidth));
-}
-
-
-int getGenDetAffectedColumn(const GenPixGrid* const grid, const double x)
-{
-  return(getAffectedIndex(x, grid->xrpix, grid->xrval, grid->xdelt, 
-			  grid->xborder, grid->xwidth));
+  // Calculate the relative position with respect to the left 
+  // and lower pixel boundaries.
+  *xp=xb-1.0*(*xi);
+  *yp=yb-1.0*(*yi);
 }
 

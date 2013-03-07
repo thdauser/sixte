@@ -19,16 +19,16 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
   // Calculate the minimum cos-value for sources inside the FOV: 
   // (angle(x0,source) <= 1/2 * diameter)
-  const double fov_min_align = cos(lad->fov_diameter/2.); 
+  const double fov_min_align=cos(lad->fov_diameter/2.); 
 
   // Determine telescope pointing direction at the current time.
   struct Telescope telescope;
-  telescope.nz = getTelescopeNz(ac, ph->time, status);
+  telescope.nz=getTelescopeNz(ac, ph->time, status);
   CHECK_STATUS_RET(*status, NULL);
 
   // Compare the photon direction to the direction of the telescope
   // axis to check whether the photon is inside the FOV.
-  Vector photon_direction = unit_vector(ph->ra, ph->dec);
+  Vector photon_direction=unit_vector(ph->ra, ph->dec);
   if (check_fov(&photon_direction, &telescope.nz, fov_min_align)==0) {
     // Photon is inside the FOV!
     
@@ -167,6 +167,7 @@ static inline int ladphdet(const LAD* const lad,
 			   LADSignal** const sig,
 			   const double timezero,
 			   const double mjdref,
+			   long* nbkgevts,
 			   int* const status)
 {
   // The charge distribution among the neighboring anodes implemented 
@@ -312,6 +313,9 @@ static inline int ladphdet(const LAD* const lad,
       copyLADSignal(&(newel->signal), &newsignal);
       newel->next=*el;
       *el=newel;
+
+      // Count the number of background events.
+      (*nbkgevts)++;
 
       // Determine the time of the next background event.
       int failed=
@@ -522,15 +526,15 @@ static inline int ladphdet(const LAD* const lad,
     int asic=(int)((*sig)->anode/lad->asic_channels);
     int pin =      (*sig)->anode%lad->asic_channels;
     
-    // Check if the bin is at the border of the ASIC and whether
+    // Check if the pin is at the border of the ASIC and whether
     // the neighboring ASIC has to be read out, too.
     int asic2=-1;
     if ((0==pin) && (asic!=0) && (asic!=element->nasics/2)) {
-      asic2 = asic-1;
+      asic2=asic-1;
     } else if ((pin>lad->asic_channels-2) && 
 	       (asic!=element->nasics/2-1) &&
 	       (asic!=element->nasics-1)) {
-      asic2 = asic+1;
+      asic2=asic+1;
     }
 
     // Check if the event happens after the coincidence time, but
@@ -757,6 +761,10 @@ int ladsim_main()
   // Output file for progress status.
   FILE* progressfile=NULL;
 
+  // Number of simulated background events.
+  long nbkgevts=0;
+
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
@@ -838,8 +846,9 @@ int ladsim_main()
       seed=(int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
     strcpy(ucase_buffer, par.ProgressFile);
@@ -1173,8 +1182,8 @@ int ladsim_main()
       // Determine the signals at the individual anodes.
       do {
 	LADSignal* signal=NULL;
-	int done_det=ladphdet(lad, imp, &signal, 
-			      par.TIMEZERO, par.MJDREF, &status);
+	int done_det=ladphdet(lad, imp, &signal, par.TIMEZERO, par.MJDREF,
+			      &nbkgevts, &status);
 	CHECK_STATUS_BREAK(status);
 	  
 	if (1==done_det) {
@@ -1264,10 +1273,13 @@ int ladsim_main()
     progressfile=NULL;
   }
 
-  // Release HEADAS random number generator:
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
-  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully!\n\n");
+  if (status==EXIT_SUCCESS) {
+    printf("number of background events: %ld\n", nbkgevts);
+    headas_chat(3, "finished successfully!\n\n");
+  }
   return(status);
 }
 

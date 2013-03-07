@@ -443,12 +443,18 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
 
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for ARF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     // Store the file name of the ARF.
     xmlparsedata->lad->arf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
     CHECK_NULL_VOID(xmlparsedata->lad->arf_filename, 
-		      xmlparsedata->status,
-		      "memory allocation for ARF file name failed");
+		    xmlparsedata->status,
+		    "memory allocation for ARF file name failed");
     strcpy(xmlparsedata->lad->arf_filename, filename);
 
     // Load the ARF.
@@ -463,12 +469,18 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
     
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for RMF");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     // Store the file name of the RMF.
     xmlparsedata->lad->rmf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
     CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename, 
-		      xmlparsedata->status,
-		      "memory allocation for RMF file name failed");
+		    xmlparsedata->status,
+		    "memory allocation for RMF file name failed");
     strcpy(xmlparsedata->lad->rmf_filename, filename);
 
     // Load the RMF.
@@ -483,6 +495,12 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
     
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for LAD background");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
+
     // Open the background SIMPUT catalog file.
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
@@ -496,6 +514,12 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the file name of the collimator vignetting function.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for vignetting");
+      xmlparsedata->status=EXIT_FAILURE;
+    }
 
     // Load the vignetting function.
     char filepathname[MAXFILENAME];
@@ -543,7 +567,7 @@ LAD* getLADfromXML(const char* const filename,
   LAD* lad=NULL;
 
   // Allocate memory for a new LAD data structure.
-  lad = newLAD(status);
+  lad=newLAD(status);
   CHECK_STATUS_RET(*status, lad);
 
 

@@ -26,7 +26,6 @@
 #include "pil.h"
 #include "headas.h"
 #include "headas_error.h"
-#include "headas_rand.h"
 #include "wcshdr.h"
 
 
@@ -116,6 +115,12 @@
     can be found in the HEAdas developer's guide or directly in the
     source files 'headas_rand.h' and 'headas_rand.c'. */
 double sixt_get_random_number(int* const status);
+
+/** Initialize the random number generator. */
+void sixt_init_rng(const int seed, int* const status);
+
+/** Clean up the random number generator. */
+void sixt_destroy_rng();
 
 /** This routine produces two Gaussian distributed random numbers. The
     standard deviation of the Gaussian distribution sigma is assumed

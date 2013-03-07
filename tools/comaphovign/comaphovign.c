@@ -1,9 +1,9 @@
-#include "wfmphovign.h"
+#include "comaphovign.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int wfmphovign_main() {
+int comaphovign_main() {
   struct Parameters par;
 
   AttitudeCatalog* ac=NULL;
@@ -11,15 +11,15 @@ int wfmphovign_main() {
 
   fitsfile* ofptr=NULL;
   long onrows=0;
-  int cenergy, cra, cdec;
+  int cenergy, cra, cdec, ctime;
 
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL:
-  set_toolname("wfmphovign");
-  set_toolversion("0.05");
+  set_toolname("comaphovign");
+  set_toolversion("0.07");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -27,7 +27,7 @@ int wfmphovign_main() {
     // --- Initialization ---
 
     // Read parameters using PIL library.
-    if ((status=wfmphovign_getpar(&par))) break;
+    if ((status=comaphovign_getpar(&par))) break;
 
     headas_chat(3, "initialize ...\n");
 
@@ -42,14 +42,15 @@ int wfmphovign_main() {
     // Determine the random number seed.
     int seed;
     if (-1!=par.Seed) {
-      seed = par.Seed;
+      seed=par.Seed;
     } else {
       // Determine the seed from the system clock.
-      seed = (int)time(NULL);
+      seed=(int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
@@ -71,9 +72,9 @@ int wfmphovign_main() {
 
       // Set the values of the entries.
       ac->nentries=1;
-      ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = 0.;
-      ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+      ac->entry[0]=defaultAttitudeEntry();
+      ac->entry[0].time=0.;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
       ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
@@ -127,10 +128,20 @@ int wfmphovign_main() {
 		    "PHOTONS", &status);
     CHECK_STATUS_BREAK(status);
 
+    // Check if the time information should be stored in the 
+    // output file.
+    if (0!=par.TimeColumn) {
+      fits_insert_col(ofptr, 1, "TIME", "D", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     // Determine the column numbers in the output file.
     fits_get_colnum(ofptr, CASEINSEN, "ENERGY", &cenergy, &status); 
     fits_get_colnum(ofptr, CASEINSEN, "RA", &cra, &status);
     fits_get_colnum(ofptr, CASEINSEN, "DEC", &cdec, &status);
+    if (0!=par.TimeColumn) {
+      fits_get_colnum(ofptr, CASEINSEN, "TIME", &ctime, &status);
+    }
     CHECK_STATUS_BREAK(status);
 
     // Add header information about program parameters.
@@ -198,6 +209,10 @@ int wfmphovign_main() {
 	onrows++;
 	
 	// Store the data in the FITS file.
+	if (0!=par.TimeColumn) {
+	  fits_write_col(ofptr, TDOUBLE, ctime, 
+			 onrows, 1, 1, &photon.time, &status);
+	}
 	fits_write_col(ofptr, TFLOAT, cenergy, 
 		       onrows, 1, 1, &photon.energy, &status);
 	float fbuffer=photon.ra * 180./M_PI;
@@ -231,8 +246,8 @@ int wfmphovign_main() {
   // --- cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Close the FITS files.
   if (NULL!=ofptr) {
@@ -243,12 +258,11 @@ int wfmphovign_main() {
   freeAttitudeCatalog(&ac);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-
   return(status);
 }
 
 
-int wfmphovign_getpar(struct Parameters* par)
+int comaphovign_getpar(struct Parameters* par)
 {
   // String input buffer.
   char* sbuffer=NULL;
@@ -284,28 +298,31 @@ int wfmphovign_getpar(struct Parameters* par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the right ascension of the "
-		   "telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the declination of the "
-		   "telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
   } 
 
+  status=ape_trad_query_bool("TimeColumn", &par->TimeColumn);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the TimeColumn parameter");
+    return(status);
+  }
+
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random "
-		   "number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 

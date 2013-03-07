@@ -1,4 +1,5 @@
 #include "sixt.h"
+#include "headas_rand.h"
 
 
 #ifdef USE_RCL
@@ -17,7 +18,7 @@ double sixt_get_random_number(int* const status)
   // The library for accessing the server is maintained
   // by Fritz-Walter Schwarm.
   int rcl_status=0;
-  double rand=rcl_rand_net_get_double("leo", "rand", &rcl_status);
+  double rand=rcl_rand_net_get_double(NULL, NULL, &rcl_status);
 
   if(RCL_RANDOM_SUCCESS!=rcl_status) {
     SIXT_ERROR("failed getting random number from RCL");
@@ -25,7 +26,6 @@ double sixt_get_random_number(int* const status)
   }
 
   return(rand);  
-
 #else
 
   // Use the HEAdas random number generator.
@@ -33,8 +33,43 @@ double sixt_get_random_number(int* const status)
 
   // Status variable is not needed.
   (void)(*status);
+#endif
+}
+
+
+void sixt_init_rng(const int seed, int* const status)
+{
+  // Initialize HEAdasS random number generator.
+  // Note that this has to be done in any case, even
+  // if the RCL random number server is used, because
+  // the HEAdas routines (like heasp) rely on HDmtDrand().
+  HDmtInit(seed);
+
+#ifdef USE_RCL
+
+  // Call the RCL random number generator specifying the
+  // server and method.
+  int rcl_status=0;
+  rcl_rand_net_get_double("draco", "rand", &rcl_status);
+
+  if(RCL_RANDOM_SUCCESS!=rcl_status) {
+    SIXT_ERROR("failed getting random number from RCL");
+    *status=EXIT_FAILURE;
+  }
+
+#else 
+
+  // The status variable is not used.
+  (void)(*status);
 
 #endif
+}
+
+
+void sixt_destroy_rng()
+{
+  // Release HEADAS random number generator:
+  HDmtFree();
 }
 
 
@@ -58,8 +93,8 @@ double rndexp(const double avgdist, int* const status)
 
   double rand=sixt_get_random_number(status);
   CHECK_STATUS_RET(*status, 0.);
-  if (rand < 1.E-15) {
-    rand = 1.E-15;
+  if (rand<1.e-15) {
+    rand=1.e-15;
   }
 
   return(-log(rand)*avgdist);
@@ -176,9 +211,21 @@ void sixt_get_XMLFile(char* const filename,
 	return;
       }
       
+    } else if (0==strcmp(Mission, "NUSTAR")) {
+      strcat(filename, "/nustar");
+      if (0==strcmp(Instrument, "NUSTAR")) {
+	strcat(filename, "/nustar.xml");
+      } else {
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("selected instrument is not supported");
+	return;
+      }
+
     } else {
       *status=EXIT_FAILURE;
-      SIXT_ERROR("selected mission is not supported");
+      char msg[MAXMSG];
+      sprintf(msg, "selected mission ('%s') is not supported", Mission);
+      SIXT_ERROR(msg);
       return;
     }
     

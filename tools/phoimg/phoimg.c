@@ -50,8 +50,9 @@ int phoimg_main() {
       seed = (int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
@@ -186,8 +187,8 @@ int phoimg_main() {
   // --- cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Close the FITS files.
   freeImpactListFile(&ilf, &status);

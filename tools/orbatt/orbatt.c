@@ -116,8 +116,8 @@ int orbatt_main()
     // Determine the orbit period (for a Kepler orbit) an print 
     // it to the screen.
     double T = 2*M_PI/n;
-    headas_printf("orbit period: %lf min\n", T/60.);
-    headas_printf("orbit precession period: %lf d\n", 
+    headas_printf("orbit period: %.1lf min\n", T/60.);
+    headas_printf("orbit precession period: %.1lf d\n", 
 		  2*M_PI/fabs(prefactor*cos(i))/(3600.*24.));
 
     // Loop over the requested time interval.

@@ -34,9 +34,9 @@ int comaimg_main() {
     // (angle(x0,source) <= 1/2 * diameter)
     const double fov_min_align=cos(M_PI/3.);
     
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
-    HDmtInit(1);
+    // Initialize the random number generator.
+    sixt_init_rng((int)time(NULL), &status);
+    CHECK_STATUS_BREAK(status);
 
     // Open the FITS file with the input photon list:
     plf=openPhotonListFile(par.PhotonList, READONLY, &status);
@@ -207,8 +207,8 @@ int comaimg_main() {
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // release HEADAS random number generator
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Close the FITS files.
   freeImpactListFile(&ilf, &status);

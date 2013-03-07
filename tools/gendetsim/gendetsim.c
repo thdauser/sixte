@@ -70,8 +70,9 @@ int gendetsim_main() {
       seed = (int)time(NULL);
     }
 
-    // Initialize HEADAS random number generator.
-    HDmtInit(seed);
+    // Initialize the random number generator.
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
 
@@ -141,8 +142,8 @@ int gendetsim_main() {
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // Release HEADAS random number generator.
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   // Destroy the GenInst data structure.
   destroyGenInst(&inst, &status);
