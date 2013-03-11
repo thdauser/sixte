@@ -47,9 +47,10 @@ struct Parameters {
   double M0;
   /** Initial time. */
   double t0;
-  /** Timespan for the calculation. */
+  /** Timespan for the calculation [s]. */
   double timespan;
-  /** Time difference between two calculation steps. */
+  double MJDREF;
+  /** Time difference between two calculation steps [s]. */
   double dt;
   /** Filename of the orbit output file. */
   char orbit_filename[MAXFILENAME];
@@ -118,6 +119,17 @@ int orbatt_main()
     CHECK_STATUS_BREAK(status);;
     long nrows=0;
     
+    // Set the timing keywords.
+    fits_update_key(fptr, TDOUBLE, "TSTART", &par.t0, 
+		    "start time", &status);
+    double dbuffer=0.0;
+    fits_update_key(fptr, TDOUBLE, "TIMEZERO", &dbuffer, 
+		    "zero time", &status);
+    fits_update_key(fptr, TDOUBLE, "MJDREF", &par.MJDREF, 
+		    "MJD for reference time", &status);
+    fits_update_key(fptr, TSTRING, "TIMEUNIT", "s", 
+		    "Unit for TSTART, TSTOP, TIMEZERO", &status);
+    CHECK_STATUS_BREAK(status);;
 
     // Setup initial orbit parameters.
     const double mu  = 3.987e14;  // G*M_earth ([m^3/s^2])
@@ -183,7 +195,7 @@ int orbatt_main()
       double sinu = sin(omega+f);
   
       // Now we can determine the position and velocity of the 
-      // satellite (Flury p. 38)
+      // satellite (Flury p. 38).
       double rl = p/(1.+e*cos(f));
       double vr = sqrt(mu/p)*e*sin(f);
       double vf = sqrt(mu*p)/rl;
@@ -217,6 +229,12 @@ int orbatt_main()
     }
     CHECK_STATUS_BREAK(status);;
     // End of loop over time interval.
+
+    // Update the TSTOP header keyword.
+    dbuffer=par.t0+time;
+    fits_update_key(fptr, TDOUBLE, "TSTOP", &dbuffer, 
+		    "stop time", &status);
+    CHECK_STATUS_BREAK(status);;
 
   } while(0); // END of error handling routine.
 
@@ -284,6 +302,12 @@ static int orbatt_getpar(struct Parameters* const par)
     return(status);
   } 
 
+  status=ape_trad_query_double("MJDREF", &par->MJDREF);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading MJDREF");
+    return(status);
+  } 
+
   status=ape_trad_query_double("timespan", &par->timespan);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'timespan' parameter");
@@ -303,6 +327,12 @@ static int orbatt_getpar(struct Parameters* const par)
   } 
   strcpy(par->orbit_filename, sbuffer);
   free(sbuffer);
+
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the clobber parameter");
+    return(status);
+  }
 
   // Convert angles [degrees] -> [radians]:
   par->i0     = par->i0     *M_PI/180.0;
