@@ -23,11 +23,6 @@
 //
 // output: time t, position \vec{r}(t) and velocity \vec{v}(t)
 //
-// The orbit parameters can either be given as program arguments on
-// the command line or be specified in a TLE file. In the latter case,
-// the program call looks like the following:
-// "./calc_orbit -tle [name of TLE file]" ( !! NOT IMPLEMENTED YET !! )
-//
 //////////////////////////////////////////////////////////////////////
 
 #include "sixt.h"
@@ -58,6 +53,8 @@ struct Parameters {
   double dt;
   /** Filename of the orbit output file. */
   char orbit_filename[MAXFILENAME];
+
+  char clobber;
 };
 
 
@@ -81,24 +78,44 @@ int orbatt_main()
 
   // Register HEATOOL.
   set_toolname("orbatt");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of error handling program.
 
     // Read in the parameters using PIL.
-    status = orbatt_getpar(&par);
-    if (EXIT_SUCCESS!=status) break;
+    status=orbatt_getpar(&par);
+    CHECK_STATUS_BREAK(status);;
+
+    // Check if the output file already exists.
+    int exists;
+    fits_file_exists(par.orbit_filename, &exists, &status);
+    CHECK_STATUS_BREAK(status);
+    if (0!=exists) {
+      if (0!=par.clobber) {
+	// Delete the file.
+	remove(par.orbit_filename);
+      } else {
+	// Throw an error.
+	char msg[MAXMSG];
+	sprintf(msg, "file '%s' already exists", par.orbit_filename);
+	SIXT_ERROR(msg);
+	status=EXIT_FAILURE;
+	break;
+      }
+    }
 
     // Create the output FITS file.
-    remove(par.orbit_filename);
-    if (fits_create_file(&fptr, par.orbit_filename, &status)) break;
+    fits_create_file(&fptr, par.orbit_filename, &status);
+    CHECK_STATUS_BREAK(status);;
     char* ttype[] = { "TIME", "X", "Y", "Z", "VX", "VY", "VZ" };
     char* tform[] = { "D"   , "D", "D", "D", "D" , "D" , "D"  };
     char* tunit[] = { "s"   , "m", "m", "m", "m/s","m/s","m/s"};
-    if (fits_create_tbl(fptr, BINARY_TBL, 0, 7, ttype, tform, tunit, 
-			"ORBIT", &status)) break;
+    fits_create_tbl(fptr, BINARY_TBL, 0, 7, ttype, tform, tunit, 
+		    "ORBIT", &status);
+    CHECK_STATUS_BREAK(status);;
     HDpar_stamp(fptr, 2, &status);
+    CHECK_STATUS_BREAK(status);;
     long nrows=0;
     
 
@@ -196,7 +213,9 @@ int orbatt_main()
       fits_write_col(fptr, TDOUBLE, 5, nrows, 1, 1, &velocity.x, &status);
       fits_write_col(fptr, TDOUBLE, 6, nrows, 1, 1, &velocity.y, &status);
       fits_write_col(fptr, TDOUBLE, 7, nrows, 1, 1, &velocity.z, &status);
+      CHECK_STATUS_BREAK(status);;
     }
+    CHECK_STATUS_BREAK(status);;
     // End of loop over time interval.
 
   } while(0); // END of error handling routine.
@@ -223,63 +242,63 @@ static int orbatt_getpar(struct Parameters* const par)
   // Read the length of the semimajor axis a.
   status=ape_trad_query_double("a0", &par->a0);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'a0' parameter", status);
+    SIXT_ERROR("failed reading the 'a0' parameter");
     return(status);
   } 
     
   // Read the eccentricity of the Kepler orbit.
   status=ape_trad_query_double("e0", &par->e0);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'e0' parameter", status);
+    SIXT_ERROR("failed reading the 'e0' parameter");
     return(status);
   } 
    
   // Read the inclination.
   status=ape_trad_query_double("i0", &par->i0);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'i0' parameter", status);
+    SIXT_ERROR("failed reading the 'i0' parameter");
     return(status);
   } 
 
   status=ape_trad_query_double("gOmega0", &par->Omega0);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'Omega0' parameter", status);
+    SIXT_ERROR("failed reading the 'Omega0' parameter");
     return(status);
   } 
 
   status=ape_trad_query_double("komega0", &par->omega0);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'omega0' parameter", status);
+    SIXT_ERROR("failed reading the 'omega0' parameter");
     return(status);
   } 
 
   status=ape_trad_query_double("M0", &par->M0);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'M0' parameter", status);
+    SIXT_ERROR("failed reading the 'M0' parameter");
     return(status);
   } 
    
   status=ape_trad_query_double("t0", &par->t0);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 't0' parameter", status);
+    SIXT_ERROR("failed reading the 't0' parameter");
     return(status);
   } 
 
   status=ape_trad_query_double("timespan", &par->timespan);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'timespan' parameter", status);
+    SIXT_ERROR("failed reading the 'timespan' parameter");
     return(status);
   } 
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the 'dt' parameter", status);
+    SIXT_ERROR("failed reading the 'dt' parameter");
     return(status);
   } 
 
   status=ape_trad_query_string("orbit_filename", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the orbit file", status);
+    SIXT_ERROR("failed reading the name of the orbit file");
     return(status);
   } 
   strcpy(par->orbit_filename, sbuffer);
@@ -295,19 +314,17 @@ static int orbatt_getpar(struct Parameters* const par)
 }
 
 
-
 static double kepler_equation(const double M, const double e) 
 {
-  double E = M;
+  double E=M;
   double dE;
 
   // Newton algorithm to solve the Kepler equation
   do {
-    dE = (M - E + e*sin(E))/(1.-e*cos(E));
-    E += dE;
+    dE =(M - E + e*sin(E))/(1.-e*cos(E));
+    E +=dE;
   } while (fabs(dE) > 0.00000001);
 
   return(E);
 }
-
 
