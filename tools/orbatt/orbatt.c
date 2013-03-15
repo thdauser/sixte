@@ -18,8 +18,8 @@
 // -> i - inclination
 // -> Omega - right ascension of ascending node
 // -> omega - argument of perigee
-// -> M0    - mean anomaly at t0 (usually M0=0, i.e. the satellite is in perigee)
-// -> t0
+// -> M0    - mean anomaly at TSTART (usually M0=0, i.e. the satellite is in perigee)
+// -> TSTART
 //
 // output: time t, position \vec{r}(t) and velocity \vec{v}(t)
 //
@@ -46,7 +46,7 @@ struct Parameters {
   /** Initial mean anomaly. */
   double M0;
   /** Initial time. */
-  double t0;
+  double TSTART;
   /** Timespan for the calculation [s]. */
   double timespan;
   double MJDREF;
@@ -120,7 +120,7 @@ int orbatt_main()
     long nrows=0;
     
     // Set the timing keywords.
-    fits_update_key(fptr, TDOUBLE, "TSTART", &par.t0, 
+    fits_update_key(fptr, TDOUBLE, "TSTART", &par.TSTART, 
 		    "start time", &status);
     double dbuffer=0.0;
     fits_update_key(fptr, TDOUBLE, "TIMEZERO", &dbuffer, 
@@ -150,7 +150,7 @@ int orbatt_main()
 		  2*M_PI/fabs(prefactor*cos(i))/(3600.*24.));
 
     // Loop over the requested time interval.
-    double time; // The absolute time is: 'par.t0 + time'
+    double time; // The absolute time is: 'par.TSTART + time'
     for (time=0.; time<=par.timespan; time+=par.dt) {
       // Iterate the Keplerian orbital elements.
 
@@ -216,7 +216,7 @@ int orbatt_main()
       // END of orbit iteration
 
       // Store the new parameters in the output file.
-      double t_abs = par.t0 + time; // Absolute time.
+      double t_abs = par.TSTART + time; // Absolute time.
       fits_insert_rows(fptr, nrows++, 1, &status);
       fits_write_col(fptr, TDOUBLE, 1, nrows, 1, 1, &t_abs, &status);
       fits_write_col(fptr, TDOUBLE, 2, nrows, 1, 1, &position.x, &status);
@@ -231,7 +231,7 @@ int orbatt_main()
     // End of loop over time interval.
 
     // Update the TSTOP header keyword.
-    dbuffer=par.t0+time;
+    dbuffer=par.TSTART+time;
     fits_update_key(fptr, TDOUBLE, "TSTOP", &dbuffer, 
 		    "stop time", &status);
     CHECK_STATUS_BREAK(status);;
@@ -296,9 +296,9 @@ static int orbatt_getpar(struct Parameters* const par)
     return(status);
   } 
    
-  status=ape_trad_query_double("t0", &par->t0);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the 't0' parameter");
+    SIXT_ERROR("failed reading the 'TSTART' parameter");
     return(status);
   } 
 

@@ -86,7 +86,7 @@ int phoimg_main() {
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = par.TIMEZERO;
+      ac->entry[0].time = par.TSTART;
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -99,13 +99,13 @@ int phoimg_main() {
 
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TIMEZERO) || 
-	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
+      if ((ac->entry[0].time > par.TSTART) || 
+	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
 		"specified period from %lf to %lf!", 
-		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+		par.TSTART, par.TSTART+par.Exposure);
 	SIXT_ERROR(msg);
 	break;
       }
@@ -136,6 +136,8 @@ int phoimg_main() {
     double dbuffer=0.;
     fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
+    fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		    "start time", &status);
     CHECK_STATUS_BREAK(status);
 
     // Scan the entire photon list.
@@ -149,8 +151,8 @@ int phoimg_main() {
       CHECK_STATUS_BREAK(status);
 
       // Check whether we are still within the requested time interval.
-      if (photon.time < par.TIMEZERO) continue;
-      if (photon.time > par.TIMEZERO+par.Exposure) break;
+      if (photon.time < par.TSTART) continue;
+      if (photon.time > par.TSTART+par.Exposure) break;
 
       // Photon Imaging.
       Impact impact;
@@ -166,7 +168,7 @@ int phoimg_main() {
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      while ((int)((photon.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((photon.time-par.TSTART)*1000./par.Exposure)>progress) {
 	progress++;
 	headas_chat(2, "\r%.1lf %%", progress*1./10.);
 	fflush(NULL);
@@ -287,9 +289,9 @@ int phoimg_getpar(struct Parameters* par)
     return(status);
   } 
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading TIMEZERO");
+    SIXT_ERROR("failed reading TSTART");
     return(status);
   } 
 

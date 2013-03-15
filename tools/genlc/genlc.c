@@ -37,6 +37,13 @@ int genlc_main() {
     fits_open_table(&infptr, par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Determine timing keywords.
+    char comment[MAXMSG];
+    double mjdref, timezero;
+    fits_read_key(infptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    fits_read_key(infptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Determine the column containing the time information.
     int ctime;
     fits_get_colnum(infptr, CASEINSEN, "TIME", &ctime, &status);
@@ -97,7 +104,7 @@ int genlc_main() {
 
       // If the event was detected before the start of the light
       // curve, we have to neglect it.
-      if (time<par.TIMEZERO) continue;
+      if (time<par.TSTART) continue;
 
       // If necessary, read the energy/signal of the next event.
       if (csignal>0) {
@@ -113,7 +120,7 @@ int genlc_main() {
       }
       
       // Determine the respective bin in the light curve.
-      long bin=((long)((time-par.TIMEZERO)/par.dt+1.0))-1;
+      long bin=((long)((time-par.TSTART)/par.dt+1.0))-1;
 		
       // If the event exceeds the end of the light curve, simply neglect it.
       if (bin>=nbins) continue;
@@ -128,8 +135,25 @@ int genlc_main() {
     // Store the light curve in the output file.
     headas_chat(3, "store light curve ...\n");
 
-    // Create a new FITS-file (remove existing one before):
-    remove(par.LightCurve);
+    // Check if the file already exists.
+    int exists;
+    fits_file_exists(par.LightCurve, &exists, &status);
+    CHECK_STATUS_BREAK(status);
+    if (0!=exists) {
+      if (0!=par.clobber) {
+	// Delete the file.
+	remove(par.LightCurve);
+      } else {
+	// Throw an error.
+	char msg[MAXMSG];
+	sprintf(msg, "file '%s' already exists", par.LightCurve);
+	SIXT_ERROR(msg);
+	status=EXIT_FAILURE;
+	break;
+      }
+    }
+
+    // Create a new FITS-file.
     char buffer[MAXFILENAME];
     sprintf(buffer, "%s(%s%s)", par.LightCurve, SIXT_DATA_PATH, 
 	    "/templates/genlc.tpl");
@@ -152,13 +176,19 @@ int genlc_main() {
 		    "time unit", &status);
     fits_update_key(outfptr, TDOUBLE, "TIMERES", &par.dt, 
 		    "time resolution", &status);
+    fits_update_key(outfptr, TDOUBLE, "MJDREF", &mjdref, 
+		    "reference MJD", &status);
+    fits_update_key(outfptr, TDOUBLE, "TIMEZERO", &timezero, 
+		    "time offset", &status);
+    fits_update_key(outfptr, TDOUBLE, "TSTART", &par.TSTART, 
+		    "start time", &status);
     CHECK_STATUS_BREAK(status);
 
     // Write the data into the table.
     for (ii=0; ii<nbins; ii++) {
       // Convert the count histogram to a light curve with
       // time and rate entries.
-      double dbuffer=(ii+1)*par.dt + par.TIMEZERO;
+      double dbuffer=(ii+1)*par.dt + par.TSTART;
       fits_write_col(outfptr, TDOUBLE, cotime, ii+1, 1, 1, 
 		     &dbuffer, &status);
       CHECK_STATUS_BREAK(status);
@@ -212,7 +242,7 @@ int genlc_getpar(struct Parameters* par)
   strcpy(par->LightCurve, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the start time of the light curve");
     return(status);

@@ -30,7 +30,7 @@ struct Parameters {
   char Simput[MAXFILENAME];
 
   double MJDREF;
-  double TIMEZERO;
+  double TSTART;
   double Exposure;
   double dt;
 

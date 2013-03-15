@@ -165,7 +165,7 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 static inline int ladphdet(const LAD* const lad,
 			   LADImpact* const imp,
 			   LADSignal** const sig,
-			   const double timezero,
+			   const double tstart,
 			   const double mjdref,
 			   long* nbkgevts,
 			   int* const status)
@@ -241,7 +241,7 @@ static inline int ladphdet(const LAD* const lad,
       bkgsrc=loadSimputSrc(lad->bkgctlg, 1, status);
       CHECK_STATUS_RET(*status, 1);
 
-      t_next_bkg=timezero;
+      t_next_bkg=tstart;
     }
 
     while (t_next_bkg<imp->time) {
@@ -890,7 +890,7 @@ int ladsim_main()
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = par.TIMEZERO;
+      ac->entry[0].time = par.TSTART;
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -903,13 +903,13 @@ int ladsim_main()
       
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TIMEZERO) || 
-	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
+      if ((ac->entry[0].time > par.TSTART) || 
+	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
 		"specified period from %lf to %lf!", 
-		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+		par.TSTART, par.TSTART+par.Exposure);
 	SIXT_ERROR(msg);
 	break;
       }
@@ -983,7 +983,7 @@ int ladsim_main()
     // photon list.
     if (1==ac->nentries) {
       // Determine the telescope pointing direction and roll angle.
-      Vector pointing=getTelescopeNz(ac, par.TIMEZERO, &status);
+      Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
     
       // Direction.
@@ -991,7 +991,7 @@ int ladsim_main()
       calculate_ra_dec(pointing, &ra, &dec);
     
       // Roll angle.
-      float rollangle=getRollAngle(ac, par.TIMEZERO, &status);
+      float rollangle=getRollAngle(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
 
       // Store the RA and Dec information in the FITS header.
@@ -1068,6 +1068,8 @@ int ladsim_main()
 		      "reference MJD", &status);
       fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		      "time offset", &status);
+      fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		      "start time", &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -1077,6 +1079,8 @@ int ladsim_main()
 		      "reference MJD", &status);
       fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		      "time offset", &status);
+      fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		      "start time", &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -1086,6 +1090,8 @@ int ladsim_main()
 		      "reference MJD", &status);
       fits_update_key(slf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		      "time offset", &status);
+      fits_update_key(slf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		      "start time", &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -1094,6 +1100,8 @@ int ladsim_main()
 		    "reference MJD", &status);
     fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
+    fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		    "start time", &status);
     fits_update_key(elf->fptr, TDOUBLE, "EXPOSURE", &par.Exposure,
 		    "exposure time [s]", &status);
     CHECK_STATUS_BREAK(status);
@@ -1119,19 +1127,19 @@ int ladsim_main()
     // Loop over photon generation and processing
     // till the time of the photon exceeds the requested
     // exposure time.
-    double bkg_time=par.TIMEZERO, last_loop=0;
+    double bkg_time=par.TSTART, last_loop=0;
     do {
 
       // Photon generation.
       // Get a new photon from the generation routine.
       Photon ph;
       int isph=phgen(ac, &srccat, 1, 
-		     par.TIMEZERO, par.TIMEZERO+par.Exposure, 
+		     par.TSTART, par.TSTART+par.Exposure, 
 		     par.MJDREF, par.dt, lad->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check if the photon still is within the requested exposure time.
-      if ((0!=isph)&&(ph.time>par.TIMEZERO+par.Exposure)) {
+      if ((0!=isph)&&(ph.time>par.TSTART+par.Exposure)) {
 	isph=0;
       }
       
@@ -1168,10 +1176,10 @@ int ladsim_main()
 	imp=getLADImpact(&status);
 	CHECK_STATUS_BREAK(status);
 	
-	if (bkg_time+par.dt<par.TIMEZERO+par.Exposure) {
+	if (bkg_time+par.dt<par.TSTART+par.Exposure) {
 	  bkg_time+=par.dt;
 	} else {
-	  bkg_time=par.TIMEZERO+par.Exposure;
+	  bkg_time=par.TSTART+par.Exposure;
 	  last_loop=1;
 	}
 	imp->time=bkg_time;
@@ -1182,7 +1190,7 @@ int ladsim_main()
       // Determine the signals at the individual anodes.
       do {
 	LADSignal* signal=NULL;
-	int done_det=ladphdet(lad, imp, &signal, par.TIMEZERO, par.MJDREF,
+	int done_det=ladphdet(lad, imp, &signal, par.TSTART, par.MJDREF,
 			      &nbkgevts, &status);
 	CHECK_STATUS_BREAK(status);
 	  
@@ -1225,7 +1233,7 @@ int ladsim_main()
       if (1==last_loop) break;
 	
       // Program progress output.
-      while ((int)((ph.time-par.TIMEZERO)*100./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TSTART)*100./par.Exposure)>progress) {
 	progress++;
 	if (NULL==progressfile) {
 	  headas_chat(2, "\r%.1lf %%", progress*1.);
@@ -1380,9 +1388,9 @@ int ladsim_getpar(struct Parameters* const par)
     return(status);
   } 
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading TIMEZERO");
+    SIXT_ERROR("failed reading TSTART");
     return(status);
   } 
 

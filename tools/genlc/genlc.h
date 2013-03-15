@@ -16,7 +16,7 @@ struct Parameters {
   char LightCurve[MAXFILENAME];
 
   /** Start time [s]. */
-  double TIMEZERO;
+  double TSTART;
   
   /** Length of the light curve [s]. */
   double length; 

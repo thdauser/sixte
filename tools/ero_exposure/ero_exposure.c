@@ -25,7 +25,7 @@ struct Parameters {
   /** Telescope Pointing direction [deg]. */
   float RA, Dec;
 
-  double t0;
+  double TSTART;
   double timespan;
   /** Step width for the exposure map calculation [s]. */
   double dt; 
@@ -94,6 +94,12 @@ void saveExpoMap(float** const map,
 
     // Create a new FITS-file (remove existing one before):
     fits_create_file(&fptr, filename, status);
+    CHECK_STATUS_BREAK(*status);
+
+    // Add header information about program parameters.
+    // The second parameter "1" means that the headers are written
+    // to the first extension.
+    HDpar_stamp(fptr, 1, status);
     CHECK_STATUS_BREAK(*status);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
@@ -289,7 +295,7 @@ int ero_exposure_main()
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.t0;
+      ac->entry[0].time=par.TSTART;
       ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -302,13 +308,13 @@ int ero_exposure_main()
       
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.t0) || 
-	  (ac->entry[ac->nentries-1].time < par.t0+par.timespan)) {
+      if ((ac->entry[0].time > par.TSTART) || 
+	  (ac->entry[ac->nentries-1].time < par.TSTART+par.timespan)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
 		"specified period from %lf to %lf!", 
-		par.t0, par.t0+par.timespan);
+		par.TSTART, par.TSTART+par.timespan);
 	SIXT_ERROR(msg);
 	break;
       }
@@ -343,10 +349,10 @@ int ero_exposure_main()
       fflush(progressfile);	
     }
 
-    // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
+    // LOOP over the given time interval from TSTART to TSTART+timespan in steps of dt.
     int intermaps=0;
     double time;
-    for (time=par.t0; time<par.t0+par.timespan; time+=par.dt) {
+    for (time=par.TSTART; time<par.TSTART+par.timespan; time+=par.dt) {
       
       // Determine the telescope pointing direction at the current time.
       Vector telescope_nz = getTelescopeNz(ac, time, &status);
@@ -412,7 +418,7 @@ int ero_exposure_main()
 
       // Check if an interim map should be saved now.
       if (par.intermaps>0) {
-	if (time > par.t0+ intermaps*(par.timespan/(par.intermaps+1))) {
+	if (time > par.TSTART+ intermaps*(par.timespan/(par.intermaps+1))) {
 	  // Construct the filename.
 	  char filename[MAXFILENAME];
 	  strncpy(filename, par.Exposuremap, 
@@ -433,7 +439,7 @@ int ero_exposure_main()
       // END of saving an interim map.
 
       // Program progress output.
-      while((unsigned int)((time-par.t0)*100./par.timespan)>progress) {
+      while((unsigned int)((time-par.TSTART)*100./par.timespan)>progress) {
 	progress++;
 	if (NULL==progressfile) {
 	  headas_chat(2, "\r%.1lf %%", progress*1.);
@@ -554,9 +560,9 @@ int ero_exposure_getpar(struct Parameters *par)
   }
 
   // Get the start time of the exposure map calculation.
-  status=ape_trad_query_double("t0", &par->t0);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the 't0' parameter");
+    SIXT_ERROR("failed reading the 'TSTART' parameter");
     return(status);
   }
 
