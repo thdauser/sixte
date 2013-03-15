@@ -49,7 +49,7 @@ EventListFile* openNewEventListFile(const char* const filename,
 				    int* const status)
 {
   EventListFile* file=newEventListFile(status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  CHECK_STATUS_RET(*status, file);
 
   // Check if the file already exists.
   int exists;
@@ -87,9 +87,9 @@ EventListFile* openNewEventListFile(const char* const filename,
       if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
 		   current_time_utc) > 0) {
 	// Return value should be == 19 !
-	if (fits_update_key(file->fptr, TSTRING, "DATE-OBS", current_time_str, 
-			    "Start Time (UTC) of exposure", status)) 
-	  return(file);
+	fits_update_key(file->fptr, TSTRING, "DATE-OBS", current_time_str, 
+			"Start Time (UTC) of exposure", status);
+	CHECK_STATUS_RET(*status, file);
       }
     }
   } 
@@ -99,15 +99,15 @@ EventListFile* openNewEventListFile(const char* const filename,
   // The second parameter "1" means that the headers are written
   // to the first extension.
   HDpar_stamp(file->fptr, 1, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  CHECK_STATUS_RET(*status, file);
 
   // Close the file.
   freeEventListFile(&file, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  CHECK_STATUS_RET(*status, file);
 
   // Re-open the file.
   file=openEventListFile(filename, READWRITE, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  CHECK_STATUS_RET(*status, file);
   
   return(file);
 }

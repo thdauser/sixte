@@ -1,5 +1,5 @@
 XTENSION        BINTABLE        / Binary table extension
-EXTNAME         LIGHTCUR        / Extension name
+EXTNAME         LIGHTCURVE      / Extension name
 ORIGIN          REMEIS          / Origin of FITS File
 CREATOR         ladlc           / Program that created this FITS file
 MISSION         LOFT            / Mission name

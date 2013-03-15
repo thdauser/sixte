@@ -170,8 +170,8 @@ int htrssim_main() {
       if (EXIT_SUCCESS!=status) break;
 
       // Check whether the event lies in the specified time interval:
-      if ((impact.time<parameters.t0)||
-	  (impact.time>parameters.t0+parameters.timespan)) continue;
+      if ((impact.time<parameters.TSTART)||
+	  (impact.time>parameters.TSTART+parameters.timespan)) continue;
 
       // Call the photon detection routine that generates the right charge
       // and stores it in the detector pixels.
@@ -290,8 +290,8 @@ static int getpar(struct Parameters* parameters)
   }
 
   // Get the start time of the simulation
-  else if ((status = PILGetReal("t0", &parameters->t0))) {
-    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
+  else if ((status = PILGetReal("TSTART", &parameters->TSTART))) {
+    HD_ERROR_THROW("Error reading the 'TSTART' parameter!\n", status);
   }
 
   // Get the timespan for the simulation

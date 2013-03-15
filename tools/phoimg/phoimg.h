@@ -26,7 +26,7 @@ struct Parameters {
   float RA, Dec;
 
   double MJDREF;
-  double TIMEZERO;
+  double TSTART;
   double Exposure;
 
   int Seed;

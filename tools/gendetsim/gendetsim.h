@@ -26,7 +26,7 @@ struct Parameters {
   char XMLFile[MAXFILENAME];
 
   double MJDREF;
-  double TIMEZERO;
+  double TSTART;
   double Exposure;
 
   int Seed;

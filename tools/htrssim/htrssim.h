@@ -22,7 +22,7 @@ struct Parameters {
   char arf_filename[MAXFILENAME];
   char eventlist_filename[MAXFILENAME];
   char eventlist_template[MAXFILENAME];
-  double t0;
+  double TSTART;
   double timespan;
   
   double ccsigma;

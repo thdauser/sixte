@@ -85,7 +85,7 @@ int phogen_main()
       // Set the values of the entries.
       ac->nentries=1;
       ac->entry[0] = defaultAttitudeEntry();      
-      ac->entry[0].time = par.TIMEZERO;
+      ac->entry[0].time = par.TSTART;
       ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
@@ -98,13 +98,13 @@ int phogen_main()
 
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TIMEZERO) || 
-	  (ac->entry[ac->nentries-1].time < par.TIMEZERO+par.Exposure)) {
+      if ((ac->entry[0].time > par.TSTART) || 
+	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
 	status=EXIT_FAILURE;
 	char msg[MAXMSG];
 	sprintf(msg, "attitude data does not cover the "
 		"specified period from %lf to %lf!", 
-		par.TIMEZERO, par.TIMEZERO+par.Exposure);
+		par.TSTART, par.TSTART+par.Exposure);
 	SIXT_ERROR(msg);
 	break;
       }
@@ -133,6 +133,8 @@ int phogen_main()
     double dbuffer=0.;
     fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "time offset", &status);
+    fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		    "start time", &status);
     CHECK_STATUS_BREAK(status);
 
     // Start the actual photon generation (after loading required data):
@@ -147,7 +149,7 @@ int phogen_main()
       // Photon generation.
       Photon ph;
       int isph=phgen(ac, &srccat, 1, 
-		     par.TIMEZERO, par.TIMEZERO+par.Exposure, 
+		     par.TSTART, par.TSTART+par.Exposure, 
 		     par.MJDREF, par.dt, 
 		     inst->tel->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
@@ -156,14 +158,14 @@ int phogen_main()
       if (0==isph) break;
 
       // Check if the photon still is within the requested exposre time.
-      if (ph.time>par.TIMEZERO+par.Exposure) break;
+      if (ph.time>par.TSTART+par.Exposure) break;
 
       // Write the photon to the output file.
       status=addPhoton2File(plf, &ph);
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      while ((int)((ph.time-par.TIMEZERO)*1000./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TSTART)*1000./par.Exposure)>progress) {
 	progress++;
 	headas_chat(2, "\r%.1lf %%", progress*1./10.);
 	fflush(NULL);
@@ -212,7 +214,7 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("PhotonList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the photon list!\n", status);
+    SIXT_ERROR("failed reading the name of the photon list");
     return(status);
   } 
   strcpy(par->PhotonList, sbuffer);
@@ -220,7 +222,7 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the mission!\n", status);
+    SIXT_ERROR("failed reading the name of the mission");
     return(status);
   } 
   strcpy(par->Mission, sbuffer);
@@ -228,7 +230,7 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Instrument", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument");
     return(status);
   } 
   strcpy(par->Instrument, sbuffer);
@@ -236,7 +238,7 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Mode", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument mode!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
   } 
   strcpy(par->Mode, sbuffer);
@@ -244,7 +246,7 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    SIXT_ERROR("failed reading the name of the XML file");
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
@@ -252,7 +254,7 @@ int phogen_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the attitude!\n", status);
+    SIXT_ERROR("failed reading the name of the attitude");
     return(status);
   } 
   strcpy(par->Attitude, sbuffer);
@@ -290,32 +292,27 @@ int phogen_getpar(struct Parameters* par)
     return(status);
   } 
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
+    SIXT_ERROR("failed reading TSTART");
     return(status);
   } 
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    SIXT_ERROR("failed reading the exposure time");
     return(status);
   } 
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
-    return(status);
-  }
-  status=ape_trad_query_int("seed", &par->Seed);
-  if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
