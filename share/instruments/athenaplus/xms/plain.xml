@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<instrument>
+<telescope>
+<focallength value="12.0"/>
+<fov diameter="0.5"/>
+<arf filename="athenapp_xms_2.5eV.arf"/>
+<psf filename="../psf_athenapp_vig_4_12.fits"/>
+<vignetting filename="../vignetting_athenapp_vig_4_12.fits"/>
+</telescope>
+
+<detector type="xms" mode="plain">
+<dimensions xwidth="20" ywidth="20"/>
+<wcs xrpix="10.5" yrpix="10.5" xrval="0." yrval="0." xdelt="250.e-6" ydelt="250.e-6"/>
+<rmf filename="athenapp_xms_2.5eV.rmf"/>
+
+<threshold_readout_lo_keV value="100.e-3"/>
+<threshold_event_lo_keV value="100.e-3"/>
+<threshold_split_lo_keV value="100.e-3"/>
+<readout mode="event"/>
+
+</detector>
+</instrument>

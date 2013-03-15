@@ -12,6 +12,20 @@ dist_athenawfi_DATA = athena/wfi/fullframe.xml
 athenaxmsdir = $(athenadir)/xms
 dist_athenaxms_DATA = athena/xms/plain.xml
 
+# Athena+
+athenaplusdir = $(xmldir)/athenaplus
+# WFI
+athenapluswfidir = $(athenaplusdir)/wfi
+dist_athenapluswfi_DATA = athenaplus/wfi/fullframe_core.xml 
+dist_athenapluswfi_DATA+= athenaplus/wfi/fullframe_side0.xml 
+dist_athenapluswfi_DATA+= athenaplus/wfi/fullframe_side1.xml 
+dist_athenapluswfi_DATA+= athenaplus/wfi/fullframe_side2.xml 
+dist_athenapluswfi_DATA+= athenaplus/wfi/fullframe_side3.xml 
+dist_athenapluswfi_DATA+= athenaplus/wfi/splitframe_core.xml 
+# XMS
+athenaplusxmsdir = $(athenaplusdir)/xms
+dist_athenaplusxms_DATA = athenaplus/xms/plain.xml
+
 # GRAVITAS
 gravitasdir = $(xmldir)/gravitas
 dist_gravitas_DATA = gravitas/hifi.xml
