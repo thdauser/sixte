@@ -202,9 +202,9 @@ int genlc_main() {
     double dbuffer=par.TSTART+par.length;
     fits_update_key(outfptr, TDOUBLE, "TSTOP", &dbuffer, 
 		    "stop time", &status);
-    fits_update_key(outfptr, TDOUBLE, "E_MIN", &par.Emin,
+    fits_update_key(outfptr, TFLOAT, "E_MIN", &par.Emin,
 		    "low energy for channel (keV)", &status);
-    fits_update_key(outfptr, TDOUBLE, "E_MAX", &par.Emin,
+    fits_update_key(outfptr, TFLOAT, "E_MAX", &par.Emin,
 		    "high energy for channel (keV)", &status);
     CHECK_STATUS_BREAK(status);
 
