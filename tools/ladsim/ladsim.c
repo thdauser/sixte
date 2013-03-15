@@ -333,7 +333,7 @@ static inline int ladphdet(const LAD* const lad,
   }
 
 
-  // --- Process the actual impact.
+  // --- Process the actual photon impact.
 
   // Flag whether a signal has to be returned, or whether the new
   // impact has to be converted into a signal and added to the
@@ -421,17 +421,18 @@ static inline int ladphdet(const LAD* const lad,
     // Determine which half of the anodes (bottom or top) is affected.
     long min_anode, max_anode;
     if (center_anode < element->nanodes/2) {
-      min_anode=MAX(0                   , center_anode-2);
-      max_anode=MIN(element->nanodes/2-1, center_anode+2);
+      min_anode=MAX(0                   , center_anode-1);
+      max_anode=MIN(element->nanodes/2-1, center_anode+1);
     } else {
-      min_anode=MAX(element->nanodes/2, center_anode-2);
-      max_anode=MIN(element->nanodes-1, center_anode+2);
+      min_anode=MAX(element->nanodes/2, center_anode-1);
+      max_anode=MIN(element->nanodes-1, center_anode+1);
     }
     int n_anodes=max_anode-min_anode+1;
-    assert(n_anodes<=5);
+    assert(n_anodes<=3);
     
-    // Loop over adjacent anodes.
-    int ii; // (lies within [0,4])
+    // Loop over adjacent anodes. We consider only the two direct 
+    // neighbors, i.e. in total 3 anodes.
+    int ii; // (lies within [0,2])
     // The following link to the element in the time-ordered 
     // list has to be defined outside of the loop. Otherwise
     // the search for the regarded point of time will start 
@@ -485,7 +486,7 @@ static inline int ladphdet(const LAD* const lad,
       // Insert in the time-ordered list.
       while(NULL!=*el) {
 	if (newsignal.time<(*el)->signal.time) break;
-	el = &((*el)->next);
+	el=&((*el)->next);
       }
       LinkedLADSigListElement* newel=newLinkedLADSigListElement(status);
       CHECK_STATUS_RET(*status, 1);
@@ -516,7 +517,7 @@ static inline int ladphdet(const LAD* const lad,
     siglist=next;
 
     // Element on the LAD.
-    LADElement* element = 
+    LADElement* element=
       lad->panel[(*sig)->panel]->module[(*sig)->module]->
       element[(*sig)->element];
 
@@ -763,7 +764,6 @@ int ladsim_main()
 
   // Number of simulated background events.
   long nbkgevts=0;
-
 
   // Error status.
   int status=EXIT_SUCCESS; 
