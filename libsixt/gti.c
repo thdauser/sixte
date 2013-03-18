@@ -126,28 +126,19 @@ void saveGTI(GTI* const gti,
 
   // Create a new event list FITS file from the template.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/gti.tpl");
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
+	  "/templates/gti.tpl");
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_VOID(*status);
 
-  // Set the time-keyword in the header.
-  // See also: Stevens, "Advanced Programming in the UNIX environment",
-  // p. 155 ff.
-  time_t current_time;
-  if (0 != time(&current_time)) {
-    struct tm* current_time_utc = gmtime(&current_time);
-    if (NULL != current_time_utc) {
-      char current_time_str[MAXMSG];
-      if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
-		   current_time_utc) > 0) {
-	// Return value should be == 19 !
-	fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
-			"Start Time (UTC) of exposure", status);
-	CHECK_STATUS_VOID(*status);
-      }
-    }
-  } 
-  // END of writing time information.
+  // Set the time-keyword in the event list header.
+  char datestr[MAXMSG];
+  int timeref;
+  fits_get_system_time(datestr, &timeref, status);
+  CHECK_STATUS_VOID(*status);
+  fits_update_key(fptr, TSTRING, "DATE", datestr, 
+		  "File creation date", status);
+  CHECK_STATUS_VOID(*status);
 
   // Move to the binary table extension.
   fits_movabs_hdu(fptr, 2, 0, status);

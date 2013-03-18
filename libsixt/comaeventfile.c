@@ -45,23 +45,14 @@ CoMaEventFile* openNewCoMaEventFile(char* const filename,
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, NULL);
 
-  // Set the time-keyword in the Event List Header.
-  // See also: Stevens, "Advanced Programming in the UNIX environment", 
-  // p. 155 ff.
-  time_t current_time;
-  if (0 != time(&current_time)) {
-    struct tm* current_time_utc = gmtime(&current_time);
-    if (NULL != current_time_utc) {
-      char current_time_str[MAXMSG];
-      if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
-		   current_time_utc) > 0) {
-	// Return value should be == 19 !
-	fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
-			"Start Time (UTC) of exposure", status);
-	CHECK_STATUS_RET(*status, NULL);
-      }
-    }
-  } // END of writing time information to Event File FITS header.
+  // Set the time-keyword in the event list header.
+  char datestr[MAXMSG];
+  int timeref;
+  fits_get_system_time(datestr, &timeref, status);
+  CHECK_STATUS_RET(*status, NULL);
+  fits_update_key(fptr, TSTRING, "DATE", datestr, 
+		  "File creation date", status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Close the newly created file again. It will be immediately re-opened
   // by the standard constructor.

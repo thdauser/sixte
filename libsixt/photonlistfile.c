@@ -124,8 +124,18 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
 
   // Create a new photon list FITS file from the given FITS template.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/photonlist.tpl");
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
+	  "/templates/photonlist.tpl");
   fits_create_file(&plf->fptr, buffer, status);
+  CHECK_STATUS_RET(*status, plf);
+
+  // Set the time-keyword in the header.
+  char datestr[MAXMSG];
+  int timeref;
+  fits_get_system_time(datestr, &timeref, status);
+  CHECK_STATUS_RET(*status, plf);
+  fits_update_key(plf->fptr, TSTRING, "DATE", datestr, 
+		  "File creation date", status);
   CHECK_STATUS_RET(*status, plf);
 
   // Add header information about program parameters.

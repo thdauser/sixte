@@ -1,43 +1,41 @@
 #include "htrseventfile.h"
 
 
-int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode)
+int openHTRSEventFile(HTRSEventFile* hef, 
+		      char* const filename,
+		      const int access_mode)
 {
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
   // Call the corresponding routine of the underlying structure.
-  status = openEventFile(&hef->generic, filename, access_mode);
-  if (EXIT_SUCCESS!=status) return(status);
+  status=openEventFile(&hef->generic, filename, access_mode);
+  CHECK_STATUS_RET(status, status);
 
   // Determine the HTRS-specific elements of the event list.
   // Determine the individual column numbers:
   // REQUIRED columns:
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "TIME", &hef->ctime, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PHA", &hef->cpha, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "ENERGY", &hef->cenergy, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "PIXEL", &hef->cpixel, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "GRADE", &hef->cgrade, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "X", &hef->cx, &status)) 
-    return(status);
-  if(fits_get_colnum(hef->generic.fptr, CASEINSEN, "Y", &hef->cy, &status)) 
-    return(status);
+  fits_get_colnum(hef->generic.fptr, CASEINSEN, "TIME", &hef->ctime, &status);
+  fits_get_colnum(hef->generic.fptr, CASEINSEN, "PHA", &hef->cpha, &status); 
+  fits_get_colnum(hef->generic.fptr, CASEINSEN, "ENERGY", &hef->cenergy, &status);
+  fits_get_colnum(hef->generic.fptr, CASEINSEN, "PIXEL", &hef->cpixel, &status); 
+  fits_get_colnum(hef->generic.fptr, CASEINSEN, "GRADE", &hef->cgrade, &status);
+  fits_get_colnum(hef->generic.fptr, CASEINSEN, "X", &hef->cx, &status);
+  fits_get_colnum(hef->generic.fptr, CASEINSEN, "Y", &hef->cy, &status);
+  CHECK_STATUS_RET(status, status);
 
   return(status);
 }
 
 
-
-int openNewHTRSEventFile(HTRSEventFile* hef, char* filename, char* template)
+int openNewHTRSEventFile(HTRSEventFile* hef, 
+			 char* const filename, 
+			 char* const template)
 {
   int status=EXIT_SUCCESS;
 
-  // Set the FITS file pointer to NULL. In case that an error occurs during the file
-  // generation, we want to avoid that the file pointer points somewhere.
+  // Set the FITS file pointer to NULL. In case that an error 
+  // occurs during the file generation, we want to avoid that 
+  // the file pointer points somewhere.
   hef->generic.fptr = NULL;
 
   // Remove old file if it exists.
@@ -47,39 +45,34 @@ int openNewHTRSEventFile(HTRSEventFile* hef, char* filename, char* template)
   fitsfile* fptr=NULL;
   char buffer[MAXMSG];
   sprintf(buffer, "%s(%s)", filename, template);
-  if (fits_create_file(&fptr, buffer, &status)) return(status);
+  fits_create_file(&fptr, buffer, &status);
+  CHECK_STATUS_RET(status, status);
 
-  // Set the time-keyword in the Event List Header.
-  // See also: Stevens, "Advanced Programming in the UNIX environment", p. 155 ff.
-  time_t current_time;
-  if (0 != time(&current_time)) {
-    struct tm* current_time_utc = gmtime(&current_time);
-    if (NULL != current_time_utc) {
-      char current_time_str[MAXMSG];
-      if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", current_time_utc) > 0) {
-	// Return value should be == 19 !
-	if (fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
-			    "Start Time (UTC) of exposure", &status)) return(status);
-      }
-    }
-  } // END of writing time information to Event File FITS header.
+  // Set the time-keyword in the event list header.
+  char datestr[MAXMSG];
+  int timeref;
+  fits_get_system_time(datestr, &timeref, &status);
+  CHECK_STATUS_RET(status, status);
+  fits_update_key(fptr, TSTRING, "DATE", datestr, 
+		  "File creation date", &status);
+  CHECK_STATUS_RET(status, status);
 
   // Add header information about program parameters.
   // The second parameter "1" means that the headers are writte
   // to the first extension.
   HDpar_stamp(fptr, 1, &status);
+  CHECK_STATUS_RET(status, status);
 
   // Close the file. It will be re-opened immediately with the
   // standard opening routine.
-  if (fits_close_file(fptr, &status)) return(status);
-
+  fits_close_file(fptr, &status);
+  CHECK_STATUS_RET(status, status);
 
   // Open the newly created FITS file.
-  status = openHTRSEventFile(hef, filename, READWRITE);
+  status=openHTRSEventFile(hef, filename, READWRITE);
 
   return(status);
 }
-
 
 
 int closeHTRSEventFile(HTRSEventFile* hef)
@@ -89,13 +82,13 @@ int closeHTRSEventFile(HTRSEventFile* hef)
 }
 
 
-
 int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
 {
   int status=EXIT_SUCCESS;
 
   // Insert a new, empty row to the table:
-  if (fits_insert_rows(hef->generic.fptr, hef->generic.row, 1, &status)) return(status);
+  fits_insert_rows(hef->generic.fptr, hef->generic.row, 1, &status);
+  CHECK_STATUS_RET(status, status);
   hef->generic.row++;
   hef->generic.nrows++;
 
@@ -104,7 +97,6 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event)
 
   return(status);
 }
-
 
 
 int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event)
@@ -116,8 +108,8 @@ int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event)
 
   // Check if there is still a row available.
   if (hef->generic.row > hef->generic.nrows) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: event list file contains no further entries!\n", status);
+    status=EXIT_FAILURE;
+    SIXT_ERROR("event list contains no further entries");
     return(status);
   }
 
@@ -128,50 +120,49 @@ int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event)
 }
 
 
-
-int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
+int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, const long row)
 {
   int status=EXIT_SUCCESS;
   int anynul=0;
 
   // Check if there is still a row available.
   if (row > hef->generic.nrows) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: event list file does not contain the requested line!\n", 
-		   status);
+    status=EXIT_FAILURE;
+    SIXT_ERROR("event list does not contain the requested line");
     return(status);
   }
 
   // Read in the data.
-  event->time = 0.;
-  if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->ctime, row, 1, 1, 
-		    &event->time, &event->time, &anynul, &status)) return(status);
-  event->pha = 0;
-  if (fits_read_col(hef->generic.fptr, TLONG, hef->cpha, row, 1, 1, 
-		    &event->pha, &event->pha, &anynul, &status)) return(status);
-  event->energy = 0;
-  if (fits_read_col(hef->generic.fptr, TFLOAT, hef->cenergy, row, 1, 1, 
-		    &event->energy, &event->energy, &anynul, &status)) return(status);
-  event->pixel = 0;
-  if (fits_read_col(hef->generic.fptr, TINT, hef->cpixel, row, 1, 1, 
-		    &event->pixel, &event->pixel, &anynul, &status)) return(status);
+  event->time=0.;
+  fits_read_col(hef->generic.fptr, TDOUBLE, hef->ctime, row, 1, 1, 
+		&event->time, &event->time, &anynul, &status);
+  event->pha=0;
+  fits_read_col(hef->generic.fptr, TLONG, hef->cpha, row, 1, 1, 
+		&event->pha, &event->pha, &anynul, &status);
+  event->energy=0;
+  fits_read_col(hef->generic.fptr, TFLOAT, hef->cenergy, row, 1, 1, 
+		&event->energy, &event->energy, &anynul, &status);
+  event->pixel=0;
+  fits_read_col(hef->generic.fptr, TINT, hef->cpixel, row, 1, 1, 
+		&event->pixel, &event->pixel, &anynul, &status);
   event->pixel--;
+  
+  event->grade=0;
+  fits_read_col(hef->generic.fptr, TINT, hef->cgrade, row, 1, 1, 
+		&event->grade, &event->grade, &anynul, &status);
 
-  event->grade = 0;
-  if (fits_read_col(hef->generic.fptr, TINT, hef->cgrade, row, 1, 1, 
-		    &event->grade, &event->grade, &anynul, &status)) return(status);
-
-  event->x = 0.;
-  if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 1, 1, 
-		    &event->x, &event->x, &anynul, &status)) return(status);
-  event->y = 0.;
-  if (fits_read_col(hef->generic.fptr, TDOUBLE, hef->cy, row, 1, 1, 
-		    &event->y, &event->y, &anynul, &status)) return(status);
+  event->x=0.;
+  fits_read_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 1, 1, 
+		&event->x, &event->x, &anynul, &status);
+  event->y=0.;
+  fits_read_col(hef->generic.fptr, TDOUBLE, hef->cy, row, 1, 1, 
+		&event->y, &event->y, &anynul, &status);
+  CHECK_STATUS_RET(status, status);
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
-    status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: reading from event list failed!\n", status);
+    status=EXIT_FAILURE;
+    SIXT_ERROR("failed reading from event list");
     return(status);
   }
 
@@ -179,27 +170,27 @@ int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row)
 }
 
 
-
-int HTRSEventFile_writeRow(HTRSEventFile* hef, HTRSEvent* event, long row) {
+int HTRSEventFile_writeRow(HTRSEventFile* hef, HTRSEvent* event, const long row) {
   int status=EXIT_SUCCESS;
 
-  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->ctime, row, 
-		     1, 1, &event->time, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TLONG, hef->cpha, row, 
-		     1, 1, &event->pha, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TFLOAT, hef->cenergy, row, 
-		     1, 1, &event->energy, &status)) return(status);
-  int pixel = event->pixel+1;
-  if (fits_write_col(hef->generic.fptr, TINT, hef->cpixel, row, 
-		     1, 1, &pixel, &status)) return(status);
+  fits_write_col(hef->generic.fptr, TDOUBLE, hef->ctime, row, 
+		 1, 1, &event->time, &status);
+  fits_write_col(hef->generic.fptr, TLONG, hef->cpha, row, 
+		 1, 1, &event->pha, &status);
+  fits_write_col(hef->generic.fptr, TFLOAT, hef->cenergy, row, 
+		 1, 1, &event->energy, &status);
 
-  if (fits_write_col(hef->generic.fptr, TINT, hef->cgrade, row, 
-		     1, 1, &event->grade, &status)) return(status);
+  int pixel=event->pixel+1;
+  fits_write_col(hef->generic.fptr, TINT, hef->cpixel, row, 
+		 1, 1, &pixel, &status);
 
-  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 
-		     1, 1, &event->x, &status)) return(status);
-  if (fits_write_col(hef->generic.fptr, TDOUBLE, hef->cy, row, 
-		     1, 1, &event->y, &status)) return(status);
+  fits_write_col(hef->generic.fptr, TINT, hef->cgrade, row, 
+		 1, 1, &event->grade, &status);
+  fits_write_col(hef->generic.fptr, TDOUBLE, hef->cx, row, 
+		 1, 1, &event->x, &status);
+  fits_write_col(hef->generic.fptr, TDOUBLE, hef->cy, row, 
+		 1, 1, &event->y, &status);
+  CHECK_STATUS_RET(status, status);
 
   return(status);
 }
