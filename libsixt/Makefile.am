@@ -1,7 +1,7 @@
 AM_CFLAGS =-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
-AM_CFLAGS+=-I@top_srcdir@/extlib/ape/include
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
 AM_CFLAGS+=-I@top_srcdir@/extlib/heainit
 AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
@@ -67,7 +67,7 @@ libsixt_la_LIBADD =@top_builddir@/extlib/heainit/libhdinit.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/heaio/libhdio.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/heautils/libhdutils.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/heasp/libhdsp.la
-libsixt_la_LIBADD+=@top_builddir@/extlib/ape/src/libape.la
+libsixt_la_LIBADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.la
 #libsixt_la_LIBADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la
 libsixt_la_LIBADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 
