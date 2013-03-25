@@ -688,7 +688,8 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 
 	  dbuffer=-99.0;
 	  fits_write_key(fptr, TDOUBLE, "CHANMIN", &dbuffer, "", status);
-	  fits_write_key(fptr, TDOUBLE, "CHANMAX", &dbuffer, "", status);
+ 	  fits_write_key(fptr, TDOUBLE, "CHANMAX", &dbuffer, "", status);
+ 	  fits_write_key(fptr, TSTRING, "CHANTYPE", "PI", "", status);
 
 	  fits_write_key(fptr, TSTRING, "CCLS0001", "BCF", "", status);
 	  fits_write_key(fptr, TSTRING, "CDTP0001", "TASK", "", status);
@@ -701,14 +702,8 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  fits_write_key(fptr, TSTRING, "CBD20001", sbuffer, "", status);
 	  sprintf(sbuffer, "PHI( %.1f)deg", psf->phis[index3]*180./M_PI);
 	  fits_write_key(fptr, TSTRING, "CBD30001", sbuffer, "", status);
-
-	  int timeref;
-	  fits_get_system_time(sbuffer, &timeref, status);
-	  CHECK_STATUS_BREAK(*status);
-	  sbuffer[10]='\0';
-	  fits_write_key(fptr, TSTRING, "CVSD0001", sbuffer, "", status);
-	  fits_write_key(fptr, TSTRING, "CVST0001", &(sbuffer[11]), "", status);
-
+	  fits_write_key(fptr, TSTRING, "CVSD0001", "2000-01-01", "", status);
+	  fits_write_key(fptr, TSTRING, "CVST0001", "00:00:00", "", status);
 	  fits_write_key(fptr, TSTRING, "CDES0001", "Theoretical images", 
 			 "", status);
 
