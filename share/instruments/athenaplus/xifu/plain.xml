@@ -3,15 +3,15 @@
 <telescope>
 <focallength value="12.0"/>
 <fov diameter="0.5"/>
-<arf filename="athenapp_xms_1.0eV.arf"/>
+<arf filename="athenapp_ir_b4c_xifu_2.5eV.arf"/>
 <psf filename="../psf_athenapp_vig_4_12.fits"/>
 <vignetting filename="../vignetting_athenapp_vig_4_12.fits"/>
 </telescope>
 
-<detector type="xms" mode="plain">
-<dimensions xwidth="10" ywidth="10"/>
-<wcs xrpix="5.5" yrpix="5.5" xrval="0." yrval="0." xdelt="50.e-6" ydelt="50.e-6"/>
-<rmf filename="athenapp_xms_1.0eV.rmf"/>
+<detector type="x-ifu" mode="plain">
+<dimensions xwidth="70" ywidth="70"/>
+<wcs xrpix="35.5" yrpix="35.5" xrval="0." yrval="0." xdelt="250.e-6" ydelt="250.e-6"/>
+<rmf filename="athenapp_ir_b4c_xifu_2.5eV.rmf"/>
 
 <threshold_readout_lo_keV value="100.e-3"/>
 <threshold_event_lo_keV value="100.e-3"/>

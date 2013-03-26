@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instrument>
 <telescope>
-<arf filename="athenapp_wfi_nofilter_onaxis.arf"/>
+<arf filename="athenapp_ir_b4c_wfi_nofilter_onaxis.arf"/>
 <focallength value="12.0"/>
 <fov diameter="0.5"/>
 <psf filename="../psf_athenapp_vig_4_12.fits"/>
@@ -11,7 +11,7 @@
 <detector type="wfi" mode="fullframe">
 <dimensions xwidth="16" ywidth="16"/>
 <wcs xrpix="8.5" yrpix="8.5" xrval="0." yrval="0." xdelt="100.e-6" ydelt="100.e-6"/>
-<rmf filename="athenapp_wfi_nofilter_onaxis.rmf"/>
+<rmf filename="athenapp_ir_b4c_wfi_nofilter_onaxis.rmf"/>
 <split type="GAUSS" par1="11.e-6"/>
 
 <threshold_readout_lo_keV value="100.e-3"/>

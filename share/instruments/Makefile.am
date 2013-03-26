@@ -22,11 +22,9 @@ dist_athenapluswfi_DATA+= athenaplus/wfi/fullframe_side1.xml
 dist_athenapluswfi_DATA+= athenaplus/wfi/fullframe_side2.xml 
 dist_athenapluswfi_DATA+= athenaplus/wfi/fullframe_side3.xml 
 dist_athenapluswfi_DATA+= athenaplus/wfi/splitframe_core.xml 
-# XMS
-athenaplusxmsdir = $(athenaplusdir)/xms
-dist_athenaplusxms_DATA = athenaplus/xms/core.xml
-dist_athenaplusxms_DATA+= athenaplus/xms/highres.xml
-dist_athenaplusxms_DATA+= athenaplus/xms/lowres.xml
+# X-IFU
+athenaplusxifudir = $(athenaplusdir)/xifu
+dist_athenaplusxifu_DATA = athenaplus/xifu/plain.xml
 
 # GRAVITAS
 gravitasdir = $(xmldir)/gravitas
