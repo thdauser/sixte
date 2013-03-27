@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -69,24 +69,14 @@ int ero_events_main()
     fits_movabs_hdu(fptr, 2, &hdutype, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Set the time-keyword in the Event List Header.
-    // See also: Stevens, "Advanced Programming in the UNIX environment",
-    // p. 155 ff.
-    time_t current_time;
-    if (0 != time(&current_time)) {
-      struct tm* current_time_utc = gmtime(&current_time);
-      if (NULL != current_time_utc) {
-	char current_time_str[MAXMSG];
-	if (strftime(current_time_str, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
-		     current_time_utc) > 0) {
-	  // Return value should be == 19 !
-	  fits_update_key(fptr, TSTRING, "DATE-OBS", current_time_str, 
-			  "Start Time (UTC) of exposure", &status);
-	  CHECK_STATUS_BREAK(status);
-	}
-      }
-    } 
-    // END of writing time information to Event File FITS header.
+    // Set the time-keyword in the header.
+    char datestr[MAXMSG];
+    int timeref;
+    fits_get_system_time(datestr, &timeref, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TSTRING, "DATE", datestr, 
+		    "File creation data", &status);
+    CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
     int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cx, cy, cccdnr;
@@ -149,7 +139,7 @@ int ero_events_main()
     wcs.crpix[1] = 0.;
     wcs.crval[0] = par.RefRA;
     wcs.crval[1] = par.RefDec;    
-    wcs.cdelt[0] = 0.05/3600.;
+    wcs.cdelt[0] =-0.05/3600.;
     wcs.cdelt[1] = 0.05/3600.;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
@@ -172,6 +162,12 @@ int ero_events_main()
     sprintf(keyword, "TCRVL%d", cy);
     fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1], 
 		    "reference value", &status);
+    sprintf(keyword, "TCDLT%d", cx);
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[0], 
+		    "pixel increment", &status);
+    sprintf(keyword, "TCDLT%d", cy);
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[1], 
+		    "pixel increment", &status);
     fits_update_key(fptr, TSTRING, "RADECSYS", "FK5", "", &status);
     float equinox=2000.0;
     fits_update_key(fptr, TFLOAT, "EQUINOX", &equinox, "", &status);
@@ -224,22 +220,23 @@ int ero_events_main()
 	tlmax_energy = energy;
       }
 
-      int rawx = pattern.rawx+1;
+      int rawx=pattern.rawx+1;
       fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &rawx, &status);
-      int rawy = pattern.rawy+1;
+      int rawy=pattern.rawy+1;
       fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &rawy, &status);
 
-      long ra = (long)(pattern.ra*180./M_PI/1.e-6);
+      long ra=(long)(pattern.ra*180./M_PI/1.e-6);
       if (pattern.ra < 0.) ra--;
       fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ra, &status);
 
-      long dec = (long)(pattern.dec*180./M_PI/1.e-6);
+      long dec=(long)(pattern.dec*180./M_PI/1.e-6);
       if (pattern.dec < 0.) dec--;
       fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &dec, &status);
+
       CHECK_STATUS_BREAK(status);
       
       // Convert world coordinates to image coordinates X and Y.
-      double world[2] = { pattern.ra*180./M_PI, pattern.dec*180./M_PI };
+      double world[2]={ pattern.ra*180./M_PI, pattern.dec*180./M_PI };
       double imgcrd[2], pixcrd[2];
       double phi, theta;
       int wcsstatus=0;
@@ -253,9 +250,9 @@ int ero_events_main()
 	status=EXIT_FAILURE;
 	break;
       }
-      long x = (long)pixcrd[0]; 
+      long x=(long)pixcrd[0]; 
       if (pixcrd[0] < 0.) x--;
-      long y = (long)pixcrd[1]; 
+      long y=(long)pixcrd[1]; 
       if (pixcrd[1] < 0.) y--;
       fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &x, &status);
       fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &y, &status);

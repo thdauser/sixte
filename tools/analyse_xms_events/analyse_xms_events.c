@@ -99,7 +99,7 @@ int analyse_xms_events_main() {
       CHECK_STATUS_BREAK(status);
 
       // Determine the event grade.
-      if ((nbefore_veryshort>0) || (nafter_veryshort>0)) {
+      if ((nbefore_veryshort>0)||(nafter_veryshort>0)) {
 	pattern->type = 3;
       } else if ((nbefore_short>0)||(nafter_short>0)) {
 	pattern->type = 2;

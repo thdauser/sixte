@@ -27,7 +27,9 @@ typedef struct {
     of rows in the FITS table and initializes the HTRSEventFile data
     structure. The access_mode parameter can be either READONLY or
     READWRITE. */
-int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode);
+int openHTRSEventFile(HTRSEventFile* hef, 
+		      char* const filename, 
+		      const int access_mode);
 
 /** Create and open a new FITS event file for the HTRS detector from a
     given FITS template. If the file already exists, the old file is
@@ -35,7 +37,9 @@ int openHTRSEventFile(HTRSEventFile* hef, char* filename, int access_mode);
     file the function also initializes the HTRSEventFile data
     structure by calling openHTRSEventFile(). The access_mode
     parameter is always READWRITE. */
-int openNewHTRSEventFile(HTRSEventFile* hef, char* filename, char* template);
+int openNewHTRSEventFile(HTRSEventFile* hef, 
+			 char* const filename, 
+			 char* const template);
 
 /** Close an open HTRS event list FITS file. */
 int closeHTRSEventFile(HTRSEventFile* hef);
@@ -52,7 +56,7 @@ int addHTRSEvent2File(HTRSEventFile* hef, HTRSEvent* event);
     In the event file the numbering of the pixels starts at 1, whereas
     in the returned HTRSEvent data structure the numbering starts at
     0. The return value of the function is the error status. */
-int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, long row);
+int HTRSEventFile_getRow(HTRSEventFile* hef, HTRSEvent* event, const long row);
 
 /** Read the next HTRSEvent from the HTRSEventFile. This routine
     increases the internal counter of the HTRSEventFile data
@@ -65,7 +69,7 @@ int HTRSEventFile_getNextRow(HTRSEventFile* hef, HTRSEvent* event);
 /** Write the specified column in the HTRSEventFile. The data to be
     written is given by the HTRSEvent. The row already must
     exist. Otherwise an error is returned. */
-int HTRSEventFile_writeRow(HTRSEventFile*, HTRSEvent*, long row);
+int HTRSEventFile_writeRow(HTRSEventFile*, HTRSEvent*, const long row);
 
 
 #endif /* HTRSEVENTFILE */

@@ -28,7 +28,7 @@ struct Parameters {
   /** Projection method: Plate carrée (0) or Hammer-Aitoff (1). */
   int projection;
 
-  double t0;
+  double TSTART;
   double timespan;
   /** Step width for the exposure map calculation [s]. */
   double dt; 
@@ -386,9 +386,9 @@ int comaexp_main()
     // --- Beginning of Exposure Map calculation
     headas_chat(5, "calculate the exposure map ...\n");
 
-    // LOOP over the given time interval from t0 to t0+timespan in steps of dt.
+    // LOOP over the given time interval from TSTART to TSTART+timespan in steps of dt.
     double time;
-    for (time=parameters.t0; time<parameters.t0+parameters.timespan;
+    for (time=parameters.TSTART; time<parameters.TSTART+parameters.timespan;
 	 time+=parameters.dt) {
       
       // Print the current time (program status information for the user).
@@ -676,8 +676,8 @@ int comaexp_getpar(struct Parameters *parameters)
   }
 
   // Get the start time of the exposure map calculation
-  else if ((status = PILGetReal("t0", &parameters->t0))) {
-    HD_ERROR_THROW("Error reading the 't0' parameter!\n", status);
+  else if ((status = PILGetReal("TSTART", &parameters->TSTART))) {
+    HD_ERROR_THROW("Error reading the 'TSTART' parameter!\n", status);
   }
 
   // Get the timespan for the exposure map calculation

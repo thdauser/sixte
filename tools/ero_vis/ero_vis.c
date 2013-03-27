@@ -28,7 +28,7 @@ struct Parameters {
   /** GTI file. */
   char GTIfile[MAXFILENAME];
   
-  double TIMEZERO;
+  double TSTART;
   double Exposure;
   double dt; 
 
@@ -181,7 +181,7 @@ int ero_vis_main()
     double time;
     double start=0;
     double ininterval=0;
-    for (time=par.TIMEZERO; time<par.TIMEZERO+par.Exposure; time+=par.dt) {
+    for (time=par.TSTART; time<par.TSTART+par.Exposure; time+=par.dt) {
       
       // Print the current time (program status information for the user).
       headas_chat(5, "\rtime: %.1lf s ", time);
@@ -263,8 +263,8 @@ int ero_vis_getpar(struct Parameters *par)
   }
 
   // Get the start time.
-  else if ((status = PILGetReal("TIMEZERO", &par->TIMEZERO))) {
-    SIXT_ERROR("failed reading the TIMEZERO");
+  else if ((status = PILGetReal("TSTART", &par->TSTART))) {
+    SIXT_ERROR("failed reading the TSTART");
   }
 
   // Get the exposure time.

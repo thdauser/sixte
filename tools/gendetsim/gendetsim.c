@@ -51,7 +51,7 @@ int gendetsim_main() {
     setGenDetIgnoreBkg(inst->det, 0);
 
     // Set the start time for the simulation.
-    setGenDetStartTime(inst->det, par.TIMEZERO);
+    setGenDetStartTime(inst->det, par.TSTART);
     
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
@@ -97,8 +97,11 @@ int gendetsim_main() {
     }
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
-    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &par.TIMEZERO,
+    double buffer_timezero=0.;
+    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
 		    "time offset", &status);
+    fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
+		    "start time", &status);
     CHECK_STATUS_BREAK(status);
 
     // Store the number of simulated input photons in the FITS header
@@ -119,11 +122,11 @@ int gendetsim_main() {
       CHECK_STATUS_BREAK(status);
 
       // Check whether we are still within the requested time interval.
-      if (impact.time < par.TIMEZERO) continue;
-      if (impact.time > par.TIMEZERO+par.Exposure) break;
+      if (impact.time < par.TSTART) continue;
+      if (impact.time > par.TSTART+par.Exposure) break;
 
       // Photon detection.
-      phdetGenDet(inst->det, &impact, par.TIMEZERO+par.Exposure, &status);
+      phdetGenDet(inst->det, &impact, par.TSTART+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
 
     };
@@ -131,7 +134,7 @@ int gendetsim_main() {
     // End of loop over all impacts in the input file.
 
     // Finalize the photon detection.
-    phdetGenDet(inst->det, NULL, par.TIMEZERO+par.Exposure, &status);
+    phdetGenDet(inst->det, NULL, par.TSTART+par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -159,7 +162,6 @@ int gendetsim_main() {
 }
 
 
-
 int getpar(struct Parameters* const par)
 {
   // String input buffer.
@@ -172,7 +174,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_file_name("ImpactList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the impact list!\n", status);
+    SIXT_ERROR("failed reading the name of the impact list");
     return(status);
   } 
   strcpy(par->ImpactList, sbuffer);
@@ -180,7 +182,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the event list!\n", status);
+    SIXT_ERROR("failed reading the name of the event list");
     return(status);
   } 
   strcpy(par->EventList, sbuffer);
@@ -188,7 +190,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the mission!\n", status);
+    SIXT_ERROR("failed reading the name of the mission");
     return(status);
   } 
   strcpy(par->Mission, sbuffer);
@@ -196,7 +198,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Instrument", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument");
     return(status);
   } 
   strcpy(par->Instrument, sbuffer);
@@ -204,7 +206,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("Mode", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument mode!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
   } 
   strcpy(par->Mode, sbuffer);
@@ -212,7 +214,7 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    SIXT_ERROR("failed reading the name of the XML file");
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
@@ -220,31 +222,31 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading MJDREF!\n", status);
+    SIXT_ERROR("failed reading MJDREF");
     return(status);
   } 
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
+    SIXT_ERROR("failed reading TSTART");
     return(status);
   } 
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    SIXT_ERROR("failed reading the exposure time");
     return(status);
   } 
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 

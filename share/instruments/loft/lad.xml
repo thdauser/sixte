@@ -41,7 +41,7 @@
        zero. Otherwise charge would be lost in split events, which,
        however, is already taken into account in the implemented
        RMF. -->
-  <threshold readout_lo_keV="0.0" readout_up_keV="50."/>
+  <threshold readout_lo_keV="0.0" readout_up_keV="80."/>
 
   <readout mode="event">
     <time_width value="1.e-5"/>

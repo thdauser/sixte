@@ -1,6 +1,6 @@
 EventList,fre,lq,"events.fits",,,"event list input file "
 LightCurve,f,lq,"lc.fits",,,"light curve output file "
-TIMEZERO,r,h,0.0,0.0,,"t0 - start time (s)"
+TSTART,r,h,0.0,0.0,,"start time (s)"
 length,r,lq,1000.0,0.0,,"length of the light curve (s) "
 dt,r,lq,1.0,0.0,,"time resolution (s) "
 Emin,r,h,-1.0,-1.0,1000000.0,"lower boundary of regarded energy band (keV) "

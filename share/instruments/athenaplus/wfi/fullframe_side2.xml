@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<instrument>
+<telescope>
+<arf filename="athenapp_ir_b4c_wfi_nofilter_onaxis.arf"/>
+<focallength value="12.0"/>
+<fov diameter="0.87"/>
+<psf filename="../psf_athenapp_vig_4_12.fits"/>
+<vignetting filename="../vignetting_athenapp_vig_4_12.fits"/>
+</telescope>
+
+<detector type="wfi" mode="fullframe">
+<dimensions xwidth="320" ywidth="400"/>
+<wcs xrpix="0.5" yrpix="400.5" xrval="0.0130." yrval="0.0128" xdelt="250.e-6" ydelt="250.e-6"/>
+<rmf filename="athenapp_ir_b4c_wfi_nofilter_onaxis.rmf"/>
+<split type="GAUSS" par1="11.e-6"/>
+
+<threshold_readout_lo_keV value="100.e-3"/>
+<threshold_event_lo_keV value="100.e-3"/>
+<threshold_split_lo_keV value="100.e-3"/>
+<readout mode="time">
+  <loop start="199" end="1" increment="-2" variable="$i">
+    <wait time="8.e-6"/>
+    <readoutline lineindex="$i" readoutindex="$i"/>
+    <readoutline lineindex="$i-1" readoutindex="$i-1"/>
+    <readoutline lineindex="399-$i" readoutindex="399-$i"/>
+    <readoutline lineindex="400-$i" readoutindex="400-$i"/>
+  </loop>
+  <newframe/>
+</readout>
+</detector>
+</instrument>

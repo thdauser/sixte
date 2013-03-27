@@ -137,10 +137,10 @@ Vector interpolateCircleVector(const Vector v1,
 void calculate_ra_dec(const Vector v, double* const ra, double* const dec)
 {
   // Determine the declination:
-  *dec = asin(v.z/sqrt(scalar_product(&v, &v)));
+  *dec=asin(v.z/sqrt(scalar_product(&v, &v)));
 
   // Determine the right ascension:
-  *ra = atan2(v.y, v.x);
+  *ra =atan2(v.y, v.x);
 }
 
 

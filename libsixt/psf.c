@@ -572,7 +572,8 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
   do { // ERROR handling loop
 
     // Create a new FITS-file:
-    if (fits_create_file(&fptr, filename, status)) break;
+    fits_create_file(&fptr, filename, status);
+    CHECK_STATUS_BREAK(*status);
 
     // Loop over the different PSFs in the storage.
     // Counters for energies, off-axis angles, and azimuthal angles.
@@ -584,16 +585,16 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  // Determine size of PSF sub-rectangles (don't save entire PSF but only 
 	  // the relevant region around the central peak, which has a probability 
 	  // greater than 0).
-	  int n = 0;     // width and
-	  int m = 0;     // height of sub-rectangle
-	  n = psf->data[index1][index2][index3].naxis1; // TODO
-	  m = psf->data[index1][index2][index3].naxis2;
+	  int n=0;     // width and
+	  int m=0;     // height of sub-rectangle
+	  n=psf->data[index1][index2][index3].naxis1;
+	  m=psf->data[index1][index2][index3].naxis2;
 
 	  // Create the relevant PSF sub-rectangle:
-	  sub_psf = (double *)realloc(sub_psf, n*m*sizeof(double));
+	  sub_psf=(double *)realloc(sub_psf, n*m*sizeof(double));
 	  if (!sub_psf) {
-	    *status = EXIT_FAILURE;
-	    HD_ERROR_THROW("Error allocating memory!\n", *status);
+	    *status=EXIT_FAILURE;
+	    SIXT_ERROR("memory allocation failed");
 	    break;
 	  }
 	  // Store the PSF in the 1D array to handle it to the FITS routine.
@@ -601,110 +602,143 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  int x, y;
 	  for (x=x0; x<x0+n; x++) {
 	    for (y=y0; y<y0+m; y++) {
-	      sub_psf[((x-x0)*n+y-y0)] = psf->data[index1][index2][index3].data[x][y];
+	      sub_psf[((x-x0)*n+y-y0)]=psf->data[index1][index2][index3].data[x][y];
 	    }
 	  }
     
 
 	  // Create an image in the FITS-file (primary HDU):
-	  long naxes[2] = {(long)(psf->data[index1][index2][index3].naxis1), 
-			   (long)(psf->data[index1][index2][index3].naxis2)};
-	  if (fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status)) break;
-	  //                                    |-> naxis
+	  long naxes[2]={(long)(psf->data[index1][index2][index3].naxis1), 
+	                 (long)(psf->data[index1][index2][index3].naxis2)};
+	  fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status);
+	  //                                |-> naxis
+	  CHECK_STATUS_BREAK(*status);
 	  nhdus++;
 	  int hdutype;
-	  if (fits_movabs_hdu(fptr, nhdus, &hdutype, status)) break;
+	  fits_movabs_hdu(fptr, nhdus, &hdutype, status);
+	  CHECK_STATUS_BREAK(*status);
 
 
 	  // Write the header keywords for PSF FITS-files (CAL/GEN/92-027):
-	  if (fits_write_key(fptr, TSTRING, "CTYPE1", "DETX",
-			     "detector coordinate system", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "CTYPE2", "DETY",
-			     "detector coordinate system", status)) break;
+	  fits_write_key(fptr, TSTRING, "CTYPE1", "DETX",
+			 "detector coordinate system", status);
+	  fits_write_key(fptr, TSTRING, "CTYPE2", "DETY",
+			 "detector coordinate system", status);
 	  
-	  if (fits_write_key(fptr, TSTRING, "HDUCLASS", "OGIP",
-			     "Extension is OGIP defined", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "HDUDOC", "CAL/GEN/92-020",
-			     "Document containing extension definition", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "HDUVERS", "1.0.0",
-			     "giving the version of the format", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "HDUCLAS1", "Image",
-			     "", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "HDUCLAS2", "PSF",
-			     "", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "HDUCLAS3", "PREDICTED",
-			     "", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "HDUCLAS4", "NET",
-			     "", status)) break;
+	  fits_write_key(fptr, TSTRING, "HDUCLASS", "OGIP",
+			 "Extension is OGIP defined", status);
+	  fits_write_key(fptr, TSTRING, "HDUDOC", "CAL/GEN/92-020",
+			 "Document containing extension definition", status);
+	  fits_write_key(fptr, TSTRING, "HDUVERS", "1.0.0",
+			 "giving the version of the format", status);
+	  fits_write_key(fptr, TSTRING, "HDUCLAS1", "Image", "", status);
+	  fits_write_key(fptr, TSTRING, "HDUCLAS2", "PSF", "", status);
+	  fits_write_key(fptr, TSTRING, "HDUCLAS3", "PREDICTED", "", status);
+	  fits_write_key(fptr, TSTRING, "HDUCLAS4", "NET", "", status);
       
-	  if (fits_write_key(fptr, TSTRING, "CUNIT1", "m", "", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "CUNIT2", "m", "", status)) break;
-	  double dbuffer = psf->data[index1][index2][index3].naxis1*0.5+0.5;
-	  if (fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
-			     "X axis reference pixel", status)) break;
-	  dbuffer = psf->data[index1][index2][index3].naxis2*0.5+0.5;
-	  if (fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
-			     "Y axis reference pixel", status)) break;
-	  dbuffer = 0.;
-	  if (fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
-			     "coord of X ref pixel", status)) break;
-	  if (fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
-			     "coord of Y ref pixel", status)) break;
-	  if (fits_write_key(fptr, TDOUBLE, "CDELT1", 
-			     &psf->data[index1][index2][index3].cdelt1, // [m]
-			     "X axis increment", status)) break;
-	  if (fits_write_key(fptr, TDOUBLE, "CDELT2", 
-			     &psf->data[index1][index2][index3].cdelt2, // [m]
-			     "Y axis increment", status)) break;
+	  fits_write_key(fptr, TSTRING, "CUNIT1", "m", "", status);
+	  fits_write_key(fptr, TSTRING, "CUNIT2", "m", "", status);
+	  double dbuffer=psf->data[index1][index2][index3].naxis1*0.5+0.5;
+	  fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
+			 "X axis reference pixel", status);
+	  dbuffer=psf->data[index1][index2][index3].naxis2*0.5+0.5;
+	  fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
+			 "Y axis reference pixel", status);
+	  dbuffer=0.;
+	  fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
+			 "coord of X ref pixel", status);
+	  fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
+			 "coord of Y ref pixel", status);
+	  fits_write_key(fptr, TDOUBLE, "CDELT1", 
+			 &psf->data[index1][index2][index3].cdelt1, // [m]
+			 "X axis increment", status);
+	  fits_write_key(fptr, TDOUBLE, "CDELT2", 
+			 &psf->data[index1][index2][index3].cdelt2, // [m]
+			 "Y axis increment", status);
 	  
-	  dbuffer = 0.0;
-	  if (fits_write_key(fptr, TDOUBLE, "BACKGRND", &dbuffer, 
-			     "background count rate per pixel", status)) break;
+	  dbuffer=0.0;
+	  fits_write_key(fptr, TDOUBLE, "BACKGRND", &dbuffer, 
+			 "background count rate per pixel", status);
 
 	  // Mission
-	  if (fits_write_key(fptr, TSTRING, "TELESCOP", "", // eROSITA
-			     "Satellite", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "INSTRUME", "", // pnCCD1
-			     "Instrument", status)) break;
-	  if (fits_write_key(fptr, TSTRING, "FILTER", "NONE",
-			     "Filter", status)) break;
+	  fits_write_key(fptr, TSTRING, "TELESCOP", "", "Mission name", status);
+	  fits_write_key(fptr, TSTRING, "INSTRUME", "", "Instrument", status);
+	  fits_write_key(fptr, TSTRING, "FILTER", "NONE", "Filter", status);
+
+	  // Creator.
+	  fits_write_key(fptr, TSTRING, "ORIGIN", "ECAP", "", status);
 
 	  // Write the ENERGY, THETA, and PHI for this particular PSF set.
 	  // This information is used to find the appropriate PSF for 
 	  // an incident photon with particular energy and off-axis angle.
-	  dbuffer = psf->energies[index1]*1000.;
-	  if (fits_write_key(fptr, TDOUBLE, "ENERGY", &dbuffer, 
-			     "photon energy for the PSF generation in [eV]", status)) break;
-	  dbuffer = psf->thetas[index2]*180.*60./M_PI;
-	  if (fits_write_key(fptr, TDOUBLE, "THETA", &dbuffer, 
-			     "off-axis angle in [arc min]", status)) break;
-	  dbuffer = psf->phis[index3]*180./M_PI;
-	  if (fits_write_key(fptr, TDOUBLE, "PHI", &dbuffer, 
-			     "azimuthal angle in [degree]", status)) break;
+	  dbuffer=psf->energies[index1]*1000.;
+	  fits_write_key(fptr, TDOUBLE, "ENERGY", &dbuffer, 
+			 "photon energy for the PSF generation in [eV]", status);
+	  dbuffer=psf->thetas[index2]*180.*60./M_PI;
+	  fits_write_key(fptr, TDOUBLE, "THETA", &dbuffer, 
+			 "off-axis angle in [arc min]", status);
+	  dbuffer=psf->phis[index3]*180./M_PI;
+	  fits_write_key(fptr, TDOUBLE, "PHI", &dbuffer, 
+			 "azimuthal angle in [degree]", status);
+
+	  fits_write_key(fptr, TDOUBLE, "ENERG_LO", &psf->energies[index1],
+			 "[keV]", status);
+	  fits_write_key(fptr, TDOUBLE, "ENERG_HI", &psf->energies[index1],
+			 "[keV]", status);
+
+	  dbuffer=-99.0;
+	  fits_write_key(fptr, TDOUBLE, "CHANMIN", &dbuffer, "", status);
+ 	  fits_write_key(fptr, TDOUBLE, "CHANMAX", &dbuffer, "", status);
+ 	  fits_write_key(fptr, TSTRING, "CHANTYPE", "PI", "", status);
+
+	  fits_write_key(fptr, TSTRING, "CCLS0001", "BCF", "", status);
+	  fits_write_key(fptr, TSTRING, "CDTP0001", "TASK", "", status);
+	  fits_write_key(fptr, TSTRING, "CCNM0001", "2D_PSF", "", status);
+	  
+	  char sbuffer[MAXMSG];
+	  sprintf(sbuffer, "ENERGY( %.1f)keV", psf->energies[index1]);
+	  fits_write_key(fptr, TSTRING, "CBD10001", sbuffer, "", status);
+	  sprintf(sbuffer, "THETA( %.1f)arcmin", psf->thetas[index2]*180.*60./M_PI);
+	  fits_write_key(fptr, TSTRING, "CBD20001", sbuffer, "", status);
+	  sprintf(sbuffer, "PHI( %.1f)deg", psf->phis[index3]*180./M_PI);
+	  fits_write_key(fptr, TSTRING, "CBD30001", sbuffer, "", status);
+	  fits_write_key(fptr, TSTRING, "CVSD0001", "2000-01-01", "", status);
+	  fits_write_key(fptr, TSTRING, "CVST0001", "00:00:00", "", status);
+	  fits_write_key(fptr, TSTRING, "CDES0001", "Theoretical images", 
+			 "", status);
 
 	  HDpar_stamp(fptr, nhdus, status);
-	  if (EXIT_SUCCESS!=*status) break;
+	  CHECK_STATUS_BREAK(*status);
 	  // END of writing header keywords.
 
 
 	  // Write the image to the file:
-	  long fpixel[2] = {x0+1, y0+1};  // Lower left corner.
-	  //                   |-----|--> FITS coordinates start at (1,1)
+	  long fpixel[2]={x0+1, y0+1};  // Lower left corner.
+	  //                 |-----|--> FITS coordinates start at (1,1)
 	  // Upper right corner.
-	  long lpixel[2] = {psf->data[index1][index2][index3].naxis1, 
-			    psf->data[index1][index2][index3].naxis2}; 
+	  long lpixel[2]={psf->data[index1][index2][index3].naxis1, 
+			  psf->data[index1][index2][index3].naxis2}; 
 	  fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, sub_psf, status);
+	  CHECK_STATUS_BREAK(*status);
       
+	  // Add a checksum for this HDU.
+	  fits_write_chksum(fptr, status);
+	  CHECK_STATUS_BREAK(*status);
 	}
+	CHECK_STATUS_BREAK(*status);
       }
-    } // END of loops over individual PSF items in the storage.
+      CHECK_STATUS_BREAK(*status);
+    } 
+    CHECK_STATUS_BREAK(*status);
+    // END of loops over individual PSF items in the storage.
 
   } while (0); // END of ERROR handling loop
 
 
-  // Close the FITS file.
+  // Close the output file.
   if (NULL!=fptr) fits_close_file(fptr, status);
 
+  // Release memory.
   if (NULL!=sub_psf) free(sub_psf);
 
   return(*status);

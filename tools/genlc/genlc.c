@@ -20,7 +20,7 @@ int genlc_main() {
 
   // Register HEATOOL:
   set_toolname("genlc");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -35,6 +35,21 @@ int genlc_main() {
 
     // Set the input pattern file.
     fits_open_table(&infptr, par.EventList, READONLY, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine timing keywords.
+    char comment[MAXMSG];
+    char mission[MAXMSG];
+    char telescop[MAXMSG];
+    char instrume[MAXMSG];
+    char filter[MAXMSG];
+    double mjdref, timezero;
+    fits_read_key(infptr, TSTRING, "MISSION", mission, comment, &status);
+    fits_read_key(infptr, TSTRING, "TELESCOP", telescop, comment, &status);
+    fits_read_key(infptr, TSTRING, "INSTRUME", instrume, comment, &status);
+    fits_read_key(infptr, TSTRING, "FILTER", filter, comment, &status);
+    fits_read_key(infptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    fits_read_key(infptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the column containing the time information.
@@ -66,7 +81,7 @@ int genlc_main() {
     long nbins=(long)(par.length/par.dt);
 
     // Allocate memory for the count histogram.
-    headas_chat(5, "create empty light curve with %ld bins ...\n",
+    headas_chat(5, "create light curve with %ld bins ...\n",
 		nbins);
     counts=(long*)malloc(nbins*sizeof(long));
     CHECK_NULL_BREAK(counts, status, 
@@ -97,9 +112,10 @@ int genlc_main() {
 
       // If the event was detected before the start of the light
       // curve, we have to neglect it.
-      if (time<par.TIMEZERO) continue;
+      if (time<par.TSTART) continue;
+      if (time>par.TSTART+par.length) continue;
 
-      // If necessary, read the energy/signal of the next event.
+      // If necessary, read the energy/signal of the event.
       if (csignal>0) {
 	float signal;
 	float fnull=0.0;
@@ -113,9 +129,9 @@ int genlc_main() {
       }
       
       // Determine the respective bin in the light curve.
-      long bin=((long)((time-par.TIMEZERO)/par.dt+1.0))-1;
+      long bin=((long)((time-par.TSTART)/par.dt+1.0))-1;
 		
-      // If the event exceeds the end of the light curve, simply neglect it.
+      // If the event exceeds the end of the light curve, neglect it.
       if (bin>=nbins) continue;
       
       // Add the event to the light curve.
@@ -128,8 +144,25 @@ int genlc_main() {
     // Store the light curve in the output file.
     headas_chat(3, "store light curve ...\n");
 
-    // Create a new FITS-file (remove existing one before):
-    remove(par.LightCurve);
+    // Check if the file already exists.
+    int exists;
+    fits_file_exists(par.LightCurve, &exists, &status);
+    CHECK_STATUS_BREAK(status);
+    if (0!=exists) {
+      if (0!=par.clobber) {
+	// Delete the file.
+	remove(par.LightCurve);
+      } else {
+	// Throw an error.
+	char msg[MAXMSG];
+	sprintf(msg, "file '%s' already exists", par.LightCurve);
+	SIXT_ERROR(msg);
+	status=EXIT_FAILURE;
+	break;
+      }
+    }
+
+    // Create a new FITS-file.
     char buffer[MAXFILENAME];
     sprintf(buffer, "%s(%s%s)", par.LightCurve, SIXT_DATA_PATH, 
 	    "/templates/genlc.tpl");
@@ -142,26 +175,45 @@ int genlc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Get column numbers.
-    int cotime, ccounts;
-    fits_get_colnum(outfptr, CASEINSEN, "TIME", &cotime, &status);
+    int ccounts;
     fits_get_colnum(outfptr, CASEINSEN, "COUNTS", &ccounts, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
+    fits_update_key(outfptr, TSTRING, "MISSION", mission, 
+		    "Mission name", &status);
+    fits_update_key(outfptr, TSTRING, "TELESCOP", telescop, 
+		    "Telescope name", &status);
+    fits_update_key(outfptr, TSTRING, "INSTRUME", instrume, 
+		    "Instrument name", &status);
+    fits_update_key(outfptr, TSTRING, "FILTER", filter, 
+		    "Filter used", &status);
     fits_update_key(outfptr, TSTRING, "TIMEUNIT", "s", 
 		    "time unit", &status);
-    fits_update_key(outfptr, TDOUBLE, "TIMERES", &par.dt, 
+    fits_update_key(outfptr, TDOUBLE, "TIMEDEL", &par.dt, 
 		    "time resolution", &status);
+    fits_update_key(outfptr, TDOUBLE, "MJDREF", &mjdref, 
+		    "reference MJD", &status);
+    timezero+=0.5*par.dt;
+    fits_update_key(outfptr, TDOUBLE, "TIMEZERO", &timezero, 
+		    "time offset", &status);
+    fits_update_key(outfptr, TDOUBLE, "TSTART", &par.TSTART, 
+		    "start time", &status);
+    double dbuffer=par.TSTART+par.length;
+    fits_update_key(outfptr, TDOUBLE, "TSTOP", &dbuffer, 
+		    "stop time", &status);
+    fits_update_key(outfptr, TFLOAT, "E_MIN", &par.Emin,
+		    "low energy for channel (keV)", &status);
+    fits_update_key(outfptr, TFLOAT, "E_MAX", &par.Emin,
+		    "high energy for channel (keV)", &status);
     CHECK_STATUS_BREAK(status);
+
+    // The ouput table does not contain a TIME column. The 
+    // center of the n-th time bin (n>=1) is determined by
+    // t(n)=TIMEZERO + TIMEDEL*(n-1).
 
     // Write the data into the table.
     for (ii=0; ii<nbins; ii++) {
-      // Convert the count histogram to a light curve with
-      // time and rate entries.
-      double dbuffer=(ii+1)*par.dt + par.TIMEZERO;
-      fits_write_col(outfptr, TDOUBLE, cotime, ii+1, 1, 1, 
-		     &dbuffer, &status);
-      CHECK_STATUS_BREAK(status);
       fits_write_col(outfptr, TLONG, ccounts, ii+1, 1, 1, 
 		     &(counts[ii]), &status);
       CHECK_STATUS_BREAK(status);
@@ -212,7 +264,7 @@ int genlc_getpar(struct Parameters* par)
   strcpy(par->LightCurve, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the start time of the light curve");
     return(status);

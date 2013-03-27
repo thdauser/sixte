@@ -2,18 +2,17 @@ AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
-AM_CFLAGS+=-I@top_srcdir@/extlib/ape/include
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
 AM_CFLAGS+=-I@top_srcdir@/extlib/heainit
 AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
-pfilesdir=PFILESDIR@
+pfilesdir=@PFILESDIR@
 dist_pfiles_DATA=photonmerge.par
 
 ############ BINARIES #################

@@ -28,7 +28,7 @@ struct Parameters {
   float RA, Dec;
 
   double MJDREF;
-  double TIMEZERO;
+  double TSTART;
   double Exposure;
 
   int Seed;
@@ -74,7 +74,7 @@ int projev_main() {
     headas_chat(3, "initialize ...\n");
 
     // Start time for the simulation.
-    double t0=par.TIMEZERO;
+    double t0=par.TSTART;
 
     // Determine the random number seed.
     int seed;
@@ -193,13 +193,13 @@ int projev_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 
   status=ape_trad_query_file_name("PatternList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the pattern list!\n", status);
+    SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
   } 
   strcpy(par->PatternList, sbuffer);
@@ -207,7 +207,7 @@ int projev_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the mission!\n", status);
+    SIXT_ERROR("failed reading the name of the mission");
     return(status);
   } 
   strcpy(par->Mission, sbuffer);
@@ -215,7 +215,7 @@ int projev_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Instrument", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument");
     return(status);
   } 
   strcpy(par->Instrument, sbuffer);
@@ -223,7 +223,7 @@ int projev_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Mode", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the instrument mode!\n", status);
+    SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
   } 
   strcpy(par->Mode, sbuffer);
@@ -231,7 +231,7 @@ int projev_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("XMLFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
+    SIXT_ERROR("failed reading the name of the XML file");
     return(status);
   } 
   strcpy(par->XMLFile, sbuffer);
@@ -239,7 +239,7 @@ int projev_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the attitude!\n", status);
+    SIXT_ERROR("failed reading the name of the attitude");
     return(status);
   } 
   strcpy(par->Attitude, sbuffer);
@@ -247,44 +247,44 @@ int projev_getpar(struct Parameters* par)
 
   status=ape_trad_query_float("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the right ascension of the telescope "
-		   "pointing!\n", status);
+    SIXT_ERROR("failed reading the right ascension of the telescope "
+		   "pointing");
     return(status);
   } 
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the declination of the telescope pointing!\n", status);
+    SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
   } 
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading MJDREF!\n", status);
+    SIXT_ERROR("failed reading MJDREF");
     return(status);
   } 
 
-  status=ape_trad_query_double("TIMEZERO", &par->TIMEZERO);
+  status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading TIMEZERO!\n", status);
+    SIXT_ERROR("failed reading TSTART");
     return(status);
   } 
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the exposure time!\n", status);
+    SIXT_ERROR("failed reading the exposure time");
     return(status);
   } 
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the seed for the random number generator!\n", status);
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 

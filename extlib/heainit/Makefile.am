@@ -1,6 +1,6 @@
 AM_CFLAGS =-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/ape/include
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio
 
 ########### LIBRARIES #################
