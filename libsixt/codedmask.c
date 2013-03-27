@@ -229,6 +229,7 @@ int getCodedMaskImpactPos(struct Point2d* const position,
   double scpy = scalar_product(&photon_direction, &telescope->ny);
   // Determine the component of the photon direction within the detector plane.
   double radius = sqrt(pow(scpx,2.)+pow(scpy,2.));
+
   // Determine the azimuthal angle of the photon within the detector plane
   // with respect to the detector nx axis.
   double alpha=atan2(scpy, scpx);
@@ -236,12 +237,12 @@ int getCodedMaskImpactPos(struct Point2d* const position,
   // Determine the impact position in the mask plane.
   position->x=
     ((double)(mask->transparent_pixels[pixel][0])
-     -mask->crpix1//+0.5+sixt_get_random_number(status)
+     -mask->crpix1+0.5+sixt_get_random_number(status)
      )*mask->cdelt1 + mask->crval1;
   CHECK_STATUS_RET(*status, 0);
   position->y=
     ((double)(mask->transparent_pixels[pixel][1])
-     -mask->crpix2//+0.5+sixt_get_random_number(status)
+     -mask->crpix2+0.5+sixt_get_random_number(status)
      )*mask->cdelt2 + mask->crval2;
   CHECK_STATUS_RET(*status, 0);
 
@@ -277,13 +278,15 @@ int getImpactPos (struct Point2d* const position,
    //Pixel points to an arbitrary pixel out of all transparent ones.
 
    //Second: get the impact positon in the mask plane in meters.
-   //(pixel_pos - reference_pixel)*width of one pixel+value at refernce_pixel
+   //(pixel_pos - reference_pixel  +0.5[since crpix is the middle of the ref. pixel,
+   //so to start at the left pixel border, add 0.5] + random number[to have a random
+   //position within the whole pixel])*width of one pixel+value at reference_pixel
    position->x =
-     ((double)(mask->transparent_pixels[pixel][0])-mask->crpix1)
+     ((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
      *mask->cdelt1+mask->crval1;
    CHECK_STATUS_RET(*status, 0);
    position->y =
-     ((double)(mask->transparent_pixels[pixel][1])-mask->crpix2)
+     ((double)(mask->transparent_pixels[pixel][1])-mask->crpix2+0.5+sixt_get_random_number(status))
      *mask->cdelt2+mask->crval2;
    CHECK_STATUS_RET(*status, 0);
 

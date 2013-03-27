@@ -106,7 +106,7 @@ int comaimg2_main() {
 
       //Check if the required time interval for the simulation
       //lies within the time interval in the attitude-file
-      if((ac->entry[0].time > 0) || (ac->entry[ac->nentries-1].time) < par.Exposure){
+      if((ac->entry[0].time > 0) || ((ac->entry[ac->nentries-1].time) < (par.Exposure +par.Timezero))){
 	status=EXIT_FAILURE;
 	SIXT_ERROR("attitude data does not cover the specified period");
 	break;
@@ -142,12 +142,12 @@ int comaimg2_main() {
     while (plf->row < plf->nrows) {
          
       //Read an entry from the photon list:
-      Photon photon={.time=0.};
+      Photon photon={.time= 0.0};
       status=PhotonListFile_getNextRow(plf, &photon);
       if (EXIT_SUCCESS!=status) break;
 
       //Check whether photon-list-entry is within requested time interval.
-      if (photon.time > par.Exposure)
+      if (photon.time > (par.Exposure + par.Timezero))
 	break;
 
       //Determine unit vector in photon-direction
@@ -308,6 +308,13 @@ int comaimg2_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the declination of the telescope");
     return(status);
   } 
+
+  //Read time-offset for simulated intervall [s].
+  status=ape_trad_query_double("Timezero", &par->Timezero);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the time-offset for simulated intervall");
+    return(status);
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {

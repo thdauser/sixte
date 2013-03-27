@@ -18,14 +18,20 @@ int comarecon2_main() {
   SquarePixels* detector_pixels=NULL;
   CodedMask* mask=NULL;
   SourceImage* sky_pixels=NULL;
-  ReconArray* recon=NULL;
+ 
+ 
+  ReadEvent* ea=NULL;
+  double* ReconArray1d=NULL; 
+  double* ReconImage1d=NULL;
+  double* EventArray1d=NULL; 
+  double* EventImage1d=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
 
 
   // Register HEATOOL:
   set_toolname("comarecon2");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -53,12 +59,12 @@ int comarecon2_main() {
     detector_pixels=newSquarePixels(&spp, &status);
     CHECK_STATUS_BREAK(status);
     // END of DETECTOR CONFIGURATION SETUP    
-
+   
     // SKY IMAGE setup.
     float delta = atan(par.pixelwidth/par.MaskDistance);
     struct SourceImageParameters sip = {
-      .naxis1 = 2*par.width -1,
-      .naxis2 = 2*par.width -1,
+      .naxis1 = 2*par.width, //-1,
+      .naxis2 = 2*par.width, //-1,
       .cdelt1 = delta,
       .cdelt2 = delta,
       .crval1 = 0.,
@@ -77,9 +83,13 @@ int comarecon2_main() {
 
     // Beginning of actual detector simulation (after loading required data):
     headas_chat(5, "start image reconstruction process ...\n");
+    if (par.ReconType ==1)
+      //Begin of reconstruction process type1 (direct deconvolution)
+      {
+      ReconArrayFits* recon_fits=NULL;
 
-    // Loop over all events in the FITS file.
-    while (0==EventFileEOF(&eventfile->generic)) {
+      // Loop over all events in the FITS file.
+      while (0==EventFileEOF(&eventfile->generic)) {
 
       CoMaEvent event;
       status=CoMaEventFile_getNextRow(eventfile, &event);
@@ -88,14 +98,11 @@ int comarecon2_main() {
       // Add the event to the SquarePixels array.
       detector_pixels->array[event.rawx][event.rawy].charge+=1.0;
 
-    } // END of scanning the impact list.
+    } // END of scanning the event list.
     CHECK_STATUS_BREAK(status);
 
-    //TODO: Write imaging algorithm
-
     //Get the reconstruction array:
-    recon=getReconArray(mask, &status);
-    SaveReconArray(recon, par.ReconArray, &status);
+    recon_fits=getReconArrayForFits(mask, &status);
 
     int s_x, s_y, ii, jj;
     //determine the convolution source_image = R*D
@@ -109,17 +116,126 @@ int comarecon2_main() {
 	for (ii=MAX(0,-xshift); ii < detector_pixels->xwidth-1-MAX(0,xshift); ii++){
 	  for(jj=MAX(0,-yshift); jj < detector_pixels->ywidth-1-MAX(0,yshift); jj++){
 	    sky_pixels->pixel[s_x][s_y]+=
-	     recon->Rmap[ii][jj] * detector_pixels->array[ii+xshift][jj+yshift].charge;
+	     recon_fits->Rmap[ii][jj] * detector_pixels->array[ii+xshift][jj+yshift].charge;
 	  }
 	}
       }
     }
     // Write the reconstructed source function to the output FITS file.
     saveSourceImage(sky_pixels, par.Image, &status);
+    SaveReconArrayFits(recon_fits, par.ReconArray, &status);
     CHECK_STATUS_BREAK(status);
 
-  } while(0);  // END of the error handling loop.
+  // --- Cleaning up ---
+  headas_chat(5, "cleaning up ...\n");
 
+  // Free the detector and sky image pixels.
+  destroySquarePixels(&detector_pixels);
+  free_SourceImage(sky_pixels);
+  FreeReconArrayFits(recon_fits);
+  }//END of reconstruction process type1 (direct deconvolution)
+
+  else if(par.ReconType==2)
+    //Begin of reconstruction process type2 (FFT)
+    {
+     ReconArray* recon=NULL;
+
+    //Get empty event array object (type: ReadEvent).
+    ea=getEventArray(detector_pixels, &status);
+
+    // Loop over all events in the FITS file.
+    while (0==EventFileEOF(&eventfile->generic)) {
+
+      status=readEventList_nextRow(eventfile, ea);
+      CHECK_STATUS_BREAK(status);
+
+      //Get the 2d-EventArray
+      ea->EventArray[ea->rawx][ea->rawy]+=ea->charge;
+      
+      
+    } // END of scanning the event list.
+    CHECK_STATUS_BREAK(status);
+
+    //Get the reconstruction array:
+    recon=getReconArray(mask, &status);
+    int Size1 = recon->naxis1;
+    int Size2 = recon->naxis2;
+
+    int ii, jj, count;
+
+    //Get the 1d image of the reconstruction array:
+    ReconImage1d=SaveReconArray1d(recon, &status);
+    //testFitsImage1d(ReconImage1d, "reconTest.fits", Size1, Size2);
+
+    //Get the 1d image of the event array:
+    EventImage1d=SaveEventArray1d(ea, &status);
+    //testFitsImage1d(EventImage1d, "eventTest.fits", Size1, Size2);
+
+    //Check whether the ReconArray and the EventArray have the same size
+    if ((recon->naxis1 != ea->naxis1) || (recon->naxis2 != ea->naxis2)){
+      printf ("Error: ReconArrray and EventArray must have the same size!\n");
+      break;
+    }
+   
+    //reconstruct sky-image via FFT
+    //perform a fft with the ReconArray
+   
+    fftw_complex* fftReconArray=NULL;
+    fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2);
+
+    //perform a fft with the EventArray
+    fftw_complex* fftEventArray=NULL;
+    fftEventArray=FFTOfArray_1d(EventImage1d, Size1, Size2 );
+
+    //multiply the komplex conjugate of fftEventArray with fftReconArray
+    fftw_complex* Multiply = NULL;
+    Multiply=(fftw_complex*) fftw_malloc(sizeof(fftw_complex)*(Size1*Size2/*+Size1*/));
+    for(count=0; count<(Size1+Size1*Size2);count++){
+      Multiply[count][0]=fftEventArray[count][0]*fftReconArray[count][0]
+	-fftEventArray[count][1]*fftReconArray[count][1];
+      Multiply[count][1]=fftEventArray[count][0]*fftReconArray[count][1]
+	+fftEventArray[count][1]*fftReconArray[count][0];
+    }
+    //Inverse FFT of Multilpy which already is of type fftw_complex
+    fftw_complex* fftInvMultiply=NULL;
+    fftInvMultiply=FFTOfArrayInverse_fftwcomplex(Multiply,Size1,Size2);
+       
+    for(ii=0; ii<Size1; ii++){
+      for(jj=0; jj<Size2; jj++){
+	//sky_pixels->pixel[ii][jj]=fftInvMultiply[ii+Size1*jj][0];
+	recon->RImage[ii][jj]=fftInvMultiply[ii+Size1*jj][0];
+	}
+    }
+
+    //Resize the image
+     for(ii=0; ii<=Size1/2; ii++){
+      for(jj=0; jj<=Size2/2; jj++){
+	sky_pixels->pixel[Size1/2+ii][Size2/2+jj]=recon->RImage[ii][jj];
+      }
+      }
+
+     for(ii=Size1/2; ii<=Size1; ii++){
+      for(jj=Size2/2; jj<=Size2; jj++){
+	sky_pixels->pixel[(int)fabs(Size1/2-ii)][(int)fabs(Size2/2-jj)]=recon->RImage[ii][jj];
+      }
+      }
+
+      for(ii=Size1/2+1; ii<Size1; ii++){
+      for(jj=0; jj<Size2/2; jj++){
+	sky_pixels->pixel[(int)fabs(Size1/2-ii)-1][Size2/2+jj+1]=recon->RImage[ii][jj];
+      }
+      }
+
+     for(ii=0; ii<Size1/2; ii++){
+       for(jj=Size2/2+1; jj<Size2; jj++){
+	 sky_pixels->pixel[ii+Size1/2+1][(int)fabs(Size2/2-jj)-1]=recon->RImage[ii][jj];
+      }
+      }
+
+    // Write the reconstructed source function to the output FITS file.
+    saveSourceImage(sky_pixels, par.Image, &status);
+    CHECK_STATUS_BREAK(status);
+    
 
   // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
@@ -128,6 +244,15 @@ int comarecon2_main() {
   destroySquarePixels(&detector_pixels);
   free_SourceImage(sky_pixels);
   FreeReconArray(recon);
+  FreeReconImage(recon);
+  FreeReconArray1d(ReconArray1d);
+  FreeEventArray(ea);
+  FreeEventArray1d(EventArray1d);
+
+    }//END of reconstruction process type2 (FFT)
+  else {
+    //Error: wrong reconstruction type
+  }} while(0);  // END of the error handling loop.
 
   // Close the FITS files.
   status=closeCoMaEventFile(eventfile);
@@ -156,9 +281,14 @@ int comarecon2_getpar(struct Parameters* par)
   SIXT_ERROR("failed reading the filename of the output image");
   }
 
- //Get the filename of the ReconArray file (FITS output file).
+  //Get the filename of the ReconArray file (FITS output file).
    else if ((status=PILGetFname("ReconArray", par->ReconArray))) {
   SIXT_ERROR("failed reading the filename of the ReconArray");
+  }
+
+  // Get reconstruction type.
+  else if ((status=PILGetInt("ReconType", &par->ReconType))) {
+    SIXT_ERROR("failed reading the reconstruction type");
   }
 
   // Read the width of the detector in [pixel].
@@ -178,66 +308,4 @@ int comarecon2_getpar(struct Parameters* par)
   CHECK_STATUS_RET(status, status);
 
   return(status);
-}
-
-
-//function test
-
-void SaveReconArray(ReconArray* recon, char* filename, int* status)
-{
-  fitsfile *fptr=NULL;
-  double *image1d=NULL;
-
-  // Print information to STDOUT.
-  char msg[MAXMSG];
-  sprintf(msg, "Store ReconArray in file '%s' ...\n", filename);
-  headas_chat(5, msg);
- 
-  do { // ERROR handling loop
-
-
-    // If the specified file already exists, remove the old version.
-    remove(filename);
- 
-    // Create a new FITS-file:
-    if (fits_create_file(&fptr, filename, status)) break;
-
-    // Allocate memory for the 1-dimensional image buffer (required for
-    // output to FITS file).
-    image1d = (double*)malloc(recon->naxis1*recon->naxis2*sizeof(double));
-    if (!image1d) {
-      *status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error allocating memory!\n", *status);
-      break;
-    }
-
-    // Store the ReconArray in the 1-dimensional buffer to handle it 
-    // to the FITS routine.
-    int x, y;
-    for (x=0; x<recon->naxis1; x++) {
-      for (y=0; y<recon->naxis2; y++) {
-	image1d[(x+ recon->naxis1*y)] = recon->Rmap[x][y];
-      }
-    }
-    
-    // Create an image in the FITS-file (primary HDU):
-    long naxes[2] = {(long)(recon->naxis1), (long)(recon->naxis2)};
-    if (fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status)) break;
-    //                                   |-> naxis
-    //    int hdutype;
-    if (fits_movabs_hdu(fptr, 1, NULL, status)) break;
-
-    // Write the image to the file:
-    long fpixel[2] = {1, 1};  // Lower left corner.
-    //                |--|--> FITS coordinates start at (1,1)
-    // Upper right corner.
-    long lpixel[2] = {recon->naxis1, recon->naxis2}; 
-    fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, image1d, status);
-
-  } while (0); // END of ERROR handling loop
-
-  // Close the FITS file.
-  if (NULL!=fptr) fits_close_file(fptr, status);
-
-  if (NULL!=image1d) free(image1d);
 }

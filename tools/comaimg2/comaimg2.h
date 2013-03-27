@@ -33,11 +33,14 @@ struct Parameters {
   float x_mask, y_mask;
   //detector-size (width, depth) ([m])
   float x_det, y_det;
-  
+
   //detector pointing direction
   double RA, DEC;
 
-  //Exposure time
+  //time-offset ([s])
+  double Timezero;
+
+  //Exposure time ([s])
   double Exposure;
 };
 

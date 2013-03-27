@@ -9,8 +9,12 @@
 /////////////////////////////////////////////
 typedef struct {
   double** Rmap; //the reconstruction-array data built from mask-array-data.
+  double**RImage; //the reconstructed image which is twice as large as the sky-image
   double open_fraction; //Transparency of the mask.
                         //Ratio #(transparent pixels)/#(all pixels)
+
+
+  int naxis1, naxis2;    // Width of the image [pixel]
 }ReconArray;
 
 typedef struct {
@@ -38,6 +42,14 @@ ReconArrayFits* getReconArrayForFits(const CodedMask* const mask, int* const sta
 
 void FreeReconArray(ReconArray* recon);
 
-void SaveReconArray(ReconArray* recon, char* filename, int* status);
+void FreeReconArrayFits(ReconArrayFits* recon);
+
+void FreeReconImage(ReconArray* recon);
+
+void FreeReconArray1d(double* ReconArray1d);
+
+double* SaveReconArray1d(ReconArray* recon, int* status);
+
+void SaveReconArrayFits(ReconArrayFits* recon, char* filename, int* status);
 
 #endif
