@@ -111,7 +111,7 @@ static long SourcesPartition(Source* const list,
 			     const long pivotIndex, const int axis)
 {
   Vector location=unit_vector(list[pivotIndex].ra, 
-				list[pivotIndex].dec);
+			      list[pivotIndex].dec);
   double pivotValue=getVectorDimensionValue(&location, axis);
 
   // Move pivot to end.
@@ -125,9 +125,11 @@ static long SourcesPartition(Source* const list,
   for (ii=left; ii<right; ii++) { // left ≤ i < right  
     location=unit_vector(list[ii].ra, list[ii].dec);
     if (getVectorDimensionValue(&location, axis)<=pivotValue) {
-      buffer=list[storeIndex];
-      list[storeIndex]=list[ii];
-      list[ii]=buffer;
+      if (ii>storeIndex) {
+	buffer=list[storeIndex];
+	list[storeIndex]=list[ii];
+	list[ii]=buffer;
+      }
       storeIndex++;
     }
   }
@@ -145,7 +147,7 @@ void quicksortSources(Source* const list, const long left,
 		      const long right, const int axis)
 {
   if (right>left) {
-    // select a pivot index //(e.g. pivotIndex := left+(right-left)/2)
+    // Select a pivot index (e.g. pivotIndex := left+(right-left)/2).
     int pivotIndex=left+(right-left)/2;
     int pivotNewIndex=SourcesPartition(list, left, right, pivotIndex, axis);
     quicksortSources(list, left, pivotNewIndex-1, axis);

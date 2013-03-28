@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.72], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.73], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
@@ -20,10 +20,10 @@ LT_INIT #([disable-shared]) #([shared])
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
+CFLAGS="$CFLAGS -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran -O0 -pg"
 
 # Linker Flags:
-LDFLAGS="$LDFLAGS -g -W -Wall"
+LDFLAGS="$LDFLAGS -g -W -Wall -O0 -pg"
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).

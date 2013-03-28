@@ -45,31 +45,31 @@ KDTreeElement* buildKDTree2(Source* const list,
   if (0==nelements) return(NULL);
 
   // Get a new empty node.
-  KDTreeElement* node = newKDTreeElement(status);
+  KDTreeElement* node=newKDTreeElement(status);
   CHECK_STATUS_RET(*status, node);
 
   // Check if there is only one element in the source list.
   if (1==nelements) {
-    *(node->src) = list[0];
+    *(node->src)=list[0];
     return(node);
   }
 
-  long median = nelements/2;
-  int axis = depth % 3;
+  long median=nelements/2;
+  int axis=depth % 3;
   quicksortSources(list, 0, nelements-1, axis);
 
   // Fill the newly created node with data.
-  *(node->src) = list[median];
+  *(node->src)=list[median];
 
   // Set right and left pointers of node.
   if (median>0) {
-    node->left = buildKDTree2(list, median, depth+1, status);
+    node->left=buildKDTree2(list, median, depth+1, status);
   }
 
   if (median<nelements-1) {
-    node->right = buildKDTree2(&list[median+1], 
-			       nelements-median-1, 
-			       depth+1, status);
+    node->right=buildKDTree2(&list[median+1], 
+			     nelements-median-1, 
+			     depth+1, status);
   }
 
   return(node);
