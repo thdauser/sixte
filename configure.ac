@@ -20,10 +20,10 @@ LT_INIT #([disable-shared]) #([shared])
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran -O0 -pg"
+CFLAGS="$CFLAGS -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
 
 # Linker Flags:
-LDFLAGS="$LDFLAGS -g -W -Wall -O0 -pg"
+LDFLAGS="$LDFLAGS -g -W -Wall"
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).
