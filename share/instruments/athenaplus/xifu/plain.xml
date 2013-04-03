@@ -12,7 +12,7 @@
 <dimensions xwidth="70" ywidth="70"/>
 <wcs xrpix="35.5" yrpix="35.5" xrval="0." yrval="0." xdelt="250.e-6" ydelt="250.e-6"/>
 <rmf filename="athenapp_ir_b4c_xifu_2.5eV.rmf"/>
-
+<phabackground filename="sixte_XIFU_tot_extended.pha"/>
 <threshold_readout_lo_keV value="100.e-3"/>
 <threshold_event_lo_keV value="100.e-3"/>
 <threshold_split_lo_keV value="100.e-3"/>
