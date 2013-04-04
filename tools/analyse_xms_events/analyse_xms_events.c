@@ -11,7 +11,7 @@ int analyse_xms_events_main() {
 
   // Register HEATOOL
   set_toolname("analyse_xms_events");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
   do { // ERROR handling loop
 
@@ -95,8 +95,39 @@ int analyse_xms_events_main() {
       }
       CHECK_STATUS_BREAK(status);
 
-      Pattern* pattern = getPattern(&status);
+      Pattern* pattern=getPattern(&status);
       CHECK_STATUS_BREAK(status);
+
+      // Copy the pattern data.
+      pattern->time=event.time;
+      pattern->frame=event.frame;
+      pattern->signal=event.signal;
+      pattern->pha=event.pha;
+      pattern->rawx=event.rawx;
+      pattern->rawy=event.rawy;
+      pattern->ra=0.;
+      pattern->dec=0.;
+      pattern->npixels=1;
+      pattern->pileup=0;
+      
+      int ii;
+      for (ii=0; (ii<NEVENTPHOTONS)&&(ii<NPATTERNPHOTONS); ii++){
+	pattern->ph_id[ii] =event.ph_id[ii];
+	pattern->src_id[ii]=event.src_id[ii];
+	if ((ii>0)&&(pattern->ph_id[ii]!=0)) {
+	  pattern->pileup=1;
+	}
+      }
+    
+      pattern->signals[0]=0.;
+      pattern->signals[1]=0.;
+      pattern->signals[2]=0.;
+      pattern->signals[3]=0.;
+      pattern->signals[4]=event.signal;
+      pattern->signals[5]=0.;
+      pattern->signals[6]=0.;
+      pattern->signals[7]=0.;
+      pattern->signals[8]=0.;
 
       // Determine the event grade.
       if ((nbefore_veryshort>0)||(nafter_veryshort>0)) {
