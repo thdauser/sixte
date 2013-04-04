@@ -19,6 +19,8 @@ struct Parameters{
   int PreTrigger;
   int PostTrigger;
   double PileupTime;
+
+  char clobber;
 };
 
 

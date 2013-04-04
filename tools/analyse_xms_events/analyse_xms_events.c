@@ -11,7 +11,7 @@ int analyse_xms_events_main() {
 
   // Register HEATOOL
   set_toolname("analyse_xms_events");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
   do { // ERROR handling loop
 
@@ -27,7 +27,7 @@ int analyse_xms_events_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new event file.
-    plf=openNewPatternFile(par.PatternList, 0, &status);
+    plf=openNewPatternFile(par.PatternList, par.clobber, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
@@ -224,6 +224,12 @@ int analyse_xms_events_getpar(struct Parameters* par)
   status=ape_trad_query_double("PileupTime", &par->PileupTime);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the pile-up time!\n", status);
+    return(status);
+  }
+
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
