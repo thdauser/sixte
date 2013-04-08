@@ -298,184 +298,228 @@ void operateGenDetClock(GenDet* const det,
 			const double time,
 			int* const status)
 {
-  // Check if the detector operation setup is time-triggered.
-  if (GENDET_TIME_TRIGGERED!=det->readout_trigger) return;
+  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
+    // Event-triggered mode. In this mode only background
+    // events are inserted.
+    
+    static double last_time=0.0; // Time of the last function call.
 
-  // Get the next element from the clock list.
-  CLType type;
-  void* element=NULL;
-  do {
-    CLReadoutLine* clreadoutline=NULL;
-    CLClearLine*   clclearline  =NULL;
-    CLWait* clwait              =NULL;
-
-    getClockListElement(det->clocklist, time, &type, &element, status);
-    CHECK_STATUS_VOID(*status);
-
-    switch (type) {
-    case CL_NONE:
-      // No operation has to be performed. The clock list is
-      // currently in a wait status.
-      break;
-    case CL_NEWFRAME:
-      // The clock list has internally increased the frame counter and readout 
-      // time. 
-
-      // If there has been no photon interaction during the last frame
-      // and if no background model is activated, jump over the next empty frames
-      // until there is a new photon impact.
-      if ((((0==det->erobackground)&&(NULL==det->phabkg))||(1==det->ignore_bkg))&&
-	  (0==det->anyphoton)) {
-	long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
-	det->clocklist->time       +=nframes*det->frametime;
-	det->clocklist->frame      +=nframes;
-	det->clocklist->readout_time=det->clocklist->time;
-      }
-
-      // Reset the flag.
-      det->anyphoton=0;
-
-      break;
-    case CL_WAIT:
-      // A waiting period is finished.
-      clwait=(CLWait*)element;
-
-      // Insert background events, if the appropriate PHA background
-      // model is defined and should be used.
-      if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
-	// Get background events for the required time interval (has
-	// to be given in [s]). The area of the detector within the 
-	// (circular) FoV has to be specified in order to determine
-	// the absolute background event rate.
-	unsigned int nevts;
-	long* bkgphas=
-	  PHABkgGetEvents(det->phabkg, clwait->time,  
-			  det->pixgrid->xwidth*det->pixgrid->xdelt*
-			  det->pixgrid->ywidth*det->pixgrid->ydelt*
-			  M_PI/4.0,
-			  &nevts, status);
+    // Insert background events, if the appropriate PHA background
+    // model is defined and should be used.
+    if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+      // Get background events for the required time interval (has
+      // to be given in [s]). The area of the detector within the 
+      // (circular) FoV has to be specified in order to determine
+      // the absolute background event rate.
+      unsigned int nevts;
+      long* bkgphas=
+	PHABkgGetEvents(det->phabkg, time-last_time,
+			det->pixgrid->xwidth*det->pixgrid->xdelt*
+			det->pixgrid->ywidth*det->pixgrid->ydelt*
+			M_PI/4.0,
+			&nevts, status);
+      CHECK_STATUS_VOID(*status);
+      
+      unsigned int ii;
+      for (ii=0; ii<nevts; ii++) {
+	// Determine the corresponding signal.
+	if (NULL==det->rmf) {
+	  SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+	  *status=EXIT_FAILURE;
+	  return;
+	}
+	float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
 	CHECK_STATUS_VOID(*status);
+	  
+	// Determine a random pixel. Only pixels within the FoV are
+	// considered. This selection is also taken into account for 
+	// the determination of the absolute background rate.
+	// (Note that charge cloud splitting effects are neglected.)
+	int x, y;
+	do {
+	  x=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	  CHECK_STATUS_VOID(*status);
+	  y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+	  CHECK_STATUS_VOID(*status);
+	} while (pow(x-det->pixgrid->xwidth/2,2.0)+
+		 pow(y-det->pixgrid->ywidth/2, 2.0)>
+		 pow(det->pixgrid->xwidth/2, 2.0));
 
-	unsigned int ii;
-	for (ii=0; ii<nevts; ii++) {
-	  // Determine the corresponding signal.
-	  if (NULL==det->rmf) {
-	    SIXT_ERROR("RMF needs to be defined for using the PHA background model");
-	    *status=EXIT_FAILURE;
-	    return;
-	  }
-	  float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
+	// Add the signal to the pixel.
+	addGenDetCharge2Pixel(det->line[y], x, energy, -1, -1);
+
+	// Call the event trigger routine.
+	GenDetReadoutPixel(det, y, y, x, time, status);
+	CHECK_STATUS_VOID(*status);
+	    
+	// In event-triggered mode each event occupies its own frame.
+	det->clocklist->frame++;	    
+      }
+      free(bkgphas);
+    }
+
+    // Remember the time of the function call.
+    last_time=time;
+
+  } else if (GENDET_TIME_TRIGGERED==det->readout_trigger) {
+    // Time-triggered mode.
+
+    // Get the next element from the clock list.
+    CLType type;
+    void* element=NULL;
+    do {
+      CLReadoutLine* clreadoutline=NULL;
+      CLClearLine*   clclearline  =NULL;
+      CLWait* clwait              =NULL;
+
+      getClockListElement(det->clocklist, time, &type, &element, status);
+      CHECK_STATUS_VOID(*status);
+
+      switch (type) {
+      case CL_NONE:
+	// No operation has to be performed. The clock list is
+	// currently in a wait status.
+	break;
+      case CL_NEWFRAME:
+	// The clock list has internally increased the frame counter and readout 
+	// time. 
+	
+	// If there has been no photon interaction during the last frame
+	// and if no background model is activated, jump over the next empty frames
+	// until there is a new photon impact.
+	if ((((0==det->erobackground)&&(NULL==det->phabkg))||(1==det->ignore_bkg))&&
+	    (0==det->anyphoton)) {
+	  long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
+	  det->clocklist->time       +=nframes*det->frametime;
+	  det->clocklist->frame      +=nframes;
+	  det->clocklist->readout_time=det->clocklist->time;
+	}
+
+	// Reset the flag.
+	det->anyphoton=0;
+	
+	break;
+      case CL_WAIT:
+	// A waiting period is finished.
+	clwait=(CLWait*)element;
+	
+	// Insert background events, if the appropriate PHA background
+	// model is defined and should be used.
+	if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+	  // Get background events for the required time interval (has
+	  // to be given in [s]). The area of the detector within the 
+	  // (circular) FoV has to be specified in order to determine
+	  // the absolute background event rate.
+	  unsigned int nevts;
+	  long* bkgphas=
+	    PHABkgGetEvents(det->phabkg, clwait->time,  
+			    det->pixgrid->xwidth*det->pixgrid->xdelt*
+			    det->pixgrid->ywidth*det->pixgrid->ydelt*
+			    M_PI/4.0,
+			    &nevts, status);
 	  CHECK_STATUS_VOID(*status);
 	  
-	  // Determine a random pixel. Only pixels within the FoV are
-	  // considered. This selection is also taken into account for 
-	  // the determination of the absolute background rate.
-	  // (Note that charge cloud splitting effects are neglected.)
-	  int x, y;
-	  do {
-	    x=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	  unsigned int ii;
+	  for (ii=0; ii<nevts; ii++) {
+	    // Determine the corresponding signal.
+	    if (NULL==det->rmf) {
+	      SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+	      *status=EXIT_FAILURE;
+	      return;
+	    }
+	    float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
 	    CHECK_STATUS_VOID(*status);
-	    y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
-	    CHECK_STATUS_VOID(*status);
-	  } while (pow(x-det->pixgrid->xwidth/2,2.0)+
-		   pow(y-det->pixgrid->ywidth/2, 2.0)>
-		   pow(det->pixgrid->xwidth/2, 2.0));
+	  
+	    // Determine a random pixel. Only pixels within the FoV are
+	    // considered. This selection is also taken into account for 
+	    // the determination of the absolute background rate.
+	    // (Note that charge cloud splitting effects are neglected.)
+	    int x, y;
+	    do {
+	      x=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	      CHECK_STATUS_VOID(*status);
+	      y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+	      CHECK_STATUS_VOID(*status);
+	    } while (pow(x-det->pixgrid->xwidth/2,2.0)+
+		     pow(y-det->pixgrid->ywidth/2, 2.0)>
+		     pow(det->pixgrid->xwidth/2, 2.0));
 
-	  // Add the signal to the pixel.
-	  addGenDetCharge2Pixel(det->line[y], x, energy, -1, -1);
-
-	  // Call the event trigger routine.
-	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
-	    GenDetReadoutPixel(det, y, y, x, time, status);
-	    CHECK_STATUS_VOID(*status);
-	    
-	    // In event-triggered mode each event occupies its own frame.
-	    det->clocklist->frame++;
+	    // Add the signal to the pixel.
+	    addGenDetCharge2Pixel(det->line[y], x, energy, -1, -1);	    
 	  }
-
+	  free(bkgphas);
 	}
-	free(bkgphas);
-      }
 
-      // Insert cosmic ray background events, 
-      // if the appropriate model is defined and should be used.
-      if ((1==det->erobackground)&&(0==det->ignore_bkg)) {
-	// Get background events for the required time interval (has
-	// to be given in [s]).
-	eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
-	double cosrota=cos(det->pixgrid->rota);
-	double sinrota=sin(det->pixgrid->rota);
-	int ii;
-	for(ii=0; ii<list->numhits; ii++) {
-
-	  // Add the signal to the detector without
-	  // regarding charge cloud splitting effects,
-	  // since this is also not done by Tenzer et al. (2010)
-	  // and Boller (2011).
-	  // Please note that the detector response matrix is
-	  // NOT applied to the particle-induced background events,
-	  // since the response is not available for the therefore
-	  // necessary high energies.
-	  // It is important that the high-energetic particle events
-	  // are only thrown away after the pattern recognition. 
-	  // Otherwise many invalid particle patterns will be reduced
-	  // to apparently valid event patterns, such that the overall
-	  // background is too high. 
-	  double xh=
-	    list->hit_xpos[ii]*0.001*cosrota+
-	    list->hit_ypos[ii]*0.001*sinrota;
-	  double yh=
-	    -list->hit_xpos[ii]*0.001*sinrota+
-	    list->hit_ypos[ii]*0.001*cosrota;	    
-	  int x, y;
-	  double xr, yr;
-	  getGenDetAffectedPixel(det->pixgrid, xh, yh,
-				 &x, &y, &xr, &yr);
-	  // Check if the pixel indices are valid or if the 
-	  // specified position lies outside the pixel area.
-	  if ((x<0) || (y<0)) continue;
-
-	  // Add the signal to the pixel.
-	  addGenDetCharge2Pixel(det->line[y], x, 
-				list->hit_energy[ii], -1, -1);
-
-	  // Call the event trigger routine.
-	  if (GENDET_EVENT_TRIGGERED==det->readout_trigger) {
-	    GenDetReadoutPixel(det, y, y, x, time, status);
-	    CHECK_STATUS_VOID(*status);
+	// Insert cosmic ray background events, 
+	// if the appropriate model is defined and should be used.
+	if ((1==det->erobackground)&&(0==det->ignore_bkg)) {
+	  // Get background events for the required time interval (has
+	  // to be given in [s]).
+	  eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
+	  double cosrota=cos(det->pixgrid->rota);
+	  double sinrota=sin(det->pixgrid->rota);
+	  int ii;
+	  for(ii=0; ii<list->numhits; ii++) {
 	    
-	    // In event-triggered mode each event occupies its own frame.
-	    det->clocklist->frame++;
+	    // Add the signal to the detector without
+	    // regarding charge cloud splitting effects,
+	    // since this is also not done by Tenzer et al. (2010)
+	    // and Boller (2011).
+	    // Please note that the detector response matrix is
+	    // NOT applied to the particle-induced background events,
+	    // since the response is not available for the therefore
+	    // necessary high energies.
+	    // It is important that the high-energetic particle events
+	    // are only thrown away after the pattern recognition. 
+	    // Otherwise many invalid particle patterns will be reduced
+	    // to apparently valid event patterns, such that the overall
+	    // background is too high. 
+	    double xh=
+	      list->hit_xpos[ii]*0.001*cosrota+
+	      list->hit_ypos[ii]*0.001*sinrota;
+	    double yh=
+	      -list->hit_xpos[ii]*0.001*sinrota+
+	      list->hit_ypos[ii]*0.001*cosrota;	    
+	    int x, y;
+	    double xr, yr;
+	    getGenDetAffectedPixel(det->pixgrid, xh, yh,
+				   &x, &y, &xr, &yr);
+	    // Check if the pixel indices are valid or if the 
+	    // specified position lies outside the pixel area.
+	    if ((x<0) || (y<0)) continue;
+	    
+	    // Add the signal to the pixel.
+	    addGenDetCharge2Pixel(det->line[y], x, 
+				  list->hit_energy[ii], -1, -1); 
 	  }
-
+	  eroBkgFree(list);
 	}
-	eroBkgFree(list);
-      }
 
-      // Apply the bad pixel map (if available) with the bad pixel 
-      // values weighted with the waiting time.
-      if (NULL!=det->badpixmap) {
-	applyBadPixMap(det->badpixmap, clwait->time, 
-		       encounterGenDetBadPix, det->line);
+	// Apply the bad pixel map (if available) with the bad pixel 
+	// values weighted with the waiting time.
+	if (NULL!=det->badpixmap) {
+	  applyBadPixMap(det->badpixmap, clwait->time, 
+			 encounterGenDetBadPix, det->line);
+	}
+	break;
+      case CL_LINESHIFT:
+	GenDetLineShift(det);
+	break;
+      case CL_READOUTLINE:
+	clreadoutline=(CLReadoutLine*)element;
+	GenDetReadoutLine(det, clreadoutline->lineindex, 
+			  clreadoutline->readoutindex, 
+			  status);
+	CHECK_STATUS_VOID(*status);	    
+	break;
+      case CL_CLEARLINE:
+	clclearline=(CLClearLine*)element;
+	GenDetClearLine(det, clclearline->lineindex);
+	break;
       }
-      break;
-    case CL_LINESHIFT:
-      GenDetLineShift(det);
-      break;
-    case CL_READOUTLINE:
-      clreadoutline=(CLReadoutLine*)element;
-      GenDetReadoutLine(det, clreadoutline->lineindex, 
-			clreadoutline->readoutindex, 
-			status);
-      CHECK_STATUS_VOID(*status);	    
-      break;
-    case CL_CLEARLINE:
-      clclearline = (CLClearLine*)element;
-      GenDetClearLine(det, clclearline->lineindex);
-      break;
-    }
-    CHECK_STATUS_VOID(*status);
-  } while(type!=CL_NONE);
+      CHECK_STATUS_VOID(*status);
+    } while(type!=CL_NONE);
+  }
 }
 
 

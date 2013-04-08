@@ -11,7 +11,7 @@ int analyse_xms_events_main() {
 
   // Register HEATOOL
   set_toolname("analyse_xms_events");
-  set_toolversion("0.02");
+  set_toolversion("0.04");
 
   do { // ERROR handling loop
 
@@ -27,7 +27,7 @@ int analyse_xms_events_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new event file.
-    plf=openNewPatternFile(par.PatternList, 0, &status);
+    plf=openNewPatternFile(par.PatternList, par.clobber, &status);
     if (EXIT_SUCCESS!=status) break;
 
 
@@ -95,8 +95,39 @@ int analyse_xms_events_main() {
       }
       CHECK_STATUS_BREAK(status);
 
-      Pattern* pattern = getPattern(&status);
+      Pattern* pattern=getPattern(&status);
       CHECK_STATUS_BREAK(status);
+
+      // Copy the pattern data.
+      pattern->time=event.time;
+      pattern->frame=event.frame;
+      pattern->signal=event.signal;
+      pattern->pha=event.pha;
+      pattern->rawx=event.rawx;
+      pattern->rawy=event.rawy;
+      pattern->ra=0.;
+      pattern->dec=0.;
+      pattern->npixels=1;
+      pattern->pileup=0;
+      
+      int ii;
+      for (ii=0; (ii<NEVENTPHOTONS)&&(ii<NPATTERNPHOTONS); ii++){
+	pattern->ph_id[ii] =event.ph_id[ii];
+	pattern->src_id[ii]=event.src_id[ii];
+	if ((ii>0)&&(pattern->ph_id[ii]!=0)) {
+	  pattern->pileup=1;
+	}
+      }
+    
+      pattern->signals[0]=0.;
+      pattern->signals[1]=0.;
+      pattern->signals[2]=0.;
+      pattern->signals[3]=0.;
+      pattern->signals[4]=event.signal;
+      pattern->signals[5]=0.;
+      pattern->signals[6]=0.;
+      pattern->signals[7]=0.;
+      pattern->signals[8]=0.;
 
       // Determine the event grade.
       if ((nbefore_veryshort>0)||(nafter_veryshort>0)) {
@@ -193,6 +224,12 @@ int analyse_xms_events_getpar(struct Parameters* par)
   status=ape_trad_query_double("PileupTime", &par->PileupTime);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the pile-up time!\n", status);
+    return(status);
+  }
+
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
