@@ -342,7 +342,7 @@ void operateGenDetClock(GenDet* const det,
 	  y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
 	  CHECK_STATUS_VOID(*status);
 	} while (pow(x-det->pixgrid->xwidth/2,2.0)+
-		 pow(y-det->pixgrid->ywidth/2, 2.0)>
+		 pow(y-det->pixgrid->ywidth/2,2.0)>
 		 pow(det->pixgrid->xwidth/2, 2.0));
 
 	// Add the signal to the pixel.
