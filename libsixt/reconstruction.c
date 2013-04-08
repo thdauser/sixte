@@ -38,7 +38,6 @@ ReconArray* newReconArray(int* const status)
 
   //Initialization:
   recon->Rmap=NULL;
-  recon->RImage=NULL;
   recon->open_fraction=0.;
 
   recon->naxis1 = 0;
@@ -77,7 +76,6 @@ ReconArrayFits* getReconArrayForFits(const CodedMask* const mask, int* const sta
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory to store the "
 			 "ReconstructionArray!\n", *status);
-	 
 	  return(recon);
 	}
 	//Clear the pixels
@@ -101,15 +99,7 @@ ReconArrayFits* getReconArrayForFits(const CodedMask* const mask, int* const sta
       if(mask->map[xcount][ycount]==1){
 	recon->Rmap[xcount][ycount]=1.;
       }else if(mask->map[xcount][ycount]==0){
-	//Recon Array1
 	recon->Rmap[xcount][ycount]=(recon->open_fraction)/(recon->open_fraction - 1.);
-	//ReconArray2
-	//double total_elements = (double)(mask->naxis1*mask->naxis2);
-
-	//recon->Rmap[xcount][ycount]=
-	// ((total_elements*recon->open_fraction-1.)/(total_elements*recon->open_fraction))*
-	// ((recon->open_fraction)/(recon->open_fraction - 1.));
-
       }else{
 	*status=EXIT_FAILURE;
 	HD_ERROR_THROW("Error while scanning mask-elements!\n", *status);
@@ -146,37 +136,11 @@ ReconArray* getReconArray(const CodedMask* const mask, int* const status)
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory to store the "
 			 "ReconstructionArray!\n", *status);
-	 
 	  return(recon);
 	}
 	//Clear the pixels
 	for(y=0; y < recon->naxis2; y++){
 	  recon->Rmap[x][y]=0.;
-	}
-    }
-    if (EXIT_SUCCESS!=*status) return(recon);
-  } else {
-      *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: could not allocate memory to store the "
-		     "ReconstructionArray!\n", *status);
-      return(recon);
-  }//end of memory-allocation
-
-//memory-allocation for RImage
-  recon->RImage=(double**)malloc(2*recon->naxis1*sizeof(double*));
-  if(NULL!=recon->RImage){
-    for(x=0; x < (2*recon->naxis1); x++){
-      recon->RImage[x]=(double*)malloc(2*recon->naxis2*sizeof(double));
-	if(NULL==recon->RImage[x]) {
-	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: could not allocate memory to store the "
-			 "ReconstructionImage!\n", *status);
-	 
-	  return(recon);
-	}
-	//Clear the pixels
-	for(y=0; y < (2*recon->naxis2); y++){
-	  recon->RImage[x][y]=0.;
 	}
     }
     if (EXIT_SUCCESS!=*status) return(recon);
@@ -193,10 +157,12 @@ ReconArray* getReconArray(const CodedMask* const mask, int* const status)
   for(xcount=0; xcount < mask->naxis1; xcount++){
     for(ycount=0; ycount < mask->naxis2; ycount++){
       if(mask->map[xcount][ycount]==1){
+	//padding:move Rmap to upper right corner 
       recon->Rmap[xcount+(recon->naxis1)/2][ycount+(recon->naxis2)/2]=1.;
       }else if(mask->map[xcount][ycount]==0){
 	//Recon Array1
-      recon->Rmap[xcount+(recon->naxis1)/2][ycount+(recon->naxis1)/2]=(recon->open_fraction)/(recon->open_fraction - 1.);
+      recon->Rmap[xcount+(recon->naxis1)/2][ycount+(recon->naxis2)/2]=
+	  (recon->open_fraction)/(recon->open_fraction - 1.);
       }else{
 	*status=EXIT_FAILURE;
 	HD_ERROR_THROW("Error while scanning mask-elements!\n", *status);
@@ -322,22 +288,6 @@ void FreeReconArray(ReconArray* recon)
 	}
       }
       free(recon->Rmap);
-    }
-    free(recon);
-  }
-}
-
-void FreeReconImage(ReconArray* recon)
-{
-  if (recon!=NULL) {
-    if ((recon->naxis1>0)&&(NULL!=recon->RImage)) {
-      int count;
-      for(count=0; count< (2*recon->naxis1); count++) {
-	if (NULL!=recon->RImage[count]) {
-	  free(recon->RImage[count]);
-	}
-      }
-      free(recon->RImage);
     }
     free(recon);
   }

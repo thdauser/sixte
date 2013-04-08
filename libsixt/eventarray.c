@@ -119,7 +119,7 @@ double* SaveEventArray1d(ReadEvent* ea, int* status)
   int x, y;
   for (x=0; x<ea->naxis1; x++) {
     for (y=0; y<ea->naxis2; y++) {
-	EventArray1d[(x+ ea->naxis1*y)] = ea->EventArray[x][y];
+      EventArray1d[(x+ ea->naxis1*y)] = ea->EventArray[x][y];
    }
   }
   return(EventArray1d); 
