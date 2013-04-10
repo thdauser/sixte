@@ -12,7 +12,7 @@
 <dimensions xwidth="428" ywidth="624"/>
 <wcs xrpix="428.5" yrpix="0.5" xrval="-0.0130." yrval="-0.0128" xdelt="130.e-6" ydelt="130.e-6"/>
 <rmf filename="athenapp_ir_b4c_wfi_withfilter_onaxis.rmf"/>
-<phabackground filename="sixte_WFI_bkgd_sum_fov40amin.pha" fov_diameter="0.137"/>
+<phabackground filename="sixte_WFI_bkgd_sum_fov40amin.pha" fov_diameter="0.14"/>
 <split type="GAUSS" par1="11.e-6"/>
 
 <threshold_readout_lo_keV value="100.e-3"/>
