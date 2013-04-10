@@ -26,6 +26,7 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
 
   // Initialize values.
   phabkg->nbins=0;
+  phabkg->fov_diameter=0.0;
 
   // Initialize GSL random number generator.
   // TODO Replace this by another random number generator.
@@ -120,51 +121,95 @@ void destroyPHABkg(PHABkg** const phabkg)
 }
 
 
-long* PHABkgGetEvents(const PHABkg* const phabkg, 
-		      /** Regarded time interval in [s]. */
-		      const double interval, 
-		      /** Detector area in [m^2]. */
-		      const float area,
-		      unsigned int* const nevts, 
-		      int* const status)
+unsigned int PHABkgGetEvents(const PHABkg* const phabkg, 
+			     /** Regarded time interval in [s]. */
+			     const double interval, 
+			     const GenPixGrid* const pixgrid,
+			     long** phas,
+			     int** x,
+			     int** y,
+			     int* const status)
 {
-  long* phas=NULL;
-
   // Check if everything is set up properly.
+  if (NULL==pixgrid) {
+    SIXT_ERROR("no pixel grid specified");
+    *status=EXIT_FAILURE;
+    return(0);
+  }
+
   if (NULL==phabkg) {
     SIXT_ERROR("no PHA background model specified");
     *status=EXIT_FAILURE;
-    return(phas);
+    return(0);
   }
 
   if (NULL==phabkg->distribution) {
     SIXT_ERROR("no PHA background spectrum loaded");
     *status=EXIT_FAILURE;
-    return(phas);
+    return(0);
   }
     
   // Determine the on average expected event number.
   // Note that the rates are given in [counts/s/bin/cm^2], whereas
   // the illuminted detector area is given in [m^2]. Therefore we 
   // need a conversion factor of 1.e4.
-  double mu=phabkg->distribution[phabkg->nbins-1]*area*1.e4*interval;
+  double mu=
+    phabkg->distribution[phabkg->nbins-1]*
+    pixgrid->xwidth*pixgrid->xdelt*
+    pixgrid->ywidth*pixgrid->ydelt*
+    1.e4*interval;
 
   // Determine the number of background events according to 
   // Poisson statistics.
-  *nevts=gsl_ran_poisson(phabkg->randgen, mu);
+  unsigned int nevts=gsl_ran_poisson(phabkg->randgen, mu);
 
-  // Allocate memory.
-  phas=(long*)malloc((*nevts)*sizeof(long));
-  CHECK_NULL_RET(phas, *status, 
-		 "memory allocation for PHA values of background events failed", 
-		 phas);
+  // Allocate memory. Note that too much memory might be allocated, because
+  // some background events are rejected because of their location outside
+  // the FoV.
+  *phas=(long*)malloc(nevts*sizeof(long));
+  CHECK_NULL_RET(*phas, *status, 
+		 "memory allocation for PHA values of background events failed", 0);
+  *x=(int*)malloc(nevts*sizeof(int));
+  CHECK_NULL_RET(*x, *status, 
+		 "memory allocation for pixel indices of background events failed", 0);
+  *y=(int*)malloc(nevts*sizeof(int));
+  CHECK_NULL_RET(*y, *status, 
+		 "memory allocation for pixel indices of background events failed", 0);
 
-  // Determine random PHA values according to the spectral distribution.
+  // Determine random PHA and pixel values according to the spectral distribution.
+  unsigned int nacc=0;
   unsigned int ii;
-  for (ii=0; ii<*nevts; ii++) {
+  double cosrota=cos(pixgrid->rota);
+  double sinrota=sin(pixgrid->rota);
+  for (ii=0; ii<nevts; ii++) {
+
+    // Determine the pixel indices.
+    int xi=(int)(sixt_get_random_number(status)*pixgrid->xwidth);
+    CHECK_STATUS_RET(*status, 0);
+    int yi=(int)(sixt_get_random_number(status)*pixgrid->ywidth);
+    CHECK_STATUS_RET(*status, 0);
+
+    // Check if this pixel lies within the regarded region.
+    if (phabkg->fov_diameter>0.0) {
+      // If a FoV radius is defined, we have to check, whether the 
+      // selected pixel is within the FoV.
+      double xr=(xi-pixgrid->xrpix+1.0)*pixgrid->xdelt;
+      double yr=(yi-pixgrid->yrpix+1.0)*pixgrid->ydelt;
+      if (pow(xr*cosrota+yr*sinrota+pixgrid->xrval,2.0)+
+	  pow(-xr*sinrota+yr*cosrota+pixgrid->yrval,2.0)
+	  >
+	  pow(phabkg->fov_diameter*0.5, 2.0)) {
+	continue;
+      }
+    }
+
+    (*x)[nacc]=xi;
+    (*y)[nacc]=yi;
+
+    // Determine the PHA value.
     double r=sixt_get_random_number(status)*phabkg->distribution[phabkg->nbins-1];
-    CHECK_STATUS_RET(*status, phas);
-    
+    CHECK_STATUS_RET(*status, 0);
+
     // Perform a binary search to obtain the corresponding detector channel.
     long min=0;
     long max=phabkg->nbins-1;
@@ -177,9 +222,10 @@ long* PHABkgGetEvents(const PHABkg* const phabkg,
 	max=mid;
       }
     }
+    (*phas)[nacc]=phabkg->channel[min];
 
-    phas[ii]=phabkg->channel[min];
+    nacc++;
   }
 
-  return(phas);
+  return(nacc);
 }

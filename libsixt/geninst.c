@@ -532,7 +532,7 @@ static void GenInstXMLElementStart(void* parsedata,
 
     xmlparsedata->inst->tel->fov_diameter=
       getXMLAttributeFloat(attr, "DIAMETER")*M_PI/180.;
-
+    
   } else if (!strcmp(Uelement, "CTE")) {
 
     xmlparsedata->inst->det->cte=getXMLAttributeFloat(attr, "VALUE");
@@ -579,23 +579,25 @@ static void GenInstXMLElementStart(void* parsedata,
 
   } else if (!strcmp(Uelement, "PHABACKGROUND")) {
 
-    if (0==eroBkgInitialized) {
-      char filename[MAXFILENAME];
-      getXMLAttributeString(attr, "FILENAME", filename);
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
 
-      // Check if a file name has been specified.
-      if (strlen(filename)==0) {
-	SIXT_ERROR("no file specified for PHA detector background");
-	xmlparsedata->status=EXIT_FAILURE;
-      }
-
-      char filepathname[MAXFILENAME];
-      strcpy(filepathname, xmlparsedata->inst->filepath);
-      strcat(filepathname, filename);
-      xmlparsedata->inst->det->phabkg=
-	newPHABkg(filepathname, &xmlparsedata->status);
-      CHECK_STATUS_VOID(xmlparsedata->status);
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for PHA detector background");
+      xmlparsedata->status=EXIT_FAILURE;
     }
+    
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->inst->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->inst->det->phabkg=
+      newPHABkg(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
+
+    // Set the radius of the FoV.
+    xmlparsedata->inst->det->phabkg->fov_diameter=
+      getXMLAttributeFloat(attr, "FOV_DIAMETER");
 
   } else if (!strcmp(Uelement, "SPLIT")) {
 
