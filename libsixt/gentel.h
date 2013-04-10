@@ -39,8 +39,8 @@ typedef struct {
   float fov_diameter;
 
   /** If the telescope is a coded mask telescope and not an imaging
-      telescope, we have to specify the coded mask pattern file
-      instead of the PSF. */
+      telescope, we have to specify the coded mask file instead of the
+      PSF. */
   CodedMask* coded_mask;
 
 } GenTel;

@@ -502,7 +502,7 @@ static void GenInstXMLElementStart(void* parsedata,
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->inst->tel->coded_mask = 
+    xmlparsedata->inst->tel->coded_mask= 
       getCodedMaskFromFile(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
@@ -520,7 +520,7 @@ static void GenInstXMLElementStart(void* parsedata,
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->inst->tel->vignetting =
+    xmlparsedata->inst->tel->vignetting=
       newVignetting(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
