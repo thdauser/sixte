@@ -2,7 +2,7 @@
 
 
 CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
-			       int* status)
+			      int* status)
 {
   // Allocate memory for the CoMaDetector object.
   CoMaDetector* det=(CoMaDetector*)malloc(sizeof(CoMaDetector));

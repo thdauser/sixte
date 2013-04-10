@@ -262,6 +262,7 @@ int comaimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the distance between the mask and the detector");
     return(status);
+
   }
 
   status=ape_trad_query_string("Attitude", &sbuffer);

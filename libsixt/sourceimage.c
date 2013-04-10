@@ -269,9 +269,10 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
  
   do { // ERROR handling loop
 
+
     // If the specified file already exists, remove the old version.
     remove(filename);
-
+ 
     // Create a new FITS-file:
     if (fits_create_file(&fptr, filename, status)) break;
 

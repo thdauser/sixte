@@ -229,6 +229,7 @@ int getCodedMaskImpactPos(struct Point2d* const position,
   double scpy = scalar_product(&photon_direction, &telescope->ny);
   // Determine the component of the photon direction within the detector plane.
   double radius = sqrt(pow(scpx,2.)+pow(scpy,2.));
+
   // Determine the azimuthal angle of the photon within the detector plane
   // with respect to the detector nx axis.
   double alpha=atan2(scpy, scpx);
@@ -236,11 +237,13 @@ int getCodedMaskImpactPos(struct Point2d* const position,
   // Determine the impact position in the mask plane.
   position->x=
     ((double)(mask->transparent_pixels[pixel][0])
-     -mask->crpix1+0.5+sixt_get_random_number(status))*mask->cdelt1 + mask->crval1;
+     -mask->crpix1+0.5+sixt_get_random_number(status)
+     )*mask->cdelt1 + mask->crval1;
   CHECK_STATUS_RET(*status, 0);
   position->y=
     ((double)(mask->transparent_pixels[pixel][1])
-     -mask->crpix2+0.5+sixt_get_random_number(status))*mask->cdelt2 + mask->crval2;
+     -mask->crpix2+0.5+sixt_get_random_number(status)
+     )*mask->cdelt2 + mask->crval2;
   CHECK_STATUS_RET(*status, 0);
 
   // Shift the position to obtain the position in the detector plane.
@@ -251,4 +254,64 @@ int getCodedMaskImpactPos(struct Point2d* const position,
   return(1);
 }
 
+
+int getImpactPos (struct Point2d* const position,
+		  const Vector* const phodir,
+		  const CodedMask* const mask, 
+		  const struct Telescope* const telescope,
+		  const float distance,
+		  const float x_det,
+		  const float y_det,
+		  int* const status)
+{// Check if a CodedMask is specified. If not, break.
+  if (NULL==mask) return(0);
+
+  // Get a random number.
+  double rand=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0); 
+
+   //Photon passes through transparent pixel.
+   //Determine its impact position on the detection plane.
+
+   //First:Determine the pixel(random)the photon passes through (mask plane).
+   int pixel = (int)(rand * mask->n_transparent_pixels);
+   //Pixel points to an arbitrary pixel out of all transparent ones.
+
+   //Second: get the impact positon in the mask plane in meters.
+   //(pixel_pos - reference_pixel  +0.5[since crpix is the middle of the ref. pixel,
+   //so to start at the left pixel border, add 0.5] + random number[to have a random
+   //position within the whole pixel])*width of one pixel+value at reference_pixel
+   position->x =
+     ((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
+     *mask->cdelt1+mask->crval1;
+   CHECK_STATUS_RET(*status, 0);
+   position->y =
+     ((double)(mask->transparent_pixels[pixel][1])-mask->crpix2+0.5+sixt_get_random_number(status))
+     *mask->cdelt2+mask->crval2;
+   CHECK_STATUS_RET(*status, 0);
+
+   //third:if off-axis photon
+   if(phodir!=&telescope->nz){
+   //Determine the components of the photon direction with respect to the
+   //detector coordinate axes nx, ny (in mask plane).
+   double x_comp = scalar_product(phodir, &telescope->nx);
+   double y_comp = scalar_product(phodir, &telescope->ny);
+
+   //Determine the component of the photon direction within the mask plane.
+   double radius = sqrt(pow(x_comp,2.)+pow(y_comp,2.));
+   //And the azimuthal angle (with respect to the nx-axis)
+   double alpha=atan2(y_comp, x_comp);
+
+   //Finally get the impact position in the detection plane.
+   //Shift the above according to the off-axis position and
+   //the distance mask-detector.
+   position->x -= cos(alpha) * radius * distance;
+   position->y -= sin(alpha) * radius * distance;
+   }
+
+   //ensure that photon does not hit the walls
+   if (fabs(position->x) > (x_det/2) || fabs(position->y) > (y_det/2)){
+     return(0);
+   }else return(1);
+}
 

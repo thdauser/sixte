@@ -5,7 +5,7 @@ ORIGIN          REMEIS          / Origin of FITS File
 CREATOR         String          / Program that created this FITS file
 MISSION         String          / Mission name
 TELESCOP        MIRAX           / Telescope name
-INSTRUME        String          / Instrument name
+INSTRUME        HXI             / Instrument name
 OBS_MODE        String          / Observation mode
 DATAMODE        String          / Instrument data mode
 FILTER          String          / CCD filter used

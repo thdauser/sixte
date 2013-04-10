@@ -109,7 +109,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
     }
   }
 
-  // Create a new event list FITS file from the template.
+  // Create a new impact list FITS file from the template.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
 	  "/templates/impactlist.tpl");
