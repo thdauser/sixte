@@ -32,6 +32,12 @@ typedef struct {
   /** Path to the FITS file containing the XML detector definition. */
   char* filepath;
 
+  /** FITS header keyword TELESCOP. */
+  char* telescop;
+
+  /** FITS header keyword INSTRUME. */
+  char* instrume;
+
 } GenInst;
 
 

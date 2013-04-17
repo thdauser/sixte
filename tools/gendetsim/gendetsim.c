@@ -64,10 +64,10 @@ int gendetsim_main() {
     // Determine the random number seed.
     int seed;
     if (-1!=par.Seed) {
-      seed = par.Seed;
+      seed=par.Seed;
     } else {
       // Determine the seed from the system clock.
-      seed = (int)time(NULL);
+      seed=(int)time(NULL);
     }
 
     // Initialize the random number generator.
@@ -90,9 +90,14 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    if (NULL!=inst->tel->telescope) {
-      fits_update_key(elf->fptr, TSTRING, "TELESCOP", inst->tel->telescope,
-		      "telescope name", &status);
+    if (NULL!=inst->telescop) {
+      fits_update_key(elf->fptr, TSTRING, "TELESCOP", inst->telescop,
+    		      "telescope name", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    if (NULL!=inst->instrume) {
+      fits_update_key(elf->fptr, TSTRING, "INSTRUME", inst->instrume,
+    		      "instrument name", &status);
       CHECK_STATUS_BREAK(status);
     }
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,

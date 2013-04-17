@@ -64,9 +64,14 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Set header keywords.
-    if (NULL!=inst->tel->telescope) {
-      fits_update_key(plf->fptr, TSTRING, "TELESCOP", inst->tel->telescope,
-		      "telescope name", &status);
+    if (NULL!=inst->telescop) {
+      fits_update_key(plf->fptr, TSTRING, "TELESCOP", inst->telescop,
+    		      "telescope name", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    if (NULL!=inst->instrume) {
+      fits_update_key(plf->fptr, TSTRING, "INSTRUME", inst->instrume,
+    		      "instrument name", &status);
       CHECK_STATUS_BREAK(status);
     }
 

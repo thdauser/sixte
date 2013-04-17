@@ -6,12 +6,13 @@ int analyse_xms_events_main() {
   EventListFile* elf=NULL;
   PatternFile* plf=NULL;
 
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
   set_toolname("analyse_xms_events");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
+
 
   do { // ERROR handling loop
 
@@ -19,17 +20,27 @@ int analyse_xms_events_main() {
     long nphotons=0, ngrade0=0, ngrade1=0, ngrade2=0, ngrade3=0;
 
     // Read parameters by PIL:
-    status = analyse_xms_events_getpar(&par);
-    if (EXIT_SUCCESS!=status) break;
+    status=analyse_xms_events_getpar(&par);
+    CHECK_STATUS_BREAK(status);
 
     // Set the input event file.
     elf=openEventListFile(par.EventList, READWRITE, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
     // Create and open a new event file.
     plf=openNewPatternFile(par.PatternList, par.clobber, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
+    // Copy header keywords.
+    char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
+    fits_read_key(elf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(plf->fptr, TSTRING, "TELESCOP", telescop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(plf->fptr, TSTRING, "INSTRUME", instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Loop over all events in the event file.
     long row;

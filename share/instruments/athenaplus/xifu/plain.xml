@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<instrument>
+<instrument telescop="Athena+" instrume="X-IFU">
 <telescope>
 <focallength value="12.0"/>
 <fov diameter="0.5"/>

@@ -17,10 +17,6 @@
     particular telescope are defined in a specific XML file. */
 typedef struct {
 
-  /** Telescope name, which is stored in the 'TELESCOP' header
-      keyword in FITS files. */
-  char* telescope;
-
   /** Detector and telescope ARF containing the effective area. */
   struct ARF* arf;
 

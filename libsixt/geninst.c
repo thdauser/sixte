@@ -65,6 +65,8 @@ GenInst* newGenInst(int* const status)
   inst->det=NULL;
   inst->filename=NULL;
   inst->filepath=NULL;
+  inst->telescop=NULL;
+  inst->instrume=NULL;
 
   // Allocate memory for the GenTel and GenDet data structs.
   inst->det=newGenDet(status);
@@ -94,6 +96,12 @@ void destroyGenInst(GenInst** const inst, int* const status)
     }
     if (NULL!=(*inst)->filepath) {
       free((*inst)->filepath);
+    }
+    if (NULL!=(*inst)->telescop) {
+      free((*inst)->telescop);
+    }
+    if (NULL!=(*inst)->instrume) {
+      free((*inst)->instrume);
     }
     free(*inst);
     *inst=NULL;
@@ -354,16 +362,25 @@ static void GenInstXMLElementStart(void* parsedata,
   strtoupper(Uelement);
 
   // Check for different elements.
-  if (!strcmp(Uelement, "TELESCOP")) {
-    // Determine the name of the telescope.
-    char telescope[MAXMSG];
-    getXMLAttributeString(attr, "NAME", telescope);
-    xmlparsedata->inst->tel->telescope=
-      (char*)malloc((strlen(telescope)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->tel->telescope, 
-		      xmlparsedata->status,
-		      "memory allocation for telescope name failed");
-    strcpy(xmlparsedata->inst->tel->telescope, telescope);
+  if (!strcmp(Uelement, "INSTRUMENT")) {
+    // Determine the values of TELESCOP and INSTRUME.
+    char telescop[MAXMSG];
+    getXMLAttributeString(attr, "TELESCOP", telescop);
+    xmlparsedata->inst->telescop=
+      (char*)malloc((strlen(telescop)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->telescop, 
+		    xmlparsedata->status,
+		    "memory allocation for TELESCOP failed");
+    strcpy(xmlparsedata->inst->telescop, telescop);
+
+    char instrume[MAXMSG];
+    getXMLAttributeString(attr, "INSTRUME", instrume);
+    xmlparsedata->inst->instrume=
+      (char*)malloc((strlen(instrume)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->instrume, 
+		    xmlparsedata->status,
+		    "memory allocation for INSTRUME failed");
+    strcpy(xmlparsedata->inst->instrume, instrume);
 
   } else if (!strcmp(Uelement, "LINESHIFT")) {
     CLLineShift* cllineshift=newCLLineShift(&xmlparsedata->status);

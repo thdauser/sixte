@@ -52,7 +52,7 @@ int erosim_main()
 
   // Register HEATOOL
   set_toolname("erosim");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -463,6 +463,30 @@ int erosim_main()
 			"attitude file", &status);
 	fits_update_key(patf[ii]->fptr, TSTRING, "ATTITUDE", par.Attitude,
 			"attitude file", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
+
+    // Mission keywords.
+    for (ii=0; ii<7; ii++) {
+      if (NULL!=subinst[ii]->telescop) {
+	if (NULL!=elf[ii]) {
+	  fits_update_key(elf[ii]->fptr, TSTRING, "TELESCOP", subinst[ii]->telescop,
+			  "telescope name", &status);
+	  CHECK_STATUS_BREAK(status);
+	}
+	fits_update_key(patf[ii]->fptr, TSTRING, "TELESCOP", subinst[ii]->telescop,
+			"telescope name", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+      if (NULL!=subinst[ii]->instrume) {
+	if (NULL!=elf[ii]) {      
+	  fits_update_key(elf[ii]->fptr, TSTRING, "INSTRUME", subinst[ii]->instrume,
+			  "instrument name", &status);
+	  CHECK_STATUS_BREAK(status);
+	}
+	fits_update_key(patf[ii]->fptr, TSTRING, "INSTRUME", subinst[ii]->instrume,
+			"instrument name", &status);
 	CHECK_STATUS_BREAK(status);
       }
     }

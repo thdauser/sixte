@@ -369,6 +369,28 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
     }
 
+    // Mission keywords.
+    if (NULL!=inst->telescop) {
+      if (NULL!=elf) {
+	fits_update_key(elf->fptr, TSTRING, "TELESCOP", inst->telescop,
+			"telescope name", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+      fits_update_key(patf->fptr, TSTRING, "TELESCOP", inst->telescop,
+		      "telescope name", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    if (NULL!=inst->instrume) {
+      if (NULL!=elf) {      
+	fits_update_key(elf->fptr, TSTRING, "INSTRUME", inst->instrume,
+			"instrument name", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+      fits_update_key(patf->fptr, TSTRING, "INSTRUME", inst->instrume,
+		      "instrument name", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
     // Timing keywords.
     double buffer_tstop=par.TSTART+par.Exposure;
     double buffer_timezero=0.;
