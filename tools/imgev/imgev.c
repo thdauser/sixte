@@ -160,6 +160,17 @@ int imgev_main() {
     //                                 |-> naxis
     CHECK_STATUS_BREAK(status);
 
+    // Copy the mission header keywords.
+    char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
+    fits_read_key(plf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(imgfptr, TSTRING, "TELESCOP", telescop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(imgfptr, TSTRING, "INSTRUME", instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Write WCS header keywords.
     int nkeyrec;
     if (0!=wcshdo(0, &wcs, &nkeyrec, &headerstr)) {
