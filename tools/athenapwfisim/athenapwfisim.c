@@ -436,31 +436,30 @@ int athenapwfisim_main()
 			"attitude file", &status);
 	CHECK_STATUS_BREAK(status);
       }
+      CHECK_STATUS_BREAK(status);
     }
 
-    // Mission keywords.
+    // TLMIN and TLMAX of PI column.
     for (ii=0; ii<5; ii++) {
-      if (NULL!=subinst[ii]->telescop) {
-	if (NULL!=elf[ii]) {
-	  fits_update_key(elf[ii]->fptr, TSTRING, "TELESCOP", subinst[ii]->telescop,
-			  "telescope name", &status);
-	  CHECK_STATUS_BREAK(status);
-	}
-	fits_update_key(patf[ii]->fptr, TSTRING, "TELESCOP", subinst[ii]->telescop,
-			"telescope name", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-      if (NULL!=subinst[ii]->instrume) {
-	if (NULL!=elf[ii]) {      
-	  fits_update_key(elf[ii]->fptr, TSTRING, "INSTRUME", subinst[ii]->instrume,
-			  "instrument name", &status);
-	  CHECK_STATUS_BREAK(status);
-	}
-	fits_update_key(patf[ii]->fptr, TSTRING, "INSTRUME", subinst[ii]->instrume,
-			"instrument name", &status);
-	CHECK_STATUS_BREAK(status);
-      }
+      char keystr[MAXMSG];
+      long value;
+      sprintf(keystr, "TLMIN%d", elf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel;
+      fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", elf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
+      fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      CHECK_STATUS_BREAK(status);
+    
+      sprintf(keystr, "TLMIN%d", patf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel;
+      fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", patf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
+      fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      CHECK_STATUS_BREAK(status);
     }
+    CHECK_STATUS_BREAK(status);
 
     // Timing keywords.
     double buffer_tstop=par.TSTART+par.Exposure;

@@ -380,6 +380,26 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
     }
 
+    // TLMIN and TLMAX of PI column.
+    char keystr[MAXMSG];
+    long value;
+    if (NULL!=elf) {
+      sprintf(keystr, "TLMIN%d", elf->cpi);
+      value=inst->det->rmf->FirstChannel;
+      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", elf->cpi);
+      value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    sprintf(keystr, "TLMIN%d", patf->cpi);
+    value=inst->det->rmf->FirstChannel;
+    fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
+    sprintf(keystr, "TLMAX%d", patf->cpi);
+    value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+    fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
+    CHECK_STATUS_BREAK(status);
+
     // Timing keywords.
     double buffer_tstop=par.TSTART+par.Exposure;
     double buffer_timezero=0.;

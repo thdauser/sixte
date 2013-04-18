@@ -34,10 +34,26 @@ int analyse_xms_events_main() {
     fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Create and open a new event file.
+    // Create and open a new pattern file.
     plf=openNewPatternFile(par.PatternList, 
 			   telescop, instrume, "Normal",
 			   par.clobber, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Upate the TLMIN and TLMAX keywords.
+    char keystr[MAXMSG];
+    long value;
+    sprintf(keystr, "TLMIN%d", elf->cpi);
+    fits_read_key(elf->fptr, TLONG, keystr, &value, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMIN%d", plf->cpi);
+    fits_update_key(plf->fptr, TLONG, keystr, &value, "", &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMAX%d", elf->cpi);
+    fits_read_key(elf->fptr, TLONG, keystr, &value, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMAX%d", plf->cpi);
+    fits_update_key(plf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over all events in the event file.
@@ -51,10 +67,6 @@ int analyse_xms_events_main() {
 
       // Count the total number of photon events in the event list.
       nphotons++;
-
-      // Neglect the inner pixel(s).
-      //if ((event.rawx>=14)&&(event.rawx<=16)&&
-      //(event.rawy>=14)&&(event.rawy<=16)) continue;
 
       // Check the events before and after the current one 
       // within the specified time spans.

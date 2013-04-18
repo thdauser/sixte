@@ -99,16 +99,17 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    if (NULL!=inst->telescop) {
-      fits_update_key(elf->fptr, TSTRING, "TELESCOP", inst->telescop,
-    		      "telescope name", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-    if (NULL!=inst->instrume) {
-      fits_update_key(elf->fptr, TSTRING, "INSTRUME", inst->instrume,
-    		      "instrument name", &status);
-      CHECK_STATUS_BREAK(status);
-    }
+    char keystr[MAXMSG];
+    long value;
+    sprintf(keystr, "TLMIN%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+    sprintf(keystr, "TLMAX%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+    CHECK_STATUS_BREAK(status);
+      
+    // Timing keywords.
     fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "reference MJD", &status);
     double buffer_timezero=0.;

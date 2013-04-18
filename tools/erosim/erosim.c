@@ -484,6 +484,27 @@ int erosim_main()
       }
     }
 
+    // TLMIN and TLMAX of PI column.
+    for (ii=0; ii<7; ii++) {
+      char keystr[MAXMSG];
+      long value;
+      sprintf(keystr, "TLMIN%d", elf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel;
+      fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", elf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
+      fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      CHECK_STATUS_BREAK(status);
+    
+      sprintf(keystr, "TLMIN%d", patf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel;
+      fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", patf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
+      fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      CHECK_STATUS_BREAK(status);  
+    }
+
     // Timing keywords.
     double buffer_tstop=par.TSTART+par.Exposure;
     double buffer_timezero=0.;
