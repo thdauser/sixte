@@ -86,7 +86,16 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
-    elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
+    if (NULL!=inst->telescop) {
+      strcpy(telescop, inst->telescop);
+    }
+    if (NULL!=inst->instrume) {
+      strcpy(instrume, inst->instrume);
+    }
+    elf=openNewEventListFile(eventlist_filename, telescop, instrume, 
+			     "Normal", par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

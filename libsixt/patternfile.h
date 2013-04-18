@@ -41,6 +41,9 @@ void destroyPatternFile(PatternFile** const file, int* const status);
 
 /** Create and open a new PatternFile. */
 PatternFile* openNewPatternFile(const char* const filename,
+				char* const telescop,
+				char* const instrume,
+				char* const filter,
 				const char clobber,
 				int* const status);
 

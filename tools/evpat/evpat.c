@@ -60,20 +60,18 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Open the output pattern file.
-    plf=openNewPatternFile(pattern_filename, par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Set header keywords.
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
     if (NULL!=inst->telescop) {
-      fits_update_key(plf->fptr, TSTRING, "TELESCOP", inst->telescop,
-    		      "telescope name", &status);
-      CHECK_STATUS_BREAK(status);
+      strcpy(telescop, inst->telescop);
     }
     if (NULL!=inst->instrume) {
-      fits_update_key(plf->fptr, TSTRING, "INSTRUME", inst->instrume,
-    		      "instrument name", &status);
-      CHECK_STATUS_BREAK(status);
+      strcpy(instrume, inst->instrume);
     }
+    plf=openNewPatternFile(pattern_filename, 
+			   telescop, instrume, "Normal",
+			   par.clobber, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Copy FITS header keywords.
     char comment[MAXMSG];

@@ -1,8 +1,7 @@
 XTENSION        BINTABLE        / Binary table extension
 EXTNAME         IMPACTS         / Extension name
-ORIGIN          REMEIS          / Origin of FITS File
-CREATOR         String          / Program that created this FITS file
-MISSION         String          / Mission name
+ORIGIN          ECAP            / Origin of FITS File
+CREATOR         Schmid          / Program that created this FITS file
 TELESCOP        String          / Telescope name
 INSTRUME        String          / Instrument name
 ATTITUDE	String		/ Name of the attitude FITS file

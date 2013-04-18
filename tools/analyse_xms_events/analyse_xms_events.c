@@ -27,19 +27,17 @@ int analyse_xms_events_main() {
     elf=openEventListFile(par.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Create and open a new event file.
-    plf=openNewPatternFile(par.PatternList, par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Copy header keywords.
+    // Determine mission keywords.
     char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
     fits_read_key(elf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(plf->fptr, TSTRING, "TELESCOP", telescop, comment, &status);
-    CHECK_STATUS_BREAK(status);
     fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(plf->fptr, TSTRING, "INSTRUME", instrume, comment, &status);
+
+    // Create and open a new event file.
+    plf=openNewPatternFile(par.PatternList, 
+			   telescop, instrume, "Normal",
+			   par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over all events in the event file.

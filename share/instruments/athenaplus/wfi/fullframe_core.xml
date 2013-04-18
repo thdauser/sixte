@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<instrument telescop="Athena+" instrume="WFI">
+<instrument telescop="AthenaPlus" instrume="WFI">
 <telescope>
 <arf filename="athenapp_ir_b4c_wfi_withfilter_onaxis.arf"/>
 <focallength value="12.0"/>

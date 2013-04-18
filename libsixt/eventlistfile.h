@@ -39,6 +39,9 @@ void freeEventListFile(EventListFile** const file, int* const status);
 /** Create and open a new EventListFile. The new file is generated
     according to the specified template. */
 EventListFile* openNewEventListFile(const char* const filename,
+				    char* const telescop,
+				    char* const instrume,
+				    char* const filter,
 				    const char clobber,
 				    int* const status);
 

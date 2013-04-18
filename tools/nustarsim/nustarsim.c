@@ -353,10 +353,18 @@ int nustarsim_main()
 
     // Open the output event list files.
     for (ii=0; ii<2; ii++) {
-      // Open the file.
+      char telescop[MAXMSG]={""};
+      char instrume[MAXMSG]={""};
+      if (NULL!=subinst[ii]->telescop) {
+	strcpy(telescop, subinst[ii]->telescop);
+      }
+      if (NULL!=subinst[ii]->instrume) {
+	strcpy(instrume, subinst[ii]->instrume);
+      }
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventListFile(eventlist_filename, par.clobber, &status);
+      elf[ii]=openNewEventListFile(eventlist_filename, telescop, instrume,
+				   "Normal", par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
@@ -367,9 +375,18 @@ int nustarsim_main()
 
     // Open the output pattern list files.
     for (ii=0; ii<2; ii++) {
+      char telescop[MAXMSG]={""};
+      char instrume[MAXMSG]={""};
+      if (NULL!=subinst[ii]->telescop) {
+	strcpy(telescop, subinst[ii]->telescop);
+      }
+      if (NULL!=subinst[ii]->instrume) {
+	strcpy(instrume, subinst[ii]->instrume);
+      }
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewPatternFile(patternlist_filename, par.clobber, &status);
+      patf[ii]=openNewPatternFile(patternlist_filename, telescop, instrume,
+				  "Normal", par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);

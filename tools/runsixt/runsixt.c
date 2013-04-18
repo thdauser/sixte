@@ -277,14 +277,25 @@ int runsixt_main()
     }
 
     // Open the output event list file.
-    elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
+    if (NULL!=inst->telescop) {
+      strcpy(telescop, inst->telescop);
+    }
+    if (NULL!=inst->instrume) {
+      strcpy(instrume, inst->instrume);
+    }
+    elf=openNewEventListFile(eventlist_filename, telescop, instrume,
+			     "Normal", par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Define the event list file as output file.
     setGenDetEventListFile(inst->det, elf);
 
     // Open the output pattern list file.
-    patf=openNewPatternFile(patternlist_filename, par.clobber, &status);
+    patf=openNewPatternFile(patternlist_filename, 
+			    telescop, instrume, "Normal",
+			    par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -366,28 +377,6 @@ int runsixt_main()
       }
       fits_update_key(patf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		      "attitude file", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Mission keywords.
-    if (NULL!=inst->telescop) {
-      if (NULL!=elf) {
-	fits_update_key(elf->fptr, TSTRING, "TELESCOP", inst->telescop,
-			"telescope name", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-      fits_update_key(patf->fptr, TSTRING, "TELESCOP", inst->telescop,
-		      "telescope name", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-    if (NULL!=inst->instrume) {
-      if (NULL!=elf) {      
-	fits_update_key(elf->fptr, TSTRING, "INSTRUME", inst->instrume,
-			"instrument name", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-      fits_update_key(patf->fptr, TSTRING, "INSTRUME", inst->instrume,
-		      "instrument name", &status);
       CHECK_STATUS_BREAK(status);
     }
 

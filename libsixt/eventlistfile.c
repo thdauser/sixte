@@ -45,16 +45,19 @@ void freeEventListFile(EventListFile** const file, int* const status)
 
 
 EventListFile* openNewEventListFile(const char* const filename,
+				    char* const telescop,
+				    char* const instrume,
+				    char* const filter,
 				    const char clobber,
 				    int* const status)
 {
-  EventListFile* file=newEventListFile(status);
-  CHECK_STATUS_RET(*status, file);
+  fitsfile* fptr=NULL;
+  CHECK_STATUS_RET(*status, NULL);
 
   // Check if the file already exists.
   int exists;
   fits_file_exists(filename, &exists, status);
-  CHECK_STATUS_RET(*status, file);
+  CHECK_STATUS_RET(*status, NULL);
   if (0!=exists) {
     if (0!=clobber) {
       // Delete the file.
@@ -65,7 +68,7 @@ EventListFile* openNewEventListFile(const char* const filename,
       sprintf(msg, "file '%s' already exists", filename);
       SIXT_ERROR(msg);
       *status=EXIT_FAILURE;
-      return(file);
+      return(NULL);
     }
   }
 
@@ -73,30 +76,43 @@ EventListFile* openNewEventListFile(const char* const filename,
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
 	  "/templates/eventlist.tpl");
-  fits_create_file(&file->fptr, buffer, status);
-  CHECK_STATUS_RET(*status, file);
+  fits_create_file(&fptr, buffer, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  // Update the mission keywords.
+  int hdutype;
+  fits_movabs_hdu(fptr, 1, &hdutype, status);
+  fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
+  fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
+  fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
+  fits_movabs_hdu(fptr, 2, &hdutype, status);
+  fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
+  fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
+  fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Set the time-keyword in the event list header.
+  fits_movabs_hdu(fptr, 1, &hdutype, status);
   char datestr[MAXMSG];
   int timeref;
   fits_get_system_time(datestr, &timeref, status);
-  CHECK_STATUS_RET(*status, file);
-  fits_update_key(file->fptr, TSTRING, "DATE", datestr, 
+  CHECK_STATUS_RET(*status, NULL);
+  fits_update_key(fptr, TSTRING, "DATE", datestr, 
 		  "File creation date", status);
-  CHECK_STATUS_RET(*status, file);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Add header information about program parameters.
   // The second parameter "1" means that the headers are written
   // to the first extension.
-  HDpar_stamp(file->fptr, 1, status);
-  CHECK_STATUS_RET(*status, file);
+  HDpar_stamp(fptr, 1, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Close the file.
-  freeEventListFile(&file, status);
-  CHECK_STATUS_RET(*status, file);
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  file=openEventListFile(filename, READWRITE, status);
+  EventListFile* file=openEventListFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
   
   return(file);
