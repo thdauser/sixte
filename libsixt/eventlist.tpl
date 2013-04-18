@@ -1,20 +1,14 @@
 SIMPLE  = T
 BITPIX  = 8
 ORIGIN  = ECAP
-CREATOR = Schmid
-TELESCOP= AthenaPlus
-INSTRUME= XIFU
-FILTER  = Normal
+CREATOR = SIXTE
 
 XTENSION= BINTABLE        / Binary table extension
 EXTNAME = EVENTS          / Extension name
 ORIGIN  = ECAP            / Origin of FITS File
-CREATOR = Schmid          / Program that created this FITS file
-TELESCOP= String          / Telescope name
-INSTRUME= String          / Instrument name
+CREATOR = SIXTE          / Program that created this FITS file
 OBS_MODE= String          / Observation mode
 DATAMODE= String          / Instrument data mode
-FILTER  = String          / CCD filter used
 MJDREF  = 54101           / Modified Julian Date of time origin
 TIMEZERO= 0.0             / Time correction
 TIMEUNIT= s               / Time unit
@@ -29,9 +23,9 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  FRAME           / Frame counter
 	TFORM#  J               / Format of column FRAME
 	TUNIT#                  / Unit of column FRAME
-	TTYPE#  PHA             / Uncorrected Event Energy
-	TFORM#  J               / Format of column PHA
-	TUNIT#  ADU             / Unit of column PHA
+	TTYPE#  PI              / Corrected Energy Channel
+	TFORM#  J               / Format of column PI
+	TUNIT#  ADU             / Unit of column PI
 	TTYPE#  SIGNAL          / Pixel SIGNAL
 	TFORM#  E               / Format of column SIGNAL
 	TUNIT#  keV             / Unit of column SIGNAL
@@ -41,15 +35,6 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  RAWY            / Raw y-coordinate of pixel
 	TFORM#  I               / Format of column RAWY
 	TUNIT#  pixel           / Unit of column RAWY
-	TTYPE#  PAT_TYPE        / Pattern type
-	TFORM#  I               / Format of column PAT_TYPE
-	TUNIT#                  / Unit of column PAT_TYPE
-	TTYPE#  PILEUP          / Pile-up flag
-	TFORM#  I               / Format of column PILEUP
-	TUNIT#                  / Unit of column PILEUP
-	TTYPE#  PHAS            / PHA values of surrounding 3x3 matrix
-	TFORM#  9I              / Format of column PHAS
-	TUNIT#                  / Unit of column PHAS
 	TTYPE# 	PH_ID           / Photon ID
 	TFORM# 	2J   		/
 	TUNIT# 	                / 

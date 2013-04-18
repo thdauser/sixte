@@ -111,7 +111,7 @@ int analyse_xms_events_main() {
       pattern->time=event.time;
       pattern->frame=event.frame;
       pattern->signal=event.signal;
-      pattern->pha=event.pha;
+      pattern->pi=event.pi;
       pattern->rawx=event.rawx;
       pattern->rawy=event.rawy;
       pattern->ra=0.;

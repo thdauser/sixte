@@ -21,7 +21,7 @@ typedef struct {
   long nrows;
 
   /** Column numbers. */
-  int ctime, cframe, cpha, csignal, crawx, crawy, cra, cdec, 
+  int ctime, cframe, cpi, csignal, crawx, crawy, cra, cdec, 
     cph_id, csrc_id, cnpixels, ctype, cpileup, csignals;
 
 } PatternFile;

@@ -19,7 +19,7 @@ typedef struct {
   long nrows;
 
   /** Column numbers. */
-  int ctime, cframe, cpha, csignal, crawx, crawy, cph_id, csrc_id;
+  int ctime, cframe, cpi, csignal, crawx, crawy, cph_id, csrc_id;
 
 } EventListFile;
 

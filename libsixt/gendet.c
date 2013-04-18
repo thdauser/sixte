@@ -90,7 +90,7 @@ int addGenDetPhotonImpact(GenDet* const det,
   float energy;
   
   if (NULL!=det->rmf) {
-    // Determine the measured detector channel (PHA channel) according 
+    // Determine the measured detector channel (PI channel) according 
     // to the RMF.
     // The channel is obtained from the RMF using the corresponding
     // HEAdas routine which is based on drawing a random number.
@@ -98,7 +98,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     returnRMFChannel(det->rmf, impact->energy, &channel);
 
     // Check if the photon is really measured. If the
-    // PHA channel returned by the HEAdas RMF function is '-1', 
+    // PI channel returned by the HEAdas RMF function is '-1', 
     // the photon is not detected.
     // This can happen, if the RMF actually is an RSP, i.e. it 
     // includes ARF contributions, e.g., 
@@ -110,7 +110,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     // Determine the corresponding detected energy.
     // NOTE: In this simulation the collected charge is represented 
     // by the nominal photon energy [keV], which corresponds to the 
-    // PHA channel according to the EBOUNDS table.
+    // PI channel according to the EBOUNDS table.
     energy=getEBOUNDSEnergy(channel, det->rmf, 0, status);
     CHECK_STATUS_RET(*status, 0);
     assert(energy>=0.);
@@ -240,9 +240,9 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     
       // Apply the detector response if available.
       if (NULL!=det->rmf) {
-	event->pha=getEBOUNDSChannel(event->signal, det->rmf);
+	event->pi=getEBOUNDSChannel(event->signal, det->rmf);
       } else {
-	event->pha=0;
+	event->pi=0;
       }
 
       // Store remaining information.

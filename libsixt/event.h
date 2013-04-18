@@ -22,8 +22,8 @@ typedef struct {
   /** Raw detector coordinates. Indices start at 0. */
   int rawx, rawy;
 
-  /** Detected PHA channel. */
-  long pha;
+  /** Detected PI channel. */
+  long pi;
 
   /** Signal in [keV]. */
   float signal;

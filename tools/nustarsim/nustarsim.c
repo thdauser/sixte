@@ -761,7 +761,7 @@ int nustarsim_main()
 	pattern.rawy   =event.rawy;
 	pattern.time   =event.time;
 	pattern.frame  =event.frame;
-	pattern.pha    =event.pha;
+	pattern.pi     =event.pi;
 	pattern.signal =event.signal;
 	pattern.ra     =0.;
 	pattern.dec    =0.;

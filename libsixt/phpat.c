@@ -311,11 +311,11 @@ void phpat(GenDet* const det,
 	    }
 	    // END of loop over all entries in the neighbor list.
 
-	    // Determine the PHA corresponding to the total signal.
+	    // Determine the PI channel corresponding to the total signal.
 	    if (NULL!=det->rmf) {
-	      pattern->pha=getEBOUNDSChannel(pattern->signal, det->rmf);
+	      pattern->pi=getEBOUNDSChannel(pattern->signal, det->rmf);
 	    } else {
-	      pattern->pha=0;
+	      pattern->pi=0;
 	    }
 
 	    // Check for pile-up.

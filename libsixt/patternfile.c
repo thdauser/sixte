@@ -14,7 +14,7 @@ PatternFile* newPatternFile(int* const status)
   file->nrows=0;
   file->ctime=0;
   file->cframe =0;
-  file->cpha   =0;
+  file->cpi    =0;
   file->csignal=0;
   file->crawx  =0;
   file->crawy  =0;
@@ -142,7 +142,7 @@ PatternFile* openPatternFile(const char* const filename,
   // Determine the column numbers.
   fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
   fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
@@ -240,8 +240,8 @@ void getPatternFromFile(const PatternFile* const file,
 		&dnull, &pattern->time, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
 		&lnull, &pattern->frame, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
-		&lnull, &pattern->pha, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cpi, row, 1, 1, 
+		&lnull, &pattern->pi, &anynul, status);
   fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
 		&fnull, &pattern->signal, &anynul, status);
   fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
@@ -285,8 +285,8 @@ void updatePatternInFile(const PatternFile* const file,
 		 1, 1, &pattern->time, status);
   fits_write_col(file->fptr, TLONG, file->cframe, row, 
 		 1, 1, &pattern->frame, status);
-  fits_write_col(file->fptr, TLONG, file->cpha, row, 
-		 1, 1, &pattern->pha, status);
+  fits_write_col(file->fptr, TLONG, file->cpi, row, 
+		 1, 1, &pattern->pi, status);
   fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
 		 1, 1, &pattern->signal, status);
   fits_write_col(file->fptr, TINT, file->crawx, row, 
@@ -345,7 +345,7 @@ void copyEvents2PatternFile(const EventListFile* const elf,
     pattern->rawy   =event->rawy;
     pattern->time   =event->time;
     pattern->frame  =event->frame;
-    pattern->pha    =event->pha;
+    pattern->pi     =event->pi;
     pattern->signal =event->signal;
     pattern->ra     =0.;
     pattern->dec    =0.;

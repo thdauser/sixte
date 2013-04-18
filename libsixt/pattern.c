@@ -10,7 +10,7 @@ Pattern* getPattern(int* const status)
   // Initalize.
   pat->rawx=0;
   pat->rawy=0;
-  pat->pha =0;
+  pat->pi  =0;
   pat->signal =0.;
   pat->time   =0.;
   pat->frame  =0;

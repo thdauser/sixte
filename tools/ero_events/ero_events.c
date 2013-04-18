@@ -79,10 +79,10 @@ int ero_events_main()
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
-    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cx, cy, cccdnr;
+    int ctime, crawx, crawy, cframe, cpi, cenergy, cra, cdec, cx, cy, cccdnr;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
-    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpi, &status);
     fits_get_colnum(fptr, CASEINSEN, "ENERGY", &cenergy, &status);
     fits_get_colnum(fptr, CASEINSEN, "RAWX", &crawx, &status);
     fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
@@ -208,8 +208,8 @@ int ero_events_main()
 		     &pattern.time, &status);
       fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, 
 		     &pattern.frame, &status);
-      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, 
-		     &pattern.pha, &status);
+      fits_write_col(fptr, TLONG, cpi, row+1, 1, 1, 
+		     &pattern.pi, &status);
 
       float energy = pattern.signal * 1000.; // [eV]
       fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &energy, &status);
