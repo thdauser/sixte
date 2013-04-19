@@ -34,27 +34,48 @@ int analyse_xms_events_main() {
     fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Determine the dimensions of the pixel array.
+    char keystr[MAXMSG];
+    int tlmaxx, tlmaxy;
+    sprintf(keystr, "TLMAX%d", elf->crawx);
+    fits_read_key(elf->fptr, TINT, keystr, &tlmaxx, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMAX%d", elf->crawy);
+    fits_read_key(elf->fptr, TINT, keystr, &tlmaxy, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Create and open a new pattern file.
     plf=openNewPatternFile(par.PatternList, 
 			   telescop, instrume, "Normal",
+			   tlmaxx+1, tlmaxy+1,
 			   par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Upate the TLMIN and TLMAX keywords.
-    char keystr[MAXMSG];
-    long value;
+    // Copy the TLMIN and TLMAX keywords of PI column.
+    long lbuffer;
     sprintf(keystr, "TLMIN%d", elf->cpi);
-    fits_read_key(elf->fptr, TLONG, keystr, &value, comment, &status);
+    fits_read_key(elf->fptr, TLONG, keystr, &lbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
     sprintf(keystr, "TLMIN%d", plf->cpi);
-    fits_update_key(plf->fptr, TLONG, keystr, &value, "", &status);
+    fits_update_key(plf->fptr, TLONG, keystr, &lbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
     sprintf(keystr, "TLMAX%d", elf->cpi);
-    fits_read_key(elf->fptr, TLONG, keystr, &value, comment, &status);
+    fits_read_key(elf->fptr, TLONG, keystr, &lbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
     sprintf(keystr, "TLMAX%d", plf->cpi);
-    fits_update_key(plf->fptr, TLONG, keystr, &value, "", &status);
+    fits_update_key(plf->fptr, TLONG, keystr, &lbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Copy TSTART and TSTOP keywords.
+    double dbuffer;
+    fits_read_key(elf->fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(plf->fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);    
 
     // Loop over all events in the event file.
     long row;

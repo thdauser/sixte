@@ -285,8 +285,11 @@ int runsixt_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    elf=openNewEventListFile(eventlist_filename, telescop, instrume,
-			     "Normal", par.clobber, &status);
+    elf=openNewEventListFile(eventlist_filename, 
+			     telescop, instrume, "Normal", 
+			     inst->det->pixgrid->xwidth,
+			     inst->det->pixgrid->ywidth,
+			     par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Define the event list file as output file.
@@ -294,7 +297,9 @@ int runsixt_main()
 
     // Open the output pattern list file.
     patf=openNewPatternFile(patternlist_filename, 
-			    telescop, instrume, "Normal",
+			    telescop, instrume, "Normal",			    
+			    inst->det->pixgrid->xwidth,
+			    inst->det->pixgrid->ywidth,
 			    par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 

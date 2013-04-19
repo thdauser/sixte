@@ -43,7 +43,7 @@ int athenapwfisim_main()
 
   // Register HEATOOL
   set_toolname("athenapwfisim");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -325,8 +325,11 @@ int athenapwfisim_main()
       }
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventListFile(eventlist_filename, telescop, instrume,
-				   "Normal", par.clobber, &status);
+      elf[ii]=openNewEventListFile(eventlist_filename, 
+				   telescop, instrume,"Normal", 
+				   subinst[ii]->det->pixgrid->xwidth,
+				   subinst[ii]->det->pixgrid->ywidth,
+				   par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
@@ -347,8 +350,11 @@ int athenapwfisim_main()
       }
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewPatternFile(patternlist_filename, telescop, instrume,
-				  "Normal", par.clobber, &status);
+      patf[ii]=openNewPatternFile(patternlist_filename, 
+				  telescop, instrume, "Normal", 
+				  subinst[ii]->det->pixgrid->xwidth,
+				  subinst[ii]->det->pixgrid->ywidth,
+				  par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);

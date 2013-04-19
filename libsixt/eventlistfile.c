@@ -11,8 +11,8 @@ EventListFile* newEventListFile(int* const status)
   file->fptr=NULL;
 
   // Initialize values.
-  file->nrows=0;
-  file->ctime=0;
+  file->nrows  =0;
+  file->ctime  =0;
   file->cframe =0;
   file->cpi    =0;
   file->csignal=0;
@@ -48,6 +48,8 @@ EventListFile* openNewEventListFile(const char* const filename,
 				    char* const telescop,
 				    char* const instrume,
 				    char* const filter,
+				    const int nxdim,
+				    const int nydim,
 				    const char clobber,
 				    int* const status)
 {
@@ -125,10 +127,27 @@ EventListFile* openNewEventListFile(const char* const filename,
   CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  EventListFile* file=openEventListFile(filename, READWRITE, status);
-  CHECK_STATUS_RET(*status, file);
+  EventListFile* elf=openEventListFile(filename, READWRITE, status);
+  CHECK_STATUS_RET(*status, elf);
+
+  // Update the TLMIN and TLMAX keywords for the DETX and DETY columns.
+  char keystr[MAXMSG];
+  int ibuffer;
+  sprintf(keystr, "TLMIN%d", elf->crawx);
+  ibuffer=0;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", elf->crawx);
+  ibuffer=nxdim-1;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMIN%d", elf->crawy);
+  ibuffer=0;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", elf->crawy);
+  ibuffer=nydim-1;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  CHECK_STATUS_RET(*status, elf);
   
-  return(file);
+  return(elf);
 }
 
 

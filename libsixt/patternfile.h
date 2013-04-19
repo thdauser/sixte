@@ -44,6 +44,8 @@ PatternFile* openNewPatternFile(const char* const filename,
 				char* const telescop,
 				char* const instrume,
 				char* const filter,
+				const int nxdim,
+				const int nydim,
 				const char clobber,
 				int* const status);
 

@@ -23,7 +23,7 @@ int gendetsim_main() {
 
   // Register HEATOOL:
   set_toolname("gendetsim");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -94,8 +94,11 @@ int gendetsim_main() {
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    elf=openNewEventListFile(eventlist_filename, telescop, instrume, 
-			     "Normal", par.clobber, &status);
+    elf=openNewEventListFile(eventlist_filename, 
+			     telescop, instrume, "Normal", 
+			     inst->det->pixgrid->xwidth, 
+			     inst->det->pixgrid->ywidth, 
+			     par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

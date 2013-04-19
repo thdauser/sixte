@@ -70,6 +70,8 @@ int evpat_main()
     }
     plf=openNewPatternFile(pattern_filename, 
 			   telescop, instrume, "Normal",
+			   inst->det->pixgrid->xwidth,
+			   inst->det->pixgrid->ywidth,
 			   par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 

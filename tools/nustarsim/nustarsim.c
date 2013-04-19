@@ -363,8 +363,11 @@ int nustarsim_main()
       }
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventListFile(eventlist_filename, telescop, instrume,
-				   "Normal", par.clobber, &status);
+      elf[ii]=openNewEventListFile(eventlist_filename, 
+				   telescop, instrume, "Normal", 
+				   subinst[ii]->det->pixgrid->xwidth,
+				   subinst[ii]->det->pixgrid->ywidth,
+				   par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
@@ -385,8 +388,11 @@ int nustarsim_main()
       }
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewPatternFile(patternlist_filename, telescop, instrume,
-				  "Normal", par.clobber, &status);
+      patf[ii]=openNewPatternFile(patternlist_filename, 
+				  telescop, instrume, "Normal", 
+				  subinst[ii]->det->pixgrid->xwidth,
+				  subinst[ii]->det->pixgrid->ywidth,
+				  par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);

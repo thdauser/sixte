@@ -55,6 +55,8 @@ PatternFile* openNewPatternFile(const char* const filename,
 				char* const telescop,
 				char* const instrume,
 				char* const filter,
+				const int nxdim,
+				const int nydim,
 				const char clobber,
 				int* const status)
 {
@@ -132,10 +134,27 @@ PatternFile* openNewPatternFile(const char* const filename,
   CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  PatternFile* file=openPatternFile(filename, READWRITE, status);
-  CHECK_STATUS_RET(*status, file);
+  PatternFile* plf=openPatternFile(filename, READWRITE, status);
+  CHECK_STATUS_RET(*status, plf);
+
+  // Update the TLMIN and TLMAX keywords for the DETX and DETY columns.
+  char keystr[MAXMSG];
+  int ibuffer;
+  sprintf(keystr, "TLMIN%d", plf->crawx);
+  ibuffer=0;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", plf->crawx);
+  ibuffer=nxdim-1;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMIN%d", plf->crawy);
+  ibuffer=0;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", plf->crawy);
+  ibuffer=nydim-1;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  CHECK_STATUS_RET(*status, plf);
   
-  return(file);
+  return(plf);
 }
 
 
