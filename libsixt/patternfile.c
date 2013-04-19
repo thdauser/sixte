@@ -99,13 +99,26 @@ PatternFile* openNewPatternFile(const char* const filename,
   CHECK_STATUS_RET(*status, NULL);
 
   // Set the time-keyword in the header.
-  fits_movabs_hdu(fptr, 1, &hdutype, status);
-  char datestr[MAXMSG];
+  char datetimestr[MAXMSG], datestr[MAXMSG];
   int timeref;
-  fits_get_system_time(datestr, &timeref, status);
+  fits_get_system_time(datetimestr, &timeref, status);
+  strcpy(datestr, datetimestr);
+  datestr[10]='\0';
   CHECK_STATUS_RET(*status, NULL);
-  fits_update_key(fptr, TSTRING, "DATE", datestr, 
-		  "File creation date", status);
+  fits_movabs_hdu(fptr, 1, &hdutype, status);
+  fits_update_key(fptr, TSTRING, "DATE", datetimestr, 
+		  "file creation date", status);
+  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr, 
+		  "UT date of observation start", status);
+  fits_update_key(fptr, TSTRING, "TIME-OBS", &(datestr[11]), 
+		  "UT time of observation start", status);
+  fits_movabs_hdu(fptr, 2, &hdutype, status);
+  fits_update_key(fptr, TSTRING, "DATE", datetimestr, 
+		  "file creation date", status);
+  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr, 
+		  "UT date of observation start", status);
+  fits_update_key(fptr, TSTRING, "TIME-OBS", &(datestr[11]), 
+		  "UT time of observation start", status);
   CHECK_STATUS_RET(*status, NULL);
 
   // Add header information about program parameters.
