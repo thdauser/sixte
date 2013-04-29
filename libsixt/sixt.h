@@ -161,6 +161,17 @@ void sixt_get_XMLFile(char* const filename,
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);
 
+void sixt_add_fits_stdkeywords(fitsfile* const fptr,
+			       const int hdunum,
+			       char* const telescop,
+			       char* const instrume,
+			       char* const filter,
+			       double mjdref,
+			       double timezero,
+			       double tstart,
+			       double tstop,
+			       int* const status);
+
 
 #endif /* SIXT_H */
 

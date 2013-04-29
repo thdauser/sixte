@@ -1,5 +1,0 @@
-input_filename,fre,lq,"photons.fits",,,"filename of the input photon list (FITS)"
-output_prefix,s,lq,"photons_",,,"filename prefix for the output photon lists (FITS)"
-photonlist_template,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
-chatter,i,lh,5,,,"chatter: control verbosity of the program"
-history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

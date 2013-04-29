@@ -254,3 +254,155 @@ void sixt_get_LADXMLFile(char* const filename,
   }
 }
 
+
+void sixt_add_fits_stdkeywords(fitsfile* const fptr,
+			       const int hdunum,
+			       char* const telescop,
+			       char* const instrume,
+			       char* const filter,
+			       double mjdref,
+			       double timezero,
+			       double tstart,
+			       double tstop,
+			       int* const status)
+{
+  // Determine the current HDU.
+  int prev_hdunum=0;
+  fits_get_hdu_num(fptr, &prev_hdunum);
+
+  // Move to the desired HDU.
+  if (prev_hdunum!=hdunum) {
+    int hdutype=0;
+    fits_movabs_hdu(fptr, hdunum, &hdutype, status);
+    CHECK_STATUS_VOID(*status);
+  }
+
+  // Update the mission keywords.
+  fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
+  fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
+  fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
+  CHECK_STATUS_VOID(*status);
+
+  // Set the timing keywords.
+  // Determine the current date and time (Stevens, "Advanced Programming 
+  // in the UNIX environment", p. 155 ff.).
+  time_t current_time;
+  if (0==time(&current_time)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not determine current time");
+    return;
+  }
+  struct tm* current_time_utc=gmtime(&current_time);
+  if (NULL==current_time_utc) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not determine current UTC time");
+    return;
+  }   
+  char current_datetimestr[MAXMSG];
+  if (19!=strftime(current_datetimestr, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
+		   current_time_utc)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting date-time string");
+    return;
+  }
+  fits_update_key(fptr, TSTRING, "DATE", current_datetimestr, 
+		  "file creation date", status);
+  CHECK_STATUS_VOID(*status);
+
+  // Determine the start date and time.
+  int int_day=(int)(mjdref-40587.0+tstart/86400.0);
+  int int_sec=(int)((mjdref-40587.0-int_day)*86400.0+tstart);
+  struct tm start_time_utc;
+  start_time_utc.tm_sec=int_sec;
+  start_time_utc.tm_min=0;
+  start_time_utc.tm_hour=0;
+  start_time_utc.tm_mday=1+int_day;
+  start_time_utc.tm_mon=0;
+  start_time_utc.tm_year=70;
+  time_t start_time=mktime(&start_time_utc);
+  // Note that we have to use 'localtime' here, although we
+  // want to determine the UTC, because this is the inverse
+  // of 'mktime'.
+  struct tm* start_time_utcn=localtime(&start_time);
+  if (NULL==start_time_utcn) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not determine UTC time");
+    return;
+  }
+  char start_datestr[MAXMSG], start_timestr[MAXMSG];
+  if (10!=strftime(start_datestr, MAXMSG, "%Y-%m-%d", start_time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting date string");
+    return;
+  }
+  if (8!=strftime(start_timestr, MAXMSG, "%H:%M:%S", start_time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting time string");
+    return;
+  }
+  fits_update_key(fptr, TSTRING, "DATE-OBS", start_datestr, 
+		  "UT date of observation start", status);
+  fits_update_key(fptr, TSTRING, "TIME-OBS", start_timestr, 
+		  "UT time of observation start", status);
+  CHECK_STATUS_VOID(*status);
+
+  // Determine the stop date and time.
+  int_day=(int)(mjdref-40587.0+tstop/86400.0);
+  int_sec=(int)((mjdref-40587.0-int_day)*86400.0+tstop);
+  struct tm stop_time_utc;
+  stop_time_utc.tm_sec=int_sec;
+  stop_time_utc.tm_min=0;
+  stop_time_utc.tm_hour=0;
+  stop_time_utc.tm_mday=1+int_day;
+  stop_time_utc.tm_mon=0;
+  stop_time_utc.tm_year=70;
+  time_t stop_time=mktime(&stop_time_utc);
+  // Note that we have to use 'localtime' here, although we
+  // want to determine the UTC, because this is the inverse
+  // of 'mktime'.
+  struct tm* stop_time_utcn=localtime(&stop_time);
+  if (NULL==stop_time_utcn) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not determine UTC time");
+    return;
+  }
+  char stop_datestr[MAXMSG], stop_timestr[MAXMSG];
+  if (10!=strftime(stop_datestr, MAXMSG, "%Y-%m-%d", stop_time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting date string");
+    return;
+  }
+  if (8!=strftime(stop_timestr, MAXMSG, "%H:%M:%S", stop_time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting time string");
+    return;
+  }
+  fits_update_key(fptr, TSTRING, "DATE-END", stop_datestr, 
+		  "UT date of observation end", status);
+  fits_update_key(fptr, TSTRING, "TIME-END", stop_timestr, 
+		  "UT time of observation end", status);
+  CHECK_STATUS_VOID(*status);
+
+  // MJDREF, TSTART, TSTOP.
+  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, 
+		  "reference MJD", status);
+  fits_update_key(fptr, TDOUBLE, "TIMEZERO", &timezero,
+		  "time offset", status);
+  fits_update_key(fptr, TDOUBLE, "TSTART", &tstart,
+		  "start time", status);
+  fits_update_key(fptr, TDOUBLE, "TSTOP", &tstop,
+		  "stop time", status);
+  CHECK_STATUS_VOID(*status);
+
+
+  // Add header information about program parameters.
+  HDpar_stamp(fptr, hdunum, status);
+  CHECK_STATUS_VOID(*status);
+
+  // Move back to the original HDU.
+  if (prev_hdunum!=hdunum) {
+    int hdutype=0;
+    fits_movabs_hdu(fptr, prev_hdunum, &hdutype, status);
+    CHECK_STATUS_VOID(*status);
+  }
+}

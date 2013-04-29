@@ -98,6 +98,13 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 
 
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
+				      char* const telescop,
+				      char* const instrume,
+				      char* const filter,
+				      const double mjdref,
+				      const double timezero,
+				      const double tstart,
+				      const double tstop,
 				      const char clobber,
 				      int* const status)
 {
@@ -129,19 +136,12 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   fits_create_file(&plf->fptr, buffer, status);
   CHECK_STATUS_RET(*status, plf);
 
-  // Set the time-keyword in the header.
-  char datestr[MAXMSG];
-  int timeref;
-  fits_get_system_time(datestr, &timeref, status);
+  // Insert header keywords to 1st and 2nd HDU.
+  sixt_add_fits_stdkeywords(plf->fptr, 1, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, plf);
-  fits_update_key(plf->fptr, TSTRING, "DATE", datestr, 
-		  "File creation date", status);
-  CHECK_STATUS_RET(*status, plf);
-
-  // Add header information about program parameters.
-  // The second parameter "1" means that the headers are written
-  // to the first extension.
-  HDpar_stamp(plf->fptr, 1, status);
+  sixt_add_fits_stdkeywords(plf->fptr, 2, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, plf);
 
   // Move to the binary table extension.

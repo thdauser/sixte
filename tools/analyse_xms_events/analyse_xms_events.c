@@ -43,10 +43,20 @@ int analyse_xms_events_main() {
     sprintf(keystr, "TLMAX%d", elf->crawy);
     fits_read_key(elf->fptr, TINT, keystr, &tlmaxy, comment, &status);
     CHECK_STATUS_BREAK(status);
+    double mjdref, timezero, tstart, tstop;
+    fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Create and open a new pattern file.
     plf=openNewPatternFile(par.PatternList, 
 			   telescop, instrume, "Normal",
+			   mjdref, timezero, tstart, tstop,
 			   tlmaxx+1, tlmaxy+1,
 			   par.clobber, &status);
     CHECK_STATUS_BREAK(status);
@@ -65,17 +75,6 @@ int analyse_xms_events_main() {
     sprintf(keystr, "TLMAX%d", plf->cpi);
     fits_update_key(plf->fptr, TLONG, keystr, &lbuffer, comment, &status);
     CHECK_STATUS_BREAK(status);
-
-    // Copy TSTART and TSTOP keywords.
-    double dbuffer;
-    fits_read_key(elf->fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(plf->fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);    
 
     // Loop over all events in the event file.
     long row;

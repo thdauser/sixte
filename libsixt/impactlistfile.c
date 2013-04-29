@@ -85,6 +85,13 @@ ImpactListFile* openImpactListFile(const char* const filename,
 
 
 ImpactListFile* openNewImpactListFile(const char* const filename,
+				      char* const telescop,
+				      char* const instrume,
+				      char* const filter,
+				      const double mjdref,
+				      const double timezero,
+				      const double tstart,
+				      const double tstop,
 				      const char clobber,
 				      int* const status)
 {
@@ -116,20 +123,13 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 
-  // Set the time-keyword in the header.
-  char datestr[MAXMSG];
-  int timeref;
-  fits_get_system_time(datestr, &timeref, status);
-  CHECK_STATUS_RET(*status, file);
-  fits_update_key(file->fptr, TSTRING, "DATE", datestr, 
-		  "File creation date", status);
-  CHECK_STATUS_RET(*status, file);
-
-  // Add header information about program parameters.
-  // The second parameter "1" means that the headers are written
-  // to the first extension.
-  HDpar_stamp(file->fptr, 1, status);
-  CHECK_STATUS_RET(*status, file);
+  // Insert header keywords to 1st and 2nd HDU.
+  sixt_add_fits_stdkeywords(file->fptr, 1, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
+  sixt_add_fits_stdkeywords(file->fptr, 2, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Move to the binary table extension.
   fits_movabs_hdu(file->fptr, 2, 0, status);

@@ -48,6 +48,13 @@ ImpactListFile* openImpactListFile(const char* const filename,
 /** Create and open a new ImpactListFile. The new file is generated
     according to the specified template. */
 ImpactListFile* openNewImpactListFile(const char* const filename,
+				      char* const telescop,
+				      char* const instrume,
+				      char* const filter,
+				      const double mjdref,
+				      const double timezero,
+				      const double tstart,
+				      const double tstop,
 				      const char clobber,
 				      int* const status);
 

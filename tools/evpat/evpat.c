@@ -59,6 +59,18 @@ int evpat_main()
     elf=openEventListFile(eventlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Read the timing keywords.
+    char comment[MAXMSG];
+    double mjdref, timezero, tstart, tstop;
+    fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Open the output pattern file.
     char telescop[MAXMSG]={""};
     char instrume[MAXMSG]={""};
@@ -70,22 +82,10 @@ int evpat_main()
     }
     plf=openNewPatternFile(pattern_filename, 
 			   telescop, instrume, "Normal",
+			   mjdref, timezero, tstart, tstop,			   
 			   inst->det->pixgrid->xwidth,
 			   inst->det->pixgrid->ywidth,
 			   par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Copy FITS header keywords.
-    char comment[MAXMSG];
-    double mjdref=0.;
-    fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
-    fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &mjdref, 
-		    "reference MJD", &status);
-    CHECK_STATUS_BREAK(status);
-    double timezero=0.;
-    fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
-    fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &timezero, 
-		    "time offset", &status);
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.

@@ -124,20 +124,32 @@ int phoimg_main() {
     plf=openPhotonListFile(photonlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Read header keywords.
+    char telescop[MAXMSG], instrume[MAXMSG], comment[MAXMSG];
+    fits_read_key(plf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    fits_read_key(plf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    double mjdref, timezero, tstart, tstop;
+    fits_read_key(plf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, par.clobber, &status);
+    ilf=openNewImpactListFile(impactlist_filename, 
+			      telescop, instrume, "Normal",
+			      mjdref, timezero, tstart, tstop,
+			      par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
     fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
-    fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    double dbuffer=0.;
-    fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		    "start time", &status);
     CHECK_STATUS_BREAK(status);
 
     // Scan the entire photon list.

@@ -121,8 +121,27 @@ int comaimg2_main() {
     float x_det = par.x_det;
     float y_det = par.y_det;
 
+    // Read header keywords.
+    char telescop[MAXMSG], instrume[MAXMSG], comment[MAXMSG];
+    fits_read_key(plf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    fits_read_key(plf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    double mjdref, timezero, tstart, tstop;
+    fits_read_key(plf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
     //Create a new FITS-file for the impact-list (output).
-    ilf = openNewImpactListFile(par.ImpactList, 1, &status);
+    ilf=openNewImpactListFile(par.ImpactList, 
+			      telescop, instrume, "Normal",
+			      mjdref, timezero, tstart, tstop,
+			      1, &status);
     CHECK_STATUS_BREAK(status);
 
     //Write WCS header keywords.

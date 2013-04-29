@@ -96,6 +96,7 @@ int gendetsim_main() {
     }
     elf=openNewEventListFile(eventlist_filename, 
 			     telescop, instrume, "Normal", 
+			     par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
 			     inst->det->pixgrid->xwidth, 
 			     inst->det->pixgrid->ywidth, 
 			     par.clobber, &status);
@@ -111,17 +112,7 @@ int gendetsim_main() {
     value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
     fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);
-      
-    // Timing keywords.
-    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    double buffer_timezero=0.;
-    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		    "time offset", &status);
-    fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		    "start time", &status);
-    CHECK_STATUS_BREAK(status);
-
+    
     // Store the number of simulated input photons in the FITS header
     // of the output event file.
     fits_update_key(elf->fptr, TLONG, "NPHOTONS", 

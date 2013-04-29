@@ -48,6 +48,10 @@ EventListFile* openNewEventListFile(const char* const filename,
 				    char* const telescop,
 				    char* const instrume,
 				    char* const filter,
+				    const double mjdref,
+				    const double timezero,
+				    const double tstart,
+				    const double tstop,
 				    const int nxdim,
 				    const int nydim,
 				    const char clobber,
@@ -81,45 +85,12 @@ EventListFile* openNewEventListFile(const char* const filename,
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, NULL);
 
-  // Update the mission keywords.
-  int hdutype;
-  fits_movabs_hdu(fptr, 1, &hdutype, status);
-  fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
-  fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
-  fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
-  fits_movabs_hdu(fptr, 2, &hdutype, status);
-  fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
-  fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
-  fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
+  // Insert header keywords to 1st and 2nd HDU.
+  sixt_add_fits_stdkeywords(fptr, 1, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
-
-  // Set the time-keyword in the event list header.
-  char datetimestr[MAXMSG], datestr[MAXMSG];
-  int timeref;
-  fits_get_system_time(datetimestr, &timeref, status);
-  strcpy(datestr, datetimestr);
-  datestr[10]='\0';
-  CHECK_STATUS_RET(*status, NULL);
-  fits_movabs_hdu(fptr, 1, &hdutype, status);
-  fits_update_key(fptr, TSTRING, "DATE", datetimestr, 
-		  "file creation date", status);
-  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr, 
-		  "UT date of observation start", status);
-  fits_update_key(fptr, TSTRING, "TIME-OBS", &(datestr[11]), 
-		  "UT time of observation start", status);
-  fits_movabs_hdu(fptr, 2, &hdutype, status);
-  fits_update_key(fptr, TSTRING, "DATE", datetimestr, 
-		  "file creation date", status);
-  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr, 
-		  "UT date of observation start", status);
-  fits_update_key(fptr, TSTRING, "TIME-OBS", &(datestr[11]), 
-		  "UT time of observation start", status);
-  CHECK_STATUS_RET(*status, NULL);
-
-  // Add header information about program parameters.
-  // The second parameter "1" means that the headers are written
-  // to the first extension.
-  HDpar_stamp(fptr, 1, status);
+  sixt_add_fits_stdkeywords(fptr, 2, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
 
   // Close the file.
@@ -129,7 +100,7 @@ EventListFile* openNewEventListFile(const char* const filename,
   // Re-open the file.
   EventListFile* elf=openEventListFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, elf);
-
+  
   // Update the TLMIN and TLMAX keywords for the DETX and DETY columns.
   char keystr[MAXMSG];
   int ibuffer;
@@ -146,7 +117,7 @@ EventListFile* openNewEventListFile(const char* const filename,
   ibuffer=nydim-1;
   fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
   CHECK_STATUS_RET(*status, elf);
-  
+
   return(elf);
 }
 
