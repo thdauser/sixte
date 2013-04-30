@@ -341,10 +341,10 @@ int erosim_main()
 
     char telescop[MAXMSG]={""};
     char instrume[MAXMSG]={""};
-    if (NULL!=subinst[ii]->telescop) {
+    if (NULL!=subinst[0]->telescop) {
       strcpy(telescop, subinst[0]->telescop);
     }
-    if (NULL!=subinst[ii]->instrume) {
+    if (NULL!=subinst[0]->instrume) {
       strcpy(instrume, subinst[0]->instrume);
     }
 

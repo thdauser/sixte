@@ -332,10 +332,10 @@ int nustarsim_main()
     char telescop[MAXMSG]={""};
     char instrume[MAXMSG]={""};
     if (NULL!=subinst[0]->telescop) {
-      strcpy(telescop, subinst[ii]->telescop);
+      strcpy(telescop, subinst[0]->telescop);
     }
     if (NULL!=subinst[0]->instrume) {
-      strcpy(instrume, subinst[ii]->instrume);
+      strcpy(instrume, subinst[0]->instrume);
     }
     
     double tstop;
