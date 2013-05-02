@@ -100,6 +100,15 @@ int photonmerge_main() {
 				     par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Copy header keywords.
+    char attitude[MAXMSG];
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "ATTITUDE", 
+		  attitude, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(outputfile->fptr, TSTRING, "ATTITUDE",
+		    attitude, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
 
     // Transfer all photons from the input files to the output file.
     int eof[MAX_N_INPUTFILES];
