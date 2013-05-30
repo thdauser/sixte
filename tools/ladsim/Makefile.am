@@ -22,7 +22,13 @@ dist_pfiles_DATA=ladsim.par
 bin_PROGRAMS=ladsim
 
 ladsim_SOURCES=ladsim.c ladsim.h
-ladsim_LDADD =@top_builddir@/libsixt/libsixt.la
-ladsim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+ladsim_LDADD =@top_builddir@/libsixt/libsixt.a
+ladsim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+ladsim_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+ladsim_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+ladsim_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+ladsim_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+ladsim_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 ladsim_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-ladsim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+ladsim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+ladsim_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

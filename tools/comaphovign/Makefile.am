@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -23,7 +22,13 @@ dist_pfiles_DATA=comaphovign.par
 bin_PROGRAMS=comaphovign
 
 comaphovign_SOURCES=comaphovign.c comaphovign.h
-comaphovign_LDADD =@top_builddir@/libsixt/libsixt.la
-comaphovign_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+comaphovign_LDADD =@top_builddir@/libsixt/libsixt.a
+comaphovign_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+comaphovign_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+comaphovign_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+comaphovign_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+comaphovign_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+comaphovign_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 comaphovign_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-comaphovign_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+comaphovign_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+comaphovign_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -25,8 +24,13 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS=comadet2
 
 comadet2_SOURCES=comadet2.c comadet2.h
-comadet2_LDADD =@top_builddir@/libsixt/libsixt.la
-comadet2_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+comadet2_LDADD =@top_builddir@/libsixt/libsixt.a
+comadet2_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+comadet2_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+comadet2_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+comadet2_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+comadet2_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+comadet2_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 comadet2_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-comadet2_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-
+comadet2_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+comadet2_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

@@ -6,10 +6,10 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-noinst_LTLIBRARIES=libhdinit.la
+noinst_LIBRARIES=libhdinit.a
 
 # Sources:
-libhdinit_la_SOURCES=headas_init.c
+libhdinit_a_SOURCES=headas_init.c
 
 ############ HEADERS #################
 

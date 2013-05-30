@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -23,8 +22,14 @@ dist_pfiles_DATA=xms_pixtemp.par
 bin_PROGRAMS=xms_pixtemp
 
 xms_pixtemp_SOURCES=xms_pixtemp.c xms_pixtemp.h
-xms_pixtemp_LDADD =@top_builddir@/libsixt/libsixt.la
-xms_pixtemp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+xms_pixtemp_LDADD =@top_builddir@/libsixt/libsixt.a
+xms_pixtemp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+xms_pixtemp_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+xms_pixtemp_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+xms_pixtemp_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+xms_pixtemp_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+xms_pixtemp_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 xms_pixtemp_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-xms_pixtemp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+xms_pixtemp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+xms_pixtemp_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 

@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## PIL .par-FILES##############
 
@@ -23,8 +22,13 @@ dist_pfiles_DATA=ero_exposure.par
 bin_PROGRAMS=ero_exposure
 
 ero_exposure_SOURCES=ero_exposure.c
-ero_exposure_LDADD =@top_builddir@/libsixt/libsixt.la
-ero_exposure_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+ero_exposure_LDADD =@top_builddir@/libsixt/libsixt.a
+ero_exposure_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+ero_exposure_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+ero_exposure_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+ero_exposure_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+ero_exposure_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+ero_exposure_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 ero_exposure_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-ero_exposure_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-
+ero_exposure_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+ero_exposure_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

@@ -22,7 +22,13 @@ dist_pfiles_DATA=orbatt.par
 bin_PROGRAMS=orbatt
 
 orbatt_SOURCES=orbatt.c
-orbatt_LDADD =@top_builddir@/libsixt/libsixt.la
-orbatt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+orbatt_LDADD =@top_builddir@/libsixt/libsixt.a
+orbatt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+orbatt_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+orbatt_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+orbatt_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+orbatt_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

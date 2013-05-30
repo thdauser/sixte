@@ -9,7 +9,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## PIL .par-FILES##############
 
@@ -24,7 +23,13 @@ dist_pfiles_DATA=imgev.par
 bin_PROGRAMS=imgev
 
 imgev_SOURCES=imgev.c
-imgev_LDADD =@top_builddir@/libsixt/libsixt.la
-imgev_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+imgev_LDADD =@top_builddir@/libsixt/libsixt.a
+imgev_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+imgev_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+imgev_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+imgev_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+imgev_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+imgev_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 imgev_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-imgev_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+imgev_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+imgev_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

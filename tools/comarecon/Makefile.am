@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -25,10 +24,13 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS=comarecon
 
 comarecon_SOURCES=comarecon.c comarecon.h
-comarecon_LDADD =@top_builddir@/libsixt/libsixt.la
-comarecon_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+comarecon_LDADD =@top_builddir@/libsixt/libsixt.a
+comarecon_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+comarecon_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+comarecon_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+comarecon_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+comarecon_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-
-
-
+comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
