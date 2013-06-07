@@ -546,7 +546,7 @@ int athenapwfisim_main()
       // Determine the currently regarded interval.
       if (NULL==gti) {
 	t0=par.TSTART;
-	t1=par.Exposure;
+	t1=par.TSTART+par.Exposure;
       } else {
 	t0=gti->start[gtibin];
 	t1=gti->stop[gtibin];
