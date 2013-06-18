@@ -1,205 +1,200 @@
 #include "comaimg.h"
 
+/////////////////////////////////////////////////////////////
+//simulates detection process. All incoming photons are    //
+//passing the mask and hitting the detector!               //
+//Input:photon-list(t,E,RA,DEC,PH_ID,SRC_ID),mask-file,    //
+//      pointing-attitude(DEC, RA)                         //
+//      or attitude-file(DEC, RA for different times),     //
+//      mask-width,det-width(in m) for FOV,distance        //
+//Output:impact-list(x-and y-value on detection-plane)     //
+/////////////////////////////////////////////////////////////
 
-////////////////////////////////////
 /** Main procedure. */
 int comaimg_main() {
   struct Parameters par;
 
-  AttitudeCatalog* ac=NULL;
-  struct Telescope telescope; // Telescope data.
+  struct Telescope telescope; //Telescope coordinate system
   PhotonListFile* plf=NULL;
   ImpactListFile* ilf=NULL;
-  double refxcrvl=0., refycrvl=0.;
   CodedMask* mask=NULL;
+  AttCatalog* ac=NULL;
+
+  double refxcrvl=0., refycrvl=0.;
 
   int status=EXIT_SUCCESS; // Error status.
 
 
   // Register HEATOOL:
   set_toolname("comaimg");
-  set_toolversion("0.02");
+  set_toolversion("0.01");
 
 
-  do {  // Beginning of the ERROR handling loop (will at most be run once)
+  do { // Beginning of the ERROR handling loop (will at most be run once)
 
     // --- Initialization ---
 
     // Read parameters using PIL library.
-    if ((status=comaimg_getpar(&par))) break;
+    status=comaimg_getpar(&par);
+    if (EXIT_SUCCESS!=status) break;
 
-    float focal_length=par.MaskDistance;
+    // Initialize HEADAS random number generator and GSL generator for 
+    // Gaussian distribution.
+    HDmtInit(1);
 
-    // Calculate the minimum cos-value for sources inside the FOV: 
-    // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align=cos(M_PI/3.);
-    
-    // Initialize the random number generator.
-    sixt_init_rng((int)time(NULL), &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Open the FITS file with the input photon list:
+    // Open the FITS file with the input photon list.
     plf=openPhotonListFile(par.PhotonList, READONLY, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) break;
 
+    // Load the coded mask from the file.
+    mask=getCodedMaskFromFile(par.Mask, &status);
+    if (EXIT_SUCCESS!=status) break;
 
-    // Set up the Attitude.
-    char ucase_buffer[MAXFILENAME];
-    strcpy(ucase_buffer, par.Attitude);
-    strtoupper(ucase_buffer);
-    if (0==strcmp(ucase_buffer, "NONE")) {
-      // Set up a simple pointing attitude.
+    //Calculate min cos-value for sources inside FOV.
+    const float fov_min_align = cos(det_phi_max(par.MaskDistance,
+						par.x_mask, par.y_mask,
+						par.x_det, par.y_det));
+    //Set up the telescope attitude:
 
-      // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+    //Buffer for attitude-filename.
+    char att_buffer[MAXFILENAME];
+    //Copy attitude-filename from par-file to buffer.
+    strcpy(att_buffer, par.Attitude);
+    //Make all letters capital to compare with any spelling of 'none'.
+    strtoupper(att_buffer);
+    if (0==strcmp(att_buffer, "NONE")){
+      //Set up attitude(no attitude-file to use).
+
+      //Memory-allocation:
+
+      //Allocates memory for struct AttitudeCatalog.
+      //Initializes nentries, current_entry to 0;entry to NULL.
+      ac=getAttCatalog(&status);
       CHECK_STATUS_BREAK(status);
 
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
+      //Allocates memory for struct AttitudeEntry.
+      ac->entry=(AttEntry*)malloc(sizeof(AttEntry));
       if (NULL==ac->entry) {
 	status=EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for AttitudeEntry failed");
 	break;
       }
 
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=0.;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+      //Set the values of the AttitudeCatalog-Entry.
 
-      Vector vz={0., 0., 1.};
+      ac->nentries=1;
+      ac->entry[0]=initializeAttitudeEntry();  
+      //ac->entry[0].time=0;
+
+      //Telescope pointing direction:
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180.0,par.DEC* M_PI/180.0);
+      //Unit-vector in z-direction:
+      Vector vz = {0.,0.,1.};
+      //Vector perpendicular to nz-vz-plane:
       ac->entry[0].nx=vector_product(vz, ac->entry[0].nz);
+      //initialize telescope coordinate sytem
+      telescope.nz=ac->entry[0].nz;
+      telescope.nx=ac->entry[0].nx;
 
     } else {
-      // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      //Load the attitude from file.
+      ac=loadAttCatalog(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > 0.) || 
-	  (ac->entry[ac->nentries-1].time < par.Exposure)) {
+      Vector initializey={0.,0.,0.};
+      telescope.ny =initializey;
+
+      //Check if the required time interval for the simulation
+      //lies within the time interval in the attitude-file
+      if((ac->entry[0].time > 0) || ((ac->entry[ac->nentries-1].time) < (par.Exposure +par.Timezero))){
 	status=EXIT_FAILURE;
 	SIXT_ERROR("attitude data does not cover the specified period");
 	break;
       }
-    }
-    // END of setting up the attitude.
+      
+    }//END of setting up the attitude.
+    
 
+    //Distance mask-detector:
+    float distance = par.MaskDistance;
+    //Detector- dimensions:
+    float x_det = par.x_det;
+    float y_det = par.y_det;
 
-    // Load the coded mask from the file.
-    mask=getCodedMaskFromFile(par.Mask, &status);
+    //Create a new FITS-file for the impact-list (output).
+    ilf = openNewImpactListFile(par.ImpactList, 1, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Create a new FITS file for the output of the impact list.
-    ilf=openNewImpactListFile(par.ImpactList, 0, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Write WCS header keywords.
+    //Write WCS header keywords.
     fits_update_key(ilf->fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status);
     fits_update_key(ilf->fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status);
     CHECK_STATUS_BREAK(status);
-    
+  
     // --- END of Initialization ---
 
 
     // --- Beginning of Imaging Process ---
 
-    // Beginning of actual simulation (after loading required data):
+    //Beginning of actual simulation (after loading required data).
     headas_chat(3, "start imaging process ...\n");
 
-    // LOOP over all timesteps given the specified timespan from t0 to t0+timespan
-    long attitude_counter=0;  // counter for AttitudeCatalog
-
-    // SCAN PHOTON LIST 
+    //SCAN PHOTON LIST (starts with first entry, plf initialized to 0 at beginning)
     while (plf->row < plf->nrows) {
-   
-      Photon photon={.time=0.};
-      
-      // Read an entry from the photon list:
+         
+      //Read an entry from the photon list:
+      Photon photon={.time= 0.0};
       status=PhotonListFile_getNextRow(plf, &photon);
-      CHECK_STATUS_BREAK(status);
+      if (EXIT_SUCCESS!=status) break;
 
-      // Check whether we are within the requested time interval.
-      if (photon.time > par.Exposure) break;
+      //Check whether photon-list-entry is within requested time interval.
+      if (photon.time > (par.Exposure + par.Timezero))
+	break;
 
-      // Determine the unit vector pointing in the direction of the photon.
+      //Determine unit vector in photon-direction
       Vector phodir=unit_vector(photon.ra, photon.dec);
-   
-      // Determine telescope pointing direction at the current time.
-      telescope.nz=getTelescopeNz(ac, photon.time, &status);
+
+      //Determine current telescope pointing direction.
+      telescope.nz=GetTelescopeNz(ac, photon.time, &status);
       CHECK_STATUS_BREAK(status);
+      
+    
+      //Check whether photon is inside FOV:
+      //Compare photon direction to direction of telescope axis
+      if (check_fov(&phodir, &telescope.nz, fov_min_align)==0){
+	//Photon is inside fov
 
-      // Check whether the photon is inside the FOV:
-      // Compare the photon direction to the unit vector specifiing the 
-      // direction of the telescope axis:
-      if (check_fov(&phodir, &telescope.nz, fov_min_align)==0) {
-	// Photon is inside the FOV!
+	telescope.nx=ac->entry[0].nx;
+	getTelAxes(ac,&telescope.nx,&telescope.ny,&telescope.nz,photon.time,&status);
+
+	//Determine photon impact position on detector in [m].
+	struct Point2d position;
 	
-	// Determine telescope data like direction etc. (attitude).
-	// The telescope coordinate system consists of a nx, ny, and nz axis.
-	// The nz axis is perpendicular to the detector plane and pointing along
-	// the telescope direction. The nx axis is align along the detector 
-	// x-direction, which is identical to the detector COLUMN.
-	// The ny axis ix pointing along the y-direction of the detector,
-	// which is also referred to as ROW.
-
-	// Determine the current nx: perpendicular to telescope axis nz
-	// and in the direction of the satellite motion.
-	telescope.nx = 
-	  normalize_vector(interpolate_vec(ac->entry[attitude_counter].nx, 
-					   ac->entry[attitude_counter].time, 
-					   ac->entry[attitude_counter+1].nx, 
-					   ac->entry[attitude_counter+1].time, 
-					   photon.time));
-	
-	// Remove the component along the vertical direction nz 
-	// (nx must be perpendicular to nz!):
-	double scp = scalar_product(&telescope.nz, &telescope.nx);
-	telescope.nx.x -= scp*telescope.nz.x;
-	telescope.nx.y -= scp*telescope.nz.y;
-	telescope.nx.z -= scp*telescope.nz.z;
-	telescope.nx = normalize_vector(telescope.nx);
-
-	// The third axis of the coordinate system ny is perpendicular 
-	// to telescope axis nz and nx:
-	telescope.ny=normalize_vector(vector_product(telescope.nz, telescope.nx));
-	
-	// Determine the photon impact position on the detector (in [m]):
-	struct Point2d position;  
-
-	// Convolution with PSF:
-	// Function returns 0, if the photon does not fall on the detector. 
-	// If it hits the detector, the return value is 1.
-	int retval=
-	  getCodedMaskImpactPos(&position, &photon, mask, 
-				&telescope, focal_length, &status);
+	//function determines impact position on mask first;
+	//checks wheather pixel is transparent;
+	//if photon then hits the detector, return value is 1, 0 else
+       	int reval = getImpactPos(&position, &phodir,
+				 mask, &telescope,
+				 distance, x_det, y_det, &status);
 	CHECK_STATUS_BREAK(status);
-	if (1==retval) {
-	  // Check whether the photon hits the detector within the FOV. 
-	  // (Due to the effects of the mirrors it might have been scattered over 
-	  // the edge of the FOV, although the source is inside the FOV.)
-	  //if (sqrt(pow(position.x,2.)+pow(position.y,2.)) < 
-	  //    tan(telescope.fov_diameter)*telescope.focal_length) {
-	  
-	  // New impact.
-	  Impact impact;
-	  impact.time  =photon.time;
-	  impact.energy=photon.energy;
-	  impact.position.x=position.x;
-	  impact.position.y=position.y;
-	  impact.ph_id     =photon.ph_id;
-	  impact.src_id    =photon.src_id;
 
-	  // Write the impact to the output file.
+	if (reval == 1){
+	 
+	  //Create new impact.
+	  Impact impact;
+	  impact.time       = photon.time;
+	  impact.energy     = photon.energy;
+	  impact.position.x = position.x;
+	  impact.position.y = position.y;
+	  impact.ph_id      = photon.ph_id;
+	  impact.src_id     = photon.src_id;
+
+	  //Write to output-file.
 	  addImpact2File(ilf, &impact, &status);
 	  CHECK_STATUS_BREAK(status);
-
-	  //}
-	} // END getCodedMaskImpactPos(...)
-      } // End of FOV check.
+	} // END of photon hits the detector.
+      } // END of photon  inside fov.
     } // END of scanning LOOP over the photon list.
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) break;
       
   } while(0);  // END of the error handling loop.
 
@@ -207,15 +202,16 @@ int comaimg_main() {
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
-  // Clean up the random number generator.
-  sixt_destroy_rng();
-
   // Close the FITS files.
   freeImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
+  freeAttCatalog(&ac);
 
-  freeAttitudeCatalog(&ac);
+  // Release memory.
   destroyCodedMask(&mask);
+
+  // release HEADAS random number generator
+  HDmtFree();
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
@@ -239,7 +235,7 @@ int comaimg_getpar(struct Parameters* par)
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
   
-  // Get the filename of the Coded Mask file (FITS image file).
+  // Get the filename of the coded mask file (FITS image file).
   status=ape_trad_query_string("Mask", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the filename of the coded mask");
@@ -248,7 +244,7 @@ int comaimg_getpar(struct Parameters* par)
   strcpy(par->Mask, sbuffer);
   free(sbuffer);
 
-  // Get the filename of the impact list file (FITS output file).
+  // Get the filename of the output impact list file (FITS file).
   status=ape_trad_query_string("ImpactList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the filename of the impact list");
@@ -257,33 +253,68 @@ int comaimg_getpar(struct Parameters* par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  // Read the distance between the coded mask and the detector plane [m].
-  status=ape_trad_query_double("MaskDistance", &par->MaskDistance);
+  //Read distance between the detector and the mask plane [m].
+  status=ape_trad_query_float("MaskDistance", &par->MaskDistance);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the distance between the mask and the detector");
+    SIXT_ERROR("failed reading the distance between the mask and detection plane");
     return(status);
-
   }
 
+  // Get the filename of the telescope-attitude input file (FITS file).
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the attitude file");
+    SIXT_ERROR("failed reading the filename of the telescope attitude");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_float("RA", &par->RA);
+  //Read width of the mask [m].
+  status=ape_trad_query_float("x_mask", &par->x_mask);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
+    SIXT_ERROR("failed reading width of the mask");
+    return(status);
+  }
+
+  //Read depth of the mask [m].
+    status=ape_trad_query_float("y_mask", &par->y_mask);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the depth of the mask");
+    return(status);
+  }
+
+  //Read width of the detector [m].
+  status=ape_trad_query_float("x_det", &par->x_det);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the width of the detector");
+    return(status);
+  }
+
+  //Read depth of the detector [m].
+  status=ape_trad_query_float("y_det", &par->y_det);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the depth of the detector");
+    return(status);
+  }
+
+  status=ape_trad_query_double("RA", &par->RA);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the right ascension of the telescope");
     return(status);
   } 
 
-  status=ape_trad_query_float("Dec", &par->Dec);
+ status=ape_trad_query_double("DEC", &par->DEC);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the declination of the telescope pointing");
+    SIXT_ERROR("failed reading the declination of the telescope");
     return(status);
   } 
+
+  //Read time-offset for simulated intervall [s].
+  status=ape_trad_query_double("Timezero", &par->Timezero);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the time-offset for simulated intervall");
+    return(status);
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
@@ -293,6 +324,3 @@ int comaimg_getpar(struct Parameters* par)
 
   return(status);
 }
-
-
-

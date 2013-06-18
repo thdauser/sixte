@@ -8,6 +8,11 @@
 #include "squarepixels.h"
 #include "codedmask.h"
 #include "sourceimage.h"
+#include "reconstruction.h"
+#include "eventarray.h"
+#include "fft_array.h"
+#include "fftw3.h"
+#include "balancing.h"
 
 
 #define TOOLSUB comarecon_main
@@ -19,6 +24,9 @@ struct Parameters {
   char EventList[MAXMSG];
   char EventListTemplate[MAXMSG];
   char Image[MAXMSG]; // output: reconstructed source image
+  char ReconArray[MAXMSG]; //output: reconstruction array
+
+  int ReconType; // reconstruction type (1: direct deconvolution, 2: FFT)
 
   /** Detector width in [pixel]. */
   int width;
@@ -39,4 +47,4 @@ struct Parameters {
 int comarecon_getpar(struct Parameters* parameters);
 
 
-#endif /* COMARECON_H */
+#endif /* COMARECON2_H */

@@ -4,6 +4,7 @@
 #include "sixt.h"
 #include "squarepixels.h"
 #include "comaeventfile.h"
+#include "codedmask.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -24,7 +25,9 @@ typedef struct {
 
 ReadEvent* newEventArray(int* const status);
 
-ReadEvent* getEventArray(SquarePixels* detector_pixels, int* status);
+ReadEvent* getEventArray(CodedMask* mask, SquarePixels* detector_pixels, int* status);
+
+ReadEvent* getEventArrayReBin(const CodedMask* const mask, SquarePixels* detector_pixels, int* status);
 
 int readEventList_nextRow(CoMaEventFile* ef, ReadEvent* ea);
 

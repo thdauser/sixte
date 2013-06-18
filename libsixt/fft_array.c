@@ -49,7 +49,29 @@ fftw_complex* FFTOfArray(fftw_complex* Input, int ImageSize1, int ImageSize2, in
   return(Output);
 }
 
-void testFitsImagefft(fftw_complex* Image, char* filename, int Size1, int Size2)
+void testFitsImagefft_img(fftw_complex* Image, char* filename, int Size1, int Size2)
+{
+  int count;
+  int status =0;    
+  fitsfile* fptr;
+ 
+  long fpixel[2]={1,1};
+  long naxes[2] = {(long)Size1, (long)Size2};
+
+  fits_create_file(&fptr, filename ,&status);
+
+  fits_create_img(fptr, DOUBLE_IMG,2, naxes, &status);
+  double* test;
+  test= calloc(Size1*Size2, sizeof(double));
+  for(count=0; count<Size1*Size2; count++){
+     test[count]=Image[count][1];
+   }
+  fits_write_pix(fptr, TDOUBLE, fpixel, naxes[0]*naxes[1],test, &status);
+  fits_close_file(fptr, &status);
+}
+
+
+void testFitsImagefft_real(fftw_complex* Image, char* filename, int Size1, int Size2)
 {
   int count;
   int status =0;    
@@ -70,20 +92,29 @@ void testFitsImagefft(fftw_complex* Image, char* filename, int Size1, int Size2)
   fits_close_file(fptr, &status);
 }
 
-void testFitsImage1d(double* Image1d, char* filename, int Size1, int Size2)
+void testFitsImage1d(double* Image1d, char* filename, int Size1, int Size2, int* const status)
 {
-  int count;
-  int status =0;    
+  int count;   
   fitsfile* fptr;
-  fits_create_file(&fptr, filename ,&status);
+
+  // Check if the file already exists.
+  int exists;
+  fits_file_exists(filename, &exists, status);
+  if (0!=exists) {
+    // Delete the file.
+    remove(filename);
+  }
+ 
+
+  fits_create_file(&fptr, filename, status);
   long fpixel[2]={1,1};
   long naxes[2] = {(long)Size1, (long)Size2};
-  fits_create_img(fptr, DOUBLE_IMG,2, naxes, &status);
+  fits_create_img(fptr, DOUBLE_IMG,2, naxes, status);
   double* test;
   test= calloc(Size1*Size2, sizeof(double));
   for(count=0; count<Size1*Size2; count++){
      test[count]=Image1d[count];
    }
-  fits_write_pix(fptr, TDOUBLE, fpixel, naxes[0]*naxes[1],test, &status);
-  fits_close_file(fptr, &status);
+  fits_write_pix(fptr, TDOUBLE, fpixel, naxes[0]*naxes[1], test, status);
+  fits_close_file(fptr, status);
 }
