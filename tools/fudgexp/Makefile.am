@@ -9,7 +9,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -24,8 +23,13 @@ dist_pfiles_DATA=fudgexp.par
 bin_PROGRAMS=fudgexp
 
 fudgexp_SOURCES=fudgexp.c fudgexp.h
-fudgexp_LDADD =@top_builddir@/libsixt/libsixt.la
-fudgexp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+fudgexp_LDADD =@top_builddir@/libsixt/libsixt.a
+fudgexp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+fudgexp_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+fudgexp_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+fudgexp_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+fudgexp_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+fudgexp_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 fudgexp_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-fudgexp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-
+fudgexp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+fudgexp_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

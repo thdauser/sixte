@@ -40,6 +40,10 @@ dist_ixowfi_DATA = ixo/wfi/fullframe.xml
 loftdir = $(xmldir)/loft
 dist_loft_DATA = loft/lad.xml
 
+# MIRAX
+miraxdir = $(xmldir)/lattes/mirax
+dist_mirax_DATA = lattes/mirax/hxi.xml
+
 # NuSTAR
 nustardir = $(xmldir)/nustar
 dist_nustar_DATA = nustar/nustar.xml

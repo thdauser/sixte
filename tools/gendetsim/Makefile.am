@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -23,7 +22,13 @@ dist_pfiles_DATA=gendetsim.par
 bin_PROGRAMS=gendetsim
 
 gendetsim_SOURCES=gendetsim.c gendetsim.h
-gendetsim_LDADD =@top_builddir@/libsixt/libsixt.la
-gendetsim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+gendetsim_LDADD =@top_builddir@/libsixt/libsixt.a
+gendetsim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+gendetsim_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+gendetsim_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+gendetsim_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+gendetsim_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+gendetsim_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 gendetsim_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-gendetsim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+gendetsim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+gendetsim_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

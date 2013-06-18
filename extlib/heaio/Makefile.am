@@ -3,10 +3,10 @@ AM_CFLAGS =-I@top_srcdir@/extlib/simput/extlib/cfitsio
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-noinst_LTLIBRARIES=libhdio.la
+noinst_LIBRARIES=libhdio.a
 
 # Sources:
-libhdio_la_SOURCES=headas_stdio.c
+libhdio_a_SOURCES=headas_stdio.c
 
 ############ HEADERS #################
 

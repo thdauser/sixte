@@ -14,7 +14,7 @@ PatternFile* newPatternFile(int* const status)
   file->nrows=0;
   file->ctime=0;
   file->cframe =0;
-  file->cpha   =0;
+  file->cpi    =0;
   file->csignal=0;
   file->crawx  =0;
   file->crawy  =0;
@@ -52,16 +52,25 @@ void destroyPatternFile(PatternFile** const file,
 
 
 PatternFile* openNewPatternFile(const char* const filename,
+				char* const telescop,
+				char* const instrume,
+				char* const filter,
+				const double mjdref,
+				const double timezero,
+				const double tstart,
+				const double tstop,
+				const int nxdim,
+				const int nydim,
 				const char clobber,
 				int* const status)
 {
-  PatternFile* file=newPatternFile(status);
-  CHECK_STATUS_RET(*status, file);
+  fitsfile* fptr=NULL;
+  CHECK_STATUS_RET(*status, NULL);
 
   // Check if the file already exists.
   int exists;
   fits_file_exists(filename, &exists, status);
-  CHECK_STATUS_RET(*status, file);
+  CHECK_STATUS_RET(*status, NULL);
   if (0!=exists) {
     if (0!=clobber) {
       // Delete the file.
@@ -72,7 +81,7 @@ PatternFile* openNewPatternFile(const char* const filename,
       sprintf(msg, "file '%s' already exists", filename);
       SIXT_ERROR(msg);
       *status=EXIT_FAILURE;
-      return(file);
+      return(NULL);
     }
   }
 
@@ -80,33 +89,43 @@ PatternFile* openNewPatternFile(const char* const filename,
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
 	  "/templates/patternlist.tpl");
-  fits_create_file(&file->fptr, buffer, status);
-  CHECK_STATUS_RET(*status, file);
+  fits_create_file(&fptr, buffer, status);
+  CHECK_STATUS_RET(*status, NULL);
 
-  // Set the time-keyword in the header.
-  char datestr[MAXMSG];
-  int timeref;
-  fits_get_system_time(datestr, &timeref, status);
-  CHECK_STATUS_RET(*status, file);
-  fits_update_key(file->fptr, TSTRING, "DATE", datestr, 
-		  "File creation date", status);
-  CHECK_STATUS_RET(*status, file);
-
-  // Add header information about program parameters.
-  // The second parameter "1" means that the headers are written
-  // to the first extension.
-  HDpar_stamp(file->fptr, 1, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  // Insert header keywords to 1st and 2nd HDU.
+  sixt_add_fits_stdkeywords(fptr, 1, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
+  sixt_add_fits_stdkeywords(fptr, 2, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Close the file.
-  destroyPatternFile(&file, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  file=openPatternFile(filename, READWRITE, status);
-  if (EXIT_SUCCESS!=*status) return(file);
+  PatternFile* plf=openPatternFile(filename, READWRITE, status);
+  CHECK_STATUS_RET(*status, plf);
+
+  // Update the TLMIN and TLMAX keywords for the DETX and DETY columns.
+  char keystr[MAXMSG];
+  int ibuffer;
+  sprintf(keystr, "TLMIN%d", plf->crawx);
+  ibuffer=0;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", plf->crawx);
+  ibuffer=nxdim-1;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMIN%d", plf->crawy);
+  ibuffer=0;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", plf->crawy);
+  ibuffer=nydim-1;
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  CHECK_STATUS_RET(*status, plf);
   
-  return(file);
+  return(plf);
 }
 
 
@@ -126,7 +145,7 @@ PatternFile* openPatternFile(const char* const filename,
   // Determine the column numbers.
   fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
   fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
@@ -224,8 +243,8 @@ void getPatternFromFile(const PatternFile* const file,
 		&dnull, &pattern->time, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
 		&lnull, &pattern->frame, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
-		&lnull, &pattern->pha, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cpi, row, 1, 1, 
+		&lnull, &pattern->pi, &anynul, status);
   fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
 		&fnull, &pattern->signal, &anynul, status);
   fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
@@ -269,8 +288,8 @@ void updatePatternInFile(const PatternFile* const file,
 		 1, 1, &pattern->time, status);
   fits_write_col(file->fptr, TLONG, file->cframe, row, 
 		 1, 1, &pattern->frame, status);
-  fits_write_col(file->fptr, TLONG, file->cpha, row, 
-		 1, 1, &pattern->pha, status);
+  fits_write_col(file->fptr, TLONG, file->cpi, row, 
+		 1, 1, &pattern->pi, status);
   fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
 		 1, 1, &pattern->signal, status);
   fits_write_col(file->fptr, TINT, file->crawx, row, 
@@ -329,7 +348,7 @@ void copyEvents2PatternFile(const EventListFile* const elf,
     pattern->rawy   =event->rawy;
     pattern->time   =event->time;
     pattern->frame  =event->frame;
-    pattern->pha    =event->pha;
+    pattern->pi     =event->pi;
     pattern->signal =event->signal;
     pattern->ra     =0.;
     pattern->dec    =0.;

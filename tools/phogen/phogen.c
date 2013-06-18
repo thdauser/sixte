@@ -121,21 +121,23 @@ int phogen_main()
     // --- Photon Generation Process ---
 
     // Open the output photon list file.
-    plf=openNewPhotonListFile(photonlist_filename, par.clobber,
-			      &status);
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
+    if (NULL!=inst->telescop) {
+      strcpy(telescop, inst->telescop);
+    }
+    if (NULL!=inst->instrume) {
+      strcpy(instrume, inst->instrume);
+    }
+    plf=openNewPhotonListFile(photonlist_filename,
+			      telescop, instrume, "Normal",
+			      par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
+			      par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
     fits_update_key(plf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		    "attitude file", &status);
-    fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    double dbuffer=0.;
-    fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		    "start time", &status);
-    CHECK_STATUS_BREAK(status);
 
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");

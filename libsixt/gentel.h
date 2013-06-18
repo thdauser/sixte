@@ -17,10 +17,6 @@
     particular telescope are defined in a specific XML file. */
 typedef struct {
 
-  /** Telescope name, which is stored in the 'TELESCOP' header
-      keyword in FITS files. */
-  char* telescope;
-
   /** Detector and telescope ARF containing the effective area. */
   struct ARF* arf;
 
@@ -39,8 +35,8 @@ typedef struct {
   float fov_diameter;
 
   /** If the telescope is a coded mask telescope and not an imaging
-      telescope, we have to specify the coded mask pattern file
-      instead of the PSF. */
+      telescope, we have to specify the coded mask file instead of the
+      PSF. */
   CodedMask* coded_mask;
 
 } GenTel;

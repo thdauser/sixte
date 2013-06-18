@@ -10,7 +10,7 @@ Event* getEvent(int* const status)
   // Initalize.
   ev->rawx=0;
   ev->rawy=0;
-  ev->pha =0;
+  ev->pi  =0;
   ev->signal=0.;
   ev->time =0.;
   ev->frame=0;

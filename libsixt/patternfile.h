@@ -21,7 +21,7 @@ typedef struct {
   long nrows;
 
   /** Column numbers. */
-  int ctime, cframe, cpha, csignal, crawx, crawy, cra, cdec, 
+  int ctime, cframe, cpi, csignal, crawx, crawy, cra, cdec, 
     cph_id, csrc_id, cnpixels, ctype, cpileup, csignals;
 
 } PatternFile;
@@ -41,6 +41,15 @@ void destroyPatternFile(PatternFile** const file, int* const status);
 
 /** Create and open a new PatternFile. */
 PatternFile* openNewPatternFile(const char* const filename,
+				char* const telescop,
+				char* const instrume,
+				char* const filter,
+				const double mjdref,
+				const double timezero,
+				const double tstart,
+				const double tstop,
+				const int nxdim,
+				const int nydim,
 				const char clobber,
 				int* const status);
 

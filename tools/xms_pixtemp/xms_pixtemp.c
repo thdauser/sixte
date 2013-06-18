@@ -6,7 +6,7 @@ int xms_pixtemp_main() {
   EventListFile* elf=NULL;
   FILE* output_file=NULL;
 
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
@@ -52,7 +52,7 @@ int xms_pixtemp_main() {
       /*      if ((1==event.array) && // Only events from the inner array.
 	      (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) { */
       fprintf(output_file, " %lf\t%lf\n", event.time, 
-	      getEBOUNDSEnergy(event.pha, rmf, 0, &status));
+	      getEBOUNDSEnergy(event.pi, rmf, 0, &status));
       CHECK_STATUS_BREAK(status);
       /* } */
 

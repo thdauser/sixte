@@ -17,7 +17,6 @@ GenTel* newGenTel(int* const status)
   }
 
   // Initialize all pointers with NULL.
-  tel->telescope=NULL;
   tel->psf      =NULL;
   tel->vignetting=NULL;
   tel->coded_mask=NULL;
@@ -34,9 +33,6 @@ GenTel* newGenTel(int* const status)
 void destroyGenTel(GenTel** const tel)
 {
   if (NULL!=*tel) {
-    if (NULL!=(*tel)->telescope) {
-      free((*tel)->telescope);      
-    }
     if (NULL!=(*tel)->arf) {
       free((*tel)->arf);
     }

@@ -113,10 +113,10 @@ int runsixt_main()
     // Determine the random number seed.
     int seed;
     if (-1!=par.Seed) {
-      seed = par.Seed;
+      seed=par.Seed;
     } else {
       // Determine the seed from the system clock.
-      seed = (int)time(NULL);
+      seed=(int)time(NULL);
     }
 
     // Initialize the random number generator.
@@ -264,27 +264,58 @@ int runsixt_main()
 
     // --- Open and set up files ---
 
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
+    if (NULL!=inst->telescop) {
+      strcpy(telescop, inst->telescop);
+    }
+    if (NULL!=inst->instrume) {
+      strcpy(instrume, inst->instrume);
+    }
+    double tstop;
+    if (NULL==gti) {
+      tstop=par.TSTART+par.Exposure;
+    } else {
+      tstop=gti->stop[gti->nentries-1];
+    }
+
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
+      plf=openNewPhotonListFile(photonlist_filename, 
+				telescop, instrume, "Normal",
+				par.MJDREF, 0.0, par.TSTART, tstop,
+				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output impact list file.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewImpactListFile(impactlist_filename, par.clobber, &status);
+      ilf=openNewImpactListFile(impactlist_filename, 
+				telescop, instrume, "Normal",
+				par.MJDREF, 0.0, par.TSTART, tstop,
+				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output event list file.
-    elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
+    elf=openNewEventListFile(eventlist_filename, 
+			     telescop, instrume, "Normal",
+			     par.MJDREF, 0.0, par.TSTART, tstop,
+			     inst->det->pixgrid->xwidth,
+			     inst->det->pixgrid->ywidth,
+			     par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Define the event list file as output file.
     setGenDetEventListFile(inst->det, elf);
 
     // Open the output pattern list file.
-    patf=openNewPatternFile(patternlist_filename, par.clobber, &status);
+    patf=openNewPatternFile(patternlist_filename, 
+			    telescop, instrume, "Normal",			    
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    inst->det->pixgrid->xwidth,
+			    inst->det->pixgrid->ywidth,
+			    par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -369,57 +400,24 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
     }
 
-    // Timing keywords.
-    double buffer_tstop=par.TSTART+par.Exposure;
-    double buffer_timezero=0.;
-    // Photon list file.
-    if (NULL!=plf) {
-      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Impact list file.
-    if (NULL!=ilf) {
-      fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Event list file.
+    // TLMIN and TLMAX of PI column.
+    char keystr[MAXMSG];
+    long value;
     if (NULL!=elf) {
-      fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(elf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		      "stop time", &status);
+      sprintf(keystr, "TLMIN%d", elf->cpi);
+      value=inst->det->rmf->FirstChannel;
+      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", elf->cpi);
+      value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);
     }
-
-    // Pattern list file.
-    fits_update_key(patf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    fits_update_key(patf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		    "time offset", &status);
-    fits_update_key(patf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		    "start time", &status);
-    fits_update_key(patf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		    "stop time", &status);
+    sprintf(keystr, "TLMIN%d", patf->cpi);
+    value=inst->det->rmf->FirstChannel;
+    fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
+    sprintf(keystr, "TLMAX%d", patf->cpi);
+    value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+    fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of opening files ---

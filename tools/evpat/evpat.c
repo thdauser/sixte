@@ -59,28 +59,33 @@ int evpat_main()
     elf=openEventListFile(eventlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Open the output pattern file.
-    plf=openNewPatternFile(pattern_filename, par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Set header keywords.
-    if (NULL!=inst->tel->telescope) {
-      fits_update_key(plf->fptr, TSTRING, "TELESCOP", inst->tel->telescope,
-		      "telescope name", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Copy FITS header keywords.
+    // Read the timing keywords.
     char comment[MAXMSG];
-    double mjdref=0.;
+    double mjdref, timezero, tstart, tstop;
     fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
-    fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &mjdref, 
-		    "reference MJD", &status);
     CHECK_STATUS_BREAK(status);
-    double timezero=0.;
     fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
-    fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &timezero, 
-		    "time offset", &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Open the output pattern file.
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
+    if (NULL!=inst->telescop) {
+      strcpy(telescop, inst->telescop);
+    }
+    if (NULL!=inst->instrume) {
+      strcpy(instrume, inst->instrume);
+    }
+    plf=openNewPatternFile(pattern_filename, 
+			   telescop, instrume, "Normal",
+			   mjdref, timezero, tstart, tstop,			   
+			   inst->det->pixgrid->xwidth,
+			   inst->det->pixgrid->ywidth,
+			   par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.

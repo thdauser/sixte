@@ -1,11 +1,7 @@
 XTENSION        BINTABLE        / Binary table extension
 EXTNAME         IMPACTS         / Extension name
-ORIGIN          REMEIS          / Origin of FITS File
-CREATOR         String          / Program that created this FITS file
-MISSION         String          / Mission name
-TELESCOP        String          / Telescope name
-INSTRUME        String          / Instrument name
-ATTITUDE	String		/ Name of the attitude FITS file
+ORIGIN          ECAP            / Origin of FITS File
+CREATOR         SIXTE           / Program that created this FITS file
 #Column definitions
 TTYPE#		TIME            / Time of photon impact
 TFORM#  	D               / 

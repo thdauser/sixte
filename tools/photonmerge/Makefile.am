@@ -22,8 +22,14 @@ dist_pfiles_DATA=photonmerge.par
 bin_PROGRAMS=photonmerge
 
 photonmerge_SOURCES=photonmerge.c photonmerge.h
-photonmerge_LDADD =@top_builddir@/libsixt/libsixt.la
-photonmerge_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+photonmerge_LDADD =@top_builddir@/libsixt/libsixt.a
+photonmerge_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+photonmerge_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+photonmerge_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+photonmerge_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+photonmerge_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+photonmerge_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 photonmerge_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-photonmerge_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+photonmerge_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+photonmerge_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 

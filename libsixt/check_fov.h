@@ -22,8 +22,7 @@
     The return value is 0, if the source is inside the FOV and >0 if
     it is outside. */
 int check_fov(const Vector* const x, const Vector* const x0, 
-	      /* Vector h1, Vector h2, double sin_dec_max, 
-		 double sin_rasc_max, */ 
 	      const double min_align);
+
 
 #endif /* CHECK_FOV_H */

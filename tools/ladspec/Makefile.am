@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ##############
 
@@ -25,7 +24,13 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS=ladspec
 
 ladspec_SOURCES=ladspec.c ladspec.h
-ladspec_LDADD =@top_builddir@/libsixt/libsixt.la
-ladspec_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+ladspec_LDADD =@top_builddir@/libsixt/libsixt.a
+ladspec_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+ladspec_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+ladspec_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+ladspec_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+ladspec_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

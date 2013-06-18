@@ -8,13 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
-
-########## DIRECTORIES ###############
-
-# Directory where to install the PIL parameter files.
-#pfilesdir = @PFILESDIR@
-#dist_pfiles_DATA = htrs_psfgen.par
 
 ############ BINARIES #################
 
@@ -23,7 +16,13 @@ AM_CFLAGS+=-Wall
 bin_PROGRAMS=htrs_psfgen
 
 htrs_psfgen_SOURCES=htrs_psfgen.c
-htrs_psfgen_LDADD =@top_builddir@/libsixt/libsixt.la
-htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+htrs_psfgen_LDADD =@top_builddir@/libsixt/libsixt.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+htrs_psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

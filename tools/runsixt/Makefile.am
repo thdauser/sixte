@@ -22,7 +22,13 @@ dist_pfiles_DATA=runsixt.par
 bin_PROGRAMS=runsixt
 
 runsixt_SOURCES=runsixt.c runsixt.h
-runsixt_LDADD =@top_builddir@/libsixt/libsixt.la
-runsixt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+runsixt_LDADD =@top_builddir@/libsixt/libsixt.a
+runsixt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+runsixt_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+runsixt_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+runsixt_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+runsixt_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

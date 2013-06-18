@@ -6,12 +6,13 @@ int analyse_xms_events_main() {
   EventListFile* elf=NULL;
   PatternFile* plf=NULL;
 
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
   set_toolname("analyse_xms_events");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
+
 
   do { // ERROR handling loop
 
@@ -19,17 +20,61 @@ int analyse_xms_events_main() {
     long nphotons=0, ngrade0=0, ngrade1=0, ngrade2=0, ngrade3=0;
 
     // Read parameters by PIL:
-    status = analyse_xms_events_getpar(&par);
-    if (EXIT_SUCCESS!=status) break;
+    status=analyse_xms_events_getpar(&par);
+    CHECK_STATUS_BREAK(status);
 
     // Set the input event file.
     elf=openEventListFile(par.EventList, READWRITE, &status);
-    if (EXIT_SUCCESS!=status) break;
+    CHECK_STATUS_BREAK(status);
 
-    // Create and open a new event file.
-    plf=openNewPatternFile(par.PatternList, par.clobber, &status);
-    if (EXIT_SUCCESS!=status) break;
+    // Determine mission keywords.
+    char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
+    fits_read_key(elf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
 
+    // Determine the dimensions of the pixel array.
+    char keystr[MAXMSG];
+    int tlmaxx, tlmaxy;
+    sprintf(keystr, "TLMAX%d", elf->crawx);
+    fits_read_key(elf->fptr, TINT, keystr, &tlmaxx, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMAX%d", elf->crawy);
+    fits_read_key(elf->fptr, TINT, keystr, &tlmaxy, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    double mjdref, timezero, tstart, tstop;
+    fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Create and open a new pattern file.
+    plf=openNewPatternFile(par.PatternList, 
+			   telescop, instrume, "Normal",
+			   mjdref, timezero, tstart, tstop,
+			   tlmaxx+1, tlmaxy+1,
+			   par.clobber, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Copy the TLMIN and TLMAX keywords of PI column.
+    long lbuffer;
+    sprintf(keystr, "TLMIN%d", elf->cpi);
+    fits_read_key(elf->fptr, TLONG, keystr, &lbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMIN%d", plf->cpi);
+    fits_update_key(plf->fptr, TLONG, keystr, &lbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMAX%d", elf->cpi);
+    fits_read_key(elf->fptr, TLONG, keystr, &lbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    sprintf(keystr, "TLMAX%d", plf->cpi);
+    fits_update_key(plf->fptr, TLONG, keystr, &lbuffer, comment, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Loop over all events in the event file.
     long row;
@@ -42,10 +87,6 @@ int analyse_xms_events_main() {
 
       // Count the total number of photon events in the event list.
       nphotons++;
-
-      // Neglect the inner pixel(s).
-      //if ((event.rawx>=14)&&(event.rawx<=16)&&
-      //(event.rawy>=14)&&(event.rawy<=16)) continue;
 
       // Check the events before and after the current one 
       // within the specified time spans.
@@ -102,7 +143,7 @@ int analyse_xms_events_main() {
       pattern->time=event.time;
       pattern->frame=event.frame;
       pattern->signal=event.signal;
-      pattern->pha=event.pha;
+      pattern->pi=event.pi;
       pattern->rawx=event.rawx;
       pattern->rawy=event.rawy;
       pattern->ra=0.;

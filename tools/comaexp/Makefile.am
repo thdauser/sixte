@@ -9,7 +9,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -24,8 +23,14 @@ dist_pfiles_DATA=comaexp.par
 bin_PROGRAMS=comaexp
 
 comaexp_SOURCES=comaexp.c
-comaexp_LDADD =@top_builddir@/libsixt/libsixt.la
-comaexp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+comaexp_LDADD =@top_builddir@/libsixt/libsixt.a
+comaexp_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+comaexp_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+comaexp_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+comaexp_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+comaexp_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+comaexp_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 comaexp_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-comaexp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+comaexp_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+comaexp_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 

@@ -23,7 +23,7 @@ int gendetsim_main() {
 
   // Register HEATOOL:
   set_toolname("gendetsim");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -64,10 +64,10 @@ int gendetsim_main() {
     // Determine the random number seed.
     int seed;
     if (-1!=par.Seed) {
-      seed = par.Seed;
+      seed=par.Seed;
     } else {
       // Determine the seed from the system clock.
-      seed = (int)time(NULL);
+      seed=(int)time(NULL);
     }
 
     // Initialize the random number generator.
@@ -86,24 +86,33 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
-    elf=openNewEventListFile(eventlist_filename, par.clobber, &status);
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
+    if (NULL!=inst->telescop) {
+      strcpy(telescop, inst->telescop);
+    }
+    if (NULL!=inst->instrume) {
+      strcpy(instrume, inst->instrume);
+    }
+    elf=openNewEventListFile(eventlist_filename, 
+			     telescop, instrume, "Normal", 
+			     par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
+			     inst->det->pixgrid->xwidth, 
+			     inst->det->pixgrid->ywidth, 
+			     par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
-    if (NULL!=inst->tel->telescope) {
-      fits_update_key(elf->fptr, TSTRING, "TELESCOP", inst->tel->telescope,
-		      "telescope name", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    double buffer_timezero=0.;
-    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		    "time offset", &status);
-    fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		    "start time", &status);
+    char keystr[MAXMSG];
+    long value;
+    sprintf(keystr, "TLMIN%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+    sprintf(keystr, "TLMAX%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);
-
+    
     // Store the number of simulated input photons in the FITS header
     // of the output event file.
     fits_update_key(elf->fptr, TLONG, "NPHOTONS", 

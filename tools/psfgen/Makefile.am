@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -23,9 +22,13 @@ dist_pfiles_DATA=psfgen.par
 bin_PROGRAMS=psfgen
 
 psfgen_SOURCES=psfgen.c
-psfgen_LDADD =@top_builddir@/libsixt/libsixt.la
-psfgen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+psfgen_LDADD =@top_builddir@/libsixt/libsixt.a
+psfgen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a 
+psfgen_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+psfgen_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+psfgen_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+psfgen_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-
-
+psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+psfgen_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

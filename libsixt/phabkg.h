@@ -2,6 +2,7 @@
 #define PHABKG_H 1
 
 #include "sixt.h"
+#include "genpixgrid.h"
 
 #include "gsl/gsl_rng.h"
 #include "gsl/gsl_randist.h"
@@ -19,6 +20,9 @@ typedef struct {
 
   /** PHA channel numbers. */
   long* channel;
+
+  /** FoV diameter [m]. */
+  float fov_diameter;
   
   /** Background event rate distribution [counts/s/bin/cm^2]. */
   float* distribution;
@@ -51,13 +55,14 @@ void destroyPHABkg(PHABkg** const phabkg);
     detector, the rates given in the input PHA spectrum, and the
     length of the regarded interval according to Poisson
     statistics. */
-long* PHABkgGetEvents(const PHABkg* const phabkg, 
-		      /** Regarded time interval in [s]. */
-		      const double interval, 
-		      /** Detector area in [m^2]. */
-		      const float area,
-		      unsigned int* const nevts, 
-		      int* const status);
+unsigned int PHABkgGetEvents(const PHABkg* const phabkg, 
+			     /** Regarded time interval in [s]. */
+			     const double interval, 
+			     const GenPixGrid* const pixgrid,
+			     long** phas,
+			     int** x,
+			     int** y,
+			     int* const status);
 
 
 #endif /* PHABKG_H */

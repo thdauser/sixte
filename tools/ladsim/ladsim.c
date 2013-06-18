@@ -958,7 +958,10 @@ int ladsim_main()
 
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
+      plf=openNewPhotonListFile(photonlist_filename, 
+				"LOFT", "LAD", "Normal",
+				par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
+				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -1062,17 +1065,6 @@ int ladsim_main()
 
     // Timing keywords.
     double dbuffer=0.;
-    // Photon list file.
-    if (NULL!=plf) {
-      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		      "time offset", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
     // Impact list file.
     if (NULL!=ilf) {
       fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,

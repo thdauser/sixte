@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -23,8 +22,13 @@ dist_pfiles_DATA = phogen.par
 bin_PROGRAMS=phogen
 
 phogen_SOURCES=phogen.c phogen.h
-phogen_LDADD =@top_builddir@/libsixt/libsixt.la
-phogen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+phogen_LDADD =@top_builddir@/libsixt/libsixt.a
+phogen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a 
+phogen_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+phogen_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+phogen_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+phogen_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+phogen_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 phogen_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-phogen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-#phogen_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a 
+phogen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+phogen_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

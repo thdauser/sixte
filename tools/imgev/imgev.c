@@ -11,8 +11,9 @@ struct Parameters {
   char PatternList[MAXFILENAME];
   char Image[MAXFILENAME];
 
+  int coordinatesystem;
+  char projection[MAXMSG];
   long naxis1, naxis2;
-  char ctype1[MAXMSG], ctype2[MAXMSG];
   char cunit1[MAXMSG], cunit2[MAXMSG];
   float crval1, crval2;
   float crpix1, crpix2;
@@ -49,7 +50,7 @@ int imgev_main() {
 
   // Register HEATOOL:
   set_toolname("imgev");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -60,6 +61,13 @@ int imgev_main() {
     status=imgev_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
+    // Check if a valid coordinate system has been selected.
+    if ((par.coordinatesystem<0)||(par.coordinatesystem>1)) {
+      status=EXIT_FAILURE;
+      SIXT_ERROR("invalid selection for coordinate system");
+      break;
+    }
+    
     headas_chat(3, "initialize ...\n");
 
     // Set the input pattern file.
@@ -79,23 +87,50 @@ int imgev_main() {
       }
     }
 
+    // Determine the projection type.
+    char ctype1[MAXMSG], ctype2[MAXMSG];
+    if (0==par.coordinatesystem) {
+      strcpy(ctype1, "RA---");
+      strcpy(ctype2, "DEC--");
+    } else if (1==par.coordinatesystem) {
+      strcpy(ctype1, "GLON-");
+      strcpy(ctype2, "GLAT-");
+    }
+    strcat(ctype1, par.projection);
+    strcat(ctype2, par.projection);
+
+    if (strlen(ctype1)!=8) {
+      status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "invalid projection type: CTYPE1='%s'", ctype1);
+      SIXT_ERROR(msg);
+      break;
+    }
+    if (strlen(ctype2)!=8) {
+      status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "invalid projection type: CTYPE2='%s'", ctype2);
+      SIXT_ERROR(msg);
+      break;
+    }
+
     // Set up the WCS data structure.
     if (0!=wcsini(1, 2, &wcs)) {
       SIXT_ERROR("initalization of WCS data structure failed");
       status=EXIT_FAILURE;
       break;
     }
-    wcs.naxis = 2;
-    wcs.crpix[0] = par.crpix1;
-    wcs.crpix[1] = par.crpix2;
-    wcs.crval[0] = par.crval1;
-    wcs.crval[1] = par.crval2;
-    wcs.cdelt[0] = par.cdelt1;
-    wcs.cdelt[1] = par.cdelt2;
+    wcs.naxis=2;
+    wcs.crpix[0]=par.crpix1;
+    wcs.crpix[1]=par.crpix2;
+    wcs.crval[0]=par.crval1;
+    wcs.crval[1]=par.crval2;
+    wcs.cdelt[0]=par.cdelt1;
+    wcs.cdelt[1]=par.cdelt2;
     strcpy(wcs.cunit[0], par.cunit1);
     strcpy(wcs.cunit[1], par.cunit2);
-    strcpy(wcs.ctype[0], par.ctype1);
-    strcpy(wcs.ctype[1], par.ctype2);
+    strcpy(wcs.ctype[0], ctype1);
+    strcpy(wcs.ctype[1], ctype2);
 
     // --- END of Initialization ---
 
@@ -112,11 +147,31 @@ int imgev_main() {
       Pattern pattern;
       getPatternFromFile(plf, row+1, &pattern, &status);
       CHECK_STATUS_BREAK(status);
-      
-      // Determine the image coordinates of the pattern.
+
+      // Convert the coordinates to the desired coordinate system.
+      double lon, lat; // [rad].
+      if (0==par.coordinatesystem) {
+	// Equatorial coordinates.
+	lon=pattern.ra*180./M_PI;
+	lat=pattern.dec*180./M_PI;
+      } else {
+	// Galactic coordinates.
+	const double l_ncp=2.145566759798267518;
+	const double ra_ngp=3.366033268750003918;
+	const double cos_d_ngp=0.8899880874849542;
+	const double sin_d_ngp=0.4559837761750669;
+	double cos_d=cos(pattern.dec);
+	double sin_d=sin(pattern.dec);
+	lon=(l_ncp-atan2(cos_d*sin(pattern.ra-ra_ngp), 
+			 cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(pattern.ra-ra_ngp)))
+	  *180./M_PI;
+	lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(pattern.ra-ra_ngp))*180./M_PI;
+      }
+
+      // Determine the image coordinates corresponding to the event.
       double pixcrd[2];
       double imgcrd[2];
-      double world[2] = {pattern.ra*180./M_PI, pattern.dec*180./M_PI};
+      double world[2]={lon, lat};
       double phi, theta;
       int status2=0;
       wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &status2);
@@ -130,8 +185,8 @@ int imgev_main() {
       }
       
       // Increase the image value at the pattern position.
-      long xx = ((long)(pixcrd[0]+0.5))-1;
-      long yy = ((long)(pixcrd[1]+0.5))-1;
+      long xx=((long)(pixcrd[0]+0.5))-1;
+      long yy=((long)(pixcrd[1]+0.5))-1;
       if ((xx>=0)&&(xx<par.naxis1) && (yy>=0)&&(yy<par.naxis2)) {
 	img[xx][yy]++;
       }
@@ -160,6 +215,17 @@ int imgev_main() {
     //                                 |-> naxis
     CHECK_STATUS_BREAK(status);
 
+    // Copy the mission header keywords.
+    char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
+    fits_read_key(plf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(imgfptr, TSTRING, "TELESCOP", telescop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(plf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(imgfptr, TSTRING, "INSTRUME", instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Write WCS header keywords.
     int nkeyrec;
     if (0!=wcshdo(0, &wcs, &nkeyrec, &headerstr)) {
@@ -179,10 +245,10 @@ int imgev_main() {
     CHECK_STATUS_BREAK(status);
 
     // Write the image to the file.
-    long fpixel[2] = {1, 1}; // Lower left corner.
+    long fpixel[2]={1, 1}; // Lower left corner.
     //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
-    long lpixel[2] = {par.naxis1, par.naxis2}; 
+    long lpixel[2]={par.naxis1, par.naxis2}; 
     fits_write_subset(imgfptr, TLONG, fpixel, lpixel, img1d, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -246,6 +312,20 @@ static int imgev_getpar(struct Parameters* par)
   strcpy(par->Image, sbuffer);
   free(sbuffer);
 
+  status=ape_trad_query_int("CoordinateSystem", &par->coordinatesystem);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading coordinate system");
+    return(status);
+  } 
+
+  status=ape_trad_query_string("Projection", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading projection type");
+    return(status);
+  } 
+  strcpy(par->projection, sbuffer);
+  free(sbuffer);
+
   status=ape_trad_query_long("NAXIS1", &par->naxis1);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading NAXIS1");
@@ -257,22 +337,6 @@ static int imgev_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading NAXIS2");
     return(status);
   } 
-
-  status=ape_trad_query_string("CTYPE1", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading CTYPE1");
-    return(status);
-  } 
-  strcpy(par->ctype1, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("CTYPE2", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading CTYPE2");
-    return(status);
-  } 
-  strcpy(par->ctype2, sbuffer);
-  free(sbuffer);
 
   status=ape_trad_query_string("CUNIT1", &sbuffer);
   if (EXIT_SUCCESS!=status) {

@@ -329,12 +329,31 @@ int nustarsim_main()
 
     // --- Open and set up files ---
 
+    char telescop[MAXMSG]={""};
+    char instrume[MAXMSG]={""};
+    if (NULL!=subinst[0]->telescop) {
+      strcpy(telescop, subinst[0]->telescop);
+    }
+    if (NULL!=subinst[0]->instrume) {
+      strcpy(instrume, subinst[0]->instrume);
+    }
+    
+    double tstop;
+    if (NULL==gti) {
+      tstop=par.TSTART+par.Exposure;
+    } else {
+      tstop=gti->stop[gti->nentries-1];
+    }
+
     // Open the output photon list files.
     if (strlen(photonlist_filename_template)>0) {
       for (ii=0; ii<2; ii++) {
 	char photonlist_filename[MAXFILENAME];
 	sprintf(photonlist_filename, photonlist_filename_template, ii);
-	plf[ii]=openNewPhotonListFile(photonlist_filename, par.clobber, &status);
+	plf[ii]=openNewPhotonListFile(photonlist_filename, 
+				      telescop, instrume, "Normal", 
+				      par.MJDREF, 0.0, par.TSTART, tstop,
+				      par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
@@ -345,7 +364,10 @@ int nustarsim_main()
       for (ii=0; ii<2; ii++) {
 	char impactlist_filename[MAXFILENAME];
 	sprintf(impactlist_filename, impactlist_filename_template, ii);
-	ilf[ii]=openNewImpactListFile(impactlist_filename, par.clobber, &status);
+	ilf[ii]=openNewImpactListFile(impactlist_filename, 
+				      telescop, instrume, "Normal", 
+				      par.MJDREF, 0.0, par.TSTART, tstop,
+				      par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
@@ -353,10 +375,14 @@ int nustarsim_main()
 
     // Open the output event list files.
     for (ii=0; ii<2; ii++) {
-      // Open the file.
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventListFile(eventlist_filename, par.clobber, &status);
+      elf[ii]=openNewEventListFile(eventlist_filename, 
+				   telescop, instrume, "Normal", 
+				   par.MJDREF, 0.0, par.TSTART, tstop,
+				   subinst[ii]->det->pixgrid->xwidth,
+				   subinst[ii]->det->pixgrid->ywidth,
+				   par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
@@ -369,7 +395,12 @@ int nustarsim_main()
     for (ii=0; ii<2; ii++) {
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewPatternFile(patternlist_filename, par.clobber, &status);
+      patf[ii]=openNewPatternFile(patternlist_filename, 
+				  telescop, instrume, "Normal",
+				  par.MJDREF, 0.0, par.TSTART, tstop,
+				  subinst[ii]->det->pixgrid->xwidth,
+				  subinst[ii]->det->pixgrid->ywidth,
+				  par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
@@ -457,6 +488,27 @@ int nustarsim_main()
       }
     }
 
+    // TLMIN and TLMAX of PI column.
+    for (ii=0; ii<2; ii++) {
+      char keystr[MAXMSG];
+      long value;
+      sprintf(keystr, "TLMIN%d", elf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel;
+      fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", elf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
+      fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      CHECK_STATUS_BREAK(status);
+    
+      sprintf(keystr, "TLMIN%d", patf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel;
+      fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      sprintf(keystr, "TLMAX%d", patf[ii]->cpi);
+      value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
+      fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
+      CHECK_STATUS_BREAK(status);  
+    }
+
     // Timing keywords.
     double buffer_tstop=par.TSTART+par.Exposure;
     double buffer_timezero=0.;
@@ -486,28 +538,6 @@ int nustarsim_main()
 			"stop time", &status);
 	CHECK_STATUS_BREAK(status);
       }
-      
-      // Event list file.
-      fits_update_key(elf[ii]->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(elf[ii]->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(elf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(elf[ii]->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-
-      // Pattern list file.
-      fits_update_key(patf[ii]->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(patf[ii]->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(patf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(patf[ii]->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
     
@@ -553,7 +583,7 @@ int nustarsim_main()
       // Determine the currently regarded interval.
       if (NULL==gti) {
 	t0=par.TSTART;
-	t1=par.Exposure;
+	t1=par.TSTART+par.Exposure;
       } else {
 	t0=gti->start[gtibin];
 	t1=gti->stop[gtibin];
@@ -744,7 +774,7 @@ int nustarsim_main()
 	pattern.rawy   =event.rawy;
 	pattern.time   =event.time;
 	pattern.frame  =event.frame;
-	pattern.pha    =event.pha;
+	pattern.pi     =event.pi;
 	pattern.signal =event.signal;
 	pattern.ra     =0.;
 	pattern.dec    =0.;

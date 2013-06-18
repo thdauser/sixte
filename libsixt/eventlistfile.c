@@ -11,10 +11,10 @@ EventListFile* newEventListFile(int* const status)
   file->fptr=NULL;
 
   // Initialize values.
-  file->nrows=0;
-  file->ctime=0;
+  file->nrows  =0;
+  file->ctime  =0;
   file->cframe =0;
-  file->cpha   =0;
+  file->cpi    =0;
   file->csignal=0;
   file->crawx  =0;
   file->crawy  =0;
@@ -45,16 +45,25 @@ void freeEventListFile(EventListFile** const file, int* const status)
 
 
 EventListFile* openNewEventListFile(const char* const filename,
+				    char* const telescop,
+				    char* const instrume,
+				    char* const filter,
+				    const double mjdref,
+				    const double timezero,
+				    const double tstart,
+				    const double tstop,
+				    const int nxdim,
+				    const int nydim,
 				    const char clobber,
 				    int* const status)
 {
-  EventListFile* file=newEventListFile(status);
-  CHECK_STATUS_RET(*status, file);
+  fitsfile* fptr=NULL;
+  CHECK_STATUS_RET(*status, NULL);
 
   // Check if the file already exists.
   int exists;
   fits_file_exists(filename, &exists, status);
-  CHECK_STATUS_RET(*status, file);
+  CHECK_STATUS_RET(*status, NULL);
   if (0!=exists) {
     if (0!=clobber) {
       // Delete the file.
@@ -65,7 +74,7 @@ EventListFile* openNewEventListFile(const char* const filename,
       sprintf(msg, "file '%s' already exists", filename);
       SIXT_ERROR(msg);
       *status=EXIT_FAILURE;
-      return(file);
+      return(NULL);
     }
   }
 
@@ -73,33 +82,43 @@ EventListFile* openNewEventListFile(const char* const filename,
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
 	  "/templates/eventlist.tpl");
-  fits_create_file(&file->fptr, buffer, status);
-  CHECK_STATUS_RET(*status, file);
+  fits_create_file(&fptr, buffer, status);
+  CHECK_STATUS_RET(*status, NULL);
 
-  // Set the time-keyword in the event list header.
-  char datestr[MAXMSG];
-  int timeref;
-  fits_get_system_time(datestr, &timeref, status);
-  CHECK_STATUS_RET(*status, file);
-  fits_update_key(file->fptr, TSTRING, "DATE", datestr, 
-		  "File creation date", status);
-  CHECK_STATUS_RET(*status, file);
-
-  // Add header information about program parameters.
-  // The second parameter "1" means that the headers are written
-  // to the first extension.
-  HDpar_stamp(file->fptr, 1, status);
-  CHECK_STATUS_RET(*status, file);
+  // Insert header keywords to 1st and 2nd HDU.
+  sixt_add_fits_stdkeywords(fptr, 1, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
+  sixt_add_fits_stdkeywords(fptr, 2, telescop, instrume, filter,
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Close the file.
-  freeEventListFile(&file, status);
-  CHECK_STATUS_RET(*status, file);
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  file=openEventListFile(filename, READWRITE, status);
-  CHECK_STATUS_RET(*status, file);
+  EventListFile* elf=openEventListFile(filename, READWRITE, status);
+  CHECK_STATUS_RET(*status, elf);
   
-  return(file);
+  // Update the TLMIN and TLMAX keywords for the DETX and DETY columns.
+  char keystr[MAXMSG];
+  int ibuffer;
+  sprintf(keystr, "TLMIN%d", elf->crawx);
+  ibuffer=0;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", elf->crawx);
+  ibuffer=nxdim-1;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMIN%d", elf->crawy);
+  ibuffer=0;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", elf->crawy);
+  ibuffer=nydim-1;
+  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
+  CHECK_STATUS_RET(*status, elf);
+
+  return(elf);
 }
 
 
@@ -119,7 +138,7 @@ EventListFile* openEventListFile(const char* const filename,
   // Determine the column numbers.
   fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
   fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
@@ -210,8 +229,8 @@ void getEventFromFile(const EventListFile* const file,
 		&dnull, &event->time, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
 		&lnull, &event->frame, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1, 
-		&lnull, &event->pha, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cpi, row, 1, 1, 
+		&lnull, &event->pi, &anynul, status);
   fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
 		&fnull, &event->signal, &anynul, status);
   fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
@@ -241,8 +260,8 @@ void updateEventInFile(const EventListFile* const file,
 		 1, 1, &event->time, status);
   fits_write_col(file->fptr, TLONG, file->cframe, row, 
 		 1, 1, &event->frame, status);
-  fits_write_col(file->fptr, TLONG, file->cpha, row, 
-		 1, 1, &event->pha, status);
+  fits_write_col(file->fptr, TLONG, file->cpi, row, 
+		 1, 1, &event->pi, status);
   fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
 		 1, 1, &event->signal, status);
   fits_write_col(file->fptr, TINT, file->crawx, row, 

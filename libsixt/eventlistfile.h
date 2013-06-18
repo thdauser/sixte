@@ -19,7 +19,7 @@ typedef struct {
   long nrows;
 
   /** Column numbers. */
-  int ctime, cframe, cpha, csignal, crawx, crawy, cph_id, csrc_id;
+  int ctime, cframe, cpi, csignal, crawx, crawy, cph_id, csrc_id;
 
 } EventListFile;
 
@@ -39,6 +39,15 @@ void freeEventListFile(EventListFile** const file, int* const status);
 /** Create and open a new EventListFile. The new file is generated
     according to the specified template. */
 EventListFile* openNewEventListFile(const char* const filename,
+				    char* const telescop,
+				    char* const instrume,
+				    char* const filter,
+				    const double mjdref,
+				    const double timezero,
+				    const double tstart,
+				    const double tstop,
+				    const int nxdim,
+				    const int nydim,
 				    const char clobber,
 				    int* const status);
 

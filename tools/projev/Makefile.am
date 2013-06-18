@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## PIL .par-FILES##############
 
@@ -23,7 +22,13 @@ dist_pfiles_DATA=projev.par
 bin_PROGRAMS=projev
 
 projev_SOURCES=projev.c
-projev_LDADD =@top_builddir@/libsixt/libsixt.la
-projev_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+projev_LDADD =@top_builddir@/libsixt/libsixt.a
+projev_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+projev_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+projev_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+projev_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+projev_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+projev_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 projev_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-projev_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+projev_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+projev_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

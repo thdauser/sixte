@@ -23,7 +23,13 @@ dist_pfiles_DATA=phoimg.par
 bin_PROGRAMS=phoimg
 
 phoimg_SOURCES=phoimg.c phoimg.h
-phoimg_LDADD =@top_builddir@/libsixt/libsixt.la
-phoimg_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+phoimg_LDADD =@top_builddir@/libsixt/libsixt.a
+phoimg_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a 
+phoimg_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+phoimg_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+phoimg_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+phoimg_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+phoimg_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 phoimg_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-phoimg_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+phoimg_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+phoimg_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

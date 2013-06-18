@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -23,8 +22,13 @@ dist_pfiles_DATA=evpat.par
 bin_PROGRAMS=evpat
 
 evpat_SOURCES=evpat.c evpat.h
-evpat_LDADD =@top_builddir@/libsixt/libsixt.la
-evpat_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+evpat_LDADD =@top_builddir@/libsixt/libsixt.a
+evpat_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+evpat_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+evpat_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+evpat_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+evpat_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+evpat_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 evpat_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-evpat_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-
+evpat_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+evpat_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

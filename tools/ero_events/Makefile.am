@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -25,8 +24,13 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS=ero_events
 
 ero_events_SOURCES=ero_events.c ero_events.h
-ero_events_LDADD =@top_builddir@/libsixt/libsixt.la
-ero_events_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+ero_events_LDADD =@top_builddir@/libsixt/libsixt.a
+ero_events_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+ero_events_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+ero_events_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+ero_events_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+ero_events_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+ero_events_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 ero_events_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-ero_events_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
-
+ero_events_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+ero_events_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

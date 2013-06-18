@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -25,7 +24,13 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS=athenapwfisim
 
 athenapwfisim_SOURCES=athenapwfisim.c athenapwfisim.h
-athenapwfisim_LDADD =@top_builddir@/libsixt/libsixt.la
-athenapwfisim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+athenapwfisim_LDADD =@top_builddir@/libsixt/libsixt.a
+athenapwfisim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+athenapwfisim_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+athenapwfisim_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+athenapwfisim_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+athenapwfisim_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+athenapwfisim_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 athenapwfisim_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-athenapwfisim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+athenapwfisim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+athenapwfisim_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

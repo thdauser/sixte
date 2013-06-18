@@ -5,17 +5,17 @@ int ero_merge_photonfiles_getpar(struct Parameters* par)
 {
   char* sbuffer=NULL;
 
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
   status=ape_trad_query_int("NInputFiles", &par->NInputFiles);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the number of input files!\n", status);
+    SIXT_ERROR("failed reading the number of input files");
     return(status);
   }
 
   status=ape_trad_query_string("InputPrefix", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the prefix of the input files!\n", status);
+    SIXT_ERROR("failed reading the name of the input file prefix");
     return(status);
   } 
   strcpy(par->InputPrefix, sbuffer);
@@ -23,7 +23,7 @@ int ero_merge_photonfiles_getpar(struct Parameters* par)
 
   status=ape_trad_query_string("OutputFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the outpuf file!\n", status);
+    SIXT_ERROR("failed reading the name of the outpuf file");
     return(status);
   } 
   strcpy(par->OutputFile, sbuffer);
@@ -31,7 +31,7 @@ int ero_merge_photonfiles_getpar(struct Parameters* par)
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the clobber parameter!\n", status);
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
@@ -39,18 +39,20 @@ int ero_merge_photonfiles_getpar(struct Parameters* par)
 }
 
 
-
 int photonmerge_main() {
   struct Parameters par;
+
   // Array of input photonlist files.
   PhotonListFile* inputfiles[MAX_N_INPUTFILES];
   int fileidx;
+
   // Output (merged) photonlist file.
   PhotonListFile* outputfile=NULL;
+
   // Buffer for the photons.
   Photon photons[MAX_N_INPUTFILES];
 
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
   // Register HEATOOL
   set_toolname("photonmerge");
@@ -64,7 +66,7 @@ int photonmerge_main() {
     }
 
     // Read parameters by PIL:
-    status = ero_merge_photonfiles_getpar(&par);
+    status=ero_merge_photonfiles_getpar(&par);
     if (EXIT_SUCCESS!=status) break;
 
     // Open the INPUT event files:
@@ -78,31 +80,34 @@ int photonmerge_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new output photon file:
-    outputfile=openNewPhotonListFile(par.OutputFile, par.clobber, &status);
-    if (EXIT_SUCCESS!=status) break;
+    char telescop[MAXMSG], instrume[MAXMSG], comment[MAXMSG];
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    CHECK_STATUS_BREAK(status);
 
+    double mjdref, timezero, tstart, tstop;
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    outputfile=openNewPhotonListFile(par.OutputFile, 
+				     telescop, instrume, "Normal",
+				     mjdref, timezero, tstart, tstop,
+				     par.clobber, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Copy header keywords.
-    // Read the keywords from the first PhotonListFile and write
-    // them to the output file.
-    struct HKeys {
-      double mjdref;
-      double timezero;
-    } hkeys;
-
-    // Read from the first input file.
-    char comment[MAXMSG]; // String buffer.
-    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "MJDREF", 
-		      &hkeys.mjdref, comment, &status)) break;    
-    if (fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TIMEZERO", 
-		      &hkeys.timezero, comment, &status)) break;    
-
-    // Write to output file.
-    if (fits_update_key(outputfile->fptr, TDOUBLE, "MJDREF", 
-			&hkeys.mjdref, "", &status)) break;
-    if (fits_update_key(outputfile->fptr, TDOUBLE, "TIMEZERO", 
-			&hkeys.timezero, "", &status)) break;
-    // END of copying header keywords.
+    char attitude[MAXMSG];
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "ATTITUDE", 
+		  attitude, comment, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(outputfile->fptr, TSTRING, "ATTITUDE",
+		    attitude, comment, &status);
+    CHECK_STATUS_BREAK(status);
 
 
     // Transfer all photons from the input files to the output file.
@@ -111,15 +116,16 @@ int photonmerge_main() {
     // Read the first entry from each photon list file:
     for (fileidx=0; fileidx<par.NInputFiles; fileidx++) {
       if (inputfiles[fileidx]->nrows>0) {
-	status = PhotonListFile_getNextRow(inputfiles[fileidx], 
-					   &(photons[fileidx]));
-	if (status!=EXIT_SUCCESS) break;
+	status=PhotonListFile_getNextRow(inputfiles[fileidx], 
+					 &(photons[fileidx]));
+	CHECK_STATUS_BREAK(status);
 	eof[fileidx]=0;
       } else {
 	eof[fileidx]=1;
 	sum_eof++;
       }
     }
+    CHECK_STATUS_BREAK(status);
     // Repeat this loop as long as at least one the input event 
     // files contains further un-read lines.
     int minidx;
@@ -141,21 +147,21 @@ int photonmerge_main() {
       photons[minidx].ph_id = 0;
 
       // Add the photon to the output file.
-      status = addPhoton2File(outputfile, &photons[minidx]);
-      if (EXIT_SUCCESS!=status) break;
+      status=addPhoton2File(outputfile, &photons[minidx]);
+      CHECK_STATUS_BREAK(status);
 
       // Read new photon from the respective input file.
       if (inputfiles[minidx]->row<inputfiles[minidx]->nrows) {
-	status = PhotonListFile_getNextRow(inputfiles[minidx], 
-					   &(photons[minidx]));
-	if (status!=EXIT_SUCCESS) break;
+	status=PhotonListFile_getNextRow(inputfiles[minidx], 
+					 &(photons[minidx]));
+	CHECK_STATUS_BREAK(status);
       } else {
 	eof[minidx]=1;
 	sum_eof++;
       }
 
     }
-    if (status!=EXIT_SUCCESS) break;
+    CHECK_STATUS_BREAK(status);
     // END of event transfer loop.
         
   } while(0); // End of error handling loop

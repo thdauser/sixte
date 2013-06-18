@@ -53,6 +53,13 @@ PhotonListFile* openPhotonListFile(const char* const filename,
     parameter has a value different from 0, any existing files will be
     overwritten. */
 PhotonListFile* openNewPhotonListFile(const char* const filename, 
+				      char* const telescop,
+				      char* const instrume,
+				      char* const filter,
+				      const double mjdref,
+				      const double timezero,
+				      const double tstart,
+				      const double tstop,
 				      const char clobber,
 				      int* const status);
 

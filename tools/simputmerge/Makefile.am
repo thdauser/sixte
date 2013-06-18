@@ -8,7 +8,6 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
 AM_CFLAGS+=-Wall 
-#AM_CFLAGS+=-Wall -Werror
 
 ########## DIRECTORIES ###############
 
@@ -23,8 +22,14 @@ dist_pfiles_DATA=simputmerge.par
 bin_PROGRAMS=simputmerge
 
 simputmerge_SOURCES=simputmerge.c simputmerge.h
-simputmerge_LDADD =@top_builddir@/libsixt/libsixt.la
-simputmerge_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la 
+simputmerge_LDADD =@top_builddir@/libsixt/libsixt.a
+simputmerge_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+simputmerge_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
+simputmerge_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
+simputmerge_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
+simputmerge_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+simputmerge_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 simputmerge_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-simputmerge_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/libfftw3.la
+simputmerge_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+simputmerge_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 

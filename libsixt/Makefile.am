@@ -42,36 +42,35 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-lib_LTLIBRARIES=libsixt.la
+lib_LIBRARIES=libsixt.a
 
 # Sources:
-libsixt_la_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
-		   impactlistfile.c ladimpactlistfile.c			\
-		   htrsdetector.c geninst.c gendet.c gentel.c		\
-		   genpixgrid.c gendetline.c eventlistfile.c		\
-		   ladsignallistfile.c ladeventlistfile.c phabkg.c	\
-		   patternfile.c clocklist.c badpixmap.c		\
-		   htrseventfile.c hexagonalpixels.c arcpixels.c	\
-		   telemetrypacket.c htrstelstream.c comadetector.c	\
-		   comaeventfile.c psf.c vignetting.c codedmask.c	\
-		   attitudecatalog.c attitudefile.c sixt.c vector.c	\
-		   photon.c fits_pha.c check_fov.c photonlistfile.c	\
-		   rmf.c arf.c kdtreeelement.c sourcecatalog.c		\
-		   source.c linkedpholist.c linkedladsiglist.c		\
-		   erodetbkgrndgen.c phgen.c phimg.c phdet.c phproj.c	\
-		   phpat.c event.c pattern.c ladsignal.c ladevent.c	\
-		   ladimpact.c lad.c lad_init.c xmlbuffer.c		\
-		   spectrum.c gti.c sourceimage.c det_phi_max.c		\
-		   attitudecatalog2.c reconstruction.c eventarray.c	\
-		   fft_array.c balancing.c
+libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c \
+		  impactlistfile.c ladimpactlistfile.c \
+		  htrsdetector.c geninst.c gendet.c gentel.c \
+		  genpixgrid.c gendetline.c eventlistfile.c \
+		  ladsignallistfile.c ladeventlistfile.c phabkg.c \
+		  patternfile.c	clocklist.c badpixmap.c \
+		  htrseventfile.c hexagonalpixels.c arcpixels.c \
+		  telemetrypacket.c htrstelstream.c comadetector.c \
+		  comaeventfile.c psf.c vignetting.c codedmask.c \
+		  attitudecatalog.c attitudefile.c sixt.c vector.c \
+		  photon.c fits_pha.c check_fov.c photonlistfile.c \
+		  rmf.c arf.c kdtreeelement.c sourcecatalog.c \
+		  source.c linkedpholist.c linkedladsiglist.c \
+		  erodetbkgrndgen.c phgen.c phimg.c phdet.c phproj.c	\
+		  phpat.c event.c pattern.c ladsignal.c ladevent.c	\
+		  ladimpact.c lad.c lad_init.c xmlbuffer.c \
+		  spectrum.c gti.c sourceimage.c det_phi_max.c \
+		  attitudecatalog2.c reconstruction.c eventarray.c	\
+		  fft_array.c balancing.c
 
-libsixt_la_LIBADD =@top_builddir@/extlib/heainit/libhdinit.la
-libsixt_la_LIBADD+=@top_builddir@/extlib/heaio/libhdio.la
-libsixt_la_LIBADD+=@top_builddir@/extlib/heautils/libhdutils.la
-libsixt_la_LIBADD+=@top_builddir@/extlib/heasp/libhdsp.la
-libsixt_la_LIBADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.la
-#libsixt_la_LIBADD+=@top_builddir@/extlib/simput/libsimput/libsimput.la
-libsixt_la_LIBADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
+libsixt_a_LIBADD =@top_builddir@/extlib/heainit/libhdinit.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/heaio/libhdio.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/heautils/libhdutils.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/heasp/libhdsp.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 
 ############ HEADERS #################
 

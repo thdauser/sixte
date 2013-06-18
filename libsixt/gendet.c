@@ -90,7 +90,7 @@ int addGenDetPhotonImpact(GenDet* const det,
   float energy;
   
   if (NULL!=det->rmf) {
-    // Determine the measured detector channel (PHA channel) according 
+    // Determine the measured detector channel (PI channel) according 
     // to the RMF.
     // The channel is obtained from the RMF using the corresponding
     // HEAdas routine which is based on drawing a random number.
@@ -98,7 +98,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     returnRMFChannel(det->rmf, impact->energy, &channel);
 
     // Check if the photon is really measured. If the
-    // PHA channel returned by the HEAdas RMF function is '-1', 
+    // PI channel returned by the HEAdas RMF function is '-1', 
     // the photon is not detected.
     // This can happen, if the RMF actually is an RSP, i.e. it 
     // includes ARF contributions, e.g., 
@@ -110,7 +110,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     // Determine the corresponding detected energy.
     // NOTE: In this simulation the collected charge is represented 
     // by the nominal photon energy [keV], which corresponds to the 
-    // PHA channel according to the EBOUNDS table.
+    // PI channel according to the EBOUNDS table.
     energy=getEBOUNDSEnergy(channel, det->rmf, 0, status);
     CHECK_STATUS_RET(*status, 0);
     assert(energy>=0.);
@@ -240,9 +240,9 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     
       // Apply the detector response if available.
       if (NULL!=det->rmf) {
-	event->pha=getEBOUNDSChannel(event->signal, det->rmf);
+	event->pi=getEBOUNDSChannel(event->signal, det->rmf);
       } else {
-	event->pha=0;
+	event->pi=0;
       }
 
       // Store remaining information.
@@ -307,55 +307,43 @@ void operateGenDetClock(GenDet* const det,
     // Insert background events, if the appropriate PHA background
     // model is defined and should be used.
     if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+
+      if (NULL==det->rmf) {
+	SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+	*status=EXIT_FAILURE;
+	return;
+      }
+
       // Get background events for the required time interval (has
-      // to be given in [s]). The area of the detector within the 
-      // (circular) FoV has to be specified in order to determine
-      // the absolute background event rate.
-      unsigned int nevts;
-      long* bkgphas=
-	PHABkgGetEvents(det->phabkg, time-last_time,
-			det->pixgrid->xwidth*det->pixgrid->xdelt*
-			det->pixgrid->ywidth*det->pixgrid->ydelt*
-			M_PI/4.0,
-			&nevts, status);
+      // to be given in [s]). The regarded area of the detector 
+      // is calculated from the information about the pixel grid.
+      long* bkgphas=NULL;
+      int* x=NULL;
+      int* y=NULL;
+      unsigned int nevts=
+	PHABkgGetEvents(det->phabkg, time-last_time, det->pixgrid, 
+			&bkgphas, &x, &y, status);
       CHECK_STATUS_VOID(*status);
       
       unsigned int ii;
       for (ii=0; ii<nevts; ii++) {
 	// Determine the corresponding signal.
-	if (NULL==det->rmf) {
-	  SIXT_ERROR("RMF needs to be defined for using the PHA background model");
-	  *status=EXIT_FAILURE;
-	  return;
-	}
 	float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
 	CHECK_STATUS_VOID(*status);
-	  
-	// Determine a random pixel. Only pixels within the FoV are
-	// considered. This selection is also taken into account for 
-	// the determination of the absolute background rate.
-	// (Note that charge cloud splitting effects are neglected.)
-	int x, y;
-	do {
-	  x=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
-	  CHECK_STATUS_VOID(*status);
-	  y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
-	  CHECK_STATUS_VOID(*status);
-	} while (pow(x-det->pixgrid->xwidth/2,2.0)+
-		 pow(y-det->pixgrid->ywidth/2,2.0)>
-		 pow(det->pixgrid->xwidth/2, 2.0));
-
+	
 	// Add the signal to the pixel.
-	addGenDetCharge2Pixel(det->line[y], x, energy, -1, -1);
+	addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, -1, -1);
 
 	// Call the event trigger routine.
-	GenDetReadoutPixel(det, y, y, x, time, status);
+	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, status);
 	CHECK_STATUS_VOID(*status);
 	    
 	// In event-triggered mode each event occupies its own frame.
 	det->clocklist->frame++;	    
       }
       free(bkgphas);
+      free(x);
+      free(y);
     }
 
     // Remember the time of the function call.
@@ -406,48 +394,37 @@ void operateGenDetClock(GenDet* const det,
 	// Insert background events, if the appropriate PHA background
 	// model is defined and should be used.
 	if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+
+	  if (NULL==det->rmf) {
+	    SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+	    *status=EXIT_FAILURE;
+	    return;
+	  }
+
 	  // Get background events for the required time interval (has
 	  // to be given in [s]). The area of the detector within the 
 	  // (circular) FoV has to be specified in order to determine
 	  // the absolute background event rate.
-	  unsigned int nevts;
-	  long* bkgphas=
-	    PHABkgGetEvents(det->phabkg, clwait->time,  
-			    det->pixgrid->xwidth*det->pixgrid->xdelt*
-			    det->pixgrid->ywidth*det->pixgrid->ydelt*
-			    M_PI/4.0,
-			    &nevts, status);
+	  long* bkgphas=NULL;
+	  int* x=NULL;
+	  int* y=NULL;
+	  unsigned int nevts=
+	    PHABkgGetEvents(det->phabkg, clwait->time, det->pixgrid,
+			    &bkgphas, &x, &y, status);
 	  CHECK_STATUS_VOID(*status);
 	  
 	  unsigned int ii;
 	  for (ii=0; ii<nevts; ii++) {
 	    // Determine the corresponding signal.
-	    if (NULL==det->rmf) {
-	      SIXT_ERROR("RMF needs to be defined for using the PHA background model");
-	      *status=EXIT_FAILURE;
-	      return;
-	    }
 	    float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
 	    CHECK_STATUS_VOID(*status);
-	  
-	    // Determine a random pixel. Only pixels within the FoV are
-	    // considered. This selection is also taken into account for 
-	    // the determination of the absolute background rate.
-	    // (Note that charge cloud splitting effects are neglected.)
-	    int x, y;
-	    do {
-	      x=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
-	      CHECK_STATUS_VOID(*status);
-	      y=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
-	      CHECK_STATUS_VOID(*status);
-	    } while (pow(x-det->pixgrid->xwidth/2,2.0)+
-		     pow(y-det->pixgrid->ywidth/2, 2.0)>
-		     pow(det->pixgrid->xwidth/2, 2.0));
 
 	    // Add the signal to the pixel.
-	    addGenDetCharge2Pixel(det->line[y], x, energy, -1, -1);	    
+	    addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, -1, -1);	    
 	  }
 	  free(bkgphas);
+	  free(x);
+	  free(y);
 	}
 
 	// Insert cosmic ray background events, 
