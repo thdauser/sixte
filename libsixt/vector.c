@@ -38,13 +38,11 @@ void normalize_vector_fast(Vector* const v) {
 }
 
 
-
 /** Calculates the scalar product of two vector structures.*/
 double scalar_product(const Vector* const x, const Vector* const y)
 {
   return(x->x * y->x + x->y * y->y + x->z * y->z);
 }
-
 
 
 /** Calculates the vector product of two vectors. */
@@ -59,7 +57,6 @@ Vector vector_product(const Vector x, const Vector y) {
 }
 
 
-
 Vector vector_difference(const Vector x2, const Vector x1) {
   Vector z;  // return vector
 
@@ -70,7 +67,6 @@ Vector vector_difference(const Vector x2, const Vector x1) {
   return(z);
 }
 
- 
 
 Vector interpolate_vec(const Vector v1, const double t1, 
 		       const Vector v2, const double t2, 
@@ -83,7 +79,6 @@ Vector interpolate_vec(const Vector v1, const double t1,
 
   return(pos);
 }
-
 
 
 Vector interpolateCircleVector(const Vector v1, 
@@ -141,8 +136,10 @@ void calculate_ra_dec(const Vector v, double* const ra, double* const dec)
 
   // Determine the right ascension:
   *ra =atan2(v.y, v.x);
+  if (*ra<0.0) {
+    *ra+=2.0*M_PI;
+  }
 }
-
 
 
 double getVectorDimensionValue(const Vector* const vec, const int dimension) 

@@ -60,7 +60,7 @@ int projev_main() {
 
   // Register HEATOOL:
   set_toolname("projev");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -120,9 +120,9 @@ int projev_main() {
 
       // Set the values of the entries.
       ac->nentries=1;
-      ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = t0;
-      ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+      ac->entry[0]=defaultAttitudeEntry();
+      ac->entry[0].time=t0;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
       Vector vz = {0., 0., 1.};
       ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
@@ -184,7 +184,6 @@ int projev_main() {
 
   return(status);
 }
-
 
 
 int projev_getpar(struct Parameters* par)

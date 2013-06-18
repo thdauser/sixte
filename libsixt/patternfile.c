@@ -379,7 +379,6 @@ void copyEvents2PatternFile(const EventListFile* const elf,
     // Add the new pattern to the output file.
     addPattern2File(plf, pattern, status);	  
     CHECK_STATUS_BREAK(*status);
-
   }
   CHECK_STATUS_VOID(*status);
 

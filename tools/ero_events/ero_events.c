@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -211,13 +211,13 @@ int ero_events_main()
       fits_write_col(fptr, TLONG, cpi, row+1, 1, 1, 
 		     &pattern.pi, &status);
 
-      float energy = pattern.signal * 1000.; // [eV]
+      float energy=pattern.signal*1000.; // [eV]
       fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &energy, &status);
       if ((energy < tlmin_energy) || (0==row)) {
-	tlmin_energy = energy;
+	tlmin_energy=energy;
       }
       if (energy > tlmax_energy) {
-	tlmax_energy = energy;
+	tlmax_energy=energy;
       }
 
       int rawx=pattern.rawx+1;
@@ -226,11 +226,16 @@ int ero_events_main()
       fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &rawy, &status);
 
       long ra=(long)(pattern.ra*180./M_PI/1.e-6);
-      if (pattern.ra < 0.) ra--;
+      if (pattern.ra < 0.) {
+	ra--;
+	SIXT_WARNING("value for right ascension <0.0deg");
+      }
       fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ra, &status);
 
       long dec=(long)(pattern.dec*180./M_PI/1.e-6);
-      if (pattern.dec < 0.) dec--;
+      if (pattern.dec < 0.) {
+	dec--;
+      }
       fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &dec, &status);
 
       CHECK_STATUS_BREAK(status);
@@ -244,8 +249,8 @@ int ero_events_main()
       if (0!=wcsstatus) {
 	char msg[MAXMSG];
 	sprintf(msg, 
-		"WCS coordinate conversion failed (error code %d)", 
-		wcsstatus);
+		"WCS coordinate conversion failed (RA=%lf, Dec=%lf, error code %d)", 
+		world[0], world[1], wcsstatus);
 	SIXT_ERROR(msg);
 	status=EXIT_FAILURE;
 	break;
