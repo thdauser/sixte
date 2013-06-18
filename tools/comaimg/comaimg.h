@@ -7,11 +7,14 @@
 #include "check_fov.h"
 #include "photon.h"
 #include "photonlistfile.h"
+#include "telescope.h"
+#include "codedmask.h"
 #include "impact.h"
 #include "impactlistfile.h"
-#include "telescope.h"
+#include "attitudecatalog2.h"
 #include "attitudecatalog.h"
-#include "codedmask.h"
+
+#include "det_phi_max.h"
 
 
 #define TOOLSUB comaimg_main
@@ -19,29 +22,33 @@
 
 
 struct Parameters {
-  char Attitude[MAXMSG];   // input: attitude file
-  char PhotonList[MAXMSG]; // input: photon list
-  char Mask[MAXMSG];       // input: coded mask file
-  char ImpactList[MAXMSG]; // output: impact list
+  char PhotonList[MAXMSG]; //input:photon list
+  char Mask[MAXMSG];       //input:mask
+  char ImpactList[MAXMSG]; //output:impact list
+  char Attitude[MAXMSG];   //input:attitude
+  
+  //Distance between the mask and detection plane ([m])
+  float MaskDistance;
+  //mask-size (width, depth) ([m])
+  float x_mask, y_mask;
+  //detector-size (width, depth) ([m])
+  float x_det, y_det;
 
-  /** [deg] */
-  float RA, Dec;
+  //detector pointing direction
+  double RA, DEC;
 
-  /** Exposure time. */
+  //time-offset ([s])
+  double Timezero;
+
+  //Exposure time ([s])
   double Exposure;
-
-  // Distance between the coded mask and the detector plane ([m]).
-  double MaskDistance;  
 };
 
 
-////////////////////////////////////////////////////////////////////////
 // Function declarations.
-////////////////////////////////////////////////////////////////////////
-
 
 /** Reads the program parameters using PIL. */
-int comaimg_getpar(struct Parameters* parameters);
+int comaimg_getpar(struct Parameters* par);
 
 
 #endif /* COMAIMG_H */

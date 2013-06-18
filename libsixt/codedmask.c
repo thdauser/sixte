@@ -195,65 +195,6 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 }
 
 
-int getCodedMaskImpactPos(struct Point2d* const position, 
-			  const Photon* const photon, 
-			  const CodedMask* const mask, 
-			  const struct Telescope* const telescope,
-			  const float focal_length,
-			  int* const status)
-{
-  // Check if a CodedMask is specified. If not, break the function.
-  if (NULL==mask) return(0);
-
-  // Get a random number.
-  double rand=sixt_get_random_number(status);
-  CHECK_STATUS_RET(*status, 0);
-
-  if (rand>mask->transparency) {
-    // The photon is absorbed by an opaque pixel.
-    return(0);
-  }
-
-  // The photon passes through a transparent pixel. So we have to 
-  // determine its impact position on the detector plane using
-  // geometrical considerations.
-  // First determine the pixel the photon passes through.
-  int pixel = (int)(rand/mask->transparency * mask->n_transparent_pixels);
-  // Now pixel points to an arbitrary pixel in the list of transparent pixels.
-
-  // Determine the direction of origin of the photon.
-  Vector photon_direction = unit_vector(photon->ra, photon->dec);
-  // Determine the components of the photon direction vector with respect to the
-  // detector coordinate axes nx and ny.
-  double scpx = scalar_product(&photon_direction, &telescope->nx);
-  double scpy = scalar_product(&photon_direction, &telescope->ny);
-  // Determine the component of the photon direction within the detector plane.
-  double radius = sqrt(pow(scpx,2.)+pow(scpy,2.));
-
-  // Determine the azimuthal angle of the photon within the detector plane
-  // with respect to the detector nx axis.
-  double alpha=atan2(scpy, scpx);
-
-  // Determine the impact position in the mask plane.
-  position->x=
-    ((double)(mask->transparent_pixels[pixel][0])
-     -mask->crpix1+0.5+sixt_get_random_number(status)
-     )*mask->cdelt1 + mask->crval1;
-  CHECK_STATUS_RET(*status, 0);
-  position->y=
-    ((double)(mask->transparent_pixels[pixel][1])
-     -mask->crpix2+0.5+sixt_get_random_number(status)
-     )*mask->cdelt2 + mask->crval2;
-  CHECK_STATUS_RET(*status, 0);
-
-  // Shift the position to obtain the position in the detector plane.
-  // The shift is necessary because of the photon's off-axis position.
-  position->x -= cos(alpha) * radius * focal_length;
-  position->y -= sin(alpha) * radius * focal_length;
-
-  return(1);
-}
-
 
 int getImpactPos (struct Point2d* const position,
 		  const Vector* const phodir,

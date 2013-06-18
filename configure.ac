@@ -113,11 +113,8 @@ AC_CONFIG_FILES([Makefile
 		tools/analyse_xms_events/Makefile
 		tools/gendetsim/Makefile
 		tools/comaimg/Makefile
-		tools/comaimg2/Makefile
 		tools/comadet/Makefile
-		tools/comadet2/Makefile
 		tools/comarecon/Makefile
-		tools/comarecon2/Makefile
 		tools/projev/Makefile
 		tools/evpat/Makefile
 		tools/imgev/Makefile

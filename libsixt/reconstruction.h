@@ -4,12 +4,13 @@
 
 #include "codedmask.h"
 #include "sixt.h"
+#include "squarepixels.h"
 /////////////////////////////////////////////
 // Type Declarations.
 /////////////////////////////////////////////
 typedef struct {
   double** Rmap; //the reconstruction-array data built from mask-array-data.
-  double**RImage; //the reconstructed image which is twice as large as the sky-image
+  //double**RImage; //the reconstructed image which is twice as large as the sky-image
   double open_fraction; //Transparency of the mask.
                         //Ratio #(transparent pixels)/#(all pixels)
 
@@ -36,7 +37,7 @@ ReconArray* newReconArray(int* const status);
 
 ReconArrayFits* newReconArrayForFits(int* const status);
 
-ReconArray* getReconArray(const CodedMask* const mask, int* const status);
+ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pixels, int* const status);
 
 ReconArrayFits* getReconArrayForFits(const CodedMask* const mask, int* const status);
 
@@ -49,6 +50,8 @@ void FreeReconImage(ReconArray* recon);
 void FreeReconArray1d(double* ReconArray1d);
 
 double* SaveReconArray1d(ReconArray* recon, int* status);
+
+double* MultiplyMaskRecon(ReconArray* recon, CodedMask* mask, int* status);
 
 void SaveReconArrayFits(ReconArrayFits* recon, char* filename, int* status);
 

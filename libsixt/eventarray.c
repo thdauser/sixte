@@ -22,7 +22,7 @@ ReadEvent* newEventArray(int* const status)
   return(ea);
 }
 
-ReadEvent* getEventArray(SquarePixels* detector_pixels, int* status)
+ReadEvent* getEventArray(CodedMask* mask, SquarePixels* detector_pixels, int* status)
 {
   ReadEvent* ea=NULL;
   int x,y;
@@ -31,9 +31,14 @@ ReadEvent* getEventArray(SquarePixels* detector_pixels, int* status)
   ea=newEventArray(status);
   if (EXIT_SUCCESS!=*status) return(ea);
 
-  //sizes are equal to those of the detector
-  ea->naxis1=2*detector_pixels->xwidth-1;
-  ea->naxis2=2*detector_pixels->ywidth-1;
+  //sizes are equal to those of the ReconArray -> mask-width but detector-pixelsize
+  //mask has to be >= detector
+
+  /*ea->naxis1=mask->naxis1;
+    ea->naxis2=mask->naxis2;*/
+
+    ea->naxis1=2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth);
+      ea->naxis2=2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth);
 
   //memory-allocation
   ea->EventArray=(double**)malloc(ea->naxis1*sizeof(double*));
@@ -60,7 +65,8 @@ ReadEvent* getEventArray(SquarePixels* detector_pixels, int* status)
       return(ea);
   }//end of memory-allocation 
   return(ea);
-}
+  }
+
 
 int readEventList_nextRow(CoMaEventFile* ef, ReadEvent* ea)
 {

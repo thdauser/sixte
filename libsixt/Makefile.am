@@ -45,25 +45,25 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 lib_LIBRARIES=libsixt.a
 
 # Sources:
-libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
-		  impactlistfile.c ladimpactlistfile.c htrsdetector.c	\
-		  geninst.c gendet.c gentel.c genpixgrid.c		\
-		  gendetline.c eventlistfile.c ladsignallistfile.c	\
-		  ladeventlistfile.c phabkg.c patternfile.c		\
-		  clocklist.c badpixmap.c htrseventfile.c		\
-		  hexagonalpixels.c arcpixels.c telemetrypacket.c	\
-		  htrstelstream.c comadetector.c comaeventfile.c	\
-		  psf.c vignetting.c codedmask.c attitudecatalog.c	\
-		  attitudefile.c sixt.c vector.c photon.c fits_pha.c	\
-		  check_fov.c photonlistfile.c rmf.c arf.c		\
-		  kdtreeelement.c sourcecatalog.c source.c		\
-		  linkedpholist.c linkedladsiglist.c			\
+libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c \
+		  impactlistfile.c ladimpactlistfile.c \
+		  htrsdetector.c geninst.c gendet.c gentel.c \
+		  genpixgrid.c gendetline.c eventlistfile.c \
+		  ladsignallistfile.c ladeventlistfile.c phabkg.c \
+		  patternfile.c	clocklist.c badpixmap.c \
+		  htrseventfile.c hexagonalpixels.c arcpixels.c \
+		  telemetrypacket.c htrstelstream.c comadetector.c \
+		  comaeventfile.c psf.c vignetting.c codedmask.c \
+		  attitudecatalog.c attitudefile.c sixt.c vector.c \
+		  photon.c fits_pha.c check_fov.c photonlistfile.c \
+		  rmf.c arf.c kdtreeelement.c sourcecatalog.c \
+		  source.c linkedpholist.c linkedladsiglist.c \
 		  erodetbkgrndgen.c phgen.c phimg.c phdet.c phproj.c	\
 		  phpat.c event.c pattern.c ladsignal.c ladevent.c	\
-		  ladimpact.c lad.c lad_init.c xmlbuffer.c spectrum.c	\
-		  gti.c sourceimage.c det_phi_max.c			\
+		  ladimpact.c lad.c lad_init.c xmlbuffer.c \
+		  spectrum.c gti.c sourceimage.c det_phi_max.c \
 		  attitudecatalog2.c reconstruction.c eventarray.c	\
-		  fft_array.c
+		  fft_array.c balancing.c
 
 libsixt_a_LIBADD =@top_builddir@/extlib/heainit/libhdinit.a
 libsixt_a_LIBADD+=@top_builddir@/extlib/heaio/libhdio.a
@@ -94,5 +94,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		phgen.h phimg.h phdet.h phproj.h phpat.h lad.h		\
 		xmlbuffer.h spectrum.h gti.h sourceimage.h		\
 		det_phi_max.h attitudecatalog2.c reconstruction.h	\
-		eventarray.h fft_array.h			
+		eventarray.h fft_array.h balancing.h			
 
