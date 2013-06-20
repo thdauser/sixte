@@ -135,7 +135,6 @@ int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
 }
 
 
-
 // Routine which is called to write an eROSITA event to the Binary_Output.
 // Return value is '0' if everything is ok, otherwise the function returns '-1'.
 int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
@@ -163,14 +162,13 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
 }
 
 
-
 // This routine finihes a detector frame by adding the 3 last 4-byte elements
 // containing the frame time, the number of discarded pixels and a spare element.
 int binary_output_erosita_finish_frame(struct Binary_Output *binary_output, 
 				     const double time) 
 {
   // Write the TIME element (readout time of last detector frame):
-  long ltime = (long)(time*40);
+  long ltime=(long)(time*40);
   if (ltime > 0x3FFFFFFF)  return(-1);
   binary_output->bytes[binary_output->n_bytes++] = 
     0x40 + (unsigned char)(ltime>>24);
@@ -215,7 +213,6 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
 }
 
 
-
 //////////////////////////////////
 //    MAIN
 int ero_fits2tm_main()
@@ -235,36 +232,36 @@ int ero_fits2tm_main()
   FILE *output_file = NULL;
   double binning_time; // Delta t (time step, length of each spectrum)
 
-  char msg[MAXMSG];    // error message buffer
   int status=EXIT_SUCCESS;
 
 
   // HEATOOLs: register program
   set_toolname("ero_fits2tm");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of ERROR handling loop
 
     // --- Initialization ---
  
-    if ((status = PILGetFname("eventlist_filename", parameters.eventlist_filename))) {
-      HD_ERROR_THROW("Error reading the name of the input event list file (FITS)!\n", status);
+    if ((status=PILGetFname("eventlist_filename", parameters.eventlist_filename))) {
+      SIXT_ERROR("failed reading the name of the input event list (FITS) file");
       break;
     }
 
     // Open the event list FITS file.
     eventlistfile=openEventListFile(parameters.eventlist_filename, READONLY, &status);
-    if(EXIT_SUCCESS!=status) return(status);
+    CHECK_STATUS_BREAK(status);
 
     // Determine the output mode (events or spectrum) according to the 
     // telescope and detector type specified in the FITS header keywords.
     char telescop[MAXMSG], instrume[MAXMSG];
     char comment[MAXMSG]; // buffer
-    if (fits_read_key(eventlistfile->fptr, TSTRING, "TELESCOP", telescop, 
-		      comment, &status)) break;
-    if (fits_read_key(eventlistfile->fptr, TSTRING, "INSTRUME", instrume, 
-		      comment, &status)) break;
+    fits_read_key(eventlistfile->fptr, TSTRING, "TELESCOP", telescop, 
+		  comment, &status);
+    fits_read_key(eventlistfile->fptr, TSTRING, "INSTRUME", instrume, 
+		  comment, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Convert to captial letters:
     strtoupper(telescop); 
@@ -273,39 +270,41 @@ int ero_fits2tm_main()
     headas_chat(5, "TELESCOP: %s\nINSTRUME: %s\n", telescop, instrume);
     if (strcmp(telescop, "EROSITA") == 0) {
       headas_chat(5, "MODE: events\n");
-      mode = MODE_EVENTS;
+      mode=MODE_EVENTS;
     } else if ((strcmp(telescop, "IXO") == 0) && 
 	       (strcmp(instrume, "HTRS") == 0)) {
       headas_chat(5, "MODE: spectrum\n");
-      mode = MODE_SPECTRUM;
+      mode=MODE_SPECTRUM;
     } else {
-      mode = MODE_INVALID;
+      mode=MODE_INVALID;
     }
 
 
     // Get the name of the output file (binary).
-    if ((status = PILGetFname("output_filename", output_filename))) {
-      sprintf(msg, "Error reading the filename of the output file (binary)!\n");
-      HD_ERROR_THROW(msg,status);
+    if ((status=PILGetFname("output_filename", output_filename))) {
+      char msg[MAXMSG]; // Error message buffer.
+      sprintf(msg, "failed reading the filename of the output file (binary)");
+      SIXT_ERROR(msg);
       break;
     }
 
     // If the output should be a spectrum determine the spectral binning time.
-    if (mode == MODE_SPECTRUM) {
-      if ((status = PILGetReal("binning_time", &binning_time))) {
-	sprintf(msg, "Error reading the spectral binning time!\n");
-	HD_ERROR_THROW(msg,status);
+    if (mode==MODE_SPECTRUM) {
+      if ((status=PILGetReal("binning_time", &binning_time))) {
+	char msg[MAXMSG]; // Error message buffer.
+	sprintf(msg, "failed reading the spectral binning time");
+	SIXT_ERROR(msg);
 	break;
       }
     }
 
     // Open the binary file for output:
-    output_file = fopen(output_filename, "w+");
-    if (output_file == NULL) {
+    output_file=fopen(output_filename, "w+");
+    if (output_file==NULL) {
       status=EXIT_FAILURE;
-      sprintf(msg, "Error: output file '%s' could not be opened!\n", 
-	      output_filename);
-      HD_ERROR_THROW(msg,status);
+      char msg[MAXMSG]; // Error message buffer.
+      sprintf(msg, "output file '%s' could not be opened", output_filename);
+      SIXT_ERROR(msg);
       break;
     }
 
@@ -349,7 +348,7 @@ int ero_fits2tm_main()
       // Read the event from the FITS file.
       getEventFromFile(eventlistfile, row+1, 
 		       &(eventlist[n_buffered_events]), &status);
-      if(EXIT_SUCCESS!=status) break;
+      CHECK_STATUS_BREAK(status);
 
       if (eventlist[n_buffered_events].frame > eventlist[0].frame) {
 	// Write the events to the binary output.
@@ -357,20 +356,20 @@ int ero_fits2tm_main()
 	for (count=0; count<n_buffered_events; count++) {
 	  if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
 	    status=EXIT_FAILURE;
-	    HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
+	    SIXT_ERROR("generation of binary format failed");
 	    break;
 	  }
 	}
 	// Finish the TLM record, even if it is not full yet.
 	if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
 	  status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
+	  SIXT_ERROR("generation of binary format failed");
 	  break;
 	}
 	  
 	// New buffering period has started.
-	eventlist[0] = eventlist[n_buffered_events];
-	n_buffered_events = 0;
+	eventlist[0]=eventlist[n_buffered_events];
+	n_buffered_events=0;
 
       } // END of loop over all buffered events
 
@@ -384,14 +383,14 @@ int ero_fits2tm_main()
       for (count=0; count<n_buffered_events; count++) {
 	if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
 	  status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
+	  SIXT_ERROR("generation of binary format failed");
 	  break;
 	}
       }
 
       if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
 	status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: generation of binary format failed!\n", status);
+	SIXT_ERROR("generation of binary format failed");
 	break;
       }
     }
@@ -410,9 +409,7 @@ int ero_fits2tm_main()
   if (output_file) fclose(output_file);
   freeEventListFile(&eventlistfile, &status);
 
-  if (status == EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
+  if (status==EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
 }
-
-
 
