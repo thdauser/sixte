@@ -14,14 +14,13 @@
 
 
 // Number of bytes per TLM byte frame
-#define N_HTRS_BYTES    (128)
-#define N_EROSITA_BYTES (128)
+#define N_BYTES (128)
 
 
 struct Parameters {
-  char eventlist_filename[MAXFILENAME];
+  char EventList[MAXFILENAME];
+  char OutputFile[MAXFILENAME];
 };
-
 
 
 // Data structure for the byte output writing routine.
@@ -36,26 +35,26 @@ struct Binary_Output {
 };
 
 
-
 // Clear the given byte buffer with 'length' bytes.
-void binary_output_clear_bytes(unsigned char *bytes, const int length) {
+void binary_output_clear_bytes(unsigned char *bytes, const int length) 
+{
   int count;
   for (count=0; count<length; count++) {
-    bytes[count] = 0;
+    bytes[count]=0;
   }
 }
 
 
-
 // Constructor of Binary_Output
-struct Binary_Output *get_Binary_Output(const int max_bytes, FILE *fptr) {
+struct Binary_Output *get_Binary_Output(const int max_bytes, const FILE* const fptr) 
+{
   // Get memory for the object itself:
-  struct Binary_Output *binary_output = 
-    (struct Binary_Output *) malloc(sizeof(struct Binary_Output));
+  struct Binary_Output *binary_output=
+    (struct Binary_Output *)malloc(sizeof(struct Binary_Output));
   if (binary_output==NULL) return(NULL);
 
   // Get memory for the byte output buffer and clear it:
-  binary_output->bytes = (unsigned char *) malloc(max_bytes*sizeof(unsigned char));
+  binary_output->bytes=(unsigned char *)malloc(max_bytes*sizeof(unsigned char));
   if (binary_output->bytes==NULL) return(NULL);
   binary_output_clear_bytes(binary_output->bytes, max_bytes);
 
@@ -71,9 +70,10 @@ struct Binary_Output *get_Binary_Output(const int max_bytes, FILE *fptr) {
 
 
 // Destructor of Binary_Output
-void free_Binary_Output(struct Binary_Output *binary_output) {
+void free_Binary_Output(struct Binary_Output *binary_output) 
+{
   // Free all allocated memory:
-  if (binary_output) {
+  if (NULL!=binary_output) {
     if (binary_output->bytes) {
       free(binary_output->bytes);
     }
@@ -83,47 +83,44 @@ void free_Binary_Output(struct Binary_Output *binary_output) {
 }
 
 
-
-// This routine finihes a record and writes all bytes to the output file.
-int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
-  int count;
-
+// This routine finishes a record and writes all bytes to the output file.
+int binary_output_erosita_finish_record(struct Binary_Output* const binary_output)
+{
   // If the record already contains some elements but is not full,
   // fill it with 0x00 entries.
   if (binary_output->n_bytes>12) {
+    int count;
     for (count=binary_output->n_bytes; count<binary_output->max_bytes; count++) {
-      binary_output->bytes[count] = 0x00;
+      binary_output->bytes[count]=0x00;
     }
 
     // Write the header of the record:
     // syncwords
-    binary_output->bytes[0] = 0xEB;
-    binary_output->bytes[1] = 0x90;
+    binary_output->bytes[0]=0xEB;
+    binary_output->bytes[1]=0x90;
     // frametime MSB
-    binary_output->bytes[2] = 0x00;  // TODO
-    binary_output->bytes[3] = 0x00;
-    binary_output->bytes[4] = 0x00;
-    binary_output->bytes[5] = 0x00;
+    binary_output->bytes[2]=0x00;  // TODO
+    binary_output->bytes[3]=0x00;
+    binary_output->bytes[4]=0x00;
+    binary_output->bytes[5]=0x00;
     // framecounter
-    binary_output->bytes[6] = binary_output->framecounter++;
+    binary_output->bytes[6]=binary_output->framecounter++;
     // header
-    binary_output->bytes[7] = 0x1F;
+    binary_output->bytes[7]=0x1F;
     // DSP frame ID
-    binary_output->bytes[8] = 0x20;
+    binary_output->bytes[8]=0x20;
     // # of 16bit elements
-    binary_output->bytes[9] = (unsigned char)((binary_output->n_bytes-12)/2);
+    binary_output->bytes[9]=(unsigned char)((binary_output->n_bytes-12)/2);
     // # of total frame   ???????????  // TODO
-    binary_output->bytes[10] = 0x00;
+    binary_output->bytes[10]=0x00;
     // actual frame #
-    binary_output->bytes[11] = binary_output->framenumber;
-
+    binary_output->bytes[11]=binary_output->framenumber;
 
     // Write the byte buffer to the output file:
-    int nbytes = fwrite (binary_output->bytes, 1, 
-			 binary_output->max_bytes, binary_output->fptr);
-    if (nbytes != binary_output->max_bytes) return(-1);
+    int nbytes=fwrite(binary_output->bytes, 1, 
+		      binary_output->max_bytes, binary_output->fptr);
+    if (nbytes!=binary_output->max_bytes) return(-1);
     
-
     // Reset variables:
     binary_output->n_bytes=12;
 
@@ -138,19 +135,19 @@ int binary_output_erosita_finish_record(struct Binary_Output *binary_output){
 // Routine which is called to write an eROSITA event to the Binary_Output.
 // Return value is '0' if everything is ok, otherwise the function returns '-1'.
 int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
-				       Event *event)
+				       const Event* const event)
 {
   // Check for overflows:
   if (event->pi>0x3FFF) return(-1);
 
   // Write the data of the event to the byte output buffer:
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     0x3F & (unsigned char)(event->pi>>8);
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     0xFF & (unsigned char)event->pi;
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     0xFF & (unsigned char)event->rawy;
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     0xFF & (unsigned char)event->rawx;
 
   // Check if record is full:
@@ -162,46 +159,44 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
 }
 
 
-// This routine finihes a detector frame by adding the 3 last 4-byte elements
+// This routine finishes a detector frame by adding the 3 last 4-byte elements
 // containing the frame time, the number of discarded pixels and a spare element.
 int binary_output_erosita_finish_frame(struct Binary_Output *binary_output, 
-				     const double time) 
+				       const double time) 
 {
   // Write the TIME element (readout time of last detector frame):
   long ltime=(long)(time*40);
   if (ltime > 0x3FFFFFFF)  return(-1);
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     0x40 + (unsigned char)(ltime>>24);
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     (unsigned char)(ltime>>16);
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     (unsigned char)(ltime>>8);
-  binary_output->bytes[binary_output->n_bytes++] = 
+  binary_output->bytes[binary_output->n_bytes++]=
     (unsigned char)ltime;
 
   // Check if record is full:
   if (binary_output->n_bytes>=binary_output->max_bytes) {
     if (binary_output_erosita_finish_record(binary_output)) return(-1);
   }
-
   
   // Write number of DISCARDED PIXELS (assumed to be 0):
-  binary_output->bytes[binary_output->n_bytes++] = 0xBE;
-  binary_output->bytes[binary_output->n_bytes++] = 0x00;
-  binary_output->bytes[binary_output->n_bytes++] = 0x00;
-  binary_output->bytes[binary_output->n_bytes++] = 0x00;
+  binary_output->bytes[binary_output->n_bytes++]=0xBE;
+  binary_output->bytes[binary_output->n_bytes++]=0x00;
+  binary_output->bytes[binary_output->n_bytes++]=0x00;
+  binary_output->bytes[binary_output->n_bytes++]=0x00;
 
   // Check if record is full:
   if (binary_output->n_bytes>=binary_output->max_bytes) {
     if (binary_output_erosita_finish_record(binary_output)) return(-1);
   }
   
-
   // Write SPARE element:
-  binary_output->bytes[binary_output->n_bytes++] = 0xC0;
-  binary_output->bytes[binary_output->n_bytes++] = 0x00;
-  binary_output->bytes[binary_output->n_bytes++] = 0x00;
-  binary_output->bytes[binary_output->n_bytes++] = 0x00;
+  binary_output->bytes[binary_output->n_bytes++]=0xC0;
+  binary_output->bytes[binary_output->n_bytes++]=0x00;
+  binary_output->bytes[binary_output->n_bytes++]=0x00;
+  binary_output->bytes[binary_output->n_bytes++]=0x00;
 
   // Finish record in any case, even if it is not full yet:
   if (binary_output_erosita_finish_record(binary_output)) {
@@ -217,116 +212,59 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
 //    MAIN
 int ero_fits2tm_main()
 {
-  struct Parameters parameters;
+  struct Parameters par;
 
-  // Program output mode (events or spectrum)
-  enum Mode {
-    MODE_INVALID =0,
-    MODE_EVENTS  =1,
-    MODE_SPECTRUM=2
-  };
-  enum Mode mode;
+  /** FITS file containing the input event list. */
+  EventListFile* elf=NULL; 
+  /** Output file. */
+  FILE *of=NULL;
 
-  EventListFile* eventlistfile=NULL; // FITS file containing the event list
-  char output_filename[MAXFILENAME];
-  FILE *output_file = NULL;
-  double binning_time; // Delta t (time step, length of each spectrum)
+  /** Output buffer. */
+  Event* eventlist=NULL;
+  struct Binary_Output *binary_output=NULL;
 
   int status=EXIT_SUCCESS;
 
 
   // HEATOOLs: register program
   set_toolname("ero_fits2tm");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of ERROR handling loop
 
     // --- Initialization ---
  
-    if ((status=PILGetFname("eventlist_filename", parameters.eventlist_filename))) {
-      SIXT_ERROR("failed reading the name of the input event list (FITS) file");
+    if ((status=PILGetFname("EventList", par.EventList))) {
+      SIXT_ERROR("failed reading the name of the input event list (FITS file)");
+      break;
+    }
+
+    // Get the name of the output file (binary).
+    if ((status=PILGetFname("OutputFile", par.OutputFile))) {
+      SIXT_ERROR("failed reading the filename of the output file (binary file)");
       break;
     }
 
     // Open the event list FITS file.
-    eventlistfile=openEventListFile(parameters.eventlist_filename, READONLY, &status);
+    elf=openEventListFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Determine the output mode (events or spectrum) according to the 
-    // telescope and detector type specified in the FITS header keywords.
-    char telescop[MAXMSG], instrume[MAXMSG];
-    char comment[MAXMSG]; // buffer
-    fits_read_key(eventlistfile->fptr, TSTRING, "TELESCOP", telescop, 
-		  comment, &status);
-    fits_read_key(eventlistfile->fptr, TSTRING, "INSTRUME", instrume, 
-		  comment, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Convert to captial letters:
-    strtoupper(telescop); 
-    strtoupper(instrume); 
-
-    headas_chat(5, "TELESCOP: %s\nINSTRUME: %s\n", telescop, instrume);
-    if (strcmp(telescop, "EROSITA") == 0) {
-      headas_chat(5, "MODE: events\n");
-      mode=MODE_EVENTS;
-    } else if ((strcmp(telescop, "IXO") == 0) && 
-	       (strcmp(instrume, "HTRS") == 0)) {
-      headas_chat(5, "MODE: spectrum\n");
-      mode=MODE_SPECTRUM;
-    } else {
-      mode=MODE_INVALID;
-    }
-
-
-    // Get the name of the output file (binary).
-    if ((status=PILGetFname("output_filename", output_filename))) {
-      char msg[MAXMSG]; // Error message buffer.
-      sprintf(msg, "failed reading the filename of the output file (binary)");
-      SIXT_ERROR(msg);
-      break;
-    }
-
-    // If the output should be a spectrum determine the spectral binning time.
-    if (mode==MODE_SPECTRUM) {
-      if ((status=PILGetReal("binning_time", &binning_time))) {
-	char msg[MAXMSG]; // Error message buffer.
-	sprintf(msg, "failed reading the spectral binning time");
-	SIXT_ERROR(msg);
-	break;
-      }
-    }
-
-    // Open the binary file for output:
-    output_file=fopen(output_filename, "w+");
-    if (output_file==NULL) {
+    // Open the binary file for output.
+    of=fopen(par.OutputFile, "w+");
+    if (of==NULL) {
       status=EXIT_FAILURE;
       char msg[MAXMSG]; // Error message buffer.
-      sprintf(msg, "output file '%s' could not be opened", output_filename);
+      sprintf(msg, "output file '%s' could not be opened", par.OutputFile);
       SIXT_ERROR(msg);
       break;
     }
 
-    // --- END of Initialization ---
-
-
-    // --- Beginning of EVENT PROCESSING ---
-
-    // Loop over all events in the FITS file:
-    headas_chat(5, "processing events ...\n");
-
-    
-    /*if (mode == MODE_EVENTS) { */
-    // EVENT mode, i.e., the events are transferred to a particular binary
-    // data format without spectral binning or other modifications.
-      
-    struct Binary_Output *binary_output = 
-      get_Binary_Output(N_EROSITA_BYTES, output_file);
-    Event *eventlist = (Event*)malloc(10000*sizeof(Event));
+    binary_output=get_Binary_Output(N_BYTES, of);
+    eventlist=(Event*)malloc(10000*sizeof(Event));
     if ((NULL==binary_output)||(NULL==eventlist)) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation failed!\n", status);
+      SIXT_ERROR("memory allocation failed");
       break;
     }
     // Clear the event buffer:
@@ -339,20 +277,25 @@ int ero_fits2tm_main()
       eventlist[count].frame=0;
     }
 
+    // --- END of Initialization ---
 
+
+    // --- Beginning of EVENT PROCESSING ---
+
+    // Loop over all events in the FITS file:
+    headas_chat(3, "processing events ...\n");
+    
     // Loop over all entries in the event list:
     int n_buffered_events=0;
     long row;
-    for (row=0; row<eventlistfile->nrows; row++) {
+    for (row=0; row<elf->nrows; row++) {
 
       // Read the event from the FITS file.
-      getEventFromFile(eventlistfile, row+1, 
-		       &(eventlist[n_buffered_events]), &status);
+      getEventFromFile(elf, row+1, &(eventlist[n_buffered_events]), &status);
       CHECK_STATUS_BREAK(status);
 
-      if (eventlist[n_buffered_events].frame > eventlist[0].frame) {
+      if (eventlist[n_buffered_events].frame>eventlist[0].frame) {
 	// Write the events to the binary output.
-	int count;
 	for (count=0; count<n_buffered_events; count++) {
 	  if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
 	    status=EXIT_FAILURE;
@@ -372,42 +315,42 @@ int ero_fits2tm_main()
 	n_buffered_events=0;
 
       } // END of loop over all buffered events
+      CHECK_STATUS_BREAK(status);
 
       n_buffered_events++;
 	
     } // END of loop over all entries in the event list.
+    CHECK_STATUS_BREAK(status);
 
-    if (EXIT_SUCCESS==status) {
-      // Write the events to the binary output.
-      int count;
-      for (count=0; count<n_buffered_events; count++) {
-	if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
-	  status=EXIT_FAILURE;
-	  SIXT_ERROR("generation of binary format failed");
-	  break;
-	}
-      }
-
-      if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
+    // Write the events to the binary output.
+    for (count=0; count<n_buffered_events; count++) {
+      if (binary_output_erosita_insert_event(binary_output, &(eventlist[count]))) {
 	status=EXIT_FAILURE;
 	SIXT_ERROR("generation of binary format failed");
 	break;
       }
     }
-    if (EXIT_SUCCESS!=status) {
-      free_Binary_Output(binary_output);
-      if (eventlist) free(eventlist);
+    CHECK_STATUS_BREAK(status);
+
+    if (binary_output_erosita_finish_frame(binary_output, eventlist[0].time)) {
+      status=EXIT_FAILURE;
+      SIXT_ERROR("generation of binary format failed");
       break;
     }
-
+  
   } while (0); // END of ERROR handling loop
 
 
   // --- Clean up ---
 
   // Close files
-  if (output_file) fclose(output_file);
-  freeEventListFile(&eventlistfile, &status);
+  if (NULL!=of) fclose(of);
+  freeEventListFile(&elf, &status);
+
+  // Release memory.
+  free_Binary_Output(binary_output);
+  if (NULL!=eventlist) free(eventlist);
+  
 
   if (status==EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
   return(status);
