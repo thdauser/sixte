@@ -33,6 +33,7 @@ psfgen
 xms_pixtemp
 ero_exposure
 ero_events
+ero_rawevents
 ero_fits2tm
 ero_split_photonfile
 ero_merge_eventfiles

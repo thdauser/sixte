@@ -46,7 +46,7 @@ void binary_output_clear_bytes(unsigned char *bytes, const int length)
 
 
 // Constructor of Binary_Output
-struct Binary_Output *get_Binary_Output(const int max_bytes, const FILE* const fptr) 
+struct Binary_Output *get_Binary_Output(const int max_bytes, FILE* const fptr) 
 {
   // Get memory for the object itself:
   struct Binary_Output *binary_output=
