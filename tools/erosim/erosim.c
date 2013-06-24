@@ -359,7 +359,7 @@ int erosim_main()
     if (strlen(photonlist_filename_template)>0) {
       for (ii=0; ii<7; ii++) {
 	char photonlist_filename[MAXFILENAME];
-	sprintf(photonlist_filename, photonlist_filename_template, ii);
+	sprintf(photonlist_filename, photonlist_filename_template, ii+1);
 	plf[ii]=openNewPhotonListFile(photonlist_filename, 
 				      telescop, instrume, "Normal", 
 				      par.MJDREF, 0.0, par.TSTART, tstop,
@@ -373,7 +373,7 @@ int erosim_main()
     if (strlen(impactlist_filename_template)>0) {
       for (ii=0; ii<7; ii++) {
 	char impactlist_filename[MAXFILENAME];
-	sprintf(impactlist_filename, impactlist_filename_template, ii);
+	sprintf(impactlist_filename, impactlist_filename_template, ii+1);
 	ilf[ii]=openNewImpactListFile(impactlist_filename, 
 				      telescop, instrume, "Normal", 
 				      par.MJDREF, 0.0, par.TSTART, tstop,
@@ -386,7 +386,7 @@ int erosim_main()
     // Open the output event list files.
     for (ii=0; ii<7; ii++) {
       char eventlist_filename[MAXFILENAME];
-      sprintf(eventlist_filename, eventlist_filename_template, ii);
+      sprintf(eventlist_filename, eventlist_filename_template, ii+1);
       elf[ii]=openNewEventListFile(eventlist_filename, 
 				   telescop, instrume, "Normal", 
 				   par.MJDREF, 0.0, par.TSTART, tstop,
@@ -404,7 +404,7 @@ int erosim_main()
     // Open the output pattern list files.
     for (ii=0; ii<7; ii++) {
       char patternlist_filename[MAXFILENAME];
-      sprintf(patternlist_filename, patternlist_filename_template, ii);
+      sprintf(patternlist_filename, patternlist_filename_template, ii+1);
       patf[ii]=openNewPatternFile(patternlist_filename, 
 				  telescop, instrume, "Normal", 
 				  par.MJDREF, 0.0, par.TSTART, tstop,

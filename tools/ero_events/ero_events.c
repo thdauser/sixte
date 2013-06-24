@@ -23,7 +23,7 @@ int ero_events_main()
 
   // Register HEATOOL:
   set_toolname("ero_events");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -79,7 +79,8 @@ int ero_events_main()
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
-    int ctime, crawx, crawy, cframe, cpi, cenergy, cra, cdec, cx, cy, cccdnr;
+    int ctime, crawx, crawy, cframe, cpi, cenergy, cra, cdec, cx, cy, 
+      cccdnr, cflag, cpat_typ, cpat_inf, cev_weight;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     fits_get_colnum(fptr, CASEINSEN, "PHA", &cpi, &status);
@@ -91,6 +92,10 @@ int ero_events_main()
     fits_get_colnum(fptr, CASEINSEN, "X", &cx, &status);
     fits_get_colnum(fptr, CASEINSEN, "Y", &cy, &status);
     fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
+    fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PAT_TYP", &cpat_typ, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PAT_INF", &cpat_inf, &status);
+    fits_get_colnum(fptr, CASEINSEN, "EV_WEIGHT", &cev_weight, &status);
     CHECK_STATUS_BREAK(status);
 
     // Timing keywords.
@@ -275,6 +280,23 @@ int ero_events_main()
       }
 
       fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &par.CCDNr, &status);
+
+      // TODO In the current implementation the value of FLAG is set to 
+      // by default. This needs to be changed later.
+      long flag=0xC0000000;
+      fits_write_col(fptr, TLONG, cflag, row+1, 1, 1, &flag, &status);
+
+      // TODO Not used in the current implementation.
+      int pat_typ=0;
+      fits_write_col(fptr, TINT, cpat_typ, row+1, 1, 1, &pat_typ, &status);
+
+      // TODO In the current implementation PAT_INF is set to the default value of 5.
+      short pat_inf=0;
+      fits_write_col(fptr, TSHORT, cpat_inf, row+1, 1, 1, &pat_inf, &status);
+
+      // TODO Inverse vignetting correction factor is not used.
+      float ev_weight=1.0;
+      fits_write_col(fptr, TFLOAT, cev_weight, row+1, 1, 1, &ev_weight, &status);
 
       CHECK_STATUS_BREAK(status);
     }

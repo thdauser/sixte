@@ -14,13 +14,14 @@ TELESCOP= eROSITA         / Telescope name
 INSTRUME= FM4             / Instrument name
 OBS_MODE= String          / Observation mode
 DATAMODE= String          / Instrument data mode
+FRAMETIM= 50.0            / [ms] nominal frame time
 FILTER  = OPEN            / CCD filter used
 OBS_ID  = String          / Observation Identifier
 EXP_ID  = String          / Exposure Identifier
 OBSERVER= String          / Name of PI
-OBJECT  = String          / Name of observed Object
-RA_OBJ  = 0.0             / Source right ascension in degrees
-DEC_OBJ = 0.0             / Source declination in degrees
+OBJECT  = NA              / Name of observed Object
+RA_OBJ  = NA              / [deg] J2000
+DEC_OBJ = NA              / [deg] J2000
 DATE-OBS= UTC_format      / Date of the start of the observation
 TSTART  = Real            / Start time of the observation
 TSTOP   = Real            / End time of the observation
@@ -29,15 +30,16 @@ MJDREF  = 54101           / Modified Julian Date of time origin
 TIMEZERO= 0.0             / Time correction
 TIMEUNIT= s               / Time unit
 TIMESYS = TT              / Time system (Terrestial Time)
-RA_PNT  = Real            / actual pointing RA
-DEC_PNT = Real            / actual pointing DEC
+TIMEDEL = 0.05            / [s] Length of exposure interval
+RA_PNT  = NA              / Actual pointing RA
+DEC_PNT = NA              / Actual pointing DEC
 RADECSYS= FK5             / Stellar reference frame
 EQUINOX = 2000.0          / Coordinate system equinox
-LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
-NXDIM   = 384             /
-NYDIM   = 384             /
-PIXLEN_X= 75.0            /
-PIXLEN_Y= 75.0            /
+LONGSTR = OGIP 1.0        / Support multi-line COMMENTs or HISTORY records
+NXDIM   = 384             / CCD dimension
+NYDIM   = 384             / CCD dimension
+PIXLEN_X= 75.0            / [micron] Pixel size
+PIXLEN_Y= 75.0            / [micron] Pixel size
 #Column definitions
 	TTYPE#  TIME            / Time of event detection
 	TFORM#  D               / Format of column TIME
@@ -45,7 +47,7 @@ PIXLEN_Y= 75.0            /
 	TTYPE#  FRAME           / Frame counter
 	TFORM#  J               / Format of column FRAME
 	TTYPE#  PHA             / Uncorrected Event Energy
-	TFORM#  J               / Format of column PHA
+	TFORM#  I               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
 	TLMIN#  0
 	TLMAX#  4095
@@ -82,5 +84,31 @@ PIXLEN_Y= 75.0            /
 	TCDLT#  1.388889e-5     / [deg/pix] WCS Y increment at ref. pixel
 	TLMIN#  long            / Minimum for Y
 	TLMAX#  long            / Maximum for Y
+	REFXCTYP RA---SIN
+	REFXCUNI deg
+	REFXCRPX 0.0
+	REFXCRVL 0.0
+	REFXCDLT 1.388889e-5
+	REFXLMIN TODO
+	REFXLMAX TODO
+	REFXDMIN TODO
+	REFXDMAX TODO
+	REFYCTYP DEC--SIN
+	REFYCUNI deg
+	REFYCRPX 0.0
+	REFYCRVL 0.0
+	REFYCDLT 1.388889e-5
+	REFYLMIN TODO
+	REFYLMAX TODO
+	REFYDMIN TODO
+	REFYDMAX TODO
 	TTYPE# 	CCDNR           / 1-7 for eROSITA
 	TFORM# 	I   		/ Format of column CCDNR
+	TTYPE#  FLAG            / flag
+	TFORM#  J               / Format of column FLAG
+	TTYPE#  PAT_TYP         / pattern type
+	TFORM#  I               / Format of column PAT_TYP
+	TTYPE#  PAT_INF         / pattern information
+	TFORM#  U               / Format of column PAT_INF
+	TTYPE#  EV_WEIGHT       / Inverse vignetting correction factor
+	TFORM#  E               / Format of column EV_WEIGHT
