@@ -399,6 +399,89 @@ int ero_calevents_main()
 
     // --- End of append GTI extension ---
 
+    // --- Beginning of append DEADCOR extension ---
+
+    headas_chat(3, "append DEADCOR extension ...\n");
+
+    // Create the DEADCOR table.
+    char deadcor_extname[MAXMSG];
+    sprintf(deadcor_extname, "DEADCOR%d", par.CCDNr);
+    char *deadcor_ttype[]={"TIME", "DEADC"};
+    char *deadcor_tform[]={"D", "E"};
+    char *deadcor_tunit[]={"", ""};
+    fits_create_tbl(fptr, BINARY_TBL, 0, 2, 
+		    deadcor_ttype, deadcor_tform, deadcor_tunit, 
+		    deadcor_extname, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not create binary table for DEADCOR extension");
+      break;
+    }
+
+    // Insert header keywords.
+    fits_update_key(fptr, TSTRING, "HDUCLASS", "OGIP", "", &status);
+    fits_update_key(fptr, TSTRING, "HDUCLAS1", "TEMPORALDATA", "", &status);
+    fits_update_key(fptr, TSTRING, "HDUCLAS2", "TSI", "", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the individual column numbers.
+    int cdeadcor_time, cdeadc;
+    fits_get_colnum(fptr, CASEINSEN, "TIME", &cdeadcor_time, &status);
+    fits_get_colnum(fptr, CASEINSEN, "DEADC", &cdeadc, &status);
+    CHECK_STATUS_BREAK(status);
+  
+    // Store the data in the table.
+    double dbuffer=0.0;
+    fits_write_col(fptr, TDOUBLE, cdeadcor_time, 1, 1, 1, &dbuffer, &status);
+    float fbuffer=1.0;
+    fits_write_col(fptr, TFLOAT, cdeadc, 1, 1, 1, &fbuffer, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // --- End of append DEADCOR extension ---
+
+    // --- Beginning of append BADPIX extension ---
+
+    headas_chat(3, "append BADPIX extension ...\n");
+
+    // Create the BADPIX table.
+    char badpix_extname[MAXMSG];
+    sprintf(badpix_extname, "BADPIX%d", par.CCDNr);
+    char *badpix_ttype[]={"RAWX", "RAWY", "YEXTENT", "TYPE", "BADFLAG",
+			  "TIMEMIN", "TIMEMAX", "PHAMIN", "PHAMAX", "PHAMED"};
+    char *badpix_tform[]={"I", "I", "I", "I", "I", 
+			  "D", "D", "I", "I", "E"};
+    char *badpix_tunit[]={"", "", "", "", "",
+			  "", "", "", "", ""};
+    fits_create_tbl(fptr, BINARY_TBL, 0, 10,
+		    badpix_ttype, badpix_tform, badpix_tunit, 
+		    badpix_extname, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not create binary table for BADPIX extension");
+      break;
+    }
+
+    // Insert header keywords.
+    fits_update_key(fptr, TSTRING, "HDUCLASS", "OGIP", "", &status);
+    fits_update_key(fptr, TSTRING, "HDUCLAS1", "BADPIX", "", &status);
+    fits_update_key(fptr, TSTRING, "HDUCLAS2", "STANDARD", "", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the individual column numbers.
+    int cbadpix_rawx, cbadpix_rawy, cbadpix_yextent, cbadpix_type, 
+      cbadflag, ctimemin, ctimemax, cphamin, cphamax, cphamed;
+    fits_get_colnum(fptr, CASEINSEN, "RAWX", &cbadpix_rawx, &status);
+    fits_get_colnum(fptr, CASEINSEN, "RAWY", &cbadpix_rawy, &status);
+    fits_get_colnum(fptr, CASEINSEN, "YEXTENT", &cbadpix_yextent, &status);
+    fits_get_colnum(fptr, CASEINSEN, "TYPE", &cbadpix_type, &status);
+    fits_get_colnum(fptr, CASEINSEN, "BADFLAG", &cbadflag, &status);
+    fits_get_colnum(fptr, CASEINSEN, "TIMEMIN", &ctimemin, &status);
+    fits_get_colnum(fptr, CASEINSEN, "TIMEMAX", &ctimemax, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PHAMIN", &cphamin, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PHAMAX", &cphamax, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PHAMED", &cphamed, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // --- End of append BADPIX extension ---
+
   } while(0); // END of the error handling loop.
 
 
