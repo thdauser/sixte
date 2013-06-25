@@ -128,6 +128,10 @@ void saveGTI(GTI* const gti,
   fits_create_file(&fptr, filename, status);
   CHECK_STATUS_VOID(*status);
 
+  // Store the GTI extension.
+  saveGTIExt(fptr, "GTI", gti, status);
+  CHECK_STATUS_VOID(*status);
+  
   // Set the time-keyword in the event list header.
   char datestr[MAXMSG];
   int timeref;
@@ -137,10 +141,6 @@ void saveGTI(GTI* const gti,
 		  "File creation date", status);
   CHECK_STATUS_VOID(*status);
 
-  // Store the GTI extension.
-  saveGTIExt(fptr, "GTI", gti, status);
-  CHECK_STATUS_VOID(*status);
-  
   // Close the FITS file.
   fits_close_file(fptr, status);
   CHECK_STATUS_VOID(*status);
