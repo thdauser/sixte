@@ -1,7 +1,7 @@
-#include "ero_events.h"
+#include "ero_calevents.h"
 
 
-int ero_events_main() 
+int ero_calevents_main() 
 {
   // Containing all programm parameters read by PIL
   struct Parameters par; 
@@ -13,17 +13,19 @@ int ero_events_main()
   fitsfile* fptr=NULL;
 
   // WCS data structure used for projection.
-  struct wcsprm wcs = { .flag=-1 };
+  struct wcsprm wcs={ .flag=-1 };
   // String buffer for FITS header.
   char* headerstr=NULL;
+
+  GTI* gti=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL:
-  set_toolname("ero_events");
-  set_toolversion("0.09");
+  set_toolname("ero_calevents");
+  set_toolversion("0.10");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -42,48 +44,115 @@ int ero_events_main()
       break;
     }
 
+
     // Open the input pattern file.
     plf=openPatternFile(par.PatternList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Create and open the output eROSITA event file.
-    // Remove old file, if it exists.
-    remove(par.eroEventList);
-
-    // Filename of the template file.
-    char template[MAXMSG];
-    strcpy(template, SIXT_DATA_PATH);
-    strcat(template, "/templates/eroeventlist.tpl");
-    
-    // Create and open a new FITS file using the template.
-    char buffer[MAXMSG];
-    sprintf(buffer, "%s(%s)", par.eroEventList, template);
-    headas_chat(4, "create new eROSITA event list file '%s' "
-		"from template '%s' ...\n", 
-		par.eroEventList, template);
-    fits_create_file(&fptr, buffer, &status);
+    // Read keywords from the input file.
+    char comment[MAXMSG];
+    float timezero=0.0;
+    fits_read_key(plf->fptr, TFLOAT, "TIMEZERO", &timezero, comment, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Move to the binary table HDU.
-    int hdutype;
-    fits_movabs_hdu(fptr, 2, &hdutype, &status);
+    char date_obs[MAXMSG];
+    fits_read_key(plf->fptr, TSTRING, "DATE-OBS", date_obs, comment, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Set the time-keyword in the header.
-    char datestr[MAXMSG];
+    char time_obs[MAXMSG];
+    fits_read_key(plf->fptr, TSTRING, "TIME-OBS", time_obs, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    char date_end[MAXMSG];
+    fits_read_key(plf->fptr, TSTRING, "DATE-END", date_end, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    char time_end[MAXMSG];
+    fits_read_key(plf->fptr, TSTRING, "TIME-END", time_end, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    double tstart=0.0;
+    fits_read_key(plf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    double tstop=0.0;
+    fits_read_key(plf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the file creation date for the header.
+    char creation_date[MAXMSG];
     int timeref;
-    fits_get_system_time(datestr, &timeref, &status);
+    fits_get_system_time(creation_date, &timeref, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TSTRING, "DATE", datestr, 
-		    "File creation data", &status);
+
+
+    // Check if the output file already exists.
+    int exists;
+    fits_file_exists(par.eroEventList, &exists, &status);
+    CHECK_STATUS_BREAK(status);
+    if (0!=exists) {
+      if (0!=par.clobber) {
+	// Delete the file.
+	remove(par.eroEventList);
+      } else {
+	// Throw an error.
+	char msg[MAXMSG];
+	sprintf(msg, "file '%s' already exists", par.eroEventList);
+	SIXT_ERROR(msg);
+	status=EXIT_FAILURE;
+	break;
+      }
+    }
+
+    // Create and open a new FITS file.
+    headas_chat(3, "create new eROSITA event list file '%s' ...\n",
+		par.eroEventList);
+    fits_create_file(&fptr, par.eroEventList, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Create the event table.
+    char *ttype[]={"TIME", "FRAME", "RAWX", "RAWY", "PHA", "ENERGY", 
+		   "RA", "DEC", "X", "Y", "CCDNR", "FLAG", 
+		   "PAT_TYP", "PAT_INF", "EV_WEIGHT"};
+    char *tform[]={"D", "J", "I", "I", "I", "E", 
+		   "J", "J", "J", "J", "I", "J", 
+		   "I", "U", "E"};
+    char *tunit[]={"", "", "", "", "adu", "eV", 
+		   "", "", "", "", "", "",
+		   "", "", "", ""};
+    fits_create_tbl(fptr, BINARY_TBL, 0, 15, ttype, tform, tunit, 
+		    "EVENTS", &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not create binary table for events "
+	      "in file '%s'", par.eroEventList);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    // Insert header keywords.
+    char hduclass[MAXMSG]="OGIP";
+    fits_update_key(fptr, TSTRING, "HDUCLASS", hduclass, "", &status);
+    char hduclas1[MAXMSG]="EVENTS";
+    fits_update_key(fptr, TSTRING, "HDUCLAS1", hduclas1, "", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Insert the standard eROSITA header keywords.
+    sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
+				 date_end, time_end, tstart, tstop, 
+				 timezero, &status);
+    CHECK_STATUS_BREAK(status);
+    sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
+				 date_end, time_end, tstart, tstop, 
+				 timezero, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
-    int ctime, crawx, crawy, cframe, cpi, cenergy, cra, cdec, cx, cy, 
+    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cx, cy, 
       cccdnr, cflag, cpat_typ, cpat_inf, cev_weight;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
-    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpi, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
     fits_get_colnum(fptr, CASEINSEN, "ENERGY", &cenergy, &status);
     fits_get_colnum(fptr, CASEINSEN, "RAWX", &crawx, &status);
     fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
@@ -98,39 +167,39 @@ int ero_events_main()
     fits_get_colnum(fptr, CASEINSEN, "EV_WEIGHT", &cev_weight, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Timing keywords.
-    float frametime=50.0;
-    fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametime,
-		    "[ms] nominal frame time", &status);
-
-    // Copy keywords from the input file.
-    char comment[MAXMSG];
-    float fbuffer=0.0;
-    fits_read_key(plf->fptr, TFLOAT, "TIMEZERO", &fbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TFLOAT, "TIMEZERO", &fbuffer, comment, &status);
+    // Set the TLMIN and TLMAX keywords.
+    // For the PHA column.
+    char keyword[MAXMSG];
+    int tlmin_pha=0, tlmax_pha=4095;
+    sprintf(keyword, "TLMIN%d", cpha);
+    fits_update_key(fptr, TINT, keyword, &tlmin_pha, "", &status);
+    sprintf(keyword, "TLMAX%d", cpha);
+    fits_update_key(fptr, TINT, keyword, &tlmax_pha, "", &status);
     CHECK_STATUS_BREAK(status);
 
-    char sbuffer[MAXMSG];
-    fits_read_key(plf->fptr, TSTRING, "TIMEUNIT", sbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TSTRING, "TIMEUNIT", sbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-
-    fits_read_key(plf->fptr, TSTRING, "TIMESYS", sbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TSTRING, "TIMESYS", sbuffer, comment, &status);
+    // For the ENERGY column.
+    float tlmin_energy=0.0, tlmax_energy=20.48;
+    sprintf(keyword, "TLMIN%d", cenergy);
+    fits_update_key(fptr, TFLOAT, keyword, &tlmin_energy, "", &status);
+    sprintf(keyword, "TLMAX%d", cenergy);
+    fits_update_key(fptr, TFLOAT, keyword, &tlmax_energy, "", &status);
     CHECK_STATUS_BREAK(status);
 
-    double dbuffer=0.0;
-    fits_read_key(plf->fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TDOUBLE, "TSTART", &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-
-    fits_read_key(plf->fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TDOUBLE, "TSTOP", &dbuffer, comment, &status);
+    // For the X and Y column.
+    long tlmin_x=-12960000, tlmax_x=12960000;
+    long tlmin_y= -6480000, tlmax_y= 6480000;
+    sprintf(keyword, "TLMIN%d", cx);
+    fits_update_key(fptr, TLONG, keyword, &tlmin_x, "", &status);
+    fits_update_key(fptr, TLONG, "REFXLMIN", &tlmin_x, "", &status);
+    sprintf(keyword, "TLMAX%d", cx);
+    fits_update_key(fptr, TLONG, keyword, &tlmax_x, "", &status);
+    fits_update_key(fptr, TLONG, "REFXLMAX", &tlmax_x, "", &status);
+    sprintf(keyword, "TLMIN%d", cy);
+    fits_update_key(fptr, TLONG, keyword, &tlmin_y, "", &status);
+    fits_update_key(fptr, TLONG, "REFYLMIN", &tlmin_y, "", &status);
+    sprintf(keyword, "TLMAX%d", cy);
+    fits_update_key(fptr, TLONG, keyword, &tlmax_y, "", &status);
+    fits_update_key(fptr, TLONG, "REFYLMAX", &tlmax_y, "", &status);
     CHECK_STATUS_BREAK(status);
 
     // Set up the WCS data structure.
@@ -139,13 +208,13 @@ int ero_events_main()
       status=EXIT_FAILURE;
       break;
     }
-    wcs.naxis = 2;
-    wcs.crpix[0] = 0.;
-    wcs.crpix[1] = 0.;
-    wcs.crval[0] = par.RefRA;
-    wcs.crval[1] = par.RefDec;    
-    wcs.cdelt[0] =-0.05/3600.;
-    wcs.cdelt[1] = 0.05/3600.;
+    wcs.naxis=2;
+    wcs.crpix[0]=0.0;
+    wcs.crpix[1]=0.0;
+    wcs.crval[0]=par.RefRA;
+    wcs.crval[1]=par.RefDec;    
+    wcs.cdelt[0]=-0.05/3600.;
+    wcs.cdelt[1]= 0.05/3600.;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
     strcpy(wcs.ctype[0], "RA---");
@@ -153,8 +222,7 @@ int ero_events_main()
     strcpy(wcs.ctype[1], "DEC--");
     strcat(wcs.ctype[1], par.Projection);
 
-    // Update the WCS keywords in the output event file.
-    char keyword[MAXMSG];
+    // Update the WCS keywords in the output file.
     sprintf(keyword, "TCTYP%d", cx);
     fits_update_key(fptr, TSTRING, keyword, wcs.ctype[0], 
 		    "projection type", &status);
@@ -173,28 +241,39 @@ int ero_events_main()
     sprintf(keyword, "TCDLT%d", cy);
     fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[1], 
 		    "pixel increment", &status);
-    fits_update_key(fptr, TSTRING, "RADECSYS", "FK5", "", &status);
-    float equinox=2000.0;
-    fits_update_key(fptr, TFLOAT, "EQUINOX", &equinox, "", &status);
-    fits_update_key(fptr, TSTRING, "LONGSTR", "OGIP 1.0",
-		    "to support multi-line COMMENT oder HISTORY records",
-		    &status);
     CHECK_STATUS_BREAK(status);
 
-    // --- END of Initialization ---
+    fits_update_key(fptr, TSTRING, "REFXCTYP", wcs.ctype[0], 
+		    "projection type", &status);
+    fits_update_key(fptr, TSTRING, "REFYCTYP", wcs.ctype[1], 
+		    "projection type", &status);
+    fits_update_key(fptr, TSTRING, "REFXCUNI", "deg", "", &status);
+    fits_update_key(fptr, TSTRING, "REFYCUNI", "deg", "", &status);
+    float refxcrpx=0.0, refycrpx=0.0;
+    fits_update_key(fptr, TFLOAT, "REFXCRPX", &refxcrpx, "", &status);
+    fits_update_key(fptr, TFLOAT, "REFYCRPX", &refycrpx, "", &status);
+    fits_update_key(fptr, TDOUBLE, "REFXCRVL", &wcs.crval[0], 
+		    "reference value", &status);
+    fits_update_key(fptr, TDOUBLE, "REFYCRVL", &wcs.crval[1], 
+		    "reference value", &status);
+    fits_update_key(fptr, TDOUBLE, "REFXCDLT", &wcs.cdelt[0], 
+		    "pixel increment", &status);
+    fits_update_key(fptr, TDOUBLE, "REFYCDLT", &wcs.cdelt[1], 
+		    "pixel increment", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // TODO use keywords REFXDMIN, REFXDMAX, REFYDMIN, REFYDMAX
+
+    // TODO use keywords RA_MIN, RA_MAX, DEC_MIN, DEC_MAX
+
+    // TODO use keywords NLLRAT, SPLTTHR
+
+    // --- END of initialization ---
 
     
-    // --- Beginning of Copy Process ---
+    // --- Beginning of copy events ---
 
-    headas_chat(3, "start copy process ...\n");
-
-    // Values for TLMIN and TLMAX header keywords in the output file.
-    float tlmin_energy=0.;
-    float tlmax_energy=0.;
-    long tlmin_x=0;
-    long tlmax_x=0;
-    long tlmin_y=0;
-    long tlmax_y=0;
+    headas_chat(3, "copy events ...\n");
 
     // Loop over all patterns in the FITS file. 
     long row;
@@ -213,17 +292,11 @@ int ero_events_main()
 		     &pattern.time, &status);
       fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, 
 		     &pattern.frame, &status);
-      fits_write_col(fptr, TLONG, cpi, row+1, 1, 1, 
+      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, 
 		     &pattern.pi, &status);
 
       float energy=pattern.signal*1000.; // [eV]
       fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &energy, &status);
-      if ((energy < tlmin_energy) || (0==row)) {
-	tlmin_energy=energy;
-      }
-      if (energy > tlmax_energy) {
-	tlmax_energy=energy;
-      }
 
       int rawx=pattern.rawx+1;
       fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &rawx, &status);
@@ -266,18 +339,6 @@ int ero_events_main()
       if (pixcrd[1] < 0.) y--;
       fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &x, &status);
       fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &y, &status);
-      if ((x < tlmin_x) || (0==row)) {
-	tlmin_x = x;
-      }
-      if (x > tlmax_x) {
-	tlmax_x = x;
-      }
-      if ((y < tlmin_y) || (0==row)) {
-	tlmin_y = y;
-      }
-      if (y > tlmax_y) {
-	tlmax_y = y;
-      }
 
       fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &par.CCDNr, &status);
 
@@ -298,33 +359,45 @@ int ero_events_main()
       float ev_weight=1.0;
       fits_write_col(fptr, TFLOAT, cev_weight, row+1, 1, 1, &ev_weight, &status);
 
+      // TODO Insert columns SUBX and SUBY.
+
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over all patterns in the FITS file.
 
+    // --- End of copy events ---
 
-    // Update TLMIN and TLMAX header keywords.
-    sprintf(keyword, "TLMIN%d", cenergy);
-    fits_update_key(fptr, TFLOAT, keyword, &tlmin_energy, "", &status);
-    sprintf(keyword, "TLMAX%d", cenergy);
-    fits_update_key(fptr, TFLOAT, keyword, &tlmax_energy, "", &status);
+    // --- Beginning of append GTI extension ---
 
-    sprintf(keyword, "TLMIN%d", cx);
-    fits_update_key(fptr, TLONG, keyword, &tlmin_x, 
-		    "", &status);
-    sprintf(keyword, "TLMAX%d", cx);
-    fits_update_key(fptr, TLONG, keyword, &tlmax_x, 
-		    "", &status);
+    headas_chat(3, "append GTI extension ...\n");
 
-    sprintf(keyword, "TLMIN%d", cy);
-    fits_update_key(fptr, TLONG, keyword, &tlmin_y, 
-		    "", &status);
-    sprintf(keyword, "TLMAX%d", cy);
-    fits_update_key(fptr, TLONG, keyword, &tlmax_y, 
-		    "", &status);
+    // If available, load the specified GTI file.
+    if (strlen(par.GTIFile)>0) {
+      char ucase_buffer[MAXFILENAME];
+      strcpy(ucase_buffer, par.GTIFile);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	gti=loadGTI(par.GTIFile, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
 
+    // If not, create a dummy GTI from TSTART and TSTOP.
+    if (NULL==gti) {
+      gti=newGTI(&status);
+      CHECK_STATUS_BREAK(status);
+      appendGTI(gti, tstart, tstop, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
+    // Store the GTI extension in the output file.
+    char gti_extname[MAXMSG];
+    sprintf(gti_extname, "GTI%d", par.CCDNr);
+    saveGTIExt(fptr, gti_extname, gti, &status);
     CHECK_STATUS_BREAK(status);
+
+    // --- End of append GTI extension ---
 
   } while(0); // END of the error handling loop.
 
@@ -335,21 +408,22 @@ int ero_events_main()
   // Close the files.
   destroyPatternFile(&plf, &status);
   if (NULL!=fptr) {
-    // If the file was opened in READWRITE mode, calculate
-    // the check sum an append it to the FITS header.
-    int mode;
-    fits_file_mode(fptr, &mode, &status);
-    if (READWRITE==mode) {
-      fits_write_chksum(fptr, &status);
-    }
+    // Append a check sum to the header of the primary and 
+    // the event extension.
+    int hdutype=0;
+    fits_movabs_hdu(fptr, 1, &hdutype, &status);
+    fits_write_chksum(fptr, &status);
+    fits_movabs_hdu(fptr, 2, &hdutype, &status);
+    fits_write_chksum(fptr, &status);
     fits_close_file(fptr, &status);
   }
   
   // Release memory.
   wcsfree(&wcs);
   if (NULL!=headerstr) free(headerstr);
+  freeGTI(&gti);
 
-  if (status == EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
+  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
 }
 
@@ -388,7 +462,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the projection type");
     return(status);
-  } 
+  }
   strcpy(par->Projection, sbuffer);
   free(sbuffer);
 
@@ -396,13 +470,21 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading RefRA");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("RefDec", &par->RefDec);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading RefDEC");
     return(status);
-  } 
+  }
+
+  status=ape_trad_query_string("GTIFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the GTI file");
+    return(status);
+  }
+  strcpy(par->GTIFile, sbuffer);
+  free(sbuffer);
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {

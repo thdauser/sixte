@@ -172,6 +172,18 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       double tstop,
 			       int* const status);
 
+void sixt_add_fits_erostdkeywords(fitsfile* const fptr, 
+				  const int hdunum, 
+				  char* const creation_date, 
+				  char* const date_obs, 
+				  char* const time_obs,
+				  char* const date_end, 
+				  char* const time_end, 
+				  double tstart, 
+				  double tstop, 
+				  double timezero, 
+				  int* const status);
+
 
 #endif /* SIXT_H */
 

@@ -34,7 +34,7 @@ struct Parameters {
   char EventList[MAXFILENAME];
   char PatternList[MAXFILENAME];
   char Attitude[MAXFILENAME];
-  char GTIfile[MAXFILENAME];
+  char GTIFile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
 
   char XMLFile[MAXFILENAME];

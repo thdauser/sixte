@@ -271,11 +271,11 @@ int erosim_main()
     // END of setting up the attitude.
 
     // Optional GTI file.
-    if (strlen(par.GTIfile)>0) {
-      strcpy(ucase_buffer, par.GTIfile);
+    if (strlen(par.GTIFile)>0) {
+      strcpy(ucase_buffer, par.GTIFile);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIfile, &status);
+	gti=loadGTI(par.GTIFile, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -933,12 +933,12 @@ int erosim_getpar(struct Parameters* const par)
   strcpy(par->Simput6, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("GTIfile", &sbuffer);
+  status=ape_trad_query_string("GTIFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the GTI file");
     return(status);
   } 
-  strcpy(par->GTIfile, sbuffer);
+  strcpy(par->GTIFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);

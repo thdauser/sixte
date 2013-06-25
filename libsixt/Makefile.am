@@ -22,13 +22,11 @@ dist_fitstemplates_DATA+=ladsignallist.tpl
 dist_fitstemplates_DATA+=ladeventlist.tpl
 dist_fitstemplates_DATA+=ladspec.tpl
 dist_fitstemplates_DATA+=genlc.tpl
-dist_fitstemplates_DATA+=eroeventlist.tpl
 dist_fitstemplates_DATA+=patternlist.tpl
 dist_fitstemplates_DATA+=htrs.eventlist.tpl
 dist_fitstemplates_DATA+=impactlist.tpl
 dist_fitstemplates_DATA+=ladimpactlist.tpl
 dist_fitstemplates_DATA+=photonlist.tpl 
-dist_fitstemplates_DATA+=gti.tpl
 
 # Directory where to install the XML files.
 xmldir=$(pkgdatadir)/xml

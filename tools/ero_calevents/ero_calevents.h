@@ -1,13 +1,14 @@
-#ifndef ERO_EVENTS_H
-#define ERO_EVENTS_H 1
+#ifndef ERO_CALEVENTS_H
+#define ERO_CALEVENTS_H 1
 
 
 #include "sixt.h"
+#include "gti.h"
 #include "pattern.h"
 #include "patternfile.h"
 #include "wcs.h"
 
-#define TOOLSUB ero_events_main
+#define TOOLSUB ero_calevents_main
 #include "headas_main.c"
 
 
@@ -19,6 +20,7 @@
 struct Parameters {
   char PatternList[MAXFILENAME];
   char eroEventList[MAXFILENAME];
+  char GTIFile[MAXFILENAME];
 
   int CCDNr;
 
@@ -42,5 +44,5 @@ struct Parameters {
 int getpar(struct Parameters* const parameters);
 
 
-#endif /* ERO_EVENTS_H */
+#endif /* ERO_CALEVENTS_H */
 

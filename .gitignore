@@ -32,7 +32,7 @@ comaphovign
 psfgen
 xms_pixtemp
 ero_exposure
-ero_events
+ero_calevents
 ero_rawevents
 ero_fits2tm
 ero_split_photonfile
