@@ -6,7 +6,7 @@
 int comaphovign_main() {
   struct Parameters par;
 
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
   PhotonListFile* plif=NULL;
 
   fitsfile* ofptr=NULL;
@@ -60,13 +60,13 @@ int comaphovign_main() {
       // Set up a simple pointing attitude.
 
       // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for Attitude failed");
 	break;
       }
 
@@ -81,7 +81,7 @@ int comaphovign_main() {
 
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
@@ -255,7 +255,7 @@ int comaphovign_main() {
     ofptr=NULL;
   }
   freePhotonListFile(&plif, &status);
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);

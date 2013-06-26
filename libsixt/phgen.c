@@ -1,7 +1,7 @@
 #include "phgen.h"
 
 
-int phgen(AttitudeCatalog* const ac,
+int phgen(Attitude* const ac,
 	  SourceCatalog** const srccat,
 	  const unsigned int ncat,
 	  const double t0,

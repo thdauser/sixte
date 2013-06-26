@@ -9,7 +9,7 @@
 #include "vector.h"
 #include "point.h"
 #include "telescope.h"
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "check_fov.h"
 
 #define TOOLSUB comaexp_main
@@ -65,7 +65,7 @@ int comaexp_main()
 {
   struct Parameters parameters; // Program parameters.
   
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
 
   // Array for the calculation of the exposure map.
   float** expMap=NULL;       
@@ -291,7 +291,7 @@ int comaexp_main()
     CHECK_STATUS_BREAK(status);
 
     // Get the satellite catalog with the telescope attitude data:
-    ac=loadAttitudeCatalog(parameters.attitude_filename, &status);
+    ac=loadAttitude(parameters.attitude_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     // Pre-calculate the carteesian coordinate vectors of 
@@ -602,7 +602,7 @@ int comaexp_main()
   if (NULL!=fptr) fits_close_file(fptr, &status);
 
   // Release memory of the attitude catalog.
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
 
   // Release memory of the FoV image.
   if (NULL!=fovImg) {

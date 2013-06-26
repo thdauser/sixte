@@ -7,7 +7,7 @@
 #include "sixt.h"
 #include "vector.h"
 #include "telescope.h"
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "check_fov.h"
 #include "vignetting.h"
 
@@ -166,7 +166,7 @@ int ero_exposure_main()
   // Program parameters.
   struct Parameters par;
 
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
   Vignetting* vignetting=NULL; 
   
   // Array for the calculation of the exposure map.
@@ -203,16 +203,16 @@ int ero_exposure_main()
 	  // Clear the exposure map.
 	  long y;
 	  for (y=0; y<par.dec_bins; y++) {
-	    expoMap[x][y] = 0.;
+	    expoMap[x][y]=0.0;
 	  }
 	} else {
-	  status = EXIT_FAILURE;
+	  status=EXIT_FAILURE;
 	  SIXT_ERROR("memory allocation for exposure map failed");
 	  break;
 	}
       }
     } else {
-      status = EXIT_FAILURE;
+      status=EXIT_FAILURE;
       SIXT_ERROR("memory allocation for exposure map failed");
       break;
     }
@@ -282,13 +282,13 @@ int ero_exposure_main()
       // Set up a simple pointing attitude.
 
       // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status=EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for Attitude failed");
 	break;
       }
 
@@ -298,12 +298,12 @@ int ero_exposure_main()
       ac->entry[0].time=par.TSTART;
       ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
-      Vector vz = {0., 0., 1.};
-      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
+      Vector vz={0., 0., 1.};
+      ac->entry[0].nx=vector_product(vz, ac->entry[0].nz);
 
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
@@ -355,7 +355,7 @@ int ero_exposure_main()
     for (time=par.TSTART; time<par.TSTART+par.timespan; time+=par.dt) {
       
       // Determine the telescope pointing direction at the current time.
-      Vector telescope_nz = getTelescopeNz(ac, time, &status);
+      Vector telescope_nz=getTelescopeNz(ac, time, &status);
       CHECK_STATUS_BREAK(status);
 
       // Calculate the RA and DEC of the pointing direction.
@@ -378,7 +378,7 @@ int ero_exposure_main()
 	long y;
 	for (y=0; y<par.dec_bins; y++) {
 	  
-	  double pixcrd[2] = { x+1., y+1. };
+	  double pixcrd[2]={ x+1., y+1. };
 	  double imgcrd[2], world[2];
 	  double phi, theta;
 	  int status2=0;
@@ -481,7 +481,7 @@ int ero_exposure_main()
   sixt_destroy_rng();
 
   // Release memory.
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
   destroyVignetting(&vignetting);
   wcsfree(&wcs);
 
@@ -497,7 +497,7 @@ int ero_exposure_main()
     free(expoMap);
   }
 
-  if (EXIT_SUCCESS==status) headas_chat(2, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 

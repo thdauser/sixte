@@ -12,7 +12,7 @@
 #include "impact.h"
 #include "impactlistfile.h"
 #include "attitudecatalog2.h"
-#include "attitudecatalog.h"
+#include "attitude.h"
 
 #include "det_phi_max.h"
 

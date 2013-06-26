@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "eventlistfile.h"
 #include "geninst.h"
 #include "gentel.h"

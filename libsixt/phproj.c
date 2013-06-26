@@ -2,7 +2,7 @@
 
 
 void phproj(GenInst* const inst,
-	    AttitudeCatalog* const ac,
+	    Attitude* const ac,
 	    PatternFile* const plf,
 	    const double t0,
 	    const double exposure,

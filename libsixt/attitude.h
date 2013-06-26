@@ -1,5 +1,5 @@
-#ifndef ATTITUDECATALOG_H
-#define ATTITUDECATALOG_H 1
+#ifndef ATTITUDE_H
+#define ATTITUDE_H 1
 
 #include "sixt.h"
 #include "attitudefile.h"
@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-/** Entry of the AttitudeCatalog. */
+/** Entry of the Attitude collection of pointing directions. */
 typedef struct {
   /** Point of time for which this attitude is valid. */
   double time;
@@ -33,17 +33,16 @@ typedef struct {
 } AttitudeEntry;
 
 
-/** Catalog containing the attitude information for an X-ray
-    telescope. */
+/** Collection containing the temporal evolution of the attitude. */
 typedef struct {
-  /** Number of AttituideEntry elements in the AttitudeCatalog. */
+  /** Number of AttituideEntry elements in the Attitude. */
   long nentries;
 
   /** Individual AttitudeEntry elements giving the attitude of the
       telescope at a particular point of time. */
   AttitudeEntry* entry;
 
-  /** Index of the currently selected entry in the catalog. */
+  /** Index of the currently selected entry in the collection. */
   long current_entry;
 
   /** Alignment flag. If the rollangle should be determined with
@@ -53,7 +52,7 @@ typedef struct {
       1. */
   int alignment;
 
-} AttitudeCatalog;
+} Attitude;
 
 
 /////////////////////////////////////////////////////////////////////
@@ -61,28 +60,27 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////
 
 
-/** Constructor for the AttitudeCatalog. Allocate memory for the
-    object. */
-AttitudeCatalog* getAttitudeCatalog(int* const status);
+/** Constructor for the Attitude data structure. Allocates memory for
+    the object. */
+Attitude* getAttitude(int* const status);
 
-/** Get a new AttitudeCatalog object and load the data from the
-    specified file. The routine loads the entire attitude data from
-    the file. After reading it checks, whether the required time
-    interval is a subset of the data provided in the attitude file. */
-AttitudeCatalog* loadAttitudeCatalog(const char* filename, 
-				     int* const status);
+/** Get a new Attitude object and load the data from the specified
+    file. The routine loads the entire attitude data from the
+    file. After reading it checks, whether the required time interval
+    is a subset of the data provided in the attitude file. */
+Attitude* loadAttitude(const char* filename, int* const status);
 
-/** Destructor for the AttitudeCatalog. */
-void freeAttitudeCatalog(AttitudeCatalog** const ac);
+/** Destructor for the Attitude data structure. */
+void freeAttitude(Attitude** const ac);
 
 /** Determine the telescope pointing direction at a specific time. */
-Vector getTelescopeNz(AttitudeCatalog* const ac, 
+Vector getTelescopeNz(Attitude* const ac, 
 		      const double time,
 		      int* const status);
 
 /** Determine the 3 axes vectors for the telescope coordinate
     system. */
-void getTelescopeAxes(AttitudeCatalog* const ac,
+void getTelescopeAxes(Attitude* const ac,
 		      Vector* const nx,
 		      Vector* const ny,
 		      Vector* const nz,
@@ -90,7 +88,7 @@ void getTelescopeAxes(AttitudeCatalog* const ac,
 		      int* const status);
 
 /** Determine the roll-angle ([rad]) at a specific time. */
-float getRollAngle(AttitudeCatalog* const ac, 
+float getRollAngle(Attitude* const ac, 
 		   const double time, 
 		   int* const status);
 
@@ -98,5 +96,5 @@ float getRollAngle(AttitudeCatalog* const ac,
 AttitudeEntry defaultAttitudeEntry();
 
 
-#endif /* ATTITUDECATALOG_H */
+#endif /* ATTITUDE_H */
 

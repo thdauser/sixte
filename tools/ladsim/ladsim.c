@@ -11,7 +11,7 @@ struct LADSignalListItem {
 
 
 static inline LADImpact* ladphimg(const LAD* const lad,
-				  AttitudeCatalog* const ac,
+				  Attitude* const ac,
 				  Photon* const ph,
 				  int* const status)
 {
@@ -742,7 +742,7 @@ int ladsim_main()
   LAD* lad=NULL;
 
   // Attitude.
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
 
   // Catalog of input X-ray sources.
   SourceCatalog* srccat=NULL;
@@ -877,13 +877,13 @@ int ladsim_main()
       // Set up a simple pointing attitude.
 
       // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       ac->entry=(AttitudeEntry*)malloc(2*sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for Attitude failed");
 	break;
       }
 
@@ -898,7 +898,7 @@ int ladsim_main()
 
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
@@ -1265,7 +1265,7 @@ int ladsim_main()
   freeLADImpactListFile(&ilf, &status);
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
   freeLAD(&lad, &status);
 
   if (NULL!=progressfile) {

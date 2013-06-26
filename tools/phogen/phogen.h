@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "geninst.h"
 #include "phgen.h"
 #include "photonlistfile.h"

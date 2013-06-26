@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "genericdetector.h"
 #include "phdet.h"
 #include "phgen.h"
