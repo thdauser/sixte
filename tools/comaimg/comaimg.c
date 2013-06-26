@@ -1,13 +1,13 @@
 #include "comaimg.h"
 
 /////////////////////////////////////////////////////////////
-//simulates detection process. All incoming photons are    //
-//passing the mask and hitting the detector!               //
+//IMAGING: incoming photons are passing transparent mask-  //
+//pixels and are hitting the detector (if not the walls)!  //
 //Input:photon-list(t,E,RA,DEC,PH_ID,SRC_ID),mask-file,    //
 //      pointing-attitude(DEC, RA)                         //
 //      or attitude-file(DEC, RA for different times),     //
 //      mask-width,det-width(in m) for FOV,distance        //
-//Output:impact-list(x-and y-value on detection-plane)     //
+//Output:impact-list(x,y [m],t,E)                          //
 /////////////////////////////////////////////////////////////
 
 /** Main procedure. */
@@ -30,30 +30,36 @@ int comaimg_main() {
   set_toolversion("0.01");
 
 
-  do { // Beginning of the ERROR handling loop (will at most be run once)
+  do { //Beginning of the ERROR handling loop (will at most be run once)
 
     // --- Initialization ---
 
-    // Read parameters using PIL library.
+    //Read parameters using PIL library.
     status=comaimg_getpar(&par);
     if (EXIT_SUCCESS!=status) break;
+    
+    //Detector-setup:
+    float x_det = par.x_det;
+    float y_det = par.y_det;
+    //Distance mask-detector:
+    float distance = par.MaskDistance;
 
-    // Initialize HEADAS random number generator and GSL generator for 
-    // Gaussian distribution.
+    //Initialize HEADAS random number generator and GSL generator for 
+    //Gaussian distribution.
     HDmtInit(1);
 
-    // Open the FITS file with the input photon list.
+    //Open the FITS file with the input photon list.
     plf=openPhotonListFile(par.PhotonList, READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
-    // Load the coded mask from the file.
+    //Load the coded mask from the file.
     mask=getCodedMaskFromFile(par.Mask, &status);
     if (EXIT_SUCCESS!=status) break;
 
     //Calculate min cos-value for sources inside FOV.
     const float fov_min_align = cos(det_phi_max(par.MaskDistance,
 						par.x_mask, par.y_mask,
-						par.x_det, par.y_det));
+						x_det, y_det));
     //Set up the telescope attitude:
 
     //Buffer for attitude-filename.
@@ -106,7 +112,7 @@ int comaimg_main() {
 
       //Check if the required time interval for the simulation
       //lies within the time interval in the attitude-file
-      if((ac->entry[0].time > 0) || ((ac->entry[ac->nentries-1].time) < (par.Exposure +par.Timezero))){
+      if((ac->entry[0].time > 0) || ((ac->entry[ac->nentries-1].time) < (par.Exposure + par.Timezero))){
 	status=EXIT_FAILURE;
 	SIXT_ERROR("attitude data does not cover the specified period");
 	break;
@@ -114,12 +120,6 @@ int comaimg_main() {
       
     }//END of setting up the attitude.
     
-
-    //Distance mask-detector:
-    float distance = par.MaskDistance;
-    //Detector- dimensions:
-    float x_det = par.x_det;
-    float y_det = par.y_det;
 
     // Read header keywords.
     char telescop[MAXMSG], instrume[MAXMSG], comment[MAXMSG];
@@ -188,12 +188,13 @@ int comaimg_main() {
 	//Determine photon impact position on detector in [m].
 	struct Point2d position;
 	
-	//function determines impact position on mask first;
-	//checks wheather pixel is transparent;
-	//if photon then hits the detector, return value is 1, 0 else
+	//first:impact position in mask-plane (transparent pixels only);
+	//if photon then hits the detector (and not the walls), return value is 1, 0 else
        	int reval = getImpactPos(&position, &phodir,
 				 mask, &telescope,
-				 distance, x_det, y_det, &status);
+				 &telescope.nz,
+				 distance, x_det, y_det,
+				 &status);
 	CHECK_STATUS_BREAK(status);
 
 	if (reval == 1){
@@ -296,12 +297,12 @@ int comaimg_getpar(struct Parameters* par)
   }
 
   //Read depth of the mask [m].
-    status=ape_trad_query_float("y_mask", &par->y_mask);
+  status=ape_trad_query_float("y_mask", &par->y_mask);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the depth of the mask");
     return(status);
   }
-
+ 
   //Read width of the detector [m].
   status=ape_trad_query_float("x_det", &par->x_det);
   if (EXIT_SUCCESS!=status) {
@@ -315,7 +316,7 @@ int comaimg_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the depth of the detector");
     return(status);
   }
-
+ 
   status=ape_trad_query_double("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the right ascension of the telescope");

@@ -62,12 +62,14 @@ typedef struct {
       no pixel in the line contains charge, and is set to 1, if any
       pixel contains charge. The length of the array is ywidth. */
   int* line2readout;
+  double DCU_length, DCU_gap, DCA_gap;
 
 } SquarePixels;
 
 
 struct SquarePixelsParameters {
   int xwidth, ywidth;
+  double DCU_length, DCU_gap, DCA_gap;
   double xpixelwidth, ypixelwidth;
 };
 

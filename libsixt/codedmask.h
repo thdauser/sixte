@@ -63,21 +63,14 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status);
 /** Destructor. */
 void destroyCodedMask(CodedMask** const mask);
 
-/** Determine the impact position of a photon on the detector plane
-    according to the coded mask aperture. The function return value
-    is 1 if the photon passes the mask. If the photon is absorbed by
-    an opaque pixel in the mask, the return value is zero. */
-int getCodedMaskImpactPos(struct Point2d* const position, 
-			  const Photon* const photon, 
-			  const CodedMask* const mask, 
-			  const struct Telescope* const telescope,
-			  const float focal_length,
-			  int* const status);
-
+/** Determine the impact position of a photon in the detector plane.
+    The function return value is 1 if the photon passes an transparent mask-pixel
+    and doesn't hit the walls. Otherwise the return value is zero. */
 int getImpactPos (struct Point2d* const position,
 		  const Vector* const phodir,
 		  const CodedMask* const mask, 
 		  const struct Telescope* const telescope,
+		  const Vector* const nz,
 		  const float distance,
 		  const float x_det,
 		  const float y_det,

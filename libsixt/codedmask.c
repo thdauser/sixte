@@ -200,12 +200,15 @@ int getImpactPos (struct Point2d* const position,
 		  const Vector* const phodir,
 		  const CodedMask* const mask, 
 		  const struct Telescope* const telescope,
+		  const Vector* const nz,
 		  const float distance,
 		  const float x_det,
 		  const float y_det,
 		  int* const status)
 {// Check if a CodedMask is specified. If not, break.
   if (NULL==mask) return(0);
+  
+  float i; //counter for 'detector-gaps'
 
   // Get a random number.
   double rand=sixt_get_random_number(status);
@@ -231,8 +234,9 @@ int getImpactPos (struct Point2d* const position,
      *mask->cdelt2+mask->crval2;
    CHECK_STATUS_RET(*status, 0);
 
+   
    //third:if off-axis photon
-   if(phodir!=&telescope->nz){
+   if(phodir->x!=nz->x || phodir->y!=nz->y || phodir->z!=nz->z){
    //Determine the components of the photon direction with respect to the
    //detector coordinate axes nx, ny (in mask plane).
    double x_comp = scalar_product(phodir, &telescope->nx);
@@ -250,9 +254,16 @@ int getImpactPos (struct Point2d* const position,
    position->y -= sin(alpha) * radius * distance;
    }
 
+   //shift origin from center to back left corner (if pos x-dir goes from back to front
+   // and pos y-dir from left to right)
+   position->x += x_det/2.;
+   position->y += y_det/2.;
+
    //ensure that photon does not hit the walls
-   if (fabs(position->x) > (x_det/2) || fabs(position->y) > (y_det/2)){
+   if (position->x > x_det || position->x < 0. || position->y > y_det || position->y < 0.){
      return(0);
-   }else return(1);
+   }
+
+return(1);
 }
 

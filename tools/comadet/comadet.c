@@ -1,10 +1,11 @@
 #include "comadet.h"
 
 /////////////////////////////////////////////////////////////
-//Also detection process;generates appropriate pixel-values//
-//on the detector (from x,y-values[m] in detection plane)  //
+//DETECTION:generates corresp. pixel-values in det-plane   //
+//discards those photons hitting det-gaps                  //
 //Input:impact-list(t,E,x,y,PH_ID,SRC_ID)                  //
 //      Width(of detector in pixels), Pixelwidth           //
+//      length of DCU, DCU_gap, DCa_gap                    //
 //Output:event-list(pixel-values RAWX,RAWY,t,charge)       //
 /////////////////////////////////////////////////////////////
 
@@ -22,7 +23,7 @@ int comadet_main() {
 
   //Register HEATOOL:
   set_toolname("comadet");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do {  //Beginning of the ERROR handling loop (will at most be run once)
@@ -45,9 +46,12 @@ int comadet_main() {
     //initializes from par-file
     struct CoMaDetectorParameters cdp = {
       .pixels = 
-      { .xwidth = par.width, //detector-width [pixel]
+      { .xwidth = par.width,          //detector-width [pixel]
 	.ywidth = par.width,
-	.xpixelwidth = par.pixelwidth, //width of one pixel [m]
+	.DCU_length = par.DCU_length, //length of DCU [m]
+	.DCU_gap = par.DCU_gap,       //gap between 2 DCU's [m]
+	.DCA_gap = par.DCA_gap,       //gap between 2 DCA's [m]
+	.xpixelwidth = par.pixelwidth,//width of one pixel [m]
 	.ypixelwidth = par.pixelwidth 
       },
       .eventfile_filename=par.EventList,
@@ -122,6 +126,21 @@ int comadet_getpar(struct Parameters* par)
   // Read the width of one detector pixel in [m].
   else if ((status=PILGetReal("Pixelwidth", &par->pixelwidth))) {
     SIXT_ERROR("failed reading the width of the detector pixels");
+  }
+
+   //Read length of DCU [m].
+  else if ((status=PILGetReal("DCU_length", &par->DCU_length))) {
+    SIXT_ERROR("failed reading the length of DCU");
+  }
+
+  //Read length of DCU_gap [m].
+  else if ((status=PILGetReal("DCU_gap", &par->DCU_gap))) {
+    SIXT_ERROR("failed reading the length of DCU_gap");
+  }
+
+  //Read length of DCA_gap [m].
+  else if ((status=PILGetReal("DCA_gap", &par->DCA_gap))) {
+    SIXT_ERROR("failed reading the length of DCA_gap");
   }
   CHECK_STATUS_RET(status, status);
 

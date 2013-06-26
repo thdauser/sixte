@@ -22,6 +22,9 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
   sp->yoffset = spp->ywidth/2;
   sp->xpixelwidth = spp->xpixelwidth;
   sp->ypixelwidth = spp->ypixelwidth;
+  sp->DCU_length = spp->DCU_length;
+  sp->DCU_gap = spp->DCU_gap;
+  sp->DCA_gap = spp->DCA_gap;
 
   //Get the memory for the pixels(xwidth x ywidth):
   //Rows:size of one pixel * number of pixels in x-direction
@@ -326,12 +329,33 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
 
 int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 {
-  //position.x and .y is with reference to the middle of the detector and in meters
-  //first: determine position in terms of pixels
-  //second: shift position because of different origin
+  //position.x and .y is with reference to the back left corner of the detector [m]
+  //(if pos. x-dir is from back to front and pos- y-dir from left to right)
+  //first: check, whether impact position lies within one of the DCU's
+  //second: determine position in terms of pixels
   //third: ensure that there will be no error with the type-cast (int rounds to lower value)
-  *x = (int)(position.x/sp->xpixelwidth + sp->xwidth*0.5 +1.)-1;
-  *y = (int)(position.y/sp->ypixelwidth + sp->ywidth*0.5 +1.)-1;
+  double DCA_length=(2.*sp->DCU_length)+sp->DCU_gap;
+  double DCA=DCA_length+sp->DCA_gap;
+
+  int ratio_x=(int)((position.x)/DCA);
+  int ratio_y=(int)((position.y)/DCA);
+
+  if(position.x < (ratio_x*DCA+sp->DCU_length)) 
+    {*x = (int)(position.x/sp->xpixelwidth +1.)-1;}
+     else{if(position.x > (ratio_x*DCA+sp->DCU_length+sp->DCU_gap)
+			   && position.x < (ratio_x*DCA+DCA_length))
+	 {*x = (int)(position.x/sp->xpixelwidth +1.)-1;}
+	    else{return(0);
+	    }
+    }
+  if(position.y < (ratio_y*DCA+sp->DCU_length)) 
+    {*y = (int)(position.y/sp->ypixelwidth +1.)-1;}
+     else{if(position.y > (ratio_y*DCA+sp->DCU_length+sp->DCU_gap)
+			   && position.y < (ratio_y*DCA+DCA_length))
+	 {*y = (int)(position.y/sp->ypixelwidth +1.)-1;}
+	    else{return(0);
+	    }
+    }
  
   if ((*x>=0) && (*x<sp->xwidth) && (*y>=0) && (*y<sp->ywidth)) {
     return (1); // Valid pixel.
