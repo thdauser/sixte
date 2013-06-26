@@ -3,6 +3,7 @@
 
 
 #include "sixt.h"
+#include "attitude.h"
 #include "gti.h"
 #include "pattern.h"
 #include "patternfile.h"
@@ -21,6 +22,7 @@ struct Parameters {
   char PatternList[MAXFILENAME];
   char eroEventList[MAXFILENAME];
   char GTIFile[MAXFILENAME];
+  char Attitude[MAXFILENAME];
 
   int CCDNr;
 

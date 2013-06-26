@@ -20,7 +20,7 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const stat
     fits_read_col(af->fptr, TFLOAT, af->crollang, af->row+1, 1, 1, 
 		  &afe.rollang, &afe.rollang, &anynul, status);
   } else {
-    afe.rollang=0.;
+    afe.rollang=0.0;
   }
 
   return(afe);

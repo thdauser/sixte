@@ -7,9 +7,26 @@
 #include "telescope.h"
 
 
-////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// Constants.
+/////////////////////////////////////////////////////////////////
+
+
+typedef enum {
+  /** Alignment of the reference direction for the nx vector
+      perpendicular to the north direction. */
+  ATTNX_NORTH =0,
+
+  /** Alignment of the nx vector with respect to the direction of
+      motion of the pointing axis. */
+  ATTNX_MOTION=1,
+
+} AttNxAlign;
+
+
+/////////////////////////////////////////////////////////////////
 // Type Declarations.
-////////////////////////////////////////////////////////////////////////
+/////////////////////%///////////////////////////////////////////
 
 
 /** Entry of the Attitude collection of pointing directions. */
@@ -20,15 +37,8 @@ typedef struct {
   /** Telescope pointing direction. */
   Vector nz;
 
-  /** Defines the detector x-direction. The x-axis doesn't necessarily
-      have to point in the direction of the telescope motion, but can
-      be distorted by the roll-angle. */
-  Vector nx;
-
   /** Roll-angle ([rad]). */
   float roll_angle;
-
-  // TODO Keep either the roll_angle or nx. 
 
 } AttitudeEntry;
 
@@ -43,21 +53,19 @@ typedef struct {
   AttitudeEntry* entry;
 
   /** Index of the currently selected entry in the collection. */
-  long current_entry;
+  long currentry;
 
-  /** Alignment flag. If the rollangle should be determined with
-      respect to the equatorial plane, the value of the alignment flag
-      should be 0. If the alignment is with respect to the motion of
-      the telescope axis, the value of the alignment flag should be
-      1. */
-  int alignment;
+  /** Alignment flag. Determines the reference direction for the
+      alignment of the nx vector. The nx vector is determined by the
+      rotation of this reference direction around the roll angle. */
+  AttNxAlign align;
 
 } Attitude;
 
 
-/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 // Function Declarations.
-/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 
 
 /** Constructor for the Attitude data structure. Allocates memory for

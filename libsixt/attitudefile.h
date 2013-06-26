@@ -14,9 +14,10 @@ typedef struct {
   /** File pointer to the FITS file. */
   fitsfile* fptr; 
 
-  /** Current row in the attitude FITS table (starting at 0). */
-  long row; 
-  /** Number of rows in the attitude table. */
+  /** Current row in the attitude FITS file (starting at 0). */
+  long row;
+
+  /** Total number of rows in the attitude file. */
   long nrows; 
 
   /* Column numbers of the individual attitude file entries. The

@@ -124,9 +124,6 @@ int projev_main() {
       ac->entry[0].time=t0;
       ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
-      Vector vz = {0., 0., 1.};
-      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
-
     } else {
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);

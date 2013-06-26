@@ -11,9 +11,10 @@ Attitude* getAttitude(int* const status)
   }
   
   // Initialize.
-  ac->nentries = 0;
-  ac->current_entry = 0;
-  ac->entry    = NULL;
+  ac->entry    =NULL;
+  ac->nentries =0;
+  ac->currentry=0;
+  ac->align    =ATTNX_NORTH;
 
   return(ac);
 }
@@ -49,27 +50,27 @@ Attitude* loadAttitude(const char* filename, int* const status)
       break;
     }
 
-    // Determine whether the rollangle alignment should refer
-    // to the telescope's direction of motion or to the equatorial 
-    // plane.
+    // Determine whether the roll angle alignment refers to the 
+    // telescope's direction of motion or to the equatorial plane.
     int status2=EXIT_SUCCESS;
     char comment[MAXMSG], sbuffer[MAXMSG]; // String buffers.
     fits_write_errmark();
+    strcpy(sbuffer, "");
     fits_read_key(af->fptr, TSTRING, "ALIGNMEN", sbuffer, comment, &status2);
     fits_clear_errmark();
+
     // Check the value of the header keyword and set the alignment flag
     // appropriately.
     strtoupper(sbuffer);
-    if ((0==strlen(sbuffer)) || (!strcmp(sbuffer, "EQUATOR"))) {
-      ac->alignment=0;
+    if ((0==strlen(sbuffer)) || (!strcmp(sbuffer, "NORTH"))) {
+      ac->align=ATTNX_NORTH;
     } else if (!strcmp(sbuffer, "MOTION")) {
-      ac->alignment=1;
+      ac->align=ATTNX_MOTION;
     } else {
       *status=EXIT_FAILURE;
-      SIXT_ERROR("invalid value for telescope alignment flag");
+      SIXT_ERROR("invalid value for keyword ALIGNMEN in attitude file");
       break;
     } 
-
     
     // Read all lines from attitude file subsequently.
     AttitudeFileEntry afe;
@@ -94,57 +95,6 @@ Attitude* loadAttitude(const char* filename, int* const status)
     // Save the number of AttitudeEntry elements.
     ac->nentries=af->nrows;
 
-
-    // Determine the telescope nx-direction for all entries in the
-    // Attitude (so far only the nz direction is set).
-
-    // TODO Check whether nx should explicitly be aligned parallel to 
-    // the equatorial plane or to the direction of the telescope motion.
-
-    // Special case for the first entry in the attitude catalog.
-    // Determine the change of the telescope pointing direction 
-    // between two subsequent AttitudeEntry elements.
-    Vector dnz=vector_difference(ac->entry[1].nz, ac->entry[0].nz);
-    if (sqrt(scalar_product(&dnz, &dnz))>1.e-7) {
-      // The vector nx is pointing along the direction of the 
-      // telescope motion.
-      // nx = (nz_0 x nz_1) x nz_0
-      ac->entry[0].nx=
-	normalize_vector(vector_product(vector_product(ac->entry[0].nz,
-						       ac->entry[1].nz),
-					ac->entry[0].nz));
-    } else {
-      // Change of the telescope axis is too small to be significant.
-      // Therefore the nx vector is selected to be aligned parallel 
-      // to the equatorial plane.
-      Vector ny={0., 1., 0.};
-      ac->entry[0].nx=vector_product(ac->entry[0].nz, ny); 
-      // TODO If nz is pointing towards of one of the poles.
-    }
-
-    // Loop over all other (than the first) AttitudeEntry elements 
-    // in the Attitude.
-    long ii;
-    for (ii=1; ii<ac->nentries; ii++) {
-
-      Vector dnz=
-	vector_difference(ac->entry[ii].nz, ac->entry[ii-1].nz);
-      if (sqrt(scalar_product(&dnz, &dnz))>1.e-7) {
-	// The vector nx is pointing along the direction of the 
-	// telescope motion.
-	ac->entry[ii].nx=
-	  normalize_vector(vector_difference(ac->entry[ii].nz,
-					     ac->entry[ii-1].nz));
-      } else {
-	// Change of the telescope axis is too small to be significant.
-	// Therefore the nx vector is selected to be aligned parallel 
-	// to the equatorial plane.
-	Vector ny={0., 1., 0.};
-	ac->entry[ii].nx=vector_product(ac->entry[ii].nz, ny); // TODO
-      }
-    } 
-    // END of loop over all AttitudeEntry elements for the calculation of nx.
-
   } while (0); // End of error handling loop
 
 
@@ -162,8 +112,8 @@ Attitude* loadAttitude(const char* filename, int* const status)
 
 void freeAttitude(Attitude** const ac)
 {
-  if (NULL != (*ac)) {
-    if (NULL != (*ac)->entry) {
+  if (NULL!=(*ac)) {
+    if (NULL!=(*ac)->entry) {
       free((*ac)->entry);
     }
     free(*ac);
@@ -172,20 +122,20 @@ void freeAttitude(Attitude** const ac)
 }
 
 
-static void setAttitudeCurrentEntry(Attitude* const ac,
-				    const double time,
-				    int* const status)
+static void setAttitudeCurrEntry(Attitude* const ac,
+				 const double time,
+				 int* const status)
 {
   // Check if this is a pointing attitude with only one data point.
   if (1==ac->nentries) {
-    ac->current_entry=0;
+    ac->currentry=0;
     return;
   }
 
   // Check if the requested time lies within the current time bin.
-  while (time < ac->entry[ac->current_entry].time) {
+  while (time < ac->entry[ac->currentry].time) {
     // Check if the beginning of the Attitude is reached.
-    if (ac->current_entry <= 0) {
+    if (ac->currentry <= 0) {
       *status=EXIT_FAILURE;
       char msg[MAXMSG]; 
       sprintf(msg, "no attitude entry available for time %lf", time);
@@ -193,12 +143,12 @@ static void setAttitudeCurrentEntry(Attitude* const ac,
       return;
     }
     // If not, go one step back.
-    ac->current_entry--;
+    ac->currentry--;
   }
 
-  while (time > ac->entry[ac->current_entry+1].time) {
+  while (time > ac->entry[ac->currentry+1].time) {
     // Check if the end of the Attitude is reached.
-    if (ac->current_entry >= ac->nentries-2) {
+    if (ac->currentry >= ac->nentries-2) {
       *status=EXIT_FAILURE;
       char msg[MAXMSG]; 
       sprintf(msg, "no attitude entry available for time %lf", time);
@@ -206,7 +156,7 @@ static void setAttitudeCurrentEntry(Attitude* const ac,
       return;
     }
     // If not, go one step further.
-    ac->current_entry++;
+    ac->currentry++;
   }
 }
 
@@ -221,16 +171,16 @@ Vector getTelescopeNz(Attitude* const ac,
   if (ac->nentries>1) {
     // Find the appropriate entry in the Attitude for the 
     // requested time.
-    setAttitudeCurrentEntry(ac, time, status);
+    setAttitudeCurrEntry(ac, time, status);
     CHECK_STATUS_RET(*status,nz);
    
     // The requested time lies within the current time bin.
     // Interpolation:
-    nz=interpolateCircleVector(ac->entry[ac->current_entry].nz, 
-			       ac->entry[ac->current_entry+1].nz, 
-			       (time-ac->entry[ac->current_entry].time)/
-			       (ac->entry[ac->current_entry+1].time-
-				ac->entry[ac->current_entry].time));
+    nz=interpolateCircleVector(ac->entry[ac->currentry].nz, 
+			       ac->entry[ac->currentry+1].nz, 
+			       (time-ac->entry[ac->currentry].time)/
+			       (ac->entry[ac->currentry+1].time-
+				ac->entry[ac->currentry].time));
 
   } else { // Pointing attitude.
     nz=ac->entry[0].nz;
@@ -260,30 +210,30 @@ void getTelescopeAxes(Attitude* const ac,
     // There is only one entry in the Attitude.
     pointed=1;
   } else {
-    if (ac->current_entry>0) {
-      dnz=vector_difference(ac->entry[ac->current_entry].nz, 
-			    ac->entry[ac->current_entry-1].nz);
+    if (ac->currentry>0) {
+      dnz=vector_difference(ac->entry[ac->currentry].nz, 
+			    ac->entry[ac->currentry-1].nz);
     } else {
-      dnz=vector_difference(ac->entry[ac->current_entry+1].nz, 
-			    ac->entry[ac->current_entry].nz);
+      dnz=vector_difference(ac->entry[ac->currentry+1].nz, 
+			    ac->entry[ac->currentry].nz);
     }
     if (scalar_product(&dnz, &dnz)<1.e-10) {
       pointed=1;
     }
   }
 
-  // Check if the x1 vector should be aligned parallel to the equatorial 
-  // plane or along the direction of motion of the telescope axis 
+  // Check if the x1 vector should be aligned perpendicular to the north 
+  // direction or along the direction of motion of the telescope axis 
   // (neglecting the roll angle). For a pointed observation the alignment 
-  // is done parallel to the equatorial plane.
+  // is done perpendicular to the north direction.
   Vector x1;
-  if ((1==pointed) || (0==ac->alignment)) {
-    // Alignment parallel to the equatorial plane.
+  if ((1==pointed) || (ATTNX_NORTH==ac->align)) {
+    // Alignment perpendicular to the north direction.
     Vector b={0., 0., 1.};
     x1=vector_product(*nz, b);
     
     // CHECK if the telescope is pointing towards one of the poles.
-    if (scalar_product(&x1, &x1)<1.e-10) {
+    if (scalar_product(&x1, &x1)<1.e-20) {
       Vector c={1., 0., 0.};
       x1=vector_product(*nz, c);
     }
@@ -291,25 +241,30 @@ void getTelescopeAxes(Attitude* const ac,
     // Normalize the vector in order to obtain a unit vector.
     x1=normalize_vector(x1);
 
-  } else {
+  } else if (ATTNX_MOTION==ac->align) {
     // Alignment along the direction of motion of the telescope axis.
     Vector perpendicular=vector_product(*nz, dnz);
     x1=normalize_vector(vector_product(perpendicular, *nz));
+
+  } else {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("invalid attitude alignment");
+    return;
   }
 
   // Determine the y1 vector, which is perpendicular 
-  // to the other 2 axes nz and x1:
+  // to the other two axes nz and x1:
   Vector y1=normalize_vector(vector_product(*nz, x1));
 
   // Take into account the roll angle.
   float roll_angle=getRollAngle(ac, time, status);
   CHECK_STATUS_VOID(*status);
-  nx->x =  x1.x * cos(roll_angle) + y1.x * sin(roll_angle);
-  nx->y =  x1.y * cos(roll_angle) + y1.y * sin(roll_angle);
-  nx->z =  x1.z * cos(roll_angle) + y1.z * sin(roll_angle);
-  ny->x = -x1.x * sin(roll_angle) + y1.x * cos(roll_angle);
-  ny->y = -x1.y * sin(roll_angle) + y1.y * cos(roll_angle);
-  ny->z = -x1.z * sin(roll_angle) + y1.z * cos(roll_angle);
+  nx->x= x1.x * cos(roll_angle) + y1.x * sin(roll_angle);
+  nx->y= x1.y * cos(roll_angle) + y1.y * sin(roll_angle);
+  nx->z= x1.z * cos(roll_angle) + y1.z * sin(roll_angle);
+  ny->x=-x1.x * sin(roll_angle) + y1.x * cos(roll_angle);
+  ny->y=-x1.y * sin(roll_angle) + y1.y * cos(roll_angle);
+  ny->z=-x1.z * sin(roll_angle) + y1.z * cos(roll_angle);
 }
 
 
@@ -322,16 +277,16 @@ float getRollAngle(Attitude* const ac,
 
     // Find the appropriate entry in the Attitude for the 
     // requested time.
-    setAttitudeCurrentEntry(ac, time, status);
+    setAttitudeCurrEntry(ac, time, status);
     CHECK_STATUS_RET(*status,0.);
     
     // The requested time lies within the current time bin.
     // Interpolation:
     double fraction=
-      (time-ac->entry[ac->current_entry].time)/
-      (ac->entry[ac->current_entry+1].time-ac->entry[ac->current_entry].time);
-    return(ac->entry[ac->current_entry  ].roll_angle*(1.-fraction) + 
-	   ac->entry[ac->current_entry+1].roll_angle*    fraction );
+      (time-ac->entry[ac->currentry].time)/
+      (ac->entry[ac->currentry+1].time-ac->entry[ac->currentry].time);
+    return(ac->entry[ac->currentry  ].roll_angle*(1.-fraction) + 
+	   ac->entry[ac->currentry+1].roll_angle*    fraction );
 
   } else { // Pointing attitude.
     return(ac->entry[0].roll_angle);
@@ -349,13 +304,8 @@ AttitudeEntry defaultAttitudeEntry()
   ae.nz.y=0.0;
   ae.nz.z=0.0;
 
-  ae.nx.x=0.0;
-  ae.nx.y=0.0;
-  ae.nx.z=0.0;
-
   ae.roll_angle=0.0;
 
   return(ae);
 }
-
 

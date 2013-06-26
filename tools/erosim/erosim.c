@@ -247,9 +247,6 @@ int erosim_main()
       ac->entry[0].time=par.TSTART;
       ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
-      Vector vz = {0., 0., 1.};
-      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
-
     } else {
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);
@@ -519,7 +516,16 @@ int erosim_main()
       CHECK_STATUS_BREAK(status);  
     }
     CHECK_STATUS_BREAK(status);  
-    
+
+    // CCD rotation angle.
+    for (ii=0; ii<7; ii++) {
+      float rotation_angle=subinst[ii]->det->pixgrid->rota*180./M_PI;
+      fits_update_key(elf[ii]->fptr, TFLOAT, "CCDROTA", &rotation_angle, "", &status);
+      fits_update_key(patf[ii]->fptr, TFLOAT, "CCDROTA", &rotation_angle, "", &status);
+      CHECK_STATUS_BREAK(status);  
+    }
+    CHECK_STATUS_BREAK(status);  
+
     // --- End of opening files ---
 
 

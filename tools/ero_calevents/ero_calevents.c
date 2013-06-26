@@ -18,6 +18,7 @@ int ero_calevents_main()
   char* headerstr=NULL;
 
   GTI* gti=NULL;
+  Attitude* ac=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -482,6 +483,118 @@ int ero_calevents_main()
 
     // --- End of append BADPIX extension ---
 
+    // --- Beginning of append CORRATT extension ---
+
+    headas_chat(3, "append CORRATT extension ...\n");
+
+    // If available, load the specified attitude file.
+    if (strlen(par.Attitude)>0) {
+      char ucase_buffer[MAXFILENAME];
+      strcpy(ucase_buffer, par.Attitude);
+      strtoupper(ucase_buffer);
+      if (0!=strcmp(ucase_buffer, "NONE")) {
+	ac=loadAttitude(par.Attitude, &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
+
+    if (NULL!=ac) {
+      // Create the CORRATT table.
+      char corratt_extname[MAXMSG];
+      sprintf(corratt_extname, "CORRATT%d", par.CCDNr);
+      char *corratt_ttype[]={"TIME", "RA", "DEC", "ROLL"};
+      char *corratt_tform[]={"D", "D", "D", "D"};
+      char *corratt_tunit[]={"", "deg", "deg", "deg"};
+      fits_create_tbl(fptr, BINARY_TBL, 0, 4,
+		      corratt_ttype, corratt_tform, corratt_tunit, 
+		      corratt_extname, &status);
+      if (EXIT_SUCCESS!=status) {
+	SIXT_ERROR("could not create binary table for CORRATT extension");
+	break;
+      }
+
+      // Insert header keywords.
+      fits_update_key(fptr, TSTRING, "HDUCLASS", "OGIP", "", &status);
+      fits_update_key(fptr, TSTRING, "HDUCLAS1", "TEMPORALDATA", "", &status);
+      fits_update_key(fptr, TSTRING, "HDUCLAS2", "ASPECT", "", &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine the individual column numbers.
+      int ccorratt_time, ccorratt_ra, ccorratt_dec, croll;
+      fits_get_colnum(fptr, CASEINSEN, "TIME", &ccorratt_time, &status);
+      fits_get_colnum(fptr, CASEINSEN, "RA", &ccorratt_ra, &status);
+      fits_get_colnum(fptr, CASEINSEN, "DEC", &ccorratt_dec, &status);
+      fits_get_colnum(fptr, CASEINSEN, "ROLL", &croll, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine the rotation of the CCD from the keyword in the event file.
+      float ccdrotation;
+      fits_read_key(plf->fptr, TFLOAT, "CCDROTA", &ccdrotation, comment, &status);
+      if (EXIT_SUCCESS!=status) {
+	SIXT_ERROR("failed reading keyword CCDROTA in input file");
+	break;
+      }
+
+      // Insert the data.
+      // Current bin in the GTI collection.
+      unsigned long gtibin=0;
+      // Loop over all intervals in the GTI collection.
+      do {
+	// Currently regarded interval.
+	double t0, t1;
+      
+	// Determine the currently regarded interval.
+	if (NULL==gti) {
+	  t0=tstart;
+	  t1=tstop;
+	} else {
+	  t0=gti->start[gtibin];
+	  t1=gti->stop[gtibin];
+	}
+	
+	// Note that the attitude is stored in steps of 1s 
+	// according to the official event file format definition.
+	long nrows=0;
+	double currtime;
+	for (currtime=t0; currtime<=t1; currtime+=1.0) {
+	  Vector pointing=getTelescopeNz(ac, currtime, &status);
+	  CHECK_STATUS_BREAK(status);	  
+	  double ra, dec;
+	  calculate_ra_dec(pointing, &ra, &dec);
+	  ra *=180./M_PI;
+	  dec*=180./M_PI;
+
+	  float rollangle=getRollAngle(ac, currtime, &status);
+	  CHECK_STATUS_BREAK(status);
+	  rollangle*=180./M_PI;
+	  
+	  // Apply the rotation angle of the CCD.
+	  rollangle+=ccdrotation;
+	  
+	  // Store the data in the file.
+	  nrows++;
+	  fits_write_col(fptr, TDOUBLE, ccorratt_time, nrows, 1, 1, &currtime, &status);
+	  fits_write_col(fptr, TDOUBLE, ccorratt_ra, nrows, 1, 1, &ra, &status);
+	  fits_write_col(fptr, TDOUBLE, ccorratt_dec, nrows, 1, 1, &dec, &status);
+	  fits_write_col(fptr, TFLOAT, croll, nrows, 1, 1, &rollangle, &status);
+	  CHECK_STATUS_BREAK(status);	  
+	}
+	CHECK_STATUS_BREAK(status);
+	
+	// Proceed to the next GTI interval.
+	if (NULL!=gti) {
+	  gtibin++;
+	  if (gtibin>=gti->nentries) break;
+	}
+	
+      } while (NULL!=gti);
+      CHECK_STATUS_BREAK(status);
+      // End of loop over the individual GTI intervals.
+      
+    }
+
+    // --- End of append CORRATT extension ---
+
   } while(0); // END of the error handling loop.
 
 
@@ -505,6 +618,7 @@ int ero_calevents_main()
   wcsfree(&wcs);
   if (NULL!=headerstr) free(headerstr);
   freeGTI(&gti);
+  freeAttitude(&ac);
 
   if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
   return(status);
@@ -567,6 +681,14 @@ int getpar(struct Parameters* const par)
     return(status);
   }
   strcpy(par->GTIFile, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("Attitude", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the attitude file");
+    return(status);
+  }
+  strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_bool("clobber", &par->clobber);

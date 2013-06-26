@@ -394,28 +394,9 @@ int comaexp_main()
       fflush(NULL);
 
       // Determine the telescope pointing direction.
-      Vector nz=getTelescopeNz(ac, time, &status);
+      Vector nx, ny, nz;
+      getTelescopeAxes(ac, &nx, &ny, &nz, time, &status);
       CHECK_STATUS_BREAK(status);
-
-      // Determine the two other axes of the telescope reference
-      // system (carteesian).
-      // Reference vectors:
-      Vector north = { .x = 0., .y = 0., .z = 1. };
-      Vector n2 = vector_product(normalize_vector(vector_product(nz, north)),nz);
-      Vector n1 = vector_product(nz, n2);
-      // Consider the roll-angle:
-      double roll_angle = getRollAngle(ac, time, &status); // [rad]
-      CHECK_STATUS_BREAK(status);
-      Vector nx = {
-	.x = n1.x * cos(roll_angle) + n2.x * sin(roll_angle),
-	.y = n1.y * cos(roll_angle) + n2.y * sin(roll_angle),
-	.z = n1.z * cos(roll_angle) + n2.z * sin(roll_angle)
-      };
-      Vector ny = {
-	.x = - n1.x * sin(roll_angle) + n2.x * cos(roll_angle),
-	.y = - n1.y * sin(roll_angle) + n2.y * cos(roll_angle),
-	.z = - n1.z * sin(roll_angle) + n2.z * cos(roll_angle)
-      };
 
       // Loop over all pixel in the exposure map.
       for (x=0; x<expMapPar.ra_bins; x++) {
@@ -435,18 +416,18 @@ int comaexp_main()
 
 	    // Check if the pixel is within the telescope FoV.
 	    // Projection along y-axis:
-	    double sy = scalar_product(&pixelpositions[x][y], &ny);
+	    double sy=scalar_product(&pixelpositions[x][y], &ny);
 	    if ((sy > sin_dec_max) || (sy < sin_dec_min)) continue;
 	    
 	    // Projection along x-axis:
-	    double sx = scalar_product(&pixelpositions[x][y], &nx);
+	    double sx=scalar_product(&pixelpositions[x][y], &nx);
 	    if ((sx > sin_ra_max) || (sx < sin_ra_min)) continue;
 
-	    double dec = asin(sy);
-	    double ra  = asin(sx/cos(dec));
+	    double dec=asin(sy);
+	    double ra =asin(sx/cos(dec));
 	    
-	    int xi = (int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
-	    int yi = (int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
+	    int xi=(int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
+	    int yi=(int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
 	    
 	    if ((xi<0) || (xi>=fovImgPar.ra_bins )) continue;
 	    if ((yi<0) || (yi>=fovImgPar.dec_bins)) continue;
@@ -459,18 +440,18 @@ int comaexp_main()
 	    // independent angles.
 
 	    // Angle in right ascension direction:
-	    double alpha = asin(scalar_product(&pixelpositions[x][y], &nx));
+	    double alpha=asin(scalar_product(&pixelpositions[x][y], &nx));
 	    // Angle in declination direction:
-	    double beta  = asin(scalar_product(&pixelpositions[x][y], &ny));
+	    double beta =asin(scalar_product(&pixelpositions[x][y], &ny));
 
 	    // Image coordinates:
-	    int xi = (int)(tan(alpha)/tan(fovImgPar.delt1) + fovImgPar.rpix1 + 0.5) -1;
-	    int yi = (int)(tan(beta) /tan(fovImgPar.delt2) + fovImgPar.rpix2 + 0.5) -1;
+	    int xi=(int)(tan(alpha)/tan(fovImgPar.delt1) + fovImgPar.rpix1 + 0.5) -1;
+	    int yi=(int)(tan(beta) /tan(fovImgPar.delt2) + fovImgPar.rpix2 + 0.5) -1;
 	    
 	    // Check the limits of the FoV.
 	    if ((xi >= 0) && (xi < fovImgPar.ra_bins ) &&
 		(yi >= 0) && (yi < fovImgPar.dec_bins)) {
-	      expMap[x][y] += parameters.dt * fovImg[xi][yi];
+	      expMap[x][y]+=parameters.dt * fovImg[xi][yi];
 	    }
 
 	  } else if (0==fov_projection) {
@@ -510,7 +491,7 @@ int comaexp_main()
 
 
     // Store the exposure map in a FITS file image.
-    headas_chat(5, "\nstore exposure map in FITS image '%s' ...\n", 
+    headas_chat(3, "\nstore exposure map in FITS image '%s' ...\n", 
 		parameters.exposuremap_filename);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
@@ -643,7 +624,7 @@ int comaexp_main()
     pixelpositions=NULL;
   }
 
-  if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 
