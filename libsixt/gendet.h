@@ -23,15 +23,15 @@
 
 
 typedef enum {
-  GENDET_TIME_TRIGGERED  = 1,
-  GENDET_EVENT_TRIGGERED = 2
+  GENDET_TIME_TRIGGERED =1,
+  GENDET_EVENT_TRIGGERED=2
 } ReadoutTrigger;
 
 
 typedef enum {
-  GS_NONE        = 0,
-  GS_GAUSS       = 1,
-  GS_EXPONENTIAL = 2
+  GS_NONE       =0,
+  GS_GAUSS      =1,
+  GS_EXPONENTIAL=2
 } GenSplitType;
 
 

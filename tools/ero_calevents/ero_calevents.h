@@ -37,6 +37,32 @@ struct Parameters {
 };
 
 
+/** Event entry in an eROSITA calibrated event file. */
+typedef struct {
+  double time;
+  long frame;
+
+  long pha;
+  float energy;
+
+  int rawx, rawy;
+  unsigned char subx, suby;
+
+  long ra, dec;
+  long x, y;
+
+  long flag;
+
+  unsigned int pat_typ;
+  unsigned char pat_inf;
+
+  float ev_weight;
+
+  unsigned char ccdnr;
+
+} eroCalEvent;
+
+
 ////////////////////////////////////////////////////////////////////////
 // Function declarations.
 ////////////////////////////////////////////////////////////////////////

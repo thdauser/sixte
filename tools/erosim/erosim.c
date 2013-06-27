@@ -513,7 +513,7 @@ int erosim_main()
       sprintf(keystr, "TLMAX%d", patf[ii]->cpi);
       value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
-      CHECK_STATUS_BREAK(status);  
+      CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);  
 
@@ -522,7 +522,21 @@ int erosim_main()
       float rotation_angle=subinst[ii]->det->pixgrid->rota*180./M_PI;
       fits_update_key(elf[ii]->fptr, TFLOAT, "CCDROTA", &rotation_angle, "", &status);
       fits_update_key(patf[ii]->fptr, TFLOAT, "CCDROTA", &rotation_angle, "", &status);
-      CHECK_STATUS_BREAK(status);  
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);  
+
+    // Split event threshold.
+    for (ii=0; ii<7; ii++) {
+      if (subinst[ii]->det->threshold_split_lo_fraction>0.0) {
+	fits_update_key(elf[ii]->fptr, TFLOAT, "SPLTTHR",
+			&subinst[ii]->det->threshold_split_lo_fraction, 
+			"Relative search level for split events", &status);
+	fits_update_key(patf[ii]->fptr, TFLOAT, "SPLTTHR", 
+			&subinst[ii]->det->threshold_split_lo_fraction, 
+			"Relative search level for split events", &status);
+	CHECK_STATUS_BREAK(status);
+      }
     }
     CHECK_STATUS_BREAK(status);  
 

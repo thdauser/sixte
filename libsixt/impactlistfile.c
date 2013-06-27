@@ -3,11 +3,10 @@
 
 ImpactListFile* newImpactListFile(int* const status)
 {
-  ImpactListFile* file = (ImpactListFile*)malloc(sizeof(ImpactListFile));
+  ImpactListFile* file=(ImpactListFile*)malloc(sizeof(ImpactListFile));
   if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for ImpactListFile failed!\n", 
-		   *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for ImpactListFile failed");
     return(file);
   }
 
@@ -140,7 +139,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
   
   // Re-open the file.
-  file = openImpactListFile(filename, READWRITE, status);
+  file=openImpactListFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
 
   return(file);
@@ -152,13 +151,13 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
 {
   // Check if the file has been opened.
   if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no ImpactListFile opened!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no impact list file opened");
     return;
   }
   if (NULL==file->fptr) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no ImpactListFile opened!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no impact list file opened");
     return;
   }
 
@@ -167,14 +166,14 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
 
   // Check if there is still a row available.
   if (file->row > file->nrows) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: ImpactListFile contains no further entries!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("impact list file contains no further entries");
     return;
   }
 
   // Read in the data.
-  int anynul = 0;
-  impact->time = 0.;
+  int anynul=0;
+  impact->time=0.;
   fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
 		&impact->time, &impact->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
@@ -206,8 +205,8 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: reading from ImpactListFile failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed reading from impact list file");
     return;
   }
 
@@ -219,7 +218,9 @@ void addImpact2File(ImpactListFile* const ilf,
 		    Impact* const impact, 
 		    int* const status)
 {
-  fits_insert_rows(ilf->fptr, ilf->row++, 1, status);
+  ilf->row++;
+  ilf->nrows++;
+
   fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
 		 ilf->row, 1, 1, &impact->time, status);
   fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
@@ -232,6 +233,5 @@ void addImpact2File(ImpactListFile* const ilf,
 		 ilf->row, 1, 1, &impact->ph_id, status);
   fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
 		 ilf->row, 1, 1, &impact->src_id, status);
-  ilf->nrows++;
 }
 

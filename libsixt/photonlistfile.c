@@ -241,15 +241,12 @@ int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
 {
   int status=EXIT_SUCCESS;
 
+  plf->row++;
+  plf->nrows++;
+
   // Convert from [rad] -> [deg]:
   double ra =ph->ra *180./M_PI;
   double dec=ph->dec*180./M_PI;
-
-  // Insert a new, empty row to the table:
-  fits_insert_rows(plf->fptr, plf->row, 1, &status);
-  CHECK_STATUS_RET(status, status);
-  plf->row++;
-  plf->nrows++;
 
   // Set the unique photon identifier to the row number in the photon
   // list file. Unless the value is already set.

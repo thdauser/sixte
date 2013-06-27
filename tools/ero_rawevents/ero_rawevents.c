@@ -180,6 +180,12 @@ int ero_rawevents_main()
     CHECK_STATUS_BREAK(status);
     // END of loop over all events in the input file.
 
+    // Append a check sum to the FITS header of the event extension.
+    int hdutype;
+    fits_movabs_hdu(fptr, 2, &hdutype, &status);
+    fits_write_chksum(fptr, &status);
+    CHECK_STATUS_BREAK(status);
+
   } while(0); // END of the error handling loop.
 
 
@@ -188,17 +194,7 @@ int ero_rawevents_main()
 
   // Close the files.
   freeEventListFile(&elf, &status);
-
-  // Append the check sum to the FITS header.
-  if (NULL!=fptr) {
-    int ii;
-    for (ii=0; ii<2; ii++) {
-      int hdutype;
-      fits_movabs_hdu(fptr, ii+1, &hdutype, &status);
-      fits_write_chksum(fptr, &status);
-    }
-    fits_close_file(fptr, &status);
-  }
+  if (NULL!=fptr) fits_close_file(fptr, &status);
   
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
   return(status);

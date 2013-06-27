@@ -26,7 +26,7 @@ int ero_calevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_calevents");
-  set_toolversion("0.10");
+  set_toolversion("0.11");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -113,15 +113,15 @@ int ero_calevents_main()
 
     // Create the event table.
     char *ttype[]={"TIME", "FRAME", "RAWX", "RAWY", "PHA", "ENERGY", 
-		   "RA", "DEC", "X", "Y", "CCDNR", "FLAG", 
-		   "PAT_TYP", "PAT_INF", "EV_WEIGHT"};
+		   "RA", "DEC", "X", "Y", "SUBX", "SUBY", "FLAG", 
+		   "PAT_TYP", "PAT_INF", "EV_WEIGHT", "CCDNR"};
     char *tform[]={"D", "J", "I", "I", "I", "E", 
-		   "J", "J", "J", "J", "I", "J", 
-		   "I", "U", "E"};
+		   "J", "J", "J", "J", "B", "B", "J",
+		   "I", "B", "E", "B"};
     char *tunit[]={"", "", "", "", "adu", "eV", 
-		   "", "", "", "", "", "",
+		   "", "", "", "", "", "", "", "",
 		   "", "", "", ""};
-    fits_create_tbl(fptr, BINARY_TBL, 0, 15, ttype, tform, tunit, 
+    fits_create_tbl(fptr, BINARY_TBL, 0, 17, ttype, tform, tunit, 
 		    "EVENTS", &status);
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
@@ -150,7 +150,7 @@ int ero_calevents_main()
 
     // Determine the column numbers.
     int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cx, cy, 
-      cccdnr, cflag, cpat_typ, cpat_inf, cev_weight;
+      csubx, csuby, cflag, cpat_typ, cpat_inf, cev_weight, cccdnr;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
@@ -161,11 +161,13 @@ int ero_calevents_main()
     fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, &status);
     fits_get_colnum(fptr, CASEINSEN, "X", &cx, &status);
     fits_get_colnum(fptr, CASEINSEN, "Y", &cy, &status);
-    fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
+    fits_get_colnum(fptr, CASEINSEN, "SUBX", &csubx, &status);
+    fits_get_colnum(fptr, CASEINSEN, "SUBY", &csuby, &status);
     fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_TYP", &cpat_typ, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_INF", &cpat_inf, &status);
     fits_get_colnum(fptr, CASEINSEN, "EV_WEIGHT", &cev_weight, &status);
+    fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the TLMIN and TLMAX keywords.
@@ -263,18 +265,30 @@ int ero_calevents_main()
 		    "pixel increment", &status);
     CHECK_STATUS_BREAK(status);
 
-    // TODO use keywords REFXDMIN, REFXDMAX, REFYDMIN, REFYDMAX
-
-    // TODO use keywords RA_MIN, RA_MAX, DEC_MIN, DEC_MAX
+    // Set the TZERO keywords for the columns SUBX and SUBY. Note that
+    // the TZERO values also have to be set with the routine 
+    // fits_set_tscale(). Otherwise CFITSIO will access the raw values
+    // in the file.
+    int tzero_subx_suby=-127;
+    sprintf(keyword, "TZERO%d", csubx);
+    fits_update_key(fptr, TINT, keyword, &tzero_subx_suby, "", &status);
+    fits_set_tscale(fptr, csubx, 1.0, (double)tzero_subx_suby, &status);
+    sprintf(keyword, "TZERO%d", csuby);
+    fits_update_key(fptr, TINT, keyword, &tzero_subx_suby, "", &status);
+    fits_set_tscale(fptr, csuby, 1.0, (double)tzero_subx_suby, &status);
+    CHECK_STATUS_BREAK(status);
 
     // TODO use keywords NLLRAT, SPLTTHR
 
     // --- END of initialization ---
 
-    
     // --- Beginning of copy events ---
 
     headas_chat(3, "copy events ...\n");
+
+    // Actual minimum and maximum values of X and Y.
+    long refxdmin, refxdmax, refydmin, refydmax;
+    double ra_min, ra_max, dec_min, dec_max;
 
     // Loop over all patterns in the FITS file. 
     long row;
@@ -285,40 +299,57 @@ int ero_calevents_main()
       getPatternFromFile(plf, row+1, &pattern, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Store the pattern in the output file.
-      fits_insert_rows(fptr, row, 1, &status);
-      CHECK_STATUS_BREAK(status);
+      // Determine the event data based on the pattern information.
+      eroCalEvent ev;
 
-      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, 
-		     &pattern.time, &status);
-      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, 
-		     &pattern.frame, &status);
-      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, 
-		     &pattern.pi, &status);
+      ev.time  =pattern.time;
+      ev.frame =pattern.frame;
+      ev.pha   =pattern.pi;
+      ev.energy=pattern.signal*1000.; // [eV]
+      ev.rawx  =pattern.rawx+1;
+      ev.rawy  =pattern.rawy+1;
 
-      float energy=pattern.signal*1000.; // [eV]
-      fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &energy, &status);
+      // TODO Columns SUBX and SUBY should have real values, because the
+      // center of a pixel is denoted by (-0.5,-0.5.).
+      ev.subx=0;
+      ev.suby=0;
 
-      int rawx=pattern.rawx+1;
-      fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &rawx, &status);
-      int rawy=pattern.rawy+1;
-      fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &rawy, &status);
+      // TODO Not used in the current implementation.
+      ev.pat_typ=0;
 
-      long ra=(long)(pattern.ra*180./M_PI/1.e-6);
+      // TODO In the current implementation PAT_INF is set to the default value of 5.
+      ev.pat_inf=0;
+
+      ev.ra=(long)(pattern.ra*180./M_PI/1.e-6);
       if (pattern.ra < 0.) {
-	ra--;
+	ev.ra--;
 	SIXT_WARNING("value for right ascension <0.0deg");
       }
-      fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ra, &status);
-
-      long dec=(long)(pattern.dec*180./M_PI/1.e-6);
+      ev.dec=(long)(pattern.dec*180./M_PI/1.e-6);
       if (pattern.dec < 0.) {
-	dec--;
+	ev.dec--;
       }
-      fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &dec, &status);
 
-      CHECK_STATUS_BREAK(status);
-      
+      // Determine the minimum and maximum values of RA and Dec in [rad].
+      if (0==row) {
+	ra_min =pattern.ra;
+	ra_max =pattern.ra;
+	dec_min=pattern.dec;
+	dec_max=pattern.dec;
+      }
+      if (pattern.ra<ra_min) {
+	ra_min=pattern.ra;
+      }
+      if (pattern.ra>ra_max) {
+	ra_max=pattern.ra;
+      }
+      if (pattern.dec<dec_min) {
+	dec_min=pattern.dec;
+      }
+      if (pattern.dec>dec_max) {
+	dec_max=pattern.dec;
+      }
+
       // Convert world coordinates to image coordinates X and Y.
       double world[2]={ pattern.ra*180./M_PI, pattern.dec*180./M_PI };
       double imgcrd[2], pixcrd[2];
@@ -334,38 +365,102 @@ int ero_calevents_main()
 	status=EXIT_FAILURE;
 	break;
       }
-      long x=(long)pixcrd[0]; 
-      if (pixcrd[0] < 0.) x--;
-      long y=(long)pixcrd[1]; 
-      if (pixcrd[1] < 0.) y--;
-      fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &x, &status);
-      fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &y, &status);
+      ev.x=(long)pixcrd[0]; 
+      if (pixcrd[0] < 0.) ev.x--;
+      ev.y=(long)pixcrd[1]; 
+      if (pixcrd[1] < 0.) ev.y--;
 
-      fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &par.CCDNr, &status);
+      // Determine the actual minimum and maximum values of X and Y.
+      if (0==row) {
+	refxdmin=ev.x;
+	refxdmax=ev.x;
+	refydmin=ev.y;
+	refydmax=ev.y;
+      }
+      if (ev.x<refxdmin) {
+	refxdmin=ev.x;
+      }
+      if (ev.x>refxdmax) {
+	refxdmax=ev.x;
+      }
+      if (ev.y<refydmin) {
+	refydmin=ev.y;
+      }
+      if (ev.y>refydmax) {
+	refydmax=ev.y;
+      }
 
       // TODO In the current implementation the value of FLAG is set to 
       // by default. This needs to be changed later.
-      long flag=0xC0000000;
-      fits_write_col(fptr, TLONG, cflag, row+1, 1, 1, &flag, &status);
-
-      // TODO Not used in the current implementation.
-      int pat_typ=0;
-      fits_write_col(fptr, TINT, cpat_typ, row+1, 1, 1, &pat_typ, &status);
-
-      // TODO In the current implementation PAT_INF is set to the default value of 5.
-      short pat_inf=0;
-      fits_write_col(fptr, TSHORT, cpat_inf, row+1, 1, 1, &pat_inf, &status);
+      ev.flag=0xC0000000;
 
       // TODO Inverse vignetting correction factor is not used.
-      float ev_weight=1.0;
-      fits_write_col(fptr, TFLOAT, cev_weight, row+1, 1, 1, &ev_weight, &status);
+      ev.ev_weight=1.0; // Invers vignetting correction factor.
 
-      // TODO Insert columns SUBX and SUBY.
+      // CCD number.
+      ev.ccdnr=par.CCDNr;
 
+      // Store the event in the output file.
+      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, &ev.time, &status);
+      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &ev.frame, &status);
+      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &ev.pha, &status);      
+      fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &ev.energy, &status);
+      fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &ev.rawx, &status);
+      fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &ev.rawy, &status);
+      fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ev.ra, &status);
+      fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &ev.dec, &status);
+      fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &ev.x, &status);
+      fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &ev.y, &status);
+      fits_write_col(fptr, TBYTE, csubx, row+1, 1, 1, &ev.subx, &status);
+      fits_write_col(fptr, TBYTE, csuby, row+1, 1, 1, &ev.suby, &status);
+      fits_write_col(fptr, TLONG, cflag, row+1, 1, 1, &ev.flag, &status);
+      fits_write_col(fptr, TUINT, cpat_typ, row+1, 1, 1, &ev.pat_typ, &status);
+      fits_write_col(fptr, TBYTE, cpat_inf, row+1, 1, 1, &ev.pat_inf, &status);
+      fits_write_col(fptr, TFLOAT, cev_weight, row+1, 1, 1, &ev.ev_weight, &status);
+      fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &ev.ccdnr, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over all patterns in the FITS file.
+
+    // Set the RA_MIN, RA_MAX, DEC_MIN, DEC_MAX keywords (in [deg]).
+    ra_min *=180./M_PI;
+    ra_max *=180./M_PI;
+    dec_min*=180./M_PI;
+    dec_max*=180./M_PI;
+    fits_update_key(fptr, TDOUBLE, "RA_MIN", &ra_min, "", &status);
+    fits_update_key(fptr, TDOUBLE, "RA_MAX", &ra_max, "", &status);
+    fits_update_key(fptr, TDOUBLE, "DEC_MIN", &dec_min, "", &status);
+    fits_update_key(fptr, TDOUBLE, "DEC_MAX", &dec_max, "", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Set the number of unique events to the number of entries in the table.
+    long uniq_evt;
+    fits_get_num_rows(fptr, &uniq_evt, &status);
+    CHECK_STATUS_BREAK(status);
+    fits_update_key(fptr, TLONG, "UNIQ_EVT", &uniq_evt, 
+		    "Number of unique events inside", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Set the REF?DMIN/MAX keywords.
+    fits_update_key(fptr, TLONG, "REFXDMIN", &refxdmin, "", &status);
+    fits_update_key(fptr, TLONG, "REFXDMAX", &refxdmax, "", &status);
+    fits_update_key(fptr, TLONG, "REFYDMIN", &refydmin, "", &status);
+    fits_update_key(fptr, TLONG, "REFYDMAX", &refydmax, "", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the relative search threshold for split partners.
+    fits_write_errmark();
+    float spltthr;
+    int opt_status=EXIT_SUCCESS;
+    fits_read_key(plf->fptr, TFLOAT, "SPLTTHR", &spltthr, comment, &opt_status);
+    if (EXIT_SUCCESS==opt_status) {
+      fits_update_key(fptr, TFLOAT, "SPLTTHR", &spltthr, 
+		      "Relative search level for split events", &status);      
+      CHECK_STATUS_BREAK(status);
+    }
+    opt_status=EXIT_SUCCESS;
+    fits_clear_errmark();
 
     // --- End of copy events ---
 
@@ -590,10 +685,15 @@ int ero_calevents_main()
       } while (NULL!=gti);
       CHECK_STATUS_BREAK(status);
       // End of loop over the individual GTI intervals.
-      
     }
 
     // --- End of append CORRATT extension ---
+
+    // Append a check sum to the header of the event extension.
+    int hdutype=0;
+    fits_movabs_hdu(fptr, 2, &hdutype, &status);
+    fits_write_chksum(fptr, &status);
+    CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
 
@@ -603,16 +703,7 @@ int ero_calevents_main()
 
   // Close the files.
   destroyPatternFile(&plf, &status);
-  if (NULL!=fptr) {
-    // Append a check sum to the header of the primary and 
-    // the event extension.
-    int hdutype=0;
-    fits_movabs_hdu(fptr, 1, &hdutype, &status);
-    fits_write_chksum(fptr, &status);
-    fits_movabs_hdu(fptr, 2, &hdutype, &status);
-    fits_write_chksum(fptr, &status);
-    fits_close_file(fptr, &status);
-  }
+  if (NULL!=fptr) fits_close_file(fptr, &status);
   
   // Release memory.
   wcsfree(&wcs);
@@ -699,5 +790,3 @@ int getpar(struct Parameters* const par)
 
   return(status);
 }
-
-
