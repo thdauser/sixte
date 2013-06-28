@@ -3,11 +3,10 @@
 
 LADImpactListFile* newLADImpactListFile(int* const status)
 {
-  LADImpactListFile* file = (LADImpactListFile*)malloc(sizeof(LADImpactListFile));
+  LADImpactListFile* file=(LADImpactListFile*)malloc(sizeof(LADImpactListFile));
   if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for LADImpactListFile failed!\n", 
-		   *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for LADImpactListFile failed");
     return(file);
   }
 
@@ -147,7 +146,7 @@ LADImpactListFile* openNewLADImpactListFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
   
   // Re-open the file.
-  file = openLADImpactListFile(filename, READWRITE, status);
+  file=openLADImpactListFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
 
   return(file);
@@ -160,13 +159,13 @@ void getNextLADImpactFromFile(LADImpactListFile* const file,
 {
   // Check if the file has been opened.
   if (NULL==file) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no LADImpactListFile opened!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no impact list file opened");
     return;
   }
   if (NULL==file->fptr) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: no LADImpactListFile opened!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no impact list file opened");
     return;
   }
 
@@ -175,62 +174,62 @@ void getNextLADImpactFromFile(LADImpactListFile* const file,
 
   // Check if there is still a row available.
   if (file->row > file->nrows) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: LADImpactListFile contains no further entries!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("impact list file contains no further entries");
     return;
   }
 
   // Read in the data.
-  int anynul = 0;
-  impact->time = 0.;
+  int anynul=0;
+  impact->time=0.;
   fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
 		&impact->time, &impact->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->energy = 0.;
+  impact->energy=0.;
   fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
 		&impact->energy, &impact->energy, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->panel = 0;
+  impact->panel=0;
   fits_read_col(file->fptr, TLONG, file->cpanel, file->row, 1, 1, 
 		&impact->panel, &impact->panel, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->module = 0;
+  impact->module=0;
   fits_read_col(file->fptr, TLONG, file->cmodule, file->row, 1, 1, 
 		&impact->module, &impact->module, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->element = 0;
+  impact->element=0;
   fits_read_col(file->fptr, TLONG, file->celement, file->row, 1, 1, 
 		&impact->element, &impact->element, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->position.x = 0.;
+  impact->position.x=0.;
   fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
 		&impact->position.x, &impact->position.x, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->position.y = 0.;
+  impact->position.y=0.;
   fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
 		&impact->position.y, &impact->position.y, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->ph_id = 0;
+  impact->ph_id=0;
   fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1, 
 		&impact->ph_id, &impact->ph_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  impact->src_id = 0;
+  impact->src_id=0;
   fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1, 
 		&impact->src_id, &impact->src_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: reading from LADImpactListFile failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("reading from impact list file failed");
     return;
   }
 
@@ -242,7 +241,9 @@ void addLADImpact2File(LADImpactListFile* const ilf,
 		       LADImpact* const impact, 
 		       int* const status)
 {
-  fits_insert_rows(ilf->fptr, ilf->row++, 1, status);
+  ilf->row++;
+  ilf->nrows++;
+
   fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
 		 ilf->row, 1, 1, &impact->time, status);
   fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
@@ -261,6 +262,5 @@ void addLADImpact2File(LADImpactListFile* const ilf,
 		 ilf->row, 1, 1, &impact->ph_id, status);
   fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
 		 ilf->row, 1, 1, &impact->src_id, status);
-  ilf->nrows++;
 }
 

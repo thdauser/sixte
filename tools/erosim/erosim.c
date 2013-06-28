@@ -19,7 +19,7 @@ int erosim_main()
   float fov7;
 
   // Attitude.
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
 
   // GTI collection.
   GTI* gti=NULL;
@@ -231,13 +231,13 @@ int erosim_main()
       // Set up a simple pointing attitude.
 
       // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for Attitude failed");
 	break;
       }
 
@@ -247,12 +247,9 @@ int erosim_main()
       ac->entry[0].time=par.TSTART;
       ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
-      Vector vz = {0., 0., 1.};
-      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
-
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
@@ -271,11 +268,11 @@ int erosim_main()
     // END of setting up the attitude.
 
     // Optional GTI file.
-    if (strlen(par.GTIfile)>0) {
-      strcpy(ucase_buffer, par.GTIfile);
+    if (strlen(par.GTIFile)>0) {
+      strcpy(ucase_buffer, par.GTIFile);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIfile, &status);
+	gti=loadGTI(par.GTIFile, &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
@@ -359,7 +356,7 @@ int erosim_main()
     if (strlen(photonlist_filename_template)>0) {
       for (ii=0; ii<7; ii++) {
 	char photonlist_filename[MAXFILENAME];
-	sprintf(photonlist_filename, photonlist_filename_template, ii);
+	sprintf(photonlist_filename, photonlist_filename_template, ii+1);
 	plf[ii]=openNewPhotonListFile(photonlist_filename, 
 				      telescop, instrume, "Normal", 
 				      par.MJDREF, 0.0, par.TSTART, tstop,
@@ -373,7 +370,7 @@ int erosim_main()
     if (strlen(impactlist_filename_template)>0) {
       for (ii=0; ii<7; ii++) {
 	char impactlist_filename[MAXFILENAME];
-	sprintf(impactlist_filename, impactlist_filename_template, ii);
+	sprintf(impactlist_filename, impactlist_filename_template, ii+1);
 	ilf[ii]=openNewImpactListFile(impactlist_filename, 
 				      telescop, instrume, "Normal", 
 				      par.MJDREF, 0.0, par.TSTART, tstop,
@@ -386,7 +383,7 @@ int erosim_main()
     // Open the output event list files.
     for (ii=0; ii<7; ii++) {
       char eventlist_filename[MAXFILENAME];
-      sprintf(eventlist_filename, eventlist_filename_template, ii);
+      sprintf(eventlist_filename, eventlist_filename_template, ii+1);
       elf[ii]=openNewEventListFile(eventlist_filename, 
 				   telescop, instrume, "Normal", 
 				   par.MJDREF, 0.0, par.TSTART, tstop,
@@ -404,7 +401,7 @@ int erosim_main()
     // Open the output pattern list files.
     for (ii=0; ii<7; ii++) {
       char patternlist_filename[MAXFILENAME];
-      sprintf(patternlist_filename, patternlist_filename_template, ii);
+      sprintf(patternlist_filename, patternlist_filename_template, ii+1);
       patf[ii]=openNewPatternFile(patternlist_filename, 
 				  telescop, instrume, "Normal", 
 				  par.MJDREF, 0.0, par.TSTART, tstop,
@@ -516,10 +513,33 @@ int erosim_main()
       sprintf(keystr, "TLMAX%d", patf[ii]->cpi);
       value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
-      CHECK_STATUS_BREAK(status);  
+      CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);  
-    
+
+    // CCD rotation angle.
+    for (ii=0; ii<7; ii++) {
+      float rotation_angle=subinst[ii]->det->pixgrid->rota*180./M_PI;
+      fits_update_key(elf[ii]->fptr, TFLOAT, "CCDROTA", &rotation_angle, "", &status);
+      fits_update_key(patf[ii]->fptr, TFLOAT, "CCDROTA", &rotation_angle, "", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);  
+
+    // Split event threshold.
+    for (ii=0; ii<7; ii++) {
+      if (subinst[ii]->det->threshold_split_lo_fraction>0.0) {
+	fits_update_key(elf[ii]->fptr, TFLOAT, "SPLTTHR",
+			&subinst[ii]->det->threshold_split_lo_fraction, 
+			"Relative search level for split events", &status);
+	fits_update_key(patf[ii]->fptr, TFLOAT, "SPLTTHR", 
+			&subinst[ii]->det->threshold_split_lo_fraction, 
+			"Relative search level for split events", &status);
+	CHECK_STATUS_BREAK(status);
+      }
+    }
+    CHECK_STATUS_BREAK(status);  
+
     // --- End of opening files ---
 
 
@@ -728,7 +748,7 @@ int erosim_main()
     freeSourceCatalog(&srccat[ii], &status);
   }
   freeGTI(&gti);
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
 
   if (NULL!=progressfile) {
     fclose(progressfile);
@@ -933,12 +953,12 @@ int erosim_getpar(struct Parameters* const par)
   strcpy(par->Simput6, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("GTIfile", &sbuffer);
+  status=ape_trad_query_string("GTIFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the GTI file");
     return(status);
   } 
-  strcpy(par->GTIfile, sbuffer);
+  strcpy(par->GTIFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);

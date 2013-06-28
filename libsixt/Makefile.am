@@ -22,13 +22,11 @@ dist_fitstemplates_DATA+=ladsignallist.tpl
 dist_fitstemplates_DATA+=ladeventlist.tpl
 dist_fitstemplates_DATA+=ladspec.tpl
 dist_fitstemplates_DATA+=genlc.tpl
-dist_fitstemplates_DATA+=eroeventlist.tpl
 dist_fitstemplates_DATA+=patternlist.tpl
 dist_fitstemplates_DATA+=htrs.eventlist.tpl
 dist_fitstemplates_DATA+=impactlist.tpl
 dist_fitstemplates_DATA+=ladimpactlist.tpl
 dist_fitstemplates_DATA+=photonlist.tpl 
-dist_fitstemplates_DATA+=gti.tpl
 
 # Directory where to install the XML files.
 xmldir=$(pkgdatadir)/xml
@@ -45,23 +43,23 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 lib_LIBRARIES=libsixt.a
 
 # Sources:
-libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c \
-		  impactlistfile.c ladimpactlistfile.c \
-		  htrsdetector.c geninst.c gendet.c gentel.c \
-		  genpixgrid.c gendetline.c eventlistfile.c \
-		  ladsignallistfile.c ladeventlistfile.c phabkg.c \
-		  patternfile.c	clocklist.c badpixmap.c \
-		  htrseventfile.c hexagonalpixels.c arcpixels.c \
-		  telemetrypacket.c htrstelstream.c comadetector.c \
-		  comaeventfile.c psf.c vignetting.c codedmask.c \
-		  attitudecatalog.c attitudefile.c sixt.c vector.c \
-		  photon.c fits_pha.c check_fov.c photonlistfile.c \
-		  rmf.c arf.c kdtreeelement.c sourcecatalog.c \
-		  source.c linkedpholist.c linkedladsiglist.c \
+libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
+		  impactlistfile.c ladimpactlistfile.c htrsdetector.c	\
+		  geninst.c gendet.c gentel.c genpixgrid.c		\
+		  gendetline.c eventlistfile.c ladsignallistfile.c	\
+		  ladeventlistfile.c phabkg.c patternfile.c		\
+		  clocklist.c badpixmap.c htrseventfile.c		\
+		  hexagonalpixels.c arcpixels.c telemetrypacket.c	\
+		  htrstelstream.c comadetector.c comaeventfile.c	\
+		  psf.c vignetting.c codedmask.c attitude.c		\
+		  attitudefile.c sixt.c photon.c fits_pha.c		\
+		  check_fov.c photonlistfile.c rmf.c arf.c		\
+		  kdtreeelement.c sourcecatalog.c source.c		\
+		  linkedpholist.c linkedladsiglist.c			\
 		  erodetbkgrndgen.c phgen.c phimg.c phdet.c phproj.c	\
 		  phpat.c event.c pattern.c ladsignal.c ladevent.c	\
-		  ladimpact.c lad.c lad_init.c xmlbuffer.c \
-		  spectrum.c gti.c sourceimage.c det_phi_max.c \
+		  ladimpact.c lad.c lad_init.c xmlbuffer.c spectrum.c	\
+		  gti.c sourceimage.c det_phi_max.c			\
 		  attitudecatalog2.c reconstruction.c eventarray.c	\
 		  fft_array.c balancing.c
 
@@ -86,13 +84,11 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		htrsdetector.h htrseventfile.h htrsevent.h		\
 		telemetrypacket.h htrstelstream.h comadetector.h	\
 		comaeventfile.h comaevent.h psf.h vignetting.h		\
-		codedmask.h attitudecatalog.h attitudefile.h		\
-		telescope.h sixt.h point.h vector.h photon.h		\
-		fits_pha.h check_fov.h photonlistfile.h rmf.h arf.h	\
-		kdtreeelement.h sourcecatalog.h source.h		\
-		linkedpholist.h linkedladsiglist.h erodetbkgrndgen.h	\
-		phgen.h phimg.h phdet.h phproj.h phpat.h lad.h		\
-		xmlbuffer.h spectrum.h gti.h sourceimage.h		\
-		det_phi_max.h attitudecatalog2.c reconstruction.h	\
-		eventarray.h fft_array.h balancing.h			
-
+		codedmask.h attitude.h attitudefile.h telescope.h	\
+		sixt.h point.h photon.h fits_pha.h check_fov.h		\
+		photonlistfile.h rmf.h arf.h kdtreeelement.h		\
+		sourcecatalog.h source.h linkedpholist.h		\
+		linkedladsiglist.h erodetbkgrndgen.h phgen.h phimg.h	\
+		phdet.h phproj.h phpat.h lad.h xmlbuffer.h spectrum.h	\
+		gti.h sourceimage.h det_phi_max.h attitudecatalog2.c	\
+		reconstruction.h eventarray.h fft_array.h balancing.h

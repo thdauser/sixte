@@ -192,13 +192,8 @@ void addEvent2File(EventListFile* const file, Event* const event,
   CHECK_NULL_VOID(file, *status, "event file not open");
   CHECK_NULL_VOID(file->fptr, *status, "event file not open");
 
-  // Insert a new, empty row to the table:
-  fits_insert_rows(file->fptr, file->nrows, 1, status);
-  CHECK_STATUS_VOID(*status);
-  file->nrows++;
-
   // Write the data.
-  updateEventInFile(file, file->nrows, event, status);
+  updateEventInFile(file, ++file->nrows, event, status);
   CHECK_STATUS_VOID(*status);
 }
 

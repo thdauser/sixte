@@ -1,13 +1,12 @@
-#ifndef ERO_EVENTS_H
-#define ERO_EVENTS_H 1
+#ifndef ERO_RAWEVENTS_H
+#define ERO_RAWEVENTS_H 1
 
 
 #include "sixt.h"
-#include "pattern.h"
-#include "patternfile.h"
-#include "wcs.h"
+#include "event.h"
+#include "eventlistfile.h"
 
-#define TOOLSUB ero_events_main
+#define TOOLSUB ero_rawevents_main
 #include "headas_main.c"
 
 
@@ -17,17 +16,10 @@
 
 
 struct Parameters {
-  char PatternList[MAXFILENAME];
+  char EventList[MAXFILENAME];
   char eroEventList[MAXFILENAME];
 
   int CCDNr;
-
-  /** Projection type (usually SIN). */
-  char Projection[MAXMSG];
-  /** Right ascension of reference point [deg]. */
-  float RefRA;
-  /** Declination of reference point [deg]. */
-  float RefDec;
 
   char clobber;
 };
@@ -42,5 +34,5 @@ struct Parameters {
 int getpar(struct Parameters* const parameters);
 
 
-#endif /* ERO_EVENTS_H */
+#endif /* ERO_RAWEVENTS_H */
 

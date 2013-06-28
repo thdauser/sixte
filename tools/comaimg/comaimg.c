@@ -73,7 +73,7 @@ int comaimg_main() {
 
       //Memory-allocation:
 
-      //Allocates memory for struct AttitudeCatalog.
+      //Allocates memory for struct Attitude.
       //Initializes nentries, current_entry to 0;entry to NULL.
       ac=getAttCatalog(&status);
       CHECK_STATUS_BREAK(status);
@@ -86,7 +86,7 @@ int comaimg_main() {
 	break;
       }
 
-      //Set the values of the AttitudeCatalog-Entry.
+      //Set the values of the AttitudeEntry.
 
       ac->nentries=1;
       ac->entry[0]=initializeAttitudeEntry();  

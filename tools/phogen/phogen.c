@@ -10,7 +10,7 @@ int phogen_main()
   GenInst* inst=NULL;
 
   // Attitude.
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
 
   // Catalog of input X-ray sources.
   SourceCatalog* srccat=NULL;
@@ -72,28 +72,25 @@ int phogen_main()
       // Set up a simple pointing attitude.
 
       // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for Attitude failed");
 	break;
       }
 
       // Set the values of the entries.
       ac->nentries=1;
-      ac->entry[0] = defaultAttitudeEntry();      
-      ac->entry[0].time = par.TSTART;
-      ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
-
-      Vector vz = {0., 0., 1.};
-      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
+      ac->entry[0]=defaultAttitudeEntry();      
+      ac->entry[0].time=par.TSTART;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check if the required time interval for the simulation
@@ -192,7 +189,7 @@ int phogen_main()
   // Release memory.
   freePhotonListFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
   destroyGenInst(&inst, &status);
 
   // Clean up the random number generator.

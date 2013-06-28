@@ -34,7 +34,7 @@ CoMaEventFile* openNewCoMaEventFile(char* const filename,
 				    char* const template, 
 				    int* const status)
 {
-  printf("*** %s \n\n", template);
+  printf("*** %s\n\n", template);
 
   // Remove old file if it exists.
   remove(filename);

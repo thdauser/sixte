@@ -6,7 +6,7 @@
 
 
 #include "sixt.h"
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "patternfile.h"
 #include "geninst.h"
 #include "phproj.h"
@@ -49,7 +49,7 @@ int projev_main() {
   PatternFile* plf=NULL;
 
   // Attitude catalog.
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
 
   // Instrument data structure (containing the focal length, FoV, ...).
   GenInst* inst=NULL;
@@ -60,7 +60,7 @@ int projev_main() {
 
   // Register HEATOOL:
   set_toolname("projev");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -108,28 +108,25 @@ int projev_main() {
       // Set up a simple pointing attitude.
 
       // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for Attitude failed");
 	break;
       }
 
       // Set the values of the entries.
       ac->nentries=1;
-      ac->entry[0] = defaultAttitudeEntry();
-      ac->entry[0].time = t0;
-      ac->entry[0].nz = unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
-
-      Vector vz = {0., 0., 1.};
-      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
+      ac->entry[0]=defaultAttitudeEntry();
+      ac->entry[0].time=t0;
+      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check if the required time interval for the simulation
@@ -177,14 +174,12 @@ int projev_main() {
   // Close the files.
   destroyPatternFile(&plf, &status);
 
-  // Release memory of AttitudeCatalog
-  freeAttitudeCatalog(&ac);
+  // Release memory of Attitude.
+  freeAttitude(&ac);
 
-  if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
-
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
-
 
 
 int projev_getpar(struct Parameters* par)

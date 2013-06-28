@@ -184,9 +184,6 @@ void addLADEvent2File(LADEventListFile* const file,
   CHECK_NULL_VOID(file, *status, "no event file opened");
   CHECK_NULL_VOID(file->fptr, *status, "no event file opened");
 
-  // Insert a new, empty row to the table:
-  fits_insert_rows(file->fptr, file->row, 1, status);
-  CHECK_STATUS_VOID(*status);
   file->nrows++;
   file->row = file->nrows;
 
@@ -206,7 +203,7 @@ void getLADEventFromFile(const LADEventListFile* const file,
 
   // Check if there is still a row available.
   if (row > file->nrows) {
-    *status = EXIT_FAILURE;
+    *status=EXIT_FAILURE;
     SIXT_ERROR("event file contains no further entries");
     return;
   }

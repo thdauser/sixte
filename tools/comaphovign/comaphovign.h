@@ -3,7 +3,7 @@
 
 
 #include "sixt.h"
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "photonlistfile.h"
 
 #define TOOLSUB comaphovign_main

@@ -2,7 +2,7 @@
 #define PHGEN_H 1
 
 #include "sixt.h"
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "gendet.h"
 #include "photon.h"
 #include "sourcecatalog.h"
@@ -13,7 +13,7 @@
 /////////////////////////////////////////////////////////////////
 
 
-int phgen(AttitudeCatalog* const ac,
+int phgen(Attitude* const ac,
 	  SourceCatalog** const srccat,
 	  const unsigned int ncat,
 	  const double t0,

@@ -206,13 +206,8 @@ void addPattern2File(PatternFile* const file,
   CHECK_NULL_VOID(file, *status, "pattern file not open");
   CHECK_NULL_VOID(file->fptr, *status, "pattern file not open");
 
-  // Insert a new, empty row to the table:
-  fits_insert_rows(file->fptr, file->nrows, 1, status);
-  CHECK_STATUS_VOID(*status);
-  file->nrows++;
-
   // Write the data.
-  updatePatternInFile(file, file->nrows, pattern, status);
+  updatePatternInFile(file, ++file->nrows, pattern, status);
   CHECK_STATUS_VOID(*status);
 }
 
@@ -379,7 +374,6 @@ void copyEvents2PatternFile(const EventListFile* const elf,
     // Add the new pattern to the output file.
     addPattern2File(plf, pattern, status);	  
     CHECK_STATUS_BREAK(*status);
-
   }
   CHECK_STATUS_VOID(*status);
 

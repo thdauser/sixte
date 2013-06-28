@@ -41,6 +41,12 @@ void saveGTI(GTI* const gti,
 	     const char clobber,
 	     int* const status);
 
+/** Store the GTI collection in a FITS file extension. */
+void saveGTIExt(fitsfile* const fptr,
+		char* const extname,
+		GTI* const gti,
+		int* const status);
+
 /** Append a new GTI to the GTI collection. */
 void appendGTI(GTI* const gti, 
 	       const double start, 

@@ -19,7 +19,7 @@ int nustarsim_main()
   float fov2;
 
   // Attitude.
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
 
   // GTI collection.
   GTI* gti=NULL;
@@ -221,13 +221,13 @@ int nustarsim_main()
       // Set up a simple pointing attitude.
 
       // First allocate memory.
-      ac=getAttitudeCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for AttitudeCatalog failed");
+	SIXT_ERROR("memory allocation for Attitude failed");
 	break;
       }
 
@@ -237,12 +237,9 @@ int nustarsim_main()
       ac->entry[0].time=par.TSTART;
       ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
-      Vector vz = {0., 0., 1.};
-      ac->entry[0].nx = vector_product(vz, ac->entry[0].nz);
-
     } else {
       // Load the attitude from the given file.
-      ac=loadAttitudeCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
@@ -846,7 +843,7 @@ int nustarsim_main()
     freeSourceCatalog(&srccat[ii], &status);
   }
   freeGTI(&gti);
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
 
   if (NULL!=progressfile) {
     fclose(progressfile);

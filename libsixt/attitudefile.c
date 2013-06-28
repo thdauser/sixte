@@ -3,8 +3,8 @@
 
 AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const status)
 {
-  AttitudeFileEntry afe = { .time = 0. };
-  int anynul = 0;
+  AttitudeFileEntry afe={ .time = 0. };
+  int anynul=0;
  
   // Time
   fits_read_col(af->fptr, TDOUBLE, af->ctime, af->row+1, 1, 1, 
@@ -20,7 +20,7 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const stat
     fits_read_col(af->fptr, TFLOAT, af->crollang, af->row+1, 1, 1, 
 		  &afe.rollang, &afe.rollang, &anynul, status);
   } else {
-    afe.rollang=0.;
+    afe.rollang=0.0;
   }
 
   return(afe);

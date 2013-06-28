@@ -2,7 +2,7 @@
 
 
 int phimg(const GenTel* const tel,
-	  AttitudeCatalog* const ac,
+	  Attitude* const ac,
 	  Photon* const ph,
 	  Impact* const imp,
 	  int* const status)

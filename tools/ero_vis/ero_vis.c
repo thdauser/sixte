@@ -7,7 +7,7 @@
 #include "sixt.h"
 #include "vector.h"
 #include "telescope.h"
-#include "attitudecatalog.h"
+#include "attitude.h"
 #include "check_fov.h"
 #include "gti.h"
 #include "simput.h"
@@ -47,7 +47,7 @@ int ero_vis_main()
   // Program parameters.
   struct Parameters par;
 
-  AttitudeCatalog* ac=NULL;
+  Attitude* ac=NULL;
   SimputCtlg* cat=NULL;
   GTI* gti=NULL;
 
@@ -68,7 +68,7 @@ int ero_vis_main()
     if ((status=ero_vis_getpar(&par))) break;
 
     // Get the telescope attitude data.
-    ac=loadAttitudeCatalog(par.Attitude, &status);
+    ac=loadAttitude(par.Attitude, &status);
     CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT source catalog, if available.
@@ -222,10 +222,10 @@ int ero_vis_main()
   headas_chat(3, "cleaning up ...\n");
 
   // Release memory.
-  freeAttitudeCatalog(&ac);
+  freeAttitude(&ac);
   freeGTI(&gti);
 
-  if (EXIT_SUCCESS==status) headas_chat(2, "finished successfully!\n\n");
+  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
 }
 

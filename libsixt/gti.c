@@ -124,13 +124,14 @@ void saveGTI(GTI* const gti,
     }
   }
 
-  // Create a new event list FITS file from the template.
-  char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/gti.tpl");
-  fits_create_file(&fptr, buffer, status);
+  // Create a new FITS file.
+  fits_create_file(&fptr, filename, status);
   CHECK_STATUS_VOID(*status);
 
+  // Store the GTI extension.
+  saveGTIExt(fptr, "GTI", gti, status);
+  CHECK_STATUS_VOID(*status);
+  
   // Set the time-keyword in the event list header.
   char datestr[MAXMSG];
   int timeref;
@@ -140,8 +141,32 @@ void saveGTI(GTI* const gti,
 		  "File creation date", status);
   CHECK_STATUS_VOID(*status);
 
-  // Move to the binary table extension.
-  fits_movabs_hdu(fptr, 2, 0, status);
+  // Close the FITS file.
+  fits_close_file(fptr, status);
+  CHECK_STATUS_VOID(*status);
+}
+
+
+void saveGTIExt(fitsfile* const fptr,
+		char* const extname,
+		GTI* const gti,
+		int* const status)
+{
+  // Create the GTI table.
+  char *ttype[]={"START", "STOP"};
+  char *tform[]={"D", "D"};
+  char *tunit[]={"", ""};
+  fits_create_tbl(fptr, BINARY_TBL, 0, 2, ttype, tform, tunit, 
+		  extname, status);
+  if (EXIT_SUCCESS!=*status) {
+    SIXT_ERROR("could not create binary table for GTI extension");
+    return;
+  }
+
+  // Insert header keywords.
+  fits_update_key(fptr, TSTRING, "HDUCLASS", "OGIP", "", status);
+  fits_update_key(fptr, TSTRING, "HDUCLAS1", "GTI", "", status);
+  fits_update_key(fptr, TSTRING, "HDUCLAS2", "STANDARD", "", status);
   CHECK_STATUS_VOID(*status);
 
   // Determine the individual column numbers.
@@ -155,10 +180,6 @@ void saveGTI(GTI* const gti,
 		 1, 1, gti->nentries, gti->start, status);
   fits_write_col(fptr, TDOUBLE, cstop, 
 		 1, 1, gti->nentries, gti->stop, status);
-  CHECK_STATUS_VOID(*status);
-
-  // Close the FITS file.
-  fits_close_file(fptr, status);
   CHECK_STATUS_VOID(*status);
 }
 
