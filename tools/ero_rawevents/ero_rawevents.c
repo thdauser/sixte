@@ -18,7 +18,7 @@ int ero_rawevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_rawevents");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of the ERROR handling loop.
@@ -144,6 +144,10 @@ int ero_rawevents_main()
     fits_update_key(fptr, TINT, keyword, &tlmax_pha, "", &status);
     CHECK_STATUS_BREAK(status);
 
+    // Set the CCDNR keyword.
+    fits_update_key(fptr, TINT, "CCDNR", &par.CCDNr, "", &status);
+    CHECK_STATUS_BREAK(status);
+
     // --- END of Initialization ---
 
     
@@ -224,6 +228,12 @@ int getpar(struct Parameters* const par)
   } 
   strcpy(par->eroEventList, sbuffer);
   free(sbuffer);
+
+  status=ape_trad_query_int("CCDNr", &par->CCDNr);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the CCDNr parameter");
+    return(status);
+  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {

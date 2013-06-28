@@ -1,5 +1,6 @@
 EventList,fre,lq,"events.fits",,,"input event list file (FITS file) "
 eroEventList,s,lq,"ero_events.fits",,,"output eROSITA event list file (FITS file) "
+CCDNr,i,lq,0,,,"CCD / telescope number"
 chatter,i,lh,4,,,"chatter: control verbosity of the program "
 clobber,b,h,no,,,"overwrite output files if exist?"
 history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "
