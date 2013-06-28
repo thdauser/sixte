@@ -1,6 +1,6 @@
 ImpactList,f,lq,"impactsnew.fits",,,"impact list file (FITS input file)"
 EventList,f,lq,"events.fits",,,"event list file (FITS output file)"
-Width,i,lq,289,0,10000,"width of the detector (pixels) "
+Width,i,lq,294,0,10000,"width of the detector (pixels) "
 Pixelwidth,r,lq,0.0006,0.0,100.0,"width of one detector pixel (m)"
 DCU_length,r,lq,0.0195,,,"length of detector crystal unit (m)"
 DCU_gap,r,lq,0.0004,,,"length of gap between two DCU's (m)"
