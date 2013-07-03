@@ -396,8 +396,7 @@ int ero_calevents_main()
 	ev.rawy  =pattern.rawy + ii/3;
 
 	// Detected channel.
-	ev.pha   =pattern.pi;
-	// TODO Store the adu of the individual split partners !!!
+	ev.pha   =pattern.pis[ii];
 
 	// Calibrated and recombined amplitude in [eV].
 	// The amplitude is positive for the main event only. For

@@ -22,7 +22,7 @@ typedef struct {
   /** Raw detector coordinates. Indices start at 0. */
   int rawx, rawy;
 
-  /** Detected PI channel. */
+  /** Detected PI channel [adu]. */
   long pi;
 
   /** Signal in [keV]. */
@@ -60,6 +60,10 @@ typedef struct {
   /** 3x3 array with individual signal values [keV] around the main
       event. */
   float signals[9];
+
+  /** 3x3 array with individual energy channels [adu] around the main
+      event. */
+  long pis[9];
 
 } Pattern;
 

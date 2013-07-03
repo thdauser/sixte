@@ -262,27 +262,36 @@ void phpat(GenDet* const det,
 	      // Determine signals in 3x3 matrix.
 	      if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx-1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[0] = neighborlist[kk]->signal;
+		  pattern->signals[0]=neighborlist[kk]->signal;
+		  pattern->pis[0]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[3] = neighborlist[kk]->signal;
+		  pattern->signals[3]=neighborlist[kk]->signal;
+		  pattern->pis[3]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[6] = neighborlist[kk]->signal;
+		  pattern->signals[6]=neighborlist[kk]->signal;
+		  pattern->pis[6]    =neighborlist[kk]->pi;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[1] = neighborlist[kk]->signal;
+		  pattern->signals[1]=neighborlist[kk]->signal;
+		  pattern->pis[1]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[4] = neighborlist[kk]->signal;
+		  pattern->signals[4]=neighborlist[kk]->signal;
+		  pattern->pis[4]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[7] = neighborlist[kk]->signal;
+		  pattern->signals[7]=neighborlist[kk]->signal;
+		  pattern->pis[7]    =neighborlist[kk]->pi;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx+1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[2] = neighborlist[kk]->signal;
+		  pattern->signals[2]=neighborlist[kk]->signal;
+		  pattern->pis[2]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[5] = neighborlist[kk]->signal;
+		  pattern->signals[5]=neighborlist[kk]->signal;
+		  pattern->pis[5]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[8] = neighborlist[kk]->signal;
+		  pattern->signals[8]=neighborlist[kk]->signal;
+		  pattern->pis[8]    =neighborlist[kk]->pi;
 		}
 	      }
 

@@ -59,3 +59,6 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  SIGNALS         / Signals in surrounding 3x3 matrix
 	TFORM#  9E              / Format of column SIGNALS
 	TUNIT#                  / Unit of column SIGNALS
+	TTYPE#  PIS             / Energy channels in surrounding 3x3 matrix
+	TFORM#  9J              / Format of column PIS
+	TUNIT#  ADU             / Unit of column PIS
