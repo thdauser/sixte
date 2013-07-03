@@ -337,13 +337,13 @@ void phpat(GenDet* const det,
 	      } else if (2==nneighborlist) {
 		// Check for double types.
 		if (pattern->signals[1]>0.) {
-		  pattern->type=1; // bottom
+		  pattern->type=3; // bottom
 		} else if (pattern->signals[3]>0.) {
-		  pattern->type=2; // left
+		  pattern->type=4; // left
 		} else if (pattern->signals[7]>0.) {
-		  pattern->type=3; // top
+		  pattern->type=1; // top
 		} else if (pattern->signals[5]>0.) {
-		  pattern->type=4; // right
+		  pattern->type=2; // right
 		} 
 
 	      } else if (3==nneighborlist) {
@@ -351,16 +351,16 @@ void phpat(GenDet* const det,
 		if (pattern->signals[1]>0.) {
 		  // bottom
 		  if (pattern->signals[3]>0.) {
-		    pattern->type=5; // bottom-left
+		    pattern->type=7; // bottom-left
 		  } else if (pattern->signals[5]>0.) {
 		    pattern->type=6; // bottom-right
 		  }
 		} else if (pattern->signals[7]>0.) {
 		  // top
 		  if (pattern->signals[3]>0.) {
-		    pattern->type=7; // top-left
+		    pattern->type=8; // top-left
 		  } else if (pattern->signals[5]>0.) {
-		    pattern->type=8; // top-right
+		    pattern->type=5; // top-right
 		  }
 		}
 
@@ -369,7 +369,7 @@ void phpat(GenDet* const det,
 		if (pattern->signals[0]>0.) { // bottom-left
 		  if ((pattern->signals[1]>pattern->signals[0])&&
 		      (pattern->signals[3]>pattern->signals[0])) {
-		    pattern->type=9; 
+		    pattern->type=11; 
 		  } 
 		} else if (pattern->signals[2]>0.) { // bottom-right
 		  if ((pattern->signals[1]>pattern->signals[2])&&
@@ -379,12 +379,12 @@ void phpat(GenDet* const det,
 		} else if (pattern->signals[6]>0.) { // top-left
 		  if ((pattern->signals[7]>pattern->signals[6])&&
 		      (pattern->signals[3]>pattern->signals[6])) {
-		    pattern->type=11; 
+		    pattern->type=12; 
 		  }
 		} else if (pattern->signals[8]>0.) { // top-right
 		  if ((pattern->signals[7]>pattern->signals[8])&&
 		      (pattern->signals[5]>pattern->signals[8])) {
-		    pattern->type=12; 
+		    pattern->type=9; 
 		  }
 		} 
 	      }

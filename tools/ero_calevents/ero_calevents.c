@@ -278,8 +278,6 @@ int ero_calevents_main()
     fits_set_tscale(fptr, csuby, 1.0, (double)tzero_subx_suby, &status);
     CHECK_STATUS_BREAK(status);
 
-    // TODO use keywords NLLRAT, SPLTTHR
-
     // --- END of initialization ---
 
     // --- Beginning of copy events ---
@@ -291,34 +289,20 @@ int ero_calevents_main()
     double ra_min, ra_max, dec_min, dec_max;
 
     // Loop over all patterns in the FITS file. 
-    long row;
-    for (row=0; row<plf->nrows; row++) {
+    long input_row, output_row=0;
+    for (input_row=0; input_row<plf->nrows; input_row++) {
       
       // Read the next pattern from the input file.
       Pattern pattern;
-      getPatternFromFile(plf, row+1, &pattern, &status);
+      getPatternFromFile(plf, input_row+1, &pattern, &status);
       CHECK_STATUS_BREAK(status);
 
       // Determine the event data based on the pattern information.
       eroCalEvent ev;
 
+      // Time and frame.
       ev.time  =pattern.time;
       ev.frame =pattern.frame;
-      ev.pha   =pattern.pi;
-      ev.energy=pattern.signal*1000.; // [eV]
-      ev.rawx  =pattern.rawx+1;
-      ev.rawy  =pattern.rawy+1;
-
-      // TODO Columns SUBX and SUBY should have real values, because the
-      // center of a pixel is denoted by (-0.5,-0.5.).
-      ev.subx=0;
-      ev.suby=0;
-
-      // TODO Not used in the current implementation.
-      ev.pat_typ=0;
-
-      // TODO In the current implementation PAT_INF is set to the default value of 5.
-      ev.pat_inf=0;
 
       ev.ra=(long)(pattern.ra*180./M_PI/1.e-6);
       if (pattern.ra < 0.) {
@@ -331,7 +315,7 @@ int ero_calevents_main()
       }
 
       // Determine the minimum and maximum values of RA and Dec in [rad].
-      if (0==row) {
+      if (0==input_row) {
 	ra_min =pattern.ra;
 	ra_max =pattern.ra;
 	dec_min=pattern.dec;
@@ -371,7 +355,7 @@ int ero_calevents_main()
       if (pixcrd[1] < 0.) ev.y--;
 
       // Determine the actual minimum and maximum values of X and Y.
-      if (0==row) {
+      if (0==input_row) {
 	refxdmin=ev.x;
 	refxdmax=ev.x;
 	refydmin=ev.y;
@@ -400,25 +384,74 @@ int ero_calevents_main()
       // CCD number.
       ev.ccdnr=par.CCDNr;
 
-      // Store the event in the output file.
-      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, &ev.time, &status);
-      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &ev.frame, &status);
-      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &ev.pha, &status);      
-      fits_write_col(fptr, TFLOAT, cenergy, row+1, 1, 1, &ev.energy, &status);
-      fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &ev.rawx, &status);
-      fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &ev.rawy, &status);
-      fits_write_col(fptr, TLONG, cra, row+1, 1, 1, &ev.ra, &status);
-      fits_write_col(fptr, TLONG, cdec, row+1, 1, 1, &ev.dec, &status);
-      fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &ev.x, &status);
-      fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &ev.y, &status);
-      fits_write_col(fptr, TBYTE, csubx, row+1, 1, 1, &ev.subx, &status);
-      fits_write_col(fptr, TBYTE, csuby, row+1, 1, 1, &ev.suby, &status);
-      fits_write_col(fptr, TLONG, cflag, row+1, 1, 1, &ev.flag, &status);
-      fits_write_col(fptr, TUINT, cpat_typ, row+1, 1, 1, &ev.pat_typ, &status);
-      fits_write_col(fptr, TBYTE, cpat_inf, row+1, 1, 1, &ev.pat_inf, &status);
-      fits_write_col(fptr, TFLOAT, cev_weight, row+1, 1, 1, &ev.ev_weight, &status);
-      fits_write_col(fptr, TINT, cccdnr, row+1, 1, 1, &ev.ccdnr, &status);
+      // Loop over all split partners contributing to the pattern.
+      int ii;
+      for (ii=0; ii<9; ii++) {
+	
+	// Only regard split patterns with a non-vanishing contribution.
+	if (pattern.signals[ii]<=0.0) continue;
+
+	// Raw pixel coordinates.
+	ev.rawx  =pattern.rawx + ii%3;
+	ev.rawy  =pattern.rawy + ii/3;
+
+	// Detected channel.
+	ev.pha   =pattern.pi;
+	// TODO Store the adu of the individual split partners !!!
+
+	// Calibrated and recombined amplitude in [eV].
+	// The amplitude is positive for the main event only. For
+	// split partners it is negative.
+	if (4==ii) {
+	  ev.energy= pattern.signal*1000.;
+	  // TODO Sub-pixel resolution is not implemented yet.
+	  ev.subx=0;
+	  ev.suby=0;
+	} else {
+	  ev.energy=-pattern.signal*1000.;
+	  ev.subx=-127;
+	  ev.suby=-127;
+	}
+
+	// Pattern type.
+	if (pattern.type>=0) {
+	  ev.pat_typ=pattern.npixels;
+	} else {
+	  // Invalid patterns.
+	  ev.pat_typ=0;
+	}
+
+	// Pattern type and alignment.
+	if (pattern.type>=0) {
+	  int pixelnr=(ii+1) - ((ii/3)-1)*6;
+	  ev.pat_inf=pattern.type*10 + pixelnr;
+	} else {
+	  ev.pat_inf=0;
+	}
+
+	// Store the event in the output file.
+	output_row++;
+	fits_write_col(fptr, TDOUBLE, ctime, output_row, 1, 1, &ev.time, &status);
+	fits_write_col(fptr, TLONG, cframe, output_row, 1, 1, &ev.frame, &status);
+	fits_write_col(fptr, TLONG, cpha, output_row, 1, 1, &ev.pha, &status);      
+	fits_write_col(fptr, TFLOAT, cenergy, output_row, 1, 1, &ev.energy, &status);
+	fits_write_col(fptr, TINT, crawx, output_row, 1, 1, &ev.rawx, &status);
+	fits_write_col(fptr, TINT, crawy, output_row, 1, 1, &ev.rawy, &status);
+	fits_write_col(fptr, TLONG, cra, output_row, 1, 1, &ev.ra, &status);
+	fits_write_col(fptr, TLONG, cdec, output_row, 1, 1, &ev.dec, &status);
+	fits_write_col(fptr, TLONG, cx, output_row, 1, 1, &ev.x, &status);
+	fits_write_col(fptr, TLONG, cy, output_row, 1, 1, &ev.y, &status);
+	fits_write_col(fptr, TINT, csubx, output_row, 1, 1, &ev.subx, &status);
+	fits_write_col(fptr, TINT, csuby, output_row, 1, 1, &ev.suby, &status);
+	fits_write_col(fptr, TLONG, cflag, output_row, 1, 1, &ev.flag, &status);
+	fits_write_col(fptr, TUINT, cpat_typ, output_row, 1, 1, &ev.pat_typ, &status);
+	fits_write_col(fptr, TBYTE, cpat_inf, output_row, 1, 1, &ev.pat_inf, &status);
+	fits_write_col(fptr, TFLOAT, cev_weight, output_row, 1, 1, &ev.ev_weight, &status);
+	fits_write_col(fptr, TINT, cccdnr, output_row, 1, 1, &ev.ccdnr, &status);
+	CHECK_STATUS_BREAK(status);
+      }
       CHECK_STATUS_BREAK(status);
+      // End of loop over all split partners.
     }
     CHECK_STATUS_BREAK(status);
     // END of loop over all patterns in the FITS file.
