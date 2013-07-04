@@ -23,8 +23,10 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
   sp->xpixelwidth = spp->xpixelwidth;
   sp->ypixelwidth = spp->ypixelwidth;
   sp->DCU_length = spp->DCU_length;
+  if(spp->DCU_length!=0.){
   sp->DCU_gap = spp->DCU_gap;
   sp->DCA_gap = spp->DCA_gap;
+  }
 
   //Get the memory for the pixels(xwidth x ywidth):
   //Rows:size of one pixel * number of pixels in x-direction
@@ -326,9 +328,10 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
 }
 
 
-
 int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 {
+  if(sp->DCU_length!=0.){
+
   //position.x and .y is with reference to the back left corner of the detector [m]
   //(if pos. x-dir is from back to front and pos- y-dir from left to right)
   //first: check, whether impact position lies within one of the DCU's
@@ -356,6 +359,10 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 	    else{return(0);
 	    }
     }
+  }else{
+    *x = (int)(position.x/sp->xpixelwidth +1.)-1;
+    *y = (int)(position.y/sp->ypixelwidth +1.)-1;
+  }
  
   if ((*x>=0) && (*x<sp->xwidth) && (*y>=0) && (*y<sp->ywidth)) {
     return (1); // Valid pixel.

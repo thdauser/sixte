@@ -124,6 +124,7 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp,
     undefined. */
 int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y);
 
+
 /** Update the valid flag for a newly created event pattern. */
 void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits);
 

@@ -32,6 +32,8 @@ struct Parameters {
   int width;
   /** Width of one detector pixel in [m]. */
   double pixelwidth;
+  /** Width of re-pixeled detector pixels in [m]. */
+  double RePixSize;  //0.0 means detector shouldn't be repixeled, else the value is given
 
   /** Distance between the coded mask and the detector plane ([m]). */
   double MaskDistance;  

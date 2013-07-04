@@ -119,9 +119,8 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
   int x,y;                          //count for memory allocation
   int xcount, ycount;               //count for getting Rmap in case1:same pixel size
   int xpixelcount=0, ypixelcount=0; //count for getting Rmap in case2:diff pixel size
-  double left=0.,leftbig=0.;        //left border of small(detector) and big(mask) pixel
-  double top=0.,topbig=0.;          //top border of small(detector) and big(mask) pixel
-  double ry, rx;
+  double leftsmall=0.,leftbig=0.;        //left border of small(detector) and big(mask) pixel
+  double topsmall=0.,topbig=0.;          //top border of small(detector) and big(mask) pixel
   double w, h;                      //width and height of part of small pixel inside current big pixel
   
 
@@ -132,13 +131,8 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
  //in order to get same pixelsize as detector:
  //[naxis1 in maskpixels]*[pixelsize of mask]->absolut size of mask in meters
  //divided by [detector pixelsize]
-  
-  /*recon->naxis1=mask->naxis1;
-    recon->naxis2=mask->naxis2;*/
-
-  
     recon->naxis1=2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth);
-      recon->naxis2=2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth);
+    recon->naxis2=2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth);
 
   //memory-allocation for Rmap
   recon->Rmap=(double**)malloc(recon->naxis1*sizeof(double*));
@@ -168,96 +162,86 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
    recon->open_fraction = mask->transparency;
 
 
-  //for testing: Loop to decide whether pixelsize is different for det and mask
+  // decide whether pixelsize is different for det and mask
    if(mask->cdelt1 == detector_pixels->xpixelwidth){
-
-
 
   //Scanning over all mask-elements
   for(xcount=0; xcount < mask->naxis1; xcount++){
     for(ycount=0; ycount < mask->naxis2; ycount++){
       if(mask->map[xcount][ycount]==1){
-
-
-		recon->Rmap[xcount][ycount]=1.;
+	recon->Rmap[xcount][ycount]=1.;
       }else if(mask->map[xcount][ycount]==0){
-	//Recon Array1
 	recon->Rmap[xcount][ycount]=
-	(recon->open_fraction)/(recon->open_fraction - 1.);
-
-	//padding:move Rmap to middle 
-	/*	recon->Rmap[xcount+(recon->naxis1)/4-1][ycount+(recon->naxis2)/4-1]=1.;
-      }else if(mask->map[xcount][ycount]==0){
-	//Recon Array1
-	recon->Rmap[xcount+(recon->naxis1)/4-1][ycount+(recon->naxis2)/4-1]=
-	(recon->open_fraction)/(recon->open_fraction - 1.);*/
-
-
-
-	//padding:move Rmap to upper right corner 
-	/*	recon->Rmap[xcount+(recon->naxis1)/2-1][ycount+(recon->naxis2)/2-1]=1.;
-      }else if(mask->map[xcount][ycount]==0){
-	//Recon Array1
-	recon->Rmap[xcount+(recon->naxis1)/2-1][ycount+(recon->naxis2)/2-1]=
-	(recon->open_fraction)/(recon->open_fraction - 1.);*/
+	  (recon->open_fraction)/(recon->open_fraction - 1.);
       }else{
 	*status=EXIT_FAILURE;
 	HD_ERROR_THROW("Error while scanning mask-elements!\n", *status);
 	}
-      
     }
-}//End of scanning over mask-elements
+  }//End of scanning over mask-elements
    }//End equal pixelsize
 
    else{//begin diff pixelsize
-  //Scanning over all mask-elements to get Rmap with same pixel-size as detector
+     //initialize all to max neg value (depending on OF)
+     for(xcount=0; xcount < (recon->naxis1/2); xcount++){
+       for(ycount=0; ycount < (recon->naxis2/2); ycount++){
+	 recon->Rmap[xcount][ycount]=(recon->open_fraction)/(recon->open_fraction - 1.);
+	}
+     }
+
+     //distance between max neg value and 1 (which has to be distributed accordingly to new smaller pixels)
+     double diff=1.-(recon->open_fraction)/(recon->open_fraction - 1.);
+
+     //Scanning over all mask-elements to get Rmap with same pixel-size as detector
      for(ycount=0; ycount<mask->naxis2;ycount++){
        for(xcount=0; xcount<mask->naxis1;xcount++){
 
 	 topbig=ycount*mask->cdelt2;   //top of current big pixel
-	 top=topbig;                   //top of current small pixel starts at big pixel
-	 ypixelcount=topbig/detector_pixels->ypixelwidth;  //count for small pixel(Rmap)
-	 while(top< (topbig+mask->cdelt2)){
-	   ry=0.;
-	   if((top+detector_pixels->ypixelwidth)>(topbig+mask->cdelt2)){
-	     ry=top+detector_pixels->ypixelwidth-topbig+mask->cdelt2;
-	   }//end (last) small pixel partially inside big pixel
-	   
-	   h=detector_pixels->ypixelwidth - (top-ypixelcount*detector_pixels->ypixelwidth)-ry;
-	   
+	 ypixelcount=topbig/detector_pixels->ypixelwidth;  //count for small pixel (new pixels in Rmap)
+	 //current y-pix: top border of big pix/width of one small pix->determines 1st small in curent big
+
+	 do{//as long as in current big pixel in y-direction
+	   topsmall=ypixelcount*detector_pixels->ypixelwidth; //top border of small pix: current small pix*width of one
+	   if(topsmall<topbig){//1st small in current big starts with part of it in former pix
+	     h=detector_pixels->ypixelwidth-(topbig-topsmall);//height that lies in current big:smallwidth-(part of height that lies in former big pix)
+	    }else{
+	     if((topsmall+detector_pixels->ypixelwidth) <= (topbig+mask->cdelt2)){//small pix lies completely in big
+	       h=detector_pixels->ypixelwidth;
+	     }else{//small pix is at border of curent big->part of it in next big
+	       h=topbig+mask->cdelt2-topsmall;//part of height in current big:top of next big - top of current small
+	      }
+	    }
+
 	   leftbig=xcount*mask->cdelt1;
-	   left=leftbig;
 	   xpixelcount=leftbig/detector_pixels->xpixelwidth;
-	   while(left< (leftbig+mask->cdelt1)){
-	     rx=0.;
-	     if((left+detector_pixels->xpixelwidth)>(leftbig+mask->cdelt1)){
-	     rx=left+detector_pixels->xpixelwidth-leftbig+mask->cdelt1;
-	     }//end (last) small pixel partially inside big pixel
-	     
-	     w=detector_pixels->xpixelwidth - (left-xpixelcount*detector_pixels->xpixelwidth)-rx;
-
-	     if(mask->map[xcount][ycount]==1){
-	       recon->Rmap[xpixelcount][ypixelcount]+=
-		h*w/(detector_pixels->xpixelwidth*detector_pixels->ypixelwidth);
-	     }//end transparent pixel
-	     else{
-	       recon->Rmap[xpixelcount][ypixelcount]+=
-		 h*w/(detector_pixels->xpixelwidth*detector_pixels->ypixelwidth)*
-		 (recon->open_fraction)/(recon->open_fraction - 1.);
-	     }//end opaque pixel
-
+	   do{//as long as in current big pixel in x-direction
+	     leftsmall=xpixelcount*detector_pixels->xpixelwidth;
+	     if(leftsmall<leftbig){
+	       w=detector_pixels->xpixelwidth-(leftbig-leftsmall);
+	     }else{
+	       if((leftsmall+detector_pixels->xpixelwidth) <= (leftbig+mask->cdelt1)){
+		 w=detector_pixels->xpixelwidth;
+	       }else{
+		 w=leftbig+mask->cdelt1-leftsmall;
+	       }
+	     }
+	     if(mask->map[xcount][ycount]==1){//all small transparent pixel-areas contribute as percentage
+	       recon->Rmap[xpixelcount][ypixelcount]+=//one small pix can have contributions from parts lying in diff big pix
+		 h*w/(detector_pixels->xpixelwidth*detector_pixels->ypixelwidth)*diff;//percentage of area with respect to area of whole small pix
+	     }//multiplied with max diff occuring in Rmap values, in order to distribute them accordingly
 	     xpixelcount++;
-	     left+=left+w;
-	   }//end sanning x small pixel
+	   }while(leftsmall+detector_pixels->xpixelwidth <= (leftbig+mask->cdelt1));
+	   //end current big pixel x-direction
 
-	   ypixelcount++;
-	   top+=top+h;
-	 }//end scanning y small pixel
 
-       }//end x bigpixel
-     }//end y bigpixel
-   }
+	     ypixelcount++;
+	 }while(topsmall+detector_pixels->ypixelwidth <= (topbig+mask->cdelt2));
+	 //end current big pixel y-direction
+      }
+     }
+
   return(recon);
+}
 }
 
 
