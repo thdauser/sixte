@@ -46,7 +46,7 @@ typedef struct {
   float energy;
 
   int rawx, rawy;
-  unsigned char subx, suby;
+  int subx, suby;
 
   long ra, dec;
   long x, y;

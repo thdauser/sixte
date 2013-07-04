@@ -262,27 +262,36 @@ void phpat(GenDet* const det,
 	      // Determine signals in 3x3 matrix.
 	      if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx-1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[0] = neighborlist[kk]->signal;
+		  pattern->signals[0]=neighborlist[kk]->signal;
+		  pattern->pis[0]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[3] = neighborlist[kk]->signal;
+		  pattern->signals[3]=neighborlist[kk]->signal;
+		  pattern->pis[3]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[6] = neighborlist[kk]->signal;
+		  pattern->signals[6]=neighborlist[kk]->signal;
+		  pattern->pis[6]    =neighborlist[kk]->pi;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[1] = neighborlist[kk]->signal;
+		  pattern->signals[1]=neighborlist[kk]->signal;
+		  pattern->pis[1]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[4] = neighborlist[kk]->signal;
+		  pattern->signals[4]=neighborlist[kk]->signal;
+		  pattern->pis[4]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[7] = neighborlist[kk]->signal;
+		  pattern->signals[7]=neighborlist[kk]->signal;
+		  pattern->pis[7]    =neighborlist[kk]->pi;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx+1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
-		  pattern->signals[2] = neighborlist[kk]->signal;
+		  pattern->signals[2]=neighborlist[kk]->signal;
+		  pattern->pis[2]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
-		  pattern->signals[5] = neighborlist[kk]->signal;
+		  pattern->signals[5]=neighborlist[kk]->signal;
+		  pattern->pis[5]    =neighborlist[kk]->pi;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
-		  pattern->signals[8] = neighborlist[kk]->signal;
+		  pattern->signals[8]=neighborlist[kk]->signal;
+		  pattern->pis[8]    =neighborlist[kk]->pi;
 		}
 	      }
 
@@ -337,13 +346,13 @@ void phpat(GenDet* const det,
 	      } else if (2==nneighborlist) {
 		// Check for double types.
 		if (pattern->signals[1]>0.) {
-		  pattern->type=1; // bottom
+		  pattern->type=3; // bottom
 		} else if (pattern->signals[3]>0.) {
-		  pattern->type=2; // left
+		  pattern->type=4; // left
 		} else if (pattern->signals[7]>0.) {
-		  pattern->type=3; // top
+		  pattern->type=1; // top
 		} else if (pattern->signals[5]>0.) {
-		  pattern->type=4; // right
+		  pattern->type=2; // right
 		} 
 
 	      } else if (3==nneighborlist) {
@@ -351,16 +360,16 @@ void phpat(GenDet* const det,
 		if (pattern->signals[1]>0.) {
 		  // bottom
 		  if (pattern->signals[3]>0.) {
-		    pattern->type=5; // bottom-left
+		    pattern->type=7; // bottom-left
 		  } else if (pattern->signals[5]>0.) {
 		    pattern->type=6; // bottom-right
 		  }
 		} else if (pattern->signals[7]>0.) {
 		  // top
 		  if (pattern->signals[3]>0.) {
-		    pattern->type=7; // top-left
+		    pattern->type=8; // top-left
 		  } else if (pattern->signals[5]>0.) {
-		    pattern->type=8; // top-right
+		    pattern->type=5; // top-right
 		  }
 		}
 
@@ -369,7 +378,7 @@ void phpat(GenDet* const det,
 		if (pattern->signals[0]>0.) { // bottom-left
 		  if ((pattern->signals[1]>pattern->signals[0])&&
 		      (pattern->signals[3]>pattern->signals[0])) {
-		    pattern->type=9; 
+		    pattern->type=11; 
 		  } 
 		} else if (pattern->signals[2]>0.) { // bottom-right
 		  if ((pattern->signals[1]>pattern->signals[2])&&
@@ -379,12 +388,12 @@ void phpat(GenDet* const det,
 		} else if (pattern->signals[6]>0.) { // top-left
 		  if ((pattern->signals[7]>pattern->signals[6])&&
 		      (pattern->signals[3]>pattern->signals[6])) {
-		    pattern->type=11; 
+		    pattern->type=12; 
 		  }
 		} else if (pattern->signals[8]>0.) { // top-right
 		  if ((pattern->signals[7]>pattern->signals[8])&&
 		      (pattern->signals[5]>pattern->signals[8])) {
-		    pattern->type=12; 
+		    pattern->type=9; 
 		  }
 		} 
 	      }

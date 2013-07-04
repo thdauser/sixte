@@ -22,7 +22,7 @@ typedef struct {
 
   /** Column numbers. */
   int ctime, cframe, cpi, csignal, crawx, crawy, cra, cdec, 
-    cph_id, csrc_id, cnpixels, ctype, cpileup, csignals;
+    cph_id, csrc_id, cnpixels, ctype, cpileup, csignals, cpis;
 
 } PatternFile;
 

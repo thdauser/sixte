@@ -23,10 +23,11 @@ Pattern* getPattern(int* const status)
   int ii;
   for(ii=0; ii<9; ii++) {
     pat->signals[ii]=0.;
+    pat->pis[ii]    =0;
   }
   for(ii=0; ii<NPATTERNPHOTONS; ii++) {
-    pat->ph_id[ii]  = 0;
-    pat->src_id[ii] = 0;
+    pat->ph_id[ii] =0;
+    pat->src_id[ii]=0;
   }
 
   return(pat);

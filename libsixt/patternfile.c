@@ -25,6 +25,7 @@ PatternFile* newPatternFile(int* const status)
   file->ctype   =0;
   file->cnpixels=0;
   file->csignals=0;
+  file->cpis    =0;
   file->cpileup =0;
 
   return(file);
@@ -157,6 +158,7 @@ PatternFile* openPatternFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "TYPE", &file->ctype, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNALS", &file->csignals, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PIS", &file->cpis, status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
@@ -263,7 +265,9 @@ void getPatternFromFile(const PatternFile* const file,
   fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
 		&inull, &pattern->pileup, &anynul, status);
   fits_read_col(file->fptr, TFLOAT, file->csignals, row, 1, 9, 
-		&lnull, &pattern->signals, &anynul, status);
+		&fnull, &pattern->signals, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cpis, row, 1, 9, 
+		&lnull, &pattern->pis, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   // Check if an error occurred during the reading process.
@@ -309,6 +313,8 @@ void updatePatternInFile(const PatternFile* const file,
 		 1, 1, &pattern->type, status);
   fits_write_col(file->fptr, TFLOAT, file->csignals, row, 
 		 1, 9, &pattern->signals, status);
+  fits_write_col(file->fptr, TLONG, file->cpis, row, 
+		 1, 9, &pattern->pis, status);
   CHECK_STATUS_VOID(*status);
 }
 
