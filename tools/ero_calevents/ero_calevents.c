@@ -663,9 +663,10 @@ int ero_calevents_main()
       }
 
       // Insert the data.
-      // Current bin in the GTI collection.
-      unsigned long gtibin=0;
+      // Number of rows in the output attitude extension.
+      long nrows=0;
       // Loop over all intervals in the GTI collection.
+      unsigned long gtibin=0;
       do {
 	// Currently regarded interval.
 	double t0, t1;
@@ -681,7 +682,6 @@ int ero_calevents_main()
 	
 	// Note that the attitude is stored in steps of 1s 
 	// according to the official event file format definition.
-	long nrows=0;
 	double currtime;
 	for (currtime=t0; currtime<=t1; currtime+=1.0) {
 	  Vector pointing=getTelescopeNz(ac, currtime, &status);
