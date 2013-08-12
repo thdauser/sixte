@@ -336,7 +336,9 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
   //(if pos. x-dir is from back to front and pos- y-dir from left to right)
   //first: check, whether impact position lies within one of the DCU's
   //second: determine position in terms of pixels
-  //third: ensure that there will be no error with the type-cast (int rounds to lower value)
+  //third: ensure that there will be no error with the type-cast
+  //(int rounds to lower value)
+
   double DCA_length=(2.*sp->DCU_length)+sp->DCU_gap;
   double DCA=DCA_length+sp->DCA_gap;
 

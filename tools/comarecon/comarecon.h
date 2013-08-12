@@ -24,9 +24,6 @@ struct Parameters {
   char EventList[MAXMSG];
   char EventListTemplate[MAXMSG];
   char Image[MAXMSG]; // output: reconstructed source image
-  char ReconArray[MAXMSG]; //output: reconstruction array
-
-  int ReconType; // reconstruction type (1: direct deconvolution, 2: FFT)
 
   /** Detector width in [pixel]. */
   int width;
