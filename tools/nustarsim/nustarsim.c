@@ -717,7 +717,7 @@ int nustarsim_main()
       headas_chat(3, "apply dead time ...\n");
       double last_time=0.;
       double veto_time=0.;
-      const double veto_interval=500.e-6;
+      const double veto_interval=500.e-6; // This value is taken from Bhalerao p.25 (43).
       const double veto_rate=28.;
 
       // Loop over all rows in the event file.
