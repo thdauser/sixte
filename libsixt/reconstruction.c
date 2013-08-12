@@ -1,31 +1,5 @@
 #include "reconstruction.h"
 
-ReconArrayFits* newReconArrayForFits(int* const status)
-{
-  ReconArrayFits* recon=(ReconArrayFits*)malloc(sizeof(ReconArrayFits));
-  if (NULL==recon) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not allocate memory for Reconstruction Array!\n",
-		   *status);
-    return(recon);
-  }
-
-  //Initialization:
-  recon->Rmap=NULL;
-  recon->open_fraction=0.;
-
-  recon->naxis1 = 0;
-  recon->naxis2 = 0;
-  recon->cdelt1 = 0.;
-  recon->cdelt2 = 0.;
-  recon->crpix1 = 0.;
-  recon->crpix2 = 0.;
-  recon->crval1 = 0.;
-  recon->crval2 = 0.;
-
-  return(recon);
-}
-
 ReconArray* newReconArray(int* const status)
 {
   ReconArray* recon=(ReconArray*)malloc(sizeof(ReconArray));
@@ -46,71 +20,6 @@ ReconArray* newReconArray(int* const status)
   return(recon);
 }
 
-ReconArrayFits* getReconArrayForFits(const CodedMask* const mask, int* const status)
-{
-
-  ReconArrayFits* recon=NULL;
-  int x,y;
-  int xcount, ycount;
-
-  //Get empty reconstruction array-object
-  recon=newReconArrayForFits(status);
-  if (EXIT_SUCCESS!=*status) return(recon);
-
-  //properties are equal to those of the mask
-  recon->naxis1=mask->naxis1;
-  recon->naxis2=mask->naxis2;
-  recon->cdelt1=mask->cdelt1;
-  recon->cdelt2=mask->cdelt2;
-  recon->crpix1=mask->crpix1;
-  recon->crpix2=mask->crpix2;
-  recon->crval1=mask->crval1;
-  recon->crval2=mask->crval2;
-
-  //memory-allocation
-  recon->Rmap=(double**)malloc(recon->naxis1*sizeof(double*));
-  if(NULL!=recon->Rmap){
-    for(x=0; x < recon->naxis1; x++){
-      recon->Rmap[x]=(double*)malloc(recon->naxis2*sizeof(double));
-	if(NULL==recon->Rmap[x]) {
-	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: could not allocate memory to store the "
-			 "ReconstructionArray!\n", *status);
-	  return(recon);
-	}
-	//Clear the pixels
-	for(y=0; y < recon->naxis2; y++){
-	  recon->Rmap[x][y]=0.;
-	}
-    }
-    if (EXIT_SUCCESS!=*status) return(recon);
-  } else {
-      *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: could not allocate memory to store the "
-		     "ReconstructionArray!\n", *status);
-      return(recon);
-  }//end of memory-allocation
-
-   recon->open_fraction = mask->transparency;
-
-  //Scanning over all mask-elements
-  for(xcount=0; xcount < mask->naxis1; xcount++){
-    for(ycount=0; ycount < mask->naxis2; ycount++){
-      if(mask->map[xcount][ycount]==1){
-	recon->Rmap[xcount][ycount]=1.;
-      }else if(mask->map[xcount][ycount]==0){
-	recon->Rmap[xcount][ycount]=(recon->open_fraction)/(recon->open_fraction - 1.);
-      }else{
-	*status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error while scanning mask-elements!\n", *status);
-      }
-      
-    }
-  }//End of scanning over mask-elements
-
-  return(recon);
-}
-
 
 ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pixels, int* const status)
 {
@@ -119,8 +28,8 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
   int x,y;                          //count for memory allocation
   int xcount, ycount;               //count for getting Rmap in case1:same pixel size
   int xpixelcount=0, ypixelcount=0; //count for getting Rmap in case2:diff pixel size
-  double leftsmall=0.,leftbig=0.;        //left border of small(detector) and big(mask) pixel
-  double topsmall=0.,topbig=0.;          //top border of small(detector) and big(mask) pixel
+  double leftsmall=0.,leftbig=0.;   //left border of small(detector) and big(mask) pixel
+  double topsmall=0.,topbig=0.;     //top border of small(detector) and big(mask) pixel
   double w, h;                      //width and height of part of small pixel inside current big pixel
   
 
@@ -185,11 +94,13 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
      //initialize all to max neg value (depending on OF)
      for(xcount=0; xcount < (recon->naxis1/2); xcount++){
        for(ycount=0; ycount < (recon->naxis2/2); ycount++){
-	 recon->Rmap[xcount][ycount]=(recon->open_fraction)/(recon->open_fraction - 1.);
+	 recon->Rmap[xcount][ycount]=(recon->open_fraction)/
+	   (recon->open_fraction - 1.);
 	}
      }
 
-     //distance between max neg value and 1 (which has to be distributed accordingly to new smaller pixels)
+     //distance between max neg value and 1 (which has to be distributed
+     // accordingly to new smaller pixels)
      double diff=1.-(recon->open_fraction)/(recon->open_fraction - 1.);
 
      //Scanning over all mask-elements to get Rmap with same pixel-size as detector
@@ -198,17 +109,22 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
 
 	 topbig=ycount*mask->cdelt2;   //top of current big pixel
 	 ypixelcount=topbig/detector_pixels->ypixelwidth;  //count for small pixel (new pixels in Rmap)
-	 //current y-pix: top border of big pix/width of one small pix->determines 1st small in curent big
+	 //current y-pix: top border of big pix/width of one small pix
+	 //->determines 1st small in curent big
 
 	 do{//as long as in current big pixel in y-direction
-	   topsmall=ypixelcount*detector_pixels->ypixelwidth; //top border of small pix: current small pix*width of one
+	   topsmall=ypixelcount*detector_pixels->ypixelwidth; //top border of small pix: 
+	                                                      //current small pix*width of one
 	   if(topsmall<topbig){//1st small in current big starts with part of it in former pix
-	     h=detector_pixels->ypixelwidth-(topbig-topsmall);//height that lies in current big:smallwidth-(part of height that lies in former big pix)
+	     h=detector_pixels->ypixelwidth-(topbig-topsmall);//height that lies in current big:
+	                                 //smallwidth-(part of height that lies in former big pix)
 	    }else{
-	     if((topsmall+detector_pixels->ypixelwidth) <= (topbig+mask->cdelt2)){//small pix lies completely in big
+	     if((topsmall+detector_pixels->ypixelwidth) <= (topbig+mask->cdelt2)){
+              //small pix lies completely in big
 	       h=detector_pixels->ypixelwidth;
 	     }else{//small pix is at border of curent big->part of it in next big
-	       h=topbig+mask->cdelt2-topsmall;//part of height in current big:top of next big - top of current small
+	       h=topbig+mask->cdelt2-topsmall;//part of height in current big:
+	       //top of next big - top of current small
 	      }
 	    }
 
@@ -225,9 +141,12 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
 		 w=leftbig+mask->cdelt1-leftsmall;
 	       }
 	     }
-	     if(mask->map[xcount][ycount]==1){//all small transparent pixel-areas contribute as percentage
-	       recon->Rmap[xpixelcount][ypixelcount]+=//one small pix can have contributions from parts lying in diff big pix
-		 h*w/(detector_pixels->xpixelwidth*detector_pixels->ypixelwidth)*diff;//percentage of area with respect to area of whole small pix
+	     if(mask->map[xcount][ycount]==1){//all small transparent pixel-areas
+	       // contribute as percentage
+	       recon->Rmap[xpixelcount][ypixelcount]+=//one small pix can have 
+		         //contributions from parts lying in diff big pix
+		 h*w/(detector_pixels->xpixelwidth*detector_pixels->ypixelwidth)*diff;
+	       //percentage of area with respect to area of whole small pix
 	     }//multiplied with max diff occuring in Rmap values, in order to distribute them accordingly
 	     xpixelcount++;
 	   }while(leftsmall+detector_pixels->xpixelwidth <= (leftbig+mask->cdelt1));
@@ -244,66 +163,6 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
 }
 }
 
-
-void SaveReconArrayFits(ReconArrayFits* recon, char* filename, int* status)
-{
-  fitsfile *fptr=NULL;
-  double *image1d=NULL;
-
-  // Print information to STDOUT.
-  char msg[MAXMSG];
-  sprintf(msg, "Store ReconArray in file '%s' ...\n", filename);
-  headas_chat(5, msg);
- 
-  do { // ERROR handling loop
-
-
-    // If the specified file already exists, remove the old version.
-    remove(filename);
- 
-    // Create a new FITS-file:
-    if (fits_create_file(&fptr, filename, status)) break;
-
-    // Allocate memory for the 1-dimensional image buffer (required for
-    // output to FITS file).
-    image1d = (double*)malloc(recon->naxis1*recon->naxis2*sizeof(double));
-    if (!image1d) {
-      *status = EXIT_FAILURE;
-      HD_ERROR_THROW("Error allocating memory!\n", *status);
-      break;
-    }
-
-    // Store the ReconArray in the 1-dimensional buffer to handle it 
-    // to the FITS routine.
-    int x, y;
-    for (x=0; x<recon->naxis1; x++) {
-      for (y=0; y<recon->naxis2; y++) {
-	image1d[(x+ recon->naxis1*y)] = recon->Rmap[x][y];
-      }
-    }
-
-    
-    // Create an image in the FITS-file (primary HDU):
-    long naxes[2] = {(long)(recon->naxis1), (long)(recon->naxis2)};
-    if (fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status)) break;
-    //                                   |-> naxis
-    //    int hdutype;
-    if (fits_movabs_hdu(fptr, 1, NULL, status)) break;
-
-    // Write the image to the file:
-    long fpixel[2] = {1, 1};  // Lower left corner.
-    //                |--|--> FITS coordinates start at (1,1)
-    // Upper right corner.
-    long lpixel[2] = {recon->naxis1, recon->naxis2}; 
-    fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, image1d, status);
-
-  } while (0); // END of ERROR handling loop
-
-  // Close the FITS file.
-  if (NULL!=fptr) fits_close_file(fptr, status);
-
-  if (NULL!=image1d) free(image1d);
-}
 
 double* SaveReconArray1d(ReconArray* recon, int* status)
 {
@@ -326,6 +185,30 @@ double* SaveReconArray1d(ReconArray* recon, int* status)
   }
  return(ReconArray1d);  
 }
+
+
+void FreeReconArray1d(double* ReconArray1d)
+{
+  if (ReconArray1d!=NULL) free(ReconArray1d);
+}
+
+
+void FreeReconArray(ReconArray* recon)
+{
+  if (recon!=NULL) {
+    if ((recon->naxis1>0)&&(NULL!=recon->Rmap)) {
+      int count;
+      for(count=0; count< recon->naxis1; count++) {
+	if (NULL!=recon->Rmap[count]) {
+	  free(recon->Rmap[count]);
+	}
+      }
+      free(recon->Rmap);
+    }
+    free(recon);
+  }
+}
+
 
  //for testing: multiply mask and ReconArray to see whether it equals the unity matrix
 double* MultiplyMaskRecon(ReconArray* recon, CodedMask* mask, int* status)
@@ -392,42 +275,4 @@ double* MultiplyMaskRecon(ReconArray* recon, CodedMask* mask, int* status)
 
   free(Multiply);
   return(multiplyMR1d);
-}
-
-
-void FreeReconArray1d(double* ReconArray1d)
-{
-  if (ReconArray1d!=NULL) free(ReconArray1d);
-}
-
-void FreeReconArrayFits(ReconArrayFits* recon)
-{
-  if (recon!=NULL) {
-    if ((recon->naxis1>0)&&(NULL!=recon->Rmap)) {
-      int count;
-      for(count=0; count< recon->naxis1; count++) {
-	if (NULL!=recon->Rmap[count]) {
-	  free(recon->Rmap[count]);
-	}
-      }
-      free(recon->Rmap);
-    }
-    free(recon);
-  }
-}
-
-void FreeReconArray(ReconArray* recon)
-{
-  if (recon!=NULL) {
-    if ((recon->naxis1>0)&&(NULL!=recon->Rmap)) {
-      int count;
-      for(count=0; count< recon->naxis1; count++) {
-	if (NULL!=recon->Rmap[count]) {
-	  free(recon->Rmap[count]);
-	}
-      }
-      free(recon->Rmap);
-    }
-    free(recon);
-  }
 }

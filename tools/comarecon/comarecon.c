@@ -74,77 +74,7 @@ int comarecon_main() {
 
     // Beginning of actual detector simulation (after loading required data):
     headas_chat(5, "start image reconstruction process ...\n");
-    if (par.ReconType ==1)
-      //Begin of reconstruction process type1 (direct deconvolution)
-      {
-	struct SourceImageParameters sip = {
-	.naxis1 = 2*mask->naxis1-1,
-	.naxis2 = 2*mask->naxis2-1,
-	.crpix1 = mask->naxis1,
-	.crpix2 = mask->naxis2,
 
-	.cdelt1 = delta,
-	.cdelt2 = delta,
-	.crval1 = 0.,
-	.crval2 = 0.
-	 };
-	 sky_pixels=getEmptySourceImage(&sip, &status);
-	 CHECK_STATUS_BREAK(status);
-
-
-
-      ReconArrayFits* recon_fits=NULL;
-
-      // Loop over all events in the FITS file.
-      while (0==EventFileEOF(&eventfile->generic)) {
-
-      CoMaEvent event;
-      status=CoMaEventFile_getNextRow(eventfile, &event);
-      CHECK_STATUS_BREAK(status);
-
-      // Add the event to the SquarePixels array.
-      detector_pixels->array[event.rawx][event.rawy].charge+=1.0;
-
-    } // END of scanning the event list.
-    CHECK_STATUS_BREAK(status);
-
-    //Get the reconstruction array:
-    recon_fits=getReconArrayForFits(mask, &status);
-
-    int s_x, s_y, ii, jj;
-    //determine the convolution source_image = R*D
-    //two loops over the source-image (2*size_det-1)
-    for(s_x=0; s_x < sky_pixels->naxis1; s_x++){
-      for (s_y=0; s_y < sky_pixels->naxis2; s_y++){
-	//two loops over the detection-area. Each positioning of the mask
-	//over the detector is considered.Therefore the shift-parameter is needed.
-	int xshift=s_x - sky_pixels->naxis1/2;
-	int yshift=s_y - sky_pixels->naxis2/2;
-	for (ii=MAX(0,-xshift); ii < detector_pixels->xwidth-1-MAX(0,xshift); ii++){
-	  for(jj=MAX(0,-yshift); jj < detector_pixels->ywidth-1-MAX(0,yshift); jj++){
-	    sky_pixels->pixel[s_x][s_y]+=
-	     recon_fits->Rmap[ii][jj] * detector_pixels->array[ii+xshift][jj+yshift].charge;
-	  }
-	}
-      }
-    }
-    // Write the reconstructed source function to the output FITS file.
-    saveSourceImage(sky_pixels, par.Image, &status);
-    SaveReconArrayFits(recon_fits, par.ReconArray, &status);
-    CHECK_STATUS_BREAK(status);
-
-  // --- Cleaning up ---
-  headas_chat(5, "cleaning up ...\n");
-
-  // Free the detector and sky image pixels.
-  destroySquarePixels(&detector_pixels);
-  free_SourceImage(sky_pixels);
-  FreeReconArrayFits(recon_fits);
-  }//END of reconstruction process type1 (direct deconvolution)
-
-  else if(par.ReconType==2)
-    //Begin of reconstruction process type2 (FFT)
-    {
       if(par.RePixSize==0.){
 	struct SourceImageParameters sip = {
 	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth)-1,
@@ -205,8 +135,11 @@ int comarecon_main() {
       struct SourceImageParameters sip = {
 	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth)-1,
 	    .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth)-1,
-	    .crpix1 = (float)(mask->naxis1*mask->cdelt1)/detector_pixels->xpixelwidth,
-	    .crpix2 = (float)(mask->naxis2*mask->cdelt2)/detector_pixels->ypixelwidth,
+	    //due to repix the axes get even numbers -> have to be shifted half a pixel
+	    //since one former pixel (for MIRAX) corresponds to 6 now -> shift: 4.0
+	    //TODO: determine crpix value automatically, depending on even/odd axes
+	    .crpix1 = (float)(mask->naxis1*mask->cdelt1)/detector_pixels->xpixelwidth-4.,
+	    .crpix2 = (float)(mask->naxis2*mask->cdelt2)/detector_pixels->ypixelwidth-4.,
 
 	    .cdelt1 = delta,
 	    .cdelt2 = delta,
@@ -231,7 +164,7 @@ int comarecon_main() {
 
 	 topbig=ycount*pixelwidth_big;   //top of current big pixel
 	 ypixelcount=ceil(topbig/detector_pixels->ypixelwidth);  //count for small pixel (new pixels in EventArray)
-	 //current y-pix: top border of big pix/width of one small pix->determines 1st small in curent big
+	 //current y-pix: top border of big pix/width of one small pix->determines 1st small in current big
 
 	 do{//as long as in current big pixel in y-direction
 	   topsmall=ypixelcount*detector_pixels->ypixelwidth; //top border of small pix: current small pix*width of one
@@ -289,7 +222,6 @@ int comarecon_main() {
     }
    
     }
-
     
     //reconstruct sky-image via FFT
 
@@ -357,12 +289,7 @@ int comarecon_main() {
 
   free_SourceImage(sky_pixels);
 
-  
-
-    }//END of reconstruction process type2 (FFT)
-  else {
-    //Error: wrong reconstruction type
-  }} while(0);  // END of the error handling loop.
+  } while(0);  // END of the error handling loop.
 
   // Close the FITS files.
   status=closeCoMaEventFile(eventfile);
@@ -389,16 +316,6 @@ int comarecon_getpar(struct Parameters* par)
   //Get the filename of the image file (FITS output file).
    else if ((status=PILGetFname("Image", par->Image))) {
   SIXT_ERROR("failed reading the filename of the output image");
-  }
-
-  //Get the filename of the ReconArray file (FITS output file).
-   else if ((status=PILGetFname("ReconArray", par->ReconArray))) {
-  SIXT_ERROR("failed reading the filename of the ReconArray");
-  }
-
-  // Get reconstruction type.
-  else if ((status=PILGetInt("ReconType", &par->ReconType))) {
-    SIXT_ERROR("failed reading the reconstruction type");
   }
 
   // Read the width of the detector in [pixel].
