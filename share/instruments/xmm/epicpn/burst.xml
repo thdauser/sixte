@@ -30,7 +30,7 @@
     <readoutline lineindex="0" readoutindex="$i"/>
     <newframe/>
     <lineshift/>
-    <wait time="0.72e-6"/>
+    <wait time="23.04e-6"/>
   </loop>
 </readout>
 </detector>
