@@ -211,46 +211,53 @@ void getTelescopeAxes(Attitude* const ac,
     pointed=1;
   } else {
     if (ac->currentry>0) {
-      dnz=vector_difference(ac->entry[ac->currentry].nz, 
-			    ac->entry[ac->currentry-1].nz);
+      dnz=vector_difference(*nz, ac->entry[ac->currentry-1].nz);
     } else {
-      dnz=vector_difference(ac->entry[ac->currentry+1].nz, 
-			    ac->entry[ac->currentry].nz);
+      dnz=vector_difference(ac->entry[ac->currentry+1].nz, *nz);
     }
     if (scalar_product(&dnz, &dnz)<1.e-10) {
       pointed=1;
     }
   }
 
-  // Check if the x1 vector should be aligned perpendicular to the north 
-  // direction or along the direction of motion of the telescope axis 
+  // Check if the x1 vector should be aligned along the north direction 
+  // or along the direction of motion of the telescope axis 
   // (neglecting the rotation according to the roll angle). For a pointed 
-  // observation the alignment is done perpendicular to the north direction.
+  // observation the alignment is done along the north direction.
   Vector x1;
   if ((1==pointed) || (ATTNX_NORTH==ac->align)) {
-    // Alignment perpendicular to the north direction.
-    Vector b={0., 0., 1.};
-    x1=vector_product(*nz, b);
+    // Alignment along the north direction.
     
-    // CHECK if the telescope is pointing towards one of the poles.
-    if (scalar_product(&x1, &x1)<1.e-20) {
-      Vector c={1., 0., 0.};
-      x1=vector_product(*nz, c);
+    // Check if the telescope is pointing towards one of the poles.
+    Vector north={0., 0., 1.};
+    if (fabs(scalar_product(nz, &north))<1.e-30) {
+      x1.x=1.0;
+      x1.y=0.0;
+      x1.z=0.0;
+    } else {
+      // If not, align the x1 vector along the north direction.
+      x1=north;
     }
 
-    // Normalize the vector in order to obtain a unit vector.
-    x1=normalize_vector(x1);
-
   } else if (ATTNX_MOTION==ac->align) {
-    // Alignment along the direction of motion of the telescope axis.
-    Vector perpendicular=vector_product(*nz, dnz);
-    x1=normalize_vector(vector_product(perpendicular, *nz));
+    // Alignment of nx along the direction of motion of the telescope axis.
+    x1=normalize_vector(dnz);
 
   } else {
     *status=EXIT_FAILURE;
     SIXT_ERROR("invalid attitude alignment");
     return;
   }
+
+  // Subtract the projection of the pointing direction
+  // such that x1 and nz are perpendicular to each other.
+  double scp=scalar_product(&x1, nz);
+  x1.x -= scp*nz->x;
+  x1.y -= scp*nz->y;
+  x1.z -= scp*nz->z;
+
+  // Normalize the vector in order to obtain a unit vector.
+  x1=normalize_vector(x1);
 
   // Determine the y1 vector, which is perpendicular 
   // to the other two axes nz and x1:
