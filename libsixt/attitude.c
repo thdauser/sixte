@@ -70,7 +70,7 @@ Attitude* loadAttitude(const char* filename, int* const status)
       *status=EXIT_FAILURE;
       SIXT_ERROR("invalid value for keyword ALIGNMEN in attitude file");
       break;
-    } 
+    }
     
     // Read all lines from attitude file subsequently.
     AttitudeFileEntry afe;
@@ -224,8 +224,8 @@ void getTelescopeAxes(Attitude* const ac,
 
   // Check if the x1 vector should be aligned perpendicular to the north 
   // direction or along the direction of motion of the telescope axis 
-  // (neglecting the roll angle). For a pointed observation the alignment 
-  // is done perpendicular to the north direction.
+  // (neglecting the rotation according to the roll angle). For a pointed 
+  // observation the alignment is done perpendicular to the north direction.
   Vector x1;
   if ((1==pointed) || (ATTNX_NORTH==ac->align)) {
     // Alignment perpendicular to the north direction.
@@ -259,12 +259,14 @@ void getTelescopeAxes(Attitude* const ac,
   // Take into account the roll angle.
   float roll_angle=getRollAngle(ac, time, status);
   CHECK_STATUS_VOID(*status);
-  nx->x= x1.x * cos(roll_angle) + y1.x * sin(roll_angle);
-  nx->y= x1.y * cos(roll_angle) + y1.y * sin(roll_angle);
-  nx->z= x1.z * cos(roll_angle) + y1.z * sin(roll_angle);
-  ny->x=-x1.x * sin(roll_angle) + y1.x * cos(roll_angle);
-  ny->y=-x1.y * sin(roll_angle) + y1.y * cos(roll_angle);
-  ny->z=-x1.z * sin(roll_angle) + y1.z * cos(roll_angle);
+  double sinroll=sin(roll_angle);
+  double cosroll=cos(roll_angle);
+  nx->x= x1.x * cosroll + y1.x * sinroll;
+  nx->y= x1.y * cosroll + y1.y * sinroll;
+  nx->z= x1.z * cosroll + y1.z * sinroll;
+  ny->x=-x1.x * sinroll + y1.x * cosroll;
+  ny->y=-x1.y * sinroll + y1.y * cosroll;
+  ny->z=-x1.z * sinroll + y1.z * cosroll;
 }
 
 
