@@ -229,16 +229,19 @@ void getTelescopeAxes(Attitude* const ac,
     // Alignment along the north direction.
     
     // Check if the telescope is pointing towards one of the poles.
-    Vector north={0., 0., 1.};
-    if (fabs(scalar_product(nz, &north))<1.e-30) {
+    Vector n1={1.0, 0.0, 0.0};
+    Vector n2={0.0, 1.0, 0.0};
+    if ((fabs(scalar_product(nz, &n1))<1.e-20) && 
+	(fabs(scalar_product(nz, &n2))<1.e-20)) {
       x1.x=1.0;
       x1.y=0.0;
       x1.z=0.0;
     } else {
       // If not, align the x1 vector along the north direction.
-      x1=north;
+      x1.x=0.0;
+      x1.y=0.0;
+      x1.z=1.0;
     }
-
   } else if (ATTNX_MOTION==ac->align) {
     // Alignment of nx along the direction of motion of the telescope axis.
     x1=normalize_vector(dnz);
@@ -252,9 +255,9 @@ void getTelescopeAxes(Attitude* const ac,
   // Subtract the projection of the pointing direction
   // such that x1 and nz are perpendicular to each other.
   double scp=scalar_product(&x1, nz);
-  x1.x -= scp*nz->x;
-  x1.y -= scp*nz->y;
-  x1.z -= scp*nz->z;
+  x1.x-=scp*nz->x;
+  x1.y-=scp*nz->y;
+  x1.z-=scp*nz->z;
 
   // Normalize the vector in order to obtain a unit vector.
   x1=normalize_vector(x1);
