@@ -59,8 +59,8 @@ void getGenDetAffectedPixel(const GenPixGrid* const grid,
   // Rotate around the reference point [m].
   double cosrota=cos(grid->rota);
   double sinrota=sin(grid->rota);
-  double xr=xd*cosrota - yd*sinrota;
-  double yr=xd*sinrota + yd*cosrota;
+  double xr= xd*cosrota +yd*sinrota;
+  double yr=-xd*sinrota +yd*cosrota;
 
   // Calculate the real valued pixel indices.
   double xb=xr/grid->xdelt + (grid->xrpix-0.5);

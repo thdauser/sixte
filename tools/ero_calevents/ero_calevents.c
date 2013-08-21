@@ -699,16 +699,23 @@ int ero_calevents_main()
 	// according to the official event file format definition.
 	double currtime;
 	for (currtime=t0; currtime<=t1; currtime+=1.0) {
-	  Vector pointing=getTelescopeNz(ac, currtime, &status);
-	  CHECK_STATUS_BREAK(status);	  
+	  Vector nx, ny, nz;
+	  getTelescopeAxes(ac, &nx, &ny, &nz, currtime, &status);
+	  CHECK_STATUS_BREAK(status);
+
 	  double ra, dec;
-	  calculate_ra_dec(pointing, &ra, &dec);
+	  calculate_ra_dec(nz, &ra, &dec);
 	  ra *=180./M_PI;
 	  dec*=180./M_PI;
 
-	  float rollangle=getRollAngle(ac, currtime, &status);
-	  CHECK_STATUS_BREAK(status);
-	  rollangle*=180./M_PI;
+	  // Determine the roll angle.
+	  Vector x1, x2;
+	  Vector z={0.0, 0.0, 1.0};
+	  x2=normalize_vector(vector_product(nz, z));
+	  x1=vector_product(x2, nz);
+
+	  float rollangle=
+	    atan2(scalar_product(&nx,&x2), scalar_product(&nx,&x1))*180./M_PI;
 	  
 	  // Apply the rotation angle of the CCD.
 	  rollangle+=ccdrotation;

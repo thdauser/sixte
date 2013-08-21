@@ -452,10 +452,10 @@ void operateGenDetClock(GenDet* const det,
 	    // to apparently valid event patterns, such that the overall
 	    // background is too high. 
 	    double xh=
-	      list->hit_xpos[ii]*0.001*cosrota+
+	      list->hit_xpos[ii]*0.001*cosrota-
 	      list->hit_ypos[ii]*0.001*sinrota;
 	    double yh=
-	      -list->hit_xpos[ii]*0.001*sinrota+
+	      list->hit_xpos[ii]*0.001*sinrota+
 	      list->hit_ypos[ii]*0.001*cosrota;	    
 	    int x, y;
 	    double xr, yr;
