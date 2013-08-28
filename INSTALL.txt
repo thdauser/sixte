@@ -1,13 +1,20 @@
 The installation of this package is based on the GNU autotools.
 
-If you checked out the sources directly from the repository you first
-have to create a configure script from the existing 'configure.ac'.
-For this purpose go into the main directory of the package (where
-there is this file) and run the 'autoreconf' command belonging to the
-GNU autotools. (If you extraced the code from the .tar.gz archive,
-you can skip the following step and continue with the next paragraph.)
+If you checked out the sources directly from the repository, make sure
+that you also checked out the source code for the SIMPUT library. This
+can be achieved with the following commands:
 
  cd sixt/
+ git submodule init
+ git submodule update
+
+Before you can run the compilation, you have to create a configure
+script from the existing 'configure.ac'. For this purpose go into the
+main directory of the package (where there is this file) and run the
+'autoreconf' command belonging to the GNU autotools. (If you extraced
+the code from the .tar.gz archive, you can skip the following step and
+continue with the next paragraph.)
+
  autoreconf --install
 
 This basically generates the 'configure' script (and some
@@ -27,7 +34,7 @@ directory (ususally root privileges required). For a local
 installation for the current user, the files can also be stored in
 '${HOME}/pfiles'. So for a local installation, e.g. type:
 
- ./configure --prefix=$HOME PFILESDIR=$HOME/pfiles
+ ./configure --prefix=$HOME PFILESDIR=$HOME/pfiles F77=gfortran
 
 Now the 'Makefile's to compile and install the software should be
 available. In order to continue type:

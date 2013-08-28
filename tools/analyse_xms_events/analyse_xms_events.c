@@ -172,13 +172,13 @@ int analyse_xms_events_main() {
 
       // Determine the event grade.
       if ((nbefore_veryshort>0)||(nafter_veryshort>0)) {
-	pattern->type = 3;
+	pattern->type=3;
       } else if ((nbefore_short>0)||(nafter_short>0)) {
-	pattern->type = 2;
-      } else if ((nbefore_short==0) && (nafter_long==0)) {
-	pattern->type = 0;
+	pattern->type=2;
+      } else if ((nbefore_short==0)&&(nafter_long==0)) {
+	pattern->type=0;
       } else {
-	pattern->type = 1;
+	pattern->type=1;
       } 
 
       switch (pattern->type) {
