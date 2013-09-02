@@ -64,6 +64,7 @@ typedef struct eroBackgroundRateFct {
   double* currenttime;
   double intervalsum;
   float* currentrate;
+  float currentslope;
 } eroBackgroundRateFct;
 
 struct rateCurrentInterval {
