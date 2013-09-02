@@ -51,7 +51,7 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
 					  const char clobber,
 					  int* const status)
 {
-  LADEventListFile* file = newLADEventListFile(status);
+  LADEventListFile* file=newLADEventListFile(status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the file already exists.

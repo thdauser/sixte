@@ -238,30 +238,45 @@ int ero_calevents_main()
     sprintf(keyword, "TCRVL%d", cy);
     fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1], 
 		    "reference value", &status);
+    sprintf(keyword, "TCRPX%d", cx);
+    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[0], 
+		    "reference point", &status);
+    sprintf(keyword, "TCRPX%d", cy);
+    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[1], 
+		    "reference point", &status);
     sprintf(keyword, "TCDLT%d", cx);
     fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[0], 
 		    "pixel increment", &status);
     sprintf(keyword, "TCDLT%d", cy);
     fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[1], 
 		    "pixel increment", &status);
+    sprintf(keyword, "TCUNI%d", cx);
+    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[0], 
+		    "axis units", &status);
+    sprintf(keyword, "TCUNI%d", cy);
+    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[1], 
+		    "axis units", &status);
     CHECK_STATUS_BREAK(status);
 
-    fits_update_key(fptr, TSTRING, "REFXCTYP", wcs.ctype[0], 
+    fits_update_key(fptr, TSTRING, "REFXCTYP", wcs.ctype[0],
 		    "projection type", &status);
-    fits_update_key(fptr, TSTRING, "REFYCTYP", wcs.ctype[1], 
+    fits_update_key(fptr, TSTRING, "REFYCTYP", wcs.ctype[1],
 		    "projection type", &status);
-    fits_update_key(fptr, TSTRING, "REFXCUNI", "deg", "", &status);
-    fits_update_key(fptr, TSTRING, "REFYCUNI", "deg", "", &status);
-    float refxcrpx=0.0, refycrpx=0.0;
-    fits_update_key(fptr, TFLOAT, "REFXCRPX", &refxcrpx, "", &status);
-    fits_update_key(fptr, TFLOAT, "REFYCRPX", &refycrpx, "", &status);
-    fits_update_key(fptr, TDOUBLE, "REFXCRVL", &wcs.crval[0], 
+    fits_update_key(fptr, TSTRING, "REFXCUNI", wcs.cunit[0],
+		    "axis units", &status);
+    fits_update_key(fptr, TSTRING, "REFYCUNI", wcs.cunit[1],
+		    "axis units", &status);
+    fits_update_key(fptr, TFLOAT, "REFXCRPX", &wcs.crpix[0],
 		    "reference value", &status);
-    fits_update_key(fptr, TDOUBLE, "REFYCRVL", &wcs.crval[1], 
+    fits_update_key(fptr, TFLOAT, "REFYCRPX", &wcs.crpix[1],
 		    "reference value", &status);
-    fits_update_key(fptr, TDOUBLE, "REFXCDLT", &wcs.cdelt[0], 
+    fits_update_key(fptr, TDOUBLE, "REFXCRVL", &wcs.crval[0],
+		    "reference value", &status);
+    fits_update_key(fptr, TDOUBLE, "REFYCRVL", &wcs.crval[1],
+		    "reference value", &status);
+    fits_update_key(fptr, TDOUBLE, "REFXCDLT", &wcs.cdelt[0],
 		    "pixel increment", &status);
-    fits_update_key(fptr, TDOUBLE, "REFYCDLT", &wcs.cdelt[1], 
+    fits_update_key(fptr, TDOUBLE, "REFYCDLT", &wcs.cdelt[1],
 		    "pixel increment", &status);
     CHECK_STATUS_BREAK(status);
 

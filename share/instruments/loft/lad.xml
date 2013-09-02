@@ -30,8 +30,8 @@
       </panel>
     </loop>
 
-  <arf filename="LAD_Requirements_v5.1.arf"/>
-  <rmf filename="LAD_Requirements_v5.1.rmf"/>
+  <arf filename="LAD_Requirements_v5.3.arf"/>
+  <rmf filename="LAD_Requirements_v5.3.rmf"/>
   <background filename="lad_background_v6.simput"/>
   <temperature value="300"/>
   <efield value="3.6e+4"/>

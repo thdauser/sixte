@@ -50,12 +50,6 @@ TUNIT#                  /
 TTYPE#  ANODE           / Affected anode
 TFORM#  J   		/
 TUNIT#                  / 
-TTYPE#  RA              / Back-projected right ascension
-TFORM#  D               / Format of column RA
-TUNIT#  deg             / Unit of column RA
-TTYPE#  DEC             / Back-projected declination
-TFORM#  D               / Format of column DEC
-TUNIT#  deg             / Unit of column DEC
 TTYPE# 	PH_ID           / Photon ID
 TFORM# 	2J   		/
 TUNIT# 	                / 

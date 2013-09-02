@@ -303,5 +303,3 @@ int genlc_getpar(struct Parameters* par)
   return(status);
 }
 
-
-
