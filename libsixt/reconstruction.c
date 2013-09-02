@@ -157,10 +157,9 @@ ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pi
 	 }while(topsmall+detector_pixels->ypixelwidth <= (topbig+mask->cdelt2));
 	 //end current big pixel y-direction
       }
-     }
-
-  return(recon);
-}
+     }  
+   }
+   return(recon);
 }
 
 
