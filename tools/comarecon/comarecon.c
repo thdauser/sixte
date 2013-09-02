@@ -18,7 +18,11 @@ int comarecon_main() {
   SquarePixels* detector_pixels=NULL;
   CodedMask* mask=NULL;
   SourceImage* sky_pixels=NULL;
-
+  ReconArray* recon=NULL;
+  PixPositionList* position_list=NULL;
+  //thought to contain contribution from non-sensitive detector area; see mail Yuri
+  //TODO: check, if needed
+  /*BalancingArray* balance=NULL;*/
  
   ReadEvent* ea=NULL;
   ReadEvent* ear=NULL;
@@ -31,6 +35,8 @@ int comarecon_main() {
 
   int status=EXIT_SUCCESS; // Error status.
 
+  int ii, jj; //counts
+  int xdiff, ydiff; //difference in size of mask and det plane
 
   // Register HEATOOL:
   set_toolname("comarecon");
@@ -65,17 +71,8 @@ int comarecon_main() {
 
     // SKY IMAGE setup.
        float delta = atan(par.pixelwidth/par.MaskDistance);
-    // END of SKY IMAGE CONFIGURATION SETUP    
-    
-    // --- END of Initialization ---
 
-
-    // --- Beginning of Imaging Process ---
-
-    // Beginning of actual detector simulation (after loading required data):
-    headas_chat(5, "start image reconstruction process ...\n");
-
-      if(par.RePixSize==0.){
+       if(par.RePixSize==0.){
 	struct SourceImageParameters sip = {
 	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth)-1,
 	    .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth)-1,
@@ -91,20 +88,22 @@ int comarecon_main() {
        sky_pixels=getEmptySourceImage(&sip, &status);
        CHECK_STATUS_BREAK(status);
       }
+    // END of SKY IMAGE CONFIGURATION SETUP    
+    
+    // --- END of Initialization ---
 
-       int ii, jj; //counts
 
-     ReconArray* recon=NULL;
-     //thought to contain contribution from non-sensitive detector area; see mail Yuri
-     //TODO: check, if needed
-     /*BalancingArray* balance=NULL;*/
+    // --- Beginning of Imaging Process ---
+
+    // Beginning of actual detector simulation (after loading required data):
+    headas_chat(5, "start image reconstruction process ...\n");
+     
 
     //Get empty event array object (type: ReadEvent)
      ea=getEventArray(mask, detector_pixels, &status);
 
     //detector size <= mask size
     //if mask size = det size -> shift is zero
-      int xdiff, ydiff; //difference in size of mask and det plane
       xdiff=((ea->naxis1)/2-detector_pixels->xwidth)/2;
       ydiff=((ea->naxis2)/2-detector_pixels->ywidth)/2;
 
@@ -267,7 +266,30 @@ int comarecon_main() {
     // Write the reconstructed source function to the output FITS file.
     saveSourceImage(sky_pixels, par.Image, &status);
     CHECK_STATUS_BREAK(status);
-    
+
+    //source-position determination:
+    //find all bright pixels, e.g. sources
+
+    double pixval=0.;
+
+    //get empty PixPositionList structure (contains pointer to current PixPosition-element
+    //and count for found sources)
+    position_list=getPixPositionList();
+
+    //for first source threshold is '0'
+    //after that: '1' if still bright enough, '2' else
+    int threshold=0; 
+    //search for sources as long as pixval is above certain value
+   do{
+      //finds current brightest pixel coordinates and saves PixPosition; returns current brightest pixval
+     pixval=findBrightestPix(threshold, sky_pixels, pixval, position_list,
+			     delta, par.RA, par.DEC);
+     
+     threshold=getThresholdForSources(pixval, position_list, sky_pixels);
+   }while(threshold==1);
+
+    //create FITS-file with all pix-coordinates
+   savePositionList(position_list, par.PositionList, &status);
 
   // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
@@ -278,6 +300,7 @@ int comarecon_main() {
   FreeReconArray1d(ReconArray1d);
   FreeEventArray(ea);
   FreeEventArray1d(EventArray1d);
+  FreePixPositionList(position_list);
 
   if(par.RePixSize!=0.){
     FreeEventArray(ear);}
@@ -316,6 +339,21 @@ int comarecon_getpar(struct Parameters* par)
   //Get the filename of the image file (FITS output file).
    else if ((status=PILGetFname("Image", par->Image))) {
   SIXT_ERROR("failed reading the filename of the output image");
+  }
+
+ //Get the filename of the position list file (FITS output file).
+   else if ((status=PILGetFname("PositionList", par->PositionList))) {
+  SIXT_ERROR("failed reading the filename of the output position list");
+  }
+
+  //Get the right-ascension of the telescope pointing [degrees].
+ else if ((status=PILGetReal("RA", &par->RA))) {
+    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
+  }
+
+  //Get the declination of the telescope pointing [degrees].
+ else if ((status=PILGetReal("DEC", &par->DEC))) {
+    SIXT_ERROR("failed reading the declination of the telescope pointing");
   }
 
   // Read the width of the detector in [pixel].

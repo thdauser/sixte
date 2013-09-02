@@ -61,7 +61,7 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
 		  ladimpact.c lad.c lad_init.c xmlbuffer.c spectrum.c	\
 		  gti.c sourceimage.c det_phi_max.c			\
 		  attitudecatalog2.c reconstruction.c eventarray.c	\
-		  fft_array.c balancing.c
+		  fft_array.c balancing.c find_position.c
 
 libsixt_a_LIBADD =@top_builddir@/extlib/heainit/libhdinit.a
 libsixt_a_LIBADD+=@top_builddir@/extlib/heaio/libhdio.a
@@ -91,4 +91,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		linkedladsiglist.h erodetbkgrndgen.h phgen.h phimg.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h spectrum.h	\
 		gti.h sourceimage.h det_phi_max.h attitudecatalog2.c	\
-		reconstruction.h eventarray.h fft_array.h balancing.h
+		reconstruction.h eventarray.h fft_array.h balancing.h   \
+		find_position.h
