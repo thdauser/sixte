@@ -575,6 +575,8 @@ static void GenInstXMLElementStart(void* parsedata,
   } else if (!strcmp(Uelement, "EROBACKGROUND")) {
 
     if (0==eroBkgInitialized) {
+      // Determine the file containing the simulated background
+      // hits from GEANT4.
       char filename[MAXFILENAME];
       getXMLAttributeString(attr, "FILENAME", filename);
 
@@ -590,6 +592,18 @@ static void GenInstXMLElementStart(void* parsedata,
       eroBkgInitialize(filepathname, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);
       eroBkgInitialized=1;
+
+      // Load the optional light curve if available. The light curve
+      // defines the time-variability of the background flux.
+      getXMLAttributeString(attr, "LIGHTCURVE", filename);
+
+      // Check if a light curve has been specified.
+      if (strlen(filename)>0) {
+	strcpy(filepathname, xmlparsedata->inst->filepath);
+	strcat(filepathname, filename);
+	eroBkgSetRateFct(filepathname, &xmlparsedata->status);
+	CHECK_STATUS_VOID(xmlparsedata->status);
+      }
     }
 
     xmlparsedata->inst->det->erobackground=1;

@@ -152,6 +152,7 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
     freeSimputLC(&rate_lc);
   } else {
     SIXT_ERROR("no simput filename specified for rate function!");
+    *status=EXIT_FAILURE;
   }
 }
 

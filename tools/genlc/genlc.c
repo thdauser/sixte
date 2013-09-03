@@ -39,12 +39,10 @@ int genlc_main() {
 
     // Determine timing keywords.
     char comment[MAXMSG];
-    char mission[MAXMSG];
     char telescop[MAXMSG];
     char instrume[MAXMSG];
     char filter[MAXMSG];
     double mjdref, timezero;
-    fits_read_key(infptr, TSTRING, "MISSION", mission, comment, &status);
     fits_read_key(infptr, TSTRING, "TELESCOP", telescop, comment, &status);
     fits_read_key(infptr, TSTRING, "INSTRUME", instrume, comment, &status);
     fits_read_key(infptr, TSTRING, "FILTER", filter, comment, &status);
@@ -180,8 +178,6 @@ int genlc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
-    fits_update_key(outfptr, TSTRING, "MISSION", mission, 
-		    "Mission name", &status);
     fits_update_key(outfptr, TSTRING, "TELESCOP", telescop, 
 		    "Telescope name", &status);
     fits_update_key(outfptr, TSTRING, "INSTRUME", instrume, 

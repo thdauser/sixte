@@ -124,6 +124,7 @@ AC_CONFIG_FILES([Makefile
 		tools/fudgexp/Makefile
 		tools/orbatt/Makefile
 		tools/mmap/Makefile
+		tools/testbkg/Makefile
 		share/Makefile
 		share/instruments/Makefile
 		extlib/Makefile
