@@ -135,9 +135,10 @@ void FreeEventArray1d(double* EventArray1d)
 
 void FreeEventArray(ReadEvent* ea)
 {
+  int count;
+
   if (ea!=NULL) {
     if ((ea->naxis1>0)&&(NULL!=ea->EventArray)) {
-      int count;
       for(count=0; count< ea->naxis1; count++) {
 	if (NULL!=ea->EventArray[count]) {
 	  free(ea->EventArray[count]);

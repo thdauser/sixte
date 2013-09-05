@@ -1,4 +1,4 @@
-ImpactList,f,lq,"impactsnew.fits",,,"impact list file (FITS input file)"
+ImpactList,f,lq,"impacts.fits",,,"impact list file (FITS input file)"
 EventList,f,lq,"events.fits",,,"event list file (FITS output file)"
 Width,i,lq,289,0,10000,"width of the detector (pixels) "
 Pixelwidth,r,lq,0.0006,0.0,100.0,"width of one detector pixel (m)"

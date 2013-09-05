@@ -129,81 +129,100 @@ void eroBkgCleanUp(int* const status) {
 }
 
 void eroBkgSetRateFct(const char* const filename, int* const status) {
-  SimputLC* rate_lc=NULL;
+  SimputLC *rate_lc = NULL;
 
   if(filename != NULL) {
     rate_lc = loadSimputLC(filename, status);
     bkgratefct.numelements = rate_lc->nentries;
     if(bkgratefct.time != NULL) {
       free(bkgratefct.time);
+      bkgratefct.time = NULL;
     }
     bkgratefct.time = (double*) malloc(rate_lc->nentries * sizeof(double));
     memcpy(bkgratefct.time, rate_lc->time, rate_lc->nentries * sizeof(double));
 
     if(bkgratefct.rate != NULL) {
       free(bkgratefct.rate);
+      bkgratefct.rate = NULL;
     }
     bkgratefct.rate = (float*) malloc(rate_lc->nentries * sizeof(float));
     memcpy(bkgratefct.rate, rate_lc->flux, rate_lc->nentries * sizeof(float));
 
     bkgratefct.currenttime = bkgratefct.time;
     bkgratefct.currentrate = bkgratefct.rate;
+    bkgratefct.currentslope = 0;
+    bkgratefct.intervalsum = 0;
 
     freeSimputLC(&rate_lc);
   } else {
-    SIXT_ERROR("no simput filename specified for rate function!");
+    SIXT_ERROR("no SIMPUT filename specified for rate function!");
     *status=EXIT_FAILURE;
   }
 }
 
 void eroBkgGetRate(double interval) {
   double startfraction = 0.;
-  const double startinterval = interval;
+  double endfraction = 0.;
+  double fullinterval = interval;
 
-  /** if we are not at EOF: check if we start in the middle of a time slice */
-  if((bkgratefct.intervalsum > 0) && (bkgratefct.currenttime <= &bkgratefct.time[bkgratefct.numelements - 1])) {
-    startfraction = *(bkgratefct.currenttime + 1) - (bkgratefct.time[0] + bkgratefct.intervalsum);
-  }
-  bkgratefct.intervalsum += interval;
-
-  /** free rate structure if it contains data from recent calculations */
+  // free rate structure if it contains data from recent calculations
   if(rCurr.rate != NULL) {
     free(rCurr.rate);
     rCurr.rate = NULL;
-    rCurr.ratesize = 0L;
     rCurr.numelements = 0L;
   }
+  rCurr.ratesize = 10L;
+  rCurr.rate = (float*) malloc(rCurr.ratesize * sizeof(float));
 
-  /** if we start in the middle of a time slice, we have to take a certain fraction of the rate into account */
-  if(startfraction > 0) {
-    rCurr.rate = (float*) realloc(rCurr.rate, 10 * sizeof(float));
-    rCurr.rate[0] = *bkgratefct.currentrate;
-    if(startfraction < startinterval) {
-      rCurr.rate[0] *= startfraction / startinterval;
+  // calculate current lightcurve slope to be used for interpolation
+  bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) / 
+                            (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
+
+  // Add interpolated lightcurve data points to rate array until we've covered the interval.
+  // All data will be normalized to the respective length fraction of the interval as the
+  // rate output is multiplied later with the total number of events directly.
+  while((interval > 0) && (bkgratefct.currenttime < &bkgratefct.time[bkgratefct.numelements - 1])) {
+    startfraction = bkgratefct.time[0] + bkgratefct.intervalsum - *bkgratefct.currenttime;
+    endfraction = *(bkgratefct.currenttime + 1) - (bkgratefct.time[0] + bkgratefct.intervalsum);
+    interval -= endfraction;
+    bkgratefct.intervalsum += endfraction;
+
+    // if the interval is larger than the current bin we jump to the next and update the slope
+    if(interval > 0) {
+      rCurr.rate[rCurr.numelements] = 0.5 * 
+                                      ((*bkgratefct.currentrate + bkgratefct.currentslope * startfraction) +
+                                      *(bkgratefct.currentrate + 1));
+      rCurr.rate[rCurr.numelements] *= endfraction / fullinterval;
+      bkgratefct.currentrate++;
+      bkgratefct.currenttime++;
+      bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) / 
+                                (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
+    } else {
+      rCurr.rate[rCurr.numelements] = 0.5 * 
+                                      ((*bkgratefct.currentrate + bkgratefct.currentslope * startfraction) +
+                                      *(bkgratefct.currentrate + 1) + bkgratefct.currentslope * interval);
+      rCurr.rate[rCurr.numelements] *= (*(bkgratefct.currenttime + 1) - (*bkgratefct.currenttime + startfraction) + interval) / fullinterval;
     }
     rCurr.numelements++;
-    interval -= startfraction;
-  }
-
-  /** if we are still not at EOF, begin looping over the rate entries until the requested interval has been covered */
-  while((interval > 0) && (bkgratefct.currentrate <= &bkgratefct.rate[bkgratefct.numelements - 1])) {
+    
+    // resize rate array if its maximum size has been reached
     if(rCurr.numelements >= rCurr.ratesize) {
       rCurr.rate = (float*) realloc(rCurr.rate, (rCurr.numelements + 50) * sizeof(float));
       rCurr.ratesize = rCurr.numelements + 50;
     }
-    interval -= *(bkgratefct.currenttime + 1) - *bkgratefct.currenttime;
-    if(interval < 0) {
-      rCurr.rate[rCurr.numelements] = *bkgratefct.currentrate;
-      rCurr.rate[rCurr.numelements] *= (interval + (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime)) / startinterval;
-    } else {
-      rCurr.rate[rCurr.numelements] = *bkgratefct.currentrate;
-      rCurr.rate[rCurr.numelements] *= (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime) / startinterval;
-      bkgratefct.currenttime++;
-      bkgratefct.currentrate++;
-    }
-    rCurr.numelements++;
+  }
+  
+  // if we hit the end of the last bin we increase the pointers and recalculate the slope
+  if(interval == 0) {
+    bkgratefct.currentrate++;
+    bkgratefct.currenttime++;
+    bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) / 
+                              (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
+  } else {
+    bkgratefct.intervalsum += interval;
   }
 
+  // re-adjust size of rate array to actual size and remove trailing free space */
   if(rCurr.numelements == 0) {
     rCurr.numelements = 1L;
     rCurr.rate = (float*) realloc(rCurr.rate, rCurr.numelements * sizeof(float));
@@ -233,7 +252,7 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
                                                   bkginputdata.numevents,
                                                   bkginputdata.interval);
   } else {
-    SIXT_ERROR("invalid interval for background generation specified!");
+    SIXT_ERROR("Invalid interval for background generation specified!");
     free(bkgresultlist);
     bkgresultlist = NULL;
     return bkgresultlist;

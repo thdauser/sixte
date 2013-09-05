@@ -13,6 +13,7 @@
 #include "fft_array.h"
 #include "fftw3.h"
 #include "balancing.h"
+#include "find_position.h"
 
 
 #define TOOLSUB comarecon_main
@@ -24,6 +25,10 @@ struct Parameters {
   char EventList[MAXMSG];
   char EventListTemplate[MAXMSG];
   char Image[MAXMSG]; // output: reconstructed source image
+  char PositionList[MAXMSG]; // output: table of found sources
+
+  //detector pointing direction
+  double RA, DEC;
 
   /** Detector width in [pixel]. */
   int width;

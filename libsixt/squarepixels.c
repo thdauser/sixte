@@ -330,7 +330,7 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
 
 int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 {
-  if(sp->DCU_length!=0.){
+  if(sp->DCU_length!=0.){//detector with gaps
 
   //position.x and .y is with reference to the back left corner of the detector [m]
   //(if pos. x-dir is from back to front and pos- y-dir from left to right)
@@ -361,7 +361,7 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 	    else{return(0);
 	    }
     }
-  }else{
+  }else{//detector without gaps
     *x = (int)(position.x/sp->xpixelwidth +1.)-1;
     *y = (int)(position.y/sp->ypixelwidth +1.)-1;
   }
