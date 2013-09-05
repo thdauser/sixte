@@ -194,7 +194,10 @@ void phpat(GenDet* const det,
 
 	    // Check if the split threshold is above the event threshold.
 	    if (split_threshold > det->threshold_event_lo_keV) {
-	      SIXT_WARNING("split threshold is above event threshold");
+	      char msg[MAXMSG];
+	      sprintf(msg, "split threshold (%.1feV) is above event threshold (%.1feV)",
+		      split_threshold*1000.0, det->threshold_event_lo_keV*1000.0);
+	      SIXT_WARNING(msg);
 	    }
 
 	    // Find all neighboring events above the split threshold.
