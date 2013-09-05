@@ -94,7 +94,7 @@ int get_psf_pos(struct Point2d* const position,
   // if only proper PSFs are used.
   if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
     // The photon does not hit the detector at all (e.g. it is absorbed).
-    headas_chat(1, "### Warning: PSF contains vignetting contributions!\n");
+    SIXT_WARNING("PSF contains vignetting contributions");
     return(0);
   }
 
@@ -102,54 +102,54 @@ int get_psf_pos(struct Point2d* const position,
   int x1, y1;   
 
   // Perform a binary search to obtain the x-coordinate.
-  int high = psf_item->naxis1-1;
-  int low = 0;
+  int high=psf_item->naxis1-1;
+  int low=0;
   int mid;
-  int ymax = psf_item->naxis2-1;
+  int ymax=psf_item->naxis2-1;
   while (high > low) {
-    mid = (low+high)/2;
+    mid=(low+high)/2;
     if (psf_item->data[mid][ymax] < rnd) {
-      low = mid+1;
+      low=mid+1;
     } else {
-      high = mid;
+      high=mid;
     }
   }
-  x1 = low;
+  x1=low;
 
   // Search for the y coordinate:
-  high = psf_item->naxis2-1;
-  low = 0;
+  high=psf_item->naxis2-1;
+  low=0;
   while (high > low) {
-    mid = (low+high)/2;
+    mid=(low+high)/2;
     if (psf_item->data[x1][mid] < rnd) {
-      low = mid+1;
+      low=mid+1;
     } else {
-      high = mid;
+      high=mid;
     }
   }
-  y1 = low;
+  y1=low;
   // Now x1 and y1 have pixel positions [integer pixel].
 
   // Determine the distance ([m]) of the central reference position from the optical axis
   // according to the off-axis angle theta:
-  double distance = focal_length * tan(theta); // TODO *(-1) ???
+  double distance=focal_length * tan(theta); // TODO *(-1) ???
 
   // Add the relative position obtained from the PSF image (randomized pixel 
   // indices x1 and y1).
-  double x2 = distance + 
+  double x2=distance + 
     ((double)x1 -psf_item->crpix1 +0.5 
      +sixt_get_random_number(status))*psf_item->cdelt1 
     + psf_item->crval1; // [m]
   CHECK_STATUS_RET(*status, 0);
-  double y2 = 
+  double y2=
     ((double)y1 -psf_item->crpix2 +0.5 
      +sixt_get_random_number(status))*psf_item->cdelt2 
     + psf_item->crval2; // [m]
   CHECK_STATUS_RET(*status, 0);
 
   // Rotate the postition [m] according to the azimuthal angle.
-  position->x = cos(phi)*x2 - sin(phi)*y2;
-  position->y = sin(phi)*x2 + cos(phi)*y2;
+  position->x=cos(phi)*x2 - sin(phi)*y2;
+  position->y=sin(phi)*x2 + cos(phi)*y2;
 
   return(1);  
 }
@@ -193,7 +193,6 @@ void destroyPSF(PSF** const psf)
 }
 
 
-
 /** Add a double value to a list. Before adding the value, check
     whether it is already in the list. In that case it doesn't have to
     be added. The number of list entries is modified appropriately. */
@@ -210,11 +209,10 @@ static void addDValue2List(const double value,
   // The value is not in the list. So continue with the following code.
 
   // Adapt the amount of allocated memory.
-  *list = (double*)realloc(*list, ((*nvalues)+1)*sizeof(double));
+  *list=(double*)realloc(*list, ((*nvalues)+1)*sizeof(double));
   if (NULL==*list) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: could not allocate memory for list in PSF data structure!\n",
-		   *status);
+    SIXT_ERROR("memory allocation for list in PSF data structure failed");
     return;
   }
   (*nvalues)++; // Now we have one element more in the list.
@@ -222,7 +220,6 @@ static void addDValue2List(const double value,
   // Add the value at the end of the list.
   (*list)[*nvalues-1] = value;
 }
-
 
 
 /** Sort a list of double values with nvalues elements. Apply Bubble
@@ -238,9 +235,9 @@ static void sortDList(double* const list, const int nvalues)
     for (index=0; index<nvalues-1-count; index++) {
       if (list[index] > list[index+1]) {
 	// Exchange the 2 elements.
-	buffer        = list[index+1];
-	list[index+1] = list[index];
-	list[index]   = buffer;
+	buffer       =list[index+1];
+	list[index+1]=list[index];
+	list[index]  =buffer;
 	// Set the exchanged flag.
 	exchanged=1;
       }
@@ -346,24 +343,21 @@ PSF* newPSF(const char* const filename,
     psf->data=(PSF_Item***)malloc(psf->nenergies*sizeof(PSF_Item**));
     if (NULL==psf->data) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for PSF data failed!\n",
-		     *status);
+      SIXT_ERROR("memory allocation for PSF data failed");
       break;
     }
     for(count=0; count<psf->nenergies; count++) {
       psf->data[count]=(PSF_Item**)malloc(psf->nthetas*sizeof(PSF_Item*));
       if (NULL==psf->data[count]) {
 	*status=EXIT_FAILURE;
-	HD_ERROR_THROW("Error: memory allocation for PSF data failed!\n",
-		       *status);
+	SIXT_ERROR("memory allocation for PSF data failed");
 	break;
       }
       for (count2=0; count2<psf->nthetas; count2++) {
 	psf->data[count][count2]=(PSF_Item*)malloc(psf->nphis*sizeof(PSF_Item));
 	if (NULL==psf->data[count][count2]) {
 	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: memory allocation for PSF data failed!\n",
-			 *status);
+	  SIXT_ERROR("memory allocation for PSF data failed");
 	  break;
 	}
 	// Initialize the PSF_Item objects in the 3-dimensional array.
@@ -406,8 +400,7 @@ PSF* newPSF(const char* const filename,
 	}
 	if (index1==psf->nenergies) {
 	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: Could not find appropriate PSF entry!\n",
-			 *status);
+	  SIXT_ERROR("could not find appropriate PSF entry");
 	  break;
 	}
 	for (index2=0; index2<psf->nthetas; index2++) {
@@ -415,8 +408,7 @@ PSF* newPSF(const char* const filename,
 	}
 	if (index2==psf->nthetas) {
 	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: Could not find appropriate PSF entry!\n",
-			 *status);
+	  SIXT_ERROR("could not find appropriate PSF entry");
 	  break;
 	}
 	for (index3=0; index3<psf->nphis; index3++) {
@@ -424,8 +416,7 @@ PSF* newPSF(const char* const filename,
 	}
 	if (index3==psf->nphis) {
 	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: Could not find appropriate PSF entry!\n",
-			 *status);
+	  SIXT_ERROR("could not find appropriate PSF entry");
 	  break;
 	}
 
@@ -466,7 +457,7 @@ PSF* newPSF(const char* const filename,
 	  // Neither [arcsec] nor [m]
 	  *status=EXIT_FAILURE;
 	  SIXT_ERROR("PSF pixel width must be given either in [m] "
-		     "or in [arcsec]!\n");
+		     "or in [arcsec]");
 	  break;
 	}
 
@@ -505,15 +496,15 @@ PSF* newPSF(const char* const filename,
 
 
 	// Read the PSF image to the input buffer.
-	int anynul;
 	double null_value=0.;
-	long fpixel[2] = {1, 1};   // lower left corner
-	//                |--|--> FITS coordinates start at (1,1)
+	long fpixel[2]={1, 1};   // lower left corner
+	//              |--|--> FITS coordinates start at (1,1)
 	// upper right corner
-	long lpixel[2] = {psf->data[index1][index2][index3].naxis1, 
-			  psf->data[index1][index2][index3].naxis2};  
-	long inc[2] = {1, 1};
+	long lpixel[2]={psf->data[index1][index2][index3].naxis1, 
+	  psf->data[index1][index2][index3].naxis2};  
+	long inc[2]={1, 1};
 	
+	int anynul;
 	if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value, 
 			     data, &anynul, status)) break;
 
