@@ -3,11 +3,11 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
-AM_CFLAGS+=-Wall 
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
+AM_CFLAGS+=-Wall
 
 ########## DIRECTORIES ###############
 
@@ -24,10 +24,10 @@ bin_PROGRAMS=runsixt
 runsixt_SOURCES=runsixt.c runsixt.h
 runsixt_LDADD =@top_builddir@/libsixt/libsixt.a
 runsixt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-runsixt_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
-runsixt_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
-runsixt_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
-runsixt_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
+runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
+runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
+runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
 runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 runsixt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a

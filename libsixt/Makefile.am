@@ -2,10 +2,10 @@ AM_CFLAGS =-I@top_srcdir@/extlib/simput/libsimput
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
 
 if RCL
 AM_CFLAGS+=-I$(RCL_INC) -DUSE_RCL
@@ -63,10 +63,10 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
 		  attitudecatalog2.c reconstruction.c eventarray.c	\
 		  fft_array.c balancing.c find_position.c
 
-libsixt_a_LIBADD =@top_builddir@/extlib/heainit/libhdinit.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/heaio/libhdio.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/heautils/libhdutils.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/heasp/libhdsp.a
+libsixt_a_LIBADD =@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
+libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
 libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 

@@ -1,13 +1,12 @@
-
 AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/heasp
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
 AM_CFLAGS+=-Wall 
 
 ########## DIRECTORIES ###############
@@ -27,10 +26,10 @@ bin_PROGRAMS=htrssim
 htrssim_SOURCES=htrssim.c htrssim.h
 htrssim_LDADD =@top_builddir@/libsixt/libsixt.a
 htrssim_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-htrssim_LDADD+=@top_builddir@/extlib/heainit/libhdinit.a
-htrssim_LDADD+=@top_builddir@/extlib/heaio/libhdio.a
-htrssim_LDADD+=@top_builddir@/extlib/heautils/libhdutils.a
-htrssim_LDADD+=@top_builddir@/extlib/heasp/libhdsp.a
+htrssim_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
+htrssim_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
+htrssim_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
+htrssim_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
 htrssim_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
 htrssim_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 htrssim_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
