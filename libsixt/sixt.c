@@ -395,9 +395,12 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
   CHECK_STATUS_VOID(*status);
 
 
-  // Add header information about program parameters.
-  HDpar_stamp(fptr, hdunum, status);
-  CHECK_STATUS_VOID(*status);
+  // Add header information about program parameters if
+  // this is the primary extension.
+  if (1==hdunum) {
+    HDpar_stamp(fptr, hdunum, status);
+    CHECK_STATUS_VOID(*status);
+  }
 
   // Move back to the original HDU.
   if (prev_hdunum!=hdunum) {

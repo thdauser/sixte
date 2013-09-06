@@ -48,16 +48,20 @@ void freeLADEventListFile(LADEventListFile** const file,
 
 
 LADEventListFile* openNewLADEventListFile(const char* const filename,
+					  const double mjdref,
+					  const double timezero,
+					  const double tstart,
+					  const double tstop,
 					  const char clobber,
 					  int* const status)
 {
-  LADEventListFile* file=newLADEventListFile(status);
-  CHECK_STATUS_RET(*status, file);
+  fitsfile* fptr=NULL;
+  CHECK_STATUS_RET(*status, NULL);
 
   // Check if the file already exists.
   int exists;
   fits_file_exists(filename, &exists, status);
-  CHECK_STATUS_RET(*status, file);
+  CHECK_STATUS_RET(*status, NULL);
   if (0!=exists) {
     if (0!=clobber) {
       // Delete the file.
@@ -68,7 +72,7 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
       sprintf(msg, "file '%s' already exists", filename);
       SIXT_ERROR(msg);
       *status=EXIT_FAILURE;
-      return(file);
+      return(NULL);
     }
   }
 
@@ -76,37 +80,26 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
 	  "/templates/ladeventlist.tpl");
-  fits_create_file(&file->fptr, buffer, status);
-  CHECK_STATUS_RET(*status, file);
+  fits_create_file(&fptr, buffer, status);
+  CHECK_STATUS_RET(*status, NULL);
 
-  // Set the time-keyword in the Event List Header.
-  char datestr[MAXMSG];
-  int timeref;
-  fits_get_system_time(datestr, &timeref, status);
-  CHECK_STATUS_RET(*status, file);
-  fits_update_key(file->fptr, TSTRING, "DATE", datestr, 
-		  "File creation date", status);
-  CHECK_STATUS_RET(*status, file);
-
-  // Add header information about program parameters.
-  // The second parameter "1" means that the headers are written
-  // to the first extension.
-  HDpar_stamp(file->fptr, 1, status);
-  CHECK_STATUS_RET(*status, file);
-
-  // Move to the binary table extension.
-  fits_movabs_hdu(file->fptr, 2, 0, status);
-  CHECK_STATUS_RET(*status, file);
+  // Insert header keywords to 1st and 2nd HDU.
+  sixt_add_fits_stdkeywords(fptr, 1, "LOFT", "LAD", "NONE",
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
+  sixt_add_fits_stdkeywords(fptr, 2, "LOFT", "LAD", "NONE",
+			    mjdref, timezero, tstart, tstop, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Close the file.
-  freeLADEventListFile(&file, status);
-  CHECK_STATUS_RET(*status, file);
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  file = openLADEventListFile(filename, READWRITE, status);
-  CHECK_STATUS_RET(*status, file);
+  LADEventListFile* lef=openLADEventListFile(filename, READWRITE, status);
+  CHECK_STATUS_RET(*status, lef);
   
-  return(file);
+  return(lef);
 }
 
 
