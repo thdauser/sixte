@@ -1,7 +1,7 @@
 SIMPLE  = T
 BITPIX  = 8
 ORIGIN  = ECAP
-CREATOR = SIXTE
+CREATOR = makelc
 
 XTENSION= BINTABLE        / Binary table extension
 EXTNAME = COUNTS          / Extension name

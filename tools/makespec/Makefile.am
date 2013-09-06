@@ -13,7 +13,7 @@ AM_CFLAGS+=-Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir=@PFILESDIR@
-dist_pfiles_DATA=ladspec.par
+dist_pfiles_DATA=makespec.par
 
 AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
@@ -21,16 +21,16 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS=ladspec
+bin_PROGRAMS=makespec
 
-ladspec_SOURCES=ladspec.c ladspec.h
-ladspec_LDADD =@top_builddir@/libsixt/libsixt.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
-ladspec_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
+makespec_SOURCES=makespec.c makespec.h
+makespec_LDADD =@top_builddir@/libsixt/libsixt.a
+makespec_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+makespec_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a

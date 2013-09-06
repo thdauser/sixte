@@ -56,6 +56,8 @@ PatternFile* openNewPatternFile(const char* const filename,
 				char* const telescop,
 				char* const instrume,
 				char* const filter,
+				char* const ancrfile,
+				char* const respfile,
 				const double mjdref,
 				const double timezero,
 				const double tstart,
@@ -95,9 +97,11 @@ PatternFile* openNewPatternFile(const char* const filename,
 
   // Insert header keywords to 1st and 2nd HDU.
   sixt_add_fits_stdkeywords(fptr, 1, telescop, instrume, filter,
+			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
   sixt_add_fits_stdkeywords(fptr, 2, telescop, instrume, filter,
+			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
 

@@ -260,6 +260,8 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       char* const telescop,
 			       char* const instrume,
 			       char* const filter,
+			       char* const ancrfile,
+			       char* const respfile,
 			       double mjdref,
 			       double timezero,
 			       double tstart,
@@ -277,10 +279,17 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
     CHECK_STATUS_VOID(*status);
   }
 
-  // Update the mission keywords.
+  // Set the mission keywords.
   fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
   fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
   fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
+  CHECK_STATUS_VOID(*status);
+
+  // Set the names of the response files used for the simulation.
+  fits_update_key(fptr, TSTRING, "ANCRFILE", ancrfile, 
+		  "ancillary response file", status);
+  fits_update_key(fptr, TSTRING, "RESPFILE", respfile, 
+		  "response file", status);
   CHECK_STATUS_VOID(*status);
 
   // Set the timing keywords.

@@ -48,6 +48,8 @@ void freeLADEventListFile(LADEventListFile** const file,
 
 
 LADEventListFile* openNewLADEventListFile(const char* const filename,
+					  char* const ancrfile,
+					  char* const respfile,
 					  const double mjdref,
 					  const double timezero,
 					  const double tstart,
@@ -85,9 +87,11 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
 
   // Insert header keywords to 1st and 2nd HDU.
   sixt_add_fits_stdkeywords(fptr, 1, "LOFT", "LAD", "NONE",
+			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
   sixt_add_fits_stdkeywords(fptr, 2, "LOFT", "LAD", "NONE",
+			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
 

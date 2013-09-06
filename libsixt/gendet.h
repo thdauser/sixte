@@ -77,6 +77,7 @@ typedef struct {
       been taken into account in the generation of the input spectra
       for the X-ray sources, the ARF contributions have to be removed
       by normalizing the RSP matrix. */
+  char* rmf_filename;
   struct RMF* rmf;
 
   /** Lower readout threshold in units of [keV]. This threshold is

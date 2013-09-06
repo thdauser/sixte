@@ -7,7 +7,7 @@ int makelc_main() {
   // Program parameters.
   struct Parameters par; 
 
-  // Input event list file.
+  // Input event file.
   fitsfile* infptr=NULL;
 
   // Output light curve.
@@ -33,7 +33,7 @@ int makelc_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Set the input pattern file.
+    // Set the input event file.
     fits_open_table(&infptr, par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 

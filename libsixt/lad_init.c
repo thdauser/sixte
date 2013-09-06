@@ -461,7 +461,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->lad->arf = loadARF(filepathname, &xmlparsedata->status);
+    xmlparsedata->lad->arf=loadARF(filepathname, &xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "RMF")) {
     
@@ -487,7 +487,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->lad->rmf = loadRMF(filepathname, &xmlparsedata->status);
+    xmlparsedata->lad->rmf=loadRMF(filepathname, &xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "BACKGROUND")) {
     

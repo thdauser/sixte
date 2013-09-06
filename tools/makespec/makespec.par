@@ -1,6 +1,6 @@
 EventList,fre,lq,"events.fits",,,"event list input file"
 Spectrum,f,lq,"spectrum.fits",,,"spectrum output file"
-XMLFile,s,h,"none",,,"XML input file with detector definition"
+RSPPath,s,h,"",,,"path to response files"
 chatter,i,lh,3,,,"chatter: control verbosity of the program"
 Seed,i,lh,-1,,,"seed for random number generator (-1: initialize with system time)"
 clobber,b,h,no,,,"overwrite output files if exist?"

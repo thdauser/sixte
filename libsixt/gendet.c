@@ -20,6 +20,7 @@ GenDet* newGenDet(int* const status)
   det->pixgrid=NULL;
   det->split  =NULL;
   det->line   =NULL;
+  det->rmf_filename=NULL;
   det->rmf    =NULL;
   det->elf    =NULL;
   det->phabkg =NULL;
@@ -64,6 +65,12 @@ void destroyGenDet(GenDet** const det)
 	destroyGenDetLine(&(*det)->line[ii]);
       }
       free((*det)->line);
+    }
+    if (NULL!=(*det)->rmf) {
+      free((*det)->rmf);
+    }
+    if (NULL!=(*det)->rmf_filename) {
+      free((*det)->rmf_filename);
     }
 
     destroyClockList(&(*det)->clocklist);

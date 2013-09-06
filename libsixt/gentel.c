@@ -17,10 +17,11 @@ GenTel* newGenTel(int* const status)
   }
 
   // Initialize all pointers with NULL.
-  tel->psf      =NULL;
+  tel->psf       =NULL;
   tel->vignetting=NULL;
   tel->coded_mask=NULL;
-  tel->arf      =NULL;
+  tel->arf       =NULL;
+  tel->arf_filename=NULL;
 
   // Set initial values.
   tel->focal_length=0.;
@@ -35,6 +36,9 @@ void destroyGenTel(GenTel** const tel)
   if (NULL!=*tel) {
     if (NULL!=(*tel)->arf) {
       free((*tel)->arf);
+    }
+    if (NULL!=(*tel)->arf_filename) {
+      free((*tel)->arf_filename);
     }
     destroyPSF(&(*tel)->psf);
     destroyVignetting(&(*tel)->vignetting);

@@ -2,9 +2,6 @@
 #define MAKELC_H 1
 
 #include "sixt.h"
-#include "lad.h"
-#include "ladeventlistfile.h"
-#include "ladevent.h"
 
 #define TOOLSUB makelc_main
 #include "headas_main.c"

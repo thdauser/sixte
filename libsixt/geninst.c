@@ -455,6 +455,15 @@ static void GenInstXMLElementStart(void* parsedata,
       xmlparsedata->status=EXIT_FAILURE;
     }
 
+    // Store the file name of the RMF.
+    xmlparsedata->inst->det->rmf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->det->rmf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for RMF file name failed");
+    strcpy(xmlparsedata->inst->det->rmf_filename, filename);
+
+    // Load the RMF.
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
@@ -472,6 +481,15 @@ static void GenInstXMLElementStart(void* parsedata,
       xmlparsedata->status=EXIT_FAILURE;
     }
 
+    // Store the file name of the ARF.
+    xmlparsedata->inst->tel->arf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->tel->arf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for ARF file name failed");
+    strcpy(xmlparsedata->inst->tel->arf_filename, filename);
+
+    // Load the ARF.
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);

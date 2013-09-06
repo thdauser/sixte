@@ -55,7 +55,7 @@ comarecon
 comaexp
 orbatt
 ladsim
-ladspec
+makespec
 makelc
 mmap_write
 mmap_read
