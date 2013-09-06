@@ -53,15 +53,15 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
 		  htrstelstream.c comadetector.c comaeventfile.c	\
 		  psf.c vignetting.c codedmask.c attitude.c		\
 		  attitudefile.c sixt.c photon.c fits_pha.c		\
-		  check_fov.c photonlistfile.c rmf.c arf.c		\
-		  kdtreeelement.c sourcecatalog.c source.c		\
-		  linkedpholist.c linkedladsiglist.c			\
-		  erodetbkgrndgen.c phgen.c phimg.c phdet.c phproj.c	\
-		  phpat.c event.c pattern.c ladsignal.c ladevent.c	\
-		  ladimpact.c lad.c lad_init.c xmlbuffer.c spectrum.c	\
-		  gti.c sourceimage.c det_phi_max.c			\
-		  attitudecatalog2.c reconstruction.c eventarray.c	\
-		  fft_array.c balancing.c find_position.c
+		  check_fov.c photonlistfile.c rmf.c kdtreeelement.c	\
+		  sourcecatalog.c source.c linkedpholist.c		\
+		  linkedladsiglist.c erodetbkgrndgen.c phgen.c		\
+		  phimg.c phdet.c phproj.c phpat.c event.c pattern.c	\
+		  ladsignal.c ladevent.c ladimpact.c lad.c lad_init.c	\
+		  xmlbuffer.c spectrum.c gti.c sourceimage.c		\
+		  det_phi_max.c attitudecatalog2.c reconstruction.c	\
+		  eventarray.c fft_array.c balancing.c			\
+		  find_position.c
 
 libsixt_a_LIBADD =@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
 libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
@@ -86,10 +86,10 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		comaeventfile.h comaevent.h psf.h vignetting.h		\
 		codedmask.h attitude.h attitudefile.h telescope.h	\
 		sixt.h point.h photon.h fits_pha.h check_fov.h		\
-		photonlistfile.h rmf.h arf.h kdtreeelement.h		\
+		photonlistfile.h rmf.h kdtreeelement.h			\
 		sourcecatalog.h source.h linkedpholist.h		\
 		linkedladsiglist.h erodetbkgrndgen.h phgen.h phimg.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h spectrum.h	\
 		gti.h sourceimage.h det_phi_max.h attitudecatalog2.c	\
-		reconstruction.h eventarray.h fft_array.h balancing.h   \
+		reconstruction.h eventarray.h fft_array.h balancing.h	\
 		find_position.h
