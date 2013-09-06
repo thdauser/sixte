@@ -1,12 +1,12 @@
-#ifndef GENLC_H
-#define GENLC_H 1
+#ifndef MAKELC_H
+#define MAKELC_H 1
 
 #include "sixt.h"
 #include "lad.h"
 #include "ladeventlistfile.h"
 #include "ladevent.h"
 
-#define TOOLSUB genlc_main
+#define TOOLSUB makelc_main
 #include "headas_main.c"
 
 
@@ -31,8 +31,8 @@ struct Parameters {
 };
 
 
-int genlc_getpar(struct Parameters *par);
+int makelc_getpar(struct Parameters *par);
 
 
-#endif /* GENLC_H */
+#endif /* MAKELC_H */
 

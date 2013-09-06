@@ -1,9 +1,9 @@
-#include "genlc.h"
+#include "makelc.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int genlc_main() {
+int makelc_main() {
   // Program parameters.
   struct Parameters par; 
 
@@ -19,8 +19,8 @@ int genlc_main() {
 
 
   // Register HEATOOL:
-  set_toolname("genlc");
-  set_toolversion("0.06");
+  set_toolname("makelc");
+  set_toolversion("0.07");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -28,7 +28,7 @@ int genlc_main() {
     // --- Initialization ---
 
     // Read the program parameters using PIL library.
-    status=genlc_getpar(&par);
+    status=makelc_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
@@ -163,7 +163,7 @@ int genlc_main() {
     // Create a new FITS-file.
     char buffer[MAXFILENAME];
     sprintf(buffer, "%s(%s%s)", par.LightCurve, SIXT_DATA_PATH, 
-	    "/templates/genlc.tpl");
+	    "/templates/makelc.tpl");
     fits_create_file(&outfptr, buffer, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -200,7 +200,7 @@ int genlc_main() {
 		    "stop time", &status);
     fits_update_key(outfptr, TFLOAT, "E_MIN", &par.Emin,
 		    "low energy for channel (keV)", &status);
-    fits_update_key(outfptr, TFLOAT, "E_MAX", &par.Emin,
+    fits_update_key(outfptr, TFLOAT, "E_MAX", &par.Emax,
 		    "high energy for channel (keV)", &status);
     CHECK_STATUS_BREAK(status);
 
@@ -234,7 +234,7 @@ int genlc_main() {
 }
 
 
-int genlc_getpar(struct Parameters* par)
+int makelc_getpar(struct Parameters* par)
 {
   // String input buffer.
   char* sbuffer=NULL;

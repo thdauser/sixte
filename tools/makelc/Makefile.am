@@ -13,7 +13,7 @@ AM_CFLAGS+=-Wall
 
 # Directory where to install the PIL parameter files.
 pfilesdir=@PFILESDIR@
-dist_pfiles_DATA=genlc.par
+dist_pfiles_DATA=makelc.par
 
 AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
@@ -21,16 +21,16 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 # The following line lists the programs that should be created and stored
 # in the 'bin' directory.
-bin_PROGRAMS=genlc
+bin_PROGRAMS=makelc
 
-genlc_SOURCES=genlc.c genlc.h
-genlc_LDADD =@top_builddir@/libsixt/libsixt.a
-genlc_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
-genlc_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
+makelc_SOURCES=makelc.c makelc.h
+makelc_LDADD =@top_builddir@/libsixt/libsixt.a
+makelc_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
+makelc_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
