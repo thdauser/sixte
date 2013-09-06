@@ -3,7 +3,7 @@
 
 struct RMF* loadRMF(char* filename, int* const status) 
 {
-  struct RMF* rmf = (struct RMF*)malloc(sizeof(struct RMF));
+  struct RMF* rmf=(struct RMF*)malloc(sizeof(struct RMF));
   if (NULL==rmf) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("could not allocate memory for RMF");

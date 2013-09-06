@@ -66,13 +66,10 @@ void destroyGenDet(GenDet** const det)
       }
       free((*det)->line);
     }
-    if (NULL!=(*det)->rmf) {
-      free((*det)->rmf);
-    }
     if (NULL!=(*det)->rmf_filename) {
       free((*det)->rmf_filename);
     }
-
+    freeRMF((*det)->rmf);
     destroyClockList(&(*det)->clocklist);
     destroyGenPixGrid(&(*det)->pixgrid);
     destroyGenSplit(&(*det)->split);

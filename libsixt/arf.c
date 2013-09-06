@@ -3,7 +3,7 @@
 
 struct ARF* getARF(int* const status)
 {
-  struct ARF* arf = (struct ARF*)malloc(sizeof(struct ARF));
+  struct ARF* arf=(struct ARF*)malloc(sizeof(struct ARF));
   CHECK_NULL_RET(arf, *status, "memory allocation for ARF failed", arf);
 
   // Initialize.
@@ -24,7 +24,7 @@ struct ARF* getARF(int* const status)
 
 struct ARF* loadARF(char* filename, int* const status) 
 {
-  struct ARF* arf = getARF(status);
+  struct ARF* arf=getARF(status);
   CHECK_STATUS_RET(*status, arf);
 
   // Load the ARF from the FITS file using the HEAdas ARF access
