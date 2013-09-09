@@ -101,6 +101,8 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
 				      char* const telescop,
 				      char* const instrume,
 				      char* const filter,
+				      char* const ancrfile,
+				      char* const respfile,
 				      const double mjdref,
 				      const double timezero,
 				      const double tstart,
@@ -138,9 +140,11 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
 
   // Insert header keywords to 1st and 2nd HDU.
   sixt_add_fits_stdkeywords(plf->fptr, 1, telescop, instrume, filter,
+			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, plf);
   sixt_add_fits_stdkeywords(plf->fptr, 2, telescop, instrume, filter,
+			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, plf);
 

@@ -41,8 +41,8 @@ void phproj(GenInst* const inst,
        +0.5+sixt_get_random_number(status))*inst->det->pixgrid->ydelt;
     CHECK_STATUS_BREAK(*status);
     
-    double xr= cosrota*xb + sinrota*yb;
-    double yr=-sinrota*xb + cosrota*yb;
+    double xr=cosrota*xb -sinrota*yb;
+    double yr=sinrota*xb +cosrota*yb;
     
     struct Point2d detpos;
     detpos.x=xr + inst->det->pixgrid->xrval; // in [m]      

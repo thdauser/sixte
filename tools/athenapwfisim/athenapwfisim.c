@@ -318,6 +318,8 @@ int athenapwfisim_main()
     if (strlen(photonlist_filename)>0) {
       plf=openNewPhotonListFile(photonlist_filename,
 				telescop, instrume, "Normal", 
+				subinst[0]->tel->arf_filename,
+				subinst[0]->det->rmf_filename,
 				par.MJDREF, 0.0, par.TSTART, tstop,
 				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
@@ -327,6 +329,8 @@ int athenapwfisim_main()
     if (strlen(impactlist_filename)>0) {
       ilf=openNewImpactListFile(impactlist_filename, 
 				telescop, instrume, "Normal", 
+				subinst[0]->tel->arf_filename,
+				subinst[0]->det->rmf_filename,
 				par.MJDREF, 0.0, par.TSTART, tstop,
 				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
@@ -338,6 +342,8 @@ int athenapwfisim_main()
       sprintf(eventlist_filename, eventlist_filename_template, ii);
       elf[ii]=openNewEventListFile(eventlist_filename, 
 				   telescop, instrume, "Normal", 
+				   subinst[0]->tel->arf_filename,
+				   subinst[0]->det->rmf_filename,
 				   par.MJDREF, 0.0, par.TSTART, tstop,
 				   subinst[ii]->det->pixgrid->xwidth,
 				   subinst[ii]->det->pixgrid->ywidth,
@@ -356,6 +362,8 @@ int athenapwfisim_main()
       sprintf(patternlist_filename, patternlist_filename_template, ii);
       patf[ii]=openNewPatternFile(patternlist_filename, 
 				  telescop, instrume, "Normal", 
+				  subinst[0]->tel->arf_filename,
+				  subinst[0]->det->rmf_filename,
 				  par.MJDREF, 0.0, par.TSTART, tstop,
 				  subinst[ii]->det->pixgrid->xwidth,
 				  subinst[ii]->det->pixgrid->ywidth,

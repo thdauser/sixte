@@ -13,12 +13,12 @@
 
 
 typedef enum {
-  /** Alignment of the reference direction for the nx vector
-      perpendicular to the north direction. */
+  /** Alignment of the nx vector of the RAWX/RAWY coordinate system
+      along the north direction. */
   ATTNX_NORTH =0,
 
-  /** Alignment of the nx vector with respect to the direction of
-      motion of the pointing axis. */
+  /** Alignment of the nx vector along the direction of motion of the
+      pointing axis. */
   ATTNX_MOTION=1,
 
 } AttNxAlign;

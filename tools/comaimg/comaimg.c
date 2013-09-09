@@ -122,29 +122,32 @@ int comaimg_main() {
     
 
     // Read header keywords.
-    char telescop[MAXMSG], instrume[MAXMSG], comment[MAXMSG];
+    char telescop[MAXMSG], instrume[MAXMSG], filter[MAXMSG];
+    char ancrfile[MAXMSG], respfile[MAXMSG];
+    char comment[MAXMSG];
     fits_read_key(plf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
     fits_read_key(plf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    fits_read_key(plf->fptr, TSTRING, "FILTER", &filter, comment, &status);
+    fits_read_key(plf->fptr, TSTRING, "ANCRFILE", &ancrfile, comment, &status);
+    fits_read_key(plf->fptr, TSTRING, "RESPFILE", &respfile, comment, &status);
     CHECK_STATUS_BREAK(status);
 
     double mjdref, timezero, tstart, tstop;
     fits_read_key(plf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
-    CHECK_STATUS_BREAK(status);
     fits_read_key(plf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
-    CHECK_STATUS_BREAK(status);
     fits_read_key(plf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
-    CHECK_STATUS_BREAK(status);
     fits_read_key(plf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
     ilf=openNewImpactListFile(par.ImpactList, 
-			      telescop, instrume, "Normal",
+			      telescop, instrume, filter,
+			      ancrfile, respfile,
 			      mjdref, timezero, tstart, tstop,
 			      0, &status);
     CHECK_STATUS_BREAK(status);
 
-    //Write WCS header keywords.
+    // Write WCS header keywords.
     fits_update_key(ilf->fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status);
     fits_update_key(ilf->fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status);
     CHECK_STATUS_BREAK(status);

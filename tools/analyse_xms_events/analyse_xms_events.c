@@ -28,10 +28,14 @@ int analyse_xms_events_main() {
     CHECK_STATUS_BREAK(status);
 
     // Determine mission keywords.
-    char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
+    char comment[MAXMSG];
+    char telescop[MAXMSG]={""}, instrume[MAXMSG]={""}, filter[MAXMSG]={""};
+    char ancrfile[MAXMSG]={""}, respfile[MAXMSG]={""};
     fits_read_key(elf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
-    CHECK_STATUS_BREAK(status);
     fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    fits_read_key(elf->fptr, TSTRING, "FILTER", &filter, comment, &status);
+    fits_read_key(elf->fptr, TSTRING, "ANCRFILE", &ancrfile, comment, &status);
+    fits_read_key(elf->fptr, TSTRING, "RESPFILE", &respfile, comment, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the dimensions of the pixel array.
@@ -43,6 +47,8 @@ int analyse_xms_events_main() {
     sprintf(keystr, "TLMAX%d", elf->crawy);
     fits_read_key(elf->fptr, TINT, keystr, &tlmaxy, comment, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Determine timing keywords.
     double mjdref, timezero, tstart, tstop;
     fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
     CHECK_STATUS_BREAK(status);
@@ -55,7 +61,8 @@ int analyse_xms_events_main() {
 
     // Create and open a new pattern file.
     plf=openNewPatternFile(par.PatternList, 
-			   telescop, instrume, "Normal",
+			   telescop, instrume, filter,
+			   ancrfile, respfile,
 			   mjdref, timezero, tstart, tstop,
 			   tlmaxx+1, tlmaxy+1,
 			   par.clobber, &status);

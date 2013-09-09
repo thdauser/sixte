@@ -128,6 +128,7 @@ int phogen_main()
     }
     plf=openNewPhotonListFile(photonlist_filename,
 			      telescop, instrume, "Normal",
+			      inst->tel->arf_filename, inst->det->rmf_filename,
 			      par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
 			      par.clobber, &status);
     CHECK_STATUS_BREAK(status);

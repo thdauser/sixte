@@ -28,7 +28,7 @@ void addString2XMLBuffer(struct XMLBuffer* const buffer,
   // Check if the buffer contains sufficient memory to add the new string.
   if (strlen(buffer->text)+strlen(string)>=buffer->maxlength) {
     // Allocate the missing memory.
-    int new_length = strlen(buffer->text) + strlen(string);
+    int new_length=strlen(buffer->text) + strlen(string);
     buffer->text=(char*)realloc(buffer->text, (new_length+1)*sizeof(char));
     if (NULL==buffer->text) {
       *status=EXIT_FAILURE;

@@ -80,22 +80,37 @@ int photonmerge_main() {
     if (EXIT_SUCCESS!=status) break;
 
     // Create and open a new output photon file:
-    char telescop[MAXMSG], instrume[MAXMSG], comment[MAXMSG];
-    fits_read_key(inputfiles[0]->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
-    fits_read_key(inputfiles[0]->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    char telescop[MAXMSG], instrume[MAXMSG], filter[MAXMSG];
+    char ancrfile[MAXMSG], respfile[MAXMSG];
+    char comment[MAXMSG];
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "TELESCOP",
+		  &telescop, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "INSTRUME",
+		  &instrume, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "FILTER",
+		  &filter, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "ANCRFILE", 
+		  &ancrfile, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TSTRING, "RESPFILE", 
+		  &respfile, comment, &status);
     CHECK_STATUS_BREAK(status);
 
     double mjdref, timezero, tstart, tstop;
-    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "MJDREF", 
+		  &mjdref, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TIMEZERO", 
+		  &timezero, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TSTART", 
+		  &tstart, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TSTOP", 
+		  &tstop, comment, &status);
     CHECK_STATUS_BREAK(status);
     outputfile=openNewPhotonListFile(par.OutputFile, 
-				     telescop, instrume, "Normal",
+				     telescop, instrume, filter,
+				     ancrfile, respfile,
 				     mjdref, timezero, tstart, tstop,
 				     par.clobber, &status);
     CHECK_STATUS_BREAK(status);
