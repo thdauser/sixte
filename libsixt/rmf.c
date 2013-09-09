@@ -4,13 +4,9 @@
 struct RMF* loadRMF(char* filename, int* const status) 
 {
   struct RMF* rmf=(struct RMF*)malloc(sizeof(struct RMF));
-  if (NULL==rmf) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("could not allocate memory for RMF");
-    return(rmf);
-  }
+  CHECK_NULL_RET(rmf, *status, "memory allocation for RMF failed", rmf);
 
-  // Load the RMF from the FITS file using the HEAdas RMF access routines
+  // Load the RMF from the FITS file using the HEAdas access routines
   // (part of libhdsp).
   fitsfile* fptr=NULL;
   fits_open_file(&fptr, filename, READONLY, status);
@@ -28,10 +24,11 @@ struct RMF* loadRMF(char* filename, int* const status)
   // In that case the RSP probably also contains the mirror ARF, what should 
   // not be the case for this simulation. Row sums with a value of less than
   // 1 should actually also not be used, but can be handled by the simulation.
-  long chancount, bincount;
+  long bincount;
   double min_sum=1.;
   for (bincount=0; bincount<rmf->NumberEnergyBins; bincount++) {
     double sum=0.;
+    long chancount;
     for (chancount=0; chancount<rmf->NumberChannels; chancount++) {
       sum+=ReturnRMFElement(rmf, chancount, bincount);
     }
@@ -59,6 +56,83 @@ struct RMF* loadRMF(char* filename, int* const status)
   CHECK_STATUS_RET(*status, rmf);
 
   return(rmf);
+}
+
+
+void loadArfRmfFromRsp(char* filename, 
+		       struct ARF** arf,
+		       struct RMF** rmf,
+		       int* const status) 
+{
+  *rmf=(struct RMF*)malloc(sizeof(struct RMF));
+  CHECK_NULL_VOID(*rmf, *status, "memory allocation for RSP failed");
+
+  // Load the RSP from the FITS file using the HEAdas access routines
+  // (part of libhdsp).
+  fitsfile* fptr=NULL;
+  fits_open_file(&fptr, filename, READONLY, status);
+  CHECK_STATUS_VOID(*status);
+  
+  // Read the 'SPECRESP MATRIX' or 'MATRIX' extension:
+  *status=ReadRMFMatrix(fptr, 0, *rmf);
+  CHECK_STATUS_VOID(*status);
+
+  // Print some information:
+  headas_chat(5, "RSP loaded with %ld energy bins and %ld channels\n",
+	      (*rmf)->NumberEnergyBins, (*rmf)->NumberChannels);
+
+  // Allocate memory for the ARF.
+  *arf=getARF(status);
+  CHECK_STATUS_VOID(*status);
+
+  // Produce an ARF from the RSP data.
+  (*arf)->NumberEnergyBins=(*rmf)->NumberEnergyBins;
+  (*arf)->LowEnergy=(float*)malloc((*arf)->NumberEnergyBins*sizeof(float));
+  CHECK_NULL_VOID((*arf)->LowEnergy, *status, 
+		  "memory allocation for energy bins failed");
+  (*arf)->HighEnergy=(float*)malloc((*arf)->NumberEnergyBins*sizeof(float));
+  CHECK_NULL_VOID((*arf)->HighEnergy, *status, 
+		  "memory allocation for energy bins failed");
+  (*arf)->EffArea=(float*)malloc((*arf)->NumberEnergyBins*sizeof(float));
+  CHECK_NULL_VOID((*arf)->EffArea, *status, 
+		  "memory allocation for effective area failed");
+  strcpy((*arf)->Telescope, (*rmf)->Telescope);
+  strcpy((*arf)->Instrument, (*rmf)->Instrument);
+  strcpy((*arf)->Detector, (*rmf)->Detector);
+  strcpy((*arf)->Filter, (*rmf)->Filter);
+
+  // Calculate the row sums.
+  long bincount;
+  int notrmf=0;
+  for (bincount=0; bincount<(*rmf)->NumberEnergyBins; bincount++) {
+    double sum=0.;
+    long chancount;
+    for (chancount=0; chancount<(*rmf)->NumberChannels; chancount++) {
+      sum+=ReturnRMFElement(*rmf, chancount, bincount);
+    }
+    
+    // Check if this might be an RMF and not an RSP, as it should be.
+    if ((0==notrmf)&&(fabs(sum-1.0)<0.001)) {
+      SIXT_WARNING("response matrix declared as RSP file looks like RMF");
+    } else {
+      notrmf=1;
+    }
+    
+    (*arf)->LowEnergy[bincount]=(*rmf)->LowEnergy[bincount];
+    (*arf)->HighEnergy[bincount]=(*rmf)->HighEnergy[bincount];
+    (*arf)->EffArea[bincount]=(float)sum;
+  }
+
+  // Normalize the RSP to obtain an ARF.
+  NormalizeRMF(*rmf);
+
+  // Read the EBOUNDS extension:
+  *status=ReadRMFEbounds(fptr, 0, *rmf);
+  CHECK_STATUS_VOID(*status);
+
+  // Close the open FITS file.
+  fits_close_file(fptr, status);
+  CHECK_STATUS_VOID(*status);
 }
 
 
