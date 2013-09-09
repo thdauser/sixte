@@ -207,8 +207,6 @@ int getImpactPos (struct Point2d* const position,
 		  int* const status)
 {// Check if a CodedMask is specified. If not, break.
   if (NULL==mask) return(0);
-  
-  float i; //counter for 'detector-gaps'
 
   // Get a random number.
   double rand=sixt_get_random_number(status);

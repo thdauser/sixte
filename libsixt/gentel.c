@@ -34,12 +34,10 @@ GenTel* newGenTel(int* const status)
 void destroyGenTel(GenTel** const tel)
 {
   if (NULL!=*tel) {
-    if (NULL!=(*tel)->arf) {
-      free((*tel)->arf);
-    }
     if (NULL!=(*tel)->arf_filename) {
       free((*tel)->arf_filename);
     }
+    freeARF((*tel)->arf);
     destroyPSF(&(*tel)->psf);
     destroyVignetting(&(*tel)->vignetting);
     destroyCodedMask(&(*tel)->coded_mask);

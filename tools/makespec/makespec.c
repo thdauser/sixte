@@ -14,6 +14,9 @@ int makespec_main() {
   long* spec=NULL;
   fitsfile* sf=NULL;
 
+  // Instrument response.
+  struct RMF* rmf=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS;
 
@@ -101,7 +104,7 @@ int makespec_main() {
       // The file should be located in the working directory.
       strcpy(filepathname, respfile);
     }
-    struct RMF* rmf=loadRMF(filepathname, &status);
+    rmf=loadRMF(filepathname, &status);
     if ((EXIT_SUCCESS!=status) && (strlen(par.RSPPath)==0)) {
       SIXT_ERROR("failed to find or open the RMF "
 		 "(specify path via the parameter 'RSPPath')");
@@ -219,6 +222,7 @@ int makespec_main() {
 
   // Release memory.
   if (NULL!=spec) free(spec);
+  freeRMF(rmf);
 
   // Clean up the random number generator.
   sixt_destroy_rng();
