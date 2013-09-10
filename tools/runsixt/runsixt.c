@@ -261,8 +261,7 @@ int runsixt_main()
 
     // --- Open and set up files ---
 
-    char telescop[MAXMSG]={""};
-    char instrume[MAXMSG]={""};
+    char telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
     if (NULL!=inst->telescop) {
       strcpy(telescop, inst->telescop);
     }
@@ -280,6 +279,7 @@ int runsixt_main()
     if (strlen(photonlist_filename)>0) {
       plf=openNewPhotonListFile(photonlist_filename, 
 				telescop, instrume, "Normal",
+				inst->tel->arf_filename, inst->det->rmf_filename,
 				par.MJDREF, 0.0, par.TSTART, tstop,
 				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
@@ -289,6 +289,7 @@ int runsixt_main()
     if (strlen(impactlist_filename)>0) {
       ilf=openNewImpactListFile(impactlist_filename, 
 				telescop, instrume, "Normal",
+				inst->tel->arf_filename, inst->det->rmf_filename,
 				par.MJDREF, 0.0, par.TSTART, tstop,
 				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
@@ -297,6 +298,7 @@ int runsixt_main()
     // Open the output event list file.
     elf=openNewEventListFile(eventlist_filename, 
 			     telescop, instrume, "Normal",
+			     inst->tel->arf_filename, inst->det->rmf_filename,
 			     par.MJDREF, 0.0, par.TSTART, tstop,
 			     inst->det->pixgrid->xwidth,
 			     inst->det->pixgrid->ywidth,
@@ -309,6 +311,7 @@ int runsixt_main()
     // Open the output pattern list file.
     patf=openNewPatternFile(patternlist_filename, 
 			    telescop, instrume, "Normal",			    
+			    inst->tel->arf_filename, inst->det->rmf_filename,
 			    par.MJDREF, 0.0, par.TSTART, tstop,
 			    inst->det->pixgrid->xwidth,
 			    inst->det->pixgrid->ywidth,

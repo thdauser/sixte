@@ -336,15 +336,6 @@ int erosim_main()
 
     // --- Open and set up files ---
 
-    char telescop[MAXMSG]={""};
-    char instrume[MAXMSG]={""};
-    if (NULL!=subinst[0]->telescop) {
-      strcpy(telescop, subinst[0]->telescop);
-    }
-    if (NULL!=subinst[0]->instrume) {
-      strcpy(instrume, subinst[0]->instrume);
-    }
-
     double tstop;
     if (NULL==gti) {
       tstop=par.TSTART+par.Exposure;
@@ -355,10 +346,21 @@ int erosim_main()
     // Open the output photon list files.
     if (strlen(photonlist_filename_template)>0) {
       for (ii=0; ii<7; ii++) {
+	char telescop[MAXMSG]={""};
+	char instrume[MAXMSG]={""};
+	if (NULL!=subinst[ii]->telescop) {
+	  strcpy(telescop, subinst[ii]->telescop);
+	}
+	if (NULL!=subinst[ii]->instrume) {
+	  strcpy(instrume, subinst[ii]->instrume);
+	}
+
 	char photonlist_filename[MAXFILENAME];
 	sprintf(photonlist_filename, photonlist_filename_template, ii+1);
 	plf[ii]=openNewPhotonListFile(photonlist_filename, 
 				      telescop, instrume, "Normal", 
+				      subinst[ii]->tel->arf_filename, 
+				      subinst[ii]->det->rmf_filename,
 				      par.MJDREF, 0.0, par.TSTART, tstop,
 				      par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
@@ -369,10 +371,21 @@ int erosim_main()
     // Open the output impact list files.
     if (strlen(impactlist_filename_template)>0) {
       for (ii=0; ii<7; ii++) {
+	char telescop[MAXMSG]={""};
+	char instrume[MAXMSG]={""};
+	if (NULL!=subinst[ii]->telescop) {
+	  strcpy(telescop, subinst[ii]->telescop);
+	}
+	if (NULL!=subinst[ii]->instrume) {
+	  strcpy(instrume, subinst[ii]->instrume);
+	}
+
 	char impactlist_filename[MAXFILENAME];
 	sprintf(impactlist_filename, impactlist_filename_template, ii+1);
 	ilf[ii]=openNewImpactListFile(impactlist_filename, 
 				      telescop, instrume, "Normal", 
+				      subinst[ii]->tel->arf_filename, 
+				      subinst[ii]->det->rmf_filename,
 				      par.MJDREF, 0.0, par.TSTART, tstop,
 				      par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
@@ -382,10 +395,21 @@ int erosim_main()
 
     // Open the output event list files.
     for (ii=0; ii<7; ii++) {
+      char telescop[MAXMSG]={""};
+      char instrume[MAXMSG]={""};
+      if (NULL!=subinst[ii]->telescop) {
+	strcpy(telescop, subinst[ii]->telescop);
+      }
+      if (NULL!=subinst[ii]->instrume) {
+	strcpy(instrume, subinst[ii]->instrume);
+      }
+      
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii+1);
       elf[ii]=openNewEventListFile(eventlist_filename, 
 				   telescop, instrume, "Normal", 
+				   subinst[ii]->tel->arf_filename, 
+				   subinst[ii]->det->rmf_filename,
 				   par.MJDREF, 0.0, par.TSTART, tstop,
 				   subinst[ii]->det->pixgrid->xwidth,
 				   subinst[ii]->det->pixgrid->ywidth,
@@ -400,10 +424,21 @@ int erosim_main()
 
     // Open the output pattern list files.
     for (ii=0; ii<7; ii++) {
+      char telescop[MAXMSG]={""};
+      char instrume[MAXMSG]={""};
+      if (NULL!=subinst[ii]->telescop) {
+	strcpy(telescop, subinst[ii]->telescop);
+      }
+      if (NULL!=subinst[ii]->instrume) {
+	strcpy(instrume, subinst[ii]->instrume);
+      }
+      
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii+1);
       patf[ii]=openNewPatternFile(patternlist_filename, 
 				  telescop, instrume, "Normal", 
+				  subinst[ii]->tel->arf_filename, 
+				  subinst[ii]->det->rmf_filename,
 				  par.MJDREF, 0.0, par.TSTART, tstop,
 				  subinst[ii]->det->pixgrid->xwidth,
 				  subinst[ii]->det->pixgrid->ywidth,

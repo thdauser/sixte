@@ -55,8 +55,8 @@ comarecon
 comaexp
 orbatt
 ladsim
-ladspec
-genlc
+makespec
+makelc
 mmap_write
 mmap_read
 runsixt
@@ -79,4 +79,3 @@ libtool
 ltmain.sh
 missing
 stamp-h1
-

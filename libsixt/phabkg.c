@@ -195,8 +195,8 @@ unsigned int PHABkgGetEvents(const PHABkg* const phabkg,
       // selected pixel is within the FoV.
       double xr=(xi-pixgrid->xrpix+1.0)*pixgrid->xdelt;
       double yr=(yi-pixgrid->yrpix+1.0)*pixgrid->ydelt;
-      if (pow(xr*cosrota+yr*sinrota+pixgrid->xrval,2.0)+
-	  pow(-xr*sinrota+yr*cosrota+pixgrid->yrval,2.0)
+      if (pow(xr*cosrota-yr*sinrota+pixgrid->xrval,2.0)+
+	  pow(xr*sinrota+yr*cosrota+pixgrid->yrval,2.0)
 	  >
 	  pow(phabkg->fov_diameter*0.5, 2.0)) {
 	continue;

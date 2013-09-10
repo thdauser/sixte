@@ -82,6 +82,8 @@ int evpat_main()
     }
     plf=openNewPatternFile(pattern_filename, 
 			   telescop, instrume, "Normal",
+			   inst->tel->arf_filename,
+			   inst->det->rmf_filename,
 			   mjdref, timezero, tstart, tstop,			   
 			   inst->det->pixgrid->xwidth,
 			   inst->det->pixgrid->ywidth,

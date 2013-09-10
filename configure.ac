@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.65)
-AC_INIT([sixte], [0.94], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.99], [christian.schmid@sternwarte.uni-erlangen.de])
 AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
@@ -92,8 +92,8 @@ AC_CONFIG_FILES([Makefile
 		tools/phoimg/Makefile
 		tools/comaphovign/Makefile
 		tools/ladsim/Makefile
-		tools/ladspec/Makefile
-		tools/genlc/Makefile
+		tools/makespec/Makefile
+		tools/makelc/Makefile
 		tools/psfgen/Makefile
 		tools/xms_pixtemp/Makefile
 		tools/ero_exposure/Makefile
@@ -124,13 +124,10 @@ AC_CONFIG_FILES([Makefile
 		tools/fudgexp/Makefile
 		tools/orbatt/Makefile
 		tools/mmap/Makefile
+		tools/testbkg/Makefile
 		share/Makefile
 		share/instruments/Makefile
-		extlib/Makefile
-		extlib/heautils/Makefile
-		extlib/heaio/Makefile
-		extlib/heainit/Makefile
-		extlib/heasp/Makefile])
+		extlib/Makefile])
 
 AC_CONFIG_SUBDIRS([extlib/simput])
 

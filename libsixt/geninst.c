@@ -444,38 +444,116 @@ static void GenInstXMLElementStart(void* parsedata,
     xmlparsedata->inst->det->pixgrid->xborder=getXMLAttributeFloat(attr, "X");
     xmlparsedata->inst->det->pixgrid->yborder=getXMLAttributeFloat(attr, "Y");
     
-  } else if (!strcmp(Uelement, "RMF")) {
+  } else if (!strcmp(Uelement, "ARF")) {
+
+    // Check if the ARF has been defined previously.
+    if (NULL!=xmlparsedata->inst->tel->arf) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("ARF already defined (cannot be loaded twice)");
+      return;
+    }
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for RMF");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for ARF");
+      return;
     }
 
+    // Store the file name of the ARF.
+    xmlparsedata->inst->tel->arf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->tel->arf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for ARF file name failed");
+    strcpy(xmlparsedata->inst->tel->arf_filename, filename);
+
+    // Load the ARF.
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->inst->filepath);
+    strcat(filepathname, filename);
+    xmlparsedata->inst->tel->arf=loadARF(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "RMF")) {
+
+    // Check if the RMF has been defined previously.
+    if (NULL!=xmlparsedata->inst->det->rmf) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("RMF already defined (cannot be loaded twice)");
+      return;
+    }
+
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for RMF");
+      return;
+    }
+
+    // Store the file name of the RMF.
+    xmlparsedata->inst->det->rmf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->det->rmf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for RMF file name failed");
+    strcpy(xmlparsedata->inst->det->rmf_filename, filename);
+
+    // Load the RMF.
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
     xmlparsedata->inst->det->rmf=loadRMF(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
-  } else if (!strcmp(Uelement, "ARF")) {
+  } else if (!strcmp(Uelement, "RSP")) {
+
+    // Check if the ARF or RMF have been defined previously.
+    if ((NULL!=xmlparsedata->inst->tel->arf) ||
+	(NULL!=xmlparsedata->inst->det->rmf)) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("ARF or RMF already defined (cannot be loaded twice)");
+      return;
+    }
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for ARF");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for RSP");
+      return;
     }
 
+    // Store the file name of the RSP.
+    xmlparsedata->inst->tel->arf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->tel->arf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for ARF file name failed");
+    strcpy(xmlparsedata->inst->tel->arf_filename, filename);
+    xmlparsedata->inst->det->rmf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->inst->det->rmf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for RMF file name failed");
+    strcpy(xmlparsedata->inst->det->rmf_filename, filename);
+
+    // Load the RSP
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->inst->tel->arf=loadARF(filepathname, &xmlparsedata->status);
+    loadArfRmfFromRsp(filepathname, 
+		      &xmlparsedata->inst->tel->arf,
+		      &xmlparsedata->inst->det->rmf,
+		      &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "PSF")) {
@@ -575,6 +653,8 @@ static void GenInstXMLElementStart(void* parsedata,
   } else if (!strcmp(Uelement, "EROBACKGROUND")) {
 
     if (0==eroBkgInitialized) {
+      // Determine the file containing the simulated background
+      // hits from GEANT4.
       char filename[MAXFILENAME];
       getXMLAttributeString(attr, "FILENAME", filename);
 
@@ -590,6 +670,18 @@ static void GenInstXMLElementStart(void* parsedata,
       eroBkgInitialize(filepathname, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);
       eroBkgInitialized=1;
+
+      // Load the optional light curve if available. The light curve
+      // defines the time-variability of the background flux.
+      getXMLAttributeString(attr, "LIGHTCURVE", filename);
+
+      // Check if a light curve has been specified.
+      if (strlen(filename)>0) {
+	strcpy(filepathname, xmlparsedata->inst->filepath);
+	strcat(filepathname, filename);
+	eroBkgSetRateFct(filepathname, &xmlparsedata->status);
+	CHECK_STATUS_VOID(xmlparsedata->status);
+      }
     }
 
     xmlparsedata->inst->det->erobackground=1;

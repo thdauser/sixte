@@ -32,7 +32,5 @@ void FreeReconArray(ReconArray* recon);
 
 //void FreeReconImage(ReconArray* recon);
 
-double* MultiplyMaskRecon(ReconArray* recon, CodedMask* mask, int* status);
-
 
 #endif

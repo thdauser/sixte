@@ -54,14 +54,8 @@ void freeLAD(LAD** const lad, int* const status)
     if (NULL!=(*lad)->vignetting) {
       destroyVignetting(&((*lad)->vignetting));
     }
-    if (NULL!=(*lad)->arf) {
-      freeARF((*lad)->arf);
-    }
     if (NULL!=(*lad)->arf_filename) {
       free((*lad)->arf_filename);
-    }
-    if (NULL!=(*lad)->rmf) {
-      freeRMF((*lad)->rmf);
     }
     if (NULL!=(*lad)->rmf_filename) {
       free((*lad)->rmf_filename);
@@ -81,6 +75,8 @@ void freeLAD(LAD** const lad, int* const status)
     if (NULL!=(*lad)->filepath) {
       free((*lad)->filepath);
     }
+    freeARF((*lad)->arf);
+    freeRMF((*lad)->rmf);
 
     free(*lad);
     *lad=NULL;

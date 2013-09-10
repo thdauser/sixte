@@ -439,14 +439,22 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
   } else if (!strcmp(Uelement, "ARF")) {
     
+    // Check if the ARF has been defined previously.
+    if (NULL!=xmlparsedata->lad->arf) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("ARF already defined (cannot be loaded twice)");
+      return;
+    }
+
     // Determine the file name of the instrument ARF.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for ARF");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for ARF");
+      return;
     }
 
     // Store the file name of the ARF.
@@ -461,11 +469,19 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->lad->arf = loadARF(filepathname, &xmlparsedata->status);
+    xmlparsedata->lad->arf=loadARF(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "RMF")) {
     
-    // Determine the file name of the detector RMF.
+    // Check if the RMF has been defined previously.
+    if (NULL!=xmlparsedata->lad->rmf) {
+      SIXT_ERROR("RMF already defined (cannot be loaded twice)");
+      xmlparsedata->status=EXIT_FAILURE;
+      return;
+    }
+
+    // Determine the file name of the RMF.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
     
@@ -473,6 +489,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     if (strlen(filename)==0) {
       SIXT_ERROR("no file specified for RMF");
       xmlparsedata->status=EXIT_FAILURE;
+      return;
     }
 
     // Store the file name of the RMF.
@@ -487,7 +504,52 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->lad->rmf = loadRMF(filepathname, &xmlparsedata->status);
+    xmlparsedata->lad->rmf=loadRMF(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
+
+  } else if (!strcmp(Uelement, "RSP")) {
+    
+    // Check if the ARF or RMF have been defined previously.
+    if ((NULL!=xmlparsedata->lad->arf)||(NULL!=xmlparsedata->lad->rmf)) {
+      SIXT_ERROR("ARF or RMF already defined (cannot be loaded twice)");
+      xmlparsedata->status=EXIT_FAILURE;
+      return;
+    }
+
+    // Determine the file name of the RSP.
+    char filename[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", filename);
+    
+    // Check if a file name has been specified.
+    if (strlen(filename)==0) {
+      SIXT_ERROR("no file specified for RSP");
+      xmlparsedata->status=EXIT_FAILURE;
+      return;
+    }
+
+    // Store the file name of the RSP.
+    xmlparsedata->lad->arf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->lad->arf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for ARF file name failed");
+    strcpy(xmlparsedata->lad->arf_filename, filename);
+    xmlparsedata->lad->rmf_filename=
+      (char*)malloc((strlen(filename)+1)*sizeof(char));
+    CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename, 
+		    xmlparsedata->status,
+		    "memory allocation for RMF file name failed");
+    strcpy(xmlparsedata->lad->rmf_filename, filename);
+
+    // Load the RSP.
+    char filepathname[MAXFILENAME];
+    strcpy(filepathname, xmlparsedata->lad->filepath);
+    strcat(filepathname, filename);
+    loadArfRmfFromRsp(filepathname, 
+		      &xmlparsedata->lad->arf,
+		      &xmlparsedata->lad->rmf,
+		      &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "BACKGROUND")) {
     

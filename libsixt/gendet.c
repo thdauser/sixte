@@ -20,6 +20,7 @@ GenDet* newGenDet(int* const status)
   det->pixgrid=NULL;
   det->split  =NULL;
   det->line   =NULL;
+  det->rmf_filename=NULL;
   det->rmf    =NULL;
   det->elf    =NULL;
   det->phabkg =NULL;
@@ -65,7 +66,10 @@ void destroyGenDet(GenDet** const det)
       }
       free((*det)->line);
     }
-
+    if (NULL!=(*det)->rmf_filename) {
+      free((*det)->rmf_filename);
+    }
+    freeRMF((*det)->rmf);
     destroyClockList(&(*det)->clocklist);
     destroyGenPixGrid(&(*det)->pixgrid);
     destroyGenSplit(&(*det)->split);
@@ -452,10 +456,10 @@ void operateGenDetClock(GenDet* const det,
 	    // to apparently valid event patterns, such that the overall
 	    // background is too high. 
 	    double xh=
-	      list->hit_xpos[ii]*0.001*cosrota+
+	      list->hit_xpos[ii]*0.001*cosrota-
 	      list->hit_ypos[ii]*0.001*sinrota;
 	    double yh=
-	      -list->hit_xpos[ii]*0.001*sinrota+
+	      list->hit_xpos[ii]*0.001*sinrota+
 	      list->hit_ypos[ii]*0.001*cosrota;	    
 	    int x, y;
 	    double xr, yr;

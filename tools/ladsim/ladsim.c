@@ -957,7 +957,9 @@ int ladsim_main()
     if (strlen(photonlist_filename)>0) {
       plf=openNewPhotonListFile(photonlist_filename, 
 				"LOFT", "LAD", "Normal",
-				par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
+				lad->arf_filename, lad->rmf_filename,
+				par.MJDREF, 0.0, 
+				par.TSTART, par.TSTART+par.Exposure,
 				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -975,7 +977,11 @@ int ladsim_main()
     }
 
     // Open the output event list file for recombined events.
-    elf=openNewLADEventListFile(eventlist_filename, par.clobber, &status);
+    elf=openNewLADEventListFile(eventlist_filename, 
+				lad->arf_filename, lad->rmf_filename,
+				par.MJDREF, 0.0,
+				par.TSTART, par.TSTART+par.Exposure,
+				par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.

@@ -10,7 +10,7 @@
 
 <detector type="wfi" mode="fullframe">
 <dimensions xwidth="640" ywidth="448"/>
-<wcs xrpix="0.5" yrpix="0.5" xrval="0.0130." yrval="0.0128" xdelt="130.e-6" ydelt="130.e-6" rota="90.0"/>
+<wcs xrpix="0.5" yrpix="0.5" xrval="0.0130." yrval="0.0128" xdelt="130.e-6" ydelt="130.e-6" rota="270.0"/>
 <rmf filename="athenapp_ir_b4c_wfi_withfilter_onaxis.rmf"/>
 <phabackground filename="sixte_WFI_bkgd_sum_fov40amin.pha"/>
 <split type="GAUSS" par1="11.e-6"/>

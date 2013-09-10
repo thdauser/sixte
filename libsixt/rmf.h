@@ -2,6 +2,7 @@
 #define RMF_H 1
 
 #include "sixt.h"
+#include "arf.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
@@ -19,11 +20,16 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** Load an RMF/RSP matrix and the corresponding EBOUNDS from a
-    response file. If the flag 'NORMALIZE_RMF' is set, the RSP is
-    renormalized to an RMF in such a way that the sum of each matrix
-    row is 1. */
+/** Load an RMF matrix and the corresponding EBOUNDS from a response
+    file. */
 struct RMF* loadRMF(char* filename, int* const status);
+
+/** Load an RSP matrix and the corresponding EBOUNDS from a response
+    file and split the RSP into an ARF and an RMF. */
+void loadArfRmfFromRsp(char* filename, 
+		       struct ARF** arf,
+		       struct RMF** rmf,
+		       int* const status);
 
 /** Destructor for the RMF data structure. Warning: As there is no
     internal destructor for the RMF data structure in the HEASP

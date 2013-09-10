@@ -104,6 +104,7 @@ int readEventList_nextRow(CoMaEventFile* ef, ReadEvent* ea)
     return(status);
   }
 
+  return(status);
 }
 
 double* SaveEventArray1d(ReadEvent* ea, int* status)

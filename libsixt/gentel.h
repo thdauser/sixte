@@ -18,6 +18,7 @@
 typedef struct {
 
   /** Detector and telescope ARF containing the effective area. */
+  char* arf_filename;
   struct ARF* arf;
 
   /** Telescope PSF. */
