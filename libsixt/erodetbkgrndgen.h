@@ -20,6 +20,7 @@ typedef struct eroBackgroundInput {
   fitsfile *inputfptr;
   long numrows;
   double interval;
+  double intervalsum;
   gsl_rng *randgen;
   
   char *timecolname;
@@ -61,6 +62,7 @@ typedef struct eroBackgroundRateFct {
   double* time;
   float* rate;
 
+  double starttime;
   double* currenttime;
   double intervalsum;
   float* currentrate;
