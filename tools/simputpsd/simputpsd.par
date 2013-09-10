@@ -1,0 +1,4 @@
+Simput,fre,lq,"simput.fits",,,"SIMPUT catalog file"
+PSDFile,s,h,"none",,,"ASCII file containing a PSD"
+chatter,i,lh,3,,,"chatter: control verbosity of the program"
+history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file"
