@@ -84,9 +84,9 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
     // Read the data.
     int anynul=0;
     fits_read_col(fptr, TLONG, cchannel, 1, 1, phabkg->nbins, 
-		  phabkg->channel, phabkg->channel, &anynul, status);
+		  0, phabkg->channel, &anynul, status);
     fits_read_col(fptr, TFLOAT, crate, 1, 1, phabkg->nbins, 
-		  phabkg->distribution, phabkg->distribution, &anynul, status);
+		  0, phabkg->distribution, &anynul, status);
     CHECK_STATUS_BREAK(*status);
 
     // Sum up the rate values in order to obtain an accumulative distribution.
