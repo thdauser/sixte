@@ -178,6 +178,40 @@ void loadArfRmfFromRsp(char* const filename,
 void freeRMF(struct RMF* const rmf) 
 {
   if (NULL!=rmf) {
+    if (NULL!=rmf->NumberGroups) {
+      free(rmf->NumberGroups);
+    }
+    if (NULL!=rmf->FirstGroup) {
+      free(rmf->FirstGroup);
+    }
+    if (NULL!=rmf->FirstChannelGroup) {
+      free(rmf->FirstChannelGroup);
+    }
+    if (NULL!=rmf->NumberChannelGroups) {
+      free(rmf->NumberChannelGroups);
+    }
+    if (NULL!=rmf->FirstElement) {
+      free(rmf->FirstElement);
+    }
+    if (NULL!=rmf->OrderGroup) {
+      free(rmf->OrderGroup);
+    }
+    if (NULL!=rmf->LowEnergy) {
+      free(rmf->LowEnergy);
+    }
+    if (NULL!=rmf->HighEnergy) {
+      free(rmf->HighEnergy);
+    }
+    if (NULL!=rmf->Matrix) {
+      free(rmf->Matrix);
+    }
+    if (NULL!=rmf->ChannelLowEnergy) {
+      free(rmf->ChannelLowEnergy);
+    }
+    if (NULL!=rmf->ChannelHighEnergy) {
+      free(rmf->ChannelHighEnergy);
+    }
+
     free(rmf);
   }
 }
