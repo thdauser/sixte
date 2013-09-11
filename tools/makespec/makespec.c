@@ -23,7 +23,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.06");
+  set_toolversion("0.08");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -43,37 +43,68 @@ int makespec_main() {
     // Read required keywords.
     char comment[MAXMSG];
     char telescop[MAXMSG];
-    char instrume[MAXMSG];
-    char filter[MAXMSG];
-    char respfile[MAXMSG];
-    char ancrfile[MAXMSG];
-    char date_obs[MAXMSG];
-    char time_obs[MAXMSG];
-    char date_end[MAXMSG];
-    char time_end[MAXMSG];
-    double exposure=0.;
     fits_read_key(ef, TSTRING, "TELESCOP", telescop, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'TELESCOP' in event file");
+      break;
+    }
+    char instrume[MAXMSG];
     fits_read_key(ef, TSTRING, "INSTRUME", instrume, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'INSTRUME' in event file");
+      break;
+    }
+    char filter[MAXMSG];
     fits_read_key(ef, TSTRING, "FILTER", filter, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'FILTER' in event file");
+      break;
+    }
 
+    char ancrfile[MAXMSG];
     fits_read_key(ef, TSTRING, "ANCRFILE", ancrfile, comment, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not find keyword 'ANCRFILE' in event file");
       break;
     }
+    char respfile[MAXMSG];
     fits_read_key(ef, TSTRING, "RESPFILE", respfile, comment, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not find keyword 'RESPFILE' in event file");
       break;
     }
 
+    char date_obs[MAXMSG];
     fits_read_key(ef, TSTRING, "DATE-OBS", date_obs, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'DATE-OBS' in event file");
+      break;
+    }
+    char time_obs[MAXMSG];
     fits_read_key(ef, TSTRING, "TIME-OBS", time_obs, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'TIME-OBS' in event file");
+      break;
+    }
+    char date_end[MAXMSG];
     fits_read_key(ef, TSTRING, "DATE-END", date_end, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'DATE-END' in event file");
+      break;
+    }
+    char time_end[MAXMSG];
     fits_read_key(ef, TSTRING, "TIME-END", time_end, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'TIME-END' in event file");
+      break;
+    }
+
+    double exposure=0.;
     fits_read_key(ef, TDOUBLE, "EXPOSURE", &exposure, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'EXPOSURE' in event file");
+      break;
+    }
 
     // Determine the column containing the signal information.
     int csignal;
@@ -104,11 +135,9 @@ int makespec_main() {
       // The file should be located in the working directory.
       strcpy(filepathname, respfile);
     }
-    rmf=loadRMF(filepathname, &status);
-    if ((EXIT_SUCCESS!=status) && (strlen(par.RSPPath)==0)) {
-      SIXT_ERROR("failed to find or open the RMF "
-		 "(specify path via the parameter 'RSPPath')");
-    }
+    struct RMF* rmf=getRMF(&status);
+    CHECK_STATUS_BREAK(status);
+    loadEbounds(rmf, filepathname, &status);
     CHECK_STATUS_BREAK(status);
 
     // Initialize the random number generator.

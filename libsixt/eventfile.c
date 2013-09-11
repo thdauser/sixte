@@ -40,7 +40,7 @@ int openEventFile(EventFile* ef, char* filename, int access_mode)
 
 int closeEventFile(EventFile* ef) 
 {
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
   if (NULL!=ef) {
     if (NULL!=ef->fptr) {

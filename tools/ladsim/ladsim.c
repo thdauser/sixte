@@ -1050,37 +1050,7 @@ int ladsim_main()
       CHECK_STATUS_BREAK(status);
     }
 
-    // Timing keywords.
-    double dbuffer=0.;
-    // Impact list file.
-    if (NULL!=ilf) {
-      fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		      "time offset", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Signal list file.
-    if (NULL!=slf) {
-      fits_update_key(slf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(slf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		      "time offset", &status);
-      fits_update_key(slf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Event list file.
-    fits_update_key(elf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		    "reference MJD", &status);
-    fits_update_key(elf->fptr, TDOUBLE, "TIMEZERO", &dbuffer,
-		    "time offset", &status);
-    fits_update_key(elf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		    "start time", &status);
+    // Store the exposure time.
     fits_update_key(elf->fptr, TDOUBLE, "EXPOSURE", &par.Exposure,
 		    "exposure time [s]", &status);
     CHECK_STATUS_BREAK(status);

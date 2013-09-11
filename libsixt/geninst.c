@@ -278,24 +278,24 @@ void parseGenInstXML(GenInst* const inst,
   // Check if all required parameters have been read successfully from 
   // the XML file.
   if (0==inst->det->pixgrid->xwidth) {
-    headas_printf("*** warning: no specification of x-width of pixel array\n");
+    SIXT_WARNING("no specification of x-width of pixel array");
   }  
   if (0==inst->det->pixgrid->ywidth) {
-    headas_printf("*** warning: no specification of y-width of pixel array\n");
+    SIXT_WARNING("no specification of y-width of pixel array");
   }
 
   if (0.==inst->det->pixgrid->xrpix) {
-    headas_printf("*** warning: no specification of x reference pixel\n");
+    SIXT_WARNING("no specification of x reference pixel");
   }
   if (0.==inst->det->pixgrid->yrpix) {
-    headas_printf("*** warning: no specification of y reference pixel\n");
+    SIXT_WARNING("no specification of y reference pixel");
   }
 
   if (0.==inst->det->pixgrid->xdelt) {
-    headas_printf("*** warning: no specification of pixel x-width\n");
+    SIXT_WARNING("no specification of pixel x-width");
   }
   if (0.==inst->det->pixgrid->ydelt) {
-    headas_printf("*** warning: no specification of pixel y-width\n");
+    SIXT_WARNING("no specification of pixel y-width");
   }
   
   if (0.>inst->det->pixgrid->xborder) {
@@ -310,21 +310,25 @@ void parseGenInstXML(GenInst* const inst,
   }
 
   if (NULL==inst->det->rmf) {
-    headas_printf("*** warning: no specification of response file (RMF/RSP)\n");
+    SIXT_WARNING("no specification of response file (RMF/RSP)");
   }
   if (NULL==inst->tel->arf) {
-    headas_printf("*** warning: no specification of ARF\n");
+    SIXT_WARNING("no specification of ARF");
+  }
+
+  if (NULL==inst->tel->psf) {
+    SIXT_WARNING("no specification of PSF");
   }
 
   if (0.==inst->tel->focal_length) {
-    headas_printf("*** warning: no specification of the focal length of the telescope\n");
+    SIXT_WARNING("no specification of the focal length of the telescope");
   }
   if (0.==inst->tel->fov_diameter) {
-    headas_printf("*** warning: no specification of the diameter of the telescope FoV\n");
+    SIXT_WARNING("no specification of the diameter of the telescope FoV");
   }
 
   if (0==inst->det->readout_trigger) {
-    headas_printf("*** warning: no specification of the readout trigger\n");
+    SIXT_WARNING("no specification of the readout trigger");
   }
 
   if (GS_EXPONENTIAL==inst->det->split->type) {
