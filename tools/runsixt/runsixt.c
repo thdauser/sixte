@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.15");
+  set_toolversion("0.16");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -451,7 +451,11 @@ int runsixt_main()
       }
     }
 
+    // Store the total exposure time.
+    fits_update_key(patf->fptr, TDOUBLE, "EXPOSURE", &totalsimtime,
+		    "exposure time [s]", &status);
 
+    
     // Current bin in the GTI collection.
     unsigned long gtibin=0;
     // Loop over all intervals in the GTI collection.

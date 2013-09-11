@@ -590,7 +590,7 @@ int erosim_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 0.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
 
     // Determine the total length of the time interval to
