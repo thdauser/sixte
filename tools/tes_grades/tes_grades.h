@@ -1,17 +1,15 @@
-#ifndef ANALYSE_XMS_EVENTS_H
-#define ANALYSE_XMS_EVENTS_H 1
+#ifndef TES_GRADES_H
+#define TES_GRADES_H 1
 
 #include "sixt.h"
-#include "eventlistfile.h"
 #include "patternfile.h"
 
 
-#define TOOLSUB analyse_xms_events_main
+#define TOOLSUB tes_grades_main
 #include "headas_main.c"
 
 
 struct Parameters{
-  char EventList[MAXFILENAME];
   char PatternList[MAXFILENAME];
 
   /** Characteristic time unit of the TES microcalorimeter. */
@@ -29,7 +27,7 @@ struct Parameters{
 ////////////////////////////////////////////////////////////////////////
 
 
-int analyse_xms_events_getpar(struct Parameters* par);
+int tes_grades_getpar(struct Parameters* par);
 
 
-#endif /* ANALYSE_XMS_EVENTS_H */
+#endif /* TES_GRADES_H */
