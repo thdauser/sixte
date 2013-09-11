@@ -109,7 +109,7 @@ int comarecon_main() {
 
 
     // Loop over all events in the FITS file.
-    while (0==EventFileEOF(&eventfile->generic)) {
+    while (0==EventListEOF(&eventfile->generic)) {
 
       status=readEventList_nextRow(eventfile, ea);
       CHECK_STATUS_BREAK(status);

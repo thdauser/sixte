@@ -16,7 +16,7 @@ int phogen_main()
   SourceCatalog* srccat=NULL;
 
   // Photon list file.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
   
   // Error status.
   int status=EXIT_SUCCESS;  
@@ -126,11 +126,11 @@ int phogen_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    plf=openNewPhotonListFile(photonlist_filename,
-			      telescop, instrume, "Normal",
-			      inst->tel->arf_filename, inst->det->rmf_filename,
-			      par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
-			      par.clobber, &status);
+    plf=openNewPhotonFile(photonlist_filename,
+			  telescop, instrume, "Normal",
+			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
+			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -188,7 +188,7 @@ int phogen_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freePhotonListFile(&plf, &status);
+  freePhotonFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
   freeAttitude(&ac);
   destroyGenInst(&inst, &status);

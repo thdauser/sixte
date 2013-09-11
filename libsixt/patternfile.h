@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 #include "event.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "pattern.h"
 
 
@@ -55,7 +55,7 @@ PatternFile* openNewPatternFile(const char* const filename,
 				const char clobber,
 				int* const status);
 
-/** Open an existing EventListFile. */
+/** Open an existing PatternFile. */
 PatternFile* openPatternFile(const char* const filename,
 			     const int mode, int* const status);
 
@@ -80,7 +80,7 @@ void updatePatternInFile(const PatternFile* const file,
     routine is used to transfer events without pattern identification
     to a PatternFile. This is needed, e.g., if no split events are
     simulated. */
-void copyEvents2PatternFile(const EventListFile* const elf,
+void copyEvents2PatternFile(const EventFile* const elf,
 			    PatternFile* const plf,
 			    int* const status);
 

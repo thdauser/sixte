@@ -3,9 +3,9 @@
 
 
 #include "sixt.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "geninst.h"
-#include "impactlistfile.h"
+#include "impactfile.h"
 #include "phdet.h"
 
 #define TOOLSUB gendetsim_main

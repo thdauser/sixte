@@ -1,12 +1,12 @@
-#include "impactlistfile.h"
+#include "impactfile.h"
 
 
-ImpactListFile* newImpactListFile(int* const status)
+ImpactFile* newImpactFile(int* const status)
 {
-  ImpactListFile* file=(ImpactListFile*)malloc(sizeof(ImpactListFile));
+  ImpactFile* file=(ImpactFile*)malloc(sizeof(ImpactFile));
   if (NULL==file) {
     *status=EXIT_FAILURE;
-    SIXT_ERROR("memory allocation for ImpactListFile failed");
+    SIXT_ERROR("memory allocation for ImpactFile failed");
     return(file);
   }
 
@@ -27,7 +27,7 @@ ImpactListFile* newImpactListFile(int* const status)
 }
 
 
-void freeImpactListFile(ImpactListFile** const file, int* const status)
+void freeImpactFile(ImpactFile** const file, int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
@@ -41,10 +41,10 @@ void freeImpactListFile(ImpactListFile** const file, int* const status)
 }
 
 
-ImpactListFile* openImpactListFile(const char* const filename,
-				   const int mode, int* const status)
+ImpactFile* openImpactFile(const char* const filename,
+			   const int mode, int* const status)
 {
-  ImpactListFile* file=newImpactListFile(status);
+  ImpactFile* file=newImpactFile(status);
   CHECK_STATUS_RET(*status, file);
 
   headas_chat(5, "open impact list file '%s' ...\n", filename);
@@ -83,20 +83,20 @@ ImpactListFile* openImpactListFile(const char* const filename,
 }
 
 
-ImpactListFile* openNewImpactListFile(const char* const filename,
-				      char* const telescop,
-				      char* const instrume,
-				      char* const filter,
-				      char* const ancrfile,
-				      char* const respfile,
-				      const double mjdref,
-				      const double timezero,
-				      const double tstart,
-				      const double tstop,
-				      const char clobber,
-				      int* const status)
+ImpactFile* openNewImpactFile(const char* const filename,
+			      char* const telescop,
+			      char* const instrume,
+			      char* const filter,
+			      char* const ancrfile,
+			      char* const respfile,
+			      const double mjdref,
+			      const double timezero,
+			      const double tstart,
+			      const double tstop,
+			      const char clobber,
+			      int* const status)
 {
-  ImpactListFile* file=newImpactListFile(status);
+  ImpactFile* file=newImpactFile(status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the file already exists.
@@ -120,7 +120,7 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   // Create a new impact list FITS file from the template.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/impactlist.tpl");
+	  "/templates/impactfile.tpl");
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 
@@ -138,19 +138,19 @@ ImpactListFile* openNewImpactListFile(const char* const filename,
   fits_movabs_hdu(file->fptr, 2, 0, status);
   CHECK_STATUS_RET(*status, file);
 
-  // Close the new ImpactListFile.
-  freeImpactListFile(&file, status);
+  // Close the new ImpactFile.
+  freeImpactFile(&file, status);
   CHECK_STATUS_RET(*status, file);
   
   // Re-open the file.
-  file=openImpactListFile(filename, READWRITE, status);
+  file=openImpactFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
 
   return(file);
 }
 
 
-void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact, 
+void getNextImpactFromFile(ImpactFile* const file, Impact* const impact, 
 			   int* const status)
 {
   // Check if the file has been opened.
@@ -218,7 +218,7 @@ void getNextImpactFromFile(ImpactListFile* const file, Impact* const impact,
 }
 
 
-void addImpact2File(ImpactListFile* const ilf, 
+void addImpact2File(ImpactFile* const ilf, 
 		    Impact* const impact, 
 		    int* const status)
 {

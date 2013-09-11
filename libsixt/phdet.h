@@ -4,8 +4,6 @@
 #include "sixt.h"
 #include "gendet.h"
 #include "impact.h"
-#include "impactlistfile.h"
-#include "eventlistfile.h"
 
 
 /////////////////////////////////////////////////////////////////

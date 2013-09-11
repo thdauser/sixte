@@ -4,7 +4,7 @@
 
 #include "sixt.h"
 #include "event.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 
 #define TOOLSUB ero_rawevents_main
 #include "headas_main.c"

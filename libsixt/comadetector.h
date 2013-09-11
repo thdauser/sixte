@@ -4,7 +4,7 @@
 
 #include "sixt.h"
 #include "impact.h"
-#include "eventfile.h"
+#include "eventlist.h"
 #include "squarepixels.h"
 #include "comaevent.h"
 #include "comaeventfile.h"

@@ -14,7 +14,7 @@ CoMaEventFile* openCoMaEventFile(char* const filename,
   }
 
   //Call the corresponding routine of the underlying structure.
-  *status=openEventFile(&ef->generic, filename, access_mode);
+  *status=openEventList(&ef->generic, filename, access_mode);
   CHECK_STATUS_RET(*status, ef);
 
   //Determine the CoMa-specific elements of the event list.
@@ -68,7 +68,7 @@ CoMaEventFile* openNewCoMaEventFile(char* const filename,
 int closeCoMaEventFile(CoMaEventFile* ef)
 {
   // Call the corresponding routine of the underlying structure.
-  return(closeEventFile(&ef->generic));
+  return(closeEventList(&ef->generic));
 }
 
 

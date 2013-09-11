@@ -6,11 +6,11 @@
 #include "vector.h"
 #include "check_fov.h"
 #include "photon.h"
-#include "photonlistfile.h"
+#include "photonfile.h"
 #include "telescope.h"
 #include "codedmask.h"
 #include "impact.h"
-#include "impactlistfile.h"
+#include "impactfile.h"
 #include "attitudecatalog2.h"
 #include "attitude.h"
 

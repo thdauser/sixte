@@ -4,7 +4,7 @@
 
 #include "sixt.h"
 #include "attitude.h"
-#include "photonlistfile.h"
+#include "photonfile.h"
 
 #define TOOLSUB comaphovign_main
 #include "headas_main.c"

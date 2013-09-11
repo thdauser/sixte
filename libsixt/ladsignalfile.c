@@ -1,12 +1,12 @@
-#include "ladsignallistfile.h"
+#include "ladsignalfile.h"
 
 
-LADSignalListFile* newLADSignalListFile(int* const status)
+LADSignalFile* newLADSignalFile(int* const status)
 {
-  LADSignalListFile* file=
-    (LADSignalListFile*)malloc(sizeof(LADSignalListFile));
+  LADSignalFile* file=
+    (LADSignalFile*)malloc(sizeof(LADSignalFile));
   CHECK_NULL_RET(file, *status, 
-		 "memory allocation for LADSignalListFile failed", file);
+		 "memory allocation for LADSignalFile failed", file);
 
   // Initialize pointers with NULL.
   file->fptr=NULL;
@@ -27,8 +27,7 @@ LADSignalListFile* newLADSignalListFile(int* const status)
 }
 
 
-void freeLADSignalListFile(LADSignalListFile** const file, 
-			   int* const status)
+void freeLADSignalFile(LADSignalFile** const file, int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
@@ -40,11 +39,11 @@ void freeLADSignalListFile(LADSignalListFile** const file,
 }
 
 
-LADSignalListFile* openNewLADSignalListFile(const char* const filename,
-					    const char clobber,
-					    int* const status)
+LADSignalFile* openNewLADSignalFile(const char* const filename,
+				    const char clobber,
+				    int* const status)
 {
-  LADSignalListFile* file=newLADSignalListFile(status);
+  LADSignalFile* file=newLADSignalFile(status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the file already exists.
@@ -68,7 +67,7 @@ LADSignalListFile* openNewLADSignalListFile(const char* const filename,
   // Create a new LADSignal list FITS file from the template file.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/ladsignallist.tpl");
+	  "/templates/ladsignalfile.tpl");
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 
@@ -92,22 +91,22 @@ LADSignalListFile* openNewLADSignalListFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   // Close the file.
-  freeLADSignalListFile(&file, status);
+  freeLADSignalFile(&file, status);
   CHECK_STATUS_RET(*status, file);
 
   // Re-open the file.
-  file=openLADSignalListFile(filename, READWRITE, status);
+  file=openLADSignalFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
   
   return(file);
 }
 
 
-LADSignalListFile* openLADSignalListFile(const char* const filename,
-					 const int mode, 
-					 int* const status)
+LADSignalFile* openLADSignalFile(const char* const filename,
+				 const int mode, 
+				 int* const status)
 {
-  LADSignalListFile* file = newLADSignalListFile(status);
+  LADSignalFile* file=newLADSignalFile(status);
   CHECK_STATUS_RET(*status, file);
 
   headas_chat(4, "open event list file '%s' ...\n", filename);
@@ -169,7 +168,7 @@ LADSignalListFile* openLADSignalListFile(const char* const filename,
 }
 
 
-void addLADSignal2File(LADSignalListFile* const file, 
+void addLADSignal2File(LADSignalFile* const file, 
 		       LADSignal* const event, 
 		       int* const status)
 {
@@ -186,7 +185,7 @@ void addLADSignal2File(LADSignalListFile* const file,
 }
 
 
-void getLADSignalFromFile(const LADSignalListFile* const file,
+void getLADSignalFromFile(const LADSignalFile* const file,
 			  const int row, LADSignal* const event,
 			  int* const status)
 {
@@ -228,13 +227,13 @@ void getLADSignalFromFile(const LADSignalListFile* const file,
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     *status=EXIT_FAILURE;
-    SIXT_ERROR("reading from ImpactListFile failed");
+    SIXT_ERROR("reading from ImpactFile failed");
     return;
   }
 }
 
 
-void updateLADSignalInFile(const LADSignalListFile* const file,
+void updateLADSignalInFile(const LADSignalFile* const file,
 			   const int row, LADSignal* const event,
 			   int* const status)
 {

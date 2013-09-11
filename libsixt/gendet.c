@@ -177,8 +177,7 @@ void GenDetLineShift(GenDet* const det)
 }
 
 
-void setGenDetEventListFile(GenDet* const det,
-			    EventListFile* const elf)
+void setGenDetEventFile(GenDet* const det, EventFile* const elf)
 {
   det->elf=elf;
 }

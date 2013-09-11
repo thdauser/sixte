@@ -2,8 +2,7 @@
 #define XMS_PIXTEMP_H 1
 
 #include "sixt.h"
-#include "genericdetector.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "event.h"
 
 

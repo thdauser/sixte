@@ -8,8 +8,8 @@ int phoimg_main() {
 
   Attitude* ac=NULL;
 
-  PhotonListFile* plf=NULL;
-  ImpactListFile* ilf=NULL;
+  PhotonFile* plf=NULL;
+  ImpactFile* ilf=NULL;
 
   // Instrument data structure including telescope information like the PSF,
   // vignetting function, focal length, and FOV diameter.
@@ -118,7 +118,7 @@ int phoimg_main() {
     headas_chat(3, "start imaging process ...\n");
 
     // Open the input photon list file.
-    plf=openPhotonListFile(photonlist_filename, READONLY, &status);
+    plf=openPhotonFile(photonlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read header keywords.
@@ -138,11 +138,11 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, 
-			      telescop, instrume, "Normal",
-			      inst->tel->arf_filename, inst->det->rmf_filename,
-			      mjdref, timezero, tstart, tstop,
-			      par.clobber, &status);
+    ilf=openNewImpactFile(impactlist_filename, 
+			  telescop, instrume, "Normal",
+			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  mjdref, timezero, tstart, tstop,
+			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -157,7 +157,7 @@ int phoimg_main() {
       Photon photon={.time=0.};
       
       // Read an entry from the photon list:
-      status=PhotonListFile_getNextRow(plf, &photon);
+      status=PhotonFile_getNextRow(plf, &photon);
       CHECK_STATUS_BREAK(status);
 
       // Check whether we are still within the requested time interval.
@@ -203,8 +203,8 @@ int phoimg_main() {
   sixt_destroy_rng();
 
   // Close the FITS files.
-  freeImpactListFile(&ilf, &status);
-  freePhotonListFile(&plf, &status);
+  freeImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
 
   freeAttitude(&ac);
   destroyGenInst(&inst, &status);

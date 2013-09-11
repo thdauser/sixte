@@ -91,7 +91,7 @@ PatternFile* openNewPatternFile(const char* const filename,
   // Create a new event list FITS file from the template file.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/patternlist.tpl");
+	  "/templates/patternfile.tpl");
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, NULL);
 
@@ -323,7 +323,7 @@ void updatePatternInFile(const PatternFile* const file,
 }
 
 
-void copyEvents2PatternFile(const EventListFile* const elf,
+void copyEvents2PatternFile(const EventFile* const elf,
 			    PatternFile* const plf,
 			    int* const status)
 {

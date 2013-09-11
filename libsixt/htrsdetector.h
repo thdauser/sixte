@@ -19,7 +19,7 @@
 #error "Error: No pixel type for HTRS detector selected!"
 #endif
 
-#include "eventfile.h"
+#include "eventlist.h"
 #include "htrseventfile.h"
 #include "impact.h"
 

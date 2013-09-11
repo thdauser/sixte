@@ -5,8 +5,8 @@
 #include "sixt.h"
 #include "attitude.h"
 #include "geninst.h"
-#include "impactlistfile.h"
-#include "photonlistfile.h"
+#include "impactfile.h"
+#include "photonfile.h"
 #include "phimg.h"
 
 #define TOOLSUB phoimg_main

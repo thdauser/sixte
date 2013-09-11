@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 #include "comaevent.h"
-#include "eventfile.h"
+#include "eventlist.h"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -14,7 +14,7 @@
 typedef struct {
 
   /** Generic EventFile data structure. */
-  EventFile generic; 
+  EventList generic; 
 
   /* Column numbers of the individual Coded mask specific event list
       entries. The numbers start at 1. The number 0 means, that there

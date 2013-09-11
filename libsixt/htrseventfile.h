@@ -3,13 +3,13 @@
 
 #include "sixt.h"
 #include "htrsevent.h"
-#include "eventfile.h"
+#include "eventlist.h"
 
 
 typedef struct {
 
-  /** Generic EventFile data structure. */
-  EventFile generic; 
+  /** Generic EventList data structure. */
+  EventList generic; 
 
   /* Column numbers of the individual HTRS-specific event list entries.
    * The numbers start at 1. The number 0 means, that there 

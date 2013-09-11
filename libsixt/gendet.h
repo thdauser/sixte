@@ -6,7 +6,7 @@
 #include "clocklist.h"
 #include "erodetbkgrndgen.h"
 #include "event.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "gendetline.h"
 #include "genericdetector.h"
 #include "genpixgrid.h"
@@ -142,10 +142,10 @@ typedef struct {
   /** Bad pixel map. */
   BadPixMap* badpixmap;
 
-  /** Output EventListFile. Note that this FITS file is not closed
-      when the GenDet data struct is destroyed. It has to be closed
+  /** Output EventFile. Note that this FITS file is not closed when
+      the GenDet data struct is destroyed. It has to be closed
       manually. */
-  EventListFile* elf;
+  EventFile* elf;
 
 } GenDet;
 
@@ -190,7 +190,7 @@ void setGenDetStartTime(GenDet* const det, const double t0);
 void GenDetLineShift(GenDet* const det);
 
 /** Read-out a particular line of the GenDet pixel array and store the
-    charges in the output EventListFile. After read-out the charges
+    charges in the output EventFile. After read-out the charges
     in the pixels are deleted. */
 void GenDetReadoutLine(GenDet* const det, 
 		       const int lineindex, 
@@ -229,9 +229,8 @@ void parseGenDetXML(GenDet* const det,
 		    const char* const filename, 
 		    int* const status);
 
-/** Assign an output EventListFile. */
-void setGenDetEventListFile(GenDet* const det,
-			    EventListFile* const elf);
+/** Assign an output EventFile. */
+void setGenDetEventFile(GenDet* const det, EventFile* const elf);
 
 /** Set the ignore_bkg flag. */
 void setGenDetIgnoreBkg(GenDet* const det, const int ignore);

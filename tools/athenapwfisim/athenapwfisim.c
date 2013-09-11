@@ -23,13 +23,13 @@ int athenapwfisim_main()
   }
 
   // Photon list file.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
 
   // Impact list file.
-  ImpactListFile* ilf=NULL;
+  ImpactFile* ilf=NULL;
 
   // Event list files.
-  EventListFile* elf[5]={NULL, NULL, NULL, NULL, NULL};
+  EventFile* elf[5]={NULL, NULL, NULL, NULL, NULL};
 
   // Pattern list files.
   PatternFile* patf[5]={NULL, NULL, NULL, NULL, NULL};
@@ -316,23 +316,23 @@ int athenapwfisim_main()
 
     // Open the output photon list files.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonListFile(photonlist_filename,
-				telescop, instrume, "Normal", 
-				subinst[0]->tel->arf_filename,
-				subinst[0]->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      plf=openNewPhotonFile(photonlist_filename,
+			    telescop, instrume, "Normal", 
+			    subinst[0]->tel->arf_filename,
+			    subinst[0]->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output impact list files.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewImpactListFile(impactlist_filename, 
-				telescop, instrume, "Normal", 
-				subinst[0]->tel->arf_filename,
-				subinst[0]->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      ilf=openNewImpactFile(impactlist_filename, 
+			    telescop, instrume, "Normal", 
+			    subinst[0]->tel->arf_filename,
+			    subinst[0]->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -340,19 +340,19 @@ int athenapwfisim_main()
     for (ii=0; ii<5; ii++) {
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventListFile(eventlist_filename, 
-				   telescop, instrume, "Normal", 
-				   subinst[0]->tel->arf_filename,
-				   subinst[0]->det->rmf_filename,
-				   par.MJDREF, 0.0, par.TSTART, tstop,
-				   subinst[ii]->det->pixgrid->xwidth,
-				   subinst[ii]->det->pixgrid->ywidth,
-				   par.clobber, &status);
+      elf[ii]=openNewEventFile(eventlist_filename, 
+			       telescop, instrume, "Normal", 
+			       subinst[0]->tel->arf_filename,
+			       subinst[0]->det->rmf_filename,
+			       par.MJDREF, 0.0, par.TSTART, tstop,
+			       subinst[ii]->det->pixgrid->xwidth,
+			       subinst[ii]->det->pixgrid->ywidth,
+			       par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
       // detector chip.
-      setGenDetEventListFile(subinst[ii]->det, elf[ii]);
+      setGenDetEventFile(subinst[ii]->det, elf[ii]);
     }
     CHECK_STATUS_BREAK(status);
 
@@ -684,8 +684,8 @@ int athenapwfisim_main()
     CHECK_STATUS_BREAK(status);
     
     // Close files in order to save memory.
-    freePhotonListFile(&plf, &status);
-    freeImpactListFile(&ilf, &status);
+    freePhotonFile(&plf, &status);
+    freeImpactFile(&ilf, &status);
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
@@ -705,12 +705,12 @@ int athenapwfisim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freeImpactListFile(&ilf,     &status);
-  freePhotonListFile(&plf,     &status);
+  freeImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
   for (ii=0; ii<5; ii++) {
     destroyGenInst    (&subinst[ii], &status);
     destroyPatternFile(&patf[ii],    &status);
-    freeEventListFile (&elf[ii],     &status);
+    freeEventFile (&elf[ii],     &status);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);

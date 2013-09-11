@@ -7,7 +7,7 @@ int ero_rawevents_main()
   struct Parameters par; 
 
   // Input event file.
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
 
   // File pointer to the output eROSITA event file. 
   fitsfile* fptr=NULL;
@@ -32,7 +32,7 @@ int ero_rawevents_main()
 
 
     // Open the input event file.
-    elf=openEventListFile(par.EventList, READONLY, &status);
+    elf=openEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read keywords from the input file.
@@ -197,7 +197,7 @@ int ero_rawevents_main()
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
   
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");

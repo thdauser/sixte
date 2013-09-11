@@ -23,13 +23,13 @@ int runsixt_main()
   }
 
   // Photon list file.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
 
   // Impact list file.
-  ImpactListFile* ilf=NULL;
+  ImpactFile* ilf=NULL;
 
   // Event list file.
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
 
   // Pattern list file.
   PatternFile* patf=NULL;
@@ -277,36 +277,36 @@ int runsixt_main()
 
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonListFile(photonlist_filename, 
-				telescop, instrume, "Normal",
-				inst->tel->arf_filename, inst->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      plf=openNewPhotonFile(photonlist_filename, 
+			    telescop, instrume, "Normal",
+			    inst->tel->arf_filename, inst->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output impact list file.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewImpactListFile(impactlist_filename, 
-				telescop, instrume, "Normal",
-				inst->tel->arf_filename, inst->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      ilf=openNewImpactFile(impactlist_filename, 
+			    telescop, instrume, "Normal",
+			    inst->tel->arf_filename, inst->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output event list file.
-    elf=openNewEventListFile(eventlist_filename, 
-			     telescop, instrume, "Normal",
-			     inst->tel->arf_filename, inst->det->rmf_filename,
-			     par.MJDREF, 0.0, par.TSTART, tstop,
-			     inst->det->pixgrid->xwidth,
-			     inst->det->pixgrid->ywidth,
-			     par.clobber, &status);
+    elf=openNewEventFile(eventlist_filename, 
+			 telescop, instrume, "Normal",
+			 inst->tel->arf_filename, inst->det->rmf_filename,
+			 par.MJDREF, 0.0, par.TSTART, tstop,
+			 inst->det->pixgrid->xwidth,
+			 inst->det->pixgrid->ywidth,
+			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Define the event list file as output file.
-    setGenDetEventListFile(inst->det, elf);
+    setGenDetEventFile(inst->det, elf);
 
     // Open the output pattern list file.
     patf=openNewPatternFile(patternlist_filename, 
@@ -582,9 +582,9 @@ int runsixt_main()
     }
     
     // Close files in order to save memory.
-    freePhotonListFile(&plf, &status);
-    freeImpactListFile(&ilf, &status);
-    freeEventListFile(&elf, &status);
+    freePhotonFile(&plf, &status);
+    freeImpactFile(&ilf, &status);
+    freeEventFile(&elf, &status);
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
@@ -602,9 +602,9 @@ int runsixt_main()
 
   // Release memory.
   destroyPatternFile(&patf, &status);
-  freeEventListFile(&elf, &status);
-  freeImpactListFile(&ilf, &status);
-  freePhotonListFile(&plf, &status);
+  freeEventFile(&elf, &status);
+  freeImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&(srccat[ii]), &status);
   }

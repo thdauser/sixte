@@ -3,8 +3,7 @@
 
 #include "sixt.h"
 #include "photon.h"
-#include "photonlistfile.h"
-//#include "wcslib.h"
+#include "photonfile.h"
 
 #define TOOLSUB fudgexp_main
 #include "headas_main.c"

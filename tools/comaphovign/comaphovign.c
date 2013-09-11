@@ -7,7 +7,7 @@ int comaphovign_main() {
   struct Parameters par;
 
   Attitude* ac=NULL;
-  PhotonListFile* plif=NULL;
+  PhotonFile* plif=NULL;
 
   fitsfile* ofptr=NULL;
   long onrows=0;
@@ -91,7 +91,7 @@ int comaphovign_main() {
     headas_chat(3, "apply vignetting ...\n");
 
     // Open the input photon list file.
-    plif=openPhotonListFile(inputlist_filename, READONLY, &status);
+    plif=openPhotonFile(inputlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the output photon list file.
@@ -183,7 +183,7 @@ int comaphovign_main() {
       Photon photon={.time=0.};
       
       // Read an entry from the photon list:
-      status=PhotonListFile_getNextRow(plif, &photon);
+      status=PhotonFile_getNextRow(plif, &photon);
       CHECK_STATUS_BREAK(status);
 
       // Apply the vignetting.
@@ -251,7 +251,7 @@ int comaphovign_main() {
     fits_close_file(ofptr, &status);
     ofptr=NULL;
   }
-  freePhotonListFile(&plif, &status);
+  freePhotonFile(&plif, &status);
   freeAttitude(&ac);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");

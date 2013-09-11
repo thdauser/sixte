@@ -12,10 +12,10 @@ int gendetsim_main() {
   GenInst* inst=NULL;
 
   // Input impact list.
-  ImpactListFile* ilf=NULL;
+  ImpactFile* ilf=NULL;
 
   // Output event list file.
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;
@@ -82,7 +82,7 @@ int gendetsim_main() {
     headas_chat(3, "start detection process ...\n");
 
     // Open the FITS file with the input impact list:
-    ilf=openImpactListFile(impactlist_filename, READONLY, &status);
+    ilf=openImpactFile(impactlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
@@ -94,13 +94,13 @@ int gendetsim_main() {
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    elf=openNewEventListFile(eventlist_filename, 
-			     telescop, instrume, "Normal", 
-			     inst->tel->arf_filename, inst->det->rmf_filename,
-			     par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
-			     inst->det->pixgrid->xwidth, 
-			     inst->det->pixgrid->ywidth, 
-			     par.clobber, &status);
+    elf=openNewEventFile(eventlist_filename, 
+			 telescop, instrume, "Normal", 
+			 inst->tel->arf_filename, inst->det->rmf_filename,
+			 par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
+			 inst->det->pixgrid->xwidth, 
+			 inst->det->pixgrid->ywidth, 
+			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -122,7 +122,7 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Define the event list file as output file.
-    setGenDetEventListFile(inst->det, elf);
+    setGenDetEventFile(inst->det, elf);
 
     // Loop over all impacts in the FITS file.
     while (ilf->row<ilf->nrows) {
@@ -162,10 +162,10 @@ int gendetsim_main() {
   destroyGenInst(&inst, &status);
 
   // Close the event list FITS file.
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
 
   // Close the impact list FITS file.
-  freeImpactListFile(&ilf, &status);
+  freeImpactFile(&ilf, &status);
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
   return(status);

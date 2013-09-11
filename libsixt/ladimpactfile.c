@@ -1,12 +1,12 @@
-#include "ladimpactlistfile.h"
+#include "ladimpactfile.h"
 
 
-LADImpactListFile* newLADImpactListFile(int* const status)
+LADImpactFile* newLADImpactFile(int* const status)
 {
-  LADImpactListFile* file=(LADImpactListFile*)malloc(sizeof(LADImpactListFile));
+  LADImpactFile* file=(LADImpactFile*)malloc(sizeof(LADImpactFile));
   if (NULL==file) {
     *status=EXIT_FAILURE;
-    SIXT_ERROR("memory allocation for LADImpactListFile failed");
+    SIXT_ERROR("memory allocation for LADImpactFile failed");
     return(file);
   }
 
@@ -30,7 +30,7 @@ LADImpactListFile* newLADImpactListFile(int* const status)
 }
 
 
-void freeLADImpactListFile(LADImpactListFile** const file, int* const status)
+void freeLADImpactFile(LADImpactFile** const file, int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
@@ -44,10 +44,10 @@ void freeLADImpactListFile(LADImpactListFile** const file, int* const status)
 }
 
 
-LADImpactListFile* openLADImpactListFile(const char* const filename,
-					 const int mode, int* const status)
+LADImpactFile* openLADImpactFile(const char* const filename,
+				 const int mode, int* const status)
 {
-  LADImpactListFile* file=newLADImpactListFile(status);
+  LADImpactFile* file=newLADImpactFile(status);
   CHECK_STATUS_RET(*status, file);
 
   headas_chat(5, "open impact list file '%s' ...\n", filename);
@@ -90,11 +90,11 @@ LADImpactListFile* openLADImpactListFile(const char* const filename,
 }
 
 
-LADImpactListFile* openNewLADImpactListFile(const char* const filename,
-					    const char clobber,
-					    int* const status)
+LADImpactFile* openNewLADImpactFile(const char* const filename,
+				    const char clobber,
+				    int* const status)
 {
-  LADImpactListFile* file = newLADImpactListFile(status);
+  LADImpactFile* file = newLADImpactFile(status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the file already exists.
@@ -118,7 +118,7 @@ LADImpactListFile* openNewLADImpactListFile(const char* const filename,
   // Create a new event list FITS file from the template file.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/ladimpactlist.tpl");
+	  "/templates/ladimpactfile.tpl");
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 
@@ -141,19 +141,19 @@ LADImpactListFile* openNewLADImpactListFile(const char* const filename,
   fits_movabs_hdu(file->fptr, 2, 0, status);
   CHECK_STATUS_RET(*status, file);
 
-  // Close the new LADImpactListFile.
-  freeLADImpactListFile(&file, status);
+  // Close the new LADImpactFile.
+  freeLADImpactFile(&file, status);
   CHECK_STATUS_RET(*status, file);
   
   // Re-open the file.
-  file=openLADImpactListFile(filename, READWRITE, status);
+  file=openLADImpactFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
 
   return(file);
 }
 
 
-void getNextLADImpactFromFile(LADImpactListFile* const file, 
+void getNextLADImpactFromFile(LADImpactFile* const file, 
 			      LADImpact* const impact, 
 			      int* const status)
 {
@@ -237,7 +237,7 @@ void getNextLADImpactFromFile(LADImpactListFile* const file,
 }
 
 
-void addLADImpact2File(LADImpactListFile* const ilf, 
+void addLADImpact2File(LADImpactFile* const ilf, 
 		       LADImpact* const impact, 
 		       int* const status)
 {

@@ -7,7 +7,7 @@
 
 #include "sixt.h"
 #include "event.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 
 #define TOOLSUB ero_fits2tm_main
 #include "headas_main.c"
@@ -215,7 +215,7 @@ int ero_fits2tm_main()
   struct Parameters par;
 
   /** FITS file containing the input event list. */
-  EventListFile* elf=NULL; 
+  EventFile* elf=NULL; 
   /** Output file. */
   FILE *of=NULL;
 
@@ -247,7 +247,7 @@ int ero_fits2tm_main()
     }
 
     // Open the event list FITS file.
-    elf=openEventListFile(par.EventList, READONLY, &status);
+    elf=openEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the binary file for output.
@@ -345,7 +345,7 @@ int ero_fits2tm_main()
 
   // Close files
   if (NULL!=of) fclose(of);
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
 
   // Release memory.
   free_Binary_Output(binary_output);

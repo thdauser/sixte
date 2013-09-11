@@ -4,7 +4,6 @@
 #include "sixt.h"
 #include "gendet.h"
 #include "gentel.h"
-#include "eventlistfile.h"
 
 
 /////////////////////////////////////////////////////////////////

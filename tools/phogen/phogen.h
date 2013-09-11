@@ -6,7 +6,7 @@
 #include "attitude.h"
 #include "geninst.h"
 #include "phgen.h"
-#include "photonlistfile.h"
+#include "photonfile.h"
 #include "simput.h"
 #include "vector.h"
 #include "simput.h"

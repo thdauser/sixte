@@ -7,7 +7,7 @@ int evpat_main()
   struct Parameters par; 
 
   // Input event list file.
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
 
   // Output pattern file.
   PatternFile* plf=NULL;
@@ -56,7 +56,7 @@ int evpat_main()
     headas_chat(3, "start pattern recombination ...\n");
 
     // Open the input event file.
-    elf=openEventListFile(eventlist_filename, READONLY, &status);
+    elf=openEventFile(eventlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read the timing keywords.
@@ -101,7 +101,7 @@ int evpat_main()
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
   destroyPatternFile(&plf, &status);
  
   destroyGenInst(&inst, &status);

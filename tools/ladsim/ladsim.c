@@ -686,16 +686,16 @@ int ladsim_main()
   SourceCatalog* srccat=NULL;
 
   // Photon list file.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
 
   // Impact list file.
-  LADImpactListFile* ilf=NULL;
+  LADImpactFile* ilf=NULL;
 
   // Signal list file.
-  LADSignalListFile* slf=NULL;
+  LADSignalFile* slf=NULL;
 
   // Recombined event list file.
-  LADEventListFile* elf=NULL;
+  LADEventFile* elf=NULL;
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -942,33 +942,33 @@ int ladsim_main()
 
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonListFile(photonlist_filename, 
-				"LOFT", "LAD", "Normal",
-				lad->arf_filename, lad->rmf_filename,
-				par.MJDREF, 0.0, 
-				par.TSTART, par.TSTART+par.Exposure,
-				par.clobber, &status);
+      plf=openNewPhotonFile(photonlist_filename, 
+			    "LOFT", "LAD", "Normal",
+			    lad->arf_filename, lad->rmf_filename,
+			    par.MJDREF, 0.0, 
+			    par.TSTART, par.TSTART+par.Exposure,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output impact list file.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewLADImpactListFile(impactlist_filename, par.clobber, &status);
+      ilf=openNewLADImpactFile(impactlist_filename, par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output raw event list file.
     if (strlen(signallist_filename)>0) {
-      slf=openNewLADSignalListFile(signallist_filename, par.clobber, &status);
+      slf=openNewLADSignalFile(signallist_filename, par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output event list file for recombined events.
-    elf=openNewLADEventListFile(eventlist_filename, 
-				lad->arf_filename, lad->rmf_filename,
-				par.MJDREF, 0.0,
-				par.TSTART, par.TSTART+par.Exposure,
-				par.clobber, &status);
+    elf=openNewLADEventFile(eventlist_filename, 
+			    lad->arf_filename, lad->rmf_filename,
+			    par.MJDREF, 0.0,
+			    par.TSTART, par.TSTART+par.Exposure,
+			    par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -1215,10 +1215,10 @@ int ladsim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freeLADEventListFile(&elf, &status);
-  freeLADSignalListFile(&slf, &status);
-  freeLADImpactListFile(&ilf, &status);
-  freePhotonListFile(&plf, &status);
+  freeLADEventFile(&elf, &status);
+  freeLADSignalFile(&slf, &status);
+  freeLADImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
   freeAttitude(&ac);
   freeLAD(&lad, &status);

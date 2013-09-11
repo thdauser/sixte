@@ -96,7 +96,7 @@ int htrs_fits2tm_main()
 
     // Loop repeated as long as there are entries in the event file.
     HTRSEvent event = { .time=0. };
-    while ((EXIT_SUCCESS==status)&&(0==EventFileEOF(&eventfile.generic))) {
+    while ((EXIT_SUCCESS==status)&&(0==EventListEOF(&eventfile.generic))) {
       
       // Read the next event from the event file.
       status=HTRSEventFile_getNextRow(&eventfile, &event);

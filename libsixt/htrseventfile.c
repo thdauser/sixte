@@ -8,7 +8,7 @@ int openHTRSEventFile(HTRSEventFile* hef,
   int status=EXIT_SUCCESS;
 
   // Call the corresponding routine of the underlying structure.
-  status=openEventFile(&hef->generic, filename, access_mode);
+  status=openEventList(&hef->generic, filename, access_mode);
   CHECK_STATUS_RET(status, status);
 
   // Determine the HTRS-specific elements of the event list.
@@ -78,7 +78,7 @@ int openNewHTRSEventFile(HTRSEventFile* hef,
 int closeHTRSEventFile(HTRSEventFile* hef)
 {
   // Call the corresponding routine of the underlying structure.
-  return(closeEventFile(&hef->generic));
+  return(closeEventList(&hef->generic));
 }
 
 

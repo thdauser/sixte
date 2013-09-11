@@ -43,7 +43,7 @@ int fudgexp_main() {
   struct Parameters par;
 
   // Photon list.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
 
   // Exposure map.
   float** map=NULL;
@@ -74,7 +74,7 @@ int fudgexp_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the photon list.
-    plf=openPhotonListFile(par.PhotonList, READWRITE, &status);
+    plf=openPhotonFile(par.PhotonList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Load the exposure map.
@@ -158,7 +158,7 @@ int fudgexp_main() {
 
       // Get the next photon from the list.
       Photon ph;
-      status=PhotonListFile_getRow(plf, &ph, row);
+      status=PhotonFile_getRow(plf, &ph, row);
       CHECK_STATUS_BREAK(status);
 
       // Determine the pixel coordinates corresponding to the photon
@@ -203,7 +203,7 @@ int fudgexp_main() {
   if (NULL!=fptr) fits_close_file(fptr, &status);
 
   if (NULL!=headerstr) free(headerstr);  
-  freePhotonListFile(&plf, &status);
+  freePhotonFile(&plf, &status);
 
   if (NULL!=map) {
     long ii;

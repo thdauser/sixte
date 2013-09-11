@@ -21,7 +21,7 @@ int htrssim_main() {
   // Before the first usage it has to be initialized.
   HTRSDetector detector;
 
-  ImpactListFile* impactlistfile=NULL;
+  ImpactFile* impactlistfile=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -43,8 +43,8 @@ int htrssim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the impact list FITS file.
-    impactlistfile = openImpactListFile(parameters.impactlist_filename, 
-					READONLY, &status);
+    impactlistfile=openImpactFile(parameters.impactlist_filename, 
+				  READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -198,7 +198,7 @@ int htrssim_main() {
   headas_chat(5, "\ncleaning up ...\n");
 
   // Close the FITS files.
-  freeImpactListFile(&impactlistfile, &status);
+  freeImpactFile(&impactlistfile, &status);
 
   // Release memory of detector.
   status+=cleanupHTRSDetector(&detector);

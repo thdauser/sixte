@@ -32,13 +32,13 @@ int erosim_main()
   }
 
   // Photon list files.
-  PhotonListFile* plf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  PhotonFile* plf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Impact list file.
-  ImpactListFile* ilf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  ImpactFile* ilf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Event list file.
-  EventListFile* elf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  EventFile* elf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Pattern list file.
   PatternFile* patf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
@@ -357,12 +357,12 @@ int erosim_main()
 
 	char photonlist_filename[MAXFILENAME];
 	sprintf(photonlist_filename, photonlist_filename_template, ii+1);
-	plf[ii]=openNewPhotonListFile(photonlist_filename, 
-				      telescop, instrume, "Normal", 
-				      subinst[ii]->tel->arf_filename, 
-				      subinst[ii]->det->rmf_filename,
-				      par.MJDREF, 0.0, par.TSTART, tstop,
-				      par.clobber, &status);
+	plf[ii]=openNewPhotonFile(photonlist_filename, 
+				  telescop, instrume, "Normal", 
+				  subinst[ii]->tel->arf_filename, 
+				  subinst[ii]->det->rmf_filename,
+				  par.MJDREF, 0.0, par.TSTART, tstop,
+				  par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
@@ -382,12 +382,12 @@ int erosim_main()
 
 	char impactlist_filename[MAXFILENAME];
 	sprintf(impactlist_filename, impactlist_filename_template, ii+1);
-	ilf[ii]=openNewImpactListFile(impactlist_filename, 
-				      telescop, instrume, "Normal", 
-				      subinst[ii]->tel->arf_filename, 
-				      subinst[ii]->det->rmf_filename,
-				      par.MJDREF, 0.0, par.TSTART, tstop,
-				      par.clobber, &status);
+	ilf[ii]=openNewImpactFile(impactlist_filename, 
+				  telescop, instrume, "Normal", 
+				  subinst[ii]->tel->arf_filename, 
+				  subinst[ii]->det->rmf_filename,
+				  par.MJDREF, 0.0, par.TSTART, tstop,
+				  par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
@@ -406,19 +406,19 @@ int erosim_main()
       
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii+1);
-      elf[ii]=openNewEventListFile(eventlist_filename, 
-				   telescop, instrume, "Normal", 
-				   subinst[ii]->tel->arf_filename, 
-				   subinst[ii]->det->rmf_filename,
-				   par.MJDREF, 0.0, par.TSTART, tstop,
-				   subinst[ii]->det->pixgrid->xwidth,
-				   subinst[ii]->det->pixgrid->ywidth,
-				   par.clobber, &status);
+      elf[ii]=openNewEventFile(eventlist_filename, 
+			       telescop, instrume, "Normal", 
+			       subinst[ii]->tel->arf_filename, 
+			       subinst[ii]->det->rmf_filename,
+			       par.MJDREF, 0.0, par.TSTART, tstop,
+			       subinst[ii]->det->pixgrid->xwidth,
+			       subinst[ii]->det->pixgrid->ywidth,
+			       par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
       // detector.
-      setGenDetEventListFile(subinst[ii]->det, elf[ii]);
+      setGenDetEventFile(subinst[ii]->det, elf[ii]);
     }
     CHECK_STATUS_BREAK(status);
 
@@ -750,8 +750,8 @@ int erosim_main()
     
     // Close files in order to save memory.
     for (ii=0; ii<7; ii++) {
-      freePhotonListFile(&plf[ii], &status);
-      freeImpactListFile(&ilf[ii], &status);
+      freePhotonFile(&plf[ii], &status);
+      freeImpactFile(&ilf[ii], &status);
     }
 
     // Run the event projection.
@@ -775,9 +775,9 @@ int erosim_main()
   for (ii=0; ii<7; ii++) {
     destroyGenInst    (&subinst[ii], &status);
     destroyPatternFile(&patf[ii],    &status);
-    freeEventListFile (&elf[ii],     &status);
-    freeImpactListFile(&ilf[ii],     &status);
-    freePhotonListFile(&plf[ii],     &status);
+    freeEventFile (&elf[ii],     &status);
+    freeImpactFile(&ilf[ii],     &status);
+    freePhotonFile(&plf[ii],     &status);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);

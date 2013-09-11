@@ -1,12 +1,12 @@
-#include "ladeventlistfile.h"
+#include "ladeventfile.h"
 
 
-LADEventListFile* newLADEventListFile(int* const status)
+LADEventFile* newLADEventFile(int* const status)
 {
-  LADEventListFile* file=
-    (LADEventListFile*)malloc(sizeof(LADEventListFile));
+  LADEventFile* file=
+    (LADEventFile*)malloc(sizeof(LADEventFile));
   CHECK_NULL_RET(file, *status, 
-		 "memory allocation for LADEventListFile failed", file);
+		 "memory allocation for LADEventFile failed", file);
 
   // Initialize pointers with NULL.
   file->fptr=NULL;
@@ -27,8 +27,7 @@ LADEventListFile* newLADEventListFile(int* const status)
 }
 
 
-void freeLADEventListFile(LADEventListFile** const file, 
-			  int* const status)
+void freeLADEventFile(LADEventFile** const file, int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
@@ -47,15 +46,15 @@ void freeLADEventListFile(LADEventListFile** const file,
 }
 
 
-LADEventListFile* openNewLADEventListFile(const char* const filename,
-					  char* const ancrfile,
-					  char* const respfile,
-					  const double mjdref,
-					  const double timezero,
-					  const double tstart,
-					  const double tstop,
-					  const char clobber,
-					  int* const status)
+LADEventFile* openNewLADEventFile(const char* const filename,
+				  char* const ancrfile,
+				  char* const respfile,
+				  const double mjdref,
+				  const double timezero,
+				  const double tstart,
+				  const double tstop,
+				  const char clobber,
+				  int* const status)
 {
   fitsfile* fptr=NULL;
   CHECK_STATUS_RET(*status, NULL);
@@ -81,7 +80,7 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
   // Create a new LADEvent list FITS file from the template file.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/ladeventlist.tpl");
+	  "/templates/ladeventfile.tpl");
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, NULL);
 
@@ -100,18 +99,18 @@ LADEventListFile* openNewLADEventListFile(const char* const filename,
   CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  LADEventListFile* lef=openLADEventListFile(filename, READWRITE, status);
+  LADEventFile* lef=openLADEventFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, lef);
   
   return(lef);
 }
 
 
-LADEventListFile* openLADEventListFile(const char* const filename,
-				       const int mode, 
-				       int* const status)
+LADEventFile* openLADEventFile(const char* const filename,
+			       const int mode, 
+			       int* const status)
 {
-  LADEventListFile* file = newLADEventListFile(status);
+  LADEventFile* file=newLADEventFile(status);
   CHECK_STATUS_RET(*status, file);
 
   headas_chat(4, "open event list file '%s' ...\n", filename);
@@ -173,7 +172,7 @@ LADEventListFile* openLADEventListFile(const char* const filename,
 }
 
 
-void addLADEvent2File(LADEventListFile* const file, 
+void addLADEvent2File(LADEventFile* const file, 
 		      LADEvent* const event, 
 		      int* const status)
 {
@@ -190,7 +189,7 @@ void addLADEvent2File(LADEventListFile* const file,
 }
 
 
-void getLADEventFromFile(const LADEventListFile* const file,
+void getLADEventFromFile(const LADEventFile* const file,
 			 const int row, LADEvent* const event,
 			 int* const status)
 {
@@ -246,13 +245,13 @@ void getLADEventFromFile(const LADEventListFile* const file,
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     *status = EXIT_FAILURE;
-    SIXT_ERROR("reading from ImpactListFile failed");
+    SIXT_ERROR("reading from ImpactFile failed");
     return;
   }
 }
 
 
-void updateLADEventInFile(const LADEventListFile* const file,
+void updateLADEventInFile(const LADEventFile* const file,
 			  const int row, LADEvent* const event,
 			  int* const status)
 {

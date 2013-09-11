@@ -15,18 +15,18 @@ endif
 ########## DIRECTORIES ###############
 
 # Directory where to install the FITS template files.
-fitstemplatesdir = $(pkgdatadir)/templates
+fitstemplatesdir=$(pkgdatadir)/templates
 dist_fitstemplates_DATA =coma.eventlist.tpl
-dist_fitstemplates_DATA+=eventlist.tpl
-dist_fitstemplates_DATA+=ladsignallist.tpl
-dist_fitstemplates_DATA+=ladeventlist.tpl
+dist_fitstemplates_DATA+=photonfile.tpl 
+dist_fitstemplates_DATA+=impactfile.tpl
+dist_fitstemplates_DATA+=eventfile.tpl
+dist_fitstemplates_DATA+=patternfile.tpl
+dist_fitstemplates_DATA+=ladimpactfile.tpl
+dist_fitstemplates_DATA+=ladsignalfile.tpl
+dist_fitstemplates_DATA+=ladeventfile.tpl
 dist_fitstemplates_DATA+=makespec.tpl
 dist_fitstemplates_DATA+=makelc.tpl
-dist_fitstemplates_DATA+=patternlist.tpl
 dist_fitstemplates_DATA+=htrs.eventlist.tpl
-dist_fitstemplates_DATA+=impactlist.tpl
-dist_fitstemplates_DATA+=ladimpactlist.tpl
-dist_fitstemplates_DATA+=photonlist.tpl 
 
 # Directory where to install the XML files.
 xmldir=$(pkgdatadir)/xml
@@ -43,25 +43,24 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 lib_LIBRARIES=libsixt.a
 
 # Sources:
-libsixt_a_SOURCES=genericdetector.c squarepixels.c eventfile.c		\
-		  impactlistfile.c ladimpactlistfile.c htrsdetector.c	\
+libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
+		  impactfile.c ladimpactfile.c htrsdetector.c		\
 		  geninst.c gendet.c gentel.c genpixgrid.c		\
-		  gendetline.c eventlistfile.c ladsignallistfile.c	\
-		  ladeventlistfile.c phabkg.c patternfile.c		\
-		  clocklist.c badpixmap.c htrseventfile.c		\
-		  hexagonalpixels.c arcpixels.c telemetrypacket.c	\
-		  htrstelstream.c comadetector.c comaeventfile.c	\
-		  psf.c vignetting.c codedmask.c attitude.c		\
-		  attitudefile.c sixt.c photon.c fits_pha.c		\
-		  check_fov.c photonlistfile.c rmf.c kdtreeelement.c	\
-		  sourcecatalog.c source.c linkedpholist.c		\
-		  ladsignallist.c erodetbkgrndgen.c phgen.c phimg.c	\
-		  phdet.c phproj.c phpat.c event.c pattern.c		\
-		  ladsignal.c ladevent.c ladimpact.c lad.c lad_init.c	\
-		  xmlbuffer.c spectrum.c gti.c sourceimage.c		\
-		  det_phi_max.c attitudecatalog2.c reconstruction.c	\
-		  eventarray.c fft_array.c balancing.c			\
-		  find_position.c
+		  gendetline.c eventfile.c ladsignalfile.c		\
+		  ladeventfile.c phabkg.c patternfile.c clocklist.c	\
+		  badpixmap.c htrseventfile.c hexagonalpixels.c		\
+		  arcpixels.c telemetrypacket.c htrstelstream.c		\
+		  comadetector.c comaeventfile.c psf.c vignetting.c	\
+		  codedmask.c attitude.c attitudefile.c sixt.c		\
+		  photon.c fits_pha.c check_fov.c photonfile.c rmf.c	\
+		  kdtreeelement.c sourcecatalog.c source.c		\
+		  linkedpholist.c ladsignallist.c erodetbkgrndgen.c	\
+		  phgen.c phimg.c phdet.c phproj.c phpat.c event.c	\
+		  pattern.c ladsignal.c ladevent.c ladimpact.c lad.c	\
+		  lad_init.c xmlbuffer.c spectrum.c gti.c		\
+		  sourceimage.c det_phi_max.c attitudecatalog2.c	\
+		  reconstruction.c eventarray.c fft_array.c		\
+		  balancing.c find_position.c
 
 libsixt_a_LIBADD =@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
 libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
@@ -75,18 +74,17 @@ libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
 # Define the headers that will be installed in $(includedir):
 include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		gaussianchargecloud.h exponentialchargecloud.h		\
-		arcpixels.h eventfile.h impactlistfile.h		\
-		ladimpactlistfile.h impact.h geninst.h gendet.h		\
-		gentel.h genpixgrid.h gendetline.h clocklist.h		\
-		event.h ladsignal.h ladevent.h ladimpact.h pattern.h	\
-		eventlistfile.h ladsignallistfile.h phabkg.h		\
-		ladeventlistfile.h patternfile.h badpixmap.h		\
-		htrsdetector.h htrseventfile.h htrsevent.h		\
-		telemetrypacket.h htrstelstream.h comadetector.h	\
-		comaeventfile.h comaevent.h psf.h vignetting.h		\
-		codedmask.h attitude.h attitudefile.h telescope.h	\
-		sixt.h point.h photon.h fits_pha.h check_fov.h		\
-		photonlistfile.h rmf.h kdtreeelement.h			\
+		arcpixels.h eventlist.h impactfile.h ladimpactfile.h	\
+		impact.h geninst.h gendet.h gentel.h genpixgrid.h	\
+		gendetline.h clocklist.h event.h ladsignal.h		\
+		ladevent.h ladimpact.h pattern.h eventfile.h		\
+		ladsignalfile.h phabkg.h ladeventfile.h patternfile.h	\
+		badpixmap.h htrsdetector.h htrseventfile.h		\
+		htrsevent.h telemetrypacket.h htrstelstream.h		\
+		comadetector.h comaeventfile.h comaevent.h psf.h	\
+		vignetting.h codedmask.h attitude.h attitudefile.h	\
+		telescope.h sixt.h point.h photon.h fits_pha.h		\
+		check_fov.h photonfile.h rmf.h kdtreeelement.h		\
 		sourcecatalog.h source.h linkedpholist.h		\
 		ladsignallist.h erodetbkgrndgen.h phgen.h phimg.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h spectrum.h	\

@@ -21,7 +21,7 @@ BalancingArray* newBalancingArray(int* const status)
 
 
 BalancingArray* getBalancingArray(ReconArray* recon, SquarePixels* detector_pixels,
-				  EventFile* ef,  int* const status)
+				  EventList* ef,  int* const status)
 {
 
   BalancingArray* balance=NULL;

@@ -267,7 +267,7 @@ int HTRSassignEventGrades(HTRSDetector detector)
   // Reset the event file row counter to the first line in the file.
   detector.eventlist.generic.row = 0;
   // Loop over all events in the event file.
-  while((EXIT_SUCCESS==status) && (0==EventFileEOF(&detector.eventlist.generic))) {
+  while((EXIT_SUCCESS==status) && (0==EventListEOF(&detector.eventlist.generic))) {
     
     // Read the next event from the FITS file.
     status=HTRSEventFile_getNextRow(&detector.eventlist, &event);
@@ -281,7 +281,7 @@ int HTRSassignEventGrades(HTRSDetector detector)
     // Former events:
     nbefore_slow=0; nbefore_fast=0;
     row = detector.eventlist.generic.row - 1;
-    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+    while (1==EventListRowIsValid(&detector.eventlist.generic, row)) {
       status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
       if (EXIT_SUCCESS!=status) break;
       if (event.time - eventbuffer.time > detector.slow_shaping_time) break;
@@ -300,7 +300,7 @@ int HTRSassignEventGrades(HTRSDetector detector)
     // Subsequent events:
     nafter_slow=0; nafter_fast=0;
     row = detector.eventlist.generic.row + 1;
-    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+    while (1==EventListRowIsValid(&detector.eventlist.generic, row)) {
       status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
       if (EXIT_SUCCESS!=status) break;
       if (eventbuffer.time - event.time > detector.slow_shaping_time) break;

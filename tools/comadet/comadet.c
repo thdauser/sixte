@@ -14,7 +14,7 @@
 int comadet_main() {
   struct Parameters par;
   
-  ImpactListFile* ilf=NULL;
+  ImpactFile* ilf=NULL;
   CoMaDetector* detector=NULL;
 
   //Error status.
@@ -35,7 +35,7 @@ int comadet_main() {
     CHECK_STATUS_RET(status, status);
     
     //Open the impact list FITS file.
-    ilf=openImpactListFile(par.ImpactList, READONLY, &status);
+    ilf=openImpactFile(par.ImpactList, READONLY, &status);
     CHECK_STATUS_RET(status, status);
     
     //Set the event list template file:
@@ -96,7 +96,7 @@ int comadet_main() {
   freeCoMaDetector(detector);
 
   //Close the FITS files.
-  freeImpactListFile(&ilf, &status);
+  freeImpactFile(&ilf, &status);
 
   if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
   return(status);

@@ -43,11 +43,11 @@ int photonmerge_main() {
   struct Parameters par;
 
   // Array of input photonlist files.
-  PhotonListFile* inputfiles[MAX_N_INPUTFILES];
+  PhotonFile* inputfiles[MAX_N_INPUTFILES];
   int fileidx;
 
   // Output (merged) photonlist file.
-  PhotonListFile* outputfile=NULL;
+  PhotonFile* outputfile=NULL;
 
   // Buffer for the photons.
   Photon photons[MAX_N_INPUTFILES];
@@ -74,7 +74,7 @@ int photonmerge_main() {
     for (fileidx=0; fileidx<par.NInputFiles; fileidx++) {
       sprintf(filename, "%s%d.fits", 
 	      par.InputPrefix, fileidx);
-      inputfiles[fileidx]=openPhotonListFile(filename, READONLY, &status);
+      inputfiles[fileidx]=openPhotonFile(filename, READONLY, &status);
       if (EXIT_SUCCESS!=status) break;
     }
     if (EXIT_SUCCESS!=status) break;
@@ -108,11 +108,11 @@ int photonmerge_main() {
     fits_read_key(inputfiles[0]->fptr, TDOUBLE, "TSTOP", 
 		  &tstop, comment, &status);
     CHECK_STATUS_BREAK(status);
-    outputfile=openNewPhotonListFile(par.OutputFile, 
-				     telescop, instrume, filter,
-				     ancrfile, respfile,
-				     mjdref, timezero, tstart, tstop,
-				     par.clobber, &status);
+    outputfile=openNewPhotonFile(par.OutputFile, 
+				 telescop, instrume, filter,
+				 ancrfile, respfile,
+				 mjdref, timezero, tstart, tstop,
+				 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Copy header keywords.
@@ -131,8 +131,8 @@ int photonmerge_main() {
     // Read the first entry from each photon list file:
     for (fileidx=0; fileidx<par.NInputFiles; fileidx++) {
       if (inputfiles[fileidx]->nrows>0) {
-	status=PhotonListFile_getNextRow(inputfiles[fileidx], 
-					 &(photons[fileidx]));
+	status=PhotonFile_getNextRow(inputfiles[fileidx], 
+				     &(photons[fileidx]));
 	CHECK_STATUS_BREAK(status);
 	eof[fileidx]=0;
       } else {
@@ -167,8 +167,8 @@ int photonmerge_main() {
 
       // Read new photon from the respective input file.
       if (inputfiles[minidx]->row<inputfiles[minidx]->nrows) {
-	status=PhotonListFile_getNextRow(inputfiles[minidx], 
-					 &(photons[minidx]));
+	status=PhotonFile_getNextRow(inputfiles[minidx], 
+				     &(photons[minidx]));
 	CHECK_STATUS_BREAK(status);
       } else {
 	eof[minidx]=1;
@@ -185,11 +185,10 @@ int photonmerge_main() {
   
   // Close the event files:
   for (fileidx=0; fileidx<par.NInputFiles; fileidx++) {
-    freePhotonListFile(&(inputfiles[fileidx]), &status);
+    freePhotonFile(&(inputfiles[fileidx]), &status);
   }
-  freePhotonListFile(&outputfile, &status);
+  freePhotonFile(&outputfile, &status);
 
   return(status);
 }
-
 

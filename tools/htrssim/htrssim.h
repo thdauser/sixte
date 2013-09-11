@@ -3,10 +3,9 @@
 
 #include "sixt.h"
 #include "htrsdetector.h"
-#include "eventfile.h"
 #include "point.h"
 #include "impact.h"
-#include "impactlistfile.h"
+#include "impactfile.h"
 
 #define TOOLSUB htrssim_main
 #include "headas_main.c"

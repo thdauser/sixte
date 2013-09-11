@@ -3,7 +3,7 @@
 
 int xms_pixtemp_main() {
   struct Parameters parameters;
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
   FILE* output_file=NULL;
 
   int status=EXIT_SUCCESS;
@@ -25,7 +25,7 @@ int xms_pixtemp_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the event file.
-    elf=openEventListFile(parameters.EventList, READWRITE, &status);
+    elf=openEventFile(parameters.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read the EBOUNDS from the detector response file.
@@ -64,7 +64,7 @@ int xms_pixtemp_main() {
   // --- Clean Up ---
 
   // Close the event file.
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
 
   // Close the output file.
   if (NULL!=output_file) {
@@ -82,7 +82,7 @@ int xms_pixtemp_main() {
 
 int xms_pixtemp_getpar(struct Parameters* parameters)
 {
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
   if ((status = PILGetFname("EventList", parameters->EventList))) {
     HD_ERROR_THROW("Error reading the name of the input file!\n", status);

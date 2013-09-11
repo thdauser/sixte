@@ -1,10 +1,10 @@
-#include "photonlistfile.h"
+#include "photonfile.h"
 
 
-PhotonListFile* newPhotonListFile(int* const status)
+PhotonFile* newPhotonFile(int* const status)
 {
-  PhotonListFile* plf=(PhotonListFile*)malloc(sizeof(PhotonListFile));
-  CHECK_NULL_RET(plf, *status, "memory allocation for PhotonListFile failed",
+  PhotonFile* plf=(PhotonFile*)malloc(sizeof(PhotonFile));
+  CHECK_NULL_RET(plf, *status, "memory allocation for PhotonFile failed",
 		 plf);
 
   // Initialize pointers with NULL.
@@ -24,7 +24,7 @@ PhotonListFile* newPhotonListFile(int* const status)
 }
 
 
-void freePhotonListFile(PhotonListFile** const plf, int* const status) 
+void freePhotonFile(PhotonFile** const plf, int* const status) 
 {
   if (NULL!=*plf) {
     if (NULL!=(*plf)->fptr) {
@@ -45,11 +45,11 @@ void freePhotonListFile(PhotonListFile** const plf, int* const status)
 }
 
 
-PhotonListFile* openPhotonListFile(const char* const filename, 
-				   const int access_mode,
-				   int* const status)
+PhotonFile* openPhotonFile(const char* const filename, 
+			   const int access_mode,
+			   int* const status)
 {
-  PhotonListFile* plf=newPhotonListFile(status);
+  PhotonFile* plf=newPhotonFile(status);
   CHECK_STATUS_RET(*status, plf);
   
   headas_chat(5, "open photon list file '%s' ...\n", filename);
@@ -97,20 +97,20 @@ PhotonListFile* openPhotonListFile(const char* const filename,
 }
 
 
-PhotonListFile* openNewPhotonListFile(const char* const filename, 
-				      char* const telescop,
-				      char* const instrume,
-				      char* const filter,
-				      char* const ancrfile,
-				      char* const respfile,
-				      const double mjdref,
-				      const double timezero,
-				      const double tstart,
-				      const double tstop,
-				      const char clobber,
-				      int* const status)
+PhotonFile* openNewPhotonFile(const char* const filename, 
+			      char* const telescop,
+			      char* const instrume,
+			      char* const filter,
+			      char* const ancrfile,
+			      char* const respfile,
+			      const double mjdref,
+			      const double timezero,
+			      const double tstart,
+			      const double tstop,
+			      const char clobber,
+			      int* const status)
 {
-  PhotonListFile* plf=newPhotonListFile(status);
+  PhotonFile* plf=newPhotonFile(status);
   CHECK_STATUS_RET(*status, plf);
 
   // Check if the file already exists.
@@ -134,7 +134,7 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   // Create a new photon list FITS file from the given FITS template.
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/photonlist.tpl");
+	  "/templates/photonfile.tpl");
   fits_create_file(&plf->fptr, buffer, status);
   CHECK_STATUS_RET(*status, plf);
 
@@ -153,18 +153,18 @@ PhotonListFile* openNewPhotonListFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
 
   // Close the file (it is reopened in the next step).
-  freePhotonListFile(&plf, status);
+  freePhotonFile(&plf, status);
   CHECK_STATUS_RET(*status, plf);
 
   // Open the newly created FITS file.
-  plf=openPhotonListFile(filename, READWRITE, status);
+  plf=openPhotonFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, plf);
 
   return(plf);
 }
 
 
-int PhotonListFile_getNextRow(PhotonListFile* const plf, Photon* const ph)
+int PhotonFile_getNextRow(PhotonFile* const plf, Photon* const ph)
 {
   int status=EXIT_SUCCESS;
 
@@ -179,14 +179,14 @@ int PhotonListFile_getNextRow(PhotonListFile* const plf, Photon* const ph)
   }
 
   // Read the new Photon from the file.
-  status=PhotonListFile_getRow(plf, ph, plf->row);
+  status=PhotonFile_getRow(plf, ph, plf->row);
 
   return(status);
 }
 
 
-int PhotonListFile_getRow(PhotonListFile* const plf, 
-			  Photon* const ph, const long row)
+int PhotonFile_getRow(PhotonFile* const plf, 
+		      Photon* const ph, const long row)
 {
   int status=EXIT_SUCCESS;
   int anynul=0;
@@ -241,7 +241,7 @@ int PhotonListFile_getRow(PhotonListFile* const plf,
 }
 
 
-int addPhoton2File(PhotonListFile* const plf, Photon* const ph)
+int addPhoton2File(PhotonFile* const plf, Photon* const ph)
 {
   int status=EXIT_SUCCESS;
 

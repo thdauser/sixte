@@ -75,7 +75,7 @@ int htrs_digital_shaper_main() {
 
     
     // Loop over all events in the event file.
-    while((EXIT_SUCCESS==status) && (0==EventFileEOF(&input_eventfile.generic))) {
+    while((EXIT_SUCCESS==status) && (0==EventListEOF(&input_eventfile.generic))) {
       
       // Read the next event from the FITS file.
       status=HTRSEventFile_getNextRow(&input_eventfile, &event);
@@ -91,7 +91,7 @@ int htrs_digital_shaper_main() {
       // time span.
       // Former events:
       long row = input_eventfile.generic.row-1;
-      while ((1==EventFileRowIsValid(&input_eventfile.generic, row)) &&
+      while ((1==EventListRowIsValid(&input_eventfile.generic, row)) &&
 	     (1==properly_shaped)){
 	status = HTRSEventFile_getRow(&input_eventfile, &eventbuffer, row);
 	if (EXIT_SUCCESS!=status) break;
@@ -102,7 +102,7 @@ int htrs_digital_shaper_main() {
       if (EXIT_SUCCESS!=status) break;
       // Subsequent events:
       row = input_eventfile.generic.row + 1;
-      while ((1==EventFileRowIsValid(&input_eventfile.generic, row)) &&
+      while ((1==EventListRowIsValid(&input_eventfile.generic, row)) &&
 	     (1==properly_shaped)){
 	status = HTRSEventFile_getRow(&input_eventfile, &eventbuffer, row);
 	if (EXIT_SUCCESS!=status) break;
@@ -145,7 +145,6 @@ int htrs_digital_shaper_main() {
 
   return(status);
 }
-
 
 
 int htrs_digital_shaper_getpar(struct Parameters* parameters)

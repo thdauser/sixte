@@ -5,7 +5,7 @@
 #include "hexagonalpixels.h"
 #include "arcpixels.h"
 #include "impact.h"
-#include "impactlistfile.h"
+#include "impactfile.h"
 
 
 #define TOOLSUB htrs_pixel_intensity_main
