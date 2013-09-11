@@ -23,7 +23,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -135,11 +135,9 @@ int makespec_main() {
       // The file should be located in the working directory.
       strcpy(filepathname, respfile);
     }
-    rmf=loadRMF(filepathname, &status);
-    if ((EXIT_SUCCESS!=status) && (strlen(par.RSPPath)==0)) {
-      SIXT_ERROR("failed to find or open the RMF "
-		 "(specify path via the parameter 'RSPPath')");
-    }
+    struct RMF* rmf=getRMF(&status);
+    CHECK_STATUS_BREAK(status);
+    loadEbounds(rmf, filepathname, &status);
     CHECK_STATUS_BREAK(status);
 
     // Initialize the random number generator.

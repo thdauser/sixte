@@ -20,13 +20,17 @@
 /////////////////////////////////////////////////////////////////
 
 
+/** Constructor. Returns an empty RMF data structure with
+    pointers initialized with NULL. */
+struct RMF* getRMF(int* const status);
+
 /** Load an RMF matrix and the corresponding EBOUNDS from a response
     file. */
-struct RMF* loadRMF(char* filename, int* const status);
+struct RMF* loadRMF(char* const filename, int* const status);
 
 /** Load an RSP matrix and the corresponding EBOUNDS from a response
     file and split the RSP into an ARF and an RMF. */
-void loadArfRmfFromRsp(char* filename, 
+void loadArfRmfFromRsp(char* const filename, 
 		       struct ARF** arf,
 		       struct RMF** rmf,
 		       int* const status);
@@ -44,6 +48,9 @@ void freeRMF(struct RMF* const rmf);
 void returnRMFChannel(struct RMF *rmf, 
 		      const float energy, 
 		      long* const channel);
+
+/** Load the EBOUNDS extension from an RMF or RSP file. */
+void loadEbounds(struct RMF* rmf, char* const filename, int* const status);
 
 /** Determines the PHA channel corresponding to a given energy
     according to the EBOUNDS table of the detector response. The

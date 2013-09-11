@@ -1,10 +1,50 @@
 #include "rmf.h"
 
 
-struct RMF* loadRMF(char* filename, int* const status) 
+struct RMF* getRMF(int* const status)
 {
   struct RMF* rmf=(struct RMF*)malloc(sizeof(struct RMF));
   CHECK_NULL_RET(rmf, *status, "memory allocation for RMF failed", rmf);
+
+  // Initialize.
+  rmf->NumberChannels     =0;
+  rmf->NumberEnergyBins   =0;
+  rmf->NumberTotalGroups  =0;
+  rmf->NumberTotalElements=0;
+  rmf->FirstChannel       =0;
+  rmf->isOrder            =0;
+  rmf->NumberGroups       =NULL;
+  rmf->FirstGroup         =NULL;
+  rmf->FirstChannelGroup  =NULL;
+  rmf->NumberChannelGroups=NULL;
+  rmf->FirstElement       =NULL;
+  rmf->OrderGroup         =NULL;
+  rmf->LowEnergy          =NULL;
+  rmf->HighEnergy         =NULL;
+  rmf->Matrix             =NULL;
+  rmf->ChannelLowEnergy   =NULL;
+  rmf->ChannelHighEnergy  =NULL;
+  rmf->AreaScaling        =0.0;
+  rmf->ResponseThreshold  =0.0;
+  strcpy(rmf->ChannelType, "");
+  strcpy(rmf->RMFVersion, "");
+  strcpy(rmf->EBDVersion, "");
+  strcpy(rmf->Telescope, "");
+  strcpy(rmf->Instrument, "");
+  strcpy(rmf->Detector, "");
+  strcpy(rmf->Filter, "");
+  strcpy(rmf->RMFType, "");
+  strcpy(rmf->RMFExtensionName, "");
+  strcpy(rmf->EBDExtensionName, "");
+  
+  return(rmf);
+}
+
+
+struct RMF* loadRMF(char* const filename, int* const status) 
+{
+  struct RMF* rmf=getRMF(status);
+  CHECK_STATUS_RET(*status, rmf);
 
   // Load the RMF from the FITS file using the HEAdas access routines
   // (part of libhdsp).
@@ -46,26 +86,25 @@ struct RMF* loadRMF(char* filename, int* const status)
     SIXT_WARNING("RMF is not normalized");
   }
 
-
-  // Read the EBOUNDS extension:
-  *status=ReadRMFEbounds(fptr, 0, rmf);
-  CHECK_STATUS_RET(*status, rmf);
-
   // Close the open FITS file.
   fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, rmf);
+
+  // Read the EBOUNDS extension.
+  loadEbounds(rmf, filename, status);
   CHECK_STATUS_RET(*status, rmf);
 
   return(rmf);
 }
 
 
-void loadArfRmfFromRsp(char* filename, 
+void loadArfRmfFromRsp(char* const filename, 
 		       struct ARF** arf,
 		       struct RMF** rmf,
 		       int* const status) 
 {
-  *rmf=(struct RMF*)malloc(sizeof(struct RMF));
-  CHECK_NULL_VOID(*rmf, *status, "memory allocation for RSP failed");
+  *rmf=getRMF(status);
+  CHECK_STATUS_VOID(*status);
 
   // Load the RSP from the FITS file using the HEAdas access routines
   // (part of libhdsp).
@@ -126,12 +165,12 @@ void loadArfRmfFromRsp(char* filename,
   // Normalize the RSP to obtain an ARF.
   NormalizeRMF(*rmf);
 
-  // Read the EBOUNDS extension:
-  *status=ReadRMFEbounds(fptr, 0, *rmf);
-  CHECK_STATUS_VOID(*status);
-
   // Close the open FITS file.
   fits_close_file(fptr, status);
+  CHECK_STATUS_VOID(*status);
+
+  // Read the EBOUNDS extension.
+  loadEbounds(*rmf, filename, status);
   CHECK_STATUS_VOID(*status);
 }
 
@@ -141,6 +180,39 @@ void freeRMF(struct RMF* const rmf)
   if (NULL!=rmf) {
     free(rmf);
   }
+}
+
+
+void returnRMFChannel(struct RMF *rmf, 
+		      const float energy, 
+		      long* const channel)
+{
+  ReturnChannel(rmf, energy, 1, channel);
+}
+
+
+void loadEbounds(struct RMF* rmf, char* const filename, int* const status)
+{
+  // Check if the rmf data structure has been initialized.
+  if (NULL==rmf) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory for RMF data structure not allocated");
+    return;
+  }
+
+  // Load the EBOUNDS from the FITS file using the HEAdas access routines
+  // (part of libhdsp).
+  fitsfile* fptr=NULL;
+  fits_open_file(&fptr, filename, READONLY, status);
+  CHECK_STATUS_VOID(*status);
+
+  // Read the EBOUNDS extension:
+  *status=ReadRMFEbounds(fptr, 0, rmf);
+  CHECK_STATUS_VOID(*status);
+
+  // Close the open FITS file.
+  fits_close_file(fptr, status);
+  CHECK_STATUS_VOID(*status);
 }
 
 
@@ -162,19 +234,19 @@ long getEBOUNDSChannel(const float energy, const struct RMF* const rmf)
   // Perform a binary search to obtain the detector PHA channel 
   // that corresponds to the given detector charge.
   long min, max, mid;
-  min = 0;
-  max = rmf->NumberChannels-1;
-  while (max > min) {
-    mid = (min+max)/2;
-    if (rmf->ChannelHighEnergy[mid] < energy) {
-      min = mid+1;
+  min=0;
+  max=rmf->NumberChannels-1;
+  while (max>min) {
+    mid=(min+max)/2;
+    if (rmf->ChannelHighEnergy[mid]<energy) {
+      min=mid+1;
     } else {
-      max = mid;
+      max=mid;
     }
   }
   
   // Return the PHA channel.
-  return(min + rmf->FirstChannel);
+  return(min+rmf->FirstChannel);
 }
 
 
@@ -184,8 +256,8 @@ float getEBOUNDSEnergy(long channel,
 		       int* const status)
 {
   // Subtract the channel offset (EBOUNDS may either start at 0 or at 1).
-  channel -= rmf->FirstChannel;
-  if ((channel < 0) || (channel >= rmf->NumberChannels)) {
+  channel-=rmf->FirstChannel;
+  if ((channel<0) || (channel>=rmf->NumberChannels)) {
     return(-1.);
   }
 
@@ -200,12 +272,4 @@ float getEBOUNDSEnergy(long channel,
   } else {
     return(rmf->ChannelHighEnergy[channel]);
   }
-}
-
-
-void returnRMFChannel(struct RMF *rmf, 
-		      const float energy, 
-		      long* const channel)
-{
-  ReturnChannel(rmf, energy, 1, channel);
 }
