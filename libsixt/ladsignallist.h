@@ -1,5 +1,5 @@
-#ifndef LINKEDLADSIGLIST_H
-#define LINKEDLADSIGLIST_H 1
+#ifndef LADSIGNALLIST_H
+#define LADSIGNALLIST_H 1
 
 #include "sixt.h"
 #include "ladsignal.h"
@@ -11,14 +11,13 @@
 
 
 /** Linked, time-ordered list of LADSignals. */
-struct structLinkedLADSigListElement {
-
+struct structLADSignalListItem {
   LADSignal signal;
 
   /** Next entry. */
-  struct structLinkedLADSigListElement* next;
+  struct structLADSignalListItem* next;
 };
-typedef struct structLinkedLADSigListElement LinkedLADSigListElement;
+typedef struct structLADSignalListItem LADSignalListItem;
 
 
 /////////////////////////////////////////////////////////////////
@@ -27,10 +26,10 @@ typedef struct structLinkedLADSigListElement LinkedLADSigListElement;
 
 
 /** Constructor. */
-LinkedLADSigListElement* newLinkedLADSigListElement(int* const status);
+LADSignalListItem* newLADSignalListItem(int* const status);
 
 /** Destructor. */
-void freeLinkedLADSigList(LinkedLADSigListElement** const list);
+void freeLADSignalList(LADSignalListItem** const list);
 
 
-#endif /* LINKEDLADSIGLIST_H */
+#endif /* LADSIGNALLIST_H */

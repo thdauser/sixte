@@ -284,7 +284,3 @@ int analyse_xms_events_getpar(struct Parameters* par)
   return(status);
 }
 
-
-
-
-

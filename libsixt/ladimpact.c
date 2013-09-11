@@ -3,7 +3,7 @@
 
 LADImpact* getLADImpact(int* const status)
 {
-  LADImpact* imp = (LADImpact*)malloc(sizeof(LADImpact));
+  LADImpact* imp=(LADImpact*)malloc(sizeof(LADImpact));
   CHECK_NULL_RET(imp, *status, 
 		 "memory allocation for LADImpact failed", imp);
   

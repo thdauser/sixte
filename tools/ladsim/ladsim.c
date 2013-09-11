@@ -1,15 +1,6 @@
 #include "ladsim.h"
 
 
-struct LADSignalListItem {
-  /** Signal entry. */
-  LADSignal* signal;
-  
-  /** Pointer to the next item. */
-  struct LADSignalListItem* next;
-};
-
-
 static inline LADImpact* ladphimg(const LAD* const lad,
 				  Attitude* const ac,
 				  Photon* const ph,
@@ -124,6 +115,7 @@ static inline LADImpact* ladphimg(const LAD* const lad,
       if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
 	// The photon does not hit the detector at all,
 	// because it is absorbed by the collimator.
+	freeLADImpact(&imp);
 	return(NULL);
       }
     } else {
@@ -134,6 +126,7 @@ static inline LADImpact* ladphimg(const LAD* const lad,
       long col2, row2;
       LADCollimatorHoleIdx(imp->position, &col2, &row2);
       if ((col1!=col2)||(row1!=row2)) {
+	freeLADImpact(&imp);
 	return(NULL);
       }
     }
@@ -141,6 +134,7 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     // Check if the impact position still is on the active area of the SDD.
     if ((imp->position.x<0.)||(imp->position.x>xwidth)||
 	(imp->position.y<0.)||(imp->position.y>ywidth)) {
+      freeLADImpact(&imp);
       return(NULL);
     }
 
@@ -152,167 +146,232 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 }
 
 
-/** Detection routine for the charge signals on the LAD anodes. The
-    function has to be called with impact times in chronological
-    order. At the end of the simulation it has to be called with a
-    negative impact energy in order to read the remaining events from
-    the internal cache. The function return value is 1, if the
-    function has (tried to) add the signals from the new impact to the
-    internal cache, or the internal cache is empty. Otherwise the
-    function returns 0. I.e., if the return value is 0, the function
-    has to be called again in order to read all events from the
-    cache. */
-static inline int ladphdet(const LAD* const lad,
-			   LADImpact* const imp,
-			   LADSignal** const sig,
-			   const double tstart,
-			   const double mjdref,
-			   long* nbkgevts,
-			   int* const status)
+void ladimp(const LAD* const lad, 
+	    LADImpact* const imp,
+	    LADSignalListItem** const siglist, 
+	    int* const status)
 {
-  // The charge distribution among the neighboring anodes implemented 
-  // in this function follows the approach of Campana et al. (2011).
+  // Element on the LAD.
+  LADElement* element= 
+    lad->panel[imp->panel]->module[imp->module]->element[imp->element];
+  
+  // Drift velocity.
+  double vD=lad->mobility*lad->efield;
+  // Drift time.
+  double drifttime=imp->position.x/vD;
 
+  // Determine the anode pitch [m].
+  float anode_pitch=
+    (element->ydim-2.*element->yborder)/(element->nanodes/2);
+
+  // Determine the parameters of the charge cloud.
+  // Boltzmann constant.
+  const double kB=8.6173324e-5; // [eV/K]
+  // Charge cloud dispersion.
+  const double sigma0=20.e-6; // (according to Campana, 2011) [m]
+  double sigma=
+    sqrt(2.*kB*lad->temperature*imp->position.x/lad->efield + 
+	 pow(sigma0,2.));
+
+  // Determine the index of the closest anode strip.
+  float xwidth=element->xdim-2.*element->xborder;
+  double y0;
+  if (imp->position.x<0.5*xwidth) {
+    y0=imp->position.y/anode_pitch;
+  } else {
+    y0=imp->position.y/anode_pitch + element->nanodes/2;
+  }
+  long center_anode=((long)(y0+1.0))-1;
+
+  // Determine the measured detector channel (PHA channel) according 
+  // to the RMF.
+  // The channel is obtained from the RMF using the corresponding
+  // HEAdas routine which is based on drawing a random number.
+  long channel;
+  returnRMFChannel(lad->rmf, imp->energy, &channel);
+
+  // Check if the signal is really measured. If the
+  // PHA channel returned by the HEAdas RMF function is '-1', 
+  // the photon is not detected.
+  // This can happen, if the RMF actually is an RSP, i.e., it 
+  // includes ARF contributions, e.g., 
+  // the detector quantum efficiency and filter transmission.
+  if (channel<0) {
+    headas_chat(5, "### undetected photon\n");
+    return; // Photon is not detected.
+  } else if (channel<lad->rmf->FirstChannel) {
+    headas_printf("### wrong channel number !\n");
+    return;
+  }
+
+  // Determine the signal corresponding to the channel according 
+  // to the EBOUNDS table.
+  float signal=getEBOUNDSEnergy(channel, lad->rmf, 0, status);
+  CHECK_STATUS_VOID(*status);
+  assert(signal>=0.);
+
+  // Determine which half of the anodes (bottom or top) is affected.
+  long min_anode, max_anode;
+  if (center_anode < element->nanodes/2) {
+    min_anode=MAX(0                   , center_anode-1);
+    max_anode=MIN(element->nanodes/2-1, center_anode+1);
+  } else {
+    min_anode=MAX(element->nanodes/2, center_anode-1);
+    max_anode=MIN(element->nanodes-1, center_anode+1);
+  }
+  int n_anodes=max_anode-min_anode+1;
+  assert(n_anodes<=3);
+    
+  // Loop over adjacent anodes. We consider only the two direct 
+  // neighbors, i.e. in total 3 anodes.
+  int ii; // (lies within [0,2])
+  // The following link to the element in the time-ordered 
+  // list has to be defined outside of the loop. Otherwise
+  // the search for the regarded point of time will start 
+  // from the beginning for each loop repetition.
+  LADSignalListItem** el=siglist;
+  for (ii=0; ii<n_anodes; ii++) {
+    LADSignal newsignal;
+      
+    // Determine the signal fraction at this anode.
+    double yi=(ii+min_anode)*1.0;
+    double fraction=0.;
+    if (ii>0) {
+      fraction=gaussint((yi-y0)*anode_pitch/sigma);
+    } else {
+      fraction=1.;
+    }
+    if (ii<n_anodes-1) {
+      fraction-=gaussint((yi-y0+1.0)*anode_pitch/sigma);
+    }
+    newsignal.signal   =fraction*signal;
+    newsignal.time     =imp->time+drifttime;    
+    newsignal.panel    =imp->panel;
+    newsignal.module   =imp->module;
+    newsignal.element  =imp->element;
+    newsignal.anode    =ii+min_anode;
+    newsignal.ph_id[0] =imp->ph_id;
+    newsignal.src_id[0]=imp->src_id;
+    int kk;
+    for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
+      newsignal.ph_id[kk] =0;
+      newsignal.src_id[kk]=0;
+    }
+
+    // Insert into the time-ordered list.
+    while(NULL!=*el) {
+      if (newsignal.time<(*el)->signal.time) break;
+      el=&((*el)->next);
+    }
+    LADSignalListItem* newel=newLADSignalListItem(status);
+    CHECK_STATUS_VOID(*status);
+
+    copyLADSignal(&(newel->signal), &newsignal);
+    newel->next=*el;
+    *el=newel;
+  }
+  // END of loop over adjacent anodes.
+}
+
+
+/** Detection routine for the charge signals on the LAD anodes. The
+   charge distribution among the neighboring anodes implemented in
+   this function follows the approach of Campana et al. (2011). The
+   function has to be called with impact times in chronological
+   order. At the end of the simulation it has to be called with a
+   negative impact energy in order to read the remaining events from
+   the internal cache. */
+static inline LADSignalListItem* ladphdet(const LAD* const lad,
+					  LADImpact* const imp,
+					  const double tstart,
+					  const double mjdref,
+					  long* nbkgevts,
+					  int* const status)
+{
   // Buffered list for LADSignals.
-  static LinkedLADSigListElement* siglist=NULL;
+  static LADSignalListItem* siglist=NULL;
 
   // Background source.
   static SimputSrc* bkgsrc=NULL;
-  static struct ARF* bkgarf=NULL;
   static double t_next_bkg=0.;
 
   // Make sure that there is a photon impact.
   assert(NULL!=imp);
 
+  // Drift velocity.
+  double vD=lad->mobility*lad->efield;
 
-  // --- Insert background events.
+  // Drift time.
+  double drifttime=imp->position.x/vD;
+
+  // --- Insert background events. ---
   
   if (NULL!=lad->bkgctlg) {
-
-    // Check if the background ARF is defined.
-    if (NULL==bkgarf) {
-      // Get an empty ARF.
-      bkgarf=getARF(status);
-      CHECK_STATUS_RET(*status, 1);
-
-      // Allocate memory. Use a logarithmic energy grid for this ARF.
-      // So the number of required bins is determined as 
-      // log(Emax/Emin)/log(factor)
-      // For Emin=0.01, Emax=1000., factor=1.01 a total number of
-      // 1158 bins is required.
-      const long narfbins=704;
-      const float arfEmin=0.9; // lower boundary for the energy grid.
-      const float arffactor=1.01;
-      bkgarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_RET(bkgarf->LowEnergy, *status, 
-		     "memory allocation for background ARF failed", 1);
-      bkgarf->HighEnergy=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_RET(bkgarf->HighEnergy, *status, 
-		     "memory allocation for background ARF failed", 1);
-      bkgarf->EffArea=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_RET(bkgarf->EffArea, *status, 
-		     "memory allocation for background ARF failed", 1);
-      bkgarf->NumberEnergyBins=narfbins;
-
-      // Set up a simple ARF.
-      float sensitive_area=
-	lad->npanels*lad->panel[0]->nmodules*
-	lad->panel[0]->module[0]->nelements*
-	(lad->panel[0]->module[0]->element[0]->xdim - 
-	 2.*lad->panel[0]->module[0]->element[0]->xborder)*
-	(lad->panel[0]->module[0]->element[0]->ydim - 
-	 2.*lad->panel[0]->module[0]->element[0]->yborder)*
-	1.e4; // Total sensitive area [cm^2].
-      long ii;
-      for (ii=0; ii<narfbins; ii++) {
-	bkgarf->LowEnergy[ii] =arfEmin*pow(arffactor,ii); // [keV]
-	bkgarf->HighEnergy[ii]=arfEmin*pow(arffactor,ii+1);
-	bkgarf->EffArea[ii]   =sensitive_area;
-      }
-      headas_chat(5, "background ARF with %.2f cm^2\n", sensitive_area);
-
-      // Set reference to background ARF for SIMPUT library.
-      setSimputARF(lad->bkgctlg, bkgarf);
-    }
-
     // Check if the background source is defined.
     if (NULL==bkgsrc) {
       // Set reference to the background source.
       bkgsrc=loadSimputSrc(lad->bkgctlg, 1, status);
-      CHECK_STATUS_RET(*status, 1);
-
+      CHECK_STATUS_RET(*status, NULL);
       t_next_bkg=tstart;
     }
 
-    while (t_next_bkg<imp->time) {
+    // Produce background impacts.
+    double uptime;
+    if (imp->energy<0.0) {
+      uptime=imp->time;
+    } else {
+      uptime=imp->time+drifttime;
+    }
+    while (t_next_bkg<uptime) {
+      LADImpact* bkgimp=getLADImpact(status);
+      CHECK_STATUS_RET(*status, NULL);
 
-      LinkedLADSigListElement** el=&siglist;
-
-      // Produce a background event.
-      LADSignal newsignal;
-      CHECK_STATUS_BREAK(*status);
-      
       // Time.
-      newsignal.time=t_next_bkg;
-
+      bkgimp->time=t_next_bkg;
+      
       // Energy.
       double ra, dec;
       getSimputPhotonEnergyCoord(lad->bkgctlg, bkgsrc,
-				 newsignal.time, mjdref, 
-				 &newsignal.signal, &ra, &dec,
+				 bkgimp->time, mjdref, 
+				 &bkgimp->energy, &ra, &dec,
 				 status);
-      CHECK_STATUS_BREAK(*status);
+      CHECK_STATUS_RET(*status, NULL);
 
       // Position.
-      newsignal.panel=(long)(sixt_get_random_number(status)*lad->npanels);
-      CHECK_STATUS_BREAK(*status);
-      newsignal.module=
+      bkgimp->panel=
+	(long)(sixt_get_random_number(status)*lad->npanels);
+      CHECK_STATUS_RET(*status, NULL);
+      bkgimp->module=
 	(long)(sixt_get_random_number(status)*
-	       lad->panel[newsignal.panel]->nmodules);
-      CHECK_STATUS_BREAK(*status);
-      newsignal.element=
+	       lad->panel[bkgimp->panel]->nmodules);
+      CHECK_STATUS_RET(*status, NULL);
+      bkgimp->element=
 	(long)(sixt_get_random_number(status)*
-	       lad->panel[newsignal.panel]->
-	       module[newsignal.module]->nelements);
-      CHECK_STATUS_BREAK(*status);
-      newsignal.anode=
-	(long)(sixt_get_random_number(status)*
-	       lad->panel[newsignal.panel]->
-	       module[newsignal.module]->
-	       element[newsignal.element]->nanodes);
-      CHECK_STATUS_BREAK(*status);
-
-      /*
-      // TODO Multiple anodes.
-      // Pointer to the element.
-      LADElement* element = 
-	lad->panel[newsignal->panel]->
-	module[newsignal->module]->
-	element[newsignal->element];
+	       lad->panel[bkgimp->panel]->
+	       module[bkgimp->module]->nelements);
+      CHECK_STATUS_RET(*status, NULL);
+      // Pointer to the element.      
+      LADElement* ladelement=
+	lad->panel[bkgimp->panel]->module[bkgimp->module]->element[bkgimp->element];
       // Determine the sensitive area of the element.
-      float xwidth = element->xdim - 2.*element->xborder;
-      float ywidth = element->ydim - 2.*element->yborder;
+      float xwidth=ladelement->xdim-2.0*ladelement->xborder;
+      float ywidth=ladelement->ydim-2.0*ladelement->yborder;
       // Get a random position on the element.
-      bkgimp->position.x=sixt_get_random_number()*xwidth;
-      bkgimp->position.y=sixt_get_random_number()*ywidth;
-      */
+      bkgimp->position.x=sixt_get_random_number(status)*xwidth;
+      CHECK_STATUS_RET(*status, NULL);
+      bkgimp->position.y=sixt_get_random_number(status)*ywidth;
+      CHECK_STATUS_RET(*status, NULL);
 
-      int kk;
-      for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
-	newsignal.ph_id[kk] = 0;
-	newsignal.src_id[kk]= 0;
-      }
+      // Photon and source ID.
+      bkgimp->ph_id =0;
+      bkgimp->src_id=0;
       
-      // Insert the background event into the time-ordered cache.
-      while(NULL!=*el) {
-	if (newsignal.time<(*el)->signal.time) break;
-	el = &((*el)->next);
-      }
-      LinkedLADSigListElement* newel=newLinkedLADSigListElement(status);
-      CHECK_STATUS_RET(*status, 1);
-      copyLADSignal(&(newel->signal), &newsignal);
-      newel->next=*el;
-      *el=newel;
+      // Insert the background impact into the time-ordered cache.
+      ladimp(lad, bkgimp, &siglist, status);
+      CHECK_STATUS_RET(*status, NULL);
+
+      // Release memory.
+      freeLADImpact(&bkgimp);
 
       // Count the number of background events.
       (*nbkgevts)++;
@@ -321,211 +380,73 @@ static inline int ladphdet(const LAD* const lad,
       int failed=
 	getSimputPhotonTime(lad->bkgctlg, bkgsrc, t_next_bkg, 
 			    mjdref, &t_next_bkg, status);
-      CHECK_STATUS_BREAK(*status);
+      CHECK_STATUS_RET(*status, NULL);
       if (0!=failed) {
 	SIXT_ERROR("failed producing background event");
 	*status=EXIT_FAILURE;
-	break;
+	return(NULL);
       }
     }
-    CHECK_STATUS_RET(*status, 1);
     // END of loop of producing background events.
   }
 
+  // --- End of inserting background events. ---
 
-  // --- Process the actual photon impact.
 
-  // Flag whether a signal has to be returned, or whether the new
-  // impact has to be converted into a signal and added to the
-  // time-ordered buffer.
-  int addimp=0;
+  // Insert the foreground impact into the time-ordered cache.
+  ladimp(lad, imp, &siglist, status);
+  CHECK_STATUS_RET(*status, NULL);
 
-  if (imp->energy>0.) {
-    // Element on the LAD.
-    LADElement* element=
-      lad->panel[imp->panel]->module[imp->module]->element[imp->element];
-    // Drift velocity.
-    double vD=lad->mobility * lad->efield;
-    // Maximum drift time of a charge cloud.
-    double tmax=element->xdim/2 / vD;
 
-    // Determine if the new impact has to be added to the buffered list.
-    if ((NULL==siglist) || (imp->time-siglist->signal.time<=tmax)) {
-      addimp=1;
-    }
+  // --- Return measured signal. ---
+
+  // Maximum drift time.
+  double tmax=lad->panel[0]->module[0]->element[0]->xdim/2/vD;
+
+  // Go through the cache of detected signals and cut out
+  // all which happend before imp->time-tmax. We need to 
+  // do this, because by the different drift times the time
+  // order of the impacts is shuffled.
+
+  // Check if the internal cache is empty.
+  if (NULL==siglist) {
+    return(NULL);
+  }
+  
+  double lotime=imp->time-tmax;
+  if (siglist->signal.time>lotime) {
+    return(NULL);
   }
 
-  if (1==addimp) {
-    // Calculate the charge contributions on the individual anodes
-    // and add the signals to the buffered list.
-
-    // Element on the LAD.
-    LADElement* element= 
-      lad->panel[imp->panel]->module[imp->module]->element[imp->element];
-
-    // Determine the anode pitch [m].
-    float anode_pitch=
-      (element->ydim - 2.*element->yborder)/(element->nanodes/2);
-
-    // Determine the parameters of the charge cloud.
-    // Boltzmann constant.
-    const double kB=8.6173324e-5; // [eV/K]
-    // Drift velocity.
-    double vD=lad->mobility * lad->efield;
-    // Charge cloud dispersion.
-    const double sigma0=20.e-6; // (according to Campana, 2011) [m]
-    double sigma= 
-      sqrt(2.*kB*lad->temperature*imp->position.x/lad->efield + 
-	   pow(sigma0,2.));
-
-    // Drift time.
-    double drifttime=imp->position.x / vD;
-
-    // Determine the index of the closest anode strip.
-    float xwidth=element->xdim - 2.*element->xborder;
-    double y0;
-    if (imp->position.x<0.5*xwidth) {
-      y0=imp->position.y/anode_pitch;
-    } else {
-      y0=imp->position.y/anode_pitch + element->nanodes/2;
+  LADSignalListItem* retlist=siglist;
+  while (siglist->next!=NULL) {
+    // Truncate the returned list if we reach the interval
+    // imp->time-tmax.
+    if (siglist->next->signal.time>lotime) {
+      LADSignalListItem* next=siglist->next;
+      siglist->next=NULL;
+      siglist=next;
+      break;
     }
-    long center_anode=((long)(y0+1)) -1;
-
-    // Determine the measured detector channel (PHA channel) according 
-    // to the RMF.
-    // The channel is obtained from the RMF using the corresponding
-    // HEAdas routine which is based on drawing a random number.
-    long channel;
-    returnRMFChannel(lad->rmf, imp->energy, &channel);
-
-    // Check if the photon is really measured. If the
-    // PHA channel returned by the HEAdas RMF function is '-1', 
-    // the photon is not detected.
-    // This can happen, if the RMF actually is an RSP, i.e., it 
-    // includes ARF contributions, e.g., 
-    // the detector quantum efficiency and filter transmission.
-    if (channel<0) {
-      headas_chat(5, "### undetected photon\n");
-      return(1); // Photon is not detected.
-    } else if (channel<lad->rmf->FirstChannel) {
-      headas_printf("### wrong channel number !\n");
-      return(1);
-    }
-
-    // Determine the signal corresponding to the channel according 
-    // to the EBOUNDS table.
-    float signal=getEBOUNDSEnergy(channel, lad->rmf, 0, status);
-    CHECK_STATUS_RET(*status, 1);
-    assert(signal>=0.);
-
-    // Determine which half of the anodes (bottom or top) is affected.
-    long min_anode, max_anode;
-    if (center_anode < element->nanodes/2) {
-      min_anode=MAX(0                   , center_anode-1);
-      max_anode=MIN(element->nanodes/2-1, center_anode+1);
-    } else {
-      min_anode=MAX(element->nanodes/2, center_anode-1);
-      max_anode=MIN(element->nanodes-1, center_anode+1);
-    }
-    int n_anodes=max_anode-min_anode+1;
-    assert(n_anodes<=3);
     
-    // Loop over adjacent anodes. We consider only the two direct 
-    // neighbors, i.e. in total 3 anodes.
-    int ii; // (lies within [0,2])
-    // The following link to the element in the time-ordered 
-    // list has to be defined outside of the loop. Otherwise
-    // the search for the regarded point of time will start 
-    // from the beginning for each loop repetition.
-    LinkedLADSigListElement** el=&siglist;
-    for (ii=0; ii<n_anodes; ii++) {
+    // Move to the next entry.
+    siglist=siglist->next;
+  }
 
-      LADSignal newsignal;
-      
-      // Determine the signal fraction at this anode.
-      double yi=(ii+min_anode)*1.0;
-      double fraction=0.;
-      if (ii>0) {
-	fraction =gaussint((yi-y0)*anode_pitch/sigma);
-      } else {
-	fraction =1.;
-      }
-      if (ii<n_anodes-1) {
-	fraction -=gaussint((yi-y0+1.0)*anode_pitch/sigma);
-      }
-      newsignal.signal=fraction*signal;
-
-      // Apply thresholds.
-      if (NULL!=lad->threshold_readout_lo_keV) {
-	if (newsignal.signal <= *(lad->threshold_readout_lo_keV)) {
-	  continue;
-	}
-      }
-      if (NULL!=lad->threshold_readout_up_keV) {
-	if (newsignal.signal >= *(lad->threshold_readout_up_keV)) {
-	  continue;
-	}
-      }
-
-      // Determine the point of time at which the charge is 
-      // collected on the anode.
-      newsignal.time=imp->time + drifttime;
-
-      newsignal.panel   = imp->panel;
-      newsignal.module  = imp->module;
-      newsignal.element = imp->element;
-      newsignal.anode   = ii+min_anode;
-      newsignal.ph_id[0]  = imp->ph_id;
-      newsignal.src_id[0] = imp->src_id;
-      int kk;
-      for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
-	newsignal.ph_id[kk] = 0;
-	newsignal.src_id[kk]= 0;
-      }
-
-      // Insert in the time-ordered list.
-      while(NULL!=*el) {
-	if (newsignal.time<(*el)->signal.time) break;
-	el=&((*el)->next);
-      }
-      LinkedLADSigListElement* newel=newLinkedLADSigListElement(status);
-      CHECK_STATUS_RET(*status, 1);
-
-      copyLADSignal(&(newel->signal), &newsignal);
-      newel->next=*el;
-      *el=newel;
-    }
-    // END of loop over adjacent anodes.
-    
-    return(1);
-
-  } else {
-
-    // Check if the internal cache is empty.
-    if (NULL==siglist) {
-      return(1);
-    }
-
-    // Return the first element from the time-ordered list.
-    *sig=getLADSignal(status);
-    CHECK_STATUS_RET(*status, 0);
-    copyLADSignal(*sig, &(siglist->signal));
-
-    // Delete the element from the buffered list.
-    LinkedLADSigListElement* next=siglist->next;
-    free(siglist);
-    siglist=next;
+  // Apply the ASIC dead time.
+  LADSignalListItem** listentry=&retlist;
+  while (NULL!=(*listentry)) {
+    LADSignal* signal=&(*listentry)->signal;
 
     // Element on the LAD.
     LADElement* element=
-      lad->panel[(*sig)->panel]->module[(*sig)->module]->
-      element[(*sig)->element];
+      lad->panel[signal->panel]->module[signal->module]->
+      element[signal->element];
 
-    // Apply the ASIC dead time.
     // Determine the ASIC and the pin of the ASIC the 
     // anode is attached to.
-    int asic=(int)((*sig)->anode/lad->asic_channels);
-    int pin =      (*sig)->anode%lad->asic_channels;
+    int asic=(int)(signal->anode/lad->asic_channels);
+    int pin =      signal->anode%lad->asic_channels;
     
     // Check if the pin is at the border of the ASIC and whether
     // the neighboring ASIC has to be read out, too.
@@ -541,39 +462,49 @@ static inline int ladphdet(const LAD* const lad,
     // Check if the event happens after the coincidence time, but
     // during the dead time.
     if (element->asic_readout_time[asic]>0.) {
-      if (((*sig)->time-element->asic_readout_time[asic]>
+      if ((signal->time-element->asic_readout_time[asic]>
 	   lad->coincidencetime) &&
-	  ((*sig)->time-element->asic_readout_time[asic]<
-	 lad->coincidencetime+element->asic_deadtime[asic])) {
-	freeLADSignal(sig);
-	return(0);
+	  (signal->time-element->asic_readout_time[asic]<
+	   lad->coincidencetime+element->asic_deadtime[asic])) {
+
+	// Delete the element from the buffered list.
+	LADSignalListItem* next=(*listentry)->next;
+	free(*listentry);
+	(*listentry)=next;
+	continue;
       }
     } 
     if (asic2>=0) {
       if (element->asic_readout_time[asic2]>0.) {
-	if (((*sig)->time-element->asic_readout_time[asic2]>
+	if ((signal->time-element->asic_readout_time[asic2]>
 	     lad->coincidencetime) &&
-	    ((*sig)->time-element->asic_readout_time[asic2]<
+	    (signal->time-element->asic_readout_time[asic2]<
 	     lad->coincidencetime+element->asic_deadtime[asic2])) {
-	  freeLADSignal(sig);
-	  return(0);
+
+	  // Delete the element from the buffered list.
+	  LADSignalListItem* next=(*listentry)->next;
+	  free(*listentry);
+	  (*listentry)=next;
+	  continue;
 	}
       }
     }
     
     // Set the time of this ASIC readout.
-    if ((element->asic_readout_time[asic]==0.) ||
-	((*sig)->time-element->asic_readout_time[asic]>
-	 lad->coincidencetime)) {
-      element->asic_readout_time[asic]=(*sig)->time;
+    if ((signal->time-element->asic_readout_time[asic]>
+	 lad->coincidencetime) ||
+	(element->asic_readout_time[asic]==0.)) {
+      element->asic_readout_time[asic]=signal->time;
       if (asic2>=0) {
-	element->asic_readout_time[asic2]=(*sig)->time;
+	element->asic_readout_time[asic2]=signal->time;
       }
     }
-    // END of dead time application.
-
-    return(0);
+    
+    // Move to the next element.
+    listentry=&((*listentry)->next);
   }
+
+  return(retlist);
 }
 
 
@@ -583,7 +514,7 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
 				    int* const status)
 {
   // List of raw event signals.
-  static struct LADSignalListItem* first=NULL;
+  static LADSignalListItem* first=NULL;
 
   // Flag if an event is complete (there will be no further
   // signal contributions).
@@ -591,41 +522,40 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
   if (NULL!=first) {
     if (NULL==signal) {
       complete=1;
-    } else if (signal->time-first->signal->time>lad->coincidencetime) {
+    } else if (signal->time-first->signal.time>lad->coincidencetime) {
       complete=1;
     }
   }
 
   // Produce a new event.
-  if (1==complete) {
+  while ((1==complete) && (NULL!=first)) {
     // Create a new empty event.
     LADEvent* ev=getLADEvent(status);
     CHECK_STATUS_RET(*status, NULL);
 
     // Construct a combined event for output.
-    ev->panel   = first->signal->panel;
-    ev->module  = first->signal->module;
-    ev->element = first->signal->element;
-    ev->anode   = first->signal->anode;
-    ev->time    = first->signal->time;
-    ev->signal  = first->signal->signal;
+    ev->panel  =first->signal.panel;
+    ev->module =first->signal.module;
+    ev->element=first->signal.element;
+    ev->anode  =first->signal.anode;
+    ev->time   =first->signal.time;
+    ev->signal =first->signal.signal;
     // Set PH_IDs and SRC_IDs.
     long jj;
     for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
-      ev->ph_id[jj] =first->signal->ph_id[jj];
-      ev->src_id[jj]=first->signal->src_id[jj];		
+      ev->ph_id[jj] =first->signal.ph_id[jj];
+      ev->src_id[jj]=first->signal.src_id[jj];		
     }
 
     // Delete the first element from the list.
-    struct LADSignalListItem* next=first->next;
-    freeLADSignal(&(first->signal));
+    LADSignalListItem* next=first->next;
     free(first);
     first=next;
 
     // Search the list in order to find adjacent signals.
     float maxsignal=ev->signal;
 
-    long nanodes = 
+    long nanodes=
       lad->panel[ev->panel]->module[ev->module]->
       element[ev->element]->nanodes;
     long* anodes=malloc(nanodes/2*sizeof(long));
@@ -640,51 +570,50 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
     while(1==new) {
       new=0;
 
-      struct LADSignalListItem** item=&first;
+      LADSignalListItem** item=&first;
       while (NULL!=(*item)) {
 
 	// Check if the regarded signal in the list seems to belong to 
 	// the same photon event.
 	// Check for the panel, module, and element.
-	if (((*item)->signal->panel==ev->panel) &&
-	    ((*item)->signal->module==ev->module) &&
-	    ((*item)->signal->element==ev->element)) {
+	if (((*item)->signal.panel==ev->panel) &&
+	    ((*item)->signal.module==ev->module) &&
+	    ((*item)->signal.element==ev->element)) {
 	  // Check for the anode, considering the different (bottom and top) 
 	  // anode lines.
-	  if ((((*item)->signal->anode>=nanodes/2)&&(ev->anode>=nanodes/2)) ||
-	      (((*item)->signal->anode< nanodes/2)&&(ev->anode< nanodes/2))) {
+	  if ((((*item)->signal.anode>=nanodes/2)&&(ev->anode>=nanodes/2)) ||
+	      (((*item)->signal.anode< nanodes/2)&&(ev->anode< nanodes/2))) {
 	    for (ii=0; ii<nanodes/2; ii++) {
 	      if (anodes[ii]==-1) break;
-	      if (((*item)->signal->anode==anodes[ii]-1) || 
-		  ((*item)->signal->anode==anodes[ii]+1)) {
+	      if (((*item)->signal.anode==anodes[ii]-1) || 
+		  ((*item)->signal.anode==anodes[ii]+1)) {
 		// Add the signal to the event.
-		ev->signal += (*item)->signal->signal;
-		if ((*item)->signal->signal>maxsignal) {
-		  maxsignal=(*item)->signal->signal;
-		  ev->anode = (*item)->signal->anode;
+		ev->signal+=(*item)->signal.signal;
+		if ((*item)->signal.signal>maxsignal) {
+		  maxsignal=(*item)->signal.signal;
+		  ev->anode=(*item)->signal.anode;
 		}
 		long jj;
 		for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
 		  long kk;
 		  for (kk=0; kk<NLADEVENTPHOTONS; kk++) {
-		    if ((*item)->signal->ph_id[jj]==ev->ph_id[kk]) break;
+		    if ((*item)->signal.ph_id[jj]==ev->ph_id[kk]) break;
 		    if (0==ev->ph_id[kk]) {
-		      ev->ph_id[kk] =(*item)->signal->ph_id[jj];
-		      ev->src_id[kk]=(*item)->signal->src_id[jj];		
+		      ev->ph_id[kk] =(*item)->signal.ph_id[jj];
+		      ev->src_id[kk]=(*item)->signal.src_id[jj];		
 		      break;
 		    }
 		  }
 		}
 		for (ii=0; ii<nanodes/2; ii++) {
 		  if (anodes[ii]==-1) {
-		    anodes[ii]=(*item)->signal->anode;
+		    anodes[ii]=(*item)->signal.anode;
 		    break;
 		  }
 		}
 	      
 		// Delete the signal entry from the list.
 		next=(*item)->next;
-		freeLADSignal(&((*item)->signal));
 		free((*item));
 		(*item)=next;
 
@@ -708,26 +637,35 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
     // Release memory.
     free(anodes);
 
+    // Apply thresholds.
+    if (NULL!=lad->threshold_readout_lo_keV) {
+      if (ev->signal<=*(lad->threshold_readout_lo_keV)) {
+	freeLADEvent(&ev);
+	continue;
+      }
+    }
+    if (NULL!=lad->threshold_readout_up_keV) {
+      if (ev->signal>=*(lad->threshold_readout_up_keV)) {
+	freeLADEvent(&ev);
+	continue;
+      }
+    }
+
     return(ev);
   }
 
 
   if (NULL!=signal) {
     // Move to the end of the list.
-    struct LADSignalListItem** item=&first;
+    LADSignalListItem** item=&first;
     while (NULL!=(*item)) {
       item=&((*item)->next);
     }
 
     // Append the new signal to the end of the list.
-    (*item)=(struct LADSignalListItem*)malloc(sizeof(struct LADSignalListItem));
-    CHECK_NULL_RET((*item), *status, 
-		   "memory allocation for signal list entry failed", 0);
-    (*item)->signal=(LADSignal*)malloc(sizeof(LADSignal));
-    CHECK_NULL_RET((*item)->signal, *status, 
-		   "memory allocation for signal entry failed", 0);
-    (*item)->next=NULL;
-    copyLADSignal((*item)->signal, signal);
+    (*item)=newLADSignalListItem(status);
+    CHECK_STATUS_RET(*status, NULL);
+    copyLADSignal(&(*item)->signal, signal);
   }
   return(NULL);
 }
@@ -771,7 +709,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.25");
+  set_toolversion("0.26");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -869,6 +807,52 @@ int ladsim_main()
     // Load the detector configuration.
     lad=getLADfromXML(xml_filename, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Set up the background ARF if necessary.
+    if (NULL!=lad->bkgctlg) {
+      // Get an empty ARF.
+      struct ARF* bkgarf=getARF(&status);
+      CHECK_STATUS_BREAK(status);
+
+      // Allocate memory. Use a logarithmic energy grid for this ARF.
+      // So the number of required bins is determined as 
+      // log(Emax/Emin)/log(factor)
+      // For Emin=0.9, Emax=1000., and factor=1.01 a total number of
+      // 704 bins is required.
+      const long narfbins=704;
+      const float arfEmin=0.9; // lower boundary for the energy grid.
+      const float arffactor=1.01;
+      bkgarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_BREAK(bkgarf->LowEnergy, status, 
+		       "memory allocation for background ARF failed");
+      bkgarf->HighEnergy=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_BREAK(bkgarf->HighEnergy, status, 
+		       "memory allocation for background ARF failed");
+      bkgarf->EffArea=(float*)malloc(narfbins*sizeof(float));
+      CHECK_NULL_BREAK(bkgarf->EffArea, status, 
+		       "memory allocation for background ARF failed");
+      bkgarf->NumberEnergyBins=narfbins;
+
+      // Set up a simple ARF.
+      float sensitive_area=
+	lad->npanels*lad->panel[0]->nmodules*
+	lad->panel[0]->module[0]->nelements*
+	(lad->panel[0]->module[0]->element[0]->xdim-
+	 2.*lad->panel[0]->module[0]->element[0]->xborder)*
+	(lad->panel[0]->module[0]->element[0]->ydim-
+	 2.*lad->panel[0]->module[0]->element[0]->yborder)*
+	1.e4; // Total sensitive area [cm^2].
+      long ii;
+      for (ii=0; ii<narfbins; ii++) {
+	bkgarf->LowEnergy[ii] =arfEmin*pow(arffactor,ii); // [keV]
+	bkgarf->HighEnergy[ii]=arfEmin*pow(arffactor,ii+1);
+	bkgarf->EffArea[ii]   =sensitive_area;
+      }
+      headas_chat(5, "background ARF with %.2f cm^2\n", sensitive_area);
+
+      // Set reference to background ARF for SIMPUT library.
+      setSimputARF(lad->bkgctlg, bkgarf);
+    }
 
     // Set up the Attitude.
     strcpy(ucase_buffer, par.Attitude);
@@ -1122,7 +1106,7 @@ int ladsim_main()
     // Loop over photon generation and processing
     // till the time of the photon exceeds the requested
     // exposure time.
-    double bkg_time=par.TSTART, last_loop=0;
+    double sim_time=par.TSTART, last_loop=0;
     do {
 
       // Photon generation.
@@ -1142,22 +1126,22 @@ int ladsim_main()
       LADImpact* imp=NULL;
       if (0!=isph) {
 
-	bkg_time=ph.time;
+	sim_time=ph.time;
 	
-	// If requested write the photon to the output file.
+	// If requested, write the photon to the output file.
 	if (NULL!=plf) {
 	  status=addPhoton2File(plf, &ph);
 	  CHECK_STATUS_BREAK(status);
 	}
 
-	// Photon transmission / absorption in the collimator.
+	// Photon transmission through / absorption in the collimator.
 	imp=ladphimg(lad, ac, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// If the photon is not transmitted but lost in the collimator,
 	// continue with the next one.
 	if (NULL==imp) continue;
-
+    
 	// If requested, write the impact to the output file.
 	if (NULL!=ilf) {
 	  addLADImpact2File(ilf, imp, &status);	    
@@ -1171,41 +1155,37 @@ int ladsim_main()
 	imp=getLADImpact(&status);
 	CHECK_STATUS_BREAK(status);
 	
-	if (bkg_time+par.dt<par.TSTART+par.Exposure) {
-	  bkg_time+=par.dt;
+	if (sim_time+par.dt<par.TSTART+par.Exposure) {
+	  sim_time+=par.dt;
 	} else {
-	  bkg_time=par.TSTART+par.Exposure;
+	  sim_time=par.TSTART+par.Exposure;
 	  last_loop=1;
 	}
-	imp->time=bkg_time;
+	imp->time=sim_time;
 	imp->energy=-1.;
       }
 
-      
       // Determine the signals at the individual anodes.
-      do {
-	LADSignal* signal=NULL;
-	int done_det=ladphdet(lad, imp, &signal, par.TSTART, par.MJDREF,
-			      &nbkgevts, &status);
-	CHECK_STATUS_BREAK(status);
-	  
-	if (1==done_det) {
-	  break;
-	  assert(NULL==signal);
-	}
-	if (NULL==signal) continue;
+      LADSignalListItem* siglist=
+	ladphdet(lad, imp, par.TSTART, par.MJDREF, &nbkgevts, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Release memory.
+      freeLADImpact(&imp);
+
+      while (siglist!=NULL) {
 
 	// Write the detected signal to the output file.
 	if (NULL!=slf) {
-	  addLADSignal2File(slf, signal, &status);
+	  addLADSignal2File(slf, &siglist->signal, &status);
 	  CHECK_STATUS_BREAK(status);
 	}
-	
+
 	// Recombine neighboring signals to events.
 	LADEvent* ev;
-	while ((ev=ladevrecomb(lad, signal, &status))) {
+	while ((ev=ladevrecomb(lad, &siglist->signal, &status))) {
 	  CHECK_STATUS_BREAK(status);
-	  
+
 	  // Add the event to the output file.
 	  addLADEvent2File(elf, ev, &status);
 	  CHECK_STATUS_BREAK(status);
@@ -1215,16 +1195,15 @@ int ladsim_main()
 	CHECK_STATUS_BREAK(status);
 	// END of loop over all events.
 
-	// Release memory.
-	freeLADSignal(&signal);
+	// Move to the next entry.
+	LADSignalListItem* next=siglist->next;
+	free(siglist);
+	siglist=next;
 
-      } while(1);
+      }
       CHECK_STATUS_BREAK(status);
       // END of loop over all signals.
       
-      // Release memory.
-      freeLADImpact(&imp);
-
       if (1==last_loop) break;
 	
       // Program progress output.
