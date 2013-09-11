@@ -20,7 +20,7 @@ int makelc_main() {
 
   // Register HEATOOL:
   set_toolname("makelc");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -66,7 +66,28 @@ int makelc_main() {
       fits_clear_errmark();
       if (EXIT_SUCCESS!=opt_status) {
 	fits_get_colnum(infptr, CASEINSEN, "SIGNAL", &csignal, &status);
-	CHECK_STATUS_BREAK(status);
+	if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("could not find column 'ENERGY'/'SIGNAL'");
+	  break;
+	}
+      }
+    }
+
+    // If the only events within a certain channel range should be
+    // considered, determine the column containing the energy /
+    // signal information.
+    int cpha=0;
+    if ((par.Chanmin>=0)||(par.Chanmax>=0)) {
+      fits_write_errmark();
+      int opt_status=EXIT_SUCCESS;
+      fits_get_colnum(infptr, CASEINSEN, "PI", &cpha, &opt_status);
+      fits_clear_errmark();
+      if (EXIT_SUCCESS!=opt_status) {
+	fits_get_colnum(infptr, CASEINSEN, "PHA", &cpha, &status);
+	if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("could not find column 'PI'/'PHA'");
+	  break;
+	}
       }
     }
 
@@ -124,6 +145,19 @@ int makelc_main() {
 	// Check if the energy of the event lies within the 
 	// requested range.
 	if ((signal<par.Emin)||(signal>par.Emax)) continue;
+      }
+
+      // If necessary, read the energy/signal of the event.
+      if (cpha>0) {
+	long pha;
+	long lnull=0;
+	fits_read_col(infptr, TLONG, cpha, ii+1, 1, 1, 
+		      &lnull, &pha, &anynul, &status);
+	CHECK_STATUS_BREAK(status);
+
+	// Check if the energy of the event lies within the 
+	// requested range.
+	if ((pha<par.Chanmin)||(pha>par.Chanmax)) continue;
       }
       
       // Determine the respective bin in the light curve.
@@ -287,6 +321,18 @@ int makelc_getpar(struct Parameters* par)
   status=ape_trad_query_float("Emax", &par->Emax);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the upper boundary of the energy band");
+    return(status);
+  } 
+
+  status=ape_trad_query_long("Chanmin", &par->Chanmin);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the lower boundary of the channel range");
+    return(status);
+  } 
+
+  status=ape_trad_query_long("Chanmax", &par->Chanmax);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the upper boundary of the channel range");
     return(status);
   } 
 

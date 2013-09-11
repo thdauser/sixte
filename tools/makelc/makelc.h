@@ -24,6 +24,9 @@ struct Parameters {
   /** Lower and upper boundary of the regarded energy band [keV]. */
   float Emin, Emax;
 
+  /** Lower and upper boundary of the regarded channel range [adu]. */
+  long Chanmin, Chanmax;
+
   char clobber;
 };
 
