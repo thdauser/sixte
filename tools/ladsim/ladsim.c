@@ -700,6 +700,9 @@ int ladsim_main()
   // Output file for progress status.
   FILE* progressfile=NULL;
 
+  // Artificial flat ARF for the generation of background events.
+  struct ARF* bkgarf=NULL;
+
   // Number of simulated background events.
   long nbkgevts=0;
 
@@ -811,7 +814,7 @@ int ladsim_main()
     // Set up the background ARF if necessary.
     if (NULL!=lad->bkgctlg) {
       // Get an empty ARF.
-      struct ARF* bkgarf=getARF(&status);
+      bkgarf=getARF(&status);
       CHECK_STATUS_BREAK(status);
 
       // Allocate memory. Use a logarithmic energy grid for this ARF.
@@ -1219,6 +1222,8 @@ int ladsim_main()
   freeSourceCatalog(&srccat, &status);
   freeAttitude(&ac);
   freeLAD(&lad, &status);
+  freeARF(bkgarf);
+  bkgarf=NULL;
 
   if (NULL!=progressfile) {
     fclose(progressfile);
