@@ -32,13 +32,14 @@ GenDet* newGenDet(int* const status)
   det->erobackground=0;
   det->anyphoton    =0;
   det->frametime    =0.;
+  det->deadtime     =0.;
   det->cte          =1.;
   det->threshold_readout_lo_keV=0.;
   det->threshold_event_lo_keV  =0.;
   det->threshold_split_lo_keV  =0.;
   det->threshold_split_lo_fraction=0.;
   det->threshold_pattern_up_keV=0.;
-  det->readout_trigger =0;
+  det->readout_trigger=0;
 
   // Get empty GenPixGrid.
   det->pixgrid=newGenPixGrid(status);
@@ -212,7 +213,6 @@ static inline void GenDetReadoutPixel(GenDet* const det,
   }
 
   if (line->charge[xindex]>0.) {
-
     Event* event=NULL;
 
     // Error handling loop.
@@ -227,6 +227,9 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       // ... and delete the pixel value.
       line->charge[xindex]=0.;
     
+      // Set the dead time of the pixel.
+      line->deadtime[xindex]=time+det->deadtime;
+
       // Copy the information about the original photons.
       int jj;
       for(jj=0; jj<NEVENTPHOTONS; jj++) {
@@ -278,7 +281,6 @@ void GenDetReadoutLine(GenDet* const det,
   if (0!=line->anycharge) {
     int ii;
     for (ii=0; ii<line->xwidth; ii++) {
-
       GenDetReadoutPixel(det, lineindex, readoutindex, ii,
 			 det->clocklist->readout_time, status);
       CHECK_STATUS_BREAK(*status);
@@ -327,7 +329,10 @@ void operateGenDetClock(GenDet* const det,
 	PHABkgGetEvents(det->phabkg, time-last_time, det->pixgrid, 
 			&bkgphas, &x, &y, status);
       CHECK_STATUS_VOID(*status);
-      
+
+      // TODO Determine exponentially distributed times
+      // for the background events.
+
       unsigned int ii;
       for (ii=0; ii<nevts; ii++) {
 	// Determine the corresponding signal.
@@ -335,7 +340,7 @@ void operateGenDetClock(GenDet* const det,
 	CHECK_STATUS_VOID(*status);
 	
 	// Add the signal to the pixel.
-	addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, -1, -1);
+	addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, time, -1, -1);
 
 	// Call the event trigger routine.
 	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, status);
@@ -423,7 +428,8 @@ void operateGenDetClock(GenDet* const det,
 	    CHECK_STATUS_VOID(*status);
 
 	    // Add the signal to the pixel.
-	    addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, -1, -1);	    
+	    addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, 
+				  det->clocklist->time, -1, -1);
 	  }
 	  free(bkgphas);
 	  free(x);
@@ -459,7 +465,7 @@ void operateGenDetClock(GenDet* const det,
 	      list->hit_ypos[ii]*0.001*sinrota;
 	    double yh=
 	      list->hit_xpos[ii]*0.001*sinrota+
-	      list->hit_ypos[ii]*0.001*cosrota;	    
+	      list->hit_ypos[ii]*0.001*cosrota;
 	    int x, y;
 	    double xr, yr;
 	    getGenDetAffectedPixel(det->pixgrid, xh, yh,
@@ -470,7 +476,9 @@ void operateGenDetClock(GenDet* const det,
 	    
 	    // Add the signal to the pixel.
 	    addGenDetCharge2Pixel(det->line[y], x, 
-				  list->hit_energy[ii], -1, -1); 
+				  list->hit_energy[ii],
+				  det->clocklist->time,
+				  -1, -1);
 	  }
 	  eroBkgFree(list);
 	}
@@ -508,15 +516,15 @@ void encounterGenDetBadPix(void* const data,
 			   const float value) 
 {
   // Array of pointers to pixel lines.
-  GenDetLine** line = (GenDetLine**)data;
+  GenDetLine** line=(GenDetLine**)data;
 
   // Check if the bad pixel type.
-  if (value < 0.) { // The pixel is a cold one.
+  if (value<0.) { // The pixel is a cold one.
     // Delete the charge in the pixel.
-    line[y]->charge[x] = 0.;
-  } else if (value > 0.) { // The pixel is a hot one.
+    line[y]->charge[x]=0.;
+  } else if (value>0.) { // The pixel is a hot one.
     // Add additional charge to the pixel.
-    addGenDetCharge2Pixel(line[y], x, value, -1, -1);
+    addGenDetCharge2Pixel(line[y], x, value, -1.0, -1, -1);
   }
 }
 
@@ -580,8 +588,8 @@ int makeGenSplitEvents(GenDet* const det,
 
   // The following array entries are used to transform between 
   // different array indices for accessing neighboring pixels.
-  const int xe[4] = {1, 0,-1, 0};
-  const int ye[4] = {0, 1, 0,-1};
+  const int xe[4]={1, 0,-1, 0};
+  const int ye[4]={0, 1, 0,-1};
 
   // Which kind of split model has been selected?
   if (GS_NONE==det->split->type) {
@@ -722,10 +730,10 @@ int makeGenSplitEvents(GenDet* const det,
     int secmindist = getMinimumDistance(distances);
     distances[mindist] = minimum;
     // Pixel coordinates of the 3rd and 4th split partner.
-    x[2] = x[0] + xe[secmindist];
-    y[2] = y[0] + ye[secmindist];
-    x[3] = x[1] + xe[secmindist];
-    y[3] = y[1] + ye[secmindist];
+    x[2]=x[0] + xe[secmindist];
+    y[2]=y[0] + ye[secmindist];
+    x[3]=x[1] + xe[secmindist];
+    y[3]=y[1] + ye[secmindist];
 
     // Now we know the affected pixels and can determine the 
     // signal fractions according to the model exp(-(r/0.355)^2).
@@ -733,24 +741,24 @@ int makeGenSplitEvents(GenDet* const det,
     // to the pixel borders, whereas here we need the distances from
     // the pixel center for the parameter r.
     // The value 0.355 is given by the parameter ecc->parameter.
-    fraction[0] = exp(-(pow(0.5-distances[mindist],2.)+
-			pow(0.5-distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
-    fraction[1] = exp(-(pow(0.5+distances[mindist],2.)+
-			pow(0.5-distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
-    fraction[2] = exp(-(pow(0.5-distances[mindist],2.)+
-			pow(0.5+distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
-    fraction[3] = exp(-(pow(0.5+distances[mindist],2.)+
-			pow(0.5+distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
+    fraction[0]=exp(-(pow(0.5-distances[mindist],2.)+
+		      pow(0.5-distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
+    fraction[1]=exp(-(pow(0.5+distances[mindist],2.)+
+		      pow(0.5-distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
+    fraction[2]=exp(-(pow(0.5-distances[mindist],2.)+
+		      pow(0.5+distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
+    fraction[3]=exp(-(pow(0.5+distances[mindist],2.)+
+		      pow(0.5+distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
     // Normalization to 1.
-    double sum = fraction[0]+fraction[1]+fraction[2]+fraction[3];
-    fraction[0] /= sum;
-    fraction[1] /= sum;
-    fraction[2] /= sum;
-    fraction[3] /= sum;
+    double sum=fraction[0]+fraction[1]+fraction[2]+fraction[3];
+    fraction[0]/=sum;
+    fraction[1]/=sum;
+    fraction[2]/=sum;
+    fraction[3]/=sum;
 
     // END of exponential split model.
 
@@ -766,8 +774,8 @@ int makeGenSplitEvents(GenDet* const det,
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) && (x[ii]<det->pixgrid->xwidth) &&
 	(y[ii]>=0) && (y[ii]<det->pixgrid->ywidth)) {
-      addGenDetCharge2Pixel(det->line[y[ii]], x[ii], signal*fraction[ii], 
-			    ph_id, src_id);
+      addGenDetCharge2Pixel(det->line[y[ii]], x[ii], signal*fraction[ii],
+			    time, ph_id, src_id);
       nvalidpixels++;
 
       // Call the event trigger routine.
@@ -790,7 +798,7 @@ int makeGenSplitEvents(GenDet* const det,
 
 void setGenDetStartTime(GenDet* const det, const double t0)
 {
-  det->clocklist->time         = t0;
-  det->clocklist->readout_time = t0;
+  det->clocklist->time        =t0;
+  det->clocklist->readout_time=t0;
 }
 

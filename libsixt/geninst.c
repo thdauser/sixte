@@ -737,7 +737,9 @@ static void GenInstXMLElementStart(void* parsedata,
     } else if (!strcmp(mode, "EVENT")) {
       xmlparsedata->inst->det->readout_trigger=GENDET_EVENT_TRIGGERED;
     }
-      
+    
+    xmlparsedata->inst->det->deadtime=getXMLAttributeDouble(attr, "DEADTIME");
+
   } else if (!strcmp(Uelement, "WAIT")) {
     
     float waittime=getXMLAttributeFloat(attr, "TIME");

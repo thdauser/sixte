@@ -20,6 +20,11 @@ typedef struct {
   /** Charges contained in the individual pixels of this line. */
   float* charge;
 
+  /** Dead time of the individual pixels in this line. The value of
+      this parameter determines the point of time until that the pixel
+      is insensitive to further incident photons. */
+  double* deadtime;
+
   /** Photon IDs corresponding to the charges in the individual
       pixels. */
   long** ph_id;
@@ -62,8 +67,10 @@ void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1);
 /** Add a charge (photon energy [keV]) to a particular pixel in the
     specified GenDetLine. The routine sets the anycharge flag of the
     affected line. */
-void addGenDetCharge2Pixel(GenDetLine* const line, const int column, 
-			   const float energy,
+void addGenDetCharge2Pixel(GenDetLine* const line, 
+			   const int column, 
+			   const float signal,
+			   const double time,
 			   const long ph_id, const long src_id);
 
 #endif /* GENDETLINE_H */

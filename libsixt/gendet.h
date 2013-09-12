@@ -130,6 +130,10 @@ typedef struct {
   /** Time for one read-out frame [s]. */
   double frametime;
 
+  /** Non-paralyzable dead time that is applied at the readout of each
+      pixel. */
+  double deadtime;
+
   /** Flag whether there has been any photon interaction since the
       last new frame. */
   int anyphoton;

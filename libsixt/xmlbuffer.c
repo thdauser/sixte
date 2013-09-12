@@ -606,6 +606,14 @@ float getXMLAttributeFloat(const char** attr, const char* const key)
 }
 
 
+double getXMLAttributeDouble(const char** attr, const char* const key)
+{
+  char buffer[MAXMSG]; // String buffer.
+  getXMLAttributeString(attr, key, buffer);
+  return(atof(buffer));
+}
+
+
 int getXMLAttributeInt(const char** attr, const char* const key)
 {
   char buffer[MAXMSG]; // String buffer.

@@ -70,6 +70,9 @@ void getXMLAttributeString(const char** attr, const char* const key,
 /** Read the float value of an XML element. */
 float getXMLAttributeFloat(const char** attr, const char* const key);
 
+/** Read the double value of an XML element. */
+double getXMLAttributeDouble(const char** attr, const char* const key);
+
 /** Read the integer value of an XML element. */
 int getXMLAttributeInt(const char** attr, const char* const key);
 
