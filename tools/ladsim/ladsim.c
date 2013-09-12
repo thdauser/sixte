@@ -408,35 +408,27 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
   // do this, because by the different drift times the time
   // order of the impacts is shuffled.
 
-  // Check if the internal cache is empty.
-  if (NULL==siglist) {
-    return(NULL);
-  }
+  // This pointer to the beginning of the list will be 
+  // returned by the function.
+  LADSignalListItem* retlist=siglist;
   
   double lotime=imp->time-tmax;
-  if (siglist->signal.time>lotime) {
-    return(NULL);
-  }
-
-  LADSignalListItem* retlist=siglist;
-  while (siglist->next!=NULL) {
-    // Truncate the returned list if we reach the interval
-    // imp->time-tmax.
-    if (siglist->next->signal.time>lotime) {
-      LADSignalListItem* next=siglist->next;
-      siglist->next=NULL;
-      siglist=next;
+  LADSignalListItem** entry=&retlist;
+  while (NULL!=*entry) {
+    if ((*entry)->signal.time>lotime) {
       break;
     }
-    
-    // Move to the next entry.
-    siglist=siglist->next;
+    // Move forward.
+    entry=&(*entry)->next;
   }
+  siglist=*entry;
+  *entry=NULL;
+  
 
   // Apply the ASIC dead time.
-  LADSignalListItem** listentry=&retlist;
-  while (NULL!=(*listentry)) {
-    LADSignal* signal=&(*listentry)->signal;
+  entry=&retlist;
+  while (NULL!=(*entry)) {
+    LADSignal* signal=&(*entry)->signal;
 
     // Element on the LAD.
     LADElement* element=
@@ -468,9 +460,9 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
 	   lad->coincidencetime+element->asic_deadtime[asic])) {
 
 	// Delete the element from the buffered list.
-	LADSignalListItem* next=(*listentry)->next;
-	free(*listentry);
-	(*listentry)=next;
+	LADSignalListItem* next=(*entry)->next;
+	free(*entry);
+	*entry=next;
 	continue;
       }
     } 
@@ -482,9 +474,9 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
 	     lad->coincidencetime+element->asic_deadtime[asic2])) {
 
 	  // Delete the element from the buffered list.
-	  LADSignalListItem* next=(*listentry)->next;
-	  free(*listentry);
-	  (*listentry)=next;
+	  LADSignalListItem* next=(*entry)->next;
+	  free(*entry);
+	  *entry=next;
 	  continue;
 	}
       }
@@ -501,7 +493,7 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
     }
     
     // Move to the next element.
-    listentry=&((*listentry)->next);
+    entry=&(*entry)->next;
   }
 
   return(retlist);
@@ -712,7 +704,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.26");
+  set_toolversion("0.27");
 
 
   do { // Beginning of ERROR HANDLING Loop.
