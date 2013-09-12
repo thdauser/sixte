@@ -1,8 +1,0 @@
-eventlist_filename,fre,lq,"events.fits",,,"filename of the inputfile containing the event list (FITS) "
-output_filename,f,lq,"binary_events.dat",,,"filename of the outputfile for the byte stream "
-n_packet_bits,i,lq,65536,0,1000000,"number of bits per telemetry packet "
-n_header_bits,i,lq,140,0,10000,"number of bits per packet reserved for the header "
-n_bin_bits,i,lq,3,0,10000,"number of bits per spectral bin "
-integration_time,r,lq,244.0e-6,0.0,1000000.0,"time step for the spectral binning of the events"
-chatter,i,lh,5,,,"chatter: control verbosity of the program"
-history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

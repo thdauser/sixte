@@ -69,9 +69,15 @@ int simputpsd_main()
     rewind(asciipsd);
     long ii;
     for (ii=0; ii<nlines; ii++) {
-      fscanf(asciipsd, "%f %f\n",
-	     &(simputpsd->frequency[ii]), &(simputpsd->power[ii]));
+      if (fscanf(asciipsd, "%f %f\n",
+		 &(simputpsd->frequency[ii]), 
+		 &(simputpsd->power[ii]))<2) {
+	SIXT_ERROR("failed reading PSD from ASCII file");
+	status=EXIT_FAILURE;
+	break;
+      }
     }
+    CHECK_STATUS_BREAK(status);
 
     // Store the PSD in the SIMPUT file.
     saveSimputPSD(simputpsd, par.Simput, "TIMING", 1, &status);

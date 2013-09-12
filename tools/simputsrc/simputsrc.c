@@ -420,16 +420,35 @@ int simputsrc_main()
       // Read the first three lines.
       char sbuffer1[MAXMSG], sbuffer2[MAXMSG];
       int ibuffer;
-      fscanf(datafile, "%s %s %d\n", sbuffer1, sbuffer2, &ibuffer);
-      fscanf(datafile, "%s\n", sbuffer1);
-      fscanf(datafile, "%s\n", sbuffer1);
+      if (fscanf(datafile, "%s %s %d\n", sbuffer1, sbuffer2, &ibuffer)<3) {
+	SIXT_ERROR("failed reading data from ASCII file");
+	status=EXIT_FAILURE;
+	break;
+      }
+      if (fscanf(datafile, "%s\n", sbuffer1)<1) {
+	SIXT_ERROR("failed reading data from ASCII file");
+	status=EXIT_FAILURE;
+	break;
+      }
+      if (fscanf(datafile, "%s\n", sbuffer1)<1) {
+	SIXT_ERROR("failed reading data from ASCII file");
+	status=EXIT_FAILURE;
+	break;
+      }
       // Read the actual data.
       long ii;
       for (ii=0; ii<nlines; ii++) {
 	float fbuffer;
-        fscanf(datafile, "%f %f %f\n",
-	       &(simputspec->energy[ii]), &fbuffer, &(simputspec->pflux[ii]));
+        if (fscanf(datafile, "%f %f %f\n",
+		   &(simputspec->energy[ii]), 
+		   &fbuffer, 
+		   &(simputspec->pflux[ii]))<3) {
+	  SIXT_ERROR("failed reading data from ASCII file");
+	  status=EXIT_FAILURE;
+	  break;
+	}
       }
+      CHECK_STATUS_BREAK(status);
 
       // Close the file.
       fclose(datafile);
@@ -443,8 +462,10 @@ int simputsrc_main()
       if ((simputspec->pflux[jj]<0.)||(simputspec->pflux[jj]>1.e12)) {
         SIXT_ERROR("flux out of boundaries");
         status=EXIT_FAILURE;
+	break;
       }
     }
+    CHECK_STATUS_BREAK(status);
     saveSimputMIdpSpec(simputspec, par.Simput, "SPECTRUM", 1, &status);
     CHECK_STATUS_BREAK(status);
     // -- END of creating the spectrum.

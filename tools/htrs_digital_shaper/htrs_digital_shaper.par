@@ -1,8 +1,0 @@
-input_eventlist_filename,fre,lq,"events.fits",,,"filename of the input event file (FITS)"
-output_eventlist_filename,f,lq,"events_shaped.fits",,,"filename of the output event file (FITS)"
-fits_templates,s,lq,"/home/schmid/share/sixt/templates",,,"directory containing FITS templates "
-frequency,r,lq,100.e6,0.0,1.e9,"shaping frequency (Hz)"
-preamp_gain,r,lh,15.,0.0,100.0,"preamplifier gain"
-nsamplings,i,lq,30,1,1000000,"number of required sampling points"
-chatter,i,lh,5,,,"chatter: control verbosity of the program "
-history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

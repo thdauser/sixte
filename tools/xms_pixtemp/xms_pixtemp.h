@@ -4,7 +4,7 @@
 #include "sixt.h"
 #include "eventfile.h"
 #include "event.h"
-
+#include "rmf.h"
 
 #define TOOLSUB xms_pixtemp_main
 #include "headas_main.c"
