@@ -3,6 +3,5 @@
 SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         ero_calevents ero_rawevents ero_exposure ero_vis comaexp	\
         gendetsim tes_grades comaimg comadet comarecon runsixt projev	\
-        imgev comaphovign simputmerge simputsrc simputpsd ladsim	\
-        erosim makespec makelc fudgexp evpat orbatt nustarsim		\
-        athenapwfisim
+        imgev comaphovign ladsim erosim makespec makelc fudgexp evpat	\
+        orbatt nustarsim athenapwfisim

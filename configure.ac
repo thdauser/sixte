@@ -114,9 +114,6 @@ AC_CONFIG_FILES([Makefile
 		tools/projev/Makefile
 		tools/evpat/Makefile
 		tools/imgev/Makefile
-		tools/simputmerge/Makefile
-		tools/simputsrc/Makefile
-		tools/simputpsd/Makefile
 		tools/fudgexp/Makefile
 		tools/orbatt/Makefile
 		share/Makefile
