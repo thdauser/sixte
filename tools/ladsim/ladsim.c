@@ -148,9 +148,50 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
 void ladimp(const LAD* const lad, 
 	    LADImpact* const imp,
+	    const int conv_with_rmf,
 	    LADSignalListItem** const siglist, 
 	    int* const status)
 {
+  // Determine the measured signal.
+  float signal;
+
+  // Check if the impact energy has to be convolved with the RMF.
+  // Note that for background events drawn from an input PHA,
+  // the energy must NOT be convolved with the RMF again.
+  if (1==conv_with_rmf) {
+    // Determine the measured detector channel (PHA channel) according 
+    // to the RMF.
+    // The channel is obtained from the RMF using the corresponding
+    // HEAdas routine which is based on drawing a random number.
+    long channel;
+    returnRMFChannel(lad->rmf, imp->energy, &channel);
+
+    // Check if the signal is really measured. If the
+    // PHA channel returned by the HEAdas RMF function is '-1', 
+    // the photon is not detected.
+    // This can happen, if the RMF actually is an RSP, i.e., it 
+    // includes ARF contributions, e.g., 
+    // the detector quantum efficiency and filter transmission.
+    if (channel<0) {
+      headas_chat(5, "### undetected photon\n");
+      return; // Photon is not detected.
+    } else if (channel<lad->rmf->FirstChannel) {
+      headas_printf("### wrong channel number !\n");
+      return;
+    }
+
+    // Determine the signal corresponding to the channel according 
+    // to the EBOUNDS table.
+    signal=getEBOUNDSEnergy(channel, lad->rmf, 0, status);
+    CHECK_STATUS_VOID(*status);
+
+  } else {
+    // The impact energy is not convolved with the RMF. Instead
+    // it is directly assumed as the measured signal.
+    signal=imp->energy;
+  }
+  assert(signal>=0.);
+
   // Element on the LAD.
   LADElement* element= 
     lad->panel[imp->panel]->module[imp->module]->element[imp->element];
@@ -181,82 +222,65 @@ void ladimp(const LAD* const lad,
   } else {
     y0=imp->position.y/anode_pitch + element->nanodes/2;
   }
-  long center_anode=((long)(y0+1.0))-1;
+  long anode1=((long)(y0+1.0))-1;
 
-  // Determine the measured detector channel (PHA channel) according 
-  // to the RMF.
-  // The channel is obtained from the RMF using the corresponding
-  // HEAdas routine which is based on drawing a random number.
-  long channel;
-  returnRMFChannel(lad->rmf, imp->energy, &channel);
+  // Determine the index of the second closest anode.
+  long anode2=anode1;
+  if ((anode1!=0) && (anode1!=element->nanodes/2) && (y0-anode1*1.0<=0.5)) {
+    anode2=anode1-1;
+  } else if ((anode1!=element->nanodes/2-1) && (anode1!=element->nanodes-1) &&
+	     (y0-anode1*1.0>=0.5)) {
+    anode2=anode1+1;
+  } 
 
-  // Check if the signal is really measured. If the
-  // PHA channel returned by the HEAdas RMF function is '-1', 
-  // the photon is not detected.
-  // This can happen, if the RMF actually is an RSP, i.e., it 
-  // includes ARF contributions, e.g., 
-  // the detector quantum efficiency and filter transmission.
-  if (channel<0) {
-    headas_chat(5, "### undetected photon\n");
-    return; // Photon is not detected.
-  } else if (channel<lad->rmf->FirstChannel) {
-    headas_printf("### wrong channel number !\n");
-    return;
-  }
-
-  // Determine the signal corresponding to the channel according 
-  // to the EBOUNDS table.
-  float signal=getEBOUNDSEnergy(channel, lad->rmf, 0, status);
-  CHECK_STATUS_VOID(*status);
-  assert(signal>=0.);
-
-  // Determine which half of the anodes (bottom or top) is affected.
-  long min_anode, max_anode;
-  if (center_anode < element->nanodes/2) {
-    min_anode=MAX(0                   , center_anode-1);
-    max_anode=MIN(element->nanodes/2-1, center_anode+1);
+  // Determine the charge distribution according to the model 
+  // of Campana et al. (2011). Distribute the charge among
+  // at most 2 anodes!
+  double fraction1, fraction2;
+  if (anode1==anode2) {
+    fraction2=0.0;
+  } else if (anode1<anode2) {
+    fraction2=gaussint((anode1*1.0+1.0-y0)*anode_pitch/sigma);
   } else {
-    min_anode=MAX(element->nanodes/2, center_anode-1);
-    max_anode=MIN(element->nanodes-1, center_anode+1);
+    fraction2=gaussint((y0-1.0*anode1)*anode_pitch/sigma);
   }
-  int n_anodes=max_anode-min_anode+1;
-  assert(n_anodes<=3);
-    
-  // Loop over adjacent anodes. We consider only the two direct 
-  // neighbors, i.e. in total 3 anodes.
-  int ii; // (lies within [0,2])
-  // The following link to the element in the time-ordered 
-  // list has to be defined outside of the loop. Otherwise
-  // the search for the regarded point of time will start 
-  // from the beginning for each loop repetition.
+  fraction1=1.0-fraction2;
+
+  // Produce a signal.
   LADSignalListItem** el=siglist;
-  for (ii=0; ii<n_anodes; ii++) {
-    LADSignal newsignal;
-      
-    // Determine the signal fraction at this anode.
-    double yi=(ii+min_anode)*1.0;
-    double fraction=0.;
-    if (ii>0) {
-      fraction=gaussint((yi-y0)*anode_pitch/sigma);
-    } else {
-      fraction=1.;
-    }
-    if (ii<n_anodes-1) {
-      fraction-=gaussint((yi-y0+1.0)*anode_pitch/sigma);
-    }
-    newsignal.signal   =fraction*signal;
-    newsignal.time     =imp->time+drifttime;    
-    newsignal.panel    =imp->panel;
-    newsignal.module   =imp->module;
-    newsignal.element  =imp->element;
-    newsignal.anode    =ii+min_anode;
-    newsignal.ph_id[0] =imp->ph_id;
-    newsignal.src_id[0]=imp->src_id;
-    int kk;
-    for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
-      newsignal.ph_id[kk] =0;
-      newsignal.src_id[kk]=0;
-    }
+
+  LADSignal newsignal;
+  newsignal.time     =imp->time+drifttime;    
+  newsignal.panel    =imp->panel;
+  newsignal.module   =imp->module;
+  newsignal.element  =imp->element;
+  newsignal.ph_id[0] =imp->ph_id;
+  newsignal.src_id[0]=imp->src_id;
+  int kk;
+  for (kk=1; kk<NLADSIGNALPHOTONS; kk++) {
+    newsignal.ph_id[kk] =0;
+    newsignal.src_id[kk]=0;
+  }
+
+  // Main signal fraction.
+  newsignal.signal=fraction1*signal;
+  newsignal.anode =anode1;
+
+  // Insert into the time-ordered list.
+  while(NULL!=*el) {
+    if (newsignal.time<(*el)->signal.time) break;
+    el=&((*el)->next);
+  }
+  LADSignalListItem* newel=newLADSignalListItem(status);
+  CHECK_STATUS_VOID(*status);
+  copyLADSignal(&(newel->signal), &newsignal);
+  newel->next=*el;
+  *el=newel;
+
+  // Secondary signal fraction.
+  if (anode1!=anode2) {
+    newsignal.signal=fraction2*signal;
+    newsignal.anode =anode2;
 
     // Insert into the time-ordered list.
     while(NULL!=*el) {
@@ -265,7 +289,6 @@ void ladimp(const LAD* const lad,
     }
     LADSignalListItem* newel=newLADSignalListItem(status);
     CHECK_STATUS_VOID(*status);
-
     copyLADSignal(&(newel->signal), &newsignal);
     newel->next=*el;
     *el=newel;
@@ -367,7 +390,7 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
       bkgimp->src_id=0;
       
       // Insert the background impact into the time-ordered cache.
-      ladimp(lad, bkgimp, &siglist, status);
+      ladimp(lad, bkgimp, 0, &siglist, status);
       CHECK_STATUS_RET(*status, NULL);
 
       // Release memory.
@@ -394,7 +417,7 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
 
 
   // Insert the foreground impact into the time-ordered cache.
-  ladimp(lad, imp, &siglist, status);
+  ladimp(lad, imp, 1, &siglist, status);
   CHECK_STATUS_RET(*status, NULL);
 
 
@@ -704,7 +727,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.27");
+  set_toolversion("0.28");
 
 
   do { // Beginning of ERROR HANDLING Loop.
