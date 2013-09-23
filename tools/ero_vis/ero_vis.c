@@ -33,7 +33,7 @@ struct Parameters {
   double dt; 
 
   /** [rad]. */
-  double fov_diameter;
+  double visibility_range;
 
   char clobber;
 };
@@ -57,7 +57,7 @@ int ero_vis_main()
 
   // Register HEATOOL:
   set_toolname("ero_vis");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -165,7 +165,7 @@ int ero_vis_main()
 
     // Determine the diameter of the search radius (minimum cos-value).
     // (angle(telescope,source) <= 1/2 * diameter)
-    double search_angle=0.5*par.fov_diameter+cone_radius;
+    double search_angle=0.5*par.visibility_range+cone_radius;
     double min_align; 
     if (search_angle<=M_PI) {
       min_align=cos(search_angle);
@@ -257,8 +257,8 @@ int ero_vis_getpar(struct Parameters *par)
     SIXT_ERROR("failed reading the name of the GTI file");
   }
 
-  // Read the diameter of the FOV (in arcmin).
-  else if ((status=PILGetReal("fov_diameter", &par->fov_diameter))) {
+  // Read the diameter of the visibility field (in arcmin).
+  else if ((status=PILGetReal("visibility_range", &par->visibility_range))) {
     SIXT_ERROR("failed reading the diameter of the FOV");
   }
 
@@ -282,7 +282,7 @@ int ero_vis_getpar(struct Parameters *par)
   }
 
   // Convert FOV diameter from [deg] to [rad].
-  par->fov_diameter*=M_PI/180.; 
+  par->visibility_range*=M_PI/180.; 
   
   return(status);
 }
