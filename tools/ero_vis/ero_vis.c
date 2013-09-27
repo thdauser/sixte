@@ -33,7 +33,7 @@ struct Parameters {
   double dt; 
 
   /** [rad]. */
-  double fov_diameter;
+  double visibility_range;
 
   char clobber;
 };
@@ -57,7 +57,7 @@ int ero_vis_main()
 
   // Register HEATOOL:
   set_toolname("ero_vis");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -165,12 +165,12 @@ int ero_vis_main()
 
     // Determine the diameter of the search radius (minimum cos-value).
     // (angle(telescope,source) <= 1/2 * diameter)
-    double search_angle=0.5*par.fov_diameter+cone_radius;
+    double search_angle=0.5*par.visibility_range+cone_radius;
     double min_align; 
-    if (search_angle <= M_PI) {
+    if (search_angle<=M_PI) {
       min_align=cos(search_angle);
     } else {
-      min_align = -1.; 
+      min_align=-1.; 
     }      
 
     // --- Beginning of GTI calculation ---
@@ -235,45 +235,45 @@ int ero_vis_getpar(struct Parameters *par)
   int status=EXIT_SUCCESS; // Error status
   
   // Get the filename of the input attitude file (FITS file).
-  if ((status = PILGetFname("Attitude", par->Attitude))) {
+  if ((status=PILGetFname("Attitude", par->Attitude))) {
     SIXT_ERROR("failed reading the name of the attitude file");
   }
   
   // Get the filename of the SIMPUT file.
-  else if ((status = PILGetFname("Simput", par->Simput))) {
+  else if ((status=PILGetFname("Simput", par->Simput))) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
   }
 
   // Get the source position specified by RA and Dec.
-  else if ((status = PILGetReal("RA", &par->RA))) {
+  else if ((status=PILGetReal("RA", &par->RA))) {
     SIXT_ERROR("failed reading the right ascension of the source");
   }
-  else if ((status = PILGetReal("DEC", &par->DEC))) {
+  else if ((status=PILGetReal("DEC", &par->DEC))) {
     SIXT_ERROR("failed reading the declination of the source");
   }
   
   // Get the filename of the output GTI file (FITS file).
-  else if ((status = PILGetFname("GTIfile", par->GTIfile))) {
+  else if ((status=PILGetFname("GTIfile", par->GTIfile))) {
     SIXT_ERROR("failed reading the name of the GTI file");
   }
 
-  // Read the diameter of the FOV (in arcmin).
-  else if ((status = PILGetReal("fov_diameter", &par->fov_diameter))) {
+  // Read the diameter of the visibility field (in arcmin).
+  else if ((status=PILGetReal("visibility_range", &par->visibility_range))) {
     SIXT_ERROR("failed reading the diameter of the FOV");
   }
 
   // Get the start time.
-  else if ((status = PILGetReal("TSTART", &par->TSTART))) {
+  else if ((status=PILGetReal("TSTART", &par->TSTART))) {
     SIXT_ERROR("failed reading the TSTART");
   }
 
   // Get the exposure time.
-  else if ((status = PILGetReal("Exposure", &par->Exposure))) {
+  else if ((status=PILGetReal("Exposure", &par->Exposure))) {
     SIXT_ERROR("failed reading the exposure time");
   }
 
   // Get the time step.
-  else if ((status = PILGetReal("dt", &par->dt))) {
+  else if ((status=PILGetReal("dt", &par->dt))) {
     SIXT_ERROR("failed reading the 'dt' parameter");
   }
 
@@ -282,7 +282,7 @@ int ero_vis_getpar(struct Parameters *par)
   }
 
   // Convert FOV diameter from [deg] to [rad].
-  par->fov_diameter *= M_PI/180.; 
+  par->visibility_range*=M_PI/180.; 
   
   return(status);
 }

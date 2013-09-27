@@ -3,7 +3,7 @@
 
 SourceCatalog* newSourceCatalog(int* const status)
 {
-  SourceCatalog* cat = (SourceCatalog*)malloc(sizeof(SourceCatalog));
+  SourceCatalog* cat=(SourceCatalog*)malloc(sizeof(SourceCatalog));
   CHECK_NULL(cat, *status,
 	     "memory allocation for SourceCatalog failed");
 
@@ -178,7 +178,7 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
-  const double close_mult=1.2; 
+  const double close_mult=1.5;
   const double close_fov_min_align=cos(close_mult*fov/2.); 
 
   // Perform a range search over all sources in the KDTree and 

@@ -130,8 +130,8 @@ int get_psf_pos(struct Point2d* const position,
   y1=low;
   // Now x1 and y1 have pixel positions [integer pixel].
 
-  // Determine the distance ([m]) of the central reference position from the optical axis
-  // according to the off-axis angle theta:
+  // Determine the distance ([m]) of the central reference position 
+  // from the optical axis according to the off-axis angle theta.
   double distance=focal_length * tan(theta); // TODO *(-1) ???
 
   // Add the relative position obtained from the PSF image (randomized pixel 
@@ -204,7 +204,7 @@ static void addDValue2List(const double value,
   // Check whether the value is already in the list.
   int count=0;
   for (count=0; count<*nvalues; count++) {
-    if (fabs((*list)[count]-value) <= fabs(value*1.e-6)) return;
+    if (fabs((*list)[count]-value)<=fabs(value*1.e-6)) return;
   }
   // The value is not in the list. So continue with the following code.
 
@@ -218,7 +218,7 @@ static void addDValue2List(const double value,
   (*nvalues)++; // Now we have one element more in the list.
 
   // Add the value at the end of the list.
-  (*list)[*nvalues-1] = value;
+  (*list)[*nvalues-1]=value;
 }
 
 
@@ -273,9 +273,9 @@ PSF* newPSF(const char* const filename,
     psf->energies = NULL;
     psf->thetas   = NULL;
     psf->phis     = NULL;
-    psf->nenergies = 0;
-    psf->nthetas   = 0;
-    psf->nphis     = 0;
+    psf->nenergies= 0;
+    psf->nthetas  = 0;
+    psf->nphis    = 0;
 
     // Open PSF FITS file
     headas_chat(5, "open PSF FITS file '%s' ...\n", filename);
@@ -304,9 +304,9 @@ PSF* newPSF(const char* const filename,
 	if (fits_read_key(fptr, TDOUBLE, "PHI", &phi, comment, 
 			  status)) break; // [deg]
 	// Convert to appropriate units.
-	energy *= 1.e-3;         // [eV] -> [keV];
-	theta  *= M_PI/180./60.; // [arc min] -> [rad]
-	phi    *= M_PI/180.;     // [deg] -> [rad]
+	energy*=1.e-3;         // [eV] -> [keV];
+	theta *=M_PI/180./60.; // [arc min] -> [rad]
+	phi   *=M_PI/180.;     // [deg] -> [rad]
 	
 	// Add value to the list of available values.
 	addDValue2List(energy, &(psf->energies), &psf->nenergies, status);
@@ -447,11 +447,11 @@ PSF* newPSF(const char* const filename,
 
 	if ((!strcmp(cunit1, "arcsec")) && (!strcmp(cunit2, "arcsec"))) {
 	  // Convert from [arcsec] -> [m]
-	  float scaling = tan(1./3600.*M_PI/180.) * focal_length; // [m/arcsec]
-	  psf->data[index1][index2][index3].cdelt1 *= scaling;
-	  psf->data[index1][index2][index3].cdelt2 *= scaling;
-	  psf->data[index1][index2][index3].crval1 *= scaling;
-	  psf->data[index1][index2][index3].crval2 *= scaling;
+	  float scaling=tan(1./3600.*M_PI/180.)*focal_length; // [m/arcsec]
+	  psf->data[index1][index2][index3].cdelt1*=scaling;
+	  psf->data[index1][index2][index3].cdelt2*=scaling;
+	  psf->data[index1][index2][index3].crval1*=scaling;
+	  psf->data[index1][index2][index3].crval2*=scaling;
 
 	} else if ((strcmp(cunit1, "m")) || (strcmp(cunit2, "m"))) {
 	  // Neither [arcsec] nor [m]
@@ -463,11 +463,11 @@ PSF* newPSF(const char* const filename,
 
 
 	// Get memory for the PSF_Item data.
-	psf->data[index1][index2][index3].data = (double **)
+	psf->data[index1][index2][index3].data=(double **)
 	  malloc(psf->data[index1][index2][index3].naxis1*sizeof(double *));
 	if (NULL!=psf->data[index1][index2][index3].data) {
 	  for (count=0; count<psf->data[index1][index2][index3].naxis1; count++) {
-	    psf->data[index1][index2][index3].data[count] = (double *)
+	    psf->data[index1][index2][index3].data[count]=(double *)
 	      malloc(psf->data[index1][index2][index3].naxis2*sizeof(double));
 	    if (NULL==psf->data[index1][index2][index3].data[count]) {
 	      *status=EXIT_FAILURE;
@@ -734,6 +734,4 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 
   return(*status);
 }
-
-
 
