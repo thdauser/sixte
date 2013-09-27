@@ -577,7 +577,8 @@ int runsixt_main()
       // If no split events are simulated, simply copy the event list
       // to a pattern list.
       headas_chat(3, "copy events to pattern file ...\n");
-      copyEvents2PatternFile(elf, patf, &status);
+      copyEvents2PatternFile(elf, patf, inst->det->threshold_pattern_up_keV,
+			     &status);
       CHECK_STATUS_BREAK(status);
     }
     

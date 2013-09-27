@@ -239,7 +239,8 @@ static inline void GenDetReadoutPixel(GenDet* const det,
 	line->src_id[xindex][jj]=0;
       }
       
-      // Apply the charge thresholds.
+      // Apply the lower readout threshold. Note that the upper
+      // threshold is only applied after pattern recombination.
       if (event->signal<=det->threshold_readout_lo_keV) {
 	break;
       }
