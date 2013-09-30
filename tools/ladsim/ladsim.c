@@ -182,7 +182,7 @@ void ladimp(const LAD* const lad,
 
     // Determine the signal corresponding to the channel according 
     // to the EBOUNDS table.
-    signal=getEBOUNDSEnergy(channel, lad->rmf, 0, status);
+    signal=getEBOUNDSEnergy(channel, lad->rmf, status);
     CHECK_STATUS_VOID(*status);
 
   } else {

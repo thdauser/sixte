@@ -28,6 +28,7 @@
 #include "headas_error.h"
 #include "wcshdr.h"
 
+#include "rmf.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -185,6 +186,18 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  double tstop, 
 				  double timezero, 
 				  int* const status);
+
+/** Determine the signal corresponding to a particular PHA channel
+    according to the EBOUNDS table. The input channel must have the
+    same offset as in the EBOUNDS table. I.e. if the first channel in
+    the EBOUNDS has the number 1, the numbering starts at 1. If the
+    first channel has the number 0, the numbering starts at 0.  The
+    returned energy is randomized between the lower and the upper bin
+    boundary and is given in the same units as the EBOUNDS, (usually
+    [keV]). */
+float getEBOUNDSEnergy(const long channel,
+		       const struct RMF* const rmf, 
+		       int* const status);
 
 
 #endif /* SIXT_H */

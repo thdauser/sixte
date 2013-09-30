@@ -125,7 +125,7 @@ int makespec_main() {
       seed=(int)time(NULL);
     }
 
-    // Load the RMF.
+    // Load the EBOUNDS of the RMF.
     char filepathname[MAXFILENAME];
     if (strlen(par.RSPPath)>0) {
       strcpy(filepathname, par.RSPPath);
