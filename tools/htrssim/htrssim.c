@@ -206,8 +206,12 @@ int htrssim_main() {
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

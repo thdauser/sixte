@@ -351,8 +351,11 @@ int ero_fits2tm_main()
   free_Binary_Output(binary_output);
   if (NULL!=eventlist) free(eventlist);
   
-
-  if (status==EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
