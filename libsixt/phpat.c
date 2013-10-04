@@ -187,7 +187,7 @@ void phpat(GenDet* const det,
 	      }
 
 	    } else { // Split threshold for generic instruments.
-	      if (det->threshold_split_lo_fraction > 0.) {
+	      if (det->threshold_split_lo_fraction>0.) {
 		split_threshold=
 		  det->threshold_split_lo_fraction*maxsignalev->signal;
 	      } else {
