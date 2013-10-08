@@ -52,7 +52,7 @@ int xms_pixtemp_main() {
       /*      if ((1==event.array) && // Only events from the inner array.
 	      (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) { */
       fprintf(output_file, " %lf\t%lf\n", event.time, 
-	      getEBOUNDSEnergy(event.pi, rmf, 0, &status));
+	      getEBOUNDSEnergy(event.pi, rmf, &status));
       CHECK_STATUS_BREAK(status);
       /* } */
 
@@ -77,7 +77,6 @@ int xms_pixtemp_main() {
 
   return(status);
 }
-
 
 
 int xms_pixtemp_getpar(struct Parameters* parameters)

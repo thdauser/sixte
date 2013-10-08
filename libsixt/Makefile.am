@@ -52,7 +52,7 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  arcpixels.c telemetrypacket.c htrstelstream.c		\
 		  comadetector.c comaeventfile.c psf.c vignetting.c	\
 		  codedmask.c attitude.c attitudefile.c sixt.c		\
-		  photon.c fits_pha.c check_fov.c photonfile.c rmf.c	\
+		  photon.c fits_pha.c check_fov.c photonfile.c		\
 		  kdtreeelement.c sourcecatalog.c source.c		\
 		  linkedpholist.c ladsignallist.c erodetbkgrndgen.c	\
 		  phgen.c phimg.c phdet.c phproj.c phpat.c event.c	\
@@ -84,7 +84,7 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		comadetector.h comaeventfile.h comaevent.h psf.h	\
 		vignetting.h codedmask.h attitude.h attitudefile.h	\
 		telescope.h sixt.h point.h photon.h fits_pha.h		\
-		check_fov.h photonfile.h rmf.h kdtreeelement.h		\
+		check_fov.h photonfile.h kdtreeelement.h		\
 		sourcecatalog.h source.h linkedpholist.h		\
 		ladsignallist.h erodetbkgrndgen.h phgen.h phimg.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h spectrum.h	\

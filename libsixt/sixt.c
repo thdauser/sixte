@@ -533,3 +533,14 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 }
 
 
+float getEBOUNDSEnergy(const long channel,
+		       const struct RMF* const rmf, 
+		       int* const status)
+{
+  float lo, hi;
+  getEBOUNDSEnergyLoHi(channel, rmf, &lo, &hi, status);
+  CHECK_STATUS_RET(*status, 0.0);
+  double r=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0.0);
+  return(r*lo + (1.0-r)*hi);
+}
