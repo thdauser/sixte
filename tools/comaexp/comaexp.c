@@ -624,8 +624,12 @@ int comaexp_main()
     pixelpositions=NULL;
   }
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

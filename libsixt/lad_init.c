@@ -33,7 +33,7 @@ static void calcModuleXYDim(LADModule* const module)
   long ii;
 
   // Loop over all columns.
-  module->xdim = 0.;
+  module->xdim=0.;
   for (ii=0; ii<module->nx; ii++) {
     // Determine the element with the maximum extension in x-direction 
     // (within the current column).
@@ -41,15 +41,15 @@ static void calcModuleXYDim(LADModule* const module)
     long jj;
     for (jj=0; jj<module->ny; jj++) {
       if (module->element[ii+jj*module->nx]->xdim > xmax) {
-	xmax = module->element[ii+jj*module->nx]->xdim;
+	xmax=module->element[ii+jj*module->nx]->xdim;
       }
     }
     // Add the extension of the biggest element in this column.
-    module->xdim += xmax;
+    module->xdim+=xmax;
   }
 
   // Loop over all rows.
-  module->ydim = 0.;
+  module->ydim=0.;
   for (ii=0; ii<module->ny; ii++) {
     // Determine the element with the maximum extension in y-direction 
     // (within the current row).
@@ -57,11 +57,11 @@ static void calcModuleXYDim(LADModule* const module)
     long jj;
     for (jj=0; jj<module->nx; jj++) {
       if (module->element[jj+ii*module->nx]->ydim > ymax) {
-	ymax = module->element[jj+ii*module->nx]->ydim;
+	ymax=module->element[jj+ii*module->nx]->ydim;
       }
     }
     // Add the extension of the biggest element in this row.
-    module->ydim += ymax;
+    module->ydim+=ymax;
   }  
 }
 
@@ -72,7 +72,7 @@ static void calcPanelXYDim(LADPanel* const panel)
   long ii;
 
   // Loop over all columns.
-  panel->xdim = 0.;
+  panel->xdim=0.;
   for (ii=0; ii<panel->nx; ii++) {
     // Determine the module with the maximum extension in x-direction 
     // (within the current column).
@@ -83,15 +83,15 @@ static void calcPanelXYDim(LADPanel* const panel)
       calcModuleXYDim(panel->module[ii+jj*panel->nx]);
 
       if (panel->module[ii+jj*panel->nx]->xdim > xmax) {
-	xmax = panel->module[ii+jj*panel->nx]->xdim;
+	xmax=panel->module[ii+jj*panel->nx]->xdim;
       }
     }
     // Add the extension of the biggest module in this column.
-    panel->xdim += xmax;
+    panel->xdim+=xmax;
   }
 
   // Loop over all rows.
-  panel->ydim = 0.;
+  panel->ydim=0.;
   for (ii=0; ii<panel->ny; ii++) {
     // Determine the module with the maximum extension in y-direction 
     // (within the current row).
@@ -99,11 +99,11 @@ static void calcPanelXYDim(LADPanel* const panel)
     long jj;
     for (jj=0; jj<panel->nx; jj++) {
       if (panel->module[jj+ii*panel->nx]->ydim > ymax) {
-	ymax = panel->module[jj+ii*panel->nx]->ydim;
+	ymax=panel->module[jj+ii*panel->nx]->ydim;
       }
     }
     // Add the extension of the biggest module in this row.
-    panel->ydim += ymax;
+    panel->ydim+=ymax;
   }  
 }
 
@@ -257,7 +257,7 @@ static void addPanel2LAD(LAD* const lad,
   lad->npanels++;
 
   // Append the new panel to the LAD.
-  lad->panel[lad->npanels-1] = panel;
+  lad->panel[lad->npanels-1]=panel;
 }
 
 
@@ -272,14 +272,14 @@ static void addModule2Panel(LADPanel* const panel,
   CHECK_NULL_VOID(module, *status, "NULL pointer to LADModule data structure");
 
   // Extend the LAD module array.
-  panel->module = 
+  panel->module=
     (LADModule**)realloc(panel->module, (panel->nmodules+1)*sizeof(LADModule*));
   CHECK_NULL_VOID(panel->module, *status, 
 		  "memory allocation for new LADModule failed");
   panel->nmodules++;
 
   // Append the new module to the LAD.
-  panel->module[panel->nmodules-1] = module;
+  panel->module[panel->nmodules-1]=module;
 }
 
 
@@ -294,7 +294,7 @@ static void addElement2Module(LADModule* const module,
   CHECK_NULL_VOID(element, *status, "NULL pointer to LADElement data structure");
 
   // Extend the LAD element array.
-  module->element = 
+  module->element=
     (LADElement**)realloc(module->element, 
 			  (module->nelements+1)*sizeof(LADElement*));
   CHECK_NULL_VOID(module->element, *status, 
@@ -302,13 +302,13 @@ static void addElement2Module(LADModule* const module,
   module->nelements++;
 
   // Append the new element to the LAD.
-  module->element[module->nelements-1] = element;
+  module->element[module->nelements-1]=element;
 }
 
 
 static void XMLElementStart(void* parsedata, const char* el, const char** attr) 
 {
-  struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
+  struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
   char Uelement[MAXMSG]; // Upper case version of XML element.
 
   // Check if an error has occurred previously.
@@ -322,43 +322,43 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   if (!strcmp(Uelement, "PANEL")) {
 
     // Create a new Panel.
-    LADPanel* panel = newLADPanel(&xmlparsedata->status);
+    LADPanel* panel=newLADPanel(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    panel->id = getXMLAttributeLong(attr, "ID");
-    panel->nx = getXMLAttributeLong(attr, "NX");
-    panel->ny = getXMLAttributeLong(attr, "NY");
+    panel->id=getXMLAttributeLong(attr, "ID");
+    panel->nx=getXMLAttributeLong(attr, "NX");
+    panel->ny=getXMLAttributeLong(attr, "NY");
     
     // Add the new panel to the LAD.
     addPanel2LAD(xmlparsedata->lad, panel, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Store the pointer to the currently open panel.
-    xmlparsedata->panel = panel;
+    xmlparsedata->panel=panel;
 
   } else if (!strcmp(Uelement, "MODULE")) {
 
     // Create a new Module.
-    LADModule* module = newLADModule(&xmlparsedata->status);
+    LADModule* module=newLADModule(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    module->id = getXMLAttributeLong(attr, "ID");
-    module->nx = getXMLAttributeLong(attr, "NX");
-    module->ny = getXMLAttributeLong(attr, "NY");
+    module->id=getXMLAttributeLong(attr, "ID");
+    module->nx=getXMLAttributeLong(attr, "NX");
+    module->ny=getXMLAttributeLong(attr, "NY");
 
     // Add the new module to the LAD.
     addModule2Panel(xmlparsedata->panel, module, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Store the pointer to the currently open module.
-    xmlparsedata->module = module;
+    xmlparsedata->module=module;
 
   } else if (!strcmp(Uelement, "ELEMENT")) {
 
     // Create a new Element.
-    LADElement* element = newLADElement(&xmlparsedata->status);
+    LADElement* element=newLADElement(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
@@ -374,41 +374,41 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Store the pointer to the currently open element.
-    xmlparsedata->element = element;
+    xmlparsedata->element=element;
 
   } else if (!strcmp(Uelement, "FOV")) {
 
     // Determine the diameter of the FOV.
-    xmlparsedata->lad->fov_diameter = getXMLAttributeFloat(attr, "DIAMETER");
+    xmlparsedata->lad->fov_diameter=getXMLAttributeFloat(attr, "DIAMETER");
    
   } else if (!strcmp(Uelement, "TEMPERATURE")) {
 
     // Determine the value of the temperature.
-    xmlparsedata->lad->temperature = getXMLAttributeFloat(attr, "VALUE");
+    xmlparsedata->lad->temperature=getXMLAttributeFloat(attr, "VALUE");
    
   } else if (!strcmp(Uelement, "EFIELD")) {
 
     // Determine the electric field.
-    xmlparsedata->lad->efield = getXMLAttributeFloat(attr, "VALUE");
+    xmlparsedata->lad->efield=getXMLAttributeFloat(attr, "VALUE");
    
   } else if (!strcmp(Uelement, "MOBILITY")) {
 
     // Determine the mobility.
-    xmlparsedata->lad->mobility = getXMLAttributeFloat(attr, "VALUE");
+    xmlparsedata->lad->mobility=getXMLAttributeFloat(attr, "VALUE");
 
   } else if (!strcmp(Uelement, "ASIC")) {
 
     // Determine the dead time.
-    xmlparsedata->lad->deadtime = 
+    xmlparsedata->lad->deadtime=
       getXMLAttributeFloat(attr, "DEADTIME");
     // Determine the error on the dead time
-    xmlparsedata->lad->edeadtime = 
+    xmlparsedata->lad->edeadtime=
       getXMLAttributeFloat(attr, "EDEADTIME");
     // Determine the length of the coincidence time window.
-    xmlparsedata->lad->coincidencetime = 
+    xmlparsedata->lad->coincidencetime=
       getXMLAttributeFloat(attr, "COINCIDENCETIME");
     // Determine the number of input channels per ASIC.
-    xmlparsedata->lad->asic_channels = 
+    xmlparsedata->lad->asic_channels=
       getXMLAttributeInt(attr, "CHANNELS");
 
   } else if (!strcmp(Uelement, "THRESHOLD")) {
@@ -587,7 +587,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->lad->vignetting =
+    xmlparsedata->lad->vignetting=
       newVignetting(filepathname, &xmlparsedata->status);
   
   } else {
@@ -600,7 +600,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 
 static void XMLElementEnd(void* parsedata, const char* el) 
 {
-  struct XMLParseData* xmlparsedata = (struct XMLParseData*)parsedata;
+  struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
   char Uelement[MAXMSG]; // Upper case version of XML element
 
   // Check if an error has occurred previously.
@@ -612,11 +612,11 @@ static void XMLElementEnd(void* parsedata, const char* el)
 
   // Check, whether a panel, module, or element has ben terminated.
   if (!strcmp(Uelement, "PANEL")) {
-    xmlparsedata->panel = NULL;
+    xmlparsedata->panel=NULL;
   } else if (!strcmp(Uelement, "MODULE")) {
-    xmlparsedata->module = NULL;
+    xmlparsedata->module=NULL;
   } else if (!strcmp(Uelement, "ELEMENT")) {
-    xmlparsedata->element = NULL;
+    xmlparsedata->element=NULL;
   }
 
   return;
@@ -674,9 +674,9 @@ LAD* getLADfromXML(const char* const filename,
 
   // Read the data from the XML file.
   // Open the XML file.
-  FILE* xmlfile = fopen(filename, "r");
+  FILE* xmlfile=fopen(filename, "r");
   if (NULL==xmlfile) {
-    *status = EXIT_FAILURE;
+    *status=EXIT_FAILURE;
     char msg[MAXMSG];
     sprintf(msg, "failed opening LAD XML definition "
 	    "file '%s' for read access!\n", filename);
@@ -686,7 +686,7 @@ LAD* getLADfromXML(const char* const filename,
 
   // The data is read from the XML file and stored in xmlbuffer
   // without any modifications.
-  struct XMLBuffer* xmlbuffer = newXMLBuffer(status);
+  struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
   CHECK_STATUS_RET(*status, lad);
 
   // Input buffer with an additional byte at the end for the 
@@ -698,7 +698,7 @@ LAD* getLADfromXML(const char* const filename,
   // Read all data from the file.
   do {
     // Get a piece of input into the buffer.
-    len = fread(buffer, 1, MAXMSG, xmlfile);
+    len=fread(buffer, 1, MAXMSG, xmlfile);
     buffer[len]='\0'; // Terminate the string.
     addString2XMLBuffer(xmlbuffer, buffer, status);
     CHECK_STATUS_RET(*status, lad);
@@ -728,7 +728,7 @@ LAD* getLADfromXML(const char* const filename,
   // structure.
   // Parse XML code in the xmlbuffer using the expat library.
   // Get an XML_Parser object.
-  XML_Parser parser = XML_ParserCreate(NULL);
+  XML_Parser parser=XML_ParserCreate(NULL);
   if (NULL==parser) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("could not allocate memory for XML parser");
@@ -737,11 +737,11 @@ LAD* getLADfromXML(const char* const filename,
 
   // Set data that is passed to the handler functions.
   struct XMLParseData xmlparsedata = {
-    .lad    = lad,
-    .panel  = NULL,
-    .module = NULL,
-    .element= NULL,
-    .status = EXIT_SUCCESS
+    .lad    =lad,
+    .panel  =NULL,
+    .module =NULL,
+    .element=NULL,
+    .status =EXIT_SUCCESS
   };
   XML_SetUserData(parser, &xmlparsedata);
 
@@ -761,7 +761,7 @@ LAD* getLADfromXML(const char* const filename,
     return(lad);
   }
   // Check for errors.
-  *status = xmlparsedata.status;
+  *status=xmlparsedata.status;
   CHECK_STATUS_RET(*status, lad);
 
   // Release memory.

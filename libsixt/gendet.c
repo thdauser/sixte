@@ -116,7 +116,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     // NOTE: In this simulation the collected charge is represented 
     // by the nominal photon energy [keV], which corresponds to the 
     // PI channel according to the EBOUNDS table.
-    energy=getEBOUNDSEnergy(channel, det->rmf, 0, status);
+    energy=getEBOUNDSEnergy(channel, det->rmf, status);
     CHECK_STATUS_RET(*status, 0);
     assert(energy>=0.);
 
@@ -239,7 +239,8 @@ static inline void GenDetReadoutPixel(GenDet* const det,
 	line->src_id[xindex][jj]=0;
       }
       
-      // Apply the charge thresholds.
+      // Apply the lower readout threshold. Note that the upper
+      // threshold is only applied after pattern recombination.
       if (event->signal<=det->threshold_readout_lo_keV) {
 	break;
       }
@@ -336,7 +337,7 @@ void operateGenDetClock(GenDet* const det,
       unsigned int ii;
       for (ii=0; ii<nevts; ii++) {
 	// Determine the corresponding signal.
-	float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
+	float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, status);
 	CHECK_STATUS_VOID(*status);
 	
 	// Add the signal to the pixel.
@@ -424,7 +425,7 @@ void operateGenDetClock(GenDet* const det,
 	  unsigned int ii;
 	  for (ii=0; ii<nevts; ii++) {
 	    // Determine the corresponding signal.
-	    float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
+	    float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, status);
 	    CHECK_STATUS_VOID(*status);
 
 	    // Add the signal to the pixel.

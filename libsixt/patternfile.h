@@ -82,6 +82,7 @@ void updatePatternInFile(const PatternFile* const file,
     simulated. */
 void copyEvents2PatternFile(const EventFile* const elf,
 			    PatternFile* const plf,
+			    const float threshold_pattern_up_keV,
 			    int* const status);
 
 

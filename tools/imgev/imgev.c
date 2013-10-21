@@ -281,8 +281,12 @@ int imgev_main() {
   }
   if (NULL!=img1d) free(img1d);
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

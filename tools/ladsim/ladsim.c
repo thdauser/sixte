@@ -182,7 +182,7 @@ void ladimp(const LAD* const lad,
 
     // Determine the signal corresponding to the channel according 
     // to the EBOUNDS table.
-    signal=getEBOUNDSEnergy(channel, lad->rmf, 0, status);
+    signal=getEBOUNDSEnergy(channel, lad->rmf, status);
     CHECK_STATUS_VOID(*status);
 
   } else {
@@ -1248,11 +1248,13 @@ int ladsim_main()
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (status==EXIT_SUCCESS) {
-    printf("number of background events: %ld\n", nbkgevts);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(5, "number of background events: %ld\n", nbkgevts);
     headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
   }
-  return(status);
 }
 
 

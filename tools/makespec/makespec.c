@@ -125,7 +125,7 @@ int makespec_main() {
       seed=(int)time(NULL);
     }
 
-    // Load the RMF.
+    // Load the EBOUNDS of the RMF.
     char filepathname[MAXFILENAME];
     if (strlen(par.RSPPath)>0) {
       strcpy(filepathname, par.RSPPath);
@@ -256,8 +256,12 @@ int makespec_main() {
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

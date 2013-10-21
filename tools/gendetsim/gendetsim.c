@@ -167,8 +167,12 @@ int gendetsim_main() {
   // Close the impact list FITS file.
   freeImpactFile(&ilf, &status);
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -178,7 +182,7 @@ int getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 

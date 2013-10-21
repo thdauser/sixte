@@ -40,16 +40,16 @@ void phpat(GenDet* const det,
 	   int* const status)
 {
   // Pattern / grade statistics.
-  struct PatternStatistics statistics = {
-    .nvalids    = 0,
-    .npvalids   = 0,
-    .ninvalids  = 0,
-    .npinvalids = 0,
+  struct PatternStatistics statistics={
+    .nvalids   =0,
+    .npvalids  =0,
+    .ninvalids =0,
+    .npinvalids=0,
   };
   long ii;
   for (ii=0; ii<13; ii++) {
-    statistics.ngrade[ii]  = 0;
-    statistics.npgrade[ii] = 0;
+    statistics.ngrade[ii] =0;
+    statistics.npgrade[ii]=0;
   }
 
   // List of all events belonging to the current frame.
@@ -64,6 +64,10 @@ void phpat(GenDet* const det,
 
   // Flag, if we analyse the eROSITA-CCD.
   int iseROSITA;
+
+  // Flag, whether the warning that the split threshold lies above the
+  // event threshold has already been printed.
+  static int threshold_warning_printed=0;
 
 
   // Error handling loop.
@@ -183,7 +187,7 @@ void phpat(GenDet* const det,
 	      }
 
 	    } else { // Split threshold for generic instruments.
-	      if (det->threshold_split_lo_fraction > 0.) {
+	      if (det->threshold_split_lo_fraction>0.) {
 		split_threshold=
 		  det->threshold_split_lo_fraction*maxsignalev->signal;
 	      } else {
@@ -193,11 +197,14 @@ void phpat(GenDet* const det,
 	    // END of determine the split threshold.
 
 	    // Check if the split threshold is above the event threshold.
-	    if (split_threshold > det->threshold_event_lo_keV) {
+	    if ((split_threshold > det->threshold_event_lo_keV) && 
+		(0==threshold_warning_printed)) {
 	      char msg[MAXMSG];
-	      sprintf(msg, "split threshold (%.1feV) is above event threshold (%.1feV)",
+	      sprintf(msg, "split threshold (%.1feV) is above event threshold (%.1feV) "
+		      "(message is printed only once)",
 		      split_threshold*1000.0, det->threshold_event_lo_keV*1000.0);
 	      SIXT_WARNING(msg);
+	      threshold_warning_printed=1;
 	    }
 
 	    // Find all neighboring events above the split threshold.

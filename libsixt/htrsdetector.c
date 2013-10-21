@@ -90,7 +90,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge=getEBOUNDSEnergy(channel, hd->generic.rmf, 0, &status);
+  float charge=getEBOUNDSEnergy(channel, hd->generic.rmf, &status);
   CHECK_STATUS_RET(status, 0);
 
   if (charge > 0.) {

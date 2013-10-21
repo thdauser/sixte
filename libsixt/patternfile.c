@@ -325,6 +325,7 @@ void updatePatternInFile(const PatternFile* const file,
 
 void copyEvents2PatternFile(const EventFile* const elf,
 			    PatternFile* const plf,
+			    const float threshold_pattern_up_keV,
 			    int* const status)
 {
   // Check if the pattern file is empty.
@@ -347,6 +348,12 @@ void copyEvents2PatternFile(const EventFile* const elf,
     // Read an event from the input list.
     getEventFromFile(elf, row+1, event, status);
     CHECK_STATUS_BREAK(*status);
+
+    // Apply the upper event threshold.
+    if ((threshold_pattern_up_keV>=0.0) &&
+	(event->signal>threshold_pattern_up_keV) ) {
+      continue;
+    }
     
     // Copy event data to pattern.
     pattern->rawx   =event->rawx;

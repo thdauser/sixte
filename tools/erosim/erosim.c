@@ -742,7 +742,9 @@ int erosim_main()
 	// If no split events are simulated, simply copy the event lists
 	// to pattern lists.
 	headas_chat(3, "copy events to pattern files ...\n");
-	copyEvents2PatternFile(elf[ii], patf[ii], &status);
+	copyEvents2PatternFile(elf[ii], patf[ii],
+			       subinst[ii]->det->threshold_pattern_up_keV,
+			       &status);
 	//CHECK_STATUS_BREAK(status);
       }
     }
@@ -793,8 +795,12 @@ int erosim_main()
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
