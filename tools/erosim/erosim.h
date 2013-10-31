@@ -9,7 +9,6 @@
 #include "gentel.h"
 #include "gti.h"
 #include "impactfile.h"
-#include "patternfile.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
@@ -70,6 +69,11 @@ struct Parameters {
 
   char clobber;
 };
+
+
+////////////////////////////////////////////////////////////////////////
+// Function declarations.
+////////////////////////////////////////////////////////////////////////
 
 
 int erosim_getpar(struct Parameters* const par);

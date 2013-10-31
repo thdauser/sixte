@@ -4,8 +4,6 @@
 #include "sixt.h"
 #include "event.h"
 #include "eventfile.h"
-#include "pattern.h"
-#include "patternfile.h"
 #include "gendet.h"
 
 
@@ -15,8 +13,8 @@
 
 
 void phpat(GenDet* const det,
-	   EventFile* const elf,
-	   PatternFile* const plf,
+	   const EventFile* const src,
+	   EventFile* const dest,
 	   const char skip_invalids,
 	   int* const status);
 

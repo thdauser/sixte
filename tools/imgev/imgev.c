@@ -1,6 +1,6 @@
 #include "sixt.h"
-#include "patternfile.h"
-#include "pattern.h"
+#include "event.h"
+#include "eventfile.h"
 
 #define TOOLSUB imgev_main
 #include "headas_main.c"
@@ -8,7 +8,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char PatternList[MAXFILENAME];
+  char EventList[MAXFILENAME];
   char Image[MAXFILENAME];
 
   int coordinatesystem;
@@ -32,8 +32,8 @@ int imgev_main() {
   // Program parameters.
   struct Parameters par; 
 
-  // Input pattern list file.
-  PatternFile* plf=NULL;
+  // Input event file.
+  EventFile* elf=NULL;
 
   // Output image.
   long** img=NULL;
@@ -50,7 +50,7 @@ int imgev_main() {
 
   // Register HEATOOL:
   set_toolname("imgev");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -70,8 +70,8 @@ int imgev_main() {
     
     headas_chat(3, "initialize ...\n");
 
-    // Set the input pattern file.
-    plf=openPatternFile(par.PatternList, READWRITE, &status);
+    // Set the event file.
+    elf=openEventFile(par.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Allocate memory for the output image.
@@ -139,33 +139,33 @@ int imgev_main() {
 
     headas_chat(5, "image binning ...\n");
 
-    // LOOP over all patterns in the FITS table.
+    // LOOP over all events in the FITS table.
     long row;
-    for (row=0; row<plf->nrows; row++) {
+    for (row=0; row<elf->nrows; row++) {
       
-      // Read the next pattern from the file.
-      Pattern pattern;
-      getPatternFromFile(plf, row+1, &pattern, &status);
+      // Read the next event from the file.
+      Event event;
+      getEventFromFile(elf, row+1, &event, &status);
       CHECK_STATUS_BREAK(status);
 
       // Convert the coordinates to the desired coordinate system.
       double lon, lat; // [rad].
       if (0==par.coordinatesystem) {
 	// Equatorial coordinates.
-	lon=pattern.ra*180./M_PI;
-	lat=pattern.dec*180./M_PI;
+	lon=event.ra*180./M_PI;
+	lat=event.dec*180./M_PI;
       } else {
 	// Galactic coordinates.
 	const double l_ncp=2.145566759798267518;
 	const double ra_ngp=3.366033268750003918;
 	const double cos_d_ngp=0.8899880874849542;
 	const double sin_d_ngp=0.4559837761750669;
-	double cos_d=cos(pattern.dec);
-	double sin_d=sin(pattern.dec);
-	lon=(l_ncp-atan2(cos_d*sin(pattern.ra-ra_ngp), 
-			 cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(pattern.ra-ra_ngp)))
+	double cos_d=cos(event.dec);
+	double sin_d=sin(event.dec);
+	lon=(l_ncp-atan2(cos_d*sin(event.ra-ra_ngp), 
+			 cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(event.ra-ra_ngp)))
 	  *180./M_PI;
-	lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(pattern.ra-ra_ngp))*180./M_PI;
+	lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(event.ra-ra_ngp))*180./M_PI;
       }
 
       // Determine the image coordinates corresponding to the event.
@@ -184,7 +184,7 @@ int imgev_main() {
 	break;
       }
       
-      // Increase the image value at the pattern position.
+      // Increase the image value at the event position.
       long xx=((long)(pixcrd[0]+0.5))-1;
       long yy=((long)(pixcrd[1]+0.5))-1;
       if ((xx>=0)&&(xx<par.naxis1) && (yy>=0)&&(yy<par.naxis2)) {
@@ -217,11 +217,11 @@ int imgev_main() {
 
     // Copy the mission header keywords.
     char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
-    fits_read_key(plf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    fits_read_key(elf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
     CHECK_STATUS_BREAK(status);
     fits_update_key(imgfptr, TSTRING, "TELESCOP", telescop, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_read_key(plf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
     CHECK_STATUS_BREAK(status);
     fits_update_key(imgfptr, TSTRING, "INSTRUME", instrume, comment, &status);
     CHECK_STATUS_BREAK(status);
@@ -259,7 +259,7 @@ int imgev_main() {
   headas_chat(5, "cleaning up ...\n");
 
   // Close the files.
-  destroyPatternFile(&plf, &status);
+  freeEventFile(&elf, &status);
 
   // Close image file.
   if (NULL!=imgfptr) fits_close_file(imgfptr, &status);
@@ -300,12 +300,12 @@ static int imgev_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("PatternList", &sbuffer);
+  status=ape_trad_query_file_name("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the pattern list file");
+    SIXT_ERROR("failed reading the name of the event file");
     return(status);
   } 
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("Image", &sbuffer);

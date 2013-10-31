@@ -83,27 +83,26 @@ int xms_pixtemp_getpar(struct Parameters* parameters)
 {
   int status=EXIT_SUCCESS;
 
-  if ((status = PILGetFname("EventList", parameters->EventList))) {
-    HD_ERROR_THROW("Error reading the name of the input file!\n", status);
+  if ((status=PILGetFname("EventList", parameters->EventList))) {
+    SIXT_ERROR("failed reading the name of the input file");
   }
 
-  else if ((status = PILGetFname("OutputFile", parameters->OutputFile))) {
-    HD_ERROR_THROW("Error reading the name of the output file!\n", status);
+  else if ((status=PILGetFname("OutputFile", parameters->OutputFile))) {
+    SIXT_ERROR("failed reading the name of the output file");
   }
 
-  else if ((status = PILGetFname("RSP", parameters->RSP))) {
-    HD_ERROR_THROW("Error reading the name of the detector response file!\n", status);
+  else if ((status=PILGetFname("RSP", parameters->RSP))) {
+    SIXT_ERROR("failed reading the name of the detector response file");
   }
 
-  else if ((status = PILGetInt("pixx", &parameters->pixx))) {
-    HD_ERROR_THROW("Error x-coordinate of the pixel to be analysed!\n", status);
+  else if ((status=PILGetInt("pixx", &parameters->pixx))) {
+    SIXT_ERROR("failed reading x-coordinate of the pixel to be analysed");
   }
 
-  else if ((status = PILGetInt("pixy", &parameters->pixy))) {
-    HD_ERROR_THROW("Error y-coordinate of the pixel to be analysed!\n", status);
+  else if ((status=PILGetInt("pixy", &parameters->pixy))) {
+    SIXT_ERROR("failed reading y-coordinate of the pixel to be analysed");
   }
 
   return(status);
 }
-
 

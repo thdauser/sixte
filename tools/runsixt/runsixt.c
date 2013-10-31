@@ -28,11 +28,11 @@ int runsixt_main()
   // Impact list file.
   ImpactFile* ilf=NULL;
 
-  // Event list file.
+  // Single-pixel event file.
   EventFile* elf=NULL;
-
-  // Pattern list file.
-  PatternFile* patf=NULL;
+  
+  // Pattern event file.
+  EventFile* patf=NULL;
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.16");
+  set_toolversion("0.17");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -62,7 +62,7 @@ int runsixt_main()
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(par.Prefix, "");
-    } 
+    }
 
     // Determine the photon list output file.
     char photonlist_filename[MAXFILENAME];
@@ -86,19 +86,19 @@ int runsixt_main()
       strcat(impactlist_filename, par.ImpactList);
     }
     
-    // Determine the event list output file.
+    // Determine the single-pixel event output file.
     char eventlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(eventlist_filename, par.Prefix);
-      strcat(eventlist_filename, "events.fits");
+      strcat(eventlist_filename, "event.fits");
     } else {
       strcpy(eventlist_filename, par.Prefix);
       strcat(eventlist_filename, par.EventList);
     }
 
-    // Determine the pattern list output file.
+    // Determine the event pattern output file.
     char patternlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.PatternList);
     strtoupper(ucase_buffer);
@@ -305,17 +305,17 @@ int runsixt_main()
 			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Define the event list file as output file.
+    // Define the event file as output file.
     setGenDetEventFile(inst->det, elf);
 
     // Open the output pattern list file.
-    patf=openNewPatternFile(patternlist_filename, 
-			    telescop, instrume, "Normal",			    
-			    inst->tel->arf_filename, inst->det->rmf_filename,
-			    par.MJDREF, 0.0, par.TSTART, tstop,
-			    inst->det->pixgrid->xwidth,
-			    inst->det->pixgrid->ywidth,
-			    par.clobber, &status);
+    patf=openNewEventFile(patternlist_filename,
+			  telescop, instrume, "Normal",
+			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  par.MJDREF, 0.0, par.TSTART, tstop,
+			  inst->det->pixgrid->xwidth,
+			  inst->det->pixgrid->ywidth,
+			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -362,16 +362,14 @@ int runsixt_main()
       }
 
       // Event list file.
-      if (NULL!=elf) {
-	fits_update_key(elf->fptr, TDOUBLE, "RA_PNT", &ra,
-			"RA of pointing direction [deg]", &status);
-	fits_update_key(elf->fptr, TDOUBLE, "DEC_PNT", &dec,
-			"Dec of pointing direction [deg]", &status);
-	fits_update_key(elf->fptr, TFLOAT, "PA_PNT", &rollangle,
-			"Roll angle [deg]", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-
+      fits_update_key(elf->fptr, TDOUBLE, "RA_PNT", &ra,
+		      "RA of pointing direction [deg]", &status);
+      fits_update_key(elf->fptr, TDOUBLE, "DEC_PNT", &dec,
+		      "Dec of pointing direction [deg]", &status);
+      fits_update_key(elf->fptr, TFLOAT, "PA_PNT", &rollangle,
+		      "Roll angle [deg]", &status);
+      CHECK_STATUS_BREAK(status);
+    
       // Pattern list file.
       fits_update_key(patf->fptr, TDOUBLE, "RA_PNT", &ra,
 		      "RA of pointing direction [deg]", &status);
@@ -391,27 +389,29 @@ int runsixt_main()
 	fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 			"attitude file", &status);
       }
-      if (NULL!=elf) {
-	fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
-			"attitude file", &status);
-      }
+      fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+		      "attitude file", &status);
       fits_update_key(patf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		      "attitude file", &status);
       CHECK_STATUS_BREAK(status);
     }
 
+    // Event type.
+    fits_update_key(elf->fptr, TSTRING, "EVTYPE", "PIXEL",
+		    "event type", &status);
+    CHECK_STATUS_BREAK(status);
+
     // TLMIN and TLMAX of PI column.
     char keystr[MAXMSG];
     long value;
-    if (NULL!=elf) {
-      sprintf(keystr, "TLMIN%d", elf->cpi);
-      value=inst->det->rmf->FirstChannel;
-      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
-      sprintf(keystr, "TLMAX%d", elf->cpi);
-      value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
-      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
-      CHECK_STATUS_BREAK(status);
-    }
+    sprintf(keystr, "TLMIN%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+    sprintf(keystr, "TLMAX%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+    CHECK_STATUS_BREAK(status);
+    
     sprintf(keystr, "TLMIN%d", patf->cpi);
     value=inst->det->rmf->FirstChannel;
     fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
@@ -577,8 +577,10 @@ int runsixt_main()
       // If no split events are simulated, simply copy the event list
       // to a pattern list.
       headas_chat(3, "copy events to pattern file ...\n");
-      copyEvents2PatternFile(elf, patf, inst->det->threshold_pattern_up_keV,
-			     &status);
+      copyEventFile(elf, patf, 
+		    inst->det->threshold_event_lo_keV,
+		    inst->det->threshold_pattern_up_keV,
+		    &status);
       CHECK_STATUS_BREAK(status);
     }
     
@@ -602,7 +604,7 @@ int runsixt_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  destroyPatternFile(&patf, &status);
+  freeEventFile(&patf, &status);
   freeEventFile(&elf, &status);
   freeImpactFile(&ilf, &status);
   freePhotonFile(&plf, &status);
@@ -620,7 +622,7 @@ int runsixt_main()
 
   // Clean up the random number generator.
   sixt_destroy_rng();
-
+  
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);

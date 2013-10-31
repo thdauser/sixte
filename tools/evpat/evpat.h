@@ -6,8 +6,6 @@
 #include "event.h"
 #include "eventfile.h"
 #include "geninst.h"
-#include "pattern.h"
-#include "patternfile.h"
 #include "phpat.h"
 
 #define TOOLSUB evpat_main

@@ -1,4 +1,4 @@
-EventList,fre,lq,"events.fits",,,"filename of the inputfile containing the event list (FITS)"
-OutputFile,f,lq,"events.tm",,,"filename of the outputfile for the byte stream"
-chatter,i,lh,5,,,"chatter: control verbosity of the program"
-history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "
+EventList,fre,lq,"events.fits",,,"name of the inputfile with the event list (FITS)"
+OutputFile,f,lq,"events.tm",,,"name of the outputfile for the byte stream"
+chatter,i,lh,3,,,"verbosity"
+history,b,lh,true,,,"write a history block with program parameters to each FITS file?"
