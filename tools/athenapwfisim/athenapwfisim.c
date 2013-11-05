@@ -489,7 +489,6 @@ int athenapwfisim_main()
     CHECK_STATUS_BREAK(status);
 
     // Timing keywords.
-    double buffer_tstop=par.TSTART+par.Exposure;
     double buffer_timezero=0.;
     // Photon list file.
     if (NULL!=plf) {
@@ -499,7 +498,7 @@ int athenapwfisim_main()
 		      "time offset", &status);
       fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
 		      "start time", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+      fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &tstop,
 		      "stop time", &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -512,7 +511,7 @@ int athenapwfisim_main()
 		      "time offset", &status);
       fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
 		      "start time", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+      fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &tstop,
 		      "stop time", &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -559,7 +558,7 @@ int athenapwfisim_main()
       // Determine the currently regarded interval.
       if (NULL==gti) {
 	t0=par.TSTART;
-	t1=par.TSTART+par.Exposure;
+	t1=tstop;
       } else {
 	t0=gti->start[gtibin];
 	t1=gti->stop[gtibin];

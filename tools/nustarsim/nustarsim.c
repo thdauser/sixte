@@ -551,7 +551,6 @@ int nustarsim_main()
     }
 
     // Timing keywords.
-    double buffer_tstop=par.TSTART+par.Exposure;
     double buffer_timezero=0.;
     for (ii=0; ii<2; ii++) {
       // Photon list file.
@@ -562,7 +561,7 @@ int nustarsim_main()
 			"time offset", &status);
 	fits_update_key(plf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
 			"start time", &status);
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+	fits_update_key(plf[ii]->fptr, TDOUBLE, "TSTOP", &tstop,
 			"stop time", &status);
 	CHECK_STATUS_BREAK(status);
       }
@@ -575,7 +574,7 @@ int nustarsim_main()
 			"time offset", &status);
 	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
 			"start time", &status);
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
+	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TSTOP", &tstop,
 			"stop time", &status);
 	CHECK_STATUS_BREAK(status);
       }
@@ -624,7 +623,7 @@ int nustarsim_main()
       // Determine the currently regarded interval.
       if (NULL==gti) {
 	t0=par.TSTART;
-	t1=par.TSTART+par.Exposure;
+	t1=tstop;
       } else {
 	t0=gti->start[gtibin];
 	t1=gti->stop[gtibin];

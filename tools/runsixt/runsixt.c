@@ -335,9 +335,9 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
 
       // Store the RA and Dec information in the FITS header.
-      ra *= 180./M_PI;
-      dec*= 180./M_PI;
-      rollangle*= 180./M_PI;
+      ra *=180./M_PI;
+      dec*=180./M_PI;
+      rollangle*=180./M_PI;
 
       // Photon list file.
       if (NULL!=plf) {
@@ -466,7 +466,7 @@ int runsixt_main()
       // Determine the currently regarded interval.
       if (NULL==gti) {
 	t0=par.TSTART;
-	t1=par.Exposure;
+	t1=tstop;
       } else {
 	t0=gti->start[gtibin];
 	t1=gti->stop[gtibin];
