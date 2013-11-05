@@ -7,7 +7,7 @@
 
 #include "sixt.h"
 #include "attitude.h"
-#include "patternfile.h"
+#include "eventfile.h"
 #include "geninst.h"
 #include "phproj.h"
 
@@ -17,7 +17,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char PatternList[MAXFILENAME];
+  char EventList[MAXFILENAME];
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
@@ -45,8 +45,8 @@ int projev_getpar(struct Parameters *par);
 int projev_main() {
   struct Parameters par; // Program parameters
 
-  // Input pattern list file.
-  PatternFile* plf=NULL;
+  // Event file.
+  EventFile* elf=NULL;
 
   // Attitude catalog.
   Attitude* ac=NULL;
@@ -60,7 +60,7 @@ int projev_main() {
 
   // Register HEATOOL:
   set_toolname("projev");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -143,8 +143,8 @@ int projev_main() {
     }
     // END of setting up the attitude.
 
-    // Set the input pattern file.
-    plf=openPatternFile(par.PatternList, READWRITE, &status);
+    // Set the event file.
+    elf=openEventFile(par.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
@@ -156,7 +156,7 @@ int projev_main() {
     headas_chat(5, "start sky projection process ...\n");
 
     // Run the pattern projection.
-    phproj(inst, ac, plf, t0, par.Exposure, &status);
+    phproj(inst, ac, elf, t0, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -172,7 +172,7 @@ int projev_main() {
   destroyGenInst(&inst, &status);
   
   // Close the files.
-  destroyPatternFile(&plf, &status);
+  freeEventFile(&elf, &status);
 
   // Release memory of Attitude.
   freeAttitude(&ac);
@@ -196,12 +196,12 @@ int projev_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("PatternList", &sbuffer);
+  status=ape_trad_query_file_name("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the pattern list");
+    SIXT_ERROR("failed reading the name of the event file");
     return(status);
   } 
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

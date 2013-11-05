@@ -192,5 +192,3 @@ void addGenDetCharge2Pixel(GenDetLine* const line,
   line->anycharge      =1;
 }
 
-
-

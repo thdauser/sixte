@@ -250,6 +250,22 @@ int ero_fits2tm_main()
     elf=openEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Check if the input file contains single-pixel events.
+    char evtype[MAXMSG], comment[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "EVTYPE", evtype, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not read FITS keyword 'EVTYPE'");
+      break;
+    }
+    strtoupper(evtype);
+    if (0!=strcmp(evtype, "PIXEL")) {
+      status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "event type of input file is '%s' (must be 'PIXEL')", evtype);
+      SIXT_ERROR(msg);
+      break;
+    }
+
     // Open the binary file for output.
     of=fopen(par.OutputFile, "w+");
     if (of==NULL) {

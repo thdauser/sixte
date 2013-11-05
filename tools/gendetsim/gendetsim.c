@@ -121,6 +121,11 @@ int gendetsim_main() {
 		    &status);
     CHECK_STATUS_BREAK(status);
 
+    // Store the event type in the FITS header.
+    fits_update_key(elf->fptr, TSTRING, "EVTYPE", "PIXEL",
+		    "event type", &status);
+    CHECK_STATUS_BREAK(status);
+
     // Define the event list file as output file.
     setGenDetEventFile(inst->det, elf);
 

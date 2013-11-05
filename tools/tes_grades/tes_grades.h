@@ -2,7 +2,7 @@
 #define TES_GRADES_H 1
 
 #include "sixt.h"
-#include "patternfile.h"
+#include "eventfile.h"
 
 
 #define TOOLSUB tes_grades_main
@@ -10,7 +10,7 @@
 
 
 struct Parameters{
-  char PatternList[MAXFILENAME];
+  char EventList[MAXFILENAME];
 
   /** Characteristic time unit of the TES microcalorimeter. */
   double TimeUnit;

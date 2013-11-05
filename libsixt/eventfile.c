@@ -10,22 +10,30 @@ EventFile* newEventFile(int* const status)
   // Initialize pointers with NULL.
   file->fptr=NULL;
 
-  // Initialize values.
-  file->nrows  =0;
-  file->ctime  =0;
+  // Initialize.
+  file->nrows=0;
+  file->ctime=0;
   file->cframe =0;
   file->cpi    =0;
   file->csignal=0;
   file->crawx  =0;
   file->crawy  =0;
+  file->cra    =0;
+  file->cdec   =0;
   file->cph_id =0;
   file->csrc_id=0;
+  file->ctype   =0;
+  file->cnpixels=0;
+  file->csignals=0;
+  file->cpis    =0;
+  file->cpileup =0;
 
   return(file);
 }
 
 
-void freeEventFile(EventFile** const file, int* const status)
+void freeEventFile(EventFile** const file, 
+		   int* const status)
 {
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
@@ -102,27 +110,27 @@ EventFile* openNewEventFile(const char* const filename,
   CHECK_STATUS_RET(*status, NULL);
 
   // Re-open the file.
-  EventFile* elf=openEventFile(filename, READWRITE, status);
-  CHECK_STATUS_RET(*status, elf);
-  
+  EventFile* plf=openEventFile(filename, READWRITE, status);
+  CHECK_STATUS_RET(*status, plf);
+
   // Update the TLMIN and TLMAX keywords for the DETX and DETY columns.
   char keystr[MAXMSG];
   int ibuffer;
-  sprintf(keystr, "TLMIN%d", elf->crawx);
+  sprintf(keystr, "TLMIN%d", plf->crawx);
   ibuffer=0;
-  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
-  sprintf(keystr, "TLMAX%d", elf->crawx);
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", plf->crawx);
   ibuffer=nxdim-1;
-  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
-  sprintf(keystr, "TLMIN%d", elf->crawy);
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMIN%d", plf->crawy);
   ibuffer=0;
-  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
-  sprintf(keystr, "TLMAX%d", elf->crawy);
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  sprintf(keystr, "TLMAX%d", plf->crawy);
   ibuffer=nydim-1;
-  fits_update_key(elf->fptr, TINT, keystr, &ibuffer, "", status);
-  CHECK_STATUS_RET(*status, elf);
-
-  return(elf);
+  fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
+  CHECK_STATUS_RET(*status, plf);
+  
+  return(plf);
 }
 
 
@@ -132,7 +140,7 @@ EventFile* openEventFile(const char* const filename,
   EventFile* file=newEventFile(status);
   CHECK_STATUS_RET(*status, file);
 
-  headas_chat(4, "open event list file '%s' ...\n", filename);
+  headas_chat(4, "open event file '%s' ...\n", filename);
   fits_open_table(&file->fptr, filename, mode, status);
   CHECK_STATUS_RET(*status, file);
 
@@ -146,8 +154,15 @@ EventFile* openEventFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "NPIXELS", &file->cnpixels, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "TYPE", &file->ctype, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "SIGNALS", &file->csignals, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PIS", &file->cpis, status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
@@ -160,13 +175,12 @@ EventFile* openEventFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
   if (repeat!=NEVENTPHOTONS) {
     // Throw an error.
-    *status = EXIT_FAILURE;
+    *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "Error: the maximum number of photons contributing "
-	    "to a single event is different for the parameter set "
-	    "in the simulation (%d) and in the event list "
-	    "template file (%ld)!\n", NEVENTPHOTONS, repeat);
-    HD_ERROR_THROW(msg, *status);
+    sprintf(msg, "inconsistent maximum number of photons contributing "
+	    "to a single event (simulation: %d, event file template %ld)", 
+	    NEVENTPHOTONS, repeat);
+    SIXT_ERROR(msg);
     return(file);
   }
   // SRC_ID.
@@ -175,13 +189,12 @@ EventFile* openEventFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
   if (repeat!=NEVENTPHOTONS) {
     // Throw an error.
-    *status = EXIT_FAILURE;
+    *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "Error: the maximum number of photons contributing "
-	    "to a single event is different for the parameter set "
-	    "in the simulation (%d) and in the event list "
-	    "template file (%ld)!\n", NEVENTPHOTONS, repeat);
-    HD_ERROR_THROW(msg, *status);
+    sprintf(msg, "inconsistent maximum number of photons contributing "
+	    "to a single event (simulation: %d, event file template %ld)", 
+	    NEVENTPHOTONS, repeat);
+    SIXT_ERROR(msg);
     return(file);
   }
 
@@ -189,10 +202,11 @@ EventFile* openEventFile(const char* const filename,
 }
 
 
-void addEvent2File(EventFile* const file, Event* const event, 
+void addEvent2File(EventFile* const file, 
+		   Event* const event, 
 		   int* const status)
 {
-  // Check if the event file has been opened.
+  // Check if the file has been opened.
   CHECK_NULL_VOID(file, *status, "event file not open");
   CHECK_NULL_VOID(file->fptr, *status, "event file not open");
 
@@ -211,8 +225,8 @@ void getEventFromFile(const EventFile* const file,
   CHECK_NULL_VOID(file->fptr, *status, "event file not open");
 
   // Check if there is still a row available.
-  if (row > file->nrows) {
-    *status = EXIT_FAILURE;
+  if (row>file->nrows) {
+    *status=EXIT_FAILURE;
     SIXT_ERROR("event file contains no further entries");
     return;
   }
@@ -236,10 +250,26 @@ void getEventFromFile(const EventFile* const file,
 		&inull, &event->rawx, &anynul, status);
   fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
 		&inull, &event->rawy, &anynul, status);
+  fits_read_col(file->fptr, TDOUBLE, file->cra, row, 1, 1, 
+		&dnull, &event->ra, &anynul, status);
+  event->ra *= M_PI/180.;
+  fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1, 
+		&lnull, &event->dec, &anynul, status);
+  event->dec*= M_PI/180.;
   fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS, 
 		&lnull, &event->ph_id, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NEVENTPHOTONS, 
 		&lnull, &event->src_id, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cnpixels, row, 1, 1, 
+		&lnull, &event->npixels, &anynul, status);
+  fits_read_col(file->fptr, TINT, file->ctype, row, 1, 1, 
+		&inull, &event->type, &anynul, status);
+  fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
+		&inull, &event->pileup, &anynul, status);
+  fits_read_col(file->fptr, TFLOAT, file->csignals, row, 1, 9, 
+		&fnull, &event->signals, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cpis, row, 1, 9, 
+		&lnull, &event->pis, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   // Check if an error occurred during the reading process.
@@ -267,10 +297,82 @@ void updateEventInFile(const EventFile* const file,
 		 1, 1, &event->rawx, status);
   fits_write_col(file->fptr, TINT, file->crawy, row, 
 		 1, 1, &event->rawy, status);
+  double dbuffer=event->ra  * 180./M_PI;
+  fits_write_col(file->fptr, TDOUBLE, file->cra, row, 
+		 1, 1, &dbuffer, status);
+  dbuffer = event->dec * 180./M_PI;
+  fits_write_col(file->fptr, TDOUBLE, file->cdec, row, 
+		 1, 1, &dbuffer, status);
   fits_write_col(file->fptr, TLONG, file->cph_id, row, 
 		 1, NEVENTPHOTONS, &event->ph_id, status);
   fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
 		 1, NEVENTPHOTONS, &event->src_id, status);
+  fits_write_col(file->fptr, TLONG, file->cnpixels, row, 
+		 1, 1, &event->npixels, status);
+  fits_write_col(file->fptr, TINT, file->cpileup, row, 
+		 1, 1, &event->pileup, status);
+  fits_write_col(file->fptr, TINT, file->ctype, row, 
+		 1, 1, &event->type, status);
+  fits_write_col(file->fptr, TFLOAT, file->csignals, row, 
+		 1, 9, &event->signals, status);
+  fits_write_col(file->fptr, TLONG, file->cpis, row, 
+		 1, 9, &event->pis, status);
   CHECK_STATUS_VOID(*status);
+}
+
+
+void copyEventFile(const EventFile* const src,
+		   EventFile* const dest,
+		   const float threshold_lo_keV,
+		   const float threshold_up_keV,
+		   int* const status)
+{
+  // Check if the event file is empty.
+  if (dest->nrows>0) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("destination event file is not empty");
+    return;
+  }
+  
+  // Copy the event type.
+  char evtype[MAXMSG], comment[MAXMSG];
+  fits_read_key(src->fptr, TSTRING, "EVTYPE", evtype, comment, status);
+  if (EXIT_SUCCESS!=*status) {
+    SIXT_ERROR("could not read FITS keyword 'EVTYPE'");
+    return;
+  }
+  fits_update_key(dest->fptr, TSTRING, "EVTYPE", evtype, comment, status);
+  CHECK_STATUS_VOID(*status);
+
+  // Get memory for buffers.
+  Event* event=getEvent(status);
+  CHECK_STATUS_VOID(*status);
+
+  // Loop over all rows in the event file.
+  long row;
+  for (row=0; row<src->nrows; row++) {
+
+    // Read an event from the input list.
+    getEventFromFile(src, row+1, event, status);
+    CHECK_STATUS_BREAK(*status);
+
+    // Apply the lower event threshold.
+    if (event->signal<threshold_lo_keV) {
+      continue;
+    }
+
+    // Apply the upper event threshold.
+    if ((threshold_up_keV>=0.0)&&(event->signal>threshold_up_keV)) {
+      continue;
+    }
+
+    // Add the new event to the output file.
+    addEvent2File(dest, event, status);	  
+    CHECK_STATUS_BREAK(*status);
+  }
+  CHECK_STATUS_VOID(*status);
+
+  // Free memory.
+  freeEvent(&event);
 }
 

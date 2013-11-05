@@ -155,7 +155,7 @@ void GenDetLineShift(GenDet* const det)
 	int jj;
 	for (jj=0; jj<det->line[ii]->xwidth; jj++) {
 	  if (det->line[ii]->charge[jj] > 0.) {
-	    det->line[ii]->charge[jj] *= det->cte;
+	    det->line[ii]->charge[jj]*=det->cte;
 	  }
 	}
       }
@@ -257,6 +257,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       event->rawx =xindex;
       event->time =time;  // Time of detection.
       event->frame=det->clocklist->frame; // Frame of detection.
+      event->npixels=1;
 
       // Store the event in the output event file.
       addEvent2File(det->elf, event, status);

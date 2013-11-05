@@ -4,9 +4,9 @@
 
 #include "sixt.h"
 #include "attitude.h"
+#include "event.h"
+#include "eventfile.h"
 #include "gti.h"
-#include "pattern.h"
-#include "patternfile.h"
 #include "wcs.h"
 
 #define TOOLSUB ero_calevents_main

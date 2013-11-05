@@ -8,7 +8,6 @@
 #include "geninst.h"
 #include "gti.h"
 #include "impactfile.h"
-#include "patternfile.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
@@ -60,11 +59,16 @@ struct Parameters {
 
   int Seed;
   
-  /** Skip invalid patterns when producing the output file. */
+  /** Skip invalid patterns when producing the output pattern file. */
   char SkipInvalids;
 
   char clobber;
 };
+
+
+////////////////////////////////////////////////////////////////////////
+// Function declarations.
+////////////////////////////////////////////////////////////////////////
 
 
 int runsixt_getpar(struct Parameters* const par);

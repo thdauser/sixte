@@ -6,11 +6,11 @@ int evpat_main()
   // Containing all programm parameters read by PIL
   struct Parameters par; 
 
-  // Input event list file.
+  // Input event file.
   EventFile* elf=NULL;
 
-  // Output pattern file.
-  PatternFile* plf=NULL;
+  // Output event pattern file.
+  EventFile* plf=NULL;
 
   // Instrument.
   GenInst* inst=NULL;
@@ -48,7 +48,7 @@ int evpat_main()
     char eventlist_filename[MAXFILENAME];
     strcpy(eventlist_filename, par.EventList);
 
-    // Determine the pattern output file.
+    // Determine the output file.
     char pattern_filename[MAXFILENAME];
     strcpy(pattern_filename, par.PatternList);
 
@@ -71,7 +71,7 @@ int evpat_main()
     fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Open the output pattern file.
+    // Open the output file.
     char telescop[MAXMSG]={""};
     char instrume[MAXMSG]={""};
     if (NULL!=inst->telescop) {
@@ -80,14 +80,14 @@ int evpat_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    plf=openNewPatternFile(pattern_filename, 
-			   telescop, instrume, "Normal",
-			   inst->tel->arf_filename,
-			   inst->det->rmf_filename,
-			   mjdref, timezero, tstart, tstop,			   
-			   inst->det->pixgrid->xwidth,
-			   inst->det->pixgrid->ywidth,
-			   par.clobber, &status);
+    plf=openNewEventFile(pattern_filename, 
+			 telescop, instrume, "Normal",
+			 inst->tel->arf_filename,
+			 inst->det->rmf_filename,
+			 mjdref, timezero, tstart, tstop,			   
+			 inst->det->pixgrid->xwidth,
+			 inst->det->pixgrid->ywidth,
+			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.
@@ -102,7 +102,7 @@ int evpat_main()
 
   // Close the files.
   freeEventFile(&elf, &status);
-  destroyPatternFile(&plf, &status);
+  freeEventFile(&plf, &status);
  
   destroyGenInst(&inst, &status);
 

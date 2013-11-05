@@ -41,7 +41,7 @@ int erosim_main()
   EventFile* elf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Pattern list file.
-  PatternFile* patf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  EventFile* patf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -52,7 +52,7 @@ int erosim_main()
 
   // Register HEATOOL
   set_toolname("erosim");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -403,7 +403,7 @@ int erosim_main()
       if (NULL!=subinst[ii]->instrume) {
 	strcpy(instrume, subinst[ii]->instrume);
       }
-      
+
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii+1);
       elf[ii]=openNewEventFile(eventlist_filename, 
@@ -435,14 +435,14 @@ int erosim_main()
       
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii+1);
-      patf[ii]=openNewPatternFile(patternlist_filename, 
-				  telescop, instrume, "Normal", 
-				  subinst[ii]->tel->arf_filename, 
-				  subinst[ii]->det->rmf_filename,
-				  par.MJDREF, 0.0, par.TSTART, tstop,
-				  subinst[ii]->det->pixgrid->xwidth,
-				  subinst[ii]->det->pixgrid->ywidth,
-				  par.clobber, &status);
+      patf[ii]=openNewEventFile(patternlist_filename, 
+				telescop, instrume, "Normal", 
+				subinst[ii]->tel->arf_filename, 
+				subinst[ii]->det->rmf_filename,
+				par.MJDREF, 0.0, par.TSTART, tstop,
+				subinst[ii]->det->pixgrid->xwidth,
+				subinst[ii]->det->pixgrid->ywidth,
+				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
@@ -529,6 +529,14 @@ int erosim_main()
 	CHECK_STATUS_BREAK(status);
       }
     }
+
+    // Event type.
+    for (ii=0; ii<7; ii++) {
+      fits_update_key(elf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL",
+		      "event type", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);  
 
     // TLMIN and TLMAX of PI column.
     for (ii=0; ii<7; ii++) {
@@ -742,9 +750,10 @@ int erosim_main()
 	// If no split events are simulated, simply copy the event lists
 	// to pattern lists.
 	headas_chat(3, "copy events to pattern files ...\n");
-	copyEvents2PatternFile(elf[ii], patf[ii],
-			       subinst[ii]->det->threshold_pattern_up_keV,
-			       &status);
+	copyEventFile(elf[ii], patf[ii],
+		      subinst[ii]->det->threshold_event_lo_keV,
+		      subinst[ii]->det->threshold_pattern_up_keV,
+		      &status);
 	//CHECK_STATUS_BREAK(status);
       }
     }
@@ -775,11 +784,11 @@ int erosim_main()
 
   // Release memory.
   for (ii=0; ii<7; ii++) {
-    destroyGenInst    (&subinst[ii], &status);
-    destroyPatternFile(&patf[ii],    &status);
-    freeEventFile (&elf[ii],     &status);
-    freeImpactFile(&ilf[ii],     &status);
-    freePhotonFile(&plf[ii],     &status);
+    destroyGenInst(&subinst[ii], &status);
+    freeEventFile(&patf[ii],  &status);
+    freeEventFile(&elf[ii], &status);
+    freeImpactFile(&ilf[ii], &status);
+    freePhotonFile(&plf[ii], &status);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);
@@ -794,7 +803,7 @@ int erosim_main()
 
   // Clean up the random number generator.
   sixt_destroy_rng();
-
+  
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);

@@ -3,14 +3,14 @@
 
 int tes_grades_main() {
   struct Parameters par;
-  PatternFile* plf=NULL;
+  EventFile* elf=NULL;
 
   int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
   set_toolname("tes_grades");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // ERROR handling loop
@@ -22,19 +22,19 @@ int tes_grades_main() {
     status=tes_grades_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
-    // Set the input pattern file.
-    plf=openPatternFile(par.PatternList, READWRITE, &status);
+    // Open the event file.
+    elf=openEventFile(par.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "analyse events ...\n");
 
-    // Loop over all entries in the pattern file.
+    // Loop over all entries in the event file.
     long row1;
-    for (row1=0; row1<plf->nrows; row1++) {
+    for (row1=0; row1<elf->nrows; row1++) {
       
-      // Read the time of the pattern from the file.
-      Pattern pat1;
-      getPatternFromFile(plf, row1+1, &pat1, &status);
+      // Read the time of the event from the file.
+      Event ev1;
+      getEventFromFile(elf, row1+1, &ev1, &status);
       CHECK_STATUS_BREAK(status);
 
       // Check the events before and after the current one 
@@ -45,17 +45,17 @@ int tes_grades_main() {
       // Former events:
       long row2;
       for (row2=row1-1; row2>=0; row2--) {
-	Pattern pat2; // Buffer.
-	getPatternFromFile(plf, row2+1, &pat2, &status);
+	Event ev2; // Buffer.
+	getEventFromFile(elf, row2+1, &ev2, &status);
 	CHECK_STATUS_BREAK(status);
 	
-	if (pat1.time-pat2.time > par.PostTrigger*par.TimeUnit) break;
-	if ((pat1.rawx==pat2.rawx)&&(pat1.rawy==pat2.rawy)) {
+	if (ev1.time-ev2.time > par.PostTrigger*par.TimeUnit) break;
+	if ((ev1.rawx==ev2.rawx)&&(ev1.rawy==ev2.rawy)) {
 	  nbefore_long++;
-	  if (pat1.time-pat2.time < par.PreTrigger*par.TimeUnit) {
+	  if (ev1.time-ev2.time < par.PreTrigger*par.TimeUnit) {
 	    nbefore_short++;
 	  }	
-	  if (pat1.time-pat2.time < par.PileupTime) {
+	  if (ev1.time-ev2.time < par.PileupTime) {
 	    nbefore_veryshort++;
 	  }	
 	}
@@ -65,18 +65,18 @@ int tes_grades_main() {
       CHECK_STATUS_BREAK(status);
 
       // Subsequent events:
-      for (row2=row1+1; row2<plf->nrows; row2++) {
-	Pattern pat2; // Buffer.
-	getPatternFromFile(plf, row2+1, &pat2, &status);
+      for (row2=row1+1; row2<elf->nrows; row2++) {
+	Event ev2; // Buffer.
+	getEventFromFile(elf, row2+1, &ev2, &status);
 	CHECK_STATUS_BREAK(status);
 
-	if (pat2.time-pat1.time > par.PostTrigger*par.TimeUnit) break;
-	if ((pat1.rawx==pat2.rawx)&&(pat1.rawy==pat2.rawy)) {
+	if (ev2.time-ev1.time > par.PostTrigger*par.TimeUnit) break;
+	if ((ev1.rawx==ev2.rawx)&&(ev1.rawy==ev2.rawy)) {
 	  nafter_long++;
-	  if (pat2.time-pat1.time < par.PreTrigger*par.TimeUnit) {
+	  if (ev2.time-ev1.time < par.PreTrigger*par.TimeUnit) {
 	    nafter_short++;
 	  }
-	  if (pat2.time-pat1.time < par.PileupTime) {
+	  if (ev2.time-ev1.time < par.PileupTime) {
 	    nafter_veryshort++;
 	  }
 	}
@@ -87,36 +87,35 @@ int tes_grades_main() {
 
       // Determine the event grade.
       if ((nbefore_veryshort>0)||(nafter_veryshort>0)) {
-	pat1.type=3;
+	ev1.type=3;
       } else if ((nbefore_short>0)||(nafter_short>0)) {
-	pat1.type=2;
+	ev1.type=2;
       } else if ((nbefore_short==0)&&(nafter_long==0)) {
-	pat1.type=0;
+	ev1.type=0;
       } else {
-	pat1.type=1;
+	ev1.type=1;
       } 
 
-      switch (pat1.type) {
+      switch (ev1.type) {
       case 0: ngrade0++; break;
       case 1: ngrade1++; break;
       case 2: ngrade2++; break;
       case 3: ngrade3++; break;
       }
       
-      // Update the pattern information in the file.
-      fits_write_col(plf->fptr, TINT, plf->ctype, row1+1, 
-		     1, 1, &pat1.type, &status);
+      // Update the event information in the file.
+      fits_write_col(elf->fptr, TINT, elf->ctype, row1+1, 
+		     1, 1, &ev1.type, &status);
       CHECK_STATUS_BREAK(status);
-
     }
     CHECK_STATUS_BREAK(status);
     // End of loop over all events in the event file
 
     // Write header keywords.
-    fits_update_key(plf->fptr, TLONG, "NGRADE0", &ngrade0, "", &status);
-    fits_update_key(plf->fptr, TLONG, "NGRADE1", &ngrade1, "", &status);
-    fits_update_key(plf->fptr, TLONG, "NGRADE2", &ngrade2, "", &status);
-    fits_update_key(plf->fptr, TLONG, "NGRADE3", &ngrade3, "", &status);
+    fits_update_key(elf->fptr, TLONG, "NGRADE0", &ngrade0, "", &status);
+    fits_update_key(elf->fptr, TLONG, "NGRADE1", &ngrade1, "", &status);
+    fits_update_key(elf->fptr, TLONG, "NGRADE2", &ngrade2, "", &status);
+    fits_update_key(elf->fptr, TLONG, "NGRADE3", &ngrade3, "", &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // End of error handling loop
@@ -126,7 +125,7 @@ int tes_grades_main() {
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  destroyPatternFile(&plf, &status);
+  freeEventFile(&elf, &status);
 
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
@@ -146,12 +145,12 @@ int tes_grades_getpar(struct Parameters* par)
   int status=EXIT_SUCCESS;
 
 
-  status=ape_trad_query_file_name("PatternList", &sbuffer);
+  status=ape_trad_query_file_name("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the pattern list");
+    SIXT_ERROR("failed reading the name of the event list");
     return(status);
   } 
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
 

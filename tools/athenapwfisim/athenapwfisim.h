@@ -9,7 +9,6 @@
 #include "gentel.h"
 #include "gti.h"
 #include "impactfile.h"
-#include "patternfile.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"

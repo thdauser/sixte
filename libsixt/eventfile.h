@@ -19,7 +19,8 @@ typedef struct {
   long nrows;
 
   /** Column numbers. */
-  int ctime, cframe, cpi, csignal, crawx, crawy, cph_id, csrc_id;
+  int ctime, cframe, cpi, csignal, crawx, crawy, cra, cdec, 
+    cph_id, csrc_id, cnpixels, ctype, cpileup, csignals, cpis;
 
 } EventFile;
 
@@ -36,8 +37,7 @@ EventFile* newEventFile(int* const status);
 /** Destructor. */
 void freeEventFile(EventFile** const file, int* const status);
 
-/** Create and open a new EventFile. The new file is generated
-    according to the specified template. */
+/** Create and open a new EventFile. */
 EventFile* openNewEventFile(const char* const filename,
 			    char* const telescop,
 			    char* const instrume,
@@ -57,21 +57,31 @@ EventFile* openNewEventFile(const char* const filename,
 EventFile* openEventFile(const char* const filename,
 			 const int mode, int* const status);
 
-/** Append a new event at the end of the event file. */
-void addEvent2File(EventFile* const file, Event* const event, 
+/** Append a new event to the event file. */
+void addEvent2File(EventFile* const file, 
+		   Event* const event, 
 		   int* const status);
 
-/** Read the Event at the specified row from the event file. The
+/** Read the Event at the specified row from the file. The
     numbering for the rows starts at 1 for the first line. */
 void getEventFromFile(const EventFile* const file,
 		      const int row, Event* const event,
 		      int* const status);
 
-/** Update the Event at the specified row in the event file. The
+/** Update the Event at the specified row in the file. The
     numbering for the rows starts at 1 for the first line. */
 void updateEventInFile(const EventFile* const file,
 		       const int row, Event* const event,
 		       int* const status);
 
+/** Fill the destination EventFile with data from the source
+    EventFile. The specified thesholds are applied to the transferred
+    events. */
+void copyEventFile(const EventFile* const src,
+		   EventFile* const det,
+		   const float threshold_lo_keV,
+		   const float threshold_up_keV,
+		   int* const status);
 
-#endif /* EVENTLISTFILE_H */
+
+#endif /* EVENTFILE_H */

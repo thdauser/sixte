@@ -35,8 +35,23 @@ int ero_rawevents_main()
     elf=openEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Check if the input file contains single-pixel events.
+    char evtype[MAXMSG], comment[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "EVTYPE", evtype, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not read FITS keyword 'EVTYPE'");
+      break;
+    }
+    strtoupper(evtype);
+    if (0!=strcmp(evtype, "PIXEL")) {
+      status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "event type of input file is '%s' (must be 'PIXEL')", evtype);
+      SIXT_ERROR(msg);
+      break;
+    }
+
     // Read keywords from the input file.
-    char comment[MAXMSG];
     float timezero=0.0;
     fits_read_key(elf->fptr, TFLOAT, "TIMEZERO", &timezero, comment, &status);
     CHECK_STATUS_BREAK(status);

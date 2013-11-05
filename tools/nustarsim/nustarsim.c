@@ -34,14 +34,14 @@ int nustarsim_main()
   // Photon list files.
   PhotonFile* plf[2]={NULL, NULL};
 
-  // Impact list file.
+  // Impact list files.
   ImpactFile* ilf[2]={NULL, NULL};
 
-  // Event list file.
+  // Event list files.
   EventFile* elf[2]={NULL, NULL};
 
-  // Pattern list file.
-  PatternFile* patf[2]={NULL, NULL};
+  // Pattern list files.
+  EventFile* patf[2]={NULL, NULL};
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -52,7 +52,7 @@ int nustarsim_main()
 
   // Register HEATOOL
   set_toolname("nustarsim");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -383,7 +383,7 @@ int nustarsim_main()
       CHECK_STATUS_BREAK(status);
     }
 
-    // Open the output event list files.
+    // Open the output event files.
     for (ii=0; ii<2; ii++) {
       char telescop[MAXMSG]={""};
       char instrume[MAXMSG]={""};
@@ -396,8 +396,8 @@ int nustarsim_main()
     
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventFile(eventlist_filename, 
-			       telescop, instrume, "Normal", 
+      elf[ii]=openNewEventFile(eventlist_filename,
+			       telescop, instrume, "Normal",
 			       subinst[ii]->tel->arf_filename,
 			       subinst[ii]->det->rmf_filename,
 			       par.MJDREF, 0.0, par.TSTART, tstop,
@@ -422,20 +422,21 @@ int nustarsim_main()
       if (NULL!=subinst[ii]->instrume) {
 	strcpy(instrume, subinst[ii]->instrume);
       }
-    
+      
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewPatternFile(patternlist_filename, 
-				  telescop, instrume, "Normal",
-				  subinst[ii]->tel->arf_filename,
-				  subinst[ii]->det->rmf_filename,
-				  par.MJDREF, 0.0, par.TSTART, tstop,
-				  subinst[ii]->det->pixgrid->xwidth,
-				  subinst[ii]->det->pixgrid->ywidth,
-				  par.clobber, &status);
+      patf[ii]=openNewEventFile(patternlist_filename, 
+				telescop, instrume, "Normal", 
+				subinst[ii]->tel->arf_filename,
+				subinst[ii]->det->rmf_filename,
+				par.MJDREF, 0.0, par.TSTART, tstop,
+				subinst[ii]->det->pixgrid->xwidth,
+				subinst[ii]->det->pixgrid->ywidth,
+				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
+
 
     // Set FITS header keywords.
     // If this is a pointing attitude, store the direction in the output
@@ -519,6 +520,14 @@ int nustarsim_main()
 	CHECK_STATUS_BREAK(status);
       }
     }
+
+    // Event type.
+    for (ii=0; ii<2; ii++) {
+      fits_update_key(elf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL",
+		      "event type", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);  
 
     // TLMIN and TLMAX of PI column.
     for (ii=0; ii<2; ii++) {
@@ -745,14 +754,14 @@ int nustarsim_main()
       status=EXIT_SUCCESS;
 
       // Apply dead time, charge pump reset, and shield anticoincidence 
-      // intervals, while producing a pattern list from the event list. 
-      // The event list contains all events neglecting dead time, charge 
-      // pump resets, and shield vetos, while the pattern list contains
-      // only events after the dead time application.
+      // intervals. The event list contains all events neglecting 
+      // dead time, charge pump resets, and shield vetos, while the
+      // pattern list contains only events after the dead time application.
       headas_chat(3, "apply dead time ...\n");
       double last_time=0.;
       double veto_time=0.;
-      const double veto_interval=500.e-6; // This value is taken from Bhalerao p.25 (43).
+      // The following value is taken from Bhalerao p.25 (43).
+      const double veto_interval=500.e-6;
       const double veto_rate=28.;
 
       // Loop over all rows in the event file.
@@ -760,7 +769,6 @@ int nustarsim_main()
       for (row=0; row<elf[ii]->nrows; row++) {
 	// Buffers.
 	Event event;
-	Pattern pattern;
 	
 	// Read an event from the input list.
 	getEventFromFile(elf[ii], row+1, &event, &status);
@@ -774,9 +782,8 @@ int nustarsim_main()
 	// Check if the event falls within an interval of charge
 	// pump reset. Resets take place every millisecond and 
 	// last for 20mus.
-	double dt=event.time - ((long)(event.time*1000.))*0.001;
+	double dt=event.time-((long)(event.time*1000.))*0.001;
 	if (dt<0.02e-3) continue;
-
 
 	// Apply the shield veto time.
 	while (event.time-veto_time>veto_interval) {
@@ -789,7 +796,6 @@ int nustarsim_main()
 	    (event.time-veto_time<=veto_interval)) {
 	  continue;
 	}
-	
 
 	// Apply the dead time (event processing time).
 	if (0==row) {
@@ -800,42 +806,9 @@ int nustarsim_main()
 
 	// The event is detected.
 	last_time=event.time;
-
-	// Copy event data to pattern.
-	pattern.rawx   =event.rawx;
-	pattern.rawy   =event.rawy;
-	pattern.time   =event.time;
-	pattern.frame  =event.frame;
-	pattern.pi     =event.pi;
-	pattern.signal =event.signal;
-	pattern.ra     =0.;
-	pattern.dec    =0.;
-	pattern.npixels=1;
-	pattern.type   =0;
-    
-	pattern.pileup =0;
-	int jj;
-	for (jj=0; (jj<NEVENTPHOTONS)&&(jj<NPATTERNPHOTONS); jj++){
-	  pattern.ph_id[jj] =event.ph_id[jj];
-	  pattern.src_id[jj]=event.src_id[jj];
-	  
-	  if ((jj>0)&&(pattern.ph_id[jj]!=0)) {
-	    pattern.pileup=1;
-	  }
-	}
-	    
-	pattern.signals[0]=0.;
-	pattern.signals[1]=0.;
-	pattern.signals[2]=0.;
-	pattern.signals[3]=0.;
-	pattern.signals[4]=event.signal;
-	pattern.signals[5]=0.;
-	pattern.signals[6]=0.;
-	pattern.signals[7]=0.;
-	pattern.signals[8]=0.;
 	
-	// Add the new pattern to the output file.
-	addPattern2File(patf[ii], &pattern, &status);	  
+	// Add the event to the output file.
+	addEvent2File(patf[ii], &event, &status);	  
 	CHECK_STATUS_BREAK(status);
       }
       //CHECK_STATUS_BREAK(status);
@@ -868,11 +841,11 @@ int nustarsim_main()
 
   // Release memory.
   for (ii=0; ii<2; ii++) {
-    destroyGenInst    (&subinst[ii], &status);
-    destroyPatternFile(&patf[ii],    &status);
-    freeEventFile (&elf[ii],     &status);
-    freeImpactFile(&ilf[ii],     &status);
-    freePhotonFile(&plf[ii],     &status);
+    destroyGenInst(&subinst[ii], &status);
+    freeEventFile(&patf[ii], &status);
+    freeEventFile(&elf[ii], &status);
+    freeImpactFile(&ilf[ii], &status);
+    freePhotonFile(&plf[ii], &status);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);
