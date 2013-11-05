@@ -200,7 +200,7 @@ int PhotonFile_getRow(PhotonFile* const plf,
   // Read in the data.
   ph->time=0.;
   fits_read_col(plf->fptr, TDOUBLE, plf->ctime, row, 1, 1, 
-		    &ph->time, &ph->time, &anynul, &status);
+		&ph->time, &ph->time, &anynul, &status);
 
   ph->energy=0.;
   fits_read_col(plf->fptr, TFLOAT, plf->cenergy, row, 1, 1, 

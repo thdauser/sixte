@@ -170,11 +170,11 @@ void GenDetLineShift(GenDet* const det)
 
   // Shift the other lines in increasing order and put the newly cleared 
   // original line number 1 at the end as the last line.
-  GenDetLine* buffer = det->line[1];
+  GenDetLine* buffer=det->line[1];
   for (ii=1; ii<det->pixgrid->ywidth-1; ii++) {
-    det->line[ii] = det->line[ii+1];
+    det->line[ii]=det->line[ii+1];
   }
-  det->line[det->pixgrid->ywidth-1] = buffer;
+  det->line[det->pixgrid->ywidth-1]=buffer;
 }
 
 
