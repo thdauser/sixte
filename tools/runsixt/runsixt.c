@@ -43,7 +43,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.17");
+  set_toolversion("0.18");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -192,14 +192,24 @@ int runsixt_main()
     }
     // END of setting up the attitude.
 
-    // Optional GTI file.
+    // If available, load the specified GTI file.
     if (strlen(par.GTIfile)>0) {
       strcpy(ucase_buffer, par.GTIfile);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
 	gti=loadGTI(par.GTIfile, &status);
 	CHECK_STATUS_BREAK(status);
+	SIXT_WARNING("the specification of a GTI file overwites the settings "
+		     "for TSTART and Exposure");
       }
+    }
+
+    // If not, create a dummy GTI from TSTART and TSTOP.
+    if (NULL==gti) {
+      gti=newGTI(&status);
+      CHECK_STATUS_BREAK(status);
+      appendGTI(gti, par.TSTART, par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
 
     // Load the SIMPUT X-ray source catalogs.
@@ -268,12 +278,7 @@ int runsixt_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    double tstop;
-    if (NULL==gti) {
-      tstop=par.TSTART+par.Exposure;
-    } else {
-      tstop=gti->stop[gti->nentries-1];
-    }
+    double tstop=gti->stop[gti->nentries-1];
 
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
@@ -442,13 +447,9 @@ int runsixt_main()
     // be simulated.
     double totalsimtime=0.;
     double simtime=0.;
-    if (NULL==gti) {
-      totalsimtime=par.Exposure;
-    } else {
-      unsigned long ii; 
-      for (ii=0; ii<gti->nentries; ii++) {
-	totalsimtime+=gti->stop[ii]-gti->start[ii];
-      }
+    unsigned long ii; 
+    for (ii=0; ii<gti->nentries; ii++) {
+      totalsimtime+=gti->stop[ii]-gti->start[ii];
     }
 
     // Store the total exposure time.
@@ -461,17 +462,9 @@ int runsixt_main()
     // Loop over all intervals in the GTI collection.
     do {
       // Currently regarded interval.
-      double t0, t1;
+      double t0=gti->start[gtibin];
+      double t1=gti->stop[gtibin];
       
-      // Determine the currently regarded interval.
-      if (NULL==gti) {
-	t0=par.TSTART;
-	t1=tstop;
-      } else {
-	t0=gti->start[gtibin];
-	t1=gti->stop[gtibin];
-      }
-
       // Set the start time for the instrument model.
       setGenDetStartTime(inst->det, t0);
 
@@ -545,13 +538,11 @@ int runsixt_main()
       }
 
       // Proceed to the next GTI interval.
-      if (NULL!=gti) {
-	simtime+=gti->stop[gtibin]-gti->start[gtibin];
-	gtibin++;
-	if (gtibin>=gti->nentries) break;
-      }
+      simtime+=gti->stop[gtibin]-gti->start[gtibin];
+      gtibin++;
+      if (gtibin>=gti->nentries) break;
 
-    } while (NULL!=gti);
+    } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
     
@@ -582,8 +573,15 @@ int runsixt_main()
 		    inst->det->threshold_pattern_up_keV,
 		    &status);
       CHECK_STATUS_BREAK(status);
+      fits_update_key(patf->fptr, TSTRING, "EVTYPE", "PATTERN", 
+		      "event type", &status);
+      CHECK_STATUS_BREAK(status);
     }
     
+    // Store the GTI extension in the event file.
+    saveGTIExt(elf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Close files in order to save memory.
     freePhotonFile(&plf, &status);
     freeImpactFile(&ilf, &status);
@@ -594,7 +592,12 @@ int runsixt_main()
     phproj(inst, ac, patf, par.TSTART, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Store the GTI extension in the pattern file.
+    saveGTIExt(patf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
     // --- End of simulation process ---
+
 
   } while(0); // END of ERROR HANDLING Loop.
 

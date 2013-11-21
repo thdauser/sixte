@@ -431,7 +431,7 @@ void operateGenDetClock(GenDet* const det,
 
 	    // Add the signal to the pixel.
 	    addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, 
-				  det->clocklist->time, -1, -1);
+	    det->clocklist->time, -1, -1);
 	  }
 	  free(bkgphas);
 	  free(x);

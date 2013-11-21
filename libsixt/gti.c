@@ -44,21 +44,24 @@ GTI* loadGTI(const char* const filename, int* const status)
     fits_open_file(&fptr, filename, READONLY, status);
     CHECK_STATUS_BREAK(*status);
 
-    // Move to the second HDU (GTI table).
-    int hdutype;
-    fits_movabs_hdu(fptr, 2, &hdutype, status);
-    CHECK_STATUS_BREAK(*status);
-    
-    // Image HDU results in an error message.
-    if (IMAGE_HDU==hdutype) {
+    // Search for an extension with name 'GTI' or 'STDGTI'.
+    int status2=EXIT_SUCCESS;
+    fits_write_errmark();
+    fits_movnam_hdu(fptr, BINARY_TBL, "GTI", 1, &status2);
+    if (EXIT_SUCCESS!=status2) {
+      status2=EXIT_SUCCESS;
+      fits_movnam_hdu(fptr, BINARY_TBL, "STDGTI", 1, &status2);
+    }
+    fits_clear_errmark();
+    if (EXIT_SUCCESS!=status2) {
       *status=EXIT_FAILURE;
       char msg[MAXMSG];
-      sprintf(msg, "no table extension available in file '%s'", 
-	      filename);
+      sprintf(msg, "could not find extension 'GTI' or 'STDGTI' (EXTVER=1) "
+	      "in file '%s'", filename);
       SIXT_ERROR(msg);
       break;
     }
-
+    
     // Determine the number of rows in the table.
     long nrows;
     fits_get_num_rows(fptr, &nrows, status);

@@ -17,13 +17,16 @@ int gendetsim_main() {
   // Output event list file.
   EventFile* elf=NULL;
 
+  // GTI collection.
+  GTI* gti=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
   set_toolname("gendetsim");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -73,7 +76,7 @@ int gendetsim_main() {
     // Initialize the random number generator.
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
-
+    
     // --- END of Initialization ---
 
 
@@ -152,6 +155,14 @@ int gendetsim_main() {
     phdetGenDet(inst->det, NULL, par.TSTART+par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Store the GTI in the event file.
+    gti=newGTI(&status);
+    CHECK_STATUS_BREAK(status);
+    appendGTI(gti, par.TSTART, par.TSTART+par.Exposure, &status);
+    CHECK_STATUS_BREAK(status);
+    saveGTIExt(elf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
   } while(0); // END of the error handling loop.
 
   // --- END of Detection process ---
@@ -163,14 +174,11 @@ int gendetsim_main() {
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  // Destroy the GenInst data structure.
-  destroyGenInst(&inst, &status);
-
-  // Close the event list FITS file.
   freeEventFile(&elf, &status);
-
-  // Close the impact list FITS file.
   freeImpactFile(&ilf, &status);
+
+  destroyGenInst(&inst, &status);
+  freeGTI(&gti);
 
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");

@@ -43,7 +43,7 @@ int athenapwfisim_main()
 
   // Register HEATOOL
   set_toolname("athenapwfisim");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -229,14 +229,24 @@ int athenapwfisim_main()
     }
     // END of setting up the attitude.
 
-    // Optional GTI file.
+    // If available, load the specified GTI file.
     if (strlen(par.GTIfile)>0) {
       strcpy(ucase_buffer, par.GTIfile);
       strtoupper(ucase_buffer);
       if (0!=strcmp(ucase_buffer, "NONE")) {
 	gti=loadGTI(par.GTIfile, &status);
 	CHECK_STATUS_BREAK(status);
+	SIXT_WARNING("the specification of a GTI file overwites the settings "
+		     "for TSTART and Exposure");
       }
+    }
+
+    // If not, create a dummy GTI from TSTART and TSTOP.
+    if (NULL==gti) {
+      gti=newGTI(&status);
+      CHECK_STATUS_BREAK(status);
+      appendGTI(gti, par.TSTART, par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
 
     // Load the SIMPUT X-ray source catalogs.
@@ -307,12 +317,7 @@ int athenapwfisim_main()
       strcpy(instrume, subinst[0]->instrume);
     }
 
-    double tstop;
-    if (NULL==gti) {
-      tstop=par.TSTART+par.Exposure;
-    } else {
-      tstop=gti->stop[gti->nentries-1];
-    }
+    double tstop=gti->stop[gti->nentries-1];
 
     // Open the output photon list files.
     if (strlen(photonlist_filename)>0) {
@@ -538,31 +543,18 @@ int athenapwfisim_main()
     // be simulated.
     double totalsimtime=0.;
     double simtime=0.;
-    if (NULL==gti) {
-      totalsimtime=par.Exposure;
-    } else {
-      unsigned long ii; 
-      for (ii=0; ii<gti->nentries; ii++) {
-	totalsimtime+=gti->stop[ii]-gti->start[ii];
-      }
+    unsigned long ii; 
+    for (ii=0; ii<gti->nentries; ii++) {
+      totalsimtime+=gti->stop[ii]-gti->start[ii];
     }
-
 
     // Current bin in the GTI collection.
     unsigned long gtibin=0;
     // Loop over all intervals in the GTI collection.
     do {
       // Currently regarded interval.
-      double t0, t1;
-      
-      // Determine the currently regarded interval.
-      if (NULL==gti) {
-	t0=par.TSTART;
-	t1=tstop;
-      } else {
-	t0=gti->start[gtibin];
-	t1=gti->stop[gtibin];
-      }
+      double t0=gti->start[gtibin];
+      double t1=gti->stop[gtibin];
 
       // Set the start time for the detector models.
       for (ii=0; ii<5; ii++) {
@@ -645,13 +637,11 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
 
       // Proceed to the next GTI interval.
-      if (NULL!=gti) {
-	simtime+=gti->stop[gtibin]-gti->start[gtibin];
-	gtibin++;
-	if (gtibin>=gti->nentries) break;
-      }
-
-    } while (NULL!=gti);
+      simtime+=gti->stop[gtibin]-gti->start[gtibin];
+      gtibin++;
+      if (gtibin>=gti->nentries) break;
+      
+    } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
     
@@ -687,20 +677,43 @@ int athenapwfisim_main()
 		      subinst[ii]->det->threshold_pattern_up_keV,
 		      &status);
 	//CHECK_STATUS_BREAK(status);
+	fits_update_key(patf[ii]->fptr, TSTRING, "EVTYPE", "PATTERN", 
+			"event type", &status);
+	//CHECK_STATUS_BREAK(status);
       }
       //CHECK_STATUS_BREAK(status);
       // END of loop over all events in the list.
     }
     CHECK_STATUS_BREAK(status);
     
+    // Store the GTI extension in the event files.
+    for (ii=0; ii<5; ii++) {
+      saveGTIExt(elf[ii]->fptr, "STDGTI", gti, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+
     // Close files in order to save memory.
     freePhotonFile(&plf, &status);
     freeImpactFile(&ilf, &status);
+    CHECK_STATUS_BREAK(status);
+    for (ii=0; ii<5; ii++) {
+      freeEventFile(&elf[ii], &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
     for (ii=0; ii<5; ii++) {
       phproj(subinst[ii], ac, patf[ii], par.TSTART, par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+
+    // Store the GTI extension in the pattern files.
+    for (ii=0; ii<5; ii++) {
+      saveGTIExt(patf[ii]->fptr, "STDGTI", gti, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);

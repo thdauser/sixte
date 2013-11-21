@@ -255,7 +255,7 @@ void parseGenInstXML(GenInst* const inst,
     // Parse error.
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "faild parsing XML file '%s':\n%s\n", 
+    sprintf(msg, "failed parsing XML file '%s':\n%s\n", 
 	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
     printf("%s", xmlbuffer->text);
     SIXT_ERROR(msg);

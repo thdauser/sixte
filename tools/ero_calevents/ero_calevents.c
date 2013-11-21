@@ -526,28 +526,13 @@ int ero_calevents_main()
 
     // --- End of copy events ---
 
-    // --- Beginning of append GTI extension ---
+    // --- Begin of append GTI extension ---
 
     headas_chat(3, "append GTI extension ...\n");
 
-    // If available, load the specified GTI file.
-    if (strlen(par.GTIFile)>0) {
-      char ucase_buffer[MAXFILENAME];
-      strcpy(ucase_buffer, par.GTIFile);
-      strtoupper(ucase_buffer);
-      if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIFile, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
-
-    // If not, create a dummy GTI from TSTART and TSTOP.
-    if (NULL==gti) {
-      gti=newGTI(&status);
-      CHECK_STATUS_BREAK(status);
-      appendGTI(gti, tstart, tstop, &status);
-      CHECK_STATUS_BREAK(status);
-    }
+    // Load the GTI extension from the input file.
+    gti=loadGTI(par.PatternList, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Store the GTI extension in the output file.
     char gti_extname[MAXMSG];
@@ -838,14 +823,6 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading RefDEC");
     return(status);
   }
-
-  status=ape_trad_query_string("GTIFile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the GTI file");
-    return(status);
-  }
-  strcpy(par->GTIFile, sbuffer);
-  free(sbuffer);
 
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {

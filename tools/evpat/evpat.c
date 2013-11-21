@@ -15,18 +15,19 @@ int evpat_main()
   // Instrument.
   GenInst* inst=NULL;
 
+  // GTI collection.
+  GTI* gti=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL:
   set_toolname("evpat");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
-
-    // --- Initialization ---
 
     headas_chat(3, "initialization ...\n");
 
@@ -52,6 +53,9 @@ int evpat_main()
     char pattern_filename[MAXFILENAME];
     strcpy(pattern_filename, par.PatternList);
 
+    // Load the GTI extension from the event file.
+    gti=loadGTI(eventlist_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "start pattern recombination ...\n");
 
@@ -94,6 +98,10 @@ int evpat_main()
     phpat(inst->det, elf, plf, par.SkipInvalids, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Store the GTI in the pattern file.
+    saveGTIExt(plf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
   } while(0); // END of the error handling loop.
 
 
@@ -105,6 +113,7 @@ int evpat_main()
   freeEventFile(&plf, &status);
  
   destroyGenInst(&inst, &status);
+  freeGTI(&gti);
 
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");

@@ -5,6 +5,7 @@
 #include "sixt.h"
 #include "eventfile.h"
 #include "geninst.h"
+#include "gti.h"
 #include "impactfile.h"
 #include "phdet.h"
 

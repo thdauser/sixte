@@ -21,7 +21,6 @@
 struct Parameters {
   char PatternList[MAXFILENAME];
   char eroEventList[MAXFILENAME];
-  char GTIFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
 
   int CCDNr;
