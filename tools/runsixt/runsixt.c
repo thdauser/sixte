@@ -199,7 +199,7 @@ int runsixt_main()
       if (0!=strcmp(ucase_buffer, "NONE")) {
 	gti=loadGTI(par.GTIfile, &status);
 	CHECK_STATUS_BREAK(status);
-	SIXT_WARNING("the specification of a GTI file overwites the settings "
+	SIXT_WARNING("the specification of a GTI file overwrites the settings "
 		     "for TSTART and Exposure");
       }
     }
