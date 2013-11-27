@@ -484,7 +484,7 @@ int runsixt_main()
 	if (0==isph) break;
 
 	// Check if the photon still is within the requested
-	// exposre time.
+	// exposure time.
 	assert(ph.time<=t1);
 
 	// If requested, write the photon to the output file.

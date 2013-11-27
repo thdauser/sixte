@@ -33,9 +33,6 @@ int phgen(Attitude* const ac,
     // Display the program progress status.
     double ra, dec;
     calculate_ra_dec(pointing, &ra, &dec);
-    headas_chat(5, "\rtime: %.1lf s, telescope: (%.3lf,%.3lf)     ", 
-		time, ra*180./M_PI, dec*180./M_PI);
-    fflush(NULL);
     
     // Generate new photons for all specified catalogs.
     double t1=MIN(time+dt, tend);

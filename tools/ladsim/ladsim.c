@@ -41,6 +41,18 @@ static inline LADImpact* ladphimg(const LAD* const lad,
       return(NULL);
     }
 
+    // Apply the collimator vignetting function (if available).
+    if (NULL!=lad->vignetting) {
+      double theta=acos(cos_theta);
+      p=sixt_get_random_number(status);
+      CHECK_STATUS_RET(*status, NULL);
+      if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
+	// The photon does not hit the detector at all,
+	// because it is absorbed by the collimator walls.
+	return(NULL);
+      }
+    }
+
     // New impact.
     LADImpact* imp=getLADImpact(status);
     CHECK_STATUS_RET(*status, NULL);    
@@ -52,19 +64,19 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     
     // Determine the photon impact position on the detector:
     // Randomly select a panel, module, and element.
-    imp->panel  = 
+    imp->panel=
       (long)(sixt_get_random_number(status)*lad->npanels);
     CHECK_STATUS_RET(*status, NULL);
-    imp->module = 
+    imp->module=
       (long)(sixt_get_random_number(status)*lad->panel[imp->panel]->nmodules);
     CHECK_STATUS_RET(*status, NULL);
-    imp->element= 	
+    imp->element=
       (long)(sixt_get_random_number(status)*
 	     lad->panel[imp->panel]->module[imp->module]->nelements);
     CHECK_STATUS_RET(*status, NULL);
     
     // Pointer to the element.
-    LADElement* element= 
+    LADElement* element=
       lad->panel[imp->panel]->module[imp->module]->element[imp->element];
     
     // Determine the sensitive area of the element.
@@ -86,43 +98,38 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
     } while ((col1<0)||(row1<0));
 
-    // Determine the position on the detector according to the off-axis
-    // angle and the orientation of the element ([m]).
-    
-    // Determine the photon direction with respect to the telescope
-    // coordinate system.
-    Vector deviation;
-    deviation.x=scalar_product(&telescope.nx, &photon_direction);
-    deviation.y=scalar_product(&telescope.ny, &photon_direction);
-    deviation.z=scalar_product(&telescope.nz, &photon_direction);
-    
-    // Determine the length of the vector to reach from the entrance 
-    // position on top of the collimator to the bottom.
-    // (The collimator has a thickness of 2 mm.)
-    double length=2.0e-3 / deviation.z;
-    
-    // Add the off-axis deviation to the entrance position.
-    imp->position.x= 
-      entrance_position.x + deviation.x * length;
-    imp->position.y= 
-      entrance_position.y + deviation.y * length;
-    
-    // Apply the collimator vignetting function (if available).
+    // If a vignetting function is given, the impact position on the 
+    // detector is set equivalent to the entrance position.
     if (NULL!=lad->vignetting) {
-      double theta=acos(cos_theta);
-      p=sixt_get_random_number(status);
-      CHECK_STATUS_RET(*status, NULL);
-      if (p > get_Vignetting_Factor(lad->vignetting, ph->energy, theta, 0.)) {
-	// The photon does not hit the detector at all,
-	// because it is absorbed by the collimator.
-	freeLADImpact(&imp);
-	return(NULL);
-      }
+      imp->position.x=entrance_position.x;
+      imp->position.y=entrance_position.y;
     } else {
       // If no explicit vignetting function is specified,
       // check if the impact position still is inside the hole.
       // Otherwise the photon has been absorbed by the walls of the hole.
       // Make sure that it is the SAME hole as before.
+      
+      // Determine the position on the detector according to the off-axis
+      // angle and the orientation of the element ([m]).
+      
+      // Determine the photon direction with respect to the telescope
+      // coordinate system.
+      Vector deviation;
+      deviation.x=scalar_product(&telescope.nx, &photon_direction);
+      deviation.y=scalar_product(&telescope.ny, &photon_direction);
+      deviation.z=scalar_product(&telescope.nz, &photon_direction);
+    
+      // Determine the length of the vector to reach from the entrance
+      // position on top of the collimator to the bottom.
+      // (The collimator has a thickness of 2 mm.)
+      double length=2.0e-3 / deviation.z;
+    
+      // Add the off-axis deviation to the entrance position.
+      imp->position.x=
+	entrance_position.x + deviation.x * length;
+      imp->position.y=
+	entrance_position.y + deviation.y * length;
+      
       long col2, row2;
       LADCollimatorHoleIdx(imp->position, &col2, &row2);
       if ((col1!=col2)||(row1!=row2)) {
@@ -173,10 +180,13 @@ void ladimp(const LAD* const lad,
     // includes ARF contributions, e.g., 
     // the detector quantum efficiency and filter transmission.
     if (channel<0) {
-      headas_chat(5, "### undetected photon\n");
+      headas_chat(5, "# undetected photon\n");
       return; // Photon is not detected.
     } else if (channel<lad->rmf->FirstChannel) {
-      headas_printf("### wrong channel number !\n");
+      *status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "wrong channel number: %ld", channel);
+      SIXT_ERROR(msg);
       return;
     }
 
@@ -211,7 +221,7 @@ void ladimp(const LAD* const lad,
   // Charge cloud dispersion.
   const double sigma0=20.e-6; // (according to Campana, 2011) [m]
   double sigma=
-    sqrt(2.*kB*lad->temperature*imp->position.x/lad->efield + 
+    sqrt(2.*kB*lad->temperature*imp->position.x/lad->efield+
 	 pow(sigma0,2.));
 
   // Determine the index of the closest anode strip.
@@ -220,7 +230,7 @@ void ladimp(const LAD* const lad,
   if (imp->position.x<0.5*xwidth) {
     y0=imp->position.y/anode_pitch;
   } else {
-    y0=imp->position.y/anode_pitch + element->nanodes/2;
+    y0=imp->position.y/anode_pitch+element->nanodes/2;
   }
   long anode1=((long)(y0+1.0))-1;
 
@@ -298,12 +308,12 @@ void ladimp(const LAD* const lad,
 
 
 /** Detection routine for the charge signals on the LAD anodes. The
-   charge distribution among the neighboring anodes implemented in
-   this function follows the approach of Campana et al. (2011). The
-   function has to be called with impact times in chronological
-   order. At the end of the simulation it has to be called with a
-   negative impact energy in order to read the remaining events from
-   the internal cache. */
+    charge distribution among the neighboring anodes implemented in
+    this function follows the approach of Campana et al. (2011). The
+    function has to be called with impact times in chronological
+    order. At the end of the simulation it has to be called with a
+    negative impact energy in order to read the remaining events from
+    the internal cache. */
 static inline LADSignalListItem* ladphdet(const LAD* const lad,
 					  LADImpact* const imp,
 					  const double tstart,
@@ -324,9 +334,6 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
   // Drift velocity.
   double vD=lad->mobility*lad->efield;
 
-  // Drift time.
-  double drifttime=imp->position.x/vD;
-
   // --- Insert background events. ---
   
   if (NULL!=lad->bkgctlg) {
@@ -343,7 +350,7 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
     if (imp->energy<0.0) {
       uptime=imp->time;
     } else {
-      uptime=imp->time+drifttime;
+      uptime=imp->time+imp->position.x/vD;
     }
     while (t_next_bkg<uptime) {
       LADImpact* bkgimp=getLADImpact(status);
@@ -417,8 +424,10 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
 
 
   // Insert the foreground impact into the time-ordered cache.
-  ladimp(lad, imp, 1, &siglist, status);
-  CHECK_STATUS_RET(*status, NULL);
+  if (imp->energy>=0.0) {
+    ladimp(lad, imp, 1, &siglist, status);
+    CHECK_STATUS_RET(*status, NULL);
+  }
 
 
   // --- Return measured signal. ---
@@ -488,7 +497,7 @@ static inline LADSignalListItem* ladphdet(const LAD* const lad,
 	*entry=next;
 	continue;
       }
-    } 
+    }
     if (asic2>=0) {
       if (element->asic_readout_time[asic2]>0.) {
 	if ((signal->time-element->asic_readout_time[asic2]>
@@ -727,7 +736,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.28");
+  set_toolversion("0.29");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -1100,8 +1109,7 @@ int ladsim_main()
       // Photon generation.
       // Get a new photon from the generation routine.
       Photon ph;
-      int isph=phgen(ac, &srccat, 1, 
-		     par.TSTART, par.TSTART+par.Exposure, 
+      int isph=phgen(ac, &srccat, 1, par.TSTART, par.TSTART+par.Exposure, 
 		     par.MJDREF, par.dt, lad->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -1142,7 +1150,7 @@ int ladsim_main()
 	// events from the internal caches.
 	imp=getLADImpact(&status);
 	CHECK_STATUS_BREAK(status);
-	
+
 	if (sim_time+par.dt<par.TSTART+par.Exposure) {
 	  sim_time+=par.dt;
 	} else {
@@ -1187,7 +1195,6 @@ int ladsim_main()
 	LADSignalListItem* next=siglist->next;
 	free(siglist);
 	siglist=next;
-
       }
       CHECK_STATUS_BREAK(status);
       // END of loop over all signals.

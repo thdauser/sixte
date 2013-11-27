@@ -208,38 +208,38 @@ void LADCollimatorHoleIdx(const struct Point2d position,
 			  long* col, long* row)
 {
   // Distance between holes in the collimator.
-  const double pitch = 28.e-6; // [m]
+  const double pitch=28.e-6; // [m]
   // Diameter of holes in the collimator.
-  const double diameter = 25.e-6; // [m]
+  const double diameter=25.e-6; // [m]
   // Square radius of the holes in the collimator.
-  double radius2 = pow(diameter*0.5, 2.);
+  double radius2=pow(diameter*0.5, 2.);
 
   // Distance between 2 subsequent rows.
-  double h = pitch*0.5/tan(M_PI/6.);
+  double h=pitch*0.5/tan(M_PI/6.);
 
   // Determine the row.
-  long rowidx = (long)(position.y/h);
+  long rowidx=(long)(position.y/h);
   // Determine the column.
-  long colidx = (long)(position.x/(pitch*0.5));
+  long colidx=(long)(position.x/(pitch*0.5));
 
   // Center indices of the circles that have to be taken into account.
   long c[2], r[2];
   
   // Check if row is an even or an odd number.
-  if (rowidx % 2 == 1) {
+  if (rowidx % 2==1) {
     // Odd (as first row).
     
     // Check if column is an even or an odd number.
-    if (colidx % 2 == 1) {
-      c[0] = colidx;
-      r[0] = rowidx;
-      c[1] = colidx+1;
-      r[1] = rowidx+1;
+    if (colidx % 2==1) {
+      c[0]=colidx;
+      r[0]=rowidx;
+      c[1]=colidx+1;
+      r[1]=rowidx+1;
     } else {
-      c[0] = colidx+1;
-      r[0] = rowidx;
-      c[1] = colidx;
-      r[1] = rowidx+1;
+      c[0]=colidx+1;
+      r[0]=rowidx;
+      c[1]=colidx;
+      r[1]=rowidx+1;
     }
     // END of column is an even or odd number.
 
@@ -247,16 +247,16 @@ void LADCollimatorHoleIdx(const struct Point2d position,
     // Row is even number (as second row).
 
     // Check if column is an even or an odd number.
-    if (colidx % 2 == 1) {
-      c[0] = colidx+1;
-      r[0] = rowidx;
-      c[1] = colidx;
-      r[1] = rowidx+1;
+    if (colidx % 2==1) {
+      c[0]=colidx+1;
+      r[0]=rowidx;
+      c[1]=colidx;
+      r[1]=rowidx+1;
     } else {
-      c[0] = colidx;
-      r[0] = rowidx;
-      c[1] = colidx+1;
-      r[1] = rowidx+1;
+      c[0]=colidx;
+      r[0]=rowidx;
+      c[1]=colidx+1;
+      r[1]=rowidx+1;
     }
     // END of column is an even or odd number.
 
@@ -268,19 +268,19 @@ void LADCollimatorHoleIdx(const struct Point2d position,
   int ii;
   for (ii=0; ii<2; ii++) {
     struct Point2d center;
-    center.x = c[ii]*pitch/2.;
-    center.y = r[ii]*h;
+    center.x=c[ii]*pitch/2.;
+    center.y=r[ii]*h;
     // Check if the specified position lies within the regarded circle (hole).
-    if (pow(position.x-center.x, 2.) + pow(position.y-center.y, 2.) < radius2) {
-      *col = c[ii];
-      *row = r[ii];
+    if (pow(position.x-center.x, 2.)+pow(position.y-center.y, 2.) < radius2) {
+      *col=c[ii];
+      *row=r[ii];
       return;  
     }
   }
 
   // Position is not open.
-  *col = -1;
-  *row = -1;
+  *col=-1;
+  *row=-1;
   return;
 }
 

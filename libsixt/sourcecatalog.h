@@ -50,8 +50,8 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 				 int* const status);
 
 /** Create photons for all sources in the catalog for the specified
-    time interval. Only sources within the FoV (given in [rad])
-    defined by the telescope pointing direction are taken into
+    time interval. Only sources within the FoV (diameter given in
+    [rad]) around the telescope pointing direction are taken into
     account. */
 LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat, 
 					const Vector* const pointing, 

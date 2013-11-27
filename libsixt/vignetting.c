@@ -11,11 +11,10 @@ Vignetting* newVignetting(const char* const filename, int* const status)
   do {
 
     // Allocate memory for the Vignetting data STRUCTURE:
-    vignetting = (Vignetting*)malloc(sizeof(Vignetting));
+    vignetting=(Vignetting*)malloc(sizeof(Vignetting));
     if (NULL==vignetting) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: could not allocate memory for storing "
-		     "the vignetting data!\n", *status);
+      SIXT_ERROR("could not allocate memory for storing the vignetting data");
       break;
     }
 
@@ -41,70 +40,65 @@ Vignetting* newVignetting(const char* const filename, int* const status)
 	   &vignetting->ntheta, &vignetting->nphi);
 
     // Allocate memory for the Vignetting data:
-    vignetting->energ_lo = (float*)malloc(vignetting->nenergies*sizeof(float));
-    vignetting->energ_hi = (float*)malloc(vignetting->nenergies*sizeof(float));
-    vignetting->theta    = (float*)malloc(vignetting->ntheta   *sizeof(float));
-    vignetting->phi      = (float*)malloc(vignetting->nphi     *sizeof(float));
+    vignetting->energ_lo=(float*)malloc(vignetting->nenergies*sizeof(float));
+    vignetting->energ_hi=(float*)malloc(vignetting->nenergies*sizeof(float));
+    vignetting->theta   =(float*)malloc(vignetting->ntheta   *sizeof(float));
+    vignetting->phi     =(float*)malloc(vignetting->nphi     *sizeof(float));
     if ((NULL==vignetting->energ_lo) || (NULL==vignetting->energ_hi) ||
 	(NULL==vignetting->theta) || (NULL==vignetting->phi)) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: could not allocate memory for storing "
-		     "the vignetting data!\n", *status);
+      SIXT_ERROR("could not allocate memory for storing the vignetting data");
       break;
     } else {
       for(count1=0; count1<vignetting->nenergies; count1++) {
-	vignetting->energ_lo[count1] = 0.;
-	vignetting->energ_hi[count1] = 0.;
+	vignetting->energ_lo[count1]=0.;
+	vignetting->energ_hi[count1]=0.;
       }
       for(count1=0; count1<vignetting->ntheta; count1++) {
-	vignetting->theta[count1] = 0.;
+	vignetting->theta[count1]=0.;
       }
       for(count1=0; count1<vignetting->nphi; count1++) {
-	vignetting->phi[count1] = 0.;
+	vignetting->phi[count1]=0.;
       }
     }
 
-    vignetting->vignet = (float***)malloc(vignetting->nenergies*sizeof(float**));
+    vignetting->vignet=(float***)malloc(vignetting->nenergies*sizeof(float**));
     if (NULL!=vignetting->vignet) {
       for(count1=0; count1<vignetting->nenergies; count1++) {
-	vignetting->vignet[count1] = (float**)malloc(vignetting->ntheta*sizeof(float*));
+	vignetting->vignet[count1]=(float**)malloc(vignetting->ntheta*sizeof(float*));
 	if (NULL!=vignetting->vignet[count1]) {
 	  for(count2=0; count2<vignetting->ntheta; count2++) {
-	    vignetting->vignet[count1][count2] = 
+	    vignetting->vignet[count1][count2]=
 	      (float*)malloc(vignetting->nphi*sizeof(float));
 	    if (NULL!=vignetting->vignet[count1][count2]) {
 	      for(count3=0; count3<vignetting->nphi; count3++) {
-		vignetting->vignet[count1][count2][count3] = 0.;
+		vignetting->vignet[count1][count2][count3]=0.;
 	      }
 	    } else {
 	      *status=EXIT_FAILURE;
-	      HD_ERROR_THROW("Error: could not allocate memory for storing "
-			     "the vignetting data!\n", *status);
+	      SIXT_ERROR("could not allocate memory for storing the vignetting data");
 	      break;
 	    }
 	  }
 	} else {
 	  *status=EXIT_FAILURE;
-	  HD_ERROR_THROW("Error: could not allocate memory for storing "
-			 "the vignetting data!\n", *status);
+	  SIXT_ERROR("could not allocate memory for storing the vignetting data");
 	  break;
 	}
       }
     } else {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: could not allocate memory for storing "
-		     "the vignetting data!\n", *status);
+      SIXT_ERROR("could not allocate memory for storing the vignetting data");
       break;
     }
-    if (EXIT_SUCCESS!=*status) break;
+    CHECK_STATUS_BREAK(*status);
 
-    data_buffer = (float*)malloc(vignetting->nenergies*
-				 vignetting->ntheta*
-				 vignetting->nphi*sizeof(float));
+    data_buffer=(float*)malloc(vignetting->nenergies*
+			       vignetting->ntheta*
+			       vignetting->nphi*sizeof(float));
     if (NULL==data_buffer) {
       *status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: could not allocate memory for storing "
-		     "the vignetting data!\n", *status);
+      SIXT_ERROR("could not allocate memory for storing the vignetting data");
       break;
     } else {
       for(count1=0; 
@@ -134,19 +128,19 @@ Vignetting* newVignetting(const char* const filename, int* const status)
     vignetting->Emin=-1.;
     vignetting->Emax=-1.;
     for (count1=0; count1<vignetting->nenergies; count1++) {
-      if ((vignetting->energ_lo[count1] < vignetting->Emin) || (vignetting->Emin<0.)) {
-	vignetting->Emin = vignetting->energ_lo[count1];
+      if ((vignetting->energ_lo[count1]<vignetting->Emin) || (vignetting->Emin<0.)) {
+	vignetting->Emin=vignetting->energ_lo[count1];
       }
-      if (vignetting->energ_hi[count1] > vignetting->Emax) {
-	vignetting->Emax = vignetting->energ_hi[count1];
+      if (vignetting->energ_hi[count1]>vignetting->Emax) {
+	vignetting->Emax=vignetting->energ_hi[count1];
       }
     }						
     // Scale from [deg] -> [rad]:
     for (count1=0; count1<vignetting->ntheta; count1++) {
-      vignetting->theta[count1] *= M_PI/180.;
+      vignetting->theta[count1]*=M_PI/180.;
     }
     for (count1=0; count1<vignetting->nphi; count1++) {
-      vignetting->phi[count1] *= M_PI/180.;
+      vignetting->phi[count1]*=M_PI/180.;
     }
 
     // Plot debug information about available energies, off-axis
@@ -239,7 +233,7 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
   /*
   // At the moment this routine can only handle the case with phi = 0.
   if (phi!=0.) {
-    HD_ERROR_THROW("Error: vignetting can only be determined for phi=0!\n", EXIT_FAILURE);
+    SIXT_ERROR("vignetting can only be determined for phi=0");
     return(0.);
   }
   */
