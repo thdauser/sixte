@@ -598,7 +598,7 @@ int erosim_main()
     // Simulation progress status (running from 0 to 100).
     unsigned int progress=0;
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%", 0.);
+      headas_chat(2, "\r%.0lf %%", 0.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -681,7 +681,7 @@ int erosim_main()
 	while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
 	  progress++;
 	  if (NULL==progressfile) {
-	    headas_chat(2, "\r%.1lf %%", progress*1.);
+	    headas_chat(2, "\r%.0lf %%", progress*1.);
 	    fflush(NULL);
 	  } else {
 	    rewind(progressfile);
@@ -717,7 +717,7 @@ int erosim_main()
       
     // Progress output.
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%\n", 100.);
+      headas_chat(2, "\r%.0lf %%\n", 100.);
       fflush(NULL);
     } else {
       rewind(progressfile);

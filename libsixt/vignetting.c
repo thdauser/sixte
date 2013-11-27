@@ -240,36 +240,35 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
 
   if ((energy<vi->Emin) || (energy>vi->Emax)) {
     return(-1.); // Energy is out of range!
-  } else {
-    // Find the right energy bin.
-    int ii;
-    for(ii=0; ii<vi->nenergies; ii++) {
-      if ((energy>vi->energ_lo[ii])&&(energy<=vi->energ_hi[ii])) {
-
-	// Check if the required angle is larger than the biggest in the 
-	// vignetting data.
-	if (theta>=vi->theta[vi->ntheta-1]) {
-	  return(vi->vignet[ii][vi->ntheta-1][0]);
-	}
-
-	// Find the two values in the vignetting data surrounding
-	// the required angle.
-	int jj;
-	for(jj=1; jj<vi->ntheta; jj++) {
-	  if (vi->theta[jj]>=theta) {
-	    break;
-	  }
-	}
-	// Interpolate between both values.
-	return(vi->vignet[ii][jj-1][0]+
-	       (vi->vignet[ii][jj][0]-vi->vignet[ii][jj-1][0])*
-	       (theta-vi->theta[jj-1])/(vi->theta[jj]-vi->theta[jj-1]));
-
+  } 
+  
+  // Find the right energy bin.
+  int ii;
+  for(ii=0; ii<vi->nenergies; ii++) {
+    if ((energy>=vi->energ_lo[ii])&&(energy<=vi->energ_hi[ii])) {
+      
+      // Check if the required angle is larger than the biggest in the 
+      // vignetting data.
+      if (theta>=vi->theta[vi->ntheta-1]) {
+	return(vi->vignet[ii][vi->ntheta-1][0]);
       }
-    } // Loop to find the right energy bin.
 
-    assert(ii<vi->nenergies);
-    return(0.); // (this should never be reached)
-  }
+      // Find the two values in the vignetting data surrounding
+      // the required angle.
+      int jj;
+      for(jj=1; jj<vi->ntheta; jj++) {
+	if (vi->theta[jj]>=theta) {
+	  // Interpolate between both values.
+	  return(vi->vignet[ii][jj-1][0]+
+		 (vi->vignet[ii][jj][0]-vi->vignet[ii][jj-1][0])*
+		 (theta-vi->theta[jj-1])/(vi->theta[jj]-vi->theta[jj-1]));
+	}
+      }
+    }
+  } 
+  // END of loop to find the right energy bin.
+
+  assert(ii<vi->nenergies);
+  return(0.); // (this should never be reached)
 }
 

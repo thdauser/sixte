@@ -379,7 +379,8 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "FOV")) {
 
     // Determine the diameter of the FOV.
-    xmlparsedata->lad->fov_diameter=getXMLAttributeFloat(attr, "DIAMETER");
+    xmlparsedata->lad->fov_diameter=
+      getXMLAttributeFloat(attr, "DIAMETER")*M_PI/180.;
    
   } else if (!strcmp(Uelement, "TEMPERATURE")) {
 
