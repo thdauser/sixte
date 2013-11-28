@@ -362,12 +362,12 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     CHECK_STATUS_VOID(xmlparsedata->status);
     
     // Set the properties.
-    element->id = getXMLAttributeLong(attr, "ID");
-    element->xdim = getXMLAttributeFloat(attr, "XDIM");
-    element->ydim = getXMLAttributeFloat(attr, "YDIM");
-    element->xborder = getXMLAttributeFloat(attr, "XBORDER");
-    element->yborder = getXMLAttributeFloat(attr, "YBORDER");
-    element->nanodes = getXMLAttributeLong(attr, "NANODES");
+    element->id=getXMLAttributeLong(attr, "ID");
+    element->xdim=getXMLAttributeFloat(attr, "XDIM");
+    element->ydim=getXMLAttributeFloat(attr, "YDIM");
+    element->xborder=getXMLAttributeFloat(attr, "XBORDER");
+    element->yborder=getXMLAttributeFloat(attr, "YBORDER");
+    element->nanodes=getXMLAttributeLong(attr, "NANODES");
     
     // Add the new element to the LAD.
     addElement2Module(xmlparsedata->module, element, &xmlparsedata->status);
@@ -415,27 +415,27 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
   } else if (!strcmp(Uelement, "THRESHOLD")) {
 
     // Determine the lower and the upper read-out threshold.
-    float threshold_readout_lo_keV = 
+    float threshold_readout_lo_keV=
       getXMLAttributeFloat(attr, "READOUT_LO_KEV");
-    float threshold_readout_up_keV = 
+    float threshold_readout_up_keV=
       getXMLAttributeFloat(attr, "READOUT_UP_KEV");
     
     if (0.<threshold_readout_lo_keV) {
-      xmlparsedata->lad->threshold_readout_lo_keV = 
+      xmlparsedata->lad->threshold_readout_lo_keV=
 	(float*)malloc(sizeof(float));
       CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_lo_keV, 
 		      xmlparsedata->status,
 		      "memory allocation for threshold failed");
-      *(xmlparsedata->lad->threshold_readout_lo_keV) = threshold_readout_lo_keV;
+      *(xmlparsedata->lad->threshold_readout_lo_keV)=threshold_readout_lo_keV;
     }
 
     if (0.<threshold_readout_up_keV) {
-      xmlparsedata->lad->threshold_readout_up_keV = 
+      xmlparsedata->lad->threshold_readout_up_keV=
 	(float*)malloc(sizeof(float));
       CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_up_keV, 
 		      xmlparsedata->status,
 		      "memory allocation for threshold failed");
-      *(xmlparsedata->lad->threshold_readout_up_keV) = threshold_readout_up_keV;
+      *(xmlparsedata->lad->threshold_readout_up_keV)=threshold_readout_up_keV;
     }
 
   } else if (!strcmp(Uelement, "ARF")) {
@@ -560,7 +560,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for LAD background");
+      SIXT_ERROR("no file specified for detector background");
       xmlparsedata->status=EXIT_FAILURE;
     }
 
@@ -569,8 +569,9 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
     xmlparsedata->lad->bkgctlg=
-      openSimputCtlg(filepathname, READONLY, 
+      openSimputCtlg(filepathname, READONLY,
 		     0, 0, 0, 0, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
@@ -590,6 +591,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     strcat(filepathname, filename);
     xmlparsedata->lad->vignetting=
       newVignetting(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
   
   } else {
     char msg[MAXMSG];

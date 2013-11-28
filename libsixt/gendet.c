@@ -321,39 +321,36 @@ void operateGenDetClock(GenDet* const det,
 	return;
       }
 
-      // Get background events for the required time interval (has
-      // to be given in [s]). The regarded area of the detector 
-      // is calculated from the information about the pixel grid.
-      long* bkgphas=NULL;
-      int* x=NULL;
-      int* y=NULL;
-      unsigned int nevts=
-	PHABkgGetEvents(det->phabkg, time-last_time, det->pixgrid, 
-			&bkgphas, &x, &y, status);
-      CHECK_STATUS_VOID(*status);
-
-      // TODO Determine exponentially distributed times
-      // for the background events.
-
-      unsigned int ii;
-      for (ii=0; ii<nevts; ii++) {
-	// Determine the corresponding signal.
-	float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, status);
+      // Get background events for the required time interval. 
+      double tbkg;
+      long phabkg;
+      while (getPHABkgEvent(det->phabkg,
+			    det->pixgrid->xwidth*det->pixgrid->xdelt*
+			    det->pixgrid->ywidth*det->pixgrid->ydelt,
+			    last_time, time,
+			    &tbkg, &phabkg, status)) {
 	CHECK_STATUS_VOID(*status);
-	
+
+	// Determine the corresponding signal.
+	float energy=getEBOUNDSEnergy(phabkg, det->rmf, status);
+	CHECK_STATUS_VOID(*status);
+
+	// Determine the affected pixel.
+	int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	CHECK_STATUS_VOID(*status);
+	int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+	CHECK_STATUS_VOID(*status);
+
 	// Add the signal to the pixel.
-	addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, time, -1, -1);
+	addGenDetCharge2Pixel(det->line[yi], xi, energy, tbkg, -1, -1);
 
 	// Call the event trigger routine.
-	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, status);
+	GenDetReadoutPixel(det, yi, yi, xi, tbkg, status);
 	CHECK_STATUS_VOID(*status);
 	    
 	// In event-triggered mode each event occupies its own frame.
 	det->clocklist->frame++;	    
       }
-      free(bkgphas);
-      free(x);
-      free(y);
     }
 
     // Remember the time of the function call.
@@ -367,7 +364,7 @@ void operateGenDetClock(GenDet* const det,
     void* element=NULL;
     do {
       CLReadoutLine* clreadoutline=NULL;
-      CLClearLine*   clclearline  =NULL;
+      CLClearLine* clclearline    =NULL;
       CLWait* clwait              =NULL;
 
       getClockListElement(det->clocklist, time, &type, &element, status);
@@ -411,31 +408,30 @@ void operateGenDetClock(GenDet* const det,
 	    return;
 	  }
 
-	  // Get background events for the required time interval (has
-	  // to be given in [s]). The area of the detector within the 
-	  // (circular) FoV has to be specified in order to determine
-	  // the absolute background event rate.
-	  long* bkgphas=NULL;
-	  int* x=NULL;
-	  int* y=NULL;
-	  unsigned int nevts=
-	    PHABkgGetEvents(det->phabkg, clwait->time, det->pixgrid,
-			    &bkgphas, &x, &y, status);
-	  CHECK_STATUS_VOID(*status);
-	  
-	  unsigned int ii;
-	  for (ii=0; ii<nevts; ii++) {
+	  // Get background events for the required time interval. 
+	  double tbkg;
+	  long phabkg;
+	  while (getPHABkgEvent(det->phabkg,
+				det->pixgrid->xwidth*det->pixgrid->xdelt*
+				det->pixgrid->ywidth*det->pixgrid->ydelt,
+				det->clocklist->time,
+				det->clocklist->time+clwait->time,
+				&tbkg, &phabkg, status)) {
+	    CHECK_STATUS_VOID(*status);
+
 	    // Determine the corresponding signal.
-	    float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, status);
+	    float energy=getEBOUNDSEnergy(phabkg, det->rmf, status);
+	    CHECK_STATUS_VOID(*status);
+
+	    // Determine the affected pixel.
+	    int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	    CHECK_STATUS_VOID(*status);
+	    int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
 	    CHECK_STATUS_VOID(*status);
 
 	    // Add the signal to the pixel.
-	    addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, 
-	    det->clocklist->time, -1, -1);
+	    addGenDetCharge2Pixel(det->line[yi], xi, energy, tbkg, -1, -1);
 	  }
-	  free(bkgphas);
-	  free(x);
-	  free(y);
 	}
 
 	// Insert cosmic ray background events, 

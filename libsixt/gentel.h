@@ -3,7 +3,7 @@
 
 #include "sixt.h"
 #include "arf.h"
-#include "codedmask.h"
+#include "phabkg.h"
 #include "psf.h"
 #include "vignetting.h"
 
@@ -35,10 +35,8 @@ typedef struct {
       file. */
   float fov_diameter;
 
-  /** If the telescope is a coded mask telescope and not an imaging
-      telescope, we have to specify the coded mask file instead of the
-      PSF. */
-  CodedMask* coded_mask;
+  /** Model for sky background according to a given PHA file. */
+  PHABkg* phabkg;
 
 } GenTel;
 

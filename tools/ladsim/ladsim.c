@@ -671,12 +671,6 @@ int ladsim_main()
       CHECK_STATUS_BREAK(status);
     }
 
-    // Drift velocity.
-    double vD=lad->mobility*lad->efield;
-
-    // Maximum drift time.
-    double tDmax=lad->panel[0]->module[0]->element[0]->xdim/2/vD;
-
     // Set up the Attitude.
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);

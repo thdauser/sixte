@@ -46,14 +46,13 @@ int phimg(const GenTel* const tel,
 	  tan(tel->fov_diameter)*tel->focal_length) {
 	
 	// New impact.
-	imp->time     = ph->time;
-	imp->energy   = ph->energy;
-	imp->position = position;
-	imp->ph_id    = ph->ph_id;
-	imp->src_id   = ph->src_id;
+	imp->time    =ph->time;
+	imp->energy  =ph->energy;
+	imp->position=position;
+	imp->ph_id   =ph->ph_id;
+	imp->src_id  =ph->src_id;
 
 	return(1);
-
       } else {
 	return(0);
       }

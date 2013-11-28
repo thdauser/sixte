@@ -9,6 +9,13 @@
 /** Data structure given to the XML handler to transfer data. */
 struct XMLParseData {
   GenInst* inst;
+  
+  /** Flag whether we are inside the 'telescope' tag. */
+  int inTelescope;
+
+  /** Flag whether we are inside the 'detector' tag. */
+  int inDetector;
+  
   int status;
 };
 
@@ -240,9 +247,11 @@ void parseGenInstXML(GenInst* const inst,
   }
 
   // Set data that is passed to the handler functions.
-  struct XMLParseData xmlparsedata = {
-    .inst   = inst,
-    .status = EXIT_SUCCESS
+  struct XMLParseData xmlparsedata={
+    .inst       =inst,
+    .inTelescope=0,
+    .inDetector =0,
+    .status     =EXIT_SUCCESS
   };
   XML_SetUserData(parser, &xmlparsedata);
 
@@ -263,7 +272,7 @@ void parseGenInstXML(GenInst* const inst,
   }
   // Check for errors.
   if (EXIT_SUCCESS!=xmlparsedata.status) {
-    *status = xmlparsedata.status;
+    *status=xmlparsedata.status;
     return;
   }
 
@@ -356,12 +365,12 @@ static void GenInstXMLElementStart(void* parsedata,
 				   const char** attr) 
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
-  char Uelement[MAXMSG]; // Upper case version of XML element.
 
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
 
   // Convert the element to an upper case string.
+  char Uelement[MAXMSG];
   strcpy(Uelement, el);
   strtoupper(Uelement);
 
@@ -385,6 +394,14 @@ static void GenInstXMLElementStart(void* parsedata,
 		    xmlparsedata->status,
 		    "memory allocation for INSTRUME failed");
     strcpy(xmlparsedata->inst->instrume, instrume);
+
+  } else if (!strcmp(Uelement, "TELESCOPE")) {
+    // Set the flag that we are inside the 'telescope' tag.
+    xmlparsedata->inTelescope=1;
+
+  } else if (!strcmp(Uelement, "DETECTOR")) {
+    // Set the flag that we are inside the 'detector' tag.
+    xmlparsedata->inDetector=1;
 
   } else if (!strcmp(Uelement, "LINESHIFT")) {
     CLLineShift* cllineshift=newCLLineShift(&xmlparsedata->status);
@@ -587,24 +604,6 @@ static void GenInstXMLElementStart(void* parsedata,
 	     &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
-  } else if (!strcmp(Uelement, "CODEDMASK")) {
-
-    char filename[MAXFILENAME];
-    getXMLAttributeString(attr, "FILENAME", filename);
-
-    // Check if a file name has been specified.
-    if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for coded mask");
-      xmlparsedata->status=EXIT_FAILURE;
-    }
-
-    char filepathname[MAXFILENAME];
-    strcpy(filepathname, xmlparsedata->inst->filepath);
-    strcat(filepathname, filename);
-    xmlparsedata->inst->tel->coded_mask= 
-      getCodedMaskFromFile(filepathname, &xmlparsedata->status);
-    CHECK_STATUS_VOID(xmlparsedata->status);
-
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
     char filename[MAXFILENAME];
@@ -687,7 +686,6 @@ static void GenInstXMLElementStart(void* parsedata,
 	CHECK_STATUS_VOID(xmlparsedata->status);
       }
     }
-
     xmlparsedata->inst->det->erobackground=1;
 
   } else if (!strcmp(Uelement, "PHABACKGROUND")) {
@@ -704,13 +702,21 @@ static void GenInstXMLElementStart(void* parsedata,
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->inst->det->phabkg=
-      newPHABkg(filepathname, &xmlparsedata->status);
-    CHECK_STATUS_VOID(xmlparsedata->status);
 
-    // Set the radius of the FoV.
-    xmlparsedata->inst->det->phabkg->fov_diameter=
-      getXMLAttributeFloat(attr, "FOV_DIAMETER");
+    if (1==xmlparsedata->inTelescope) {
+      xmlparsedata->inst->tel->phabkg=
+	newPHABkg(filepathname, &xmlparsedata->status);
+      CHECK_STATUS_VOID(xmlparsedata->status);
+    } else if (1==xmlparsedata->inTelescope) {
+      xmlparsedata->inst->det->phabkg=
+	newPHABkg(filepathname, &xmlparsedata->status);
+      CHECK_STATUS_VOID(xmlparsedata->status);
+    } else {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("tag <phabackground> must be inside <telescope> or "
+		 "<detector> environment");
+      return;
+    }
 
   } else if (!strcmp(Uelement, "SPLIT")) {
 
@@ -718,11 +724,11 @@ static void GenInstXMLElementStart(void* parsedata,
     getXMLAttributeString(attr, "TYPE", type);
     strtoupper(type);
     if (!strcmp(type, "NONE")) {
-      xmlparsedata->inst->det->split->type = GS_NONE;
+      xmlparsedata->inst->det->split->type=GS_NONE;
     } else if (!strcmp(type, "GAUSS")) {
-      xmlparsedata->inst->det->split->type = GS_GAUSS;
+      xmlparsedata->inst->det->split->type=GS_GAUSS;
     } else if (!strcmp(type, "EXPONENTIAL")) {
-      xmlparsedata->inst->det->split->type = GS_EXPONENTIAL;
+      xmlparsedata->inst->det->split->type=GS_EXPONENTIAL;
     }
     xmlparsedata->inst->det->split->par1=getXMLAttributeFloat(attr, "PAR1");
     xmlparsedata->inst->det->split->par2=getXMLAttributeFloat(attr, "PAR2");
@@ -736,8 +742,7 @@ static void GenInstXMLElementStart(void* parsedata,
       xmlparsedata->inst->det->readout_trigger=GENDET_TIME_TRIGGERED;
     } else if (!strcmp(mode, "EVENT")) {
       xmlparsedata->inst->det->readout_trigger=GENDET_EVENT_TRIGGERED;
-    }
-    
+    }    
     xmlparsedata->inst->det->deadtime=getXMLAttributeDouble(attr, "DEADTIME");
 
   } else if (!strcmp(Uelement, "WAIT")) {
@@ -749,7 +754,7 @@ static void GenInstXMLElementStart(void* parsedata,
     CHECK_STATUS_VOID(xmlparsedata->status);
 
     // Accumulate the amount of time required for one read-out frame.
-    xmlparsedata->inst->det->frametime += waittime;
+    xmlparsedata->inst->det->frametime+=waittime;
 	
   } else if (!strcmp(Uelement, "CLEARLINE")) {
 
@@ -761,41 +766,45 @@ static void GenInstXMLElementStart(void* parsedata,
 
   } else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
 
-    xmlparsedata->inst->det->threshold_readout_lo_keV = 
+    xmlparsedata->inst->det->threshold_readout_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower readout threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_readout_lo_keV);
 	
   } else if (!strcmp(Uelement, "THRESHOLD_PATTERN_UP_KEV")) {
 
-    xmlparsedata->inst->det->threshold_pattern_up_keV = 
+    xmlparsedata->inst->det->threshold_pattern_up_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "upper pattern threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_pattern_up_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
 
-    xmlparsedata->inst->det->threshold_event_lo_keV = 
+    xmlparsedata->inst->det->threshold_event_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower event threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_event_lo_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_KEV")) {
 
-    xmlparsedata->inst->det->threshold_split_lo_keV =
+    xmlparsedata->inst->det->threshold_split_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower split threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_split_lo_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
 
-    xmlparsedata->inst->det->threshold_split_lo_fraction = 
+    xmlparsedata->inst->det->threshold_split_lo_fraction=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower split threshold: %.1lf %%\n", 
 		xmlparsedata->inst->det->threshold_split_lo_fraction*100.);
 
+  } else {
+    // Unknown tag, display warning.
+    char msg[MAXMSG];
+    sprintf(msg, "unknown XML tag: <%s>", el);
+    SIXT_WARNING(msg);
   }
-  CHECK_STATUS_VOID(xmlparsedata->status);
 }
 
 
@@ -803,11 +812,20 @@ static void GenInstXMLElementEnd(void* parsedata, const char* el)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
-  (void)el; // Unused parameter.
-
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
 
-  return;
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG];
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+
+  if (!strcmp(Uelement, "TELESCOPE")) {
+    // Unset the flag for inside the 'telescope' tag.
+    xmlparsedata->inTelescope=0;
+  } else if (!strcmp(Uelement, "DETECTOR")) {
+    // Unset the flag for inside the 'detector' tag.
+    xmlparsedata->inDetector=0;
+  }
 }
 
