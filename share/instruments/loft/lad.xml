@@ -2,7 +2,7 @@
 <!-- LOFT LAD version 1.13 -->
 <instrument type="LOFT LAD">
   <telescope>
-    <fov diameter="2.0"/>
+    <fov diameter="2.1"/>
     <vignetting filename="lad_vignetting_normalized.fits"/>
   </telescope>
 
