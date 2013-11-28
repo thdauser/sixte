@@ -205,8 +205,29 @@ void freeLADElement(LADElement** const element)
 
 
 void LADCollimatorHoleIdx(const struct Point2d position,
-			  long* col, long* row)
+			  long* const col, long* const row)
 {
+#ifdef LAD_COLLIMATOR_SQUARE_HOLES
+  const double porewidth=83.e-6; // [m]
+  const double wallthickness=16.e-6; // [m]
+  
+  const double cellsize=porewidth+wallthickness;
+  long xi=(long)(position.x/cellsize);
+  long yi=(long)(position.y/cellsize);
+  double x=position.x-xi*cellsize;
+  double y=position.y-yi*cellsize;
+
+  if ((x<=wallthickness) || (y<=wallthickness)) {
+    // Closed.
+    *col=-1;
+    *row=-1;
+  } else {
+    // Open.
+    *col=xi;
+    *row=yi;
+  }
+
+#else
   // Distance between holes in the collimator.
   const double pitch=28.e-6; // [m]
   // Diameter of holes in the collimator.
@@ -259,7 +280,6 @@ void LADCollimatorHoleIdx(const struct Point2d position,
       r[1]=rowidx+1;
     }
     // END of column is an even or odd number.
-
   }
   // END of row is odd or even.
 
@@ -281,6 +301,6 @@ void LADCollimatorHoleIdx(const struct Point2d position,
   // Position is not open.
   *col=-1;
   *row=-1;
-  return;
+#endif
 }
 
