@@ -10,6 +10,11 @@
 #include "xmlbuffer.h"
 
 
+/** This flag can be used to switch between the current and the old
+   collimator model with square and circular holes, respectively. */
+#define LAD_COLLIMATOR_SQUARE_HOLES 1
+
+
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
 /////////////////////////////////////////////////////////////////
@@ -223,7 +228,7 @@ void freeLADElement(LADElement** const element);
     inside a hole but on the absorbing material, the return values of
     the column and row indices are set to -1. */
 void LADCollimatorHoleIdx(const struct Point2d position,
-			  long* col, long* row);
+			  long* const col, long* const row);
 
 
 #endif

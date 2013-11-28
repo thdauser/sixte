@@ -121,8 +121,8 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     
       // Determine the length of the vector to reach from the entrance
       // position on top of the collimator to the bottom.
-      // (The collimator has a thickness of 2 mm.)
-      double length=2.0e-3 / deviation.z;
+      // (The collimator has a thickness of 5 mm.)
+      double length=0.005/deviation.z;
     
       // Add the off-axis deviation to the entrance position.
       imp->position.x=
@@ -158,11 +158,11 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     this function follows the approach of Campana et al. (2011). The
     function has to be called with impact times in chronological
     order. */ 
-void ladphdet(const LAD* const lad, 
-	      LADImpact* const imp,
-	      const int conv_with_rmf,
-	      LADSignalListItem** const siglist, 
-	      int* const status)
+static inline void ladphdet(const LAD* const lad, 
+			    LADImpact* const imp,
+			    const int conv_with_rmf,
+			    LADSignalListItem** const siglist, 
+			    int* const status)
 {
   // Determine the measured signal.
   float signal;
@@ -454,7 +454,6 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
 	continue;
       }
     }
-
     return(ev);
   }
 
@@ -522,7 +521,7 @@ int ladsim_main()
 
   // Register HEATOOL
   set_toolname("ladsim");
-  set_toolversion("0.30");
+  set_toolversion("0.31");
 
 
   do { // Beginning of ERROR HANDLING Loop.

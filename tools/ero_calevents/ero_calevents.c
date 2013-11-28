@@ -26,7 +26,7 @@ int ero_calevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_calevents");
-  set_toolversion("0.12");
+  set_toolversion("0.13");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -127,15 +127,18 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Create the event table.
-    char *ttype[]={"TIME", "FRAME", "RAWX", "RAWY", "PHA", "ENERGY", 
-		   "RA", "DEC", "X", "Y", "SUBX", "SUBY", "FLAG", 
-		   "PAT_TYP", "PAT_INF", "EV_WEIGHT", "CCDNR"};
-    char *tform[]={"D", "J", "I", "I", "I", "E", 
-		   "J", "J", "J", "J", "B", "B", "J",
-		   "I", "B", "E", "B"};
-    char *tunit[]={"", "", "", "", "adu", "eV", 
-		   "", "", "", "", "", "", "", "",
-		   "", "", "", ""};
+    char *ttype[]={"TIME", "RA", "DEC", "X", "Y", "ENERGY",
+		   "EV_WEIGHT", "RAWX", "RAWY", "SUBX", "SUBY",
+		   "PHA", "PAT_TYP", "PAT_INF", "CCDNR",
+		   "FLAG", "FRAME"};
+    char *tform[]={"D", "J", "J", "J", "J", "E",
+		   "E", "I", "I", "B", "B",
+		   "I", "I", "B", "B",
+		   "J", "J"};
+    char *tunit[]={"", "", "", "", "", "eV",
+		   "", "", "", "", "",
+		   "adu", "", "", "",
+		   "", ""};
     fits_create_tbl(fptr, BINARY_TBL, 0, 17, ttype, tform, tunit, 
 		    "EVENTS", &status);
     if (EXIT_SUCCESS!=status) {
@@ -164,25 +167,25 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
-    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cx, cy, 
-      csubx, csuby, cflag, cpat_typ, cpat_inf, cev_weight, cccdnr;
+    int ctime, cra, cdec, cx, cy, cenergy, cev_weight, crawx, crawy, 
+      csubx, csuby, cpha, cpat_typ, cpat_inf, cccdnr, cflag, cframe;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
-    fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
-    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
-    fits_get_colnum(fptr, CASEINSEN, "ENERGY", &cenergy, &status);
-    fits_get_colnum(fptr, CASEINSEN, "RAWX", &crawx, &status);
-    fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
     fits_get_colnum(fptr, CASEINSEN, "RA", &cra, &status);
     fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, &status);
     fits_get_colnum(fptr, CASEINSEN, "X", &cx, &status);
     fits_get_colnum(fptr, CASEINSEN, "Y", &cy, &status);
+    fits_get_colnum(fptr, CASEINSEN, "ENERGY", &cenergy, &status);
+    fits_get_colnum(fptr, CASEINSEN, "EV_WEIGHT", &cev_weight, &status);
+    fits_get_colnum(fptr, CASEINSEN, "RAWX", &crawx, &status);
+    fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
     fits_get_colnum(fptr, CASEINSEN, "SUBX", &csubx, &status);
     fits_get_colnum(fptr, CASEINSEN, "SUBY", &csuby, &status);
-    fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_TYP", &cpat_typ, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_INF", &cpat_inf, &status);
-    fits_get_colnum(fptr, CASEINSEN, "EV_WEIGHT", &cev_weight, &status);
     fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
+    fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
+    fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the TLMIN and TLMAX keywords.
