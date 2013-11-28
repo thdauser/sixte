@@ -707,7 +707,7 @@ static void GenInstXMLElementStart(void* parsedata,
       xmlparsedata->inst->tel->phabkg=
 	newPHABkg(filepathname, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);
-    } else if (1==xmlparsedata->inTelescope) {
+    } else if (1==xmlparsedata->inDetector) {
       xmlparsedata->inst->det->phabkg=
 	newPHABkg(filepathname, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);

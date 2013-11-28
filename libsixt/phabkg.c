@@ -24,6 +24,7 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
 
   // Initialize values.
   phabkg->nbins=0;
+  phabkg->tnext=0.;
 
   // Load the specified PHA file.
   fitsfile *fptr=NULL;
@@ -107,7 +108,7 @@ void destroyPHABkg(PHABkg** const phabkg)
 }
 
 
-int getPHABkgEvent(const PHABkg* const phabkg,
+int getPHABkgEvent(PHABkg* const phabkg,
 		   const float scaling,
 		   const double tstart,
 		   const double tstop,
@@ -115,8 +116,6 @@ int getPHABkgEvent(const PHABkg* const phabkg,
 		   long* const pha,
 		   int* const status)
 {
-  static double tnext=0.0;
-
   // Check if everything is set up properly.
   if (NULL==phabkg) {
     SIXT_ERROR("no PHA background model specified");
@@ -135,19 +134,19 @@ int getPHABkgEvent(const PHABkg* const phabkg,
 
   // Update to the start time, if time of next background event lies
   // before that.
-  if (tnext<tstart) {
-    tnext=tstart+rndexp(1./rate, status);
+  if (phabkg->tnext<tstart) {
+    phabkg->tnext=tstart+rndexp(1./rate, status);
     CHECK_STATUS_RET(*status, 0);
   }
 
   // Check if the time of the next background event lies before the
   // specified upper limit. In this case no event is produced.
-  if (tnext>tstop) {
+  if (phabkg->tnext>tstop) {
     return(0);
   }
 
   // Set the time of the background event.
-  *t=tnext;
+  *t=phabkg->tnext;
 
   // Determine the PHA value.
   double r=sixt_get_random_number(status)*phabkg->distribution[phabkg->nbins-1];
@@ -168,7 +167,7 @@ int getPHABkgEvent(const PHABkg* const phabkg,
   *pha=phabkg->channel[min];
 
   // Determine the time of the next background event.
-  tnext+=rndexp(1./rate, status);
+  phabkg->tnext+=rndexp(1./rate, status);
   CHECK_STATUS_RET(*status, 0);
 
   return(1);

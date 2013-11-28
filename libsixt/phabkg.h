@@ -23,6 +23,9 @@ typedef struct {
       detector. */
   float* distribution;
 
+  /** Time of the next background event. */
+  double tnext;
+
 } PHABkg;
 
 
@@ -51,7 +54,7 @@ void destroyPHABkg(PHABkg** const phabkg);
     exponentially distributed. The average rate is determined by the
     distribution given in the PHA data set multiplied with the
     scaling factor. */
-int getPHABkgEvent(const PHABkg* const phabkg,
+int getPHABkgEvent(PHABkg* const phabkg,
 		   /** Scaling factor for the count rate
 		       distribution. Must be given in [m^2] or
 		       [deg^2]. */
