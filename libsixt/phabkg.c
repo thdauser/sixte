@@ -21,6 +21,8 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
   // Initialize all pointers with NULL.
   phabkg->channel     =NULL;
   phabkg->distribution=NULL;
+  phabkg->vignetting  =NULL;
+  phabkg->focal_length=NULL;
 
   // Initialize values.
   phabkg->nbins=0;

@@ -2,6 +2,7 @@
 #define PHABKG_H 1
 
 #include "sixt.h"
+#include "vignetting.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -17,14 +18,17 @@ typedef struct {
   /** PHA channel numbers. */
   long* channel;
 
-  /** Background event rate distribution. The units are either
-      [counts/s/bin/deg^2] or [counts/s/bin/m^2] depending on
-      whether the background model is assigned to a telescope or a
-      detector. */
+  /** Background event rate distribution [counts/s/bin/m^2]. */
   float* distribution;
 
   /** Time of the next background event. */
   double tnext;
+
+  /** Telescope vignetting function. */
+  Vignetting** vignetting;
+
+  /** Telescope focal length. */
+  float* focal_length;
 
 } PHABkg;
 
@@ -40,9 +44,7 @@ typedef struct {
     channels in the EBOUNDS extension of the RMF. The entries in the
     RATE column represent the background event rate in this particular
     energy channel per second and per illuminated detector area
-    [counts/s/bin/m^2] or per sky angle [counts/s/bin/deg^2],
-    depending on whether the model is assigned to a telescope or a
-    detector. */
+    [counts/s/bin/m^2]. */
 PHABkg* newPHABkg(const char* const filename, int* const status);
 
 /** Destructor. */
@@ -56,8 +58,7 @@ void destroyPHABkg(PHABkg** const phabkg);
     scaling factor. */
 int getPHABkgEvent(PHABkg* const phabkg,
 		   /** Scaling factor for the count rate
-		       distribution. Must be given in [m^2] or
-		       [deg^2]. */
+		       distribution. Must be given in [m^2]. */
 		   const float scaling,
 		   const double tstart,
 		   /** Upper limit for the time of the background

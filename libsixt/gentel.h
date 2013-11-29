@@ -35,9 +35,6 @@ typedef struct {
       file. */
   float fov_diameter;
 
-  /** Model for sky background according to a given PHA file. */
-  PHABkg* phabkg;
-
 } GenTel;
 
 

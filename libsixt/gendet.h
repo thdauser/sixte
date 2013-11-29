@@ -110,8 +110,8 @@ typedef struct {
       ray detector background. */
   int erobackground;
 
-  /** Model for detector background according to a given PHA file. */
-  PHABkg* phabkg;
+  /** Models for detector background based on PHA spectra. */
+  PHABkg* phabkg[2];
   
   /** Flag, whether the detector background models (either
       eROSITA-specific model for the cosmic ray detector background or

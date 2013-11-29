@@ -21,7 +21,6 @@ GenTel* newGenTel(int* const status)
   tel->vignetting  =NULL;
   tel->arf         =NULL;
   tel->arf_filename=NULL;
-  tel->phabkg      =NULL;
 
   // Set initial values.
   tel->focal_length=0.;
@@ -40,7 +39,6 @@ void destroyGenTel(GenTel** const tel)
     freeARF((*tel)->arf);
     destroyPSF(&(*tel)->psf);
     destroyVignetting(&(*tel)->vignetting);
-    destroyPHABkg(&(*tel)->phabkg);
 
     free(*tel);
     *tel=NULL;

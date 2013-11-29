@@ -49,7 +49,7 @@ int phgen(Attitude* const ac,
       // Merge the photon lists.
       pholist=mergeLinkedPhoLists(pholist, newlist);
     }
-    
+
     // Increase the time.
     time+=dt;
   }

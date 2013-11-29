@@ -8,14 +8,7 @@
 
 /** Data structure given to the XML handler to transfer data. */
 struct XMLParseData {
-  GenInst* inst;
-  
-  /** Flag whether we are inside the 'telescope' tag. */
-  int inTelescope;
-
-  /** Flag whether we are inside the 'detector' tag. */
-  int inDetector;
-  
+  GenInst* inst;  
   int status;
 };
 
@@ -249,8 +242,6 @@ void parseGenInstXML(GenInst* const inst,
   // Set data that is passed to the handler functions.
   struct XMLParseData xmlparsedata={
     .inst       =inst,
-    .inTelescope=0,
-    .inDetector =0,
     .status     =EXIT_SUCCESS
   };
   XML_SetUserData(parser, &xmlparsedata);
@@ -394,14 +385,6 @@ static void GenInstXMLElementStart(void* parsedata,
 		    xmlparsedata->status,
 		    "memory allocation for INSTRUME failed");
     strcpy(xmlparsedata->inst->instrume, instrume);
-
-  } else if (!strcmp(Uelement, "TELESCOPE")) {
-    // Set the flag that we are inside the 'telescope' tag.
-    xmlparsedata->inTelescope=1;
-
-  } else if (!strcmp(Uelement, "DETECTOR")) {
-    // Set the flag that we are inside the 'detector' tag.
-    xmlparsedata->inDetector=1;
 
   } else if (!strcmp(Uelement, "LINESHIFT")) {
     CLLineShift* cllineshift=newCLLineShift(&xmlparsedata->status);
@@ -548,8 +531,8 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      xmlparsedata->status=EXIT_FAILURE;
       SIXT_ERROR("no file specified for RSP");
+      xmlparsedata->status=EXIT_FAILURE;
       return;
     }
 
@@ -592,8 +575,9 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for PSF");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for PSF");
+      return;
     }
 
     char filepathname[MAXFILENAME];
@@ -611,8 +595,9 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for vignetting");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for vignetting");
+      return;
     }
 
     char filepathname[MAXFILENAME];
@@ -642,8 +627,9 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for bad pixel map");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for bad pixel map");
+      return;
     }
 
     char filepathname[MAXFILENAME];
@@ -663,8 +649,9 @@ static void GenInstXMLElementStart(void* parsedata,
 
       // Check if a file name has been specified.
       if (strlen(filename)==0) {
-	SIXT_ERROR("no file specified for eROSITA detector background");
 	xmlparsedata->status=EXIT_FAILURE;
+	SIXT_ERROR("no file specified for eROSITA detector background");
+	return;
       }
 
       char filepathname[MAXFILENAME];
@@ -695,27 +682,38 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for PHA detector background");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for PHA detector background");
+      return;
     }
     
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
 
-    if (1==xmlparsedata->inTelescope) {
-      xmlparsedata->inst->tel->phabkg=
-	newPHABkg(filepathname, &xmlparsedata->status);
-      CHECK_STATUS_VOID(xmlparsedata->status);
-    } else if (1==xmlparsedata->inDetector) {
-      xmlparsedata->inst->det->phabkg=
-	newPHABkg(filepathname, &xmlparsedata->status);
-      CHECK_STATUS_VOID(xmlparsedata->status);
-    } else {
+    // There can be up to 2 PHA background models.
+    int ii;
+    for (ii=0; ii<2; ii++) {
+      if (NULL==xmlparsedata->inst->det->phabkg[ii]) {
+	break;
+      }
+    }
+    if (2==ii) {
       xmlparsedata->status=EXIT_FAILURE;
-      SIXT_ERROR("tag <phabackground> must be inside <telescope> or "
-		 "<detector> environment");
+      SIXT_ERROR("cannot use more than 2 PHA background models");
       return;
+    }
+    xmlparsedata->inst->det->phabkg[ii]=
+      newPHABkg(filepathname, &xmlparsedata->status);
+    CHECK_STATUS_VOID(xmlparsedata->status);
+
+    // If needed, link the vignetting function and the focal length
+    // of the telescope.
+    if (getXMLAttributeInt(attr, "VIGNETTING")!=0) {
+      xmlparsedata->inst->det->phabkg[ii]->vignetting=
+	&xmlparsedata->inst->tel->vignetting;
+      xmlparsedata->inst->det->phabkg[ii]->focal_length=
+	&xmlparsedata->inst->tel->focal_length;
     }
 
   } else if (!strcmp(Uelement, "SPLIT")) {
@@ -812,20 +810,9 @@ static void GenInstXMLElementEnd(void* parsedata, const char* el)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
+  (void)el;
+
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
-
-  // Convert the element to an upper case string.
-  char Uelement[MAXMSG];
-  strcpy(Uelement, el);
-  strtoupper(Uelement);
-
-  if (!strcmp(Uelement, "TELESCOPE")) {
-    // Unset the flag for inside the 'telescope' tag.
-    xmlparsedata->inTelescope=0;
-  } else if (!strcmp(Uelement, "DETECTOR")) {
-    // Unset the flag for inside the 'detector' tag.
-    xmlparsedata->inDetector=0;
-  }
 }
 
