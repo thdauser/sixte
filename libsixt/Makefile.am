@@ -56,9 +56,9 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  ladsignallist.c erodetbkgrndgen.c phgen.c phimg.c	\
 		  phdet.c phproj.c phpat.c event.c ladsignal.c		\
 		  ladevent.c ladimpact.c lad.c lad_init.c xmlbuffer.c	\
-		  gti.c sourceimage.c det_phi_max.c			\
-		  attitudecatalog2.c reconstruction.c eventarray.c	\
-		  fft_array.c balancing.c find_position.c
+		  gti.c sourceimage.c reconstruction.c eventarray.c	\
+		  fft_array.c balancing.c find_position.c		\
+		  attitudecatalog2.c det_phi_max.c
 
 libsixt_a_LIBADD =@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
 libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
@@ -85,6 +85,6 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		sourcecatalog.h source.h linkedpholist.h		\
 		ladsignallist.h erodetbkgrndgen.h phgen.h phimg.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h gti.h	\
-		sourceimage.h det_phi_max.h attitudecatalog2.c		\
-		reconstruction.h eventarray.h fft_array.h balancing.h	\
-		find_position.h
+		sourceimage.h reconstruction.h eventarray.h		\
+		fft_array.h balancing.h find_position.h			\
+		attitudecatalog2.h det_phi_max.h
