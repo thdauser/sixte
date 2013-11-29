@@ -102,12 +102,10 @@ int addGenDetPhotonImpact(GenDet* const det,
     long channel;
     returnRMFChannel(det->rmf, impact->energy, &channel);
 
-    // Check if the photon is really measured. If the
-    // PI channel returned by the HEAdas RMF function is '-1', 
-    // the photon is not detected.
-    // This can happen, if the RMF actually is an RSP, i.e. it 
-    // includes ARF contributions, e.g., 
-    // the detector quantum efficiency and filter transmission.
+    // Check if the photon is really measured. If the PI channel 
+    // returned by the HEAdas RMF function is '-1', the photon is not 
+    // detected. This can happen, if the RMF includes ARF contributions, 
+    // e.g., the detector quantum efficiency and filter transmission.
     if (channel<det->rmf->FirstChannel) {
       return(0); // Break the function (photon is not detected).
     }

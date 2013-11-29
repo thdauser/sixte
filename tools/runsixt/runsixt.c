@@ -475,8 +475,7 @@ int runsixt_main()
 
 	// Photon generation.
 	Photon ph;
-	int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1,
-		       par.MJDREF, par.dt, 
+	int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1, par.MJDREF, par.dt, 
 		       inst->tel->fov_diameter, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
