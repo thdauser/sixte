@@ -173,12 +173,6 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     si->maxra  = si->crval1 + si->cdelt1*(si->naxis1-(si->crpix1-0.5));
     si->mindec = si->crval2 - si->cdelt2*(si->crpix2-0.5);
     si->maxdec = si->crval2 + si->cdelt2*(si->naxis2-(si->crpix2-0.5));
-    
-
-    // Load the spectra specified in the FITS header.
-    *status = loadSpectra(fptr, &si->spectrumstore);
-    if (EXIT_SUCCESS!=*status) break;
-
 
     // Allocate memory for the pixels of the image:
     si->pixel = (double**)malloc(si->naxis1*sizeof(double*));
