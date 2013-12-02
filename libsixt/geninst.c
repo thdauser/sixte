@@ -797,6 +797,17 @@ static void GenInstXMLElementStart(void* parsedata,
     headas_chat(3, "lower split threshold: %.1lf %%\n", 
 		xmlparsedata->inst->det->threshold_split_lo_fraction*100.);
 
+
+  } else if (!strcmp(Uelement, "TELESCOPE")) {
+    
+    // Nothing to do here. Do not remove this selection! Otherwise
+    // the tag <telescope> will be regarded as unknown.
+
+  } else if (!strcmp(Uelement, "DETECTOR")) {
+    
+    // Nothing to do here. Do not remove this selection! Otherwise
+    // the tag <detector> will be regarded as unknown.
+    
   } else {
     // Unknown tag, display warning.
     char msg[MAXMSG];
