@@ -20,7 +20,7 @@ int makelc_main() {
 
   // Register HEATOOL:
   set_toolname("makelc");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -212,25 +212,27 @@ int makelc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
-    fits_update_key(outfptr, TSTRING, "TELESCOP", telescop, 
+    fits_update_key(outfptr, TSTRING, "TELESCOP", telescop,
 		    "Telescope name", &status);
-    fits_update_key(outfptr, TSTRING, "INSTRUME", instrume, 
+    fits_update_key(outfptr, TSTRING, "INSTRUME", instrume,
 		    "Instrument name", &status);
-    fits_update_key(outfptr, TSTRING, "FILTER", filter, 
+    fits_update_key(outfptr, TSTRING, "FILTER", filter,
 		    "Filter used", &status);
-    fits_update_key(outfptr, TSTRING, "TIMEUNIT", "s", 
+    fits_update_key(outfptr, TSTRING, "TIMEUNIT", "s",
 		    "time unit", &status);
-    fits_update_key(outfptr, TDOUBLE, "TIMEDEL", &par.dt, 
+    fits_update_key(outfptr, TDOUBLE, "TIMEDEL", &par.dt,
 		    "time resolution", &status);
-    fits_update_key(outfptr, TDOUBLE, "MJDREF", &mjdref, 
+    fits_update_key(outfptr, TDOUBLE, "MJDREF", &mjdref,
 		    "reference MJD", &status);
-    timezero+=0.5*par.dt;
-    fits_update_key(outfptr, TDOUBLE, "TIMEZERO", &timezero, 
+    fits_update_key(outfptr, TDOUBLE, "TIMEZERO", &timezero,
 		    "time offset", &status);
-    fits_update_key(outfptr, TDOUBLE, "TSTART", &par.TSTART, 
+    float timepixr=0.f;
+    fits_update_key(outfptr, TFLOAT, "TIMEPIXR", &timepixr,
+		    "time stamp at beginning of bin", &status);
+    fits_update_key(outfptr, TDOUBLE, "TSTART", &par.TSTART,
 		    "start time", &status);
     double dbuffer=par.TSTART+par.length;
-    fits_update_key(outfptr, TDOUBLE, "TSTOP", &dbuffer, 
+    fits_update_key(outfptr, TDOUBLE, "TSTOP", &dbuffer,
 		    "stop time", &status);
     fits_update_key(outfptr, TFLOAT, "E_MIN", &par.Emin,
 		    "low energy for channel (keV)", &status);
@@ -239,8 +241,8 @@ int makelc_main() {
     CHECK_STATUS_BREAK(status);
 
     // The ouput table does not contain a TIME column. The 
-    // center of the n-th time bin (n>=1) is determined by
-    // t(n)=TIMEZERO + TIMEDEL*(n-1).
+    // beginning (TIMEPIXR=0.0) of the n-th time bin (n>=1) 
+    // is determined as t(n)=TIMEZERO + TIMEDEL*(n-1).
 
     // Write the data into the table.
     for (ii=0; ii<nbins; ii++) {
