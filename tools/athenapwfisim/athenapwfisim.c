@@ -43,7 +43,7 @@ int athenapwfisim_main()
 
   // Register HEATOOL
   set_toolname("athenapwfisim");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -110,17 +110,8 @@ int athenapwfisim_main()
       strcat(patternlist_filename_template, par.PatternList);
     }
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
-
     // Initialize the random number generator.
-    sixt_init_rng(seed, &status);
+    sixt_init_rng(getSeed(par.Seed), &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
@@ -191,23 +182,9 @@ int athenapwfisim_main()
     strtoupper(ucase_buffer);
     if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -215,39 +192,18 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period covered by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
-    // If available, load the specified GTI file.
-    if (strlen(par.GTIfile)>0) {
-      strcpy(ucase_buffer, par.GTIfile);
-      strtoupper(ucase_buffer);
-      if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIfile, &status);
-	CHECK_STATUS_BREAK(status);
-	SIXT_WARNING("the specification of a GTI file overwrites the settings "
-		     "for TSTART and Exposure");
-      }
-    }
-
-    // If not, create a dummy GTI from TSTART and TSTOP.
-    if (NULL==gti) {
-      gti=newGTI(&status);
-      CHECK_STATUS_BREAK(status);
-      appendGTI(gti, par.TSTART, par.TSTART+par.Exposure, &status);
-      CHECK_STATUS_BREAK(status);
-    }
+    // Get a GTI.
+    gti=getGTIFromFileOrContinuous(par.GTIfile, 
+				   par.TSTART, par.TSTART+par.Exposure,
+				   par.MJDREF, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT X-ray source catalogs.
     srccat[0]=loadSourceCatalog(par.Simput, subinst[0]->tel->arf, &status);
@@ -317,7 +273,7 @@ int athenapwfisim_main()
       strcpy(instrume, subinst[0]->instrume);
     }
 
-    double tstop=gti->stop[gti->nentries-1];
+    double tstop=gti->stop[gti->ngti-1];
 
     // Open the output photon list files.
     if (strlen(photonlist_filename)>0) {
@@ -541,16 +497,17 @@ int athenapwfisim_main()
 
     // Determine the total length of the time interval to
     // be simulated.
-    double totalsimtime=0.;
-    double simtime=0.;
-    unsigned long ii; 
-    for (ii=0; ii<gti->nentries; ii++) {
-      totalsimtime+=gti->stop[ii]-gti->start[ii];
+    double totalsimtime=sumGTI(gti);
+    for (ii=0; ii<5; ii++) {
+      fits_update_key(patf[ii]->fptr, TDOUBLE, "EXPOSURE", &totalsimtime,
+		      "exposure time [s]", &status);
+      CHECK_STATUS_BREAK(status);
     }
+    CHECK_STATUS_BREAK(status);
 
-    // Current bin in the GTI collection.
-    unsigned long gtibin=0;
     // Loop over all intervals in the GTI collection.
+    double simtime=0.;
+    int gtibin=0;
     do {
       // Currently regarded interval.
       double t0=gti->start[gtibin];
@@ -639,7 +596,7 @@ int athenapwfisim_main()
       // Proceed to the next GTI interval.
       simtime+=gti->stop[gtibin]-gti->start[gtibin];
       gtibin++;
-      if (gtibin>=gti->nentries) break;
+      if (gtibin>=gti->ngti) break;
       
     } while (1);
     CHECK_STATUS_BREAK(status);

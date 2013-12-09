@@ -73,9 +73,6 @@ int projev_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Start time for the simulation.
-    double t0=par.TSTART;
-
     // Determine the random number seed.
     int seed;
     if (-1!=par.Seed) {
@@ -106,23 +103,9 @@ int projev_main() {
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=t0;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -131,15 +114,9 @@ int projev_main() {
 
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > t0) || 
-	  (ac->entry[ac->nentries-1].time < t0+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", t0, t0+par.Exposure);
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
@@ -156,7 +133,7 @@ int projev_main() {
     headas_chat(5, "start sky projection process ...\n");
 
     // Run the pattern projection.
-    phproj(inst, ac, elf, t0, par.Exposure, &status);
+    phproj(inst, ac, elf, par.TSTART, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.

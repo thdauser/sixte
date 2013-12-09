@@ -101,6 +101,9 @@
 /////////////////////////////////////////////////////////////////
 
 
+/** Return a seed for the random number generator. */
+int getSeed(int seed);
+
 /** This routine returns a random number. The values are either
     obtained from the Remeis random number server or are created by
     the HEAdas random number generator. The routine is basically a
@@ -175,16 +178,32 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       int* const status);
 
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr, 
-				  const int hdunum, 
-				  char* const creation_date, 
-				  char* const date_obs, 
+				  const int hdunum,
+				  char* const creation_date,
+				  char* const date_obs,
 				  char* const time_obs,
-				  char* const date_end, 
-				  char* const time_end, 
-				  double tstart, 
-				  double tstop, 
-				  double timezero, 
+				  char* const date_end,
+				  char* const time_end,
+				  double tstart,
+				  double tstop,
+				  double mjdref,
+				  double timezero,
 				  int* const status);
+
+/** Determine whether the given value for MJDREF is equivalent to the
+    specified reference MJDREF. In order to allow a better
+    localization of the problem by the user, an optional description
+    can be specified, which is added to the displayed message in case
+    of a mismatch. */
+void verifyMJDREF(const double refmjdref,
+		  const double mjdref,
+		  const char* const description,
+		  int* const status);
+
+/** Make sure that the value of TIMEZERO is '0.0'. This is required by
+    the current implementation. */
+void verifyTIMEZERO(const double timezero,
+		    int* const status);
 
 /** Determine the signal corresponding to a particular PHA channel
     according to the EBOUNDS table. The input channel must have the

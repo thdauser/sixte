@@ -57,7 +57,7 @@ int ero_vis_main()
 
   // Register HEATOOL:
   set_toolname("ero_vis");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -91,6 +91,7 @@ int ero_vis_main()
     // Set up a new GTI collection.
     gti=newGTI(&status);
     CHECK_STATUS_BREAK(status);
+    gti->mjdref=ac->mjdref;
 
     // --- END of Initialization ---
 

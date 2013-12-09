@@ -8,6 +8,17 @@
 #endif
 
 
+int getSeed(int seed)
+{
+  if (-1!=seed) {
+    return(seed);
+  } else {
+    // Determine the seed from the system clock.
+    return((int)time(NULL));
+  }
+}
+
+
 double sixt_get_random_number(int* const status)
 {
   // Return a random value out of the interval [0,1).
@@ -429,6 +440,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  char* const time_end,
 				  double tstart,
 				  double tstop,
+				  double mjdref,
 				  double timezero,
 				  int* const status)
 {
@@ -490,9 +502,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   fits_update_key(fptr, TDOUBLE, "TSTOP", &tstop, "Stop time of exposure in units of TIME column", status);
   fits_update_key(fptr, TDOUBLE, "TEND", &tstop, "End time of exposure in units of TIME column", status);
 
-  double mjdref=54101.0;
-  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "[d] 2007-01-01T00:00:00", status);
-  
+  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "[d]", status);
   fits_update_key(fptr, TDOUBLE, "TIMEZERO", &timezero, "Time offset", status);
   
   char timeunit[MAXMSG]="s";
@@ -529,6 +539,38 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
     int hdutype=0;
     fits_movabs_hdu(fptr, prev_hdunum, &hdutype, status);
     CHECK_STATUS_VOID(*status);
+  }
+}
+
+
+void verifyMJDREF(const double refmjdref,
+		  const double mjdref,
+		  const char* const description,
+		  int* const status)
+{
+  if (fabs(mjdref-refmjdref)>1.e-6) {
+    *status=EXIT_FAILURE;
+    char insertmsg[MAXMSG];
+    if (NULL==description) {
+      strcpy(insertmsg, "");
+    } else {
+      strcpy(insertmsg, description);
+      strcat(insertmsg, " ");
+    }
+    char msg[MAXMSG];
+    sprintf(msg, "MJDREF %sdoes not match required value of '%.1lf'", 
+	    insertmsg, refmjdref);
+    SIXT_ERROR(msg);
+  }
+}
+
+
+void verifyTIMEZERO(const double timezero,
+		    int* const status)
+{
+  if (0.0!=timezero) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("implementation requires that TIMEZERO=0.0 in input file");
   }
 }
 

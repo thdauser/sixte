@@ -4,6 +4,7 @@
 ////////////////////////////////////
 /** Main procedure. */
 int gendetsim_main() {
+  const double timezero=0.0;
 
   // Containing all programm parameters read by PIL
   struct Parameters par; 
@@ -64,17 +65,8 @@ int gendetsim_main() {
     char eventlist_filename[MAXFILENAME];
     strcpy(eventlist_filename, par.EventList);
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
-
     // Initialize the random number generator.
-    sixt_init_rng(seed, &status);
+    sixt_init_rng(getSeed(par.Seed), &status);
     CHECK_STATUS_BREAK(status);
     
     // --- END of Initialization ---
@@ -158,6 +150,8 @@ int gendetsim_main() {
     // Store the GTI in the event file.
     gti=newGTI(&status);
     CHECK_STATUS_BREAK(status);
+    gti->mjdref=par.MJDREF;
+    gti->timezero=timezero;
     appendGTI(gti, par.TSTART, par.TSTART+par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
     saveGTIExt(elf->fptr, "STDGTI", gti, &status);

@@ -40,16 +40,59 @@ int comaphovign_main() {
     strcpy(outputlist_filename, par.OutputList);
 
     // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
+    int seed=getSeed(par.Seed);
 
     // Initialize the random number generator.
     sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Open the input photon list file.
+    plif=openPhotonFile(inputlist_filename, READONLY, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Read keywords.
+    char comment[MAXMSG];
+    double mjdref=0.;
+    fits_read_key(plif->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'MJDREF' from input "
+	      "photon list '%s'", inputlist_filename);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    double timezero=0.;
+    fits_write_errmark();
+    int status2=EXIT_SUCCESS;
+    fits_read_key(plif->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status2);
+    fits_clear_errmark();
+    if (EXIT_SUCCESS!=status2) {
+      timezero=0.;
+    }
+
+    double tstart=0.;
+    fits_read_key(plif->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTART' from input "
+	      "photon list '%s'", inputlist_filename);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    double tstop=0.;
+    fits_read_key(plif->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTOP' from input "
+	      "photon list '%s'", inputlist_filename);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    // Make sure that TIMEZERO==0.0.
+    verifyTIMEZERO(timezero, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set up the Attitude.
@@ -58,41 +101,21 @@ int comaphovign_main() {
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(mjdref, tstart, tstop,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=0.;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
+
+      // Check if the required time interval is a subset of the period
+      // described by the attitude file.
+      checkAttitudeTimeCoverage(ac, mjdref, tstart, tstop, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
-    
-    // --- END of Initialization ---
-
-
-    // --- Beginning of Imaging Process ---
-
-    headas_chat(3, "apply vignetting ...\n");
-
-    // Open the input photon list file.
-    plif=openPhotonFile(inputlist_filename, READONLY, &status);
-    CHECK_STATUS_BREAK(status);
 
     // Open the output photon list file.
     // Check if the file already exists.
@@ -152,29 +175,20 @@ int comaphovign_main() {
     fits_movabs_hdu(ofptr, 2, &hdu_type, &status);
     CHECK_STATUS_BREAK(status);
     
-    // Copy FITS header keywords.
-    char attitude[MAXMSG], comment[MAXMSG];
-    fits_read_key(plif->fptr, TSTRING, "ATTITUDE", 
-		  attitude, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    // Write FITS header keywords.
     fits_update_key(ofptr, TSTRING, "ATTITUDE",
-		    attitude, comment, &status);
-    CHECK_STATUS_BREAK(status);
-
-    double dbuffer=0.;
-    fits_read_key(plif->fptr, TDOUBLE, "MJDREF", 
-		  &dbuffer, comment, &status);
+		    par.Attitude, comment, &status);
     CHECK_STATUS_BREAK(status);
     fits_update_key(ofptr, TDOUBLE, "MJDREF",
-		    &dbuffer, comment, &status);
-    CHECK_STATUS_BREAK(status);
-
-    fits_read_key(plif->fptr, TDOUBLE, "TIMEZERO", 
-		  &dbuffer, comment, &status);
+		    &mjdref, comment, &status);
     CHECK_STATUS_BREAK(status);
     fits_update_key(ofptr, TDOUBLE, "TIMEZERO", 
-		    &dbuffer, comment, &status);
+		    &timezero, comment, &status);
     CHECK_STATUS_BREAK(status);
+
+    // --- END of Initialization ---
+
+    headas_chat(3, "apply vignetting ...\n");
 
     // Scan the entire photon list.
     int progress=0;  

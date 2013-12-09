@@ -41,17 +41,8 @@ int phoimg_main() {
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed = par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed = (int)time(NULL);
-    }
-
     // Initialize the random number generator.
-    sixt_init_rng(seed, &status);
+    sixt_init_rng(getSeed(par.Seed), &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the appropriate instrument XML definition file.
@@ -71,23 +62,9 @@ int phoimg_main() {
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -95,17 +72,10 @@ int phoimg_main() {
       CHECK_STATUS_BREAK(status);
 
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period covered by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
     

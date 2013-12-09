@@ -4,6 +4,7 @@
 
 #include "sixt.h"
 #include "attitude.h"
+#include "eroeventfile.h"
 #include "event.h"
 #include "eventfile.h"
 #include "gti.h"
@@ -38,16 +39,16 @@ struct Parameters {
 
 /** Event entry in an eROSITA calibrated event file. */
 typedef struct {
-  double time;
+  double time; /* [s] */
   long frame;
 
-  long pha;
-  float energy;
+  long pha; /* [adu] */
+  float energy; /* [eV] */
 
   int rawx, rawy;
   int subx, suby;
 
-  long ra, dec;
+  double ra, dec; /* [deg] */
   long x, y;
 
   long flag;

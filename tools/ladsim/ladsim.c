@@ -587,17 +587,8 @@ int ladsim_main()
       strcat(eventlist_filename, par.EventList);
     }
 
-    // Determine the random number generator seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
-
     // Initialize the random number generator.
-    sixt_init_rng(seed, &status);
+    sixt_init_rng(getSeed(par.Seed), &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
@@ -674,24 +665,10 @@ int ladsim_main()
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")) {
-      // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      // Set up a pointing attitude.
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(2*sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -699,17 +676,10 @@ int ladsim_main()
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period described by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
@@ -723,11 +693,11 @@ int ladsim_main()
     long kk;
     long try=0, pass=0;
     struct Point2d position;
-    float xwidth = 
-      lad->panel[0]->module[0]->element[0]->xdim - 
+    float xwidth=
+      lad->panel[0]->module[0]->element[0]->xdim-
       lad->panel[0]->module[0]->element[0]->xborder*2.;
-    float ywidth = 
-      lad->panel[0]->module[0]->element[0]->ydim - 
+    float ywidth=
+      lad->panel[0]->module[0]->element[0]->ydim-
       lad->panel[0]->module[0]->element[0]->yborder*2.;
     for (kk=0; kk<1000000; kk++) {
       long col, row;
@@ -745,7 +715,7 @@ int ladsim_main()
       } while ((col<0)||(row<0));
       pass++;
     }
-    printf("### LAD Open Area Ratio: %lf ###\n", pass*1./try);
+    headas_chat(1, "### LAD Open Area Ratio: %lf ###\n", pass*1./try);
 #endif
 
     // --- End of Initialization ---

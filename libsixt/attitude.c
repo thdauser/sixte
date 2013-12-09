@@ -15,12 +15,15 @@ Attitude* getAttitude(int* const status)
   ac->nentries =0;
   ac->currentry=0;
   ac->align    =ATTNX_NORTH;
+  ac->mjdref   =0.0;
+  ac->tstart   =0.0;
+  ac->tstop    =0.0;
 
   return(ac);
 }
 
 
-Attitude* loadAttitude(const char* filename, int* const status)
+Attitude* loadAttitude(const char* const filename, int* const status)
 {
   Attitude* ac=NULL;
   AttitudeFile* af=NULL;
@@ -70,6 +73,43 @@ Attitude* loadAttitude(const char* filename, int* const status)
       *status=EXIT_FAILURE;
       SIXT_ERROR("invalid value for keyword ALIGNMEN in attitude file");
       break;
+    }
+
+    // Determine MJDREF, TSTART, and TSTOP.
+    fits_read_key(af->fptr, TDOUBLE, "MJDREF", &ac->mjdref, comment, status);
+    if (EXIT_SUCCESS!=*status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'MJDREF' from attitude file '%s'", 
+	      filename);
+      SIXT_ERROR(msg);
+      break;
+    }
+    fits_read_key(af->fptr, TDOUBLE, "TSTART", &ac->tstart, comment, status);
+    if (EXIT_SUCCESS!=*status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTART' from attitude file '%s'", 
+	      filename);
+      SIXT_ERROR(msg);
+      break;
+    }
+    fits_read_key(af->fptr, TDOUBLE, "TSTOP", &ac->tstop, comment, status);
+    if (EXIT_SUCCESS!=*status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTOP' from attitude file '%s'", 
+	      filename);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    // Check if TIMEZERO is present. If yes, it must be zero.
+    double timezero;
+    fits_write_errmark();
+    status2=EXIT_SUCCESS;
+    fits_read_key(af->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status2);
+    fits_clear_errmark();
+    if (EXIT_SUCCESS==status2) {
+      verifyTIMEZERO(timezero, status);
+      CHECK_STATUS_BREAK(*status);
     }
     
     // Read all lines from attitude file subsequently.
@@ -161,8 +201,8 @@ static void setAttitudeCurrEntry(Attitude* const ac,
 }
 
 
-Vector getTelescopeNz(Attitude* const ac, 
-		      const double time, 
+Vector getTelescopeNz(Attitude* const ac,
+		      const double time,
 		      int* const status)
 {
   Vector nz={.x=0., .y=0., .z=0.};
@@ -194,7 +234,7 @@ void getTelescopeAxes(Attitude* const ac,
 		      Vector* const nx,
 		      Vector* const ny,
 		      Vector* const nz,
-		      const double time, 
+		      const double time,
 		      int* const status)
 {   
   // Determine the z vector (telescope pointing direction):
@@ -280,8 +320,8 @@ void getTelescopeAxes(Attitude* const ac,
 }
 
 
-float getRollAngle(Attitude* const ac, 
-		   const double time, 
+float getRollAngle(Attitude* const ac,
+		   const double time,
 		   int* const status)
 {
   // Check if survey attitude.
@@ -306,18 +346,62 @@ float getRollAngle(Attitude* const ac,
 }
 
 
-AttitudeEntry defaultAttitudeEntry()
+AttitudeEntry* getAttitudeEntry(int* const status) 
 {
-  AttitudeEntry ae;
+  AttitudeEntry* ae=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
+  CHECK_NULL(ae, *status, "memory allocation for AttitudeEntry failed");
 
-  ae.time=0.0;
-
-  ae.nz.x=0.0;
-  ae.nz.y=0.0;
-  ae.nz.z=0.0;
-
-  ae.roll_angle=0.0;
+  ae->time=0.0;
+  ae->nz.x=0.0;
+  ae->nz.y=0.0;
+  ae->nz.z=0.0;
+  ae->roll_angle=0.0;
 
   return(ae);
 }
 
+
+Attitude* getPointingAttitude(const double mjdref,
+			      const double tstart,
+			      const double tstop,
+			      const double ra,
+			      const double dec,
+			      int* const status)
+{
+  // First allocate memory.
+  Attitude* ac=getAttitude(status);
+  CHECK_STATUS_RET(*status, ac);
+  ac->entry=getAttitudeEntry(status);
+  CHECK_STATUS_RET(*status, ac);
+  ac->nentries=1;
+
+  ac->mjdref=mjdref;
+  ac->tstart=tstart;
+  ac->tstop =tstop;
+  ac->entry[0].time=tstart;
+  ac->entry[0].nz=unit_vector(ra, dec);
+
+  return(ac);
+}
+
+
+void checkAttitudeTimeCoverage(const Attitude* const ac,
+			       const double mjdref,
+			       const double tstart,
+			       const double tstop,
+			       int* const status)
+{
+  // Check that the values for MJDREF are equal.
+  verifyMJDREF(mjdref, ac->mjdref, "in attitude file", status);
+  CHECK_STATUS_VOID(*status);
+
+  // Check the boundaries of the time interval.
+  if ((ac->tstart > tstart) || (ac->tstop < tstop)) {
+    *status=EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "attitude does not cover the required period from %lf to %lf",
+	    tstart, tstop);
+    SIXT_ERROR(msg);
+    return;
+  }
+}

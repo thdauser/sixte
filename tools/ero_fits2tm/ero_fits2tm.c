@@ -25,13 +25,13 @@ struct Parameters {
 
 // Data structure for the byte output writing routine.
 struct Binary_Output {
-  unsigned char *bytes;  // Byte output buffer
-  FILE *fptr;            // Pointer to output file
-  int n_bytes;           // Counting the bytes already written to the buffer
-  int max_bytes;         // Maximum number of bytes in one TLM record
-  unsigned char framecounter;  // Counter for the records (NOT detector frames)
-  unsigned char framenumber;   // Counter for the records belonging to one and
-                               // the same detector frame
+  unsigned char *bytes; // Byte output buffer
+  FILE *fptr;           // Pointer to output file
+  int n_bytes;          // Counting the bytes already written to the buffer
+  int max_bytes;        // Maximum number of bytes in one TLM record
+  unsigned char framecounter; // Counter for the records (NOT detector frames)
+  unsigned char framenumber;  // Counter for the records belonging to one and
+                              // the same detector frame
 };
 
 
@@ -166,7 +166,10 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
 {
   // Write the TIME element (readout time of last detector frame):
   long ltime=(long)(time*40);
-  if (ltime > 0x3FFFFFFF)  return(-1);
+  if (ltime > 0x3FFFFFFF) {
+    SIXT_ERROR("time exceeds maximum allowed value");
+    return(-1);
+  }
   binary_output->bytes[binary_output->n_bytes++]=
     0x40 + (unsigned char)(ltime>>24);
   binary_output->bytes[binary_output->n_bytes++]=
@@ -208,8 +211,6 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
 }
 
 
-//////////////////////////////////
-//    MAIN
 int ero_fits2tm_main()
 {
   struct Parameters par;
@@ -228,7 +229,7 @@ int ero_fits2tm_main()
 
   // HEATOOLs: register program
   set_toolname("ero_fits2tm");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do { // Beginning of ERROR handling loop

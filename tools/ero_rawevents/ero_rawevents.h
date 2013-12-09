@@ -3,6 +3,7 @@
 
 
 #include "sixt.h"
+#include "eroeventfile.h"
 #include "event.h"
 #include "eventfile.h"
 

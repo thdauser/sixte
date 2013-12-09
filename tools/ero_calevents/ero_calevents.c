@@ -26,7 +26,7 @@ int ero_calevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_calevents");
-  set_toolversion("0.13");
+  set_toolversion("0.14");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -67,32 +67,89 @@ int ero_calevents_main()
     }
 
     // Read keywords from the input file.
-    float timezero=0.0;
-    fits_read_key(elf->fptr, TFLOAT, "TIMEZERO", &timezero, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    double mjdref=0.0;
+    fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'MJDREF' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    double timezero=0.0;
+    fits_write_errmark();
+    int status2=EXIT_SUCCESS;
+    fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status2);
+    fits_clear_errmark();
+    if (EXIT_SUCCESS!=status2) {
+      timezero=0.;
+    }
 
     char date_obs[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "DATE-OBS", date_obs, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'DATE-OBS' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char time_obs[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "TIME-OBS", time_obs, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TIME-OBS' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char date_end[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "DATE-END", date_end, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'DATE-END' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char time_end[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "TIME-END", time_end, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TIME-END' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     double tstart=0.0;
     fits_read_key(elf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTART' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     double tstop=0.0;
     fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTOP' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    // Verify values of MJDREF and TIMEZERO.
+    verifyMJDREF(eromjdref, mjdref, "in event file", &status);
+    CHECK_STATUS_BREAK(status);
+    verifyTIMEZERO(timezero, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the file creation date for the header.
@@ -100,7 +157,6 @@ int ero_calevents_main()
     int timeref;
     fits_get_system_time(creation_date, &timeref, &status);
     CHECK_STATUS_BREAK(status);
-
 
     // Check if the output file already exists.
     int exists;
@@ -158,12 +214,12 @@ int ero_calevents_main()
 
     // Insert the standard eROSITA header keywords.
     sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
-				 date_end, time_end, tstart, tstop, 
-				 timezero, &status);
+				 date_end, time_end, tstart, tstop,
+				 mjdref, timezero, &status);
     CHECK_STATUS_BREAK(status);
     sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
-				 date_end, time_end, tstart, tstop, 
-				 timezero, &status);
+				 date_end, time_end, tstart, tstop,
+				 mjdref, timezero, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
@@ -311,6 +367,23 @@ int ero_calevents_main()
     fits_set_tscale(fptr, csuby, 1.0, (double)tzero_subx_suby, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Set the TZERO and TSCAL keywords for the columns RA and DEC.
+    // Note that both values also have to be set with the routine 
+    // fits_set_tscale(). Otherwise CFITSIO will access the raw values
+    // in the file.
+    double tzero_ra_dec=0.0, tscal_ra_dec=1.e-6;
+    sprintf(keyword, "TZERO%d", cra);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_ra_dec, "", &status);
+    sprintf(keyword, "TSCAL%d", cra);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_ra_dec, "", &status);
+    fits_set_tscale(fptr, cra, tscal_ra_dec, tzero_ra_dec, &status);
+    sprintf(keyword, "TZERO%d", cdec);
+    fits_update_key(fptr, TINT, keyword, &tzero_ra_dec, "", &status);
+    sprintf(keyword, "TSCAL%d", cdec);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_ra_dec, "", &status);
+    fits_set_tscale(fptr, cdec, tscal_ra_dec, tzero_ra_dec, &status);
+    CHECK_STATUS_BREAK(status);
+
     // --- END of initialization ---
 
     // --- Beginning of copy events ---
@@ -334,18 +407,14 @@ int ero_calevents_main()
       eroCalEvent ev;
 
       // Time and frame.
-      ev.time  =event.time;
-      ev.frame =event.frame;
+      ev.time =event.time;
+      ev.frame=event.frame;
 
-      ev.ra=(long)(event.ra*180./M_PI/1.e-6);
-      if (event.ra < 0.) {
-	ev.ra--;
+      ev.ra=event.ra*180./M_PI;
+      if (event.ra<0.) {
 	SIXT_WARNING("value for right ascension <0.0deg");
       }
-      ev.dec=(long)(event.dec*180./M_PI/1.e-6);
-      if (event.dec < 0.) {
-	ev.dec--;
-      }
+      ev.dec=event.dec*180./M_PI;
 
       // Determine the minimum and maximum values of RA and Dec in [rad].
       if (0==input_row) {
@@ -469,8 +538,8 @@ int ero_calevents_main()
 	fits_write_col(fptr, TFLOAT, cenergy, output_row, 1, 1, &ev.energy, &status);
 	fits_write_col(fptr, TINT, crawx, output_row, 1, 1, &ev.rawx, &status);
 	fits_write_col(fptr, TINT, crawy, output_row, 1, 1, &ev.rawy, &status);
-	fits_write_col(fptr, TLONG, cra, output_row, 1, 1, &ev.ra, &status);
-	fits_write_col(fptr, TLONG, cdec, output_row, 1, 1, &ev.dec, &status);
+	fits_write_col(fptr, TDOUBLE, cra, output_row, 1, 1, &ev.ra, &status);
+	fits_write_col(fptr, TDOUBLE, cdec, output_row, 1, 1, &ev.dec, &status);
 	fits_write_col(fptr, TLONG, cx, output_row, 1, 1, &ev.x, &status);
 	fits_write_col(fptr, TLONG, cy, output_row, 1, 1, &ev.y, &status);
 	fits_write_col(fptr, TINT, csubx, output_row, 1, 1, &ev.subx, &status);
@@ -503,7 +572,7 @@ int ero_calevents_main()
     long uniq_evt;
     fits_get_num_rows(fptr, &uniq_evt, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TLONG, "UNIQ_EVT", &uniq_evt, 
+    fits_update_key(fptr, TLONG, "UNIQ_EVT", &uniq_evt,
 		    "Number of unique events inside", &status);
     CHECK_STATUS_BREAK(status);
 
@@ -520,7 +589,7 @@ int ero_calevents_main()
     int opt_status=EXIT_SUCCESS;
     fits_read_key(elf->fptr, TFLOAT, "SPLTTHR", &spltthr, comment, &opt_status);
     if (EXIT_SUCCESS==opt_status) {
-      fits_update_key(fptr, TFLOAT, "SPLTTHR", &spltthr, 
+      fits_update_key(fptr, TFLOAT, "SPLTTHR", &spltthr,
 		      "Relative search level for split events", &status);      
       CHECK_STATUS_BREAK(status);
     }
@@ -535,6 +604,11 @@ int ero_calevents_main()
 
     // Load the GTI extension from the input file.
     gti=loadGTI(par.PatternList, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Make sure that the MJDREF of the GTI extension agrees with
+    // the value in the input event file.
+    verifyMJDREF(mjdref, gti->mjdref, "in GTI file", &status);
     CHECK_STATUS_BREAK(status);
 
     // Store the GTI extension in the output file.
@@ -640,6 +714,8 @@ int ero_calevents_main()
       if (0!=strcmp(ucase_buffer, "NONE")) {
 	ac=loadAttitude(par.Attitude, &status);
 	CHECK_STATUS_BREAK(status);
+	verifyMJDREF(mjdref, ac->mjdref, "in attitude file", &status);
+	CHECK_STATUS_BREAK(status);
       }
     }
 
@@ -684,7 +760,7 @@ int ero_calevents_main()
       // Number of rows in the output attitude extension.
       long nrows=0;
       // Loop over all intervals in the GTI collection.
-      unsigned long gtibin=0;
+      int gtibin=0;
       do {
 	// Currently regarded interval.
 	double t0, t1;
@@ -736,7 +812,7 @@ int ero_calevents_main()
 	// Proceed to the next GTI interval.
 	if (NULL!=gti) {
 	  gtibin++;
-	  if (gtibin>=gti->nentries) break;
+	  if (gtibin>=gti->ngti) break;
 	}
 	
       } while (NULL!=gti);

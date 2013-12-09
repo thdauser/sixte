@@ -7,12 +7,8 @@ GTI* newGTI(int* const status)
   CHECK_NULL_RET(gti, *status, 
 		 "memory allocation for GTI data structure failed", gti);
 
-  // Initialize pointers with NULL.
-  gti->start=NULL;
-  gti->stop =NULL;
-
-  // Initialize values.
-  gti->nentries=0;
+  // Initialize.
+  HDgti_init(gti);
 
   return(gti);
 }
@@ -21,82 +17,43 @@ GTI* newGTI(int* const status)
 void freeGTI(GTI** const gti)
 {
   if (NULL!=*gti) {
-    if (NULL!=(*gti)->start) {
-      free((*gti)->start);
-    }
-    if (NULL!=(*gti)->stop) {
-      free((*gti)->stop);
-    }
+    HDgti_free(*gti);
     free(*gti);
     *gti=NULL;
   }
 }
 
 
-GTI* loadGTI(const char* const filename, int* const status)
+GTI* loadGTI(char* const filename, int* const status)
 {
   GTI* gti=NULL;
-  fitsfile* fptr=NULL;
 
-  do { // Beginning of Error handling loop.
+  // Allocate memory.
+  gti=newGTI(status);
+  CHECK_NULL(gti, *status, 
+	     "memory allocation for GTI data structure failed");
 
-    // Open the FITS file for reading:
-    fits_open_file(&fptr, filename, READONLY, status);
-    CHECK_STATUS_BREAK(*status);
+  // Try to load an extension with the name 'GTI' or 'STDGTI'.
+  int status2=EXIT_SUCCESS;
+  fits_write_errmark();
+  HDgti_read(filename, gti, "GTI", "START", "STOP", NULL, NULL, &status2);
+  if (EXIT_SUCCESS!=status2) {
+    status2=EXIT_SUCCESS;
+    HDgti_read(filename, gti, "STDGTI", "START", "STOP", NULL, NULL, &status2);
+  }
+  fits_clear_errmark();
+  if (EXIT_SUCCESS!=status2) {
+    *status=EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "could not find extension 'GTI' or 'STDGTI' "
+	    "in file '%s'", filename);
+    SIXT_ERROR(msg);
+    return(NULL);
+  }
 
-    // Search for an extension with name 'GTI' or 'STDGTI'.
-    int status2=EXIT_SUCCESS;
-    fits_write_errmark();
-    fits_movnam_hdu(fptr, BINARY_TBL, "GTI", 1, &status2);
-    if (EXIT_SUCCESS!=status2) {
-      status2=EXIT_SUCCESS;
-      fits_movnam_hdu(fptr, BINARY_TBL, "STDGTI", 1, &status2);
-    }
-    fits_clear_errmark();
-    if (EXIT_SUCCESS!=status2) {
-      *status=EXIT_FAILURE;
-      char msg[MAXMSG];
-      sprintf(msg, "could not find extension 'GTI' or 'STDGTI' (EXTVER=1) "
-	      "in file '%s'", filename);
-      SIXT_ERROR(msg);
-      break;
-    }
-    
-    // Determine the number of rows in the table.
-    long nrows;
-    fits_get_num_rows(fptr, &nrows, status);
-    CHECK_STATUS_BREAK(*status);
-
-    // Determine the individual column numbers.
-    int cstart, cstop;
-    fits_get_colnum(fptr, CASEINSEN, "START", &cstart, status);
-    fits_get_colnum(fptr, CASEINSEN,  "STOP", &cstop , status);
-    CHECK_STATUS_BREAK(*status);
-
-    // Allocate memory.
-    gti=newGTI(status);
-    CHECK_NULL_BREAK(gti, *status, 
-		     "memory allocation for GTI data structure failed");
-    gti->start=(double*)malloc(nrows*sizeof(double));
-    CHECK_NULL_BREAK(gti->start, *status, 
-		     "memory allocation for GTI data structure failed");
-    gti->stop =(double*)malloc(nrows*sizeof(double));
-    CHECK_NULL_BREAK(gti->stop , *status, 
-		     "memory allocation for GTI data structure failed");
-    
-    // Read the data from the table.
-    int anynul = 0;
-    fits_read_col(fptr, TDOUBLE, cstart, 1, 1, nrows, 
-		  NULL, gti->start, &anynul, status);
-    fits_read_col(fptr, TDOUBLE, cstop , 1, 1, nrows, 
-		  NULL, gti->stop , &anynul, status);
-    CHECK_STATUS_BREAK(*status);
-
-    gti->nentries=nrows;
-
-  } while(0); // END of error handling loop.
-
-  if (NULL!=fptr) fits_close_file(fptr, status);
+  // Make sure that TIMEZERO==0.0.
+  verifyTIMEZERO(gti->timezero, status);
+  CHECK_STATUS_RET(*status, gti);
 
   return(gti);
 }
@@ -155,35 +112,7 @@ void saveGTIExt(fitsfile* const fptr,
 		GTI* const gti,
 		int* const status)
 {
-  // Create the GTI table.
-  char *ttype[]={"START", "STOP"};
-  char *tform[]={"D", "D"};
-  char *tunit[]={"", ""};
-  fits_create_tbl(fptr, BINARY_TBL, 0, 2, ttype, tform, tunit, 
-		  extname, status);
-  if (EXIT_SUCCESS!=*status) {
-    SIXT_ERROR("could not create binary table for GTI extension");
-    return;
-  }
-
-  // Insert header keywords.
-  fits_update_key(fptr, TSTRING, "HDUCLASS", "OGIP", "", status);
-  fits_update_key(fptr, TSTRING, "HDUCLAS1", "GTI", "", status);
-  fits_update_key(fptr, TSTRING, "HDUCLAS2", "STANDARD", "", status);
-  CHECK_STATUS_VOID(*status);
-
-  // Determine the individual column numbers.
-  int cstart, cstop;
-  fits_get_colnum(fptr, CASEINSEN, "START", &cstart, status);
-  fits_get_colnum(fptr, CASEINSEN,  "STOP", &cstop , status);
-  CHECK_STATUS_VOID(*status);
-  
-  // Store the data in the table.
-  fits_write_col(fptr, TDOUBLE, cstart, 
-		 1, 1, gti->nentries, gti->start, status);
-  fits_write_col(fptr, TDOUBLE, cstop, 
-		 1, 1, gti->nentries, gti->stop, status);
-  CHECK_STATUS_VOID(*status);
+  HDgti_write(fptr, gti, extname, "START", "STOP", status);
 }
 
 
@@ -193,16 +122,61 @@ void appendGTI(GTI* const gti,
 	       int* const status)
 {
   // Allocate memory.
-  gti->start=realloc(gti->start, (gti->nentries+1)*sizeof(double));
-  CHECK_NULL_VOID(gti, *status, 
-		  "memory allocation for GTI data structure failed");
-  gti->stop =realloc(gti->stop , (gti->nentries+1)*sizeof(double));
-  CHECK_NULL_VOID(gti, *status, 
-		  "memory allocation for GTI data structure failed");
+  if (gti->ngti>=gti->maxgti) {
+    HDgti_grow(gti, gti->ngti+1, status);
+    CHECK_STATUS_VOID(*status);
+  }
 
   // Store the start and the stop time.
-  gti->start[gti->nentries]=start;
-  gti->stop[gti->nentries] =stop;
-  gti->nentries++;
+  gti->start[gti->ngti]=start;
+  gti->stop[gti->ngti] =stop;
+  gti->ngti++;
 }
 
+
+double sumGTI(GTI* const gti)
+{
+  double sum=0.;
+  int ii; 
+  for (ii=0; ii<gti->ngti; ii++) {
+    sum+=gti->stop[ii]-gti->start[ii];
+  }
+  return(sum);
+}
+
+
+GTI* getGTIFromFileOrContinuous(char* const filename,
+				const double tstart,
+				const double tstop,
+				const double mjdref,
+				int* const status)
+{
+  GTI* gti=NULL;
+
+  // If available, load the specified GTI file.
+  if (strlen(filename)>0) {
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, filename);
+    strtoupper(ucase_buffer);
+    if (0!=strcmp(ucase_buffer, "NONE")) {
+      gti=loadGTI(filename, status);
+      CHECK_STATUS_RET(*status, gti);
+      verifyMJDREF(mjdref, gti->mjdref, "in GTI file", status);
+      CHECK_STATUS_RET(*status, gti);
+      SIXT_WARNING("the specification of a GTI file overwrites the settings "
+		   "for TSTART and Exposure");
+    }
+  }
+
+  // If not, create a dummy GTI from TSTART and TSTOP.
+  if (NULL==gti) {
+    gti=newGTI(status);
+    CHECK_STATUS_RET(*status, gti);
+    gti->mjdref=mjdref;
+    gti->timezero=0.0;
+    appendGTI(gti, tstart, tstop, status);
+    CHECK_STATUS_RET(*status, gti);
+  }
+
+  return(gti);
+}

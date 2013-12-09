@@ -140,7 +140,7 @@ EventFile* openEventFile(const char* const filename,
   EventFile* file=newEventFile(status);
   CHECK_STATUS_RET(*status, file);
 
-  headas_chat(4, "open event file '%s' ...\n", filename);
+  headas_chat(3, "open event file '%s' ...\n", filename);
   fits_open_table(&file->fptr, filename, mode, status);
   CHECK_STATUS_RET(*status, file);
 
