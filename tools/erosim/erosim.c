@@ -801,7 +801,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the photon list");
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -809,7 +809,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the impact list");
     return(status);
-  } 
+  }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
@@ -817,7 +817,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
-  } 
+  }
   strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
@@ -825,7 +825,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
-  } 
+  }
   strcpy(par->PatternList, sbuffer);
   free(sbuffer);
 
@@ -833,7 +833,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -841,7 +841,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 1");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile1, sbuffer);
   free(sbuffer);
 
@@ -849,7 +849,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 2");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile2, sbuffer);
   free(sbuffer);
 
@@ -857,7 +857,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 3");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile3, sbuffer);
   free(sbuffer);
 
@@ -865,7 +865,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 4");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile4, sbuffer);
   free(sbuffer);
 
@@ -873,7 +873,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 5");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile5, sbuffer);
   free(sbuffer);
 
@@ -881,7 +881,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 6");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile6, sbuffer);
   free(sbuffer);
 
@@ -889,7 +889,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 7");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile7, sbuffer);
   free(sbuffer);
 
@@ -903,7 +903,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -912,20 +912,20 @@ int erosim_getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the right ascension of the telescope "
 	       "pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope "
 	       "pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput, sbuffer);
   free(sbuffer);
 
@@ -933,7 +933,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the second SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput2, sbuffer);
   free(sbuffer);
 
@@ -941,7 +941,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the third SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput3, sbuffer);
   free(sbuffer);
 
@@ -949,7 +949,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the forth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput4, sbuffer);
   free(sbuffer);
 
@@ -957,7 +957,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the fifth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput5, sbuffer);
   free(sbuffer);
 
@@ -973,7 +973,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the GTI file");
     return(status);
-  } 
+  }
   strcpy(par->GTIFile, sbuffer);
   free(sbuffer);
 
@@ -981,25 +981,25 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading dt");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_bool("SkipInvalids", &par->SkipInvalids);
   if (EXIT_SUCCESS!=status) {
@@ -1017,7 +1017,7 @@ int erosim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the progress status file");
     return(status);
-  } 
+  }
   strcpy(par->ProgressFile, sbuffer);
   free(sbuffer);
 

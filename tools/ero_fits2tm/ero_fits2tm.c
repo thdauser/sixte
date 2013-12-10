@@ -20,6 +20,8 @@
 struct Parameters {
   char EventList[MAXFILENAME];
   char OutputFile[MAXFILENAME];
+
+  double TIMEZERO;
 };
 
 
@@ -138,8 +140,10 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
 				       const Event* const event)
 {
   // Check for overflows:
-  if (event->pi>0x3FFF) return(-1);
-
+  assert(event->pi<=0x3FFF);
+  assert(event->rawx<=0xFF);
+  assert(event->rawy<=0xFF);
+  
   // Write the data of the event to the byte output buffer:
   binary_output->bytes[binary_output->n_bytes++]=
     0x3F & (unsigned char)(event->pi>>8);
@@ -229,21 +233,33 @@ int ero_fits2tm_main()
 
   // HEATOOLs: register program
   set_toolname("ero_fits2tm");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR handling loop
 
     // --- Initialization ---
- 
-    if ((status=PILGetFname("EventList", par.EventList))) {
-      SIXT_ERROR("failed reading the name of the input event list (FITS file)");
+    char* sbuffer=NULL;
+
+    status=ape_trad_query_file_name("EventList", &sbuffer);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading the name of the input event list");
       break;
     }
+    strcpy(par.EventList, sbuffer);
+    free(sbuffer);
 
-    // Get the name of the output file (binary).
-    if ((status=PILGetFname("OutputFile", par.OutputFile))) {
-      SIXT_ERROR("failed reading the filename of the output file (binary file)");
+    status=ape_trad_query_file_name("OutputFile", &sbuffer);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading the name of the output file");
+      break;
+    }
+    strcpy(par.OutputFile, sbuffer);
+    free(sbuffer);
+
+    status=ape_trad_query_double("TIMEZERO", &par.TIMEZERO);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading TIMEZERO");
       break;
     }
 
@@ -310,6 +326,9 @@ int ero_fits2tm_main()
       // Read the event from the FITS file.
       getEventFromFile(elf, row+1, &(eventlist[n_buffered_events]), &status);
       CHECK_STATUS_BREAK(status);
+
+      // Subtract the time offset.
+      eventlist[n_buffered_events].time-=par.TIMEZERO;
 
       if (eventlist[n_buffered_events].frame>eventlist[0].frame) {
 	// Write the events to the binary output.
