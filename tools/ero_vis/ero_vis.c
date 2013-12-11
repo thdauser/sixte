@@ -50,6 +50,10 @@ int ero_vis_main()
   Attitude* ac=NULL;
   SimputCtlg* cat=NULL;
   GTI* gti=NULL;
+  fitsfile* fptr=NULL;
+
+  char* datestr=NULL;
+  char* timestr=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;
@@ -57,7 +61,7 @@ int ero_vis_main()
 
   // Register HEATOOL:
   set_toolname("ero_vis");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -216,13 +220,73 @@ int ero_vis_main()
     saveGTI(gti, par.GTIfile, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
+
+    // Open the GTI file and append the columns 'DATE-START', 'TIME-START',
+    // 'DATE-STOP', and 'TIME-STOP', which contain the same information
+    // as the already present columns 'START' and 'STOP', but are better
+    // readable for human being than large numbers of seconds.
+
+    // Open the file.
+    fits_open_file(&fptr, par.GTIfile, READWRITE, &status);
+    CHECK_STATUS_BREAK(status);
+    int hdutype;
+    fits_movabs_hdu(fptr, 2, &hdutype, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the number of rows.
+    long nrows;
+    fits_get_num_rows(fptr, &nrows, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Insert the new columns.
+    fits_insert_col(fptr, 3, "DATE-START", "10A", &status);
+    fits_insert_col(fptr, 4, "TIME-START", "8A", &status);
+    fits_insert_col(fptr, 5, "DATE-STOP", "10A", &status);
+    fits_insert_col(fptr, 6, "TIME-STOP", "8A", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Loop over all entries.
+    datestr=(char*)malloc(20*sizeof(char));
+    CHECK_NULL_BREAK(datestr, status, "memory allocation for string buffer failed");
+    timestr=(char*)malloc(20*sizeof(char));
+    CHECK_NULL_BREAK(datestr, status, "memory allocation for string buffer failed");
+    long jj;
+    for (jj=0; jj<nrows; jj++) {
+      // Determine the start date and time.
+      sixt_get_date_time(gti->mjdref, gti->start[jj], datestr, timestr, &status);
+      CHECK_STATUS_BREAK(status);
+      fits_write_col(fptr, TSTRING, 3, jj+1, 1, 1, &datestr, &status);
+      fits_write_col(fptr, TSTRING, 4, jj+1, 1, 1, &timestr, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine the stop date and time.
+      sixt_get_date_time(gti->mjdref, gti->stop[jj], datestr, timestr, &status);
+      CHECK_STATUS_BREAK(status);
+      fits_write_col(fptr, TSTRING, 5, jj+1, 1, 1, &datestr, &status);
+      fits_write_col(fptr, TSTRING, 6, jj+1, 1, 1, &timestr, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+    
+    // Close the file.
+    fits_close_file(fptr, &status);
+    CHECK_STATUS_BREAK(status);
+    fptr=NULL;
+
   } while(0); // END of the error handling loop.
 
 
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
+  // Close the GTI file.
+  if (NULL!=fptr) {
+    fits_close_file(fptr, &status);
+  }
+
   // Release memory.
+  if (NULL!=datestr) free(datestr);
+  if (NULL!=timestr) free(timestr);
   freeAttitude(&ac);
   freeGTI(&gti);
 

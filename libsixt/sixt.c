@@ -266,6 +266,44 @@ void sixt_get_LADXMLFile(char* const filename,
 }
 
 
+void sixt_get_date_time(const double mjdref,
+			const double t,
+			char* const datestr,
+			char* const timestr,
+			int* const status)
+{
+  int int_day=(int)(mjdref-40587.0+t/86400.0);
+  int int_sec=(int)((mjdref-40587.0-int_day)*86400.0+t);
+  struct tm time_utc;
+  time_utc.tm_sec=int_sec;
+  time_utc.tm_min=0;
+  time_utc.tm_hour=0;
+  time_utc.tm_mday=1+int_day;
+  time_utc.tm_mon=0;
+  time_utc.tm_year=70;
+  time_t timet=mktime(&time_utc);
+  // Note that we have to use 'localtime' here, although we
+  // want to determine the UTC, because this is the inverse
+  // of 'mktime'.
+  struct tm* time_utcn=localtime(&timet);
+  if (NULL==time_utcn) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not determine UTC time");
+    return;
+  }
+  if (10!=strftime(datestr, MAXMSG, "%Y-%m-%d", time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting date string");
+    return;
+  }
+  if (8!=strftime(timestr, MAXMSG, "%H:%M:%S", time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting time string");
+    return;
+  }
+}
+
+
 void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       const int hdunum,
 			       char* const telescop,
@@ -330,76 +368,21 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
   CHECK_STATUS_VOID(*status);
 
   // Determine the start date and time.
-  int int_day=(int)(mjdref-40587.0+tstart/86400.0);
-  int int_sec=(int)((mjdref-40587.0-int_day)*86400.0+tstart);
-  struct tm start_time_utc;
-  start_time_utc.tm_sec=int_sec;
-  start_time_utc.tm_min=0;
-  start_time_utc.tm_hour=0;
-  start_time_utc.tm_mday=1+int_day;
-  start_time_utc.tm_mon=0;
-  start_time_utc.tm_year=70;
-  time_t start_time=mktime(&start_time_utc);
-  // Note that we have to use 'localtime' here, although we
-  // want to determine the UTC, because this is the inverse
-  // of 'mktime'.
-  struct tm* start_time_utcn=localtime(&start_time);
-  if (NULL==start_time_utcn) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("could not determine UTC time");
-    return;
-  }
-  char start_datestr[MAXMSG], start_timestr[MAXMSG];
-  if (10!=strftime(start_datestr, MAXMSG, "%Y-%m-%d", start_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting date string");
-    return;
-  }
-  if (8!=strftime(start_timestr, MAXMSG, "%H:%M:%S", start_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting time string");
-    return;
-  }
-  fits_update_key(fptr, TSTRING, "DATE-OBS", start_datestr, 
+  char datestr[MAXMSG], timestr[MAXMSG];
+  sixt_get_date_time(mjdref, tstart, datestr, timestr, status);
+  CHECK_STATUS_VOID(*status);
+  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr, 
 		  "UT date of observation start", status);
-  fits_update_key(fptr, TSTRING, "TIME-OBS", start_timestr, 
+  fits_update_key(fptr, TSTRING, "TIME-OBS", timestr, 
 		  "UT time of observation start", status);
   CHECK_STATUS_VOID(*status);
 
   // Determine the stop date and time.
-  int_day=(int)(mjdref-40587.0+tstop/86400.0);
-  int_sec=(int)((mjdref-40587.0-int_day)*86400.0+tstop);
-  struct tm stop_time_utc;
-  stop_time_utc.tm_sec=int_sec;
-  stop_time_utc.tm_min=0;
-  stop_time_utc.tm_hour=0;
-  stop_time_utc.tm_mday=1+int_day;
-  stop_time_utc.tm_mon=0;
-  stop_time_utc.tm_year=70;
-  time_t stop_time=mktime(&stop_time_utc);
-  // Note that we have to use 'localtime' here, although we
-  // want to determine the UTC, because this is the inverse
-  // of 'mktime'.
-  struct tm* stop_time_utcn=localtime(&stop_time);
-  if (NULL==stop_time_utcn) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("could not determine UTC time");
-    return;
-  }
-  char stop_datestr[MAXMSG], stop_timestr[MAXMSG];
-  if (10!=strftime(stop_datestr, MAXMSG, "%Y-%m-%d", stop_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting date string");
-    return;
-  }
-  if (8!=strftime(stop_timestr, MAXMSG, "%H:%M:%S", stop_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting time string");
-    return;
-  }
-  fits_update_key(fptr, TSTRING, "DATE-END", stop_datestr, 
+  sixt_get_date_time(mjdref, tstop, datestr, timestr, status);
+  CHECK_STATUS_VOID(*status);
+  fits_update_key(fptr, TSTRING, "DATE-END", datestr, 
 		  "UT date of observation end", status);
-  fits_update_key(fptr, TSTRING, "TIME-END", stop_timestr, 
+  fits_update_key(fptr, TSTRING, "TIME-END", timestr, 
 		  "UT time of observation end", status);
   CHECK_STATUS_VOID(*status);
 

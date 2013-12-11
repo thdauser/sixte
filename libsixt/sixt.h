@@ -164,6 +164,15 @@ void sixt_get_XMLFile(char* const filename,
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);
 
+/** Determine a date and a time string for the specified MJDREF offset
+    and time given in seconds since MJDREF. */
+void sixt_get_date_time(const double mjdref,
+			const double t,
+			char* const datestr,
+			char* const timestr,
+			int* const status);
+
+/** Add standard FITS header keywords to the specified file. */
 void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       const int hdunum,
 			       char* const telescop,
@@ -177,6 +186,8 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       double tstop,
 			       int* const status);
 
+/** Add eROSITA-specific standard FITS header keywords to the
+    specified file. */
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr, 
 				  const int hdunum,
 				  char* const creation_date,
