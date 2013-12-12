@@ -362,7 +362,7 @@ void copyEventFile(const EventFile* const src,
     }
 
     // Apply the upper event threshold.
-    if ((threshold_up_keV>=0.0)&&(event->signal>threshold_up_keV)) {
+    if ((threshold_up_keV>0.0)&&(event->signal>threshold_up_keV)) {
       continue;
     }
 
