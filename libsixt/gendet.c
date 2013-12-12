@@ -301,6 +301,29 @@ void GenDetClearLine(GenDet* const det, const int lineindex) {
 }
 
 
+/** Apply the hot pixels of the bad pixel map on the detector pixel
+    array. */
+static void insertHotPix(GenDet* const det, const double timespan)
+{
+  int ii;
+  for (ii=0; ii<det->badpixmap->xwidth; ii++) {
+    if (1==det->badpixmap->anyhotpix[ii]) {
+      int jj;
+      for (jj=0; jj<det->badpixmap->ywidth; jj++) {
+	if (det->badpixmap->pixels[ii][jj]>0.) {
+	  // Add additional charge to the pixel.
+	  addGenDetCharge2Pixel(det, ii, jj,
+				det->badpixmap->pixels[ii][jj]*timespan,
+				-1.0, -1, -1);
+	}
+      }
+      // END of loop over y-coordinate.
+    }
+  }
+  // END of loop over x-coordinate.
+}
+
+
 void operateGenDetClock(GenDet* const det,
 			const double time,
 			int* const status)
@@ -380,7 +403,7 @@ void operateGenDetClock(GenDet* const det,
 	  }
 	  
 	  // Add the signal to the pixel.
-	  addGenDetCharge2Pixel(det->line[yi], xi, energy, bkg_time, -1, -1);
+	  addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
 
 	  // Call the event trigger routine.
 	  GenDetReadoutPixel(det, yi, yi, xi, bkg_time, status);
@@ -507,7 +530,7 @@ void operateGenDetClock(GenDet* const det,
 	      }
 
 	      // Add the signal to the pixel.
-	      addGenDetCharge2Pixel(det->line[yi], xi, energy, bkg_time, -1, -1);
+	      addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
 	    }
 	  }
 	}
@@ -551,7 +574,7 @@ void operateGenDetClock(GenDet* const det,
 	    if ((x<0) || (y<0)) continue;
 	    
 	    // Add the signal to the pixel.
-	    addGenDetCharge2Pixel(det->line[y], x, 
+	    addGenDetCharge2Pixel(det, x, y,
 				  list->hit_energy[ii],
 				  det->clocklist->time,
 				  -1, -1);
@@ -559,11 +582,10 @@ void operateGenDetClock(GenDet* const det,
 	  eroBkgFree(list);
 	}
 
-	// Apply the bad pixel map (if available) with the bad pixel 
-	// values weighted with the waiting time.
+	// Apply the hot pixels of the bad pixel map (if available) using
+	// the pixel values weighted with the waiting time.
 	if (NULL!=det->badpixmap) {
-	  applyBadPixMap(det->badpixmap, clwait->time, 
-			 encounterGenDetBadPix, det->line);
+	  insertHotPix(det, clwait->time);
 	}
 	break;
       case CL_LINESHIFT:
@@ -583,24 +605,6 @@ void operateGenDetClock(GenDet* const det,
       }
       CHECK_STATUS_VOID(*status);
     } while(type!=CL_NONE);
-  }
-}
-
-
-void encounterGenDetBadPix(void* const data, 
-			   const int x, const int y, 
-			   const float value) 
-{
-  // Array of pointers to pixel lines.
-  GenDetLine** line=(GenDetLine**)data;
-
-  // Check if the bad pixel type.
-  if (value<0.) { // The pixel is a cold one.
-    // Delete the charge in the pixel.
-    line[y]->charge[x]=0.;
-  } else if (value>0.) { // The pixel is a hot one.
-    // Add additional charge to the pixel.
-    addGenDetCharge2Pixel(line[y], x, value, -1.0, -1, -1);
   }
 }
 
@@ -850,7 +854,7 @@ int makeGenSplitEvents(GenDet* const det,
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) && (x[ii]<det->pixgrid->xwidth) &&
 	(y[ii]>=0) && (y[ii]<det->pixgrid->ywidth)) {
-      addGenDetCharge2Pixel(det->line[y[ii]], x[ii], signal*fraction[ii],
+      addGenDetCharge2Pixel(det, x[ii], y[ii], signal*fraction[ii],
 			    time, ph_id, src_id);
       nvalidpixels++;
 
@@ -869,6 +873,50 @@ int makeGenSplitEvents(GenDet* const det,
 
   // Return the number of affected pixels.
   return(nvalidpixels);
+}
+
+
+void addGenDetCharge2Pixel(GenDet* const det,
+			   const int column,
+			   const int row,
+			   const float signal,
+			   const double time,
+			   const long ph_id,
+			   const long src_id)
+{
+  // If a bad pixel map is defined, check whether the pixel is a dead one.
+  if (NULL!=det->badpixmap) {
+    if (det->badpixmap->pixels[column][row]<0.) return;
+  }
+
+  GenDetLine* line=det->line[row];
+
+  // Check if the pixel is sensitive right now.
+  if ((time<line->deadtime[column])&&(time>=0.0)) return;
+
+  // Set PH_ID and SRC_ID.
+  if (line->charge[column]<0.001) {
+    // If the charge collect in the pixel up to now is below 1eV,
+    // overwrite the old PH_ID and SRC_ID by the new value.
+    line->ph_id[column][0] =ph_id;
+    line->src_id[column][0]=src_id;
+
+  } else if (signal>0.001) {
+    // Only store the PH_ID and SRC_ID of the new contribution
+    // if its signal is above 1eV.
+    long ii;
+    for (ii=0; ii<NEVENTPHOTONS; ii++) {
+      if (0==line->ph_id[column][ii]) {
+	line->ph_id[column][ii] =ph_id;
+	line->src_id[column][ii]=src_id;
+	break;
+      }
+    }
+  }
+
+  // Add the signal.
+  line->charge[column]+=signal;
+  line->anycharge      =1;
 }
 
 

@@ -204,13 +204,6 @@ void GenDetReadoutLine(GenDet* const det,
 /** Clear a particular line of the GenDet pixel array. */
 void GenDetClearLine(GenDet* const det, const int lineindex);
 
-/** This function is called if a bad pixel is encountered and has to
-    be applied to the detector pixel array. The parameter 'value' has
-    to be added to the bad pixel at 'x' and 'y'. */
-void encounterGenDetBadPix(void* const data, 
-			   const int x, const int y, 
-			   const float value);
-
 /** Constructor for GenSplit data structure. */
 GenSplit* newGenSplit(int* const status);
 
@@ -227,6 +220,16 @@ int makeGenSplitEvents(GenDet* const det,
 		       const long ph_id, const long src_id,
 		       const double time,
 		       int* const status);
+
+/** Add a charge (photon energy [keV]) to a particular pixel in the
+    specified GenDetLine. The routine sets the anycharge flag of the
+    affected line. */
+void addGenDetCharge2Pixel(GenDet* const line,
+			   const int column,
+			   const int row,
+			   const float signal,
+			   const double time,
+			   const long ph_id, const long src_id);
 
 /** Parse the GenDet definition from an XML file. */
 void parseGenDetXML(GenDet* const det, 

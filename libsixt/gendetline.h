@@ -64,13 +64,5 @@ void clearGenDetLine(GenDetLine* const line);
     remain in there and have to be cleared separately. */
 void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1);
 
-/** Add a charge (photon energy [keV]) to a particular pixel in the
-    specified GenDetLine. The routine sets the anycharge flag of the
-    affected line. */
-void addGenDetCharge2Pixel(GenDetLine* const line, 
-			   const int column, 
-			   const float signal,
-			   const double time,
-			   const long ph_id, const long src_id);
 
 #endif /* GENDETLINE_H */
