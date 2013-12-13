@@ -14,7 +14,7 @@ BadPixMap* newBadPixMap(int* const status)
 
   // Initialize all pointers with NULL.
   map->pixels   =NULL;
-  map->anyhotpix=NULL;
+  map->anybadpix=NULL;
 
   // Set the initial values.
   map->xwidth=0;
@@ -86,14 +86,14 @@ BadPixMap* loadBadPixMap(const char* const filename,
     }
     CHECK_STATUS_BREAK(*status);
     // Allocate memory for the column flags.
-    map->anyhotpix=(int*)malloc(map->xwidth*sizeof(int));
-    if (NULL==map->anyhotpix) {
+    map->anybadpix=(int*)malloc(map->xwidth*sizeof(int));
+    if (NULL==map->anybadpix) {
       *status=EXIT_FAILURE;
       SIXT_ERROR("memory allocation for BadPixMap failed");
       break;
     }
     for (ii=0; ii<map->xwidth; ii++) {
-      map->anyhotpix[ii]=0;
+      map->anybadpix[ii]=0;
     }
 
     // Copy the input buffer to the BadPixMap.
@@ -101,19 +101,19 @@ BadPixMap* loadBadPixMap(const char* const filename,
       int jj;
       for(jj=0; jj<map->ywidth; jj++) {
         map->pixels[ii][jj]=input_buffer[ii+ map->xwidth*jj];
-        // Check if the pixel is a hot one.
-        if (map->pixels[ii][jj]>0.) {
+        // Check if the pixel is a bad one.
+        if (map->pixels[ii][jj]!=0.) {
 	  // Set the flag that this column of the image contains
-	  // at least one hot pixel.
-	  map->anyhotpix[ii]=1;
-        }
+	  // at least one bad pixel.
+	  map->anybadpix[ii]=1;
 
-	// Print some information.
-	if (map->pixels[ii][jj]>0.) {
-	  headas_chat(5, " hot pixel at (%d,%d)\n", ii, jj);
-	} else if (map->pixels[ii][jj]<0.) {
-	  headas_chat(5, " cold pixel at (%d,%d)\n", ii, jj);
-	}
+	  // Print some information.
+	  if (map->pixels[ii][jj]>0.) {
+	    headas_chat(5, " hot pixel at (%d,%d)\n", ii, jj);
+	  } else if (map->pixels[ii][jj]<0.) {
+	    headas_chat(5, " cold pixel at (%d,%d)\n", ii, jj);
+	  }
+        }
       }
     }
   } while (0); // END of 1st error handling loop.
@@ -144,8 +144,8 @@ void destroyBadPixMap(BadPixMap** const map)
       }
       free((*map)->pixels);
     }
-    if (NULL!=(*map)->anyhotpix) {
-      free((*map)->anyhotpix);
+    if (NULL!=(*map)->anybadpix) {
+      free((*map)->anybadpix);
     }
     free(*map);
     *map=NULL;

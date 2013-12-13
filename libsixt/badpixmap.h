@@ -23,10 +23,10 @@ typedef struct {
   /** 2-dimensional pixel array containing the bad pixel map. */
   float** pixels;
 
-  /** This flag specifies if the column contains any hot pixels (value
-      1). If not (value 0), the hot pixel application routine can jump
+  /** This flag specifies if the column contains any bad pixels (value
+      1). If not (value 0), the bad pixel application routine can jump
       to the next column. */
-  int* anyhotpix;
+  int* anybadpix;
 
 } BadPixMap;
 

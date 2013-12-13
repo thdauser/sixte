@@ -301,20 +301,25 @@ void GenDetClearLine(GenDet* const det, const int lineindex) {
 }
 
 
-/** Apply the hot pixels of the bad pixel map on the detector pixel
-    array. */
-static void insertHotPix(GenDet* const det, const double timespan)
+/** Apply the bad pixels of the bad pixel map. */
+static void insertBadPix(GenDet* const det, const double timespan)
 {
   int ii;
   for (ii=0; ii<det->badpixmap->xwidth; ii++) {
-    if (1==det->badpixmap->anyhotpix[ii]) {
+    if (1==det->badpixmap->anybadpix[ii]) {
       int jj;
       for (jj=0; jj<det->badpixmap->ywidth; jj++) {
+	float diff=det->badpixmap->pixels[ii][jj]*timespan;
 	if (det->badpixmap->pixels[ii][jj]>0.) {
-	  // Add additional charge to the pixel.
-	  addGenDetCharge2Pixel(det, ii, jj,
-				det->badpixmap->pixels[ii][jj]*timespan,
-				-1.0, -1, -1);
+	  // If the pixel is a hot one, add charge.
+	  addGenDetCharge2Pixel(det, ii, jj, diff, -1.0, -1, -1);
+	} else if (det->badpixmap->pixels[ii][jj]<0.) {
+	  // If the pixel is a cold one, remove charge.
+	  if (det->line[jj]->charge[ii]<(-1.)*diff) {
+	    det->line[jj]->charge[ii]=0.;
+	  } else {
+	    det->line[jj]->charge[ii]+=diff;
+	  }
 	}
       }
       // END of loop over y-coordinate.
@@ -585,7 +590,7 @@ void operateGenDetClock(GenDet* const det,
 	// Apply the hot pixels of the bad pixel map (if available) using
 	// the pixel values weighted with the waiting time.
 	if (NULL!=det->badpixmap) {
-	  insertHotPix(det, clwait->time);
+	  insertBadPix(det, clwait->time);
 	}
 	break;
       case CL_LINESHIFT:
@@ -884,11 +889,6 @@ void addGenDetCharge2Pixel(GenDet* const det,
 			   const long ph_id,
 			   const long src_id)
 {
-  // If a bad pixel map is defined, check whether the pixel is a dead one.
-  if (NULL!=det->badpixmap) {
-    if (det->badpixmap->pixels[column][row]<0.) return;
-  }
-
   GenDetLine* line=det->line[row];
 
   // Check if the pixel is sensitive right now.
