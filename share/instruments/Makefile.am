@@ -55,6 +55,7 @@ dist_srg_DATA = srg/erosita.xml
 # XMM EPICpn
 xmmepicpndir = $(xmldir)/xmm/epicpn
 dist_xmmepicpn_DATA = xmm/epicpn/fullframe.xml
+dist_xmmepicpn_DATA+= xmm/smallwindow.xml
 dist_xmmepicpn_DATA+= xmm/epicpn/timing.xml
 dist_xmmepicpn_DATA+= xmm/epicpn/burst.xml
 
