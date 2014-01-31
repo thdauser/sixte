@@ -8,6 +8,7 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
 AM_CFLAGS+=-Wall 
 
 ########## PIL .par-FILES##############
