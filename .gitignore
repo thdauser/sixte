@@ -6,7 +6,6 @@
 *.swp
 *.swo
 .project
-configure
 Makefile
 Makefile.in
 doc
@@ -54,15 +53,9 @@ fudgexp
 # Autotool stuff:
 aclocal.m4
 autom4te.cache
-config.guess
 config.h
 config.h.in
 config.log
 config.status
-config.sub
-depcomp
-install-sh
 libtool
-ltmain.sh
-missing
 stamp-h1
