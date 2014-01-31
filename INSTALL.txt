@@ -65,4 +65,6 @@ If you have HEAsoft installed on your system, this variable might
 already exist. In that case make sure that it contains the path
 specified by PFILESDIR.
 
-If everything worked properly you can now use the software.
+If everything worked properly you can now use the software. A sample
+setup illustrating how to run the simulation is provided at
+http://www.sternwarte.uni-erlangen.de/~schmid/download/sixte_sample.tar.gz
