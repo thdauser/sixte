@@ -14,6 +14,9 @@ int makespec_main() {
   long* spec=NULL;
   fitsfile* sf=NULL;
 
+  // GTI.
+  GTI* gti=NULL;
+
   // Instrument response.
   struct RMF* rmf=NULL;
 
@@ -23,7 +26,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -99,12 +102,11 @@ int makespec_main() {
       break;
     }
 
-    double exposure=0.;
-    fits_read_key(ef, TDOUBLE, "EXPOSURE", &exposure, comment, &status);
-    if (EXIT_SUCCESS!=status) {
-      SIXT_ERROR("could not find keyword 'EXPOSURE' in event file");
-      break;
-    }
+    // Load the GTI extension in order to be able to determine the 
+    // exposure time.
+    gti=loadGTI(par.EventList, &status);
+    CHECK_STATUS_BREAK(status);
+    double exposure=sumGTI(gti);
 
     // Determine the column containing the signal information.
     int csignal;
@@ -252,6 +254,7 @@ int makespec_main() {
   // Release memory.
   if (NULL!=spec) free(spec);
   freeRMF(rmf);
+  freeGTI(&gti);
 
   // Clean up the random number generator.
   sixt_destroy_rng();

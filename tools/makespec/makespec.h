@@ -4,6 +4,7 @@
 #include "sixt.h"
 #include "rmf.h"
 #include "arf.h"
+#include "gti.h"
 
 #ifndef HEASP_H
 #define HEASP_H 1
