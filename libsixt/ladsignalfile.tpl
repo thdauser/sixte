@@ -34,25 +34,18 @@ TFORM#  D               / Format of column TIME
 TUNIT#  s               / Unit of column TIME
 TTYPE#  FRAME           / Frame counter
 TFORM#  J               / Format of column FRAME
-TUNIT#                  / Unit of column FRAME
 TTYPE#  SIGNAL          / Measured signal
 TFORM#  E               / 
 TUNIT#  keV             / 
 TTYPE#  PANEL           / Affected panel
 TFORM#  J   		/
-TUNIT#                  / 
 TTYPE#  MODULE          / Affected module
 TFORM#  J   		/
-TUNIT#                  / 
 TTYPE#  ELEMENT         / Affected element
 TFORM#  J   		/
-TUNIT#                  / 
 TTYPE#  ANODE           / Affected anode
 TFORM#  J   		/
-TUNIT#                  / 
 TTYPE# 	PH_ID           / Photon ID
 TFORM# 	2J   		/
-TUNIT# 	                / 
 TTYPE# 	SRC_ID          / Source ID
 TFORM# 	2J   		/
-TUNIT# 	                / 

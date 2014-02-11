@@ -22,7 +22,6 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TUNIT#  s               / Unit of column TIME
 	TTYPE#  FRAME           / Frame counter
 	TFORM#  J               / Format of column FRAME
-	TUNIT#                  / Unit of column FRAME
 	TTYPE#  PI              / Corrected Energy Channel
 	TFORM#  J               / Format of column PI
 	TUNIT#  ADU             / Unit of column PI
@@ -43,22 +42,17 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TUNIT#  deg             / Unit of column DEC
 	TTYPE# 	PH_ID           / Photon ID
 	TFORM# 	2J   		/
-	TUNIT# 	                / 
 	TTYPE# 	SRC_ID          / Source ID
 	TFORM# 	2J   		/
-	TUNIT# 	                / 
 	TTYPE#  TYPE            / Pattern type
 	TFORM#  I               / Format of column TYPE
-	TUNIT#                  / Unit of column TYPE
 	TTYPE#  NPIXELS         / Number of involved pixels
 	TFORM#  J               / Format of column NPIXELS
-	TUNIT#                  / Unit of column NPIXELS
 	TTYPE#  PILEUP          / Pile-up flag
 	TFORM#  I               / Format of column PILEUP
-	TUNIT#                  / Unit of column PILEUP
 	TTYPE#  SIGNALS         / Signals in surrounding 3x3 matrix
 	TFORM#  9E              / Format of column SIGNALS
-	TUNIT#                  / Unit of column SIGNALS
+	TUNIT#  keV             / Unit of column SIGNAL
 	TTYPE#  PIS             / Energy channels in surrounding 3x3 matrix
 	TFORM#  9J              / Format of column PIS
 	TUNIT#  ADU             / Unit of column PIS

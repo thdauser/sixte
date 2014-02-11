@@ -15,13 +15,10 @@ TFORM#  	E   		/
 TUNIT#  	keV             / 
 TTYPE#  	PANEL           / Affected Panel
 TFORM#  	J   		/
-TUNIT#  	                / 
 TTYPE#  	MODULE          / Affected Module
 TFORM#  	J   		/
-TUNIT#  	                / 
 TTYPE#  	ELEMENT         / Affected Element
 TFORM#  	J   		/
-TUNIT#  	                / 
 TTYPE#  	X               / X coordinate of photon impact
 TFORM#  	D               / 
 TUNIT#  	m               / 
@@ -40,7 +37,5 @@ TCDLT#		1.		/
 TCUNI#		m		/
 TTYPE#  	PH_ID           / Photon ID
 TFORM#  	J   		/
-TUNIT#  	                / 
 TTYPE#  	SRC_ID          / Source ID
 TFORM#  	J   		/
-TUNIT#  	                / 
