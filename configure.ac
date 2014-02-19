@@ -116,6 +116,7 @@ AC_CONFIG_FILES([Makefile
 		tools/imgev/Makefile
 		tools/fudgexp/Makefile
 		tools/orbatt/Makefile
+		tools/epicpn_events/Makefile
 		share/Makefile
 		share/instruments/Makefile
 		extlib/Makefile])

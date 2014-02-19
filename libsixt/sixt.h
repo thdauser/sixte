@@ -44,6 +44,15 @@
 #define SIXT_NAN (0./0.)
 
 
+/** MJDREF used in the FITS header of eROSITA event files
+    [d]. Corresponds to 2000-01-01T00:00:00. */
+extern const double eromjdref;
+
+/** MJDREF used in the FITS header of XMM event files [d]. Corresponds
+    to 1998-01-01T00:00:00.00. */
+extern const double xmmmjdref;
+
+
 /////////////////////////////////////////////////////////////////
 // Macro definitions.
 /////////////////////////////////////////////////////////////////

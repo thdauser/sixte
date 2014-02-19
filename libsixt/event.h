@@ -51,8 +51,8 @@ typedef struct {
       one for a single-pixel event. */
   long npixels;
 
-  /** Split pattern type. Unknown (0), single (1), double (2), triple
-      (3), quadruple (4), or invalid (-1). */
+  /** Split pattern type: single (0), double (1-4), triple (5-8),
+      quadruple (9-12), or invalid (-1). */
   int type;
 
   /** Pile-up flag. */
