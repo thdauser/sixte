@@ -58,4 +58,4 @@ dist_xmmepicpn_DATA = xmm/epicpn/fullframe.xml
 dist_xmmepicpn_DATA+= xmm/epicpn/smallwindow.xml
 dist_xmmepicpn_DATA+= xmm/epicpn/timing.xml
 dist_xmmepicpn_DATA+= xmm/epicpn/burst.xml
-
+dist_xmmepicpn_DATA+= xmm/epicpn/combined12ccds.xml
