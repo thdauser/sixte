@@ -16,6 +16,25 @@ struct XMLBuffer {
   unsigned long maxlength;
 };
 
+/** Data structure for include handling */
+struct XMLIncludeHandler {
+
+  /** Flag if the preprocessed XMLBuffer contained any further includes
+      to be expanded. */
+  int further_includes;
+
+  /** Output buffer for included XML data. */
+  struct XMLBuffer* include_buffer;
+
+  /** Output buffer for processed XML data. */
+  struct XMLBuffer* output_buffer;
+
+  /** filepath of the xml file */
+  char xmlfile[MAXFILENAME];
+
+  int status;
+};
+
 /** Data structure given to the XML Pre-Parser. */
 struct XMLPreParseData {
 
@@ -57,6 +76,12 @@ void freeXMLBuffer(struct XMLBuffer** const buffer);
 void addString2XMLBuffer(struct XMLBuffer* const buffer, 
 			 const char* const string,
 			 int* const status);
+
+/** Expand the included XML files in the GenDet XML
+    description. */
+void expandIncludesXML(struct XMLBuffer* const buffer, 
+		       char* filename, 
+		       int* const status);
 
 /** Expand the loops and arithmetic operations in the GenDet XML
     description. */
