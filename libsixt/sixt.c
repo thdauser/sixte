@@ -8,6 +8,15 @@
 #endif
 
 
+/** MJDREF used in the FITS header of eROSITA event files
+    [d]. Corresponds to 2000-01-01T00:00:00. */
+const double eromjdref=51544.;
+
+/** MJDREF used in the FITS header of XMM event files [d]. Corresponds
+    to 1998-01-01T00:00:00.00. */
+const double xmmmjdref=50814.;
+
+
 int getSeed(int seed)
 {
   if (-1!=seed) {

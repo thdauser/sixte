@@ -448,34 +448,6 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
-
-    // Timing keywords.
-    double buffer_timezero=0.;
-    // Photon list file.
-    if (NULL!=plf) {
-      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Impact list file.
-    if (NULL!=ilf) {
-      fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
     
     // --- End of opening files ---
 

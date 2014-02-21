@@ -1,12 +1,14 @@
-#ifndef ERO_RAWEVENTS_H
-#define ERO_RAWEVENTS_H 1
+#ifndef EPICPN_EVENTS_H
+#define EPICPN_EVENTS_H 1
 
 
 #include "sixt.h"
+#include "attitude.h"
 #include "event.h"
 #include "eventfile.h"
+#include "wcs.h"
 
-#define TOOLSUB ero_rawevents_main
+#define TOOLSUB epicpn_events_main
 #include "headas_main.c"
 
 
@@ -16,13 +18,34 @@
 
 
 struct Parameters {
-  char EventList[MAXFILENAME];
-  char eroEventList[MAXFILENAME];
-
-  int CCDNr;
+  char PatternList[MAXFILENAME];
+  char EPICpnEventList[MAXFILENAME];
 
   char clobber;
 };
+
+
+/** Event entry in an EPIC-pn event file. */
+typedef struct {
+  /* [s] */
+  double time;
+
+  /* [pixel] */
+  int rawx, rawy;
+  /* [0.05arcsec] */
+  int detx, dety;
+  /* [0.05arcsec] */
+  long x, y;
+
+  /* [adu] */
+  int pha;
+  /* [eV] */
+  int pi;
+  
+  long flag;
+  char pattern;
+
+} EPICpnEvent;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -34,5 +57,5 @@ struct Parameters {
 int getpar(struct Parameters* const parameters);
 
 
-#endif /* ERO_RAWEVENTS_H */
+#endif /* EPICPN_EVENTS_H */
 

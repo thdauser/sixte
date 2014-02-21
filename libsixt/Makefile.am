@@ -88,4 +88,4 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h gti.h	\
 		sourceimage.h reconstruction.h eventarray.h		\
 		fft_array.h balancing.h find_position.h			\
-		attitudecatalog2.h det_phi_max.h eroeventfile.h
+		attitudecatalog2.h det_phi_max.h

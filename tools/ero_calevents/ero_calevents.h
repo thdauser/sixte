@@ -4,7 +4,6 @@
 
 #include "sixt.h"
 #include "attitude.h"
-#include "eroeventfile.h"
 #include "event.h"
 #include "eventfile.h"
 #include "gti.h"
