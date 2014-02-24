@@ -240,7 +240,10 @@ void parseGenInstXML(GenInst* const inst,
   // Close the file handler to the XML file.
   fclose(xmlfile);
 
+  // Before expanding loops in the XML file, add the included code to it.
+  expandIncludesXML(xmlbuffer, filename, status);
 
+  CHECK_STATUS_VOID(*status);
   // Before acutally parsing the XML code, expand the loops and 
   // arithmetic operations in the GenDet XML description.
   // The expansion algorithm repeatetly scans the XML code and

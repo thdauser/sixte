@@ -530,37 +530,6 @@ int nustarsim_main()
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);  
     }
-
-    // Timing keywords.
-    double buffer_timezero=0.;
-    for (ii=0; ii<2; ii++) {
-      // Photon list file.
-      if (NULL!=plf[ii]) {
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-			"reference MJD", &status);
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-			"time offset", &status);
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
-			"start time", &status);
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "TSTOP", &tstop,
-			"stop time", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-
-      // Impact list file.
-      if (NULL!=ilf[ii]) {
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-			"reference MJD", &status);
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-			"time offset", &status);
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
-			"start time", &status);
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TSTOP", &tstop,
-			"stop time", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
-    CHECK_STATUS_BREAK(status);
     
     // --- End of opening files ---
 

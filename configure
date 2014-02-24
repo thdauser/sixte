@@ -4689,7 +4689,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 # Create the following Makefiles (including subdirectories).
 # A Makefile that is not listed here will not be created by 'automake'!
-ac_config_files="$ac_config_files Makefile libsixt/Makefile tools/Makefile tools/runsixt/Makefile tools/phogen/Makefile tools/phoimg/Makefile tools/comaphovign/Makefile tools/ladsim/Makefile tools/makespec/Makefile tools/makelc/Makefile tools/psfgen/Makefile tools/xms_pixtemp/Makefile tools/ero_exposure/Makefile tools/ero_vis/Makefile tools/ero_calevents/Makefile tools/ero_rawevents/Makefile tools/ero_fits2tm/Makefile tools/erosim/Makefile tools/comaexp/Makefile tools/nustarsim/Makefile tools/athenapwfisim/Makefile tools/htrssim/Makefile tools/tes_grades/Makefile tools/gendetsim/Makefile tools/comaimg/Makefile tools/comadet/Makefile tools/comarecon/Makefile tools/projev/Makefile tools/evpat/Makefile tools/imgev/Makefile tools/fudgexp/Makefile tools/orbatt/Makefile share/Makefile share/instruments/Makefile extlib/Makefile"
+ac_config_files="$ac_config_files Makefile libsixt/Makefile tools/Makefile tools/runsixt/Makefile tools/phogen/Makefile tools/phoimg/Makefile tools/comaphovign/Makefile tools/ladsim/Makefile tools/makespec/Makefile tools/makelc/Makefile tools/psfgen/Makefile tools/xms_pixtemp/Makefile tools/ero_exposure/Makefile tools/ero_vis/Makefile tools/ero_calevents/Makefile tools/ero_rawevents/Makefile tools/ero_fits2tm/Makefile tools/erosim/Makefile tools/comaexp/Makefile tools/nustarsim/Makefile tools/athenapwfisim/Makefile tools/htrssim/Makefile tools/tes_grades/Makefile tools/gendetsim/Makefile tools/comaimg/Makefile tools/comadet/Makefile tools/comarecon/Makefile tools/projev/Makefile tools/evpat/Makefile tools/imgev/Makefile tools/fudgexp/Makefile tools/orbatt/Makefile tools/epicpn_events/Makefile share/Makefile share/instruments/Makefile extlib/Makefile"
 
 
 
@@ -5464,6 +5464,7 @@ do
     "tools/imgev/Makefile") CONFIG_FILES="$CONFIG_FILES tools/imgev/Makefile" ;;
     "tools/fudgexp/Makefile") CONFIG_FILES="$CONFIG_FILES tools/fudgexp/Makefile" ;;
     "tools/orbatt/Makefile") CONFIG_FILES="$CONFIG_FILES tools/orbatt/Makefile" ;;
+    "tools/epicpn_events/Makefile") CONFIG_FILES="$CONFIG_FILES tools/epicpn_events/Makefile" ;;
     "share/Makefile") CONFIG_FILES="$CONFIG_FILES share/Makefile" ;;
     "share/instruments/Makefile") CONFIG_FILES="$CONFIG_FILES share/instruments/Makefile" ;;
     "extlib/Makefile") CONFIG_FILES="$CONFIG_FILES extlib/Makefile" ;;

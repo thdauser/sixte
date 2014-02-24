@@ -526,6 +526,217 @@ static void expandXMLElementEnd(void* data, const char* el)
 }
 
 
+
+static void InclXMLElementStart(void* data, 
+			    const char* el, 
+			    const char** attr) 
+{
+  struct XMLIncludeHandler* mydata=(struct XMLIncludeHandler*)data;
+
+  // Check if an error has occurred previously.
+  CHECK_STATUS_VOID(mydata->status);
+
+  struct XMLBuffer* output=mydata->output_buffer;
+
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG]; // Upper case version of XML element
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+
+  // Check if the element is an include tag.
+  if(strcmp(Uelement, "INCLUDE")==0){
+
+    // Set the output to the include buffer
+    output=mydata->include_buffer;
+
+    // Read the name of the included file
+    char includefilename[MAXFILENAME], includefilepath[MAXFILENAME];
+    getXMLAttributeString(attr, "FILENAME", includefilename);
+
+    // Check if a file name has been specified.
+    if(strlen(includefilename)==0){
+      mydata->status=EXIT_FAILURE;
+      SIXT_ERROR("Failed reading name of included xml file.");
+      return;
+    }
+
+    // Construct the filepath to the included file
+    strcpy(includefilepath, mydata->xmlfile);
+    if(includefilename==NULL){
+      mydata->status=EXIT_FAILURE;
+      SIXT_ERROR("Failed copying name of included xml file.");
+      return;
+    }
+    // Set a pointer to the last occurence of a slash
+    char *ptr=strrchr(includefilepath, '/');
+    if(ptr==NULL){
+      // If no slash is found, set it to the first character
+      ptr=&includefilepath[0];
+    }else{
+      // Otherwise move to the next character not to lose the slash
+      ptr++;
+    }
+    // Set the next character to null to cut off the name of the input xml file
+    *ptr='\0';
+    // Append the name of the included xml file
+    strcat(includefilepath, includefilename);
+
+    // Open include file
+    FILE* includefile=fopen(includefilepath, "r");
+    if(includefile==NULL){
+      mydata->status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "Failed opening included xml file:\n%s", includefilepath);
+      SIXT_ERROR(msg);
+      return;
+    }
+    // write include file to output buffer
+    const int buffer_size=256;
+    char buffer[buffer_size+1];
+    int len;
+
+    do{
+      len=fread(buffer, 1, buffer_size, includefile);
+      buffer[len]='\0';
+      addString2XMLBuffer(output, buffer, &mydata->status);
+      CHECK_STATUS_VOID(mydata->status);
+    }while(!feof(includefile));
+
+    fclose(includefile);
+
+    // Recursively scan included xml code for includes
+    expandIncludesXML(output, includefilepath, &mydata->status);
+    CHECK_STATUS_VOID(mydata->status);
+
+    // Copy included XML code to the right output buffer
+    addString2XMLBuffer(mydata->output_buffer, output->text, &mydata->status);
+    CHECK_STATUS_VOID(mydata->status);
+
+    // raise further includes
+    mydata->further_includes=1;
+
+    // empty the include buffer
+    freeXMLBuffer(&(mydata->include_buffer));
+    mydata->include_buffer=newXMLBuffer(&mydata->status);
+
+  }else{
+    // If it was not an include tag, just write it to the output buffer
+    char buffer[MAXMSG];
+    if(sprintf(buffer, "<%s", el)>=MAXMSG){
+      mydata->status=EXIT_FAILURE;
+      SIXT_ERROR("XML element string too long");
+      return;
+    }
+    addString2XMLBuffer(output, buffer, &mydata->status);
+    CHECK_STATUS_VOID(mydata->status);
+    int ii=0;
+    while(attr[ii]){
+      if(sprintf(buffer, " %s=\"%s\"", attr[ii], attr[ii+1])>=MAXMSG){
+        mydata->status=EXIT_FAILURE;
+        SIXT_ERROR("XML element string too long");
+        return;
+      }
+      addString2XMLBuffer(output, buffer, &mydata->status);
+      CHECK_STATUS_VOID(mydata->status);
+
+      ii+=2;
+    }
+    addString2XMLBuffer(output, ">", &mydata->status);
+    CHECK_STATUS_VOID(mydata->status);
+  }
+}
+
+static void InclXMLElementEnd(void* data, 
+			    const char* el) 
+{
+  struct XMLIncludeHandler* mydata=(struct XMLIncludeHandler*)data;
+
+  // Pointer to output buffer
+  struct XMLBuffer* output=mydata->output_buffer;
+
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG]; // Upper case version of XML element
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+
+  // Check if the element is an include tag.
+  if(strcmp(Uelement, "INCLUDE")){
+    // If not, print the end tag
+    char buffer[MAXMSG];
+    if(sprintf(buffer, "</%s>", el)>=MAXMSG){
+      mydata->status=EXIT_FAILURE;
+      SIXT_ERROR("XML string element too long");
+      return;
+    }
+    addString2XMLBuffer(output, buffer, &mydata->status);
+    if(EXIT_SUCCESS!=mydata->status) {
+      return;
+    }
+  }
+}
+
+void expandIncludesXML(struct XMLBuffer* const buffer, char* filename, int* const status)
+{
+  struct XMLIncludeHandler data;
+  strcpy(data.xmlfile, filename);
+
+  do{
+    // Set further_includes to 0, if nothing new is found, 
+    // this terminates the while loop
+    data.further_includes=0;
+    data.status=EXIT_SUCCESS;
+    data.include_buffer=newXMLBuffer(status);
+    data.output_buffer=newXMLBuffer(status);
+
+    // Parse XML code in the buffer using the expat library.
+    // Get a parser object.
+    XML_Parser parser=XML_ParserCreate(NULL);
+    if(NULL==parser){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("could not allocate memory for XML parser");
+      return;
+    }
+
+    // Set data that is passed to the handler functions.
+    XML_SetUserData(parser, &data);
+
+    // Set handler functions
+    XML_SetElementHandler(parser, InclXMLElementStart, InclXMLElementEnd);
+
+    // Process all the data in the string buffer.
+    const int done=1;
+    if(!XML_Parse(parser, buffer->text, strlen(buffer->text), done)) {
+      // Parse error.
+      *status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "parsing XML code failed: \n%s\n", 
+	      XML_ErrorString(XML_GetErrorCode(parser)));
+      printf("%s", buffer->text);
+      SIXT_ERROR(msg);
+      return;
+    }
+
+    // Check for errors.
+    if (EXIT_SUCCESS!=data.status) {
+      *status=data.status;
+      return;
+    }
+
+    // Copy the output XMLBuffer to the input XMLBuffer
+    copyXMLBuffer(buffer, data.output_buffer, status);
+    if(EXIT_SUCCESS!=*status){
+      return;
+    }
+    // release allocated memory
+    freeXMLBuffer(&data.output_buffer);
+    XML_ParserFree(parser);
+
+  }while(data.further_includes);
+
+  CHECK_STATUS_VOID(*status);
+}
+
+
 void expandXML(struct XMLBuffer* const buffer, int* const status)
 {
   struct XMLPreParseData data;
