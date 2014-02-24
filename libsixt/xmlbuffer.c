@@ -655,7 +655,7 @@ static void InclXMLElementEnd(void* data,
   }
 }
 
-void expandIncludesXML(struct XMLBuffer* const buffer, char* filename, int* const status)
+void expandIncludesXML(struct XMLBuffer* const buffer, const char* filename, int* const status)
 {
   struct XMLIncludeHandler data;
   strcpy(data.xmlfile, filename);

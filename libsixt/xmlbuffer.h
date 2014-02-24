@@ -80,7 +80,7 @@ void addString2XMLBuffer(struct XMLBuffer* const buffer,
 /** Expand the included XML files in the GenDet XML
     description. */
 void expandIncludesXML(struct XMLBuffer* const buffer, 
-		       char* filename, 
+		       const char* filename, 
 		       int* const status);
 
 /** Expand the loops and arithmetic operations in the GenDet XML
