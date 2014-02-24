@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+*/
+
 #include "comaimg.h"
 
 /////////////////////////////////////////////////////////////
@@ -44,9 +64,9 @@ int comaimg_main() {
     //Distance mask-detector:
     float distance = par.MaskDistance;
 
-    //Initialize HEADAS random number generator and GSL generator for 
-    //Gaussian distribution.
-    HDmtInit(1);
+    // Initialize the random number generator.
+    sixt_init_rng(getSeed(-1), &status);
+    CHECK_STATUS_BREAK(status);
 
     //Open the FITS file with the input photon list.
     plf=openPhotonFile(par.PhotonList, READONLY, &status);
@@ -233,8 +253,8 @@ int comaimg_main() {
   // Release memory.
   destroyCodedMask(&mask);
 
-  // release HEADAS random number generator
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
