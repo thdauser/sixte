@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "makespec.h"
 
 
@@ -14,6 +34,9 @@ int makespec_main() {
   long* spec=NULL;
   fitsfile* sf=NULL;
 
+  // GTI.
+  GTI* gti=NULL;
+
   // Instrument response.
   struct RMF* rmf=NULL;
 
@@ -23,7 +46,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -99,12 +122,11 @@ int makespec_main() {
       break;
     }
 
-    double exposure=0.;
-    fits_read_key(ef, TDOUBLE, "EXPOSURE", &exposure, comment, &status);
-    if (EXIT_SUCCESS!=status) {
-      SIXT_ERROR("could not find keyword 'EXPOSURE' in event file");
-      break;
-    }
+    // Load the GTI extension in order to be able to determine the 
+    // exposure time.
+    gti=loadGTI(par.EventList, &status);
+    CHECK_STATUS_BREAK(status);
+    double exposure=sumGTI(gti);
 
     // Determine the column containing the signal information.
     int csignal;
@@ -252,6 +274,7 @@ int makespec_main() {
   // Release memory.
   if (NULL!=spec) free(spec);
   freeRMF(rmf);
+  freeGTI(&gti);
 
   // Clean up the random number generator.
   sixt_destroy_rng();

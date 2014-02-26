@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+*/
+
 #include "comadetector.h"
 
 
@@ -13,8 +33,8 @@ CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
   }
 
   // Set initial values.
-  det->pixels    = NULL;
-  det->eventfile = NULL;
+  det->pixels   =NULL;
+  det->eventfile=NULL;
 
   // Call the initialization routines of the underlying data structures.
   det->pixels=newSquarePixels(&parameters->pixels, status);
@@ -49,10 +69,10 @@ int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
   // Determine the affected pixel.
   int x, y; // Detector RAWX and RAWY.
   if (getSquarePixel(det->pixels, impact->position, &x, &y)>0) {
-    CoMaEvent event = { .time   = impact->time,
-			.charge = impact->energy,
-			.rawx   = x,
-			.rawy   = y };
+    CoMaEvent event={.time  =impact->time,
+		     .charge=impact->energy,
+		     .rawx  =x,
+		     .rawy  =y };
 
     // Add event to event file.
     status=addCoMaEvent2File(det->eventfile, &event);
@@ -61,5 +81,4 @@ int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
 
   return(status);
 }
-
 

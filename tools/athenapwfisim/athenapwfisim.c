@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "athenapwfisim.h"
 
 
@@ -448,34 +468,6 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
-
-    // Timing keywords.
-    double buffer_timezero=0.;
-    // Photon list file.
-    if (NULL!=plf) {
-      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Impact list file.
-    if (NULL!=ilf) {
-      fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
     
     // --- End of opening files ---
 

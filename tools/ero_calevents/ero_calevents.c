@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "ero_calevents.h"
 
 
@@ -476,7 +496,7 @@ int ero_calevents_main()
 	refydmax=ev.y;
       }
 
-      // TODO In the current implementation the value of FLAG is set to 
+      // TODO In the current implementation the value of FLAG is set
       // by default. This needs to be changed later.
       ev.flag=0xC0000000;
 
@@ -534,7 +554,7 @@ int ero_calevents_main()
 	output_row++;
 	fits_write_col(fptr, TDOUBLE, ctime, output_row, 1, 1, &ev.time, &status);
 	fits_write_col(fptr, TLONG, cframe, output_row, 1, 1, &ev.frame, &status);
-	fits_write_col(fptr, TLONG, cpha, output_row, 1, 1, &ev.pha, &status);      
+	fits_write_col(fptr, TLONG, cpha, output_row, 1, 1, &ev.pha, &status);
 	fits_write_col(fptr, TFLOAT, cenergy, output_row, 1, 1, &ev.energy, &status);
 	fits_write_col(fptr, TINT, crawx, output_row, 1, 1, &ev.rawx, &status);
 	fits_write_col(fptr, TINT, crawy, output_row, 1, 1, &ev.rawy, &status);

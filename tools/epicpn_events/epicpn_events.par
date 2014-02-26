@@ -1,0 +1,5 @@
+PatternList,fre,lq,"pattern.fits",,,"input event pattern list (FITS file)"
+EPICpnEventList,s,lq,"epicpn_events.fits",,,"output EPIC-pn event list (FITS file)"
+chatter,i,lh,3,,,"verbosity"
+clobber,b,h,no,,,"overwrite output files if exist?"
+history,b,lh,true,,,"write a history block with program parameters to each FITS file?"

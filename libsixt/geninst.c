@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "geninst.h"
 
 
@@ -220,7 +240,10 @@ void parseGenInstXML(GenInst* const inst,
   // Close the file handler to the XML file.
   fclose(xmlfile);
 
+  // Before expanding loops in the XML file, add the included code to it.
+  expandIncludesXML(xmlbuffer, filename, status);
 
+  CHECK_STATUS_VOID(*status);
   // Before acutally parsing the XML code, expand the loops and 
   // arithmetic operations in the GenDet XML description.
   // The expansion algorithm repeatetly scans the XML code and

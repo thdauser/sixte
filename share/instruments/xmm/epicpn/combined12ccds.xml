@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<instrument>
+
+<telescope>
+  <focallength value="7.5"/>
+  <fov diameter="1.0"/>
+  <psf filename="pn_psf.fits"/>
+</telescope>
+
+<detector type="EPIC-pn">
+  <dimensions xwidth="384" ywidth="400"/>
+  <wcs xrpix="160.5" yrpix="220.5" xrval="0." yrval="0." xdelt="150.e-6" ydelt="150.e-6"/>
+  <cte value="1"/>
+  <rmf filename="pn-med-10.rmf"/>
+  <arf filename="pn-med-10.arf"/>
+  <split type="gauss" par1="9.8e-6" par2="-0.5e-6"/>
+  <threshold_readout_lo_keV value="0.100"/>
+  <threshold_event_lo_keV value="0.100"/>
+  <threshold_pattern_up_keV value="20."/>
+
+  <readout mode="time">
+    <wait time="68.75e-3"/>
+    <loop start="0" end="399" increment="1" variable="$i">
+      <readoutline lineindex="0" readoutindex="$i"/>
+      <lineshift/>
+    </loop>
+    <newframe/>
+  </readout>
+
+</detector>
+</instrument>

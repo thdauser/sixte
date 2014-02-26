@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef EVENT_H 
 #define EVENT_H 1
 
@@ -51,8 +71,8 @@ typedef struct {
       one for a single-pixel event. */
   long npixels;
 
-  /** Split pattern type. Unknown (0), single (1), double (2), triple
-      (3), quadruple (4), or invalid (-1). */
+  /** Split pattern type: single (0), double (1-4), triple (5-8),
+      quadruple (9-12), or invalid (-1). */
   int type;
 
   /** Pile-up flag. */

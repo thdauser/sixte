@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef SIXT_H
 #define SIXT_H 1
 
@@ -42,6 +62,15 @@
 
 /** Not a Number. */
 #define SIXT_NAN (0./0.)
+
+
+/** MJDREF used in the FITS header of eROSITA event files
+    [d]. Corresponds to 2000-01-01T00:00:00. */
+extern const double eromjdref;
+
+/** MJDREF used in the FITS header of XMM event files [d]. Corresponds
+    to 1998-01-01T00:00:00.00. */
+extern const double xmmmjdref;
 
 
 /////////////////////////////////////////////////////////////////
