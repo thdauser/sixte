@@ -532,6 +532,9 @@ int ladsim_main()
   // Background source.
   SimputSrc* bkgsrc=NULL;
 
+  // GTI collection.
+  GTI* gti=NULL;
+
   // Number of simulated background events.
   long nbkgevts=0;
 
@@ -1138,6 +1141,16 @@ int ladsim_main()
       assert(siglist->signal.time>par.TSTART+par.Exposure);
     }
 
+    // Store the GTI extension in the event file.
+    gti=newGTI(&status);
+    CHECK_STATUS_BREAK(status);
+    gti->mjdref=par.MJDREF;
+    gti->timezero=0.0;
+    appendGTI(gti, par.TSTART, par.TSTART+par.Exposure, &status);
+    CHECK_STATUS_BREAK(status);
+    saveGTIExt(elf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Progress output.
     if (NULL==progressfile) {
       headas_chat(2, "\r%.0lf %%\n", 100.);
@@ -1168,6 +1181,7 @@ int ladsim_main()
   freeLAD(&lad, &status);
   freeSimputSrc(&bkgsrc);
   freeARF(bkgarf);
+  freeGTI(&gti);
   bkgarf=NULL;
 
   if (NULL!=progressfile) {

@@ -25,6 +25,7 @@
 
 #include "attitude.h"
 #include "genericdetector.h"
+#include "gti.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
