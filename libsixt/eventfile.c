@@ -252,10 +252,10 @@ void getEventFromFile(const EventFile* const file,
 		&inull, &event->rawy, &anynul, status);
   fits_read_col(file->fptr, TDOUBLE, file->cra, row, 1, 1, 
 		&dnull, &event->ra, &anynul, status);
-  event->ra *= M_PI/180.;
+  event->ra*=M_PI/180.;
   fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1, 
 		&lnull, &event->dec, &anynul, status);
-  event->dec*= M_PI/180.;
+  event->dec*=M_PI/180.;
   fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS, 
 		&lnull, &event->ph_id, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NEVENTPHOTONS, 
@@ -297,10 +297,10 @@ void updateEventInFile(const EventFile* const file,
 		 1, 1, &event->rawx, status);
   fits_write_col(file->fptr, TINT, file->crawy, row, 
 		 1, 1, &event->rawy, status);
-  double dbuffer=event->ra  * 180./M_PI;
+  double dbuffer=event->ra*180./M_PI;
   fits_write_col(file->fptr, TDOUBLE, file->cra, row, 
 		 1, 1, &dbuffer, status);
-  dbuffer = event->dec * 180./M_PI;
+  dbuffer=event->dec*180./M_PI;
   fits_write_col(file->fptr, TDOUBLE, file->cdec, row, 
 		 1, 1, &dbuffer, status);
   fits_write_col(file->fptr, TLONG, file->cph_id, row, 
