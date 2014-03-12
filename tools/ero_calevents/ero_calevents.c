@@ -378,13 +378,18 @@ int ero_calevents_main()
     // the TZERO values also have to be set with the routine 
     // fits_set_tscale(). Otherwise CFITSIO will access the raw values
     // in the file.
-    int tzero_subx_suby=-127;
+    double tzero_subx_suby=-0.843333333333333;
+    double tscal_subx_suby=6.66666666666667e-3;
     sprintf(keyword, "TZERO%d", csubx);
-    fits_update_key(fptr, TINT, keyword, &tzero_subx_suby, "", &status);
-    fits_set_tscale(fptr, csubx, 1.0, (double)tzero_subx_suby, &status);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_subx_suby, "", &status);
+    sprintf(keyword, "TSCAL%d", csubx);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_subx_suby, "", &status);
+    fits_set_tscale(fptr, csubx, tscal_subx_suby, tzero_subx_suby, &status);
     sprintf(keyword, "TZERO%d", csuby);
-    fits_update_key(fptr, TINT, keyword, &tzero_subx_suby, "", &status);
-    fits_set_tscale(fptr, csuby, 1.0, (double)tzero_subx_suby, &status);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_subx_suby, "", &status);
+    sprintf(keyword, "TSCAL%d", csuby);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_subx_suby, "", &status);
+    fits_set_tscale(fptr, csuby, tscal_subx_suby, tzero_subx_suby, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the TZERO and TSCAL keywords for the columns RA and DEC.
@@ -514,26 +519,25 @@ int ero_calevents_main()
 	if (event.signals[ii]<=0.0) continue;
 
 	// Raw pixel coordinates.
-	ev.rawx  =event.rawx + ii%3;
-	ev.rawy  =event.rawy + ii/3;
+	ev.rawx=event.rawx + ii%3;
+	ev.rawy=event.rawy + ii/3;
+
+	// TODO Sub-pixel resolution is not implemented.
+	ev.subx=0;
+	ev.suby=0;
 
 	// Detected channel.
-	ev.pha   =event.pis[ii];
+	ev.pha=event.pis[ii];
 
 	// Calibrated and recombined amplitude in [eV].
 	// The amplitude is positive for the main event only. For
 	// split partners it is negative.
 	if (4==ii) {
 	  ev.energy= event.signal*1000.;
-	  // TODO Sub-pixel resolution is not implemented yet.
-	  ev.subx=0;
-	  ev.suby=0;
 	} else {
 	  ev.energy=-event.signal*1000.;
-	  ev.subx=-127;
-	  ev.suby=-127;
 	}
-
+	
 	// Event type.
 	if (event.type>=0) {
 	  ev.pat_typ=event.npixels;
