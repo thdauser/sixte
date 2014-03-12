@@ -154,22 +154,29 @@ int get_psf_pos(struct Point2d* const position,
   // from the optical axis according to the off-axis angle theta.
   double distance=focal_length * tan(theta); // TODO *(-1) ???
 
+  // rotate to the phi used for evaluating the psf
+  double sinp, cosp;
+  sincos(psf->phis[index3], &sinp, &cosp);
+  position->x=cosp*distance;
+  position->y=sinp*distance;
+
   // Add the relative position obtained from the PSF image (randomized pixel 
   // indices x1 and y1).
-  double x2=distance + 
+  double x2=position->x + 
     ((double)x1 -psf_item->crpix1 +0.5 
      +sixt_get_random_number(status))*psf_item->cdelt1 
     + psf_item->crval1; // [m]
   CHECK_STATUS_RET(*status, 0);
-  double y2=
+  double y2=position->y + 
     ((double)y1 -psf_item->crpix2 +0.5 
      +sixt_get_random_number(status))*psf_item->cdelt2 
     + psf_item->crval2; // [m]
   CHECK_STATUS_RET(*status, 0);
 
-  // Rotate the postition [m] according to the azimuthal angle.
-  position->x=cos(phi)*x2 - sin(phi)*y2;
-  position->y=sin(phi)*x2 + cos(phi)*y2;
+  // Rotate the postition [m] according to the final azimuthal angle.
+  sincos(phi-psf->phis[index3], &sinp, &cosp);
+  position->x=cosp*x2 - sinp*y2;
+  position->y=sinp*x2 + cosp*y2;
 
   return(1);  
 }
