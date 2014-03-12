@@ -155,6 +155,15 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
 
   if(filename != NULL) {
     rate_lc = loadSimputLC(filename, status);
+
+    // Make sure that the light curve is given as a function of time.
+    // Periodic light curves cannot be processed here.
+    if (NULL==rate_lc->time) {
+      SIXT_ERROR("light curve for background variation does not contain TIME column");
+      *status=EXIT_FAILURE;
+      return;
+    }
+
     bkgratefct.numelements = rate_lc->nentries;
     bkgratefct.starttime = rate_lc->timezero;
     if(bkgratefct.time != NULL) {
@@ -180,6 +189,7 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
   } else {
     SIXT_ERROR("no SIMPUT filename specified for rate function!");
     *status=EXIT_FAILURE;
+    return;
   }
 }
 
