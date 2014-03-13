@@ -50,6 +50,8 @@ struct Parameters {
   /** Skip invalid patterns when producing the output file. */
   char SkipInvalids;
 
+  int Seed;
+
   char clobber;
 };
 

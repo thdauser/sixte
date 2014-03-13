@@ -93,16 +93,8 @@ int projev_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed = par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed = (int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -114,7 +106,7 @@ int projev_main() {
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set up the Attitude.

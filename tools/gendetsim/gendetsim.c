@@ -67,10 +67,6 @@ int gendetsim_main() {
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
-    CHECK_STATUS_BREAK(status);
-
     // Use the background if available.
     setGenDetIgnoreBkg(inst->det, 0);
 
@@ -86,9 +82,14 @@ int gendetsim_main() {
     strcpy(eventlist_filename, par.EventList);
 
     // Initialize the random number generator.
-    sixt_init_rng(getSeed(par.Seed), &status);
+    unsigned int seed=getSeed(par.Seed);
+    sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
     
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, seed, &status);
+    CHECK_STATUS_BREAK(status);
+
     // --- END of Initialization ---
 
 

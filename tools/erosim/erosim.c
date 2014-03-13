@@ -142,7 +142,8 @@ int erosim_main()
     }
 
     // Initialize the random number generator.
-    sixt_init_rng(getSeed(par.Seed), &status);
+    unsigned int seed=getSeed(par.Seed);
+    sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
@@ -201,7 +202,7 @@ int erosim_main()
 
       // Load the instrument configuration either with the
       // specific (if available) or the default XML file.
-      subinst[ii]=loadGenInst(buffer, &status);
+      subinst[ii]=loadGenInst(buffer, seed, &status);
       CHECK_STATUS_BREAK(status);
 
       // Set the usage of the detector background according to

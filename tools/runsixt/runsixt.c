@@ -131,7 +131,8 @@ int runsixt_main()
     }
 
     // Initialize the random number generator.
-    sixt_init_rng(getSeed(par.Seed), &status);
+    unsigned int seed=getSeed(par.Seed);
+    sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
@@ -153,7 +154,7 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
     
     // Set the usage of the detector background according to
@@ -799,7 +800,7 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_int("seed", &par->Seed);
+  status=ape_trad_query_int("Seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);

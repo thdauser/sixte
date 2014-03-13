@@ -17,13 +17,13 @@ const double eromjdref=51544.;
 const double xmmmjdref=50814.;
 
 
-int getSeed(int seed)
+unsigned int getSeed(int seed)
 {
-  if (-1!=seed) {
-    return(seed);
+  if (seed>=0) {
+    return((unsigned int)seed);
   } else {
     // Determine the seed from the system clock.
-    return((int)time(NULL));
+    return((unsigned int)time(NULL));
   }
 }
 
@@ -57,7 +57,7 @@ double sixt_get_random_number(int* const status)
 }
 
 
-void sixt_init_rng(const int seed, int* const status)
+void sixt_init_rng(const unsigned int seed, int* const status)
 {
   // Initialize HEAdasS random number generator.
   // Note that this has to be done in any case, even

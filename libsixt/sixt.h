@@ -131,7 +131,7 @@ extern const double xmmmjdref;
 
 
 /** Return a seed for the random number generator. */
-int getSeed(int seed);
+unsigned int getSeed(int seed);
 
 /** This routine returns a random number. The values are either
     obtained from the Remeis random number server or are created by
@@ -149,7 +149,7 @@ int getSeed(int seed);
 double sixt_get_random_number(int* const status);
 
 /** Initialize the random number generator. */
-void sixt_init_rng(const int seed, int* const status);
+void sixt_init_rng(const unsigned int seed, int* const status);
 
 /** Clean up the random number generator. */
 void sixt_destroy_rng();

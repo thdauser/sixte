@@ -63,7 +63,8 @@ int phogen_main()
     strcpy(photonlist_filename, par.PhotonList);
 
     // Initialize the random number generator.
-    sixt_init_rng(getSeed(par.Seed), &status);
+    unsigned int seed=getSeed(par.Seed);
+    sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the appropriate instrument XML definition file.
@@ -74,7 +75,7 @@ int phogen_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
     
     // Set up the Attitude.

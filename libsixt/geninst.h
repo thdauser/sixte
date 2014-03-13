@@ -76,7 +76,9 @@ GenInst* newGenInst(int* const status);
 void destroyGenInst(GenInst** const det, int* const status);
 
 /** Parse the GenInst definition from an XML file. */
-GenInst* loadGenInst(const char* const filename, int* const status);
+GenInst* loadGenInst(const char* const filename,
+		     const unsigned int seed,
+		     int* const status);
 
 
 #endif /* GENINST_H */

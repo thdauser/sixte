@@ -28,7 +28,8 @@
 
 /** Data structure given to the XML handler to transfer data. */
 struct XMLParseData {
-  GenInst* inst;  
+  GenInst* inst;
+  unsigned int seed;
   int status;
 };
 
@@ -53,16 +54,6 @@ static void GenInstXMLElementStart(void* data, const char* el,
 				   const char** attr);
 /** Handler for the end of an XML element. */
 static void GenInstXMLElementEnd(void* data, const char* el);
-
-
-////////////////////////////////////////////////////////////////////
-// Function Declarations.
-////////////////////////////////////////////////////////////////////
-
-
-void parseGenInstXML(GenInst* const inst, 
-		     const char* const filename, 
-		     int* const status);
 
 
 ////////////////////////////////////////////////////////////////////
@@ -129,77 +120,9 @@ void destroyGenInst(GenInst** const inst, int* const status)
 }
 
 
-GenInst* loadGenInst(const char* const filename, int* const status)
-{
-  // Get a new and empty data structure.
-  GenInst* inst=newGenInst(status);
-  CHECK_STATUS_RET(*status, inst);
-
-  // Split the reference to the XML detector definition file
-  // into path and filename. This has to be done before
-  // calling the parser routine for the XML file.
-  char filename2[MAXFILENAME];
-  char rootname[MAXFILENAME];
-  // Make a local copy of the filename variable in order to avoid
-  // compiler warnings due to discarded const qualifier at the 
-  // subsequent function call.
-  strcpy(filename2, filename);
-  fits_parse_rootname(filename2, rootname, status);
-  CHECK_STATUS_RET(*status, inst);
-
-  // Split rootname into the file path and the file name.
-  char* lastslash=strrchr(rootname, '/');
-  if (NULL==lastslash) {
-    inst->filepath=(char*)malloc(sizeof(char));
-    CHECK_NULL_RET(inst->filepath, *status, 
-		   "memory allocation for filepath failed", inst);
-    inst->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filename, *status, 
-		   "memory allocation for filename failed", inst);
-    strcpy(inst->filepath, "");
-    strcpy(inst->filename, rootname);
-  } else {
-    lastslash++;
-    inst->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filename, *status, 
-		   "memory allocation for filename failed", inst);
-    strcpy(inst->filename, lastslash);
-      
-    *lastslash='\0';
-    inst->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filepath, *status, 
-		   "memory allocation for filepath failed", inst);
-    strcpy(inst->filepath, rootname);
-  }
-  // END of storing the filename and filepath.
-
-
-  // Read in the XML definition of the detector.
-  parseGenInstXML(inst, filename, status);
-  CHECK_STATUS_RET(*status, inst);
-
-
-  // Allocate memory for the detector pixels.
-  inst->det->line=
-    (GenDetLine**)malloc(inst->det->pixgrid->ywidth*sizeof(GenDetLine*));
-  if (NULL==inst->det->line) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("memory allocation for GenDet pixel array failed");
-    return(inst);
-  }
-  int ii;
-  for (ii=0; ii<inst->det->pixgrid->ywidth; ii++) {
-    inst->det->line[ii]=newGenDetLine(inst->det->pixgrid->xwidth, status);
-    if (EXIT_SUCCESS!=*status) return(inst);
-  }
-
-
-  return(inst);
-}
-
-
-void parseGenInstXML(GenInst* const inst, 
-		     const char* const filename, 
+void parseGenInstXML(GenInst* const inst,
+		     const char* const filename,
+		     const unsigned int seed,
 		     int* const status)
 {
   headas_chat(5, "read instrument setup from XML file '%s' ...\n", filename);
@@ -242,8 +165,8 @@ void parseGenInstXML(GenInst* const inst,
 
   // Before expanding loops in the XML file, add the included code to it.
   expandIncludesXML(xmlbuffer, filename, status);
-
   CHECK_STATUS_VOID(*status);
+
   // Before acutally parsing the XML code, expand the loops and 
   // arithmetic operations in the GenDet XML description.
   // The expansion algorithm repeatetly scans the XML code and
@@ -264,8 +187,9 @@ void parseGenInstXML(GenInst* const inst,
 
   // Set data that is passed to the handler functions.
   struct XMLParseData xmlparsedata={
-    .inst       =inst,
-    .status     =EXIT_SUCCESS
+    .inst  =inst,
+    .seed  =seed,
+    .status=EXIT_SUCCESS
   };
   XML_SetUserData(parser, &xmlparsedata);
 
@@ -371,6 +295,77 @@ void parseGenInstXML(GenInst* const inst,
   }
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
+}
+
+
+GenInst* loadGenInst(const char* const filename,
+		     const unsigned int seed,
+		     int* const status)
+{
+  // Get a new and empty data structure.
+  GenInst* inst=newGenInst(status);
+  CHECK_STATUS_RET(*status, inst);
+
+  // Split the reference to the XML detector definition file
+  // into path and filename. This has to be done before
+  // calling the parser routine for the XML file.
+  char filename2[MAXFILENAME];
+  char rootname[MAXFILENAME];
+  // Make a local copy of the filename variable in order to avoid
+  // compiler warnings due to discarded const qualifier at the 
+  // subsequent function call.
+  strcpy(filename2, filename);
+  fits_parse_rootname(filename2, rootname, status);
+  CHECK_STATUS_RET(*status, inst);
+
+  // Split rootname into the file path and the file name.
+  char* lastslash=strrchr(rootname, '/');
+  if (NULL==lastslash) {
+    inst->filepath=(char*)malloc(sizeof(char));
+    CHECK_NULL_RET(inst->filepath, *status, 
+		   "memory allocation for filepath failed", inst);
+    inst->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
+    CHECK_NULL_RET(inst->filename, *status, 
+		   "memory allocation for filename failed", inst);
+    strcpy(inst->filepath, "");
+    strcpy(inst->filename, rootname);
+  } else {
+    lastslash++;
+    inst->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
+    CHECK_NULL_RET(inst->filename, *status, 
+		   "memory allocation for filename failed", inst);
+    strcpy(inst->filename, lastslash);
+      
+    *lastslash='\0';
+    inst->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
+    CHECK_NULL_RET(inst->filepath, *status, 
+		   "memory allocation for filepath failed", inst);
+    strcpy(inst->filepath, rootname);
+  }
+  // END of storing the filename and filepath.
+
+
+  // Read in the XML definition of the detector.
+  parseGenInstXML(inst, filename, seed, status);
+  CHECK_STATUS_RET(*status, inst);
+
+
+  // Allocate memory for the detector pixels.
+  inst->det->line=
+    (GenDetLine**)malloc(inst->det->pixgrid->ywidth*sizeof(GenDetLine*));
+  if (NULL==inst->det->line) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for GenDet pixel array failed");
+    return(inst);
+  }
+  int ii;
+  for (ii=0; ii<inst->det->pixgrid->ywidth; ii++) {
+    inst->det->line[ii]=newGenDetLine(inst->det->pixgrid->xwidth, status);
+    if (EXIT_SUCCESS!=*status) return(inst);
+  }
+
+
+  return(inst);
 }
 
 
@@ -680,7 +675,7 @@ static void GenInstXMLElementStart(void* parsedata,
       char filepathname[MAXFILENAME];
       strcpy(filepathname, xmlparsedata->inst->filepath);
       strcat(filepathname, filename);
-      eroBkgInitialize(filepathname, &xmlparsedata->status);
+      eroBkgInitialize(filepathname, xmlparsedata->seed, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);
       eroBkgInitialized=1;
 

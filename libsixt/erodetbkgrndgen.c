@@ -70,6 +70,7 @@ inline double calcEventRate(const double* const hit_time,
 /* external functions */
 
 void eroBkgInitialize(const char* const filename,
+		      const unsigned int seed,
                       int* const status) {
 
   bkgratefct.numelements = 0L;
@@ -89,7 +90,6 @@ void eroBkgInitialize(const char* const filename,
   bkginputdata.interval = 0.;
   bkginputdata.intervalsum = 0.;
   ftime(&time_struct);
-  srand((unsigned int)time_struct.millitm - (unsigned int)time_struct.time);
 
   fits_open_table(&bkginputdata.inputfptr, filename, READONLY, status);
   fits_report_error(stderr, *status);
@@ -124,7 +124,7 @@ void eroBkgInitialize(const char* const filename,
                                                  bkginputdata.interval);
 
   bkginputdata.randgen = gsl_rng_alloc(gsl_rng_ranlux);
-  gsl_rng_set(bkginputdata.randgen, rand() * ((int)time_struct.time + (unsigned int)time_struct.millitm));
+  gsl_rng_set(bkginputdata.randgen, seed);
 }
 
 void eroBkgFree(eroBackgroundOutput* struct_to_free) {

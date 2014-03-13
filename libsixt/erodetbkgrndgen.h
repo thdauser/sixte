@@ -110,7 +110,8 @@ eroBackgroundOutput* eroBkgGetBackgroundList(const double interval);
 
 /** open the simulation data file and initialize the random number
  * generator and the main structure */
-void eroBkgInitialize(const char* const filename, int* const status);
+void eroBkgInitialize(const char* const filename, const unsigned int seed, 
+		      int* const status);
 
 /** free memory of passed eroBackgroundOutput structure */
 void eroBkgFree(eroBackgroundOutput* struct_to_free);

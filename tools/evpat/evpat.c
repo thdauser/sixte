@@ -62,7 +62,8 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    unsigned int seed=getSeed(par.Seed);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the event list file name.
@@ -203,6 +204,12 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_bool("SkipInvalids", &par->SkipInvalids);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the SkipInvalids parameter");
+    return(status);
+  }
+
+  status=ape_trad_query_int("Seed", &par->Seed);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 
