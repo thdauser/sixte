@@ -780,7 +780,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
