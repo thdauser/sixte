@@ -204,7 +204,7 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.09");
+  set_toolversion("0.10");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -416,7 +416,7 @@ int ero_exposure_main()
 
       // Check if an interim map should be saved now.
       if (par.intermaps>0) {
-	if (time > par.TSTART+intermaps*(par.timespan/(par.intermaps+1))) {
+	if (time > par.TSTART+intermaps*(par.timespan/par.intermaps)) {
 	  // Construct the filename.
 	  char filename[MAXFILENAME];
 	  strncpy(filename, par.Exposuremap, 
