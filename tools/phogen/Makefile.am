@@ -13,8 +13,8 @@ AM_CFLAGS+=-Wall
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
-pfilesdir = @PFILESDIR@
-dist_pfiles_DATA = phogen.par
+pfilesdir=$(pkgdatadir)/pfiles
+dist_pfiles_DATA=phogen.par
 
 ############ BINARIES #################
 

@@ -13,7 +13,7 @@ AM_CFLAGS+=-Wall
 ########## PIL .par-FILES##############
 
 # Directory where to install the PIL parameter files.
-pfilesdir=@PFILESDIR@
+pfilesdir=$(pkgdatadir)/pfiles
 dist_pfiles_DATA=projev.par
 
 ############ BINARIES #################

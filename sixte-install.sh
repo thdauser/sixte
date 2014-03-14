@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# install for SIXTE - sh version
+#
+# This script assumes that the SIXTE environment variable is set
+# and uses nifty tricks from HEADAS' setup scripts
+#
+# Author: Joern Wilms, joern.wilms@sternwarte.uni-erlangen.de
+#
+
+if [ "X${SIXTE}" == X ];  then
+  echo "sixte-install.csh: ERROR -- set SIXTE before sourcing sixte-install.csh"
+  exit 1
+fi
+
+if ! [ -d ${SIXTE} ]; then
+    echo "Directory ${SIXTE} does not exist"
+    exit 2
+fi
+
+sixte_bin=${SIXTE}/bin
+PATH=${sixte_bin}:${PATH}
+
+#
+# setup parameter files
+#
+if [ "X${PFILES}" == X ]; then
+    mkdir -p ${HOME}/pfiles
+    PFILES="${HOME}/pfiles;${SIXTE}/share/sixte/pfiles"
+else
+    PFILES="${PFILES}:${SIXTE}/share/sixte/pfiles"
+fi
