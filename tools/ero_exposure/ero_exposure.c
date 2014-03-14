@@ -204,7 +204,7 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.10");
+  set_toolversion("0.11");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -219,7 +219,7 @@ int ero_exposure_main()
     if (NULL!=expoMap) {
       long x;
       for (x=0; x<par.ra_bins; x++) {
-	expoMap[x] = (float*)malloc(par.dec_bins*sizeof(float));
+	expoMap[x]=(float*)malloc(par.dec_bins*sizeof(float));
 	if (NULL!=expoMap[x]) {
 	  // Clear the exposure map.
 	  long y;
@@ -352,6 +352,28 @@ int ero_exposure_main()
     double time;
     for (time=par.TSTART; time<par.TSTART+par.timespan; time+=par.dt) {
       
+      // Check if an interim map should be saved now.
+      if (par.intermaps>0) {
+	if (time > par.TSTART+intermaps*(par.timespan/par.intermaps)) {
+	  // Construct the filename.
+	  char filename[MAXFILENAME];
+	  strncpy(filename, par.Exposuremap,
+		  strlen(par.Exposuremap)-5);
+	  filename[strlen(par.Exposuremap)-5]='\0';
+	  char buffer[MAXFILENAME];
+	  sprintf(buffer, "_%d.fits", intermaps);
+	  strcat(filename, buffer);
+
+	  // Save the interim map.
+	  saveExpoMap(expoMap, filename, par.ra_bins, par.dec_bins,
+		      &wcs, par.clobber, &status);
+	  CHECK_STATUS_BREAK(status);
+
+	  intermaps++;
+	}
+      }
+      // END of saving an interim map.
+
       // Determine the telescope pointing direction at the current time.
       Vector telescope_nz=getTelescopeNz(ac, time, &status);
       CHECK_STATUS_BREAK(status);
@@ -413,28 +435,6 @@ int ero_exposure_main()
 	CHECK_STATUS_BREAK(status);  
       }
       CHECK_STATUS_BREAK(status);
-
-      // Check if an interim map should be saved now.
-      if (par.intermaps>0) {
-	if (time > par.TSTART+intermaps*(par.timespan/par.intermaps)) {
-	  // Construct the filename.
-	  char filename[MAXFILENAME];
-	  strncpy(filename, par.Exposuremap, 
-		  strlen(par.Exposuremap)-5);
-	  filename[strlen(par.Exposuremap)-5]='\0';
-	  char buffer[MAXFILENAME];
-	  sprintf(buffer, "_%d.fits", intermaps);
-	  strcat(filename, buffer);
-
-	  // Save the interim map.
-	  saveExpoMap(expoMap, filename, par.ra_bins, par.dec_bins, 
-		      &wcs, par.clobber, &status);
-	  CHECK_STATUS_BREAK(status);
-
-	  intermaps++;
-	}
-      }
-      // END of saving an interim map.
 
       // Program progress output.
       while((unsigned int)((time-par.TSTART)*100./par.timespan)>progress) {
