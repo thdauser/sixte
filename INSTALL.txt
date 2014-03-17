@@ -24,17 +24,10 @@ the software. At this point you also have to specify the installation
 directory. The default setting on most platforms is '/usr/local',
 i.e. the binaries will be installed to '/usr/local/bin', the libraries
 to '/usr/local/lib' etc. This setting can be changed using the
-'--prefix' option of the 'configure' script (see below). Apart from
-the installation directory you also have to specify the location,
-where the PIL parameter files will be installed. This option can also
-be set on the command line or the environment via the 'PFILESDIR'
-variable. If the software will be used by different users the
-parameter files should be stored in the '${HEADAS}/syspfiles'
-directory (ususally root privileges required). For a local
-installation for the current user, the files can also be stored in
-'${HOME}/pfiles'. So for a local installation, e.g. type:
+'--prefix' option of the 'configure' script (see below). For a local
+installation, e.g. type:
 
- ./configure --prefix=$HOME PFILESDIR=$HOME/pfiles F77=gfortran
+ ./configure --prefix=$HOME
 
 Now the 'Makefile's to compile and install the software should be
 available. In order to continue type:
@@ -46,25 +39,19 @@ The simulation package uses several FITS template files to create FITS
 files. These templates are stored in ${prefix}/share/sixte/templates
 during the installation. The instrument XML definition files are
 maintained in the directory ${prefix}/share/sixte/instruments.
-
 For parameter input the simulation software uses the PIL / APE library
 and therefore requires a .par file for each simulation task. These
-files are installed in the directory specified by PFILESDIR. In order
-to make them available to the simulation, you have to set an
-environment variable called $PFILES pointing to this directory. 
+files are installed in the directory ${prefix}/share/sixte/pfiles. 
+
+In order to run the simulation, you have to set an
+environment variable called $SIXTE pointing to the ${prefix} directory and then call the setup script 'install-sixte.sh' or 'install-sixte.csh' depending on which shell you use.
 
 In a C-shell environment you can do this with the following command:
 
-setenv PFILES $HOME/pfiles
+setenv SIXTE $HOME
+source $SIXTE/bin/sixte-install.csh
 
 In a Bash environment the corresponding command is:
 
-export PFILES=$HOME/pfiles
-
-If you have HEAsoft installed on your system, this variable might
-already exist. In that case make sure that it contains the path
-specified by PFILESDIR.
-
-If everything worked properly you can now use the software. A sample
-setup illustrating how to run the simulation is provided at
-http://www.sternwarte.uni-erlangen.de/~schmid/download/sixte_sample.tar.gz
+export SIXTE=$HOME
+$SIXTE/bin/sixte-install.sh
