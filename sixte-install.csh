@@ -18,6 +18,19 @@ if (! -d ${SIXTE}) then
     exit 2
 endif
 
+#
+# set the SIMPUT environment variable
+#
+setenv SIMPUT ${SIXTE}
+
+#
+# run the setup script for SIMPUT
+#
+source ${SIMPUT}/bin/simput-install.csh
+
+#
+# set paths
+#
 set SIXTE_BIN = ${SIXTE}/bin
 setenv PATH ${SIXTE_BIN}:${PATH}
 
