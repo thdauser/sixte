@@ -346,7 +346,7 @@ int ero_exposure_main()
       fprintf(progressfile, "%.2lf", 0.);
       fflush(progressfile);	
     }
-
+    
     // LOOP over the given time interval from TSTART to TSTART+timespan in steps of dt.
     int intermaps=0;
     double time;
@@ -354,7 +354,7 @@ int ero_exposure_main()
       
       // Check if an interim map should be saved now.
       if (par.intermaps>0) {
-	if (time > par.TSTART+intermaps*(par.timespan/par.intermaps)) {
+	if (time >= par.TSTART+intermaps*(par.timespan/par.intermaps)) {
 	  // Construct the filename.
 	  char filename[MAXFILENAME];
 	  strncpy(filename, par.Exposuremap,
