@@ -61,13 +61,6 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  fft_array.c balancing.c find_position.c		\
 		  attitudecatalog2.c det_phi_max.c
 
-libsixt_a_LIBADD =@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
-libsixt_a_LIBADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
-
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir):
