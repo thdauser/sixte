@@ -26,6 +26,21 @@ void phdetGenDet(GenDet* const det,
 		 const double tend,
 		 int* const status)
 {
+  double operation_time;
+  if (NULL==impact) {
+    // If no impact has been given as parameter, finalize the GenDet. 
+    // Perform the time-triggered operations without adding any new 
+    // signal charges.
+    operation_time=tend;
+  } else {
+    operation_time=impact->time;
+  }
+
+  // Call the detector operating clock routine.
+  operateGenDetClock(det, operation_time, status);
+  CHECK_STATUS_VOID(*status);
+
+
   // Total number of detected photons. Only the number of
   // photons absorbed by valid pixels inside the detector is
   // counted. Split events created by one photon are counted only
@@ -40,13 +55,6 @@ void phdetGenDet(GenDet* const det,
     if (addGenDetPhotonImpact(det, impact, status) > 0) {
       n_detected_photons++;
     }
-    CHECK_STATUS_VOID(*status);
-
-  } else {
-    // If no impact has been given as parameter, finalize the GenDet. 
-    // Perform the time-triggered operations without adding any new 
-    // signal charges.
-    operateGenDetClock(det, tend, status);
     CHECK_STATUS_VOID(*status);
   }
 }

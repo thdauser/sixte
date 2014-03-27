@@ -109,10 +109,6 @@ int addGenDetPhotonImpact(GenDet* const det,
 			  const Impact* const impact, 
 			  int* const status)
 {
-  // Call the detector operating clock routine.
-  operateGenDetClock(det, impact->time, status);
-  CHECK_STATUS_RET(*status, 0);
-
   // Determine the detected energy.
   float energy;
   
