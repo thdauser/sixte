@@ -47,7 +47,7 @@ int gendetsim_main() {
 
   // Register HEATOOL:
   set_toolname("gendetsim");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -67,12 +67,6 @@ int gendetsim_main() {
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Use the background if available.
-    setGenDetIgnoreBkg(inst->det, 0);
-
-    // Set the start time for the simulation.
-    setGenDetStartTime(inst->det, par.TSTART);
-    
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
@@ -90,6 +84,12 @@ int gendetsim_main() {
     inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Use the background if available.
+    setGenDetIgnoreBkg(inst->det, 0);
+
+    // Set the start time for the simulation.
+    setGenDetStartTime(inst->det, par.TSTART);
+    
     // --- END of Initialization ---
 
 
