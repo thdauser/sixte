@@ -14,6 +14,12 @@ config.h
 config.h.in
 config.log
 config.status
+config.guess
+config.sub
+depcomp
+install-sh
+ltmain.sh
+missing
 libtool
 stamp-h1
 ar-lib
