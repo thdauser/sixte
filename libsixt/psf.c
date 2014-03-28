@@ -156,7 +156,11 @@ int get_psf_pos(struct Point2d* const position,
 
   // rotate to the phi used for evaluating the psf
   double sinp, cosp;
+  #ifdef __APPLE__ && __MACH__
+  __sincos(psf->phis[index3], &sinp, &cosp);
+  #else
   sincos(psf->phis[index3], &sinp, &cosp);
+  #endif
   position->x=cosp*distance;
   position->y=sinp*distance;
 
@@ -174,7 +178,11 @@ int get_psf_pos(struct Point2d* const position,
   CHECK_STATUS_RET(*status, 0);
 
   // Rotate the postition [m] according to the final azimuthal angle.
+  #ifdef __APPLE__ && __MACH__
+  __sincos(phi-psf->phis[index3], &sinp, &cosp);
+  #else
   sincos(phi-psf->phis[index3], &sinp, &cosp);
+  #endif
   position->x=cosp*x2 - sinp*y2;
   position->y=sinp*x2 + cosp*y2;
 
