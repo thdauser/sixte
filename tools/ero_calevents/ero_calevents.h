@@ -51,6 +51,10 @@ struct Parameters {
   float RefRA;
   /** Declination of reference point [deg]. */
   float RefDec;
+  /** Right ascension of pointing [deg]. */
+  float RA;
+  /** Declination of pointing [deg]. */
+  float Dec;
 
   char clobber;
 };

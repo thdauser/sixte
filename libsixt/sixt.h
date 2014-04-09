@@ -228,6 +228,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  double tstop,
 				  double mjdref,
 				  double timezero,
+				  int ccdnr,
 				  int* const status);
 
 /** Determine whether the given value for MJDREF is equivalent to the

@@ -434,6 +434,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  double tstop,
 				  double mjdref,
 				  double timezero,
+				  int ccdnr,
 				  int* const status)
 {
   // Determine the current HDU.
@@ -455,11 +456,15 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   fits_update_key(fptr, TSTRING, "MISSION", mission, "", status);
   char telescop[MAXMSG]="eROSITA";
   fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
-  char instrume[MAXMSG]="INSTRUME";
+  char instrume[MAXMSG];
+  sprintf(instrume, "FM%d", ccdnr);
   fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
+  fits_update_key(fptr, TSTRING, "INSTRUM1", instrume, "", status);
+  int ninst=1;
+  fits_update_key(fptr, TINT, "NINST", &ninst, "", status);
 
-  char obsmode[MAXMSG]="";
-  fits_update_key(fptr, TSTRING, "OBSMODE", obsmode, "", status);
+  char obsmode[MAXMSG]="SURVEY";
+  fits_update_key(fptr, TSTRING, "OBS_MODE", obsmode, "", status);
   char datamode[MAXMSG]="";
   fits_update_key(fptr, TSTRING, "DATAMODE", datamode, "", status);
   
@@ -485,14 +490,15 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   fits_update_key(fptr, TDOUBLE, "DE_OBJ", &de_obj, "[deg] J2000", status);
 
   fits_update_key(fptr, TSTRING, "DATE", creation_date, "File creation date", status);
-  fits_update_key(fptr, TSTRING, "DATE-OBS", date_obs, "UT date of observation start", status);
-  fits_update_key(fptr, TSTRING, "TIME-OBS", time_obs, "UT time of observation start", status);
-  fits_update_key(fptr, TSTRING, "DATE-END", date_end, "UT date of observation end", status);
-  fits_update_key(fptr, TSTRING, "TIME-END", time_end, "UT time of observation end", status);
+  char date_obs_time[MAXMSG]="";
+  sprintf(date_obs_time, "%sT%s", date_obs, time_obs);
+  fits_update_key(fptr, TSTRING, "DATE-OBS", date_obs_time, "UT date of observation start", status);
+  char date_end_time[MAXMSG]="";
+  sprintf(date_end_time, "%sT%s", date_end, time_end);
+  fits_update_key(fptr, TSTRING, "DATE-END", date_end_time, "UT date of observation end", status);
 
   fits_update_key(fptr, TDOUBLE, "TSTART", &tstart, "Start time of exposure in units of TIME column", status);
   fits_update_key(fptr, TDOUBLE, "TSTOP", &tstop, "Stop time of exposure in units of TIME column", status);
-  fits_update_key(fptr, TDOUBLE, "TEND", &tstop, "End time of exposure in units of TIME column", status);
 
   fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "[d]", status);
   fits_update_key(fptr, TDOUBLE, "TIMEZERO", &timezero, "Time offset", status);

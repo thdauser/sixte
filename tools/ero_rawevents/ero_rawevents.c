@@ -211,11 +211,11 @@ int ero_rawevents_main()
     // Insert the standard eROSITA header keywords.
     sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop, 
-				 mjdref, timezero, &status);
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
     sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop, 
-				 mjdref, timezero, &status);
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.

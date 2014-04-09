@@ -235,11 +235,11 @@ int ero_calevents_main()
     // Insert the standard eROSITA header keywords.
     sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop,
-				 mjdref, timezero, &status);
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
     sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop,
-				 mjdref, timezero, &status);
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
@@ -403,7 +403,7 @@ int ero_calevents_main()
     fits_update_key(fptr, TDOUBLE, keyword, &tscal_ra_dec, "", &status);
     fits_set_tscale(fptr, cra, tscal_ra_dec, tzero_ra_dec, &status);
     sprintf(keyword, "TZERO%d", cdec);
-    fits_update_key(fptr, TINT, keyword, &tzero_ra_dec, "", &status);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_ra_dec, "", &status);
     sprintf(keyword, "TSCAL%d", cdec);
     fits_update_key(fptr, TDOUBLE, keyword, &tscal_ra_dec, "", &status);
     fits_set_tscale(fptr, cdec, tscal_ra_dec, tzero_ra_dec, &status);
@@ -674,10 +674,10 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
   
     // Store the data in the table.
-    double dbuffer=0.0;
-    fits_write_col(fptr, TDOUBLE, cdeadcor_time, 1, 1, 1, &dbuffer, &status);
-    float fbuffer=1.0;
-    fits_write_col(fptr, TFLOAT, cdeadc, 1, 1, 1, &fbuffer, &status);
+    double dbuffer[2]={tstart, tstop};
+    fits_write_col(fptr, TDOUBLE, cdeadcor_time, 1, 1, 2, dbuffer, &status);
+    float fbuffer[2]={1.,1.};
+    fits_write_col(fptr, TFLOAT, cdeadc, 1, 1, 2, fbuffer, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of append DEADCOR extension ---
@@ -740,6 +740,27 @@ int ero_calevents_main()
 	CHECK_STATUS_BREAK(status);
 	verifyMJDREF(mjdref, ac->mjdref, "in attitude file", &status);
 	CHECK_STATUS_BREAK(status);
+      } else {
+      // if no attitude is available, fake one
+        ac=getAttitude(&status);
+        CHECK_STATUS_BREAK(status);
+        ac->tstart=tstart;
+        ac->tstop=tstop;
+        ac->mjdref=mjdref;
+        ac->nentries=2;
+        ac->align=ATTNX_NORTH;
+        ac->entry=(AttitudeEntry*)malloc(ac->nentries*sizeof(AttitudeEntry));
+        if (NULL==ac->entry) {
+          status=EXIT_FAILURE;
+          SIXT_ERROR("not enough memory available to store the Attitude");
+          break;
+        }
+        ac->entry[0].time=tstart;
+        ac->entry[1].time=tstop;
+        ac->entry[0].roll_angle=0.;
+        ac->entry[1].roll_angle=0.;
+        ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+        ac->entry[1].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
       }
     }
 
@@ -934,6 +955,18 @@ int getpar(struct Parameters* const par)
   }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
+
+  status=ape_trad_query_float("RA", &par->RA);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading RA");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Dec", &par->Dec);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading DEC");
+    return(status);
+  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
