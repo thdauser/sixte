@@ -27,6 +27,7 @@ dist_fitstemplates_DATA+=ladeventfile.tpl
 dist_fitstemplates_DATA+=makespec.tpl
 dist_fitstemplates_DATA+=makelc.tpl
 dist_fitstemplates_DATA+=htrs.eventlist.tpl
+dist_fitstemplates_DATA+=pixelimpactfile.tpl
 
 # Directory where to install the XML files.
 xmldir=$(pkgdatadir)/xml
@@ -59,7 +60,8 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  ladevent.c ladimpact.c lad.c lad_init.c xmlbuffer.c	\
 		  gti.c sourceimage.c reconstruction.c eventarray.c	\
 		  fft_array.c balancing.c find_position.c		\
-		  attitudecatalog2.c det_phi_max.c
+		  attitudecatalog2.c det_phi_max.c advdet.c 		\
+		  pixelimpactfile.c
 
 ############ HEADERS #################
 
@@ -81,4 +83,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h gti.h	\
 		sourceimage.h reconstruction.h eventarray.h		\
 		fft_array.h balancing.h find_position.h			\
-		attitudecatalog2.h det_phi_max.h
+		attitudecatalog2.h det_phi_max.h advdet.h 		\
+		  pixelimpactfile.h

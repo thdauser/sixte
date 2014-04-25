@@ -25,6 +25,7 @@ dist_athenapluswfi_DATA+= athenaplus/wfi/splitframe_core.xml
 # X-IFU
 athenaplusxifudir = $(athenaplusdir)/xifu
 dist_athenaplusxifu_DATA = athenaplus/xifu/plain.xml
+dist_athenaplusxifu_DATA+= athenaplus/xifu/xifu_detector.xml
 
 # GRAVITAS
 gravitasdir = $(xmldir)/gravitas

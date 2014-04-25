@@ -109,6 +109,7 @@ AC_CONFIG_FILES([Makefile
 		tools/epicpn_events/Makefile
 		tools/epicmos1_events/Makefile
 		tools/epicmos2_events/Makefile
+		tools/piximpacts/Makefile
 		share/Makefile
 		share/instruments/Makefile
 		extlib/Makefile])

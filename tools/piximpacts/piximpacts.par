@@ -1,0 +1,4 @@
+ImpactList,fre,lq,"impacts.fits",,,"impact list input file"
+PixImpList,s,lq,"piximpacts.fits",,,"pixel impact list output file"
+XMLFile,s,h,"none",,,"XML input file with detector definition (overwrites Mission, Instrument, and Mode)"
+clobber,b,h,no,,,"overwrite output files if exist?"
