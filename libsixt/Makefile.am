@@ -84,4 +84,4 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		sourceimage.h reconstruction.h eventarray.h		\
 		fft_array.h balancing.h find_position.h			\
 		attitudecatalog2.h det_phi_max.h advdet.h 		\
-		  pixelimpactfile.h
+		  pixelimpactfile.h pixelimpact.h

@@ -8,7 +8,13 @@ TFORM#  	D               /
 TUNIT#          s        	/ 
 TTYPE#  	ENERGY          / Energy of the incident photon
 TFORM#  	E   		/
-TUNIT#  	keV             / 
+TUNIT#  	keV             /
+TTYPE#		X		/ Detector x coordinate of impact
+TFORM#		D		/
+TUNIT#		m		/
+TTYPE#		Y		/ Detector y coordinate of impact
+TFORM#		D		/
+TUNIT#		m		/ 
 TTYPE#  	PH_ID           / Photon ID
 TFORM#  	J   		/
 TTYPE#  	SRC_ID          / Source ID

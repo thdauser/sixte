@@ -95,7 +95,7 @@ int CheckAdvPixImpact(AdvPix pix, Impact *imp){
   }  
 }
 
-void CalcAdvPixImpact(AdvPix pix, Impact *imp, Impact *piximp){
+void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp){
   
   // Calculate impact coordinates in respect to the 
   // pixel coordinate system
@@ -109,11 +109,13 @@ void CalcAdvPixImpact(AdvPix pix, Impact *imp, Impact *piximp){
   piximp->energy = imp->energy;
   piximp->ph_id = imp->ph_id;
   piximp->src_id = imp->src_id;
-  piximp->position.x = u;
-  piximp->position.y = v;
+  piximp->detposition.x = imp->position.x;
+  piximp->detposition.y = imp->position.y;
+  piximp->pixposition.x = u;
+  piximp->pixposition.y = v;
 }
 
-int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, Impact **piximp){
+int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, PixImpact **piximp){
   
   // Duplicate the impact but transform the coordinates into
   // the detector coordinate system
@@ -136,7 +138,7 @@ int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, Impact **piximp){
       nimpacts++;
       *pixindex=(long*)realloc(*pixindex, nimpacts*sizeof(long));
       *pixindex[nimpacts-1]=(long)ii;
-      *piximp=(Impact*)realloc(*piximp, nimpacts*sizeof(Impact));
+      *piximp=(PixImpact*)realloc(*piximp, nimpacts*sizeof(PixImpact));
       CalcAdvPixImpact(det->pix[ii], &detimp, &((*piximp)[nimpacts-1]));
     }
   }
@@ -161,6 +163,8 @@ void parseAdvDetXML(AdvDet* const det,
     SIXT_ERROR(msg);
     return;
   }
+  
+  printf("Parse XML code...\n");
 
   // The data is read from the XML file and stored in xmlbuffer
   // without any modifications.

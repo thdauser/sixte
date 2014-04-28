@@ -22,7 +22,7 @@
 #define PIXIMPFILE_H 1
 
 #include "sixt.h"
-#include "impact.h"
+#include "pixelimpact.h"
 #include "point.h"
 
 ////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ typedef struct {
   long row;
 
   /** Column numbers in the FITS binary table. */
-  int ctime, cenergy, cph_id, csrc_id, cpix_id, cu, cv;
+  int ctime, cenergy, cx, cy, cph_id, csrc_id, cpix_id, cu, cv;
 
 } PixImpFile;
 
@@ -72,6 +72,8 @@ PixImpFile* openNewPixImpFile(const char* const filename,
 			      char* const filter,
 			      char* const ancrfile,
 			      char* const respfile,
+			      char* const xmlfile,
+			      char* const impactlist,
 			      const double mjdref,
 			      const double timezero,
 			      const double tstart,
@@ -84,13 +86,13 @@ PixImpFile* openNewPixImpFile(const char* const filename,
     call, the first row from the FITS table is read and the counter is
     increased to 'row==1'). */
 void getNextImpactFromPixImpFile(PixImpFile* const file, 
-			   Impact* const impact, 
+			   PixImpact* const impact, 
 			   long *pixid,
 			   int* const status);
 
 /** Append a new entry to the PixImpFile. */
 void addImpact2PixImpFile(PixImpFile* const ilf, 
-			  Impact* const impact,
+			  PixImpact* const impact,
 			  long pixid, 
 			  int* const status);
 

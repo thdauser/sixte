@@ -41,6 +41,7 @@ struct Parameters {
   char XMLFile[MAXFILENAME];
   
   char clobber;
+  char history;
 };
 
 

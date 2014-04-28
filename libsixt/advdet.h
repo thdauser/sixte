@@ -23,6 +23,7 @@
 
 #include "sixt.h"
 #include "impact.h"
+#include "pixelimpact.h"
 #include "point.h"
 #include "xmlbuffer.h"
 
@@ -106,11 +107,11 @@ int CheckAdvPixImpact(AdvPix pix, Impact *imp);
 
 /** Function calculating the exact impact position and time in
     pixel coordinates. */
-void CalcAdvPixImpact(AdvPix pix, Impact *imp, Impact *piximp);
+void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp);
 
 /** Function determining the pixel indices which have an impact from one 
     event. Gives the number of pixels that were hit.*/
-int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, Impact **piximp);
+int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, PixImpact **piximp);
 
 
 #endif /* ADVDET_H */

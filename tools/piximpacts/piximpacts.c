@@ -102,6 +102,8 @@ int piximpacts_main() {
 			   filter,
 			   ancrfile,
 			   respfile,
+			   par.XMLFile,
+			   impactlist_filename,
 			   mjdref,
 			   timezero,
 			   tstart,
@@ -116,23 +118,28 @@ int piximpacts_main() {
       // event pixel index array
       long *pixindex=NULL;
   
+      // detector impact
+      Impact detimp;
+  
       // pixel impact array
-      Impact *piximp=NULL;
-      
+      PixImpact *piximp=NULL;
+
       // load next impact
-      Impact impact;
-      getNextImpactFromFile(ilf, &impact, &status);
+      getNextImpactFromFile(ilf, &detimp, &status);
       CHECK_STATUS_BREAK(status);
       
+
       // calculate pixel impact parameters
-      int newPixImpacts=AdvImpactList(det, &impact, &pixindex, &piximp);
+      int newPixImpacts=AdvImpactList(det, &detimp, &pixindex, &piximp);
       
+
       if(newPixImpacts>0){
 	for(ii=0; ii<newPixImpacts; ii++){
 	  addImpact2PixImpFile(plf, &(piximp[ii]), pixindex[ii], &status);
 	}
       }
       
+
       free(pixindex);
       free(piximp);
     }
@@ -200,6 +207,12 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the clobber parameter");
+    return(status);
+  }
+
+  status=ape_trad_query_bool("history", &par->history);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the history parameter");
     return(status);
   }
 
