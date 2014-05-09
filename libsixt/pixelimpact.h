@@ -32,6 +32,10 @@
 
 /** Impact of a photon on the detector plane. */
 typedef struct {
+  
+  /** ID of pixel. */
+  long pixID;
+  
   /** Arrival time of the photon on the detector [s]. */
   double time;
   

@@ -423,6 +423,37 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 }
 
 
+void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+			       char* const telescop,
+			       char* const instrume,
+			       char* const filter,
+			       char* const ancrfile,
+			       char* const respfile,
+			       double *mjdref,
+			       double *timezero,
+			       double *tstart,
+			       double *tstop, 
+				int* const status)
+{
+  
+  char comment[MAXMSG];
+  
+  fits_read_key(ifptr, TSTRING, "TELESCOP", telescop, comment, status);
+  fits_read_key(ifptr, TSTRING, "INSTRUME", instrume, comment, status);
+  fits_read_key(ifptr, TSTRING, "FILTER", filter, comment, status);
+  CHECK_STATUS_VOID(*status);
+  fits_read_key(ifptr, TSTRING, "ANCRFILE", ancrfile, comment, status);
+  fits_read_key(ifptr, TSTRING, "RESPFILE", respfile, comment, status);
+  CHECK_STATUS_VOID(*status);
+  // MJDREF, TSTART, TSTOP.
+  fits_read_key(ifptr, TDOUBLE, "MJDREF", mjdref, comment, status);
+  fits_read_key(ifptr, TDOUBLE, "TIMEZERO", timezero, comment, status);
+  fits_read_key(ifptr, TDOUBLE, "TSTART", tstart, comment, status);
+  fits_read_key(ifptr, TDOUBLE, "TSTOP", tstop, comment, status);
+  CHECK_STATUS_VOID(*status);
+}
+
+
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  const int hdunum,
 				  char* const creation_date,

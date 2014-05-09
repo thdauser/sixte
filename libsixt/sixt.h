@@ -215,6 +215,19 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       double tstop,
 			       int* const status);
 
+/** Reads standard header keywords from a FITS file. */
+void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+			       char* const telescop,
+			       char* const instrume,
+			       char* const filter,
+			       char* const ancrfile,
+			       char* const respfile,
+			       double *mjdref,
+			       double *timezero,
+			       double *tstart,
+			       double *tstop, 
+			       int* const status);
+
 /** Add eROSITA-specific standard FITS header keywords to the
     specified file. */
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr, 

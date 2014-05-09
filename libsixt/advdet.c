@@ -41,6 +41,41 @@ static void AdvDetXMLElementEnd(void* parsedata, const char* el);
 // Program Code
 ////////////////////////////////////////////////////////////////////
 
+TESNoiseProperties* newTESNoise(int* const status){
+  
+  // Allocate memory
+  TESNoiseProperties* noise=(TESNoiseProperties*)malloc(sizeof(TESNoiseProperties));
+  if(NULL==noise){
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for TESNoiseProperties failed");
+    return(noise);
+  }
+  
+  // Initialize values and pointers
+  noise->WhiteRMS=0.;
+  noise->H0=1.;
+  noise->Nz=0;
+  noise->Np=0;
+  noise->Zeros=NULL;
+  noise->Poles=NULL;
+  
+  return(noise);
+}
+
+void destroyTESNoiseProperties(TESNoiseProperties* noise){
+  
+  if(noise->Zeros!=NULL){
+    free(noise->Zeros);
+  }
+  if(noise->Poles!=NULL){
+    free(noise->Poles);
+  }
+  noise->WhiteRMS=0.;
+  noise->H0=1.;
+  noise->Nz=0;
+  noise->Np=0;
+}
+
 AdvDet* newAdvDet(int* const status){
   
   // Allocate memory.
@@ -53,21 +88,36 @@ AdvDet* newAdvDet(int* const status){
 
   // Initialize all pointers with NULL.
   det->pix=NULL;
+  det->TESNoise=NULL;
   det->filename=NULL;
   det->filepath=NULL;
   det->sx=0.;
   det->sy=0.;
   det->npix=0;
   det->cpix=0;
+  det->SampleFreq=0.;
+  det->ADCOffset=0;
+  det->calfactor=0.;
+  det->tesnoisefilter=0;
 
   return(det);
 }
 
-void destroyAdvDet(AdvDet **det, int* const status){
+void destroyAdvDet(AdvDet **det){
   
   if(NULL!=(*det)){
     if(NULL!=(*det)->pix){
       free((*det)->pix);
+    }
+    if(NULL!=(*det)->filename){
+      free((*det)->filename);
+    }
+    if(NULL!=(*det)->filepath){
+      free((*det)->filepath);
+    }
+    if(NULL!=(*det)->TESNoise){
+      destroyTESNoiseProperties((*det)->TESNoise);
+      free((*det)->TESNoise);
     }
   }
 }
@@ -115,7 +165,7 @@ void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp){
   piximp->pixposition.y = v;
 }
 
-int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, PixImpact **piximp){
+int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp){
   
   // Duplicate the impact but transform the coordinates into
   // the detector coordinate system
@@ -136,9 +186,8 @@ int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, PixImpact **piximp)
   for(ii=0; ii<det->npix; ii++){
     if(CheckAdvPixImpact(det->pix[ii], &detimp)!=0){
       nimpacts++;
-      *pixindex=(long*)realloc(*pixindex, nimpacts*sizeof(long));
-      *pixindex[nimpacts-1]=(long)ii;
       *piximp=(PixImpact*)realloc(*piximp, nimpacts*sizeof(PixImpact));
+      piximp[nimpacts-1]->pixID=(long)ii;
       CalcAdvPixImpact(det->pix[ii], &detimp, &((*piximp)[nimpacts-1]));
     }
   }
@@ -153,7 +202,7 @@ void parseAdvDetXML(AdvDet* const det,
 		 
   // Read the XML data from the file.
   // Open the specified file.
-  printf("Open file %s\n", filename);
+  printf("Read file %s\n", filename);
   FILE* xmlfile=fopen(filename, "r");
   if (NULL==xmlfile) {
     *status=EXIT_FAILURE;
@@ -163,8 +212,6 @@ void parseAdvDetXML(AdvDet* const det,
     SIXT_ERROR(msg);
     return;
   }
-  
-  printf("Parse XML code...\n");
 
   // The data is read from the XML file and stored in xmlbuffer
   // without any modifications.
@@ -287,7 +334,62 @@ static void AdvDetXMLElementStart(void* parsedata,
     xmlparsedata->det->pix[xmlparsedata->det->cpix].sy=(double)posy*getXMLAttributeDouble(attr, "DELY");
     xmlparsedata->det->pix[xmlparsedata->det->cpix].width=getXMLAttributeDouble(attr, "WIDTH");
     xmlparsedata->det->pix[xmlparsedata->det->cpix].height=getXMLAttributeDouble(attr, "HEIGHT");
-    xmlparsedata->det->cpix++;
+    getXMLAttributeString(attr, "TESPROFFILE", xmlparsedata->det->pix[xmlparsedata->det->cpix].tesproffilename);
+    getXMLAttributeString(attr, "TESPROFVER", xmlparsedata->det->pix[xmlparsedata->det->cpix].version);
+    xmlparsedata->det->pix[xmlparsedata->det->cpix].profVersionID=-1;
+    
+    xmlparsedata->det->cpix++; 
+  } else if (!strcmp(Uelement, "SAMPLEFREQ")) {
+    xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "FREQ");
+  } else if (!strcmp(Uelement, "ADCOFFSET")) {
+    xmlparsedata->det->ADCOffset=getXMLAttributeInt(attr, "OFFSET");
+  } else if (!strcmp(Uelement, "CALFACTOR")) {
+    xmlparsedata->det->calfactor=getXMLAttributeDouble(attr, "FACTOR");
+  } else if (!strcmp(Uelement, "TESWHITENOISE")) {
+    if(xmlparsedata->det->TESNoise==NULL){
+      xmlparsedata->det->TESNoise=newTESNoise(&(xmlparsedata->status));
+      CHECK_STATUS_VOID(xmlparsedata->status);
+    }
+    xmlparsedata->det->TESNoise->WhiteRMS=getXMLAttributeDouble(attr, "RMS");
+  } else if (!strcmp(Uelement, "TESNOISEFILTER")) {
+    if(xmlparsedata->det->TESNoise==NULL){
+      xmlparsedata->det->TESNoise=newTESNoise(&(xmlparsedata->status));
+      CHECK_STATUS_VOID(xmlparsedata->status);
+    }
+    xmlparsedata->det->TESNoise->H0=getXMLAttributeDouble(attr, "NORM");
+    xmlparsedata->det->tesnoisefilter=1;
+  } else if (!strcmp(Uelement, "NOISEPOLE")) {
+    if(xmlparsedata->det->tesnoisefilter==1){
+      xmlparsedata->det->TESNoise->Np++;
+      xmlparsedata->det->TESNoise->Poles=(double*)realloc(xmlparsedata->det->TESNoise->Poles, 
+							  xmlparsedata->det->TESNoise->Np*sizeof(double));
+      if(xmlparsedata->det->TESNoise->Poles==NULL){
+	xmlparsedata->status=EXIT_FAILURE;
+	SIXT_ERROR("Realloc of noise poles array failed.");
+	return;
+      }
+     xmlparsedata->det->TESNoise->Poles[xmlparsedata->det->TESNoise->Np-1]=getXMLAttributeDouble(attr, "POLE"); 
+    }else{
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("XML syntax error: noisepole used outside of tesnoisefilter.");
+      return;
+    }
+   } else if (!strcmp(Uelement, "NOISEZERO")) {
+    if(xmlparsedata->det->tesnoisefilter==1){
+      xmlparsedata->det->TESNoise->Nz++;
+      xmlparsedata->det->TESNoise->Zeros=(double*)realloc(xmlparsedata->det->TESNoise->Zeros, 
+							  xmlparsedata->det->TESNoise->Nz*sizeof(double));
+      if(xmlparsedata->det->TESNoise->Zeros==NULL){
+	xmlparsedata->status=EXIT_FAILURE;
+	SIXT_ERROR("Realloc of noise zeros array failed.");
+	return;
+      }
+     xmlparsedata->det->TESNoise->Zeros[xmlparsedata->det->TESNoise->Nz-1]=getXMLAttributeDouble(attr, "ZERO"); 
+    }else{
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("XML syntax error: noisezero used outside of tesnoisefilter.");
+      return;
+    }
   } else {
     // Unknown tag, display warning.
     char msg[MAXMSG];
@@ -300,7 +402,17 @@ static void AdvDetXMLElementEnd(void* parsedata, const char* el)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
-  (void)el;
+  // Check if an error has occurred previously.
+  CHECK_STATUS_VOID(xmlparsedata->status);
+
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG];
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+  
+  if (!strcmp(Uelement, "TESNOISEFILTER")) {
+    xmlparsedata->det->tesnoisefilter=0;
+  }
 
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);

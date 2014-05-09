@@ -15,42 +15,42 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2014 Thorsten Brand, FAU
+   Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU
 */
 
-#ifndef PIXIMP_H
-#define PIXIMP_H 1
+#ifndef TESSTREAM_H
+#define TESSTREAM_H 1
 
 #include "sixt.h"
 #include "gti.h"
-#include "impactfile.h"
+#include "pixelimpact.h"
 #include "advdet.h"
 #include "pixelimpactfile.h"
+#include "tesproftemplates.h"
+#include "tesnoisespectrum.h"
+#include "tesdatastream.h"
 
-#define TOOLSUB piximpacts_main
+#define TOOLSUB tesstream_main
 #include "headas_main.c"
 
-////////////////////////////////////////////////////////////////////////
-// Type declarations.
-////////////////////////////////////////////////////////////////////////
-
-
 struct Parameters {
-  char ImpactList[MAXFILENAME];
   char PixImpList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
+  char streamname[MAXFILENAME];
+  
+  char activePixels[9];
+  int Nactive;
+  int Npix;
+  int nlo;
+  int nhi;
+  
+  double tstart;
+  double tstop;
   
   char clobber;
   char history;
 };
 
+int getpar(struct Parameters* const par);
 
-////////////////////////////////////////////////////////////////////////
-// Function declarations.
-////////////////////////////////////////////////////////////////////////
-
-
-// Reads the program parameters using PIL
-int getpar(struct Parameters* const parameters);
-
-#endif /* PIXIMP_H */
+#endif /* TESSTREAM_H */

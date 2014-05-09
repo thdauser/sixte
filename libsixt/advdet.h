@@ -50,8 +50,41 @@ typedef struct{
   
   /** Index of pixel in detector structure. */
   int pindex;
+  
+  /** Name of file of pulse template. */
+  char tesproffilename[MAXFILENAME];
+  
+  /** Version of pulse template. */
+  char version[10];
+  
+  /** Version index of pulse template */
+  int profVersionID;
 
 }AdvPix;
+
+/** Data structure describing the noise properties of calorimeter 
+ pixels */
+typedef struct{
+  
+  /** White noise RMS value */
+  double WhiteRMS;
+  
+  /** Normalisation of the filter function */
+  double H0;
+  
+  /** Number of zeros */
+  int Nz;
+  
+  /** Zeros */
+  double *Zeros;
+  
+  /** Number of poles */
+  int Np;
+  
+  /** Poles */
+  double *Poles;
+  
+}TESNoiseProperties;
 
 
 /** Data structure describing the geometry of a pixel detector with
@@ -79,12 +112,34 @@ typedef struct{
 
   /** Path to the FITS file containing the XML detector definition. */
   char* filepath;
+  
+  /** Sampling frequency */
+  double SampleFreq;
+  
+  /** Sampling frequency */
+  int ADCOffset;
+  
+  /** Sampling frequency */
+  double calfactor;
+  
+  /** Noise properties of calorimeter noise */
+  TESNoiseProperties* TESNoise;
+  
+  /** Signal if being inside the 'tesnoisefilter' tag of xml */
+  int tesnoisefilter;
 
 }AdvDet;
 
 /////////////////////////////////////////////////////////////////////
 // Function Declarations.
 /////////////////////////////////////////////////////////////////////
+
+/** Constructor. Allocates memory for a new TESNoiseProperties data 
+    structure. */
+TESNoiseProperties* newTESNoise(int* const status);
+
+/** Destructor. Releases all allocated memory. */
+void destroyTESNoiseProperties(TESNoiseProperties* noise);
 
 /** Read the advanced detector syntax from the specified XML */
 void parseAdvDetXML(AdvDet* const det, 
@@ -100,7 +155,7 @@ AdvDet* loadAdvDet(const char* const filename,
 
 /** Destructor. Releases all allocated memory and resets the pointer
     to the AdvDet data structure to NULL. */
-void destroyAdvDet(AdvDet **det, int* const status);
+void destroyAdvDet(AdvDet **det);
 
 /** Function testing if an impact lies inside a pixel. */
 int CheckAdvPixImpact(AdvPix pix, Impact *imp);
@@ -111,7 +166,7 @@ void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp);
 
 /** Function determining the pixel indices which have an impact from one 
     event. Gives the number of pixels that were hit.*/
-int AdvImpactList(AdvDet *det, Impact *imp, long **pixindex, PixImpact **piximp);
+int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp);
 
 
 #endif /* ADVDET_H */

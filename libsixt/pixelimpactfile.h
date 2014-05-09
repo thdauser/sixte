@@ -85,15 +85,21 @@ PixImpFile* openNewPixImpFile(const char* const filename,
     counter by 1 (e.g. if 'row==0' at the beginning of the function
     call, the first row from the FITS table is read and the counter is
     increased to 'row==1'). */
-void getNextImpactFromPixImpFile(PixImpFile* const file, 
-			   PixImpact* const impact, 
-			   long *pixid,
+int getNextImpactFromPixImpFile(PixImpFile* const file, 
+			   PixImpact* const impact,
 			   int* const status);
 
 /** Append a new entry to the PixImpFile. */
 void addImpact2PixImpFile(PixImpFile* const ilf, 
-			  PixImpact* const impact,
-			  long pixid, 
+			  PixImpact* const impact, 
+			  int* const status);
+
+/** Get the tstart and tstop times from the file. */
+void getPixImpFileTimeValues(PixImpFile* const ilf,
+			  double *mjdref,
+			  double *timezero,
+			  double *tstart,
+			  double *tstop,
 			  int* const status);
 
 #endif /* PIXIMPFILE_H */

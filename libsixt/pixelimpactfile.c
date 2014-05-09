@@ -170,7 +170,7 @@ PixImpFile* openNewPixImpFile(const char* const filename,
   fits_write_comment(file->fptr, comment, status);
   CHECK_STATUS_RET(*status, file);
   
-  //Write XML into header
+  //Write photon impact file into header
   sprintf(comment, "PHOFILE: %s", impactlist);
   fits_write_comment(file->fptr, comment, status);
   CHECK_STATUS_RET(*status, file);
@@ -186,21 +186,20 @@ PixImpFile* openNewPixImpFile(const char* const filename,
   return(file);
 }
 
-void getNextImpactFromPixImpFile(PixImpFile* const file, 
+int getNextImpactFromPixImpFile(PixImpFile* const file, 
 			   PixImpact* const impact,
-			   long *pixid,
 			   int* const status)
 {
   // Check if the file has been opened.
   if (NULL==file) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("no pixel impact list file opened");
-    return;
+    return 0;
   }
   if (NULL==file->fptr) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("no pixel impact list file opened");
-    return;
+    return 0;
   }
 
   // Move counter to next line.
@@ -208,9 +207,7 @@ void getNextImpactFromPixImpFile(PixImpFile* const file,
 
   // Check if there is still a row available.
   if (file->row > file->nrows) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("pixel impact list file contains no further entries");
-    return;
+    return 0;
   }
   
   // Read in the data.
@@ -218,68 +215,67 @@ void getNextImpactFromPixImpFile(PixImpFile* const file,
   impact->time=0.;
   fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
 		&impact->time, &impact->time, &anynul, status);
-  CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_RET(*status, 0);
 
   impact->energy = 0.;
   fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
 		&impact->energy, &impact->energy, &anynul, status);
-  CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_RET(*status, 0);
 
   impact->detposition.x = 0.;
   fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
 		&impact->detposition.x, &impact->detposition.x, &anynul, status);
-  CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_RET(*status, 0);
 
   impact->detposition.y = 0.;
   fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
 		&impact->detposition.y, &impact->detposition.y, &anynul, status);
-  CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_RET(*status, 0);
 
   impact->pixposition.x = 0.;
   fits_read_col(file->fptr, TDOUBLE, file->cu, file->row, 1, 1, 
 		&impact->pixposition.x, &impact->pixposition.x, &anynul, status);
-  CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_RET(*status, 0);
 
   impact->pixposition.y = 0.;
   fits_read_col(file->fptr, TDOUBLE, file->cv, file->row, 1, 1, 
 		&impact->pixposition.y, &impact->pixposition.y, &anynul, status);
-  CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_RET(*status, 0);
 
   impact->ph_id = 0;
   fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1, 
 		&impact->ph_id, &impact->ph_id, &anynul, status);
-  CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_RET(*status, 0);
 
   impact->src_id = 0;
   fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1, 
 		&impact->src_id, &impact->src_id, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-  *pixid=-1;
+  CHECK_STATUS_RET(*status, 0);
+  impact->pixID=-1;
   fits_read_col(file->fptr, TLONG, file->cpix_id, file->row, 1, 1, 
-		pixid, pixid, &anynul, status);
-  CHECK_STATUS_VOID(*status);
-  pixid=pixid-1;
+		&impact->pixID, &impact->pixID, &anynul, status);
+  CHECK_STATUS_RET(*status, 0);
+  impact->pixID=impact->pixID-1;
   
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("failed reading from pixel impact list file");
-    return;
+    return 0;
   }
 
-  return;
+  return 1;
 }
 
 void addImpact2PixImpFile(PixImpFile* const ilf, 
 			  PixImpact* const impact,
-			  long pixid,
 			  int* const status)
 {
   ilf->row++;
   ilf->nrows++;
   
-  pixid=pixid+1;
+  impact->pixID=impact->pixID+1;
 
   fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
 		 ilf->row, 1, 1, &impact->time, status);
@@ -298,5 +294,23 @@ void addImpact2PixImpFile(PixImpFile* const ilf,
   fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
 		 ilf->row, 1, 1, &impact->src_id, status);
   fits_write_col(ilf->fptr, TLONG, ilf->cpix_id, 
-		 ilf->row, 1, 1, &pixid, status);
+		 ilf->row, 1, 1, &impact->pixID, status);
+}
+
+void getPixImpFileTimeValues(PixImpFile* const ilf,
+			  double *mjdref,
+			  double *timezero,
+			  double *tstart,
+			  double *tstop,
+			  int* const status)
+{
+  char comment[MAXMSG];
+  fits_read_key(ilf->fptr, TDOUBLE, "MJDREF", mjdref, comment, status);
+  CHECK_STATUS_VOID(*status);
+  fits_read_key(ilf->fptr, TDOUBLE, "TIMEZERO", timezero, comment, status);
+  CHECK_STATUS_VOID(*status);
+  fits_read_key(ilf->fptr, TDOUBLE, "TSTART", tstart, comment, status);
+  CHECK_STATUS_VOID(*status);
+  fits_read_key(ilf->fptr, TDOUBLE, "TSTOP", tstop, comment, status);
+  CHECK_STATUS_VOID(*status);
 }
