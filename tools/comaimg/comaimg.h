@@ -33,6 +33,8 @@ struct Parameters {
   float x_mask, y_mask;
   //detector-size (width, depth) ([m])
   float x_det, y_det;
+  //width of one detector pixel ([m])
+  float det_pixelwidth;
 
   //detector pointing direction
   double RA, DEC;

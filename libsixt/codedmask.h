@@ -76,5 +76,9 @@ int getImpactPos (struct Point2d* const position,
 		  const float y_det,
 		  int* const status);
 
+int getImpactPos2 (struct wcsprm* wcs, struct Point2d* const position, const CodedMask* const mask,
+		   double const photon_ra, double const photon_dec, float const det_pixelwidth,
+		   const float x_det, const float y_det, int* const status);
+
 
 #endif /* CODEDMASK_H */

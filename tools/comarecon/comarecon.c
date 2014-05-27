@@ -16,22 +16,20 @@ int comarecon_main() {
   
   CoMaEventFile* eventfile=NULL;
   SquarePixels* detector_pixels=NULL;
-  CodedMask* mask=NULL;
+  CodedMask* mask=NULL; 
   SourceImage* sky_pixels=NULL;
   ReconArray* recon=NULL;
+  MaskShadow* mask_shadow=NULL;
   PixPositionList* position_list=NULL;
-  //thought to contain contribution from non-sensitive detector area; see mail Yuri
-  //TODO: check, if needed
-  /*BalancingArray* balance=NULL;*/
- 
+  double* median_list=NULL; //temporary array of all background pixels for determination of median 
   ReadEvent* ea=NULL;
   ReadEvent* ear=NULL;
-  double* ReconArray1d=NULL; 
   double* ReconImage1d=NULL;
-  double* EventArray1d=NULL; 
   double* EventImage1d=NULL;
-  /*double* BalancingArray1d=NULL;
-    double* BalancingImage1d=NULL;*/
+  fftw_complex* fftReconArray=NULL;
+  fftw_complex* fftEventArray=NULL;
+  fftw_complex* Multiply = NULL;
+  fftw_complex* fftInvMultiply=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -59,263 +57,323 @@ int comarecon_main() {
     CHECK_STATUS_BREAK(status);
     
     // DETECTOR setup.
+    double ra=par.RA;
+    double dec=par.DEC;
+    double distance=par.MaskDistance;
+
     struct SquarePixelsParameters spp = {
       .xwidth = par.width,
       .ywidth = par.width,
       .xpixelwidth = par.pixelwidth,
-      .ypixelwidth = par.pixelwidth 
+      .ypixelwidth = par.pixelwidth,
+      .DCU_length=par.DCU_length,
+      .DCU_gap=par.DCU_gap,
+      .DCA_gap=par.DCA_gap
     };
     detector_pixels=newSquarePixels(&spp, &status);
     CHECK_STATUS_BREAK(status);
     // END of DETECTOR CONFIGURATION SETUP    
 
     // SKY IMAGE setup.
-       float delta = atan(par.pixelwidth/par.MaskDistance);
+       float delta = atan(par.pixelwidth/distance);
 
        if(par.RePixSize==0.){
 	struct SourceImageParameters sip = {
-	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth)-1,
-	    .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth)-1,
-	    .crpix1 = (float)(mask->naxis1*mask->cdelt1)/detector_pixels->xpixelwidth,
-	    .crpix2 = (float)(mask->naxis2*mask->cdelt2)/detector_pixels->ypixelwidth,
-
+	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth),
+	    .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth),
+	    .crpix1 = (float)(sip.naxis1/2.+1), //even axes: ends to .5, odd axes (not possible,*2): ends to .0 (therefore: axis/2+0.5)
+	    .crpix2 = (float)(sip.naxis2/2.+1), //further +0.5,since left boarder of 1st pix in sky image is 0.5(FITS)
 	    .cdelt1 = delta,
 	    .cdelt2 = delta,
-	    .crval1 = 0.,
-	    .crval2 = 0.
+	    .crval1 = ra,
+	    .crval2 = dec
 	  };
 
        sky_pixels=getEmptySourceImage(&sip, &status);
        CHECK_STATUS_BREAK(status);
       }
-    // END of SKY IMAGE CONFIGURATION SETUP    
+    // END of SKY IMAGE CONFIGURATION SETUP 
+
+    //SOURCE-POSITION DETERMINATION:
+    double pixval=0.;
+    int threshold=0; //for first source threshold is '0' after that: '1' if still bright enough, '2' else
+    //get empty PixPositionList structure (contains pointer to current PixPosition-element
+    //and count for found sources)
+    position_list=getPixPositionList(sky_pixels);
+    //memory-allocation for median_list
+    median_list=getMedian_list(sky_pixels, &status);
+
+    //initialization of wcs parameter structure for deteremining ra/dec of source
+    struct wcsprm wcs = {
+      .flag=-1
+    }; //flag has to be set only at 1st init
+    if (0!=wcsini(1, 2, &wcs)) {
+      SIXT_ERROR("initalization of WCS data structure failed");
+      status=EXIT_FAILURE;
+      break;
+    }
+    wcs.naxis=2;
+    wcs.crpix[0]=sky_pixels->crpix1;
+    wcs.crpix[1]=sky_pixels->crpix2; 
+    wcs.crval[0]=sky_pixels->crval1;
+    wcs.crval[1]=sky_pixels->crval2;
+    wcs.cdelt[0]=sky_pixels->cdelt1*180./M_PI;
+    wcs.cdelt[1]=sky_pixels->cdelt2*180./M_PI;
+
+ //initialization of wcs parameter structure for getting mask shadow
+    struct wcsprm wcs2 = {
+      .flag=-1
+    }; //flag has to be set only at 1st init
+    if (0!=wcsini(1, 2, &wcs2)) {
+      SIXT_ERROR("initalization of WCS data structure failed");
+      status=EXIT_FAILURE;
+      break;
+    }
+    wcs2.naxis=2;
+    wcs2.crpix[0]=(detector_pixels->xwidth)/2;
+    wcs2.crpix[1]=(detector_pixels->ywidth)/2;
+    wcs2.crval[0]=ra;  //in deg
+    wcs2.crval[1]=dec;
+    wcs2.cdelt[0]=atan(detector_pixels->xpixelwidth/distance)*180./M_PI; //in deg
+    wcs2.cdelt[1]=atan(detector_pixels->ypixelwidth/distance)*180./M_PI;
+
+
+    //telescope coordinate system     //TODO: use attitude
+       //telescope pointing direction
+       Vector nz=normalize_vector(unit_vector(ra*M_PI/180.0,dec* M_PI/180.0));
+       //unit-vector in z-direction:
+       Vector vz = {0.,0.,1.};
+
+       Vector nx= normalize_vector(vector_product(nz,vz));         
+       // Vector ny= normalize_vector(vector_product(nz,nx)); 
     
     // --- END of Initialization ---
 
 
-    // --- Beginning of Imaging Process ---
+    // --- Beginning of Reconstruction Process ---
 
     // Beginning of actual detector simulation (after loading required data):
     headas_chat(5, "start image reconstruction process ...\n");
-     
 
     //Get empty event array object (type: ReadEvent)
      ea=getEventArray(mask, detector_pixels, &status);
+     
 
-    //detector size <= mask size
-    //if mask size = det size -> shift is zero
-      xdiff=((ea->naxis1)/2-detector_pixels->xwidth)/2;
-      ydiff=((ea->naxis2)/2-detector_pixels->ywidth)/2;
+       //detector size <= mask size
+       //if mask size = det size -> shift is zero
+       xdiff=((ea->naxis1)/2-detector_pixels->xwidth)/2;
+       ydiff=((ea->naxis2)/2-detector_pixels->ywidth)/2;
 
 
-    // Loop over all events in the FITS file.
-    while (0==EventFileEOF(&eventfile->generic)) {
+       // Loop over all events in the FITS file.
+       while (0==EventFileEOF(&eventfile->generic)) {
 
-      status=readEventList_nextRow(eventfile, ea);
-      CHECK_STATUS_BREAK(status);
+	 status=readEventList_nextRow(eventfile, ea);
+	 CHECK_STATUS_BREAK(status);
 
-      //Get the 2d-EventArray, padded to the upper right corner
+	 //Get the 2d-EventArray, padded to the upper right corner
+	 ea->EventArray[ea->rawx+ea->naxis1/2+xdiff][ea->rawy+ea->naxis2/2+ydiff]+=ea->charge;
 
-      //minus 1:because if axis is of lenght N then pixels: 0 to N-1
-      ea->EventArray[ea->rawx+ea->naxis1/2-1+xdiff][ea->rawy+ea->naxis2/2-1+ydiff]+=ea->charge;
-
-    } // END of scanning the event list.
-    CHECK_STATUS_BREAK(status);
-
-    if(par.RePixSize!=0.){//only works, if new smaller pixel fit without remainder in former big ones!
-      //EventArray has been built with original pix-size, in order to distribute the events correctly
-      //from now on the newe smaller size is used -> also for the later called ReconArray
-      double pixelwidth_big=detector_pixels->xpixelwidth;//width of the former EventArray pixels (the real det-pix-size)
-      detector_pixels->xpixelwidth=par.RePixSize;
-      detector_pixels->ypixelwidth=par.RePixSize;
-
-      //get source image with correct axes, since xpixelwidth has changed
-      float delta = atan(par.RePixSize/par.MaskDistance);
-      struct SourceImageParameters sip = {
-	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth)-1,
-	    .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth)-1,
-	    //due to repix the axes get even numbers -> have to be shifted half a pixel
-	    //since one former pixel (for MIRAX) corresponds to 6 now -> shift: 4.0
-	    //TODO: determine crpix value automatically, depending on even/odd axes
-	    .crpix1 = (float)(mask->naxis1*mask->cdelt1)/detector_pixels->xpixelwidth-4.,
-	    .crpix2 = (float)(mask->naxis2*mask->cdelt2)/detector_pixels->ypixelwidth-4.,
-
-	    .cdelt1 = delta,
-	    .cdelt2 = delta,
-	    .crval1 = 0.,
-	    .crval2 = 0.
-	  };
-
-       sky_pixels=getEmptySourceImage(&sip, &status);
+       } // END of scanning the event list.
        CHECK_STATUS_BREAK(status);
 
-      //new pointer for EventArray with more entries, since smaller pix-size (EventArrayRepix)
-      ear=getEventArray(mask, detector_pixels, &status);
+       if(par.RePixSize!=0.){//only works, if new smaller pixel fit without remainder in former big ones!
+	 //EventArray has been built with original pix-size, in order to distribute the events correctly
+	 //from now on, the new smaller size is used -> also for the later called ReconArray
+	 double pixelwidth_big=detector_pixels->xpixelwidth;//width of the former EventArray pixels (the real det-pix-size)
+	 detector_pixels->xpixelwidth=par.RePixSize;
+	 detector_pixels->ypixelwidth=par.RePixSize;
 
-      int xcount, ycount;               //bigcount
-      int xpixelcount=0, ypixelcount=0; //smallcount
-      double leftsmall=0.,leftbig=0.;        //left border of small and big pixel
-      double topsmall=0.,topbig=0.;          //top border of small and big pixel
+	 //get source image with correct axes, since xpixelwidth has changed
+	 float delta = atan(par.RePixSize/distance);
+	 struct SourceImageParameters sip = {
+	   .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth)-1,
+	   .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth)-1,
+	   //due to repix the axes get even numbers -> have to be shifted half a pixel
+	   //since one former pixel (for MIRAX) corresponds to 6 now -> shift: 4.0
+	   //TODO: determine crpix value automatically, depending on even/odd axes
+	   .crpix1 = (float)(mask->naxis1*mask->cdelt1)/detector_pixels->xpixelwidth-4.,
+	   .crpix2 = (float)(mask->naxis2*mask->cdelt2)/detector_pixels->ypixelwidth-4.,
 
-      //Scanning over all EventArray-elements to get EventArray with smaller pixel-size
-     for(ycount=0; ycount<ea->naxis2;ycount++){
-       for(xcount=0; xcount<ea->naxis1;xcount++){
+	   .cdelt1 = delta,
+	   .cdelt2 = delta,
+	   .crval1 = ra,
+	   .crval2 = dec
+	 };
 
-	 topbig=ycount*pixelwidth_big;   //top of current big pixel
-	 ypixelcount=ceil(topbig/detector_pixels->ypixelwidth);  //count for small pixel (new pixels in EventArray)
-	 //current y-pix: top border of big pix/width of one small pix->determines 1st small in current big
+	 sky_pixels=getEmptySourceImage(&sip, &status);
+	 CHECK_STATUS_BREAK(status);
 
-	 do{//as long as in current big pixel in y-direction
-	   topsmall=ypixelcount*detector_pixels->ypixelwidth; //top border of small pix: current small pix*width of one
+	 //new pointer for EventArray with more entries, since smaller pix-size (EventArrayRepix)
+	 ear=getEventArray(mask, detector_pixels, &status);
+
+	 int xcount, ycount;               //bigcount
+	 int xpixelcount=0, ypixelcount=0; //smallcount
+	 double leftsmall=0.,leftbig=0.;        //left border of small and big pixel
+	 double topsmall=0.,topbig=0.;          //top border of small and big pixel
+
+	 //Scanning over all EventArray-elements to get EventArray with smaller pixel-size
+	 for(ycount=0; ycount<ea->naxis2;ycount++){
+	   for(xcount=0; xcount<ea->naxis1;xcount++){
+
+	     topbig=ycount*pixelwidth_big;   //top of current big pixel
+	     ypixelcount=ceil(topbig/detector_pixels->ypixelwidth);  //count for small pixel (new pixels in EventArray)
+	     //current y-pix: top border of big pix/width of one small pix->determines 1st small in current big
+
+	     do{//as long as in current big pixel in y-direction
+	       topsmall=ypixelcount*detector_pixels->ypixelwidth; //top border of small pix: current small pix*width of one
 	   
-	   leftbig=xcount*pixelwidth_big;
-	   xpixelcount=ceil(leftbig/detector_pixels->xpixelwidth);
-	   do{//as long as in current big pixel in x-direction
-	     leftsmall=xpixelcount*detector_pixels->xpixelwidth;
+	       leftbig=xcount*pixelwidth_big;
+	       xpixelcount=ceil(leftbig/detector_pixels->xpixelwidth);
+	       do{//as long as in current big pixel in x-direction
+		 leftsmall=xpixelcount*detector_pixels->xpixelwidth;
     
-	     ear->EventArray[xpixelcount][ypixelcount]=ea->EventArray[xcount][ycount];	     
+		 ear->EventArray[xpixelcount][ypixelcount]=ea->EventArray[xcount][ycount];	     
 
-	     xpixelcount++;
-	   }while(leftsmall+detector_pixels->xpixelwidth < (leftbig+pixelwidth_big));
-	   //end current big pixel x-direction
-	   ypixelcount++;
-	 }while(topsmall+detector_pixels->ypixelwidth < (topbig+pixelwidth_big));
-	 //end current big pixel y-direction
+		 xpixelcount++;
+	       }while(leftsmall+detector_pixels->xpixelwidth < (leftbig+pixelwidth_big));
+	       //end current big pixel x-direction
+	       ypixelcount++;
+	     }while(topsmall+detector_pixels->ypixelwidth < (topbig+pixelwidth_big));
+	     //end current big pixel y-direction
+	   }
+	 }
+       }//end re-pixel EventArray to smaller size given by RePixSize
 
 
+       //Get the reconstruction array:
+       recon=getReconArray(mask, detector_pixels, &status);
+       int Size1 = recon->naxis1;
+       int Size2 = recon->naxis2;
+
+        //Get the 1d image of the reconstruction array -> needed by FFTW
+       ReconImage1d=SaveReconArray1d(recon, &status);
+
+       //perform a fft with the ReconArray       
+       fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2, -1);
+
+        //get repixeled mask from ReconArray, which is needed later for building the mask shadow during IROS
+        //basic constructor for both,the whole re-pixeled mask&/shadow element
+        mask_shadow=getMaskShadowElement(Size1, Size2, &status); 
+        //gets re-pixeled mask as big as EventArray with values betw. 0...1
+	getMaskRepix(recon, mask_shadow);  
+    
+
+        do{ //search for sources as long as pixval is above certain value
+       //run as long as threshold==1
+
+       if(par.RePixSize!=0.){
+	 //Get the 1d image of the event array -> needed by FFTW
+	 EventImage1d=SaveEventArray1d(ear, &status); 
+	 //Check whether the ReconArray and the EventArray have the same size
+	 if ((recon->naxis1 != ear->naxis1) || (recon->naxis2 != ear->naxis2)){
+	   printf ("Error: ReconArrray and EventArray must have the same size!\n");
+	   break;
+	 }		  
+       }else{
+	 //Get the 1d image of the event array -> needed by FFTW
+	 EventImage1d=SaveEventArray1d(ea, &status);
+	 //Check whether the ReconArray and the EventArray have the same size
+	 if ((recon->naxis1 != ea->naxis1) || (recon->naxis2 != ea->naxis2)){
+	   printf ("Error: ReconArrray and EventArray must have the same size!\n");
+	   break;
+	 }
        }
-     }
-      
-    }//end re-pixel EventArray to smaller size given by RePixSize
-
-
-    //Get the reconstruction array:
-    recon=getReconArray(mask, detector_pixels, &status);
-    int Size1 = recon->naxis1;
-    int Size2 = recon->naxis2;
-
-    //Get the 1d image of the reconstruction array -> needed by FFTW
-    ReconImage1d=SaveReconArray1d(recon, &status);
-    //create FITS image of 1d ReconArray for testing
-    testFitsImage1d(ReconImage1d, "R1dTest.fits", Size1, Size2, &status);
-
-    if(par.RePixSize!=0.){
-    //Get the 1d image of the event array -> needed by FFTW
-    EventImage1d=SaveEventArray1d(ear, &status);
-    testFitsImage1d(EventImage1d, "E1dTest.fits", Size1, Size2, &status);
-    //Check whether the ReconArray and the EventArray have the same size
-    if ((recon->naxis1 != ear->naxis1) || (recon->naxis2 != ear->naxis2)){
-      printf ("Error: ReconArrray and EventArray must have the same size!\n");
-      break;
-    }
-		  
-    }else{
-    //Get the 1d image of the event array -> needed by FFTW
-    EventImage1d=SaveEventArray1d(ea, &status);
-    //create FITS image of 1d EventArray for testing
-    testFitsImage1d(EventImage1d, "E1dTest.fits", Size1, Size2, &status);
-    //Check whether the ReconArray and the EventArray have the same size
-    if ((recon->naxis1 != ea->naxis1) || (recon->naxis2 != ea->naxis2)){
-      printf ("Error: ReconArrray and EventArray must have the same size!\n");
-      break;
-    }
    
-    }
+       //perform a fft with the EventArray       
+       fftEventArray=FFTOfArray_1d(EventImage1d, Size1, Size2, -1);
     
-    //reconstruct sky-image via FFT
+       //multiply fftEventArray with komplex conjugate of fftReconArray
+       //Re-part: E(Re)*R(Re)+E(Im)*R(Im); Im-part: E(Re)*R(Im)-E(Im)*R(Re)       
+       Multiply=(fftw_complex*) fftw_malloc(sizeof(fftw_complex)*(Size1*Size2));
+       for(ii=0; ii<Size1; ii++){
+	 for(jj=0; jj<Size2; jj++){
+	   Multiply[ii+Size1*jj][0]=fftEventArray[ii+Size1*jj][0]*fftReconArray[ii+Size1*jj][0]
+	     +fftEventArray[ii+Size1*jj][1]*(fftReconArray[ii+Size1*jj][1]);
+	   Multiply[ii+Size1*jj][1]=-fftEventArray[ii+Size1*jj][0]*(fftReconArray[ii+Size1*jj][1])
+	     +fftEventArray[ii+Size1*jj][1]*fftReconArray[ii+Size1*jj][0];
+	 }
+       }
 
-    //perform a fft with the ReconArray
-    fftw_complex* fftReconArray=NULL;
-    fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2, -1);
+       //Inverse FFT of Multilpy which already is of type fftw_complex       
+       fftInvMultiply=FFTOfArray(Multiply, Size1, Size2, +1);
 
-    //perform a fft with the EventArray
-    fftw_complex* fftEventArray=NULL;
-    fftEventArray=FFTOfArray_1d(EventImage1d, Size1, Size2, -1);
-    
-    //multiply fftEventArray with komplex conjugate of fftReconArray
-    //Re-part: E(Re)*R(Re)+E(Im)*R(Im); Im-part: E(Re)*R(Im)-E(Im)*R(Re)
-    fftw_complex* Multiply = NULL;
-    Multiply=(fftw_complex*) fftw_malloc(sizeof(fftw_complex)*(Size1*Size2));
-    for(ii=0; ii<Size1; ii++){
-      for(jj=0; jj<Size2; jj++){
-	Multiply[ii+Size1*jj][0]=fftEventArray[ii+Size1*jj][0]*fftReconArray[ii+Size1*jj][0]
-	  +fftEventArray[ii+Size1*jj][1]*(fftReconArray[ii+Size1*jj][1]);
-	Multiply[ii+Size1*jj][1]=-fftEventArray[ii+Size1*jj][0]*(fftReconArray[ii+Size1*jj][1])
-	+fftEventArray[ii+Size1*jj][1]*fftReconArray[ii+Size1*jj][0];
-      }
-    }
+       //save real part of inverse fft in sky image
+       for(ii=0; ii<Size1; ii++){
+	 for(jj=0; jj<Size2; jj++){
+	   sky_pixels->pixel[ii][jj]=fftInvMultiply[ii+Size1*jj][0]/(Size1*Size2);
+	 }
+       }
 
-    //Inverse FFT of Multilpy which already is of type fftw_complex
-    fftw_complex* fftInvMultiply=NULL;
-    fftInvMultiply=FFTOfArray(Multiply, Size1, Size2, +1);
+       //for testing:
+       char name_image[7];
+       sprintf(name_image,"image_%u", position_list->entryCount);
 
-    /*
-    //get the balancing array
-    balance=getBalancingArray(recon, detector_pixels, &eventfile->generic, &status);
-    //testing:Get the 1d image of the balancing array:
-     BalancingImage1d=SaveBalancingArray1d(balance, &status);
-     testFitsImage1d(BalancingImage1d, "B1dTest.fits", Size1, Size2, &status);*/
+       // Write the reconstructed source function to the output FITS file.
+       if(position_list->entryCount <=1){
+       saveSourceImage(sky_pixels, name_image, &status);
+       CHECK_STATUS_BREAK(status);
+       }
+   
 
-    //save real part of inverse fft in sky image
-     for(ii=0; ii<Size1-1; ii++){
-      for(jj=0; jj<Size2-1; jj++){
-	sky_pixels->pixel[ii][jj]=fftInvMultiply[ii+Size1*jj][0]/(Size1*Size2);//-balance->Bmap[ii][jj];
-      }
-     }
+       /*do{*/
+       //finds current brightest pixel coordinates and saves PixPosition; returns current brightest pixval
+       pixval=findBrightestPix(threshold, sky_pixels, pixval, position_list, &wcs, &status);
+       threshold=getThresholdForSources(pixval, position_list, sky_pixels, median_list, par.Sigma);
+       /* }while(threshold==1);*/
 
-    // Write the reconstructed source function to the output FITS file.
-    saveSourceImage(sky_pixels, par.Image, &status);
-    CHECK_STATUS_BREAK(status);
+       //get mask shadow for current source
+        getMaskShadow2(mask_shadow,&wcs2,position_list,sky_pixels,detector_pixels,recon,&status);
+	double norm=getNormalization2(mask_shadow, ea, detector_pixels, xdiff, ydiff);
+	printf("norm:%lf\n",norm);
 
-    //source-position determination:
-    //find all bright pixels, e.g. sources
+	//new event array: method two
+       	if(norm>1.){
 
-    double pixval=0.;
+	  for(ii=0; ii<detector_pixels->xwidth; ii++){
+	    for(jj=0; jj<detector_pixels->ywidth; jj++){
+	      if(ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]!=0.){
+		ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]-=norm*mask_shadow->shadow[ii][jj];
+		if(ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]<0.){
+		ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]=0.;
+		}
+	      }
+	     
+	    }
+	  }
 
-    //get empty PixPositionList structure (contains pointer to current PixPosition-element
-    //and count for found sources)
-    position_list=getPixPositionList();
-
-    //for first source threshold is '0'
-    //after that: '1' if still bright enough, '2' else
-    int threshold=0; 
-    //search for sources as long as pixval is above certain value
-   do{
-      //finds current brightest pixel coordinates and saves PixPosition; returns current brightest pixval
-     pixval=findBrightestPix(threshold, sky_pixels, pixval, position_list,
-			     delta, par.RA, par.DEC);
-     
-     threshold=getThresholdForSources(pixval, position_list, sky_pixels);
-   }while(threshold==1);
+	}else{
+	  threshold=2; 
+	  }
+	FreeEventArray1d(EventImage1d);
+	fftw_free(fftEventArray);
+	fftw_free(fftInvMultiply);
+        }while(threshold==1);
 
     //create FITS-file with all pix-coordinates
-   savePositionList(position_list, par.PositionList, &status);
+     savePositionList(position_list, par.PositionList, &status);
 
   // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
   // Free the detector and sky image pixels.
   destroySquarePixels(&detector_pixels);
-  FreeReconArray(recon);
-  FreeReconArray1d(ReconArray1d);
-  FreeEventArray(ea);
-  FreeEventArray1d(EventArray1d);
+  destroyCodedMask(&mask);
+  FreeReconArray(&recon);
+  FreeReconArray1d(ReconImage1d);
+  FreeEventArray(ea); 
   FreePixPositionList(position_list);
-
-  if(par.RePixSize!=0.){
-    FreeEventArray(ear);}
-  /*FreeBalancingArray(balance);*/
-  fftw_free(fftReconArray);
-  fftw_free(fftEventArray);
-  fftw_free(fftInvMultiply);
-
-
+  FreeMaskShadow(mask_shadow,Size1);
+  if(par.RePixSize!=0.){FreeEventArray(ear);}
+  fftw_free(fftReconArray); 
+  wcsfree(&wcs);
+  wcsfree(&wcs2);
   free_SourceImage(sky_pixels);
-
   } while(0);  // END of the error handling loop.
 
   // Close the FITS files.
   status=closeCoMaEventFile(eventfile);
+  free(eventfile);
 
   if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
   return(status);
@@ -374,6 +432,26 @@ int comarecon_getpar(struct Parameters* par)
   // Read the distance between the coded mask and the detector plane [m].
   else if ((status=PILGetReal("MaskDistance", &par->MaskDistance))) {
     SIXT_ERROR("failed reading the distance between the mask and the detector");
+  }
+
+  //Read length of DCU [m].
+  else if ((status=PILGetReal("DCU_length", &par->DCU_length))) {
+    SIXT_ERROR("failed reading the length of DCU");
+  }
+
+  //Read length of DCU_gap [m].
+  else if ((status=PILGetReal("DCU_gap", &par->DCU_gap))) {
+    SIXT_ERROR("failed reading the length of DCU_gap");
+  }
+
+  //Read length of DCA_gap [m].
+  else if ((status=PILGetReal("DCA_gap", &par->DCA_gap))) {
+    SIXT_ERROR("failed reading the length of DCA_gap");
+  }
+
+  //Read sigma value.
+  else if ((status=PILGetReal("Sigma", &par->Sigma))) {
+    SIXT_ERROR("failed reading value of Sigma");
   }
   CHECK_STATUS_RET(status, status);
 

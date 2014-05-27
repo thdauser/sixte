@@ -28,7 +28,7 @@ double* SaveReconArray1d(ReconArray* recon, int* status);
 
 void FreeReconArray1d(double* ReconArray1d);
 
-void FreeReconArray(ReconArray* recon);
+void FreeReconArray(ReconArray** const recon);
 
 //void FreeReconImage(ReconArray* recon);
 

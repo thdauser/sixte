@@ -176,8 +176,8 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     
 
     // Load the spectra specified in the FITS header.
-    *status = loadSpectra(fptr, &si->spectrumstore);
-    if (EXIT_SUCCESS!=*status) break;
+    /* *status = loadSpectra(fptr, &si->spectrumstore);
+       if (EXIT_SUCCESS!=*status) break;*/
 
 
     // Allocate memory for the pixels of the image:
@@ -229,19 +229,21 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     int x, y;
     for(x=0; x<si->naxis1; x++) {
       for(y=0; y<si->naxis2; y++) {
-	si->total_rate += input_buffer[x+ si->naxis1*y]; // [photons/s]
-	si->pixel[x][y] = si->total_rate;
+	/*si->total_rate += input_buffer[x+ si->naxis1*y]; // [photons/s]
+	  si->pixel[x][y] = si->total_rate;*/
+
+	si->pixel[x][y] =input_buffer[x+ si->naxis1*y];
       }
     }
 
     // Normalization of the SourceImage such that the sum
     // of all pixel values is 1 and create a probability 
     // distribution.
-    for(x=0; x<si->naxis1; x++) {
+    /*for(x=0; x<si->naxis1; x++) {
       for(y=0; y<si->naxis2; y++) {
 	si->pixel[x][y] *= 1./si->total_rate;
       }
-    }
+      }*/
     // Set accumulation flag.
     si->accumulated = 1;
 

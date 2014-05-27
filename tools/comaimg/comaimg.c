@@ -43,6 +43,9 @@ int comaimg_main() {
     float y_det = par.y_det;
     //Distance mask-detector:
     float distance = par.MaskDistance;
+    float det_pixelwidth= par.det_pixelwidth;
+    double ra=par.RA;
+    double dec=par.DEC;
 
     //Initialize HEADAS random number generator and GSL generator for 
     //Gaussian distribution.
@@ -93,7 +96,7 @@ int comaimg_main() {
       //ac->entry[0].time=0;
 
       //Telescope pointing direction:
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180.0,par.DEC* M_PI/180.0);
+      ac->entry[0].nz=normalize_vector(unit_vector(par.RA*M_PI/180.0,par.DEC* M_PI/180.0));
       //Unit-vector in z-direction:
       Vector vz = {0.,0.,1.};
       //Vector perpendicular to nz-vz-plane:
@@ -151,6 +154,29 @@ int comaimg_main() {
     fits_update_key(ilf->fptr, TDOUBLE, "REFXCRVL", &refxcrvl, "", &status);
     fits_update_key(ilf->fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status);
     CHECK_STATUS_BREAK(status);
+
+
+
+    //initialization of wcs parameter structure for determining impact position
+    struct wcsprm wcs = {
+      .flag=-1
+    }; //flag has to be set only at 1st init
+    if (0!=wcsini(1, 2, &wcs)) {
+      SIXT_ERROR("initalization of WCS data structure failed");
+      status=EXIT_FAILURE;
+      break;
+    }
+    wcs.naxis=2;
+    wcs.crpix[0]=(x_det/det_pixelwidth)/2;
+    wcs.crpix[1]=(y_det/det_pixelwidth)/2;
+    wcs.crval[0]=ra;  //in deg
+    wcs.crval[1]=dec;
+    wcs.cdelt[0]=atan(det_pixelwidth/distance)*180./M_PI;
+    wcs.cdelt[1]=atan(det_pixelwidth/distance)*180./M_PI;
+
+
+
+
   
     // --- END of Initialization ---
 
@@ -173,7 +199,7 @@ int comaimg_main() {
 	break;
 
       //Determine unit vector in photon-direction
-      Vector phodir=unit_vector(photon.ra, photon.dec);
+      Vector phodir=normalize_vector(unit_vector(photon.ra, photon.dec));
 
       //Determine current telescope pointing direction.
       telescope.nz=GetTelescopeNz(ac, photon.time, &status);
@@ -193,11 +219,13 @@ int comaimg_main() {
 	
 	//first:impact position in mask-plane (transparent pixels only);
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
-       	int reval = getImpactPos(&position, &phodir,
+	/*	int reval = getImpactPos(&position, &phodir,
 				 mask, &telescope,
 				 &telescope.nz,
 				 distance, x_det, y_det,
-				 &status);
+				 &status);*/
+		int reval=getImpactPos2(&wcs,&position,mask,photon.ra*180./M_PI,photon.dec*180./M_PI,det_pixelwidth,x_det,y_det,&status);
+
 	CHECK_STATUS_BREAK(status);
 
 	if (reval == 1){
@@ -317,6 +345,13 @@ int comaimg_getpar(struct Parameters* par)
   status=ape_trad_query_float("y_det", &par->y_det);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the depth of the detector");
+    return(status);
+  }
+
+  //Read width of one detector pixel[m].
+  status=ape_trad_query_float("det_pixelwidth", &par->det_pixelwidth);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the width of one detector pixel");
     return(status);
   }
  

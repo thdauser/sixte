@@ -195,7 +195,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 }
 
 
-
+//impact position via projection downwards
 int getImpactPos (struct Point2d* const position,
 		  const Vector* const phodir,
 		  const CodedMask* const mask, 
@@ -265,3 +265,47 @@ int getImpactPos (struct Point2d* const position,
 return(1);
 }
 
+
+//impact position via wcs-projection
+int getImpactPos2 (struct wcsprm* wcs, struct Point2d* const position, const CodedMask* const mask,
+		   double const photon_ra, double const photon_dec, float const det_pixelwidth,
+		   const float x_det, const float y_det, int* const status)
+{
+  // Check if a CodedMask is specified. If not, break.
+  if (NULL==mask) return(0);
+
+  double pixcrd[2];
+  double imgcrd[2];
+  double world[2]={photon_ra, photon_dec};
+  double phi, theta;
+  int stat=0;
+
+  wcss2p(wcs,1,2,world,&phi,&theta,imgcrd,pixcrd,&stat);
+  if(0!=stat){
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("wcs projection failed!\n", *status);
+  }
+
+  // Get a random number.
+  double rand=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0); 
+
+  //Photon passes through transparent pixel.
+  //Determine its impact position on the detection plane.
+
+  //Determine the pixel(random)the photon passes through (mask plane).
+  int pixel = (int)(rand * mask->n_transparent_pixels);
+  //Pixel points to an arbitrary pixel out of all transparent ones.
+  
+  position->x=((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
+     *mask->cdelt1+mask->crval1+(double)(pixcrd[0]*det_pixelwidth);
+  position->y=((double)(mask->transparent_pixels[pixel][1])-mask->crpix2+0.5+sixt_get_random_number(status))
+     *mask->cdelt2+mask->crval2+(double)(pixcrd[1]*det_pixelwidth);
+
+  //ensure that photon does not hit the walls
+  if (position->x > x_det || position->x < 0. || position->y > y_det || position->y < 0.){
+    return(0);
+  }
+
+return(1);
+}

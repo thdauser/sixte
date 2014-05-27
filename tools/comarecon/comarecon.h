@@ -14,6 +14,8 @@
 #include "fftw3.h"
 #include "balancing.h"
 #include "find_position.h"
+#include "vector.h"
+#include "maskshadow.h"
 
 
 #define TOOLSUB comarecon_main
@@ -38,7 +40,16 @@ struct Parameters {
   double RePixSize;  //0.0 means detector shouldn't be repixeled, else the value is given
 
   /** Distance between the coded mask and the detector plane ([m]). */
-  double MaskDistance;  
+  double MaskDistance; 
+
+  /**length of DCU, gap between 2 DCU's and gap between two DCA's [m]. */
+  //only works for 2x2 DCU's separated by DCU_gap, followed by DCA_gap
+  double DCU_length;
+  double DCU_gap;
+  double DCA_gap;
+  
+  /**threshold for sources, factor to mulpilpy sigma with. */
+  double Sigma;
 };
 
 
@@ -51,4 +62,4 @@ struct Parameters {
 int comarecon_getpar(struct Parameters* parameters);
 
 
-#endif /* COMARECON2_H */
+#endif /* COMARECON_H */

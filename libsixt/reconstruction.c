@@ -192,21 +192,23 @@ void FreeReconArray1d(double* ReconArray1d)
 }
 
 
-void FreeReconArray(ReconArray* recon)
+void FreeReconArray(ReconArray** const recon)
 {
-  if (recon!=NULL) {
-    if ((recon->naxis1>0)&&(NULL!=recon->Rmap)) {
+  if ((*recon)!=NULL) {
+    if (((*recon)->naxis1>0)&&(NULL!=(*recon)->Rmap)) {
       int count;
-      for(count=0; count< recon->naxis1; count++) {
-	if (NULL!=recon->Rmap[count]) {
-	  free(recon->Rmap[count]);
+      for(count=0; count<(*recon)->naxis1; count++) {
+	if (NULL!=(*recon)->Rmap[count]) {
+	  free((*recon)->Rmap[count]);
 	}
       }
-      free(recon->Rmap);
+      free((*recon)->Rmap);
     }
-    free(recon);
+    free(*recon);
+    *recon=NULL;
   }
 }
+
 
 
  

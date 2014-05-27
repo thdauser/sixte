@@ -1,5 +1,5 @@
 #ifndef EVENTARRAY_H
-#define EVENTARRAY_H1
+#define EVENTARRAY_H 1
 
 #include "sixt.h"
 #include "squarepixels.h"

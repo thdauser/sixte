@@ -98,12 +98,12 @@ void testFitsImage1d(double* Image1d, char* filename, int Size1, int Size2, int*
   fitsfile* fptr;
 
   // Check if the file already exists.
-  int exists;
+   int exists;
   fits_file_exists(filename, &exists, status);
   if (0!=exists) {
     // Delete the file.
     remove(filename);
-  }
+    }
  
 
   fits_create_file(&fptr, filename, status);
