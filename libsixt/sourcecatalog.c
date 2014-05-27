@@ -1,9 +1,29 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "sourcecatalog.h"
 
 
 SourceCatalog* newSourceCatalog(int* const status)
 {
-  SourceCatalog* cat = (SourceCatalog*)malloc(sizeof(SourceCatalog));
+  SourceCatalog* cat=(SourceCatalog*)malloc(sizeof(SourceCatalog));
   CHECK_NULL(cat, *status,
 	     "memory allocation for SourceCatalog failed");
 
@@ -178,7 +198,7 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
 
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
-  const double close_mult=1.2; 
+  const double close_mult=1.5;
   const double close_fov_min_align=cos(close_mult*fov/2.); 
 
   // Perform a range search over all sources in the KDTree and 

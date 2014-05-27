@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "makespec.h"
 
 
@@ -14,6 +34,9 @@ int makespec_main() {
   long* spec=NULL;
   fitsfile* sf=NULL;
 
+  // GTI.
+  GTI* gti=NULL;
+
   // Instrument response.
   struct RMF* rmf=NULL;
 
@@ -23,7 +46,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.06");
+  set_toolversion("0.09");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -43,37 +66,67 @@ int makespec_main() {
     // Read required keywords.
     char comment[MAXMSG];
     char telescop[MAXMSG];
-    char instrume[MAXMSG];
-    char filter[MAXMSG];
-    char respfile[MAXMSG];
-    char ancrfile[MAXMSG];
-    char date_obs[MAXMSG];
-    char time_obs[MAXMSG];
-    char date_end[MAXMSG];
-    char time_end[MAXMSG];
-    double exposure=0.;
     fits_read_key(ef, TSTRING, "TELESCOP", telescop, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'TELESCOP' in event file");
+      break;
+    }
+    char instrume[MAXMSG];
     fits_read_key(ef, TSTRING, "INSTRUME", instrume, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'INSTRUME' in event file");
+      break;
+    }
+    char filter[MAXMSG];
     fits_read_key(ef, TSTRING, "FILTER", filter, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'FILTER' in event file");
+      break;
+    }
 
+    char ancrfile[MAXMSG];
     fits_read_key(ef, TSTRING, "ANCRFILE", ancrfile, comment, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not find keyword 'ANCRFILE' in event file");
       break;
     }
+    char respfile[MAXMSG];
     fits_read_key(ef, TSTRING, "RESPFILE", respfile, comment, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not find keyword 'RESPFILE' in event file");
       break;
     }
 
+    char date_obs[MAXMSG];
     fits_read_key(ef, TSTRING, "DATE-OBS", date_obs, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'DATE-OBS' in event file");
+      break;
+    }
+    char time_obs[MAXMSG];
     fits_read_key(ef, TSTRING, "TIME-OBS", time_obs, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'TIME-OBS' in event file");
+      break;
+    }
+    char date_end[MAXMSG];
     fits_read_key(ef, TSTRING, "DATE-END", date_end, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'DATE-END' in event file");
+      break;
+    }
+    char time_end[MAXMSG];
     fits_read_key(ef, TSTRING, "TIME-END", time_end, comment, &status);
-    fits_read_key(ef, TDOUBLE, "EXPOSURE", &exposure, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not find keyword 'TIME-END' in event file");
+      break;
+    }
+
+    // Load the GTI extension in order to be able to determine the 
+    // exposure time.
+    gti=loadGTI(par.EventList, &status);
     CHECK_STATUS_BREAK(status);
+    double exposure=sumGTI(gti);
 
     // Determine the column containing the signal information.
     int csignal;
@@ -94,7 +147,7 @@ int makespec_main() {
       seed=(int)time(NULL);
     }
 
-    // Load the RMF.
+    // Load the EBOUNDS of the RMF.
     char filepathname[MAXFILENAME];
     if (strlen(par.RSPPath)>0) {
       strcpy(filepathname, par.RSPPath);
@@ -104,11 +157,9 @@ int makespec_main() {
       // The file should be located in the working directory.
       strcpy(filepathname, respfile);
     }
-    rmf=loadRMF(filepathname, &status);
-    if ((EXIT_SUCCESS!=status) && (strlen(par.RSPPath)==0)) {
-      SIXT_ERROR("failed to find or open the RMF "
-		 "(specify path via the parameter 'RSPPath')");
-    }
+    struct RMF* rmf=getRMF(&status);
+    CHECK_STATUS_BREAK(status);
+    loadEbounds(rmf, filepathname, &status);
     CHECK_STATUS_BREAK(status);
 
     // Initialize the random number generator.
@@ -223,12 +274,17 @@ int makespec_main() {
   // Release memory.
   if (NULL!=spec) free(spec);
   freeRMF(rmf);
+  freeGTI(&gti);
 
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

@@ -8,12 +8,13 @@ AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
 AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
+AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
 AM_CFLAGS+=-Wall 
 
 ########## PIL .par-FILES##############
 
 # Directory where to install the PIL parameter files.
-pfilesdir=@PFILESDIR@
+pfilesdir=$(pkgdatadir)/pfiles
 dist_pfiles_DATA=imgev.par
 
 ############ BINARIES #################

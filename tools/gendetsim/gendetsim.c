@@ -1,9 +1,30 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "gendetsim.h"
 
 
 ////////////////////////////////////
 /** Main procedure. */
 int gendetsim_main() {
+  const double timezero=0.0;
 
   // Containing all programm parameters read by PIL
   struct Parameters par; 
@@ -12,10 +33,13 @@ int gendetsim_main() {
   GenInst* inst=NULL;
 
   // Input impact list.
-  ImpactListFile* ilf=NULL;
+  ImpactFile* ilf=NULL;
 
   // Output event list file.
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
+
+  // GTI collection.
+  GTI* gti=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;
@@ -23,7 +47,7 @@ int gendetsim_main() {
 
   // Register HEATOOL:
   set_toolname("gendetsim");
-  set_toolversion("0.03");
+  set_toolversion("0.05");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -43,16 +67,6 @@ int gendetsim_main() {
 		     &status);
     CHECK_STATUS_BREAK(status);
 
-    // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
-    CHECK_STATUS_BREAK(status);
-
-    // Use the background if available.
-    setGenDetIgnoreBkg(inst->det, 0);
-
-    // Set the start time for the simulation.
-    setGenDetStartTime(inst->det, par.TSTART);
-    
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
@@ -61,19 +75,21 @@ int gendetsim_main() {
     char eventlist_filename[MAXFILENAME];
     strcpy(eventlist_filename, par.EventList);
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
+    
+    // Load the instrument configuration.
+    inst=loadGenInst(xml_filename, seed, &status);
+    CHECK_STATUS_BREAK(status);
 
+    // Use the background if available.
+    setGenDetIgnoreBkg(inst->det, 0);
+
+    // Set the start time for the simulation.
+    setGenDetStartTime(inst->det, par.TSTART);
+    
     // --- END of Initialization ---
 
 
@@ -82,7 +98,7 @@ int gendetsim_main() {
     headas_chat(3, "start detection process ...\n");
 
     // Open the FITS file with the input impact list:
-    ilf=openImpactListFile(impactlist_filename, READONLY, &status);
+    ilf=openImpactFile(impactlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the output event file.
@@ -94,13 +110,13 @@ int gendetsim_main() {
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    elf=openNewEventListFile(eventlist_filename, 
-			     telescop, instrume, "Normal", 
-			     inst->tel->arf_filename, inst->det->rmf_filename,
-			     par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
-			     inst->det->pixgrid->xwidth, 
-			     inst->det->pixgrid->ywidth, 
-			     par.clobber, &status);
+    elf=openNewEventFile(eventlist_filename, 
+			 telescop, instrume, "Normal", 
+			 inst->tel->arf_filename, inst->det->rmf_filename,
+			 par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
+			 inst->det->pixgrid->xwidth, 
+			 inst->det->pixgrid->ywidth, 
+			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -121,8 +137,13 @@ int gendetsim_main() {
 		    &status);
     CHECK_STATUS_BREAK(status);
 
+    // Store the event type in the FITS header.
+    fits_update_key(elf->fptr, TSTRING, "EVTYPE", "PIXEL",
+		    "event type", &status);
+    CHECK_STATUS_BREAK(status);
+
     // Define the event list file as output file.
-    setGenDetEventListFile(inst->det, elf);
+    setGenDetEventFile(inst->det, elf);
 
     // Loop over all impacts in the FITS file.
     while (ilf->row<ilf->nrows) {
@@ -147,6 +168,16 @@ int gendetsim_main() {
     phdetGenDet(inst->det, NULL, par.TSTART+par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Store the GTI in the event file.
+    gti=newGTI(&status);
+    CHECK_STATUS_BREAK(status);
+    gti->mjdref=par.MJDREF;
+    gti->timezero=timezero;
+    appendGTI(gti, par.TSTART, par.TSTART+par.Exposure, &status);
+    CHECK_STATUS_BREAK(status);
+    saveGTIExt(elf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
   } while(0); // END of the error handling loop.
 
   // --- END of Detection process ---
@@ -158,17 +189,18 @@ int gendetsim_main() {
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  // Destroy the GenInst data structure.
+  freeEventFile(&elf, &status);
+  freeImpactFile(&ilf, &status);
+
   destroyGenInst(&inst, &status);
+  freeGTI(&gti);
 
-  // Close the event list FITS file.
-  freeEventListFile(&elf, &status);
-
-  // Close the impact list FITS file.
-  freeImpactListFile(&ilf, &status);
-
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -178,7 +210,7 @@ int getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS; 
 
   // Read all parameters via the ape_trad_ routines.
 

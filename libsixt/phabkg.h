@@ -1,11 +1,28 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef PHABKG_H 
 #define PHABKG_H 1
 
 #include "sixt.h"
-#include "genpixgrid.h"
-
-#include "gsl/gsl_rng.h"
-#include "gsl/gsl_randist.h"
+#include "vignetting.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -21,14 +38,17 @@ typedef struct {
   /** PHA channel numbers. */
   long* channel;
 
-  /** FoV diameter [m]. */
-  float fov_diameter;
-  
-  /** Background event rate distribution [counts/s/bin/cm^2]. */
+  /** Background event rate distribution [counts/s/bin/m^2]. */
   float* distribution;
 
-  /** GSL random number generator. */
-  gsl_rng *randgen;
+  /** Time of the next background event. */
+  double tnext;
+
+  /** Telescope vignetting function. */
+  Vignetting** vignetting;
+
+  /** Telescope focal length. */
+  float* focal_length;
 
 } PHABkg;
 
@@ -44,25 +64,29 @@ typedef struct {
     channels in the EBOUNDS extension of the RMF. The entries in the
     RATE column represent the background event rate in this particular
     energy channel per second and per illuminated detector area
-    [counts/s/bin/cm^2]. */
+    [counts/s/bin/m^2]. */
 PHABkg* newPHABkg(const char* const filename, int* const status);
 
 /** Destructor. */
 void destroyPHABkg(PHABkg** const phabkg);
 
-/** Determine a number of background events according to the specified
-    model. The number of events is determined by the area of the
-    detector, the rates given in the input PHA spectrum, and the
-    length of the regarded interval according to Poisson
-    statistics. */
-unsigned int PHABkgGetEvents(const PHABkg* const phabkg, 
-			     /** Regarded time interval in [s]. */
-			     const double interval, 
-			     const GenPixGrid* const pixgrid,
-			     long** phas,
-			     int** x,
-			     int** y,
-			     int* const status);
+/** Determine the PHA value and time of a background event according
+    to the specified spectral distribution. The function returns an
+    individual event. The time differences between the events are
+    exponentially distributed. The average rate is determined by the
+    distribution given in the PHA data set multiplied with the
+    scaling factor. */
+int getPHABkgEvent(PHABkg* const phabkg,
+		   /** Scaling factor for the count rate
+		       distribution. Must be given in [m^2]. */
+		   const float scaling,
+		   const double tstart,
+		   /** Upper limit for the time of the background
+		       event [s]. */
+		   const double tstop,
+		   double* const t,
+		   long* const pha,
+		   int* const status);
 
 
 #endif /* PHABKG_H */

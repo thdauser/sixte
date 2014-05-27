@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "ero_calevents.h"
 
 
@@ -6,8 +26,8 @@ int ero_calevents_main()
   // Containing all programm parameters read by PIL
   struct Parameters par; 
 
-  // Input pattern file.
-  PatternFile* plf=NULL;
+  // Input event file.
+  EventFile* elf=NULL;
 
   // File pointer to the output eROSITA event file. 
   fitsfile* fptr=NULL;
@@ -26,7 +46,7 @@ int ero_calevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_calevents");
-  set_toolversion("0.11");
+  set_toolversion("0.14");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -46,38 +66,110 @@ int ero_calevents_main()
     }
 
 
-    // Open the input pattern file.
-    plf=openPatternFile(par.PatternList, READONLY, &status);
+    // Open the input event file.
+    elf=openEventFile(par.PatternList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Check if the input file contains recombined event patterns.
+    char evtype[MAXMSG], comment[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "EVTYPE", evtype, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not read FITS keyword 'EVTYPE'");
+      break;
+    }
+    strtoupper(evtype);
+    if (0!=strcmp(evtype, "PATTERN")) {
+      status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "event type of input file is '%s' (must be 'PATTERN')", evtype);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     // Read keywords from the input file.
-    char comment[MAXMSG];
-    float timezero=0.0;
-    fits_read_key(plf->fptr, TFLOAT, "TIMEZERO", &timezero, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    double mjdref=0.0;
+    fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'MJDREF' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    double timezero=0.0;
+    fits_write_errmark();
+    int status2=EXIT_SUCCESS;
+    fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status2);
+    fits_clear_errmark();
+    if (EXIT_SUCCESS!=status2) {
+      timezero=0.;
+    }
 
     char date_obs[MAXMSG];
-    fits_read_key(plf->fptr, TSTRING, "DATE-OBS", date_obs, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TSTRING, "DATE-OBS", date_obs, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'DATE-OBS' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char time_obs[MAXMSG];
-    fits_read_key(plf->fptr, TSTRING, "TIME-OBS", time_obs, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TSTRING, "TIME-OBS", time_obs, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TIME-OBS' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char date_end[MAXMSG];
-    fits_read_key(plf->fptr, TSTRING, "DATE-END", date_end, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TSTRING, "DATE-END", date_end, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'DATE-END' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char time_end[MAXMSG];
-    fits_read_key(plf->fptr, TSTRING, "TIME-END", time_end, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TSTRING, "TIME-END", time_end, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TIME-END' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     double tstart=0.0;
-    fits_read_key(plf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTART' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     double tstop=0.0;
-    fits_read_key(plf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTOP' from input "
+	      "event list '%s'", par.PatternList);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    // Verify values of MJDREF and TIMEZERO.
+    verifyMJDREF(eromjdref, mjdref, "in event file", &status);
+    CHECK_STATUS_BREAK(status);
+    verifyTIMEZERO(timezero, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the file creation date for the header.
@@ -85,7 +177,6 @@ int ero_calevents_main()
     int timeref;
     fits_get_system_time(creation_date, &timeref, &status);
     CHECK_STATUS_BREAK(status);
-
 
     // Check if the output file already exists.
     int exists;
@@ -112,15 +203,18 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Create the event table.
-    char *ttype[]={"TIME", "FRAME", "RAWX", "RAWY", "PHA", "ENERGY", 
-		   "RA", "DEC", "X", "Y", "SUBX", "SUBY", "FLAG", 
-		   "PAT_TYP", "PAT_INF", "EV_WEIGHT", "CCDNR"};
-    char *tform[]={"D", "J", "I", "I", "I", "E", 
-		   "J", "J", "J", "J", "B", "B", "J",
-		   "I", "B", "E", "B"};
-    char *tunit[]={"", "", "", "", "adu", "eV", 
-		   "", "", "", "", "", "", "", "",
-		   "", "", "", ""};
+    char *ttype[]={"TIME", "RA", "DEC", "X", "Y", "ENERGY",
+		   "EV_WEIGHT", "RAWX", "RAWY", "SUBX", "SUBY",
+		   "PHA", "PAT_TYP", "PAT_INF", "CCDNR",
+		   "FLAG", "FRAME"};
+    char *tform[]={"D", "J", "J", "J", "J", "E",
+		   "E", "I", "I", "B", "B",
+		   "I", "I", "B", "B",
+		   "J", "J"};
+    char *tunit[]={"", "", "", "", "", "eV",
+		   "", "", "", "", "",
+		   "adu", "", "", "",
+		   "", ""};
     fits_create_tbl(fptr, BINARY_TBL, 0, 17, ttype, tform, tunit, 
 		    "EVENTS", &status);
     if (EXIT_SUCCESS!=status) {
@@ -140,34 +234,34 @@ int ero_calevents_main()
 
     // Insert the standard eROSITA header keywords.
     sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
-				 date_end, time_end, tstart, tstop, 
-				 timezero, &status);
+				 date_end, time_end, tstart, tstop,
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
     sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
-				 date_end, time_end, tstart, tstop, 
-				 timezero, &status);
+				 date_end, time_end, tstart, tstop,
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
-    int ctime, crawx, crawy, cframe, cpha, cenergy, cra, cdec, cx, cy, 
-      csubx, csuby, cflag, cpat_typ, cpat_inf, cev_weight, cccdnr;
+    int ctime, cra, cdec, cx, cy, cenergy, cev_weight, crawx, crawy, 
+      csubx, csuby, cpha, cpat_typ, cpat_inf, cccdnr, cflag, cframe;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
-    fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
-    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
-    fits_get_colnum(fptr, CASEINSEN, "ENERGY", &cenergy, &status);
-    fits_get_colnum(fptr, CASEINSEN, "RAWX", &crawx, &status);
-    fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
     fits_get_colnum(fptr, CASEINSEN, "RA", &cra, &status);
     fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, &status);
     fits_get_colnum(fptr, CASEINSEN, "X", &cx, &status);
     fits_get_colnum(fptr, CASEINSEN, "Y", &cy, &status);
+    fits_get_colnum(fptr, CASEINSEN, "ENERGY", &cenergy, &status);
+    fits_get_colnum(fptr, CASEINSEN, "EV_WEIGHT", &cev_weight, &status);
+    fits_get_colnum(fptr, CASEINSEN, "RAWX", &crawx, &status);
+    fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
     fits_get_colnum(fptr, CASEINSEN, "SUBX", &csubx, &status);
     fits_get_colnum(fptr, CASEINSEN, "SUBY", &csuby, &status);
-    fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
+    fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_TYP", &cpat_typ, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_INF", &cpat_inf, &status);
-    fits_get_colnum(fptr, CASEINSEN, "EV_WEIGHT", &cev_weight, &status);
     fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
+    fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
+    fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set the TLMIN and TLMAX keywords.
@@ -284,13 +378,35 @@ int ero_calevents_main()
     // the TZERO values also have to be set with the routine 
     // fits_set_tscale(). Otherwise CFITSIO will access the raw values
     // in the file.
-    int tzero_subx_suby=-127;
+    double tzero_subx_suby=-0.843333333333333;
+    double tscal_subx_suby=6.66666666666667e-3;
     sprintf(keyword, "TZERO%d", csubx);
-    fits_update_key(fptr, TINT, keyword, &tzero_subx_suby, "", &status);
-    fits_set_tscale(fptr, csubx, 1.0, (double)tzero_subx_suby, &status);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_subx_suby, "", &status);
+    sprintf(keyword, "TSCAL%d", csubx);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_subx_suby, "", &status);
+    fits_set_tscale(fptr, csubx, tscal_subx_suby, tzero_subx_suby, &status);
     sprintf(keyword, "TZERO%d", csuby);
-    fits_update_key(fptr, TINT, keyword, &tzero_subx_suby, "", &status);
-    fits_set_tscale(fptr, csuby, 1.0, (double)tzero_subx_suby, &status);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_subx_suby, "", &status);
+    sprintf(keyword, "TSCAL%d", csuby);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_subx_suby, "", &status);
+    fits_set_tscale(fptr, csuby, tscal_subx_suby, tzero_subx_suby, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Set the TZERO and TSCAL keywords for the columns RA and DEC.
+    // Note that both values also have to be set with the routine 
+    // fits_set_tscale(). Otherwise CFITSIO will access the raw values
+    // in the file.
+    double tzero_ra_dec=0.0, tscal_ra_dec=1.e-6;
+    sprintf(keyword, "TZERO%d", cra);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_ra_dec, "", &status);
+    sprintf(keyword, "TSCAL%d", cra);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_ra_dec, "", &status);
+    fits_set_tscale(fptr, cra, tscal_ra_dec, tzero_ra_dec, &status);
+    sprintf(keyword, "TZERO%d", cdec);
+    fits_update_key(fptr, TDOUBLE, keyword, &tzero_ra_dec, "", &status);
+    sprintf(keyword, "TSCAL%d", cdec);
+    fits_update_key(fptr, TDOUBLE, keyword, &tscal_ra_dec, "", &status);
+    fits_set_tscale(fptr, cdec, tscal_ra_dec, tzero_ra_dec, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- END of initialization ---
@@ -303,54 +419,50 @@ int ero_calevents_main()
     long refxdmin, refxdmax, refydmin, refydmax;
     double ra_min, ra_max, dec_min, dec_max;
 
-    // Loop over all patterns in the FITS file. 
+    // Loop over all events in the FITS file. 
     long input_row, output_row=0;
-    for (input_row=0; input_row<plf->nrows; input_row++) {
+    for (input_row=0; input_row<elf->nrows; input_row++) {
       
-      // Read the next pattern from the input file.
-      Pattern pattern;
-      getPatternFromFile(plf, input_row+1, &pattern, &status);
+      // Read the next event from the input file.
+      Event event;
+      getEventFromFile(elf, input_row+1, &event, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Determine the event data based on the pattern information.
+      // Determine the event data based on the event information.
       eroCalEvent ev;
 
       // Time and frame.
-      ev.time  =pattern.time;
-      ev.frame =pattern.frame;
+      ev.time =event.time;
+      ev.frame=event.frame;
 
-      ev.ra=(long)(pattern.ra*180./M_PI/1.e-6);
-      if (pattern.ra < 0.) {
-	ev.ra--;
+      ev.ra=event.ra*180./M_PI;
+      if (event.ra<0.) {
 	SIXT_WARNING("value for right ascension <0.0deg");
       }
-      ev.dec=(long)(pattern.dec*180./M_PI/1.e-6);
-      if (pattern.dec < 0.) {
-	ev.dec--;
-      }
+      ev.dec=event.dec*180./M_PI;
 
       // Determine the minimum and maximum values of RA and Dec in [rad].
       if (0==input_row) {
-	ra_min =pattern.ra;
-	ra_max =pattern.ra;
-	dec_min=pattern.dec;
-	dec_max=pattern.dec;
+	ra_min =event.ra;
+	ra_max =event.ra;
+	dec_min=event.dec;
+	dec_max=event.dec;
       }
-      if (pattern.ra<ra_min) {
-	ra_min=pattern.ra;
+      if (event.ra<ra_min) {
+	ra_min=event.ra;
       }
-      if (pattern.ra>ra_max) {
-	ra_max=pattern.ra;
+      if (event.ra>ra_max) {
+	ra_max=event.ra;
       }
-      if (pattern.dec<dec_min) {
-	dec_min=pattern.dec;
+      if (event.dec<dec_min) {
+	dec_min=event.dec;
       }
-      if (pattern.dec>dec_max) {
-	dec_max=pattern.dec;
+      if (event.dec>dec_max) {
+	dec_max=event.dec;
       }
 
       // Convert world coordinates to image coordinates X and Y.
-      double world[2]={ pattern.ra*180./M_PI, pattern.dec*180./M_PI };
+      double world[2]={ event.ra*180./M_PI, event.dec*180./M_PI };
       double imgcrd[2], pixcrd[2];
       double phi, theta;
       int wcsstatus=0;
@@ -389,7 +501,7 @@ int ero_calevents_main()
 	refydmax=ev.y;
       }
 
-      // TODO In the current implementation the value of FLAG is set to 
+      // TODO In the current implementation the value of FLAG is set
       // by default. This needs to be changed later.
       ev.flag=0xC0000000;
 
@@ -399,46 +511,45 @@ int ero_calevents_main()
       // CCD number.
       ev.ccdnr=par.CCDNr;
 
-      // Loop over all split partners contributing to the pattern.
+      // Loop over all split partners contributing to the event.
       int ii;
       for (ii=0; ii<9; ii++) {
 	
-	// Only regard split patterns with a non-vanishing contribution.
-	if (pattern.signals[ii]<=0.0) continue;
+	// Only regard split events with a non-vanishing contribution.
+	if (event.signals[ii]<=0.0) continue;
 
 	// Raw pixel coordinates.
-	ev.rawx  =pattern.rawx + ii%3;
-	ev.rawy  =pattern.rawy + ii/3;
+	ev.rawx=event.rawx + ii%3;
+	ev.rawy=event.rawy + ii/3;
+
+	// TODO Sub-pixel resolution is not implemented.
+	ev.subx=0;
+	ev.suby=0;
 
 	// Detected channel.
-	ev.pha   =pattern.pis[ii];
+	ev.pha=event.pis[ii];
 
 	// Calibrated and recombined amplitude in [eV].
 	// The amplitude is positive for the main event only. For
 	// split partners it is negative.
 	if (4==ii) {
-	  ev.energy= pattern.signal*1000.;
-	  // TODO Sub-pixel resolution is not implemented yet.
-	  ev.subx=0;
-	  ev.suby=0;
+	  ev.energy= event.signal*1000.;
 	} else {
-	  ev.energy=-pattern.signal*1000.;
-	  ev.subx=-127;
-	  ev.suby=-127;
+	  ev.energy=-event.signal*1000.;
 	}
-
-	// Pattern type.
-	if (pattern.type>=0) {
-	  ev.pat_typ=pattern.npixels;
+	
+	// Event type.
+	if (event.type>=0) {
+	  ev.pat_typ=event.npixels;
 	} else {
-	  // Invalid patterns.
+	  // Invalid events.
 	  ev.pat_typ=0;
 	}
 
-	// Pattern type and alignment.
-	if (pattern.type>=0) {
+	// Event type and alignment.
+	if (event.type>=0) {
 	  int pixelnr=(ii+1) - ((ii/3)-1)*6;
-	  ev.pat_inf=pattern.type*10 + pixelnr;
+	  ev.pat_inf=event.type*10 + pixelnr;
 	} else {
 	  ev.pat_inf=0;
 	}
@@ -447,12 +558,12 @@ int ero_calevents_main()
 	output_row++;
 	fits_write_col(fptr, TDOUBLE, ctime, output_row, 1, 1, &ev.time, &status);
 	fits_write_col(fptr, TLONG, cframe, output_row, 1, 1, &ev.frame, &status);
-	fits_write_col(fptr, TLONG, cpha, output_row, 1, 1, &ev.pha, &status);      
+	fits_write_col(fptr, TLONG, cpha, output_row, 1, 1, &ev.pha, &status);
 	fits_write_col(fptr, TFLOAT, cenergy, output_row, 1, 1, &ev.energy, &status);
 	fits_write_col(fptr, TINT, crawx, output_row, 1, 1, &ev.rawx, &status);
 	fits_write_col(fptr, TINT, crawy, output_row, 1, 1, &ev.rawy, &status);
-	fits_write_col(fptr, TLONG, cra, output_row, 1, 1, &ev.ra, &status);
-	fits_write_col(fptr, TLONG, cdec, output_row, 1, 1, &ev.dec, &status);
+	fits_write_col(fptr, TDOUBLE, cra, output_row, 1, 1, &ev.ra, &status);
+	fits_write_col(fptr, TDOUBLE, cdec, output_row, 1, 1, &ev.dec, &status);
 	fits_write_col(fptr, TLONG, cx, output_row, 1, 1, &ev.x, &status);
 	fits_write_col(fptr, TLONG, cy, output_row, 1, 1, &ev.y, &status);
 	fits_write_col(fptr, TINT, csubx, output_row, 1, 1, &ev.subx, &status);
@@ -468,7 +579,7 @@ int ero_calevents_main()
       // End of loop over all split partners.
     }
     CHECK_STATUS_BREAK(status);
-    // END of loop over all patterns in the FITS file.
+    // END of loop over all events in the FITS file.
 
     // Set the RA_MIN, RA_MAX, DEC_MIN, DEC_MAX keywords (in [deg]).
     ra_min *=180./M_PI;
@@ -485,7 +596,7 @@ int ero_calevents_main()
     long uniq_evt;
     fits_get_num_rows(fptr, &uniq_evt, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TLONG, "UNIQ_EVT", &uniq_evt, 
+    fits_update_key(fptr, TLONG, "UNIQ_EVT", &uniq_evt,
 		    "Number of unique events inside", &status);
     CHECK_STATUS_BREAK(status);
 
@@ -500,9 +611,9 @@ int ero_calevents_main()
     fits_write_errmark();
     float spltthr;
     int opt_status=EXIT_SUCCESS;
-    fits_read_key(plf->fptr, TFLOAT, "SPLTTHR", &spltthr, comment, &opt_status);
+    fits_read_key(elf->fptr, TFLOAT, "SPLTTHR", &spltthr, comment, &opt_status);
     if (EXIT_SUCCESS==opt_status) {
-      fits_update_key(fptr, TFLOAT, "SPLTTHR", &spltthr, 
+      fits_update_key(fptr, TFLOAT, "SPLTTHR", &spltthr,
 		      "Relative search level for split events", &status);      
       CHECK_STATUS_BREAK(status);
     }
@@ -511,28 +622,18 @@ int ero_calevents_main()
 
     // --- End of copy events ---
 
-    // --- Beginning of append GTI extension ---
+    // --- Begin of append GTI extension ---
 
     headas_chat(3, "append GTI extension ...\n");
 
-    // If available, load the specified GTI file.
-    if (strlen(par.GTIFile)>0) {
-      char ucase_buffer[MAXFILENAME];
-      strcpy(ucase_buffer, par.GTIFile);
-      strtoupper(ucase_buffer);
-      if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIFile, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
+    // Load the GTI extension from the input file.
+    gti=loadGTI(par.PatternList, &status);
+    CHECK_STATUS_BREAK(status);
 
-    // If not, create a dummy GTI from TSTART and TSTOP.
-    if (NULL==gti) {
-      gti=newGTI(&status);
-      CHECK_STATUS_BREAK(status);
-      appendGTI(gti, tstart, tstop, &status);
-      CHECK_STATUS_BREAK(status);
-    }
+    // Make sure that the MJDREF of the GTI extension agrees with
+    // the value in the input event file.
+    verifyMJDREF(mjdref, gti->mjdref, "in GTI file", &status);
+    CHECK_STATUS_BREAK(status);
 
     // Store the GTI extension in the output file.
     char gti_extname[MAXMSG];
@@ -573,10 +674,10 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
   
     // Store the data in the table.
-    double dbuffer=0.0;
-    fits_write_col(fptr, TDOUBLE, cdeadcor_time, 1, 1, 1, &dbuffer, &status);
-    float fbuffer=1.0;
-    fits_write_col(fptr, TFLOAT, cdeadc, 1, 1, 1, &fbuffer, &status);
+    double dbuffer[2]={tstart, tstop};
+    fits_write_col(fptr, TDOUBLE, cdeadcor_time, 1, 1, 2, dbuffer, &status);
+    float fbuffer[2]={1.,1.};
+    fits_write_col(fptr, TFLOAT, cdeadc, 1, 1, 2, fbuffer, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- End of append DEADCOR extension ---
@@ -637,6 +738,29 @@ int ero_calevents_main()
       if (0!=strcmp(ucase_buffer, "NONE")) {
 	ac=loadAttitude(par.Attitude, &status);
 	CHECK_STATUS_BREAK(status);
+	verifyMJDREF(mjdref, ac->mjdref, "in attitude file", &status);
+	CHECK_STATUS_BREAK(status);
+      } else {
+      // if no attitude is available, fake one
+        ac=getAttitude(&status);
+        CHECK_STATUS_BREAK(status);
+        ac->tstart=tstart;
+        ac->tstop=tstop;
+        ac->mjdref=mjdref;
+        ac->nentries=2;
+        ac->align=ATTNX_NORTH;
+        ac->entry=(AttitudeEntry*)malloc(ac->nentries*sizeof(AttitudeEntry));
+        if (NULL==ac->entry) {
+          status=EXIT_FAILURE;
+          SIXT_ERROR("not enough memory available to store the Attitude");
+          break;
+        }
+        ac->entry[0].time=tstart;
+        ac->entry[1].time=tstop;
+        ac->entry[0].roll_angle=0.;
+        ac->entry[1].roll_angle=0.;
+        ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
+        ac->entry[1].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
       }
     }
 
@@ -671,7 +795,7 @@ int ero_calevents_main()
 
       // Determine the rotation of the CCD from the keyword in the event file.
       float ccdrotation;
-      fits_read_key(plf->fptr, TFLOAT, "CCDROTA", &ccdrotation, comment, &status);
+      fits_read_key(elf->fptr, TFLOAT, "CCDROTA", &ccdrotation, comment, &status);
       if (EXIT_SUCCESS!=status) {
 	SIXT_ERROR("failed reading keyword CCDROTA in input file");
 	break;
@@ -681,7 +805,7 @@ int ero_calevents_main()
       // Number of rows in the output attitude extension.
       long nrows=0;
       // Loop over all intervals in the GTI collection.
-      unsigned long gtibin=0;
+      int gtibin=0;
       do {
 	// Currently regarded interval.
 	double t0, t1;
@@ -733,7 +857,7 @@ int ero_calevents_main()
 	// Proceed to the next GTI interval.
 	if (NULL!=gti) {
 	  gtibin++;
-	  if (gtibin>=gti->nentries) break;
+	  if (gtibin>=gti->ngti) break;
 	}
 	
       } while (NULL!=gti);
@@ -756,7 +880,7 @@ int ero_calevents_main()
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  destroyPatternFile(&plf, &status);
+  freeEventFile(&elf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
   
   // Release memory.
@@ -765,8 +889,12 @@ int ero_calevents_main()
   freeGTI(&gti);
   freeAttitude(&ac);
 
-  if (status==EXIT_SUCCESS) headas_chat(3, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -820,14 +948,6 @@ int getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_string("GTIFile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the GTI file");
-    return(status);
-  }
-  strcpy(par->GTIFile, sbuffer);
-  free(sbuffer);
-
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude file");
@@ -835,6 +955,18 @@ int getpar(struct Parameters* const par)
   }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
+
+  status=ape_trad_query_float("RA", &par->RA);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading RA");
+    return(status);
+  }
+
+  status=ape_trad_query_float("Dec", &par->Dec);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading DEC");
+    return(status);
+  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {

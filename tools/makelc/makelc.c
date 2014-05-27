@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "makelc.h"
 
 
@@ -20,7 +40,7 @@ int makelc_main() {
 
   // Register HEATOOL:
   set_toolname("makelc");
-  set_toolversion("0.07");
+  set_toolversion("0.09");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -66,7 +86,28 @@ int makelc_main() {
       fits_clear_errmark();
       if (EXIT_SUCCESS!=opt_status) {
 	fits_get_colnum(infptr, CASEINSEN, "SIGNAL", &csignal, &status);
-	CHECK_STATUS_BREAK(status);
+	if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("could not find column 'ENERGY'/'SIGNAL'");
+	  break;
+	}
+      }
+    }
+
+    // If the only events within a certain channel range should be
+    // considered, determine the column containing the energy /
+    // signal information.
+    int cpha=0;
+    if ((par.Chanmin>=0)||(par.Chanmax>=0)) {
+      fits_write_errmark();
+      int opt_status=EXIT_SUCCESS;
+      fits_get_colnum(infptr, CASEINSEN, "PI", &cpha, &opt_status);
+      fits_clear_errmark();
+      if (EXIT_SUCCESS!=opt_status) {
+	fits_get_colnum(infptr, CASEINSEN, "PHA", &cpha, &status);
+	if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("could not find column 'PI'/'PHA'");
+	  break;
+	}
       }
     }
 
@@ -125,6 +166,19 @@ int makelc_main() {
 	// requested range.
 	if ((signal<par.Emin)||(signal>par.Emax)) continue;
       }
+
+      // If necessary, read the energy/signal of the event.
+      if (cpha>0) {
+	long pha;
+	long lnull=0;
+	fits_read_col(infptr, TLONG, cpha, ii+1, 1, 1, 
+		      &lnull, &pha, &anynul, &status);
+	CHECK_STATUS_BREAK(status);
+
+	// Check if the energy of the event lies within the 
+	// requested range.
+	if ((pha<par.Chanmin)||(pha>par.Chanmax)) continue;
+      }
       
       // Determine the respective bin in the light curve.
       long bin=((long)((time-par.TSTART)/par.dt+1.0))-1;
@@ -178,25 +232,27 @@ int makelc_main() {
     CHECK_STATUS_BREAK(status);
 
     // Write header keywords.
-    fits_update_key(outfptr, TSTRING, "TELESCOP", telescop, 
+    fits_update_key(outfptr, TSTRING, "TELESCOP", telescop,
 		    "Telescope name", &status);
-    fits_update_key(outfptr, TSTRING, "INSTRUME", instrume, 
+    fits_update_key(outfptr, TSTRING, "INSTRUME", instrume,
 		    "Instrument name", &status);
-    fits_update_key(outfptr, TSTRING, "FILTER", filter, 
+    fits_update_key(outfptr, TSTRING, "FILTER", filter,
 		    "Filter used", &status);
-    fits_update_key(outfptr, TSTRING, "TIMEUNIT", "s", 
+    fits_update_key(outfptr, TSTRING, "TIMEUNIT", "s",
 		    "time unit", &status);
-    fits_update_key(outfptr, TDOUBLE, "TIMEDEL", &par.dt, 
+    fits_update_key(outfptr, TDOUBLE, "TIMEDEL", &par.dt,
 		    "time resolution", &status);
-    fits_update_key(outfptr, TDOUBLE, "MJDREF", &mjdref, 
+    fits_update_key(outfptr, TDOUBLE, "MJDREF", &mjdref,
 		    "reference MJD", &status);
-    timezero+=0.5*par.dt;
-    fits_update_key(outfptr, TDOUBLE, "TIMEZERO", &timezero, 
+    fits_update_key(outfptr, TDOUBLE, "TIMEZERO", &timezero,
 		    "time offset", &status);
-    fits_update_key(outfptr, TDOUBLE, "TSTART", &par.TSTART, 
+    float timepixr=0.f;
+    fits_update_key(outfptr, TFLOAT, "TIMEPIXR", &timepixr,
+		    "time stamp at beginning of bin", &status);
+    fits_update_key(outfptr, TDOUBLE, "TSTART", &par.TSTART,
 		    "start time", &status);
     double dbuffer=par.TSTART+par.length;
-    fits_update_key(outfptr, TDOUBLE, "TSTOP", &dbuffer, 
+    fits_update_key(outfptr, TDOUBLE, "TSTOP", &dbuffer,
 		    "stop time", &status);
     fits_update_key(outfptr, TFLOAT, "E_MIN", &par.Emin,
 		    "low energy for channel (keV)", &status);
@@ -205,8 +261,8 @@ int makelc_main() {
     CHECK_STATUS_BREAK(status);
 
     // The ouput table does not contain a TIME column. The 
-    // center of the n-th time bin (n>=1) is determined by
-    // t(n)=TIMEZERO + TIMEDEL*(n-1).
+    // beginning (TIMEPIXR=0.0) of the n-th time bin (n>=1) 
+    // is determined as t(n)=TIMEZERO + TIMEDEL*(n-1).
 
     // Write the data into the table.
     for (ii=0; ii<nbins; ii++) {
@@ -229,8 +285,12 @@ int makelc_main() {
   // Release memory.
   if (NULL!=counts) free(counts);
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -287,6 +347,18 @@ int makelc_getpar(struct Parameters* par)
   status=ape_trad_query_float("Emax", &par->Emax);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the upper boundary of the energy band");
+    return(status);
+  } 
+
+  status=ape_trad_query_long("Chanmin", &par->Chanmin);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the lower boundary of the channel range");
+    return(status);
+  } 
+
+  status=ape_trad_query_long("Chanmax", &par->Chanmax);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the upper boundary of the channel range");
     return(status);
   } 
 

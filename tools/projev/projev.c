@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #else
@@ -7,7 +27,7 @@
 
 #include "sixt.h"
 #include "attitude.h"
-#include "patternfile.h"
+#include "eventfile.h"
 #include "geninst.h"
 #include "phproj.h"
 
@@ -17,7 +37,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char PatternList[MAXFILENAME];
+  char EventList[MAXFILENAME];
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
@@ -45,8 +65,8 @@ int projev_getpar(struct Parameters *par);
 int projev_main() {
   struct Parameters par; // Program parameters
 
-  // Input pattern list file.
-  PatternFile* plf=NULL;
+  // Event file.
+  EventFile* elf=NULL;
 
   // Attitude catalog.
   Attitude* ac=NULL;
@@ -60,7 +80,7 @@ int projev_main() {
 
   // Register HEATOOL:
   set_toolname("projev");
-  set_toolversion("0.03");
+  set_toolversion("0.04");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -73,19 +93,8 @@ int projev_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Start time for the simulation.
-    double t0=par.TSTART;
-
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed = par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed = (int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -97,7 +106,7 @@ int projev_main() {
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set up the Attitude.
@@ -106,23 +115,9 @@ int projev_main() {
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=t0;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -131,20 +126,14 @@ int projev_main() {
 
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > t0) || 
-	  (ac->entry[ac->nentries-1].time < t0+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", t0, t0+par.Exposure);
-	HD_ERROR_THROW(msg, status);
-	break;
-      }
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
-    // Set the input pattern file.
-    plf=openPatternFile(par.PatternList, READWRITE, &status);
+    // Set the event file.
+    elf=openEventFile(par.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
@@ -156,7 +145,7 @@ int projev_main() {
     headas_chat(5, "start sky projection process ...\n");
 
     // Run the pattern projection.
-    phproj(inst, ac, plf, t0, par.Exposure, &status);
+    phproj(inst, ac, elf, par.TSTART, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -172,13 +161,17 @@ int projev_main() {
   destroyGenInst(&inst, &status);
   
   // Close the files.
-  destroyPatternFile(&plf, &status);
+  freeEventFile(&elf, &status);
 
   // Release memory of Attitude.
   freeAttitude(&ac);
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -192,12 +185,12 @@ int projev_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("PatternList", &sbuffer);
+  status=ape_trad_query_file_name("EventList", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the pattern list");
+    SIXT_ERROR("failed reading the name of the event file");
     return(status);
   } 
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

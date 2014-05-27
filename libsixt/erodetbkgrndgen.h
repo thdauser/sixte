@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Michael Wille, FAU
+*/
+
 #ifndef _ERODETBKGRNDGEN_H_
 #define _ERODETBKGRNDGEN_H_ 1
 
@@ -20,6 +40,7 @@ typedef struct eroBackgroundInput {
   fitsfile *inputfptr;
   long numrows;
   double interval;
+  double intervalsum;
   gsl_rng *randgen;
   
   char *timecolname;
@@ -61,6 +82,7 @@ typedef struct eroBackgroundRateFct {
   double* time;
   float* rate;
 
+  double starttime;
   double* currenttime;
   double intervalsum;
   float* currentrate;
@@ -88,7 +110,8 @@ eroBackgroundOutput* eroBkgGetBackgroundList(const double interval);
 
 /** open the simulation data file and initialize the random number
  * generator and the main structure */
-void eroBkgInitialize(const char* const filename, int* const status);
+void eroBkgInitialize(const char* const filename, const unsigned int seed, 
+		      int* const status);
 
 /** free memory of passed eroBackgroundOutput structure */
 void eroBkgFree(eroBackgroundOutput* struct_to_free);

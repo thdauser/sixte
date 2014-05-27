@@ -1,8 +1,30 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "phogen.h"
 
 
 int phogen_main() 
 {
+  const double timezero=0.0;
+
   // Program parameters.
   struct Parameters par;
 
@@ -16,7 +38,7 @@ int phogen_main()
   SourceCatalog* srccat=NULL;
 
   // Photon list file.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
   
   // Error status.
   int status=EXIT_SUCCESS;  
@@ -40,16 +62,8 @@ int phogen_main()
     char photonlist_filename[MAXFILENAME];
     strcpy(photonlist_filename, par.PhotonList);
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed = par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed = (int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -61,7 +75,7 @@ int phogen_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
     
     // Set up the Attitude.
@@ -70,23 +84,9 @@ int phogen_main()
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();      
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -94,17 +94,10 @@ int phogen_main()
       CHECK_STATUS_BREAK(status);
 
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period covered by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
@@ -126,11 +119,11 @@ int phogen_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    plf=openNewPhotonListFile(photonlist_filename,
-			      telescop, instrume, "Normal",
-			      inst->tel->arf_filename, inst->det->rmf_filename,
-			      par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
-			      par.clobber, &status);
+    plf=openNewPhotonFile(photonlist_filename,
+			  telescop, instrume, "Normal",
+			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  par.MJDREF, timezero, par.TSTART, par.TSTART+par.Exposure,
+			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -188,7 +181,7 @@ int phogen_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freePhotonListFile(&plf, &status);
+  freePhotonFile(&plf, &status);
   freeSourceCatalog(&srccat, &status);
   freeAttitude(&ac);
   destroyGenInst(&inst, &status);
@@ -196,8 +189,12 @@ int phogen_main()
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

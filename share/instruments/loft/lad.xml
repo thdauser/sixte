@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<!-- LOFT LAD version 1.12 -->
+<!-- LOFT LAD version 1.13 -->
 <instrument type="LOFT LAD">
   <telescope>
-    <fov diameter="1.5"/>
-    <vignetting filename="lad.vignetting.fits"/>
+    <fov diameter="2.1"/>
+    <vignetting filename="lad_vignetting_normalized.fits"/>
   </telescope>
 
   <detector type="SDD">
@@ -30,7 +30,7 @@
       </panel>
     </loop>
 
-  <arf filename="LAD_Requirements_v5.3.arf"/>
+  <arf filename="LAD_Requirements_v5.3_corr.arf"/>
   <rmf filename="LAD_Requirements_v5.3.rmf"/>
   <background filename="lad_background_v6.simput"/>
   <temperature value="300"/>

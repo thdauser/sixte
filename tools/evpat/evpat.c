@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "evpat.h"
 
 
@@ -6,14 +26,17 @@ int evpat_main()
   // Containing all programm parameters read by PIL
   struct Parameters par; 
 
-  // Input event list file.
-  EventListFile* elf=NULL;
+  // Input event file.
+  EventFile* elf=NULL;
 
-  // Output pattern file.
-  PatternFile* plf=NULL;
+  // Output event pattern file.
+  EventFile* plf=NULL;
 
   // Instrument.
   GenInst* inst=NULL;
+
+  // GTI collection.
+  GTI* gti=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -21,12 +44,10 @@ int evpat_main()
 
   // Register HEATOOL:
   set_toolname("evpat");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
-
-    // --- Initialization ---
 
     headas_chat(3, "initialization ...\n");
 
@@ -41,22 +62,26 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    unsigned int seed=getSeed(par.Seed);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the event list file name.
     char eventlist_filename[MAXFILENAME];
     strcpy(eventlist_filename, par.EventList);
 
-    // Determine the pattern output file.
+    // Determine the output file.
     char pattern_filename[MAXFILENAME];
     strcpy(pattern_filename, par.PatternList);
 
+    // Load the GTI extension from the event file.
+    gti=loadGTI(eventlist_filename, &status);
+    CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "start pattern recombination ...\n");
 
     // Open the input event file.
-    elf=openEventListFile(eventlist_filename, READONLY, &status);
+    elf=openEventFile(eventlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read the timing keywords.
@@ -71,7 +96,7 @@ int evpat_main()
     fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Open the output pattern file.
+    // Open the output file.
     char telescop[MAXMSG]={""};
     char instrume[MAXMSG]={""};
     if (NULL!=inst->telescop) {
@@ -80,18 +105,22 @@ int evpat_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    plf=openNewPatternFile(pattern_filename, 
-			   telescop, instrume, "Normal",
-			   inst->tel->arf_filename,
-			   inst->det->rmf_filename,
-			   mjdref, timezero, tstart, tstop,			   
-			   inst->det->pixgrid->xwidth,
-			   inst->det->pixgrid->ywidth,
-			   par.clobber, &status);
+    plf=openNewEventFile(pattern_filename, 
+			 telescop, instrume, "Normal",
+			 inst->tel->arf_filename,
+			 inst->det->rmf_filename,
+			 mjdref, timezero, tstart, tstop,			   
+			 inst->det->pixgrid->xwidth,
+			 inst->det->pixgrid->ywidth,
+			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.
     phpat(inst->det, elf, plf, par.SkipInvalids, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Store the GTI in the pattern file.
+    saveGTIExt(plf->fptr, "STDGTI", gti, &status);
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -101,13 +130,18 @@ int evpat_main()
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  freeEventListFile(&elf, &status);
-  destroyPatternFile(&plf, &status);
+  freeEventFile(&elf, &status);
+  freeEventFile(&plf, &status);
  
   destroyGenInst(&inst, &status);
+  freeGTI(&gti);
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -170,6 +204,12 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_bool("SkipInvalids", &par->SkipInvalids);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the SkipInvalids parameter");
+    return(status);
+  }
+
+  status=ape_trad_query_int("Seed", &par->Seed);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);
   }
 

@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+*/
+
 #include "comaimg.h"
 
 /////////////////////////////////////////////////////////////
@@ -15,8 +35,8 @@ int comaimg_main() {
   struct Parameters par;
 
   struct Telescope telescope; //Telescope coordinate system
-  PhotonListFile* plf=NULL;
-  ImpactListFile* ilf=NULL;
+  PhotonFile* plf=NULL;
+  ImpactFile* ilf=NULL;
   CodedMask* mask=NULL;
   AttCatalog* ac=NULL;
 
@@ -47,12 +67,12 @@ int comaimg_main() {
     double ra=par.RA;
     double dec=par.DEC;
 
-    //Initialize HEADAS random number generator and GSL generator for 
-    //Gaussian distribution.
-    HDmtInit(1);
+    // Initialize the random number generator.
+    sixt_init_rng(getSeed(-1), &status);
+    CHECK_STATUS_BREAK(status);
 
     //Open the FITS file with the input photon list.
-    plf=openPhotonListFile(par.PhotonList, READONLY, &status);
+    plf=openPhotonFile(par.PhotonList, READONLY, &status);
     if (EXIT_SUCCESS!=status) break;
 
     //Load the coded mask from the file.
@@ -143,11 +163,11 @@ int comaimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
-    ilf=openNewImpactListFile(par.ImpactList, 
-			      telescop, instrume, filter,
-			      ancrfile, respfile,
-			      mjdref, timezero, tstart, tstop,
-			      0, &status);
+    ilf=openNewImpactFile(par.ImpactList, 
+			  telescop, instrume, filter,
+			  ancrfile, respfile,
+			  mjdref, timezero, tstart, tstop,
+			  0, &status);
     CHECK_STATUS_BREAK(status);
 
     // Write WCS header keywords.
@@ -191,7 +211,7 @@ int comaimg_main() {
          
       //Read an entry from the photon list:
       Photon photon={.time= 0.0};
-      status=PhotonListFile_getNextRow(plf, &photon);
+      status=PhotonFile_getNextRow(plf, &photon);
       if (EXIT_SUCCESS!=status) break;
 
       //Check whether photon-list-entry is within requested time interval.
@@ -254,15 +274,15 @@ int comaimg_main() {
   headas_chat(3, "cleaning up ...\n");
 
   // Close the FITS files.
-  freeImpactListFile(&ilf, &status);
-  freePhotonListFile(&plf, &status);
+  freeImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
   freeAttCatalog(&ac);
 
   // Release memory.
   destroyCodedMask(&mask);
 
-  // release HEADAS random number generator
-  HDmtFree();
+  // Clean up the random number generator.
+  sixt_destroy_rng();
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);

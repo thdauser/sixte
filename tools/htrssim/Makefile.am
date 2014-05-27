@@ -12,7 +12,7 @@ AM_CFLAGS+=-Wall
 ########## DIRECTORIES ###############
 
 # Directory where to install the PIL parameter files.
-pfilesdir=@PFILESDIR@
+pfilesdir=$(pkgdatadir)/pfiles
 dist_pfiles_DATA=htrssim.par
 
 AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'

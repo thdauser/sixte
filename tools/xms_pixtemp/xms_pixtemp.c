@@ -1,9 +1,29 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "xms_pixtemp.h"
 
 
 int xms_pixtemp_main() {
   struct Parameters parameters;
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
   FILE* output_file=NULL;
 
   int status=EXIT_SUCCESS;
@@ -25,7 +45,7 @@ int xms_pixtemp_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the event file.
-    elf=openEventListFile(parameters.EventList, READWRITE, &status);
+    elf=openEventFile(parameters.EventList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read the EBOUNDS from the detector response file.
@@ -52,7 +72,7 @@ int xms_pixtemp_main() {
       /*      if ((1==event.array) && // Only events from the inner array.
 	      (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) { */
       fprintf(output_file, " %lf\t%lf\n", event.time, 
-	      getEBOUNDSEnergy(event.pi, rmf, 0, &status));
+	      getEBOUNDSEnergy(event.pi, rmf, &status));
       CHECK_STATUS_BREAK(status);
       /* } */
 
@@ -64,7 +84,7 @@ int xms_pixtemp_main() {
   // --- Clean Up ---
 
   // Close the event file.
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
 
   // Close the output file.
   if (NULL!=output_file) {
@@ -79,32 +99,30 @@ int xms_pixtemp_main() {
 }
 
 
-
 int xms_pixtemp_getpar(struct Parameters* parameters)
 {
-  int status = EXIT_SUCCESS;
+  int status=EXIT_SUCCESS;
 
-  if ((status = PILGetFname("EventList", parameters->EventList))) {
-    HD_ERROR_THROW("Error reading the name of the input file!\n", status);
+  if ((status=PILGetFname("EventList", parameters->EventList))) {
+    SIXT_ERROR("failed reading the name of the input file");
   }
 
-  else if ((status = PILGetFname("OutputFile", parameters->OutputFile))) {
-    HD_ERROR_THROW("Error reading the name of the output file!\n", status);
+  else if ((status=PILGetFname("OutputFile", parameters->OutputFile))) {
+    SIXT_ERROR("failed reading the name of the output file");
   }
 
-  else if ((status = PILGetFname("RSP", parameters->RSP))) {
-    HD_ERROR_THROW("Error reading the name of the detector response file!\n", status);
+  else if ((status=PILGetFname("RSP", parameters->RSP))) {
+    SIXT_ERROR("failed reading the name of the detector response file");
   }
 
-  else if ((status = PILGetInt("pixx", &parameters->pixx))) {
-    HD_ERROR_THROW("Error x-coordinate of the pixel to be analysed!\n", status);
+  else if ((status=PILGetInt("pixx", &parameters->pixx))) {
+    SIXT_ERROR("failed reading x-coordinate of the pixel to be analysed");
   }
 
-  else if ((status = PILGetInt("pixy", &parameters->pixy))) {
-    HD_ERROR_THROW("Error y-coordinate of the pixel to be analysed!\n", status);
+  else if ((status=PILGetInt("pixy", &parameters->pixy))) {
+    SIXT_ERROR("failed reading y-coordinate of the pixel to be analysed");
   }
 
   return(status);
 }
-
 

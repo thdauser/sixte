@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "gendet.h"
 
 
@@ -17,13 +37,14 @@ GenDet* newGenDet(int* const status)
   }
 
   // Initialize all pointers with NULL.
-  det->pixgrid=NULL;
-  det->split  =NULL;
-  det->line   =NULL;
+  det->pixgrid  =NULL;
+  det->split    =NULL;
+  det->line     =NULL;
   det->rmf_filename=NULL;
-  det->rmf    =NULL;
-  det->elf    =NULL;
-  det->phabkg =NULL;
+  det->rmf      =NULL;
+  det->elf      =NULL;
+  det->phabkg[0]=NULL;
+  det->phabkg[1]=NULL;
   det->clocklist=NULL;
   det->badpixmap=NULL;
 
@@ -32,13 +53,14 @@ GenDet* newGenDet(int* const status)
   det->erobackground=0;
   det->anyphoton    =0;
   det->frametime    =0.;
+  det->deadtime     =0.;
   det->cte          =1.;
   det->threshold_readout_lo_keV=0.;
   det->threshold_event_lo_keV  =0.;
   det->threshold_split_lo_keV  =0.;
   det->threshold_split_lo_fraction=0.;
   det->threshold_pattern_up_keV=0.;
-  det->readout_trigger =0;
+  det->readout_trigger=0;
 
   // Get empty GenPixGrid.
   det->pixgrid=newGenPixGrid(status);
@@ -74,7 +96,8 @@ void destroyGenDet(GenDet** const det)
     destroyGenPixGrid(&(*det)->pixgrid);
     destroyGenSplit(&(*det)->split);
     destroyBadPixMap(&(*det)->badpixmap);
-    destroyPHABkg(&(*det)->phabkg);
+    destroyPHABkg(&(*det)->phabkg[0]);
+    destroyPHABkg(&(*det)->phabkg[1]);
     
     free(*det);
     *det=NULL;
@@ -86,10 +109,6 @@ int addGenDetPhotonImpact(GenDet* const det,
 			  const Impact* const impact, 
 			  int* const status)
 {
-  // Call the detector operating clock routine.
-  operateGenDetClock(det, impact->time, status);
-  CHECK_STATUS_RET(*status, 0);
-
   // Determine the detected energy.
   float energy;
   
@@ -101,12 +120,10 @@ int addGenDetPhotonImpact(GenDet* const det,
     long channel;
     returnRMFChannel(det->rmf, impact->energy, &channel);
 
-    // Check if the photon is really measured. If the
-    // PI channel returned by the HEAdas RMF function is '-1', 
-    // the photon is not detected.
-    // This can happen, if the RMF actually is an RSP, i.e. it 
-    // includes ARF contributions, e.g., 
-    // the detector quantum efficiency and filter transmission.
+    // Check if the photon is really measured. If the PI channel 
+    // returned by the HEAdas RMF function is '-1', the photon is not 
+    // detected. This can happen, if the RMF includes ARF contributions, 
+    // e.g., the detector quantum efficiency and filter transmission.
     if (channel<det->rmf->FirstChannel) {
       return(0); // Break the function (photon is not detected).
     }
@@ -115,7 +132,7 @@ int addGenDetPhotonImpact(GenDet* const det,
     // NOTE: In this simulation the collected charge is represented 
     // by the nominal photon energy [keV], which corresponds to the 
     // PI channel according to the EBOUNDS table.
-    energy=getEBOUNDSEnergy(channel, det->rmf, 0, status);
+    energy=getEBOUNDSEnergy(channel, det->rmf, status);
     CHECK_STATUS_RET(*status, 0);
     assert(energy>=0.);
 
@@ -154,7 +171,7 @@ void GenDetLineShift(GenDet* const det)
 	int jj;
 	for (jj=0; jj<det->line[ii]->xwidth; jj++) {
 	  if (det->line[ii]->charge[jj] > 0.) {
-	    det->line[ii]->charge[jj] *= det->cte;
+	    det->line[ii]->charge[jj]*=det->cte;
 	  }
 	}
       }
@@ -169,16 +186,15 @@ void GenDetLineShift(GenDet* const det)
 
   // Shift the other lines in increasing order and put the newly cleared 
   // original line number 1 at the end as the last line.
-  GenDetLine* buffer = det->line[1];
+  GenDetLine* buffer=det->line[1];
   for (ii=1; ii<det->pixgrid->ywidth-1; ii++) {
-    det->line[ii] = det->line[ii+1];
+    det->line[ii]=det->line[ii+1];
   }
-  det->line[det->pixgrid->ywidth-1] = buffer;
+  det->line[det->pixgrid->ywidth-1]=buffer;
 }
 
 
-void setGenDetEventListFile(GenDet* const det,
-			    EventListFile* const elf)
+void setGenDetEventFile(GenDet* const det, EventFile* const elf)
 {
   det->elf=elf;
 }
@@ -213,7 +229,6 @@ static inline void GenDetReadoutPixel(GenDet* const det,
   }
 
   if (line->charge[xindex]>0.) {
-
     Event* event=NULL;
 
     // Error handling loop.
@@ -228,6 +243,9 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       // ... and delete the pixel value.
       line->charge[xindex]=0.;
     
+      // Set the dead time of the pixel.
+      line->deadtime[xindex]=time+det->deadtime;
+
       // Copy the information about the original photons.
       int jj;
       for(jj=0; jj<NEVENTPHOTONS; jj++) {
@@ -237,7 +255,8 @@ static inline void GenDetReadoutPixel(GenDet* const det,
 	line->src_id[xindex][jj]=0;
       }
       
-      // Apply the charge thresholds.
+      // Apply the lower readout threshold. Note that the upper
+      // threshold is only applied after pattern recombination.
       if (event->signal<=det->threshold_readout_lo_keV) {
 	break;
       }
@@ -254,6 +273,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       event->rawx =xindex;
       event->time =time;  // Time of detection.
       event->frame=det->clocklist->frame; // Frame of detection.
+      event->npixels=1;
 
       // Store the event in the output event file.
       addEvent2File(det->elf, event, status);
@@ -279,7 +299,6 @@ void GenDetReadoutLine(GenDet* const det,
   if (0!=line->anycharge) {
     int ii;
     for (ii=0; ii<line->xwidth; ii++) {
-
       GenDetReadoutPixel(det, lineindex, readoutindex, ii,
 			 det->clocklist->readout_time, status);
       CHECK_STATUS_BREAK(*status);
@@ -298,6 +317,34 @@ void GenDetClearLine(GenDet* const det, const int lineindex) {
 }
 
 
+/** Apply the bad pixels of the bad pixel map. */
+static void insertBadPix(GenDet* const det, const double timespan)
+{
+  int ii;
+  for (ii=0; ii<det->badpixmap->xwidth; ii++) {
+    if (1==det->badpixmap->anybadpix[ii]) {
+      int jj;
+      for (jj=0; jj<det->badpixmap->ywidth; jj++) {
+	float diff=det->badpixmap->pixels[ii][jj]*timespan;
+	if (det->badpixmap->pixels[ii][jj]>0.) {
+	  // If the pixel is a hot one, add charge.
+	  addGenDetCharge2Pixel(det, ii, jj, diff, -1.0, -1, -1);
+	} else if (det->badpixmap->pixels[ii][jj]<0.) {
+	  // If the pixel is a cold one, remove charge.
+	  if (det->line[jj]->charge[ii]<(-1.)*diff) {
+	    det->line[jj]->charge[ii]=0.;
+	  } else {
+	    det->line[jj]->charge[ii]+=diff;
+	  }
+	}
+      }
+      // END of loop over y-coordinate.
+    }
+  }
+  // END of loop over x-coordinate.
+}
+
+
 void operateGenDetClock(GenDet* const det,
 			const double time,
 			int* const status)
@@ -310,7 +357,7 @@ void operateGenDetClock(GenDet* const det,
 
     // Insert background events, if the appropriate PHA background
     // model is defined and should be used.
-    if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+    if ((NULL!=det->phabkg[0])&&(0==det->ignore_bkg)) {
 
       if (NULL==det->rmf) {
 	SIXT_ERROR("RMF needs to be defined for using the PHA background model");
@@ -318,36 +365,75 @@ void operateGenDetClock(GenDet* const det,
 	return;
       }
 
-      // Get background events for the required time interval (has
-      // to be given in [s]). The regarded area of the detector 
-      // is calculated from the information about the pixel grid.
-      long* bkgphas=NULL;
-      int* x=NULL;
-      int* y=NULL;
-      unsigned int nevts=
-	PHABkgGetEvents(det->phabkg, time-last_time, det->pixgrid, 
-			&bkgphas, &x, &y, status);
-      CHECK_STATUS_VOID(*status);
-      
-      unsigned int ii;
-      for (ii=0; ii<nevts; ii++) {
-	// Determine the corresponding signal.
-	float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
-	CHECK_STATUS_VOID(*status);
-	
-	// Add the signal to the pixel.
-	addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, -1, -1);
+      // Loop over all PHA background models.
+      int ii;
+      for (ii=0; ii<2; ii++) {
+	// Check if the model is defined.
+	if (det->phabkg[ii]==NULL) break;
 
-	// Call the event trigger routine.
-	GenDetReadoutPixel(det, y[ii], y[ii], x[ii], time, status);
-	CHECK_STATUS_VOID(*status);
+	// Get background events for the required time interval. 
+	double bkg_time;
+	long bkg_pha;
+	while (getPHABkgEvent(det->phabkg[ii],
+			      det->pixgrid->xwidth*det->pixgrid->xdelt*
+			      det->pixgrid->ywidth*det->pixgrid->ydelt,
+			      last_time, time,
+			      &bkg_time, &bkg_pha, status)) {
+	  CHECK_STATUS_VOID(*status);
+
+	  // Determine the corresponding signal.
+	  float energy=getEBOUNDSEnergy(bkg_pha, det->rmf, status);
+	  CHECK_STATUS_VOID(*status);
+
+	  // Determine the affected pixel.
+	  int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	  CHECK_STATUS_VOID(*status);
+	  int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+	  CHECK_STATUS_VOID(*status);
+
+	  // If specified, apply vignetting.
+	  if (NULL!=det->phabkg[ii]->vignetting) {
+	    // Check if vignetting function and focal length are given.
+	    if (NULL==*det->phabkg[ii]->vignetting) {
+	      *status=EXIT_FAILURE;
+	      SIXT_ERROR("vignetting function is need for "
+			 "vignetting-dependent background model");
+	      return;
+	    }
+	    if (0.0==*det->phabkg[ii]->focal_length) {
+	      *status=EXIT_FAILURE;
+	      SIXT_ERROR("focal length is need for vignetting-dependent "
+			 "background model");
+	      return;
+	    }
+
+	    // Determine the off-axis angle.
+	    float theta=
+	      atan(sqrt(pow((xi-det->pixgrid->xrpix+1.0)*det->pixgrid->xdelt,2.0)+
+			pow((yi-det->pixgrid->yrpix+1.0)*det->pixgrid->ydelt,2.0))/
+		   *det->phabkg[ii]->focal_length);
 	    
-	// In event-triggered mode each event occupies its own frame.
-	det->clocklist->frame++;	    
+	    // Apply vignetting.
+	    double p=sixt_get_random_number(status);
+	    CHECK_STATUS_VOID(*status);
+	    if (p>get_Vignetting_Factor(*det->phabkg[ii]->vignetting, 
+					energy, theta, 0.)) {
+	      // The background event is discarded due to vignetting.
+	      continue;
+	    }
+	  }
+	  
+	  // Add the signal to the pixel.
+	  addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
+
+	  // Call the event trigger routine.
+	  GenDetReadoutPixel(det, yi, yi, xi, bkg_time, status);
+	  CHECK_STATUS_VOID(*status);
+	    
+	  // In event-triggered mode each event occupies its own frame.
+	  det->clocklist->frame++;
+	}	    
       }
-      free(bkgphas);
-      free(x);
-      free(y);
     }
 
     // Remember the time of the function call.
@@ -361,7 +447,7 @@ void operateGenDetClock(GenDet* const det,
     void* element=NULL;
     do {
       CLReadoutLine* clreadoutline=NULL;
-      CLClearLine*   clclearline  =NULL;
+      CLClearLine* clclearline    =NULL;
       CLWait* clwait              =NULL;
 
       getClockListElement(det->clocklist, time, &type, &element, status);
@@ -379,8 +465,8 @@ void operateGenDetClock(GenDet* const det,
 	// If there has been no photon interaction during the last frame
 	// and if no background model is activated, jump over the next empty frames
 	// until there is a new photon impact.
-	if ((((0==det->erobackground)&&(NULL==det->phabkg))||(1==det->ignore_bkg))&&
-	    (0==det->anyphoton)) {
+	if ((((0==det->erobackground)&&(NULL==det->phabkg[0])&&(NULL==det->phabkg[1]))
+	     ||(1==det->ignore_bkg))&&(0==det->anyphoton)) {
 	  long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
 	  det->clocklist->time       +=nframes*det->frametime;
 	  det->clocklist->frame      +=nframes;
@@ -397,7 +483,7 @@ void operateGenDetClock(GenDet* const det,
 	
 	// Insert background events, if the appropriate PHA background
 	// model is defined and should be used.
-	if ((NULL!=det->phabkg)&&(0==det->ignore_bkg)) {
+	if ((NULL!=det->phabkg[0])&&(0==det->ignore_bkg)) {
 
 	  if (NULL==det->rmf) {
 	    SIXT_ERROR("RMF needs to be defined for using the PHA background model");
@@ -405,30 +491,69 @@ void operateGenDetClock(GenDet* const det,
 	    return;
 	  }
 
-	  // Get background events for the required time interval (has
-	  // to be given in [s]). The area of the detector within the 
-	  // (circular) FoV has to be specified in order to determine
-	  // the absolute background event rate.
-	  long* bkgphas=NULL;
-	  int* x=NULL;
-	  int* y=NULL;
-	  unsigned int nevts=
-	    PHABkgGetEvents(det->phabkg, clwait->time, det->pixgrid,
-			    &bkgphas, &x, &y, status);
-	  CHECK_STATUS_VOID(*status);
-	  
-	  unsigned int ii;
-	  for (ii=0; ii<nevts; ii++) {
-	    // Determine the corresponding signal.
-	    float energy=getEBOUNDSEnergy(bkgphas[ii], det->rmf, 0, status);
-	    CHECK_STATUS_VOID(*status);
+	  // Loop over all PHA background models.
+	  int ii;
+	  for (ii=0; ii<2; ii++) {
+	    // Check if the model is defined.
+	    if (det->phabkg[ii]==NULL) break;
 
-	    // Add the signal to the pixel.
-	    addGenDetCharge2Pixel(det->line[y[ii]], x[ii], energy, -1, -1);	    
+	    // Get background events for the required time interval. 
+	    double bkg_time;
+	    long bkg_pha;
+	    while (getPHABkgEvent(det->phabkg[ii],
+				  det->pixgrid->xwidth*det->pixgrid->xdelt*
+				  det->pixgrid->ywidth*det->pixgrid->ydelt,
+				  det->clocklist->time,
+				  det->clocklist->time+clwait->time,
+				  &bkg_time, &bkg_pha, status)) {
+	      CHECK_STATUS_VOID(*status);
+
+	      // Determine the corresponding signal.
+	      float energy=getEBOUNDSEnergy(bkg_pha, det->rmf, status);
+	      CHECK_STATUS_VOID(*status);
+
+	      // Determine the affected pixel.
+	      int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+	      CHECK_STATUS_VOID(*status);
+	      int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+	      CHECK_STATUS_VOID(*status);
+
+	      // If specified, apply vignetting.
+	      if (NULL!=det->phabkg[ii]->vignetting) {
+		// Check if vignetting function and focal length are given.
+		if (NULL==*det->phabkg[ii]->vignetting) {
+		  *status=EXIT_FAILURE;
+		  SIXT_ERROR("vignetting function is need for "
+			     "vignetting-dependent background model");
+		  return;
+		}
+		if (0.0==*det->phabkg[ii]->focal_length) {
+		  *status=EXIT_FAILURE;
+		  SIXT_ERROR("focal length is need for vignetting-dependent "
+			     "background model");
+		  return;
+		}
+
+		// Determine the off-axis angle.
+		float theta=
+		  atan(sqrt(pow((xi-det->pixgrid->xrpix+1.0)*det->pixgrid->xdelt,2.0)+
+			    pow((yi-det->pixgrid->yrpix+1.0)*det->pixgrid->ydelt,2.0))/
+		       *det->phabkg[ii]->focal_length);
+		
+		// Apply vignetting.
+		double p=sixt_get_random_number(status);
+		CHECK_STATUS_VOID(*status);
+		if (p>get_Vignetting_Factor(*det->phabkg[ii]->vignetting, 
+					    energy, theta, 0.)) {
+		  // The background event is discarded due to vignetting.
+		  continue;
+		}
+	      }
+
+	      // Add the signal to the pixel.
+	      addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
+	    }
 	  }
-	  free(bkgphas);
-	  free(x);
-	  free(y);
 	}
 
 	// Insert cosmic ray background events, 
@@ -460,7 +585,7 @@ void operateGenDetClock(GenDet* const det,
 	      list->hit_ypos[ii]*0.001*sinrota;
 	    double yh=
 	      list->hit_xpos[ii]*0.001*sinrota+
-	      list->hit_ypos[ii]*0.001*cosrota;	    
+	      list->hit_ypos[ii]*0.001*cosrota;
 	    int x, y;
 	    double xr, yr;
 	    getGenDetAffectedPixel(det->pixgrid, xh, yh,
@@ -470,17 +595,18 @@ void operateGenDetClock(GenDet* const det,
 	    if ((x<0) || (y<0)) continue;
 	    
 	    // Add the signal to the pixel.
-	    addGenDetCharge2Pixel(det->line[y], x, 
-				  list->hit_energy[ii], -1, -1); 
+	    addGenDetCharge2Pixel(det, x, y,
+				  list->hit_energy[ii],
+				  det->clocklist->time,
+				  -1, -1);
 	  }
 	  eroBkgFree(list);
 	}
 
-	// Apply the bad pixel map (if available) with the bad pixel 
-	// values weighted with the waiting time.
+	// Apply the hot pixels of the bad pixel map (if available) using
+	// the pixel values weighted with the waiting time.
 	if (NULL!=det->badpixmap) {
-	  applyBadPixMap(det->badpixmap, clwait->time, 
-			 encounterGenDetBadPix, det->line);
+	  insertBadPix(det, clwait->time);
 	}
 	break;
       case CL_LINESHIFT:
@@ -500,24 +626,6 @@ void operateGenDetClock(GenDet* const det,
       }
       CHECK_STATUS_VOID(*status);
     } while(type!=CL_NONE);
-  }
-}
-
-
-void encounterGenDetBadPix(void* const data, 
-			   const int x, const int y, 
-			   const float value) 
-{
-  // Array of pointers to pixel lines.
-  GenDetLine** line = (GenDetLine**)data;
-
-  // Check if the bad pixel type.
-  if (value < 0.) { // The pixel is a cold one.
-    // Delete the charge in the pixel.
-    line[y]->charge[x] = 0.;
-  } else if (value > 0.) { // The pixel is a hot one.
-    // Add additional charge to the pixel.
-    addGenDetCharge2Pixel(line[y], x, value, -1, -1);
   }
 }
 
@@ -581,8 +689,8 @@ int makeGenSplitEvents(GenDet* const det,
 
   // The following array entries are used to transform between 
   // different array indices for accessing neighboring pixels.
-  const int xe[4] = {1, 0,-1, 0};
-  const int ye[4] = {0, 1, 0,-1};
+  const int xe[4]={1, 0,-1, 0};
+  const int ye[4]={0, 1, 0,-1};
 
   // Which kind of split model has been selected?
   if (GS_NONE==det->split->type) {
@@ -723,10 +831,10 @@ int makeGenSplitEvents(GenDet* const det,
     int secmindist = getMinimumDistance(distances);
     distances[mindist] = minimum;
     // Pixel coordinates of the 3rd and 4th split partner.
-    x[2] = x[0] + xe[secmindist];
-    y[2] = y[0] + ye[secmindist];
-    x[3] = x[1] + xe[secmindist];
-    y[3] = y[1] + ye[secmindist];
+    x[2]=x[0] + xe[secmindist];
+    y[2]=y[0] + ye[secmindist];
+    x[3]=x[1] + xe[secmindist];
+    y[3]=y[1] + ye[secmindist];
 
     // Now we know the affected pixels and can determine the 
     // signal fractions according to the model exp(-(r/0.355)^2).
@@ -734,24 +842,24 @@ int makeGenSplitEvents(GenDet* const det,
     // to the pixel borders, whereas here we need the distances from
     // the pixel center for the parameter r.
     // The value 0.355 is given by the parameter ecc->parameter.
-    fraction[0] = exp(-(pow(0.5-distances[mindist],2.)+
-			pow(0.5-distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
-    fraction[1] = exp(-(pow(0.5+distances[mindist],2.)+
-			pow(0.5-distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
-    fraction[2] = exp(-(pow(0.5-distances[mindist],2.)+
-			pow(0.5+distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
-    fraction[3] = exp(-(pow(0.5+distances[mindist],2.)+
-			pow(0.5+distances[secmindist],2.))/
-		      pow(det->split->par1,2.));
+    fraction[0]=exp(-(pow(0.5-distances[mindist],2.)+
+		      pow(0.5-distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
+    fraction[1]=exp(-(pow(0.5+distances[mindist],2.)+
+		      pow(0.5-distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
+    fraction[2]=exp(-(pow(0.5-distances[mindist],2.)+
+		      pow(0.5+distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
+    fraction[3]=exp(-(pow(0.5+distances[mindist],2.)+
+		      pow(0.5+distances[secmindist],2.))/
+		    pow(det->split->par1,2.));
     // Normalization to 1.
-    double sum = fraction[0]+fraction[1]+fraction[2]+fraction[3];
-    fraction[0] /= sum;
-    fraction[1] /= sum;
-    fraction[2] /= sum;
-    fraction[3] /= sum;
+    double sum=fraction[0]+fraction[1]+fraction[2]+fraction[3];
+    fraction[0]/=sum;
+    fraction[1]/=sum;
+    fraction[2]/=sum;
+    fraction[3]/=sum;
 
     // END of exponential split model.
 
@@ -767,8 +875,8 @@ int makeGenSplitEvents(GenDet* const det,
   for(ii=0; ii<npixels; ii++) {
     if ((x[ii]>=0) && (x[ii]<det->pixgrid->xwidth) &&
 	(y[ii]>=0) && (y[ii]<det->pixgrid->ywidth)) {
-      addGenDetCharge2Pixel(det->line[y[ii]], x[ii], signal*fraction[ii], 
-			    ph_id, src_id);
+      addGenDetCharge2Pixel(det, x[ii], y[ii], signal*fraction[ii],
+			    time, ph_id, src_id);
       nvalidpixels++;
 
       // Call the event trigger routine.
@@ -789,9 +897,48 @@ int makeGenSplitEvents(GenDet* const det,
 }
 
 
+void addGenDetCharge2Pixel(GenDet* const det,
+			   const int column,
+			   const int row,
+			   const float signal,
+			   const double time,
+			   const long ph_id,
+			   const long src_id)
+{
+  GenDetLine* line=det->line[row];
+
+  // Check if the pixel is sensitive right now.
+  if ((time<line->deadtime[column])&&(time>=0.0)) return;
+
+  // Set PH_ID and SRC_ID.
+  if (line->charge[column]<0.001) {
+    // If the charge collect in the pixel up to now is below 1eV,
+    // overwrite the old PH_ID and SRC_ID by the new value.
+    line->ph_id[column][0] =ph_id;
+    line->src_id[column][0]=src_id;
+
+  } else if (signal>0.001) {
+    // Only store the PH_ID and SRC_ID of the new contribution
+    // if its signal is above 1eV.
+    long ii;
+    for (ii=0; ii<NEVENTPHOTONS; ii++) {
+      if (0==line->ph_id[column][ii]) {
+	line->ph_id[column][ii] =ph_id;
+	line->src_id[column][ii]=src_id;
+	break;
+      }
+    }
+  }
+
+  // Add the signal.
+  line->charge[column]+=signal;
+  line->anycharge      =1;
+}
+
+
 void setGenDetStartTime(GenDet* const det, const double t0)
 {
-  det->clocklist->time         = t0;
-  det->clocklist->readout_time = t0;
+  det->clocklist->time        =t0;
+  det->clocklist->readout_time=t0;
 }
 

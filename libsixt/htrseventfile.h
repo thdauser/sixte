@@ -1,15 +1,35 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef HTRSEVENTFILE_H
 #define HTRSEVENTFILE_H 1
 
 #include "sixt.h"
 #include "htrsevent.h"
-#include "eventfile.h"
+#include "eventlist.h"
 
 
 typedef struct {
 
-  /** Generic EventFile data structure. */
-  EventFile generic; 
+  /** Generic EventList data structure. */
+  EventList generic; 
 
   /* Column numbers of the individual HTRS-specific event list entries.
    * The numbers start at 1. The number 0 means, that there 

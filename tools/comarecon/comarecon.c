@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+*/
+
 #include "comarecon.h"
 
 /////////////////////////////////////////////////////////////
@@ -158,12 +178,10 @@ int comarecon_main() {
     //Get empty event array object (type: ReadEvent)
      ea=getEventArray(mask, detector_pixels, &status);
      
-
        //detector size <= mask size
        //if mask size = det size -> shift is zero
        xdiff=((ea->naxis1)/2-detector_pixels->xwidth)/2;
        ydiff=((ea->naxis2)/2-detector_pixels->ywidth)/2;
-
 
        // Loop over all events in the FITS file.
        while (0==EventFileEOF(&eventfile->generic)) {

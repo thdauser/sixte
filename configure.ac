@@ -1,15 +1,18 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.65)
-AC_INIT([sixte], [0.99], [christian.schmid@sternwarte.uni-erlangen.de])
-AC_CONFIG_AUX_DIR([build-aux]) # Store auxiliary files in the sub-directory 'build-aux'.
+AC_PREREQ(2.59)
+AC_INIT([sixte], [0.130], [christian.schmid@sternwarte.uni-erlangen.de])
+
+# Store auxiliary files in the sub-directory 'build-aux'.
+AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
 
 # Check for programs:
 AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
 AC_PROG_FC # Search for a Fortran compiler.
+AM_PROG_AR
 AC_PROG_RANLIB
 
 # Compiler Flags:
@@ -19,7 +22,7 @@ AC_PROG_RANLIB
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -g -fopenmp -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
+CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
 
 # Linker Flags:
 LDFLAGS="$LDFLAGS -g -W -Wall"
@@ -63,19 +66,6 @@ AC_C_CONST
 
 # Checks for library functions.
 
-# PIL parameter files have to be installed to the $PFILES directory.
-AC_ARG_VAR([PFILESDIR], [target directory for .par files])
-if test -z "$PFILESDIR"
-then
-	if test -z "$HEADAS"
-	then
-		AC_MSG_ERROR([Environment variable '\$HEADAS' is not set], [])
-	else
-		PFILESDIR="\${HEADAS}/pfiles"
-	fi
-fi
-AC_SUBST([PFILESDIR])
-
 # The following line tells 'configure' to create a header file 'config.h'
 # that is filled with definitions from this script.
 # The 'config.h' contains for example the name of the package and can be
@@ -105,13 +95,8 @@ AC_CONFIG_FILES([Makefile
 		tools/comaexp/Makefile
 		tools/nustarsim/Makefile
 		tools/athenapwfisim/Makefile
-		tools/photonmerge/Makefile
 		tools/htrssim/Makefile
-		tools/htrs_psfgen/Makefile
-		tools/htrs_pixel_intensity/Makefile
-		tools/htrs_fits2tm/Makefile
-		tools/htrs_digital_shaper/Makefile
-		tools/analyse_xms_events/Makefile
+		tools/tes_grades/Makefile
 		tools/gendetsim/Makefile
 		tools/comaimg/Makefile
 		tools/comadet/Makefile
@@ -119,12 +104,13 @@ AC_CONFIG_FILES([Makefile
 		tools/projev/Makefile
 		tools/evpat/Makefile
 		tools/imgev/Makefile
-		tools/simputmerge/Makefile
-		tools/simputsrc/Makefile
 		tools/fudgexp/Makefile
 		tools/orbatt/Makefile
-		tools/mmap/Makefile
-		tools/testbkg/Makefile
+		tools/epicpn_events/Makefile
+		tools/epicmos1_events/Makefile
+		tools/epicmos2_events/Makefile
+		tools/piximpacts/Makefile
+		tools/tesstream/Makefile
 		share/Makefile
 		share/instruments/Makefile
 		extlib/Makefile])

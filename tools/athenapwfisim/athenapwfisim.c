@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "athenapwfisim.h"
 
 
@@ -23,16 +43,16 @@ int athenapwfisim_main()
   }
 
   // Photon list file.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
 
   // Impact list file.
-  ImpactListFile* ilf=NULL;
+  ImpactFile* ilf=NULL;
 
   // Event list files.
-  EventListFile* elf[5]={NULL, NULL, NULL, NULL, NULL};
+  EventFile* elf[5]={NULL, NULL, NULL, NULL, NULL};
 
   // Pattern list files.
-  PatternFile* patf[5]={NULL, NULL, NULL, NULL, NULL};
+  EventFile* patf[5]={NULL, NULL, NULL, NULL, NULL};
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -43,7 +63,7 @@ int athenapwfisim_main()
 
   // Register HEATOOL
   set_toolname("athenapwfisim");
-  set_toolversion("0.03");
+  set_toolversion("0.06");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -110,16 +130,8 @@ int athenapwfisim_main()
       strcat(patternlist_filename_template, par.PatternList);
     }
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -176,7 +188,7 @@ int athenapwfisim_main()
 
       // Load the instrument configuration either with the
       // specific (if available) or the default XML file.
-      subinst[ii]=loadGenInst(buffer, &status);
+      subinst[ii]=loadGenInst(buffer, seed, &status);
       CHECK_STATUS_BREAK(status);
 
       // Set the usage of the detector background according to
@@ -191,23 +203,9 @@ int athenapwfisim_main()
     strtoupper(ucase_buffer);
     if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -215,29 +213,18 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period covered by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
-    // Optional GTI file.
-    if (strlen(par.GTIfile)>0) {
-      strcpy(ucase_buffer, par.GTIfile);
-      strtoupper(ucase_buffer);
-      if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIfile, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
+    // Get a GTI.
+    gti=getGTIFromFileOrContinuous(par.GTIfile, 
+				   par.TSTART, par.TSTART+par.Exposure,
+				   par.MJDREF, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT X-ray source catalogs.
     srccat[0]=loadSourceCatalog(par.Simput, subinst[0]->tel->arf, &status);
@@ -307,32 +294,27 @@ int athenapwfisim_main()
       strcpy(instrume, subinst[0]->instrume);
     }
 
-    double tstop;
-    if (NULL==gti) {
-      tstop=par.TSTART+par.Exposure;
-    } else {
-      tstop=gti->stop[gti->nentries-1];
-    }
+    double tstop=gti->stop[gti->ngti-1];
 
     // Open the output photon list files.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonListFile(photonlist_filename,
-				telescop, instrume, "Normal", 
-				subinst[0]->tel->arf_filename,
-				subinst[0]->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      plf=openNewPhotonFile(photonlist_filename,
+			    telescop, instrume, "Normal", 
+			    subinst[0]->tel->arf_filename,
+			    subinst[0]->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output impact list files.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewImpactListFile(impactlist_filename, 
-				telescop, instrume, "Normal", 
-				subinst[0]->tel->arf_filename,
-				subinst[0]->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      ilf=openNewImpactFile(impactlist_filename, 
+			    telescop, instrume, "Normal", 
+			    subinst[0]->tel->arf_filename,
+			    subinst[0]->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
@@ -340,19 +322,19 @@ int athenapwfisim_main()
     for (ii=0; ii<5; ii++) {
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventListFile(eventlist_filename, 
-				   telescop, instrume, "Normal", 
-				   subinst[0]->tel->arf_filename,
-				   subinst[0]->det->rmf_filename,
-				   par.MJDREF, 0.0, par.TSTART, tstop,
-				   subinst[ii]->det->pixgrid->xwidth,
-				   subinst[ii]->det->pixgrid->ywidth,
-				   par.clobber, &status);
+      elf[ii]=openNewEventFile(eventlist_filename, 
+			       telescop, instrume, "Normal", 
+			       subinst[0]->tel->arf_filename,
+			       subinst[0]->det->rmf_filename,
+			       par.MJDREF, 0.0, par.TSTART, tstop,
+			       subinst[ii]->det->pixgrid->xwidth,
+			       subinst[ii]->det->pixgrid->ywidth,
+			       par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
       // detector chip.
-      setGenDetEventListFile(subinst[ii]->det, elf[ii]);
+      setGenDetEventFile(subinst[ii]->det, elf[ii]);
     }
     CHECK_STATUS_BREAK(status);
 
@@ -360,14 +342,14 @@ int athenapwfisim_main()
     for (ii=0; ii<5; ii++) {
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewPatternFile(patternlist_filename, 
-				  telescop, instrume, "Normal", 
-				  subinst[0]->tel->arf_filename,
-				  subinst[0]->det->rmf_filename,
-				  par.MJDREF, 0.0, par.TSTART, tstop,
-				  subinst[ii]->det->pixgrid->xwidth,
-				  subinst[ii]->det->pixgrid->ywidth,
-				  par.clobber, &status);
+      patf[ii]=openNewEventFile(patternlist_filename, 
+				telescop, instrume, "Normal", 
+				subinst[0]->tel->arf_filename,
+				subinst[0]->det->rmf_filename,
+				par.MJDREF, 0.0, par.TSTART, tstop,
+				subinst[ii]->det->pixgrid->xwidth,
+				subinst[ii]->det->pixgrid->ywidth,
+				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
@@ -458,6 +440,14 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
     }
 
+    // Event type.
+    for (ii=0; ii<5; ii++) {
+      fits_update_key(elf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL",
+		      "event type", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);  
+
     // TLMIN and TLMAX of PI column.
     for (ii=0; ii<5; ii++) {
       char keystr[MAXMSG];
@@ -479,35 +469,6 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
-
-    // Timing keywords.
-    double buffer_tstop=par.TSTART+par.Exposure;
-    double buffer_timezero=0.;
-    // Photon list file.
-    if (NULL!=plf) {
-      fits_update_key(plf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(plf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
-
-    // Impact list file.
-    if (NULL!=ilf) {
-      fits_update_key(ilf->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-		      "reference MJD", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-		      "time offset", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTART", &par.TSTART,
-		      "start time", &status);
-      fits_update_key(ilf->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-		      "stop time", &status);
-      CHECK_STATUS_BREAK(status);
-    }
     
     // --- End of opening files ---
 
@@ -519,7 +480,7 @@ int athenapwfisim_main()
     // Simulation progress status (running from 0 to 100).
     unsigned int progress=0;
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%", 0.);
+      headas_chat(2, "\r%.0lf %%", 0.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -529,33 +490,21 @@ int athenapwfisim_main()
 
     // Determine the total length of the time interval to
     // be simulated.
-    double totalsimtime=0.;
-    double simtime=0.;
-    if (NULL==gti) {
-      totalsimtime=par.Exposure;
-    } else {
-      unsigned long ii; 
-      for (ii=0; ii<gti->nentries; ii++) {
-	totalsimtime+=gti->stop[ii]-gti->start[ii];
-      }
+    double totalsimtime=sumGTI(gti);
+    for (ii=0; ii<5; ii++) {
+      fits_update_key(patf[ii]->fptr, TDOUBLE, "EXPOSURE", &totalsimtime,
+		      "exposure time [s]", &status);
+      CHECK_STATUS_BREAK(status);
     }
+    CHECK_STATUS_BREAK(status);
 
-
-    // Current bin in the GTI collection.
-    unsigned long gtibin=0;
     // Loop over all intervals in the GTI collection.
+    double simtime=0.;
+    int gtibin=0;
     do {
       // Currently regarded interval.
-      double t0, t1;
-      
-      // Determine the currently regarded interval.
-      if (NULL==gti) {
-	t0=par.TSTART;
-	t1=par.TSTART+par.Exposure;
-      } else {
-	t0=gti->start[gtibin];
-	t1=gti->stop[gtibin];
-      }
+      double t0=gti->start[gtibin];
+      double t1=gti->stop[gtibin];
 
       // Set the start time for the detector models.
       for (ii=0; ii<5; ii++) {
@@ -613,7 +562,7 @@ int athenapwfisim_main()
 	while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
 	  progress++;
 	  if (NULL==progressfile) {
-	    headas_chat(2, "\r%.1lf %%", progress*1.);
+	    headas_chat(2, "\r%.0lf %%", progress*1.);
 	    fflush(NULL);
 	  } else {
 	    rewind(progressfile);
@@ -638,20 +587,18 @@ int athenapwfisim_main()
       CHECK_STATUS_BREAK(status);
 
       // Proceed to the next GTI interval.
-      if (NULL!=gti) {
-	simtime+=gti->stop[gtibin]-gti->start[gtibin];
-	gtibin++;
-	if (gtibin>=gti->nentries) break;
-      }
-
-    } while (NULL!=gti);
+      simtime+=gti->stop[gtibin]-gti->start[gtibin];
+      gtibin++;
+      if (gtibin>=gti->ngti) break;
+      
+    } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
     
       
     // Progress output.
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%\n", 100.);
+      headas_chat(2, "\r%.0lf %%\n", 100.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -675,7 +622,13 @@ int athenapwfisim_main()
 	// If no split events are simulated, simply copy the event lists
 	// to pattern lists.
 	headas_chat(3, "copy events to pattern files ...\n");
-	copyEvents2PatternFile(elf[ii], patf[ii], &status);
+	copyEventFile(elf[ii], patf[ii],
+		      subinst[ii]->det->threshold_event_lo_keV,
+		      subinst[ii]->det->threshold_pattern_up_keV,
+		      &status);
+	//CHECK_STATUS_BREAK(status);
+	fits_update_key(patf[ii]->fptr, TSTRING, "EVTYPE", "PATTERN", 
+			"event type", &status);
 	//CHECK_STATUS_BREAK(status);
       }
       //CHECK_STATUS_BREAK(status);
@@ -683,14 +636,34 @@ int athenapwfisim_main()
     }
     CHECK_STATUS_BREAK(status);
     
+    // Store the GTI extension in the event files.
+    for (ii=0; ii<5; ii++) {
+      saveGTIExt(elf[ii]->fptr, "STDGTI", gti, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+
     // Close files in order to save memory.
-    freePhotonListFile(&plf, &status);
-    freeImpactListFile(&ilf, &status);
+    freePhotonFile(&plf, &status);
+    freeImpactFile(&ilf, &status);
+    CHECK_STATUS_BREAK(status);
+    for (ii=0; ii<5; ii++) {
+      freeEventFile(&elf[ii], &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
     for (ii=0; ii<5; ii++) {
       phproj(subinst[ii], ac, patf[ii], par.TSTART, par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+
+    // Store the GTI extension in the pattern files.
+    for (ii=0; ii<5; ii++) {
+      saveGTIExt(patf[ii]->fptr, "STDGTI", gti, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
@@ -705,12 +678,12 @@ int athenapwfisim_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  freeImpactListFile(&ilf,     &status);
-  freePhotonListFile(&plf,     &status);
+  freeImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
   for (ii=0; ii<5; ii++) {
-    destroyGenInst    (&subinst[ii], &status);
-    destroyPatternFile(&patf[ii],    &status);
-    freeEventListFile (&elf[ii],     &status);
+    destroyGenInst(&subinst[ii], &status);
+    freeEventFile(&patf[ii], &status);
+    freeEventFile(&elf[ii], &status);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);
@@ -726,8 +699,12 @@ int athenapwfisim_main()
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -753,7 +730,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the photon list");
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -761,7 +738,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the impact list");
     return(status);
-  } 
+  }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
@@ -769,7 +746,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
-  } 
+  }
   strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
@@ -777,7 +754,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
-  } 
+  }
   strcpy(par->PatternList, sbuffer);
   free(sbuffer);
 
@@ -785,7 +762,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 0");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile0, sbuffer);
   free(sbuffer);
 
@@ -793,7 +770,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 1");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile1, sbuffer);
   free(sbuffer);
 
@@ -801,7 +778,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 2");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile2, sbuffer);
   free(sbuffer);
 
@@ -809,7 +786,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 3");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile3, sbuffer);
   free(sbuffer);
 
@@ -817,7 +794,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 4");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile4, sbuffer);
   free(sbuffer);
 
@@ -831,7 +808,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -840,20 +817,20 @@ int athenapwfisim_getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the right ascension of the telescope "
 	       "pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope "
 	       "pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput, sbuffer);
   free(sbuffer);
 
@@ -861,7 +838,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the second SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput2, sbuffer);
   free(sbuffer);
 
@@ -869,7 +846,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the third SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput3, sbuffer);
   free(sbuffer);
 
@@ -877,7 +854,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the forth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput4, sbuffer);
   free(sbuffer);
 
@@ -885,7 +862,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the fifth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput5, sbuffer);
   free(sbuffer);
 
@@ -901,7 +878,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the GTI file");
     return(status);
-  } 
+  }
   strcpy(par->GTIfile, sbuffer);
   free(sbuffer);
 
@@ -909,19 +886,19 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
@@ -945,7 +922,7 @@ int athenapwfisim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the progress status file");
     return(status);
-  } 
+  }
   strcpy(par->ProgressFile, sbuffer);
   free(sbuffer);
 

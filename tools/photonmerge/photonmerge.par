@@ -1,6 +1,0 @@
-NInputFiles,i,lq,2,1,1000,"number of input files "
-InputPrefix,s,lq,"photons_",,,"filename prefix of the input photon files (FITS)"
-OutputFile,f,lq,"photons.fits",,,"filename of the output photon file (FITS)"
-chatter,i,lh,5,,,"chatter: control verbosity of the program"
-clobber,b,h,no,,,"overwrite output files if exist?"
-history,b,lh,true,,,"history-flag: write a history block with program parameters to each FITS file "

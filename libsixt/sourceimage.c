@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "sourceimage.h"
 
 
@@ -6,7 +26,7 @@ SourceImage* get_SourceImage()
   SourceImage* si=NULL;
 
   // Allocate memory:
-  si = (SourceImage*)malloc(sizeof(SourceImage));
+  si=(SourceImage*)malloc(sizeof(SourceImage));
   if(si!=NULL) {
     si->pixel=NULL;
 
@@ -173,12 +193,6 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     si->maxra  = si->crval1 + si->cdelt1*(si->naxis1-(si->crpix1-0.5));
     si->mindec = si->crval2 - si->cdelt2*(si->crpix2-0.5);
     si->maxdec = si->crval2 + si->cdelt2*(si->naxis2-(si->crpix2-0.5));
-    
-
-    // Load the spectra specified in the FITS header.
-    /* *status = loadSpectra(fptr, &si->spectrumstore);
-       if (EXIT_SUCCESS!=*status) break;*/
-
 
     // Allocate memory for the pixels of the image:
     si->pixel = (double**)malloc(si->naxis1*sizeof(double*));

@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef LADSIM_H
 #define LADSIM_H 1
 
@@ -5,16 +25,17 @@
 
 #include "attitude.h"
 #include "genericdetector.h"
+#include "gti.h"
 #include "phdet.h"
 #include "phgen.h"
 #include "phimg.h"
-#include "photonlistfile.h"
+#include "photonfile.h"
 #include "phproj.h"
 #include "lad.h"
-#include "ladeventlistfile.h"
-#include "ladimpactlistfile.h"
-#include "ladsignallistfile.h"
-#include "linkedladsiglist.h"
+#include "ladeventfile.h"
+#include "ladimpactfile.h"
+#include "ladsignalfile.h"
+#include "ladsignallist.h"
 #include "rmf.h"
 #include "sourcecatalog.h"
 #include "vector.h"

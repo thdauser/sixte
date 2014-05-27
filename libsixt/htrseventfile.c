@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "htrseventfile.h"
 
 
@@ -8,7 +28,7 @@ int openHTRSEventFile(HTRSEventFile* hef,
   int status=EXIT_SUCCESS;
 
   // Call the corresponding routine of the underlying structure.
-  status=openEventFile(&hef->generic, filename, access_mode);
+  status=openEventList(&hef->generic, filename, access_mode);
   CHECK_STATUS_RET(status, status);
 
   // Determine the HTRS-specific elements of the event list.
@@ -78,7 +98,7 @@ int openNewHTRSEventFile(HTRSEventFile* hef,
 int closeHTRSEventFile(HTRSEventFile* hef)
 {
   // Call the corresponding routine of the underlying structure.
-  return(closeEventFile(&hef->generic));
+  return(closeEventList(&hef->generic));
 }
 
 

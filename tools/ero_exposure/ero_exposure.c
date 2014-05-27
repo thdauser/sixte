@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #else
@@ -96,12 +116,6 @@ void saveExpoMap(float** const map,
     fits_create_file(&fptr, filename, status);
     CHECK_STATUS_BREAK(*status);
 
-    // Add header information about program parameters.
-    // The second parameter "1" means that the headers are written
-    // to the first extension.
-    HDpar_stamp(fptr, 1, status);
-    CHECK_STATUS_BREAK(*status);
-
     // Convert the exposure map to a 1d-array to store it in the FITS image.
     map1d=(float*)malloc(naxis1*naxis2*sizeof(float));
     CHECK_NULL_BREAK(map1d, *status, 
@@ -110,14 +124,20 @@ void saveExpoMap(float** const map,
     for (x=0; x<naxis1; x++) {
       long y;
       for (y=0; y<naxis2; y++) {
-	map1d[x + y*naxis1] = map[x][y];
+	map1d[x + y*naxis1]=map[x][y];
       }
     }
 
     // Create an image in the FITS-file (primary HDU):
-    long naxes[2] = { naxis1, naxis2 };
+    long naxes[2]={ naxis1, naxis2 };
     fits_create_img(fptr, FLOAT_IMG, 2, naxes, status);
     //                               |-> naxis
+    CHECK_STATUS_BREAK(*status);
+
+    // Add header information about program parameters.
+    // The second parameter "1" means that the headers are written
+    // to the first extension.
+    HDpar_stamp(fptr, 1, status);
     CHECK_STATUS_BREAK(*status);
 
     // Write WCS header keywords.
@@ -131,18 +151,18 @@ void saveExpoMap(float** const map,
     while (strlen(strptr)>0) {
       char strbuffer[81];
       strncpy(strbuffer, strptr, 80);
-      strbuffer[80] = '\0';
+      strbuffer[80]='\0';
       fits_write_record(fptr, strbuffer, status);
       CHECK_STATUS_BREAK(*status);
-      strptr += 80;
+      strptr+=80;
     }
     CHECK_STATUS_BREAK(*status);
 
     // Write the image to the file.
-    long fpixel[2] = {1, 1}; // Lower left corner.
-    //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
+    long fpixel[2]={1, 1}; // Lower left corner.
+    //              |--|--> FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
-    long lpixel[2] = {naxis1, naxis2}; 
+    long lpixel[2]={naxis1, naxis2}; 
     fits_write_subset(fptr, TFLOAT, fpixel, lpixel, map1d, status);
     CHECK_STATUS_BREAK(*status);
 
@@ -173,7 +193,7 @@ int ero_exposure_main()
   float** expoMap=NULL;
 
   // WCS data structure used for projection.
-  struct wcsprm wcs = { .flag=-1 };
+  struct wcsprm wcs={ .flag=-1 };
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -184,21 +204,22 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.08");
+  set_toolversion("0.11");
   
 
   do { // Beginning of the ERROR handling loop.
 
     // --- Initialization ---
+
     // Read the program parameters using PIL library.
     if ((status=ero_exposure_getpar(&par))) break;
 
     // Get memory for the exposure map.
-    expoMap = (float**)malloc(par.ra_bins*sizeof(float*));
+    expoMap=(float**)malloc(par.ra_bins*sizeof(float*));
     if (NULL!=expoMap) {
       long x;
       for (x=0; x<par.ra_bins; x++) {
-	expoMap[x] = (float*)malloc(par.dec_bins*sizeof(float));
+	expoMap[x]=(float*)malloc(par.dec_bins*sizeof(float));
 	if (NULL!=expoMap[x]) {
 	  // Clear the exposure map.
 	  long y;
@@ -224,13 +245,13 @@ int ero_exposure_main()
       status=EXIT_FAILURE;
       break;
     }
-    wcs.naxis =  2;
-    wcs.crpix[0] = par.ra_bins/2  + 0.5;
-    wcs.crpix[1] = par.dec_bins/2 + 0.5;
-    wcs.crval[0] = 0.5*(par.ra1 +par.ra2 )*180./M_PI;
-    wcs.crval[1] = 0.5*(par.dec1+par.dec2)*180./M_PI;    
-    wcs.cdelt[0] = (par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
-    wcs.cdelt[1] = (par.dec2-par.dec1)*180./M_PI/par.dec_bins;
+    wcs.naxis=2;
+    wcs.crpix[0]=par.ra_bins/2 +0.5;
+    wcs.crpix[1]=par.dec_bins/2+0.5;
+    wcs.crval[0]=0.5*(par.ra1 +par.ra2 )*180./M_PI;
+    wcs.crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;    
+    wcs.cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
+    wcs.cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
     if (1==par.projection) {
@@ -247,14 +268,14 @@ int ero_exposure_main()
 
     // Calculate the minimum cos-value for sources inside the FOV: 
     // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align = cos(par.fov_diameter/2.); 
+    const double fov_min_align=cos(par.fov_diameter/2.); 
     double field_min_align;
     if ((par.ra2-par.ra1 > M_PI/6.) || 
 	(par.dec2-par.dec1 > M_PI/6.)) {
       // Actually -1 should be sufficient, but -2 is even safer.
-      field_min_align = -2.; 
+      field_min_align=-2.; 
     } else {
-      field_min_align = 
+      field_min_align=
 	cos((sqrt(pow(par.ra2-par.ra1, 2.)+pow(par.dec2-par.dec1, 2.))+
 	     par.fov_diameter)/2.);
     }
@@ -280,23 +301,9 @@ int ero_exposure_main()
     strtoupper(ucase_buffer);
     if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(0., par.TSTART, par.TSTART+par.timespan,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status=EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -305,16 +312,10 @@ int ero_exposure_main()
       
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.timespan)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.timespan);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // Note that MJDREF is assumed as the value from the attitude file.
+      checkAttitudeTimeCoverage(ac, ac->mjdref, par.TSTART,
+				par.TSTART+par.timespan, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
@@ -338,19 +339,41 @@ int ero_exposure_main()
     // Simulation progress status (running from 0 to 100).
     unsigned int progress=0;
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%", 0.);
+      headas_chat(2, "\r%.0lf %%", 0.);
       fflush(NULL);
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 0.);
       fflush(progressfile);	
     }
-
+    
     // LOOP over the given time interval from TSTART to TSTART+timespan in steps of dt.
     int intermaps=0;
     double time;
     for (time=par.TSTART; time<par.TSTART+par.timespan; time+=par.dt) {
       
+      // Check if an interim map should be saved now.
+      if (par.intermaps>0) {
+	if (time >= par.TSTART+intermaps*(par.timespan/par.intermaps)) {
+	  // Construct the filename.
+	  char filename[MAXFILENAME];
+	  strncpy(filename, par.Exposuremap,
+		  strlen(par.Exposuremap)-5);
+	  filename[strlen(par.Exposuremap)-5]='\0';
+	  char buffer[MAXFILENAME];
+	  sprintf(buffer, "_%d.fits", intermaps);
+	  strcat(filename, buffer);
+
+	  // Save the interim map.
+	  saveExpoMap(expoMap, filename, par.ra_bins, par.dec_bins,
+		      &wcs, par.clobber, &status);
+	  CHECK_STATUS_BREAK(status);
+
+	  intermaps++;
+	}
+      }
+      // END of saving an interim map.
+
       // Determine the telescope pointing direction at the current time.
       Vector telescope_nz=getTelescopeNz(ac, time, &status);
       CHECK_STATUS_BREAK(status);
@@ -362,7 +385,7 @@ int ero_exposure_main()
       // Check if the specified field of the sky might be within the FOV.
       // Otherwise break this run and continue at the beginning of the loop 
       // with the next time step.
-      Vector pixpos = 
+      Vector pixpos=
 	unit_vector(0.5*(par.ra1+par.ra2), 0.5*(par.dec1+par.dec2));
       if (check_fov(&pixpos, &telescope_nz, field_min_align)!=0) {
 	continue;
@@ -413,33 +436,11 @@ int ero_exposure_main()
       }
       CHECK_STATUS_BREAK(status);
 
-      // Check if an interim map should be saved now.
-      if (par.intermaps>0) {
-	if (time > par.TSTART+ intermaps*(par.timespan/(par.intermaps+1))) {
-	  // Construct the filename.
-	  char filename[MAXFILENAME];
-	  strncpy(filename, par.Exposuremap, 
-		  strlen(par.Exposuremap)-5);
-	  filename[strlen(par.Exposuremap)-5]='\0';
-	  char buffer[MAXFILENAME];
-	  sprintf(buffer, "_%d.fits", intermaps);
-	  strcat(filename, buffer);
-
-	  // Save the interim map.
-	  saveExpoMap(expoMap, filename, par.ra_bins, par.dec_bins, 
-		      &wcs, par.clobber, &status);
-	  CHECK_STATUS_BREAK(status);
-
-	  intermaps++;
-	}
-      }
-      // END of saving an interim map.
-
       // Program progress output.
       while((unsigned int)((time-par.TSTART)*100./par.timespan)>progress) {
 	progress++;
 	if (NULL==progressfile) {
-	  headas_chat(2, "\r%.1lf %%", progress*1.);
+	  headas_chat(2, "\r%.0lf %%", progress*1.);
 	  fflush(NULL);
 	} else {
 	  rewind(progressfile);
@@ -453,7 +454,7 @@ int ero_exposure_main()
     
     // Progress output.
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%\n", 100.);
+      headas_chat(2, "\r%.0lf %%\n", 100.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -638,13 +639,13 @@ int ero_exposure_getpar(struct Parameters *par)
   }
 
   // Convert angles from [deg] to [rad].
-  par->ra1  *= M_PI/180.;
-  par->ra2  *= M_PI/180.;
-  par->dec1 *= M_PI/180.;
-  par->dec2 *= M_PI/180.;
+  par->ra1 *=M_PI/180.;
+  par->ra2 *=M_PI/180.;
+  par->dec1*=M_PI/180.;
+  par->dec2*=M_PI/180.;
 
   // Convert angles from [arc min] to [rad].
-  par->fov_diameter *= M_PI/180.; 
+  par->fov_diameter*=M_PI/180.; 
   
   return(status);
 }

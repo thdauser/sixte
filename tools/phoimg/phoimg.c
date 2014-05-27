@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "phoimg.h"
 
 
@@ -8,8 +28,8 @@ int phoimg_main() {
 
   Attitude* ac=NULL;
 
-  PhotonListFile* plf=NULL;
-  ImpactListFile* ilf=NULL;
+  PhotonFile* plf=NULL;
+  ImpactFile* ilf=NULL;
 
   // Instrument data structure including telescope information like the PSF,
   // vignetting function, focal length, and FOV diameter.
@@ -41,16 +61,8 @@ int phoimg_main() {
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed = par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed = (int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -62,7 +74,7 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set up the Attitude.
@@ -71,23 +83,9 @@ int phoimg_main() {
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -95,17 +93,10 @@ int phoimg_main() {
       CHECK_STATUS_BREAK(status);
 
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period covered by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
     
@@ -118,7 +109,7 @@ int phoimg_main() {
     headas_chat(3, "start imaging process ...\n");
 
     // Open the input photon list file.
-    plf=openPhotonListFile(photonlist_filename, READONLY, &status);
+    plf=openPhotonFile(photonlist_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read header keywords.
@@ -138,11 +129,11 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output impact list file.
-    ilf=openNewImpactListFile(impactlist_filename, 
-			      telescop, instrume, "Normal",
-			      inst->tel->arf_filename, inst->det->rmf_filename,
-			      mjdref, timezero, tstart, tstop,
-			      par.clobber, &status);
+    ilf=openNewImpactFile(impactlist_filename, 
+			  telescop, instrume, "Normal",
+			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  mjdref, timezero, tstart, tstop,
+			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -157,7 +148,7 @@ int phoimg_main() {
       Photon photon={.time=0.};
       
       // Read an entry from the photon list:
-      status=PhotonListFile_getNextRow(plf, &photon);
+      status=PhotonFile_getNextRow(plf, &photon);
       CHECK_STATUS_BREAK(status);
 
       // Check whether we are still within the requested time interval.
@@ -203,14 +194,18 @@ int phoimg_main() {
   sixt_destroy_rng();
 
   // Close the FITS files.
-  freeImpactListFile(&ilf, &status);
-  freePhotonListFile(&plf, &status);
+  freeImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
 
   freeAttitude(&ac);
   destroyGenInst(&inst, &status);
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

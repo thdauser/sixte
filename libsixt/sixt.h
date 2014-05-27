@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef SIXT_H
 #define SIXT_H 1
 
@@ -28,7 +48,7 @@
 #include "headas_error.h"
 #include "wcshdr.h"
 
-
+#include "rmf.h"
 
 /////////////////////////////////////////////////////////////////
 // Constants.
@@ -42,6 +62,15 @@
 
 /** Not a Number. */
 #define SIXT_NAN (0./0.)
+
+
+/** MJDREF used in the FITS header of eROSITA event files
+    [d]. Corresponds to 2000-01-01T00:00:00. */
+extern const double eromjdref;
+
+/** MJDREF used in the FITS header of XMM event files [d]. Corresponds
+    to 1998-01-01T00:00:00.00. */
+extern const double xmmmjdref;
 
 
 /////////////////////////////////////////////////////////////////
@@ -101,6 +130,9 @@
 /////////////////////////////////////////////////////////////////
 
 
+/** Return a seed for the random number generator. */
+unsigned int getSeed(int seed);
+
 /** This routine returns a random number. The values are either
     obtained from the Remeis random number server or are created by
     the HEAdas random number generator. The routine is basically a
@@ -117,7 +149,7 @@
 double sixt_get_random_number(int* const status);
 
 /** Initialize the random number generator. */
-void sixt_init_rng(const int seed, int* const status);
+void sixt_init_rng(const unsigned int seed, int* const status);
 
 /** Clean up the random number generator. */
 void sixt_destroy_rng();
@@ -161,6 +193,15 @@ void sixt_get_XMLFile(char* const filename,
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);
 
+/** Determine a date and a time string for the specified MJDREF offset
+    and time given in seconds since MJDREF. */
+void sixt_get_date_time(const double mjdref,
+			const double t,
+			char* const datestr,
+			char* const timestr,
+			int* const status);
+
+/** Add standard FITS header keywords to the specified file. */
 void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       const int hdunum,
 			       char* const telescop,
@@ -174,17 +215,61 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       double tstop,
 			       int* const status);
 
+/** Reads standard header keywords from a FITS file. */
+void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+			       char* const telescop,
+			       char* const instrume,
+			       char* const filter,
+			       char* const ancrfile,
+			       char* const respfile,
+			       double *mjdref,
+			       double *timezero,
+			       double *tstart,
+			       double *tstop, 
+			       int* const status);
+
+/** Add eROSITA-specific standard FITS header keywords to the
+    specified file. */
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr, 
-				  const int hdunum, 
-				  char* const creation_date, 
-				  char* const date_obs, 
+				  const int hdunum,
+				  char* const creation_date,
+				  char* const date_obs,
 				  char* const time_obs,
-				  char* const date_end, 
-				  char* const time_end, 
-				  double tstart, 
-				  double tstop, 
-				  double timezero, 
+				  char* const date_end,
+				  char* const time_end,
+				  double tstart,
+				  double tstop,
+				  double mjdref,
+				  double timezero,
+				  int ccdnr,
 				  int* const status);
+
+/** Determine whether the given value for MJDREF is equivalent to the
+    specified reference MJDREF. In order to allow a better
+    localization of the problem by the user, an optional description
+    can be specified, which is added to the displayed message in case
+    of a mismatch. */
+void verifyMJDREF(const double refmjdref,
+		  const double mjdref,
+		  const char* const description,
+		  int* const status);
+
+/** Make sure that the value of TIMEZERO is '0.0'. This is required by
+    the current implementation. */
+void verifyTIMEZERO(const double timezero,
+		    int* const status);
+
+/** Determine the signal corresponding to a particular PHA channel
+    according to the EBOUNDS table. The input channel must have the
+    same offset as in the EBOUNDS table. I.e. if the first channel in
+    the EBOUNDS has the number 1, the numbering starts at 1. If the
+    first channel has the number 0, the numbering starts at 0.  The
+    returned energy is randomized between the lower and the upper bin
+    boundary and is given in the same units as the EBOUNDS, (usually
+    [keV]). */
+float getEBOUNDSEnergy(const long channel,
+		       const struct RMF* const rmf, 
+		       int* const status);
 
 
 #endif /* SIXT_H */

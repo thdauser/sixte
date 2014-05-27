@@ -1,6 +1,8 @@
+dist_bin_SCRIPTS =sixte-install.sh
+dist_bin_SCRIPTS+=sixte-install.csh
 
-EXTRA_DIST = INSTALL.txt # include INSTALL.txt in the distributed package
+EXTRA_DIST=INSTALL.txt # include INSTALL.txt in the distributed package
 
 # The sub-directories are built before the current directory.
 # In order to change this, include "." in the list of SUBDIRS.
-SUBDIRS = extlib libsixt tools share
+SUBDIRS=extlib libsixt tools share

@@ -25,6 +25,8 @@ dist_athenapluswfi_DATA+= athenaplus/wfi/splitframe_core.xml
 # X-IFU
 athenaplusxifudir = $(athenaplusdir)/xifu
 dist_athenaplusxifu_DATA = athenaplus/xifu/plain.xml
+dist_athenaplusxifu_DATA+= athenaplus/xifu/xifu_detector.xml
+dist_athenaplusxifu_DATA+= athenaplus/xifu/pulse.fits
 
 # GRAVITAS
 gravitasdir = $(xmldir)/gravitas
@@ -55,6 +57,7 @@ dist_srg_DATA = srg/erosita.xml
 # XMM EPICpn
 xmmepicpndir = $(xmldir)/xmm/epicpn
 dist_xmmepicpn_DATA = xmm/epicpn/fullframe.xml
+dist_xmmepicpn_DATA+= xmm/epicpn/smallwindow.xml
 dist_xmmepicpn_DATA+= xmm/epicpn/timing.xml
 dist_xmmepicpn_DATA+= xmm/epicpn/burst.xml
-
+dist_xmmepicpn_DATA+= xmm/epicpn/combined12ccds.xml

@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #else
@@ -21,7 +41,7 @@ int htrssim_main() {
   // Before the first usage it has to be initialized.
   HTRSDetector detector;
 
-  ImpactListFile* impactlistfile=NULL;
+  ImpactFile* impactlistfile=NULL;
 
   int status=EXIT_SUCCESS; // Error status.
 
@@ -43,8 +63,8 @@ int htrssim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the impact list FITS file.
-    impactlistfile = openImpactListFile(parameters.impactlist_filename, 
-					READONLY, &status);
+    impactlistfile=openImpactFile(parameters.impactlist_filename, 
+				  READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
 
@@ -198,7 +218,7 @@ int htrssim_main() {
   headas_chat(5, "\ncleaning up ...\n");
 
   // Close the FITS files.
-  freeImpactListFile(&impactlistfile, &status);
+  freeImpactFile(&impactlistfile, &status);
 
   // Release memory of detector.
   status+=cleanupHTRSDetector(&detector);
@@ -206,8 +226,12 @@ int htrssim_main() {
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

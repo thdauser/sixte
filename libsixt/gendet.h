@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef GENDET_H 
 #define GENDET_H 1
 
@@ -6,7 +26,7 @@
 #include "clocklist.h"
 #include "erodetbkgrndgen.h"
 #include "event.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 #include "gendetline.h"
 #include "genericdetector.h"
 #include "genpixgrid.h"
@@ -110,8 +130,8 @@ typedef struct {
       ray detector background. */
   int erobackground;
 
-  /** Model for detector background according to a given PHA file. */
-  PHABkg* phabkg;
+  /** Models for detector background based on PHA spectra. */
+  PHABkg* phabkg[2];
   
   /** Flag, whether the detector background models (either
       eROSITA-specific model for the cosmic ray detector background or
@@ -130,6 +150,10 @@ typedef struct {
   /** Time for one read-out frame [s]. */
   double frametime;
 
+  /** Non-paralyzable dead time that is applied at the readout of each
+      pixel. */
+  double deadtime;
+
   /** Flag whether there has been any photon interaction since the
       last new frame. */
   int anyphoton;
@@ -142,10 +166,10 @@ typedef struct {
   /** Bad pixel map. */
   BadPixMap* badpixmap;
 
-  /** Output EventListFile. Note that this FITS file is not closed
-      when the GenDet data struct is destroyed. It has to be closed
+  /** Output EventFile. Note that this FITS file is not closed when
+      the GenDet data struct is destroyed. It has to be closed
       manually. */
-  EventListFile* elf;
+  EventFile* elf;
 
 } GenDet;
 
@@ -190,7 +214,7 @@ void setGenDetStartTime(GenDet* const det, const double t0);
 void GenDetLineShift(GenDet* const det);
 
 /** Read-out a particular line of the GenDet pixel array and store the
-    charges in the output EventListFile. After read-out the charges
+    charges in the output EventFile. After read-out the charges
     in the pixels are deleted. */
 void GenDetReadoutLine(GenDet* const det, 
 		       const int lineindex, 
@@ -199,13 +223,6 @@ void GenDetReadoutLine(GenDet* const det,
 
 /** Clear a particular line of the GenDet pixel array. */
 void GenDetClearLine(GenDet* const det, const int lineindex);
-
-/** This function is called if a bad pixel is encountered and has to
-    be applied to the detector pixel array. The parameter 'value' has
-    to be added to the bad pixel at 'x' and 'y'. */
-void encounterGenDetBadPix(void* const data, 
-			   const int x, const int y, 
-			   const float value);
 
 /** Constructor for GenSplit data structure. */
 GenSplit* newGenSplit(int* const status);
@@ -224,14 +241,23 @@ int makeGenSplitEvents(GenDet* const det,
 		       const double time,
 		       int* const status);
 
+/** Add a charge (photon energy [keV]) to a particular pixel in the
+    specified GenDetLine. The routine sets the anycharge flag of the
+    affected line. */
+void addGenDetCharge2Pixel(GenDet* const line,
+			   const int column,
+			   const int row,
+			   const float signal,
+			   const double time,
+			   const long ph_id, const long src_id);
+
 /** Parse the GenDet definition from an XML file. */
 void parseGenDetXML(GenDet* const det, 
 		    const char* const filename, 
 		    int* const status);
 
-/** Assign an output EventListFile. */
-void setGenDetEventListFile(GenDet* const det,
-			    EventListFile* const elf);
+/** Assign an output EventFile. */
+void setGenDetEventFile(GenDet* const det, EventFile* const elf);
 
 /** Set the ignore_bkg flag. */
 void setGenDetIgnoreBkg(GenDet* const det, const int ignore);

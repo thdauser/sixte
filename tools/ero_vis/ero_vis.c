@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #else
@@ -33,7 +53,7 @@ struct Parameters {
   double dt; 
 
   /** [rad]. */
-  double fov_diameter;
+  double visibility_range;
 
   char clobber;
 };
@@ -50,6 +70,10 @@ int ero_vis_main()
   Attitude* ac=NULL;
   SimputCtlg* cat=NULL;
   GTI* gti=NULL;
+  fitsfile* fptr=NULL;
+
+  char* datestr=NULL;
+  char* timestr=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;
@@ -57,7 +81,7 @@ int ero_vis_main()
 
   // Register HEATOOL:
   set_toolname("ero_vis");
-  set_toolversion("0.04");
+  set_toolversion("0.07");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -91,6 +115,7 @@ int ero_vis_main()
     // Set up a new GTI collection.
     gti=newGTI(&status);
     CHECK_STATUS_BREAK(status);
+    gti->mjdref=ac->mjdref;
 
     // --- END of Initialization ---
 
@@ -165,12 +190,12 @@ int ero_vis_main()
 
     // Determine the diameter of the search radius (minimum cos-value).
     // (angle(telescope,source) <= 1/2 * diameter)
-    double search_angle=0.5*par.fov_diameter+cone_radius;
+    double search_angle=0.5*par.visibility_range+cone_radius;
     double min_align; 
-    if (search_angle <= M_PI) {
+    if (search_angle<=M_PI) {
       min_align=cos(search_angle);
     } else {
-      min_align = -1.; 
+      min_align=-1.; 
     }      
 
     // --- Beginning of GTI calculation ---
@@ -215,13 +240,73 @@ int ero_vis_main()
     saveGTI(gti, par.GTIfile, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
+
+    // Open the GTI file and append the columns 'DATE-START', 'TIME-START',
+    // 'DATE-STOP', and 'TIME-STOP', which contain the same information
+    // as the already present columns 'START' and 'STOP', but are better
+    // readable for human being than large numbers of seconds.
+
+    // Open the file.
+    fits_open_file(&fptr, par.GTIfile, READWRITE, &status);
+    CHECK_STATUS_BREAK(status);
+    int hdutype;
+    fits_movabs_hdu(fptr, 2, &hdutype, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Determine the number of rows.
+    long nrows;
+    fits_get_num_rows(fptr, &nrows, &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Insert the new columns.
+    fits_insert_col(fptr, 3, "DATE-START", "10A", &status);
+    fits_insert_col(fptr, 4, "TIME-START", "8A", &status);
+    fits_insert_col(fptr, 5, "DATE-STOP", "10A", &status);
+    fits_insert_col(fptr, 6, "TIME-STOP", "8A", &status);
+    CHECK_STATUS_BREAK(status);
+
+    // Loop over all entries.
+    datestr=(char*)malloc(20*sizeof(char));
+    CHECK_NULL_BREAK(datestr, status, "memory allocation for string buffer failed");
+    timestr=(char*)malloc(20*sizeof(char));
+    CHECK_NULL_BREAK(datestr, status, "memory allocation for string buffer failed");
+    long jj;
+    for (jj=0; jj<nrows; jj++) {
+      // Determine the start date and time.
+      sixt_get_date_time(gti->mjdref, gti->start[jj], datestr, timestr, &status);
+      CHECK_STATUS_BREAK(status);
+      fits_write_col(fptr, TSTRING, 3, jj+1, 1, 1, &datestr, &status);
+      fits_write_col(fptr, TSTRING, 4, jj+1, 1, 1, &timestr, &status);
+      CHECK_STATUS_BREAK(status);
+
+      // Determine the stop date and time.
+      sixt_get_date_time(gti->mjdref, gti->stop[jj], datestr, timestr, &status);
+      CHECK_STATUS_BREAK(status);
+      fits_write_col(fptr, TSTRING, 5, jj+1, 1, 1, &datestr, &status);
+      fits_write_col(fptr, TSTRING, 6, jj+1, 1, 1, &timestr, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+    
+    // Close the file.
+    fits_close_file(fptr, &status);
+    CHECK_STATUS_BREAK(status);
+    fptr=NULL;
+
   } while(0); // END of the error handling loop.
 
 
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
 
+  // Close the GTI file.
+  if (NULL!=fptr) {
+    fits_close_file(fptr, &status);
+  }
+
   // Release memory.
+  if (NULL!=datestr) free(datestr);
+  if (NULL!=timestr) free(timestr);
   freeAttitude(&ac);
   freeGTI(&gti);
 
@@ -235,45 +320,45 @@ int ero_vis_getpar(struct Parameters *par)
   int status=EXIT_SUCCESS; // Error status
   
   // Get the filename of the input attitude file (FITS file).
-  if ((status = PILGetFname("Attitude", par->Attitude))) {
+  if ((status=PILGetFname("Attitude", par->Attitude))) {
     SIXT_ERROR("failed reading the name of the attitude file");
   }
   
   // Get the filename of the SIMPUT file.
-  else if ((status = PILGetFname("Simput", par->Simput))) {
+  else if ((status=PILGetFname("Simput", par->Simput))) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
   }
 
   // Get the source position specified by RA and Dec.
-  else if ((status = PILGetReal("RA", &par->RA))) {
+  else if ((status=PILGetReal("RA", &par->RA))) {
     SIXT_ERROR("failed reading the right ascension of the source");
   }
-  else if ((status = PILGetReal("DEC", &par->DEC))) {
+  else if ((status=PILGetReal("DEC", &par->DEC))) {
     SIXT_ERROR("failed reading the declination of the source");
   }
   
   // Get the filename of the output GTI file (FITS file).
-  else if ((status = PILGetFname("GTIfile", par->GTIfile))) {
+  else if ((status=PILGetFname("GTIfile", par->GTIfile))) {
     SIXT_ERROR("failed reading the name of the GTI file");
   }
 
-  // Read the diameter of the FOV (in arcmin).
-  else if ((status = PILGetReal("fov_diameter", &par->fov_diameter))) {
+  // Read the diameter of the visibility field (in arcmin).
+  else if ((status=PILGetReal("visibility_range", &par->visibility_range))) {
     SIXT_ERROR("failed reading the diameter of the FOV");
   }
 
   // Get the start time.
-  else if ((status = PILGetReal("TSTART", &par->TSTART))) {
+  else if ((status=PILGetReal("TSTART", &par->TSTART))) {
     SIXT_ERROR("failed reading the TSTART");
   }
 
   // Get the exposure time.
-  else if ((status = PILGetReal("Exposure", &par->Exposure))) {
+  else if ((status=PILGetReal("Exposure", &par->Exposure))) {
     SIXT_ERROR("failed reading the exposure time");
   }
 
   // Get the time step.
-  else if ((status = PILGetReal("dt", &par->dt))) {
+  else if ((status=PILGetReal("dt", &par->dt))) {
     SIXT_ERROR("failed reading the 'dt' parameter");
   }
 
@@ -282,7 +367,7 @@ int ero_vis_getpar(struct Parameters *par)
   }
 
   // Convert FOV diameter from [deg] to [rad].
-  par->fov_diameter *= M_PI/180.; 
+  par->visibility_range*=M_PI/180.; 
   
   return(status);
 }

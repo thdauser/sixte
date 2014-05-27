@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef LAD_H
 #define LAD_H 1
 
@@ -8,6 +28,11 @@
 #include "simput.h"
 #include "vignetting.h"
 #include "xmlbuffer.h"
+
+
+/** This flag can be used to switch between the current and the old
+   collimator model with square and circular holes, respectively. */
+#define LAD_COLLIMATOR_SQUARE_HOLES 1
 
 
 /////////////////////////////////////////////////////////////////
@@ -134,7 +159,7 @@ typedef struct {
   char* rmf_filename;
   struct RMF* rmf;
 
-  /** Definition of the detector background. */
+  /** Detector background model. */
   SimputCtlg* bkgctlg;
 
   /** Temperature of the SDDs [K]. */
@@ -223,7 +248,7 @@ void freeLADElement(LADElement** const element);
     inside a hole but on the absorbing material, the return values of
     the column and row indices are set to -1. */
 void LADCollimatorHoleIdx(const struct Point2d position,
-			  long* col, long* row);
+			  long* const col, long* const row);
 
 
 #endif

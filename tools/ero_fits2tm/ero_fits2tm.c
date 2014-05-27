@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #else
@@ -7,7 +27,7 @@
 
 #include "sixt.h"
 #include "event.h"
-#include "eventlistfile.h"
+#include "eventfile.h"
 
 #define TOOLSUB ero_fits2tm_main
 #include "headas_main.c"
@@ -20,18 +40,20 @@
 struct Parameters {
   char EventList[MAXFILENAME];
   char OutputFile[MAXFILENAME];
+
+  double TIMEZERO;
 };
 
 
 // Data structure for the byte output writing routine.
 struct Binary_Output {
-  unsigned char *bytes;  // Byte output buffer
-  FILE *fptr;            // Pointer to output file
-  int n_bytes;           // Counting the bytes already written to the buffer
-  int max_bytes;         // Maximum number of bytes in one TLM record
-  unsigned char framecounter;  // Counter for the records (NOT detector frames)
-  unsigned char framenumber;   // Counter for the records belonging to one and
-                               // the same detector frame
+  unsigned char *bytes; // Byte output buffer
+  FILE *fptr;           // Pointer to output file
+  int n_bytes;          // Counting the bytes already written to the buffer
+  int max_bytes;        // Maximum number of bytes in one TLM record
+  unsigned char framecounter; // Counter for the records (NOT detector frames)
+  unsigned char framenumber;  // Counter for the records belonging to one and
+                              // the same detector frame
 };
 
 
@@ -138,8 +160,10 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
 				       const Event* const event)
 {
   // Check for overflows:
-  if (event->pi>0x3FFF) return(-1);
-
+  assert(event->pi<=0x3FFF);
+  assert(event->rawx<=0xFF);
+  assert(event->rawy<=0xFF);
+  
   // Write the data of the event to the byte output buffer:
   binary_output->bytes[binary_output->n_bytes++]=
     0x3F & (unsigned char)(event->pi>>8);
@@ -166,7 +190,10 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
 {
   // Write the TIME element (readout time of last detector frame):
   long ltime=(long)(time*40);
-  if (ltime > 0x3FFFFFFF)  return(-1);
+  if (ltime > 0x3FFFFFFF) {
+    SIXT_ERROR("time exceeds maximum allowed value");
+    return(-1);
+  }
   binary_output->bytes[binary_output->n_bytes++]=
     0x40 + (unsigned char)(ltime>>24);
   binary_output->bytes[binary_output->n_bytes++]=
@@ -208,14 +235,12 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
 }
 
 
-//////////////////////////////////
-//    MAIN
 int ero_fits2tm_main()
 {
   struct Parameters par;
 
   /** FITS file containing the input event list. */
-  EventListFile* elf=NULL; 
+  EventFile* elf=NULL; 
   /** Output file. */
   FILE *of=NULL;
 
@@ -228,27 +253,55 @@ int ero_fits2tm_main()
 
   // HEATOOLs: register program
   set_toolname("ero_fits2tm");
-  set_toolversion("0.03");
+  set_toolversion("0.05");
 
 
   do { // Beginning of ERROR handling loop
 
     // --- Initialization ---
- 
-    if ((status=PILGetFname("EventList", par.EventList))) {
-      SIXT_ERROR("failed reading the name of the input event list (FITS file)");
+    char* sbuffer=NULL;
+
+    status=ape_trad_query_file_name("EventList", &sbuffer);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading the name of the input event list");
       break;
     }
+    strcpy(par.EventList, sbuffer);
+    free(sbuffer);
 
-    // Get the name of the output file (binary).
-    if ((status=PILGetFname("OutputFile", par.OutputFile))) {
-      SIXT_ERROR("failed reading the filename of the output file (binary file)");
+    status=ape_trad_query_file_name("OutputFile", &sbuffer);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading the name of the output file");
+      break;
+    }
+    strcpy(par.OutputFile, sbuffer);
+    free(sbuffer);
+
+    status=ape_trad_query_double("TIMEZERO", &par.TIMEZERO);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading TIMEZERO");
       break;
     }
 
     // Open the event list FITS file.
-    elf=openEventListFile(par.EventList, READONLY, &status);
+    elf=openEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Check if the input file contains single-pixel events.
+    char evtype[MAXMSG], comment[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "EVTYPE", evtype, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not read FITS keyword 'EVTYPE'");
+      break;
+    }
+    strtoupper(evtype);
+    if (0!=strcmp(evtype, "PIXEL")) {
+      status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "event type of input file is '%s' (must be 'PIXEL')", evtype);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     // Open the binary file for output.
     of=fopen(par.OutputFile, "w+");
@@ -293,6 +346,9 @@ int ero_fits2tm_main()
       // Read the event from the FITS file.
       getEventFromFile(elf, row+1, &(eventlist[n_buffered_events]), &status);
       CHECK_STATUS_BREAK(status);
+
+      // Subtract the time offset.
+      eventlist[n_buffered_events].time-=par.TIMEZERO;
 
       if (eventlist[n_buffered_events].frame>eventlist[0].frame) {
 	// Write the events to the binary output.
@@ -345,14 +401,17 @@ int ero_fits2tm_main()
 
   // Close files
   if (NULL!=of) fclose(of);
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
 
   // Release memory.
   free_Binary_Output(binary_output);
   if (NULL!=eventlist) free(eventlist);
   
-
-  if (status==EXIT_SUCCESS) headas_chat(5, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 

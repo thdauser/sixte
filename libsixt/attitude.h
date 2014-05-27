@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef ATTITUDE_H
 #define ATTITUDE_H 1
 
@@ -60,6 +80,12 @@ typedef struct {
       rotation of this reference direction around the roll angle. */
   AttNxAlign align;
 
+  /** MJDREF as specified in the FITS header of the attitude file. */
+  double mjdref;
+
+  /** TSTART and TSTOP. */
+  double tstart, tstop;
+
 } Attitude;
 
 
@@ -76,13 +102,13 @@ Attitude* getAttitude(int* const status);
     file. The routine loads the entire attitude data from the
     file. After reading it checks, whether the required time interval
     is a subset of the data provided in the attitude file. */
-Attitude* loadAttitude(const char* filename, int* const status);
+Attitude* loadAttitude(const char* const filename, int* const status);
 
 /** Destructor for the Attitude data structure. */
 void freeAttitude(Attitude** const ac);
 
 /** Determine the telescope pointing direction at a specific time. */
-Vector getTelescopeNz(Attitude* const ac, 
+Vector getTelescopeNz(Attitude* const ac,
 		      const double time,
 		      int* const status);
 
@@ -92,16 +118,30 @@ void getTelescopeAxes(Attitude* const ac,
 		      Vector* const nx,
 		      Vector* const ny,
 		      Vector* const nz,
-		      const double time, 
+		      const double time,
 		      int* const status);
 
 /** Determine the roll-angle ([rad]) at a specific time. */
-float getRollAngle(Attitude* const ac, 
-		   const double time, 
+float getRollAngle(Attitude* const ac,
+		   const double time,
 		   int* const status);
 
-/** Return an empty AttitudeEntry object with default values. */
-AttitudeEntry defaultAttitudeEntry();
+/** Produce a pointing attitude. */
+Attitude* getPointingAttitude(const double mjdref,
+			      const double tstart,
+			      const double tstop,
+			      const double ra,
+			      const double dec,
+			      int* const status);
+
+/** Check if the interval specified by tstart and tstop with respect
+    to mjdred is covered by the attitude. If that is not the case, an
+    error is returned. */
+void checkAttitudeTimeCoverage(const Attitude* const ac,
+			       const double mjdref,
+			       const double tstart,
+			       const double tstop,
+			       int* const status);
 
 
 #endif /* ATTITUDE_H */

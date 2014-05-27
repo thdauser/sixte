@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "htrsdetector.h"
 
 
@@ -90,7 +110,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   // NOTE: In this simulation the charge is represented by the nominal
   // photon energy which corresponds to the PHA channel according to the
   // EBOUNDS table.
-  float charge=getEBOUNDSEnergy(channel, hd->generic.rmf, 0, &status);
+  float charge=getEBOUNDSEnergy(channel, hd->generic.rmf, &status);
   CHECK_STATUS_RET(status, 0);
 
   if (charge > 0.) {
@@ -267,7 +287,7 @@ int HTRSassignEventGrades(HTRSDetector detector)
   // Reset the event file row counter to the first line in the file.
   detector.eventlist.generic.row = 0;
   // Loop over all events in the event file.
-  while((EXIT_SUCCESS==status) && (0==EventFileEOF(&detector.eventlist.generic))) {
+  while((EXIT_SUCCESS==status) && (0==EventListEOF(&detector.eventlist.generic))) {
     
     // Read the next event from the FITS file.
     status=HTRSEventFile_getNextRow(&detector.eventlist, &event);
@@ -281,7 +301,7 @@ int HTRSassignEventGrades(HTRSDetector detector)
     // Former events:
     nbefore_slow=0; nbefore_fast=0;
     row = detector.eventlist.generic.row - 1;
-    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+    while (1==EventListRowIsValid(&detector.eventlist.generic, row)) {
       status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
       if (EXIT_SUCCESS!=status) break;
       if (event.time - eventbuffer.time > detector.slow_shaping_time) break;
@@ -300,7 +320,7 @@ int HTRSassignEventGrades(HTRSDetector detector)
     // Subsequent events:
     nafter_slow=0; nafter_fast=0;
     row = detector.eventlist.generic.row + 1;
-    while (1==EventFileRowIsValid(&detector.eventlist.generic, row)) {
+    while (1==EventListRowIsValid(&detector.eventlist.generic, row)) {
       status = HTRSEventFile_getRow(&detector.eventlist, &eventbuffer, row);
       if (EXIT_SUCCESS!=status) break;
       if (eventbuffer.time - event.time > detector.slow_shaping_time) break;

@@ -8,6 +8,26 @@
 #endif
 
 
+/** MJDREF used in the FITS header of eROSITA event files
+    [d]. Corresponds to 2000-01-01T00:00:00. */
+const double eromjdref=51544.;
+
+/** MJDREF used in the FITS header of XMM event files [d]. Corresponds
+    to 1998-01-01T00:00:00.00. */
+const double xmmmjdref=50814.;
+
+
+unsigned int getSeed(int seed)
+{
+  if (seed>=0) {
+    return((unsigned int)seed);
+  } else {
+    // Determine the seed from the system clock.
+    return((unsigned int)time(NULL));
+  }
+}
+
+
 double sixt_get_random_number(int* const status)
 {
   // Return a random value out of the interval [0,1).
@@ -37,7 +57,7 @@ double sixt_get_random_number(int* const status)
 }
 
 
-void sixt_init_rng(const int seed, int* const status)
+void sixt_init_rng(const unsigned int seed, int* const status)
 {
   // Initialize HEAdasS random number generator.
   // Note that this has to be done in any case, even
@@ -255,6 +275,44 @@ void sixt_get_LADXMLFile(char* const filename,
 }
 
 
+void sixt_get_date_time(const double mjdref,
+			const double t,
+			char* const datestr,
+			char* const timestr,
+			int* const status)
+{
+  int int_day=(int)(mjdref-40587.0+t/86400.0);
+  int int_sec=(int)((mjdref-40587.0-int_day)*86400.0+t);
+  struct tm time_utc;
+  time_utc.tm_sec=int_sec;
+  time_utc.tm_min=0;
+  time_utc.tm_hour=0;
+  time_utc.tm_mday=1+int_day;
+  time_utc.tm_mon=0;
+  time_utc.tm_year=70;
+  time_t timet=mktime(&time_utc);
+  // Note that we have to use 'localtime' here, although we
+  // want to determine the UTC, because this is the inverse
+  // of 'mktime'.
+  struct tm* time_utcn=localtime(&timet);
+  if (NULL==time_utcn) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not determine UTC time");
+    return;
+  }
+  if (10!=strftime(datestr, MAXMSG, "%Y-%m-%d", time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting date string");
+    return;
+  }
+  if (8!=strftime(timestr, MAXMSG, "%H:%M:%S", time_utcn)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("failed formatting time string");
+    return;
+  }
+}
+
+
 void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       const int hdunum,
 			       char* const telescop,
@@ -319,76 +377,21 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
   CHECK_STATUS_VOID(*status);
 
   // Determine the start date and time.
-  int int_day=(int)(mjdref-40587.0+tstart/86400.0);
-  int int_sec=(int)((mjdref-40587.0-int_day)*86400.0+tstart);
-  struct tm start_time_utc;
-  start_time_utc.tm_sec=int_sec;
-  start_time_utc.tm_min=0;
-  start_time_utc.tm_hour=0;
-  start_time_utc.tm_mday=1+int_day;
-  start_time_utc.tm_mon=0;
-  start_time_utc.tm_year=70;
-  time_t start_time=mktime(&start_time_utc);
-  // Note that we have to use 'localtime' here, although we
-  // want to determine the UTC, because this is the inverse
-  // of 'mktime'.
-  struct tm* start_time_utcn=localtime(&start_time);
-  if (NULL==start_time_utcn) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("could not determine UTC time");
-    return;
-  }
-  char start_datestr[MAXMSG], start_timestr[MAXMSG];
-  if (10!=strftime(start_datestr, MAXMSG, "%Y-%m-%d", start_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting date string");
-    return;
-  }
-  if (8!=strftime(start_timestr, MAXMSG, "%H:%M:%S", start_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting time string");
-    return;
-  }
-  fits_update_key(fptr, TSTRING, "DATE-OBS", start_datestr, 
+  char datestr[MAXMSG], timestr[MAXMSG];
+  sixt_get_date_time(mjdref, tstart, datestr, timestr, status);
+  CHECK_STATUS_VOID(*status);
+  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr, 
 		  "UT date of observation start", status);
-  fits_update_key(fptr, TSTRING, "TIME-OBS", start_timestr, 
+  fits_update_key(fptr, TSTRING, "TIME-OBS", timestr, 
 		  "UT time of observation start", status);
   CHECK_STATUS_VOID(*status);
 
   // Determine the stop date and time.
-  int_day=(int)(mjdref-40587.0+tstop/86400.0);
-  int_sec=(int)((mjdref-40587.0-int_day)*86400.0+tstop);
-  struct tm stop_time_utc;
-  stop_time_utc.tm_sec=int_sec;
-  stop_time_utc.tm_min=0;
-  stop_time_utc.tm_hour=0;
-  stop_time_utc.tm_mday=1+int_day;
-  stop_time_utc.tm_mon=0;
-  stop_time_utc.tm_year=70;
-  time_t stop_time=mktime(&stop_time_utc);
-  // Note that we have to use 'localtime' here, although we
-  // want to determine the UTC, because this is the inverse
-  // of 'mktime'.
-  struct tm* stop_time_utcn=localtime(&stop_time);
-  if (NULL==stop_time_utcn) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("could not determine UTC time");
-    return;
-  }
-  char stop_datestr[MAXMSG], stop_timestr[MAXMSG];
-  if (10!=strftime(stop_datestr, MAXMSG, "%Y-%m-%d", stop_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting date string");
-    return;
-  }
-  if (8!=strftime(stop_timestr, MAXMSG, "%H:%M:%S", stop_time_utcn)) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("failed formatting time string");
-    return;
-  }
-  fits_update_key(fptr, TSTRING, "DATE-END", stop_datestr, 
+  sixt_get_date_time(mjdref, tstop, datestr, timestr, status);
+  CHECK_STATUS_VOID(*status);
+  fits_update_key(fptr, TSTRING, "DATE-END", datestr, 
 		  "UT date of observation end", status);
-  fits_update_key(fptr, TSTRING, "TIME-END", stop_timestr, 
+  fits_update_key(fptr, TSTRING, "TIME-END", timestr, 
 		  "UT time of observation end", status);
   CHECK_STATUS_VOID(*status);
 
@@ -420,6 +423,37 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 }
 
 
+void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+			       char* const telescop,
+			       char* const instrume,
+			       char* const filter,
+			       char* const ancrfile,
+			       char* const respfile,
+			       double *mjdref,
+			       double *timezero,
+			       double *tstart,
+			       double *tstop, 
+				int* const status)
+{
+  
+  char comment[MAXMSG];
+  
+  fits_read_key(ifptr, TSTRING, "TELESCOP", telescop, comment, status);
+  fits_read_key(ifptr, TSTRING, "INSTRUME", instrume, comment, status);
+  fits_read_key(ifptr, TSTRING, "FILTER", filter, comment, status);
+  CHECK_STATUS_VOID(*status);
+  fits_read_key(ifptr, TSTRING, "ANCRFILE", ancrfile, comment, status);
+  fits_read_key(ifptr, TSTRING, "RESPFILE", respfile, comment, status);
+  CHECK_STATUS_VOID(*status);
+  // MJDREF, TSTART, TSTOP.
+  fits_read_key(ifptr, TDOUBLE, "MJDREF", mjdref, comment, status);
+  fits_read_key(ifptr, TDOUBLE, "TIMEZERO", timezero, comment, status);
+  fits_read_key(ifptr, TDOUBLE, "TSTART", tstart, comment, status);
+  fits_read_key(ifptr, TDOUBLE, "TSTOP", tstop, comment, status);
+  CHECK_STATUS_VOID(*status);
+}
+
+
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  const int hdunum,
 				  char* const creation_date,
@@ -429,7 +463,9 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  char* const time_end,
 				  double tstart,
 				  double tstop,
+				  double mjdref,
 				  double timezero,
+				  int ccdnr,
 				  int* const status)
 {
   // Determine the current HDU.
@@ -451,11 +487,15 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   fits_update_key(fptr, TSTRING, "MISSION", mission, "", status);
   char telescop[MAXMSG]="eROSITA";
   fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
-  char instrume[MAXMSG]="INSTRUME";
+  char instrume[MAXMSG];
+  sprintf(instrume, "FM%d", ccdnr);
   fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
+  fits_update_key(fptr, TSTRING, "INSTRUM1", instrume, "", status);
+  int ninst=1;
+  fits_update_key(fptr, TINT, "NINST", &ninst, "", status);
 
-  char obsmode[MAXMSG]="";
-  fits_update_key(fptr, TSTRING, "OBSMODE", obsmode, "", status);
+  char obsmode[MAXMSG]="SURVEY";
+  fits_update_key(fptr, TSTRING, "OBS_MODE", obsmode, "", status);
   char datamode[MAXMSG]="";
   fits_update_key(fptr, TSTRING, "DATAMODE", datamode, "", status);
   
@@ -481,18 +521,17 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   fits_update_key(fptr, TDOUBLE, "DE_OBJ", &de_obj, "[deg] J2000", status);
 
   fits_update_key(fptr, TSTRING, "DATE", creation_date, "File creation date", status);
-  fits_update_key(fptr, TSTRING, "DATE-OBS", date_obs, "UT date of observation start", status);
-  fits_update_key(fptr, TSTRING, "TIME-OBS", time_obs, "UT time of observation start", status);
-  fits_update_key(fptr, TSTRING, "DATE-END", date_end, "UT date of observation end", status);
-  fits_update_key(fptr, TSTRING, "TIME-END", time_end, "UT time of observation end", status);
+  char date_obs_time[MAXMSG]="";
+  sprintf(date_obs_time, "%sT%s", date_obs, time_obs);
+  fits_update_key(fptr, TSTRING, "DATE-OBS", date_obs_time, "UT date of observation start", status);
+  char date_end_time[MAXMSG]="";
+  sprintf(date_end_time, "%sT%s", date_end, time_end);
+  fits_update_key(fptr, TSTRING, "DATE-END", date_end_time, "UT date of observation end", status);
 
   fits_update_key(fptr, TDOUBLE, "TSTART", &tstart, "Start time of exposure in units of TIME column", status);
   fits_update_key(fptr, TDOUBLE, "TSTOP", &tstop, "Stop time of exposure in units of TIME column", status);
-  fits_update_key(fptr, TDOUBLE, "TEND", &tstop, "End time of exposure in units of TIME column", status);
 
-  double mjdref=54101.0;
-  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "[d] 2007-01-01T00:00:00", status);
-  
+  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "[d]", status);
   fits_update_key(fptr, TDOUBLE, "TIMEZERO", &timezero, "Time offset", status);
   
   char timeunit[MAXMSG]="s";
@@ -533,3 +572,46 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 }
 
 
+void verifyMJDREF(const double refmjdref,
+		  const double mjdref,
+		  const char* const description,
+		  int* const status)
+{
+  if (fabs(mjdref-refmjdref)>1.e-6) {
+    *status=EXIT_FAILURE;
+    char insertmsg[MAXMSG];
+    if (NULL==description) {
+      strcpy(insertmsg, "");
+    } else {
+      strcpy(insertmsg, description);
+      strcat(insertmsg, " ");
+    }
+    char msg[MAXMSG];
+    sprintf(msg, "MJDREF %sdoes not match required value of '%.1lf'", 
+	    insertmsg, refmjdref);
+    SIXT_ERROR(msg);
+  }
+}
+
+
+void verifyTIMEZERO(const double timezero,
+		    int* const status)
+{
+  if (0.0!=timezero) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("implementation requires that TIMEZERO=0.0 in input file");
+  }
+}
+
+
+float getEBOUNDSEnergy(const long channel,
+		       const struct RMF* const rmf, 
+		       int* const status)
+{
+  float lo, hi;
+  getEBOUNDSEnergyLoHi(channel, rmf, &lo, &hi, status);
+  CHECK_STATUS_RET(*status, 0.0);
+  double r=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0.0);
+  return(r*lo + (1.0-r)*hi);
+}

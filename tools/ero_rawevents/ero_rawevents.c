@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "ero_rawevents.h"
 
 
@@ -7,7 +27,7 @@ int ero_rawevents_main()
   struct Parameters par; 
 
   // Input event file.
-  EventListFile* elf=NULL;
+  EventFile* elf=NULL;
 
   // File pointer to the output eROSITA event file. 
   fitsfile* fptr=NULL;
@@ -18,7 +38,7 @@ int ero_rawevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_rawevents");
-  set_toolversion("0.02");
+  set_toolversion("0.03");
 
 
   do { // Beginning of the ERROR handling loop.
@@ -32,37 +52,109 @@ int ero_rawevents_main()
 
 
     // Open the input event file.
-    elf=openEventListFile(par.EventList, READONLY, &status);
+    elf=openEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Check if the input file contains single-pixel events.
+    char evtype[MAXMSG], comment[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "EVTYPE", evtype, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("could not read FITS keyword 'EVTYPE'");
+      break;
+    }
+    strtoupper(evtype);
+    if (0!=strcmp(evtype, "PIXEL")) {
+      status=EXIT_FAILURE;
+      char msg[MAXMSG];
+      sprintf(msg, "event type of input file is '%s' (must be 'PIXEL')", evtype);
+      SIXT_ERROR(msg);
+      break;
+    }
+
     // Read keywords from the input file.
-    char comment[MAXMSG];
-    float timezero=0.0;
-    fits_read_key(elf->fptr, TFLOAT, "TIMEZERO", &timezero, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    double mjdref=0.0;
+    fits_read_key(elf->fptr, TDOUBLE, "MJDREF", &mjdref, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'MJDREF' from input "
+	      "event list '%s'", par.EventList);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    double timezero=0.0;
+    fits_write_errmark();
+    int status2=EXIT_SUCCESS;
+    fits_read_key(elf->fptr, TDOUBLE, "TIMEZERO", &timezero, comment, &status2);
+    fits_clear_errmark();
+    if (EXIT_SUCCESS!=status2) {
+      timezero=0.;
+    }
 
     char date_obs[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "DATE-OBS", date_obs, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'DATE-OBS' from input "
+	      "event list '%s'", par.EventList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char time_obs[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "TIME-OBS", time_obs, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TIME-OBS' from input "
+	      "event list '%s'", par.EventList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char date_end[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "DATE-END", date_end, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'DATE-END' from input "
+	      "event list '%s'", par.EventList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     char time_end[MAXMSG];
     fits_read_key(elf->fptr, TSTRING, "TIME-END", time_end, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TIME-END' from input "
+	      "event list '%s'", par.EventList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     double tstart=0.0;
     fits_read_key(elf->fptr, TDOUBLE, "TSTART", &tstart, comment, &status);
-    CHECK_STATUS_BREAK(status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTART' from input "
+	      "event list '%s'", par.EventList);
+      SIXT_ERROR(msg);
+      break;
+    }
 
     double tstop=0.0;
     fits_read_key(elf->fptr, TDOUBLE, "TSTOP", &tstop, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'TSTOP' from input "
+	      "event list '%s'", par.EventList);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    // Verify values of MJDREF and TIMEZERO.
+    verifyMJDREF(eromjdref, mjdref, "in event file", &status);
+    CHECK_STATUS_BREAK(status);
+    verifyTIMEZERO(timezero, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the file creation date for the header.
@@ -96,10 +188,10 @@ int ero_rawevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Create the event table.
-    char *ttype[]={"TIME", "FRAME", "RAWX", "RAWY", "PHA"};
-    char *tunit[]={"", "", "", "", "ADU"};
-    char *tform[]={"D", "J", "I", "I", "I"}; 
-    fits_create_tbl(fptr, BINARY_TBL, 0, 5, ttype, tform, tunit, 
+    char *ttype[]={"OTS", "FRACSEC", "FRAME", "RAWX", "RAWY", "PHA"};
+    char *tunit[]={"s", "micros", "", "", "", "ADU"};
+    char *tform[]={"J", "J", "J", "I", "I", "I"}; 
+    fits_create_tbl(fptr, BINARY_TBL, 0, 6, ttype, tform, tunit, 
 		    "EVENTS", &status);
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
@@ -119,16 +211,17 @@ int ero_rawevents_main()
     // Insert the standard eROSITA header keywords.
     sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop, 
-				 timezero, &status);
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
     sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop, 
-				 timezero, &status);
+				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
-    int ctime, cframe, crawx, crawy, cpha;
-    fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
+    int cots, cfracsec, cframe, crawx, crawy, cpha;
+    fits_get_colnum(fptr, CASEINSEN, "OTS", &cots, &status);
+    fits_get_colnum(fptr, CASEINSEN, "FRACSEC", &cfracsec, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     fits_get_colnum(fptr, CASEINSEN, "RAWX", &crawx, &status);
     fits_get_colnum(fptr, CASEINSEN, "RAWY", &crawy, &status);
@@ -168,12 +261,15 @@ int ero_rawevents_main()
       fits_insert_rows(fptr, row, 1, &status);
       CHECK_STATUS_BREAK(status);
 
-      fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, 
-		     &event.time, &status);
-      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, 
-		     &event.frame, &status);
-      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, 
-		     &event.pi, &status);
+      // Separate the time value into ots (on-board second clock)
+      // and fracsec (subsecond clock) integer values.
+      long ots=(long)event.time;
+      long fracsec=(long)((event.time-ots)*1.e6); // [micro seconds]
+
+      fits_write_col(fptr, TLONG, cots, row+1, 1, 1, &ots, &status);
+      fits_write_col(fptr, TLONG, cfracsec, row+1, 1, 1, &fracsec, &status);
+      fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &event.frame, &status);
+      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &event.pi, &status);
       int rawx=event.rawx+1;
       fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &rawx, &status);
       int rawy=event.rawy+1;
@@ -197,11 +293,15 @@ int ero_rawevents_main()
   headas_chat(3, "cleaning up ...\n");
 
   // Close the files.
-  freeEventListFile(&elf, &status);
+  freeEventFile(&elf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
   
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

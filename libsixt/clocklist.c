@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "clocklist.h"
 
 
@@ -31,26 +51,30 @@ ClockList* newClockList(int* const status)
 void destroyClockList(ClockList** const list)
 {
   if (NULL!=(*list)) {
-    if ( (NULL!=(*list)->list) && (NULL!=(*list)->type) && (0<(*list)->nelements) ) {
+    if ((NULL!=(*list)->list)&&(NULL!=(*list)->type)&&(0<(*list)->nelements)) {
       int i;
       for (i=0; i<(*list)->nelements; i++) {
 	if (NULL!=(*list)->list[i]) {
 	  if (CL_WAIT==(*list)->type[i]) {
-	    CLWait* clwait = (CLWait*)((*list)->list[i]);
+	    CLWait* clwait=(CLWait*)((*list)->list[i]);
 	    destroyCLWait(&clwait);
-	    (*list)->list[i] = NULL;
+	    (*list)->list[i]=NULL;
 	  } else if (CL_LINESHIFT==(*list)->type[i]) {
 	    CLLineShift* cllineshift = (CLLineShift*)((*list)->list[i]);
 	    destroyCLLineShift(&cllineshift);
-	    (*list)->list[i] = NULL;
+	    (*list)->list[i]=NULL;
 	  } else if (CL_NEWFRAME==(*list)->type[i]) {
-	    CLNewFrame* clnewframe = (CLNewFrame*)((*list)->list[i]);
+	    CLNewFrame* clnewframe=(CLNewFrame*)((*list)->list[i]);
 	    destroyCLNewFrame(&clnewframe);
-	    (*list)->list[i] = NULL;
+	    (*list)->list[i]=NULL;
 	  } else if (CL_READOUTLINE==(*list)->type[i]) {
-	    CLReadoutLine* clreadoutline = (CLReadoutLine*)((*list)->list[i]);
+	    CLReadoutLine* clreadoutline=(CLReadoutLine*)((*list)->list[i]);
 	    destroyCLReadoutLine(&clreadoutline);
-	    (*list)->list[i] = NULL;
+	    (*list)->list[i]=NULL;
+	  } else if (CL_CLEARLINE==(*list)->type[i]) {
+	    CLClearLine* clclearline=(CLClearLine*)((*list)->list[i]);
+	    destroyCLClearLine(&clclearline);
+	    (*list)->list[i]=NULL;
 	  } else {
 	    printf("Unknown CLType!\n");
 	  }
@@ -70,23 +94,23 @@ void append2ClockList(ClockList* const list, const CLType type,
 		      void* const element, int* const status)
 {
   // Allocate memory for a new element.
-  list->type = realloc(list->type, (list->nelements+1)*sizeof(CLType));
+  list->type=realloc(list->type, (list->nelements+1)*sizeof(CLType));
   if (NULL==list->type) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for ClockList element failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for ClockList element failed");
     return;
   }
   list->list = realloc(list->list, (list->nelements+1)*sizeof(void*));
   if (NULL==list->list) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for ClockList element failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for ClockList element failed");
     return;
   }
   list->nelements++;
   
   // Setup the values of the last, newly appended element.
-  list->type[list->nelements-1] = type;
-  list->list[list->nelements-1] = element;
+  list->type[list->nelements-1]=type;
+  list->list[list->nelements-1]=element;
 }
 
 
@@ -110,7 +134,7 @@ void getClockListElement(ClockList* const list, const double time,
   // Check if the list contains any elements.
   if (0==list->nelements) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Clock list is empty!\n", *status);
+    SIXT_ERROR("clock list is empty");
     return;
   }
 
@@ -118,8 +142,8 @@ void getClockListElement(ClockList* const list, const double time,
   // whether the time specified in the parameter list exceeds the waiting
   // period. In that case move to the next element.
   if (CL_WAIT==list->type[list->element]) {
-    CLWait* clwait = (CLWait*)list->list[list->element];
-    if (list->time+clwait->time >= time) {
+    CLWait* clwait=(CLWait*)list->list[list->element];
+    if (list->time+clwait->time>=time) {
       // The wait period still continues.
       *type   =CL_NONE;
       *element=NULL;
@@ -145,17 +169,17 @@ CLWait* newCLWait(const double time, int* const status) {
   headas_chat(5, "new CLWait element (time=%e)\n", time);
 
   // Allocate memory.
-  CLWait* clwait = (CLWait*)malloc(sizeof(CLWait));
+  CLWait* clwait=(CLWait*)malloc(sizeof(CLWait));
   if (NULL==clwait) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for CLWait element failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for CLWait element failed");
     return(clwait);
   }
 
   // Initialize pointers with NULL.
 
   // Set parameters.
-  clwait->time = time;
+  clwait->time=time;
 
   return(clwait);
 }
@@ -176,10 +200,10 @@ CLLineShift* newCLLineShift(int* const status) {
   headas_chat(5, "new CLLineShift element\n");
 
   // Allocate memory.
-  CLLineShift* cllineshift = (CLLineShift*)malloc(sizeof(CLLineShift));
+  CLLineShift* cllineshift=(CLLineShift*)malloc(sizeof(CLLineShift));
   if (NULL==cllineshift) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for CLLineShift element failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for CLLineShift element failed");
     return(cllineshift);
   }
   
@@ -200,9 +224,9 @@ CLNewFrame* newCLNewFrame(int* const status) {
   headas_chat(5, "new CLNewFrame element\n");
 
   // Allocate memory.
-  CLNewFrame* clnewframe = (CLNewFrame*)malloc(sizeof(CLNewFrame));
+  CLNewFrame* clnewframe=(CLNewFrame*)malloc(sizeof(CLNewFrame));
   if (NULL==clnewframe) {
-    *status = EXIT_FAILURE;
+    *status=EXIT_FAILURE;
     SIXT_ERROR("memory allocation for CLNewFrame element failed");
     return(clnewframe);
   }
@@ -227,9 +251,9 @@ CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
 	      lineindex, readoutindex);
 
   // Allocate memory.
-  CLReadoutLine* clreadoutline = (CLReadoutLine*)malloc(sizeof(CLReadoutLine));
+  CLReadoutLine* clreadoutline=(CLReadoutLine*)malloc(sizeof(CLReadoutLine));
   if (NULL==clreadoutline) {
-    *status = EXIT_FAILURE;
+    *status=EXIT_FAILURE;
     SIXT_ERROR("memory allocation for CLReadoutLine element failed");
     return(clreadoutline);
   }
@@ -257,15 +281,15 @@ CLClearLine* newCLClearLine(const int lineindex, int* const status)
 	      lineindex);
 
   // Allocate memory.
-  CLClearLine* clclearline = (CLClearLine*)malloc(sizeof(CLClearLine));
+  CLClearLine* clclearline=(CLClearLine*)malloc(sizeof(CLClearLine));
   if (NULL==clclearline) {
-    *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Memory allocation for CLClearLine element failed!\n", *status);
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for CLClearLine element failed");
     return(clclearline);
   }
   
   // Initialize.
-  clclearline->lineindex    = lineindex;
+  clclearline->lineindex=lineindex;
 
   return(clclearline);
 }

@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "nustarsim.h"
 
 
@@ -32,16 +52,16 @@ int nustarsim_main()
   }
 
   // Photon list files.
-  PhotonListFile* plf[2]={NULL, NULL};
+  PhotonFile* plf[2]={NULL, NULL};
 
-  // Impact list file.
-  ImpactListFile* ilf[2]={NULL, NULL};
+  // Impact list files.
+  ImpactFile* ilf[2]={NULL, NULL};
 
-  // Event list file.
-  EventListFile* elf[2]={NULL, NULL};
+  // Event list files.
+  EventFile* elf[2]={NULL, NULL};
 
-  // Pattern list file.
-  PatternFile* patf[2]={NULL, NULL};
+  // Pattern list files.
+  EventFile* patf[2]={NULL, NULL};
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -52,7 +72,7 @@ int nustarsim_main()
 
   // Register HEATOOL
   set_toolname("nustarsim");
-  set_toolversion("0.04");
+  set_toolversion("0.06");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -121,16 +141,8 @@ int nustarsim_main()
       strcat(patternlist_filename_template, par.PatternList);
     }
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -175,7 +187,7 @@ int nustarsim_main()
 
       // Load the instrument configuration either with the
       // specific (if available) or the default XML file.
-      subinst[ii]=loadGenInst(buffer, &status);
+      subinst[ii]=loadGenInst(buffer, seed, &status);
       CHECK_STATUS_BREAK(status);
 
       // Set the usage of the detector background according to
@@ -219,23 +231,9 @@ int nustarsim_main()
     strtoupper(ucase_buffer);
     if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
       // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -243,29 +241,18 @@ int nustarsim_main()
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period covered by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
-    // Optional GTI file.
-    if (strlen(par.GTIfile)>0) {
-      strcpy(ucase_buffer, par.GTIfile);
-      strtoupper(ucase_buffer);
-      if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIfile, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
+    // Get a GTI.
+    gti=getGTIFromFileOrContinuous(par.GTIfile, 
+				   par.TSTART, par.TSTART+par.Exposure,
+				   par.MJDREF, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT X-ray source catalogs.
     srccat[0]=loadSourceCatalog(par.Simput, arf2, &status);
@@ -326,12 +313,7 @@ int nustarsim_main()
 
     // --- Open and set up files ---
 
-    double tstop;
-    if (NULL==gti) {
-      tstop=par.TSTART+par.Exposure;
-    } else {
-      tstop=gti->stop[gti->nentries-1];
-    }
+    double tstop=gti->stop[gti->ngti-1];
 
     // Open the output photon list files.
     if (strlen(photonlist_filename_template)>0) {
@@ -347,12 +329,12 @@ int nustarsim_main()
     
 	char photonlist_filename[MAXFILENAME];
 	sprintf(photonlist_filename, photonlist_filename_template, ii);
-	plf[ii]=openNewPhotonListFile(photonlist_filename, 
-				      telescop, instrume, "Normal", 
-				      subinst[ii]->tel->arf_filename,
-				      subinst[ii]->det->rmf_filename,
-				      par.MJDREF, 0.0, par.TSTART, tstop,
-				      par.clobber, &status);
+	plf[ii]=openNewPhotonFile(photonlist_filename, 
+				  telescop, instrume, "Normal", 
+				  subinst[ii]->tel->arf_filename,
+				  subinst[ii]->det->rmf_filename,
+				  par.MJDREF, 0.0, par.TSTART, tstop,
+				  par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
@@ -372,18 +354,18 @@ int nustarsim_main()
     
 	char impactlist_filename[MAXFILENAME];
 	sprintf(impactlist_filename, impactlist_filename_template, ii);
-	ilf[ii]=openNewImpactListFile(impactlist_filename, 
-				      telescop, instrume, "Normal", 
-				      subinst[ii]->tel->arf_filename,
-				      subinst[ii]->det->rmf_filename,
-				      par.MJDREF, 0.0, par.TSTART, tstop,
-				      par.clobber, &status);
+	ilf[ii]=openNewImpactFile(impactlist_filename, 
+				  telescop, instrume, "Normal", 
+				  subinst[ii]->tel->arf_filename,
+				  subinst[ii]->det->rmf_filename,
+				  par.MJDREF, 0.0, par.TSTART, tstop,
+				  par.clobber, &status);
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
     }
 
-    // Open the output event list files.
+    // Open the output event files.
     for (ii=0; ii<2; ii++) {
       char telescop[MAXMSG]={""};
       char instrume[MAXMSG]={""};
@@ -396,19 +378,19 @@ int nustarsim_main()
     
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventListFile(eventlist_filename, 
-				   telescop, instrume, "Normal", 
-				   subinst[ii]->tel->arf_filename,
-				   subinst[ii]->det->rmf_filename,
-				   par.MJDREF, 0.0, par.TSTART, tstop,
-				   subinst[ii]->det->pixgrid->xwidth,
-				   subinst[ii]->det->pixgrid->ywidth,
-				   par.clobber, &status);
+      elf[ii]=openNewEventFile(eventlist_filename,
+			       telescop, instrume, "Normal",
+			       subinst[ii]->tel->arf_filename,
+			       subinst[ii]->det->rmf_filename,
+			       par.MJDREF, 0.0, par.TSTART, tstop,
+			       subinst[ii]->det->pixgrid->xwidth,
+			       subinst[ii]->det->pixgrid->ywidth,
+			       par.clobber, &status);
       CHECK_STATUS_BREAK(status);
 
       // Define the event list file as output file for the respective
       // detector.
-      setGenDetEventListFile(subinst[ii]->det, elf[ii]);
+      setGenDetEventFile(subinst[ii]->det, elf[ii]);
     }
     CHECK_STATUS_BREAK(status);
 
@@ -422,20 +404,21 @@ int nustarsim_main()
       if (NULL!=subinst[ii]->instrume) {
 	strcpy(instrume, subinst[ii]->instrume);
       }
-    
+      
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewPatternFile(patternlist_filename, 
-				  telescop, instrume, "Normal",
-				  subinst[ii]->tel->arf_filename,
-				  subinst[ii]->det->rmf_filename,
-				  par.MJDREF, 0.0, par.TSTART, tstop,
-				  subinst[ii]->det->pixgrid->xwidth,
-				  subinst[ii]->det->pixgrid->ywidth,
-				  par.clobber, &status);
+      patf[ii]=openNewEventFile(patternlist_filename, 
+				telescop, instrume, "Normal", 
+				subinst[ii]->tel->arf_filename,
+				subinst[ii]->det->rmf_filename,
+				par.MJDREF, 0.0, par.TSTART, tstop,
+				subinst[ii]->det->pixgrid->xwidth,
+				subinst[ii]->det->pixgrid->ywidth,
+				par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
+
 
     // Set FITS header keywords.
     // If this is a pointing attitude, store the direction in the output
@@ -520,6 +503,14 @@ int nustarsim_main()
       }
     }
 
+    // Event type.
+    for (ii=0; ii<2; ii++) {
+      fits_update_key(elf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL",
+		      "event type", &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);  
+
     // TLMIN and TLMAX of PI column.
     for (ii=0; ii<2; ii++) {
       char keystr[MAXMSG];
@@ -540,38 +531,6 @@ int nustarsim_main()
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);  
     }
-
-    // Timing keywords.
-    double buffer_tstop=par.TSTART+par.Exposure;
-    double buffer_timezero=0.;
-    for (ii=0; ii<2; ii++) {
-      // Photon list file.
-      if (NULL!=plf[ii]) {
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-			"reference MJD", &status);
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-			"time offset", &status);
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
-			"start time", &status);
-	fits_update_key(plf[ii]->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-			"stop time", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-
-      // Impact list file.
-      if (NULL!=ilf[ii]) {
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "MJDREF", &par.MJDREF,
-			"reference MJD", &status);
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TIMEZERO", &buffer_timezero,
-			"time offset", &status);
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TSTART", &par.TSTART,
-			"start time", &status);
-	fits_update_key(ilf[ii]->fptr, TDOUBLE, "TSTOP", &buffer_tstop,
-			"stop time", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
-    CHECK_STATUS_BREAK(status);
     
     // --- End of opening files ---
 
@@ -583,7 +542,7 @@ int nustarsim_main()
     // Simulation progress status (running from 0 to 100).
     unsigned int progress=0;
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%", 0.);
+      headas_chat(2, "\r%.0lf %%", 0.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -593,34 +552,22 @@ int nustarsim_main()
 
     // Determine the total length of the time interval to
     // be simulated.
-    double totalsimtime=0.;
-    double simtime=0.;
-    if (NULL==gti) {
-      totalsimtime=par.Exposure;
-    } else {
-      unsigned long ii; 
-      for (ii=0; ii<gti->nentries; ii++) {
-	totalsimtime+=gti->stop[ii]-gti->start[ii];
-      }
+    double totalsimtime=sumGTI(gti);
+    for (ii=0; ii<2; ii++) {
+      fits_update_key(patf[ii]->fptr, TDOUBLE, "EXPOSURE", &totalsimtime,
+		      "exposure time [s]", &status);
+      CHECK_STATUS_BREAK(status);
     }
+    CHECK_STATUS_BREAK(status);
 
-
-    // Current bin in the GTI collection.
-    unsigned long gtibin=0;
     // Loop over all intervals in the GTI collection.
+    double simtime=0.;
+    int gtibin=0;
     do {
       // Currently regarded interval.
-      double t0, t1;
+      double t0=gti->start[gtibin];
+      double t1=gti->stop[gtibin];
       
-      // Determine the currently regarded interval.
-      if (NULL==gti) {
-	t0=par.TSTART;
-	t1=par.TSTART+par.Exposure;
-      } else {
-	t0=gti->start[gtibin];
-	t1=gti->stop[gtibin];
-      }
-
       // Set the start time for the detector models.
       for (ii=0; ii<2; ii++) {
 	setGenDetStartTime(subinst[ii]->det, t0);
@@ -692,7 +639,7 @@ int nustarsim_main()
 	while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
 	  progress++;
 	  if (NULL==progressfile) {
-	    headas_chat(2, "\r%.1lf %%", progress*1.);
+	    headas_chat(2, "\r%.0lf %%", progress*1.);
 	    fflush(NULL);
 	  } else {
 	    rewind(progressfile);
@@ -717,20 +664,18 @@ int nustarsim_main()
       CHECK_STATUS_BREAK(status);
 
       // Proceed to the next GTI interval.
-      if (NULL!=gti) {
-	simtime+=gti->stop[gtibin]-gti->start[gtibin];
-	gtibin++;
-	if (gtibin>=gti->nentries) break;
-      }
+      simtime+=gti->stop[gtibin]-gti->start[gtibin];
+      gtibin++;
+      if (gtibin>=gti->ngti) break;
 
-    } while (NULL!=gti);
+    } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
     
       
     // Progress output.
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%\n", 100.);
+      headas_chat(2, "\r%.0lf %%\n", 100.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -745,14 +690,14 @@ int nustarsim_main()
       status=EXIT_SUCCESS;
 
       // Apply dead time, charge pump reset, and shield anticoincidence 
-      // intervals, while producing a pattern list from the event list. 
-      // The event list contains all events neglecting dead time, charge 
-      // pump resets, and shield vetos, while the pattern list contains
-      // only events after the dead time application.
+      // intervals. The event list contains all events neglecting 
+      // dead time, charge pump resets, and shield vetos, while the
+      // pattern list contains only events after the dead time application.
       headas_chat(3, "apply dead time ...\n");
       double last_time=0.;
       double veto_time=0.;
-      const double veto_interval=500.e-6; // This value is taken from Bhalerao p.25 (43).
+      // The following value is taken from Bhalerao p.25 (43).
+      const double veto_interval=500.e-6;
       const double veto_rate=28.;
 
       // Loop over all rows in the event file.
@@ -760,7 +705,6 @@ int nustarsim_main()
       for (row=0; row<elf[ii]->nrows; row++) {
 	// Buffers.
 	Event event;
-	Pattern pattern;
 	
 	// Read an event from the input list.
 	getEventFromFile(elf[ii], row+1, &event, &status);
@@ -774,9 +718,8 @@ int nustarsim_main()
 	// Check if the event falls within an interval of charge
 	// pump reset. Resets take place every millisecond and 
 	// last for 20mus.
-	double dt=event.time - ((long)(event.time*1000.))*0.001;
+	double dt=event.time-((long)(event.time*1000.))*0.001;
 	if (dt<0.02e-3) continue;
-
 
 	// Apply the shield veto time.
 	while (event.time-veto_time>veto_interval) {
@@ -789,7 +732,6 @@ int nustarsim_main()
 	    (event.time-veto_time<=veto_interval)) {
 	  continue;
 	}
-	
 
 	// Apply the dead time (event processing time).
 	if (0==row) {
@@ -800,59 +742,47 @@ int nustarsim_main()
 
 	// The event is detected.
 	last_time=event.time;
-
-	// Copy event data to pattern.
-	pattern.rawx   =event.rawx;
-	pattern.rawy   =event.rawy;
-	pattern.time   =event.time;
-	pattern.frame  =event.frame;
-	pattern.pi     =event.pi;
-	pattern.signal =event.signal;
-	pattern.ra     =0.;
-	pattern.dec    =0.;
-	pattern.npixels=1;
-	pattern.type   =0;
-    
-	pattern.pileup =0;
-	int jj;
-	for (jj=0; (jj<NEVENTPHOTONS)&&(jj<NPATTERNPHOTONS); jj++){
-	  pattern.ph_id[jj] =event.ph_id[jj];
-	  pattern.src_id[jj]=event.src_id[jj];
-	  
-	  if ((jj>0)&&(pattern.ph_id[jj]!=0)) {
-	    pattern.pileup=1;
-	  }
-	}
-	    
-	pattern.signals[0]=0.;
-	pattern.signals[1]=0.;
-	pattern.signals[2]=0.;
-	pattern.signals[3]=0.;
-	pattern.signals[4]=event.signal;
-	pattern.signals[5]=0.;
-	pattern.signals[6]=0.;
-	pattern.signals[7]=0.;
-	pattern.signals[8]=0.;
 	
-	// Add the new pattern to the output file.
-	addPattern2File(patf[ii], &pattern, &status);	  
+	// Add the event to the output file.
+	addEvent2File(patf[ii], &event, &status);	  
 	CHECK_STATUS_BREAK(status);
       }
       //CHECK_STATUS_BREAK(status);
       // END of loop over all events in the list.
+
+      fits_update_key(patf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL", 
+		      "event type", &status);
+      //CHECK_STATUS_BREAK(status);
+
     }
     CHECK_STATUS_BREAK(status);
     
+    // Store the GTI extension in the event files.
+    for (ii=0; ii<2; ii++) {
+      saveGTIExt(elf[ii]->fptr, "STDGTI", gti, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+
     // Close files in order to save memory.
     for (ii=0; ii<2; ii++) {
-      freePhotonListFile(&plf[ii], &status);
-      freeImpactListFile(&ilf[ii], &status);
+      freePhotonFile(&plf[ii], &status);
+      freeImpactFile(&ilf[ii], &status);
+      freeEventFile(&elf[ii], &status);
     }
+    CHECK_STATUS_BREAK(status);
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
     for (ii=0; ii<2; ii++) {
       phproj(subinst[ii], ac, patf[ii], par.TSTART, par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    CHECK_STATUS_BREAK(status);
+
+    // Store the GTI extension in the pattern files.
+    for (ii=0; ii<2; ii++) {
+      saveGTIExt(patf[ii]->fptr, "STDGTI", gti, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
@@ -868,11 +798,11 @@ int nustarsim_main()
 
   // Release memory.
   for (ii=0; ii<2; ii++) {
-    destroyGenInst    (&subinst[ii], &status);
-    destroyPatternFile(&patf[ii],    &status);
-    freeEventListFile (&elf[ii],     &status);
-    freeImpactListFile(&ilf[ii],     &status);
-    freePhotonListFile(&plf[ii],     &status);
+    destroyGenInst(&subinst[ii], &status);
+    freeEventFile(&patf[ii], &status);
+    freeEventFile(&elf[ii], &status);
+    freeImpactFile(&ilf[ii], &status);
+    freePhotonFile(&plf[ii], &status);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);
@@ -888,8 +818,12 @@ int nustarsim_main()
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 

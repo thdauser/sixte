@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Michael Wille, FAU
+*/
+
 #include "erodetbkgrndgen.h"
 
 static eroBackgroundInput bkginputdata;
@@ -50,6 +70,7 @@ inline double calcEventRate(const double* const hit_time,
 /* external functions */
 
 void eroBkgInitialize(const char* const filename,
+		      const unsigned int seed,
                       int* const status) {
 
   bkgratefct.numelements = 0L;
@@ -58,6 +79,7 @@ void eroBkgInitialize(const char* const filename,
   bkgratefct.currenttime = NULL;
   bkgratefct.currentrate = NULL;
   bkgratefct.intervalsum = 0.;
+  bkgratefct.starttime = 0.;
 
   bkginputdata.eventlist = NULL;
   bkginputdata.numrows = 0L;
@@ -66,8 +88,8 @@ void eroBkgInitialize(const char* const filename,
   bkginputdata.xcolname = "X";
   bkginputdata.ycolname = "Y";
   bkginputdata.interval = 0.;
+  bkginputdata.intervalsum = 0.;
   ftime(&time_struct);
-  srand((unsigned int)time_struct.millitm - (unsigned int)time_struct.time);
 
   fits_open_table(&bkginputdata.inputfptr, filename, READONLY, status);
   fits_report_error(stderr, *status);
@@ -102,7 +124,7 @@ void eroBkgInitialize(const char* const filename,
                                                  bkginputdata.interval);
 
   bkginputdata.randgen = gsl_rng_alloc(gsl_rng_ranlux);
-  gsl_rng_set(bkginputdata.randgen, rand() * ((int)time_struct.time + (unsigned int)time_struct.millitm));
+  gsl_rng_set(bkginputdata.randgen, seed);
 }
 
 void eroBkgFree(eroBackgroundOutput* struct_to_free) {
@@ -133,7 +155,17 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
 
   if(filename != NULL) {
     rate_lc = loadSimputLC(filename, status);
+
+    // Make sure that the light curve is given as a function of time.
+    // Periodic light curves cannot be processed here.
+    if (NULL==rate_lc->time) {
+      SIXT_ERROR("light curve for background variation does not contain TIME column");
+      *status=EXIT_FAILURE;
+      return;
+    }
+
     bkgratefct.numelements = rate_lc->nentries;
+    bkgratefct.starttime = rate_lc->timezero;
     if(bkgratefct.time != NULL) {
       free(bkgratefct.time);
       bkgratefct.time = NULL;
@@ -157,6 +189,7 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
   } else {
     SIXT_ERROR("no SIMPUT filename specified for rate function!");
     *status=EXIT_FAILURE;
+    return;
   }
 }
 
@@ -178,14 +211,37 @@ void eroBkgGetRate(double interval) {
   bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) / 
                             (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
 
+
+  // check if we've reached the beginning of the lightcurve so far
+  if(bkginputdata.intervalsum < bkgratefct.starttime) {
+    // if yes we assume the interval fraction in front of the lightcurve as rate 1 and process the rest.
+    if((bkginputdata.intervalsum + interval) >= bkgratefct.starttime) {
+      rCurr.rate[rCurr.numelements] = (bkgratefct.starttime - bkginputdata.intervalsum) / fullinterval;
+      rCurr.numelements++;
+      interval -= (bkgratefct.starttime - bkginputdata.intervalsum);
+      bkginputdata.intervalsum = bkgratefct.starttime;
+    } else {
+      // if not we assume rate 1 and return.
+      rCurr.rate[rCurr.numelements] = 1;
+      rCurr.numelements++;
+      bkginputdata.intervalsum += interval;
+      interval = 0;
+      return;
+    }
+  }
+       
+                            
   // Add interpolated lightcurve data points to rate array until we've covered the interval.
   // All data will be normalized to the respective length fraction of the interval as the
   // rate output is multiplied later with the total number of events directly.
-  while((interval > 0) && (bkgratefct.currenttime < &bkgratefct.time[bkgratefct.numelements - 1])) {
+  while((bkginputdata.intervalsum >= bkgratefct.starttime) &&
+        (interval > 0) && 
+        (bkgratefct.currenttime < &bkgratefct.time[bkgratefct.numelements - 1])) {
     startfraction = bkgratefct.time[0] + bkgratefct.intervalsum - *bkgratefct.currenttime;
     endfraction = *(bkgratefct.currenttime + 1) - (bkgratefct.time[0] + bkgratefct.intervalsum);
     interval -= endfraction;
     bkgratefct.intervalsum += endfraction;
+    bkginputdata.intervalsum += endfraction;
 
     // if the interval is larger than the current bin we jump to the next and update the slope
     if(interval > 0) {
@@ -220,21 +276,17 @@ void eroBkgGetRate(double interval) {
                               (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
   } else {
     bkgratefct.intervalsum += interval;
+    bkginputdata.intervalsum += interval;
   }
 
   // re-adjust size of rate array to actual size and remove trailing free space */
-  if(rCurr.numelements == 0) {
-    rCurr.numelements = 1L;
-    rCurr.rate = (float*) realloc(rCurr.rate, rCurr.numelements * sizeof(float));
-    if((interval != 0) && (bkgratefct.currentrate <= &bkgratefct.rate[bkgratefct.numelements - 1])) {
-      rCurr.rate[0] = *bkgratefct.currentrate;
-    } else {
-      rCurr.rate[0] = 1;
-      rCurr.ratesize = rCurr.numelements;
-    }
-  } else {
-    rCurr.rate = (float*) realloc(rCurr.rate, rCurr.numelements * sizeof(float));
-    rCurr.ratesize = rCurr.numelements;
+  rCurr.ratesize = rCurr.numelements + 1;
+  rCurr.rate = (float*) realloc(rCurr.rate, rCurr.ratesize * sizeof(float));
+  
+  // if we are at the EOF but still have some interval left we set the rate to 1.
+  if((interval > 0) && (bkgratefct.currenttime >= &bkgratefct.time[bkgratefct.numelements - 1])) {
+    rCurr.numelements++;
+    rCurr.rate[rCurr.ratesize - 1] = interval / fullinterval;
   }
 }
 
@@ -245,6 +297,7 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
   bkgresultlist->numevents = 0;
   bkgresultlist->numhits = 0;
 
+  // If the requested interval is valid we calculate the event rate of the background file
   if(interval > 0) {
     bkginputdata.interval = interval;
     bkginputdata.eventsperinterval = calcEventRate(bkginputdata.hit_time,
@@ -257,9 +310,12 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
     bkgresultlist = NULL;
     return bkgresultlist;
   }
-  
+
+  // If we use a rate function we multiply the output poisson events by the normalized rate(s) for this interval.
+  // Otherwise we just take the unchanged result of the poisson random function.
   if(bkgratefct.numelements == 0) {
     bkgresultlist->numevents = gsl_ran_poisson(bkginputdata.randgen, bkginputdata.eventsperinterval);
+    bkginputdata.intervalsum += interval;
   } else {
     eroBkgGetRate(interval);
     for(cc = 0; cc < rCurr.numelements; cc++) {

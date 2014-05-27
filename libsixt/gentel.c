@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "gentel.h"
 
 
@@ -17,10 +37,9 @@ GenTel* newGenTel(int* const status)
   }
 
   // Initialize all pointers with NULL.
-  tel->psf       =NULL;
-  tel->vignetting=NULL;
-  tel->coded_mask=NULL;
-  tel->arf       =NULL;
+  tel->psf         =NULL;
+  tel->vignetting  =NULL;
+  tel->arf         =NULL;
   tel->arf_filename=NULL;
 
   // Set initial values.
@@ -40,7 +59,6 @@ void destroyGenTel(GenTel** const tel)
     freeARF((*tel)->arf);
     destroyPSF(&(*tel)->psf);
     destroyVignetting(&(*tel)->vignetting);
-    destroyCodedMask(&(*tel)->coded_mask);
 
     free(*tel);
     *tel=NULL;

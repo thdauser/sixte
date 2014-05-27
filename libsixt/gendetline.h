@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef GENDETLINE_H 
 #define GENDETLINE_H 1
 
@@ -19,6 +39,11 @@ typedef struct {
 
   /** Charges contained in the individual pixels of this line. */
   float* charge;
+
+  /** Dead time of the individual pixels in this line. The value of
+      this parameter determines the point of time until that the pixel
+      is insensitive to further incident photons. */
+  double* deadtime;
 
   /** Photon IDs corresponding to the charges in the individual
       pixels. */
@@ -59,11 +84,5 @@ void clearGenDetLine(GenDetLine* const line);
     remain in there and have to be cleared separately. */
 void addGenDetLine(GenDetLine* const line0, const GenDetLine* const line1);
 
-/** Add a charge (photon energy [keV]) to a particular pixel in the
-    specified GenDetLine. The routine sets the anycharge flag of the
-    affected line. */
-void addGenDetCharge2Pixel(GenDetLine* const line, const int column, 
-			   const float energy,
-			   const long ph_id, const long src_id);
 
 #endif /* GENDETLINE_H */

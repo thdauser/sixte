@@ -8,7 +8,7 @@
 <vignetting filename="../vignetting_athenapp_vig_4_12.fits"/>
 </telescope>
 
-<detector type="wfi" mode="fullframe">
+<detector>
 <dimensions xwidth="640" ywidth="448"/>
 <wcs xrpix="640.5" yrpix="448.5" xrval="0.0128." yrval="-0.0130" xdelt="130.e-6" ydelt="130.e-6"/>
 <rmf filename="athenapp_ir_b4c_wfi_withfilter_onaxis.rmf"/>

@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "fudgexp.h"
 
 
@@ -43,7 +63,7 @@ int fudgexp_main() {
   struct Parameters par;
 
   // Photon list.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
 
   // Exposure map.
   float** map=NULL;
@@ -74,7 +94,7 @@ int fudgexp_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the photon list.
-    plf=openPhotonListFile(par.PhotonList, READWRITE, &status);
+    plf=openPhotonFile(par.PhotonList, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
 
     // Load the exposure map.
@@ -158,7 +178,7 @@ int fudgexp_main() {
 
       // Get the next photon from the list.
       Photon ph;
-      status=PhotonListFile_getRow(plf, &ph, row);
+      status=PhotonFile_getRow(plf, &ph, row);
       CHECK_STATUS_BREAK(status);
 
       // Determine the pixel coordinates corresponding to the photon
@@ -203,7 +223,7 @@ int fudgexp_main() {
   if (NULL!=fptr) fits_close_file(fptr, &status);
 
   if (NULL!=headerstr) free(headerstr);  
-  freePhotonListFile(&plf, &status);
+  freePhotonFile(&plf, &status);
 
   if (NULL!=map) {
     long ii;
@@ -221,6 +241,11 @@ int fudgexp_main() {
   // Clean up the random number generator.
   sixt_destroy_rng();
 
-  return(status);
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 

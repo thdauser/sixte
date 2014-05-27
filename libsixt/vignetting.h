@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #ifndef VIGNETTING_H
 #define VIGNETTING_H 1
 
@@ -53,8 +73,9 @@ void destroyVignetting(Vignetting** const vi);
 /** Determine the Vignetting factor for given photon energy, off-axis
     angle, and azimuth angle. The energy has to be given in [keV], the
     angles in [rad]. If the pointer to the Vignetting data structure
-    is NULL, a default value of 1. will be returned. */
-/* TODO: So far the azimuth angle is neglected! */
+    is NULL, a default value of 1. will be returned. Note that the
+    azimuthal dependence is neglected in the current
+    implementation. */
 float get_Vignetting_Factor(const Vignetting* const vi, 
 			    const float energy, 
 			    const float theta, 

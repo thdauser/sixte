@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "runsixt.h"
 
 
@@ -23,16 +43,16 @@ int runsixt_main()
   }
 
   // Photon list file.
-  PhotonListFile* plf=NULL;
+  PhotonFile* plf=NULL;
 
   // Impact list file.
-  ImpactListFile* ilf=NULL;
+  ImpactFile* ilf=NULL;
 
-  // Event list file.
-  EventListFile* elf=NULL;
-
-  // Pattern list file.
-  PatternFile* patf=NULL;
+  // Single-pixel event file.
+  EventFile* elf=NULL;
+  
+  // Pattern event file.
+  EventFile* patf=NULL;
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -43,7 +63,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.15");
+  set_toolversion("0.18");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -62,7 +82,7 @@ int runsixt_main()
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(par.Prefix, "");
-    } 
+    }
 
     // Determine the photon list output file.
     char photonlist_filename[MAXFILENAME];
@@ -86,7 +106,7 @@ int runsixt_main()
       strcat(impactlist_filename, par.ImpactList);
     }
     
-    // Determine the event list output file.
+    // Determine the single-pixel event output file.
     char eventlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.EventList);
     strtoupper(ucase_buffer);
@@ -98,7 +118,7 @@ int runsixt_main()
       strcat(eventlist_filename, par.EventList);
     }
 
-    // Determine the pattern list output file.
+    // Determine the event pattern output file.
     char patternlist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.PatternList);
     strtoupper(ucase_buffer);
@@ -110,16 +130,8 @@ int runsixt_main()
       strcat(patternlist_filename, par.PatternList);
     }
 
-    // Determine the random number seed.
-    int seed;
-    if (-1!=par.Seed) {
-      seed=par.Seed;
-    } else {
-      // Determine the seed from the system clock.
-      seed=(int)time(NULL);
-    }
-
     // Initialize the random number generator.
+    unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -142,7 +154,7 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
-    inst=loadGenInst(xml_filename, &status);
+    inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
     
     // Set the usage of the detector background according to
@@ -153,24 +165,10 @@ int runsixt_main()
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);
     if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
-      // Set up a simple pointing attitude.
-
-      // First allocate memory.
-      ac=getAttitude(&status);
+      // Set up a pointing attitude.
+      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
-
-      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
-      if (NULL==ac->entry) {
-	status = EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for Attitude failed");
-	break;
-      }
-
-      // Set the values of the entries.
-      ac->nentries=1;
-      ac->entry[0]=defaultAttitudeEntry();
-      ac->entry[0].time=par.TSTART;
-      ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
 
     } else {
       // Load the attitude from the given file.
@@ -178,29 +176,18 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
       
       // Check if the required time interval for the simulation
-      // is a subset of the time described by the attitude file.
-      if ((ac->entry[0].time > par.TSTART) || 
-	  (ac->entry[ac->nentries-1].time < par.TSTART+par.Exposure)) {
-	status=EXIT_FAILURE;
-	char msg[MAXMSG];
-	sprintf(msg, "attitude data does not cover the "
-		"specified period from %lf to %lf!", 
-		par.TSTART, par.TSTART+par.Exposure);
-	SIXT_ERROR(msg);
-	break;
-      }
+      // is a subset of the period described by the attitude file.
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+				par.TSTART+par.Exposure, &status);
+      CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
-    // Optional GTI file.
-    if (strlen(par.GTIfile)>0) {
-      strcpy(ucase_buffer, par.GTIfile);
-      strtoupper(ucase_buffer);
-      if (0!=strcmp(ucase_buffer, "NONE")) {
-	gti=loadGTI(par.GTIfile, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-    }
+    // Get a GTI.
+    gti=getGTIFromFileOrContinuous(par.GTIfile, 
+				   par.TSTART, par.TSTART+par.Exposure,
+				   par.MJDREF, &status);
+    CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT X-ray source catalogs.
     srccat[0]=loadSourceCatalog(par.Simput, inst->tel->arf, &status);
@@ -268,54 +255,49 @@ int runsixt_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    double tstop;
-    if (NULL==gti) {
-      tstop=par.TSTART+par.Exposure;
-    } else {
-      tstop=gti->stop[gti->nentries-1];
-    }
+    double tstop=gti->stop[gti->ngti-1];
 
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonListFile(photonlist_filename, 
-				telescop, instrume, "Normal",
-				inst->tel->arf_filename, inst->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      plf=openNewPhotonFile(photonlist_filename, 
+			    telescop, instrume, "Normal",
+			    inst->tel->arf_filename, inst->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output impact list file.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewImpactListFile(impactlist_filename, 
-				telescop, instrume, "Normal",
-				inst->tel->arf_filename, inst->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
-				par.clobber, &status);
+      ilf=openNewImpactFile(impactlist_filename, 
+			    telescop, instrume, "Normal",
+			    inst->tel->arf_filename, inst->det->rmf_filename,
+			    par.MJDREF, 0.0, par.TSTART, tstop,
+			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
     }
 
     // Open the output event list file.
-    elf=openNewEventListFile(eventlist_filename, 
-			     telescop, instrume, "Normal",
-			     inst->tel->arf_filename, inst->det->rmf_filename,
-			     par.MJDREF, 0.0, par.TSTART, tstop,
-			     inst->det->pixgrid->xwidth,
-			     inst->det->pixgrid->ywidth,
-			     par.clobber, &status);
+    elf=openNewEventFile(eventlist_filename, 
+			 telescop, instrume, "Normal",
+			 inst->tel->arf_filename, inst->det->rmf_filename,
+			 par.MJDREF, 0.0, par.TSTART, tstop,
+			 inst->det->pixgrid->xwidth,
+			 inst->det->pixgrid->ywidth,
+			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Define the event list file as output file.
-    setGenDetEventListFile(inst->det, elf);
+    // Define the event file as output file.
+    setGenDetEventFile(inst->det, elf);
 
     // Open the output pattern list file.
-    patf=openNewPatternFile(patternlist_filename, 
-			    telescop, instrume, "Normal",			    
-			    inst->tel->arf_filename, inst->det->rmf_filename,
-			    par.MJDREF, 0.0, par.TSTART, tstop,
-			    inst->det->pixgrid->xwidth,
-			    inst->det->pixgrid->ywidth,
-			    par.clobber, &status);
+    patf=openNewEventFile(patternlist_filename,
+			  telescop, instrume, "Normal",
+			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  par.MJDREF, 0.0, par.TSTART, tstop,
+			  inst->det->pixgrid->xwidth,
+			  inst->det->pixgrid->ywidth,
+			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
@@ -335,9 +317,9 @@ int runsixt_main()
       CHECK_STATUS_BREAK(status);
 
       // Store the RA and Dec information in the FITS header.
-      ra *= 180./M_PI;
-      dec*= 180./M_PI;
-      rollangle*= 180./M_PI;
+      ra *=180./M_PI;
+      dec*=180./M_PI;
+      rollangle*=180./M_PI;
 
       // Photon list file.
       if (NULL!=plf) {
@@ -362,16 +344,14 @@ int runsixt_main()
       }
 
       // Event list file.
-      if (NULL!=elf) {
-	fits_update_key(elf->fptr, TDOUBLE, "RA_PNT", &ra,
-			"RA of pointing direction [deg]", &status);
-	fits_update_key(elf->fptr, TDOUBLE, "DEC_PNT", &dec,
-			"Dec of pointing direction [deg]", &status);
-	fits_update_key(elf->fptr, TFLOAT, "PA_PNT", &rollangle,
-			"Roll angle [deg]", &status);
-	CHECK_STATUS_BREAK(status);
-      }
-
+      fits_update_key(elf->fptr, TDOUBLE, "RA_PNT", &ra,
+		      "RA of pointing direction [deg]", &status);
+      fits_update_key(elf->fptr, TDOUBLE, "DEC_PNT", &dec,
+		      "Dec of pointing direction [deg]", &status);
+      fits_update_key(elf->fptr, TFLOAT, "PA_PNT", &rollangle,
+		      "Roll angle [deg]", &status);
+      CHECK_STATUS_BREAK(status);
+    
       // Pattern list file.
       fits_update_key(patf->fptr, TDOUBLE, "RA_PNT", &ra,
 		      "RA of pointing direction [deg]", &status);
@@ -391,27 +371,29 @@ int runsixt_main()
 	fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 			"attitude file", &status);
       }
-      if (NULL!=elf) {
-	fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
-			"attitude file", &status);
-      }
+      fits_update_key(elf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+		      "attitude file", &status);
       fits_update_key(patf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 		      "attitude file", &status);
       CHECK_STATUS_BREAK(status);
     }
 
+    // Event type.
+    fits_update_key(elf->fptr, TSTRING, "EVTYPE", "PIXEL",
+		    "event type", &status);
+    CHECK_STATUS_BREAK(status);
+
     // TLMIN and TLMAX of PI column.
     char keystr[MAXMSG];
     long value;
-    if (NULL!=elf) {
-      sprintf(keystr, "TLMIN%d", elf->cpi);
-      value=inst->det->rmf->FirstChannel;
-      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
-      sprintf(keystr, "TLMAX%d", elf->cpi);
-      value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
-      fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
-      CHECK_STATUS_BREAK(status);
-    }
+    sprintf(keystr, "TLMIN%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+    sprintf(keystr, "TLMAX%d", elf->cpi);
+    value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
+    fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
+    CHECK_STATUS_BREAK(status);
+    
     sprintf(keystr, "TLMIN%d", patf->cpi);
     value=inst->det->rmf->FirstChannel;
     fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
@@ -430,7 +412,7 @@ int runsixt_main()
     // Simulation progress status (running from 0 to 100).
     unsigned int progress=0;
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%", 0.);
+      headas_chat(2, "\r%.0lf %%", 0.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -440,34 +422,19 @@ int runsixt_main()
 
     // Determine the total length of the time interval to
     // be simulated.
-    double totalsimtime=0.;
-    double simtime=0.;
-    if (NULL==gti) {
-      totalsimtime=par.Exposure;
-    } else {
-      unsigned long ii; 
-      for (ii=0; ii<gti->nentries; ii++) {
-	totalsimtime+=gti->stop[ii]-gti->start[ii];
-      }
-    }
-
-
-    // Current bin in the GTI collection.
-    unsigned long gtibin=0;
+    double totalsimtime=sumGTI(gti);
+    fits_update_key(patf->fptr, TDOUBLE, "EXPOSURE", &totalsimtime,
+		    "exposure time [s]", &status);
+    CHECK_STATUS_BREAK(status);
+    
     // Loop over all intervals in the GTI collection.
+    int gtibin=0;
+    double simtime=0.;
     do {
       // Currently regarded interval.
-      double t0, t1;
+      double t0=gti->start[gtibin];
+      double t1=gti->stop[gtibin];
       
-      // Determine the currently regarded interval.
-      if (NULL==gti) {
-	t0=par.TSTART;
-	t1=par.Exposure;
-      } else {
-	t0=gti->start[gtibin];
-	t1=gti->stop[gtibin];
-      }
-
       // Set the start time for the instrument model.
       setGenDetStartTime(inst->det, t0);
 
@@ -478,8 +445,7 @@ int runsixt_main()
 
 	// Photon generation.
 	Photon ph;
-	int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1,
-		       par.MJDREF, par.dt, 
+	int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1, par.MJDREF, par.dt, 
 		       inst->tel->fov_diameter, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
@@ -487,7 +453,7 @@ int runsixt_main()
 	if (0==isph) break;
 
 	// Check if the photon still is within the requested
-	// exposre time.
+	// exposure time.
 	assert(ph.time<=t1);
 
 	// If requested, write the photon to the output file.
@@ -519,7 +485,7 @@ int runsixt_main()
 	while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
 	  progress++;
 	  if (NULL==progressfile) {
-	    headas_chat(2, "\r%.1lf %%", progress*1.);
+	    headas_chat(2, "\r%.0lf %%", progress*1.);
 	    fflush(NULL);
 	  } else {
 	    rewind(progressfile);
@@ -541,20 +507,18 @@ int runsixt_main()
       }
 
       // Proceed to the next GTI interval.
-      if (NULL!=gti) {
-	simtime+=gti->stop[gtibin]-gti->start[gtibin];
-	gtibin++;
-	if (gtibin>=gti->nentries) break;
-      }
+      simtime+=gti->stop[gtibin]-gti->start[gtibin];
+      gtibin++;
+      if (gtibin>=gti->ngti) break;
 
-    } while (NULL!=gti);
+    } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
     
       
     // Progress output.
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.1lf %%\n", 100.);
+      headas_chat(2, "\r%.0lf %%\n", 100.);
       fflush(NULL);
     } else {
       rewind(progressfile);
@@ -573,21 +537,36 @@ int runsixt_main()
       // If no split events are simulated, simply copy the event list
       // to a pattern list.
       headas_chat(3, "copy events to pattern file ...\n");
-      copyEvents2PatternFile(elf, patf, &status);
+      copyEventFile(elf, patf, 
+		    inst->det->threshold_event_lo_keV,
+		    inst->det->threshold_pattern_up_keV,
+		    &status);
+      CHECK_STATUS_BREAK(status);
+      fits_update_key(patf->fptr, TSTRING, "EVTYPE", "PATTERN", 
+		      "event type", &status);
       CHECK_STATUS_BREAK(status);
     }
     
+    // Store the GTI extension in the event file.
+    saveGTIExt(elf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
     // Close files in order to save memory.
-    freePhotonListFile(&plf, &status);
-    freeImpactListFile(&ilf, &status);
-    freeEventListFile(&elf, &status);
+    freePhotonFile(&plf, &status);
+    freeImpactFile(&ilf, &status);
+    freeEventFile(&elf, &status);
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
     phproj(inst, ac, patf, par.TSTART, par.Exposure, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Store the GTI extension in the pattern file.
+    saveGTIExt(patf->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
     // --- End of simulation process ---
+
 
   } while(0); // END of ERROR HANDLING Loop.
 
@@ -597,10 +576,10 @@ int runsixt_main()
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
-  destroyPatternFile(&patf, &status);
-  freeEventListFile(&elf, &status);
-  freeImpactListFile(&ilf, &status);
-  freePhotonListFile(&plf, &status);
+  freeEventFile(&patf, &status);
+  freeEventFile(&elf, &status);
+  freeImpactFile(&ilf, &status);
+  freePhotonFile(&plf, &status);
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&(srccat[ii]), &status);
   }
@@ -615,9 +594,13 @@ int runsixt_main()
 
   // Clean up the random number generator.
   sixt_destroy_rng();
-
-  if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
-  return(status);
+  
+  if (EXIT_SUCCESS==status) {
+    headas_chat(3, "finished successfully!\n\n");
+    return(EXIT_SUCCESS);
+  } else {
+    return(EXIT_FAILURE);
+  }
 }
 
 
@@ -797,7 +780,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
@@ -817,7 +800,7 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_int("seed", &par->Seed);
+  status=ape_trad_query_int("Seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the seed for the random number generator");
     return(status);

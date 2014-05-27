@@ -1,3 +1,23 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2007-2014 Christian Schmid, FAU
+*/
+
 #include "geninst.h"
 
 
@@ -9,6 +29,7 @@
 /** Data structure given to the XML handler to transfer data. */
 struct XMLParseData {
   GenInst* inst;
+  unsigned int seed;
   int status;
 };
 
@@ -33,16 +54,6 @@ static void GenInstXMLElementStart(void* data, const char* el,
 				   const char** attr);
 /** Handler for the end of an XML element. */
 static void GenInstXMLElementEnd(void* data, const char* el);
-
-
-////////////////////////////////////////////////////////////////////
-// Function Declarations.
-////////////////////////////////////////////////////////////////////
-
-
-void parseGenInstXML(GenInst* const inst, 
-		     const char* const filename, 
-		     int* const status);
 
 
 ////////////////////////////////////////////////////////////////////
@@ -109,7 +120,187 @@ void destroyGenInst(GenInst** const inst, int* const status)
 }
 
 
-GenInst* loadGenInst(const char* const filename, int* const status)
+void parseGenInstXML(GenInst* const inst,
+		     const char* const filename,
+		     const unsigned int seed,
+		     int* const status)
+{
+  headas_chat(5, "read instrument setup from XML file '%s' ...\n", filename);
+
+  // Read the XML data from the file.
+  // Open the specified file.
+  FILE* xmlfile=fopen(filename, "r");
+  if (NULL==xmlfile) {
+    *status=EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "failed opening XML "
+	    "file '%s' for read access", filename);
+    SIXT_ERROR(msg);
+    return;
+  }
+
+  // The data is read from the XML file and stored in xmlbuffer
+  // without any modifications.
+  struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
+  CHECK_STATUS_VOID(*status);
+
+  // Input buffer with an additional byte at the end for the 
+  // termination of the string.
+  const int buffer_size=256;
+  char buffer[buffer_size+1];
+  // Number of chars in buffer.
+  int len;
+
+  // Read all data from the file.
+  do {
+    // Get a piece of input into the buffer.
+    len=fread(buffer, 1, buffer_size, xmlfile);
+    buffer[len]='\0'; // Terminate the string.
+    addString2XMLBuffer(xmlbuffer, buffer, status);
+    CHECK_STATUS_VOID(*status);
+  } while (!feof(xmlfile));
+
+  // Close the file handler to the XML file.
+  fclose(xmlfile);
+
+  // Before expanding loops in the XML file, add the included code to it.
+  expandIncludesXML(xmlbuffer, filename, status);
+  CHECK_STATUS_VOID(*status);
+
+  // Before acutally parsing the XML code, expand the loops and 
+  // arithmetic operations in the GenDet XML description.
+  // The expansion algorithm repeatetly scans the XML code and
+  // searches for loop tags. It replaces the loop tags by repeating
+  // the contained XML code.
+  expandXML(xmlbuffer, status);
+  CHECK_STATUS_VOID(*status);
+
+
+  // Parse XML code in the xmlbuffer using the expat library.
+  // Get an XML_Parser object.
+  XML_Parser parser=XML_ParserCreate(NULL);
+  if (NULL==parser) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("could not allocate memory for XML parser");
+    return;
+  }
+
+  // Set data that is passed to the handler functions.
+  struct XMLParseData xmlparsedata={
+    .inst  =inst,
+    .seed  =seed,
+    .status=EXIT_SUCCESS
+  };
+  XML_SetUserData(parser, &xmlparsedata);
+
+  // Set the handler functions.
+  XML_SetElementHandler(parser, GenInstXMLElementStart, GenInstXMLElementEnd);
+
+  // Parse all the data in the string buffer.
+  const int done=1;
+  if (!XML_Parse(parser, xmlbuffer->text, strlen(xmlbuffer->text), done)) {
+    // Parse error.
+    *status=EXIT_FAILURE;
+    char msg[MAXMSG];
+    sprintf(msg, "failed parsing XML file '%s':\n%s\n", 
+	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
+    printf("%s", xmlbuffer->text);
+    SIXT_ERROR(msg);
+    return;
+  }
+  // Check for errors.
+  if (EXIT_SUCCESS!=xmlparsedata.status) {
+    *status=xmlparsedata.status;
+    return;
+  }
+
+
+  // Release memory.
+  XML_ParserFree(parser);
+
+  // Remove the XML string buffer.
+  freeXMLBuffer(&xmlbuffer);
+
+
+  // Check if all required parameters have been read successfully from 
+  // the XML file.
+  if (0==inst->det->pixgrid->xwidth) {
+    SIXT_WARNING("no specification of x-width of pixel array");
+  }  
+  if (0==inst->det->pixgrid->ywidth) {
+    SIXT_WARNING("no specification of y-width of pixel array");
+  }
+
+  if (0.==inst->det->pixgrid->xrpix) {
+    SIXT_WARNING("no specification of x reference pixel");
+  }
+  if (0.==inst->det->pixgrid->yrpix) {
+    SIXT_WARNING("no specification of y reference pixel");
+  }
+
+  if (0.==inst->det->pixgrid->xdelt) {
+    SIXT_WARNING("no specification of pixel x-width");
+  }
+  if (0.==inst->det->pixgrid->ydelt) {
+    SIXT_WARNING("no specification of pixel y-width");
+  }
+  
+  if (0.>inst->det->pixgrid->xborder) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("invalid specification of x-border of pixels");
+    return;    
+  }
+  if (0.>inst->det->pixgrid->yborder) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("invalid specification of y-border of pixels");
+    return;    
+  }
+
+  if (NULL==inst->det->rmf) {
+    SIXT_WARNING("no specification of response file (RMF/RSP)");
+  }
+  if (NULL==inst->tel->arf) {
+    SIXT_WARNING("no specification of ARF");
+  }
+
+  if (NULL==inst->tel->psf) {
+    SIXT_WARNING("no specification of PSF");
+  }
+
+  if (0.==inst->tel->focal_length) {
+    SIXT_WARNING("no specification of the focal length of the telescope");
+  }
+  if (0.==inst->tel->fov_diameter) {
+    SIXT_WARNING("no specification of the diameter of the telescope FoV");
+  }
+
+  if (0==inst->det->readout_trigger) {
+    SIXT_WARNING("no specification of the readout trigger");
+  }
+
+  if (GS_EXPONENTIAL==inst->det->split->type) {
+    if (inst->det->split->par1==0.) {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("no valid split model parameters in the XML file");
+      return;    
+    }
+  }
+
+  if (GS_GAUSS==inst->det->split->type) {
+    if ((inst->det->split->par1==0.)&&(inst->det->split->par2==0.)) {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("no valid split model parameters in the XML file");
+      return;    
+    }
+  }
+  // END of checking, if all detector parameters have successfully been 
+  // read from the XML file.
+}
+
+
+GenInst* loadGenInst(const char* const filename,
+		     const unsigned int seed,
+		     int* const status)
 {
   // Get a new and empty data structure.
   GenInst* inst=newGenInst(status);
@@ -155,7 +346,7 @@ GenInst* loadGenInst(const char* const filename, int* const status)
 
 
   // Read in the XML definition of the detector.
-  parseGenInstXML(inst, filename, status);
+  parseGenInstXML(inst, filename, seed, status);
   CHECK_STATUS_RET(*status, inst);
 
 
@@ -178,186 +369,17 @@ GenInst* loadGenInst(const char* const filename, int* const status)
 }
 
 
-void parseGenInstXML(GenInst* const inst, 
-		     const char* const filename, 
-		     int* const status)
-{
-  headas_chat(5, "read instrument setup from XML file '%s' ...\n", filename);
-
-  // Read the XML data from the file.
-  // Open the specified file.
-  FILE* xmlfile=fopen(filename, "r");
-  if (NULL==xmlfile) {
-    *status=EXIT_FAILURE;
-    char msg[MAXMSG];
-    sprintf(msg, "failed opening XML "
-	    "file '%s' for read access", filename);
-    SIXT_ERROR(msg);
-    return;
-  }
-
-  // The data is read from the XML file and stored in xmlbuffer
-  // without any modifications.
-  struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
-  CHECK_STATUS_VOID(*status);
-
-  // Input buffer with an additional byte at the end for the 
-  // termination of the string.
-  const int buffer_size=256;
-  char buffer[buffer_size+1];
-  // Number of chars in buffer.
-  int len;
-
-  // Read all data from the file.
-  do {
-    // Get a piece of input into the buffer.
-    len=fread(buffer, 1, buffer_size, xmlfile);
-    buffer[len]='\0'; // Terminate the string.
-    addString2XMLBuffer(xmlbuffer, buffer, status);
-    CHECK_STATUS_VOID(*status);
-  } while (!feof(xmlfile));
-
-  // Close the file handler to the XML file.
-  fclose(xmlfile);
-
-
-  // Before acutally parsing the XML code, expand the loops and 
-  // arithmetic operations in the GenDet XML description.
-  // The expansion algorithm repeatetly scans the XML code and
-  // searches for loop tags. It replaces the loop tags by repeating
-  // the contained XML code.
-  expandXML(xmlbuffer, status);
-  CHECK_STATUS_VOID(*status);
-
-
-  // Parse XML code in the xmlbuffer using the expat library.
-  // Get an XML_Parser object.
-  XML_Parser parser=XML_ParserCreate(NULL);
-  if (NULL==parser) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("could not allocate memory for XML parser");
-    return;
-  }
-
-  // Set data that is passed to the handler functions.
-  struct XMLParseData xmlparsedata = {
-    .inst   = inst,
-    .status = EXIT_SUCCESS
-  };
-  XML_SetUserData(parser, &xmlparsedata);
-
-  // Set the handler functions.
-  XML_SetElementHandler(parser, GenInstXMLElementStart, GenInstXMLElementEnd);
-
-  // Parse all the data in the string buffer.
-  const int done=1;
-  if (!XML_Parse(parser, xmlbuffer->text, strlen(xmlbuffer->text), done)) {
-    // Parse error.
-    *status=EXIT_FAILURE;
-    char msg[MAXMSG];
-    sprintf(msg, "faild parsing XML file '%s':\n%s\n", 
-	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
-    printf("%s", xmlbuffer->text);
-    SIXT_ERROR(msg);
-    return;
-  }
-  // Check for errors.
-  if (EXIT_SUCCESS!=xmlparsedata.status) {
-    *status = xmlparsedata.status;
-    return;
-  }
-
-
-  // Release memory.
-  XML_ParserFree(parser);
-
-  // Remove the XML string buffer.
-  freeXMLBuffer(&xmlbuffer);
-
-
-  // Check if all required parameters have been read successfully from 
-  // the XML file.
-  if (0==inst->det->pixgrid->xwidth) {
-    headas_printf("*** warning: no specification of x-width of pixel array\n");
-  }  
-  if (0==inst->det->pixgrid->ywidth) {
-    headas_printf("*** warning: no specification of y-width of pixel array\n");
-  }
-
-  if (0.==inst->det->pixgrid->xrpix) {
-    headas_printf("*** warning: no specification of x reference pixel\n");
-  }
-  if (0.==inst->det->pixgrid->yrpix) {
-    headas_printf("*** warning: no specification of y reference pixel\n");
-  }
-
-  if (0.==inst->det->pixgrid->xdelt) {
-    headas_printf("*** warning: no specification of pixel x-width\n");
-  }
-  if (0.==inst->det->pixgrid->ydelt) {
-    headas_printf("*** warning: no specification of pixel y-width\n");
-  }
-  
-  if (0.>inst->det->pixgrid->xborder) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("invalid specification of x-border of pixels");
-    return;    
-  }
-  if (0.>inst->det->pixgrid->yborder) {
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("invalid specification of y-border of pixels");
-    return;    
-  }
-
-  if (NULL==inst->det->rmf) {
-    headas_printf("*** warning: no specification of response file (RMF/RSP)\n");
-  }
-  if (NULL==inst->tel->arf) {
-    headas_printf("*** warning: no specification of ARF\n");
-  }
-
-  if (0.==inst->tel->focal_length) {
-    headas_printf("*** warning: no specification of the focal length of the telescope\n");
-  }
-  if (0.==inst->tel->fov_diameter) {
-    headas_printf("*** warning: no specification of the diameter of the telescope FoV\n");
-  }
-
-  if (0==inst->det->readout_trigger) {
-    headas_printf("*** warning: no specification of the readout trigger\n");
-  }
-
-  if (GS_EXPONENTIAL==inst->det->split->type) {
-    if (inst->det->split->par1==0.) {
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("no valid split model parameters in the XML file");
-      return;    
-    }
-  }
-
-  if (GS_GAUSS==inst->det->split->type) {
-    if ((inst->det->split->par1==0.)&&(inst->det->split->par2==0.)) {
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("no valid split model parameters in the XML file");
-      return;    
-    }
-  }
-  // END of checking, if all detector parameters have successfully been 
-  // read from the XML file.
-}
-
-
 static void GenInstXMLElementStart(void* parsedata, 
 				   const char* el, 
 				   const char** attr) 
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
-  char Uelement[MAXMSG]; // Upper case version of XML element.
 
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
 
   // Convert the element to an upper case string.
+  char Uelement[MAXMSG];
   strcpy(Uelement, el);
   strtoupper(Uelement);
 
@@ -527,8 +549,8 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      xmlparsedata->status=EXIT_FAILURE;
       SIXT_ERROR("no file specified for RSP");
+      xmlparsedata->status=EXIT_FAILURE;
       return;
     }
 
@@ -571,8 +593,9 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for PSF");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for PSF");
+      return;
     }
 
     char filepathname[MAXFILENAME];
@@ -583,24 +606,6 @@ static void GenInstXMLElementStart(void* parsedata,
 	     &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
-  } else if (!strcmp(Uelement, "CODEDMASK")) {
-
-    char filename[MAXFILENAME];
-    getXMLAttributeString(attr, "FILENAME", filename);
-
-    // Check if a file name has been specified.
-    if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for coded mask");
-      xmlparsedata->status=EXIT_FAILURE;
-    }
-
-    char filepathname[MAXFILENAME];
-    strcpy(filepathname, xmlparsedata->inst->filepath);
-    strcat(filepathname, filename);
-    xmlparsedata->inst->tel->coded_mask= 
-      getCodedMaskFromFile(filepathname, &xmlparsedata->status);
-    CHECK_STATUS_VOID(xmlparsedata->status);
-
   } else if (!strcmp(Uelement, "VIGNETTING")) {
 
     char filename[MAXFILENAME];
@@ -608,8 +613,9 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for vignetting");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for vignetting");
+      return;
     }
 
     char filepathname[MAXFILENAME];
@@ -639,8 +645,9 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for bad pixel map");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for bad pixel map");
+      return;
     }
 
     char filepathname[MAXFILENAME];
@@ -660,14 +667,15 @@ static void GenInstXMLElementStart(void* parsedata,
 
       // Check if a file name has been specified.
       if (strlen(filename)==0) {
-	SIXT_ERROR("no file specified for eROSITA detector background");
 	xmlparsedata->status=EXIT_FAILURE;
+	SIXT_ERROR("no file specified for eROSITA detector background");
+	return;
       }
 
       char filepathname[MAXFILENAME];
       strcpy(filepathname, xmlparsedata->inst->filepath);
       strcat(filepathname, filename);
-      eroBkgInitialize(filepathname, &xmlparsedata->status);
+      eroBkgInitialize(filepathname, xmlparsedata->seed, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);
       eroBkgInitialized=1;
 
@@ -683,7 +691,6 @@ static void GenInstXMLElementStart(void* parsedata,
 	CHECK_STATUS_VOID(xmlparsedata->status);
       }
     }
-
     xmlparsedata->inst->det->erobackground=1;
 
   } else if (!strcmp(Uelement, "PHABACKGROUND")) {
@@ -693,20 +700,39 @@ static void GenInstXMLElementStart(void* parsedata,
 
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
-      SIXT_ERROR("no file specified for PHA detector background");
       xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("no file specified for PHA detector background");
+      return;
     }
     
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->inst->det->phabkg=
+
+    // There can be up to 2 PHA background models.
+    int ii;
+    for (ii=0; ii<2; ii++) {
+      if (NULL==xmlparsedata->inst->det->phabkg[ii]) {
+	break;
+      }
+    }
+    if (2==ii) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("cannot use more than 2 PHA background models");
+      return;
+    }
+    xmlparsedata->inst->det->phabkg[ii]=
       newPHABkg(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
-    // Set the radius of the FoV.
-    xmlparsedata->inst->det->phabkg->fov_diameter=
-      getXMLAttributeFloat(attr, "FOV_DIAMETER");
+    // If needed, link the vignetting function and the focal length
+    // of the telescope.
+    if (getXMLAttributeInt(attr, "VIGNETTING")!=0) {
+      xmlparsedata->inst->det->phabkg[ii]->vignetting=
+	&xmlparsedata->inst->tel->vignetting;
+      xmlparsedata->inst->det->phabkg[ii]->focal_length=
+	&xmlparsedata->inst->tel->focal_length;
+    }
 
   } else if (!strcmp(Uelement, "SPLIT")) {
 
@@ -714,11 +740,11 @@ static void GenInstXMLElementStart(void* parsedata,
     getXMLAttributeString(attr, "TYPE", type);
     strtoupper(type);
     if (!strcmp(type, "NONE")) {
-      xmlparsedata->inst->det->split->type = GS_NONE;
+      xmlparsedata->inst->det->split->type=GS_NONE;
     } else if (!strcmp(type, "GAUSS")) {
-      xmlparsedata->inst->det->split->type = GS_GAUSS;
+      xmlparsedata->inst->det->split->type=GS_GAUSS;
     } else if (!strcmp(type, "EXPONENTIAL")) {
-      xmlparsedata->inst->det->split->type = GS_EXPONENTIAL;
+      xmlparsedata->inst->det->split->type=GS_EXPONENTIAL;
     }
     xmlparsedata->inst->det->split->par1=getXMLAttributeFloat(attr, "PAR1");
     xmlparsedata->inst->det->split->par2=getXMLAttributeFloat(attr, "PAR2");
@@ -732,8 +758,9 @@ static void GenInstXMLElementStart(void* parsedata,
       xmlparsedata->inst->det->readout_trigger=GENDET_TIME_TRIGGERED;
     } else if (!strcmp(mode, "EVENT")) {
       xmlparsedata->inst->det->readout_trigger=GENDET_EVENT_TRIGGERED;
-    }
-      
+    }    
+    xmlparsedata->inst->det->deadtime=getXMLAttributeDouble(attr, "DEADTIME");
+
   } else if (!strcmp(Uelement, "WAIT")) {
     
     float waittime=getXMLAttributeFloat(attr, "TIME");
@@ -743,7 +770,7 @@ static void GenInstXMLElementStart(void* parsedata,
     CHECK_STATUS_VOID(xmlparsedata->status);
 
     // Accumulate the amount of time required for one read-out frame.
-    xmlparsedata->inst->det->frametime += waittime;
+    xmlparsedata->inst->det->frametime+=waittime;
 	
   } else if (!strcmp(Uelement, "CLEARLINE")) {
 
@@ -755,41 +782,56 @@ static void GenInstXMLElementStart(void* parsedata,
 
   } else if (!strcmp(Uelement, "THRESHOLD_READOUT_LO_KEV")) {
 
-    xmlparsedata->inst->det->threshold_readout_lo_keV = 
+    xmlparsedata->inst->det->threshold_readout_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower readout threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_readout_lo_keV);
 	
   } else if (!strcmp(Uelement, "THRESHOLD_PATTERN_UP_KEV")) {
 
-    xmlparsedata->inst->det->threshold_pattern_up_keV = 
+    xmlparsedata->inst->det->threshold_pattern_up_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "upper pattern threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_pattern_up_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
 
-    xmlparsedata->inst->det->threshold_event_lo_keV = 
+    xmlparsedata->inst->det->threshold_event_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower event threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_event_lo_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_KEV")) {
 
-    xmlparsedata->inst->det->threshold_split_lo_keV =
+    xmlparsedata->inst->det->threshold_split_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower split threshold: %.3lf keV\n", 
 		xmlparsedata->inst->det->threshold_split_lo_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
 
-    xmlparsedata->inst->det->threshold_split_lo_fraction = 
+    xmlparsedata->inst->det->threshold_split_lo_fraction=
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(3, "lower split threshold: %.1lf %%\n", 
 		xmlparsedata->inst->det->threshold_split_lo_fraction*100.);
 
+
+  } else if (!strcmp(Uelement, "TELESCOPE")) {
+    
+    // Nothing to do here. Do not remove this selection! Otherwise
+    // the tag <telescope> will be regarded as unknown.
+
+  } else if (!strcmp(Uelement, "DETECTOR")) {
+    
+    // Nothing to do here. Do not remove this selection! Otherwise
+    // the tag <detector> will be regarded as unknown.
+    
+  } else {
+    // Unknown tag, display warning.
+    char msg[MAXMSG];
+    sprintf(msg, "unknown XML tag: <%s>", el);
+    SIXT_WARNING(msg);
   }
-  CHECK_STATUS_VOID(xmlparsedata->status);
 }
 
 
@@ -797,11 +839,9 @@ static void GenInstXMLElementEnd(void* parsedata, const char* el)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
-  (void)el; // Unused parameter.
+  (void)el;
 
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
-
-  return;
 }
 
