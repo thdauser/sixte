@@ -184,7 +184,7 @@ int comarecon_main() {
        ydiff=((ea->naxis2)/2-detector_pixels->ywidth)/2;
 
        // Loop over all events in the FITS file.
-       while (0==EventFileEOF(&eventfile->generic)) {
+       while (0==EventListEOF(&eventfile->generic)) {
 
 	 status=readEventList_nextRow(eventfile, ea);
 	 CHECK_STATUS_BREAK(status);
