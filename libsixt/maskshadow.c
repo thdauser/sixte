@@ -92,8 +92,6 @@ void getMaskRepix(ReconArray* recon, MaskShadow* ms)
   }
   //value at Rmap (ranging from max neg value defined by OF to 1)
   //divided by: distance from max neg value to 1 -> percentage of transparency (0==none to 1==max)
-
-  return(ms);
 }
 
 
