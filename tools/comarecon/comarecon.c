@@ -324,8 +324,8 @@ int comarecon_main() {
        }
 
        //for testing:
-       char name_image[7];
-       sprintf(name_image,"image_%u", position_list->entryCount);
+       char name_image[MAXFILENAME];
+       sprintf(name_image,"image_%lu", position_list->entryCount);
 
        // Write the reconstructed source function to the output FITS file.
        if(position_list->entryCount <=1){
