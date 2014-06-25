@@ -122,8 +122,8 @@ int pixdetillum_main(){
       piximp.energy=(float)par.energy;
       piximp.ph_id=ii;
       piximp.src_id=0;
-      int x=getRndNum(&status);
-      int y=getRndNum(&status);
+      double x=getRndNum(&status);
+      double y=getRndNum(&status);
       piximp.pixposition.x=(-0.5+x)*det->pix[pixid].width;
       piximp.pixposition.y=(-0.5+y)*det->pix[pixid].height;
       piximp.detposition.x=piximp.pixposition.x+det->pix[pixid].sx;
