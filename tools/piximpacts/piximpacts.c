@@ -145,10 +145,13 @@ int piximpacts_main() {
     }
       
     // Copy the GTI extension into the new file
-    //fits_movnam_hdu(ilf->fptr, BINARY_TBL, "STDGTI", 0, &status);
-    //CHECK_STATUS_BREAK(status);
-    //fits_copy_hdu(ilf->fptr, plf->fptr, 0, &status);
-   // CHECK_STATUS_BREAK(status);
+    CHECK_STATUS_BREAK(status);
+    if(!fits_movnam_hdu(ilf->fptr, BINARY_TBL, "STDGTI", 0, &status)){
+      fits_copy_hdu(ilf->fptr, plf->fptr, 0, &status);
+      CHECK_STATUS_BREAK(status);
+    }else{
+      status=EXIT_SUCCESS;
+    }
     
   } while(0); // END of the error handling loop.
   
@@ -159,7 +162,7 @@ int piximpacts_main() {
   freePixImpFile(&plf, &status);
   freeImpactFile(&ilf, &status);
   
-  // destroyAdvDet(&det, &status);
+  destroyAdvDet(&det);
   
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");

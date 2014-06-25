@@ -370,7 +370,7 @@ int getpar(struct Parameters* const par)
       par->nhi=par->nlo;
       par->Nactive=1;
     }
-    if(par->Nactive<0 || par->nlo<1){
+    if(par->Nactive<0 || par->nlo<0){
       status=EXIT_FAILURE;
       SIXT_ERROR("Input values for active pixels corrupted.");
       return(status);
