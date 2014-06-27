@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2014 Thorsten Brand, FAU
+   Copyright 2014 Jelle de Plaa & Thorsten Brand, FAU
 */
 
 #include "tesproftemplates.h"
@@ -305,3 +305,332 @@ int findTESProfileEnergyIndex(TESProfiles* prof,
   return (best_match);
 }
 
+int genTESProfile(TESTemplateInput* pinp, TESProfiles** ptemp, int* const status) {
+    
+  int i,j,k;
+  double total;
+  
+  
+  if ((*ptemp)==NULL) {
+    (*ptemp)=newTESProfiles(status);
+  }
+  
+  /** For now, we create one version for all pixels */
+  (*ptemp)->Nv=1;
+  (*ptemp)->version=(char**)malloc((*ptemp)->Nv*sizeof(char*));
+  if((*ptemp)->version==NULL){
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("Malloc error.");
+    return *status;
+  }
+  
+  /* Allocate memory for different versions */
+  (*ptemp)->profiles = (TESProfilesEntries*) malloc((*ptemp)->Nv * sizeof(TESProfilesEntries));
+  if((*ptemp)->profiles==NULL){
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("Malloc error.");
+    return *status;
+  }
+  
+  for (i=0;i<(*ptemp)->Nv;i++) {
+    // copy version name
+    (*ptemp)->version[i]=(char*)malloc((strlen(pinp->version[i])+1)*sizeof(char));
+    if((*ptemp)->version[i]==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("Malloc error.");
+      return *status;
+    }
+    strcpy((*ptemp)->version[i], pinp->version[i]);
+  
+    /* Initialize profile pointer in entry */
+    newTESProfilesEntries(&(*ptemp)->profiles[i]);
+    
+    /* Set dimensions of profiles arrays */
+    (*ptemp)->profiles[i].Nt=pinp->nsamp;
+    (*ptemp)->profiles[i].NE=pinp->ne;
+    
+    /* Allocate memory for energy and time arrays */
+    (*ptemp)->profiles[i].energy = (double*)malloc((*ptemp)->profiles[i].NE * sizeof(double));
+    if((*ptemp)->profiles[i].energy==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("Malloc error.");
+      return *status;
+    }
+    (*ptemp)->profiles[i].time = (double*)malloc((*ptemp)->profiles[i].Nt * sizeof(double));
+    if((*ptemp)->profiles[i].time==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("Malloc error.");
+      return *status;
+    }
+    
+    /* Fill energy arrays with values */
+    for (j=0;j<(*ptemp)->profiles[i].NE;j++) {
+      (*ptemp)->profiles[i].energy[j]=pinp->energies[j];
+    } 
+    
+    /* Fill time arrays with values */
+    for (j=0;j<(*ptemp)->profiles[i].Nt;j++) {
+      (*ptemp)->profiles[i].time[j]=(double) j / pinp->freq;
+    }
+    
+    /* Allocate adc_value arrays */
+    (*ptemp)->profiles[i].adc_value= (double**) malloc((*ptemp)->profiles[i].NE*sizeof(double*));
+    if((*ptemp)->profiles[i].adc_value==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("Malloc error.");
+      return *status;
+    }
+    for (j=0;j<(*ptemp)->profiles[i].NE;j++) {
+      (*ptemp)->profiles[i].adc_value[j]=NULL;
+      (*ptemp)->profiles[i].adc_value[j]=(double*)malloc((*ptemp)->profiles[i].Nt*sizeof(double));
+      if((*ptemp)->profiles[i].adc_value[j]==NULL){
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("Malloc error.");
+      return *status;
+      }
+    }
+    
+    /* Calculate profiles */
+    for (j=0;j<(*ptemp)->profiles[i].NE;j++) {
+      total=0.;
+      /* Calculate exponential pulse */
+      for (k=0;k<(*ptemp)->profiles[i].Nt;k++) {
+	(*ptemp)->profiles[i].adc_value[j][k]=ExponentialPulse(&(*ptemp)->profiles[i].time[k],&pinp->trise,&pinp->tfall);
+	total = total + (*ptemp)->profiles[i].adc_value[j][k];
+      }
+      /* Normalisation step to make area equal to 1.0 */
+      for (k=0;k<(*ptemp)->profiles[i].Nt;k++) {
+	(*ptemp)->profiles[i].adc_value[j][k]=(*ptemp)->profiles[i].adc_value[j][k]/total;
+      }
+	
+    }
+       
+  }
+  return *status;
+} 
+
+
+double ExponentialPulse(double *t, double *trise, double *tfall) {
+
+  double result;
+     
+  result = (1.-exp(-*t/ *trise))*exp(-*t / *tfall);
+
+  return result;
+}
+
+int createTESProfilesFile(char *filename, 
+			   const char clobber,
+			   char *comment,
+			   int* const status)
+{
+  
+  // Check if the file already exists.
+  int exists;
+  fits_file_exists(filename, &exists, status);
+  CHECK_STATUS_RET(*status, *status);
+  if (0!=exists) {
+    if (0!=clobber) {
+      // Delete the file.
+      remove(filename);
+    } else {
+      // Throw an error.
+      char msg[MAXMSG];
+      sprintf(msg, "file '%s' already exists", filename);
+      SIXT_ERROR(msg);
+      *status=EXIT_FAILURE;
+      CHECK_STATUS_RET(*status, *status);
+    }
+  }
+  
+  // Create the new empty file
+  fitsfile *fptr=NULL;
+  
+  fits_create_file(&fptr, filename, status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  // Write the neccessary keywords to Primary extension
+  int logic=(int)'T';
+  int bitpix=8;
+  int naxis=0;
+  fits_update_key(fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
+  fits_update_key(fptr, TINT, "BITPIX", &(bitpix), NULL, status);
+  fits_update_key(fptr, TINT, "NAXIS", &(naxis), NULL, status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  // Write comment to header
+  fits_write_comment(fptr, comment, status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, *status);
+
+  return *status;
+  
+}
+
+int writeTESProfiles(char *filename, 
+			     char *version, 
+			     TESProfilesEntries *prof, 
+			     const char clobber,
+			     char *comment,
+			     int* const status)
+{
+  
+  // Check if the file already exists.
+  int exists;
+  fits_file_exists(filename, &exists, status);
+  CHECK_STATUS_RET(*status, *status);
+  if (0==exists) {
+    createTESProfilesFile(filename, clobber, comment, status);
+    CHECK_STATUS_RET(*status, *status);
+  }
+  
+  fitsfile *fptr=NULL;
+  
+  fits_open_file(&fptr, filename, READWRITE, status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  // Try to move to the version-extension
+  if(fits_movnam_hdu(fptr, BINARY_TBL, version, 0, status)){
+    // That version does not exist in the file yet, create it
+    *status=EXIT_SUCCESS;
+    char *name[]={"TIME"};
+    char *type[]={"D"};
+    char *unit[]={"s"};
+    fits_create_tbl(fptr, BINARY_TBL, prof->Nt, 1, name,type,unit, version, status);
+    CHECK_STATUS_RET(*status, *status);
+    
+    // Write the TIME column
+    fits_write_col(fptr, TDOUBLE, 1, 1, 1, prof->Nt, 
+		   prof->time, status);
+    CHECK_STATUS_RET(*status, *status);
+  }else{
+    // Extension is already there, check if TIME column is compatible
+    long nrows=0;
+    int tcol=0;
+    
+    // First read number of rows and compare to length of time array
+    fits_get_num_rows(fptr, &nrows, status);
+    CHECK_STATUS_RET(*status, *status);
+    
+    if(nrows!=prof->Nt){
+      // Length does not match to already existing table
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("The specified file already contains the same pulse template version but with different length.");
+      CHECK_STATUS_RET(*status, *status);
+    }
+    
+    // Read the TIME column
+    fits_get_colnum(fptr, CASEINSEN, "TIME", &tcol, status);
+    if(status!=EXIT_SUCCESS){
+      // TIME column does not exist
+      SIXT_ERROR("The specified file already contains the same pulse template version but without a TIME column.");
+      CHECK_STATUS_RET(*status, *status);
+    }
+    
+    double nulval=0.;
+    double tarray[nrows];
+    int anynul=0;
+    
+    fits_read_col(fptr, TDOUBLE, tcol, 1, 1, nrows, 
+		  &nulval, tarray, &anynul, status);
+    CHECK_STATUS_RET(*status, *status);
+    
+    long ii;
+    // loop over all time steps and compare time values
+    for(ii=0; ii<nrows; ii++){
+      if(tarray[ii]!=prof->time[ii]){
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("The specified file already contains the same pulse template version but with different TIME vector.");
+	CHECK_STATUS_RET(*status, *status);
+      }
+    }
+  }
+    
+  // Now fptr should point to a valid template file
+  // Insert the adc columns one by one in correct position
+  
+  int jj;
+  
+  for(jj=0; jj<prof->NE; jj++){
+    InsertTESProfADCCol(fptr, prof->Nt, prof->energy[jj], 
+			prof->adc_value[jj], status);
+    CHECK_STATUS_RET(*status, *status);
+  }
+  
+  // Write comment to header
+  fits_write_comment(fptr, comment, status);
+  CHECK_STATUS_RET(*status, *status);
+
+  fits_close_file(fptr, status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  return *status;
+  
+}
+
+int InsertTESProfADCCol(fitsfile *fptr, 
+			long nt, 
+			double energy, 
+			double *adc, 
+			int* const status)
+{
+ 
+  // Construct new column name
+  char ename[9];
+  sprintf(ename, "E%07.0lf", energy*1000.);
+  
+  // Read number of existing columns
+  int ncols;
+  fits_get_num_cols(fptr, &ncols, status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  int col=2;
+  
+  // Determine place for new column
+  if(ncols==1){
+    // Only TIME column is present until now, place ADC column behind
+    col=2;
+  }else{
+    // There are already ADC columns, look for correct place
+    int ii;
+    for(ii=0; ii<ncols-1; ii++){
+      // Read column number
+      char colname[9], keyname[9], comment[MAXMSG];
+      sprintf(keyname, "TTYPE%d", ii+2);
+      fits_read_key(fptr, TSTRING, keyname, colname, comment, status);
+      CHECK_STATUS_RET(*status, *status);
+      
+      // Determine energy of ADC column
+      char *ptr=NULL;
+      double colen;
+      if(colname[0]!='E'){
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("Column in input file is not a energy column.");
+	CHECK_STATUS_RET(*status, *status);
+      }
+      ptr=&(colname[1]);
+      colen=((double)atoi(ptr))/1000.;
+      if(colen<energy){
+	col++;
+      }else if(colen==energy){
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("Input file already contains a template for identical energy.");
+	CHECK_STATUS_RET(*status, *status);
+      }else{
+	break;
+      }
+    }
+  }
+  
+  // Now insert a new column
+  fits_insert_col(fptr, col, ename, "D", status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  // Write the adc-array to the new column
+  fits_write_col(fptr, TDOUBLE, col, 1, 1, nt, adc, status);
+  CHECK_STATUS_RET(*status, *status);
+  
+  return *status;
+}

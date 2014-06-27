@@ -63,6 +63,32 @@ typedef struct{
   
 }TESProfiles;
 
+/** Structure containing the input values for pulse profile template generation */
+typedef struct{
+  
+  /** Version name */
+  char **version;
+  
+  /** Sample Frequency (Hz) */
+  double freq;
+  
+  /** Number of energy steps */
+  int ne;
+  
+  /** Array with energies (keV) */
+  double *energies;
+  
+  /** Number of samples per template (2^x, advice >=4096) */
+  long nsamp;
+  
+  /** Pulse rise time (usually equals tfall/50 us) */
+  double trise;
+  
+  /** Pulse fall time (typically 200 us = 2E-4 seconds) */
+  double tfall;
+  
+}TESTemplateInput;
+
 
 /////////////////////////////////////////////////////////////////
 // Function Declarations.
@@ -89,6 +115,27 @@ void readTESProfiles(char *filename,
 			     TESProfiles *prof, 
 			     int* const status);
 
+/** Function which creates a pulse profile template file. */
+int createTESProfilesFile(char *filename, 
+			   const char clobber,
+			   char *comment,
+			   int* const status);
+
+/** Function which inserts a pulse profile template in a table pointed by fptr */
+int InsertTESProfADCCol(fitsfile *fptr, 
+			long nt, 
+			double energy, 
+			double *adc, 
+			int* const status);
+
+/** Function which writes one FITS table with pulse profile templates. */
+int writeTESProfiles(char *filename, 
+			     char *version, 
+			     TESProfilesEntries *prof, 
+			     const char clobber,
+			     char *comment,
+			     int* const status);
+
 /** Function which looks for a specific version and returns the index 
     or -1 if the version is not yet present in the template collection */
 int findTESProfileVersionIndex(TESProfiles* prof,
@@ -99,5 +146,11 @@ int findTESProfileVersionIndex(TESProfiles* prof,
 int findTESProfileEnergyIndex(TESProfiles* prof, 
 			      int version, 
 			      double energy);
+
+/** Generate pulse profiles function */
+int genTESProfile(TESTemplateInput* pinp, TESProfiles** ptemp, int* const status);
+
+/** Function to calculate a bare exponential pulse */
+double ExponentialPulse(double *t, double *trise, double *tfall);
 
 #endif /* TESPROFTEMPLFILE_H */

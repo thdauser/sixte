@@ -112,6 +112,7 @@ AC_CONFIG_FILES([Makefile
 		tools/piximpacts/Makefile
 		tools/tesstream/Makefile
 		tools/pixdetillum/Makefile
+		tools/pulsetemplgen/Makefile
 		share/Makefile
 		share/instruments/Makefile
 		extlib/Makefile])
