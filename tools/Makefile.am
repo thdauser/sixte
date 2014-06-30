@@ -5,4 +5,6 @@ SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         gendetsim tes_grades comaimg comadet comarecon runsixt projev	\
         imgev comaphovign ladsim erosim makespec makelc fudgexp evpat	\
         orbatt nustarsim athenapwfisim epicpn_events epicmos1_events    \
-        epicmos2_events piximpacts tesstream pixdetillum pulsetemplgen
+        epicmos2_events piximpacts tesstream pixdetillum pulsetemplgen  \
+        pulsetemplimport 
+        

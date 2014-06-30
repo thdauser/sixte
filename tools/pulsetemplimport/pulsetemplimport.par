@@ -1,0 +1,4 @@
+Filename,s,lq,"Pulsetemplates.fits",,,"output file"
+ASCIIFile,s,lq,"pulse.dat",,,"input file"
+Version,s,lq,"Pulse1",,,"Version name"
+energy,r,lq,1.,,,"energy of template [keV]"
