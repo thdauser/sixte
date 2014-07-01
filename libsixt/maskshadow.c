@@ -275,7 +275,7 @@ void testImageShadow(MaskShadow* ms, SquarePixels* det_pix, int* status)
    }
   }
 
-  testFitsImage1d(buffer1d, "maskshadow.fits",det_pix->xwidth, det_pix->ywidth, &status);
+  testFitsImage1d(buffer1d, "maskshadow.fits",det_pix->xwidth, det_pix->ywidth, status);
 }
 
 void testImageEventArray(ReadEvent* ea, SquarePixels* det_pix, int const xdiff, int const ydiff, 
@@ -298,7 +298,7 @@ void testImageEventArray(ReadEvent* ea, SquarePixels* det_pix, int const xdiff, 
    }
   }
 
-  testFitsImage1d(buffer1d, filename, det_pix->xwidth, det_pix->ywidth, &status);
+  testFitsImage1d(buffer1d, filename, det_pix->xwidth, det_pix->ywidth, status);
 }
 
 
@@ -321,7 +321,7 @@ void testImageMap(MaskShadow* ms, ReconArray* r, int* status)
    }
   }
 
-  testFitsImage1d(buffer1d, "maskmap.fits",r->naxis1/2, r->naxis2/2, &status);
+  testFitsImage1d(buffer1d, "maskmap.fits",r->naxis1/2, r->naxis2/2, status);
 }
 
 

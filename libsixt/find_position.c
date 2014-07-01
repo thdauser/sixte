@@ -89,7 +89,7 @@ SourceNeighbors* getSourceNeighbors()
 double findBrightestPix(int threshold, SourceImage* sky_pixels, double pixval, PixPositionList* ppl,
 		        struct wcsprm* wcs, int* const status)
 {
-  int ii,jj,x,y;
+  int ii,jj,x=0,y=0;
   double pix=0.; //temporary store pixval for comparison with current sky-image pixel to get the brightest
 
   //find brightest pixel
@@ -142,7 +142,7 @@ double findBrightestPix(int threshold, SourceImage* sky_pixels, double pixval, P
       ppl->entry[ppl->entryCount]->midPixY=y;
 
       //identify and save neighbors;find pos from significant pix-> save to PixPosList at current entry
-      findNeighbors(x, y, ppl, sky_pixels, wcs, &status);
+      findNeighbors(x, y, ppl, sky_pixels, wcs, status);
 
       //increase number of found sources
       ppl->entryCount++;
@@ -306,7 +306,7 @@ double getMean(double* median_list,long unsigned int n)
 
 double getSdev(double* median_list,long unsigned int n)
 {
-  int ii;
+  long unsigned int ii;
   double sum=0., mean;
   double dev=0., sigma;
 
@@ -334,7 +334,7 @@ double getSdev(double* median_list,long unsigned int n)
 //TODO:give array of all pixels except already identified ones
 double torben(double* m,long unsigned int n)
 {
-    int         i, less, greater, equal;
+    long unsigned int         i, less, greater, equal;
     double  min, max, guess, maxltguess, mingtguess;
 
     min = max = m[0] ;
@@ -440,7 +440,8 @@ void SaveSkyImage3Columns(SourceImage* si,char* filename,int* status)
 
    do{
      long unsigned int count=0;
-     int x,y;
+     long unsigned int x;
+     int ii, jj;
      
      //remove old version
     remove(filename);
@@ -467,12 +468,13 @@ void SaveSkyImage3Columns(SourceImage* si,char* filename,int* status)
       z_array[x]=0.;
     }    
 
+
     //fill in the arrays
-    for(x=0; x<si->naxis1; x++){
-      for(y=0; y<si->naxis2; y++){
-	x_array[count]=x;
-	y_array[count]=y;
-	z_array[count]=si->pixel[x][y];
+    for(ii=0; ii<si->naxis1; ii++){
+      for(jj=0; jj<si->naxis2; jj++){
+	x_array[count]=ii;
+	y_array[count]=jj;
+	z_array[count]=si->pixel[ii][jj];
 	count++;
       }
     }
