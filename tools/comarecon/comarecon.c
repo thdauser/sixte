@@ -159,13 +159,13 @@ int comarecon_main() {
     wcs2.cdelt[1]=atan(detector_pixels->ypixelwidth/distance)*180./M_PI;
 
 
-    //telescope coordinate system     //TODO: use attitude
+    //telescope coordinate system     //TODO: USE ATTITUDE
        //telescope pointing direction
-       Vector nz=normalize_vector(unit_vector(ra*M_PI/180.0,dec* M_PI/180.0));
+       //Vector nz=normalize_vector(unit_vector(ra*M_PI/180.0,dec* M_PI/180.0));
        //unit-vector in z-direction:
-       Vector vz = {0.,0.,1.};
+       //Vector vz = {0.,0.,1.};
 
-       Vector nx= normalize_vector(vector_product(nz,vz));         
+       // Vector nx= normalize_vector(vector_product(nz,vz));   
        // Vector ny= normalize_vector(vector_product(nz,nx)); 
     
     // --- END of Initialization ---
