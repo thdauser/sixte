@@ -20,16 +20,17 @@
 
 #include "comarecon.h"
 
-/////////////////////////////////////////////////////////////
-//RECONSTRUCTION: The detected photons are                 //
-//deconvolved via the ReconArray and FFT                   //
-//Input:event-list(t,charge,RAWX,RAWY),mask-file,          //
-//      det-width(in pixel), pixelwidth, distance          //
-//Output:sky-image                                         //
-/////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//RECONSTRUCTION: The detected photons are deconvolved via the ReconArray and EventArray//
+//                using FFT like: SkyImg=FFTInv(FFT(EA)*FFT(RAcomplexconjugate));       //
+//                IROS-algorithm for identifying sources                                //
+//Input:event-list(t,charge,RAWX,RAWY),mask-file,detector-setup(width of det in pixels, //
+//      pixelwidth,distance,pointing,gaps,RePixSize),sigma(threshold for sources)       //
+//Output:sky-image, PositionList                                                        //
+//////////////////////////////////////////////////////////////////////////////////////////
 
 
-////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 /** Main procedure. */
 int comarecon_main() {
   struct Parameters par;
@@ -41,7 +42,7 @@ int comarecon_main() {
   ReconArray* recon=NULL;
   MaskShadow* mask_shadow=NULL;
   PixPositionList* position_list=NULL;
-  double* median_list=NULL; //temporary array of all background pixels for determination of median 
+  double* median_list=NULL; //temp array of all background pix for determination of median 
   ReadEvent* ea=NULL;
   ReadEvent* ear=NULL;
   double* ReconImage1d=NULL;
@@ -140,7 +141,7 @@ int comarecon_main() {
     wcs.cdelt[0]=sky_pixels->cdelt1*180./M_PI;
     wcs.cdelt[1]=sky_pixels->cdelt2*180./M_PI;
 
- //initialization of wcs parameter structure for getting mask shadow
+    //initialization of wcs parameter structure for getting mask shadow
     struct wcsprm wcs2 = {
       .flag=-1
     }; //flag has to be set only at 1st init
@@ -333,12 +334,9 @@ int comarecon_main() {
        CHECK_STATUS_BREAK(status);
        }
    
-
-       /*do{*/
        //finds current brightest pixel coordinates and saves PixPosition; returns current brightest pixval
        pixval=findBrightestPix(threshold, sky_pixels, pixval, position_list, &wcs, &status);
        threshold=getThresholdForSources(pixval, position_list, sky_pixels, median_list, par.Sigma);
-       /* }while(threshold==1);*/
 
        //get mask shadow for current source
         getMaskShadow2(mask_shadow,&wcs2,position_list,sky_pixels,detector_pixels,recon,&status);
@@ -371,6 +369,8 @@ int comarecon_main() {
     //create FITS-file with all pix-coordinates
      savePositionList(position_list, par.PositionList, &status);
 
+  // --- END of Reconstruction Process ---
+
   // --- Cleaning up ---
   headas_chat(5, "cleaning up ...\n");
 
@@ -396,7 +396,7 @@ int comarecon_main() {
   if (EXIT_SUCCESS==status) headas_chat(5, "finished successfully!\n\n");
   return(status);
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////
 
 int comarecon_getpar(struct Parameters* par)
 {

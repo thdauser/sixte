@@ -265,7 +265,6 @@ void testImageShadow(MaskShadow* ms, SquarePixels* det_pix, int* status)
  if (!buffer1d) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error allocating memory for 1d-buffer!\n", *status);
-    //return(buffer1d);
  }
 
  //Create the 1D-image from buffer 
@@ -289,7 +288,6 @@ void testImageEventArray(ReadEvent* ea, SquarePixels* det_pix, int const xdiff, 
  if (!buffer1d) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error allocating memory for 1d-buffer!\n", *status);
-    //return(buffer1d);
  }
 
  //Create the 1D-image from buffer 
@@ -313,7 +311,6 @@ void testImageMap(MaskShadow* ms, ReconArray* r, int* status)
  if (!buffer1d) {
     *status = EXIT_FAILURE;
     HD_ERROR_THROW("Error allocating memory for 1d-buffer!\n", *status);
-    //return(buffer1d);
  }
 
  //Create the 1D-image from buffer 
