@@ -271,6 +271,7 @@ void writeTESFitsStream(fitsfile *fptr,
 			double tstart,
 			double tstop,
 			double timeres,
+			long *Nevts,
 			int* const status)
 {
   
@@ -328,8 +329,16 @@ void writeTESFitsStream(fitsfile *fptr,
   for(ii=0; ii<stream->Npix; ii++){
     fits_write_col(fptr, TUSHORT, 2+ii, 1, 1, nrows, stream->adc_value[ii], status);
     CHECK_STATUS_VOID(*status);
+    
+    char nev[tlen];
+    sprintf(nev, "NES%05d", stream->pixID[ii]+1);
+    fits_update_key(fptr, TLONG, nev, &Nevts[stream->pixID[ii]],
+      "Number of simulated events in pixel stream", status);
+    CHECK_STATUS_VOID(*status);
   }
   CHECK_STATUS_VOID(*status);
+  
+  int firstpix, lastpix;
   
   // Write header keywords
   fits_update_key(fptr, TDOUBLE, "TSTART",
@@ -344,11 +353,13 @@ void writeTESFitsStream(fitsfile *fptr,
   fits_update_key(fptr, TINT, "NPIX",
         &(stream->Npix), "Number of pixel streams in extension", status);
   CHECK_STATUS_VOID(*status);
+  firstpix=stream->pixID[0]+1;
   fits_update_key(fptr, TINT, "FIRSTPIX",
-        &(stream->pixID[0]), "ID of first pixel in extension", status);
+        &(firstpix), "ID of first pixel in extension", status);
   CHECK_STATUS_VOID(*status);
-  fits_update_key(fptr, TINT, "FIRSTPIX",
-        &(stream->pixID[stream->Npix]), "ID of last pixel in extension", status);
+  lastpix=stream->pixID[stream->Npix-1]+1;
+  fits_update_key(fptr, TINT, "LASTPIX",
+        &(lastpix), "ID of last pixel in extension", status);
   CHECK_STATUS_VOID(*status);
   
 }
@@ -362,6 +373,7 @@ void getTESDataStream(TESDataStream* TESData,
 		      int Ndetpix,
 		      int Nactive,
 		      int* activearray,
+		      long* Nevts,
 		      int* const status) 
 {
 			     
@@ -451,6 +463,7 @@ void getTESDataStream(TESDataStream* TESData,
 			      impact.energy);
 	addEventToNode(ActPulses,TESProf,&impact,evtpixid,profver,eindex,status);
 	CHECK_STATUS_VOID(*status);
+	Nevts[impact.pixID]=Nevts[impact.pixID]+1;
 	if(ActPulses[evtpixid]==NULL){
 	  *status=EXIT_FAILURE;
 	  SIXT_ERROR("Added impact but pointer is NULL.");

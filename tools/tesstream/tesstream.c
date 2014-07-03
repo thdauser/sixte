@@ -41,6 +41,8 @@ int tesstream_main() {
   
   int *activearray=NULL;
   
+  long *Nevts=NULL;
+  
   // Keywords
   char telescop[MAXMSG];
   char instrume[MAXMSG];
@@ -129,6 +131,17 @@ int tesstream_main() {
       CHECK_STATUS_BREAK(status);
     }
     
+    // construct array for event numbers
+    Nevts=(long*)malloc(det->npix*sizeof(long));
+    if(Nevts==NULL){
+      status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for array of event numbers failed");
+      CHECK_STATUS_BREAK(status);
+    }
+    for(ii=0; ii<det->npix; ii++){
+      Nevts[ii]=0;
+    }
+    
     profiles=newTESProfiles(&status);
     CHECK_STATUS_BREAK(status);
     
@@ -173,6 +186,7 @@ int tesstream_main() {
 		     det->npix,
 		     par.Nactive,
 		     activearray,
+		     Nevts,
 		     &status);
     CHECK_STATUS_BREAK(status);
     
@@ -260,6 +274,7 @@ int tesstream_main() {
 			  tstart,
 			  tstop,
 			  timeres,
+			  Nevts,
 			  &status);
       CHECK_STATUS_BREAK(status);
       restpix=restpix-TESFITSMAXPIX;
