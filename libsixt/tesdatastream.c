@@ -272,6 +272,8 @@ void writeTESFitsStream(fitsfile *fptr,
 			double tstop,
 			double timeres,
 			long *Nevts,
+			int ismonoen,
+			float monoen,
 			int* const status)
 {
   
@@ -362,6 +364,13 @@ void writeTESFitsStream(fitsfile *fptr,
         &(lastpix), "ID of last pixel in extension", status);
   CHECK_STATUS_VOID(*status);
   
+  if(ismonoen==1){    
+    fits_update_key(fptr, TFLOAT, "MONOEN",
+        &monoen, "Monochromatic energy of photons [keV]", status);
+    CHECK_STATUS_VOID(*status);
+  }
+  CHECK_STATUS_VOID(*status);
+  
 }
 
 void getTESDataStream(TESDataStream* TESData, 
@@ -374,6 +383,8 @@ void getTESDataStream(TESDataStream* TESData,
 		      int Nactive,
 		      int* activearray,
 		      long* Nevts,
+		      int *ismonoc,
+		      float *monoen,
 		      int* const status) 
 {
 			     
@@ -394,6 +405,9 @@ void getTESDataStream(TESDataStream* TESData,
   /* Status of getNextImpactFromPixImpFile */
   int piximpstatus=0;
   int evtpixid=-1; // PixID of event
+  
+  // total number of simulated events
+  long ntot=0;
   
   /* Initialize running indices */
   t=tstart;
@@ -433,6 +447,8 @@ void getTESDataStream(TESDataStream* TESData,
   
   printf("Simulate %ld time steps for %d pixels.\n", Nt, Npix);
   
+  *ismonoc=1;
+  
   /* While loop over all time bins */
   while (tstep<Nt) {
 
@@ -470,6 +486,17 @@ void getTESDataStream(TESDataStream* TESData,
 	  CHECK_STATUS_VOID(*status);
 	}
 	CHECK_STATUS_VOID(*status);
+	if(*ismonoc==1){
+	  if(ntot==0){
+	    *monoen=impact.energy;
+	  }else{
+	    if(impact.energy!=(*monoen)){
+	      *monoen=0.;
+	      *ismonoc=0;
+	    }
+	  }
+	}
+	ntot++;
       }
       CHECK_STATUS_VOID(*status);
       piximpstatus=getNextImpactFromPixImpFile(PixFile,&impact,status);

@@ -170,6 +170,8 @@ void writeTESFitsStream(fitsfile *fptr,
 			double tstop,
 			double timeres,
 			long *Nevts,
+			int ismonoen,
+			float monoen,
 			int* const status);
 
 /** Main engine generating TES data stream */
@@ -183,6 +185,8 @@ void getTESDataStream(TESDataStream* TESData,
 		      int Nactive,
 		      int* activearray,
 		      long* Nevts,
+		      int *ismonoc,
+		      float *monoen,
 		      int* const status);
 
 /** Add an event to the node list */

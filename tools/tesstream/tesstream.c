@@ -54,6 +54,9 @@ int tesstream_main() {
   double tstart;
   double tstop;
   
+  int ismonoc=0;
+  float monoen=0.;
+  
   int ii;
   
   // Register HEATOOL:
@@ -187,6 +190,8 @@ int tesstream_main() {
 		     par.Nactive,
 		     activearray,
 		     Nevts,
+		     &ismonoc,
+		     &monoen,
 		     &status);
     CHECK_STATUS_BREAK(status);
     
@@ -275,6 +280,8 @@ int tesstream_main() {
 			  tstop,
 			  timeres,
 			  Nevts,
+			  ismonoc,
+			  monoen,
 			  &status);
       CHECK_STATUS_BREAK(status);
       restpix=restpix-TESFITSMAXPIX;
