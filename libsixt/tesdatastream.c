@@ -521,7 +521,14 @@ void getTESDataStream(TESDataStream* TESData,
 	}
 	
 	/* The digitization step */
-	TESData->adc_value[tstep][ipix]=TESData->adc_value[tstep][ipix] + (uint16_t) PixVal; 
+	double tesdbl=TESData->adc_value[tstep][ipix] + PixVal;
+	if(tesdbl<0.){
+	  tesdbl=0.;
+	}
+	TESData->adc_value[tstep][ipix]=(uint16_t)tesdbl; //TODO Noise buffer seems to contain repeated shapes. Needs to be investigated.
+	if(TESData->adc_value[tstep][ipix]==65535){
+	  printf("tstep=%ld ipix=%d noise=%lf, inoise=%d, tesdbl=%le\n", tstep, ipix, PixVal, inoise, tesdbl);
+	}
 	
 	/* If the end of the Pulse template is reached, remove the event */
 	while (ActPulses[ipix]!=NULL && ActPulses[ipix]->count==ActPulses[ipix]->Nt-1) {
