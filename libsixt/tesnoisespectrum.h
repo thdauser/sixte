@@ -76,6 +76,9 @@ typedef struct {
 // Function Declarations.
 /////////////////////////////////////////////////////////////////
 
+/** Function to generate a rng for the noise buffer */
+void setNoiseGSLSeed(gsl_rng **r, unsigned long int seed);
+
 /** Function to allocate and fill noise parameter struct */
 NoiseSpectrum* newNoiseSpectrum(AdvDet *det, 
 				int* const status);
@@ -86,7 +89,8 @@ NoiseBuffer* newNoiseBuffer(int* const status,
 /** Generate noise data from a noise spectrum */
 int genNoiseSpectrum(NoiseSpectrum* Noise, 
 		     NoiseBuffer* NBuffer, 
-		     double *SampFreq, 
+		     double *SampFreq,  
+		     gsl_rng **r,
 		     int* const status);
 
 

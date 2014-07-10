@@ -187,6 +187,7 @@ void getTESDataStream(TESDataStream* TESData,
 		      long* Nevts,
 		      int *ismonoc,
 		      float *monoen,
+		      unsigned long int seed,
 		      int* const status);
 
 /** Add an event to the node list */

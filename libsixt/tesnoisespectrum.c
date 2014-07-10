@@ -21,6 +21,14 @@
 
 #include "tesnoisespectrum.h"
 
+void setNoiseGSLSeed(gsl_rng **r, unsigned long int seed){
+  
+  const gsl_rng_type * T;
+  T = gsl_rng_default;
+  *r = gsl_rng_alloc(T);
+  gsl_rng_set(*r, seed);
+}
+
 
 NoiseSpectrum* newNoiseSpectrum(AdvDet *det, 
 				int* const status) {
@@ -106,11 +114,10 @@ NoiseBuffer* newNoiseBuffer(int* const status,
 int genNoiseSpectrum(NoiseSpectrum* Noise, 
 		     NoiseBuffer* NBuffer, 
 		     double *SampFreq, 
+		     gsl_rng **r,
                      int* const status) 
 {
     
-    const gsl_rng_type * T;
-    gsl_rng * r;
     double U, G, sigma;
     const double pi=3.14159265359;
     int i,j, k;
@@ -120,11 +127,6 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
     fftw_complex Ze, Po, H; /* Products of Zeros & Poles */
     double w, f;               /* Omega and frequency*/
     
-    /* gsl_rng_set(); */
-    
-    T = gsl_rng_default;
-    r = gsl_rng_alloc(T);
-
     sigma=1.;
     
     in=(fftw_complex *) fftw_malloc(sizeof(fftw_complex) * NBuffer->BufferSize);
@@ -145,8 +147,8 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
       for (i=0; i<NBuffer->BufferSize; i++) {
 
         /* Create a complex white noise spectrum */
-        U=(gsl_rng_uniform(r)-0.5)*pi;
-	G=gsl_ran_gaussian(r,sigma); 
+        U=(gsl_rng_uniform(*r)-0.5)*pi;
+	G=gsl_ran_gaussian(*r,sigma); 
 	in[i]=cos(U)*G*Noise->WhiteRMS + sin(U)*G*Noise->WhiteRMS*I;
 	      
         /* Define the noise filter */

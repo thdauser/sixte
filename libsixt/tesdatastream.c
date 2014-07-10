@@ -385,6 +385,7 @@ void getTESDataStream(TESDataStream* TESData,
 		      long* Nevts,
 		      int *ismonoc,
 		      float *monoen,
+		      unsigned long int seed,
 		      int* const status) 
 {
 			     
@@ -422,6 +423,10 @@ void getTESDataStream(TESDataStream* TESData,
   long Nt=(tstop-tstart)*SampleFreq; // Number of time steps
   long tstep=0; // active timestep
   
+  /* Initialize rng */
+  gsl_rng *rng;
+  setNoiseGSLSeed(&rng, seed);
+  
   /* allocate output stream structure */
   allocateTESDataStream(TESData, Nt, Npix, status);
   CHECK_STATUS_VOID(*status);
@@ -457,7 +462,7 @@ void getTESDataStream(TESDataStream* TESData,
     
     /* Fill Noise buffer */
     if (inoise==NOISEBUFFERSIZE) {
-      genNoiseSpectrum(Noise,NBuffer,&SampleFreq,status);
+      genNoiseSpectrum(Noise,NBuffer,&SampleFreq,&rng,status);
       CHECK_STATUS_VOID(*status);
       inoise=0;
     }

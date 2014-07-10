@@ -192,6 +192,7 @@ int tesstream_main() {
 		     Nevts,
 		     &ismonoc,
 		     &monoen,
+		     par.seed,
 		     &status);
     CHECK_STATUS_BREAK(status);
     
@@ -369,6 +370,14 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the history parameter");
     return(status);
   }
+
+  int seed;
+  status=ape_trad_query_int("Seed", &seed);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the Seed");
+    return(status);
+  }
+  par->seed=(unsigned long int)seed;
   
   char *pix=NULL;
   status=ape_trad_query_string("pixels", &pix);

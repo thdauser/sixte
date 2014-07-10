@@ -49,6 +49,8 @@ struct Parameters {
   
   char clobber;
   char history;
+  
+  unsigned long int seed;
 };
 
 int getpar(struct Parameters* const par);
