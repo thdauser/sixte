@@ -62,7 +62,8 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  fft_array.c balancing.c find_position.c		\
 		  attitudecatalog2.c det_phi_max.c advdet.c 		\
 		  pixelimpactfile.c tesdatastream.c tesnoisespectrum.c  \
-		  tesproftemplates.c maskshadow.c
+		  tesproftemplates.c maskshadow.c tesstreamfile.c       \
+		  teseventfile.c
 
 ############ HEADERS #################
 
@@ -86,5 +87,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		fft_array.h balancing.h find_position.h			\
 		attitudecatalog2.h det_phi_max.h advdet.h 		\
 		pixelimpactfile.h pixelimpact.h tesdatastream.h 	\
-		tesnoisespectrum.h tesproftemplates.h maskshadow.h
-
+		tesnoisespectrum.h tesproftemplates.h maskshadow.h      \
+		tesstreamfile.h teseventfile.h

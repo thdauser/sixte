@@ -114,6 +114,7 @@ AC_CONFIG_FILES([Makefile
 		tools/pixdetillum/Makefile
 		tools/pulsetemplgen/Makefile
 		tools/pulsetemplimport/Makefile
+		tools/streamtoevents/Makefile
 		share/Makefile
 		share/instruments/Makefile
 		extlib/Makefile])
