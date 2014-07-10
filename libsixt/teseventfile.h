@@ -77,11 +77,11 @@ TesEventFile*  opennewTesEventFile(const char* const filename,
 				  const double tstart,
 				  const double tstop,
 				  const int pixID,
-				  const int eventSize,
-				  const int preBufferSize,
-				  const double sampleFreq,
+				  int eventSize,
+				  int preBufferSize,
+				  double sampleFreq,
 				  const char clobber,
-				  int* const statuss);
+				  int* const status);
 
 /** Writes the ADC curves in the TES event format*/
 void writeEvents2FITS(TesEventFile** outputFiles,TESDataStream* stream,PixImpFile* impfile,

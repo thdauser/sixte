@@ -76,9 +76,9 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 				  const double tstart,
 				  const double tstop,
 				  const int pixID,
-				  const int eventSize,
-				  const int preBufferSize,
-				  const double sampleFreq,
+				  int eventSize,
+				  int preBufferSize,
+				  double sampleFreq,
 				  const char clobber,
 				  int* const status){
 
