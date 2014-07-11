@@ -21,6 +21,7 @@
 #ifndef DETPIXILLUM_H
 #define DETPIXILLUM_H 1
 
+#include <sys/time.h>
 #include "sixt.h"
 #include "simput.h"
 #include "gti.h"
@@ -58,6 +59,8 @@ struct Parameters {
   
   char clobber;
   char history;
+  
+  unsigned long int seed;
 };
 
 

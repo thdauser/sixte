@@ -70,6 +70,9 @@ int pixdetillum_main(){
 
     headas_chat(3, "initialize ...\n");
     
+    // Set the rng seed
+    sixt_init_rng(par.seed, &status);
+    
     // Load detector information
     det=loadAdvDet(par.XMLFile, &status);
     CHECK_STATUS_BREAK(status);
@@ -111,10 +114,10 @@ int pixdetillum_main(){
       
     while(time<=par.tstop){
       // Determine random impact time
-      double u=getRndNum(&status);
+      double u=sixt_get_random_number(&status);
       time=time-log(1.-u)/par.rate/par.Nactive;
       // determine random pixel
-      long pixid=(long)(getRndNum(&status)*par.Nactive)+(long)par.nlo;
+      long pixid=(long)(sixt_get_random_number(&status)*par.Nactive)+(long)par.nlo;
       // determine photon attributes
       PixImpact piximp;
       piximp.pixID=pixid;
@@ -122,8 +125,8 @@ int pixdetillum_main(){
       piximp.energy=(float)par.energy;
       piximp.ph_id=ii;
       piximp.src_id=0;
-      double x=getRndNum(&status);
-      double y=getRndNum(&status);
+      double x=sixt_get_random_number(&status);
+      double y=sixt_get_random_number(&status);
       piximp.pixposition.x=(-0.5+x)*det->pix[pixid].width;
       piximp.pixposition.y=(-0.5+y)*det->pix[pixid].height;
       piximp.detposition.x=piximp.pixposition.x+det->pix[pixid].sx;
@@ -264,7 +267,24 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the history parameter");
     return(status);
   }
+
+  int seed=0;
+  status=ape_trad_query_int("Seed", &seed);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the seed.");
+    return(status);
+  }
   
+  if(seed==-1){
+    // Initialize with system time
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    par->seed=1000000*tv.tv_sec+tv.tv_usec;
+  }else{
+    par->seed=(unsigned long int)seed;
+  }
+  printf("Seed=%ld\n", par->seed);
+    
   char *pix=NULL;
   status=ape_trad_query_string("pixels", &pix);
   if (EXIT_SUCCESS!=status) {

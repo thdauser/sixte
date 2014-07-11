@@ -377,7 +377,14 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the Seed");
     return(status);
   }
-  par->seed=(unsigned long int)seed;
+  if(seed==-1){
+    // Initialize with system time
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    par->seed=1000000*tv.tv_sec+tv.tv_usec;
+  }else{
+    par->seed=(unsigned long int)seed;
+  }
   
   char *pix=NULL;
   status=ape_trad_query_string("pixels", &pix);

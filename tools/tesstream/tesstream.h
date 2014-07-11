@@ -21,6 +21,7 @@
 #ifndef TESSTREAM_H
 #define TESSTREAM_H 1
 
+#include <sys/time.h>
 #include "sixt.h"
 #include "gti.h"
 #include "pixelimpact.h"
