@@ -10,6 +10,6 @@
   <tesnoisefilter norm="1.0" nzeros="0" npoles="0">
   </tesnoisefilter>
   <samplefreq freq="1e+6"/>
-  <calfactor factor="4333.333333333"/>
+  <calfactor factor="938306.357"/>
   <adcoffset offset="200"/>
 </pixdetector>
