@@ -275,9 +275,8 @@ int comarecon_main() {
         //basic constructor for both,the whole re-pixeled mask&/shadow element
         mask_shadow=getMaskShadowElement(Size1, Size2, &status); 
         //gets re-pixeled mask as big as EventArray with values betw. 0...1
-	getMaskRepix(recon, mask_shadow);  
-    
-
+	getMaskRepix(recon, mask_shadow);
+  
         do{ //search for sources as long as pixval is above certain value
        //run as long as threshold==1
 
@@ -329,7 +328,7 @@ int comarecon_main() {
        sprintf(name_image,"image_%lu", position_list->entryCount);
 
        // Write the reconstructed source function to the output FITS file.
-       if(position_list->entryCount <=1){
+       if(position_list->entryCount <1){
        saveSourceImage(sky_pixels, name_image, &status);
        CHECK_STATUS_BREAK(status);
        }
@@ -341,7 +340,6 @@ int comarecon_main() {
        //get mask shadow for current source
         getMaskShadow2(mask_shadow,&wcs2,position_list,sky_pixels,detector_pixels,recon,&status);
 	double norm=getNormalization2(mask_shadow, ea, detector_pixels, xdiff, ydiff);
-	printf("norm:%lf\n",norm);
 
 	//new event array: method two
        	if(norm>1.){

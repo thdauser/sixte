@@ -21,10 +21,4 @@ fftw_complex* FFTOfArray_1d(double* Image1d, int ImageSize1, int ImageSize2, int
 //type +1 equals FFTW_BAKWARD;type -1 equals FFTW_FORWARD
 fftw_complex* FFTOfArray(fftw_complex* Input, int ImageSize1, int ImageSize2, int type);
 
-void testFitsImagefft_real(fftw_complex* Image, char* filename, int Size1, int Size2);
-
-void testFitsImagefft_img(fftw_complex* Image, char* filename, int Size1, int Size2);
-
-void testFitsImage1d(double* Image1d, char* filename, int Size1, int Size2, int* const status);
-
 #endif

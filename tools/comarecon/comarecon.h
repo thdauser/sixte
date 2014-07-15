@@ -36,6 +36,7 @@
 #include "find_position.h"
 #include "vector.h"
 #include "maskshadow.h"
+#include "testimg.h"
 
 
 #define TOOLSUB comarecon_main

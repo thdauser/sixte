@@ -2,7 +2,6 @@
 #define MASKSHADOW_H 1
 
 #include "sixt.h"
-#include "find_position.h"
 #include "vector.h"
 #include "reconstruction.h"
 #include "find_position.h"
@@ -30,16 +29,11 @@ void getMaskRepix(ReconArray* recon, MaskShadow* ms);
 
 void getMaskShadow(MaskShadow* ms, PixPositionList* ppl, SourceImage* sky_pixels, SquarePixels* det_pix,
 		    ReconArray* r, const Vector* const nx, const Vector* const ny, double const distance);
-void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, SourceImage* sky_pixels, SquarePixels* det_pix, ReconArray* r, int* const status);
-
-void testImageShadow(MaskShadow* ms, SquarePixels* det_pix, int* status);
-
-void testImageMap(MaskShadow* ms, ReconArray* r, int* status);
+void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, SourceImage* sky_pixels,
+		    SquarePixels* det_pix, ReconArray* r, int* const status);
 
 double getNormalization1(MaskShadow* ms, ReadEvent* ea, SquarePixels* det_pix, int const xdiff, int const ydiff);
 double getNormalization2(MaskShadow* ms, ReadEvent* ea, SquarePixels* det_pix, int const xdiff, int const ydiff);
-
-void testImageEventArray(ReadEvent* ea, SquarePixels* det_pix, int const xdiff, int const ydiff, char* filename, int* status);
 
 void FreeMaskShadow(MaskShadow* ms,int const Size1);
 

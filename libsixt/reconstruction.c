@@ -23,7 +23,6 @@ ReconArray* newReconArray(int* const status)
 
 ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pixels, int* const status)
 {
-
   ReconArray* recon=NULL;
   int x,y;                          //count for memory allocation
   int xcount, ycount;               //count for getting Rmap in case1:same pixel size
