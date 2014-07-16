@@ -519,9 +519,9 @@ void getTESDataStream(TESDataStream* TESData,
 	/* Loop over linked list and add pulse values */
 	current=ActPulses[ipix];
 	while (current!=NULL) {
-	  PixVal=PixVal + CalFactor * current->adcpulse[current->count];
+	  PixVal=PixVal + CalFactor * current->adcpulse[(long)(current->count)];
 	  CHECK_STATUS_VOID(*status);
-	  current->count=current->count+1;
+	  current->count=current->count+(1./SampleFreq)/(current->time[1]-current->time[0]);
 	  current=current->next;
 	}
 	
@@ -536,7 +536,7 @@ void getTESDataStream(TESDataStream* TESData,
 	}
 	
 	/* If the end of the Pulse template is reached, remove the event */
-	while (ActPulses[ipix]!=NULL && ActPulses[ipix]->count==ActPulses[ipix]->Nt-1) {
+	while (ActPulses[ipix]!=NULL && ActPulses[ipix]->count>=(double)(ActPulses[ipix]->Nt-1)) {
 	  removeEventFromNode(ActPulses,&ipix);
 	  CHECK_STATUS_VOID(*status);
 	}
@@ -609,7 +609,7 @@ int addEventToNode(EvtNode** ActPulses,
      current->time[i]=Pulses->profiles[versionID].time[i]; 
      current->adcpulse[i]=impact->energy * Pulses->profiles[versionID].adc_value[EnID][i];
    }
-   current->count=0;
+   current->count=0.;
    current->Nt=Pulses->profiles[versionID].Nt;
    
    if(ActPulses[pixno]==NULL){

@@ -105,7 +105,9 @@ typedef struct node{
   long Nt;
   
   /** Current position (index) in the pulse */
-  long count;  
+  /** saved as double to account for different */
+  /** sampling for pulses and data stream */
+  double count;  
   
   /** Next node */
   struct node * next;
