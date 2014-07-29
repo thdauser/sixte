@@ -42,7 +42,7 @@
 // Function Declarations.
 ////////////////////////////////////////////////////////////////////////
 
-//if type==TREADEVENT -> shiftX=ea->naxis1/2+xdiff
+//if type==TREADEVENT -> shiftX=ea->naxis1/2+xdiff -> sizeX=det_pix->xwidth
 //else -> shiftX=0
 void createTestImg(void* arg, int type, int sizeX, int sizeY, int shiftX,
 		   int shiftY, char* filename, int* const status);

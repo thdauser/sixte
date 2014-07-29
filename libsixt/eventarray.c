@@ -22,7 +22,7 @@ ReadEvent* newEventArray(int* const status)
   return(ea);
 }
 
-ReadEvent* getEventArray(CodedMask* mask, SquarePixels* detector_pixels, int* status)
+ReadEvent* getEventArray(CodedMask* mask, double Size1, double Size2, int* status)
 {
   ReadEvent* ea=NULL;
   int x,y;
@@ -34,8 +34,8 @@ ReadEvent* getEventArray(CodedMask* mask, SquarePixels* detector_pixels, int* st
   //sizes are equal to those of the ReconArray -> mask-width but detector-pixelsize
   //mask has to be >= detector
 
-    ea->naxis1=2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth);
-    ea->naxis2=2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth);
+    ea->naxis1=2*(mask->naxis1*mask->cdelt1/Size1);
+    ea->naxis2=2*(mask->naxis2*mask->cdelt2/Size2);
 
   //memory-allocation
   ea->EventArray=(double**)malloc(ea->naxis1*sizeof(double*));

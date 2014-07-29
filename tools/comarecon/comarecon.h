@@ -37,6 +37,7 @@
 #include "vector.h"
 #include "maskshadow.h"
 #include "testimg.h"
+#include "repix.h"
 
 
 #define TOOLSUB comarecon_main
