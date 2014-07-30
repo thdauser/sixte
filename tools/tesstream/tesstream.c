@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU
+   Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU, Philippe Peille, IRAP
 */
 
 #include "tesstream.h"
@@ -25,35 +25,18 @@
 int tesstream_main() {
   
   // Containing all programm parameters read by PIL.
-  struct Parameters par;
+  struct Parameters partmp;
+  TESGeneralParameters par;
   
   // Error status.
   int status=EXIT_SUCCESS;
-  int Nstreams=0;
-  
-  PixImpFile* impfile=NULL;
-  TESProfiles* profiles=NULL;
+
+  int Nstreams=0;  
+  TESInitStruct* init=NULL;
   TESFitsStream** fitsstream=NULL;
   TESDataStream* stream=NULL;
-  AdvDet *det=NULL;
-  
   fitsfile *ofptr=NULL;
-  
-  int *activearray=NULL;
-  
-  long *Nevts=NULL;
-  
-  // Keywords
-  char telescop[MAXMSG];
-  char instrume[MAXMSG];
-  char filter[MAXMSG];
-  char ancrfile[MAXMSG];
-  char respfile[MAXMSG];
-  double mjdref;
-  double timezero;
-  double tstart;
-  double tstop;
-  
+    
   int ismonoc=0;
   float monoen=0.;
   
@@ -68,128 +51,32 @@ int tesstream_main() {
        
     headas_chat(3, "initialize ...\n");
     // Get program parameters.
-    status=getpar(&par);
+    status=getpar(&partmp);
     CHECK_STATUS_BREAK(status);
        
-    // Open the pixel impact file
-    impfile=openPixImpFile(par.PixImpList, READONLY, &status);
+    // Copy parameters in general parameters structure
+    copyParams2GeneralStruct(partmp,&par);
+    
+    // Initialization
+    init = newInitStruct(&status);
     CHECK_STATUS_BREAK(status);
-    
-    // Read keywords from input file
-    sixt_read_fits_stdkeywords(impfile->fptr,
-			       telescop,
-			       instrume,
-			       filter,
-			       ancrfile,
-			       respfile,
-			       &mjdref,
-			       &timezero,
-			       &tstart,
-			       &tstop, 
-			       &status);
+    tesinitialization(init,&par,TESSTREAM,&status);
     CHECK_STATUS_BREAK(status);
-    printf("Pixel impact file reaches from %lfs-%lfs .\n", tstart, tstop);
-    if(tstart>par.tstart){
-      puts("Program parameter tstart smaller as in input file.");    
-    }else{
-      tstart=par.tstart;
-    }
-    if(tstop<par.tstop){
-      puts("Program parameter tstop larger as in input file.");
-    }else{
-      tstop=par.tstop;
-    }
-    printf("Simulate from %lfs-%lfs .\n", tstart, tstop);
-  
-    // Load the detector structure
-    det=loadAdvDet(par.XMLFile, &status);
-    CHECK_STATUS_BREAK(status);
-    
-    // construct array of active pixels
-    activearray=(int*)malloc(det->npix*sizeof(int));
-    if(activearray==NULL){
-      status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for array of actove pixels failed");
-      CHECK_STATUS_BREAK(status);
-    }
-    if(par.Nactive==-1){
-      par.Nactive=det->npix;
-      par.nlo=0;
-      par.nhi=det->npix-1;
-    }
-    int act=0;
-    for(ii=0; ii<det->npix; ii++){
-      if(ii<par.nlo || ii>par.nhi){
-	activearray[ii]=-1;
-      } else {
-	activearray[ii]=act;
-	act++;
-      }
-    }
-    if(act!=par.Nactive){
-      status=EXIT_FAILURE;
-      char msg[MAXMSG];
-      sprintf(msg, "Number of active pixels has been corrupted. Counted %d instead of %d pixels.", act, par.Nactive);
-      SIXT_ERROR(msg);
-      CHECK_STATUS_BREAK(status);
-    }
-    
-    // construct array for event numbers
-    Nevts=(long*)malloc(det->npix*sizeof(long));
-    if(Nevts==NULL){
-      status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for array of event numbers failed");
-      CHECK_STATUS_BREAK(status);
-    }
-    for(ii=0; ii<det->npix; ii++){
-      Nevts[ii]=0;
-    }
-    
-    profiles=newTESProfiles(&status);
-    CHECK_STATUS_BREAK(status);
-    
-    for(ii=0; ii<det->npix; ii++){
-      // Test if profile is already loaded, if not, load it
-      int versionindex=findTESProfileVersionIndex(profiles, det->pix[ii].version);
-      if(activearray[ii]>-1 && versionindex<0){
-	char profilename[MAXFILENAME];
-	sprintf(profilename, "%s%s", det->filepath, det->pix[ii].tesproffilename);
-	readTESProfiles(profilename,
-			det->pix[ii].version, 
-			profiles, 
-			&status);
-	CHECK_STATUS_BREAK(status);
-	versionindex=findTESProfileVersionIndex(profiles, det->pix[ii].version);
-	if(versionindex<0){
-	  status=EXIT_FAILURE;
-	  SIXT_ERROR("New profile not loaded.");
-	  CHECK_STATUS_BREAK(status);
-	}
-	det->pix[ii].profVersionID=versionindex;
-      } else {
-	det->pix[ii].profVersionID=versionindex;
-      }
-    }
-    if(status!=EXIT_SUCCESS){
-      SIXT_ERROR("Failed reading pulse profile templates.");
-      CHECK_STATUS_BREAK(status);
-    }
-    
   
     // Generate the data      
     stream=newTESDataStream(&status);
     CHECK_STATUS_BREAK(status);
     
     getTESDataStream(stream, 
-		     impfile, 
-		     profiles,
-		     det,
-		     tstart, 
-		     tstop,
-		     det->npix,
+		     init->impfile, 
+		     init->profiles,
+		     init->det,
+		     init->tstart, 
+		     init->tstop,
+		     init->det->npix,
 		     par.Nactive,
-		     activearray,
-		     Nevts,
+		     init->activearray,
+		     init->Nevts,
 		     &ismonoc,
 		     &monoen,
 		     par.seed,
@@ -210,17 +97,17 @@ int tesstream_main() {
     }
     createTESFitsStreamFile(&ofptr, 
 			    par.streamname,
-			    telescop,
-			    instrume,
-			    filter,
-			    ancrfile,
-			    respfile,
+			    init->telescop,
+			    init->instrume,
+			    init->filter,
+			    init->ancrfile,
+			    init->respfile,
 			    par.XMLFile,
 			    par.PixImpList,
-			    mjdref,
-			    timezero,
-			    tstart,
-			    tstop,
+			    init->mjdref,
+			    init->timezero,
+			    init->tstart,
+			    init->tstop,
 			    par.clobber, 
 			    &status);
     CHECK_STATUS_BREAK(status);
@@ -254,8 +141,8 @@ int tesstream_main() {
       // find the ofiginal pixel id (reverse of the activearray)
       for(pp=0; pp<extpix; pp++){
 	id=-1;
-	for(ll=0; ll<det->npix; ll++){
-	  if(activearray[ll]==par.Nactive-restpix+pp){
+	for(ll=0; ll<init->det->npix; ll++){
+	  if(init->activearray[ll]==par.Nactive-restpix+pp){
 	    id=ll;
 	  }
 	}
@@ -274,16 +161,16 @@ int tesstream_main() {
       }
       CHECK_STATUS_BREAK(status);
   
-      double timeres=1./det->SampleFreq;
+      double timeres=1./init->det->SampleFreq;
       writeTESFitsStream(ofptr, 
-			  fitsstream[ii],
-			  tstart,
-			  tstop,
-			  timeres,
-			  Nevts,
-			  ismonoc,
-			  monoen,
-			  &status);
+			 fitsstream[ii],
+			 init->tstart,
+			 init->tstop,
+			 timeres,
+			 init->Nevts,
+			 ismonoc,
+			 monoen,
+			 &status);
       CHECK_STATUS_BREAK(status);
       restpix=restpix-TESFITSMAXPIX;
     }
@@ -294,15 +181,12 @@ int tesstream_main() {
        
   } while(0); // END of the error handling loop.
   
-  destroyTESProfiles(profiles);
-  destroyAdvDet(&det);
-  freePixImpFile(&impfile, &status);
+  freeTESInitStruct(&init,&status);
   destroyTESDataStream(stream);
   for(ii=0; ii<Nstreams; ii++){
     destroyTESFitsStream(fitsstream[ii]);
   }
   free(fitsstream);
-  free(activearray);
   
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
@@ -418,3 +302,27 @@ int getpar(struct Parameters* const par)
 
   return(status);
 }
+
+
+/** Copies the parameters contained in the local parameter structure into the
+    more general one*/
+void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParameters* const par){
+  strcpy(par->PixImpList,partmp.PixImpList);
+  strcpy(par->XMLFile,partmp.XMLFile);
+  strcpy(par->streamname,partmp.streamname);
+  
+  strcpy(par->activePixels,partmp.activePixels);
+  par->Nactive=partmp.Nactive;
+  par->Npix=partmp.Npix;
+  par->nlo=partmp.nlo;
+  par->nhi=partmp.nhi;
+  
+  par->tstart=partmp.tstart;
+  par->tstop=partmp.tstop;
+  
+  par->clobber=partmp.clobber;
+  par->history=partmp.history;
+
+  par->seed=partmp.seed;
+}
+ 

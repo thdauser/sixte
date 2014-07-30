@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU
+   Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU, Philippe Peille, IRAP
 */
 
 #ifndef TESSTREAM_H
@@ -30,6 +30,7 @@
 #include "tesproftemplates.h"
 #include "tesnoisespectrum.h"
 #include "tesdatastream.h"
+#include "tesinitialization.h"
 
 #define TOOLSUB tesstream_main
 #include "headas_main.c"
@@ -55,5 +56,9 @@ struct Parameters {
 };
 
 int getpar(struct Parameters* const par);
+
+/** Copies the parameters contained in the local parameter structure into the
+    more general one*/
+void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParameters* const par);
 
 #endif /* TESSTREAM_H */
