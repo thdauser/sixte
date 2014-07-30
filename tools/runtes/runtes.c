@@ -18,11 +18,11 @@
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU, Philippe Peille, IRAP
 */
 
-#include "tesstream.h"
+#include "runtes.h"
 
 ////////////////////////////////////
 /** Main procedure. */
-int tesstream_main() {
+int runtes_main() {
   
   // Containing all programm parameters read by PIL.
   struct Parameters partmp;
@@ -43,7 +43,7 @@ int tesstream_main() {
   int ii;
   
   // Register HEATOOL:
-  set_toolname("tesstream");
+  set_toolname("runtes");
   set_toolversion("0.05");
   
   do { // Beginning of the ERROR handling loop (will at 
@@ -83,102 +83,114 @@ int tesstream_main() {
 		     &status);
     CHECK_STATUS_BREAK(status);
     
-    // Get output data arrays
-    Nstreams=(par.Nactive+TESFITSMAXPIX-1)/TESFITSMAXPIX;
-    fitsstream=(TESFitsStream**)malloc(Nstreams*sizeof(TESFitsStream*));
-    if(fitsstream==NULL){
-      status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for FITS streams failed");
+    //Write Stream file if asked
+    if (par.writeStreamFile) {
+      // Get output data arrays
+      Nstreams=(par.Nactive+TESFITSMAXPIX-1)/TESFITSMAXPIX;
+      fitsstream=(TESFitsStream**)malloc(Nstreams*sizeof(TESFitsStream*));
+      if(fitsstream==NULL){
+	status=EXIT_FAILURE;
+	SIXT_ERROR("memory allocation for FITS streams failed");
+	CHECK_STATUS_BREAK(status);
+      }
+      for(ii=0; ii<Nstreams; ii++){
+	fitsstream[ii]=newTESFitsStream(&status);
+	CHECK_STATUS_BREAK(status);
+      }
+      createTESFitsStreamFile(&ofptr, 
+			      par.streamname,
+			      init->telescop,
+			      init->instrume,
+			      init->filter,
+			      init->ancrfile,
+			      init->respfile,
+			      par.XMLFile,
+			      par.PixImpList,
+			      init->mjdref,
+			      init->timezero,
+			      init->tstart,
+			      init->tstop,
+			      par.clobber, 
+			      &status);
       CHECK_STATUS_BREAK(status);
-    }
-    for(ii=0; ii<Nstreams; ii++){
-      fitsstream[ii]=newTESFitsStream(&status);
-      CHECK_STATUS_BREAK(status);
-    }
-    createTESFitsStreamFile(&ofptr, 
-			    par.streamname,
-			    init->telescop,
-			    init->instrume,
-			    init->filter,
-			    init->ancrfile,
-			    init->respfile,
-			    par.XMLFile,
-			    par.PixImpList,
-			    init->mjdref,
-			    init->timezero,
-			    init->tstart,
-			    init->tstop,
-			    par.clobber, 
-			    &status);
-    CHECK_STATUS_BREAK(status);
   
-    // Write the output file
+      // Write the output file
     
-    int restpix=par.Nactive;
-    for(ii=0; ii<Nstreams; ii++){
-      // print extension name
-      sprintf(fitsstream[ii]->name, "ADC%03d", ii+1);
+      int restpix=par.Nactive;
+      for(ii=0; ii<Nstreams; ii++){
+	// print extension name
+	sprintf(fitsstream[ii]->name, "ADC%03d", ii+1);
       
-      // calculate number of pixels in the extension
-      int extpix=TESFITSMAXPIX;
-      if(extpix>restpix){
-	extpix=restpix;
-      }
+	// calculate number of pixels in the extension
+	int extpix=TESFITSMAXPIX;
+	if(extpix>restpix){
+	  extpix=restpix;
+	}
       
-      // allocate memory for fits stream
-      allocateTESFitsStream(fitsstream[ii], 
-			   stream->Ntime, 
-			   extpix, 
-			   &status);
-      CHECK_STATUS_BREAK(status);
+	// allocate memory for fits stream
+	allocateTESFitsStream(fitsstream[ii], 
+			      stream->Ntime, 
+			      extpix, 
+			      &status);
+	CHECK_STATUS_BREAK(status);
       
-      // transfer values into fits stream
-      int pp, tt, ll, id;
-      // time array
-      for(tt=0; tt<stream->Ntime; tt++){
-	fitsstream[ii]->time[tt]=stream->time[tt];
-      }
-      // find the ofiginal pixel id (reverse of the activearray)
-      for(pp=0; pp<extpix; pp++){
-	id=-1;
-	for(ll=0; ll<init->det->npix; ll++){
-	  if(init->activearray[ll]==par.Nactive-restpix+pp){
-	    id=ll;
+	// transfer values into fits stream
+	int pp, tt, ll, id;
+	// time array
+	for(tt=0; tt<stream->Ntime; tt++){
+	  fitsstream[ii]->time[tt]=stream->time[tt];
+	}
+	// find the ofiginal pixel id (reverse of the activearray)
+	for(pp=0; pp<extpix; pp++){
+	  id=-1;
+	  for(ll=0; ll<init->det->npix; ll++){
+	    if(init->activearray[ll]==par.Nactive-restpix+pp){
+	      id=ll;
+	    }
+	  }
+	  if(id==-1){
+	    status=EXIT_FAILURE;
+	    SIXT_ERROR("Pixel ID not found.");
+	    CHECK_STATUS_BREAK(status);
+	  }
+	  CHECK_STATUS_BREAK(status);
+	  fitsstream[ii]->pixID[pp]=id;
+
+	  // adc_value array
+	  for(tt=0; tt<stream->Ntime; tt++){
+	    fitsstream[ii]->adc_value[pp][tt]=stream->adc_value[tt][par.Nactive-restpix+pp];
 	  }
 	}
-	if(id==-1){
-	  status=EXIT_FAILURE;
-	  SIXT_ERROR("Pixel ID not found.");
-	  CHECK_STATUS_BREAK(status);
-	}
 	CHECK_STATUS_BREAK(status);
-	fitsstream[ii]->pixID[pp]=id;
-
-	// adc_value array
-	for(tt=0; tt<stream->Ntime; tt++){
-	  fitsstream[ii]->adc_value[pp][tt]=stream->adc_value[tt][par.Nactive-restpix+pp];
-	}
+  
+	double timeres=1./init->det->SampleFreq;
+	writeTESFitsStream(ofptr, 
+			   fitsstream[ii],
+			   init->tstart,
+			   init->tstop,
+			   timeres,
+			   init->Nevts,
+			   ismonoc,
+			   monoen,
+			   &status);
+	CHECK_STATUS_BREAK(status);
+	restpix=restpix-TESFITSMAXPIX;
       }
       CHECK_STATUS_BREAK(status);
-  
-      double timeres=1./init->det->SampleFreq;
-      writeTESFitsStream(ofptr, 
-			 fitsstream[ii],
-			 init->tstart,
-			 init->tstop,
-			 timeres,
-			 init->Nevts,
-			 ismonoc,
-			 monoen,
-			 &status);
-      CHECK_STATUS_BREAK(status);
-      restpix=restpix-TESFITSMAXPIX;
-    }
-    CHECK_STATUS_BREAK(status);
     
-    fits_close_file(ofptr, &status);
-    CHECK_STATUS_BREAK(status);
-       
+      fits_close_file(ofptr, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+
+
+    //Trigerring part
+    writeTriggerFileWithImpact(stream,par.tesTriggerFile,init->telescop,
+			       init->instrume,init->filter,init->ancrfile,init->respfile,
+			       par.XMLFile,par.PixImpList,
+			       init->mjdref,init->timezero,init->tstart,init->tstop,
+			       par.triggerSize,par.preBufferSize,
+			       init->det->SampleFreq,par.clobber,par.nlo,
+			       par.nhi-par.nlo+1,monoen,&status);
   } while(0); // END of the error handling loop.
   
   freeTESInitStruct(&init,&status);
@@ -230,7 +242,33 @@ int getpar(struct Parameters* const par)
   } 
   strcpy(par->streamname, sbuffer);
   free(sbuffer); 
+
+  status=ape_trad_query_string("TesTriggerfile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the TES Trigger output file");
+    return(status);
+  } 
+  strcpy(par->tesTriggerFile, sbuffer);
+  free(sbuffer);
   
+  status=ape_trad_query_int("TriggerSize", &par->triggerSize);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the TriggerSize parameter");
+    return(status);
+  }
+
+  status=ape_trad_query_int("PreBufferSize", &par->preBufferSize);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the PreBufferSize parameter");
+    return(status);
+  }
+  
+  status=ape_trad_query_bool("WriteStreamFile", &par->writeStreamFile);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the WriteStreamFile parameter");
+    return(status);
+  }
+
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the clobber parameter");
@@ -310,16 +348,20 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   strcpy(par->PixImpList,partmp.PixImpList);
   strcpy(par->XMLFile,partmp.XMLFile);
   strcpy(par->streamname,partmp.streamname);
+  strcpy(par->tesTriggerFile,partmp.tesTriggerFile);
   
   strcpy(par->activePixels,partmp.activePixels);
   par->Nactive=partmp.Nactive;
   par->Npix=partmp.Npix;
   par->nlo=partmp.nlo;
   par->nhi=partmp.nhi;
-  
+  par->triggerSize=partmp.triggerSize;
+  par->preBufferSize=partmp.preBufferSize;
+
   par->tstart=partmp.tstart;
   par->tstop=partmp.tstop;
   
+  par->writeStreamFile=partmp.writeStreamFile;
   par->clobber=partmp.clobber;
   par->history=partmp.history;
 

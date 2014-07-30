@@ -115,6 +115,7 @@ AC_CONFIG_FILES([Makefile
 		tools/pulsetemplgen/Makefile
 		tools/pulsetemplimport/Makefile
 		tools/streamtotriggers/Makefile
+		tools/runtes/Makefile
 		share/Makefile
 		share/instruments/Makefile
 		extlib/Makefile])

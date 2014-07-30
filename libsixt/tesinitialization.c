@@ -22,7 +22,7 @@
 
 /** Initializes the different variables necessary fo the simulations. Depending
     on the tool calling this function, not all the variables are set. */
-void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par,enum tes_calling_tool calling_tool, int* const status){
+void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par, int* const status){
   int ii;
 
   // Open the pixel impact file
