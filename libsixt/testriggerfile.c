@@ -420,10 +420,10 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     if ((impact.pixID>=pixlow) && (impact.pixID<=(pixlow+Npix))){
       numberSimulated[impact.pixID-pixlow]++;
       while ((impact.time>(outputTimeCol[impact.pixID-pixlow][currentTimeIndex[impact.pixID-pixlow]]+(double)triggerSize/sampleFreq)) &&
-	     (currentTimeIndex[impact.pixID-pixlow]<outputFiles[impact.pixID-pixlow]->nrows-1 )){
+	     (currentTimeIndex[impact.pixID-pixlow]<=outputFiles[impact.pixID-pixlow]->nrows-1 )){
 	       currentTimeIndex[impact.pixID-pixlow]++;
       }
-      if (currentTimeIndex[impact.pixID-pixlow]<outputFiles[impact.pixID-pixlow]->nrows){//If we have reach the end of the impacts 
+      if (currentTimeIndex[impact.pixID-pixlow]<outputFiles[impact.pixID-pixlow]->nrows){//If we have not reached the end of the impacts 
 	if (impact.time>(outputTimeCol[impact.pixID-pixlow][currentTimeIndex[impact.pixID-pixlow]])) {
 	  numberTrigger[impact.pixID-pixlow]++;
 	}
@@ -435,9 +435,9 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   //Save keywords with number of counts and monochromatic energy
   char keyword[9];
   for (pixNumber=0;pixNumber<Npix;pixNumber++) {
-    sprintf(keyword,"NES%05d",pixNumber+1);
+    sprintf(keyword,"NES%05d",pixNumber+pixlow+1);
     fits_update_key(outputFiles[pixNumber]->fptr, TINT, keyword, &(numberSimulated[pixNumber]), "Number of simulated pulses", status);
-    sprintf(keyword,"NET%05d",pixNumber+1);
+    sprintf(keyword,"NET%05d",pixNumber+pixlow+1);
     fits_update_key(outputFiles[pixNumber]->fptr, TINT, keyword, &(numberTrigger[pixNumber]), "Number of triggered pulses", status);
     fits_update_key(outputFiles[pixNumber]->fptr, TFLOAT, "MONOEN", &monoen, "Monochromatic energy of photons [keV]", status);
   }
