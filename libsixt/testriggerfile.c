@@ -188,11 +188,87 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 }
 
 
-void writeTriggers2FITS(TesTriggerFile** outputFiles,TESDataStream* stream,PixImpFile* impfile,
-		      int pixlow,int Npix,double tstart,double tstartTES,
-		      double tstop,double sampleFreq,int triggerSize,int preBufferSize,
-		      float monoen,int* const status){
-  
+void writeTriggerFileWithImpact(TESDataStream* const stream,
+				char* const tesTriggerFilename,char* const telescop,
+				char* const instrume,char* const filter,
+				char* const ancrfile,char* const respfile,
+				char* const xmlfile,char* const impactlist,
+				const double mjdref,const double timezero,
+				double tstart,double tstop,const int triggerSize,
+				const int preBufferSize,const double sampleFreq,
+				const char clobber,const int pixlow,const int Npix,
+				int* const status){
+
+  ////////////////////////////////
+  //Open output files
+  ////////////////////////////////
+  TesTriggerFile** outputFiles = (TesTriggerFile**)malloc(Npix*sizeof(TesTriggerFile*));
+  if(outputFiles==NULL){
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for ouputFiles failed");
+    CHECK_STATUS_VOID(*status);
+  }
+
+  for (int i =0;i<Npix;i++){
+    outputFiles[i] = opennewTesTriggerFile(tesTriggerFilename,
+					   telescop,
+					   instrume,
+					   filter,
+					   ancrfile,
+					   respfile,
+					   xmlfile,
+					   impactlist,
+					   mjdref,
+					   timezero,
+					   tstart,
+					   tstop,
+					   pixlow+i+1,
+					   triggerSize,
+					   preBufferSize,
+					   sampleFreq,
+					   clobber,
+					   status);
+      
+  }
+  CHECK_STATUS_VOID(*status);
+    
+  ////////////////////////////////
+  //Open Impact file
+  ////////////////////////////////
+  PixImpFile* impfile=openPixImpFile(impactlist, READONLY, status);
+  CHECK_STATUS_VOID(*status);
+  double tstartImp=0;
+  double tstopImp=0;
+  char comment[MAXMSG];
+  fits_read_key(impfile->fptr, TDOUBLE, "TSTART", &tstartImp, comment, status);
+  fits_read_key(impfile->fptr, TDOUBLE, "TSTOP", &tstopImp, comment, status);
+  CHECK_STATUS_VOID(*status);
+
+  //Check if tstart/tstop are compatible with pix impact file and correct if necessary
+  double tstartTES = tstart;
+  printf("Pix impact file reaches from %lfs-%lfs .\n", tstartImp, tstopImp);
+  if(tstartImp>tstart){
+    if(tstartImp>tstop){
+      SIXT_ERROR("Impact file tstart is larger than end of TES ADC data -> abort");
+      *status=EXIT_FAILURE;
+      CHECK_STATUS_VOID(*status);
+    }
+    puts("Impact file tstart is larger than in TES ADC data.");    
+    tstart=tstartImp;
+  }
+  if(tstopImp<tstop){
+    if(tstopImp<tstart){
+      SIXT_ERROR("Impact file tstop is smaller than start of TES ADC data -> abort");
+      *status=EXIT_FAILURE;
+      CHECK_STATUS_VOID(*status);
+    }
+    puts("Impact file tstop is smaller than in TES ADC data.");
+    tstop=tstopImp;
+  }
+  printf("Simulate from %lfs-%lfs .\n", tstart, tstop);
+
+
+
   //Allocation of array containing the triggers being constructed
   uint16_t** adc_value = (uint16_t**)malloc(Npix*sizeof(uint16_t*));
   if(adc_value==NULL){
@@ -358,6 +434,7 @@ void writeTriggers2FITS(TesTriggerFile** outputFiles,TESDataStream* stream,PixIm
   } 
   //Save keywords with number of counts and monochromatic energy
   char keyword[9];
+  float monoen=0;
   for (pixNumber=0;pixNumber<Npix;pixNumber++) {
     sprintf(keyword,"NES%05d",pixNumber+1);
     fits_update_key(outputFiles[pixNumber]->fptr, TINT, keyword, &(numberSimulated[pixNumber]), "Number of simulated pulses", status);
@@ -367,6 +444,12 @@ void writeTriggers2FITS(TesTriggerFile** outputFiles,TESDataStream* stream,PixIm
   }
 
   //Free memory
+  if (outputFiles!=NULL){
+    for (ii=0;ii<Npix;ii++){
+      freeTesTriggerFile(&(outputFiles[ii]), status);
+    }
+  }
+  freePixImpFile(&impfile, status);
   if(adc_value!=NULL){
     for(ii=0; ii<Npix; ii++){
       if(adc_value[ii]!=NULL){

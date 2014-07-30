@@ -19,6 +19,7 @@
 */
 
 #include "streamtotriggers.h"
+#include "tesinitialization.h"
 
 ////////////////////////////////////
 /** Main procedure. */
@@ -30,11 +31,9 @@ int streamtotriggers_main() {
   int status=EXIT_SUCCESS;
   
   //Pointers
-  PixImpFile* impfile=NULL;
   TESDataStream* stream=NULL;
   AdvDet *det=NULL;
   TesStreamFile* tesfile=NULL;
-  TesTriggerFile** outputFiles=NULL;
 
   // Keywords
   char telescop[MAXMSG];
@@ -60,19 +59,13 @@ int streamtotriggers_main() {
   
   do { // Beginning of the ERROR handling loop (will at 
        // most be run once).
-       
     headas_chat(3, "initialize ...\n");
     // Get program parameters.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
 
-    // Open the pixel impact file
-    //impfile=openPixImpFile(par.PixImpList, READONLY, &status);
-    //CHECK_STATUS_BREAK(status);
-  
     // Load the detector structure
     det=loadAdvDet(par.XMLFile, &status);
-    
     CHECK_STATUS_BREAK(status);
     
     // Check and eventually modifies the active pixels
@@ -150,92 +143,19 @@ int streamtotriggers_main() {
     CHECK_STATUS_BREAK(status);
 
 
+    writeTriggerFileWithImpact(stream,par.tesTriggerFile,telescop,
+			       instrume,filter,ancrfile,respfile,
+			       par.XMLFile,par.PixImpList,
+			       mjdref,timezero,tstart,tstop,
+			       par.triggerSize,par.preBufferSize,
+			       det->SampleFreq,par.clobber,par.nlo,
+			       tesfile->Npix,&status);
     
-    //Open output files
-    outputFiles = (TesTriggerFile**)malloc((tesfile->Npix)*sizeof(TesTriggerFile*));
-    if(outputFiles==NULL){
-      status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for ouputFiles failed");
-      CHECK_STATUS_BREAK(status);
-    }
-
-    for (int i =0;i<tesfile->Npix;i++){
-      outputFiles[i] = opennewTesTriggerFile(par.tesTriggerFile,
-					     telescop,
-					     instrume,
-					     filter,
-					     ancrfile,
-					     respfile,
-					     par.XMLFile,
-					     par.PixImpList,
-					     mjdref,
-					     timezero,
-					     tstart,
-					     tstop,
-					     par.nlo+i+1,
-					     par.triggerSize,
-					     par.preBufferSize,
-					     det->SampleFreq,
-					     par.clobber,
-					     &status);
-      
-    }
-    
-    
-    ////////////////////////////////
-    //Triggering part
-    //For the moment, perfect trigger using impact file
-    ////////////////////////////////
-
-
-    // Open the pixel impact file
-    impfile=openPixImpFile(par.PixImpList, READONLY, &status);
-    CHECK_STATUS_BREAK(status);
-    double tstartImp=0;
-    double tstopImp=0;
-    fits_read_key(impfile->fptr, TDOUBLE, "TSTART", &tstartImp, comment, &status);
-    fits_read_key(impfile->fptr, TDOUBLE, "TSTOP", &tstopImp, comment, &status);
-    CHECK_STATUS_BREAK(status);
-
-    //Check if tstart/tstop are compatible with pix impact file and correct if necessary
-    double tstartTES = tstart;
-    printf("Pix impact file reaches from %lfs-%lfs .\n", tstartImp, tstopImp);
-    if(tstartImp>tstart){
-      if(tstartImp>tstop){
-	SIXT_ERROR("Impact file tstart is larger than end of TES ADC data -> abort");
-	status=EXIT_FAILURE;
-	CHECK_STATUS_BREAK(status);
-      }
-      puts("Impact file tstart is larger than in TES ADC data.");    
-      tstart=tstartImp;
-    }
-    if(tstopImp<tstop){
-      if(tstopImp<tstart){
-	SIXT_ERROR("Impact file tstop is smaller than start of TES ADC data -> abort");
-	status=EXIT_FAILURE;
-	CHECK_STATUS_BREAK(status);
-      }
-      puts("Impact file tstop is smaller than in TES ADC data.");
-      tstop=tstopImp;
-    }
-    printf("Simulate from %lfs-%lfs .\n", tstart, tstop);
-
-    // Write TES triggers in output file
-    writeTriggers2FITS(outputFiles,stream,impfile,par.nlo,tesfile->Npix,tstart,tstartTES,
-		     tstop,det->SampleFreq,par.triggerSize,par.preBufferSize,monoen,&status);
 
   } while(0); // END of the error handling loop.
 
   //Free memory
-  if (outputFiles!=NULL){
-    for (ii=0;ii<tesfile->Npix;ii++){
-      freeTesTriggerFile(&(outputFiles[ii]), &status);
-    }
-  }
-  
-
   destroyAdvDet(&det);
-  freePixImpFile(&impfile, &status);
   destroyTESDataStream(stream);
   freeTesStreamFile(&tesfile,&status);
 
@@ -357,3 +277,5 @@ int getpar(struct Parameters* const par)
 
   return(status);
 }
+
+

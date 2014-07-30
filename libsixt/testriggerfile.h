@@ -84,10 +84,16 @@ TesTriggerFile*  opennewTesTriggerFile(const char* const filename,
 				  int* const status);
 
 /** Writes the ADC curves in the TES trigger format*/
-void writeTriggers2FITS(TesTriggerFile** outputFiles,TESDataStream* stream,PixImpFile* impfile,
-		      int pixlow,int Npix,double tstart,double tstartTES,
-		      double tstop,double sampleFreq,int triggerSize,int preBufferSize,
-		      float monoen,int* const status);
+void writeTriggerFileWithImpact(TESDataStream* const stream,
+				char* const tesTriggerFilename,char* const telescop,
+				char* const instrume,char* const filter,
+				char* const ancrfile,char* const respfile,
+				char* const xmlfile,char* const impactlist,
+				const double mjdref,const double timezero,
+				double tstart,double tstop,const int triggerSize,
+				const int preBufferSize,const double sampleFreq,
+				const char clobber,const int pixlow,const int Npix,
+				int* const status);
 
 
 #endif /* TESTRIGGERFILE_H */
