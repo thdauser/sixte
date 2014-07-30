@@ -149,7 +149,7 @@ int streamtotriggers_main() {
 			       mjdref,timezero,tstart,tstop,
 			       par.triggerSize,par.preBufferSize,
 			       det->SampleFreq,par.clobber,par.nlo,
-			       tesfile->Npix,&status);
+			       tesfile->Npix,monoen,&status);
     
 
   } while(0); // END of the error handling loop.

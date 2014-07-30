@@ -93,7 +93,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
 				double tstart,double tstop,const int triggerSize,
 				const int preBufferSize,const double sampleFreq,
 				const char clobber,const int pixlow,const int Npix,
-				int* const status);
+				float monoen,int* const status);
 
 
 #endif /* TESTRIGGERFILE_H */

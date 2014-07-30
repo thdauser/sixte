@@ -197,7 +197,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
 				double tstart,double tstop,const int triggerSize,
 				const int preBufferSize,const double sampleFreq,
 				const char clobber,const int pixlow,const int Npix,
-				int* const status){
+				float monoen,int* const status){
 
   ////////////////////////////////
   //Open output files
@@ -434,7 +434,6 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   } 
   //Save keywords with number of counts and monochromatic energy
   char keyword[9];
-  float monoen=0;
   for (pixNumber=0;pixNumber<Npix;pixNumber++) {
     sprintf(keyword,"NES%05d",pixNumber+1);
     fits_update_key(outputFiles[pixNumber]->fptr, TINT, keyword, &(numberSimulated[pixNumber]), "Number of simulated pulses", status);
