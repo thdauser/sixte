@@ -5,6 +5,7 @@
 #include "codedmask.h"
 #include "sixt.h"
 #include "squarepixels.h"
+#include "repix.h"
 
 /////////////////////////////////////////////
 // Type Declarations.
@@ -22,7 +23,7 @@ typedef struct {
 /////////////////////////////////////////////
 ReconArray* newReconArray(int* const status);
 
-ReconArray* getReconArray(const CodedMask* const mask, SquarePixels* detector_pixels, int* const status);
+ReconArray* getReconArray(CodedMask* mask, SquarePixels* detector_pixels, int* const status);
 
 double* SaveReconArray1d(ReconArray* recon, int* status);
 

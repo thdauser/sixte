@@ -3,7 +3,14 @@
 
 #include "sixt.h"
 #include "eventarray.h"
-#include "testimg.h"
+#include "reconstruction.h"
+#include "projectedmask.h"
+
+#define TMASKSHADOW 1     //MaskShadow* ms->shadow
+#define TREADEVENT 2      //ReadEvent* ea->EventArray
+#define TMASKSHADOWMAP 3  //MaskShadow* ms->map
+#define TPROJMASK 4       //ProjectedMask* pm->map
+#define TMASKMAP 5        //CodedMask* cm->map,ReconArray* ra->Rmap
 
 
 /////////////////////////////////////////////
@@ -22,6 +29,16 @@ void repixNoReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int ty
   //Size1/2: sizes of array which shall be re-pixeled (in pixels)
   //pixelwidth_big: size of pixels of given array before re-pixelization (in meters)
   //pixelwidth_small: size of pixels to which the array shall be re-pixeled to (in meters)
+
+
+//re-pixels from bigger pixels to smaller ones that fit not without reminder into former bigger ones
+//the re-pixeled array is hence blurred due to approximation of the data
+
+void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int type, 
+		       int Size1, int Size2, double pixelwidth_big, double pixelwidth_small,
+		       double MinVal);
+  //MinVal: min value that may occur in the re-pixeled array; the whole raw new array (arg_dataAfterRepix)
+  //must be initialized to that value before handling it to the repix-fct
 
 
 #endif /* REPIX_H */

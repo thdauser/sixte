@@ -48,24 +48,33 @@ void repixNoReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int ty
 
 }
 
-//not finished yet
-/*
 void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int type, 
-		     int Size1, int Size2, double pixelwidth_big, double pixelwidth_small)
+		       int Size1, int Size2, double pixelwidth_big, double pixelwidth_small,
+		       double MinVal)
 {
-  int xcount, ycount;                 //bigcount
-  int xpixelcount=0, ypixelcount=0;   //smallcount
-  double leftsmall=0.,leftbig=0.;     //left border of small and big pixel
-  double topsmall=0.,topbig=0.;       //top border of small and big pixel
+  int xcount, ycount;                //bigcount
+  int xpixelcount=0, ypixelcount=0;  //smallcount
+  double leftsmall=0.,leftbig=0.;    //left border of small and big pixel
+  double topsmall=0.,topbig=0.;      //top border of small and big pixel
+  double w, h;                       //width and height of part of small pixel inside current big pixel
+  double diff;                       //difference between MinVal (to which all BR-pixels are initialzed to)
+                                       // and current not zero pix
+  double dataBRbuffer;               //buffer for BR-data -> has to be typecasted for some input-types
 
-  double** dataBR=NULL; //before repix
+  double** dataBR_double=NULL; //before repix  //only one BR-array needed, depending on input type
+  int** dataBR_int=NULL; //before repix
   double** dataAR=NULL; //after repix
 
-  if(type==TREADEVENT){
-    ReadEvent* ea =(ReadEvent*)arg_dataBeforeRepix;
-    dataBR=ea->EventArray;
-    ReadEvent* ear =(ReadEvent*)arg_dataAfterRepix;
-    dataAR=ear->EventArray;
+  if(type==TMASKMAP){
+    CodedMask* cm =(CodedMask*)arg_dataBeforeRepix;
+    dataBR_int=cm->map;
+    ReconArray* ra =(ReconArray*)arg_dataAfterRepix;
+    dataAR=ra->Rmap;
+  }else if(type==TPROJMASK){ 
+    ProjectedMask* pmBR =(ProjectedMask*)arg_dataBeforeRepix;
+    dataBR_double=pmBR->map;
+    ProjectedMask* pmAR =(ProjectedMask*)arg_dataAfterRepix;
+    dataAR=pmAR->map;
   }
 
   //Scanning over all Array-elements to get Array with smaller pixel-size
@@ -73,7 +82,7 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
     for(xcount=0; xcount<Size2; xcount++){
       
       topbig=ycount*pixelwidth_big;   //top of current big pixel
-      ypixelcount=ceil(topbig/pixelwidth_small);  //count for new smaller pixels 
+      ypixelcount=topbig/pixelwidth_small;  //count for new smaller pixels 
        //current y-pix: top border of big pix/width of one small pix->determines 1st small in current big
 
       do{//as long as in current big pixel in y-direction
@@ -93,7 +102,7 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
 	    }
 
 	leftbig=xcount*pixelwidth_big;
-	xpixelcount=ceil(leftbig/pixelwidth_small);
+	xpixelcount=leftbig/pixelwidth_small;
 	do{//as long as in current big pixel in x-direction
 	  leftsmall=xpixelcount*pixelwidth_small;
   
@@ -107,24 +116,23 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
 	       }
 	     }
 
+	  if(type==TMASKMAP){
+	    dataBRbuffer=(double)dataBR_int[xcount][ycount];
+	  }else{
+	    dataBRbuffer=dataBR_double[xcount][ycount];
+	  }
 
 
+	  if(dataBRbuffer!=0.){//all small transparent pixel-areas contribute as percentage
+	    //distance between MinVal and MaxVal has to be distributed to new smaller pix
+	    diff=dataBRbuffer-MinVal; //dataBR[xcount][ycount]=MaxVal;
+	                                        //MinVal might be neg-> greater diff
+	    dataAR[xpixelcount][ypixelcount]+=//one small pix can have 
+	      //contributions from parts lying in diff big pix
+	      h*w/(pixelwidth_small*pixelwidth_small)*diff;
+	      //percentage of area with respect to area of whole small pix
+	  }//multiplied with max diff occuring in Rmap values, in order to distribute them accordingly
 
-
-	     if(dataBR[xcount][ycount]!=0){//all small transparent pixel-areas
-	       // contribute as percentage
-	       dataAR[xpixelcount][ypixelcount]+=//one small pix can have 
-		         //contributions from parts lying in diff big pix
-		 h*w/(pixelwidth_small*pixelwidth_small)*diff;
-	       //percentage of area with respect to area of whole small pix
-	     }//multiplied with max diff occuring in Rmap values, in order to distribute them accordingly
-
-
-
-
-
-
-	     
 
 	  xpixelcount++;
 	}while(leftsmall+pixelwidth_small < (leftbig+pixelwidth_big));
@@ -136,6 +144,5 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
     }
   }
 
-
-  }*/
+}
 

@@ -244,8 +244,6 @@ int comarecon_main() {
 	 ydiff=((ea->naxis2)/2-detector_pixels->ywidth)/2;
        }//end re-pixel EventArray to smaller size given by RePixSize
 
-
-
        //Get the reconstruction array:
        recon=getReconArray(mask, detector_pixels, &status);
        int Size1 = recon->naxis1;
@@ -253,7 +251,7 @@ int comarecon_main() {
 
         //Get the 1d image of the reconstruction array -> needed by FFTW
        ReconImage1d=SaveReconArray1d(recon, &status);
-
+      
        //perform a fft with the ReconArray       
        fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2, -1);
 
@@ -304,7 +302,7 @@ int comarecon_main() {
        sprintf(name_image,"image_%lu", position_list->entryCount);
 
        // Write the reconstructed source function to the output FITS file.
-       if(position_list->entryCount <=1){
+       if(position_list->entryCount <1){
        saveSourceImage(sky_pixels, name_image, &status);
        CHECK_STATUS_BREAK(status);
        }

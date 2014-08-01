@@ -11,7 +11,7 @@ void createTestImg(void* arg, int type, int sizeX, int sizeY,
   }else if(type==TREADEVENT){
     ReadEvent* ea =(ReadEvent*)arg;
     data=ea->EventArray;
-  }else if(type==TMASKMAP){
+  }else if(type==TMASKSHADOWMAP){
     MaskShadow* ms =(MaskShadow*)arg;
     data=ms->map;
   }else if(type==TPROJMASK){

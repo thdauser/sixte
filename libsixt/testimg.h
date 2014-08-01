@@ -28,10 +28,11 @@
 #include "projectedmask.h"
 
 
-#define TMASKSHADOW 1
-#define TREADEVENT 2
-#define TMASKMAP 3
-#define TPROJMASK 4
+#define TMASKSHADOW 1     //MaskShadow* ms->shadow
+#define TREADEVENT 2      //ReadEvent* ea->EventArray
+#define TMASKSHADOWMAP 3  //MaskShadow* ms->map
+#define TPROJMASK 4       //ProjectedMask* pm->map
+#define TMASKMAP 5        //CodedMask* cm->map
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
