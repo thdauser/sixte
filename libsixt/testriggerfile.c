@@ -38,6 +38,7 @@ TesTriggerFile* newTesTriggerFile(int* const status) {
   file->row  	=0;
   file->timeCol =1;
   file->trigCol  =2;
+  file->ph_idCol = 3;
   file->pixID   =0;
 
   return(file);
@@ -51,6 +52,7 @@ void freeTesTriggerFile(TesTriggerFile** const file, int* const status){
     (*file)->pixID	      =0;
     (*file)->timeCol          =0;
     (*file)->trigCol           =0;
+    (*file)->ph_idCol           =0;
     
     if (NULL!=(*file)->fptr) {
       fits_close_file((*file)->fptr, status);
@@ -134,13 +136,13 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
    // Create table
   int tlen=9;
   
-  char *ttype[2];
-  char *tform[2];
-  char *tunit[2];
+  char *ttype[3];
+  char *tform[3];
+  char *tunit[3];
   
   int ii;
   
-  for(ii=0; ii<2; ii++){
+  for(ii=0; ii<3; ii++){
     ttype[ii]=(char*)malloc(tlen*sizeof(char));
     if(ttype[ii]==NULL){
       *status=EXIT_FAILURE;
@@ -171,11 +173,16 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   sprintf(ttype[1], "PXL%05d", pixID);
   sprintf(tform[1], "%dU",triggerSize);
   sprintf(tunit[1], "ADC");
+
+  //Create third column PH_ID
+  sprintf(ttype[2], "PH_ID");
+  sprintf(tform[2], "1PJ(%d)",MAXIMPACTNUMBER);
+  sprintf(tunit[2], "");
   CHECK_STATUS_RET(*status,file);
   
   char extName[9];
   sprintf(extName,"ADC%03d",pixID);
-  fits_create_tbl(file->fptr, BINARY_TBL, 0, 2,
+  fits_create_tbl(file->fptr, BINARY_TBL, 0, 3,
 		  ttype, tform, tunit,extName, status);
   //Add keywords to other extension
   fits_update_key(file->fptr, TINT, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
@@ -340,7 +347,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     /* If the pulse occurs in a time bin away from preBufferSize samples of the current time, is in an active pixel, */ 
     /* and we are not recording, put flag to record*/
     while ((piximpstatus>0) &&(impact.time>=t+(double)preBufferSize/sampleFreq)&&(impact.time<t+(((double)preBufferSize+1.0)/sampleFreq))) {
-      if((impact.pixID>=pixlow) && (impact.pixID<=(pixlow+Npix))){
+      if((impact.pixID>=pixlow) && (impact.pixID<(pixlow+Npix))){
 	if (positionInTrigger[impact.pixID-pixlow]==-1) {
 	  positionInTrigger[impact.pixID-pixlow]=0;
 	  //Check if pulses are gonna be in the pre-buffer
@@ -373,7 +380,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     
     for (pixNumber=0;pixNumber<Npix;pixNumber++) {
       if ((positionInTrigger[pixNumber]>=0) && (positionInTrigger[pixNumber]<triggerSize)) {
-	adc_value[pixNumber][positionInTrigger[pixNumber]] = stream->adc_value[(int)((t-tstartTES)*sampleFreq)][pixNumber];
+	adc_value[pixNumber][positionInTrigger[pixNumber]] = stream->adc_value[(int)round((t-tstartTES)*sampleFreq)][pixNumber];
 	positionInTrigger[pixNumber]++;
       }
       //If Trigger is full, record in output FITS file
@@ -398,34 +405,57 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   }
 
   //Count number of pulses that should be visible
-  double** outputTimeCol = (double**)malloc(Npix*sizeof(double*));
-  int* currentTimeIndex = (int*)malloc(Npix*sizeof(int));
+  double** outputTimeCol = (double**)malloc(Npix*sizeof(double*)); //Time column of the trigger file
+  int* currentTimeIndex = (int*)malloc(Npix*sizeof(int)); //Current index of time column number for each pixel
+  long** currentImpactArray = (long**)malloc(Npix*sizeof(long*)); //Array containing for each pixel the PH_ID in the current trigger
+  int* currentImpactNumber = (int*)malloc(Npix*sizeof(int*)); //Number of impacts in the current trigger for each pixel
   int anynul=0;
   for (pixNumber=0;pixNumber<Npix;pixNumber++) {
       outputTimeCol[pixNumber] = (double*)malloc(outputFiles[pixNumber]->nrows * sizeof(double));
       currentTimeIndex[pixNumber] = 0;
+      currentImpactArray[pixNumber] = (long*)malloc(MAXIMPACTNUMBER*sizeof(long));
+      for (int jj=0;jj<MAXIMPACTNUMBER;jj++){
+	currentImpactArray[pixNumber][jj]=0;
+      }
+      currentImpactNumber[pixNumber] = 0;
       //Read time column in output file
       fits_read_col(outputFiles[pixNumber]->fptr, TDOUBLE, outputFiles[pixNumber]->timeCol, 
 		    1,1,outputFiles[pixNumber]->nrows, NULL, (outputTimeCol[pixNumber]), &anynul,status);
       CHECK_STATUS_VOID(*status);
   }
+  
   //Reinitialize impfile
   impfile->row=0;
-  //Get first impact
-  piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
-  CHECK_STATUS_VOID(*status);
+  //Get first impact after tstart
+  do {
+	piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
+	CHECK_STATUS_VOID(*status);
+  } while(impact.time<tstart);
+
+  //Reinitialize trigger file
+  for (pixNumber=0;pixNumber<Npix;pixNumber++) {
+    outputFiles[pixNumber]->row=1;
+  }
 
   //Iterate over the impacts
   while ((piximpstatus>0) && (impact.time<tstop)){
-    if ((impact.pixID>=pixlow) && (impact.pixID<=(pixlow+Npix))){
+    if ((impact.pixID>=pixlow) && (impact.pixID<(pixlow+Npix))){
       numberSimulated[impact.pixID-pixlow]++;
-      while ((impact.time>(outputTimeCol[impact.pixID-pixlow][currentTimeIndex[impact.pixID-pixlow]]+(double)triggerSize/sampleFreq)) &&
+      if ((impact.time>(outputTimeCol[impact.pixID-pixlow][currentTimeIndex[impact.pixID-pixlow]]+(double)triggerSize/sampleFreq)) &&
 	     (currentTimeIndex[impact.pixID-pixlow]<=outputFiles[impact.pixID-pixlow]->nrows-1 )){
-	       currentTimeIndex[impact.pixID-pixlow]++;
+	//Change trigger -> save corresponding impacts and go to next
+	fits_write_col(outputFiles[impact.pixID-pixlow]->fptr, TLONG, outputFiles[impact.pixID-pixlow]->ph_idCol, 
+		       outputFiles[impact.pixID-pixlow]->row, 1,currentImpactNumber[impact.pixID-pixlow],currentImpactArray[impact.pixID-pixlow], status);
+	CHECK_STATUS_VOID(*status);
+	currentTimeIndex[impact.pixID-pixlow]++;
+	outputFiles[impact.pixID-pixlow]->row++;
+	currentImpactNumber[impact.pixID-pixlow]=0;
       }
       if (currentTimeIndex[impact.pixID-pixlow]<outputFiles[impact.pixID-pixlow]->nrows){//If we have not reached the end of the impacts 
 	if (impact.time>(outputTimeCol[impact.pixID-pixlow][currentTimeIndex[impact.pixID-pixlow]])) {
 	  numberTrigger[impact.pixID-pixlow]++;
+	  currentImpactArray[impact.pixID-pixlow][currentImpactNumber[impact.pixID-pixlow]] = impact.ph_id;
+	  currentImpactNumber[impact.pixID-pixlow]++;
 	}
       }
     }
@@ -435,6 +465,11 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   //Save keywords with number of counts and monochromatic energy
   char keyword[9];
   for (pixNumber=0;pixNumber<Npix;pixNumber++) {
+    if (currentImpactNumber[pixNumber]>0){
+      fits_write_col(outputFiles[pixNumber]->fptr, TLONG, outputFiles[pixNumber]->ph_idCol, 
+		     outputFiles[pixNumber]->row, 1,currentImpactNumber[pixNumber],currentImpactArray[pixNumber], status);
+      CHECK_STATUS_VOID(*status);
+    }
     sprintf(keyword,"NES%05d",pixNumber+pixlow+1);
     fits_update_key(outputFiles[pixNumber]->fptr, TINT, keyword, &(numberSimulated[pixNumber]), "Number of simulated pulses", status);
     sprintf(keyword,"NET%05d",pixNumber+pixlow+1);

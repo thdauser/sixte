@@ -105,10 +105,19 @@ int streamtotriggers_main() {
 			       &tstart,
 			       &tstop, 
 			       &status);
+    CHECK_STATUS_BREAK(status);
+
     //Read monochromatic energy
     if (fits_movabs_hdu(tesfile->fptr,2, &hdu_type, &status)) break;
-    fits_read_key(tesfile->fptr, TFLOAT, "MONOEN", &monoen, comment, &status);    
+    fits_read_key(tesfile->fptr, TFLOAT, "MONOEN", &monoen, comment, &status);
+    if (status==KEY_NO_EXIST) {
+      puts("No monochromatic energy keyword in stream file, defaulting to 0.");
+      monoen=0;
+      status=EXIT_SUCCESS;
+    }
     CHECK_STATUS_BREAK(status);
+
+
 
     double tstart_stream;
     printf("TES stream file reaches from %lfs-%lfs .\n", tstart, tstop);

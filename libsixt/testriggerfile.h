@@ -26,6 +26,14 @@
 #include "pixelimpactfile.h"
 
 ////////////////////////////////////////////////////////////////////////
+// Constants.
+////////////////////////////////////////////////////////////////////////
+
+/** Maximum number of impacts per trigger. */
+#define MAXIMPACTNUMBER (50)
+
+
+////////////////////////////////////////////////////////////////////////
 // Type declarations.
 ////////////////////////////////////////////////////////////////////////
 
@@ -42,8 +50,8 @@ typedef struct {
       has been read or written so far. */
   long row;
 
-  /** Column numbers for time and trigger columns */
-  int timeCol,trigCol;
+  /** Column numbers for time, trigger, and impact columns */
+  int timeCol,trigCol,ph_idCol;
 
   /** ID of the pixel corresponding to this file */
   int pixID;
