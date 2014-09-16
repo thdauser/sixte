@@ -290,6 +290,8 @@ void sixt_get_date_time(const double mjdref,
   time_utc.tm_mday=1+int_day;
   time_utc.tm_mon=0;
   time_utc.tm_year=70;
+  // avoid warning by valgrind
+  time_utc.tm_isdst=-1;
   time_t timet=mktime(&time_utc);
   // Note that we have to use 'localtime' here, although we
   // want to determine the UTC, because this is the inverse

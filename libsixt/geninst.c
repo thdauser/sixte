@@ -233,9 +233,12 @@ void parseGenInstXML(GenInst* const inst,
 
   if (0.==inst->det->pixgrid->xrpix) {
     SIXT_WARNING("no specification of x reference pixel");
+    SIXT_WARNING("Ignore this if x coordinate of reference pixel equals zero");
   }
   if (0.==inst->det->pixgrid->yrpix) {
     SIXT_WARNING("no specification of y reference pixel");
+    SIXT_WARNING("Ignore this warning if the y coordinate of the");
+    SIXT_WARNING("reference pixel equals zero");
   }
 
   if (0.==inst->det->pixgrid->xdelt) {
