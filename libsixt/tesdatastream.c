@@ -530,6 +530,9 @@ void getTESDataStream(TESDataStream* TESData,
 	if(tesdbl<0.){
 	  tesdbl=0.;
 	}
+	if(tesdbl>65534.){//maximum coded value -1
+	  tesdbl=65534.;
+	}
 	TESData->adc_value[tstep][ipix]=(uint16_t)tesdbl; //TODO Noise buffer seems to contain repeated shapes. Needs to be investigated.
 	if(TESData->adc_value[tstep][ipix]==65535){
 	  printf("tstep=%ld ipix=%d noise=%lf, inoise=%d, tesdbl=%le\n", tstep, ipix, PixVal, inoise, tesdbl);
