@@ -27,3 +27,4 @@ doc
 .deps
 .libs
 sixt*.tar.gz
+*.DS_Store
