@@ -506,7 +506,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   int lastpix = pixlow+Npix;
   int numberpix = Npix;
   fits_update_key(outputFile->fptr, TINT, "FIRSTPIX", &firstpix, "First pixel in trigger file", status);
-  fits_update_key(outputFile->fptr, TINT, "LASTPIX", &lastpix, "First pixel in trigger file", status);
+  fits_update_key(outputFile->fptr, TINT, "LASTPIX", &lastpix, "Last pixel in trigger file", status);
   fits_update_key(outputFile->fptr, TINT, "NPIX", &numberpix, "Number of pixels in trigger file", status);
   //Save keywords with number of counts
   char keyword[9];
