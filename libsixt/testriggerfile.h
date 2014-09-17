@@ -50,11 +50,8 @@ typedef struct {
       has been read or written so far. */
   long row;
 
-  /** Column numbers for time, trigger, and impact columns */
-  int timeCol,trigCol,ph_idCol;
-
-  /** ID of the pixel corresponding to this file */
-  int pixID;
+  /** Column numbers for time, trigger, impact, and pixID columns */
+  int timeCol,trigCol,ph_idCol,pixIDCol;
 
 } TesTriggerFile;
 
@@ -84,7 +81,6 @@ TesTriggerFile*  opennewTesTriggerFile(const char* const filename,
 				  const double timezero,
 				  const double tstart,
 				  const double tstop,
-				  const int pixID,
 				  int triggerSize,
 				  int preBufferSize,
 				  double sampleFreq,
