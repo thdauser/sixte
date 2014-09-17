@@ -118,7 +118,7 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
                      int* const status) 
 {
     
-    double U, G, sigma;
+    double U, G, sigma, df;
     const double pi=3.14159265359;
     int i,j, k;
     
@@ -126,6 +126,7 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
     fftw_plan p;
     fftw_complex Ze, Po, H; /* Products of Zeros & Poles */
     double w, f;               /* Omega and frequency*/
+    double con;
     
     sigma=1.;
     
@@ -145,11 +146,14 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
     for (j=0; j<NBuffer->NPixel; j++) {
     
       for (i=0; i<NBuffer->BufferSize; i++) {
+        
+	/* Calculate size of frequency bin */
+	df=*SampFreq/(NBuffer->BufferSize);
 
         /* Create a complex white noise spectrum */
         U=(gsl_rng_uniform(*r)-0.5)*pi;
 	G=gsl_ran_gaussian(*r,sigma); 
-	in[i]=cos(U)*G*Noise->WhiteRMS + sin(U)*G*Noise->WhiteRMS*I;
+	in[i]=cos(U)*G + sin(U)*G*I;
 	      
         /* Define the noise filter */
 	/* Set initial value of zeros and poles */
@@ -157,10 +161,14 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
         Po = 1.0 + 0.0 * I;  /* Poles initialisation */
         
 	/* Calculate frequency and angular frequency for spectrum */
-	f=(i+1)*(*SampFreq)/(NBuffer->BufferSize);
-	w=2.0*pi*f;
-	
-        /* Multiply all the zeros */
+	if (i<=NBuffer->BufferSize/2) {
+	  f=(i+1)*df;
+	  w=2.0*pi*f;
+	} else {  
+	  f=-(NBuffer->BufferSize-i+1)*df;
+	  w=2.0*pi*f;
+	}
+	/* Multiply all the zeros */
         for (k=0;k<Noise->Nz;k++) {
           Ze = Ze * (1.0 + Noise->Zeros[k] * w * I);
         }
@@ -174,15 +182,15 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
 	H = Noise->H0 * Ze / Po; 
 	
 	/* Multiply the noise filter with the white noise */
-	in[i]=in[i] * sqrt(1.0/(H * conj(H)));
+	in[i]=in[i] * H * Noise->WhiteRMS * sqrt(df);
       }
       in[0]=0.0 + 0.0*I;
-      p=(fftw_plan) fftw_plan_dft_1d(NBuffer->BufferSize,in,out,FFTW_BACKWARD,FFTW_ESTIMATE);
+      p=(fftw_plan) fftw_plan_dft_1d(NBuffer->BufferSize,in,out,FFTW_FORWARD,FFTW_ESTIMATE);
     
       fftw_execute(p);
     
       for (i=0;i<NBuffer->BufferSize;i++) {
-        NBuffer->Buffer[i][j]=creal(out[i]) * sqrt(*SampFreq/NBuffer->BufferSize) ;
+        NBuffer->Buffer[i][j]=creal(out[i]) / sqrt(NBuffer->BufferSize) ;
       }
     
     }

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<pixdetector type="x-ifu" npix="64*64" xoff="-8.505e-3" yoff="8.505e-3">
+  <loop start="0" end="63" increment="1" variable="$l">
+    <loop start="0" end="63" increment="1" variable="$c">
+      <pixel posx="$c" delx="270e-6" posy="$l" dely="-270e-6" width="270e-6" height="270e-6" tesproffile="Pulse_200us_156kHz.fits" tesprofver="PULSE1"/>
+    </loop>
+  </loop>
+  <teswhitenoise rms="1.0"/>
+  <tesnoisefilter norm="20.158382126" nzeros="1" npoles="2">
+    <noisezero zero="1.946980922e-4"></noisezero> 
+    <noisepole pole="2.447206646e-4"></noisepole>
+    <noisepole pole="2.509675914e-5"></noisepole>
+  </tesnoisefilter>
+  <samplefreq freq="156.25e+3"/>
+  <calfactor factor="1.14302848324"/>
+  <adcoffset offset="200"/>
+</pixdetector>

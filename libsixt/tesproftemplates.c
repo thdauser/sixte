@@ -308,7 +308,7 @@ int findTESProfileEnergyIndex(TESProfiles* prof,
 int genTESProfile(TESTemplateInput* pinp, TESProfiles** ptemp, int* const status) {
     
   int i,j,k;
-  double total;
+  double norm;
   
   
   if ((*ptemp)==NULL) {
@@ -392,15 +392,13 @@ int genTESProfile(TESTemplateInput* pinp, TESProfiles** ptemp, int* const status
     
     /* Calculate profiles */
     for (j=0;j<(*ptemp)->profiles[i].NE;j++) {
-      total=0.;
+      /* Normalize based on area (in s) calculated by analytic integration of pulse profile */
+      norm = pinp->tfall - (pinp->tfall * pinp->trise)/(pinp->tfall + pinp->trise); 
+
       /* Calculate exponential pulse */
       for (k=0;k<(*ptemp)->profiles[i].Nt;k++) {
 	(*ptemp)->profiles[i].adc_value[j][k]=ExponentialPulse(&(*ptemp)->profiles[i].time[k],&pinp->trise,&pinp->tfall);
-	total = total + (*ptemp)->profiles[i].adc_value[j][k];
-      }
-      /* Normalisation step to make area equal to 1.0 */
-      for (k=0;k<(*ptemp)->profiles[i].Nt;k++) {
-	(*ptemp)->profiles[i].adc_value[j][k]=(*ptemp)->profiles[i].adc_value[j][k]/total;
+	(*ptemp)->profiles[i].adc_value[j][k]=(*ptemp)->profiles[i].adc_value[j][k]/norm;
       }
 	
     }
