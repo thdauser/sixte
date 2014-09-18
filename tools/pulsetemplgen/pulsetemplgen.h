@@ -33,6 +33,7 @@ struct Parameters {
   int nver;
   char filename[MAXMSG];
   char clobber;
+  char history;
   
   double energy_high;
   double energy_low;

@@ -54,7 +54,7 @@ int pulsetemplgen_main() {
 			ptemp->version[ii], 
 			&ptemp->profiles[ii], 
 			par.clobber,
-			"Created with pulsetemplgen (SIXTE tool).",
+			par.history,
 			&status);
       CHECK_STATUS_BREAK(status);
     }
@@ -188,6 +188,12 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_long("nsamp", &par->pinp.nsamp);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the nsamp parameter");
+    return(status);
+  }
+
+  status=ape_trad_query_bool("history", &par->history);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the history parameter");
     return(status);
   }
   

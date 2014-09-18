@@ -118,7 +118,7 @@ void readTESProfiles(char *filename,
 /** Function which creates a pulse profile template file. */
 int createTESProfilesFile(char *filename, 
 			   const char clobber,
-			   char *comment,
+			   char history,
 			   int* const status);
 
 /** Function which inserts a pulse profile template in a table pointed by fptr */
@@ -133,7 +133,7 @@ int writeTESProfiles(char *filename,
 			     char *version, 
 			     TESProfilesEntries *prof, 
 			     const char clobber,
-			     char *comment,
+			     char history,
 			     int* const status);
 
 /** Function which looks for a specific version and returns the index 

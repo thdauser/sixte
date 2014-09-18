@@ -419,7 +419,7 @@ double ExponentialPulse(double *t, double *trise, double *tfall) {
 
 int createTESProfilesFile(char *filename, 
 			   const char clobber,
-			   char *comment,
+			   char history,
 			   int* const status)
 {
   
@@ -456,9 +456,11 @@ int createTESProfilesFile(char *filename,
   fits_update_key(fptr, TINT, "NAXIS", &(naxis), NULL, status);
   CHECK_STATUS_RET(*status, *status);
   
-  // Write comment to header
-  fits_write_comment(fptr, comment, status);
-  CHECK_STATUS_RET(*status, *status);
+  // Write history to primary header
+  if (history) {
+    HDpar_stamp(fptr, 1, status);
+    CHECK_STATUS_RET(*status,*status);
+  }
   
   fits_close_file(fptr, status);
   CHECK_STATUS_RET(*status, *status);
@@ -471,7 +473,7 @@ int writeTESProfiles(char *filename,
 			     char *version, 
 			     TESProfilesEntries *prof, 
 			     const char clobber,
-			     char *comment,
+			     char history,
 			     int* const status)
 {
   
@@ -480,7 +482,7 @@ int writeTESProfiles(char *filename,
   fits_file_exists(filename, &exists, status);
   CHECK_STATUS_RET(*status, *status);
   if (0==exists) {
-    createTESProfilesFile(filename, clobber, comment, status);
+    createTESProfilesFile(filename, clobber, history, status);
     CHECK_STATUS_RET(*status, *status);
   }
   
@@ -557,10 +559,6 @@ int writeTESProfiles(char *filename,
     CHECK_STATUS_RET(*status, *status);
   }
   
-  // Write comment to header
-  fits_write_comment(fptr, comment, status);
-  CHECK_STATUS_RET(*status, *status);
-
   fits_close_file(fptr, status);
   CHECK_STATUS_RET(*status, *status);
   
