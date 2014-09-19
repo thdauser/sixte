@@ -206,7 +206,7 @@ void removeEventFromNode(EvtNode** ActPulses,
 			int* pixel);
 
 /** Destroy array of linked lists */
-void destroyEventNodes(EvtNode** ActPulses);
+void destroyEventNode(EvtNode* node);
 
 /** Initialize array of linked lists */
 EvtNode** newEventNodes(int *NPixel, int* const status);

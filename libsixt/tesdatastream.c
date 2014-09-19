@@ -553,7 +553,9 @@ void getTESDataStream(TESDataStream* TESData,
   }
   
   /* Clean dynamic memory */
-  destroyEventNodes(ActPulses);
+  for (ipix=0;ipix<Npix;ipix++) {
+    destroyEventNode(ActPulses[ipix]);
+  }
   destroyNoiseSpectrum(Noise,status);
   destroyNoiseBuffer(NBuffer,status);
 }
@@ -647,8 +649,15 @@ void removeEventFromNode(EvtNode** ActPulses,
    free(pop);
 }  
 
-void destroyEventNodes(EvtNode** ActPulses) {
-    free(ActPulses);
+void destroyEventNode(EvtNode* node) {
+  if (node!=NULL) {
+    if (node->next!=NULL) {
+      destroyEventNode(node->next);
+    }
+    free(node->time);
+    free(node->adcpulse);
+    free(node);
+  }
 }
 
 int checkPixIfActive(int pixID, int Npix, int* activearray){
