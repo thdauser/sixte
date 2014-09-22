@@ -404,12 +404,12 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   }
 
   //Count number of pulses that should be visible
-  double* outputTimeCol = (double*)malloc(outputFile->nrows*sizeof(double*)); //Time column of the trigger file
-  long* outputPixIDCol = (long*)malloc(outputFile->nrows*sizeof(long*)); //PixID column of the trigger file
+  double* outputTimeCol = (double*)malloc(outputFile->nrows*sizeof(double)); //Time column of the trigger file
+  long* outputPixIDCol = (long*)malloc(outputFile->nrows*sizeof(long)); //PixID column of the trigger file
   int* currentTimeIndex = (int*)malloc(Npix*sizeof(int)); //Current index of time column number for each pixel
   long** currentImpactArray = (long**)malloc(Npix*sizeof(long*)); //Array containing for each pixel the PH_ID in the current trigger
-  int* currentImpactNumber = (int*)malloc(Npix*sizeof(int*)); //Number of impacts in the current trigger for each pixel
-  unsigned char* eofArray = (unsigned char*)malloc(Npix*sizeof(unsigned char*));//Array containing the EOF signal for each pixel
+  int* currentImpactNumber = (int*)malloc(Npix*sizeof(int)); //Number of impacts in the current trigger for each pixel
+  unsigned char* eofArray = (unsigned char*)malloc(Npix*sizeof(unsigned char));//Array containing the EOF signal for each pixel
   int anynul=0;
 
   //Read time column in output file
@@ -565,5 +565,4 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   numberTrigger=NULL;
 
 }
-
 
