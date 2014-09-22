@@ -195,6 +195,16 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &(deltat), "Time resolution of data stream", status);
   CHECK_STATUS_RET(*status,file);
 
+  //Free memory
+  for(ii=0; ii<4; ii++){
+    free(ttype[ii]);
+    ttype[ii]=NULL;
+    free(tform[ii]);
+    tform[ii]=NULL;
+    free(tunit[ii]);
+    tunit[ii]=NULL;
+  }
+
   return(file);
 
 }
@@ -403,104 +413,172 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     t=t+1./sampleFreq;
   }
 
-  //Count number of pulses that should be visible
-  double* outputTimeCol = (double*)malloc(outputFile->nrows*sizeof(double)); //Time column of the trigger file
-  long* outputPixIDCol = (long*)malloc(outputFile->nrows*sizeof(long)); //PixID column of the trigger file
-  int* currentTimeIndex = (int*)malloc(Npix*sizeof(int)); //Current index of time column number for each pixel
-  long** currentImpactArray = (long**)malloc(Npix*sizeof(long*)); //Array containing for each pixel the PH_ID in the current trigger
-  int* currentImpactNumber = (int*)malloc(Npix*sizeof(int)); //Number of impacts in the current trigger for each pixel
-  unsigned char* eofArray = (unsigned char*)malloc(Npix*sizeof(unsigned char));//Array containing the EOF signal for each pixel
-  int anynul=0;
+  //Free adc_value array which is not useful anymore
+  if(adc_value!=NULL){
+    for(ii=0; ii<Npix; ii++){
+      free(adc_value[ii]);
+      adc_value[ii]=NULL;
+    }
+    free(adc_value);
+    adc_value=NULL;
+  }
+  free(positionInTrigger);
+  positionInTrigger=NULL;
 
-  //Read time column in output file
-  fits_read_col(outputFile->fptr, TDOUBLE, outputFile->timeCol, 
-		1,1,outputFile->nrows, NULL, outputTimeCol, &anynul,status);
-  CHECK_STATUS_VOID(*status);
+  //If there is no trigger, print WARNING. Still compute numberSimulated.
+  if (outputFile->nrows==0) {
+    puts("WARNING: No trigger found. Check in impact file that there does exist an event inside the simulation time");
+    //Reinitialize impfile
+    impfile->row=0;
+    //Get first impact after tstart
+    do {
+      piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
+      CHECK_STATUS_VOID(*status);
+    } while(impact.time<tstart);
 
-  //Read pixID column in output file
-  fits_read_col(outputFile->fptr, TLONG, outputFile->pixIDCol, 
-		1,1,outputFile->nrows, NULL, outputPixIDCol, &anynul,status);
-  CHECK_STATUS_VOID(*status);
+    //Reinitialize trigger file
+    outputFile->row=1;
 
-  //Initialize arrays
-  int timeColIterator = 0;//iterator over the time column
-  for (pixNumber=0;pixNumber<Npix;pixNumber++) {
-    //Look for first record of corresponding pixID
-    timeColIterator=0;
-    while (outputPixIDCol[timeColIterator]!=(pixNumber+pixlow+1)) {
-      timeColIterator+=1;
-      if (timeColIterator==outputFile->nrows){
-	timeColIterator=-1;
-	break;
+    //Iterate over the impacts
+    while ((piximpstatus>0) && (impact.time<tstop)){
+      if ((impact.pixID>=pixlow) && (impact.pixID<(pixlow+Npix))){
+	numberSimulated[impact.pixID-pixlow]++;
       }
     }
-    if (timeColIterator!=-1) {
-      currentTimeIndex[pixNumber] = timeColIterator;
-    }
-    
-    //Allocate impact array
-    currentImpactArray[pixNumber] = (long*)malloc(MAXIMPACTNUMBER*sizeof(long));
-    for (int jj=0;jj<MAXIMPACTNUMBER;jj++){
-      currentImpactArray[pixNumber][jj]=0;
-    }
-    
-    //Set impact number for each pixel
-    currentImpactNumber[pixNumber] = 0;
-    //Set eof indicator for each pixel
-    eofArray[pixNumber]=1;
   }
-  
-  //Reinitialize impfile
-  impfile->row=0;
-  //Get first impact after tstart
-  do {
-	piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
-	CHECK_STATUS_VOID(*status);
-  } while(impact.time<tstart);
+  else {
+    //Count number of pulses that should be visible
+    double* outputTimeCol = (double*)malloc(outputFile->nrows*sizeof(double)); //Time column of the trigger file
+    long* outputPixIDCol = (long*)malloc(outputFile->nrows*sizeof(long)); //PixID column of the trigger file
+    int* currentTimeIndex = (int*)malloc(Npix*sizeof(int)); //Current index of time column number for each pixel
+    long** currentImpactArray = (long**)malloc(Npix*sizeof(long*)); //Array containing for each pixel the PH_ID in the current trigger
+    int* currentImpactNumber = (int*)malloc(Npix*sizeof(int)); //Number of impacts in the current trigger for each pixel
+    unsigned char* eofArray = (unsigned char*)malloc(Npix*sizeof(unsigned char));//Array containing the EOF signal for each pixel
+    int anynul=0;
 
-  //Reinitialize trigger file
-  outputFile->row=1;
+    //Read time column in output file
+    fits_read_col(outputFile->fptr, TDOUBLE, outputFile->timeCol, 
+		  1,1,outputFile->nrows, NULL, outputTimeCol, &anynul,status);
+    CHECK_STATUS_VOID(*status);
 
-  //Iterate over the impacts
-  while ((piximpstatus>0) && (impact.time<tstop)){
-    if ((impact.pixID>=pixlow) && (impact.pixID<(pixlow+Npix))){
-      numberSimulated[impact.pixID-pixlow]++;
-      if ((impact.time>(outputTimeCol[currentTimeIndex[impact.pixID-pixlow]]+(double)triggerSize/sampleFreq)) &&
-	  (eofArray[impact.pixID-pixlow])){
-	//Change trigger -> save corresponding impacts and go to next
-	fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol, 
-		       currentTimeIndex[impact.pixID-pixlow]+1, 1,currentImpactNumber[impact.pixID-pixlow],currentImpactArray[impact.pixID-pixlow], status);
-	CHECK_STATUS_VOID(*status);
-	//Look for next trigger of corresponding pixel
-	if (currentTimeIndex[impact.pixID-pixlow]==outputFile->nrows-1) {
-	  eofArray[impact.pixID-pixlow]=0;
+    //Read pixID column in output file
+    fits_read_col(outputFile->fptr, TLONG, outputFile->pixIDCol, 
+		  1,1,outputFile->nrows, NULL, outputPixIDCol, &anynul,status);
+    CHECK_STATUS_VOID(*status);
+
+    //Initialize arrays
+    int timeColIterator = 0;//iterator over the time column
+    for (pixNumber=0;pixNumber<Npix;pixNumber++) {
+      //Set impact number for each pixel
+      currentImpactNumber[pixNumber] = 0;
+      //Set eof indicator for each pixel
+      eofArray[pixNumber]=1;
+
+      //Look for first record of corresponding pixID
+      timeColIterator=0;
+      while (outputPixIDCol[timeColIterator]!=(pixNumber+pixlow+1)) {
+	timeColIterator+=1;
+	if (timeColIterator==outputFile->nrows){
+	  timeColIterator=-1;
+	  break;
 	}
-	else{
-	  timeColIterator=currentTimeIndex[impact.pixID-pixlow]+1;
-	  while (outputPixIDCol[timeColIterator]!=impact.pixID+1) {
-	    timeColIterator+=1;
-	    if (timeColIterator==outputFile->nrows){
-	      eofArray[impact.pixID-pixlow]=0;
-	      break;
+      }
+      if (timeColIterator!=-1) {
+	currentTimeIndex[pixNumber] = timeColIterator;
+      }
+      else {
+	eofArray[pixNumber]=0;
+	currentTimeIndex[pixNumber]=0;
+      }
+    
+      //Allocate impact array
+      currentImpactArray[pixNumber] = (long*)malloc(MAXIMPACTNUMBER*sizeof(long));
+      for (int jj=0;jj<MAXIMPACTNUMBER;jj++){
+	currentImpactArray[pixNumber][jj]=0;
+      }
+    
+    }
+  
+    //Reinitialize impfile
+    impfile->row=0;
+    //Get first impact after tstart
+    do {
+      piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
+      CHECK_STATUS_VOID(*status);
+    } while(impact.time<tstart);
+
+    //Reinitialize trigger file
+    outputFile->row=1;
+
+    //Iterate over the impacts
+    while ((piximpstatus>0) && (impact.time<tstop)){
+      if ((impact.pixID>=pixlow) && (impact.pixID<(pixlow+Npix))){
+	numberSimulated[impact.pixID-pixlow]++;
+	if ((impact.time>(outputTimeCol[currentTimeIndex[impact.pixID-pixlow]]+(double)triggerSize/sampleFreq)) &&
+	    (eofArray[impact.pixID-pixlow])){
+	  //Change trigger -> save corresponding impacts and go to next
+	  fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol, 
+			 currentTimeIndex[impact.pixID-pixlow]+1, 1,currentImpactNumber[impact.pixID-pixlow],currentImpactArray[impact.pixID-pixlow], status);
+	  CHECK_STATUS_VOID(*status);
+	  //Look for next trigger of corresponding pixel
+	  if (currentTimeIndex[impact.pixID-pixlow]==outputFile->nrows-1) {
+	    eofArray[impact.pixID-pixlow]=0;
+	  }
+	  else{
+	    timeColIterator=currentTimeIndex[impact.pixID-pixlow]+1;
+	    while (outputPixIDCol[timeColIterator]!=impact.pixID+1) {
+	      timeColIterator+=1;
+	      if (timeColIterator==outputFile->nrows){
+		eofArray[impact.pixID-pixlow]=0;
+		break;
+	      }
+	    }
+	    if (eofArray[impact.pixID-pixlow]) {
+	      currentTimeIndex[impact.pixID-pixlow]=timeColIterator;
 	    }
 	  }
-	  if (eofArray[impact.pixID-pixlow]) {
-	    currentTimeIndex[impact.pixID-pixlow]=timeColIterator;
-	  }
+	  currentImpactNumber[impact.pixID-pixlow]=0;
 	}
-	currentImpactNumber[impact.pixID-pixlow]=0;
+	//If we have not reached the end of the impacts and are still inside the trigger
+	if ((eofArray[impact.pixID-pixlow]) && 
+	    (impact.time>(outputTimeCol[currentTimeIndex[impact.pixID-pixlow]]))){
+	  numberTrigger[impact.pixID-pixlow]++;
+	  currentImpactArray[impact.pixID-pixlow][currentImpactNumber[impact.pixID-pixlow]] = impact.ph_id;
+	  currentImpactNumber[impact.pixID-pixlow]++;
+	}
       }
-      //If we have not reached the end of the impacts and are still inside the trigger
-      if ((eofArray[impact.pixID-pixlow]) && 
-	  (impact.time>(outputTimeCol[currentTimeIndex[impact.pixID-pixlow]]))){
-	numberTrigger[impact.pixID-pixlow]++;
-	currentImpactArray[impact.pixID-pixlow][currentImpactNumber[impact.pixID-pixlow]] = impact.ph_id;
-	currentImpactNumber[impact.pixID-pixlow]++;
+      piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
+      CHECK_STATUS_VOID(*status);
+    }
+    for (pixNumber=0;pixNumber<Npix;pixNumber++) {
+      if (currentImpactNumber[pixNumber]>0){
+	fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol, 
+		       currentTimeIndex[impact.pixID-pixlow]+1, 1,currentImpactNumber[pixNumber],currentImpactArray[pixNumber], status);
+	CHECK_STATUS_VOID(*status);
       }
     }
-    piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
-    CHECK_STATUS_VOID(*status);
-  } 
+    free(outputTimeCol);
+    outputTimeCol=NULL;
+    free(outputPixIDCol);
+    outputPixIDCol=NULL;
+    free(currentTimeIndex);
+    currentTimeIndex=NULL;
+    if (currentImpactArray!=NULL){
+      for(ii=0; ii<Npix; ii++){
+	if(currentImpactArray[ii]!=NULL){
+	  free(currentImpactArray[ii]);
+	  currentImpactArray[ii]=NULL;
+	}
+      }
+      free(currentImpactArray);
+      currentImpactArray=NULL;
+    }
+    free(currentImpactNumber);
+    currentImpactNumber=NULL;
+    free(eofArray);
+    eofArray=NULL;
+  }
+
   //Save keywords with first, last and N pixels
   int firstpix = pixlow+1;
   int lastpix = pixlow+Npix;
@@ -511,11 +589,6 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   //Save keywords with number of counts
   char keyword[9];
   for (pixNumber=0;pixNumber<Npix;pixNumber++) {
-    if (currentImpactNumber[pixNumber]>0){
-      fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol, 
-		     currentTimeIndex[impact.pixID-pixlow]+1, 1,currentImpactNumber[pixNumber],currentImpactArray[pixNumber], status);
-      CHECK_STATUS_VOID(*status);
-    }
     sprintf(keyword,"NES%05d",pixNumber+pixlow+1);
     fits_update_key(outputFile->fptr, TINT, keyword, &(numberSimulated[pixNumber]), "Number of simulated pulses", status);
     sprintf(keyword,"NET%05d",pixNumber+pixlow+1);
@@ -527,42 +600,11 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   //Free memory
   freeTesTriggerFile(&(outputFile), status);
   freePixImpFile(&impfile, status);
-  if(adc_value!=NULL){
-    for(ii=0; ii<Npix; ii++){
-      if(adc_value[ii]!=NULL){
-	free(adc_value[ii]);
-	adc_value[ii]=NULL;
-      }
-    }
-    free(adc_value);
-    adc_value=NULL;
-  }
-  free(positionInTrigger);
-  positionInTrigger=NULL;
-  free(outputTimeCol);
-  outputTimeCol=NULL;
-  free(outputPixIDCol);
-  outputPixIDCol=NULL;
-  free(currentTimeIndex);
-  currentTimeIndex=NULL;
-  if (currentImpactArray!=NULL){
-    for(ii=0; ii<Npix; ii++){
-      if(currentImpactArray[ii]!=NULL){
-	free(currentImpactArray[ii]);
-	currentImpactArray[ii]=NULL;
-      }
-    }
-    free(currentImpactArray);
-    currentImpactArray=NULL;
-  }
-  free(currentImpactNumber);
-  currentImpactNumber=NULL;
-  free(eofArray);
-  eofArray=NULL;
   free(numberSimulated);
   numberSimulated=NULL;
   free(numberTrigger);
   numberTrigger=NULL;
 
 }
+
 
