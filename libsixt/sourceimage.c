@@ -88,7 +88,7 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
       return(si);
     }
     // Clear the pixels.
-    for(ycount=0; ycount<si->naxis2; ycount++) {
+    for(ycount=0; ycount<sip->naxis2; ycount++) {
       si->pixel[xcount][ycount] = 0.;
     }
   }
