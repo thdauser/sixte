@@ -436,14 +436,13 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
       CHECK_STATUS_VOID(*status);
     } while(impact.time<tstart);
 
-    //Reinitialize trigger file
-    outputFile->row=1;
-
     //Iterate over the impacts
     while ((piximpstatus>0) && (impact.time<tstop)){
       if ((impact.pixID>=pixlow) && (impact.pixID<(pixlow+Npix))){
 	numberSimulated[impact.pixID-pixlow]++;
       }
+      piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
+      CHECK_STATUS_VOID(*status);
     }
   }
   else {
@@ -557,6 +556,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
 	CHECK_STATUS_VOID(*status);
       }
     }
+    //Free memory
     free(outputTimeCol);
     outputTimeCol=NULL;
     free(outputPixIDCol);
