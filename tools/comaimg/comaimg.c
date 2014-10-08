@@ -229,7 +229,7 @@ int comaimg_main() {
 	//Photon is inside fov
 
 	telescope.nx=ac->entry[0].nx;
-	getTelAxes(ac,&telescope.nx,&telescope.ny,&telescope.nz,photon.time,&status);
+	getTelescopeAxes(ac,&telescope.nx,&telescope.ny,&telescope.nz,photon.time,&status);
 
 	//Determine photon impact position on detector in [m].
 	struct Point2d position;
