@@ -59,12 +59,11 @@ libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  phdet.c phproj.c phpat.c event.c ladsignal.c		\
 		  ladevent.c ladimpact.c lad.c lad_init.c xmlbuffer.c	\
 		  gti.c sourceimage.c reconstruction.c eventarray.c	\
-		  fft_array.c balancing.c find_position.c		\
-		  attitudecatalog2.c det_phi_max.c advdet.c 		\
-		  pixelimpactfile.c tesdatastream.c tesnoisespectrum.c  \
-		  tesproftemplates.c maskshadow.c tesstreamfile.c       \
-		  testriggerfile.c testimg.c projectedmask.c repix.c    \
-		  tesinitialization.c
+		  fft_array.c balancing.c find_position.c det_phi_max.c \
+	          advdet.c pixelimpactfile.c tesdatastream.c 		\
+		  tesnoisespectrum.c tesproftemplates.c maskshadow.c 	\
+		  tesstreamfile.c testriggerfile.c testimg.c 		\
+		  projectedmask.c repix.c tesinitialization.c	
 
 ############ HEADERS #################
 
