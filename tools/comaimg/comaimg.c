@@ -38,7 +38,7 @@ int comaimg_main() {
   PhotonFile* plf=NULL;
   ImpactFile* ilf=NULL;
   CodedMask* mask=NULL;
-  AttCatalog* ac=NULL;
+  Attitude* ac=NULL;
 
   double refxcrvl=0., refycrvl=0.;
 
@@ -98,11 +98,11 @@ int comaimg_main() {
 
       //Allocates memory for struct Attitude.
       //Initializes nentries, current_entry to 0;entry to NULL.
-      ac=getAttCatalog(&status);
+      ac=getAttitude(&status);
       CHECK_STATUS_BREAK(status);
 
       //Allocates memory for struct AttitudeEntry.
-      ac->entry=(AttEntry*)malloc(sizeof(AttEntry));
+      ac->entry=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
       if (NULL==ac->entry) {
 	status=EXIT_FAILURE;
 	SIXT_ERROR("memory allocation for AttitudeEntry failed");
@@ -127,7 +127,7 @@ int comaimg_main() {
 
     } else {
       //Load the attitude from file.
-      ac=loadAttCatalog(par.Attitude, &status);
+      ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
 
       Vector initializey={0.,0.,0.};
@@ -195,9 +195,6 @@ int comaimg_main() {
     wcs.cdelt[1]=atan(det_pixelwidth/distance)*180./M_PI;
 
 
-
-
-  
     // --- END of Initialization ---
 
 
@@ -222,7 +219,7 @@ int comaimg_main() {
       Vector phodir=normalize_vector(unit_vector(photon.ra, photon.dec));
 
       //Determine current telescope pointing direction.
-      telescope.nz=GetTelescopeNz(ac, photon.time, &status);
+      telescope.nz=getTelescopeNz(ac, photon.time, &status);
       CHECK_STATUS_BREAK(status);
       
     
@@ -239,12 +236,7 @@ int comaimg_main() {
 	
 	//first:impact position in mask-plane (transparent pixels only);
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
-	/*	int reval = getImpactPos(&position, &phodir,
-				 mask, &telescope,
-				 &telescope.nz,
-				 distance, x_det, y_det,
-				 &status);*/
-		int reval=getImpactPos2(&wcs,&position,mask,photon.ra*180./M_PI,photon.dec*180./M_PI,det_pixelwidth,x_det,y_det,&status);
+	int reval=getImpactPos2(&wcs,&position,mask,photon.ra*180./M_PI,photon.dec*180./M_PI,det_pixelwidth,x_det,y_det,&status);
 
 	CHECK_STATUS_BREAK(status);
 
@@ -276,7 +268,7 @@ int comaimg_main() {
   // Close the FITS files.
   freeImpactFile(&ilf, &status);
   freePhotonFile(&plf, &status);
-  freeAttCatalog(&ac);
+  freeAttitude(&ac);
 
   // Release memory.
   destroyCodedMask(&mask);

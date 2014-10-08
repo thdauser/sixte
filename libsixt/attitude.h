@@ -56,6 +56,7 @@ typedef struct {
 
   /** Telescope pointing direction. */
   Vector nz;
+  Vector nx;   //telescope motion direction
 
   /** Roll-angle ([rad]). */
   float roll_angle;
@@ -97,6 +98,8 @@ typedef struct {
 /** Constructor for the Attitude data structure. Allocates memory for
     the object. */
 Attitude* getAttitude(int* const status);
+
+AttitudeEntry initializeAttitudeEntry ();
 
 /** Get a new Attitude object and load the data from the specified
     file. The routine loads the entire attitude data from the

@@ -42,6 +42,23 @@ Attitude* getAttitude(int* const status)
   return(ac);
 }
 
+AttitudeEntry initializeAttitudeEntry ()
+{
+   AttitudeEntry ae;
+   ae.time = 0.;
+
+   ae.nz.x = 0.;
+   ae.nz.y = 0.;
+   ae.nz.z = 0.;
+
+   ae.nx.x = 0.;
+   ae.nx.y = 0.;
+   ae.nx.z = 0.;
+
+   ae.roll_angle = 0.;
+
+   return(ae);
+}
 
 Attitude* loadAttitude(const char* const filename, int* const status)
 {
@@ -119,7 +136,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
 	      filename);
       SIXT_ERROR(msg);
       break;
-    }
+      }
 
     // Check if TIMEZERO is present. If yes, it must be zero.
     double timezero;

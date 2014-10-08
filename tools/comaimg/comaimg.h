@@ -31,7 +31,6 @@
 #include "codedmask.h"
 #include "impact.h"
 #include "impactfile.h"
-#include "attitudecatalog2.h"
 #include "attitude.h"
 
 #include "det_phi_max.h"
