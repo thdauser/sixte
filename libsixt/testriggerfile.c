@@ -347,7 +347,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
       do {
 	piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
 	CHECK_STATUS_VOID(*status);
-      } while(impact.time<(tstart+(double)preBufferSize/sampleFreq));
+      } while((impact.time<(tstart+(double)preBufferSize/sampleFreq)) && piximpstatus );
     }
    
     /* If the pulse occurs in a time bin away from preBufferSize samples of the current time, is in an active pixel, */ 
@@ -448,11 +448,41 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   else {
     //Count number of pulses that should be visible
     double* outputTimeCol = (double*)malloc(outputFile->nrows*sizeof(double)); //Time column of the trigger file
+    if(outputTimeCol==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for outputTimeCol failed.");
+      CHECK_STATUS_VOID(*status);
+    }
     long* outputPixIDCol = (long*)malloc(outputFile->nrows*sizeof(long)); //PixID column of the trigger file
+    if(outputPixIDCol==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for outputPixIDCol failed.");
+      CHECK_STATUS_VOID(*status);
+    }
     int* currentTimeIndex = (int*)malloc(Npix*sizeof(int)); //Current index of time column number for each pixel
+    if(currentTimeIndex==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for currentTimeIndex failed.");
+      CHECK_STATUS_VOID(*status);
+    }
     long** currentImpactArray = (long**)malloc(Npix*sizeof(long*)); //Array containing for each pixel the PH_ID in the current trigger
+    if(currentImpactArray==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for currentImpactArray failed.");
+      CHECK_STATUS_VOID(*status);
+    }
     int* currentImpactNumber = (int*)malloc(Npix*sizeof(int)); //Number of impacts in the current trigger for each pixel
+    if(currentImpactNumber==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for currentImpactNumber failed.");
+      CHECK_STATUS_VOID(*status);
+    }
     unsigned char* eofArray = (unsigned char*)malloc(Npix*sizeof(unsigned char));//Array containing the EOF signal for each pixel
+    if(eofArray==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for eofArray failed.");
+      CHECK_STATUS_VOID(*status);
+    }
     int anynul=0;
 
     //Read time column in output file
@@ -492,6 +522,11 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     
       //Allocate impact array
       currentImpactArray[pixNumber] = (long*)malloc(MAXIMPACTNUMBER*sizeof(long));
+      if(currentImpactArray[pixNumber]==NULL){
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("memory allocation for currentImpactArray failed.");
+	CHECK_STATUS_VOID(*status);
+      }
       for (int jj=0;jj<MAXIMPACTNUMBER;jj++){
 	currentImpactArray[pixNumber][jj]=0;
       }
@@ -542,6 +577,11 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
 	if ((eofArray[impact.pixID-pixlow]) && 
 	    (impact.time>(outputTimeCol[currentTimeIndex[impact.pixID-pixlow]]))){
 	  numberTrigger[impact.pixID-pixlow]++;
+	  if (currentImpactNumber[impact.pixID-pixlow] >= MAXIMPACTNUMBER){
+	    *status=EXIT_FAILURE;
+	    SIXT_ERROR("Number of impacts in record greater than the maximum allocated number -> abort.\nCheck your count rate or MAXIMPACTNUMBER in testriggerfile.h");
+	    CHECK_STATUS_VOID(*status);
+	  }
 	  currentImpactArray[impact.pixID-pixlow][currentImpactNumber[impact.pixID-pixlow]] = impact.ph_id;
 	  currentImpactNumber[impact.pixID-pixlow]++;
 	}
@@ -563,6 +603,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     outputPixIDCol=NULL;
     free(currentTimeIndex);
     currentTimeIndex=NULL;
+    printf("%d\n",currentImpactNumber[0]);
     if (currentImpactArray!=NULL){
       for(ii=0; ii<Npix; ii++){
 	if(currentImpactArray[ii]!=NULL){
@@ -601,9 +642,9 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   freeTesTriggerFile(&(outputFile), status);
   freePixImpFile(&impfile, status);
   free(numberSimulated);
-  numberSimulated=NULL;
+  //numberSimulated=NULL;
   free(numberTrigger);
-  numberTrigger=NULL;
+  //numberTrigger=NULL;
 
 }
 
