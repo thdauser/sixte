@@ -603,7 +603,6 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     outputPixIDCol=NULL;
     free(currentTimeIndex);
     currentTimeIndex=NULL;
-    printf("%d\n",currentImpactNumber[0]);
     if (currentImpactArray!=NULL){
       for(ii=0; ii<Npix; ii++){
 	if(currentImpactArray[ii]!=NULL){
