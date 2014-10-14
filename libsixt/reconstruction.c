@@ -92,7 +92,7 @@ ReconArray* getReconArray(CodedMask* mask, SquarePixels* detector_pixels, int* c
 	}
      }
 
-     repixWithReminder(mask,recon,5,mask->naxis1,mask->naxis2,mask->cdelt1,detector_pixels->xpixelwidth,MinVal);
+     repixWithReminder(mask,recon,5,mask->naxis1,mask->naxis2,mask->cdelt1,mask->cdelt1,detector_pixels->xpixelwidth,MinVal);
 
    }//end diff pixelsize
    return(recon);

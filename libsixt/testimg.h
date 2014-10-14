@@ -33,6 +33,7 @@
 #define TMASKSHADOWMAP 3  //MaskShadow* ms->map
 #define TPROJMASK 4       //ProjectedMask* pm->map
 #define TMASKMAP 5        //CodedMask* cm->map
+#define TSOURCEIMG 6      //SourceImage* si->pixel
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.

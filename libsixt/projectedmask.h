@@ -56,7 +56,9 @@ typedef struct{
 
 ProjectedMask* newProjectedMask(int* const status);
 
-ProjectedMask* getProjectedMask(const CodedMask* const mask, SquarePixels* det_pix, 
-				const double proj_dist, int* const status);
+ProjectedMask* getEmptyProjectedMask(int Size1, int Size2, double pixelsize1, double pixelsize2,
+				     int* const status);
+
+void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj);
 
 #endif /* PROJECTEDMASK_H */

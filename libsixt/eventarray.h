@@ -25,7 +25,7 @@ typedef struct {
 
 ReadEvent* newEventArray(int* const status);
 
-ReadEvent* getEventArray(CodedMask* mask, double Size1, double Size2, int* status);
+ReadEvent* getEventArray(int Size1, int Size2, int* status);
 
 ReadEvent* getEventArrayReBin(const CodedMask* const mask, SquarePixels* detector_pixels, int* status);
 

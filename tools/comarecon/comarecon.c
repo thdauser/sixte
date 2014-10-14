@@ -84,7 +84,7 @@ int comarecon_main() {
 
     double xdetsize_beforeRepix=par.width; //in the case of Repix the detector_pixels are overwritten, 
     double ydetsize_beforeRepix=par.width; //but some functions need the old smaller size (of the det in pixels)
-    double xpixelsize_beforeRepix=par.pixelwidth;
+    double xpixelsize_beforeRepix=par.pixelwidth; //original detector-pixelsize
     double ypixelsize_beforeRepix=par.pixelwidth;
 
     struct SquarePixelsParameters spp = {
@@ -101,13 +101,12 @@ int comarecon_main() {
     // END of DETECTOR CONFIGURATION SETUP    
 
     // SKY IMAGE setup.
-       
        if(par.RePixSize==0.){
 	float delta = atan(par.pixelwidth/distance);
 	struct SourceImageParameters sip = {
 	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth),
 	    .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth),
-	    .crpix1 = (float)(sip.naxis1/2.+1), //even axes: ends to .5, odd axes (not possible,*2): ends to .0 (therefore: axis/2+0.5)
+	    .crpix1 = (float)(sip.naxis1/2.+1), //even axes:ends to .5;odd axes (not possible,*2):ends to .0 (therefore: axis/2+0.5)
 	    .crpix2 = (float)(sip.naxis2/2.+1), //further +0.5,since left boarder of 1st pix in sky image is 0.5(FITS)
 	    .cdelt1 = delta,
 	    .cdelt2 = delta,
@@ -125,7 +124,6 @@ int comarecon_main() {
 	 detector_pixels->xpixelwidth=par.RePixSize;
 	 detector_pixels->ypixelwidth=par.RePixSize;
 	 
-
 	 //get source image with correct axes, since xpixelwidth has changed
 	 float delta = atan(par.RePixSize/distance);
 	 struct SourceImageParameters sip = {
@@ -208,7 +206,11 @@ int comarecon_main() {
     headas_chat(5, "start image reconstruction process ...\n");
 
     //Get empty event array object (type: ReadEvent)
-    ea=getEventArray(mask,xpixelsize_beforeRepix,ypixelsize_beforeRepix,&status);
+       //sizes are equal to those of the ReconArray -> mask-width but detector-pixelsize
+       //mask has to be >= detector
+    int ea_size1=2*(mask->naxis1*mask->cdelt1/xpixelsize_beforeRepix);
+    int ea_size2=2*(mask->naxis2*mask->cdelt2/ypixelsize_beforeRepix);
+    ea=getEventArray(ea_size1,ea_size2,&status);
      
        //detector size <= mask size
        //if mask size = det size -> shift is zero
@@ -231,7 +233,10 @@ int comarecon_main() {
 	 double pixelwidth_big=xpixelsize_beforeRepix;//width of the former EventArray pixels (the real det-pix-size)
 
 	 //new pointer for EventArray with more entries, since smaller pix-size (EventArrayRepix)
-	 ear=getEventArray(mask, detector_pixels->xpixelwidth, detector_pixels->ypixelwidth, &status);
+	 int ear_size1=2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth);
+	 int ear_size2=2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth);
+
+	 ear=getEventArray(ear_size1, ear_size2, &status);
 
 	 repixNoReminder(ea,ear,2,ea->naxis1,ea->naxis2,pixelwidth_big,detector_pixels->xpixelwidth);
 
@@ -250,7 +255,7 @@ int comarecon_main() {
        int Size2 = recon->naxis2;
 
         //Get the 1d image of the reconstruction array -> needed by FFTW
-       ReconImage1d=SaveReconArray1d(recon, &status);
+       ReconImage1d=SaveReconArray1d(recon, &status);  
       
        //perform a fft with the ReconArray       
        fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2, -1);

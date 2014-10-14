@@ -146,6 +146,9 @@ void checkAttitudeTimeCoverage(const Attitude* const ac,
 			       const double tstop,
 			       int* const status);
 
+void setWCScurrentPointing(const char* const filename, const Attitude* const ac,
+			   Vector* const nz, struct wcsprm* wcs, int* const status);
+
 
 #endif /* ATTITUDE_H */
 

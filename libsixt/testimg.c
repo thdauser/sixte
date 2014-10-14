@@ -17,6 +17,9 @@ void createTestImg(void* arg, int type, int sizeX, int sizeY,
   }else if(type==TPROJMASK){
     ProjectedMask* pm =(ProjectedMask*)arg;
     data=pm->map;
+  }else if(type==TSOURCEIMG){
+    SourceImage* si =(SourceImage*)arg;
+    data=si->pixel;
   }
 
   double* buffer1d=NULL;

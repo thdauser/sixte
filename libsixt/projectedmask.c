@@ -21,22 +21,19 @@ ProjectedMask* newProjectedMask(int* const status)
   return(proj);
 }
 
-
-ProjectedMask* getProjectedMask(const CodedMask* const mask, SquarePixels* det_pix,
-				const double proj_dist, int* const status)
+ProjectedMask* getEmptyProjectedMask(int Size1, int Size2, double pixelsize1, double pixelsize2,
+				     int* const status)
 {
   ProjectedMask* proj=NULL;
   int x,y;                   //counts
-  int xcount, ycount;        //counts 
-
 
   //Get empty ProjectedMask-object
   proj=newProjectedMask(status);
   if (EXIT_SUCCESS!=*status) return(proj);
 
   //size of axes in pixels: 2*amount_of_mask_pixels+1
-  proj->naxis1=2*mask->naxis1+1;
-  proj->naxis2=2*mask->naxis2+1;
+  proj->naxis1=Size1;
+  proj->naxis2=Size2;
 
   //memory-allocation for the map
   //only amount of pixels important,not their actual alternating sizes
@@ -64,10 +61,19 @@ ProjectedMask* getProjectedMask(const CodedMask* const mask, SquarePixels* det_p
       return(proj);
   }//end of memory-allocation
 
-  //get the different pixelsizes in meters
-  //NOTE: only for square pixels!
-  proj->pixelwidth1=proj_dist*(mask->cdelt1-det_pix->xpixelwidth);
-  proj->pixelwidth2=proj_dist*det_pix->xpixelwidth;
+  //get the different pixelsizes in meters, if map with alternating pixelsizes,
+  //NOTE: only for square pixels (of mask/det)!
+  proj->pixelwidth1=pixelsize1;
+  proj->pixelwidth2=pixelsize2;
+
+  return(proj);
+}
+
+
+void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
+{
+  int x,y;                   //counts
+  int xcount, ycount;        //counts 
 
   //scanning over whole mask and fill in the ProjectedMask-pixels
     //equivalent to former mask pixels
@@ -78,7 +84,6 @@ ProjectedMask* getProjectedMask(const CodedMask* const mask, SquarePixels* det_p
       proj->map[xcount][ycount]=(double)mask->map[x][y];
      }
    }
-  
   
   //scanning over all ProjectedMask-pixels and fill in the new intermediate ones
 
@@ -116,7 +121,7 @@ ProjectedMask* getProjectedMask(const CodedMask* const mask, SquarePixels* det_p
   }
 
   
- //special case: 1st row (bottom)
+  //special case: 1st row (bottom)
    //1st pix
   proj->map[0][0]=(proj->map[1][0]+proj->map[0][1])/2;
 
@@ -156,7 +161,4 @@ ProjectedMask* getProjectedMask(const CodedMask* const mask, SquarePixels* det_p
   //last pix
   proj->map[proj->naxis1-1][proj->naxis1-1]=(proj->map[proj->naxis1-2][proj->naxis1-1]+
   proj->map[proj->naxis1-1][proj->naxis1-2])/2;
-  
-
-  return(proj);
 }

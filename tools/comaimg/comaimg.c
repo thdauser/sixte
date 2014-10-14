@@ -44,7 +44,6 @@ int comaimg_main() {
 
   int status=EXIT_SUCCESS; // Error status.
 
-
   // Register HEATOOL:
   set_toolname("comaimg");
   set_toolversion("0.01");
@@ -68,15 +67,15 @@ int comaimg_main() {
     double dec=par.DEC;
 
     // Initialize the random number generator.
-    sixt_init_rng(getSeed(-1), &status);
+    sixt_init_rng(getSeed(-1),&status);
     CHECK_STATUS_BREAK(status);
 
     //Open the FITS file with the input photon list.
-    plf=openPhotonFile(par.PhotonList, READONLY, &status);
+    plf=openPhotonFile(par.PhotonList,READONLY,&status);
     if (EXIT_SUCCESS!=status) break;
 
     //Load the coded mask from the file.
-    mask=getCodedMaskFromFile(par.Mask, &status);
+    mask=getCodedMaskFromFile(par.Mask,&status);
     if (EXIT_SUCCESS!=status) break;
 
     //Calculate min cos-value for sources inside FOV.
@@ -120,7 +119,7 @@ int comaimg_main() {
       //Unit-vector in z-direction:
       Vector vz = {0.,0.,1.};
       //Vector perpendicular to nz-vz-plane:
-      ac->entry[0].nx=vector_product(vz, ac->entry[0].nz);
+      ac->entry[0].nx=vector_product(vz,ac->entry[0].nz);
       //initialize telescope coordinate sytem
       telescope.nz=ac->entry[0].nz;
       telescope.nx=ac->entry[0].nx;
@@ -132,6 +131,7 @@ int comaimg_main() {
 
       Vector initializey={0.,0.,0.};
       telescope.ny =initializey;
+      telescope.nx=ac->entry[0].nx;
 
       //Check if the required time interval for the simulation
       //lies within the time interval in the attitude-file
@@ -142,7 +142,6 @@ int comaimg_main() {
       }
       
     }//END of setting up the attitude.
-    
 
     // Read header keywords.
     char telescop[MAXMSG], instrume[MAXMSG], filter[MAXMSG];
@@ -175,9 +174,7 @@ int comaimg_main() {
     fits_update_key(ilf->fptr, TDOUBLE, "REFYCRVL", &refycrvl, "", &status);
     CHECK_STATUS_BREAK(status);
 
-
-
-    //initialization of wcs parameter structure for determining impact position
+    //initialization of wcs parameter structure for determining the impact position
     struct wcsprm wcs = {
       .flag=-1
     }; //flag has to be set only at 1st init
@@ -194,7 +191,6 @@ int comaimg_main() {
     wcs.cdelt[0]=atan(det_pixelwidth/distance)*180./M_PI;
     wcs.cdelt[1]=atan(det_pixelwidth/distance)*180./M_PI;
 
-
     // --- END of Initialization ---
 
 
@@ -208,7 +204,7 @@ int comaimg_main() {
          
       //Read an entry from the photon list:
       Photon photon={.time= 0.0};
-      status=PhotonFile_getNextRow(plf, &photon);
+      status=PhotonFile_getNextRow(plf,&photon);
       if (EXIT_SUCCESS!=status) break;
 
       //Check whether photon-list-entry is within requested time interval.
@@ -216,27 +212,31 @@ int comaimg_main() {
 	break;
 
       //Determine unit vector in photon-direction
-      Vector phodir=normalize_vector(unit_vector(photon.ra, photon.dec));
+      Vector phodir=normalize_vector(unit_vector(photon.ra,photon.dec));
 
       //Determine current telescope pointing direction.
-      telescope.nz=getTelescopeNz(ac, photon.time, &status);
+      telescope.nz=getTelescopeNz(ac,photon.time,&status);
       CHECK_STATUS_BREAK(status);
       
-    
       //Check whether photon is inside FOV:
       //Compare photon direction to direction of telescope axis
-      if (check_fov(&phodir, &telescope.nz, fov_min_align)==0){
+      if (check_fov(&phodir,&telescope.nz,fov_min_align)==0){
 	//Photon is inside fov
 
-	telescope.nx=ac->entry[0].nx;
 	getTelescopeAxes(ac,&telescope.nx,&telescope.ny,&telescope.nz,photon.time,&status);
+
+	if (0!=strcmp(att_buffer, "NONE")){ //attitude-file is used
+	  //set wcs according to new pointing (attitude could have changed)
+	  setWCScurrentPointing(par.Attitude,ac,&telescope.nz,&wcs,&status);
+	}
 
 	//Determine photon impact position on detector in [m].
 	struct Point2d position;
 	
 	//first:impact position in mask-plane (transparent pixels only);
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
-	int reval=getImpactPos2(&wcs,&position,mask,photon.ra*180./M_PI,photon.dec*180./M_PI,det_pixelwidth,x_det,y_det,&status);
+	int reval=getImpactPos2(&wcs,&position,mask,photon.ra*180./M_PI,
+				photon.dec*180./M_PI,det_pixelwidth,x_det,y_det,&status);
 
 	CHECK_STATUS_BREAK(status);
 
@@ -252,13 +252,16 @@ int comaimg_main() {
 	  impact.src_id     = photon.src_id;
 
 	  //Write to output-file.
-	  addImpact2File(ilf, &impact, &status);
+	  addImpact2File(ilf,&impact,&status);
 	  CHECK_STATUS_BREAK(status);
 	} // END of photon hits the detector.
       } // END of photon  inside fov.
     } // END of scanning LOOP over the photon list.
     if (EXIT_SUCCESS!=status) break;
-      
+  
+    // Release memory.
+    destroyCodedMask(&mask);
+    wcsfree(&wcs);
   } while(0);  // END of the error handling loop.
 
 
@@ -266,12 +269,9 @@ int comaimg_main() {
   headas_chat(3, "cleaning up ...\n");
 
   // Close the FITS files.
-  freeImpactFile(&ilf, &status);
-  freePhotonFile(&plf, &status);
+  freeImpactFile(&ilf,&status);
+  freePhotonFile(&plf,&status);
   freeAttitude(&ac);
-
-  // Release memory.
-  destroyCodedMask(&mask);
 
   // Clean up the random number generator.
   sixt_destroy_rng();

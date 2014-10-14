@@ -32,6 +32,7 @@
 #include "impact.h"
 #include "impactfile.h"
 #include "attitude.h"
+#include "attitudefile.h"
 
 #include "det_phi_max.h"
 
