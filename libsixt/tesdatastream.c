@@ -403,6 +403,7 @@ void getTESDataStream(TESDataStream* TESData,
   double PixVal;         /* Pixel value (double) */
   PixImpact impact;      /* Current impact */
   
+  
   /* Status of getNextImpactFromPixImpFile */
   int piximpstatus=0;
   int evtpixid=-1; // PixID of event
@@ -435,7 +436,14 @@ void getTESDataStream(TESDataStream* TESData,
   NoiseSpectrum* Noise=newNoiseSpectrum(det, status);
   CHECK_STATUS_VOID(*status);
   NoiseBuffer* NBuffer=newNoiseBuffer(status, &Npix);
-  CHECK_STATUS_VOID(*status); 
+  CHECK_STATUS_VOID(*status);
+  
+  /* Initialize 1/F noise arrays */
+  NoiseOoF* OFNoise=NULL;
+  if(det->TESNoise->OoFRMS!=0.){
+    OFNoise=newNoiseOoF(status,&rng,det); 
+    CHECK_STATUS_VOID(*status);
+  }
   
   /* Initialize array of linked lists containing active pulses */
   EvtNode** ActPulses=NULL;
@@ -466,6 +474,12 @@ void getTESDataStream(TESDataStream* TESData,
       CHECK_STATUS_VOID(*status);
       inoise=0;
     }
+    
+    /* Calculate next state of 1/f noise base array */
+    if(det->TESNoise->OoFRMS!=0.){
+      getNextOoFNoiseSumval(OFNoise, &rng, status);
+    }
+    
     
     /* Get first event from the impact file */
     if (tstep==0) {
@@ -512,9 +526,16 @@ void getTESDataStream(TESDataStream* TESData,
 	/* Add the offset first */
         TESData->adc_value[tstep][ipix]=Offset;
 	PixVal=0.;
+	
+        /* Add 1/f noise to the pixel value (double) */
+	CHECK_STATUS_VOID(*status);
+	if(det->TESNoise->OoFRMS!=0.){
+	  PixVal= PixVal + OFNoise->Sumrval + gsl_ran_gaussian(rng,OFNoise->Sigma);
+	}
+	CHECK_STATUS_VOID(*status);
     
 	/* Add noise to the pixel value (double) */
-	PixVal=NBuffer->Buffer[inoise][ipix];
+	PixVal=PixVal + NBuffer->Buffer[inoise][ipix];
 	
 	/* Loop over linked list and add pulse values */
 	current=ActPulses[ipix];

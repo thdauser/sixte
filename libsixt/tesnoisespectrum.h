@@ -21,6 +21,7 @@
 #ifndef TES_NOISESPECTRUM_H 
 #define TES_NOISESPECTRUM_H 1
 
+#include <math.h>
 #include <complex.h>
 #include "sixt.h"
 #include "advdet.h"
@@ -71,6 +72,26 @@ typedef struct {
 } NoiseBuffer;
 
 
+/** 1/f noise generation */
+typedef struct {
+  /** Precision of 1/f noise generation depends on the length of 
+      the random-value arrays (RValues). This is the correlation 'length'. */
+  int Length;
+  
+  /** Noise level */
+  double Sigma;
+  
+  /** Array of random values from Gauss distribution */
+  double *RValues;
+  
+  /** Sum of the random values */
+  double Sumrval;
+  
+  /** Index of the array element to be changed */
+  int Index;
+  
+} NoiseOoF;
+
 
 /////////////////////////////////////////////////////////////////
 // Function Declarations.
@@ -85,14 +106,21 @@ NoiseSpectrum* newNoiseSpectrum(AdvDet *det,
 NoiseBuffer* newNoiseBuffer(int* const status, 
 			    int *NumberOfPixels);
 
-
+/** Function to initialise arrays for 1/f noise generation */
+NoiseOoF* newNoiseOoF(int* const status,
+                      gsl_rng **r, 
+		      AdvDet* det); 
+		      
 /** Generate noise data from a noise spectrum */
 int genNoiseSpectrum(NoiseSpectrum* Noise, 
 		     NoiseBuffer* NBuffer, 
 		     double *SampFreq,  
 		     gsl_rng **r,
 		     int* const status);
-
+		     
+int getNextOoFNoiseSumval(NoiseOoF* OFNoise,  /* */ 
+                          gsl_rng **r,        /* Random number generator */
+		          int* const status);
 
 /** Function to deallocate buffer memory */
 int destroyNoiseBuffer(NoiseBuffer* NBuffer, 
@@ -100,5 +128,7 @@ int destroyNoiseBuffer(NoiseBuffer* NBuffer,
 int destroyNoiseSpectrum(NoiseSpectrum* Noise, 
 			 int* const status);
 
+int destroyNoiseOoF(NoiseOoF* OFNoise, 
+		       int* const status);
 
 #endif /* TES_NOISESPECTRUM_H */

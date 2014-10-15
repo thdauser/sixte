@@ -84,6 +84,14 @@ typedef struct{
   /** Poles */
   double *Poles;
   
+  /** 1/f noise properties */
+  /** 1/f rms value */
+  double OoFRMS;
+  
+  /** 1/f knee frequency (e.g. the pole where the flat power spectrum 
+      turns into a 1/f curve) */
+  double OoFKnee;
+  
 }TESNoiseProperties;
 
 

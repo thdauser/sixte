@@ -110,6 +110,59 @@ NoiseBuffer* newNoiseBuffer(int* const status,
     return NBuffer;
 }
 
+NoiseOoF* newNoiseOoF(int* const status,
+                      gsl_rng **r,
+		      AdvDet* det) 
+{
+    int j;
+    double OffSet, diff;
+    
+    /* Allocate memory for 1/f noise arrays */
+    NoiseOoF* OFNoise=(NoiseOoF*) malloc(sizeof(NoiseOoF));
+    if(OFNoise==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for 1/f noise generation failed");
+      CHECK_STATUS_RET(*status, OFNoise);
+    } 
+    
+    OffSet=(double) det->ADCOffset;
+    
+    /* Length of the 1/f noise arrays */
+    OFNoise->Length=(int) (det->SampleFreq * 0.3678)/det->TESNoise->OoFKnee;            
+    /* Noise level */
+    OFNoise->Sigma=det->TESNoise->OoFRMS;              
+    
+    OFNoise->RValues=(double*)malloc(OFNoise->Length*sizeof(double));
+    
+    if(OFNoise->RValues==NULL){
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("memory allocation for OFNoise RValues failed");
+      CHECK_STATUS_RET(*status, OFNoise);
+    }
+    
+    OFNoise->Sumrval=0.;
+    for(j=0;j<OFNoise->Length;j++) {
+        /* Fill array with Gauss-distributed random values and sum the array */
+	OFNoise->RValues[j]=gsl_ran_gaussian(*r,OFNoise->Sigma);
+	OFNoise->Sumrval=OFNoise->Sumrval+OFNoise->RValues[j];
+    }	
+    /* Make sure the data is not too far away from the baseline */
+    diff=abs(OFNoise->Sumrval);
+    while (diff >= OffSet/5) {
+	OFNoise->Sumrval=0.;
+	for(j=0;j<OFNoise->Length;j++) {
+	  OFNoise->RValues[j]=gsl_ran_gaussian(*r,OFNoise->Sigma);
+	  OFNoise->Sumrval=OFNoise->Sumrval+OFNoise->RValues[j];
+	}  
+	diff=abs(OFNoise->Sumrval);
+    }
+    
+    OFNoise->Index=0;
+    
+    
+    return OFNoise;
+}
+
 
 int genNoiseSpectrum(NoiseSpectrum* Noise, 
 		     NoiseBuffer* NBuffer, 
@@ -126,7 +179,6 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
     fftw_plan p;
     fftw_complex Ze, Po, H; /* Products of Zeros & Poles */
     double w, f;               /* Omega and frequency*/
-    double con;
     
     sigma=1.;
     
@@ -201,6 +253,36 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
     return *status;
 }
 
+int getNextOoFNoiseSumval(NoiseOoF* OFNoise,  /* */ 
+                          gsl_rng **r,        /* Random number generator */
+		          int* const status)
+{
+    int i, c;
+    double src;
+    
+    i=OFNoise->Index;
+    
+    i++;
+    OFNoise->Index=i;
+    
+    if (i==OFNoise->Length) {
+      OFNoise->Index=0;
+      return *status; 
+    }
+    
+    c=0;
+    while( (i & 1) == 0 ) {
+      i = i >> 1;
+      c++;
+    }
+    
+    src=gsl_ran_gaussian(*r,OFNoise->Sigma);
+    OFNoise->Sumrval=OFNoise->Sumrval + src - OFNoise->RValues[c];
+    OFNoise->RValues[c]=src;
+
+    return *status;
+}		      
+
 
 int destroyNoiseSpectrum(NoiseSpectrum* Noise, 
 			 int* const status) 
@@ -237,3 +319,17 @@ int destroyNoiseBuffer(NoiseBuffer* NBuffer,
 
     return *status;
 }
+
+int destroyNoiseOoF(NoiseOoF* OFNoise, 
+		    int* const status) {
+
+    if(OFNoise!=NULL){
+      if(OFNoise->RValues!=NULL){
+	free(OFNoise->RValues);
+      }
+      free(OFNoise);
+    }
+
+    return *status;
+}
+

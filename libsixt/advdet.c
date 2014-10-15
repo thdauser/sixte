@@ -58,6 +58,8 @@ TESNoiseProperties* newTESNoise(int* const status){
   noise->Np=0;
   noise->Zeros=NULL;
   noise->Poles=NULL;
+  noise->OoFRMS=0.;
+  noise->OoFKnee=0.;
   
   return(noise);
 }
@@ -74,6 +76,8 @@ void destroyTESNoiseProperties(TESNoiseProperties* noise){
   noise->H0=1.;
   noise->Nz=0;
   noise->Np=0;
+  noise->OoFRMS=0.;
+  noise->OoFKnee=0.;
 }
 
 AdvDet* newAdvDet(int* const status){
@@ -351,6 +355,13 @@ static void AdvDetXMLElementStart(void* parsedata,
       CHECK_STATUS_VOID(xmlparsedata->status);
     }
     xmlparsedata->det->TESNoise->WhiteRMS=getXMLAttributeDouble(attr, "RMS");
+  } else if (!strcmp(Uelement, "TESOOFNOISE")) {
+    if(xmlparsedata->det->TESNoise==NULL){
+      xmlparsedata->det->TESNoise=newTESNoise(&(xmlparsedata->status));
+      CHECK_STATUS_VOID(xmlparsedata->status);
+    }
+    xmlparsedata->det->TESNoise->OoFRMS=getXMLAttributeDouble(attr, "RMS");
+    xmlparsedata->det->TESNoise->OoFKnee=getXMLAttributeDouble(attr, "FKNEE");
   } else if (!strcmp(Uelement, "TESNOISEFILTER")) {
     if(xmlparsedata->det->TESNoise==NULL){
       xmlparsedata->det->TESNoise=newTESNoise(&(xmlparsedata->status));
