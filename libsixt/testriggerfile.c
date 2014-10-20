@@ -592,7 +592,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
     for (pixNumber=0;pixNumber<Npix;pixNumber++) {
       if (currentImpactNumber[pixNumber]>0){
 	fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol, 
-		       currentTimeIndex[impact.pixID-pixlow]+1, 1,currentImpactNumber[pixNumber],currentImpactArray[pixNumber], status);
+		       currentTimeIndex[pixNumber]+1, 1,currentImpactNumber[pixNumber],currentImpactArray[pixNumber], status);
 	CHECK_STATUS_VOID(*status);
       }
     }
