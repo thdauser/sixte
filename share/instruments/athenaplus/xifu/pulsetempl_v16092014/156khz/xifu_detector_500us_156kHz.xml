@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 
-<pixdetector type="x-ifu" npix="64*64" xoff="-8.505e-3" yoff="8.505e-3">
-  <loop start="0" end="63" increment="1" variable="$l">
+<pixdetector type="x-ifu" npix="64*60" xoff="-8.48e-3" yoff="7.95e-3">
+  <loop start="0" end="59" increment="1" variable="$l">
     <loop start="0" end="63" increment="1" variable="$c">
-      <pixel posx="$c" delx="270e-6" posy="$l" dely="-270e-6" width="270e-6" height="270e-6" tesproffile="Pulse_500us_156kHz.fits" tesprofver="PULSE1"/>
+      <pixel posx="$c" delx="265e-6" posy="$l" dely="-265e-6" width="250e-6" height="250e-6" tesproffile="Pulse_500us_156kHz.fits" tesprofver="PULSE1"/>
     </loop>
   </loop>
   <teswhitenoise rms="1.0"/>
