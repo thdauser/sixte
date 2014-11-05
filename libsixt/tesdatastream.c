@@ -456,6 +456,7 @@ void getTESDataStream(TESDataStream* TESData,
   CHECK_STATUS_VOID(*status);
   
   t=tstart;
+  long t_long = 0;
   EvtNode *current;
   
   printf("Simulate %ld time steps for %d pixels.\n", Nt, Npix);
@@ -554,7 +555,7 @@ void getTESDataStream(TESDataStream* TESData,
 	if(tesdbl>65534.){//maximum coded value -1
 	  tesdbl=65534.;
 	}
-	TESData->adc_value[tstep][ipix]=(uint16_t)tesdbl; //TODO Noise buffer seems to contain repeated shapes. Needs to be investigated.
+	TESData->adc_value[tstep][ipix]=(uint16_t)round(tesdbl); //TODO Noise buffer seems to contain repeated shapes. Needs to be investigated.
 	if(TESData->adc_value[tstep][ipix]==65535){
 	  printf("tstep=%ld ipix=%d noise=%lf, inoise=%d, tesdbl=%le\n", tstep, ipix, PixVal, inoise, tesdbl);
 	}
@@ -568,7 +569,8 @@ void getTESDataStream(TESDataStream* TESData,
    
     /* Go to next time step */
     inoise=inoise+1;
-    t=t+1./SampleFreq;
+    t_long++;
+    t=tstart+t_long/SampleFreq;
     tstep++;
   
   }
@@ -672,9 +674,7 @@ void removeEventFromNode(EvtNode** ActPulses,
 
 void destroyEventNode(EvtNode* node) {
   if (node!=NULL) {
-    if (node->next!=NULL) {
-      destroyEventNode(node->next);
-    }
+    destroyEventNode(node->next);
     free(node->time);
     free(node->adcpulse);
     free(node);

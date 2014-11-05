@@ -291,6 +291,7 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
   int jj;
   //Current time
   double t = tstart;
+  long tlong = 0;
   //Current impact
   PixImpact impact;
   // Status of getNextImpactFromPixImpFile
@@ -410,8 +411,29 @@ void writeTriggerFileWithImpact(TESDataStream* const stream,
       }
     }
     fflush(stdout);
-    t=t+1./sampleFreq;
+    tlong++;
+    t=tstart+tlong/sampleFreq;
   }
+
+  //Record incomplete record if there is one
+  for (pixNumber=0;pixNumber<Npix;pixNumber++) {
+      if (positionInTrigger[pixNumber]>0){
+	for (int j=positionInTrigger[pixNumber];j<triggerSize;j++) {
+	  adc_value[pixNumber][j] = 0;
+	}
+	time = t-(positionInTrigger[pixNumber])/sampleFreq;
+	pixID = pixNumber+pixlow+1;
+	outputFile->nrows++;
+	outputFile->row++;
+	fits_write_col(outputFile->fptr, TDOUBLE, outputFile->timeCol, 
+		       outputFile->row, 1, 1, &time, status);
+	fits_write_col(outputFile->fptr, TUSHORT, outputFile->trigCol, 
+		       outputFile->row, 1, triggerSize, (adc_value[pixNumber]), status);
+	fits_write_col(outputFile->fptr, TLONG, outputFile->pixIDCol, 
+		       outputFile->row, 1, 1, &pixID, status);
+	CHECK_STATUS_VOID(*status);
+      }
+    }
 
   //Free adc_value array which is not useful anymore
   if(adc_value!=NULL){
