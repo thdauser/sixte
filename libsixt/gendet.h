@@ -80,6 +80,29 @@ typedef struct {
 
 } GenSplit;
 
+/** characteristics of a DEPFET. If the flag
+    depfetflag is set to 1, the detector is treated as
+    a DEPFET sensor. If the flag istorageflag is set to
+    1 additionally, the DEPFET is treated as an IS-DEPFET. */
+typedef struct{
+
+  /** Flag for DEPFET =1 */
+  int depfetflag; 
+  /** Flag for IS-part of DEPFET =1 */
+  int istorageflag; 
+
+  /** Integration time */
+  double t_integration;
+  /** Clear time */
+  double t_clear;
+  /** Settling time */
+  double t_settling;
+
+  /** Transfer time (only for IS-DEPFET) */
+  double t_transfer;
+
+}DepfetProp;
+
 
 /** Generic pixelized X-ray detector. The data structure is designed
     in a generic way. The characteristic properties for a particular
@@ -170,6 +193,9 @@ typedef struct {
       the GenDet data struct is destroyed. It has to be closed
       manually. */
   EventFile* elf;
+  
+  /** Properties of the DEPFET sensor. */
+  DepfetProp depfet;
 
 } GenDet;
 
@@ -261,6 +287,15 @@ void setGenDetEventFile(GenDet* const det, EventFile* const elf);
 
 /** Set the ignore_bkg flag. */
 void setGenDetIgnoreBkg(GenDet* const det, const int ignore);
+
+/** Adds the signel to a depfet detector */
+void addDepfetSignal(GenDet* const det,
+		const int colnum,
+		const int row,
+		const float signal,
+		const double time,
+		const long ph_id,
+		const long src_id);
 
 
 #endif /* GENDET_H */

@@ -61,6 +61,8 @@ GenDet* newGenDet(int* const status)
   det->threshold_split_lo_fraction=0.;
   det->threshold_pattern_up_keV=0.;
   det->readout_trigger=0;
+  det->depfet.depfetflag=0;
+  det->depfet.istorageflag=0;
 
   // Get empty GenPixGrid.
   det->pixgrid=newGenPixGrid(status);
@@ -240,8 +242,10 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     
       // Readout the signal from the pixel array ...
       event->signal=line->charge[xindex];
-      // ... and delete the pixel value.
-      line->charge[xindex]=0.;
+      // ... overwrite the charge with the carry charge for the next cycle...
+      line->charge[xindex]=line->ccarry[xindex];
+      // ... and delete the carry charge.
+      line->ccarry[xindex]=0.;
     
       // Set the dead time of the pixel.
       line->deadtime[xindex]=time+det->deadtime;
@@ -251,8 +255,12 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       for(jj=0; jj<NEVENTPHOTONS; jj++) {
 	event->ph_id[jj]  =line->ph_id[xindex][jj];
 	event->src_id[jj] =line->src_id[xindex][jj];
-	line->ph_id[xindex][jj] =0;
-	line->src_id[xindex][jj]=0;
+	// Set the IDs to the carry IDs
+	line->ph_id[xindex][jj] =line->carry_ph_id[xindex][jj];
+	line->src_id[xindex][jj]=line->carry_src_id[xindex][jj];
+	// Set the carry IDs to 0
+	line->carry_ph_id[xindex][jj] =0;
+	line->carry_src_id[xindex][jj]=0;
       }
       
       // Apply the lower readout threshold. Note that the upper
@@ -309,6 +317,7 @@ void GenDetReadoutLine(GenDet* const det,
     // Reset the anycharge flag of this line.
     line->anycharge=0;
   }
+  line->last_readouttime=det->clocklist->readout_time;
 }
 
 
@@ -931,7 +940,11 @@ void addGenDetCharge2Pixel(GenDet* const det,
   }
 
   // Add the signal.
-  line->charge[column]+=signal;
+  if(det->depfet.depfetflag!=1){
+    line->charge[column]+=signal;
+  }else{
+    addDepfetSignal(det, column, row, signal, time, ph_id, src_id);
+  }
   line->anycharge      =1;
 }
 
@@ -942,3 +955,168 @@ void setGenDetStartTime(GenDet* const det, const double t0)
   det->clocklist->readout_time=t0;
 }
 
+void addDepfetSignal(GenDet* const det,
+		const int colnum,
+		const int row,
+		const float signal,
+		const double time,
+		const long ph_id,
+		const long src_id){
+		  
+
+  GenDetLine* line=det->line[row];
+  
+  if(det->depfet.istorageflag==0){
+    // Normal DEPFET.
+      
+    // Determine time since the start of the readout cycle
+    double rtime=time-line->last_readouttime;
+  
+    // Check if the time makes sense
+    if(rtime<0 || rtime>det->frametime){
+      SIXT_ERROR("time since the start of the frame out of bounds.");
+    }
+    
+    // t_readout is the time length of the active readout
+    double t_readout=det->depfet.t_settling
+		      +2.*det->depfet.t_integration
+		      +det->depfet.t_clear;
+    
+    // t_wait is the time interval from the beginning of the
+    // cycle to the begin of the read-out.
+    double t_wait=det->frametime-t_readout;
+		    
+    if(rtime<=t_wait){
+      // The photon arrives in the normal exposure interval.
+      line->charge[colnum]+=signal;
+      
+    }else{
+      double ti1=rtime-t_wait;
+      if(ti1<=det->depfet.t_integration){
+	// The photon arrives during the first integration.
+	// It is detected incompletely but gets cleared afterwards.
+	line->charge[colnum]+=
+	  signal*(det->depfet.t_integration-ti1)/det->depfet.t_integration;	
+	
+      }else{
+	
+	// In the following cases, there is always a carry to the next frame
+	line->anycarry=1;
+	
+	// Set PH_ID and SRC_ID in carry-arrays.
+	if (line->ccarry[colnum]<0.001) {
+	  // If the charge collect in the pixel up to now is below 1eV,
+	  // overwrite the old PH_ID and SRC_ID by the new value.
+	  line->carry_ph_id[colnum][0] =ph_id;
+	  line->carry_src_id[colnum][0]=src_id;
+
+	} else if (signal>0.001) {
+	  // Only store the PH_ID and SRC_ID of the new contribution
+	  // if its signal is above 1eV.
+	  long ii;
+	  for (ii=0; ii<NEVENTPHOTONS; ii++) {
+	    if (0==line->carry_ph_id[colnum][ii]) {
+	      line->carry_ph_id[colnum][ii] =ph_id;
+	      line->carry_src_id[colnum][ii]=src_id;
+	      break;
+	    }
+	  }
+	}
+	
+	double tc=ti1-det->depfet.t_integration;
+	if(tc<=det->depfet.t_clear){
+	  // The photon arrives during the clear time.
+	  // It is cleared incompletely and the remaining signal
+	  // gets detected negatively in this frame, positively
+	  // in the next
+	  float rem=signal*tc/det->depfet.t_clear;
+	  line->charge[colnum]+=rem*(-1.);
+	  line->ccarry[colnum]+=rem;
+	  
+	}else{
+	  double ts=tc-det->depfet.t_clear;
+	  if(ts<=det->depfet.t_settling){
+	    // The photon arrives during the second settling time.
+	    // It is detected negatively in this frame, positively
+	    // in the next frame.
+	    line->charge[colnum]+=signal*(-1.);
+	    line->ccarry[colnum]+=signal;
+	    
+	  }else{
+	    // The photon arrives during the second integration.
+	    // It is partially detected negatively in this frame
+	    // and fully detected positively in the next one.
+	    float intsig=
+	      signal*(det->depfet.t_integration-ts+det->depfet.t_settling)
+		/det->depfet.t_integration;
+	      line->charge[colnum]+=intsig*(-1.);
+	      line->ccarry[colnum]+=signal;
+	  }
+	}
+      }
+    }
+  }else{
+    // IS-DEPFET
+    
+    // t_frame is the time since the frame started
+    double t_frame=time-det->line[0]->last_readouttime;
+    
+    // Determine time since the start of the readout cycle
+    double rtime=time-line->last_readouttime;
+    
+    //Determine time interval of clear
+    double cstart=det->depfet.t_integration+det->depfet.t_settling;
+    double cstop=det->depfet.t_integration+det->depfet.t_settling
+		      +det->depfet.t_clear;
+    
+    // Check if the time makes sense
+    if(t_frame<0 || t_frame>det->frametime){
+      SIXT_ERROR("time since the start of the frame out of bounds.");
+    } 
+    if(rtime<0 || rtime>det->frametime){
+      SIXT_ERROR("time since the start of the frame out of bounds.");
+    }
+    
+    if(t_frame<det->depfet.t_transfer){
+      // The photon arrives during the transfer time
+      
+      line->anycarry=1;
+      
+      // Set PH_ID and SRC_ID in carry-arrays.
+      if (line->ccarry[colnum]<0.001) {
+	// If the charge collect in the pixel up to now is below 1eV,
+	// overwrite the old PH_ID and SRC_ID by the new value.
+	line->carry_ph_id[colnum][0] =ph_id;
+	line->carry_src_id[colnum][0]=src_id;
+
+      } else if (signal>0.001) {
+	// Only store the PH_ID and SRC_ID of the new contribution
+	// if its signal is above 1eV.
+	long ii;
+	for (ii=0; ii<NEVENTPHOTONS; ii++) {
+	  if (0==line->carry_ph_id[colnum][ii]) {
+	    line->carry_ph_id[colnum][ii] =ph_id;
+	    line->carry_src_id[colnum][ii]=src_id;
+	    break;
+	  }
+	}
+      }
+      
+      float s_now=signal*
+	      (det->depfet.t_transfer-t_frame)/det->depfet.t_transfer;
+      float s_carry=signal-s_now;
+      line->charge[colnum]+=s_now;
+      line->ccarry[colnum]+=s_carry;
+      
+    }else{
+      // The photon arrives during the normal exposure interval
+      
+      // Check if the time is in the clear interval
+      if(rtime>cstart && rtime<cstop){
+	line->charge[colnum]+=signal*(cstop-rtime)/det->depfet.t_clear;
+      }else{
+	line->charge[colnum]+=signal;
+      }
+    }
+  }
+}

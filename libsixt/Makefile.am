@@ -89,4 +89,4 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		pixelimpactfile.h pixelimpact.h tesdatastream.h 	\
 		tesnoisespectrum.h tesproftemplates.h maskshadow.h      \
 		tesstreamfile.h testriggerfile.h testimg.h  		\
-		projectedmask.h repix.h tesinitialization.h
+		projectedmask.h repix.h tesinitialization.h	

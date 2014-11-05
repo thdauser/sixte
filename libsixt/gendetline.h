@@ -47,6 +47,9 @@ typedef struct {
       this parameter determines the point of time until that the pixel
       is insensitive to further incident photons. */
   double* deadtime;
+  
+  /** The time of the last readout of this line */
+  double last_readouttime;
 
   /** Photon IDs corresponding to the charges in the individual
       pixels. */

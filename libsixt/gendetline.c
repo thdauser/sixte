@@ -51,6 +51,7 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
   line->xwidth=0;
   line->anycharge=0;
   line->anycarry=0;
+  line->last_readouttime=0.;
 
   // Allocate memory.
   line->charge=(float*)malloc(xwidth*sizeof(float));

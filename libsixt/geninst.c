@@ -752,6 +752,32 @@ static void GenInstXMLElementStart(void* parsedata,
     xmlparsedata->inst->det->split->par1=getXMLAttributeFloat(attr, "PAR1");
     xmlparsedata->inst->det->split->par2=getXMLAttributeFloat(attr, "PAR2");
 
+  } else if (!strcmp(Uelement, "DEPFET")) {
+    
+    xmlparsedata->inst->det->depfet.depfetflag=1;    
+      
+    xmlparsedata->inst->det->depfet.t_integration=
+			    getXMLAttributeDouble(attr, "INTEGRATION");
+      
+    xmlparsedata->inst->det->depfet.t_clear=
+			    getXMLAttributeDouble(attr, "CLEAR");
+      
+    xmlparsedata->inst->det->depfet.t_settling=
+			    getXMLAttributeDouble(attr, "SETTLING");
+    
+    char type[MAXMSG];
+    getXMLAttributeString(attr, "TYPE", type);
+    strtoupper(type);
+    if(!strcmp(type, "NORMAL")) {
+      xmlparsedata->inst->det->depfet.istorageflag=0;
+      
+    }else if(!strcmp(type, "IS")) {
+      xmlparsedata->inst->det->depfet.istorageflag=1;
+      
+      xmlparsedata->inst->det->depfet.t_transfer=
+			    getXMLAttributeDouble(attr, "TRANSFER");
+    }
+    
   } else if (!strcmp(Uelement, "READOUT")) {
 
     char mode[MAXMSG];
