@@ -40,6 +40,9 @@ typedef struct {
   /** Charges contained in the individual pixels of this line. */
   float* charge;
 
+  /** Charges which remain in the pixels until the next read-out. */
+  float* ccarry;
+
   /** Dead time of the individual pixels in this line. The value of
       this parameter determines the point of time until that the pixel
       is insensitive to further incident photons. */
@@ -49,14 +52,26 @@ typedef struct {
       pixels. */
   long** ph_id;
 
+  /** Photon IDs corresponding to the carry charges in the individual
+      pixels. */
+  long** carry_ph_id;
+
   /** Source IDs corresponding to the charges in the individual
       pixels. */
   long** src_id;
+
+  /** Source IDs corresponding to the carry charges in the individual
+      pixels. */
+  long** carry_src_id;
 
   /** This flag specifies if the line contains any charges (value
       1). If not (value 0), the read-out does not have to be
       performed. */
   int anycharge;
+  
+  /** This flag specifies if the line contains any carry charges
+      for the next read-out cycle (f.e. for DEPFETs). */
+  int anycarry;
   
 } GenDetLine;
 

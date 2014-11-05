@@ -41,16 +41,23 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
 
   // Set all pointers to NULL.
   line->charge  =NULL;
+  line->ccarry  =NULL;
   line->deadtime=NULL;
   line->ph_id   =NULL;
   line->src_id  =NULL;
+  line->carry_ph_id   =NULL;
+  line->carry_src_id  =NULL;
 
   line->xwidth=0;
   line->anycharge=0;
+  line->anycarry=0;
 
   // Allocate memory.
   line->charge=(float*)malloc(xwidth*sizeof(float));
   CHECK_NULL_RET(line->charge, *status,
+		 "memory allocation for GenDetLine failed", line);
+  line->ccarry=(float*)malloc(xwidth*sizeof(float));
+  CHECK_NULL_RET(line->ccarry, *status,
 		 "memory allocation for GenDetLine failed", line);
   line->deadtime=(double*)malloc(xwidth*sizeof(double));
   CHECK_NULL_RET(line->deadtime, *status,
@@ -61,19 +68,33 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
   line->src_id=(long**)malloc(xwidth*sizeof(long*));
   CHECK_NULL_RET(line->src_id, *status,
 		 "memory allocation for GenDetLine failed", line);
+  line->carry_ph_id=(long**)malloc(xwidth*sizeof(long*));
+  CHECK_NULL_RET(line->carry_ph_id, *status,
+		 "memory allocation for GenDetLine failed", line);
+  line->carry_src_id=(long**)malloc(xwidth*sizeof(long*));
+  CHECK_NULL_RET(line->carry_src_id, *status,
+		 "memory allocation for GenDetLine failed", line);
   int ii;
   for(ii=0; ii<xwidth; ii++) {
     line->ph_id[ii]=(long*)malloc(NEVENTPHOTONS*sizeof(long));
     CHECK_NULL_RET(line->ph_id[ii], *status,
 		   "memory allocation for GenDetLine failed", line);
     line->src_id[ii]=(long*)malloc(NEVENTPHOTONS*sizeof(long));
-    CHECK_NULL_RET(line->src_id, *status,
+    CHECK_NULL_RET(line->src_id[ii], *status,
+		   "memory allocation for GenDetLine failed", line);
+    line->carry_ph_id[ii]=(long*)malloc(NEVENTPHOTONS*sizeof(long));
+    CHECK_NULL_RET(line->carry_ph_id[ii], *status,
+		   "memory allocation for GenDetLine failed", line);
+    line->carry_src_id[ii]=(long*)malloc(NEVENTPHOTONS*sizeof(long));
+    CHECK_NULL_RET(line->carry_src_id[ii], *status,
 		   "memory allocation for GenDetLine failed", line);
     // Initialize.
     int jj;
     for (jj=0; jj<NEVENTPHOTONS; jj++) {
       line->ph_id[ii][jj] =0;
       line->src_id[ii][jj]=0;
+      line->carry_ph_id[ii][jj] =0;
+      line->carry_src_id[ii][jj]=0;
     }
   }
 
@@ -82,11 +103,14 @@ GenDetLine* newGenDetLine(const int xwidth, int* const status)
   // Clear the pixels.
   for(ii=0; ii<line->xwidth; ii++) {
     line->charge[ii]=0.;
+    line->ccarry[ii]=0.;
     line->deadtime[ii]=0.;
     int jj;
     for (jj=0; jj<NEVENTPHOTONS; jj++) {
       line->ph_id[ii][jj] =0;
       line->src_id[ii][jj]=0;
+      line->carry_ph_id[ii][jj] =0;
+      line->carry_src_id[ii][jj]=0;
     }
   }
 
@@ -99,6 +123,9 @@ void destroyGenDetLine(GenDetLine** const line)
   if (NULL!=*line) {
     if (NULL!=(*line)->charge) {
       free((*line)->charge);
+    }
+    if (NULL!=(*line)->ccarry) {
+      free((*line)->ccarry);
     }
     if (NULL!=(*line)->deadtime) {
       free((*line)->deadtime);
@@ -120,6 +147,24 @@ void destroyGenDetLine(GenDetLine** const line)
 	}
       }
       free((*line)->src_id);
+    }
+    if (NULL!=(*line)->carry_ph_id) {
+      int ii;
+      for (ii=0; ii<(*line)->xwidth; ii++) {
+	if (NULL!=(*line)->carry_ph_id[ii]) {
+	  free((*line)->carry_ph_id[ii]);
+	}
+      }
+      free((*line)->carry_ph_id);
+    }
+    if (NULL!=(*line)->carry_src_id) {
+      int ii;
+      for (ii=0; ii<(*line)->xwidth; ii++) {
+	if (NULL!=(*line)->carry_src_id[ii]) {
+	  free((*line)->carry_src_id[ii]);
+	}
+      }
+      free((*line)->carry_src_id);
     }
     free(*line);
     *line=NULL;
@@ -144,6 +189,25 @@ void clearGenDetLine(GenDetLine* const line)
       }
     }
     line->anycharge=0;
+  }
+  // Check if the line contains carry charges for the next
+  // read-out cycle.
+  if (1==line->anycarry) {
+    int ii;
+    for(ii=0; ii<line->xwidth; ii++) {
+      if (line->ccarry[ii]>0.) {
+	line->charge[ii]=line->ccarry[ii];
+	line->ccarry[ii]=0.;
+	int jj;
+	for (jj=0; jj<NEVENTPHOTONS; jj++) {
+	  line->ph_id[ii][jj] =line->carry_ph_id[ii][jj];
+	  line->src_id[ii][jj]=line->carry_src_id[ii][jj];
+	  line->carry_ph_id[ii][jj] =0;
+	  line->carry_src_id[ii][jj]=0;
+	}
+      }
+    }
+    line->anycarry=0;
   }
 }
 
