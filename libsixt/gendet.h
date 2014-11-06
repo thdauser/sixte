@@ -289,7 +289,7 @@ void setGenDetEventFile(GenDet* const det, EventFile* const elf);
 void setGenDetIgnoreBkg(GenDet* const det, const int ignore);
 
 /** Adds the signel to a depfet detector */
-void addDepfetSignal(GenDet* const det,
+int addDepfetSignal(GenDet* const det,
 		const int colnum,
 		const int row,
 		const float signal,

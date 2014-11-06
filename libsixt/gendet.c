@@ -918,12 +918,23 @@ void addGenDetCharge2Pixel(GenDet* const det,
 
   // Check if the pixel is sensitive right now.
   if ((time<line->deadtime[column])&&(time>=0.0)) return;
+  
+  float oldcharge=line->charge[column];
 
+  // Add the signal.
+  int sign=1;
+  if(det->depfet.depfetflag!=1){
+    line->charge[column]+=signal;
+  }else{
+    sign=addDepfetSignal(det, column, row, signal, time, ph_id, src_id);
+  }
+  line->anycharge      =1;
+  
   // Set PH_ID and SRC_ID.
-  if (line->charge[column]<0.001) {
+  if (oldcharge<0.001) {
     // If the charge collect in the pixel up to now is below 1eV,
     // overwrite the old PH_ID and SRC_ID by the new value.
-    line->ph_id[column][0] =ph_id;
+    line->ph_id[column][0] =sign*ph_id;
     line->src_id[column][0]=src_id;
 
   } else if (signal>0.001) {
@@ -932,20 +943,12 @@ void addGenDetCharge2Pixel(GenDet* const det,
     long ii;
     for (ii=0; ii<NEVENTPHOTONS; ii++) {
       if (0==line->ph_id[column][ii]) {
-	line->ph_id[column][ii] =ph_id;
+	line->ph_id[column][ii] =sign*ph_id;
 	line->src_id[column][ii]=src_id;
 	break;
       }
     }
   }
-
-  // Add the signal.
-  if(det->depfet.depfetflag!=1){
-    line->charge[column]+=signal;
-  }else{
-    addDepfetSignal(det, column, row, signal, time, ph_id, src_id);
-  }
-  line->anycharge      =1;
 }
 
 
@@ -955,7 +958,7 @@ void setGenDetStartTime(GenDet* const det, const double t0)
   det->clocklist->readout_time=t0;
 }
 
-void addDepfetSignal(GenDet* const det,
+int addDepfetSignal(GenDet* const det,
 		const int colnum,
 		const int row,
 		const float signal,
@@ -965,6 +968,8 @@ void addDepfetSignal(GenDet* const det,
 		  
 
   GenDetLine* line=det->line[row];
+  
+  int sign=1;
   
   if(det->depfet.istorageflag==0){
     // Normal DEPFET.
@@ -1002,6 +1007,7 @@ void addDepfetSignal(GenDet* const det,
 	
 	// In the following cases, there is always a carry to the next frame
 	line->anycarry=1;
+	sign=-1;
 	
 	// Set PH_ID and SRC_ID in carry-arrays.
 	if (line->ccarry[colnum]<0.001) {
@@ -1081,6 +1087,7 @@ void addDepfetSignal(GenDet* const det,
       // The photon arrives during the transfer time
       
       line->anycarry=1;
+      sign=-1;
       
       // Set PH_ID and SRC_ID in carry-arrays.
       if (line->ccarry[colnum]<0.001) {
@@ -1119,4 +1126,5 @@ void addDepfetSignal(GenDet* const det,
       }
     }
   }
+  return sign;
 }
