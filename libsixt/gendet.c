@@ -230,7 +230,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     return;
   }
 
-  if (line->charge[xindex]>0.) {
+  if (line->charge[xindex]!=0.) {
     Event* event=NULL;
 
     // Error handling loop.
@@ -242,8 +242,10 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     
       // Readout the signal from the pixel array ...
       event->signal=line->charge[xindex];
+//printf("Got event %f keV\n", event->signal);
       // ... overwrite the charge with the carry charge for the next cycle...
       line->charge[xindex]=line->ccarry[xindex];
+//printf("flip carry %f keV\n", line->charge[xindex]);
       // ... and delete the carry charge.
       line->ccarry[xindex]=0.;
     
@@ -265,7 +267,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       
       // Apply the lower readout threshold. Note that the upper
       // threshold is only applied after pattern recombination.
-      if (event->signal<=det->threshold_readout_lo_keV) {
+      if ((event->signal*event->signal)<=(det->threshold_readout_lo_keV*det->threshold_readout_lo_keV)) {
 	break;
       }
     
@@ -282,7 +284,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       event->time =time;  // Time of detection.
       event->frame=det->clocklist->frame; // Frame of detection.
       event->npixels=1;
-
+//puts("store event.");
       // Store the event in the output event file.
       addEvent2File(det->elf, event, status);
       CHECK_STATUS_BREAK(*status);
@@ -305,6 +307,7 @@ void GenDetReadoutLine(GenDet* const det,
   GenDetLine* line=det->line[lineindex];
 
   if (0!=line->anycharge) {
+//printf("Actually read out line %d\n", lineindex);
     int ii;
     for (ii=0; ii<line->xwidth; ii++) {
       GenDetReadoutPixel(det, lineindex, readoutindex, ii,
@@ -315,9 +318,10 @@ void GenDetReadoutLine(GenDet* const det,
     // END of loop over all pixels in the line.
 
     // Reset the anycharge flag of this line.
-    line->anycharge=0;
+    line->anycharge=line->anycarry;
+    line->anycarry=0;
   }
-  line->last_readouttime=det->clocklist->readout_time;
+  line->last_readouttime=det->clocklist->time;
 }
 
 
@@ -971,11 +975,14 @@ int addDepfetSignal(GenDet* const det,
   
   int sign=1;
   
+  double rtime=time-line->last_readouttime;
+  
   if(det->depfet.istorageflag==0){
     // Normal DEPFET.
       
     // Determine time since the start of the readout cycle
-    double rtime=time-line->last_readouttime;
+//printf("last readout=%lf\n", line->last_readouttime);
+//printf("time=%lf, rtime=%lf, frametime=%lf, clocktime=%lf\n", time, rtime, det->frametime, det->clocklist->time);
   
     // Check if the time makes sense
     if(rtime<0 || rtime>det->frametime){
@@ -994,6 +1001,7 @@ int addDepfetSignal(GenDet* const det,
     if(rtime<=t_wait){
       // The photon arrives in the normal exposure interval.
       line->charge[colnum]+=signal;
+//printf("Normal exposure: signal=%f\n", line->charge[colnum]);
       
     }else{
       double ti1=rtime-t_wait;
@@ -1001,7 +1009,8 @@ int addDepfetSignal(GenDet* const det,
 	// The photon arrives during the first integration.
 	// It is detected incompletely but gets cleared afterwards.
 	line->charge[colnum]+=
-	  signal*(det->depfet.t_integration-ti1)/det->depfet.t_integration;	
+	  signal*(det->depfet.t_integration-ti1)/det->depfet.t_integration;
+//printf("First Integration: signal=%f\n", line->charge[colnum]);	
 	
       }else{
 	
@@ -1038,6 +1047,7 @@ int addDepfetSignal(GenDet* const det,
 	  float rem=signal*tc/det->depfet.t_clear;
 	  line->charge[colnum]+=rem*(-1.);
 	  line->ccarry[colnum]+=rem;
+//printf("Clear: signal=%f\n", line->charge[colnum]);
 	  
 	}else{
 	  double ts=tc-det->depfet.t_clear;
@@ -1047,6 +1057,7 @@ int addDepfetSignal(GenDet* const det,
 	    // in the next frame.
 	    line->charge[colnum]+=signal*(-1.);
 	    line->ccarry[colnum]+=signal;
+//printf("Settling: signal=%f\n", line->charge[colnum]);
 	    
 	  }else{
 	    // The photon arrives during the second integration.
@@ -1057,6 +1068,7 @@ int addDepfetSignal(GenDet* const det,
 		/det->depfet.t_integration;
 	      line->charge[colnum]+=intsig*(-1.);
 	      line->ccarry[colnum]+=signal;
+//printf("Second Integration: signal=%f\n", line->charge[colnum]);
 	  }
 	}
       }
@@ -1068,7 +1080,6 @@ int addDepfetSignal(GenDet* const det,
     double t_frame=time-det->line[0]->last_readouttime;
     
     // Determine time since the start of the readout cycle
-    double rtime=time-line->last_readouttime;
     
     //Determine time interval of clear
     double cstart=det->depfet.t_integration+det->depfet.t_settling;
@@ -1114,15 +1125,17 @@ int addDepfetSignal(GenDet* const det,
       float s_carry=signal-s_now;
       line->charge[colnum]+=s_now;
       line->ccarry[colnum]+=s_carry;
-      
+//printf("IS-transfer: %f keV\n", line->charge[colnum]);      
     }else{
       // The photon arrives during the normal exposure interval
       
       // Check if the time is in the clear interval
       if(rtime>cstart && rtime<cstop){
 	line->charge[colnum]+=signal*(cstop-rtime)/det->depfet.t_clear;
+//printf("IS-Clear: signal=%f\n", line->charge[colnum]);	
       }else{
 	line->charge[colnum]+=signal;
+//printf("IS-normal: signal=%f\n", line->charge[colnum]);	
       }
     }
   }

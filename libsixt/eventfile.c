@@ -305,6 +305,7 @@ void updateEventInFile(const EventFile* const file,
 		       const int row, Event* const event,
 		       int* const status)
 {
+//puts("write event.");
   fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
 		 1, 1, &event->time, status);
   fits_write_col(file->fptr, TLONG, file->cframe, row, 

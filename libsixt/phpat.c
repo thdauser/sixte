@@ -167,7 +167,7 @@ void phpat(GenDet* const det,
 	  if (NULL!=framelist[jj]) {
 	    
 	    // Check if the event is below the threshold.
-	    if (framelist[jj]->signal<det->threshold_event_lo_keV) continue;
+	    if ((framelist[jj]->signal*framelist[jj]->signal)<(det->threshold_event_lo_keV*det->threshold_event_lo_keV)) continue;
   
 	    // Start a new neighbor list.
 	    neighborlist[0]=framelist[jj];
@@ -305,6 +305,14 @@ void phpat(GenDet* const det,
 	      
 	      // Determine the total signal.
 	      event->signal+=neighborlist[kk]->signal;
+	      // If a contribution was negative, flag as invalid 
+	      // (-2, such that it doesn't collide with definition afterwards. 
+	      // Is changed to -1 at the end of the process.)
+	      if(neighborlist[kk]->signal<0.){
+		event->type=-2;
+	      }else{
+		event->type=-1;
+	      }
 
 	      // Determine signals in 3x3 matrix.
 	      if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx-1) {
@@ -382,67 +390,72 @@ void phpat(GenDet* const det,
 	    }
 
 	    // Determine the event type.
-	    // First assume that the event is invalid.
-	    event->type=-1; 
-	    // Border events are declared as invalid.
-	    if (0==border) {
-	      if (1==nneighborlist) {
-		// Single event.
-		event->type=0;
-
-	      } else if (2==nneighborlist) {
-		// Check for double types.
-		if (event->signals[1]>0.) {
-		  event->type=3; // bottom
-		} else if (event->signals[3]>0.) {
-		  event->type=4; // left
-		} else if (event->signals[7]>0.) {
-		  event->type=1; // top
-		} else if (event->signals[5]>0.) {
-		  event->type=2; // right
-		} 
-
-	      } else if (3==nneighborlist) {
-		// Check for triple types.
-		if (event->signals[1]>0.) {
-		  // bottom
-		  if (event->signals[3]>0.) {
-		    event->type=7; // bottom-left
-		  } else if (event->signals[5]>0.) {
-		    event->type=6; // bottom-right
-		  }
-		} else if (event->signals[7]>0.) {
-		  // top
-		  if (event->signals[3]>0.) {
-		    event->type=8; // top-left
-		  } else if (event->signals[5]>0.) {
-		    event->type=5; // top-right
-		  }
-		}
-
-	      } else if (4==nneighborlist) {
-		// Check for quadruple types.
-		if (event->signals[0]>0.) { // bottom-left
-		  if ((event->signals[1]>event->signals[0])&&
-		      (event->signals[3]>event->signals[0])) {
-		    event->type=11; 
-		  } 
-		} else if (event->signals[2]>0.) { // bottom-right
-		  if ((event->signals[1]>event->signals[2])&&
-		      (event->signals[5]>event->signals[2])) {
-		    event->type=10;
-		  }
-		} else if (event->signals[6]>0.) { // top-left
-		  if ((event->signals[7]>event->signals[6])&&
-		      (event->signals[3]>event->signals[6])) {
-		    event->type=12; 
-		  }
-		} else if (event->signals[8]>0.) { // top-right
-		  if ((event->signals[7]>event->signals[8])&&
-		      (event->signals[5]>event->signals[8])) {
-		    event->type=9; 
-		  }
-		} 
+	    if(event->type==-2){
+	      //Event had negative contributions, flag as invalid.
+	      event->type=-1;
+	    }else{
+	      // First assume that the event is invalid.
+	      event->type=-1; 
+	      // Border events are declared as invalid.
+	      if (0==border) {
+	        if (1==nneighborlist) {
+	  	  // Single event.
+	  	  event->type=0;
+          
+	        } else if (2==nneighborlist) {
+	  	  // Check for double types.
+	  	  if (event->signals[1]>0.) {
+	  	    event->type=3; // bottom
+	  	  } else if (event->signals[3]>0.) {
+	  	    event->type=4; // left
+	  	  } else if (event->signals[7]>0.) {
+	  	    event->type=1; // top
+	  	  } else if (event->signals[5]>0.) {
+	  	    event->type=2; // right
+	  	  } 
+          
+	        } else if (3==nneighborlist) {
+	  	  // Check for triple types.
+	  	  if (event->signals[1]>0.) {
+	  	   // bottom
+	  	    if (event->signals[3]>0.) {
+	  	      event->type=7; // bottom-left
+	  	    } else if (event->signals[5]>0.) {
+	  	      event->type=6; // bottom-right
+	  	    }
+	  	  } else if (event->signals[7]>0.) {
+	  	    // top
+	  	    if (event->signals[3]>0.) {
+	  	      event->type=8; // top-left
+	  	    } else if (event->signals[5]>0.) {
+	  	      event->type=5; // top-right
+	  	    }
+	  	}
+          
+	        } else if (4==nneighborlist) {
+	  	  // Check for quadruple types.
+	  	  if (event->signals[0]>0.) { // bottom-left
+	  	    if ((event->signals[1]>event->signals[0])&&
+	  	        (event->signals[3]>event->signals[0])) {
+	  	      event->type=11; 
+	  	    } 
+	  	  } else if (event->signals[2]>0.) { // bottom-right
+	  	    if ((event->signals[1]>event->signals[2])&&
+	  	        (event->signals[5]>event->signals[2])) {
+	  	      event->type=10;
+	  	    }
+	  	  } else if (event->signals[6]>0.) { // top-left
+	  	    if ((event->signals[7]>event->signals[6])&&
+	  	        (event->signals[3]>event->signals[6])) {
+	  	      event->type=12; 
+	  	    }
+	  	  } else if (event->signals[8]>0.) { // top-right
+	  	    if ((event->signals[7]>event->signals[8])&&
+	  	        (event->signals[5]>event->signals[8])) {
+	  	      event->type=9; 
+	  	    }
+	  	  } 
+	        }
 	      }
 	    }
 	    // END of determine the event type.
