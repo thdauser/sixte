@@ -1077,7 +1077,8 @@ int addDepfetSignal(GenDet* const det,
     // IS-DEPFET
     
     // t_frame is the time since the frame started
-    double t_frame=time-det->line[0]->last_readouttime;
+    //double t_frame=time-det->line[0]->last_readouttime;
+    double t_frame=time-det->clocklist->readout_time;
     
     // Determine time since the start of the readout cycle
     
