@@ -1093,35 +1093,39 @@ int addDepfetSignal(GenDet* const det,
     if(rtime<0 || rtime>det->frametime){
       SIXT_ERROR("time since the start of the frame out of bounds.");
     }
-    
-    if(t_frame<det->depfet.t_transfer){
-      // The photon arrives during the transfer time
       
-      line->anycarry=1;
-      sign=-1;
+    line->anycarry=1;
+    sign=-1;
       
-      // Set PH_ID and SRC_ID in carry-arrays.
-      if (line->ccarry[colnum]<0.001) {
-	// If the charge collect in the pixel up to now is below 1eV,
-	// overwrite the old PH_ID and SRC_ID by the new value.
-	line->carry_ph_id[colnum][0] =ph_id;
-	line->carry_src_id[colnum][0]=src_id;
+    // Set PH_ID and SRC_ID in carry-arrays.
+    if (line->ccarry[colnum]<0.001) {
+      // If the charge collect in the pixel up to now is below 1eV,
+      // overwrite the old PH_ID and SRC_ID by the new value.
+      line->carry_ph_id[colnum][0] =ph_id;
+      line->carry_src_id[colnum][0]=src_id;
 
-      } else if (signal>0.001) {
-	// Only store the PH_ID and SRC_ID of the new contribution
-	// if its signal is above 1eV.
-	long ii;
-	for (ii=0; ii<NEVENTPHOTONS; ii++) {
-	  if (0==line->carry_ph_id[colnum][ii]) {
-	    line->carry_ph_id[colnum][ii] =ph_id;
-	    line->carry_src_id[colnum][ii]=src_id;
-	    break;
-	  }
+    } else if (signal>0.001) {
+      // Only store the PH_ID and SRC_ID of the new contribution
+      // if its signal is above 1eV.
+      long ii;
+      for (ii=0; ii<NEVENTPHOTONS; ii++) {
+	if (0==line->carry_ph_id[colnum][ii]) {
+	  line->carry_ph_id[colnum][ii] =ph_id;
+	  line->carry_src_id[colnum][ii]=src_id;
+	  break;
 	}
       }
+    }
+    
+    double transfertime=det->frametime-det->depfet.t_transfer;
+    
+    if(t_frame>transfertime){
+      // The photon arrives during the transfer time
+      
+      double intransfertime=t_frame-transfertime;
       
       float s_now=signal*
-	      (det->depfet.t_transfer-t_frame)/det->depfet.t_transfer;
+	      (intransfertime)/det->depfet.t_transfer;
       float s_carry=signal-s_now;
       line->charge[colnum]+=s_now;
       line->ccarry[colnum]+=s_carry;
@@ -1131,6 +1135,7 @@ int addDepfetSignal(GenDet* const det,
       
       // Check if the time is in the clear interval
       if(rtime>cstart && rtime<cstop){
+	
 	line->charge[colnum]+=signal*(cstop-rtime)/det->depfet.t_clear;
 //printf("IS-Clear: signal=%f\n", line->charge[colnum]);	
       }else{
