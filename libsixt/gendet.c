@@ -230,7 +230,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     return;
   }
 
-  if (line->charge[xindex]!=0.) {
+  if (line->charge[xindex]!=0.||line->ccarry[xindex]!=0.) {
     Event* event=NULL;
 
     // Error handling loop.
@@ -307,7 +307,7 @@ void GenDetReadoutLine(GenDet* const det,
   GenDetLine* line=det->line[lineindex];
 
   if (0!=line->anycharge) {
-//printf("Actually read out line %d\n", lineindex);
+//printf("Read out line %d\n", lineindex);
     int ii;
     for (ii=0; ii<line->xwidth; ii++) {
       GenDetReadoutPixel(det, lineindex, readoutindex, ii,
@@ -326,6 +326,7 @@ void GenDetReadoutLine(GenDet* const det,
 
 
 void GenDetClearLine(GenDet* const det, const int lineindex) {
+  //puts("Clear line.");
   clearGenDetLine(det->line[lineindex]);
 }
 
@@ -634,6 +635,7 @@ void operateGenDetClock(GenDet* const det,
 	break;
       case CL_CLEARLINE:
 	clclearline=(CLClearLine*)element;
+	//puts("case CL_CLEARLINE in clocklist.");
 	GenDetClearLine(det, clclearline->lineindex);
 	break;
       }
@@ -976,6 +978,7 @@ int addDepfetSignal(GenDet* const det,
   int sign=1;
   
   double rtime=time-line->last_readouttime;
+  //printf("New event: rtime=%lf\n", rtime);
   
   if(det->depfet.istorageflag==0){
     // Normal DEPFET.
@@ -1079,13 +1082,19 @@ int addDepfetSignal(GenDet* const det,
     // t_frame is the time since the frame started
     //double t_frame=time-det->line[0]->last_readouttime;
     double t_frame=time-det->clocklist->readout_time;
-    
+    //printf("  t_frame=%lf\n", t_frame);
+    //printf("  carry before=%lf\n", line->ccarry[colnum]);
+    //printf("  signal before=%lf\n", line->charge[colnum]);
+    //if(line->ccarry[colnum]!=0.) puts("\n This might be ccarry pileup.\n");
+    //if(line->charge[colnum]!=0.) puts("\n This might be charge pileup.\n");
     // Determine time since the start of the readout cycle
     
     //Determine time interval of clear
-    double cstart=det->depfet.t_integration+det->depfet.t_settling;
-    double cstop=det->depfet.t_integration+det->depfet.t_settling
-		      +det->depfet.t_clear;
+    double cstart=det->frametime-(det->depfet.t_integration+det->depfet.t_settling
+		      +det->depfet.t_clear);
+    double cstop=det->frametime-(det->depfet.t_integration+det->depfet.t_settling);
+    //printf("  cstart=%lf\n", cstart);
+    //printf("  cstop=%lf\n", cstop);
     
     // Check if the time makes sense
     if(t_frame<0 || t_frame>det->frametime){
@@ -1094,34 +1103,35 @@ int addDepfetSignal(GenDet* const det,
     if(rtime<0 || rtime>det->frametime){
       SIXT_ERROR("time since the start of the frame out of bounds.");
     }
-      
-    line->anycarry=1;
-    sign=-1;
-      
-    // Set PH_ID and SRC_ID in carry-arrays.
-    if (line->ccarry[colnum]<0.001) {
-      // If the charge collect in the pixel up to now is below 1eV,
-      // overwrite the old PH_ID and SRC_ID by the new value.
-      line->carry_ph_id[colnum][0] =ph_id;
-      line->carry_src_id[colnum][0]=src_id;
-
-    } else if (signal>0.001) {
-      // Only store the PH_ID and SRC_ID of the new contribution
-      // if its signal is above 1eV.
-      long ii;
-      for (ii=0; ii<NEVENTPHOTONS; ii++) {
-	if (0==line->carry_ph_id[colnum][ii]) {
-	  line->carry_ph_id[colnum][ii] =ph_id;
-	  line->carry_src_id[colnum][ii]=src_id;
-	  break;
-	}
-      }
-    }
     
     double transfertime=det->frametime-det->depfet.t_transfer;
+    //printf("  transfertime=%lf\n", transfertime);
     
     if(t_frame>transfertime){
       // The photon arrives during the transfer time
+      //puts(">> In transfer time");
+      line->anycarry=1;
+      sign=-1;
+    
+      // Set PH_ID and SRC_ID in carry-arrays.
+      if (line->ccarry[colnum]<0.001) {
+        // If the charge collect in the pixel up to now is below 1eV,
+        // overwrite the old PH_ID and SRC_ID by the new value.
+        line->carry_ph_id[colnum][0] =ph_id;
+        line->carry_src_id[colnum][0]=src_id;
+    
+      } else if (signal>0.001) {
+        // Only store the PH_ID and SRC_ID of the new contribution
+        // if its signal is above 1eV.
+        long ii;
+        for (ii=0; ii<NEVENTPHOTONS; ii++) {
+          if (0==line->carry_ph_id[colnum][ii]) {
+    	line->carry_ph_id[colnum][ii] =ph_id;
+    	line->carry_src_id[colnum][ii]=src_id;
+    	break;
+          }
+        }
+      }
       
       double intransfertime=t_frame-transfertime;
       
@@ -1136,14 +1146,48 @@ int addDepfetSignal(GenDet* const det,
       
       // Check if the time is in the clear interval
       if(rtime>cstart && rtime<cstop){
+      //puts(">> In clear time");
 	
 	line->charge[colnum]+=signal*(cstop-rtime)/det->depfet.t_clear;
 //printf("IS-Clear: signal=%f\n", line->charge[colnum]);	
       }else{
-	line->charge[colnum]+=signal;
-//printf("IS-normal: signal=%f\n", line->charge[colnum]);	
+	if(t_frame<=rtime){
+      //puts(">> t_frame<=rtime");
+      
+	  line->anycarry=1;
+	  sign=-1;
+      
+	  // Set PH_ID and SRC_ID in carry-arrays.
+	  if (line->ccarry[colnum]<0.001) {
+	    // If the charge collect in the pixel up to now is below 1eV,
+	    // overwrite the old PH_ID and SRC_ID by the new value.
+	    line->carry_ph_id[colnum][0] =ph_id;
+	    line->carry_src_id[colnum][0]=src_id;
+
+	  } else if (signal>0.001) {
+	    // Only store the PH_ID and SRC_ID of the new contribution
+	    // if its signal is above 1eV.
+	    long ii;
+	    for (ii=0; ii<NEVENTPHOTONS; ii++) {
+	      if (0==line->carry_ph_id[colnum][ii]) {
+		line->carry_ph_id[colnum][ii] =ph_id;
+		line->carry_src_id[colnum][ii]=src_id;
+		break;
+	      }
+	    }
+	  }
+	  line->ccarry[colnum]+=signal;
+//printf("IS-normal: signal=%f\n", line->ccarry[colnum]);
+	}else{
+      //puts(">> t_frame>rtime");
+	  line->charge[colnum]+=signal;
+//printf("IS-normal: signal=%f\n", line->charge[colnum]);
+	}	
       }
     }
   }
+    //printf("  carry after=%lf\n", line->ccarry[colnum]);
+    //printf("  signal after=%lf\n", line->charge[colnum]);
+  
   return sign;
 }
