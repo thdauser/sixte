@@ -242,10 +242,8 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     
       // Readout the signal from the pixel array ...
       event->signal=line->charge[xindex];
-//printf("Got event %f keV\n", event->signal);
       // ... overwrite the charge with the carry charge for the next cycle...
       line->charge[xindex]=line->ccarry[xindex];
-//printf("flip carry %f keV\n", line->charge[xindex]);
       // ... and delete the carry charge.
       line->ccarry[xindex]=0.;
     
@@ -284,7 +282,7 @@ static inline void GenDetReadoutPixel(GenDet* const det,
       event->time =time;  // Time of detection.
       event->frame=det->clocklist->frame; // Frame of detection.
       event->npixels=1;
-//puts("store event.");
+
       // Store the event in the output event file.
       addEvent2File(det->elf, event, status);
       CHECK_STATUS_BREAK(*status);
@@ -307,7 +305,6 @@ void GenDetReadoutLine(GenDet* const det,
   GenDetLine* line=det->line[lineindex];
 
   if (0!=line->anycharge) {
-//printf("Read out line %d\n", lineindex);
     int ii;
     for (ii=0; ii<line->xwidth; ii++) {
       GenDetReadoutPixel(det, lineindex, readoutindex, ii,
@@ -326,7 +323,7 @@ void GenDetReadoutLine(GenDet* const det,
 
 
 void GenDetClearLine(GenDet* const det, const int lineindex) {
-  //puts("Clear line.");
+
   clearGenDetLine(det->line[lineindex]);
 }
 
@@ -635,7 +632,6 @@ void operateGenDetClock(GenDet* const det,
 	break;
       case CL_CLEARLINE:
 	clclearline=(CLClearLine*)element;
-	//puts("case CL_CLEARLINE in clocklist.");
 	GenDetClearLine(det, clclearline->lineindex);
 	break;
       }
@@ -984,8 +980,6 @@ int addDepfetSignal(GenDet* const det,
     // Normal DEPFET.
       
     // Determine time since the start of the readout cycle
-//printf("last readout=%lf\n", line->last_readouttime);
-//printf("time=%lf, rtime=%lf, frametime=%lf, clocktime=%lf\n", time, rtime, det->frametime, det->clocklist->time);
   
     // Check if the time makes sense
     if(rtime<0 || rtime>det->frametime){
@@ -1004,7 +998,6 @@ int addDepfetSignal(GenDet* const det,
     if(rtime<=t_wait){
       // The photon arrives in the normal exposure interval.
       line->charge[colnum]+=signal;
-//printf("Normal exposure: signal=%f\n", line->charge[colnum]);
       
     }else{
       double ti1=rtime-t_wait;
@@ -1012,8 +1005,7 @@ int addDepfetSignal(GenDet* const det,
 	// The photon arrives during the first integration.
 	// It is detected incompletely but gets cleared afterwards.
 	line->charge[colnum]+=
-	  signal*(det->depfet.t_integration-ti1)/det->depfet.t_integration;
-//printf("First Integration: signal=%f\n", line->charge[colnum]);	
+	  signal*(det->depfet.t_integration-ti1)/det->depfet.t_integration;	
 	
       }else{
 	
@@ -1050,7 +1042,6 @@ int addDepfetSignal(GenDet* const det,
 	  float rem=signal*tc/det->depfet.t_clear;
 	  line->charge[colnum]+=rem*(-1.);
 	  line->ccarry[colnum]+=rem;
-//printf("Clear: signal=%f\n", line->charge[colnum]);
 	  
 	}else{
 	  double ts=tc-det->depfet.t_clear;
@@ -1060,7 +1051,6 @@ int addDepfetSignal(GenDet* const det,
 	    // in the next frame.
 	    line->charge[colnum]+=signal*(-1.);
 	    line->ccarry[colnum]+=signal;
-//printf("Settling: signal=%f\n", line->charge[colnum]);
 	    
 	  }else{
 	    // The photon arrives during the second integration.
@@ -1071,7 +1061,6 @@ int addDepfetSignal(GenDet* const det,
 		/det->depfet.t_integration;
 	      line->charge[colnum]+=intsig*(-1.);
 	      line->ccarry[colnum]+=signal;
-//printf("Second Integration: signal=%f\n", line->charge[colnum]);
 	  }
 	}
       }
@@ -1080,21 +1069,13 @@ int addDepfetSignal(GenDet* const det,
     // IS-DEPFET
     
     // t_frame is the time since the frame started
-    //double t_frame=time-det->line[0]->last_readouttime;
     double t_frame=time-det->clocklist->readout_time;
-    //printf("  t_frame=%lf\n", t_frame);
-    //printf("  carry before=%lf\n", line->ccarry[colnum]);
-    //printf("  signal before=%lf\n", line->charge[colnum]);
-    //if(line->ccarry[colnum]!=0.) puts("\n This might be ccarry pileup.\n");
-    //if(line->charge[colnum]!=0.) puts("\n This might be charge pileup.\n");
     // Determine time since the start of the readout cycle
     
     //Determine time interval of clear
     double cstart=det->frametime-(det->depfet.t_integration+det->depfet.t_settling
 		      +det->depfet.t_clear);
     double cstop=det->frametime-(det->depfet.t_integration+det->depfet.t_settling);
-    //printf("  cstart=%lf\n", cstart);
-    //printf("  cstop=%lf\n", cstop);
     
     // Check if the time makes sense
     if(t_frame<0 || t_frame>det->frametime){
@@ -1105,11 +1086,9 @@ int addDepfetSignal(GenDet* const det,
     }
     
     double transfertime=det->frametime-det->depfet.t_transfer;
-    //printf("  transfertime=%lf\n", transfertime);
     
     if(t_frame>transfertime){
       // The photon arrives during the transfer time
-      //puts(">> In transfer time");
       line->anycarry=1;
       sign=-1;
     
@@ -1139,20 +1118,16 @@ int addDepfetSignal(GenDet* const det,
 	      (intransfertime)/det->depfet.t_transfer;
       float s_carry=signal-s_now;
       line->charge[colnum]+=s_now;
-      line->ccarry[colnum]+=s_carry;
-//printf("IS-transfer: %f keV\n", line->charge[colnum]);      
+      line->ccarry[colnum]+=s_carry;     
     }else{
       // The photon arrives during the normal exposure interval
       
       // Check if the time is in the clear interval
       if(rtime>cstart && rtime<cstop){
-      //puts(">> In clear time");
 	
 	line->charge[colnum]+=signal*(cstop-rtime)/det->depfet.t_clear;
-//printf("IS-Clear: signal=%f\n", line->charge[colnum]);	
       }else{
 	if(t_frame<=rtime){
-      //puts(">> t_frame<=rtime");
       
 	  line->anycarry=1;
 	  sign=-1;
@@ -1177,17 +1152,12 @@ int addDepfetSignal(GenDet* const det,
 	    }
 	  }
 	  line->ccarry[colnum]+=signal;
-//printf("IS-normal: signal=%f\n", line->ccarry[colnum]);
 	}else{
-      //puts(">> t_frame>rtime");
 	  line->charge[colnum]+=signal;
-//printf("IS-normal: signal=%f\n", line->charge[colnum]);
 	}	
       }
     }
   }
-    //printf("  carry after=%lf\n", line->ccarry[colnum]);
-    //printf("  signal after=%lf\n", line->charge[colnum]);
   
   return sign;
 }
