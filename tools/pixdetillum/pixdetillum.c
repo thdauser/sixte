@@ -122,7 +122,8 @@ int pixdetillum_main(){
       PixImpact piximp;
       piximp.pixID=pixid;
       piximp.time=time;
-      piximp.energy=(float)par.energy;
+      float energy=(sixt_get_random_number(&status)-0.5)*par.bandwidth+par.energy;
+      piximp.energy=energy;
       piximp.ph_id=ii;
       piximp.src_id=0;
       double x=sixt_get_random_number(&status);
@@ -259,6 +260,12 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_double("energy", &par->energy);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the energy parameter");
+    return(status);
+  }
+  
+  status=ape_trad_query_double("bandwidth", &par->bandwidth);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the bandwidth parameter");
     return(status);
   }
 

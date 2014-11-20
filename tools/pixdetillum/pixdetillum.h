@@ -56,6 +56,7 @@ struct Parameters {
   
   double rate;
   double energy;
+  double bandwidth;
   
   char clobber;
   char history;
