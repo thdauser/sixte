@@ -547,7 +547,7 @@ int ero_calevents_main()
 	}
 
 	// Event type and alignment.
-	if (event.type>=0) {
+	if (event.type>=1) {
 	  int pixelnr=(ii+1) - ((ii/3)-1)*6;
 	  ev.pat_inf=event.type*10 + pixelnr;
 	} else {
@@ -593,12 +593,12 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Set the number of unique events to the number of entries in the table.
-    long uniq_evt;
-    fits_get_num_rows(fptr, &uniq_evt, &status);
-    CHECK_STATUS_BREAK(status);
-    fits_update_key(fptr, TLONG, "UNIQ_EVT", &uniq_evt,
-		    "Number of unique events inside", &status);
-    CHECK_STATUS_BREAK(status);
+    // long uniq_evt;
+    // fits_get_num_rows(fptr, &uniq_evt, &status);
+    // CHECK_STATUS_BREAK(status);
+    // fits_update_key(fptr, TLONG, "UNIQ_EVT", &uniq_evt,
+	//	    "Number of unique events inside", &status);
+    // CHECK_STATUS_BREAK(status);
 
     // Set the REF?DMIN/MAX keywords.
     fits_update_key(fptr, TLONG, "REFXDMIN", &refxdmin, "", &status);

@@ -10,7 +10,7 @@
 
 /** MJDREF used in the FITS header of eROSITA event files
     [d]. Corresponds to 2000-01-01T00:00:00. */
-const double eromjdref=51544.;
+const double eromjdref=51543.875;
 
 /** MJDREF used in the FITS header of XMM event files [d]. Corresponds
     to 1998-01-01T00:00:00.00. */
@@ -520,7 +520,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   double ra_obj=0.0;
   fits_update_key(fptr, TDOUBLE, "RA_OBJ", &ra_obj, "[deg] J2000", status);
   double de_obj=0.0;
-  fits_update_key(fptr, TDOUBLE, "DE_OBJ", &de_obj, "[deg] J2000", status);
+  fits_update_key(fptr, TDOUBLE, "DEC_OBJ", &de_obj, "[deg] J2000", status);
 
   fits_update_key(fptr, TSTRING, "DATE", creation_date, "File creation date", status);
   char date_obs_time[MAXMSG]="";
