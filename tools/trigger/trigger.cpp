@@ -191,7 +191,7 @@
 *                                  instead 'if (fabs(tstartj-tstart0) <= 0.2*safetyMarginTstart)'
 *                                - If the iteration runs 10 times (10 different LPFs) and tstart0 and tstartj are not enough close => The tstarts of
 *                                  the last 5 iterations are averaged (not the tstarts of all the iterations)
-*                                - If a pulse if pile-up in the tail of a previous one => The process to recalculate precisely the
+*                                - If a pulse is piled-up in the tail of a previous one => The process to recalculate precisely the
 *                                  tstart is not run
 *                   18/12/13    New input parameter 'getTaus'
 * version 14.0.0    24/03/14	Added a new output extension EUR-TEST to IFCA tests
@@ -346,14 +346,12 @@ MAP OF SECTIONS IN THIS FILE:
  ****************************************************/
 int main(int argc, char **argv) {
 
-	create = "trigger v.15.0.0";			//Set "CREATE" keyword of output FITS file
+        create = "trigger v.15.0.0";			//Set "CREATE" keyword of output FITS file
 	time_t t_start = time(NULL);
 	char str_stat[8];
 	char val[256];
 	string message="";
 	int status=EPOK, extver=0;
-	extern int inDataIterator(long totalrows, long offset, long firstrow,long nrows, int ncols, iteratorCol *cols, void *user_strct);
-
 	
 	sprintf(temporalFileName,"TRIGGERauxfile");
 	strcat(temporalFileName,".txt");
@@ -361,7 +359,7 @@ int main(int argc, char **argv) {
 	if(temporalFile == NULL)
 	{
 		writeLog(fileRef,"Error",verbosity,"Cannot open auxiliary file TRIGGERauxfile.txt");
-		EPexit(-62900);
+		EPexit(1009);
 	}
 	sprintf(temporalFileName2,"ppr");
 	strcat(temporalFileName2,".txt");
@@ -369,164 +367,76 @@ int main(int argc, char **argv) {
 	if(temporalFile2 == NULL)
 	{
 		writeLog(fileRef,"Error",verbosity,"Cannot open auxiliary file ppr.txt");
-		EPexit(-62900);
+		EPexit(1009);
 	}
 
 	// Read input parameters
-	status = initModule(argc, argv, status);
-	if (!status == EPOK)  EPexit(status);
+	status = initModule(argc, argv);
+	if(status)EPexit(status);
 
 	writeLog(fileRef,"Log", verbosity, "Into Trigger task");
   
 	////////////////////////  	Open input FITS file
-	//MC status = DALobjectOpen(inName, &inObject, status); 				if (status == -2004){EPexit(-62102);}
-	//status = DALobjectFindElement(inObject, "RAW_ADC_DATA", &inExten, status);	if (status == -2104){EPexit(-62201);}
-	//MC status = DALobjectFindElement(inObject, "RECORDS", &inExten, status);	if (status == -2104){EPexit(-62201);}
 	if(fits_open_file(&inObject, inName,0,&status)) printerror(status);
 	strcpy(extname,"RECORDS");
 	if(fits_movnam_hdu(inObject, ANY_HDU,extname, extver, &status)) printerror(status);	
 	
 	///////////////////////	Input keywords
-	/*getKg (&kg, &kgNumber, status);
-	if (!status == EPOK) EPexit(status);
-	getKi (&ki, &kiNumber, status);
-	if (!status == EPOK) EPexit(status);
-	status = readKeywords(kg, kgNumber, inName, inExten, fileRef,  status);
-	if (!status == EPOK) EPexit(status);
-	status = readKeywords(ki, kiNumber, inName, inExten, fileRef,  status);
-	if (!status == EPOK) EPexit(status);
-	status = goodValuesKeywords (kg, kgNumber, inName, inExten, fileRef,  status);
-	if (!status == EPOK) EPexit(status);
-	
-	string datatype;
-	status = getKeywordsValueString (kg, kgNumber, "DATATYPE", &datatype, fileRef, status);
-	if ((datatype != "XRAY") & (datatype != "TESNOISE")){
-	  message = "Illegal value of DATATYPE keyword in " + string(inName) + " file and " + inExten->name + " extension";
-	  writeLog(fileRef,"Error",verbosity,message);
-	  writeLog(fileRef,"Error", verbosity,"Legal values 'XRAY' or 'TESNOISE'");
-	  status = -72002;
-	  EPexit(status);
-	}
-	string bias;
-	double oscfrekw;
-	status = getKeywordsValueString (kg, kgNumber, "BIAS", &bias, fileRef, status);
-	if (bias == "A"){
-	  status = getKeywordsValueReal (kg, kgNumber, "OSCFREKW", &oscfrekw, fileRef, status);
-	  if (oscfrekw == 0){
-	    message = "Illegal value of OSCFREKW keyword in " + string(inName) + " file and " + inExten->name + "extension";
-	    writeLog(fileRef,"Error",verbosity,message);
-	    writeLog(fileRef,"Error", verbosity,"Legal values greater than 0");
-	    status = -72002;
-	    EPexit(status);
-	  }
-	}*/
-
-	//MC status = DALattributeGetInt(inExten, "TRIGGSZ", &eventsz, unit, comment, status);
 	strcpy(keyname,"TRIGGSZ");
 	if(fits_read_key(inObject,TLONG,keyname, &eventsz,comment,&status)) printerror(status);
-	//MC status = DALattributeGetReal(inExten, "DELTAT", &samprate, unit, comment, status);
 	strcpy(keyname,"DELTAT");
 	if(fits_read_key(inObject,TDOUBLE,keyname, &samprate,comment,&status)) printerror(status);
 	samprate = 1/samprate;
-	//MC status = DALtableGetNumRows(inExten,&eventcnt,status);
 	if(fits_get_num_rows(inObject,&eventcnt, &status)) printerror(status);
 	ivcal=1.0;
 	asquid = 1.0;
-	//MC status = DALattributeGetReal(inExten, "MONOEN", &energy, unit, comment, status);
 	strcpy(keyname,"MONOEN");
 	if(fits_read_key(inObject,TDOUBLE,keyname, &energy,comment,&status)) printerror(status);
-	
 	energy = energy*1e3;
 	plspolar = 1.0;
-	/*status = getKeywordsValueInt (kg, kgNumber, "EVENTSZ", &eventsz, fileRef, status);
-	status = getKeywordsValueReal (kg, kgNumber, "SAMPRATE", &samprate, fileRef, status);
-	status = getKeywordsValueInt (kg, kgNumber, "EVENTCNT", &eventcnt, fileRef, status);
-	status = getKeywordsValueReal (kg, kgNumber, "IVCAL", &ivcal, fileRef, status);
-	status = getKeywordsValueReal (kg, kgNumber, "ASQUID", &asquid, fileRef, status);
-	status = getKeywordsValueReal (kg, kgNumber, "ENERGY", &energy, fileRef, status);
-	status = getKeywordsValueReal (kg, kgNumber, "PLSPOLAR", &plspolar, fileRef, status);*/
 
-	// If STRICT calibration mode => No secondary pulses searched for => No pulse models library used
-	if ((mode == 1) || (mode == 2))
+	// If CALIBRATION mode (mode = 0) => No secondary pulses searched for => No pulse models library used => Library has to be created
+	// If PRODUCTION mode (mode = 1) => Library is read
+	if (mode == 1)
 	{
-		// Open pulses models library file (EUR-LIB extension)
-		//MC status = DALobjectOpen(inLibName, &inLibObject, status);
-		//MC if (status == -2004)
-		//MC {
-		//MC 	status = 0;
-		//MC 	message = "Input library FITS file either not found or file name too long: " + string(inLibName);
-		//MC 	writeLog(fileRef,"Error", verbosity,message);
-		//MC 	EPexit(-2004);
-		//MC }
-		if(fits_open_file(&inLibObject, inLibName,0,&status)) printerror(status);
+	    // Open pulses models library file (EUR-LIB extension)
+	    if(fits_open_file(&inLibObject, inLibName,0,&status)) printerror(status);
+	    strcpy(extname,"EUR-LIB");
+	    if(fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status)) printerror(status);
 
-		//MC status = DALobjectFindElement(inLibObject, "EUR-LIB", &inLibExten, status);
-		//MC if (status == -2104)
-		//MC {
-		//MC 	status = 0;
-		//MC 	message = "EUR-LIB extension not found in " + string(inLibName) + " file";
-		//MC 	writeLog(fileRef,"Error", verbosity,message);
-		//MC 	EPexit(-2104);
-		//MC }
-		strcpy(extname,"EUR-LIB");
-		if(fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status)) printerror(status);
-
-		// Read the pulse models library input FITS file and store the whole library in "library" and "models"
-
-		status = readLib(status);
-
-		ntotalrows = 1;
-		/*gsl_matrix *modelsAux = gsl_matrix_alloc(models->size1,models->size2+50);
-	    for (int i=0;i<nummodels;i++)
-	    {
-	    	for (int j=0;j<50;j++)
-	    	{
-	    		gsl_matrix_set(modelsAux,i,j,0.0);
-	    	}
-	    	for (int j=50;j<modelsAux->size2;j++)
-	    	{
-	    		gsl_matrix_set(modelsAux,i,j,gsl_matrix_get(models,i,j-50));
-	    	}
-	    }
-	    gsl_matrix_free(models);
-	    gsl_matrix *models = gsl_matrix_alloc(modelsAux->size1,modelsAux->size2);
-	    gsl_matrix_memcpy(models,modelsAux);
-	    gsl_matrix_free(modelsAux);*/
+	    // Read the pulse models library input FITS file and store the whole library in "library" and "models"
+	    status = readLib();
+	    if(status)EPexit(status);
+	    ntotalrows = 1;
 	}
 	else
 	{
-		status = createLibrary(status);
-		if (!status == EPOK) EPexit (status);
+		status = createLibrary();
+		if(status)EPexit(status);
 		if(fits_open_file(&inLibObject,inLibName,READWRITE,&status))printerror(status);
 	}
 
 	if (energy == 0)	// There are no pulses
 	{
 		/////////////////////// Create output FITS file: Trigger file (*_trg.fits)
-		status = createTriggerFile(status);
-		if (!status == EPOK) EPexit (status);
-		//MC 
+		status = createTriggerFile();
+		if(status)EPexit(status);
 		if(fits_open_file(&trgObject,trgName,READWRITE,&status))printerror(status);
 
 		/////////////////////// Write output keywords
-		//MC status = DALattributePutInt(trgExten, "EVENTCNT", 0, unit, comment,	status);
 		evtcnt = 0;
 		strcpy(extname,"EUR-TRG");
 		if(fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status)) printerror(status);
 		strcpy(keyname,"EVENTCNT");
 		if(fits_write_key(trgObject,TLONG,keyname,&evtcnt,comment,&status)) printerror(status);
-
 	}
 	else				// There are pulses
 	{
-		//////////////////////// Initialize input parameters
+		//////////////////////// Initialize input parameters (and transform from seconds to samples)
 		sizePulse = ntaus * tauFALL;
 		safetyMarginTstart = safetyMarginTstart*samprate;
 		nsAftrtstart = tAftrtstart*samprate;
-
-		// Transform from seconds to bins
-		status = seconds2Bins (status);
-
+		sizePulse_b = (int)(sizePulse * samprate);
 		Lrs = (int)(LrsT*samprate);
 		Lb = (int)(LbT*samprate);
 
@@ -536,62 +446,48 @@ int main(int argc, char **argv) {
 		}
 		if (sizePulse_b == 0){
 			writeLog(fileRef, "Error", verbosity, "Calculated pulse size is 0");
-			status = -62801;
-			EPexit(status);
+			EPexit(2021);
 		}
-		//pulsegsl = gsl_vector_alloc(sizePulse_b);
 
 		/////////////////////// Get structure of input FITS file columns
-		//MC long numBins = 0L;	dal_dataType type;	int varLength=0; long sizeT, sizeV;
 
 		strcpy(straux,"Time");
-		//MC status = DALtableGetColStruct (inExten,0,&numBins,straux,&type, &sizeT,&varLength,status);	if (status == -1219){status = -62501; EPexit(status);}
 		strcpy(extname,"RECORDS");
 		if(fits_movnam_hdu(inObject, ANY_HDU,extname, extver, &status)) printerror(status);
 		if(fits_get_colnum(inObject,0,straux,&colnum,&status)) printerror(status);
-		//strcpy(straux,"I0");
 		strcpy(straux,"ADC");
-		//MC status = DALtableGetColStruct (inExten,0,&numBins,straux,&type, &sizeV,&varLength,status);	if (status == -1219){status = -62502; EPexit(status);}
 		if(fits_get_colnum(inObject,0,straux,&colnum,&status)) printerror(status);
-		
+
 		sprintf(str_stat,"%d",status);
 		message = "Open InFits: " +  string(inName) + " " + string(str_stat);
 		writeLog(fileRef,"Log",verbosity,message);
-
-
+		
 		/////////////////////// Create output FITS file: Trigger file (*_trg.fits)
-		status = createTriggerFile(status);
-
-		if (status != EPOK) EPexit (status);
+		status = createTriggerFile();
+		if(status)EPexit(status);
 		if(fits_open_file(&obj.inObject,trgName,1,&status))printerror(status);
 
 		///////////////////////// Iteration DAL
-		//MC extern int inDataIterator(long totalrows, long offset, long firstrow,long nrows, int ncols, iteratorCol *cols, void *user_strct);
+		extern int inDataIterator(long totalrows, long offset, long firstrow,long nrows, int ncols, iteratorCol *cols, void *user_strct);
 
 			// Create structure to run Iteration DAL
 		iteratorCol cols [2]; 					// Structure of Iteration DAL
-		int n_cols = 2; 						// Number of columns:  TIME + I
+		int n_cols = 2; 					// Number of columns:  TIME + ADC
 		long rows_per_loop = 0; 				// 0: Use default: Optimum number of rows
-		long offset=0; 							// 0: Process all the rows
-		
-		//MC
+		long offset=0; 						// 0: Process all the rows
+
 		strcpy(extname,"RECORDS");
 		if(fits_movnam_hdu(inObject, ANY_HDU,extname, extver, &status)) printerror(status);
 		
-			// Read Time Column
+		// Read Time column
 		strcpy(straux,"TIME");
-		//MC status = DALiterSetByName(&cols[0], inExten, straux, DAL_DOUBLE, InputCol,	status);
 		if(fits_iter_set_by_name(&cols[0], inObject, straux, TDOUBLE, InputCol)) printerror(status);
-		
 
-			// Read I
-		//strcpy(straux,"I0");
+		// Read ADC column
 		strcpy(straux,"ADC");
-		//MC status = DALiterSetByName(&cols[1], inExten, straux,DAL_DOUBLE, InputCol, status);
 		if(fits_iter_set_by_name(&cols[1], inObject, straux, TDOUBLE, InputCol))printerror(status);
-		
 
-		if ((mode == 1) || (mode == 2))
+		if (mode == 1)	// Production mode
 		{
 			// Once the pulse models read from the library are low-pass filtered and derived, they are stored in "models"
 			for (int i=0; i<models->size1; i++)
@@ -599,23 +495,20 @@ int main(int argc, char **argv) {
 				gsl_matrix_get_row(model,models,i);
 
 				// PULSE MODEL: Low-pass filtering
-				status = lpf_boxcar(&model,model->size,tauFALL*scaleFactor,samprate,status);
-				if (status == 1)
+				status = lpf_boxcar(&model,model->size,tauFALL*scaleFactor,samprate);
+				if (status == 2023)
 				{
 					writeLog(fileRef,"Warning", verbosity,"lpf_boxcar(Model): tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.");
-					status = 0;
+					status = EPOK;
 				}
-				if (status == 2)
+				if (status == 2024)
 				{
 					writeLog(fileRef,"Warning", verbosity,"lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low");
 					return(status);
 				}
-				if (!status == EPOK) return (status);
-
 				// PULSE MODEL: Derivative after filtering
 				modelSGN = gsl_vector_alloc(model->size);
-				status = derMTHSimple (&model,&modelSGN,model->size,status);
-				if (!status == EPOK) return (status);
+				if(derMTHSimple (&model,&modelSGN,model->size)) return (status);
 
 				gsl_matrix_set_row(models,i,model);
 			}
@@ -623,48 +516,60 @@ int main(int argc, char **argv) {
 		}
 
 			// Called iteration function
-		//MC status = DALiterateData(n_cols, cols, offset, rows_per_loop, inDataIterator, 0L, status);
 		if(fits_iterate_data(n_cols,cols,offset,rows_per_loop,inDataIterator,0L,&status))printerror(status);
 
-		fclose(temporalFile);
-
 		/////////////////////// Write output keywords
-		//MC status = DALattributePutInt(trgExten, "EVENTCNT", totalpulses-1, unit, comment,	status);
 		strcpy(extname,"EUR-TRG");
 		if(fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status)) printerror(status);
 		ttpls1 = totalpulses-1;
 		strcpy(keyname,"EVENTCNT");
 		if(fits_write_key(trgObject,TINT,keyname,&ttpls1,comment,&status)) printerror(status);
 
+		// EVENTCNT = totalpulses-1 because totalpulses has been initialized to 1 in trigger.h
 
 		if ((energy > 0) && (totalpulses == 0))
 		{
-			writeLog(fileRef, "Warning", verbosity, "Some pulses have been not found");
+			writeLog(fileRef, "Warning", verbosity, "Some pulses have not been found");
 		}
 	}
 
-	/////////////////////// Close input FITS files
-	//MC status = DALobjectClose(inObject, DAL_SAVE, status);
+	if (mode == 0)	// Calibration mode
+	{
+		gsl_vector *pulsetemplate = gsl_vector_alloc(sizePulse_b);
+		double pulseheighttemplate = 0;
+
+		status = calculateTemplate (totalpulses,&pulsetemplate,&pulseheighttemplate);
+		if(status)EPexit(status);
+		
+		status = writeLibrary(pulseheighttemplate, &pulsetemplate);
+		if(status)EPexit(status);
+
+		gsl_vector_free(pulsetemplate);
+	}
 
 	/////////////////////// Close output FITS files
-	//MC status = DALobjectClose(trgObject, DAL_SAVE, status);
-
 	// Close pulses models library file (EUR-LIB extension)
-	//MC status = DALobjectClose(inLibObject, DAL_SAVE, status);
 	if(fits_close_file(inObject,&status) || fits_close_file(trgObject,&status) || 
 	  fits_close_file(inLibObject,&status))  printerror(status);
 	
+	if(fclose(temporalFile)||fclose(temporalFile2))EPexit(1010);
 
-	//gsl_vector_free(pulsegsl);
+	/////////////////////// Free memory
+	if (energy != 0)
+	{
+		//delete [] straux;
+		delete [] obj.nameTable;
+		delete [] obj.nameCol;
+		delete [] obj.unit;
+	}
 
-	if (mode != 0)
+	if (mode == 1) //Production mode
 	{
 		//gsl_vector_free(modelSGN);
 
 		gsl_matrix_free(library);
 		gsl_matrix_free(models);
 	}
-	fclose(temporalFile2);
 
 	/////////////////////// Finalize the task
 	time_t t_end = time(NULL);
@@ -679,21 +584,10 @@ int main(int argc, char **argv) {
 	else
 	{
 		writeLog(fileRef,"Error", verbosity,"Trigger Module FAILS");
-		EPexit(-8000);
-	}
-	
-	if (energy != 0)
-	{
-		/////////////////////// Free memory
-		//delete [] straux;
-		delete [] obj.nameTable;
-		delete [] obj.nameCol;
-		delete [] obj.unit;
+		EPexit(1008);
 	}
 
-	status=fclose(fileRef);
-	if(!status == EPOK) EPexit(-4003);
-	EPexit(status);
+	if(fclose(fileRef))EPexit(1005);
 
 	return status;
 }
@@ -713,16 +607,16 @@ int main(int argc, char **argv) {
  *      - General parameters (nameLog, verbosity)
  * - It initializes log file of the task
  ****************************************************************************/
-int initModule(int argc, char **argv, int status)
+int initModule(int argc, char **argv)
 {
-	if (!status == EPOK)	return status;
+	int status = EPOK;
 	//
 	// Define Trigger Input parameters and assign values to variables
 	//
 	// Parameter Definition
 	
 	// SECTION 1/2 TO BE MODIFIED IF PARAMETERS NEED TO BE MODIFIED
-       const int npars = 19, npars1 = 20;
+        const int npars = 19, npars1 = 20;
 	inparam triggerPars[npars];
 	int optidx =0, par=0, fst=0, ipar; 
 	int fstLib=0;
@@ -748,8 +642,8 @@ int initModule(int argc, char **argv, int status)
 	triggerPars[2].ValStr = triggerPars[2].defValStr;
 
 	triggerPars[3].name = "mode"; 
-    triggerPars[3].description = "Strict calibration mode (0), calibration (1) or production mode (2)";
-    triggerPars[3].defValInt = 2;
+    triggerPars[3].description = "Calibration mode (0) or production mode (1)";
+    triggerPars[3].defValInt = 1;
     triggerPars[3].type = "int";
 	triggerPars[3].ValInt = triggerPars[3].defValInt;
 
@@ -863,54 +757,52 @@ int initModule(int argc, char **argv, int status)
 	int commandLine = 0; // initialize command line as being empty
 	while ((par=getopt_long(argc, argv,"",long_options, &optidx ))!= -1) // while there are still parameters in command line
 	{
-		// Params have been specified in the command line
-		commandLine = 1;
-		switch(par)
+	  // Params have been specified in the command line
+	  commandLine = 1;
+	  switch(par)
+	  {
+	    case 0:
+		// identify parameter read from command line
+		for(int i=0;i<npars; i++)
 		{
-			case 0:
-				// identify parameter read from command line
-				for(int i=0;i<npars; i++)
+			if(long_options[optidx].name == triggerPars[i].name.c_str())
+			{
+				if(triggerPars[i].type == "char")
 				{
-					if(long_options[optidx].name == triggerPars[i].name.c_str())
-					{
-						if(triggerPars[i].type == "char")
-						{
-							triggerPars[i].ValStr = optarg;
-						}
-						else if(triggerPars[i].type == "int")
-						{
-							if ((!isdigit(optarg[0]) && (optarg[0] != '-'))) return(-3001);
-							if ((!isdigit(optarg[0]) && (optarg[0] == '-')))
-							{
-								if (!isdigit(optarg[1])) return(-3001);
-							}
-
-							triggerPars[i].ValInt = atoi(optarg);
-						}
-						else
-						{
-							if ((!isdigit(optarg[0]) && (optarg[0] != '-')))	return(-3001);
-							if ((!isdigit(optarg[0]) && (optarg[0] == '-')))
-							{
-								if (!isdigit(optarg[1]))	return(-3001);
-							}
-
-							triggerPars[i].ValReal= atof(optarg);
-						}
-						break;
-					} // endif
-				} // endfor
+				  triggerPars[i].ValStr = optarg;
+				}
+				else if(triggerPars[i].type == "int")
+				{
+				  if ((!isdigit(optarg[0]) && (optarg[0] != '-'))) return(1001);
+				  if ((!isdigit(optarg[0]) && (optarg[0] == '-')))
+				  {
+				    if (!isdigit(optarg[1])) return(1001);
+				  }
+				  triggerPars[i].ValInt = atoi(optarg);
+				}
+				else
+				{
+				  if ((!isdigit(optarg[0]) && (optarg[0] != '-'))) return(1001);
+				  if ((!isdigit(optarg[0]) && (optarg[0] == '-')))
+				  {
+				    if (!isdigit(optarg[1]))	return(1001);
+				  }
+				  triggerPars[i].ValReal= atof(optarg);
+				}
 				break;
-		    default:
-		    	cout << "Error: invalid parameter name "<< long_options[optidx].name << endl;
-		    	EPexit(-3007);
-		}//switch
+			} // endif
+		} // endfor
+		break;
+	    default:
+	    	cout << "Error: invalid parameter name "<< long_options[optidx].name << endl;
+	    	EPexit(1002);
+	  }//switch
 	}//while
 	// If command line is empty: ask for params interactively
 	if(commandLine == 0)
 	{
-		status=interactivePars(triggerPars,npars,task);
-		if(status) EPexit(status);
+		status = interactivePars(triggerPars,npars,task);
+		if(status)EPexit(status);
 	}
 
 	/*
@@ -938,56 +830,48 @@ int initModule(int argc, char **argv, int status)
 	// SECTION 2/2 TO BE MODIFIED IF PARAMETERS NEED TO BE MODIFIED
 	for(int i=0;i<npars; i++){
 	  if(triggerPars[i].name == "inFile") {
-	    strcpy(inName, triggerPars[i].ValStr.c_str()); 
-	    fst = access(inName, R_OK);
-	    if (fst < 0) 						return(-62102); 						
+	    strcpy(inName, triggerPars[i].ValStr.c_str()); 					
 	  }else if(triggerPars[i].name == "inLibFile"){
 	    strcpy(inLibName, triggerPars[i].ValStr.c_str()); 
 	    fst = access(inLibName, R_OK);
-	    fstLib=fst;
-	    //if (fst < 0) 						return(-62103);
 	  }else if(triggerPars[i].name == "outFile"){
 	    strcpy(trgName, triggerPars[i].ValStr.c_str()); 
 	  }else if(triggerPars[i].name == "mode"){
 	    mode = triggerPars[i].ValInt;
-	    if ((mode != 0) && (mode != 1) && (mode != 2))	return (-62620);
-	    if ((mode == 1) || (mode == 2))
-	    {
-	    	if (fstLib < 0) 						return(-62103);
-	    }
+	    if ((mode != 0) && (mode != 1))			return (2009);
 	  }else if(triggerPars[i].name == "b_cF"){
 	    b_cF = triggerPars[i].ValReal; 
-	    if (b_cF < 0)						return (-62621);
+	    if (b_cF < 0)					return (2010);
 	  }else if(triggerPars[i].name == "c_cF"){
 	    c_cF = triggerPars[i].ValReal; 
-	    if (c_cF < 0)						return (-62622);
+	    if (c_cF < 0)					return (2011);
 	  }else if(triggerPars[i].name == "LrsT"){
 	    LrsT = triggerPars[i].ValReal; 
-	    if (LrsT <= 0)						return (-62623);
+	    if (LrsT <= 0)					return (2012);
 	  }else if(triggerPars[i].name == "LbT"){
 	    LbT = triggerPars[i].ValReal; 
-	    if (LbT <= 0)						return (-62624);
+	    if (LbT <= 0)					return (2013);
 	  }else if(triggerPars[i].name == "tauFALL"){
 	    tauFALL = triggerPars[i].ValReal; 
-	    if (tauFALL <= 0)						return (-62612);
+	    if (tauFALL <= 0)					return (2003);
 	  }else if(triggerPars[i].name == "scaleFactor"){
 	    scaleFactor = triggerPars[i].ValReal; 
-	    if (scaleFactor <= 0)					return (-62619);
+	    if (scaleFactor <= 0)				return (2008);
 	  }else if(triggerPars[i].name == "samplesUp"){
 	    samplesUp = triggerPars[i].ValInt; 
-	    if (samplesUp <= 0)						return (-62615);
+	    if (samplesUp <= 0)					return (2006);
 	  }else if(triggerPars[i].name == "nSgms"){
 	    nSgms = triggerPars[i].ValInt; 
-	    if (nSgms <= 0)						return (-62614);
+	    if (nSgms <= 0)					return (2005);
 	  }else if(triggerPars[i].name == "ntaus"){
 	    ntaus = triggerPars[i].ValInt; 
-	    if (ntaus <= 0)						return (-62613);
+	    if (ntaus <= 0)					return (2004);
 	  }else if(triggerPars[i].name == "tAftrtstart"){
 	    tAftrtstart = triggerPars[i].ValReal; 
-	    if (tAftrtstart < 0)					return (-62616);
+	    if (tAftrtstart < 0)				return (2007);
 	  }else if(triggerPars[i].name == "numBitsQuality"){
 	    numBitsQual = triggerPars[i].ValInt; 
-	    if (numBitsQual< 4 || numBitsQual > 32)			return (-62609);
+	    if (numBitsQual< 4 || numBitsQual > 32)		return (2002);
 	  }else if(triggerPars[i].name == "writePulse"){
 	    writePulse = triggerPars[i].ValInt; 
 	  }else if(triggerPars[i].name == "getTaus"){
@@ -996,34 +880,19 @@ int initModule(int argc, char **argv, int status)
 	    strcpy(nameLog,triggerPars[i].ValStr.c_str()); 
 	  }else if(triggerPars[i].name == "verbosity"){
 	    verbosity = triggerPars[i].ValInt; 
-	    if (verbosity<0 || verbosity>3)				return (-62606);
+	    if (verbosity<0 || verbosity>3)			return (2001);
 	  }
 	}
 	// END OF SECTION 2/2 TO BE MODIFIED IF PARAMETERS NEED TO BE MODIFIED
 
 	fileRef = fopen(nameLog,"w+");	// Remove file if it already exists and open a new file to save log messages
-	if (fileRef == NULL) return(-4001);
+	if (fileRef == NULL) return(1003);
 	
 	return (status);
 }
 
 
 /*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
-
-
-/***** SECTION 4 ************************************************************
- * seconds2Bins function: This function transforms the units of the input parameters from seconds to bins.
- *
- ****************************************************************************/
-int seconds2Bins (int status)
-{
-	if (status != EPOK) return status;
-
-	sizePulse_b = (int)(sizePulse * samprate);
-
-	return status;
-}
-/*xxxx end of SECTION 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
 /***** SECTION 5 ************************************************************
@@ -1034,13 +903,11 @@ int seconds2Bins (int status)
  * - Create keywords
  *
  ***************************************************************************/
-int createTriggerFile(int status)
+int createTriggerFile()
 {
 	string message;
-	int extver=0;
-	
-	//MC if (!status == 0)		return status;
-
+	int extver=0, status = EPOK;
+  
 	/////////////////////// Create output FITS files: If it does not exist already
 	//If trgName does not finish as '.fits' and the file trgName+'.fits' already exists =>
 	//=> Data are appended to trgName file => Must not be allowed
@@ -1067,14 +934,14 @@ int createTriggerFile(int status)
 	}
 
 	//Create Trigger File
-	if (status == EPOK) {// if file already exists => error 
-		//MC status = DALobjectOpen(trgName, &trgObject, status);
-		fits_open_file(&trgObject, trgName,0,&status);
-		if (status == EPOK) {status = -62101; return status;}
-		else {status = EPOK;}
+	// if file already exists => error 
+	fits_open_file(&trgObject, trgName,0,&status);
+	if (status == EPOK){
+	  return(1001);
+	}else {
+	  status = EPOK;
 	}
 
-	//MC status = DALobjectCreate(trgName, DAL_DISK, NULL, &trgObject, status);
 	if(fits_create_file(&trgObject, trgName, &status)) printerror(status);
 
 	sprintf(straux, "%d", status);
@@ -1082,16 +949,14 @@ int createTriggerFile(int status)
 	writeLog(fileRef,"Log", verbosity,message);
 
 	/////////////////////// Create extension EUR-TRG
-	//MC status = DALtableCreate(trgObject, DAL_DISK, 0, "EUR-TRG", &trgExten, status);
 	char *tt[1];
 	char *tf[1];
 	char *tu[1];
 	strcpy(extname,"EUR-TRG");
 	if(fits_open_file(&trgObject,trgName,READWRITE,&status))printerror(status);
 	if(fits_create_tbl(trgObject, BINARY_TBL,0,0,tt,tf,tu,extname,&status))printerror(status);
-
+	
 	/////////////////////// Create extension EUR-TEST and its columns
-	//MC status = DALtableCreate(trgObject, DAL_DISK, 0, "EUR-TEST", &trgExten1, status);
 	strcpy(extname,"EUR-TEST");
 	if(fits_create_tbl(trgObject,BINARY_TBL,0,0,tt,tf,tu,extname,&status))printerror(status);
 
@@ -1099,44 +964,36 @@ int createTriggerFile(int status)
 	strcpy(extname,"EUR-TRG");
 	if(fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status)) printerror(status);
 	
-	//MC status = DALattributePutInt(trgExten, "EVENTSZ", sizePulse_b, unit, comment, status);
 	strcpy(keyname,"EVENTSZ");
 	if(fits_write_key(trgObject,TLONG,keyname,&sizePulse_b,comment,&status)) printerror(status);
-	//MC status = DALattributePutReal(trgExten, "ENERGY", energy, unit, comment, status);
 	strcpy(keyname,"ENERGY");
 	if(fits_write_key(trgObject,TDOUBLE,keyname,&energy,comment,&status)) printerror(status);
-	/*status = writeKeywords (kg, kgNumber, trgName, trgExten, fileRef,  status);
-	status = writeKeywords (ki, kiNumber, trgName, trgExten, fileRef,  status);*/
-	//MC status = DALattributePutReal(trgExten, "SAMPRATE", samprate, unit, comment, status);
 	strcpy(keyname,"SAMPRATE");
 	if(fits_write_key(trgObject,TDOUBLE,keyname,&samprate,comment,&status)) printerror(status);
-
-	//MC status = DALattributePutInt(trgExten, "NBQUAL", numBitsQual, unit, comment, status);
+	
 	strcpy(keyname,"NBQUAL");
 	if(fits_write_key(trgObject,TINT,keyname,&numBitsQual,comment,&status)) printerror(status);
-	//MC status = DALattributePutInt(trgExten, "TRG_ID", 1, unit, comment, status);
 	strcpy(keyname,"TRG_ID");
 	if(fits_write_key(trgObject,TINT,keyname,&trg_id,comment,&status)) printerror(status);
-	//MC status = DALattributePutChar(trgExten, "CREATOR", create, unit, comment, status);
 	strcpy(keyname,"CREATOR");
 	strcpy(keyvalstr,create);
 	if(fits_write_key(trgObject,TSTRING,keyname,keyvalstr,comment,&status)) printerror(status);
 
 	// Set process keyword
-	char str_verb[125];			sprintf(str_verb,"%d",verbosity);
-	char str_numB[125];			sprintf(str_numB,"%d",numBitsQual);
+	char str_verb[125];		sprintf(str_verb,"%d",verbosity);
+	char str_numB[125];		sprintf(str_numB,"%d",numBitsQual);
 	char str_ntaus[125];		sprintf(str_ntaus,"%d",ntaus);
 	char str_tauFall[125];		sprintf(str_tauFall,"%e",tauFALL);
 	char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",scaleFactor);
 	char str_samplesUp[125];	sprintf(str_samplesUp,"%d",samplesUp);
-	char str_nSgms[125];	    sprintf(str_nSgms,"%f",nSgms);
-	char str_wp[125];			if (writePulse) sprintf(str_wp,"y"); else  sprintf(str_wp,"n");
+	char str_nSgms[125];	    	sprintf(str_nSgms,"%f",nSgms);
+	char str_wp[125];		if (writePulse) sprintf(str_wp,"y"); else  sprintf(str_wp,"n");
 	char str_getTaus[125];		if (getTaus) sprintf(str_getTaus,"y"); else  sprintf(str_getTaus,"n");
-	char str_mode[125];			sprintf(str_mode,"%d",mode);
-	char str_b_cF[125];			sprintf(str_b_cF,"%f",b_cF);
-	char str_c_cF[125];			sprintf(str_c_cF,"%f",c_cF);
-	char str_LrsT[125];			sprintf(str_LrsT,"%e",LrsT);
-	char str_LbT[125];			sprintf(str_LbT,"%e",LbT);
+	char str_mode[125];		sprintf(str_mode,"%d",mode);
+	char str_b_cF[125];		sprintf(str_b_cF,"%f",b_cF);
+	char str_c_cF[125];		sprintf(str_c_cF,"%f",c_cF);
+	char str_LrsT[125];		sprintf(str_LrsT,"%e",LrsT);
+	char str_LbT[125];		sprintf(str_LbT,"%e",LbT);
 	char str_tAftrtstart[125];	sprintf(str_tAftrtstart,"%e",tAftrtstart);
 
 	string process (string("TRIGGER") 	+ ' ' +
@@ -1150,43 +1007,25 @@ int createTriggerFile(int status)
 	string(nameLog)			+ ' ' + string(str_verb)	    + ' ' +
 	string("(")				+      (string) create 		    +   	  string(")"));
 
-	//MC status = DALattributePutChar(trgExten, "PROCESS",process.c_str(), unit, comment, status);
 	strcpy(keyname,"PROCESS");
 	strcpy(keyvalstr,process.c_str());
 	if(fits_write_key_longwarn(trgObject,&status))printerror(status);
 	if(fits_write_key_longstr(trgObject,keyname,keyvalstr,comment,&status)) printerror(status);
-	//MC status = DALattributePutChar(trgExten, "FTYPE", "pulse", unit, comment, status);
+	
 	strcpy(keyname,"FTYPE");
 	strcpy(keyvalstr,"pulse");
 	if(fits_write_key(trgObject,TSTRING,keyname,keyvalstr,comment,&status)) printerror(status);
-
-	//MC status = DALattributePutInt(trgExten, "NTAUS", ntaus, unit, comment, status);
+	
 	strcpy(keyname,"NTAUS");
 	if(fits_write_key(trgObject,TINT,keyname,&ntaus,comment,&status)) printerror(status);
-	//MC status = DALattributePutReal(trgExten, "TAUFALL", tauFALL, unit, comment, status);
 	strcpy(keyname,"TAUFALL");
 	if(fits_write_key(trgObject,TDOUBLE,keyname,&tauFALL,comment,&status)) printerror(status);
-	//MC status = DALattributePutReal(trgExten, "SCLFCTR", scaleFactor, unit, comment, status);
 	strcpy(keyname,"SCLFCTR");
 	if(fits_write_key(trgObject,TDOUBLE,keyname,&scaleFactor,comment,&status)) printerror(status);
-	
-	//MC if ((mode == 0) || (mode == 1))
-	//MC {
-	//MC 	status = DALattributePutInt(trgExten, "MODE", 0, unit, comment, status);
-	//MC }
-	//MC else
-	//MC {
-	//MC	status = DALattributePutInt(trgExten, "MODE", 1, unit, comment, status);
-	//MC }
-	modeval = 1;
-	if ((mode == 0) || (mode == 1)) modeval = 0;
 	strcpy(keyname,"MODE");
-	if(fits_write_key(trgObject,TINT,keyname,&modeval,comment,&status)) printerror(status);	
-	
-	//MC status = DALattributePutReal(trgExten, "B_CF", b_cF, unit, comment, status);
+	if(fits_write_key(trgObject,TINT,keyname,&mode,comment,&status)) printerror(status);	
 	strcpy(keyname,"B_CF");
 	if(fits_write_key(trgObject,TDOUBLE,keyname,&b_cF,comment,&status)) printerror(status);
-	//MC status = DALattributePutReal(trgExten, "C_CF", c_cF, unit, comment, status);
 	strcpy(keyname,"C_CF");
 	if(fits_write_key(trgObject,TDOUBLE,keyname,&c_cF,comment,&status)) printerror(status);
 
@@ -1207,19 +1046,16 @@ int createTriggerFile(int status)
  *   * Rows (events) are processed in only one step (without cutting into several segments)
  * - Free allocate of GSL vectors
  ****************************************************************************/
-int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int ncols, iteratorCol *cols, void *user_strct)
+int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int ncols, iteratorCol *cols, void *user_strct)
 {
 	string message;
-	//MC 
-	int status=EPOK;
+	int status = EPOK;
 	int extver=0;
-	
-	//MC if (!status == 0)	return status;
 
 	/////////////////////// Declare variables
 	static double *time;	// Vector of TIME column
-	static double *v;		// Vector of V column
-	nPulsesRow = 0;			// Number of pulses in each row
+	static double *v;	// Vector of V column
+	nPulsesRow = 0;		// Number of pulses in each row
 
 	/////////////////////// Allocate input GSL vectors
 	gsl_vector *timegsl = gsl_vector_alloc(nrows); 				 // Input TIME column
@@ -1232,45 +1068,32 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 	gsl_vector *derSGN = gsl_vector_alloc(eventsz);				 // Sign of the invectorDERIVATIVE
 
 	/////////////////////// Read iterator
-	//MC status = DALiterGetArray(&cols[0], ((void **)&time), status);
 	time = (double *) fits_iter_get_array(&cols[0]);
-	//MC status = toGslVector(((void **)&time), &timegsl, nrows, 0, DAL_DOUBLE, status);
-	status = toGslVector(((void **)&time), &timegsl, nrows, 0, TDOUBLE, status);
-	//MC status = DALiterGetArray(&cols[1], ((void **)&v), status);
+	status = toGslVector(((void **)&time), &timegsl, nrows, 0, TDOUBLE);
+	if(status)EPexit(status);
 	v = (double *) fits_iter_get_array(&cols[1]);
-	//MC status = toGslMatrix(((void **)&v), &vgsl, eventsz, nrows, (int)DAL_DOUBLE,	0, status);
-	status = toGslMatrix(((void **)&v), &vgsl, eventsz, nrows, (int)TDOUBLE, 0, status);
+	status = toGslMatrix(((void **)&v), &vgsl, eventsz, nrows, (int)TDOUBLE, 0);
+	if(status)EPexit(status);
 
 	char val[256];
 	char val_aux[256];
-	//tstartevents = gsl_vector_alloc(eventcnt);
-	//event = gsl_vector_alloc(eventsz);
 
-	
 	///////////////////////  Processing each row of pulses
-	for (int i=0; i< nrows; i++) {
-
+	for (int i=0; i< nrows; i++)
+	{
 		sprintf(straux,"%d",ntotalrows);
 		message = "-------------> Row: " + string(straux);
 		sprintf(straux,"%d",eventcnt);		
 		message += " of " + string(straux) + " <------------------ ";
 		writeLog(fileRef,"Log", verbosity,message);
-		sprintf(val,"-----------> Row: ");
-		sprintf(val_aux,"%d",ntotalrows);
-		strcat(val,val_aux);
-		sprintf(val_aux," of ");
-		strcat(val,val_aux);
-		sprintf(val_aux,"%d",eventcnt);
-		strcat(val,val_aux);
+		sprintf(val,"-------------> Row: %d of %d <------------------ ",ntotalrows,eventcnt);
 		strcat(val,"\n");
 		fputs(val,temporalFile);
+
 
 		double time0 = gsl_vector_get(timegsl, i);	// Time in the begin of the row
 		gsl_matrix_get_row(invector, vgsl, i);
 		gsl_vector_scale(invector,ivcal);		//IVCAL to change arbitrary units of voltage to non-arbitrary units of current (Amps)
-
-		if (i == 0)		timefirstevent = time0;
-		//gsl_vector_set(tstartevents,ntotalrows-1,gsl_vector_get(timegsl,i));
 
 		// Assign positive polarity to the pulses
 		if (((asquid>0) && (plspolar<0)) || ((asquid<0) && (plspolar>0)))
@@ -1278,70 +1101,36 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 			gsl_vector_scale(invector,-1);
 			chngplrt = 1;
 		}
-		//MC status = DALattributePutInt(trgExten, "CHNGPLRT", chngplrt, unit, comment, status);
 		strcpy(extname,"EUR-TRG");
 		if(fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status)) printerror(status);
 		strcpy(keyname,"CHNGPLRT");
 		if(fits_update_key(trgObject,TINT,keyname,&chngplrt,comment,&status))printerror(status);
-
+		
 		gsl_vector_memcpy(invectorNOTFILTERED,invector);
 
-		//gsl_vector_memcpy(event, invectorNOTFILTERED);
-
 		// Low-pass filtering
-		status = lpf_boxcar(&invector,invector->size,scaleFactor*tauFALL,samprate,status);
-		if (status == 1)
+		status = lpf_boxcar(&invector,invector->size,scaleFactor*tauFALL,samprate);
+		if (status == 2023)
 		{
-	   	   writeLog(fileRef,"Warning", verbosity,"lpf_boxcar: tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.");
-	   	   status = 0;
+	   	   writeLog(fileRef,"Warning", verbosity,"lpf_boxcar: tauFALL*scaleFactot too small => Cut-off frequency too high => Equivalent to not filter.");
+	   	   status = EPOK;
 		}
-		if (status == 2)
+		if (status == 2024)
 		{
 	  	  writeLog(fileRef,"Warning", verbosity,"lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low");
 	  	  return(status);
 		}
-		if (!status == EPOK) return (status);
 		gsl_vector_memcpy(invectorFILTERED,invector);
 
-		/*if (indice == 26)
-		{
-			writeLog(fileRef,"Warning", verbosity,status,"Va a escribir el fichero");
-			FILE * temporalFile;
-			char val[256];
-			char val_aux[256];
-			char temporalFileName[255];
-			sprintf(temporalFileName,trgName);
-			strcat(temporalFileName,".txt");
-			//temporalFile = fopen ("temporal.txt","w");
-			temporalFile = fopen (temporalFileName,"w");
-			//cout<<"temporalFileName: "<<temporalFileName<<endl;
-			for (int i=0;i<eventsz;i++)
-			{
-				sprintf(val,"%e",gsl_vector_get(invectorNOTFILTERED,i));
-				strcat(val," ");
-				sprintf(val_aux,"%e",gsl_vector_get(invectorFILTERED,i));
-				strcat(val,val_aux);
-				//strcat(val," ");
-				//sprintf(val_aux,"%e",thresholdmediankappa);
-				//strcat(val,val_aux);
-				strcat(val,"\n");
-				fputs (val,temporalFile);
-			}
-			fclose(temporalFile);
-		}*/
-
 		// Derivative after filtering
-		status = derMTHSimple (&invector,&SGN,invector->size,status);
-		if (!status == EPOK) return (status);
+		if(derMTHSimple (&invector,&SGN,invector->size))return (status);
 		gsl_vector_memcpy(invectorDERIVATIVE,invector);
 		gsl_vector_memcpy(derSGN,SGN);
 
-		
-		if (indice+1 == 86)
+		if (indice+1 == 1)
 		{
 			//  Creating NTFltRow Column
 			if (status == EPOK) {
-				//MC obj.inObject = trgExten1;
 				obj.inObject = trgObject;
 				obj.nameTable = new char [255];
 				strcpy(obj.nameTable,"EUR-TEST");
@@ -1350,42 +1139,29 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 				obj.iniCol = 0;
 				obj.nameCol = new char [255];
 				strcpy(obj.nameCol,"NTFltRow");
-				//MC obj.type = DAL_DOUBLE;
 				obj.type = TDOUBLE;
 				obj.unit = new char [255];
 				strcpy(obj.unit," ");
 			}
-			status = writeFitsSimple(obj, invectorNOTFILTERED, status);
+			status = writeFitsSimple(obj, invectorNOTFILTERED);
+			if(status)EPexit(status);
 
 			//  Creating FltRow Column
-			if (status == EPOK)
-			{
-				strcpy(obj.nameCol,"FltRow");
-			}
-			status = writeFitsSimple(obj, invectorFILTERED, status);
+			strcpy(obj.nameCol,"FltRow");
+			status = writeFitsSimple(obj, invectorFILTERED);
+			if(status)EPexit(status);
 
 			//  Creating DerRow Column
-			if (status == EPOK) {
-				strcpy(obj.nameCol,"DerRow");
-			}
-			status = writeFitsSimple(obj, invectorDERIVATIVE, status);
+			strcpy(obj.nameCol,"DerRow");
+			status = writeFitsSimple(obj, invectorDERIVATIVE);
+			if(status)EPexit(status);
 		}
-		
-		/*sprintf(val,"vectorinNOTFIL vectorinFIL vectorinDER");
-		strcat(val,"\n");
-		fputs (val,temporalFile);
-		for (int i=0; i<invectorFILTERED->size;i++)
-		{
-			sprintf(val,"%e %e %e",gsl_vector_get(invectorNOTFILTERED,i),gsl_vector_get(invectorFILTERED,i),gsl_vector_get(invectorDERIVATIVE,i));
-			strcat(val,"\n");
-			fputs (val,temporalFile);
-		}*/
 
 		// Rows (events) are processed in only one step (without cutting into several segments)
 		initialtime = time0;
 
-		status = procRow(invectorNOTFILTERED, invectorDERIVATIVE, &nPulsesRow, status);
-
+		status = procRow(invectorNOTFILTERED, invectorDERIVATIVE, &nPulsesRow);
+		if(status)EPexit(status);
 		ntotalrows ++;
 
 		indice++;
@@ -1434,12 +1210,11 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
  * - npulses: Number of pulses found in the row (event)
  * - status: Auxiliary variable which has the function status: Error, Warning or OK
  ****************************************************************************/
-int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses, int status)
+int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses)
 {
 	char val[256];
 	char val_aux[256];
-
-	if (!status == 0)	return status;
+	int status = EPOK;
 
 	/////////////////////// Initialize variables
 	nPulsesRow = 0;
@@ -1465,69 +1240,28 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses, int s
 	gsl_vector_set_zero(tauFallgsl);
 
 	/////////////////////// Find pulses of the row
-	if (mode == 2)
-	{
-		status = findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
-				npulses,
-				1,
-				tauFALL, scaleFactor, sizePulse_b, samprate,
-				samplesUp, nSgms,
-				Lb, Lrs, b_cF, c_cF,
-				library, models,
-				safetyMarginTstart,
-				stopCriteriaMKC,
-				kappaMKC,
-				limitCriteriaMAX,
-				nsAftrtstart,
-				levelPrvPulse,
-				primaryThresholdCriteria,
-				temporalFile,
-				status,
-				indice+1);
-	}
-	else
-	{
-		status = findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
-				npulses,
-				mode,
-				tauFALL, scaleFactor, sizePulse_b, samprate,
-				samplesUp, nSgms,
-				Lb, Lrs, b_cF, c_cF,
-				library, models,
-				safetyMarginTstart,
-				stopCriteriaMKC,
-				kappaMKC,
-				limitCriteriaMAX,
-				nsAftrtstart,
-				levelPrvPulse,
-				primaryThresholdCriteria,
-				temporalFile,
-				status,
-				indice+1);
-	}
+	if(findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
+			npulses,
+			mode,
+			tauFALL, scaleFactor, sizePulse_b, samprate,
+			samplesUp, nSgms,
+			Lb, Lrs, b_cF, c_cF,
+			library, models,
+			safetyMarginTstart,
+			stopCriteriaMKC,
+			kappaMKC,
+			limitCriteriaMAX,
+			nsAftrtstart,
+			levelPrvPulse,
+			primaryThresholdCriteria,
+			temporalFile,
+			indice+1))EPexit(status);
+
 	sprintf(val,"%d %d",indice+1,nPulsesRow);
 	strcat(val,"\n");
 	fputs(val,temporalFile2);
-	/*sprintf(val,"vectorDER");
-		strcat(val,"\n");
-		fputs(val,temporalFile);
-	if (indice+1 == 207)
-	{
-		for (int j=0;j<vectorDER->size;j++)
-		{
-			sprintf(val,"%.12f",gsl_vector_get(vectorDER,j));
-			strcat(val,"\n");
-			fputs(val,temporalFile);
-		}
-	}*/
 
 	// Calculate the tend of each found pulse
-	/*sprintf(val,"nPulsesRowTOT: ");
-	sprintf(val_aux,"%d",nPulsesRow);
-	strcat(val,val_aux);
-	strcat(val,"\n");
-	fputs(val, temporalFile);*/
-
 	gsl_vector *tendAUXgsl;
 
 	for (int i=0;i<nPulsesRow;i++)
@@ -1584,276 +1318,11 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses, int s
 		}
 	}
 
-	/*for (int i=0;i<nPulsesRow;i++)
-		{
-			sprintf(val,"Pulsesfound( ");
-			sprintf(val_aux,"%d",i);
-			strcat(val,val_aux);
-			sprintf(val_aux,"): ");
-			strcat(val,val_aux);
-			sprintf(val_aux,"%e",gsl_vector_get(tstartgsl,i));
-			strcat(val,val_aux);
-			strcat(val,"\n");
-			fputs(val, temporalFile);
-		}*/
-
-	/*/////////////////////// Obtain in a precise way the tstart of the founded pulses
-		// Declare variables
-	gsl_vector *pulsevector;		// Current pulse
-	gsl_vector *pulsevectorFIL;		// Low-pass filtered current pulse
-	long pulsevectorFILmax_index;	// Index where the maximum of the low-pass filtered current pulse is
-	gsl_vector *SGN1;
-	long sizePulse_bi;				// Current pulse size
-	                                // (lower than sizePulse_b if the following pulse is closer than sizePulse_b)
-	long tstart0;					// From the beginning of 'pulsevector' => Add to tstartgsl (which takes into account the safety margin)
-	double tstartj;                 // From the beginning of 'pulsevector' => Add to tstartgsl (which takes into account the safety margin)
-	double sF = scaleFactor/10;		// The first scale factor to use is 10 times lower the input parameter 'scaleFactor'
-									// HARPOINT!!!
-	double sFj;						// 0.1*scaleFactor, 0.2*scaleFactor, 0.3*scaleFactor...
-	bool iterate = true;
-	gsl_vector *tstartjgsl=gsl_vector_alloc(10);	// It stores the tstart's calculated by using different cut
-													// frequencies (different sFj) of the low-pass filter
-
-	int tstart0LIMITED = 0;			// Not limited
-	int tstartjLIMITED = 0;
-
-		// Auxiliary variables
-	gsl_vector *pulsevector_aux;
-	double t0;	//tstartgsl_i (only to shorten the code)
-	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
-
-	for (int i=0; i<nPulsesRow; i++)
-	// For each pulse...
-	{
-		iterate = true;
-		sizePulse_bi = gsl_vector_get(tendAUXgsl,i)-gsl_vector_get(tstartgsl,i)+1;
-		pulsevector = gsl_vector_alloc(sizePulse_bi);
-		pulsevector_aux = gsl_vector_alloc(sizePulse_bi);
-		pulsevectorFIL = gsl_vector_alloc(sizePulse_bi);
-		SGN1 = gsl_vector_alloc(sizePulse_bi);
-
-		t0 = gsl_vector_get (tstartgsl,i);
-		sprintf(val,"tstart: %.12e",t0);
-		strcat(val,"\n");
-		fputs(val,temporalFile);
-
-		// Extract the current pulse from the event
-		if (vectorNOTFIL->size - t0 > sizePulse_bi)
-		// Not truncated pulse
-		{
-			temp = gsl_vector_subvector(vectorNOTFIL,t0+1,sizePulse_bi);
-
-			gsl_vector_memcpy(pulsevector,&temp.vector);
-		}
-		else
-		// Truncated pulse
-		{
-			for (int j=0; j<(vectorNOTFIL->size) - t0; j++)
-			{
-				if (t0 == -1) t0 = 0;
-				gsl_vector_set(pulsevector,j,gsl_vector_get(vectorNOTFIL,j+t0));
-			}
-			for (int j=(vectorNOTFIL->size)-t0; j< sizePulse_bi; j++) // Fill in with 0's
-			{
-				gsl_vector_set(pulsevector,j,0.0);
-			}
-		}
-
-		sprintf(val,"gsl_vector_max_index(pulsevector): %d",gsl_vector_max_index(pulsevector));
-		strcat(val,"\n");
-		fputs(val,temporalFile);
-		if (gsl_vector_max_index(pulsevector)<10)					// HARDPOINT!!!!!
-		//if (gsl_vector_max_index(pulsevector)<3)					// HARDPOINT!!!!!
-		{
-			iterate = false;
-
-		}
-
-		// Low-pass filtering by using sF  = scaleFactor/10
-		gsl_vector_memcpy(pulsevector_aux,pulsevector);
-		status = lpf_boxcar(&pulsevector_aux,pulsevector_aux->size,sF*tauFALL,samprate,status);
-		if (status == 1)
-		{
-			writeLog(fileRef,"Warning", verbosity,"lpf_boxcar(Model): tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.");
-			//sprintf(val,"1st sF lpf_boxcar(Model): tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.");
-			//strcat(val,"\n");
-			//fputs(val,temporalFile);
-			status = 0;
-		}
-		if (status == 2)
-		{
-			writeLog(fileRef,"Warning", verbosity,"lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low");
-			//sprintf(val,"1st sF lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low");
-			//strcat(val,"\n");
-			//fputs(val,temporalFile);
-			iterate = false;
-			status = 0;
-		}
-
-		if (iterate == true)
-		{
-			gsl_vector_memcpy(pulsevectorFIL,pulsevector_aux);
-			pulsevectorFILmax_index = gsl_vector_max_index(pulsevectorFIL);
-
-			// Calculate tstart0 by calculating the maximum of the derivative of the filtered data
-			status = derMTHSimple (&pulsevector_aux,&SGN1,pulsevector_aux->size,status);
-			if (!status == EPOK) return (status);
-			tstart0 = gsl_vector_max_index(pulsevector_aux);
-			// The first and simplest correction of the tstart
-			if (tstart0 > pulsevectorFILmax_index)
-			{
-				tstart0 = pulsevectorFILmax_index;
-				tstart0LIMITED = 1;
-			}
-			gsl_vector_set(tstartjgsl,0,tstart0);
-
-			sFj = sF+sF;
-			for (int j=1;j<10;j++)
-			// For different cut frequencies of the low-pass filter...
-			// sFj = 0.2scaleFactor, 0.3scaleFactor,...
-			// sFj goes increasing => Cut frequency decreases => boxLength increases
-			{
-				tstartjLIMITED = 0;
-
-				// Low-pass filtering by using sF
-				gsl_vector_memcpy(pulsevector_aux,pulsevector);
-				status = lpf_boxcar(&pulsevector_aux,pulsevector_aux->size,sFj*tauFALL,samprate,status);
-				if (status == 1)
-				{
-					writeLog(fileRef,"Warning", verbosity,"lpf_boxcar(Model): tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.");
-					sprintf(val,"lpf_boxcar(Model): tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.");
-					strcat(val,"\n");
-					fputs(val,temporalFile);
-					status = 0;
-				}
-				if (status == 2)
-				// At the end => break, because boxLength would go on increasing
-				{
-					writeLog(fileRef,"Warning", verbosity,"lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low");
-					sprintf(val,"lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low");
-					strcat(val,"\n");
-					fputs(val,temporalFile);
-
-					if (j == 1)
-					{
-						// tstart0/2 (averaging) + tstartgsl
-						gsl_vector_set(tstartgsl,i,floor((tstart0+gsl_vector_get(tstartgsl,i)+gsl_vector_get(tstartgsl,i))/2));
-						status = 0;
-						break;
-					}
-					else
-					{
-						tstart0 = gsl_vector_get(tstartjgsl,0);
-						for (int k=1;k<j;k++)
-						{
-							tstart0 = tstart0+gsl_vector_get(tstartjgsl,k);
-						}
-						// (tstart0+tstartjgsl_1+tstartjgsl_2 +...+tstartjgsl_j)/j + tstartgsl
-						//gsl_vector_set(tstartgsl,i,+gsl_vector_get(tstartgsl,i)+tstart0/(tstartjgsl->size));
-						gsl_vector_set(tstartgsl,i,gsl_vector_get(tstartgsl,i)+tstart0/j);
-						status = 0;
-						break;
-					}
-				}
-				gsl_vector_memcpy(pulsevectorFIL,pulsevector_aux);
-				pulsevectorFILmax_index = gsl_vector_max_index(pulsevectorFIL);
-
-				// Calculate tstartj by calculating the maximum of the derivative of the filtered data
-				status = derMTHSimple (&pulsevector_aux,&SGN1,pulsevector_aux->size,status);
-				tstartj = gsl_vector_max_index(pulsevector_aux);
-				if (tstartj > pulsevectorFILmax_index)
-				{
-					tstartj = pulsevectorFILmax_index;
-					tstartjLIMITED = 1;
-				}
-				gsl_vector_set(tstartjgsl,j,tstartj);
-
-				// Compare tstart0 and tstartj
-				// if tstart0 and tstartj are similar => Stop ('break') and tstart=(tstart0+tstartj)/2
-				// else => Another iteration sFj=sFj+sF*j
-				if ((fabs(tstartj-tstart0) <= 2) && ((tstart0LIMITED != 1) || (tstartjLIMITED != 1)) && (tstart0-tstartj != 0))
-				//if ((fabs(tstartj-tstart0) <= 0.1*safetyMarginTstart) && ((tstart0LIMITED != 1) || (tstartjLIMITED != 1)) && (tstart0-tstartj != 0))
-				//if ((fabs(tstartj-tstart0) <= 0.1*safetyMarginTstart) && ((tstart0LIMITED != 1) || (tstartjLIMITED != 1)))
-				//if (fabs(tstartj-tstart0) <= 0.1*safetyMarginTstart)
-				//if (fabs(tstartj-tstart0) <= 0.2*safetyMarginTstart)
-				{
-					sprintf(val,"Entra1");
-					strcat(val,"\n");
-					fputs(val,temporalFile);
-					if ((i != nPulsesRow-1) && (floor((tstart0+tstartj)/2)+gsl_vector_get(tstartgsl,i) < gsl_vector_get(tstartgsl,i+1))
-					|| ((i != 0) && (floor((tstart0+tstartj)/2)+gsl_vector_get(tstartgsl,i) > gsl_vector_get(tstartgsl,i-1))) || ((i==0) && (i==nPulsesRow-1)))
-					{
-						sprintf(val,"Entra1_1");
-						strcat(val,"\n");
-						fputs(val,temporalFile);
-						gsl_vector_set(tstartgsl,i,floor((tstart0+tstartj)/2)+gsl_vector_get(tstartgsl,i));
-
-						break;
-					}
-				}
-				else
-				{
-					sprintf(val,"Entra2");
-					strcat(val,"\n");
-					fputs(val,temporalFile);
-					tstart0 = tstartj;
-					tstart0LIMITED = tstartjLIMITED;
-					sFj = sFj + sF;
-					if (j == 10-1)
-					{
-						//tstart0 = gsl_vector_get(tstartjgsl,0);
-						tstart0 = gsl_vector_get(tstartjgsl,5);
-						//for (int k=1;k<tstartjgsl->size;k++)
-						for (int k=6;k<tstartjgsl->size;k++)
-						{
-							tstart0 = tstart0+gsl_vector_get(tstartjgsl,k);
-						}
-						//gsl_vector_set(tstartgsl,i,gsl_vector_get(tstartgsl,i)+tstart0/(tstartjgsl->size));
-						if ((i != nPulsesRow-1) && (gsl_vector_get(tstartgsl,i)+tstart0/5 < gsl_vector_get(tstartgsl,i+1))
-						|| ((i != 0) && (gsl_vector_get(tstartgsl,i)+tstart0/5 > gsl_vector_get(tstartgsl,i-1))) || ((i==0) && (i==nPulsesRow-1)))
-						{
-							sprintf(val,"Entra2_1");
-							strcat(val,"\n");
-							fputs(val,temporalFile);
-							if (i!=nPulsesRow-1)
-							{
-								sprintf(val,"Siguiente: %.12e",gsl_vector_get(tstartgsl,i+1));
-								strcat(val,"\n");
-								fputs(val,temporalFile);
-							}
-							if (i!= 0)
-							{
-								sprintf(val,"Anterior: %.12e",gsl_vector_get(tstartgsl,i-1));
-								strcat(val,"\n");
-								fputs(val,temporalFile);
-							}
-							gsl_vector_set(tstartgsl,i,gsl_vector_get(tstartgsl,i)+tstart0/5);
-							sprintf(val,"El del pulso i: %.12e",gsl_vector_get(tstartgsl,i));
-							strcat(val,"\n");
-							fputs(val,temporalFile);
-						}
-					}
-				}
-			}
-
-			gsl_vector_free(pulsevector);
-			gsl_vector_free(pulsevector_aux);
-			gsl_vector_free(pulsevectorFIL);
-			gsl_vector_free(SGN1);
-		}
-		else
-		{
-
-			gsl_vector_set(tstartgsl,i,gsl_vector_get(tstartgsl,i)+safetyMarginTstart);
-		}
-	}
-	gsl_vector_free(tstartjgsl);*/
-
 	for (int i=0;i<nPulsesRow;i++)
 	{
 		gsl_vector_set(tstartgsl,i,gsl_vector_get(tstartgsl,i)+safetyMarginTstart);
 	}
-	//if (nPulsesRow!=0) gsl_vector_free(tendAUXgsl);
+
 
 	for (int i=0;i<nPulsesRow;i++)
 	{
@@ -1881,7 +1350,6 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses, int s
 		}
 
 	}
-	//...............................................
 
 	for (int i=0;i<nPulsesRow;i++)
 	{
@@ -1912,49 +1380,14 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses, int s
 		gsl_vector_memcpy(tendWOutSftMrggsl,tendgsl);
 		gsl_vector_add(tstartWOutSftMrggsl,safetyMarginVector);
 		gsl_vector_add(tendWOutSftMrggsl,safetyMarginVector);
-		status = obtainTau (vectorNOTFIL, tstartWOutSftMrggsl, tendWOutSftMrggsl, nPulsesRow, &tauRisegsl, &tauFallgsl, status);
+		status = obtainTau (vectorNOTFIL, tstartWOutSftMrggsl, tendWOutSftMrggsl, nPulsesRow, &tauRisegsl, &tauFallgsl);
+		if(status)EPexit(status);
 	}
 
 	/////////////////////// Write pulses and measurements in output FITS files
 	if (nPulsesRow != 0)	pulsesgsl = gsl_matrix_alloc(nPulsesRow,sizePulse_b);
-
-	status = writePulses (vectorNOTFIL, vectorDER, tstartgsl, tendgsl, qualitygsl, tauRisegsl, tauFallgsl, energygsl, &pulsesgsl, status);
-
-
-	/*if ((mode == 0) && (indice == 0))
-	{
-		status = writeLibrary(gsl_vector_get(energygsl,0), &pulsegsl, status);
-	}*/
-	if (mode == 0)
-	{
-		if (indice == 0)
-		{
-			pulseheighttemplate = 0.0;
-			pulseaverage = gsl_vector_alloc(sizePulse_b);
-			gsl_vector_set_all(pulseaverage,0.0);
-			row_aux = gsl_vector_alloc(sizePulse_b);
-		}
-
-		for (int i=0;i<nPulsesRow;i++)
-		{
-			pulseheighttemplate = pulseheighttemplate + gsl_vector_get(energygsl,i);
-			gsl_matrix_get_row(row_aux,pulsesgsl,i);
-			gsl_vector_add(pulseaverage,row_aux);
-		}
-
-		if (indice == eventcnt-1)
-		{
-			gsl_vector_scale(pulseaverage,1.0/((double) totalpulses));
-			pulseheighttemplate = pulseheighttemplate/totalpulses;
-
-			//status = getB(pulseaverage, tstartgsl, nPulsesRow, &Lbgsl, sizePulse_b, &Bgsl, temporalFile,status);
-			//status = getPulseHeight(pulseaverage, gsl_vector_get(tstartgsl,0), 0, 1, Lrs, gsl_vector_get(Lbgsl,0), gsl_vector_get(Bgsl,0), sizePulse_b, &pulseheighttemplate, temporalFile, status);
-			status = writeLibrary(pulseheighttemplate, &pulseaverage, status);
-			gsl_vector_free (pulseaverage);
-			gsl_vector_free (row_aux);
-		}
-
-	}
+	status = writePulses (vectorNOTFIL, vectorDER, tstartgsl, tendgsl, qualitygsl, tauRisegsl, tauFallgsl, energygsl, &pulsesgsl);
+	if(status)EPexit(status);
 
 	/////////////////////// Free allocate of GSL vectors
 	gsl_vector_free(tstartgsl);
@@ -1996,9 +1429,9 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses, int s
  * 		- Obtained tau rise
  * 		- Obtained tau fall
  ******************************************************************************/
-int obtainTau (gsl_vector *invector, gsl_vector *tstartgsl, gsl_vector *tendgsl, int nPulses, gsl_vector **taurisegsl, gsl_vector **taufallgsl, int status)
+int obtainTau (gsl_vector *invector, gsl_vector *tstartgsl, gsl_vector *tendgsl, int nPulses, gsl_vector **taurisegsl, gsl_vector **taufallgsl)
 {
-	if (!status == EPOK || nPulses == 0)	return status;
+	int status = EPOK;
 
 	/////////////////////// Declare variables
 	int tstart_index, tend_index;			// tstart and tend of each pulse
@@ -2122,10 +1555,9 @@ int obtainTau (gsl_vector *invector, gsl_vector *tstartgsl, gsl_vector *tendgsl,
 * - Creating Quality Column
 *
 ******************************************************************************/
-int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector *tstart, gsl_vector *tend, gsl_vector *quality, gsl_vector *taurise, gsl_vector *taufall, gsl_vector *energy, gsl_matrix **pulses, int status)
+int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector *tstart, gsl_vector *tend, gsl_vector *quality, gsl_vector *taurise, gsl_vector *taufall, gsl_vector *energy, gsl_matrix **pulses)
 {
-
-	if (!status == EPOK)	return status;
+	int status = EPOK;
 	char val[256];
 
 	/////////////////////// TRG Extension
@@ -2136,7 +1568,6 @@ int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector 
 	gsl_vector *tailBeforegsl;
 	bool tailBefore = true;
 	int min = 5;
-	double tmp0;
 
 	gsl_vector_view temp;
 
@@ -2192,92 +1623,8 @@ int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector 
 			}
 		}
 
-		/*if (indice == 40)	//Uno menos del evento que se quiere manejar
-		{
-			char inNameaux[255];
-			char * pch;
-			sprintf(inNameaux,inName);
-			if (strlen(inNameaux)>=6)
-			{
-				//Check if inName has '.fits' and if yes, delete it
-				if (strncmp(strndup(inNameaux+strlen(inNameaux)-5, 5),".fits",5) == 0)
-				{
-					// inName finishes as '.fits' => Delete '.fits' to inName => inNameaux
-					pch = strtok (inNameaux,".");
-					sprintf(inNameaux,pch);
-				}
-			}
-			FILE * generalFile;
-			FILE * eventFile;
-			FILE * tstartFile;
-			FILE * pulseFile;
-			char val[256];
-			char filegeneral[255];
-			char fileevent[255];
-			char filetstart[255];
-			char filepulse[255];
-
-			sprintf(filegeneral,inNameaux);
-			sprintf(val,"_event%d_general.txt",indice+1);
-			strcat(filegeneral,val);
-			generalFile = fopen (filegeneral,"w");
-			//sprintf(val,"%.12e",timefirstevent);
-			//strcat(val,"\n");
-			//fputs (val,generalFile);
-			sprintf(val,"%.14e",gsl_vector_get(tstartevents,indice));
-			strcat(val,"\n");
-			fputs (val,generalFile);
-			sprintf(val,"%d",nPulsesRow);
-			strcat(val,"\n");
-			fputs (val,generalFile);
-			sprintf(val,"%e",samprate);
-			strcat(val,"\n");
-			fputs (val,generalFile);
-			if (chngplrt == 1) biasvolt = biasvolt*(-1.0);
-			sprintf(val,"%.14e",biasvolt);
-			strcat(val,"\n");
-			fputs (val,generalFile);
-
-			sprintf(fileevent,inNameaux);
-			sprintf(val,"_event%d.txt",indice+1);
-			strcat(fileevent,val);
-			eventFile = fopen (fileevent,"w");
-			for (int i=0; i<eventsz; i++)
-			{
-				sprintf(val,"%.14e",gsl_vector_get(event,i));
-				strcat(val,"\n");
-				fputs (val,eventFile);
-			}
-
-			sprintf(filetstart,inNameaux);
-			sprintf(val,"_event%d_tstartpulses.txt",indice+1);
-			strcat(filetstart,val);
-			tstartFile = fopen (filetstart,"w");
-
-			for (int i=0; i<nPulsesRow; i++)
-			{
-				sprintf(val,"%.14e",gsl_vector_get(tstart,i));
-				strcat(val,"\n");
-				fputs (val,tstartFile);
-
-				sprintf(filepulse,inNameaux);
-				sprintf(val,"_event%d_pulse%d.txt",indice+1,i+1);
-				strcat(filepulse,val);
-				pulseFile = fopen (filepulse,"w");
-				for (int j=0; j<vgslout2->size2; j++)
-				{
-					sprintf(val,"%.14e",gsl_matrix_get(vgslout2,i,j));
-					strcat(val,"\n");
-					fputs (val,pulseFile);
-				}
-				fclose(pulseFile);
-			}
-			fclose(tstartFile);
-		}*/
-
 		//  Creating Tstart Column
 		if (status == EPOK) {
-			//MC obj.inObject = trgExten;
 			obj.inObject = trgObject;
 			obj.nameTable = new char [255];
 			strcpy(obj.nameTable,"EUR-TRG");
@@ -2286,88 +1633,70 @@ int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector 
 			obj.iniCol = 0;
 			obj.nameCol = new char [255];
 			strcpy(obj.nameCol,"Tstart");
-			//MC obj.type = DAL_DOUBLE;
 			obj.type = TDOUBLE;
 			obj.unit = new char [255];
 			strcpy(obj.unit,"seconds");
 		}
 		temp = gsl_vector_subvector(tstart,0,nPulsesRow);
-
-		status = writeFitsSimple(obj, &temp.vector, status);
+		status = writeFitsSimple(obj, &temp.vector);
+		if(status)EPexit(status);
 
 		// Creating I0 Column
 		if (writePulse){	// If the input parameter writePulses = yes then it puts in output FITS file
-			if (status == EPOK) {
-				strcpy(obj.nameCol,"I0");
-				//MC obj.type = DAL_DOUBLE;
-				obj.type = TDOUBLE;
-				strcpy(obj.unit,"Amps");
-			}
-			status = writeFitsComplex(obj, vgslout2, status);
-
+			strcpy(obj.nameCol,"I0");
+			obj.type = TDOUBLE;
+			strcpy(obj.unit,"Amps");
+			if(writeFitsComplex(obj, vgslout2))EPexit(status);
 		}
-
 		//gsl_matrix_get_row(*pulsetemplate,vgslout2,0);
 		gsl_matrix_memcpy(*pulses,vgslout2);
 
 		// Creating Tend Column
-		if (status == EPOK) {
-			strcpy(obj.nameCol,"Tend");
-			//MC obj.type = DAL_DOUBLE;
-			obj.type = TDOUBLE;
-			strcpy(obj.unit,"seconds");
-		}
+		strcpy(obj.nameCol,"Tend");
+		obj.type = TDOUBLE;
+		strcpy(obj.unit,"seconds");
 		temp = gsl_vector_subvector(tend,0,nPulsesRow);
-		status = writeFitsSimple(obj, &temp.vector, status);
-
+		status = writeFitsSimple(obj, &temp.vector);
+		if(status)EPexit(status);
 
 		// Creating tauRise Column
-		if (status == EPOK) {
-			strcpy(obj.nameCol,"tauRise");
-		}
+		strcpy(obj.nameCol,"tauRise");
 		temp = gsl_vector_subvector(taurise,0,nPulsesRow);
-		status = writeFitsSimple(obj, &temp.vector, status);
-
+		status = writeFitsSimple(obj, &temp.vector);
+		if(status)EPexit(status);
 
 		// Creating tauFall Column
-		if (status == EPOK) {
-			strcpy(obj.nameCol,"tauFall");
-		}
+		strcpy(obj.nameCol,"tauFall");
 		temp = gsl_vector_subvector(taufall,0,nPulsesRow);
-		status = writeFitsSimple(obj, &temp.vector, status);
+		status = writeFitsSimple(obj, &temp.vector);
+		if(status)EPexit(status);
 
 		// Creating difTstrt Column
-		if (status == EPOK) {
-			strcpy(obj.nameCol,"difTstrt");
-		}
-		status = writeFitsSimple(obj, difTstart, status);
+		strcpy(obj.nameCol,"difTstrt");
+		status = writeFitsSimple(obj, difTstart);
+		if(status)EPexit(status);
 
 		// Creating EstEnrgy Column
-		if (status == EPOK) {
-			strcpy(obj.nameCol,"EstEnrgy");
-			strcpy(obj.unit,"eV");
-		}
+		strcpy(obj.nameCol,"EstEnrgy");
+		strcpy(obj.unit,"eV");
 		temp = gsl_vector_subvector(energy,0,nPulsesRow);
-		status = writeFitsSimple(obj, &temp.vector, status);
+		status = writeFitsSimple(obj, &temp.vector);
+		if(status)EPexit(status);
 
 		// Creating Quality Column
-		if (status == EPOK) {
-			strcpy(obj.nameCol,"Quality");
-			//MC obj.type = DAL_SHORT;
-			obj.type = TSHORT;
-			strcpy(obj.unit,"bits");
-		}
+		strcpy(obj.nameCol,"Quality");
+		obj.type = TSHORT;
+		strcpy(obj.unit,"bits");
 		temp = gsl_vector_subvector(quality,0,nPulsesRow);
-		status = writeFitsSimple(obj, &temp.vector, status);
+		status = writeFitsSimple(obj, &temp.vector);
+		if(status)EPexit(status);
 
 		// Creating TailBfr Column
-		if (status == EPOK) {
-			strcpy(obj.nameCol,"TailBfr");
-			//MC obj.type = DAL_SHORT;
-			obj.type = TSHORT;
-			strcpy(obj.unit," ");
-		}
-		status = writeFitsSimple(obj, tailBeforegsl, status);
+		strcpy(obj.nameCol,"TailBfr");
+		obj.type = TSHORT;
+		strcpy(obj.unit," ");
+		status = writeFitsSimple(obj, tailBeforegsl);
+		if(status)EPexit(status);
 
 		totalpulses = totalpulses + nPulsesRow;
 		sprintf(val,"totalpulses: %d",totalpulses-1);
@@ -2385,153 +1714,49 @@ int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector 
 /*xxxx end of SECTION 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/*int obtainTauRise (double Tmax, double Imax, double tauFall, double *tauRise, int status)
-{
-	if (!status == 0)	return status;
-
-	int iter = 0, max_iter = 100;
-	const gsl_root_fsolver_type *T;
-	gsl_root_fsolver *s;
-	//double x_lo = 1/tauFall, x_hi = Imax/1e-6;
-	double x_lo = 1e5, x_hi = 2e5;
-	cout<<"Imax: "<<Imax<<endl;
-	cout<<"x_lo: "<<x_lo<<" x_hi: "<<x_hi<<endl;
-	cout<<"x_loOK: "<<1/tauFall<<" x_hiOK: "<<Imax/1e-6<<endl;
-	double r = (x_hi-x_lo)/2.0;
-	gsl_function F;
-	struct my_f_params params = { 1.0/tauFall, Tmax };
-
-    F.function = &my_f;
-	F.params = &params;
-
-	T = gsl_root_fsolver_bisection;
-	s = gsl_root_fsolver_alloc (T);
-	gsl_root_fsolver_set (s, &F, x_lo, x_hi);
-
-	writeLog(fileRef,"Warning", verbosity,"Using %s method", gsl_root_fsolver_name (s));
-
-	writeLog(fileRef,"Warning", verbosity,"%5s [%9s, %9s] %9s","iter", "lower", "upper", "root");
-
-	do
-	{
-		iter++;
-	    status = gsl_root_fsolver_iterate (s);
-	    r = gsl_root_fsolver_root (s);
-	    x_lo = gsl_root_fsolver_x_lower (s);
-	    x_hi = gsl_root_fsolver_x_upper (s);
-	    status = gsl_root_test_interval (x_lo, x_hi, 0, 0.001);
-
-	    if (status == GSL_SUCCESS)	writeLog(fileRef,"Warning", verbosity,"Converged: ");
-
-	    //status = writeLog(fileRef,"Warning", verbosity,status,"%5d [%.7f, %.7f] %.7f",iter, x_lo, x_hi, r);
-	    writeLog(fileRef,"Warning", verbosity,"%d [%f, %f] %f",iter, x_lo, x_hi, r);
-
-	}while (status == GSL_CONTINUE && iter < max_iter);
-
-	*tauRise = 1/r;
-
-	gsl_root_fsolver_free (s);*/
-
-	/*int iter = 0, max_iter = 100;
-	const gsl_root_fdfsolver_type *T;
-	gsl_root_fdfsolver *s;
-	double alpha = 1.0/tauFall;
-	//double x0, x = 0.005e-3, r_expected = Tmax-(1/x)*log((alpha+x)/alpha);
-	double x0, x = alpha;
-	//double x0, x = 145000;
-	gsl_function_fdf FDF;
-	struct my_f_params params = {alpha, Tmax};
-
-	FDF.f = &my_f;
-	FDF.df = &my_f_deriv;
-	FDF.fdf = &my_f_fdf;
-	FDF.params = &params;
-
-	T = gsl_root_fdfsolver_newton;
-	s = gsl_root_fdfsolver_alloc (T);
-	gsl_root_fdfsolver_set (s, &FDF, x);
-
-	//status = writeLog(fileRef,"Warning", verbosity,status,"Using %s method", gsl_root_fsolver_name (s));
-
-	writeLog(fileRef,"Warning", verbosity,"%5s %9s","iter", "root");
-
-	do
-	{
-		iter++;
-	    status = gsl_root_fdfsolver_iterate (s);
-	    x0 = x;
-	    x = gsl_root_fdfsolver_root (s);
-	    status = gsl_root_test_delta (x, x0, 0, 1e-3);
-
-	    if (status == GSL_SUCCESS)	status = writeLog(fileRef,"Warning", verbosity,status,"Converged: ");
-
-	    status = writeLog(fileRef,"Warning", verbosity,status,"%d %f",iter, x);
-	}
-	while (status == GSL_CONTINUE && iter < max_iter);
-
-	*tauRise = 1/x;
-
-	gsl_root_fdfsolver_free (s);*/
-
-	/*return(status);
-}*/
 
 
 /***** SECTION 10 ************************************************************
 * readLib: This function loads all the pulse models from the pulses models library input FITS file.
 ******************************************************************************/
-int readLib (int status)
+int readLib ()
 {
 	string message="";
-	//MC 
-	int extver=0;
-
-	//MC status = DALtableGetNumRows(inLibExten, &nummodels,status);
+	int extver=0, status = EPOK;
+	
 	strcpy(extname,"EUR-LIB");
 	if(fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status)) printerror(status);
 	if(fits_get_num_rows(inLibObject,&nummodels, &status)) printerror(status);
-
+	
 	/////////////////////// Get structure of pulse model library input FITS file columns
-	//MC long numBins = 0L;	dal_dataType type;	int varLength=0; long sizeT, sizeV;
 	strcpy(straux,"ENERGY");
-	//MC status = DALtableGetColStruct (inLibExten,0,&numBins,straux,&type, &sizeT,&varLength,status);	if (status == -1219){status = -62507; EPexit(status);}
 	if(fits_get_colnum(inLibObject,0,straux,&colnum,&status)) printerror(status);
-
 	strcpy(straux,"ESTENERGY");
-	//MC status = DALtableGetColStruct (inLibExten,0,&numBins,straux,&type, &sizeT,&varLength,status);	if (status == -1219){status = -62503; EPexit(status);}
 	if(fits_get_colnum(inLibObject,0,straux,&colnum,&status)) printerror(status);
 	strcpy(straux,"PULSE");
-	//MC status = DALtableGetColStruct (inLibExten,0,&numBins,straux,&type, &sizeV,&varLength,status);	if (status == -1219){status = -62506; EPexit(status);}
 	if(fits_get_colnum(inLibObject,0,straux,&colnum,&status)) printerror(status);		
 
 	extern int inDataIteratorLib(long totalrows, long offset, long firstrow,long nrows, int ncols, iteratorCol *cols, void *user_strct);
 
 		// Create structure to run Iteration DAL
 	iteratorCol colsLib [3]; 				// Structure of Iteration DAL
-	int n_cols = 3; 						// Number of columns:  Energy + EstEnergy + PULSE
-	long rows_per_loop = nummodels; 		// 0: Use default: Optimum number of rows
-	long offset=0; 							// 0: Process all the rows
+	int n_cols = 3; 					// Number of columns:  Energy + EstEnergy + PULSE
+	long rows_per_loop = nummodels; 			// 0: Use default: Optimum number of rows
+	long offset=0; 						// 0: Process all the rows
 
 	// Read Energy Column
 	strcpy(straux,"Energy");
-	//MC status = DALiterSetByName(&colsLib[0], inLibExten, straux, DAL_DOUBLE, InputCol, status);
 	if(fits_iter_set_by_name(&colsLib[0], inLibObject, straux, TDOUBLE, InputCol))printerror(status);
-	
-		// Read Est Energy Column
+		// Read Energy Column
 	strcpy(straux,"EstEnergy");
-	//MC status = DALiterSetByName(&colsLib[1], inLibExten, straux, DAL_DOUBLE, InputCol, status);
 	if(fits_iter_set_by_name(&colsLib[1], inLibObject, straux, TDOUBLE, InputCol))printerror(status);
-	
 		// Read PULSE
 	strcpy(straux,"PULSE");
-	//MC status = DALiterSetByName(&colsLib[2], inLibObject, straux, DAL_DOUBLE, InputCol, status);
 	if(fits_iter_set_by_name(&colsLib[2], inLibObject, straux, TDOUBLE, InputCol))printerror(status);
 
 		// Called iteration function
-	//MC status = DALiterateData(n_cols, colsLib, offset, rows_per_loop, inDataIteratorLib, 0L, status);
 	if(fits_iterate_data(n_cols, colsLib, offset, rows_per_loop, inDataIteratorLib,0L,&status)) printerror(status);
 
-	
 	return (status);
 }
 /*xxxx end of SECTION 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -2548,23 +1773,20 @@ int readLib (int status)
  ****************************************************************************/
 int inDataIteratorLib(long totalrows, long offset, long firstrow, long nrows, int ncols, iteratorCol *cols, void *user_strct)
 {
-	//MC if (!status == 0)	return status;
-	int status=EPOK;
+  	int status = EPOK;
 	int extver=0;
 
 	/////////////////////// Declare variables
 	static double *energy;		// Vector of ENERGY column
-	static double *estenergy;		// Vector of ESTENERGY column
-	static double *pulsemodel;  // Vector of PULSE column
+	static double *estenergy;	// Vector of ESTENERGY column
+	static double *pulsemodel;  	// Vector of PULSE column
 	long eventsz;
 
-	//MC status = DALattributeGetInt(inLibExten, "EVENTSZ", &eventsz, unit, comment, status);
 	strcpy(extname,"EUR-LIB");
 	if(fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status)) printerror(status);
 	strcpy(keyname,"EVENTSZ");
 	if(fits_read_key(inLibObject,TLONG,keyname, &eventsz,comment,&status)) printerror(status);
 	
-
 	/////////////////////// Allocate input GSL vectors
 	gsl_vector *energygsl = gsl_vector_alloc(nummodels);
 	gsl_vector *estenergygsl = gsl_vector_alloc(nummodels);
@@ -2575,18 +1797,15 @@ int inDataIteratorLib(long totalrows, long offset, long firstrow, long nrows, in
 	model = gsl_vector_alloc(eventsz);
 
 	/////////////////////// Read iterator
-	//MC status = DALiterGetArray(&cols[0], ((void **)&energy), status);
 	energy = (double *) fits_iter_get_array(&cols[0]);
-	//MC status = toGslVector(((void **)&energy), &energygsl, nrows, 0, DAL_DOUBLE, status);
-	status = toGslVector(((void **)&energy), &energygsl, nrows, 0, TDOUBLE, status);
-	//MC status = DALiterGetArray(&cols[1], ((void **)&estenergy), status);
+	status = toGslVector(((void **)&energy), &energygsl, nrows, 0, TDOUBLE);
+	if(status)EPexit(status);
 	estenergy = (double *) fits_iter_get_array(&cols[1]);
-	//MC status = toGslVector(((void **)&estenergy), &estenergygsl, nrows, 0, DAL_DOUBLE, status);
-	status = toGslVector(((void **)&estenergy), &estenergygsl, nrows, 0, TDOUBLE, status);
-	//MC status = DALiterGetArray(&cols[2], ((void **)&pulsemodel), status);
+	status = toGslVector(((void **)&estenergy), &estenergygsl, nrows, 0, TDOUBLE);
+	if(status)EPexit(status);
 	pulsemodel = (double *) fits_iter_get_array(&cols[2]);
-	//MC status = toGslMatrix(((void **)&pulsemodel), &pulsemodelgsl, eventsz, nrows, (int)DAL_DOUBLE,	0, status);
-	status = toGslMatrix(((void **)&pulsemodel), &pulsemodelgsl, eventsz, nrows, (int)TDOUBLE,0,status);
+	status = toGslMatrix(((void **)&pulsemodel), &pulsemodelgsl, eventsz, nrows, (int)TDOUBLE,0);
+	if(status)EPexit(status);
 
 	///////////////////////  Processing each row of pulses
 	for (int i=0; i< nrows; i++)
@@ -2617,64 +1836,49 @@ int inDataIteratorLib(long totalrows, long offset, long firstrow, long nrows, in
  * - xxx
  * - xxx
  ****************************************************************************/
-int createLibrary(int status)
+int createLibrary()
 {
-	//MC 
-	int extver=0;
-
-	//MC if (!status == 0)	return status;
+	int extver=0, status=EPOK;
 
 	/////////////////////// Create output FITS files: If it does not exist already
 	//Create Library file or open it
-	
-	//MC status = DALobjectOpen(inLibName, &inLibObject, status);
 	fits_open_file(&inLibObject, inLibName,0,&status);
 
 	if (status == EPOK)
 	{
 		append = true;
-		//MC status = DALobjectFindElement(inLibObject, "EUR-LIB", &inLibExten, status);
-		//if (status == -2104){EPexit(-62202);}
+
 		strcpy(extname,"EUR-LIB");
 		if(fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status)) printerror(status);
-					
-		//MC status = DALattributeGetInt(inLibExten, "EVENTCNT", &eventcntLib, unit, comment, status);
 		strcpy(keyname,"EVENTCNT");
 		if(fits_read_key(inLibObject,TLONG,keyname, &eventcntLib,comment,&status)) printerror(status);
-		//MC status = DALattributePutInt(inLibExten, "EVENTCNT", eventcntLib+1, unit, comment, status);
 		eventcntLib1 = eventcntLib + 1;
 		strcpy(keyname,"EVENTCNT");
 		if(fits_write_key(inLibObject,TLONG,keyname, &eventcntLib1,comment,&status))printerror(status);
-
-		status = readLib(status);
+		
+		status = readLib();
+		if(status)EPexit(status);
 		ntotalrows = 1;
 	}
 	else
 	{
 		append = false;
 		status = EPOK;
-		//MC status = DALobjectCreate(inLibName, DAL_DISK, NULL, &inLibObject, status);
 		if(fits_create_file(&inLibObject, inLibName, &status))printerror(status);
 
 		/////////////////////// Create extension EUR-LIB
-		//MC status = DALtableCreate(inLibObject, DAL_DISK, 0, "EUR-LIB", &inLibExten, status);
 		strcpy(extname,"EUR-LIB");
 		if(fits_create_tbl(inLibObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status)) printerror(status);
-		//MC status = DALattributePutInt(inLibExten, "EVENTCNT", 1, unit, comment, status);
 		evtcnt = 1;
 		strcpy(keyname,"EVENTCNT");
 		if(fits_write_key(inLibObject,TLONG,keyname,&evtcnt,comment,&status)) printerror(status);
-
 		/////////////////////// Create keywords
-		//MC status = DALattributePutInt(inLibExten, "LIB_ID", 1, unit, comment, status);
 		lib_id = 1;
 		strcpy(keyname,"LIB_ID");
 		if(fits_write_key(inLibObject,TLONG,keyname,&lib_id,comment,&status)) printerror(status);
-		//MC status = DALattributePutChar(inLibExten, "CREATOR", create, unit, comment, status);
 		strcpy(keyname,"CREATOR");
 		strcpy(keyvalstr,create);
 		if(fits_write_key(inLibObject,TSTRING,keyname,keyvalstr,comment,&status)) printerror(status);
-		//MC status = DALattributePutChar(inLibExten, "FTYPE", "lib", unit, comment, status);
 		strcpy(keyname,"FTYPE");
 		strcpy(keyvalstr,"lib");
 		if(fits_write_key(inLibObject,TSTRING,keyname,keyvalstr,comment,&status)) printerror(status);
@@ -2687,17 +1891,14 @@ int createLibrary(int status)
 	string(str_energy)      + ' ' +
 	string("(")				+      (string) create 		  +   	  string(")"));
 
-	//MC status = DALattributePutChar(inLibExten, "PROCESS",process.c_str(), unit, comment, status);
 	strcpy(keyname,"PROCESS");
 	strcpy(keyvalstr,process.c_str());
 	if(fits_write_key_longwarn(inLibObject,&status))printerror(status);
 	if(fits_write_key_longstr(inLibObject,keyname,keyvalstr,comment,&status)) printerror(status);
-	
-	//MC close file if newly created
+	//close file if newly created
 	if(!append){
 	  if (fits_close_file(inLibObject, &status))printerror(status);
 	}
-	
 	return (status);
 }
 /*xxxx end of SECTION 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -2707,10 +1908,9 @@ int createLibrary(int status)
 * writeLibrary function: It writes each pulse model into the EUR-LIB extension of the output FITS file
 *
 ******************************************************************************/
-int writeLibrary(double estenergy, gsl_vector **pulsetemplate, int status)
+int writeLibrary(double estenergy, gsl_vector **pulsetemplate)
 {
-	//MC if (!status == ISDC_OK)	return status;
-
+	int status = EPOK;
 	/////////////////////// LIB Extension
 	gsl_vector *energyoutgsl = gsl_vector_alloc(1);
 	gsl_vector *estenergyoutgsl = gsl_vector_alloc(1);
@@ -2761,8 +1961,7 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate, int status)
     	gsl_vector_free(estenergycolumnaux);
     	gsl_matrix_free(modelsaux1);
 
-    	//MC obj.inObject = inLibExten;
-	obj.inObject = inLibObject;
+    	obj.inObject = inLibObject;
     	obj.nameTable = new char [255];
     	strcpy(obj.nameTable,"EUR-LIB");
     	obj.iniCol = 0;
@@ -2770,25 +1969,27 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate, int status)
     	obj.unit = new char [255];
     	for (int i=0;i<eventcntLib+1;i++)
     	{
-    		obj.iniRow = i+1;
+	    obj.iniRow = i+1;
     	    obj.endRow = i+1;
     	    strcpy(obj.nameCol,"ENERGY");
-    	    //MC obj.type = DAL_DOUBLE;
-	    obj.type = TDOUBLE;
+    	    obj.type = TDOUBLE;
     	    strcpy(obj.unit,"eV");
     	    gsl_vector_set (energyoutgsl,0,gsl_vector_get(energycolumn,i));
-    	    status = writeFitsSimple(obj, energyoutgsl, status);
+    	    status = writeFitsSimple(obj, energyoutgsl);
+	    if(status)EPexit(status);
 
     	    strcpy(obj.nameCol,"ESTENERGY");
     	    strcpy(obj.unit," ");
     	    gsl_vector_set (estenergyoutgsl,0,gsl_vector_get(estenergycolumn,i));
-    	    status = writeFitsSimple(obj, estenergyoutgsl, status);
+    	    status = writeFitsSimple(obj, estenergyoutgsl);
+	    if(status)EPexit(status);
 
     	    strcpy(obj.nameCol,"PULSE");
     	    strcpy(obj.unit,"Amps");
     	    gsl_matrix_get_row(modelsrow,modelsaux,i);
     	    gsl_matrix_set_row(pulsetemplates_matrix,0,modelsrow);
-    	    status = writeFitsComplex(obj, pulsetemplates_matrix, status);
+    	    status = writeFitsComplex(obj, pulsetemplates_matrix);
+	    if(status)EPexit(status);
     	}
     	gsl_vector_free(modelsrow);
 
@@ -2798,7 +1999,6 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate, int status)
     }
     else
     {
-    	//MC status = DALattributePutInt(inLibExten, "EVENTSZ", sizePulse_b, unit, comment, status);
 	if(fits_write_key(inLibObject,TINT,"EVENTSZ",&sizePulse_b,comment,&status)) printerror(status);
 
     	gsl_vector_set (energyoutgsl,0,energy);
@@ -2807,33 +2007,34 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate, int status)
     	gsl_matrix_set_row(pulsetemplates_matrix,0,*pulsetemplate);
 
     	// Creating ENERGY Column
-   		//MC obj.inObject = inLibExten;
-		obj.inObject = inLibObject;
-   		obj.nameTable = new char [255];
-   		strcpy(obj.nameTable,"EUR-LIB");
-   		obj.iniRow = 1;
-   		obj.endRow = 1;
-   		obj.iniCol = 0;
-   		obj.nameCol = new char [255];
-   		strcpy(obj.nameCol,"ENERGY");
-   		//MC obj.type = DAL_DOUBLE;
-		obj.type = TDOUBLE;
-   		obj.unit = new char [255];
-   		strcpy(obj.unit,"eV");
-   		status = writeFitsSimple(obj, energyoutgsl, status);
+   	obj.inObject = inLibObject;
+   	obj.nameTable = new char [255];
+   	strcpy(obj.nameTable,"EUR-LIB");
+   	obj.iniRow = 1;
+   	obj.endRow = 1;
+   	obj.iniCol = 0;
+   	obj.nameCol = new char [255];
+   	strcpy(obj.nameCol,"ENERGY");
+   	obj.type = TDOUBLE;
+   	obj.unit = new char [255];
+   	strcpy(obj.unit,"eV");
+   	status = writeFitsSimple(obj, energyoutgsl);
+	if(status)EPexit(status);
 
-   		// Creating ESTENERGY Column
-		strcpy(obj.nameCol,"ESTENERGY");
-		strcpy(obj.unit,"u1");
-		status = writeFitsSimple(obj, estenergyoutgsl, status);
+   	// Creating ESTENERGY Column
+    	strcpy(obj.nameCol,"ESTENERGY");
+    	strcpy(obj.unit,"u1");
+    	status = writeFitsSimple(obj, estenergyoutgsl);
+	if(status)EPexit(status);
 
-   		// Creating PULSE Column
-   		strcpy(obj.nameCol,"PULSE");
-   		strcpy(obj.unit,"Amps");
-   		status = writeFitsComplex(obj, pulsetemplates_matrix, status);
+   	// Creating PULSE Column
+   	strcpy(obj.nameCol,"PULSE");
+   	strcpy(obj.unit,"Amps");
+   	status = writeFitsComplex(obj, pulsetemplates_matrix);
+	if(status)EPexit(status);
     }
 
-		// Free memory
+    // Free memory
     gsl_vector_free(energyoutgsl);
     gsl_vector_free(estenergyoutgsl);
 
@@ -2842,3 +2043,361 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate, int status)
     return (status);
 }
 /*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhistogsl, gsl_vector **yhistogsl)
+{
+    int status = EPOK;
+
+    /////////////////////// Declare variables
+    int size = invector->size;
+    double invectormax= 0;         // Maximum of invector
+    double invectormin=1e10;  // Minimum of invector
+    double binSize;
+    int ind = 0;                       // Index of the bin which contains each invector element
+    gsl_vector *invectoraux = gsl_vector_alloc(size);
+    gsl_vector *invectoraux2;
+    gsl_vector_view temp;					// In order to handle with gsl_vector_view (subvectors)
+
+    char val[256];
+
+    for (int i=0;i<size;i++)
+    {
+    	if (gsl_vector_get(invector,i) > 0)
+    	{
+    		gsl_vector_set(invectoraux,ind,gsl_vector_get(invector,i));
+    		ind = ind+1;
+    	}
+    }
+    temp = gsl_vector_subvector(invectoraux,0,ind);
+    invectoraux2 = gsl_vector_alloc(ind);
+    gsl_vector_memcpy(invectoraux2, &temp.vector);
+    size = invectoraux2->size;
+
+    ///Obtain invector_max
+    for (int i=0; i<size; i++)
+    {
+    	if (invectormax < gsl_vector_get (invectoraux2,i))	invectormax = gsl_vector_get (invectoraux2,i);
+    }
+    // Obtain invector_min
+    for (int i=0; i<size; i++)
+    {
+    	if (invectormin > gsl_vector_get (invectoraux2,i))	invectormin = gsl_vector_get (invectoraux2,i);
+    }
+
+    if (invectormax == invectormin) EPexit(1013);
+
+    if ((invectormax != 0) && (invectormin != 1e10))
+    {
+
+    	// Obtain binSize
+        binSize = (invectormax - invectormin) / nbins;        // Size of each bin of the histogram
+
+        /////////////////////// Create histogram x-axis
+        for (int i=0; i<nbins; i++)	{gsl_vector_set (*xhistogsl,i,binSize*i+invectormin+binSize/2);}
+
+        /////////////////////// Create histogram y-axis
+        gsl_vector_set_zero (*yhistogsl);
+        for (int i=0; i<size; i++)
+        {
+        	ind = (int) ((gsl_vector_get(invectoraux2,i) - invectormin) / binSize);
+            if (ind == nbins) ind--;
+            gsl_vector_set (*yhistogsl,ind, gsl_vector_get(*yhistogsl,ind) + 1);
+        }
+    }
+
+    gsl_vector_free(invectoraux);
+    gsl_vector_free(invectoraux2);
+
+    return status;
+}
+
+
+int inDataIteratorOutTrg(long totalrows, long offset, long firstrow, long nrows, int ncols, iteratorCol *cols, void *user_strct)
+{
+	/////////////////////// Declare variables
+	int status = EPOK;
+	static double *tstart;		// Vector of TSTART column
+	static double *estenrgy;	// Vector of ENERGY column
+	static double *quality;		// Vector of QUALITY column
+
+	/////////////////////// Allocate input GSL vectors
+	gsl_vector *tstartoutgsl = gsl_vector_alloc(totalpulses-1);
+	gsl_vector *estenrgygsl = gsl_vector_alloc(totalpulses-1);
+	gsl_vector *qualityoutgsl = gsl_vector_alloc(totalpulses-1);
+
+	/////////////////////// Read iterator
+	tstart = (double *) fits_iter_get_array(&cols[0]);
+	status = toGslVector(((void **)&tstart), &tstartoutgsl, nrows, 0, TDOUBLE);
+	if(status)EPexit(status);
+	estenrgy = (double *) fits_iter_get_array(&cols[1]);
+	status = toGslVector(((void **)&estenrgy), &estenrgygsl, nrows, 0, TDOUBLE);
+	if(status)EPexit(status);
+	quality = (double *) fits_iter_get_array(&cols[2]);
+	status = toGslVector(((void **)&quality), &qualityoutgsl, nrows, 0, TDOUBLE);
+	if(status)EPexit(status);
+
+	///////////////////////  Processing each row of pulses
+	for (int i=0; i< nrows; i++)
+	{
+		gsl_vector_set(tstartout,ntotalrows-1,gsl_vector_get(tstartoutgsl,i));
+		gsl_vector_set(pulseheight,ntotalrows-1,gsl_vector_get(estenrgygsl,i));
+		gsl_vector_set(qualityout,ntotalrows-1,gsl_vector_get(qualityoutgsl,i));
+
+		ntotalrows ++;
+	}
+
+	/////////////////////// Free allocate of GSL vectors
+	gsl_vector_free(tstartoutgsl);
+	gsl_vector_free(estenrgygsl);
+	gsl_vector_free(qualityoutgsl);
+
+	return (status);
+}
+
+int align(gsl_vector **vector1, gsl_vector ** vector2)
+{
+	int status = EPOK;
+	const double pi = 4.0 * atan(1.0);
+
+	char val[256];
+
+	int size = (*vector1)->size;
+
+	double SelectedTimeDuration = size/samprate;
+	gsl_vector_complex *vector1fft = gsl_vector_complex_alloc(size);
+	gsl_vector_complex *vector2fft = gsl_vector_complex_alloc(size);
+	double vector1fft_ph;
+	double vector2fft_ph;
+
+	double shiftdouble;
+	int shiftint;
+
+	gsl_vector *vector2shifted = gsl_vector_alloc(size);
+
+	status = FFT(*vector1,vector1fft,SelectedTimeDuration);
+	if(status)EPexit(status);
+	status = FFT(*vector2,vector2fft,SelectedTimeDuration);
+	if(status)EPexit(status);
+
+	vector1fft_ph= gsl_complex_arg(gsl_vector_complex_get(vector1fft,1))*size/(2*pi);
+	vector2fft_ph= gsl_complex_arg(gsl_vector_complex_get(vector2fft,1))*size/(2*pi);
+	shiftdouble = vector1fft_ph-vector2fft_ph;
+
+	if ((shiftdouble > -1) && (shiftdouble < 1)) shiftint = 0;
+	else if (shiftdouble > 1)	shiftint = floor(shiftdouble);
+	else if (shiftdouble < -1)	shiftint = ceil(shiftdouble);
+
+
+	if (shiftint > 0)
+	{
+		status = shift_m(*vector2,vector2shifted,shiftint);
+		if(status)EPexit(status);
+		gsl_vector_memcpy(*vector2,vector2shifted);
+	}
+	else if (shiftint < 0)
+	{
+		status = shiftm(*vector2,vector2shifted,fabs(shiftint));
+		if(status)EPexit(status);
+		gsl_vector_memcpy(*vector2,vector2shifted);
+	}
+
+	/*sprintf(val,"ph1: %.12e ph2: %.12e shift: %.12e shiftint: %d",vector1fft_ph,vector2fft_ph,shiftdouble,shiftint);
+	strcat(val,"\n");
+	fputs(val,temporalFile);*/
+
+	return (status);
+}
+
+
+int shiftm(gsl_vector *vectorin, gsl_vector *vectorout, int m)
+{
+	int status = EPOK;
+	char val[256];
+	int size = vectorin->size;
+
+	for (int i=0;i<size-m;i++)
+	{
+		gsl_vector_set(vectorout,i+m,gsl_vector_get(vectorin,i));
+	}
+	for (int i=0;i<m;i++)
+	{
+		gsl_vector_set(vectorout,i,gsl_vector_get(vectorin,0));
+	}
+
+	return (status);
+}
+
+int shift_m(gsl_vector *vectorin, gsl_vector *vectorout, int m)
+{
+	int status = EPOK;
+	char val[256];
+	int size = vectorin->size;
+
+	for (int i=m;i<size;i++)
+	{
+		gsl_vector_set(vectorout,i-m,gsl_vector_get(vectorin,i));
+	}
+	for (int i=size-m;i<size;i++)
+	{
+		gsl_vector_set(vectorout,i,gsl_vector_get(vectorin,size-1));
+	}
+
+	return (status);
+}
+
+int calculateTemplate (int totalPulses, gsl_vector **pulseaverage, double *pulseaverageHeight)
+{
+	int status = EPOK;
+
+	char val[256];
+	int extver=0;
+
+	// Declare (and initialize) variables
+	tstartout = gsl_vector_alloc(totalPulses-1);	// Tstart column from the output trg FITS file
+	pulseheight = gsl_vector_alloc(totalPulses-1);	// EstEnrgy column from the output trg FITS file
+	qualityout = gsl_vector_alloc(totalPulses-1);	// Quality column from the output trg FITS file
+
+	gsl_vector *nonpileup = gsl_vector_alloc(totalPulses-1);	// Piled up pulse => Not taking into account to calculate the template
+	long nonpileupPulses = totalPulses-1;						// A priori, all the found pulses are considered as non piled up
+	gsl_vector_set_all(nonpileup,1);
+
+	int nBins = floor(sqrt(totalPulses-1));			// Number of bins of the pulseheights histogram
+													// Square-root choice (used by Excel and many others)
+	gsl_vector *xhisto = gsl_vector_alloc(nBins);	// X-axis of the pulseheights histogram
+	gsl_vector *yhisto = gsl_vector_alloc(nBins);	// Y-axis of the pulseheights histogram
+	int index_maximumpulseheight;					// Index where the maximum of the pulseheights histogram is
+	double maximumpulseheight;						// Maximum of the pulseheights histogram
+
+	//gsl_vector *pulseaverage = gsl_vector_alloc(sizePulse_b);	// Template (calculated by averaging pulses)
+	bool firstnonpileupPulse = true;
+	gsl_matrix *pulse_matrix = gsl_matrix_alloc(1,sizePulse_b);
+	gsl_vector *pulse = gsl_vector_alloc(sizePulse_b);
+	gsl_vector *pulseshifted = gsl_vector_alloc(sizePulse_b);
+	gsl_vector *pulseoriginal = gsl_vector_alloc(sizePulse_b);	// Only to info purposes (TO BE DELETED)
+
+	int Shift= 0;
+	double tstartnext;
+
+	// When one of the found pulses is validated as non piled up pulse by using EstEnrgy
+	strcpy(obj.nameTable,"EUR-TRG");    // (pulseheights histogram) and Tstart, and Quality => The pulse, I0, is going
+	strcpy(obj.nameCol,"I0");           // to be read from the trg output FITS file (in order to not handle a long matrix of
+	                                    // pulses, found pulses x sizePulse_b)
+
+	/////////////////////// Get structure of output FITS file columns
+	//long numBins = 0L;	dal_dataType type;	int varLength=0; long sizeT, sizeV;
+	if(fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status)) printerror(status);
+	strcpy(straux,"Tstart");
+	if(fits_get_colnum(obj.inObject,0,straux,&colnum,&status)) printerror(status);
+	//status = DALtableGetColStruct (trgExten,0,&numBins,straux,&type, &sizeT,&varLength,status);	if (status == -1219){status = -62511; EPexit(status);}
+	strcpy(straux,"EstEnrgy");
+	if(fits_get_colnum(obj.inObject,0,straux,&colnum,&status)) printerror(status);
+	//status = DALtableGetColStruct (trgExten,0,&numBins,straux,&type, &sizeT,&varLength,status);	if (status == -1219){status = -62512; EPexit(status);}
+	strcpy(straux,"Quality");
+	if(fits_get_colnum(obj.inObject,0,straux,&colnum,&status)) printerror(status);
+	//status = DALtableGetColStruct (trgExten,0,&numBins,straux,&type, &sizeT,&varLength,status);	if (status == -1219){status = -62513; EPexit(status);}
+
+	///////////////////////// Iteration DAL
+	extern int inDataIteratorOutTrg(long totalrows, long offset, long firstrow,long nrows, int ncols, iteratorCol *cols, void *user_strct);
+
+		// Create structure to run Iteration DAL
+	iteratorCol cols [3]; 					// Structure of Iteration DAL
+	int n_cols = 3; 						// Number of columns:  Tstart + EstEnrgy + Quality
+	long rows_per_loop = 0; 				// 0: Use default: Optimum number of rows
+	long offset=0; 							// 0: Process all the rows
+
+	strcpy(straux,"Tstart");
+	//status = DALiterSetByName(&cols[0], trgExten, straux, DAL_DOUBLE, InputCol,	status);
+	if(fits_iter_set_by_name(&cols[0], obj.inObject, straux, TDOUBLE, InputCol)) printerror(status);
+	strcpy(straux,"EstEnrgy");
+	//status = DALiterSetByName(&cols[1], trgExten, straux, DAL_DOUBLE, InputCol,	status);
+	if(fits_iter_set_by_name(&cols[1], obj.inObject, straux, TDOUBLE, InputCol)) printerror(status);
+	strcpy(straux,"quality");
+	//status = DALiterSetByName(&cols[2], trgExten, straux, DAL_DOUBLE, InputCol,	status);
+	if(fits_iter_set_by_name(&cols[2], obj.inObject, straux, TDOUBLE, InputCol)) printerror(status);
+
+
+	ntotalrows = 1;	// Because it has already been used in other inDataIterators functions
+	//status = DALiterateData(n_cols, cols, offset, rows_per_loop, inDataIteratorOutTrg, 0L, status);
+	if(fits_iterate_data(n_cols,cols,offset,rows_per_loop,inDataIterator,0L,&status))printerror(status);
+
+	gsl_vector_scale(tstartout,samprate); 	//tstarts not in sec but in samples
+
+	status = createHisto(pulseheight, nBins, &xhisto, &yhisto);
+	if(status)EPexit(status);
+	index_maximumpulseheight = gsl_vector_max_index(yhisto);
+	maximumpulseheight = gsl_vector_get(xhisto,index_maximumpulseheight);
+
+	for (int i=0;i<totalPulses-1;i++)
+	{
+		if (i == totalPulses-2)		tstartnext = gsl_vector_get(tstartout,i)+2*sizePulse_b;
+		else 						tstartnext = gsl_vector_get(tstartout,i+1);
+
+		if ((gsl_vector_get(pulseheight,i) < maximumpulseheight-0.1*maximumpulseheight) || (gsl_vector_get(pulseheight,i) > maximumpulseheight+0.1*maximumpulseheight)
+			|| (tstartnext-gsl_vector_get(tstartout,i) <= sizePulse_b) || (gsl_vector_get(qualityout,i) != 0))
+		{
+			gsl_vector_set(nonpileup,i,0);
+			nonpileupPulses --;
+		}
+		else
+		{
+			if (firstnonpileupPulse == true)
+			{
+				obj.iniRow = i+1;
+				obj.endRow = i+1;
+				status=readFitsComplex (obj,&pulse_matrix);
+				if(status)EPexit(status);
+				/*for (int j=0;j<pulse_matrix->size2;j++)
+				{
+					sprintf(val,"%d %.12e",j,gsl_matrix_get(pulse_matrix,0,j));
+					strcat(val,"\n");
+					fputs(val,temporalFile);
+				}*/
+				gsl_matrix_get_row(pulse,pulse_matrix,0);
+				gsl_vector_memcpy(*pulseaverage,pulse);
+				*pulseaverageHeight = *pulseaverageHeight + gsl_vector_get(pulseheight,i);
+			}
+			else
+			{
+				obj.iniRow = i+1;
+				obj.endRow = i+1;
+				status=readFitsComplex (obj,&pulse_matrix);
+				if(status)EPexit(status);
+				gsl_matrix_get_row(pulse,pulse_matrix,0);
+
+				/*sprintf(val,"%d %d %d",i,gsl_vector_max_index(pulseaverage),gsl_vector_max_index(pulse));
+				strcat(val,"\n");
+				fputs(val,temporalFile);*/
+
+				gsl_vector_memcpy(pulseoriginal,pulse);
+				status=align(pulseaverage,&pulse);
+				if(status)EPexit(status);
+				gsl_vector_add(*pulseaverage,pulse);
+				*pulseaverageHeight = *pulseaverageHeight + gsl_vector_get(pulseheight,i);
+				/*for (int k=0;k<(*pulseaverage)->size;k++)
+				{
+					sprintf(val,"%.12e %.12e %.12e",gsl_vector_get(*pulseaverage,k),gsl_vector_get(pulseoriginal,k),gsl_vector_get(pulse,k));
+					strcat(val,"\n");
+					fputs(val,temporalFile);
+				}*/
+				/*status = shiftm(pulse,pulseshifted,i,status);
+				status = align(&pulse,&pulseshifted,&Shift,status);
+				sprintf(val,"%d",(-1)*i);
+				strcat(val,"\n");
+				fputs(val,temporalFile);
+				status = shift_m(pulse,pulseshifted,i,status);
+				status = align(&pulse,&pulseshifted,&Shift,status);*/
+			}
+			if (firstnonpileupPulse == true)	firstnonpileupPulse = false;
+		}
+	}
+
+	gsl_vector_scale(*pulseaverage,1.0/(nonpileupPulses));
+	*pulseaverageHeight = *pulseaverageHeight/nonpileupPulses;
+
+	gsl_vector_free(tstartout);
+	gsl_vector_free(pulseheight);
+	gsl_vector_free(qualityout);
+
+	return (status);
+}
