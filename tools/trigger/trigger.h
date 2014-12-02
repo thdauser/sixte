@@ -1,12 +1,24 @@
 /********************************************************************************************
-* (C) This product has been produced by IFCA with funding from the Spanish
-* Ministry of Science and Innovation (MICINN) under project
-* ESP2006-13608-C02-01, as an in-kind contribution to the EURECA
-* project.  It remains the property of CSIC (Spanish Council for
-* Scientific Research) and it cannot be modified, adapted or used for
-* purposes other than the original ones except by its owner.
-*
-*                  INSTITUTO DE FISICA DE CANTABRIA
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+   Copyright 2014:  Trigger has been developed by the INSTITUTO DE FISICA DE 
+   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
+   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
+   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
+   ESP2013-48637-C2-1-P.
 *
 *                      TRIGGERING PULSES
 *
