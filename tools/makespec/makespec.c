@@ -26,6 +26,9 @@
 int makespec_main() {
   // Program parameters.
   struct Parameters par; 
+  
+  // Full file name with filter.
+  char evtlistfiltered[2*MAXFILENAME];
 
   // Input event file.
   fitsfile* ef=NULL;
@@ -58,9 +61,22 @@ int makespec_main() {
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
+    
+    char ucase_buffer[MAXFILENAME];
+    strcpy(ucase_buffer, par.EventFilter);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer,"NONE")) {
+      strcpy(evtlistfiltered, par.EventFilter);
+    }else{
+      if(0>=sprintf(evtlistfiltered, "%s[EVENTS][%s]", par.EventList, par.EventFilter)){
+	status=EXIT_FAILURE;
+	SIXT_ERROR("Assembling file name failed.");
+	break;
+      }
+    }
 
     // Open the input event file.
-    fits_open_table(&ef, par.EventList, READONLY, &status);
+    fits_open_table(&ef, evtlistfiltered, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read required keywords.
@@ -250,6 +266,8 @@ int makespec_main() {
 		    "none", &status);
     fits_update_key(sf, TDOUBLE, "EXPOSURE", &exposure,
 		    "exposure time", &status);
+    fits_update_key(sf, TSTRING, "FilterExpr", par.EventFilter,
+		    "used filter expression", &status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over all channels in the spectrum.
@@ -304,6 +322,14 @@ int makespec_getpar(struct Parameters* par)
     return(status);
   } 
   strcpy(par->EventList, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_file_name("EventFilter", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the event filter expression");
+    return(status);
+  } 
+  strcpy(par->EventFilter, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("Spectrum", &sbuffer);

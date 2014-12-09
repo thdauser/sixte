@@ -1,4 +1,5 @@
 EventList,fre,lq,"events.fits",,,"event list input file"
+EventFilter,s,h,"NONE",,,"event list filter (extended filename syntax expression)"
 Spectrum,f,lq,"spectrum.fits",,,"spectrum output file"
 RSPPath,s,h,"",,,"path to response files"
 chatter,i,lh,3,,,"chatter: control verbosity of the program"
