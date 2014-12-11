@@ -66,7 +66,7 @@ int makespec_main() {
     strcpy(ucase_buffer, par.EventFilter);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(evtlistfiltered, par.EventFilter);
+      strcpy(evtlistfiltered, par.EventList);
     }else{
       if(0>=sprintf(evtlistfiltered, "%s[EVENTS][%s]", par.EventList, par.EventFilter)){
 	status=EXIT_FAILURE;
