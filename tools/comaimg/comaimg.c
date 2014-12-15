@@ -79,9 +79,8 @@ int comaimg_main() {
     if (EXIT_SUCCESS!=status) break;
 
     //Calculate min cos-value for sources inside FOV.
-    const float fov_min_align = cos(det_phi_max(par.MaskDistance,
-						par.x_mask, par.y_mask,
-						x_det, y_det));
+    float phi_max=det_phi_max(distance,par.x_mask,par.y_mask,x_det,y_det);
+    float fov_min_align = cos(phi_max);
     //Set up the telescope attitude:
 
     //Buffer for attitude-filename.
@@ -135,11 +134,11 @@ int comaimg_main() {
 
       //Check if the required time interval for the simulation
       //lies within the time interval in the attitude-file
-      if((ac->entry[0].time > 0) || ((ac->entry[ac->nentries-1].time) < (par.Exposure + par.Timezero))){
+      /* if((ac->entry[0].time > 0) || ((ac->entry[ac->nentries-1].time) < (par.Exposure + par.Timezero))){
 	status=EXIT_FAILURE;
 	SIXT_ERROR("attitude data does not cover the specified period");
 	break;
-      }
+	}*/
       
     }//END of setting up the attitude.
 
@@ -235,9 +234,8 @@ int comaimg_main() {
 	
 	//first:impact position in mask-plane (transparent pixels only);
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
-	int reval=getImpactPos2(&wcs,&position,mask,photon.ra*180./M_PI,
+	int reval=getImpactPos_wcs(&wcs,&position,mask,photon.ra*180./M_PI,
 				photon.dec*180./M_PI,det_pixelwidth,x_det,y_det,&status);
-
 	CHECK_STATUS_BREAK(status);
 
 	if (reval == 1){
