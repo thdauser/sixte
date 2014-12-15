@@ -78,9 +78,10 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
     return(si);
   }
   si->naxis1 = sip->naxis1;
+  si->naxis2 = sip->naxis2;
   int xcount, ycount;
   for(xcount=0; xcount<si->naxis1; xcount++) {
-    si->pixel[xcount]=(double*)malloc(sip->naxis2*sizeof(double));
+    si->pixel[xcount]=(double*)malloc(si->naxis2*sizeof(double));
     if (NULL==si->pixel[xcount]) {
       *status=EXIT_FAILURE;
       HD_ERROR_THROW("Error: could not allocate memory to store "
@@ -88,11 +89,11 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
       return(si);
     }
     // Clear the pixels.
-    for(ycount=0; ycount<sip->naxis2; ycount++) {
+    for(ycount=0; ycount<si->naxis2; ycount++) {
       si->pixel[xcount][ycount] = 0.;
     }
   }
-  si->naxis2 = sip->naxis2;
+ 
   
   // Set the properties of the pixel array.
   si->cdelt1 = sip->cdelt1;

@@ -23,7 +23,7 @@ typedef struct {
 /////////////////////////////////////////////
 ReconArray* newReconArray(int* const status);
 
-ReconArray* getReconArray(CodedMask* mask, SquarePixels* detector_pixels, int* const status);
+ReconArray* getReconArray(CodedMask* mask,int type, SquarePixels* detector_pixels, int* const status);
 
 double* SaveReconArray1d(ReconArray* recon, int* status);
 

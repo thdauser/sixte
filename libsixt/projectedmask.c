@@ -15,6 +15,7 @@ ProjectedMask* newProjectedMask(int* const status)
 
   proj->pixelwidth1 = 0.;
   proj->pixelwidth2 = 0.;
+  proj->OpenPixels=0.;
   proj->naxis1 = 0;
   proj->naxis2 = 0;
 
@@ -86,7 +87,7 @@ void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
    }
   
   //scanning over all ProjectedMask-pixels and fill in the new intermediate ones
-
+  /*
   for(y=1; y<(proj->naxis2-1); y+=2){ //all middle odd rows -> contains former mask-pix (each odd col in this row)
 
 	  //1st pix
@@ -160,5 +161,20 @@ void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
 
   //last pix
   proj->map[proj->naxis1-1][proj->naxis1-1]=(proj->map[proj->naxis1-2][proj->naxis1-1]+
-  proj->map[proj->naxis1-1][proj->naxis1-2])/2;
+  proj->map[proj->naxis1-1][proj->naxis1-2])/2;*/
+}
+
+
+void getOpenPixels(ProjectedMask* proj_repix)
+{
+  int ii, jj; //counts
+  double PixCount=0;
+
+  for(ii=0; ii<proj_repix->naxis1; ii++){
+    for(jj=0; jj<proj_repix->naxis2; jj++){
+      PixCount+=proj_repix->map[ii][jj];
+    }
+  }
+
+  proj_repix->OpenPixels=PixCount;
 }

@@ -45,6 +45,8 @@ typedef struct{
 		          In each line: all even pixels, each line starts and ends
 		          with such a pixel.*/
 
+  double OpenPixels;  /* Sum of all open pixels values -> required for normalization*/
+
   int naxis1;  /*  Width of the image [pixel]. 2*amount_of_mask_pixels+1 */
   int naxis2;  /*  Width of the image [pixel]. 2*amount_of_mask_pixels+1 */
 
@@ -60,5 +62,7 @@ ProjectedMask* getEmptyProjectedMask(int Size1, int Size2, double pixelsize1, do
 				     int* const status);
 
 void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj);
+
+void getOpenPixels(ProjectedMask* proj_repix); //gets sum of all open-pixel-values -> for normalization
 
 #endif /* PROJECTEDMASK_H */

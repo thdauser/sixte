@@ -26,6 +26,7 @@
 #include "maskshadow.h"
 #include "fft_array.h"
 #include "projectedmask.h"
+#include "skyimage.h"
 
 
 #define TMASKSHADOW 1     //MaskShadow* ms->shadow
@@ -34,6 +35,7 @@
 #define TPROJMASK 4       //ProjectedMask* pm->map
 #define TMASKMAP 5        //CodedMask* cm->map
 #define TSOURCEIMG 6      //SourceImage* si->pixel
+#define TSKYIMG 7         //SkyImage* si->pixel OR si->ra OR si->dec
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.

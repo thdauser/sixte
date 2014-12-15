@@ -21,7 +21,7 @@ ReconArray* newReconArray(int* const status)
 }
 
 
-ReconArray* getReconArray(CodedMask* mask, SquarePixels* detector_pixels, int* const status)
+ReconArray* getReconArray(CodedMask* mask,int type, SquarePixels* detector_pixels, int* const status)
 {
   ReconArray* recon=NULL;
   int x,y;                          //count for memory allocation
@@ -72,8 +72,14 @@ ReconArray* getReconArray(CodedMask* mask, SquarePixels* detector_pixels, int* c
       if(mask->map[xcount][ycount]==1){
 	recon->Rmap[xcount][ycount]=1.;
       }else if(mask->map[xcount][ycount]==0){
-	recon->Rmap[xcount][ycount]=
-	  (recon->open_fraction)/(recon->open_fraction - 1.);
+
+	if(type == 1){
+	  recon->Rmap[xcount][ycount]=
+	    (recon->open_fraction)/(recon->open_fraction - 1.);
+	}else if(type == 2){
+	  recon->Rmap[xcount][ycount]=-1;
+	}
+
       }else{
 	*status=EXIT_FAILURE;
 	HD_ERROR_THROW("Error while scanning mask-elements!\n", *status);
@@ -84,7 +90,12 @@ ReconArray* getReconArray(CodedMask* mask, SquarePixels* detector_pixels, int* c
 
    else{//begin diff pixelsize
      //initialize all to max neg value (depending on OF)
-     double MinVal=(recon->open_fraction)/(recon->open_fraction - 1.);
+     double MinVal;
+     if(type == 1){
+       MinVal=(recon->open_fraction)/(recon->open_fraction - 1.);
+     }else if(type == 2){
+       MinVal=-1.;
+     }
 
      for(xcount=0; xcount < (recon->naxis1/2); xcount++){
        for(ycount=0; ycount < (recon->naxis2/2); ycount++){
