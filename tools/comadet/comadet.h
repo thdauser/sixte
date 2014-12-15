@@ -37,6 +37,8 @@ struct Parameters {
   char EventList[MAXMSG];
   char EventListTemplate[MAXMSG];
 
+  //protoMirax-flag: 1=yes, 0=no
+  int protoMirax;
   /** Detector width in [pixel]. */
   //has to include all gaps
   int width;

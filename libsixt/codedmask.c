@@ -215,7 +215,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 }
 
 
-//impact position via projection downwards
+//impact position via projection downwards,'per hand'-> for comparison
 int getImpactPos (struct Point2d* const position,
 		  const Vector* const phodir,
 		  const CodedMask* const mask, 
@@ -230,13 +230,13 @@ int getImpactPos (struct Point2d* const position,
 
   // Get a random number.
   double rand=sixt_get_random_number(status);
-  CHECK_STATUS_RET(*status, 0); 
+    CHECK_STATUS_RET(*status, 0); 
 
    //Photon passes through transparent pixel.
    //Determine its impact position on the detection plane.
 
    //First:Determine the pixel(random)the photon passes through (mask plane).
-   int pixel = (int)(rand * mask->n_transparent_pixels);
+  int pixel = (int)(rand * mask->n_transparent_pixels);
    //Pixel points to an arbitrary pixel out of all transparent ones.
 
    //Second: get the impact positon in the mask plane in meters.
@@ -287,7 +287,7 @@ return(1);
 
 
 //impact position via wcs-projection
-int getImpactPos2 (struct wcsprm* wcs, struct Point2d* const position, const CodedMask* const mask,
+int getImpactPos_wcs (struct wcsprm* wcs, struct Point2d* const position, const CodedMask* const mask,
 		   double const photon_ra, double const photon_dec, float const det_pixelwidth,
 		   const float x_det, const float y_det, int* const status)
 {
@@ -314,18 +314,107 @@ int getImpactPos2 (struct wcsprm* wcs, struct Point2d* const position, const Cod
   //Determine its impact position on the detection plane.
 
   //Determine the pixel(random)the photon passes through (mask plane).
-  int pixel = (int)(rand * mask->n_transparent_pixels);
+   int pixel =(int)(rand * mask->n_transparent_pixels);
   //Pixel points to an arbitrary pixel out of all transparent ones.
-  
-  position->x=((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
-     *mask->cdelt1+mask->crval1+(double)(pixcrd[0]*det_pixelwidth);
-  position->y=((double)(mask->transparent_pixels[pixel][1])-mask->crpix2+0.5+sixt_get_random_number(status))
-     *mask->cdelt2+mask->crval2+(double)(pixcrd[1]*det_pixelwidth);
+  //use current mask pixel - mask->crpix -> set coordinate system to center
+  //above*mask->cdelt -> in meters
+   position->x=((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
+    *mask->cdelt1+mask->crval1+(double)((pixcrd[0]-wcs->crpix[0]+0.5)*det_pixelwidth);
+   position->y=((double)(mask->transparent_pixels[pixel][1])-mask->crpix2+0.5+sixt_get_random_number(status))
+    *mask->cdelt2+mask->crval2+(double)((pixcrd[1]-wcs->crpix[1]+0.5)*det_pixelwidth);
+
+  position->x+=x_det/2;
+  position->y+=y_det/2;
 
   //ensure that photon does not hit the walls
   if (position->x > x_det || position->x < 0. || position->y > y_det || position->y < 0.){
     return(0);
   }
 
-return(1);
+  return(1);
+}
+
+
+int getImpactPos_protoMirax(struct wcsprm* wcs, struct wcsprm* wcs2, struct Point2d* const position,
+			   const CodedMask* const mask, double const photon_ra, double const photon_dec,
+			   float const det_pixelwidth, const float det_width, const float x_det,
+			   const float y_det, int* const status)
+{
+  // Check if a CodedMask is specified. If not, break.
+  if (NULL==mask) return(0);
+
+  double pixcrd[2];
+  double imgcrd[2];
+  double world[2]={photon_ra, photon_dec};
+  double phi, theta;
+  int stat=0;
+
+  wcss2p(wcs,1,2,world,&phi,&theta,imgcrd,pixcrd,&stat);
+  if(0!=stat){
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("wcs projection failed!\n", *status);
+  }
+
+  double pixcrd2[2];
+  double imgcrd2[2];
+  double world2[2]={photon_ra, photon_dec};
+  double phi2, theta2;
+  int stat2=0;
+
+  wcss2p(wcs2,1,2,world2,&phi2,&theta2,imgcrd2,pixcrd2,&stat2);
+  if(0!=stat2){
+    *status=EXIT_FAILURE;
+    HD_ERROR_THROW("wcs projection failed!\n", *status);
+  }
+
+  // Get a random number.
+  double rand=sixt_get_random_number(status);
+  CHECK_STATUS_RET(*status, 0);
+
+  //Photon passes through transparent pixel.
+  //Determine its impact position on the detection plane.
+
+  //Determine the pixel(random)the photon passes through (mask plane).
+  int pixel =(int)(rand * mask->n_transparent_pixels);
+  //Pixel points to an arbitrary pixel out of all transparent ones.
+  
+  //impact position at collimator distance (between mask and det-plane) in meters
+  double x_coll=((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
+    *mask->cdelt1+mask->crval1+(double)((pixcrd2[0]-wcs2->crpix[0])*det_pixelwidth);
+  double y_coll=((double)(mask->transparent_pixels[pixel][1])-mask->crpix2+0.5+sixt_get_random_number(status))
+    *mask->cdelt2+mask->crval2+(double)((pixcrd2[1]-wcs2->crpix[1])*det_pixelwidth);
+
+  //shift origin from center to corner
+  x_coll+=x_det/2;
+  y_coll+=y_det/2;
+
+  //determine detector-element that is hit at collimator distance
+  int x_coll_det=(int)(x_coll/det_width);
+  int y_coll_det=(int)(y_coll/det_width);
+
+  //impact position at detection plane in meters
+  position->x=((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
+    *mask->cdelt1+mask->crval1+(double)((pixcrd[0]-wcs->crpix[0]+0.5)*det_pixelwidth);
+  position->y=((double)(mask->transparent_pixels[pixel][1])-mask->crpix2+0.5+sixt_get_random_number(status))
+    *mask->cdelt2+mask->crval2+(double)((pixcrd[1]-wcs->crpix[1]+0.5)*det_pixelwidth);
+
+  //shift origin from center to corner
+  position->x+=x_det/2;
+  position->y+=y_det/2;
+
+  //determine detector that is hit at detection plane
+  int x_detector=(int)(position->x/det_width);
+  int y_detector=(int)(position->y/det_width);
+
+  //ensure that photon does not hit the outer walls
+  if (position->x > x_det || position->x < 0. || position->y > y_det || position->y < 0.){
+    return(0);
+  }
+
+  //ensure that photon does not hit the collimator walls
+  if (x_coll_det != x_detector || y_coll_det != y_detector){
+    return(0);
+  }
+
+  return(1);
 }

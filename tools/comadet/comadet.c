@@ -100,8 +100,13 @@ int comadet_main() {
 
       //detection routine:determines affected pixel and adds new event
       //to the event-file
-      status=addImpact2CoMaDetector(detector, &impact);
-      CHECK_STATUS_RET(status, status);
+      if(par.protoMirax==1){
+	status=addImpact2CoMaDetector_protoMirax(detector, &impact);
+	CHECK_STATUS_RET(status, status);
+      }else{
+	status=addImpact2CoMaDetector(detector, &impact);
+	CHECK_STATUS_RET(status, status);
+      }
       
     } //END of scanning the impact list.
     CHECK_STATUS_RET(status, status);
@@ -136,6 +141,11 @@ int comadet_getpar(struct Parameters* par)
   // Get the filename of the event list file (FITS output file).
   else if ((status=PILGetFname("EventList", par->EventList))) {
     SIXT_ERROR("failed reading the filename of the event list output");
+  }
+
+  // Check whether protoMirax or not [yes=1, no=0].
+  else if ((status=PILGetInt("protoMirax", &par->protoMirax))) {
+    SIXT_ERROR("failed reading protoMirax-flag");
   }
 
   // Read the width of the detector in [pixel].
