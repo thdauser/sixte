@@ -56,6 +56,7 @@ int comarecon_main() {
 
   int ii, jj; //counts
   int xdiff, ydiff; //difference in size of mask and det plane
+  int PixAmount;
 
   // Register HEATOOL:
   set_toolname("comarecon");
@@ -102,16 +103,18 @@ int comarecon_main() {
 
     // SKY IMAGE setup.
        if(par.RePixSize==0.){
-	float delta = atan(par.pixelwidth/distance);
-	struct SourceImageParameters sip = {
-	    .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth),
-	    .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth),
-	    .crpix1 = (float)(sip.naxis1/2.+1), //even axes:ends to .5;odd axes (not possible,*2):ends to .0 (therefore: axis/2+0.5)
-	    .crpix2 = (float)(sip.naxis2/2.+1), //further +0.5,since left boarder of 1st pix in sky image is 0.5(FITS)
-	    .cdelt1 = delta,
-	    .cdelt2 = delta,
-	    .crval1 = ra,
-	    .crval2 = dec
+	 PixAmount=4;
+
+	 float delta = atan(par.pixelwidth/distance);
+	 struct SourceImageParameters sip = {
+	   .naxis1 = 2*(mask->naxis1*mask->cdelt1/detector_pixels->xpixelwidth),
+	   .naxis2 = 2*(mask->naxis2*mask->cdelt2/detector_pixels->ypixelwidth),
+	   .crpix1 = (float)(sip.naxis1/2.+1), //even axes:ends to .5;odd axes (not possible,*2):ends to .0 (therefore: axis/2+0.5)
+	   .crpix2 = (float)(sip.naxis2/2.+1), //further +0.5,since left boarder of 1st pix in sky image is 0.5(FITS)
+	   .cdelt1 = delta,
+	   .cdelt2 = delta,
+	   .crval1 = ra*M_PI/180.,
+	   .crval2 = dec*M_PI/180.
 	};
        sky_pixels=getEmptySourceImage(&sip, &status);
        CHECK_STATUS_BREAK(status);
@@ -124,6 +127,8 @@ int comarecon_main() {
 	 detector_pixels->xpixelwidth=par.RePixSize;
 	 detector_pixels->ypixelwidth=par.RePixSize;
 	 
+	 PixAmount=24;
+
 	 //get source image with correct axes, since xpixelwidth has changed
 	 float delta = atan(par.RePixSize/distance);
 	 struct SourceImageParameters sip = {
@@ -135,8 +140,8 @@ int comarecon_main() {
 	   .crpix2 = (float)(sip.naxis2/2.+1),
 	   .cdelt1 = delta,
 	   .cdelt2 = delta,
-	   .crval1 = ra,
-	   .crval2 = dec
+	   .crval1 = ra*M_PI/180.,
+	   .crval2 = dec*M_PI/180.
 	 };
 	sky_pixels=getEmptySourceImage(&sip, &status);
         CHECK_STATUS_BREAK(status);
@@ -165,9 +170,9 @@ int comarecon_main() {
     wcs.naxis=2;
     wcs.crpix[0]=sky_pixels->crpix1;
     wcs.crpix[1]=sky_pixels->crpix2; 
-    wcs.crval[0]=sky_pixels->crval1;
-    wcs.crval[1]=sky_pixels->crval2;
-    wcs.cdelt[0]=sky_pixels->cdelt1*180./M_PI;
+    wcs.crval[0]=sky_pixels->crval1*180./M_PI;
+    wcs.crval[1]=sky_pixels->crval2*180./M_PI;
+    wcs.cdelt[0]=sky_pixels->cdelt1*180./M_PI; //in deg
     wcs.cdelt[1]=sky_pixels->cdelt2*180./M_PI;
 
     //initialization of wcs parameter structure for getting mask shadow
@@ -228,6 +233,10 @@ int comarecon_main() {
 
        } // END of scanning the event list.
        CHECK_STATUS_BREAK(status);
+       
+       //createTestImg(&ea->EventArray,2,detector_pixels->xwidth,detector_pixels->ywidth,
+       // ea->naxis1/2+xdiff,ea->naxis2/2+ydiff,"eventArray.fits",&status);
+       
 
        if(par.RePixSize!=0.){
 	 double pixelwidth_big=xpixelsize_beforeRepix;//width of the former EventArray pixels (the real det-pix-size)
@@ -250,7 +259,15 @@ int comarecon_main() {
        }//end re-pixel EventArray to smaller size given by RePixSize
 
        //Get the reconstruction array:
-       recon=getReconArray(mask, detector_pixels, &status);
+       //type: 1: balanced cross correlation (rnd pattern), 2: MURA
+       /*int type;
+       if(par.protoMirax == 1){
+	 type=2;
+       }else{
+	 type=1;
+	 }*/ //TODO
+       
+       recon=getReconArray(mask,2,detector_pixels,&status);
        int Size1 = recon->naxis1;
        int Size2 = recon->naxis2;
 
@@ -260,14 +277,14 @@ int comarecon_main() {
        //perform a fft with the ReconArray       
        fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2, -1);
 
-        //get repixeled mask from ReconArray, which is needed later for building the mask shadow during IROS
-        //basic constructor for both,the whole re-pixeled mask&/shadow element
-        mask_shadow=getMaskShadowElement(Size1, Size2, &status); 
-        //gets re-pixeled mask as big as EventArray with values betw. 0...1
-	getMaskRepix(recon, mask_shadow);
+       //get repixeled mask from ReconArray, which is needed later for building the mask shadow during IROS
+       //basic constructor for both,the whole re-pixeled mask&/shadow element
+       mask_shadow=getMaskShadowElement(Size1/2, Size2/2, Size1, Size2, &status); 
+       //gets re-pixeled mask as big as EventArray with values betw. 0...1
+       getMaskRepix(recon, mask_shadow, 1);
   
-        do{ //search for sources as long as pixval is above certain value
-       //run as long as threshold==1
+       do{ //search for sources as long as pixval is above certain value
+	 //run as long as threshold==1
 
 	 //Get the 1d image of the event array -> needed by FFTW
 	 EventImage1d=SaveEventArray1d(ea, &status);
@@ -275,10 +292,10 @@ int comarecon_main() {
 	 if ((recon->naxis1 != ea->naxis1) || (recon->naxis2 != ea->naxis2)){
 	   printf ("Error: ReconArrray and EventArray must have the same size!\n");
 	   break;
-	   }
+	 }
    
-       //perform a fft with the EventArray       
-       fftEventArray=FFTOfArray_1d(EventImage1d, Size1, Size2, -1);
+	 //perform a fft with the EventArray       
+	 fftEventArray=FFTOfArray_1d(EventImage1d, Size1, Size2, -1);
     
        //multiply fftEventArray with komplex conjugate of fftReconArray
        //Re-part: E(Re)*R(Re)+E(Im)*R(Im); Im-part: E(Re)*R(Im)-E(Im)*R(Re)       
@@ -307,40 +324,40 @@ int comarecon_main() {
        sprintf(name_image,"image_%lu", position_list->entryCount);
 
        // Write the reconstructed source function to the output FITS file.
-       if(position_list->entryCount <1){
+       if(position_list->entryCount <=2){
        saveSourceImage(sky_pixels, name_image, &status);
        CHECK_STATUS_BREAK(status);
        }
    
        //finds current brightest pixel coordinates and saves PixPosition; returns current brightest pixval
-       pixval=findBrightestPix(threshold, sky_pixels, pixval, position_list, &wcs, &status);
+       pixval=findBrightestPix(threshold, PixAmount, sky_pixels, pixval, position_list, &wcs, &status);
        threshold=getThresholdForSources(pixval, position_list, sky_pixels, median_list, par.Sigma);
 
        //get mask shadow for current source
-        getMaskShadow2(mask_shadow,&wcs2,position_list,sky_pixels,detector_pixels,recon,&status);
-	double norm=getNormalization2(mask_shadow, ea, detector_pixels, xdiff, ydiff);
+       getMaskShadow2(mask_shadow,&wcs2,position_list,sky_pixels->crpix1,sky_pixels->crpix2,detector_pixels,Size1/2,Size2/2,1,&status);
+       double norm=getNormalization2(mask_shadow, ea, detector_pixels, xdiff, ydiff);
+       
+       //new event array: method two
+       if(norm>1.){
 
-	//new event array: method two
-       	if(norm>1.){
-
-	  for(ii=0; ii<detector_pixels->xwidth; ii++){
-	    for(jj=0; jj<detector_pixels->ywidth; jj++){
-	      if(ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]!=0.){
-		ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]-=norm*mask_shadow->shadow[ii][jj];
-		if(ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]<0.){
-		ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]=0.;
-		}
-	      }
+	 for(ii=0; ii<detector_pixels->xwidth; ii++){
+	   for(jj=0; jj<detector_pixels->ywidth; jj++){
+	     if(ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]!=0.){
+	       ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]-=norm*mask_shadow->shadow[ii][jj];
+	       if(ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]<0.){
+		 ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]=0.;
+	       }
+	     }
 	     
-	    }
-	  }
+	   }
+	 }
 
-	}else{
-	  threshold=2; 
-	  }
-	FreeEventArray1d(EventImage1d);
-	fftw_free(fftEventArray);
-	fftw_free(fftInvMultiply);
+       }else{
+	 threshold=2; 
+       }
+       FreeEventArray1d(EventImage1d);
+       fftw_free(fftEventArray);
+       fftw_free(fftInvMultiply);
         }while(threshold==1);
 
     //create FITS-file with all pix-coordinates
