@@ -99,8 +99,10 @@ AC_CONFIG_FILES([Makefile
 		tools/tes_grades/Makefile
 		tools/gendetsim/Makefile
 		tools/comaimg/Makefile
+		tools/comaimgPM/Makefile
 		tools/comadet/Makefile
 		tools/comarecon/Makefile
+		tools/comabackpro/Makefile
 		tools/projev/Makefile
 		tools/evpat/Makefile
 		tools/imgev/Makefile

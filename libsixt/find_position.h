@@ -14,7 +14,6 @@ typedef struct {
                             //(weighted position of all significant pixels)
   double posRA, posDEC;     //position of source in ra,dec
   double pixval;            //value of source-pixel
-  /* double errorRA, errorDEC;*/ //error of found ra,dec compared to originally given value (source.simput)
 } PixPosition;
 
 typedef struct  {
@@ -43,10 +42,10 @@ SourceNeighbors* getSourceNeighbors();
 
 
 //returns value of current brightest source
-double findBrightestPix(int threshold, SourceImage* sky_pixels, double pixval, PixPositionList* ppl,
+double findBrightestPix(int threshold, int PixAmount, SourceImage* sky_pixels, double pixval, PixPositionList* ppl,
 		        struct wcsprm* wcs, int* const status);
 
-void findNeighbors(int x, int y, PixPositionList* ppl, SourceImage* sky_pixels, struct wcsprm* wcs, int* const status);
+void findNeighbors(int x, int y, int PixAmount, PixPositionList* ppl, SourceImage* sky_pixels, struct wcsprm* wcs, int* const status);
 
 double* getMedian_list(SourceImage* sky_pixels, int* const status);
 

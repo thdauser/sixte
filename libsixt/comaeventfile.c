@@ -106,7 +106,7 @@ int addCoMaEvent2File(CoMaEventFile* ef, CoMaEvent* event)
 
   if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 
 		     1, 1, &event->time, &status)) return(status);
-  if (fits_write_col(ef->generic.fptr, TFLOAT, ef->ccharge, ef->generic.row, 
+  if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ccharge, ef->generic.row, 
 		     1, 1, &event->charge, &status)) return(status);
   if (fits_write_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 
 		     1, 1, &event->rawx, &status)) return(status);
@@ -139,7 +139,7 @@ int CoMaEventFile_getNextRow(CoMaEventFile* ef, CoMaEvent* event)
 		    1, &event->time, &event->time, &anynul, &status)) 
     return(status);
   event->charge = 0.;
-  if (fits_read_col(ef->generic.fptr, TLONG, ef->ccharge, ef->generic.row, 1, 
+  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ccharge, ef->generic.row, 1, 
 		    1, &event->charge, &event->charge, &anynul, &status)) 
     return(status);
   event->rawx = 0;

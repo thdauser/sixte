@@ -17,7 +17,8 @@ MaskShadow* getEmptyMaskShadowElement(int* const status)
   return(ms);
 }
 
-MaskShadow* getMaskShadowElement(int const Size1, int const Size2, int* const status)
+MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int const Size1_shadow, 
+				 int const Size2_shadow, int* const status)
 {
   MaskShadow* ms=NULL;
   int x,y;
@@ -27,10 +28,10 @@ MaskShadow* getMaskShadowElement(int const Size1, int const Size2, int* const st
   if (EXIT_SUCCESS!=*status) return(ms);
 
   //memory-allocation map (as big as mask with pixel-size of detector)
-  ms->map=(double**)malloc((Size1/2+1)*sizeof(double*));
+  ms->map=(double**)malloc((Size1_map+1)*sizeof(double*));
   if(NULL!=ms->map){
-    for(x=0; x <= Size1/2; x++){  //'+1' because of shift of map see below (get MaskShadow2)
-      ms->map[x]=(double*)malloc((Size2/2+1)*sizeof(double));
+    for(x=0; x <= Size1_map; x++){  //'+1' because of shift of map see below (get MaskShadow2)
+      ms->map[x]=(double*)malloc((Size2_map+1)*sizeof(double));
 	if(NULL==ms->map[x]) {
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory to store the "
@@ -39,7 +40,7 @@ MaskShadow* getMaskShadowElement(int const Size1, int const Size2, int* const st
 	  return(ms);
 	}
 	//Clear the pixels
-	for(y=0; y <= Size2/2; y++){
+	for(y=0; y <= Size2_map; y++){
 	  ms->map[x][y]=0.;
 	}
     }
@@ -52,10 +53,10 @@ MaskShadow* getMaskShadowElement(int const Size1, int const Size2, int* const st
   }//end of memory-allocation map
 
    //memory-allocation shadow (as big as EventArray -> for later subtraction)
-  ms->shadow=(double**)malloc(Size1*sizeof(double*));
+  ms->shadow=(double**)malloc(Size1_shadow*sizeof(double*));
   if(NULL!=ms->shadow){
-    for(x=0; x < Size1; x++){
-      ms->shadow[x]=(double*)malloc(Size2*sizeof(double));
+    for(x=0; x < Size1_shadow; x++){
+      ms->shadow[x]=(double*)malloc(Size2_shadow*sizeof(double));
 	if(NULL==ms->shadow[x]) {
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory to store the "
@@ -64,7 +65,7 @@ MaskShadow* getMaskShadowElement(int const Size1, int const Size2, int* const st
 	  return(ms);
 	}
 	//Clear the pixels
-	for(y=0; y < Size2; y++){
+	for(y=0; y < Size2_shadow; y++){
 	  ms->shadow[x][y]=0.;
 	}
     }
@@ -80,12 +81,12 @@ MaskShadow* getMaskShadowElement(int const Size1, int const Size2, int* const st
   return(ms);
 }
 
-void getMaskRepix(ReconArray* recon, MaskShadow* ms)
+void getMaskRepix(ReconArray* recon, MaskShadow* ms, int shift)
 {
   int ii,jj;
 
-  for(ii=1; ii<=recon->naxis1/2; ii++){
-    for(jj=1; jj<=recon->naxis2/2; jj++){
+  for(ii=0+shift; ii<recon->naxis1/2+shift; ii++){
+    for(jj=0+shift; jj<recon->naxis2/2+shift; jj++){
       ms->map[ii][jj]=(recon->Rmap[ii][jj]+fabs((recon->open_fraction)/(recon->open_fraction - 1.)))/
 	(1.-(recon->open_fraction)/(recon->open_fraction - 1.));
     }
@@ -177,7 +178,8 @@ void getMaskShadow(MaskShadow* ms, PixPositionList* ppl, SourceImage* sky_pixels
 
 }
 
-void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, SourceImage* sky_pixels, SquarePixels* det_pix, ReconArray* r, int* const status)
+void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, float sky_crpix1, float sky_crpix2, SquarePixels* det_pix, int Size1,
+		    int Size2, int shift, int* const status)
 {
   double pixcrd[2];
   double imgcrd[2];
@@ -198,12 +200,12 @@ void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, S
    //memory-allcation
   posD=(double*)malloc(2*sizeof(double));
 
-  for(ii=1; ii<=r->naxis1/2; ii++){
-    for(jj=1; jj<=r->naxis2/2; jj++){
+  for(ii=0+shift; ii<Size1+shift; ii++){
+    for(jj=0+shift; jj<Size2+shift; jj++){
       
       //in meters
-      posD[0]=(ii-sky_pixels->crpix1/2+0.5)*det_pix->xpixelwidth+(double)(pixcrd[0]*det_pix->xpixelwidth);
-      posD[1]=(jj-sky_pixels->crpix2/2+0.5)*det_pix->ypixelwidth+(double)(pixcrd[1]*det_pix->ypixelwidth);
+      posD[0]=(ii-sky_crpix1/2+0.5)*det_pix->xpixelwidth+(double)(pixcrd[0]*det_pix->xpixelwidth);
+      posD[1]=(jj-sky_crpix2/2+0.5)*det_pix->ypixelwidth+(double)(pixcrd[1]*det_pix->ypixelwidth);
 
       if(posD[0]<0. || posD[0]>(det_pix->xwidth*det_pix->xpixelwidth) || posD[1]<0. 
 	 || posD[1]>(det_pix->ywidth*det_pix->ypixelwidth)){

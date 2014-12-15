@@ -23,14 +23,15 @@ typedef struct {
 
 MaskShadow* getEmptyMaskShadowElement(int* const status);
 
-MaskShadow* getMaskShadowElement(int const Size1, int const Size2, int* const status);
+MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int const Size1_shadow, 
+				 int const Size2_shadow, int* const status);
 
-void getMaskRepix(ReconArray* recon, MaskShadow* ms);
+void getMaskRepix(ReconArray* recon, MaskShadow* ms, int shift);
 
 void getMaskShadow(MaskShadow* ms, PixPositionList* ppl, SourceImage* sky_pixels, SquarePixels* det_pix,
 		    ReconArray* r, const Vector* const nx, const Vector* const ny, double const distance);
-void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, SourceImage* sky_pixels,
-		    SquarePixels* det_pix, ReconArray* r, int* const status);
+void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, float sky_crpix1, float sky_crpix2,
+		    SquarePixels* det_pix, int const Size1, int const Size2, int const shift, int* const status);
 
 double getNormalization1(MaskShadow* ms, ReadEvent* ea, SquarePixels* det_pix, int const xdiff, int const ydiff);
 double getNormalization2(MaskShadow* ms, ReadEvent* ea, SquarePixels* det_pix, int const xdiff, int const ydiff);

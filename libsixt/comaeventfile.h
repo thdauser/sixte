@@ -82,8 +82,7 @@ int addCoMaEvent2File(CoMaEventFile* ef, CoMaEvent* event);
     increases the internal counter of the CoMaEventFile data
     structure. In the event file the numbering of the pixels starts
     at 1, whereas in the returned CoMaEvent data structure the
-    numbering starts at 0. The return value is the error status. The
-    return value is the error status. */
+    numbering starts at 0. The return value is the error status. */
 int CoMaEventFile_getNextRow(CoMaEventFile* ef, CoMaEvent* event);
 
 

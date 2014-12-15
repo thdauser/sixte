@@ -86,7 +86,7 @@ SourceNeighbors* getSourceNeighbors()
 }
 
 
-double findBrightestPix(int threshold, SourceImage* sky_pixels, double pixval, PixPositionList* ppl,
+double findBrightestPix(int threshold, int PixAmount, SourceImage* sky_pixels, double pixval, PixPositionList* ppl,
 		        struct wcsprm* wcs, int* const status)
 {
   int ii,jj,x=0,y=0;
@@ -107,7 +107,7 @@ double findBrightestPix(int threshold, SourceImage* sky_pixels, double pixval, P
 	}else{//source below threshold
 
 	     //find next brightest pix
-	     if(sky_pixels->pixel[ii][jj] > pix && sky_pixels->pixel[ii][jj] < pixval){	       
+	  if(sky_pixels->pixel[ii][jj] > pix && sky_pixels->pixel[ii][jj] < pixval){       
 	       if(ppl->found_pos[ii][jj]==0.){  //which is the case if the pixel is not identified yet
 	       //reset value of 'pix'
 	       pix=sky_pixels->pixel[ii][jj];
@@ -142,7 +142,7 @@ double findBrightestPix(int threshold, SourceImage* sky_pixels, double pixval, P
       ppl->entry[ppl->entryCount]->midPixY=y;
 
       //identify and save neighbors;find pos from significant pix-> save to PixPosList at current entry
-      findNeighbors(x, y, ppl, sky_pixels, wcs, status);
+      findNeighbors(x, y, PixAmount, ppl, sky_pixels, wcs, status);
 
       //increase number of found sources
       ppl->entryCount++;
@@ -154,7 +154,8 @@ double findBrightestPix(int threshold, SourceImage* sky_pixels, double pixval, P
 }
 
 
-void findNeighbors(int x, int y, PixPositionList* ppl, SourceImage* sky_pixels, struct wcsprm* wcs, int* const status)
+void findNeighbors(int x, int y, int PixAmount, PixPositionList* ppl, SourceImage* sky_pixels,
+		   struct wcsprm* wcs, int* const status)
 { 
   int ii, jj; //counts
   double sum_all=0.; //sum of all pixel-values of the sky image
@@ -164,48 +165,97 @@ void findNeighbors(int x, int y, PixPositionList* ppl, SourceImage* sky_pixels, 
   ppl->neighbors[ppl->entryCount]=getSourceNeighbors();
 
   //memory-allocation for the neighbor_list at entryCount (current brightest pix)
-  //16 pix are allocated even though some sources only contain 9 or 12 pix per source
-   snl=(double**)malloc(4*sizeof(double*));
+  //PixAmount pix are allocated even though some sources contain less  pix per source
+   snl=(double**)malloc(PixAmount*sizeof(double*));
    if (NULL!= snl) {
-      for(ii=0; ii<4; ii++) {
-	 snl[ii] = (double*)malloc(4*sizeof(double));
+      for(ii=0; ii<PixAmount; ii++) {
+	 snl[ii] = (double*)malloc(PixAmount*sizeof(double));
 
 	//Clear the pixels
-	for(jj=0; jj<4; jj++){
+	for(jj=0; jj<PixAmount; jj++){
 	   snl[ii][jj]=0.;
 	}
       }
     }  
 
-  //determine pixel amount in each direction
-   //x-direction
-   if((sky_pixels->pixel[x+1][y]/sky_pixels->pixel[x][y]) >= 0.8){ //right hand side from brightest pix is also bright
-     xamount=4;
-     xstart=1;
-   }else{
-     if((sky_pixels->pixel[x-1][y]/sky_pixels->pixel[x][y]) >= 0.8){ //left hand side from brightest pix is also bright
+
+   if(PixAmount == 4){ //default case for comarecon with only mask repix -> different patterns
+     //determine pixel amount in each direction
+     //x-direction
+     if((sky_pixels->pixel[x+1][y]/sky_pixels->pixel[x][y]) >= 0.8){ //right hand side from brightest pix is also bright
        xamount=4;
-       xstart=2;
-     }else{
-       xamount=3;
        xstart=1;
-     }
-   }
-
-   //y-direction
-   if((sky_pixels->pixel[x][y+1]/sky_pixels->pixel[x][y]) >= 0.8){ //top of brightest pix is also bright
-     yamount=4;
-     ystart=1;
-   }else{
-     if((sky_pixels->pixel[x][y-1]/sky_pixels->pixel[x][y]) >= 0.8){ //bottom of brightest pix is also bright
-       yamount=4;
-       ystart=2;
      }else{
-       yamount=3;
-       ystart=1;
+       if((sky_pixels->pixel[x-1][y]/sky_pixels->pixel[x][y]) >= 0.8){ //left hand side from brightest pix is also bright
+	 xamount=4;
+	 xstart=2;
+       }else{
+	 xamount=3;
+	 xstart=1;
+       }
      }
-   }
 
+     //y-direction
+     if((sky_pixels->pixel[x][y+1]/sky_pixels->pixel[x][y]) >= 0.8){ //top of brightest pix is also bright
+       yamount=4;
+       ystart=1;
+     }else{
+       if((sky_pixels->pixel[x][y-1]/sky_pixels->pixel[x][y]) >= 0.8){ //bottom of brightest pix is also bright
+	 yamount=4;
+	 ystart=2;
+       }else{
+	 yamount=3;
+	 ystart=1;
+       }
+     }
+   }else{ //END PixAmount is 4; more pixels because of repix (comarecon) or backpro
+     if(sky_pixels->pixel[x-PixAmount/2][y]/sky_pixels->pixel[x][y] >= 0.8){
+       xamount=PixAmount;
+       xstart=PixAmount/2;
+     }else{
+       if(sky_pixels->pixel[x-PixAmount/2+1][y]/sky_pixels->pixel[x][y] >= 0.8){
+	 xamount=PixAmount-1;
+	 xstart=PixAmount/2+1;
+       }else{
+	 xamount=PixAmount-2;
+	 xstart=PixAmount/2+2;
+       }
+     }
+
+     if(sky_pixels->pixel[x+PixAmount/2][y]/sky_pixels->pixel[x][y] >= 0.8){
+       xamount=xamount;
+     }else{
+       if(sky_pixels->pixel[x+PixAmount/2-1][y]/sky_pixels->pixel[x][y] >= 0.8){
+	 xamount-=1;
+       }else{
+	 xamount-=2;
+       }
+     }
+
+     if(sky_pixels->pixel[x][y-PixAmount/2]/sky_pixels->pixel[x][y] >= 0.8){
+       yamount=PixAmount;
+       ystart=PixAmount/2;
+     }else{
+       if(sky_pixels->pixel[x][y-PixAmount/2+1]/sky_pixels->pixel[x][y] >= 0.8){
+	 yamount=PixAmount-1;
+	 ystart=PixAmount/2+1;
+       }else{
+	 yamount=PixAmount-2;
+	 ystart=PixAmount/2+2;
+       }
+     }
+
+     if(sky_pixels->pixel[x][y+PixAmount/2]/sky_pixels->pixel[x][y] >= 0.8){
+       yamount=yamount;
+     }else{
+       if(sky_pixels->pixel[x][y+PixAmount/2-1]/sky_pixels->pixel[x][y] >= 0.8){
+	 yamount-=1;
+       }else{
+	 yamount-=2;
+       }
+     }
+
+   }
 
   //find all neighbours of current brightest pix
   //'-xstart' since: start before current pix
@@ -282,6 +332,7 @@ int getThresholdForSources(double pix, PixPositionList* ppl, SourceImage* sky_pi
   //pixval:current candidate for bright pix (e.g. a source)
   //ensure that deviation between pix and all other (background) pixels is still big enough
   sigma=getSdev(median_list, median_list_count); //standard deviation
+  printf("%f\n",sigma);
   if((pix!=0.) && ((pix-median) > factorOfSigma*sigma))
     { 
      th=1;
