@@ -21,15 +21,28 @@
 #ifndef COMAEVENT_H
 #define COMAEVENT_H 1
 
+#include "sixt.h"
+
+/////////////////////////////////////////////////////////////////
+// Type Declarations.
+/////////////////////////////////////////////////////////////////
 
 /** Coded Mask specific event. */
 typedef struct {
   double time;
   /** Pixel charge represented by the photon energy [keV]. */
-  float charge; 
+  double charge; 
   /** Pixel coordinates starting at 0. */
   int rawx, rawy;
 } CoMaEvent;
+
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
+
+CoMaEvent* getCoMaEvent(int* status);
+
+void freeCoMaEvent(CoMaEvent** const ce);
 
 
 #endif /* COMAEVENT_H */

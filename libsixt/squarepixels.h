@@ -143,7 +143,7 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp,
     is zero. In the latter case the pixel coordinates x and y are
     undefined. */
 int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y);
-
+int getSquarePixel_protoMirax(SquarePixels* sp, struct Point2d position, int* x, int* y);
 
 /** Update the valid flag for a newly created event pattern. */
 void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits);

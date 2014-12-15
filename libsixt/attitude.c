@@ -113,7 +113,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
     }
 
     // Determine MJDREF, TSTART, and TSTOP.
-     fits_read_key(af->fptr, TDOUBLE, "MJDREF", &ac->mjdref, comment, status);
+    fits_read_key(af->fptr, TDOUBLE, "MJDREF", &ac->mjdref, comment, status);
     if (EXIT_SUCCESS!=*status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'MJDREF' from attitude file '%s'", 
@@ -136,7 +136,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
 	      filename);
       SIXT_ERROR(msg);
       break;
-      }
+    }
 
     // Check if TIMEZERO is present. If yes, it must be zero.
     double timezero;
@@ -429,7 +429,7 @@ void checkAttitudeTimeCoverage(const Attitude* const ac,
 			       int* const status)
 {
   // Check that the values for MJDREF are equal.
-  verifyMJDREF(mjdref, ac->mjdref, "in attitude file", status);
+   verifyMJDREF(mjdref, ac->mjdref, "in attitude file", status);
   CHECK_STATUS_VOID(*status);
 
   // Check the boundaries of the time interval.
@@ -440,7 +440,7 @@ void checkAttitudeTimeCoverage(const Attitude* const ac,
 	    tstart, tstop);
     SIXT_ERROR(msg);
     return;
-    }
+  }
 }
 
 void setWCScurrentPointing(const char* const filename, const Attitude* const ac,
@@ -490,4 +490,44 @@ void setWCScurrentPointing(const char* const filename, const Attitude* const ac,
   //set wcs to actual current pointing
   wcs->crval[0]=RAnz;  //in deg
   wcs->crval[1]=DECnz;
+}
+
+void getCurrentVelocity(const char* const filename, const Attitude* const ac,
+			double* vel_ra, double* vel_dec, double const att_start,
+			double const att_stop, int* const status)
+{
+  AttitudeFile* af=NULL;
+
+  //open the attitude file:
+  af=open_AttitudeFile(filename,READONLY,status);
+  CHECK_STATUS_VOID(*status);
+  AttitudeFileEntry afe;
+
+  //get current AttitudeFileEntry
+  af->row=ac->currentry;
+  afe=read_AttitudeFileEntry(af,status);
+  CHECK_STATUS_VOID(*status);
+  double currRA=afe.ra;
+  double currDEC=afe.dec;
+
+  af->row=ac->currentry+1;
+  afe=read_AttitudeFileEntry(af,status);
+  CHECK_STATUS_VOID(*status);
+  double nextRA=afe.ra;
+  double nextDEC=afe.dec;
+
+  if (NULL!=af) {
+    if (af->fptr) fits_close_file(af->fptr,status);
+    free(af);
+  }
+
+  //difference of current and succeeding attitude entries [deg]
+  double diffRA=fabs(currRA-nextRA); //attitude-interval
+  double diffDEC=fabs(currDEC-nextDEC);
+
+  //time interval between two current pointings
+  double interval=att_stop-att_start;
+
+  *vel_ra=diffRA/interval;
+  *vel_dec=diffDEC/interval;
 }

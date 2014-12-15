@@ -75,6 +75,8 @@ void freeCoMaDetector(CoMaDetector* det);
     pileup effects are taken into account. */
 int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact);
 
+int addImpact2CoMaDetector_protoMirax(CoMaDetector* det, Impact* impact);
+
 
 #endif /* COMADETECTOR_H */
 

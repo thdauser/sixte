@@ -394,6 +394,32 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 }
 
 
+int getSquarePixel_protoMirax(SquarePixels* sp, struct Point2d position, int* x, int* y)
+{
+  int ratio_x=(int)((position.x)/sp->DCU_length);
+  int ratio_y=(int)((position.y)/sp->DCU_length);
+
+  if(position.x > (ratio_x*sp->DCU_length+sp->DCU_gap) && position.x < (ratio_x*sp->DCU_length+sp->DCU_gap+2*sp->xpixelwidth)) 
+    {*x = (int)(position.x/sp->xpixelwidth +1.)-1;}
+  else{
+    return(0);
+  }
+  if(position.y > (ratio_y*sp->DCU_length+sp->DCU_gap) && position.y < (ratio_y*sp->DCU_length+sp->DCU_gap+2*sp->ypixelwidth)) 
+    {*y = (int)(position.y/sp->ypixelwidth +1.)-1;}
+  else{
+    return(0);
+  }
+
+  if ((*x>=0) && (*x<sp->xwidth) && (*y>=0) && (*y<sp->ywidth)) {
+    return (1); // Valid pixel.
+  } else {
+    return (0); // Invalid pixel.
+  }
+}
+
+
+
+
 
 void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits)
 {

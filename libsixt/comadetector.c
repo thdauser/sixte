@@ -82,3 +82,22 @@ int addImpact2CoMaDetector(CoMaDetector* det, Impact* impact)
   return(status);
 }
 
+int addImpact2CoMaDetector_protoMirax(CoMaDetector* det, Impact* impact)
+{
+  int status=EXIT_SUCCESS;
+
+  // Determine the affected pixel.
+  int x, y; // Detector RAWX and RAWY.
+  if (getSquarePixel_protoMirax(det->pixels, impact->position, &x, &y)>0) {
+    CoMaEvent event={.time  =impact->time,
+		     .charge=impact->energy,
+		     .rawx  =x,
+		     .rawy  =y };
+
+    // Add event to event file.
+    status=addCoMaEvent2File(det->eventfile, &event);
+    if (EXIT_SUCCESS!=status) return(status);
+  }
+
+  return(status);
+}
