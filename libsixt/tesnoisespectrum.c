@@ -171,55 +171,48 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
                      int* const status) 
 {
     
-    double U, G, sigma, df;
+    double Gx, Gy, sigma, df;
     const double pi=3.14159265359;
     int i,j, k;
     
-    fftw_complex *in, *out;
+    fftw_complex *in;
+    double *out;
     fftw_plan p;
     fftw_complex Ze, Po, H; /* Products of Zeros & Poles */
     double w, f;               /* Omega and frequency*/
     
     sigma=1.;
     
-    in=(fftw_complex *) fftw_malloc(sizeof(fftw_complex) * NBuffer->BufferSize);
+    in=(fftw_complex *) fftw_malloc(sizeof(fftw_complex) * (NBuffer->BufferSize/2+1));
     if(in==NULL){
       *status=EXIT_FAILURE;
       SIXT_ERROR("memory allocation for fftw_complex failed");
       CHECK_STATUS_RET(*status, *status);
     }
-    out=(fftw_complex *) fftw_malloc(sizeof(fftw_complex) * NBuffer->BufferSize);
+    out=(double *) fftw_malloc(sizeof(double) * NBuffer->BufferSize);
     if(out==NULL){
       *status=EXIT_FAILURE;
       SIXT_ERROR("memory allocation for fftw_complex failed");
       CHECK_STATUS_RET(*status, *status);
     }
     
+    
+    /* Calculate size of frequency bin */
+    df=*SampFreq/(NBuffer->BufferSize);
+
     for (j=0; j<NBuffer->NPixel; j++) {
     
-      for (i=0; i<NBuffer->BufferSize; i++) {
+      for (i=1; i<=NBuffer->BufferSize/2; i++) {
         
-	/* Calculate size of frequency bin */
-	df=*SampFreq/(NBuffer->BufferSize);
-
-        /* Create a complex white noise spectrum */
-        U=(gsl_rng_uniform(*r)-0.5)*pi;
-	G=gsl_ran_gaussian(*r,sigma); 
-	in[i]=cos(U)*G + sin(U)*G*I;
-	      
         /* Define the noise filter */
 	/* Set initial value of zeros and poles */
         Ze = 1.0 + 0.0 * I;  /* Zeros initialisation */
         Po = 1.0 + 0.0 * I;  /* Poles initialisation */
         
 	/* Calculate frequency and angular frequency for spectrum */
-	if (i<=NBuffer->BufferSize/2) {
-	  f=(i+1)*df;
-	  w=2.0*pi*f;
-	} else {  
-	  f=-(NBuffer->BufferSize-i+1)*df;
-	  w=2.0*pi*f;
-	}
+	f=i*df;
+	w=2.0*pi*f;
+
 	/* Multiply all the zeros */
         for (k=0;k<Noise->Nz;k++) {
           Ze = Ze * (1.0 + Noise->Zeros[k] * w * I);
@@ -233,16 +226,30 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
 	/* Calculate the filter amplitude (complex) */
 	H = Noise->H0 * Ze / Po; 
 	
-	/* Multiply the noise filter with the white noise */
-	in[i]=in[i] * H * Noise->WhiteRMS * sqrt(df);
+	if (i==NBuffer->BufferSize/2) { // At Nyquist freq, the FT is purely real-> draw only one gaussian variable
+	  /* Create a complex white noise spectrum */
+	  Gx=gsl_ran_gaussian(*r,sigma); 
+	  in[i]=Gx + 0.0*I;
+	  
+	  /* Multiply the noise filter with the white noise */
+	  in[i]=in[i] * abs(H) * Noise->WhiteRMS * sqrt(df) / sqrt(2.);
+	} else {
+	  /* Create a complex white noise spectrum */
+	  Gx=gsl_ran_gaussian(*r,sigma); 
+	  Gy=gsl_ran_gaussian(*r,sigma); 
+	  in[i]=Gx + Gy*I;
+
+	  /* Multiply the noise filter with the white noise */
+	  in[i]=in[i] * H * Noise->WhiteRMS *sqrt(df) / sqrt(2.);
+	}
       }
       in[0]=0.0 + 0.0*I;
-      p=(fftw_plan) fftw_plan_dft_1d(NBuffer->BufferSize,in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+      p=(fftw_plan) fftw_plan_dft_c2r_1d(NBuffer->BufferSize,in,out,FFTW_ESTIMATE);
     
       fftw_execute(p);
     
       for (i=0;i<NBuffer->BufferSize;i++) {
-        NBuffer->Buffer[i][j]=creal(out[i]) / sqrt(NBuffer->BufferSize) ;
+        NBuffer->Buffer[i][j]=out[i] / sqrt(2*NBuffer->BufferSize) ;
       }
     
     }
