@@ -1,5 +1,5 @@
-/********************************************************************************************
-   This file is part of SIXTE.
+/************************************************************************************************
+   This file is part of SIXTE/SIRENA software.
 
    SIXTE is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
@@ -14,15 +14,14 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  Trigger has been developed by the INSTITUTO DE FISICA DE 
-   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
-   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
+   Copyright 2014:  Trigger has been developed by the INSTITUTO DE FISICA DE
+   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and
+   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
    ESP2013-48637-C2-1-P.
-*
-*                      TRIGGERING PULSES
-*
-*
+
+/************************************************************************************************
+*                      TRIGGER
 *
 *  File:      trigger.h
 *  Developer: Beatriz Cobo Martín
@@ -120,82 +119,80 @@
 *  03/10/14    New parameters for 'writePulses'
 *              New functions 'createLibrary' and 'writeLibrary'
 *  15/10/14    New column TAILBFR, just in case there is a tail before the first pulse of the row
+*  Dec/14      Deleted some unnecessary input parameters
+*  	           Deleted some unnecessary output keywords
+*  	           Deleted some constants and variables not used
+*  	           New functions 'calculateTemplate', 'createHisto', 'align', 'shiftm' and 'shift_m'
 * ********************************************************************************************/
 
 #ifndef TRIGGER_H_
 #define TRIGGER_H_
 
 // Utils module
-#include <inoutUtils.h>
-#include <unistd.h>
-#include <pulseProcess.h>
 
+	#include <inoututils.h>
+	#include <unistd.h>
+	#include <pulseprocess.h>
 
-//MC  FOR DAL -> CFITSIO migration
-int  colnum=0, felem=0;
-char extname[20];
-char keyname[10];
-char keyvalstr[1000];
-char *tform[1];
-char *ttype[1];
-char *tunit[1];
-int evtcnt=0, ttpls1=0, modeval=0,eventcntLib1=0, lib_id=0;
+//MC FOR DAL -> CFITSIO migration
 
+	int  colnum=0, felem=0;
+	char extname[20];
+	char keyname[10];
+	char keyvalstr[1000];
+	char *tform[1];
+	char *ttype[1];
+	char *tunit[1];
+	int evtcnt=0, ttpls1=0, modeval=0,eventcntLib1=0, lib_id=0;
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Provisional => To be deleted in future
-int indice = 0;		// Provisional to export the event data to a file!!!!!!!!!!!!!!!!!!!!!!!!!
-                    // Functions in pulseProcess (Utils) make use of it to write info to an auxiliary file
-FILE * temporalFile;
-char temporalFileName[255];
-FILE * temporalFile2;
-char temporalFileName2[255];
+	int indice = 0;		// Provisional to export the event data to a file!!!!!!!!!!!!!!!!!!!!!!!!!
+                    	// Functions in pulseprocess (Utils) make use of it to write info to an auxiliary file
+	FILE * temporalFile;
+	char temporalFileName[255];
+	FILE * temporalFile2;
+	char temporalFileName2[255];
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // Constants
-double safetyMarginTstart = 50e-6;
-double stopCriteriaMKC = 1.0;  			// Used in medianKappaClipping
-                               	   	   	// Given in %
-double kappaMKC = 3.0;					// Used in medianKappaClipping
-double limitCriteriaMAX = 5.0; 			// To establish the alignment between pulse and model
-							            // Given in %
-double levelPrvPulse = 100.0;  		    // Secondary pulses must be 1/levelPrvPulse times larger than the preceding pulse
-double primaryThresholdCriteria = 60.0; // To establish the threshold to locate piled-up pulses
-		                                // Given in %
+
+	double safetyMarginTstart = 50e-6;
+	double stopCriteriaMKC = 1.0;  			// Used in medianKappaClipping
+                               	   	   		// Given in %
+	double kappaMKC = 3.0;					// Used in medianKappaClipping
+	double levelPrvPulse = 100.0;  		    // Secondary pulses must be 1/levelPrvPulse times larger than the preceding pulse
 
 // INPUT FILES & OUTPUT FILES
 
-	fitsfile *inObject=NULL; 		// Object contains information of input FITS file
-	
-	char inName[255];					// Name of the input FITS file
+	fitsfile *inObject=NULL; 		// Object which contains information of the input FITS file
+	char inName[255];				// Name of the input FITS file
 
-	fitsfile *inLibObject=NULL; 		// Object contains information of pulses models library FITS file
+	fitsfile *inLibObject=NULL; 	// Object which contains information of the pulses templates library FITS file
+	char inLibName[255];			// Name of the pulses templates library FITS file
 
-	char inLibName[255];				// Name of the pulses models library FITS file
+	FILE *fileRef;					// Pointer for file which contains errors and warnings
 
-	FILE *fileRef;						// Pointer for file which contains errors and warnings.
-
-	fitsfile *trgObject=NULL;
-
-	char trgName[255];
+	fitsfile *trgObject=NULL;	    // Object which contains information of the output FITS file
+	char trgName[255];				// Name of the output FITS file
 
 	char *unit=NULL, *comment=NULL;
 
 // INPUT KEYWORDS
 
-	long eventsz;
-	double samprate;
-	long eventcnt;
-	double ivcal;
-	double asquid;
-	double energy;
-	double plspolar;
+	long eventsz;		// TRIGGSZ
+	double samprate;	// Related to DELTAT
+	long eventcnt;		// Number of rows
+	double energy;		// Related to MONOEN
+
+	double ivcal;		// Just in case it would be necessary
+	double asquid;		// Just in case it would be necessary
+	double plspolar;	// Just in case it would be necessary
 
 // INPUT PARAMETERS (and others closely related to them)
 	
-	// Parameter to decide which operation mode is going to be used (and other parameters to put it into practice)
 	int mode;				// Operation mode
-	double b_cF;			// Calibration factors (used only in case of production mode)
-	double c_cF;
 
-	// Parameters to apply the running sum filter
 	double LrsT;			// Running sum length (in the RS filter case): T -> Time => Seconds
 	double LbT;				// Baseline averaging length (in the RS filter case): T -> Time => Seconds
 	double Lrs;				// LrsT in samples
@@ -203,30 +200,21 @@ double primaryThresholdCriteria = 60.0; // To establish the threshold to locate 
 	gsl_vector *Bgsl;
 	gsl_vector *Lbgsl;
 
-	// Parameters to find pulses
 	double tauFALL;			// Fall time of the pulses
-	double scaleFactor; 	// Scale factor to apply to the fall time of the pulses in order to calculate the box-car length
-	int samplesUp;
-	double nSgms;
-	double tAftrtstart;		// Time after the alignment between a pulse and its model to be fixed as 0 in the adjusted derivative
-							// (in order to help building the adjusted derivative)
-							// Time fixed as 0 after tstart+tstartDER in the difference between pulse and model
-	long nsAftrtstart;      // Number of samples fixed as 0 after tstart+tstartDER in the difference between pulse and model
+	double scaleFactor; 	// Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length
+	int samplesUp;			// Consecutive samples over the threshold to locate a pulse
+	double nSgms;			// Number of Sigmas to establish the threshold
 
-	int numBitsQual;		// Number of bits using for Quality
-
-	// Parameters to establish the tend of the pulses (size of the pulses)
-	int ntaus;
+	int ntaus;				// Number of tauFALLs after starting the pulse to calculate its tend
 	double sizePulse; 		// Size of pulse (seconds) (ntaus*tauFALL)
 	int sizePulse_b;		// sizePulse in bins
 
-	// General Parameters
 	int writePulse = 1;		// Write pulses in the output FITS file. Default value = true
 	int getTaus = 0;		// Calculate the approximate rise and fall times of the pulses. Default value = false
 	char nameLog[255];		// Output log file name
 	int verbosity;			// Verbosity level of the output log file
 
-// OUTPUT VECTORS
+// OUTPUT VECTORS (in calibration mode to write the pulse templates library)
 
 	gsl_vector *energygsl = gsl_vector_alloc(1);
 	gsl_vector *estenergygsl = gsl_vector_alloc(1);
@@ -237,71 +225,56 @@ double primaryThresholdCriteria = 60.0; // To establish the threshold to locate 
 	//To avoid the deprecate conversions
 	char *straux = new char[255];
 
-	bool append;				// Library FITS file new (append=false) or not (append=true)
-	long eventcntLib;
-	//gsl_matrix *library;		// Energy-EstEnergy
-	//gsl_matrix *models;			// Matrix where all the pulse models of the pulse models library are going to be stored
+	bool append;				// Pulse templates library FITS file new (append=false) or not (append=true)
+	long eventcntLib;			// Rows in the EUR-LIB extension of the pulse templates library output FITS file
 
-
-	int totalpulses = 1; 		// Total number of founded pulses
-	int ntotalrows = 1;
+	int totalpulses = 1; 		// Total number of founded pulses. Be careful because it is initialized to 1
+	int ntotalrows = 1;			// Used in inDataIterator functions
 	double initialtime = 0;
-	int nPulsesRow = 0;			// Number of pulses of each row
 
-	long nummodels;				// Number of pulse models (rows number) included in the pulses models library file
-	gsl_vector *model;			// Pulse which is going to used as model
-	                            // (selected row of the PULSE column of the EUR-LIB extension from the pulses models library file)
-								// It will be overwritten with the first derivative of it
-	gsl_vector *modelSGN;		// Sign of the pulse model first derivative
-	long index_maxModel;		// Maximum of the pulse model first derivative (in order to align each pulse with the model)
-	gsl_matrix *library;		// Energy-Taurise-Taufall
-	gsl_matrix *models;			// Matrix where all the pulse models of the pulse models library are going to be stored
+	int nPulsesRow = 0;			// Number of pulses of each record (record is equivalent to row)
+
+	long nummodels;				// Number of the pulse templates (number of rows) included in the pulses templates library file
+	gsl_vector *model;			// Pulse template which is going to be used as model
+	                            // (selected row of the PULSE column of the EUR-LIB extension from the pulses templates library file)
+								// It will be overwritten with the its first derivative
+	gsl_vector *modelSGN;       // Sign of the first derivative of the pulse template
+	gsl_matrix *library;		// Energy - EstEnergy
+	gsl_matrix *models;			// Matrix where all the pulse templates of the library are going to be stored
 
 	// Parameters used to write output FITS files
 	IOData obj;
 
-	/*gsl_vector *pulseaverage;
-	gsl_vector *row_aux;
-	double pulseheighttemplate;*/
-
-	gsl_vector *tstartout;
-	gsl_vector *pulseheight;
-	gsl_vector *qualityout;
-
+	gsl_vector *tstartout;		// Tstart column from the output trg FITS file
+	gsl_vector *pulseheight;	// EstEnrgy column from the output trg FITS file
+	gsl_vector *qualityout;		// Quality column from the output trg FITS file
 
 // OUTPUT KEYWORDS
 
-	long nqual;				// Number of bits of quality column
-	long trg_id;			// Trigger status
 	const char *create;		// Name and version of the module: name-0.0.0
 	long chngplrt = 0; 		// 1 => Polarity changed (pulses multiplied by -1)
 	                        // 0 => Polarity not changed
 
 //FUNCTIONS
 
-	// Input parameters manipulation
 	int initModule(int argc, char **argv);
 	
-	// Handle the templates library FITS file (read or create it)
 	int readLib ();
-	int inDataIteratorLib(long totalrows, long offset, long firstrow, long nrows, int ncols, iteratorCol *cols, void *user_strct);
 	int createLibrary();
-	int writeLibrary(double estenergy, gsl_vector **pulsetemplate);
 
-	// Create Extension
 	int createTriggerFile();
 
-	// Create TRIGGERRepresentation
 	int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses);
-
 	int obtainTau (gsl_vector *invector, gsl_vector *tstartgsl, gsl_vector *tendgsl, int nPulses, gsl_vector **taurisegsl, gsl_vector **taufallgsl);
 	int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector *tstart, gsl_vector *tend, gsl_vector *quality, gsl_vector *taurise, gsl_vector *taufall, gsl_vector *energy, gsl_matrix **pulses);
 
+	int calculateTemplate (int totalPulses, gsl_vector **pulseaverage, double *pulseaverageHeight);
 	int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhisto, gsl_vector **yhisto);
 	int align(gsl_vector **vector1, gsl_vector ** vector2);
 	int shiftm(gsl_vector *vectorin, gsl_vector *vectorout, int m);
 	int shift_m(gsl_vector *vectorin, gsl_vector *vectorout, int m);
-	int calculateTemplate (int totalPulses, gsl_vector **pulseaverage, double *pulseaverageHeight);
+
+	int writeLibrary(double estenergy, gsl_vector **pulsetemplate);
 
 	using namespace std;
 
