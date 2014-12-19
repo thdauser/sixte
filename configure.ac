@@ -118,6 +118,11 @@ AC_CONFIG_FILES([Makefile
 		tools/pulsetemplimport/Makefile
 		tools/streamtotriggers/Makefile
 		tools/runtes/Makefile
+		tools/trigger/Makefile
+		tools/pulsegrade/Makefile
+		tools/filter/Makefile
+		tools/pseudoenergy/Makefile
+		tools/energy/Makefile				
 		tools/tesconstpileup/Makefile
 		share/Makefile
 		share/instruments/Makefile
