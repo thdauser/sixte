@@ -127,7 +127,8 @@ AC_CONFIG_FILES([Makefile
 		tools/tesconstpileup/Makefile
 		share/Makefile
 		share/instruments/Makefile
-		extlib/Makefile])
+		extlib/Makefile
+		extlib/Utils/Makefile])
 
 AC_CONFIG_SUBDIRS([extlib/simput])
 

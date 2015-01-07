@@ -80,7 +80,7 @@
 
 // General
 
-	#include <fitsio.h>
+	#include "fitsio.h"
 	#include <math.h>
 	#include <iostream>
 	#include <boost/lexical_cast.hpp>
