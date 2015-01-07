@@ -1,15 +1,8 @@
-AM_CFLAGS =-I@top_srcdir@/libsixt
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/Utils
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
-AM_CFLAGS+=-Wall 
+AM_CXXFLAGS =-I@top_srcdir@/libsixt
+AM_CXXFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio
+AM_CXXFLAGS+=-I@top_srcdir@/extlib/Utils
+AM_CXXFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
+AM_CXXFLAGS+=-Wall 
 
 ########## DIRECTORIES ###############
 
@@ -25,13 +18,6 @@ bin_PROGRAMS=energy
 
 energy_SOURCES=energy.cpp energy.h
 energy_LDADD =@top_builddir@/libsixt/libsixt.a
-energy_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-energy_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
-energy_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
-energy_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
-energy_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
-energy_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
-energy_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
 energy_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
 energy_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
-energy_LDADD+=@top_builddir@/extlib/simput/extlib/Utils/libutilsic.a
+energy_LDADD+=@top_builddir@/extlib/Utils/libutilsic.a
