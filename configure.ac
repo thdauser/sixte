@@ -11,6 +11,7 @@ AC_CONFIG_SRCDIR([libsixt/sixt.h])
 
 # Check for programs:
 AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
+AC_PROG_CXX # Search for a CXX-Compiler 
 AC_PROG_FC # Search for a Fortran compiler.
 AM_PROG_AR
 AC_PROG_RANLIB
