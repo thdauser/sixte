@@ -1,0 +1,5 @@
+# How to add Tools to SIXTE 
+
+- create folder in the tools/ directory with the name of your tool
+- put your tool in the tools/Makefile.am folder and the configure.ac
+- create tools/<toolname>/.gitignore and add the executable name to it
