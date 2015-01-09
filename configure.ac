@@ -50,6 +50,12 @@ AC_SEARCH_LIBS(XML_Parse, [expat],
 #AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
 #AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
 
+
+#################################### 
+# boostlib
+AC_CONFIG_MACRO_DIR(./build-aux/m4/)
+AX_BOOST_BASE([1.54],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboost-all-dev])])
+
 #################################### 
 # GSL Libraries:
 AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \

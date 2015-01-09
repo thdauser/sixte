@@ -1,6 +1,8 @@
 dist_bin_SCRIPTS =sixte-install.sh
 dist_bin_SCRIPTS+=sixte-install.csh
 
+ACLOCAL_AMFLAGS = -I ./build-aux/m4/
+
 EXTRA_DIST=INSTALL.txt # include INSTALL.txt in the distributed package
 
 # The sub-directories are built before the current directory.
