@@ -54,7 +54,7 @@ AC_SEARCH_LIBS(XML_Parse, [expat],
 #################################### 
 # boostlib
 AC_CONFIG_MACRO_DIR(./build-aux/m4/)
-AX_BOOST_BASE([1.54],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboost-all-dev])])
+AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboost-all-dev])])
 
 #################################### 
 # GSL Libraries:
