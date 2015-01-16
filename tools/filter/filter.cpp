@@ -250,7 +250,7 @@ The users must supply the following input parameters:
 *
 * - Read input parameters (call initModule)
 * - Open input TRIGGER FITS file
-* - Open input NOISESPEC FITS file (TPSALL extension)
+* - Open input NOISESPEC FITS file (NOISEALL extension)
 * - Read input keywords and check their values
 * - If there are no pulses in _trg input FITS file (empty EUR-TRG extension) => Provide a warning and finish
 * - Get structure of input FITS fileS columns (from _trg and _noisespec)
@@ -360,14 +360,14 @@ int main (int argc, char **argv)
 	message = "Open TriggerFits: " + string(trgName);
 	writeLog(fileRef,"Log", verbosity,message);
 	
-	// Open input NOISESPEC FITS file (TPSALL extension)
-	// TPSALL extension contains all the frequencies (positive and negative)
+	// Open input NOISESPEC FITS file (NOISEALL extension)
+	// NOISEALL extension contains all the frequencies (positive and negative)
 	if (fits_open_file(&noisespecObject, noisespecName,READWRITE,&status))
 	{
 	    message = "Cannot open file " + string(noisespecName);
 	    EP_EXIT_ERROR(message,status);
 	}
-	strcpy(extname,"TPSALL");
+	strcpy(extname,"NOISEALL");
 	if (fits_movnam_hdu(noisespecObject, ANY_HDU,extname, extver, &status))
 	{
 	    message = "Cannot move to " + string(extname) + " in " + string(noisespecName) + " (before keyword reading)";
@@ -458,7 +458,7 @@ int main (int argc, char **argv)
 	}
 	if (eventcnt_noisespec <= 0)
 	{
-		message = "Legal values for EVENTCNT (TPSALL) are integer numbers greater than 0";
+		message = "Legal values for EVENTCNT (NOISEALL) are integer numbers greater than 0";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
@@ -524,7 +524,7 @@ int main (int argc, char **argv)
 	    EP_EXIT_ERROR(message,EPFAIL);
 	}
 	
-	// Iteration TPSALL extension (NOISESPEC file)
+	// Iteration NOISEALL extension (NOISESPEC file)
 	ntotalrows = 0;
 	freqgsl = gsl_vector_alloc(eventcnt_noisespec);
 	csdgsl = gsl_vector_alloc(eventcnt_noisespec);
@@ -538,7 +538,7 @@ int main (int argc, char **argv)
 	long offset = 0;			// 0: Process all the rows
 
 		// Read Columns
-	strcpy(extname,"TPSALL");
+	strcpy(extname,"NOISEALL");
 	if (fits_movnam_hdu(noisespecObject, ANY_HDU,extname, extver, &status))
 	{
 	    message = "Cannot move to HDU " + string(extname) +" in " + string(noisespecName);
@@ -1964,7 +1964,7 @@ int createFilterFile ()
 
 
 /***** SECTION 8 ************************************************************
-* inDataIteratorTPS: This function reads F and CSD columns from the _noisespec input FITS file (TPSALL extension)
+* inDataIteratorTPS: This function reads F and CSD columns from the _noisespec input FITS file (NOISEALL extension)
 *                    and stores them in 'freqgsl' and 'csdgsl'. It takes the optimum number of rows and works iteratively.
 *
 * - Declare variables
