@@ -554,7 +554,7 @@ int toGslVector(void **buffer, gsl_vector **array, long nevent, int eventini, in
 		{
 			case TDOUBLE: gsl_vector_set(*array,i,((double*)*buffer)[i+eventini]); break;
 			case TSHORT:  gsl_vector_set(*array,i,((short*)*buffer)[i+eventini]); break;
-			case TINT:  gsl_vector_set(*array,i,((int*)*buffer)[i+eventini]); break;
+			case TINT:  gsl_vector_set(*array,i,((long*)*buffer)[i+eventini]); break;
 		}
 	}
 	

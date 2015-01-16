@@ -105,6 +105,7 @@
 *   Dec/14      DAL -> CFITSIO migration
 *    			'pulsegrade' instead of 'pulseshape'
 *    			Deleted some unnecessary output keywords
+* 12/01/15      Deleted 'processin'
 ***********************************************************************/
 
 #ifndef PULSEGRADE_H_
@@ -184,7 +185,6 @@
 // OUTPUT KEYWORDS
 
 	const char *create;				   		// Name and version of the module: name-0.0.0
-	char *processin = new char[1023];		// Shell command (including input parameters) used to create FITS file
 
 // FUNCTIONS
 

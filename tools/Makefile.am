@@ -8,5 +8,5 @@ SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         epicmos2_events piximpacts tesstream pixdetillum pulsetemplgen  \
         pulsetemplimport streamtotriggers runtes tesconstpileup         \
 	comaimgPM comabackpro trigger pulsegrade filter pseudoenergy  \
-        energy
+        energy gennoisespec 
 

@@ -248,21 +248,28 @@
 *                   			to build the pulse templates library by averaging some of the found pulses. A pulseheight
 *                   			histogram is used to identify the piled up pulses which are not going to be used to average
 *                   			Deleted the calculus of the tstart precisely
+*                   12/01/15    'PROCESS' output keyword renamed as 'PROC0'
+*                   13/01/15    Added a new input parameter 'crtlib' (create library or not):
+*                   				New 'crtlib' plays the same role as the old 'mode' (mode=0 => crtLib=1, mode=1 => crtLib=0)
+*                   				'mode' refers to calibration or production and it is not used by TRIGGER but in the following tasks
+*                   				"creationlib run mode" instead of "calibration mode" and "notcreationlib run mode" instead of "production mode"
+*
 *********************************************************************************************************************/
 
 /******************************************************************************
 DESCRIPTION:
 
-The TRIGGER task has two possible operation modes, calibration or production.
+The TRIGGER task has two possible run modes, in order to create or not a pulse templates library (i.e., if it is necessary to look for
+all the pulses or not): creationlib or notcreationlib run modes.
 
-In the  production mode, the goal of the TRIGGER task is try to find all the pulses in the input FITS file. Each record is
+In the notcreationlib run mode, the goal of the TRIGGER task is try to find all the pulses in the input FITS file. Each record is
 low-pass filtered and derived. Then, the process of looking for pulses is scanning the first derivative of the filtered
 record and if there is a number of consecutive samples over a pre-established threshold, a pulse has been found. To look
 for secondary pulses (due to the piled-up), the adjusted derivative of the record is used. The adjusted derivative is
 built by using the difference between the derivative of the filtered found pulses and the corresponding scaled and shifted
 derivative of the filtered pulse template.
 
-In the calibration mode, the input FITS file only contains monochromatic pulses and, the additional goal is to build
+In the creationlib run mode, the input FITS file only contains monochromatic pulses and, the goal is to build
 the pulse templates library by averaging some of the found pulses in order to get the pulse template. The secondary pulses
 are not going to be searched for, so the pulse templates library is not going to be used (to make the adjusted derivative)
 but to be build. Once the pulses have been found (and written in the output FITS file), a pulseheights histogram is used
@@ -279,8 +286,9 @@ The user must supply the following input parameters:
 - outFile: Name of the output FITS file
 - inLibFile: Name of the pulses templates library FITS file
 - mode: Operation mode, calibration mode (0) or production mode (1)
-- LrsT: Running sum length in seconds (only in production mode)
-- LbT: Baseline averaging length in seconds (only in production mode)
+- crtLib: Run mode, create the pulse templates library (1) or not (0)
+- LrsT: Running sum length in seconds (only in notcreationlib mode)
+- LbT: Baseline averaging length in seconds (only in notcreationlib mode)
 - tauFALL: Fall time of the pulses in seconds
 - scaleFactor: Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length
 - samplesUp: Consecutive samples over the threshold to locate a pulse
@@ -333,10 +341,10 @@ MAP OF SECTIONS IN THIS FILE:
 * - Read input parameters (call initModule)
 * - Open input FITS file
 * - Read input keywords and check their values
-* - If production mode => Read the pulse templates library input FITS file
+* - If notcreationlib run mode => Read the pulse templates library input FITS file
 * 	- Open pulses templates library file (EUR-LIB extension)
 * 	- Read the pulse templates library input FITS file and store the whole library in "library" and "models" (call readLib)
-* - elseIf calibration mode => Build the pulse templates library FITS file
+* - elseIf creationlib run mode => Build the pulse templates library FITS file
 *   (Secondary pulses are not searched for => Pulse templates library not used)
 * 	- Call createLibrary
 * - If MONOEN = 0 (there are no pulses):
@@ -347,10 +355,10 @@ MAP OF SECTIONS IN THIS FILE:
 * 	- Create output FITS file (call createTriggerFile)
 *	- Create structure to run Iteration: inDataIterator
 *		- Read columns (TIME and ADC)
-*	- If production mode => Pulse templates: Low-pass filtering and first derivative
+*	- If notcreationlib run mode => Pulse templates: Low-pass filtering and first derivative
 *	- Called iteration function: inDataIterator
 *   - Write EVENTCNT output keywords (because 'totalpulses' was not ok yet when the rest of the keywords were written)
-* - If calibration mode => Calculate the pulse template by averaging some found pulses
+* - If creationlib run mode => Calculate the pulse template by averaging some found pulses
 * 	- Call calculateTemplate
 * 	- Call writeLibrary
 * - Close FITS files
@@ -456,9 +464,9 @@ int main(int argc, char **argv)
 	energy = energy*1e3;
 	plspolar = 1.0;
 
-	// If CALIBRATION mode (mode = 0) => Secondary pulses are not searched for => Pulse templates library not used => Library has to be created
-	// If PRODUCTION mode (mode = 1) => Read the pulse templates library input FITS file
-	if (mode == 1)
+	// If CREATIONLIB run mode (crtLib = 1) => Secondary pulses are not searched for => Pulse templates library not used => Library has to be created
+	// If CREATIONLIB mode (crtLib = 0) => Read the pulse templates library input FITS file
+	if (crtLib == 0)
 	{
 	    // Open pulses templates library file (EUR-LIB extension)
 	    if (fits_open_file(&inLibObject, inLibName,0,&status))
@@ -620,9 +628,9 @@ int main(int argc, char **argv)
 		    EP_EXIT_ERROR(message,status);
 		}
 
-		if (mode == 1)	// Production mode
+		if (crtLib == 0)	// NOTCREATIONLIB mode
 		{
-			// Once the pulse models read from the library are low-pass filtered and derived, they are stored in "models"
+			// Once the pulse templates read from the library are low-pass filtered and derived, they are stored in "models"
 			for (int i=0; i<models->size1; i++)
 			{
 				gsl_matrix_get_row(model,models,i);
@@ -697,20 +705,20 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (mode == 0)	// Calibration mode => Calculate the pulse template by averaging some found pulses
+	if (crtLib == 1)	// CREATIONLIB run mode => Calculate the pulse template by averaging some found pulses
 	{
 		gsl_vector *pulsetemplate = gsl_vector_alloc(sizePulse_b);
 		double pulseheighttemplate = 0;
 
 		if (calculateTemplate (totalpulses,&pulsetemplate,&pulseheighttemplate))
 		{
-		    message = "Cannot run routine calculateTemplate in calibration mode";
+		    message = "Cannot run routine calculateTemplate in creationlib run mode";
 		    EP_EXIT_ERROR(message,EPFAIL);
 		}
 		
 		if (writeLibrary(pulseheighttemplate, &pulsetemplate))
 		{
-		    message = "Cannot run routine writeLibrary in calibration mode";
+		    message = "Cannot run routine writeLibrary in crationlib run mode";
 		    EP_EXIT_ERROR(message,EPFAIL);
 		}
 
@@ -754,7 +762,7 @@ int main(int argc, char **argv)
 		delete [] obj.unit;
 	}
 
-	if (mode == 1) //Production mode
+	if (crtLib == 0) // Notcreationlib mode
 	{
 		//gsl_vector_free(modelSGN);
 
@@ -797,7 +805,7 @@ int initModule(int argc, char **argv)
 
 	// Define TRIGGER input parameters and assign values to variables
 	// Parameter definition and assignation of default values
-    const int npars = 15, npars1 = 16;
+    const int npars = 16, npars1 = 17;
 	inparam triggerPars[npars];
 	int optidx =0, par=0, fst=0, ipar; 
 	int fstLib=0;
@@ -830,91 +838,99 @@ int initModule(int argc, char **argv)
     triggerPars[3].maxValInt = 1;
 	triggerPars[3].ValInt = triggerPars[3].defValInt;
 
-	triggerPars[4].name = "LrsT";
-    triggerPars[4].description = "Running sum length (in the RS filter case) (seconds) (only in production mode) [>0]";
-    triggerPars[4].defValReal = 30.E-6;
-    triggerPars[4].type = "double";
-    triggerPars[4].minValReal = 1.E-50;
-    triggerPars[4].maxValReal = +1.E+50;
-	triggerPars[4].ValReal = triggerPars[4].defValReal;
+	triggerPars[4].name = "crtLib";
+	triggerPars[4].description = "Create pulse templates library (1) or not (0)";
+	triggerPars[4].defValInt = 0;
+	triggerPars[4].type = "int";
+	triggerPars[4].minValInt = 0;
+	triggerPars[4].maxValInt = 1;
+	triggerPars[4].ValInt = triggerPars[4].defValInt;
 
-	triggerPars[5].name = "LbT";
-    triggerPars[5].description = "Baseline averaging length (in the RS filter case) (seconds) (only in production mode) [>0]";
-    triggerPars[5].defValReal = 1.E-3;
+	triggerPars[5].name = "LrsT";
+    triggerPars[5].description = "Running sum length (in the RS filter case) (seconds) (only in notcreationmode mode) [>0]";
+    triggerPars[5].defValReal = 30.E-6;
     triggerPars[5].type = "double";
-    triggerPars[5].minValReal = +1.E-50;
+    triggerPars[5].minValReal = 1.E-50;
     triggerPars[5].maxValReal = +1.E+50;
 	triggerPars[5].ValReal = triggerPars[5].defValReal;
 
-	triggerPars[6].name = "tauFALL";
-    triggerPars[6].description = "Fall time of the pulses (seconds) [>0]";
-    triggerPars[6].defValReal = 3.5E-4;
+	triggerPars[6].name = "LbT";
+    triggerPars[6].description = "Baseline averaging length (in the RS filter case) (seconds) (only in notcreation mode) [>0]";
+    triggerPars[6].defValReal = 1.E-3;
     triggerPars[6].type = "double";
-    triggerPars[6].minValReal = +1.E-10;
-    triggerPars[6].maxValReal = +1.E+10;
+    triggerPars[6].minValReal = +1.E-50;
+    triggerPars[6].maxValReal = +1.E+50;
 	triggerPars[6].ValReal = triggerPars[6].defValReal;
 
-	triggerPars[7].name = "scaleFactor";
-    triggerPars[7].description = "Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length [>0]";
-    triggerPars[7].defValReal = 0.1;
+	triggerPars[7].name = "tauFALL";
+    triggerPars[7].description = "Fall time of the pulses (seconds) [>0]";
+    triggerPars[7].defValReal = 3.5E-4;
     triggerPars[7].type = "double";
     triggerPars[7].minValReal = +1.E-10;
     triggerPars[7].maxValReal = +1.E+10;
 	triggerPars[7].ValReal = triggerPars[7].defValReal;
 
-	triggerPars[8].name = "samplesUp";
-    triggerPars[8].description = "Consecutive samples over the threshold to locate a pulse (bins) [>0]";
-    triggerPars[8].defValInt = 20;
-    triggerPars[8].type = "int";
-    triggerPars[8].minValInt = 1;
-    triggerPars[8].maxValInt = int(1E20);
-	triggerPars[8].ValInt = triggerPars[8].defValInt;
+	triggerPars[8].name = "scaleFactor";
+    triggerPars[8].description = "Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length [>0]";
+    triggerPars[8].defValReal = 0.1;
+    triggerPars[8].type = "double";
+    triggerPars[8].minValReal = +1.E-10;
+    triggerPars[8].maxValReal = +1.E+10;
+	triggerPars[8].ValReal = triggerPars[8].defValReal;
 
-	triggerPars[9].name = "nSgms";
-    triggerPars[9].description = "Number of Sigmas to establish the threshold [>0]";
-    triggerPars[9].defValInt = 3;
+	triggerPars[9].name = "samplesUp";
+    triggerPars[9].description = "Consecutive samples over the threshold to locate a pulse (bins) [>0]";
+    triggerPars[9].defValInt = 20;
     triggerPars[9].type = "int";
     triggerPars[9].minValInt = 1;
-    triggerPars[9].maxValInt = 100;
+    triggerPars[9].maxValInt = int(1E20);
 	triggerPars[9].ValInt = triggerPars[9].defValInt;
 
-	triggerPars[10].name = "ntaus";
-    triggerPars[10].description = "Number of tauFALLs after starting the pulse to calculate its tend [>0]";
-    triggerPars[10].defValInt = 15;
+	triggerPars[10].name = "nSgms";
+    triggerPars[10].description = "Number of Sigmas to establish the threshold [>0]";
+    triggerPars[10].defValInt = 3;
     triggerPars[10].type = "int";
     triggerPars[10].minValInt = 1;
-    triggerPars[10].maxValInt = 1000;
+    triggerPars[10].maxValInt = 100;
 	triggerPars[10].ValInt = triggerPars[10].defValInt;
 
-	triggerPars[11].name = "writePulse";
-    triggerPars[11].description = "Write pulses in the output FITS file? (1:TRUE, 0:FALSE)";
-    triggerPars[11].defValInt = 1;
+	triggerPars[11].name = "ntaus";
+    triggerPars[11].description = "Number of tauFALLs after starting the pulse to calculate its tend [>0]";
+    triggerPars[11].defValInt = 15;
     triggerPars[11].type = "int";
-    triggerPars[11].minValInt = 0;
-    triggerPars[11].maxValInt = 1;
+    triggerPars[11].minValInt = 1;
+    triggerPars[11].maxValInt = 1000;
 	triggerPars[11].ValInt = triggerPars[11].defValInt;
 
-	triggerPars[12].name = "getTaus";
-    triggerPars[12].description = "Calculate the approximate rise and fall times of the pulses? (1:TRUE, 0:FALSE)";
-    triggerPars[12].defValInt = 0;
+	triggerPars[12].name = "writePulse";
+    triggerPars[12].description = "Write pulses in the output FITS file? (1:TRUE, 0:FALSE)";
+    triggerPars[12].defValInt = 1;
     triggerPars[12].type = "int";
     triggerPars[12].minValInt = 0;
     triggerPars[12].maxValInt = 1;
 	triggerPars[12].ValInt = triggerPars[12].defValInt;
 
-	triggerPars[13].name = "nameLog";
-    triggerPars[13].description = "Output log file Name";
-    triggerPars[13].defValStr = "trg_log.txt";
-    triggerPars[13].type = "char";
-	triggerPars[13].ValStr = triggerPars[13].defValStr;
+	triggerPars[13].name = "getTaus";
+    triggerPars[13].description = "Calculate the approximate rise and fall times of the pulses? (1:TRUE, 0:FALSE)";
+    triggerPars[13].defValInt = 0;
+    triggerPars[13].type = "int";
+    triggerPars[13].minValInt = 0;
+    triggerPars[13].maxValInt = 1;
+	triggerPars[13].ValInt = triggerPars[13].defValInt;
 
-	triggerPars[14].name = "verbosity";
-    triggerPars[14].description = "Verbosity Level of the output log file (in [0,3])";
-    triggerPars[14].defValInt = 3;
-    triggerPars[14].type = "int";
-    triggerPars[14].minValInt = 0;
-    triggerPars[14].maxValInt = 3;
-	triggerPars[14].ValInt = triggerPars[14].defValInt;
+	triggerPars[14].name = "nameLog";
+    triggerPars[14].description = "Output log file name";
+    triggerPars[14].defValStr = "trg_log.txt";
+    triggerPars[14].type = "char";
+	triggerPars[14].ValStr = triggerPars[14].defValStr;
+
+	triggerPars[15].name = "verbosity";
+    triggerPars[15].description = "Verbosity level of the output log file (in [0,3])";
+    triggerPars[15].defValInt = 3;
+    triggerPars[15].type = "int";
+    triggerPars[15].minValInt = 0;
+    triggerPars[15].maxValInt = 3;
+	triggerPars[15].ValInt = triggerPars[15].defValInt;
 	
 	// Define structure for command line options
 	static struct option long_options[npars1];
@@ -1003,6 +1019,10 @@ int initModule(int argc, char **argv)
 		else if (triggerPars[i].name == "mode")
 		{
 			mode = triggerPars[i].ValInt;
+		}
+		else if (triggerPars[i].name == "crtLib")
+		{
+			crtLib = triggerPars[i].ValInt;
 		}
 		else if (triggerPars[i].name == "LrsT")
 		{
@@ -1268,11 +1288,11 @@ int inDataIteratorLib(long totalrows, long offset, long firstrow, long nrows, in
 
 
 /***** SECTION 6 ************************************************************
-* createLibrary: This function build the pulse templates library.
+* createLibrary: This function builds the pulse templates library.
 *                If the pulse templates library does not exist, it is created
 *                If the pulse templates library exists, new information will be appended to it.
 *
-* - If the pulse templates library exist => Call readLib
+* - If the pulse templates library exists => Call readLib
 * - If the pulse templates does not exist => It is created
 ****************************************************************************/
 int createLibrary()
@@ -1371,7 +1391,7 @@ int createLibrary()
 	string(str_energy)      + ' ' +
 	string("(")				+      (string) create 		  +   	  string(")"));
 
-	strcpy(keyname,"PROCESS");
+	strcpy(keyname,"PROC0");
 	strcpy(keyvalstr,process.c_str());
 	if (fits_write_key_longwarn(inLibObject,&status))
 	{
@@ -1555,12 +1575,13 @@ int createTriggerFile()
 	char str_wp[125];			if (writePulse) sprintf(str_wp,"y"); else  sprintf(str_wp,"n");
 	char str_getTaus[125];		if (getTaus) sprintf(str_getTaus,"y"); else  sprintf(str_getTaus,"n");
 	char str_mode[125];			sprintf(str_mode,"%d",mode);
+	char str_crtLib[125];		sprintf(str_crtLib,"%d",crtLib);
 	char str_LrsT[125];			sprintf(str_LrsT,"%e",LrsT);
 	char str_LbT[125];			sprintf(str_LbT,"%e",LbT);
 
 	string process (string("TRIGGER") 	+ ' ' +
 	string(inName) 			+ ' ' + string(inLibName) 	    + ' ' + string(trgName) 	+ ' ' +
-	string(str_mode) 		+ ' ' +
+	string(str_mode) 		+ ' ' + string(str_crtLib) 		+ ' ' +
 	string(str_LrsT)   	    + ' ' + string(str_LbT)         + ' ' +
 	string(str_tauFall)     + ' ' + string(str_scaleFactor) + ' ' +
 	string(str_samplesUp)   + ' ' + string(str_nSgms)       + ' ' +
@@ -1569,11 +1590,11 @@ int createTriggerFile()
 	string(nameLog)			+ ' ' + string(str_verb)	    + ' ' +
 	string("(")				+      (string) create 		    +   	  string(")"));
 
-	strcpy(keyname,"PROCESS");
+	strcpy(keyname,"PROC0");
 	strcpy(keyvalstr,process.c_str());
 	if (fits_write_key_longwarn(trgObject,&status))
 	{
-            message = "Cannot write long warn in output trigger file " + string(trgName);
+		message = "Cannot write long warn in output trigger file " + string(trgName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	if (fits_write_key_longstr(trgObject,keyname,keyvalstr,comment,&status))
@@ -1829,9 +1850,49 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses)
 	gsl_vector_set_zero(tauFallgsl);
 
 	// Find pulses of the record
-	if (findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
+	if (crtLib == 0)
+	{
+		if (findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
+				npulses,
+				1,
+				tauFALL, scaleFactor, sizePulse_b, samprate,
+				samplesUp, nSgms,
+				Lb, Lrs,
+				library, models,
+				safetyMarginTstart,
+				stopCriteriaMKC,
+				kappaMKC,
+				levelPrvPulse,
+				temporalFile,
+				indice+1))
+		{
+			message = "Cannot run routine findPulses";
+			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
+	}
+	else if (crtLib == 1)
+	{
+		if (findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
+				npulses,
+				0,
+				tauFALL, scaleFactor, sizePulse_b, samprate,
+				samplesUp, nSgms,
+				Lb, Lrs,
+				library, models,
+				safetyMarginTstart,
+				stopCriteriaMKC,
+				kappaMKC,
+				levelPrvPulse,
+				temporalFile,
+				indice+1))
+		{
+			message = "Cannot run routine findPulses";
+			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
+	}
+	/*if (findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
 			npulses,
-			mode,
+			crtLib,
 			tauFALL, scaleFactor, sizePulse_b, samprate,
 			samplesUp, nSgms,
 			Lb, Lrs,
@@ -1845,7 +1906,7 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses)
 	{
 		message = "Cannot run routine findPulses";
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-	}
+	}*/
 
 	// Provisional!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	sprintf(val,"%d %d",indice+1,nPulsesRow);
@@ -2319,9 +2380,9 @@ int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector 
 
 
 /***** SECTION 12 ************************************************************
-* calculateTemplate function: In calibration mode (monochromatic pulses) this function averages some of the found pulses
+* calculateTemplate function: In creationlib run mode (monochromatic pulses) this function averages some of the found pulses
 *                             in order to get the pulse template and build the pulse templates library FITS file.
-*                             It works once the pulses have been found (and written in the output FITS file)
+*                             It works when the pulses have already been found (and written in the output FITS file)
 *                             because it needs to do a pulseheights histogram to discard the piled up pulses.
 *                             Only the non piled up pulses are going to be read from the _trg output FITS file (in order
 *                             to not handle a long matrix of pulses, found pulses x sizePulse_b).
@@ -2680,7 +2741,7 @@ int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhistogsl, gsl_ve
 * - shiftdouble into shiftint
 * - Move forward or delay vector2 depending on positive or negative shift
 ******************************************************************************/
-int align(gsl_vector **vector1, gsl_vector ** vector2)
+int align(gsl_vector **vector1, gsl_vector **vector2)
 {
 	char val[256];
 

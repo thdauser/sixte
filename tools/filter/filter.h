@@ -107,6 +107,7 @@
 *   		Deleted inDataIteratorTrg0
 *   		Deleted some input/output keywords
 *   		Deleted some unnecessary input parameters (Emin, Emax)
+* 12/01/15  Deleted 'annalsin'
 ********************************************************************************************/
 
 #ifndef FILTER_H_
@@ -231,7 +232,6 @@
 // OUTPUT KEYWORDS
 
 	const char *create;					// Name and version of the module: name-0.0.0
-	char *annalsin = new char[1023];
 
 // OUTPUT VECTORS
 

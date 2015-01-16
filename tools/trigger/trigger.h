@@ -123,6 +123,7 @@
 *  	           Deleted some unnecessary output keywords
 *  	           Deleted some constants and variables not used
 *  	           New functions 'calculateTemplate', 'createHisto', 'align', 'shiftm' and 'shift_m'
+*  13/01/15    New input parameter 'crtLib'
 * ********************************************************************************************/
 
 #ifndef TRIGGER_H_
@@ -134,7 +135,7 @@
 	#include <unistd.h>
 	#include <pulseprocess.h>
 
-//MC FOR DAL -> CFITSIO migration
+// CFITSIO helpers
 
 	int  colnum=0, felem=0;
 	char extname[20];
@@ -192,6 +193,7 @@
 // INPUT PARAMETERS (and others closely related to them)
 	
 	int mode;				// Operation mode
+	int crtLib;             // Run mode
 
 	double LrsT;			// Running sum length (in the RS filter case): T -> Time => Seconds
 	double LbT;				// Baseline averaging length (in the RS filter case): T -> Time => Seconds
@@ -214,7 +216,7 @@
 	char nameLog[255];		// Output log file name
 	int verbosity;			// Verbosity level of the output log file
 
-// OUTPUT VECTORS (in calibration mode to write the pulse templates library)
+// OUTPUT VECTORS (in creationlib run mode to write the pulse templates library)
 
 	gsl_vector *energygsl = gsl_vector_alloc(1);
 	gsl_vector *estenergygsl = gsl_vector_alloc(1);

@@ -77,6 +77,8 @@
 *  31/07/14    Code modified in order to work with non monochromatic input FITS files
 *  	 Sep/14    Analytical calculus of b and c and sigma (no fitting)
 *    Dec/14    DAL->CFITSIO migration + error routines update
+*  12/01/15    Deleted 'processinA' and 'processinB'
+*              Deleted 'annalsinA' and 'annalsinB'
 ******************************************************************************************/
 
 #ifndef ENERGY_H_
@@ -196,10 +198,6 @@
 // OUTPUT KEYWORDS
 
 	const char *create;					// Name and version of the module: name-0.0.0
-	char *processinA = new char[1023];	// Shell command (including input parameters) used to create FITS file
-	char *processinB = new char[1023];
-	char *annalsinA = new char[1023];
-	char *annalsinB = new char[1023];
 
 //FUNCTIONS
 

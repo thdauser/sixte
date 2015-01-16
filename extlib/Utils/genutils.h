@@ -80,11 +80,12 @@
 
 // General
 
-	#include "fitsio.h"
+	#include <fitsio.h>
 	#include <math.h>
 	#include <iostream>
 	#include <boost/lexical_cast.hpp>
 	#include <vector>
+    #include <complex>
 	#include <getopt.h> // For getopt module
 	#include <stdarg.h>
 	#include <string>

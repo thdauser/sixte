@@ -129,7 +129,8 @@ AC_CONFIG_FILES([Makefile
 		tools/pulsegrade/Makefile
 		tools/filter/Makefile
 		tools/pseudoenergy/Makefile
-		tools/energy/Makefile				
+		tools/energy/Makefile
+		tools/gennoisespec/Makefile
 		tools/tesconstpileup/Makefile
 		share/Makefile
 		share/instruments/Makefile

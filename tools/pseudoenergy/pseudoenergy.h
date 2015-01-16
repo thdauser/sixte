@@ -93,6 +93,7 @@
 *              Deleted some unnecessary functions
 *              Deleted some unnecessary input parameters
 *              Deleted some unnecessesary keywords
+*  12/01/15    Deleted 'processin'
 * ******************************************************************************************/
 
 #ifndef PSEUDOENERGY_H_
@@ -147,8 +148,8 @@
 	long eventcnt_in;
 
 	//EUR-FLT extension (from the _flt input FITS file)
-	long eventcnt_flt;
 	long fltid;
+	long eventcnt_flt;
 	
 //INPUT VECTORS
 	
@@ -222,7 +223,7 @@
 // OUTPUT KEYWORDS
 	
 	const char *create;					// Name and version of the module: name-0.0.0
-	char *processin = new char[1023];	// Shell command (including input parameters) used to create FITS file
+	//char *processin = new char[1023];	// Shell command (including input parameters) used to create FITS file
 	
 // OUTPUT VECTORS
 	
