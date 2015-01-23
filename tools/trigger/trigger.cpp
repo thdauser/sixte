@@ -253,6 +253,10 @@
 *                   				New 'crtlib' plays the same role as the old 'mode' (mode=0 => crtLib=1, mode=1 => crtLib=0)
 *                   				'mode' refers to calibration or production and it is not used by TRIGGER but in the following tasks
 *                   				"creationlib run mode" instead of "calibration mode" and "notcreationlib run mode" instead of "production mode"
+*                   20/01/15    Bug corrected: EVENTSZ keyword was being written as TLONG using int sizePulse_b value (corrected to TINT)
+*                               Clobber parameter added. Some renameing of variables/FITS extensions (EUR-TRG -> TRIGGER, EUR-LIB --> LIBRARY, EUR-TEST->TEST)
+*                               Quality column was read as int,TDOUBLE in inDataIteratorOutTrg => short, TSHORT
+*                   23/01/15    'inDataIterator': Just in case the last record has been filled in with 0's => Re-allocate 'invector'
 *
 *********************************************************************************************************************/
 
@@ -335,6 +339,7 @@ MAP OF SECTIONS IN THIS FILE:
 ****************************************************/
 #include <trigger.h>
 
+
 /***** SECTION 2 ************************************
 * MAIN function: This function is the main function of the TRIGGER task
 *
@@ -367,13 +372,12 @@ MAP OF SECTIONS IN THIS FILE:
 ****************************************************/
 int main(int argc, char **argv)
 {
-	char val[256];
-
 	create = "trigger v.16.0.0";			//Set "CREATOR" keyword of output FITS file
 	time_t t_start = time(NULL);
-	char str_stat[8];
 	string message="";
 	int status=EPOK, extver=0;
+	double cutFreq = 0.;
+	int boxLength = 0;
 	
 	sprintf(temporalFileName,"TRIGGERauxfile");
 	strcat(temporalFileName,".txt");
@@ -442,6 +446,7 @@ int main(int argc, char **argv)
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 	samprate = 1/samprate;
+	
 	if (fits_get_num_rows(inObject,&eventcnt, &status))
 	{
 	    message = "Cannot get number of rows in " + string(inName);
@@ -468,13 +473,13 @@ int main(int argc, char **argv)
 	// If CREATIONLIB mode (crtLib = 0) => Read the pulse templates library input FITS file
 	if (crtLib == 0)
 	{
-	    // Open pulses templates library file (EUR-LIB extension)
+	    // Open pulses templates library file (LIBRARY extension)
 	    if (fits_open_file(&inLibObject, inLibName,0,&status))
 	    {
 	    	message = "Cannot open file " +  string(inLibName);
 	    	EP_EXIT_ERROR(message,status);
 	    }
-	    strcpy(extname,"EUR-LIB");
+	    strcpy(extname,"LIBRARY");
 	    if (fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status))
 	    {
 	    	message = "Cannot move to HDU " + string(extname) + " in " + string(inLibName);
@@ -519,7 +524,7 @@ int main(int argc, char **argv)
 
 		// Write output keywords (their values have been previously checked)
 		evtcnt = 0;
-		strcpy(extname,"EUR-TRG");
+		strcpy(extname,"TRIGGER");
 		if (fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status))
 		{
 		    message = "Cannot move to HDU " + string(extname) +" in " + string(trgName);
@@ -528,7 +533,7 @@ int main(int argc, char **argv)
 		strcpy(keyname,"EVENTCNT");
 		if (evtcnt < 0)
 		{
-			message = "Legal values for EVENTCNT (EUR-TRG) are integer numbers greater than or equal to 0";
+			message = "Legal values for EVENTCNT (TRIGGER) are integer numbers greater than or equal to 0";
 			writeLog(fileRef, "Error", verbosity, message);
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
@@ -630,6 +635,15 @@ int main(int argc, char **argv)
 
 		if (crtLib == 0)	// NOTCREATIONLIB mode
 		{
+			// Check Boxlength
+			cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
+			boxLength = (int) ((1/cutFreq) * samprate);
+			if (boxLength <= 1)
+			{
+			      message = "lpf_boxcar(Model): tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
+			      writeLog(fileRef,"Warning", verbosity,message);
+			}
+			
 			// Once the pulse templates read from the library are low-pass filtered and derived, they are stored in "models"
 			for (int i=0; i<models->size1; i++)
 			{
@@ -644,14 +658,12 @@ int main(int argc, char **argv)
 				}
 				if (status == 3)
 				{
-					message = "lpf_boxcar(Model): tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
-					writeLog(fileRef,"Warning", verbosity,message);
 					status = EPOK;
 				}
 				if (status == 4)
 				{
 					message = "lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low";
-					writeLog(fileRef,"Warning", verbosity,message);
+					writeLog(fileRef,"Error", verbosity,message);
 					EP_EXIT_ERROR(message,EPFAIL);
 				}
 
@@ -668,6 +680,16 @@ int main(int argc, char **argv)
 			gsl_vector_free(model);
 		}
 
+		// Check Boxlength
+		cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
+		boxLength = (int) ((1/cutFreq) * samprate);
+		
+		if (boxLength <= 1)
+		{
+		      message = "lpf_boxcar: tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
+		      writeLog(fileRef,"Warning", verbosity,message);
+		}
+
 		// Called iteration function
 		if (fits_iterate_data(n_cols,cols,offset,rows_per_loop,inDataIterator,0L,&status))
 		{
@@ -676,7 +698,7 @@ int main(int argc, char **argv)
 		}
 
 		// Write output keywords (their values have been previously checked)
-		strcpy(extname,"EUR-TRG");
+		strcpy(extname,"TRIGGER");
 		if (fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status))
 		{
 		    message = "Cannot move to HDU " + string(extname) +" in " + string(trgName);
@@ -687,7 +709,7 @@ int main(int argc, char **argv)
 		strcpy(keyname,"EVENTCNT");
 		if (ttpls1 < 0)
 		{
-			message = "Legal values for EVENTCNT (EUR-TRG) are integer numbers greater than or equal to 0";
+			message = "Legal values for EVENTCNT (TRIGGER) are integer numbers greater than or equal to 0";
 			writeLog(fileRef, "Error", verbosity, message);
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
@@ -801,14 +823,11 @@ int main(int argc, char **argv)
 ****************************************************************************/
 int initModule(int argc, char **argv)
 {
-	int status = EPOK;
-
 	// Define TRIGGER input parameters and assign values to variables
 	// Parameter definition and assignation of default values
-    const int npars = 16, npars1 = 17;
+	const int npars = 17, npars1 = 18;
 	inparam triggerPars[npars];
-	int optidx =0, par=0, fst=0, ipar; 
-	int fstLib=0;
+	int optidx =0, par=0; 
 	string message="";
 	string task="trigger";
 
@@ -932,6 +951,12 @@ int initModule(int argc, char **argv)
     triggerPars[15].maxValInt = 3;
 	triggerPars[15].ValInt = triggerPars[15].defValInt;
 	
+	triggerPars[16].name = "clobber";
+    triggerPars[16].description = "Re-write output files if clobber=yes";
+    triggerPars[16].defValStr = "no";
+    triggerPars[16].type = "char";
+	triggerPars[16].ValStr = triggerPars[16].defValStr;
+	
 	// Define structure for command line options
 	static struct option long_options[npars1];
 	for (optidx = 0; optidx<npars; optidx++)
@@ -987,7 +1012,7 @@ int initModule(int argc, char **argv)
 	    		} // endfor
 	    		break;
 	    	default:
-	    		message = "Invalid parameter name " + string(long_options[optidx].name);
+	    		message = "Invalid parameter name ";
 	    		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}//switch
 	}//while
@@ -1068,6 +1093,15 @@ int initModule(int argc, char **argv)
 		{
 			verbosity = triggerPars[i].ValInt;
 		}
+		else if (triggerPars[i].name == "clobber")
+		{
+			strcpy(clobberStr, triggerPars[i].ValStr.c_str());
+			if(strcmp(clobberStr,"yes")==0){
+			  clobber=1;
+			}else{
+			  clobber=0;
+			}
+		}
 
 		// Check if parameter value is in allowed range
 		if( triggerPars[i].type == "int" &&
@@ -1110,7 +1144,7 @@ int readLib()
 	string message="";
 	int extver=0, status = EPOK;
 
-	strcpy(extname,"EUR-LIB");
+	strcpy(extname,"LIBRARY");
 	if (fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status))
 	{
 	    message = "Cannot move to HDU " + string(extname);
@@ -1211,7 +1245,7 @@ int inDataIteratorLib(long totalrows, long offset, long firstrow, long nrows, in
 	double *pulsemodel, *pulsemodelin;  // Vector of PULSE column
 	long eventsz;
 
-	strcpy(extname,"EUR-LIB");
+	strcpy(extname,"LIBRARY");
 	if (fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status))
 	{
 	    message = "Cannot move to HDU  " + string(extname) + " in library file";
@@ -1225,7 +1259,7 @@ int inDataIteratorLib(long totalrows, long offset, long firstrow, long nrows, in
 	}
 	if (eventsz <= 0)
 	{
-		message = "Legal values for EVENTSZ (EUR-LIB) are integer numbers greater than 0";
+		message = "Legal values for EVENTSZ (LIBRARY) are integer numbers greater than 0";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
@@ -1306,7 +1340,7 @@ int createLibrary()
 	if (status == EPOK)
 	{
 		append = true;
-		strcpy(extname,"EUR-LIB");
+		strcpy(extname,"LIBRARY");
 		if (fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status))
 		{
 		    message = "Cannot move to HDU " + string(extname);
@@ -1320,7 +1354,7 @@ int createLibrary()
 		}
 		if (eventcntLib <= 0)
 		{
-			message = "Legal values for read EVENTCNT (EUR-LIB) are integer numbers greater than 0";
+			message = "Legal values for read EVENTCNT (LIBRARY) are integer numbers greater than 0";
 			writeLog(fileRef, "Error", verbosity, message);
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
@@ -1328,7 +1362,7 @@ int createLibrary()
 		strcpy(keyname,"EVENTCNT");
 		if (eventcntLib1 <= eventcntLib)
 		{
-			message = "Legal value for written EVENTCNT (EUR-LIB) is read EVENTCNT (EUR-LIB) plus 1";
+			message = "Legal value for written EVENTCNT (LIBRARY) is read EVENTCNT (LIBRARY) plus 1";
 			writeLog(fileRef, "Error", verbosity, message);
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
@@ -1353,8 +1387,8 @@ int createLibrary()
 		    message = "Cannot create library " + string(inLibName);
 		    EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
-		// Create extension EUR-LIB
-		strcpy(extname,"EUR-LIB");
+		// Create extension LIBRARY
+		strcpy(extname,"LIBRARY");
 		if (fits_create_tbl(inLibObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
 		{
 		    message = "Cannot create table " + string(extname);
@@ -1365,7 +1399,7 @@ int createLibrary()
 		strcpy(keyname,"EVENTCNT");
 		if (evtcnt <= 0)
 		{
-		    message = "Legal values for EVENTCNT (EUR-LIB) are integer numbers greater than 0";
+		    message = "Legal values for EVENTCNT (LIBRARY) are integer numbers greater than 0";
 		    writeLog(fileRef, "Error", verbosity, message);
 		    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
@@ -1423,7 +1457,7 @@ int createLibrary()
 * createTriggerFile function: This function creates the structure of the _trg output FITS file
 *
 * - Create _trg output FITS file (if it does not exist yet)
-* - Create extension EUR-TRG
+* - Create extension TRIGGER
 * - Create keywords
 ***************************************************************************/
 int createTriggerFile()
@@ -1456,30 +1490,36 @@ int createTriggerFile()
 		}
 	}
 
-	// Create _trg file (if file already exists => error)
-	fits_open_file(&trgObject, trgName,0,&status);
-	if (status == EPOK)
+	// Create _trg file (if file already exists => check clobber)
+	
+	if (fileExists(string(trgName)) && clobber==1)
 	{
-	    message = "Output trigger file already exists: cannot be overwritten";
-	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+	      if (remove(trgName)){
+		  message = "Output trigger file already exists & cannot be deleted ("+string(strerror(errno))+")";
+		  EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+	      }
 	}
-	else
+	else if(fileExists(string(trgName)) && clobber==0)
 	{
-	  status = EPOK;
+	      message = "Output trigger file already exists: must not be overwritten";
+	      EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
-	if (fits_create_file(&trgObject, trgName, &status))
+	if(!fileExists(string(trgName)))
 	{
-	    message = "Cannot create output trigger file " + string(trgName);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+	      if(fits_create_file(&trgObject, trgName, &status))
+	      {
+		  message = "Cannot create output trigger file " + string(trgName);
+		  EP_PRINT_ERROR(message,status); return(EPFAIL);
+	      }
 	}
 	message = "Create Trigger Fits File: " + string(trgName);
 	writeLog(fileRef,"Log", verbosity,message);
 
-	// Create extension EUR-TRG
+	// Create extension TRIGGER
 	char *tt[1];
 	char *tf[1];
 	char *tu[1];
-	strcpy(extname,"EUR-TRG");
+	strcpy(extname,"TRIGGER");
 	if (fits_open_file(&trgObject,trgName,READWRITE,&status))
 	{
 	    message = "Cannot open output trigger file " + string(trgName);
@@ -1502,7 +1542,7 @@ int createTriggerFile()
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	// Create keywords
-	strcpy(extname,"EUR-TRG");
+	strcpy(extname,"TRIGGER");
 	if (fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status))
 	{
 		message = "Cannot move to HDU " + string(extname) + " in output trigger file " + string(trgName);
@@ -1512,7 +1552,7 @@ int createTriggerFile()
 	strcpy(keyname,"MODE");
 	if ((mode != 0) && (mode != 1))
 	{
-		message = "Legal values for MODE (EUR-TRG) are 0 or 1";
+		message = "Legal values for MODE (TRIGGER) are 0 or 1";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
@@ -1524,11 +1564,11 @@ int createTriggerFile()
 	strcpy(keyname,"EVENTSZ");
 	if (sizePulse_b <= 0)
 	{
-		message = "Legal values for EVENTSZ (EUR-TRG) are integer numbers greater than 0";
+		message = "Legal values for EVENTSZ (TRIGGER) are integer numbers greater than 0";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
-	if (fits_write_key(trgObject,TLONG,keyname,&sizePulse_b,comment,&status))
+	if (fits_write_key(trgObject,TINT,keyname,&sizePulse_b,comment,&status))
 	{
   	    message = "Cannot write keyword " + string(keyname) + " in output trigger file " + string(trgName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
@@ -1536,7 +1576,7 @@ int createTriggerFile()
 	strcpy(keyname,"ENERGY");
 	if (energy < 0)
 	{
-		message = "Legal values for ENERGY (EUR-TRG) are non negative real numbers";
+		message = "Legal values for ENERGY (TRIGGER) are non negative real numbers";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
@@ -1548,7 +1588,7 @@ int createTriggerFile()
 	strcpy(keyname,"SAMPRATE");
 	if (samprate <= 0)
 	{
-		message = "Legal values for SAMPRATE (EUR-TRG) are non negative real numbers";
+		message = "Legal values for SAMPRATE (TRIGGER) are non negative real numbers";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
@@ -1587,7 +1627,7 @@ int createTriggerFile()
 	string(str_samplesUp)   + ' ' + string(str_nSgms)       + ' ' +
 	string(str_ntaus) 		+ ' ' +
 	string(str_wp)		    + ' ' + string(str_getTaus) + ' ' +
-	string(nameLog)			+ ' ' + string(str_verb)	    + ' ' +
+	string(nameLog)			+ ' ' + string(str_verb)	    + ' ' + string(clobberStr) + ' ' +
 	string("(")				+      (string) create 		    +   	  string(")"));
 
 	strcpy(keyname,"PROC0");
@@ -1616,6 +1656,7 @@ int createTriggerFile()
 * - Allocate input GSL vectors
 * - Read iterator
 * - Processing each record
+*   - Just in case the last record has been filled in with 0's => Re-allocate invector
 *   - Assign positive polarity to the pulses (by using asquid and plspolar)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 *   - Low-pass filtering and first derivative
 *   - Process each record (call procRow)
@@ -1639,11 +1680,11 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	gsl_vector *timegsl = gsl_vector_alloc(nrows); 				 // Input TIME column
 	gsl_matrix *vgsl = gsl_matrix_alloc(nrows, eventsz); 		 // Input ADC column (matrix)
 	gsl_vector *invector = gsl_vector_alloc(eventsz); 			 // Each record
-	gsl_vector *invectorNOTFILTERED = gsl_vector_alloc(eventsz); // Record without having been filtered
-	gsl_vector *invectorFILTERED = gsl_vector_alloc(eventsz);	 // Filtered (LPF) record
-	gsl_vector *invectorDERIVATIVE = gsl_vector_alloc(eventsz);  // Derivative of invectorFILTERED
-	gsl_vector *SGN = gsl_vector_alloc(eventsz);
-	gsl_vector *derSGN = gsl_vector_alloc(eventsz);				 // Sign of the invectorDERIVATIVE
+	gsl_vector *invectorNOTFILTERED; 							 // Record without having been filtered
+	gsl_vector *invectorFILTERED;	 	                         // Filtered (LPF) record
+	gsl_vector *invectorDERIVATIVE;                              // Derivative of invectorFILTERED
+	gsl_vector *SGN;
+	gsl_vector *derSGN;				                             // Sign of the invectorDERIVATIVE
 
 	// Read iterator
 	timein = (double *) fits_iter_get_array(&cols[0]);
@@ -1663,6 +1704,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 
+	
 	// Processing each record
 	for (int i=0; i< nrows; i++)
 	{
@@ -1677,6 +1719,41 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 
 		double time0 = gsl_vector_get(timegsl, i);	// Initial time of the record
 		gsl_matrix_get_row(invector, vgsl, i);
+
+		// Just in case the last record has been filled in with 0's => Re-allocate invector
+		if ((ntotalrows == eventcnt) && (gsl_vector_ispos(invector) != 1))
+		{
+			// Know the new dimension of the last record (elements different from 0)
+			long eventszLastRecord;
+			eventszLastRecord = gsl_vector_min_index(invector);
+
+			// Auxiliary vector
+			gsl_vector *vector_aux = gsl_vector_alloc(eventszLastRecord);
+			gsl_vector_view temp;
+			temp = gsl_vector_subvector(invector,0,eventszLastRecord);
+			gsl_vector_memcpy(vector_aux,&temp.vector);
+
+			// Free invector, allocate with the new dimension and free the auxiliary vector
+			gsl_vector_free(invector);
+			invector = gsl_vector_alloc(eventszLastRecord);
+			gsl_vector_memcpy(invector,vector_aux);
+			gsl_vector_free(vector_aux);
+
+			invectorNOTFILTERED = gsl_vector_alloc(eventszLastRecord); 	// Record without having been filtered
+			invectorFILTERED = gsl_vector_alloc(eventszLastRecord);	 	// Filtered (LPF) record
+			invectorDERIVATIVE = gsl_vector_alloc(eventszLastRecord);  	// Derivative of invectorFILTERED
+			SGN = gsl_vector_alloc(eventszLastRecord);
+			derSGN = gsl_vector_alloc(eventszLastRecord);				// Sign of the invectorDERIVATIVE
+		}
+		else
+		{
+			invectorNOTFILTERED = gsl_vector_alloc(eventsz); 	// Record without having been filtered
+			invectorFILTERED = gsl_vector_alloc(eventsz);	 	// Filtered (LPF) record
+			invectorDERIVATIVE = gsl_vector_alloc(eventsz);  	// Derivative of invectorFILTERED
+			SGN = gsl_vector_alloc(eventsz);
+			derSGN = gsl_vector_alloc(eventsz);			    	// Sign of the invectorDERIVATIVE
+		}
+
 		gsl_vector_scale(invector,ivcal);			// IVCAL to change arbitrary units of voltage to non-arbitrary
 		                                            // units of current (Amps)
 
@@ -1686,7 +1763,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 			gsl_vector_scale(invector,-1);
 			chngplrt = 1;
 		}
-		strcpy(extname,"EUR-TRG");
+		strcpy(extname,"TRIGGER");
 		if (fits_movnam_hdu(trgObject, ANY_HDU,extname, extver, &status))
 		{
 			message = "Cannot move to HDU " + string(extname);
@@ -1695,7 +1772,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		strcpy(keyname,"CHNGPLRT");
 		if ((chngplrt != 0) && (chngplrt != 1))
 		{
-			message = "Legal values for CHNGPLRT (EUR-TRG) are 0 or 1";
+			message = "Legal values for CHNGPLRT (TRIGGER) are 0 or 1";
 			writeLog(fileRef, "Error", verbosity, message);
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
@@ -1715,14 +1792,12 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		}
 		if (status == 3)
 		{
-		   message = "lpf_boxcar: tauFALL*scaleFactot too small => Cut-off frequency too high => Equivalent to not filter.";
-	   	   writeLog(fileRef,"Warning", verbosity,message);
 	   	   status = EPOK;
 		}
 		if (status == 4)
 		{
 		  message = "lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low";
-	  	  writeLog(fileRef,"Warning", verbosity,message);
+	  	  writeLog(fileRef,"Error", verbosity,message);
 	  	  EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 		gsl_vector_memcpy(invectorFILTERED,invector);
@@ -1890,23 +1965,6 @@ int procRow(gsl_vector *vectorNOTFIL, gsl_vector *vectorDER, int *npulses)
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
 	}
-	/*if (findPulses (vectorNOTFIL, vectorDER, &tstartgsl, &qualitygsl, &energygsl,
-			npulses,
-			crtLib,
-			tauFALL, scaleFactor, sizePulse_b, samprate,
-			samplesUp, nSgms,
-			Lb, Lrs,
-			library, models,
-			safetyMarginTstart,
-			stopCriteriaMKC,
-			kappaMKC,
-			levelPrvPulse,
-			temporalFile,
-			indice+1))
-	{
-		message = "Cannot run routine findPulses";
-		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-	}*/
 
 	// Provisional!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	sprintf(val,"%d %d",indice+1,nPulsesRow);
@@ -2189,7 +2247,7 @@ int obtainTau (gsl_vector *invector, gsl_vector *tstartgsl, gsl_vector *tendgsl,
 
 
 /***** SECTION 11 ************************************************************
-* writePulses function: It writes each pulse data into the EUR-TRG extension of the output FITS file
+* writePulses function: It writes each pulse data into the TRIGGER extension of the output FITS file
 *
 ******************************************************************************/
 int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector *tstart, gsl_vector *tend, gsl_vector *quality, gsl_vector *taurise, gsl_vector *taufall, gsl_vector *energy, gsl_matrix **pulses)
@@ -2264,7 +2322,7 @@ int writePulses(gsl_vector *invectorNOTFIL, gsl_vector *invectorDER, gsl_vector 
 		// Creating Tstart Column
 		obj.inObject = trgObject;
 		obj.nameTable = new char [255];
-		strcpy(obj.nameTable,"EUR-TRG");
+		strcpy(obj.nameTable,"TRIGGER");
 		obj.iniRow = totalpulses;
 		obj.endRow = totalpulses+nPulsesRow-1;
 		obj.iniCol = 0;
@@ -2433,7 +2491,7 @@ int calculateTemplate (int totalPulses, gsl_vector **pulseaverage, double *pulse
 	// (pulseheights histogram) and Tstart, and Quality => The pulse, I0, is going
 	// to be read from the trg output FITS file (in order to not handle a long matrix of
 	// pulses, found pulses x sizePulse_b)
-	strcpy(obj.nameTable,"EUR-TRG");
+	strcpy(obj.nameTable,"TRIGGER");
 	strcpy(obj.nameCol,"I0");
 	obj.inObject=trgObject;
 	obj.type=TDOUBLE;
@@ -2524,7 +2582,6 @@ int calculateTemplate (int totalPulses, gsl_vector **pulseaverage, double *pulse
 		{
  			gsl_vector_set(nonpileup,i,0);
 			nonpileupPulses --;
-
 		}
 		else
 		{
@@ -2595,7 +2652,7 @@ int inDataIteratorOutTrg(long totalrows, long offset, long firstrow, long nrows,
 	double *tstart, *tstartin;		// Vector of TSTART column
 	double *estenrgy, *estenrgyin;	// Vector of ENERGY column
 	//static double *quality;		// Vector of QUALITY column
-	int *quality, *qualityin;		// Vector of QUALITY column
+	short *quality, *qualityin;		// Vector of QUALITY column
 	string message = "";
 
 	// Allocate input GSL vectors
@@ -2619,9 +2676,9 @@ int inDataIteratorOutTrg(long totalrows, long offset, long firstrow, long nrows,
 	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	//quality = (double *) fits_iter_get_array(&cols[2]);
-	qualityin = (int *) fits_iter_get_array(&cols[2]);
+	qualityin = (short *) fits_iter_get_array(&cols[2]);
 	quality = &qualityin[1];
-	if (toGslVector(((void **)&quality), &qualityoutgsl, nrows, 0, TDOUBLE))
+	if (toGslVector(((void **)&quality), &qualityoutgsl, nrows, 0, TSHORT))
 	{
 	    message = "Cannot run toGslVector routine for vector quality";
 	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
@@ -2866,7 +2923,7 @@ int shift_m(gsl_vector *vectorin, gsl_vector *vectorout, int m)
 
 
 /***** SECTION 18 ************************************************************
-* writeLibrary function: This function writes the pulse template into the EUR-LIB extension of the output FITS file
+* writeLibrary function: This function writes the pulse template into the LIBRARY extension of the output FITS file
 *
 ******************************************************************************/
 int writeLibrary(double estenergy, gsl_vector **pulsetemplate)
@@ -2926,7 +2983,7 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate)
 
     	obj.inObject = inLibObject;
     	obj.nameTable = new char [255];
-    	strcpy(obj.nameTable,"EUR-LIB");
+    	strcpy(obj.nameTable,"LIBRARY");
     	obj.iniCol = 0;
     	obj.nameCol = new char [255];
     	obj.unit = new char [255];
@@ -2971,7 +3028,7 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate)
     }
     else
     {
-    	strcpy(extname,"EUR-LIB");
+    	strcpy(extname,"LIBRARY");
     	if (fits_movnam_hdu(inLibObject, ANY_HDU,extname, extver, &status))
     	{
     		message = "Cannot move to HDU  " + string(extname) + " in library";
@@ -2979,7 +3036,7 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate)
     	}
     	if (sizePulse_b <= 0)
     	{
-    		message = "Legal values for EVENTSZ (EUR-TRG) are integer numbers greater than 0";
+    		message = "Legal values for EVENTSZ (TRIGGER) are integer numbers greater than 0";
     		writeLog(fileRef, "Error", verbosity, message);
     		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
     	}
@@ -2996,7 +3053,7 @@ int writeLibrary(double estenergy, gsl_vector **pulsetemplate)
     	// Creating ENERGY Column
     	obj.inObject = inLibObject;
     	obj.nameTable = new char [255];
-    	strcpy(obj.nameTable,"EUR-LIB");
+    	strcpy(obj.nameTable,"LIBRARY");
     	obj.iniRow = 1;
     	obj.endRow = 1;
     	obj.iniCol = 0;

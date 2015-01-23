@@ -85,7 +85,7 @@
 	#include <iostream>
 	#include <boost/lexical_cast.hpp>
 	#include <vector>
-    #include <complex>
+        #include <complex>
 	#include <getopt.h> // For getopt module
 	#include <stdarg.h>
 	#include <string>
@@ -95,6 +95,7 @@
 	using std::ifstream;
 	#include <sstream>
 	#include <ctype.h>
+	#include <sys/stat.h>
 
 	#ifndef EPOK	//Event Processing OK
 	#define EPOK                 (0)
@@ -109,6 +110,8 @@
 	#define EP_PRINT_ERROR(msg,status) (print_error(__func__, msg, status))
 
 using namespace std;
+
+	const double pi = 4.0 * atan(1.0);
 
 	typedef struct
 	{
@@ -145,7 +148,8 @@ using namespace std;
 	void print_error( const char* const func, string message, int status);
 	void writeLog (FILE *fileRef, string type, int verbosity, string message);
 	void exit_error(const char* const func, string msg,int status);
-
+	bool fileExists (const std::string& name);
+	
 //using namespace std;
 
 #endif /*GENUTILS_H_*/

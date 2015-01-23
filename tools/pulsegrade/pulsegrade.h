@@ -106,6 +106,7 @@
 *    			'pulsegrade' instead of 'pulseshape'
 *    			Deleted some unnecessary output keywords
 * 12/01/15      Deleted 'processin'
+* 20/01/15      Replacing psh related variables by psg names
 ***********************************************************************/
 
 #ifndef PULSEGRADE_H_
@@ -162,7 +163,9 @@
 
 	char nameLog[255];	// Output log file name
 	int verbosity;		// Verbosity level of the output log file
-
+	char clobberStr[4];	// Clobber=yes then overwritte output files	
+	int clobber=0;
+	
 //AUXILIARY VARIABLES
 
 	//To avoid the deprecate conversions
@@ -177,8 +180,8 @@
 
 // OUTPUT FILE
 
-	fitsfile *pshObject = NULL;		// Object which contains information of the output FITS file
-	char pshName[255];				// Name of the output FITS file
+	fitsfile *psgObject = NULL;		// Object which contains information of the output FITS file
+	char psgName[255];				// Name of the output FITS file
 
 	char *unit=NULL, *comment=NULL;
 

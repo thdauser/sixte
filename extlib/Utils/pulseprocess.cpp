@@ -205,7 +205,6 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRat
 	double cutFreq;	//Frequency domain
 	int boxLength;	//Time domain
 	double boxSum = 0.0;
-	const double pi = 4.0 * atan(1.0);
 
 	//Define the LPF (frequency domain) and the box-car function (time domain)
 	cutFreq = 2 * (1/(2*pi*tau_fall));	//According to Jan, sinc(f1)=0.6 where f1=1/(2pi*tau_fall)
@@ -215,11 +214,7 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRat
 	boxLength =(int) ((1/cutFreq) * sampleRate);
 
 	if (boxLength < 1)boxLength = 1;
-	if (boxLength >= szVct)
-	{
-	    message = "Too  low box car cut-off frequency";
-	    EP_PRINT_ERROR(message,4);
-	}
+	if (boxLength >= szVct)return(4);
 
 	// It is going to work with a longer vector to not have strange results for the last boxLength windows
 	invectorAux = gsl_vector_alloc(szVct+boxLength);
@@ -264,11 +259,7 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRat
 	gsl_vector_free(invectorAux);
 	gsl_vector_free(invectorAux1);
 	
-	if (boxLength == 1)
-	{
-	    message = "Too high cut-off frequency (no filtering)";
-	    EP_PRINT_ERROR(message,3);
-	}
+	if (boxLength == 1)return(3);
 
 	return (EPOK);
 }
@@ -1425,7 +1416,7 @@ int findPulses (
 	int pulseFound;
 	double thresholdmediankappa;	// Threshold to look for pulses in the first derivative
 	gsl_vector *model;				// Pulse which is going to be used as template (or model)
-		                        	// (selected row of the PULSE column of the EUR-LIB extension
+		                        	// (selected row of the PULSE column of the LIBRARY extension
 									// from the pulses templates library file)
 									// It will be overwritten with its first derivative
 		// To look for single pulses during the first step
@@ -1754,7 +1745,7 @@ int findPulses (
 * - library: Matrix where the values of Energy of each pulse template are stored
 * - models: Matrix where all the pulse templates of the pulse templates library are going to be stored
 * - model: Pulse which is going to used as template
-*          (selected row of the PULSE column of the EUR-LIB extension from the pulses templates library file)
+*          (selected row of the PULSE column of the LIBRARY extension from the pulses templates library file)
 *
 * - safetymargintstart: Equal to the 'safetyMarginTstart' global variable
 * - stopCriteriamkc: Used in medianKappaClipping (%)

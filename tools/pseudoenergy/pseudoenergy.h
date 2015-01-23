@@ -94,6 +94,10 @@
 *              Deleted some unnecessary input parameters
 *              Deleted some unnecessesary keywords
 *  12/01/15    Deleted 'processin'
+*  21/01/15    Variable renaming for parameters
+*  22/01/15    Renaming of some input parameters:
+* 				    TorF ->filterDomain ;  Hp_OForRS -> filterHp ; Mp_OForRS -> filterMp ; Ms_OForRS -> filterMs
+* 				    Lp_OForRS -> filterLp ; Ls_OForRS -> filterLs
 * ******************************************************************************************/
 
 #ifndef PSEUDOENERGY_H_
@@ -175,15 +179,24 @@
 
 	char nameLog[255];		// Output log file name
 	int verbosity;			// Verbosity level of the output log file
+	char clobberStr[4];		// Clobber=yes then overwritte output files	
+	int clobber=0;
+	int TorF;			// Time domain(0) or frequency domain(1)
+	char filterDomain[2];		// T -> time domain; F-> freq. domain	
 
-	int TorF;				// Time domain(0) or frequency domain(1)
 
 	int Hp_OForRS;			// Optimal filter (1) or running sum filter (0) for High Primary pulses
 	int Mp_OForRS;			// Optimal filter (1) or running sum filter (0) for Med Primary pulses
 	int Ms_OForRS;			// Optimal filter (1) or running sum filter (0) for Med Secondary pulses
 	int Lp_OForRS;			// Optimal filter (1) or running sum filter (0) for Low Primary pulses
 	int Ls_OForRS;			// Optimal filter (1) or running sum filter (0) for Low Secondary pulses
-
+	char filterHp[3];		// Optimal filter (OP) or running sum filter (RS) for High Primary pulses
+	char filterMp[3];		// Optimal filter (OP) or running sum filter (RS) for Med Primary pulses
+	char filterMs[3];		// Optimal filter (OP) or running sum filter (RS) for Med Secondary pulses
+	char filterLp[3];		// Optimal filter (OP) or running sum filter (RS) for Low Primary pulses
+	char filterLs[3];		// Optimal filter (OP) or running sum filter (RS) for Low Secondary pulses
+	
+	
 	double LrsT;			// Running sum length (in the RS filter case): T -> Time => Seconds
 	double LbT;				// Baseline averaging length (in the RS filter case): T -> Time => Seconds
 	long Lrs;				// LrsT in samples
@@ -215,8 +228,8 @@
 
 // IN/OUTPUT FILE
 	
-	fitsfile *pshObject = NULL;		// Object which contains information of _psh input/output FITS file
-	char pshName[255];				// Name of the _psh input/output FITS file
+	fitsfile *psgObject = NULL;		// Object which contains information of _psg input/output FITS file
+	char psgName[255];				// Name of the _psg input/output FITS file
 	
 	char *unit=NULL, *comment=NULL;
 

@@ -65,6 +65,7 @@
 * 26/11/13    tAftrtstart has changed from 'constant' to 'input parameter'
 * 13/01/15    Migrated to CFITSIO (removal of ISDC DAL)
 *             Run dependency on datatype files (xray, iv or tesnoise) deleted
+* 20/01/15    Parameter renaming for task renaming
 ********************************************************************************************/
 
 #ifndef GENNOISE_H_
@@ -88,8 +89,6 @@
 	int evtcnt=0, keyvalint=0;
 
 // Constants
-
-	const double pi = 4.0 * atan(1.0);
 
 	double safetyMarginTstart = 50e-6;
 	double stopCriteriaMKC = 1.0;  			// Used in medianKappaClipping
@@ -145,7 +144,9 @@
 
 	char nameLog[255];		// Output log file name
 	int verbosity;			// Verbosity level of the output log file
-
+	char clobberStr[4];		// Clobber=yes then overwritte output files	
+	int clobber=0;
+	
 //AUXILIARY VARIABLES
 
 	//To avoid the deprecate conversions
@@ -170,8 +171,8 @@
 
 // OUTPUT FILE
 
-	fitsfile *tespsObject = NULL;		// Object which contains information of output FITS file
-	char tespsName[255];
+	fitsfile *gnoiseObject = NULL;		// Object which contains information of output FITS file
+	char gnoiseName[255];
 
 	char *unit=NULL, *comment=NULL;
 

@@ -627,15 +627,15 @@ int interactivePars(inparam *taskPars, int np, string task)
 	{
 		if (taskPars[i].type == "char")
 		{
-			cout << "--" << taskPars[i].name << "=" << taskPars[i].description << "(" << taskPars[i].defValStr << ")";
+			cout << " --" << taskPars[i].name << "=" << taskPars[i].description << " [" << taskPars[i].defValStr << "]";
 		}
 		else if (taskPars[i].type == "int")
 		{
-			cout << "--" << taskPars[i].name << "=" << taskPars[i].description << "(" << taskPars[i].defValInt << ")";
+			cout << " --" << taskPars[i].name << "=" << taskPars[i].description << " [" << taskPars[i].defValInt << "]";
 		}
 		else
 		{
-			cout << "--" << taskPars[i].name << "=" << taskPars[i].description << "(" << taskPars[i].defValReal << ")";
+			cout << " --" << taskPars[i].name << "=" << taskPars[i].description << " [" << taskPars[i].defValReal << "]";
 		}
 	}
 	printf("\n\n");

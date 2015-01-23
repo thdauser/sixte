@@ -176,9 +176,10 @@
 
 //INPUT PARAMETERS
 
-	char nameLog[255];				// Output log file name
-	int verbosity;					// Verbosity level of the output log file
-
+	char nameLog[255];			// Output log file name
+	int verbosity;				// Verbosity level of the output log file
+	char clobberStr[4];			// Clobber=yes then overwritte output files	
+	int clobber=0;
 	int Hp, Mp, Ms, Lp, Ls;			// To consider a pulse as a valid one to calculate the optimal filter
 
 //AUXILIARY VARIABLES

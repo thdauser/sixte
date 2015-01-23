@@ -109,6 +109,7 @@
 *                              ADC instead PXL02016 column
 *  version 10.0.0   13/01/15   Migrated to CFITSIO (removal of ISDC DAL)
 *                              Run dependency on datatype files (xray, iv or tesnoise) deleted
+*                   20/01/15   Added clobbering; renaming of parameter because of tasks renaming
  ********************************************************************************************************************/
 
 /******************************************************************************
@@ -201,6 +202,8 @@ int main (int argc, char **argv)
 	char str_stat[8];
 	string message = "";
 	int status=EPOK, extver=0;
+	double cutFreq = 0.;
+	int boxLength = 0;
 
 	sprintf(temporalFileName,"GENNOISESPECauxfile");
 	strcat(temporalFileName,".txt");
@@ -296,8 +299,6 @@ int main (int argc, char **argv)
 	    EP_EXIT_ERROR(message,status);
 	}
 
-	message = "Open infileFits: " + string(infileName);
-	writeLog(fileRef,"Error", verbosity,message);
 
 	// Initialize variables and transform from seconds to samples
 	tauFALL_b = (int) (tauFALL * samprate);
@@ -360,6 +361,15 @@ int main (int argc, char **argv)
 	    EP_EXIT_ERROR(message,status);
 	}
 
+	// Check Boxlength
+	cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
+	boxLength = (int) ((1/cutFreq) * samprate);
+	if (boxLength <= 1)
+	{
+	      message = "lpf_boxcar: tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
+	      writeLog(fileRef,"Warning", verbosity,message);
+	}
+	
 	// Called iteration function
 	if (fits_iterate_data(n_cols,cols,offset,rows_per_loop,inDataIterator,0L,&status))
 	{
@@ -429,19 +439,19 @@ int main (int argc, char **argv)
 	// Create output FITS File: GENNOISESPEC representation file (*_noisespec.fits)
 	if(createTPSreprFile())
 	{
-		message = "Cannot create file " +  string(tespsName);
+		message = "Cannot create file " +  string(gnoiseName);
 		EP_EXIT_ERROR(message,EPFAIL);
 	}	
-	if (fits_open_file(&tespsObject,tespsName,1,&status))
+	if (fits_open_file(&gnoiseObject,gnoiseName,1,&status))
 	{
-		message = "Cannot open file " +  string(tespsName);
+		message = "Cannot open file " +  string(gnoiseName);
 		EP_EXIT_ERROR(message,status);
 	}
 	
 	// Write extensions NOISE and NOISEALL (call writeTPSreprExten)
 	if(writeTPSreprExten ())
 	{
-		message = "Cannot write extensions in " +  string(tespsName);
+		message = "Cannot write extensions in " +  string(gnoiseName);
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 
@@ -453,9 +463,9 @@ int main (int argc, char **argv)
 	gsl_vector_free(startIntervalgsl);
 
 	// Close output FITS file
-	if (fits_close_file(tespsObject,&status))
+	if (fits_close_file(gnoiseObject,&status))
 	{
-	    message = "Cannot close file " + string(tespsName);
+	    message = "Cannot close file " + string(gnoiseName);
 	    EP_EXIT_ERROR(message,status);
 	}	
 
@@ -501,7 +511,7 @@ int initModule(int argc, char **argv)
 
 	// Define TRIGGER input parameters and assign values to variables
 	// Parameter definition and assignation of default values
-	const int npars = 14, npars1 = 15;
+	const int npars = 15, npars1 = 16;
 	inparam gennoisespecPars[npars];
 	int optidx =0, par=0, fst=0, ipar;
 	string message="";
@@ -613,6 +623,12 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[13].maxValInt = 3;
 	gennoisespecPars[13].ValInt = gennoisespecPars[13].defValInt;
 
+	gennoisespecPars[14].name = "clobber";
+	gennoisespecPars[14].description = "Re-write output files if clobber=yes";
+	gennoisespecPars[14].defValStr = "no";
+	gennoisespecPars[14].type = "char";
+	gennoisespecPars[14].ValStr = gennoisespecPars[14].defValStr;
+	
 	// Define structure for command line options
 	static struct option long_options[npars1];
 	for (optidx = 0; optidx<npars; optidx++)
@@ -668,7 +684,7 @@ int initModule(int argc, char **argv)
 				} // endfor
 				break;
 		    default:
-		    	message = "Invalid parameter name " + string(long_options[optidx].name);
+		    	message = "Invalid parameter name ";
 	    		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}//switch
 	}//while
@@ -691,7 +707,7 @@ int initModule(int argc, char **argv)
 		}
 		else if(gennoisespecPars[i].name == "outFile")
 		{
-		    strcpy(tespsName, gennoisespecPars[i].ValStr.c_str());
+		    strcpy(gnoiseName, gennoisespecPars[i].ValStr.c_str());
 		}
 		else if(gennoisespecPars[i].name == "intervalMin")
 		{
@@ -740,6 +756,15 @@ int initModule(int argc, char **argv)
 		else if(gennoisespecPars[i].name == "verbosity")
 		{
 		    verbosity = gennoisespecPars[i].ValInt;
+		}
+		else if (gennoisespecPars[i].name == "clobber")
+		{
+			strcpy(clobberStr, gennoisespecPars[i].ValStr.c_str());
+			if(strcmp(clobberStr,"yes")==0){
+			  clobber=1;
+			}else{
+			  clobber=0;
+			}
 		}
 		
 		// Check if parameter value is in allowed range
@@ -867,7 +892,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 	
 	// Pulse-free segments are divided into pulse-free intervals with intervalMinBins size
 	SelectedTimeDuration = eventsz/((double)samprate);
-
+	
 	// Processing each record
 	for (int i=0; i< nrows; i++)
 	{
@@ -909,14 +934,12 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 			}
 			if (status == 3)
 			{
-			    message = "lpf_boxcar: tauFALL*scaleFactot too small => Cut-off frequency too high => Equivalent to not filter.";
-			    writeLog(fileRef,"Warning", verbosity,message);
 			    status = EPOK;
 			}
 			if (status == 4)
 			{
 			    message = "lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low";
-			    writeLog(fileRef,"Warning", verbosity,message);
+			    writeLog(fileRef,"Error", verbosity,message);
 			    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 			}
 
@@ -1155,24 +1178,34 @@ int createTPSreprFile ()
 
 	// Create output FITS files: If it does not exist already
 	// Create NOISE representation File
-	status = fits_open_file(&tespsObject, tespsName,0,&status);
-	if (status == EPOK) 
-	{ // file does already exist
-	    message = "Output FITS file (type 'noisespec') already exits: " + string(tespsName);
-	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	}
-	else {status = EPOK;}
-	if (fits_create_file(&tespsObject, tespsName, &status))
+
+	if ( fileExists(string(gnoiseName)) && clobber==1)
 	{
-	    message = "Cannot create output gennoisespec file " + string(tespsName);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+	      if (remove(gnoiseName)){
+		  message = "Output FITS file ("+ string(gnoiseName)+") already exits & cannot be deleted ("+string(strerror(errno))+")";
+		  EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+	      }
 	}
-	message = "Create gennoisespec FITS File (_noisespec): " + string(tespsName);
+	else if(fileExists(string(gnoiseName)) && clobber==0)
+	{
+	      message = "Output FITS file ("+ string(gnoiseName)+") already exits: must not be overwritten";
+	      EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+	}
+	if(!fileExists(string(gnoiseName)))
+	{
+	      if(fits_create_file(&gnoiseObject, gnoiseName, &status))
+	      {
+		  message = "Cannot create output gennoisespec file " + string(gnoiseName);
+		  EP_PRINT_ERROR(message,status); return(EPFAIL);
+	      }
+	}
+	
+	message = "Create gennoisespec FITS File (_noisespec): " + string(gnoiseName);
 	writeLog(fileRef,"Log", verbosity,message);
 
 	// Create extensions: NOISE
 	strcpy(extname,"NOISE");
-	if (fits_create_tbl(tespsObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
+	if (fits_create_tbl(gnoiseObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
 	{
 	    message = "Cannot create table " + string(extname);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
@@ -1180,7 +1213,7 @@ int createTPSreprFile ()
 
 	// Create extensions: NOISEALL
 	strcpy(extname,"NOISEALL");
-	if (fits_create_tbl(tespsObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
+	if (fits_create_tbl(gnoiseObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
 	{
 	    message = "Cannot create table " + string(extname);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
@@ -1200,79 +1233,79 @@ int createTPSreprFile ()
 	char str_verb[125];			sprintf(str_verb,"%d",verbosity);
 
 	string process (string("gennoisespec")+ ' ' +
-	string(infileName) 		+ ' ' + string(tespsName) 	   + ' ' +
+	string(infileName) 		+ ' ' + string(gnoiseName) 	   + ' ' +
 	string(str_intervalMin) + ' ' + string(str_ntausPF) 		+ ' ' + string(str_nintervals) + ' ' +
 	string(str_tauFALL)	    + ' ' + string(str_scaleFactor)     + ' ' +
 	string(str_samplesUp)   + ' ' + string(str_nSgms)           + ' ' +
 	string(str_ntaus) 	    + ' ' +
 	string(str_LrsT)       + ' ' + string(str_LbT) + ' ' +
-	string(nameLog)	        + ' ' + string(str_verb)            + ' ' +
+	string(nameLog)	        + ' ' + string(str_verb)            + ' ' + string(clobberStr) + ' ' +
 	string("(")				+      (string) creator  +   	string(")"));
 
 	// Create keywords in NOISE HDU
 	strcpy(extname,"NOISE");
-	if (fits_movnam_hdu(tespsObject, ANY_HDU,extname, extver, &status))
+	if (fits_movnam_hdu(gnoiseObject, ANY_HDU,extname, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(extname) + " in file " + string(tespsName);
+	    message = "Cannot move to HDU " + string(extname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"EVENTCNT");
 	keyvalint = intervalMinBins/2;
-	if (fits_write_key(tespsObject,TINT,keyname,&keyvalint,comment,&status))
+	if (fits_write_key(gnoiseObject,TINT,keyname,&keyvalint,comment,&status))
 	{
-	    message = "Cannot write keyword " + string(keyname) + " in file " + string(tespsName);
+	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"CREATOR");
 	strcpy(keyvalstr,creator);
-	if (fits_write_key(tespsObject,TSTRING,keyname,keyvalstr,comment,&status))
+	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
 	{
-	    message = "Cannot write keyword " + string(keyname) + " in file " + string(tespsName);
+	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"PROC0");
 	strcpy(keyvalstr,process.c_str());
-	if (fits_write_key_longwarn(tespsObject,&status))
+	if (fits_write_key_longwarn(gnoiseObject,&status))
 	{
-        message = "Cannot write long warn in file " + string(tespsName);
+        message = "Cannot write long warn in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
-	if (fits_write_key_longstr(tespsObject,keyname,keyvalstr,comment,&status))
+	if (fits_write_key_longstr(gnoiseObject,keyname,keyvalstr,comment,&status))
 	{
-  	    message = "Cannot write keyword " + string(keyname) + " in file " + string(tespsName);
+  	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);  
 	}
 	
 	// Create keywords in NOISEall HDU
 	strcpy(extname,"NOISEALL");
-	if (fits_movnam_hdu(tespsObject, ANY_HDU,extname, extver, &status))
+	if (fits_movnam_hdu(gnoiseObject, ANY_HDU,extname, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(extname) + " in file " + string(tespsName);
+	    message = "Cannot move to HDU " + string(extname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"EVENTCNT");
-	if (fits_write_key(tespsObject,TINT,keyname,&intervalMinBins,comment,&status))
+	if (fits_write_key(gnoiseObject,TINT,keyname,&intervalMinBins,comment,&status))
 	{
-	    message = "Cannot write keyword " + string(keyname) + " in file " + string(tespsName);
+	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"CREATOR");
 	strcpy(keyvalstr,creator);
-	if (fits_write_key(tespsObject,TSTRING,keyname,keyvalstr,comment,&status))
+	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
 	{
-	    message = "Cannot write keyword " + string(keyname) + " in file " + string(tespsName);
+	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}	
 	strcpy(keyname,"PROC");
 	strcpy(keyvalstr,process.c_str());
-	if (fits_write_key_longwarn(tespsObject,&status))
+	if (fits_write_key_longwarn(gnoiseObject,&status))
 	{
-        message = "Cannot write long warn in file " + string(tespsName);
+        message = "Cannot write long warn in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
-	if (fits_write_key_longstr(tespsObject,keyname,keyvalstr,comment,&status))
+	if (fits_write_key_longstr(gnoiseObject,keyname,keyvalstr,comment,&status))
 	{
-  	    message = "Cannot write keyword " + string(keyname) + " in file " + string(tespsName);
+  	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);  
 	}
 
@@ -1320,7 +1353,7 @@ int writeTPSreprExten ()
 		gsl_vector_set(csdALLgsl,i+intervalMinBins/2,gsl_vector_get(EventSamplesFFTMean,i+intervalMinBins/2));
 	}
 
-	obj.inObject = tespsObject;
+	obj.inObject = gnoiseObject;
 	obj.nameTable = new char [255];
 	strcpy(obj.nameTable,"NOISE");
 	obj.iniRow = 1;
@@ -1337,7 +1370,7 @@ int writeTPSreprExten ()
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 
-	obj.inObject = tespsObject;
+	obj.inObject = gnoiseObject;
 	obj.nameTable = new char [255];
 	strcpy(obj.nameTable,"NOISE");
 	obj.iniRow = 1;
@@ -1354,7 +1387,7 @@ int writeTPSreprExten ()
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 
-	obj.inObject = tespsObject;	
+	obj.inObject = gnoiseObject;	
 	obj.nameTable = new char [255];
 	strcpy(obj.nameTable,"NOISE");
 	obj.iniRow = 1;
@@ -1372,7 +1405,7 @@ int writeTPSreprExten ()
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 
-	obj.inObject = tespsObject;		
+	obj.inObject = gnoiseObject;		
 	obj.nameTable = new char [255];
 	strcpy(obj.nameTable,"NOISEALL");
 	obj.iniRow = 1;

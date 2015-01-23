@@ -593,4 +593,10 @@ int area0 (gsl_vector **input)
 }
 /*xxxx end of SECTION 21  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
-
+/* Check for file existence
+ * Filename is a char
+ */
+bool fileExists(const std::string& name) {
+  struct stat buffer;   
+  return (stat(name.c_str(), &buffer) == 0); 
+}

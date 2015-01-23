@@ -79,6 +79,7 @@
 *    Dec/14    DAL->CFITSIO migration + error routines update
 *  12/01/15    Deleted 'processinA' and 'processinB'
 *              Deleted 'annalsinA' and 'annalsinB'
+*  22/01/15    Renaming of input parameter HorMorL --> gradesForER
 ******************************************************************************************/
 
 #ifndef ENERGY_H_
@@ -106,11 +107,11 @@
 
 // INPUT/OUTPUT FILES
 
-	fitsfile *pshObjectA=NULL; 		// Object which contains information of the input FITS file (inFileA)
-	char pshNameA[255];				// Name of the input FITS file (inFileA)
+	fitsfile *psgObjectA=NULL; 		// Object which contains information of the input FITS file (inFileA)
+	char psgNameA[255];				// Name of the input FITS file (inFileA)
 
-	fitsfile *pshObjectB=NULL; 		// Object which contains information of the input FITS file (inFileB)
-	char pshNameB[255];				// Name of the input FITS file (inFileB)
+	fitsfile *psgObjectB=NULL; 		// Object which contains information of the input FITS file (inFileB)
+	char psgNameB[255];				// Name of the input FITS file (inFileB)
 
 	FILE *fileRef;					// Pointer for file which contains errors and warnings
 
@@ -125,7 +126,7 @@
 
 // INPUT KEYWORDS
 
-	//EUR-PSH extension (inFileA)
+	//PSGRADE extension (inFileA)
 	long eventcntA;
 	long eventcntA_OK;
 	long eventcntA1_OK;
@@ -133,7 +134,7 @@
 	long eventcntA3_OK;
 	double energyA;
 
-	//EUR-PSH extension (inFileB)
+	//PSGRADE extension (inFileB)
 	long eventcntB;
 	long eventcntB_OK;
 	long eventcntB1_OK;
@@ -157,14 +158,16 @@
 
 //INPUT PARAMETERS
 
-	char nameLog[255];			// Output log file name
-	int verbosity;				// Verbosity level of the output log file
-
+	char nameLog[255];		// Output log file name
+	int verbosity;			// Verbosity level of the output log file
+	char clobberStr[4];		// Clobber=yes then overwritte output files	
+	int clobber=0;
 	// Calibration factor to convert pseudoenergies into energies
 	double b_cF, c_cF;				// E = b_cF·e + c_cF^2	(e->pseudoenergy, E->energy)
 
 	int optmode;
 	int HorMorL;
+	char gradesForER[4];		// Event grades to be used for Energy resolution calculation
 
 //AUXILIARY VARIABLES
 

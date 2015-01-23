@@ -214,6 +214,8 @@
 	int writePulse = 1;		// Write pulses in the output FITS file. Default value = true
 	int getTaus = 0;		// Calculate the approximate rise and fall times of the pulses. Default value = false
 	char nameLog[255];		// Output log file name
+	char clobberStr[4];		// Clobber=yes then overwritte output files	
+	int clobber=0;
 	int verbosity;			// Verbosity level of the output log file
 
 // OUTPUT VECTORS (in creationlib run mode to write the pulse templates library)
