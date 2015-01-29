@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [0.130], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.0], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -18,7 +18,6 @@ AM_PROG_AR
 AC_PROG_LIBTOOL
 
 AC_LIB_HAVE_LINKFLAGS([simput])
-
 
 # Compiler Flags:
 # "-g -W -Wall -O0" for debugging

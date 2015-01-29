@@ -30,3 +30,4 @@ sixt*.tar.gz
 *.DS_Store
 build-aux/ar-lib
 build-aux/compile
+build-aux/m4
