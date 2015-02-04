@@ -96,6 +96,7 @@
 	#include <sstream>
 	#include <ctype.h>
 	#include <sys/stat.h>
+        #include <complex>
 
 	#ifndef EPOK	//Event Processing OK
 	#define EPOK                 (0)

@@ -1,9 +1,6 @@
-AM_CXXFLAGS=-I@abs_top_srcdir@/extlib/simput/extlib/cfitsio
-
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-#noinst_LIBRARIES=libutilsic.a
 lib_LTLIBRARIES=libutilsic.la
 
 # Sources:
