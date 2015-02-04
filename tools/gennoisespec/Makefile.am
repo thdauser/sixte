@@ -1,7 +1,5 @@
 AM_CXXFLAGS =-I@top_srcdir@/libsixt
-AM_CXXFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio
 AM_CXXFLAGS+=-I@top_srcdir@/extlib/Utils
-AM_CXXFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
 AM_CXXFLAGS+=-Wall 
 
 ########## DIRECTORIES ###############
@@ -17,7 +15,5 @@ AM_CXXFLAGS+=-Wall
 bin_PROGRAMS=gennoisespec
 
 gennoisespec_SOURCES=gennoisespec.cpp gennoisespec.h
-gennoisespec_LDADD =@top_builddir@/libsixt/libsixt.a
-gennoisespec_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
-gennoisespec_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
-gennoisespec_LDADD+=@top_builddir@/extlib/Utils/libutilsic.a
+gennoisespec_LDADD =@top_builddir@/libsixt/libsixt.la
+gennoisespec_LDADD+=@top_builddir@/extlib/Utils/libutilsic.la
