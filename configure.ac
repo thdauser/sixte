@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [0.130], [christian.schmid@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [0.130], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -14,7 +14,11 @@ AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
 AC_PROG_CXX # Search for a CXX-Compiler 
 AC_PROG_FC # Search for a Fortran compiler.
 AM_PROG_AR
-AC_PROG_RANLIB
+
+AC_PROG_LIBTOOL
+
+AC_LIB_HAVE_LINKFLAGS([simput])
+
 
 # Compiler Flags:
 # "-g -W -Wall -O0" for debugging
@@ -26,7 +30,8 @@ AC_PROG_RANLIB
 CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
 
 # Linker Flags:
-LDFLAGS="$LDFLAGS -g -W -Wall"
+# LDFLAGS="$LDFLAGS -g -W -Wall"
+LDFLAGS="$LDFLAGS -g -W -Wall -L${prefix}/lib -L$LIBSIMPUT_PREFIX/lib"
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).
@@ -72,6 +77,18 @@ AC_CHECK_HEADERS([limit.h math.h stdio.h stdlib.h stdarg.h string.h])
 AC_C_CONST
 
 # Checks for library functions.
+AC_SEARCH_LIBS(ffexist, [cfitsio], [], [AC_MSG_ERROR([ cfitsio not found (should be part of simput)!])], -lm)
+AC_SEARCH_LIBS(wcssub, [wcs], [], [AC_MSG_ERROR([ libwcs not found (should be part of simput)!])], -lm)
+AC_SEARCH_LIBS([fftw_free], [fftw3], [], [AC_MSG_ERROR([ libfftw not found (should be part of simput)!])], -lm)
+AC_SEARCH_LIBS([ape_test], [ape], [], [AC_MSG_ERROR([ libape not found (should be part of simput)!])], [-lm])
+AC_SEARCH_LIBS([atSun], [atFunctions], [], [AC_MSG_ERROR([ libatFunctions not found (should be part of simput)!])], [-lm])
+AC_SEARCH_LIBS([headas_chat], [hdio], [], [AC_MSG_ERROR([ libhdio not found (should be part of simput)!])], [-lm])
+AC_SEARCH_LIBS([headas_clobberfile], [hdutils], [], [AC_MSG_ERROR([ libhdutils not found (should be part of simput)!])], [-lm -lhdio])
+AC_SEARCH_LIBS([headas_init], [hdinit], [], [AC_MSG_ERROR([ libhdinit not found (should be part of simput)!])], [-lm -lhdio -lhdutils])
+AC_SEARCH_LIBS([posstring], [posstring], [], [AC_MSG_ERROR([ libposstring not found (should be part of simput)!])], [-lm])
+AC_SEARCH_LIBS([nhinit], [labnh], [], [AC_MSG_ERROR([ liblabnh not found (should be part of simput)!])], [-lm -lposstring])
+AC_SEARCH_LIBS([freeRMF], [simput], [], [AC_MSG_ERROR([ libsimput not found!])], [-lm -lape -lhdinit -lhdio -lhdutils -llabnh -lposstring -lhdinit] )
+
 
 # The following line tells 'configure' to create a header file 'config.h'
 # that is filled with definitions from this script.
@@ -81,6 +98,7 @@ AC_CONFIG_HEADER([config.h])
 
 # Create the following Makefiles (including subdirectories).
 # A Makefile that is not listed here will not be created by 'automake'!
+
 AC_CONFIG_FILES([Makefile
 		libsixt/Makefile
 		tools/Makefile
@@ -132,12 +150,8 @@ AC_CONFIG_FILES([Makefile
 		tools/energy/Makefile
 		tools/gennoisespec/Makefile
 		tools/tesconstpileup/Makefile
-		share/Makefile
-		share/instruments/Makefile
 		extlib/Makefile
 		extlib/Utils/Makefile])
-
-AC_CONFIG_SUBDIRS([extlib/simput])
 
 AC_OUTPUT
 

@@ -21,7 +21,14 @@ endif
 #
 # set the SIMPUT environment variable
 #
-setenv SIMPUT ${SIXTE}
+
+if (${?SIMPUT} == 0) then
+  setenv SIMPUT ${SIXTE}
+    if (! -e ${SIMPUT}/bin/simput-install.csh) then
+	echo "sixte-install.csh: ERROR -- set SIMPUT environment variable before sourcing sixte-install.csh"
+	exit 1
+    endif
+endif
 
 #
 # run the setup script for SIMPUT

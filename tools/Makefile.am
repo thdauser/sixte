@@ -1,5 +1,5 @@
 # The sub-directories are built before the current directory.
-# In order to change this, include "." in the list of SUBDIRS.
+# In order to change this, include "." in the list of SUBDIRS
 SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         ero_calevents ero_rawevents ero_exposure ero_vis comaexp	\
         gendetsim tes_grades comaimg comadet comarecon runsixt projev	\
@@ -9,4 +9,3 @@ SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         pulsetemplimport streamtotriggers runtes tesconstpileup         \
 	comaimgPM comabackpro trigger pulsegrade filter pseudoenergy  \
         energy gennoisespec 
-

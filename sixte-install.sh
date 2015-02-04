@@ -18,11 +18,14 @@ if ! [ -d ${SIXTE} ]; then
     exit 2
 fi
 
-#
-# set the SIMPUT environment variable
-#
-export SIMPUT=${SIXTE}
-
+if [ "X${SIMPUT}" == X ];  then
+    export SIMPUT=${SIXTE}
+    if ! [ -e ${SIMPUT}/bin/simput-install.csh ]; then
+	echo "sixte-install.csh: ERROR -- set SIMPUT environment variable before sourcing sixte-install.csh"
+	exit 1
+    fi
+fi
+	
 #
 # run the setup script for SIMPUT
 #

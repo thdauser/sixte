@@ -1,12 +1,4 @@
 AM_CFLAGS =-I@top_srcdir@/libsixt
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
 AM_CFLAGS+=-Wall 
 
 ########## DIRECTORIES ###############
@@ -22,13 +14,4 @@ dist_pfiles_DATA=orbatt.par
 bin_PROGRAMS=orbatt
 
 orbatt_SOURCES=orbatt.c
-orbatt_LDADD =@top_builddir@/libsixt/libsixt.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
-orbatt_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
+orbatt_LDADD =@top_builddir@/libsixt/libsixt.la

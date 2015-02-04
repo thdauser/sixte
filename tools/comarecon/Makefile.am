@@ -1,13 +1,4 @@
 AM_CFLAGS =-I@top_srcdir@/libsixt
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
 AM_CFLAGS+=-Wall 
 
 ########## DIRECTORIES ###############
@@ -25,13 +16,4 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 bin_PROGRAMS=comarecon
 
 comarecon_SOURCES=comarecon.c comarecon.h
-comarecon_LDADD =@top_builddir@/libsixt/libsixt.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
-comarecon_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
+comarecon_LDADD =@top_builddir@/libsixt/libsixt.la

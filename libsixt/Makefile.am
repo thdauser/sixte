@@ -41,10 +41,11 @@ AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-lib_LIBRARIES=libsixt.a
+lib_LTLIBRARIES=libsixt.la
+libsixt_la_LDFLAGS = -version-info 2:0:0
 
 # Sources:
-libsixt_a_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
+libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  impactfile.c ladimpactfile.c htrsdetector.c		\
 		  geninst.c gendet.c gentel.c genpixgrid.c		\
 		  gendetline.c ladsignalfile.c ladeventfile.c		\

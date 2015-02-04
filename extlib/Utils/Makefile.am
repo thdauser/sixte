@@ -3,10 +3,11 @@ AM_CXXFLAGS=-I@abs_top_srcdir@/extlib/simput/extlib/cfitsio
 ########### LIBRARIES #################
 
 # Libraries that are installed in the 'lib' directory.
-noinst_LIBRARIES=libutilsic.a
+#noinst_LIBRARIES=libutilsic.a
+lib_LTLIBRARIES=libutilsic.la
 
 # Sources:
-libutilsic_a_SOURCES=genutils.cpp inoututils.cpp pulseprocess.cpp
+libutilsic_la_SOURCES=genutils.cpp inoututils.cpp pulseprocess.cpp
 
 ############ HEADERS #################
 

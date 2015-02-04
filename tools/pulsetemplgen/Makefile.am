@@ -1,13 +1,4 @@
 AM_CFLAGS =-I@top_srcdir@/libsixt
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/libsimput 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
 AM_CFLAGS+=-Wall 
 
 ########## DIRECTORIES ###############
@@ -23,13 +14,4 @@ dist_pfiles_DATA=pulsetemplgen.par
 bin_PROGRAMS=pulsetemplgen
 
 pulsetemplgen_SOURCES=pulsetemplgen.c pulsetemplgen.h
-pulsetemplgen_LDADD =@top_builddir@/libsixt/libsixt.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/libsimput/libsimput.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/heainit/libhdinit.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/heaio/libhdio.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/heautils/libhdutils.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/heasp/libhdsp.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/ape/src/libape.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/wcslib/C/libwcs-4.13.4.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/fftw/.libs/libfftw3.a
-pulsetemplgen_LDADD+=@top_builddir@/extlib/simput/extlib/cfitsio/libcfitsio.a
+pulsetemplgen_LDADD =@top_builddir@/libsixt/libsixt.la
