@@ -32,7 +32,7 @@
 
 /** needed for seeding the random number generator with
  * a value that changes sufficiently fast */
-struct timeb time_struct;
+extern struct timeb time_struct;
 
 /** structure which contains all the input data from
  * the background simulation file */

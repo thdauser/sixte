@@ -182,7 +182,7 @@ int athenapwfisim_main()
       strtoupper(ubuffer);
       if (0==strcmp(ubuffer, "NONE")) {
 	strcpy(buffer, SIXT_DATA_PATH);
-	strcat(buffer, "/instruments/athenaplus/wfi/");
+	strcat(buffer, "/instruments/athena/wfi/");
 	strcat(buffer, default_filename);
       }
 

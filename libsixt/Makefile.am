@@ -1,12 +1,4 @@
-AM_CFLAGS =-I@top_srcdir@/extlib/simput/libsimput 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/cfitsio 
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/wcslib/C
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/ape/include
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heainit
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heaio
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heautils
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/heasp
-AM_CFLAGS+=-I@top_srcdir@/extlib/simput/extlib/fftw/api
+AM_CFLAGS=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 if RCL
 AM_CFLAGS+=-I$(RCL_INC) -DUSE_RCL
@@ -36,7 +28,6 @@ dist_xml_DATA+=htrs.xml
 dist_xml_DATA+=comadet.xml
 dist_xml_DATA+=aciss3.xml
 
-AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 ########### LIBRARIES #################
 

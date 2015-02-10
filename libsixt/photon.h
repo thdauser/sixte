@@ -33,7 +33,7 @@
 
 
 // Counter for the number of entirely generated photons.
-long photon_counter;
+// extern long photon_counter;
 
 
 ////////////////////////////////////////////////////////////////////////

@@ -24,6 +24,8 @@ static eroBackgroundInput bkginputdata;
 static eroBackgroundRateFct bkgratefct;
 static struct rateCurrentInterval rCurr = {0L, 0., NULL, 0L};
 
+struct timeb time_struct;
+
 /* internal functions */
 
 int calcEvents(const double* const hit_time, const long numrows) {
