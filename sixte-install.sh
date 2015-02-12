@@ -46,3 +46,24 @@ if [ "X${PFILES}" == X ]; then
 else
     PFILES="${PFILES}:${SIXTE}/share/sixte/pfiles"
 fi
+
+
+export DYLD_LIBRARY_PATH LD_LIBRARY_PATH PATH PFILES
+
+SIXTE_LIB=${SIXTE}/lib
+if [ "x$LD_LIBRARY_PATH" = x ]; then
+  LD_LIBRARY_PATH="$SIXTE_LIB"
+else
+  LD_LIBRARY_PATH=`echo ":$LD_LIBRARY_PATH:" | sed "s%:$SIXTE_LIB:%:%g" | sed "s%::*$%%"`
+  LD_LIBRARY_PATH="$SIXTE_LIB$LD_LIBRARY_PATH"
+fi
+
+build_os=`uname`
+if [ "$build_os" == "Darwin" ]; then
+    if [ "x$DYLD_LIBRARY_PATH" = x ]; then
+	DYLD_LIBRARY_PATH="$SIXTE_LIB"
+    else
+	DYLD_LIBRARY_PATH=`echo ":$DYLD_LIBRARY_PATH:" | sed "s%:$SIXTE_LIB:%:%g" | sed "s%::*$%%"`
+	DYLD_LIBRARY_PATH="$SIXTE_LIB$DYLD_LIBRARY_PATH"
+    fi
+fi

@@ -50,3 +50,25 @@ if (${?PFILES} == 0) then
 else
     setenv PFILES "${PFILES}:${SIXTE}/share/sixte/pfiles"
 endif
+
+#
+# set LD_LIBRARY_PATH
+#
+set SIMPUT_LIB = ${SIMPUT}/lib
+
+if (${?LD_LIBRARY_PATH} == 0) then
+    setenv LD_LIBRARY_PATH ${SIMPUT_LIB}
+else
+    setenv LD_LIBRARY_PATH `echo ":${LD_LIBRARY_PATH}:" | sed "s%:${SIMPUT_LIB}:%:%g" | sed 's%::*$%%'`
+    setenv LD_LIBRARY_PATH ${SIMPUT_LIB}${LD_LIBRARY_PATH}
+endif
+
+set build_os = `uname`
+if (${build_os} == "Darwin") then
+    if (${?DYLD_LIBRARY_PATH} == 0) then
+	setenv DYLD_LIBRARY_PATH ${SIMPUT_LIB}
+    else
+	setenv DYLD_LIBRARY_PATH `echo ":${DYLD_LIBRARY_PATH}:" | sed "s%:${SIMPUT_LIB}:%:%g" | sed 's%::*$%%'`
+	setenv DYLD_LIBRARY_PATH ${SIMPUT_LIB}${DYLD_LIBRARY_PATH}
+    endif
+endif
