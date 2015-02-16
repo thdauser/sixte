@@ -56,8 +56,9 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  tesnoisespectrum.c tesproftemplates.c maskshadow.c 	\
 		  tesstreamfile.c testriggerfile.c testimg.c 		\
 		  projectedmask.c repix.c tesinitialization.c	        \
-		  comaevent.c skyimage.c
-
+		  comaevent.c skyimage.c detstruct2obj2d.c obj2d.c 	\
+		  sixtesvg.c
+		  
 ############ HEADERS #################
 
 # Define the headers that will be installed in $(includedir):
@@ -82,4 +83,6 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		pixelimpactfile.h pixelimpact.h tesdatastream.h 	\
 		tesnoisespectrum.h tesproftemplates.h maskshadow.h      \
 		tesstreamfile.h testriggerfile.h testimg.h  		\
-		projectedmask.h repix.h tesinitialization.h skyimage.h	
+		projectedmask.h repix.h tesinitialization.h skyimage.h	\
+		detstruct2obj2d.h obj2d.h sixtesvg.h
+		

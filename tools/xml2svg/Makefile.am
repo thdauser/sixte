@@ -1,0 +1,17 @@
+AM_CFLAGS =-I@top_srcdir@/libsixt
+AM_CFLAGS+=-Wall 
+
+########## DIRECTORIES ###############
+
+# Directory where to install the PIL parameter files.
+pfilesdir=$(pkgdatadir)/pfiles
+dist_pfiles_DATA=xml2svg.par
+
+############ BINARIES #################
+
+# The following line lists the programs that should be created and stored
+# in the 'bin' directory.
+bin_PROGRAMS=xml2svg
+
+xml2svg_SOURCES=xml2svg.c xml2svg.h
+xml2svg_LDADD =@top_builddir@/libsixt/libsixt.la

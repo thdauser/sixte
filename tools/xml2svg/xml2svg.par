@@ -1,0 +1,5 @@
+XMLFiles,s,q,"",,,"XML input files with detector definition (seperated by spaces)"
+SVGName,s,q,"test.svg",,,"SVG output file"
+SVGWidth,r,lq,100.0,0.0,,"Width of the output SVG in mm."
+Border,r,lq,10.0,0.0,,"Border of the output SVG in mm."
+DrawN,i,h,1024,,,"Number of single pixels to draw"
