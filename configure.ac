@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.2], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.3], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -27,10 +27,15 @@ AC_LIB_HAVE_LINKFLAGS([simput],[hdio ape hdinit hdio hdutils hdinit],[],[],[libs
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
 CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
+CFLAGS="$CFLAGS -I${prefix}/include -I$LIBSIMPUT_PREFIX/include"
+
+CPPFLAGS="$CPPCFLAGS -I${prefix}/include -I$LIBSIMPUT_PREFIX/include"
 
 # Linker Flags:
 # LDFLAGS="$LDFLAGS -g -W -Wall"
 LDFLAGS="$LDFLAGS -g -W -Wall -L${prefix}/lib -L$LIBSIMPUT_PREFIX/lib"
+
+
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).
@@ -68,9 +73,10 @@ AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
 
 #################################### 
+
 # Check for header files:
 AC_HEADER_STDC
-AC_CHECK_HEADERS([limit.h math.h stdio.h stdlib.h stdarg.h string.h])
+AC_CHECK_HEADERS([limit.h math.h stdio.h stdlib.h stdarg.h string.h simput.h fitsio.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -154,4 +160,3 @@ AC_CONFIG_FILES([Makefile
 		extlib/Utils/Makefile])
 
 AC_OUTPUT
-
