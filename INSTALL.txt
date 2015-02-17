@@ -1,19 +1,14 @@
 The installation of this package is based on the GNU autotools.
 
 If you checked out the sources directly from the repository, make sure
-that you also checked out the source code for the SIMPUT library. This
-can be achieved with the following commands:
-
- cd sixt/
- git submodule init
- git submodule update
+that you also obtained and installed SIMPUT before installing SIXTE.
 
 Before you can run the compilation, you have to create a configure
 script from the existing 'configure.ac'. For this purpose go into the
-main directory of the package (where there is this file) and run the
-'autoreconf' command belonging to the GNU autotools. (If you extraced
-the code from the .tar.gz archive, you can skip the following step and
-continue with the next paragraph.)
+main directory of the package (the location of the file you are
+currently reading) and run the 'autoreconf' command belonging to the
+GNU autotools. (If you obtained the code from the .tar.gz archive, you
+can skip the following step and continue with the next paragraph.)
 
  autoreconf --install
 
