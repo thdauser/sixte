@@ -100,7 +100,19 @@ int xml2svg_main() {
 			    par.drawn,
 			    &status);
     CHECK_STATUS_BREAK(status);
-    }    
+    }
+    // Draw coordinate system axes
+    SixteSVG_draw_line(svg, 
+		       0., worldymin, 
+		       0., worldymax, 
+		       1., "#999999", 
+		       &status);
+    SixteSVG_draw_line(svg, 
+		       worldxmin, 0., 
+		       worldxmax, 0.,
+		       1., "#999999", 
+		       &status);
+    CHECK_STATUS_BREAK(status);
     // Close SVG Objects
     SixteSVG_close(svg, &status);
     CHECK_STATUS_BREAK(status);
