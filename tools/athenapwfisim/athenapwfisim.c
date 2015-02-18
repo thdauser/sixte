@@ -26,8 +26,16 @@ int athenapwfisim_main()
   // Program parameters.
   struct Parameters par;
   
+  // Number of detector chips
+  unsigned int nchips=4;
+  
+  unsigned long ii;
+  
   // Individual sub-instruments.
-  GenInst* subinst[5]={NULL, NULL, NULL, NULL, NULL};
+  GenInst* subinst[nchips];
+  for(ii=0; ii<nchips; ii++){
+    subinst[ii]=NULL;
+  }
 
   // Attitude.
   Attitude* ac=NULL;
@@ -37,7 +45,6 @@ int athenapwfisim_main()
 
   // Catalog of input X-ray sources.
   SourceCatalog* srccat[MAX_N_SIMPUT];
-  unsigned long ii;
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     srccat[ii]=NULL;
   }
@@ -49,10 +56,16 @@ int athenapwfisim_main()
   ImpactFile* ilf=NULL;
 
   // Event list files.
-  EventFile* elf[5]={NULL, NULL, NULL, NULL, NULL};
+  EventFile* elf[nchips];
+  for(ii=0; ii<nchips; ii++){
+    elf[ii]=NULL;
+  }
 
   // Pattern list files.
-  EventFile* patf[5]={NULL, NULL, NULL, NULL, NULL};
+  EventFile* patf[nchips];
+  for(ii=0; ii<nchips; ii++){
+    patf[ii]=NULL;
+  }
 
   // Output file for progress status.
   FILE* progressfile=NULL;
@@ -63,7 +76,7 @@ int athenapwfisim_main()
 
   // Register HEATOOL
   set_toolname("athenapwfisim");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -148,7 +161,7 @@ int athenapwfisim_main()
 
     // Load the configurations of all five chips from the XML 
     // definition files.
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       // Check if a particular XML file is given for this 
       // chip. If not, use the default XML file.
       char buffer[MAXFILENAME];
@@ -157,23 +170,19 @@ int athenapwfisim_main()
       switch (ii) {
       case 0:
 	strcpy(buffer, par.XMLFile0);
-	strcpy(default_filename, "fullframe_core.xml");
+	strcpy(default_filename, "depfet_b_1l_ff_chip0.xml");
 	break;
       case 1:
 	strcpy(buffer, par.XMLFile1);
-	strcpy(default_filename, "fullframe_side0.xml");
+	strcpy(default_filename, "depfet_b_1l_ff_chip1.xml");
 	break;
       case 2:
 	strcpy(buffer, par.XMLFile2);
-	strcpy(default_filename, "fullframe_side1.xml");
+	strcpy(default_filename, "depfet_b_1l_ff_chip2.xml");
 	break;
       case 3:
 	strcpy(buffer, par.XMLFile3);
-	strcpy(default_filename, "fullframe_side2.xml");
-	break;
-      case 4:
-	strcpy(buffer, par.XMLFile4);
-	strcpy(default_filename, "fullframe_side3.xml");
+	strcpy(default_filename, "depfet_b_1l_ff_chip3.xml");
 	break;
       default:
 	break;
@@ -182,7 +191,7 @@ int athenapwfisim_main()
       strtoupper(ubuffer);
       if (0==strcmp(ubuffer, "NONE")) {
 	strcpy(buffer, SIXT_DATA_PATH);
-	strcat(buffer, "/instruments/athena/wfi/");
+	strcat(buffer, "/instruments/athena/wfi_wo_filter/");
 	strcat(buffer, default_filename);
       }
 
@@ -319,7 +328,7 @@ int athenapwfisim_main()
     }
 
     // Open the output event list files.
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       char eventlist_filename[MAXFILENAME];
       sprintf(eventlist_filename, eventlist_filename_template, ii);
       elf[ii]=openNewEventFile(eventlist_filename, 
@@ -339,7 +348,7 @@ int athenapwfisim_main()
     CHECK_STATUS_BREAK(status);
 
     // Open the output pattern list files.
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       char patternlist_filename[MAXFILENAME];
       sprintf(patternlist_filename, patternlist_filename_template, ii);
       patf[ii]=openNewEventFile(patternlist_filename, 
@@ -397,7 +406,7 @@ int athenapwfisim_main()
 	CHECK_STATUS_BREAK(status);
       }
 
-      for (ii=0; ii<5; ii++) {
+      for (ii=0; ii<nchips; ii++) {
 	// Event list file.
 	fits_update_key(elf[ii]->fptr, TDOUBLE, "RA_PNT", &ra,
 			"RA of pointing direction [deg]", &status);
@@ -430,7 +439,7 @@ int athenapwfisim_main()
 			"attitude file", &status);
       }
 
-      for (ii=0; ii<5; ii++) {
+      for (ii=0; ii<nchips; ii++) {
 	fits_update_key(elf[ii]->fptr, TSTRING, "ATTITUDE", par.Attitude,
 			"attitude file", &status);
 	fits_update_key(patf[ii]->fptr, TSTRING, "ATTITUDE", par.Attitude,
@@ -441,7 +450,7 @@ int athenapwfisim_main()
     }
 
     // Event type.
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       fits_update_key(elf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL",
 		      "event type", &status);
       CHECK_STATUS_BREAK(status);
@@ -449,7 +458,7 @@ int athenapwfisim_main()
     CHECK_STATUS_BREAK(status);  
 
     // TLMIN and TLMAX of PI column.
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       char keystr[MAXMSG];
       long value;
       sprintf(keystr, "TLMIN%d", elf[ii]->cpi);
@@ -491,7 +500,7 @@ int athenapwfisim_main()
     // Determine the total length of the time interval to
     // be simulated.
     double totalsimtime=sumGTI(gti);
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       fits_update_key(patf[ii]->fptr, TDOUBLE, "EXPOSURE", &totalsimtime,
 		      "exposure time [s]", &status);
       CHECK_STATUS_BREAK(status);
@@ -507,7 +516,7 @@ int athenapwfisim_main()
       double t1=gti->stop[gtibin];
 
       // Set the start time for the detector models.
-      for (ii=0; ii<5; ii++) {
+      for (ii=0; ii<nchips; ii++) {
 	setGenDetStartTime(subinst[ii]->det, t0);
       }
 
@@ -552,7 +561,7 @@ int athenapwfisim_main()
 	}
 
 	// Photon Detection.
-	for (ii=0; ii<5; ii++) {
+	for (ii=0; ii<nchips; ii++) {
 	  phdetGenDet(subinst[ii]->det, &imp, t1, &status);
 	  CHECK_STATUS_BREAK(status);
 	}
@@ -576,7 +585,7 @@ int athenapwfisim_main()
       // END of photon processing loop for the current interval.
 
       // Clear the detectors.
-      for (ii=0; ii<5; ii++) {
+      for (ii=0; ii<nchips; ii++) {
 	phdetGenDet(subinst[ii]->det, NULL, t1, &status);
 	CHECK_STATUS_BREAK(status);
 	long jj;
@@ -609,7 +618,7 @@ int athenapwfisim_main()
 
     // Use parallel computation via OpenMP.
 #pragma omp parallel for reduction(+:status)
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       status=EXIT_SUCCESS;
 
       // Perform a pattern analysis, only if split events are simulated.
@@ -637,7 +646,7 @@ int athenapwfisim_main()
     CHECK_STATUS_BREAK(status);
     
     // Store the GTI extension in the event files.
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       saveGTIExt(elf[ii]->fptr, "STDGTI", gti, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -647,7 +656,7 @@ int athenapwfisim_main()
     freePhotonFile(&plf, &status);
     freeImpactFile(&ilf, &status);
     CHECK_STATUS_BREAK(status);
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       freeEventFile(&elf[ii], &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -655,14 +664,14 @@ int athenapwfisim_main()
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       phproj(subinst[ii], ac, patf[ii], par.TSTART, par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
 
     // Store the GTI extension in the pattern files.
-    for (ii=0; ii<5; ii++) {
+    for (ii=0; ii<nchips; ii++) {
       saveGTIExt(patf[ii]->fptr, "STDGTI", gti, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -680,7 +689,7 @@ int athenapwfisim_main()
   // Release memory.
   freeImpactFile(&ilf, &status);
   freePhotonFile(&plf, &status);
-  for (ii=0; ii<5; ii++) {
+  for (ii=0; ii<nchips; ii++) {
     destroyGenInst(&subinst[ii], &status);
     freeEventFile(&patf[ii], &status);
     freeEventFile(&elf[ii], &status);
@@ -788,14 +797,6 @@ int athenapwfisim_getpar(struct Parameters* const par)
     return(status);
   }
   strcpy(par->XMLFile3, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XMLFile4", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file 4");
-    return(status);
-  }
-  strcpy(par->XMLFile4, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_bool("Background", &par->Background);

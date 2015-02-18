@@ -60,7 +60,6 @@ struct Parameters {
   char XMLFile1[MAXFILENAME];
   char XMLFile2[MAXFILENAME];
   char XMLFile3[MAXFILENAME];
-  char XMLFile4[MAXFILENAME];
 
   char Background;
 
