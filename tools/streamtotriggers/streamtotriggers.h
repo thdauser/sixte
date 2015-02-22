@@ -31,6 +31,7 @@
 #include "tesdatastream.h"
 #include "tesstreamfile.h"
 #include "testriggerfile.h"
+#include "tesinitialization.h"
 
 #define TOOLSUB streamtotriggers_main
 #include "headas_main.c"
@@ -57,5 +58,9 @@ struct Parameters {
 };
 
 int getpar(struct Parameters* const par);
+
+/** Copies the parameters contained in the local parameter structure into the
+    more general one*/
+void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParameters* const par);
 
 #endif /* STREAMTOTRIGGERS_H */

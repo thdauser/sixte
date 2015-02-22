@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015 Philippe Peille, IRAP
 */
 
 #ifndef TESTRIGGERFILE_H
@@ -24,37 +24,37 @@
 #include "sixt.h"
 #include "tesdatastream.h"
 #include "pixelimpactfile.h"
-
-////////////////////////////////////////////////////////////////////////
-// Constants.
-////////////////////////////////////////////////////////////////////////
-
-/** Maximum number of impacts per trigger. */
-#define MAXIMPACTNUMBER (50000)
+#include "tesrecord.h"
+#include "optimalfilters.h"
+#include "tesinitialization.h"
 
 
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
 ////////////////////////////////////////////////////////////////////////
 
+typedef struct{
+	/** Pointer to the FITS file. */
+	fitsfile* fptr;
 
-typedef struct {
-  /** Pointer to the FITS file. */
-  fitsfile* fptr;
-  
-  /** Total number of rows in the FITS file. */
-  long nrows;
+	/** Total number of rows in the FITS file. */
+	long nrows;
 
-  /** Number of the current row in the FITS file. The numbering
+	/** Number of the current row in the FITS file. The numbering
       starts at 1 for the first line. If row is equal to 0, no row
       has been read or written so far. */
-  long row;
+	long row;
 
-  /** Column numbers for time, trigger, impact, and pixID columns */
-  int timeCol,trigCol,ph_idCol,pixIDCol;
+	/** Number of ADC values per record */
+	int trigger_size;
 
-} TesTriggerFile;
+	/** Time interval between two ADC values in the file */
+	double delta_t;
 
+	/** Column numbers for time, trigger, impact, and pixID columns */
+	int timeCol,trigCol,ph_idCol,pixIDCol;
+
+}TesTriggerFile;
 
 ////////////////////////////////////////////////////////////////////////
 // Function declarations.
@@ -63,7 +63,7 @@ typedef struct {
 
 /** Constructor. Returns a pointer to an empty TesTriggerFile data
     structure. */
-TesTriggerFile* newTesTriggerFile(int* const status);
+TesTriggerFile* newTesTriggerFile(int triggerSize,int* const status);
 
 /** Destructor. */
 void freeTesTriggerFile(TesTriggerFile** const file, int* const status);
@@ -87,17 +87,24 @@ TesTriggerFile*  opennewTesTriggerFile(const char* const filename,
 				  const char clobber,
 				  int* const status);
 
-/** Writes the ADC curves in the TES trigger format*/
-void writeTriggerFileWithImpact(TESDataStream* const stream,
-				char* const tesTriggerFilename,char* const telescop,
-				char* const instrume,char* const filter,
-				char* const ancrfile,char* const respfile,
-				char* const xmlfile,char* const impactlist,
-				const double mjdref,const double timezero,
-				double tstart,double tstop,const int triggerSize,
-				const int preBufferSize,const double sampleFreq,
-				const char clobber,const int pixlow,const int Npix,
-				float monoen,int* const status);
+/** Create and open a new TesTriggerFile. */
+TesTriggerFile* openexistingTesTriggerFile(const char* const filename,int* const status);
 
+/** Save pixels, NES/NET and monoen keywords to the given FITS file */
+void saveTriggerKeywords(fitsfile* fptr,int firstpix,int lastpix,int numberpix,float monoen,
+		int* const numberSimulated,int* const numberTrigger,int* const status);
+
+/** Writes the ADC curves in the TES trigger format*/
+void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
+		TESInitStruct* init,float monoen,const char write_file,const char reconstruct,
+		ReconstructInit* reconstruct_init,char* const tes_event_file,int event_list_size,
+		int* const status);
+
+
+/** Populates a TesRecord structure with the next record */
+int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status);
+
+/** Writes a record to a file */
+void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status);
 
 #endif /* TESTRIGGERFILE_H */

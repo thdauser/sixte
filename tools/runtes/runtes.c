@@ -23,55 +23,56 @@
 ////////////////////////////////////
 /** Main procedure. */
 int runtes_main() {
-  
+
   // Containing all programm parameters read by PIL.
   struct Parameters partmp;
   TESGeneralParameters par;
-  
+
   // Error status.
   int status=EXIT_SUCCESS;
 
-  int Nstreams=0;  
+  int Nstreams=0;
   TESInitStruct* init=NULL;
   TESFitsStream** fitsstream=NULL;
   TESDataStream* stream=NULL;
   fitsfile *ofptr=NULL;
-    
+  ReconstructInit* reconstruct_init = NULL;
+
   int ismonoc=0;
   float monoen=0.;
-  
+
   int ii;
-  
+
   // Register HEATOOL:
   set_toolname("runtes");
   set_toolversion("0.05");
-  
-  do { // Beginning of the ERROR handling loop (will at 
+
+  do { // Beginning of the ERROR handling loop (will at
        // most be run once).
-       
+
     headas_chat(3, "initialize ...\n");
     // Get program parameters.
     status=getpar(&partmp);
     CHECK_STATUS_BREAK(status);
-       
+
     // Copy parameters in general parameters structure
     copyParams2GeneralStruct(partmp,&par);
-    
+
     // Initialization
     init = newInitStruct(&status);
     CHECK_STATUS_BREAK(status);
     tesinitialization(init,&par,&status);
     CHECK_STATUS_BREAK(status);
-  
-    // Generate the data      
+
+    // Generate the data
     stream=newTESDataStream(&status);
     CHECK_STATUS_BREAK(status);
-    
-    getTESDataStream(stream, 
-		     init->impfile, 
+
+    getTESDataStream(stream,
+		     init->impfile,
 		     init->profiles,
 		     init->det,
-		     init->tstart, 
+		     init->tstart,
 		     init->tstop,
 		     init->det->npix,
 		     par.Nactive,
@@ -82,7 +83,7 @@ int runtes_main() {
 		     par.seed,
 		     &status);
     CHECK_STATUS_BREAK(status);
-    
+
     //Write Stream file if asked
     if (par.writeStreamFile) {
       // Get output data arrays
@@ -97,7 +98,7 @@ int runtes_main() {
 	fitsstream[ii]=newTESFitsStream(&status);
 	CHECK_STATUS_BREAK(status);
       }
-      createTESFitsStreamFile(&ofptr, 
+      createTESFitsStreamFile(&ofptr,
 			      par.streamname,
 			      init->telescop,
 			      init->instrume,
@@ -110,30 +111,30 @@ int runtes_main() {
 			      init->timezero,
 			      init->tstart,
 			      init->tstop,
-			      par.clobber, 
+			      par.clobber,
 			      &status);
       CHECK_STATUS_BREAK(status);
-  
+
       // Write the output file
-    
+
       int restpix=par.Nactive;
       for(ii=0; ii<Nstreams; ii++){
 	// print extension name
 	sprintf(fitsstream[ii]->name, "ADC%03d", ii+1);
-      
+
 	// calculate number of pixels in the extension
 	int extpix=TESFITSMAXPIX;
 	if(extpix>restpix){
 	  extpix=restpix;
 	}
-      
+
 	// allocate memory for fits stream
-	allocateTESFitsStream(fitsstream[ii], 
-			      stream->Ntime, 
-			      extpix, 
+	allocateTESFitsStream(fitsstream[ii],
+			      stream->Ntime,
+			      extpix,
 			      &status);
 	CHECK_STATUS_BREAK(status);
-      
+
 	// transfer values into fits stream
 	int pp, tt, ll, id;
 	// time array
@@ -162,9 +163,9 @@ int runtes_main() {
 	  }
 	}
 	CHECK_STATUS_BREAK(status);
-  
+
 	double timeres=1./init->det->SampleFreq;
-	writeTESFitsStream(ofptr, 
+	writeTESFitsStream(ofptr,
 			   fitsstream[ii],
 			   init->tstart,
 			   init->tstop,
@@ -177,36 +178,41 @@ int runtes_main() {
 	restpix=restpix-TESFITSMAXPIX;
       }
       CHECK_STATUS_BREAK(status);
-    
+
       fits_close_file(ofptr, &status);
       CHECK_STATUS_BREAK(status);
     }
 
+    //Initialize reconstruction if necessary
+    if (partmp.Reconstruct){
+		reconstruct_init = newReconstructInit(&status);
+		CHECK_STATUS_BREAK(status);
+		initializeReconstruction(reconstruct_init,partmp.OptimalFilterFile,partmp.PulseLength,
+				partmp.PulseTemplateFile,partmp.Threshold,partmp.Calfac,&status);
+		CHECK_STATUS_BREAK(status);
+    }
 
     //Trigerring part
-    writeTriggerFileWithImpact(stream,par.tesTriggerFile,init->telescop,
-			       init->instrume,init->filter,init->ancrfile,init->respfile,
-			       par.XMLFile,par.PixImpList,
-			       init->mjdref,init->timezero,init->tstart,init->tstop,
-			       par.triggerSize,par.preBufferSize,
-			       init->det->SampleFreq,par.clobber,par.nlo,
-			       par.nhi-par.nlo+1,monoen,&status);
+    triggerWithImpact(stream,&par,init,monoen,partmp.WriteRecordFile,partmp.Reconstruct,
+    		reconstruct_init,partmp.TesEventFile,partmp.EventListSize,&status);
+
   } while(0); // END of the error handling loop.
-  
+
   freeTESInitStruct(&init,&status);
+  freeReconstructInit(reconstruct_init);
   destroyTESDataStream(stream);
   for(ii=0; ii<Nstreams; ii++){
     destroyTESFitsStream(fitsstream[ii]);
   }
   free(fitsstream);
-  
+
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
   } else {
     return(EXIT_FAILURE);
   }
-  
+
 }
 
 int getpar(struct Parameters* const par)
@@ -215,7 +221,7 @@ int getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -223,7 +229,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pixel impact list");
     return(status);
-  } 
+  }
   strcpy(par->PixImpList, sbuffer);
   free(sbuffer);
 
@@ -231,7 +237,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -239,18 +245,32 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the Stream file");
     return(status);
-  } 
+  }
   strcpy(par->streamname, sbuffer);
-  free(sbuffer); 
-
-  status=ape_trad_query_string("TesTriggerfile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the TES Trigger output file");
-    return(status);
-  } 
-  strcpy(par->tesTriggerFile, sbuffer);
   free(sbuffer);
-  
+
+  status=ape_trad_query_bool("Reconstruct", &par->Reconstruct);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the history parameter");
+    return(status);
+  }
+
+  status=ape_trad_query_bool("WriteRecordFile", &par->WriteRecordFile);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the history parameter");
+    return(status);
+  }
+
+  if (par->WriteRecordFile){
+	  status=ape_trad_query_string("TesTriggerfile", &sbuffer);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the name of the TES Trigger output file");
+		  return(status);
+	  }
+	  strcpy(par->tesTriggerFile, sbuffer);
+	  free(sbuffer);
+  }
+
   status=ape_trad_query_int("TriggerSize", &par->triggerSize);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the TriggerSize parameter");
@@ -262,28 +282,83 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the PreBufferSize parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_bool("WriteStreamFile", &par->writeStreamFile);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the WriteStreamFile parameter");
     return(status);
   }
 
-  status=ape_trad_query_bool("clobber", &par->clobber);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the clobber parameter");
-    return(status);
-  }
-  
   status=ape_trad_query_double("tstart", &par->tstart);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the tstart parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("tstop", &par->tstop);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the tstop parameter");
+    return(status);
+  }
+
+  if (par->Reconstruct) {
+	  status=ape_trad_query_string("TesEventFile", &sbuffer);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the name of the event file");
+		  return(status);
+	  }
+	  strcpy(par->TesEventFile, sbuffer);
+	  free(sbuffer);
+
+	  status=ape_trad_query_string("OptimalFilterFile", &sbuffer);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the name of the optimal filter file");
+		  return(status);
+	  }
+	  strcpy(par->OptimalFilterFile, sbuffer);
+	  free(sbuffer);
+
+	  status=ape_trad_query_string("PulseTemplateFile", &sbuffer);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the name of the pulse template file");
+		  return(status);
+	  }
+	  strcpy(par->PulseTemplateFile, sbuffer);
+	  free(sbuffer);
+
+	  status=ape_trad_query_int("PulseLength", &par->PulseLength);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the PulseLength parameter");
+		  return(status);
+	  }
+
+	  status=ape_trad_query_double("Threshold", &par->Threshold);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the Threshold parameter");
+		  return(status);
+	  }
+
+	  status=ape_trad_query_double("Calfac", &par->Calfac);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the Calfac parameter");
+		  return(status);
+	  }
+
+	  status=ape_trad_query_int("EventListSize", &par->EventListSize);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the EventListSize parameter");
+		  return(status);
+	  }
+  }
+
+  if (par->WriteRecordFile==0 && par->Reconstruct==0){
+	  SIXT_ERROR("You have to at least choose to save the records or to reconstruct the events. Aborting simulation");
+	  return(EXIT_FAILURE);
+  }
+
+  status=ape_trad_query_bool("clobber", &par->clobber);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
 
@@ -307,7 +382,7 @@ int getpar(struct Parameters* const par)
   }else{
     par->seed=(unsigned long int)seed;
   }
-  
+
   char *pix=NULL;
   status=ape_trad_query_string("pixels", &pix);
   if (EXIT_SUCCESS!=status) {
@@ -349,7 +424,7 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   strcpy(par->XMLFile,partmp.XMLFile);
   strcpy(par->streamname,partmp.streamname);
   strcpy(par->tesTriggerFile,partmp.tesTriggerFile);
-  
+
   strcpy(par->activePixels,partmp.activePixels);
   par->Nactive=partmp.Nactive;
   par->Npix=partmp.Npix;
@@ -360,11 +435,11 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
 
   par->tstart=partmp.tstart;
   par->tstop=partmp.tstop;
-  
+
   par->writeStreamFile=partmp.writeStreamFile;
   par->clobber=partmp.clobber;
   par->history=partmp.history;
 
   par->seed=partmp.seed;
 }
- 
+

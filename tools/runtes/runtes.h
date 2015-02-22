@@ -32,6 +32,7 @@
 #include "tesdatastream.h"
 #include "tesinitialization.h"
 #include "testriggerfile.h"
+#include "optimalfilters.h"
 
 #define TOOLSUB runtes_main
 #include "headas_main.c"
@@ -41,6 +42,9 @@ struct Parameters {
   char XMLFile[MAXFILENAME];
   char streamname[MAXFILENAME];
   char tesTriggerFile[MAXFILENAME];
+  char TesEventFile[MAXFILENAME];
+  char PulseTemplateFile[MAXFILENAME];
+  char OptimalFilterFile[MAXFILENAME];
 
   char activePixels[9];
   int Nactive;
@@ -49,11 +53,17 @@ struct Parameters {
   int nhi;
   int triggerSize;
   int preBufferSize;
+  int PulseLength;
+  int EventListSize;
 
   double tstart;
   double tstop;
+  double Threshold;
+  double Calfac;
   
   char writeStreamFile;
+  char Reconstruct;
+  char WriteRecordFile;
   char clobber;
   char history;
   

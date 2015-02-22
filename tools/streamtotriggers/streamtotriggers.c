@@ -26,6 +26,7 @@
 int streamtotriggers_main() {
   // Containing all programm parameters read by PIL.
   struct Parameters par;
+  TESGeneralParameters generic_par;
   
   // Error status.
   int status=EXIT_SUCCESS;
@@ -34,17 +35,8 @@ int streamtotriggers_main() {
   TESDataStream* stream=NULL;
   AdvDet *det=NULL;
   TesStreamFile* tesfile=NULL;
+  TESInitStruct* init=NULL;
 
-  // Keywords
-  char telescop[MAXMSG];
-  char instrume[MAXMSG];
-  char filter[MAXMSG];
-  char ancrfile[MAXMSG];
-  char respfile[MAXMSG];
-  double mjdref;
-  double timezero;
-  double tstart;
-  double tstop;
   float monoen;
   
   int ii;
@@ -87,6 +79,10 @@ int streamtotriggers_main() {
       CHECK_STATUS_BREAK(status);
     }
     
+    // Initialization structure necessary for trigger step
+    init = newInitStruct(&status);
+    CHECK_STATUS_BREAK(status);
+
     //Open TesStream File
     tesfile = openTesStreamFile(par.streamname,par.nlo,par.nhi,READONLY, &status);
     CHECK_STATUS_BREAK(status);
@@ -95,15 +91,15 @@ int streamtotriggers_main() {
     // Read keywords from tes file
     if (fits_movabs_hdu(tesfile->fptr,1, &hdu_type, &status)) break;
     sixt_read_fits_stdkeywords(tesfile->fptr,
-			       telescop,
-			       instrume,
-			       filter,
-			       ancrfile,
-			       respfile,
-			       &mjdref,
-			       &timezero,
-			       &tstart,
-			       &tstop, 
+			       init->telescop,
+			       init->instrume,
+			       init->filter,
+			       init->ancrfile,
+			       init->respfile,
+			       &init->mjdref,
+			       &init->timezero,
+			       &init->tstart,
+			       &init->tstop,
 			       &status);
     CHECK_STATUS_BREAK(status);
 
@@ -120,51 +116,46 @@ int streamtotriggers_main() {
 
 
     double tstart_stream;
-    printf("TES stream file reaches from %lfs-%lfs .\n", tstart, tstop);
-    tstart_stream = tstart;
-    if(tstart>par.tstart){
-      if(tstart>par.tstop){
+    printf("TES stream file reaches from %lfs-%lfs .\n", init->tstart, init->tstop);
+    tstart_stream = init->tstart;
+    if(init->tstart>par.tstart){
+      if(init->tstart>par.tstop){
 	SIXT_ERROR("Program parameter tstop smaller than tstart in TES stream file -> abort");
 	status=EXIT_FAILURE;
 	CHECK_STATUS_BREAK(status);
       }
       puts("Program parameter tstart smaller as in TES stream file.");    
     }else{
-      tstart=par.tstart;
+      init->tstart=par.tstart;
     }
-    if(tstop<par.tstop){
-      if(tstop<par.tstart){
+    if(init->tstop<par.tstop){
+      if(init->tstop<par.tstart){
 	SIXT_ERROR("Program parameter tstart larger than tstop in TES stream file -> abort");
 	status=EXIT_FAILURE;
 	CHECK_STATUS_BREAK(status);
       }
       puts("Program parameter tstop larger as in TES stream file.");
     }else{
-      tstop=par.tstop;
+      init->tstop=par.tstop;
     }
-    printf("Retrieving TES Stream from %lfs-%lfs .\n", tstart, tstop);
+    printf("Retrieving TES Stream from %lfs-%lfs .\n", init->tstart, init->tstop);
 
     //Create TESDataStream from file
     stream = newTESDataStream(&status);
     CHECK_STATUS_BREAK(status);
-    stream = generateTESDataStreamFromFile(stream,tesfile,tstart_stream,tstart,tstop,
+    stream = generateTESDataStreamFromFile(stream,tesfile,tstart_stream,init->tstart,init->tstop,
 					   det->SampleFreq,&status);
     CHECK_STATUS_BREAK(status);
 
-
-    writeTriggerFileWithImpact(stream,par.tesTriggerFile,telescop,
-			       instrume,filter,ancrfile,respfile,
-			       par.XMLFile,par.PixImpList,
-			       mjdref,timezero,tstart,tstop,
-			       par.triggerSize,par.preBufferSize,
-			       det->SampleFreq,par.clobber,par.nlo,
-			       tesfile->Npix,monoen,&status);
-    
+    // Copy parameters in general parameters structure
+    copyParams2GeneralStruct(par,&generic_par);
+    triggerWithImpact(stream,&generic_par,init,monoen,1,0,NULL,"dummy",0,&status);
 
   } while(0); // END of the error handling loop.
 
   //Free memory
   destroyAdvDet(&det);
+  freeTESInitStruct(&init,&status);
   destroyTESDataStream(stream);
   freeTesStreamFile(&tesfile,&status);
 
@@ -287,4 +278,26 @@ int getpar(struct Parameters* const par)
   return(status);
 }
 
+/** Copies the parameters contained in the local parameter structure into the
+    more general one*/
+void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParameters* const par){
+  strcpy(par->PixImpList,partmp.PixImpList);
+  strcpy(par->XMLFile,partmp.XMLFile);
+  strcpy(par->streamname,partmp.streamname);
+  strcpy(par->tesTriggerFile,partmp.tesTriggerFile);
+
+  strcpy(par->activePixels,partmp.activePixels);
+  par->Nactive=partmp.Nactive;
+  par->Npix=partmp.Npix;
+  par->nlo=partmp.nlo;
+  par->nhi=partmp.nhi;
+  par->triggerSize=partmp.triggerSize;
+  par->preBufferSize=partmp.preBufferSize;
+
+  par->tstart=partmp.tstart;
+  par->tstop=partmp.tstop;
+
+  par->clobber=partmp.clobber;
+  par->history=partmp.history;
+}
 

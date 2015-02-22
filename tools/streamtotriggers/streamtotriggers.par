@@ -3,7 +3,7 @@ XMLFile,s,h,"XIFU.xml",,,"XML input file with detector definition (overwrites Mi
 tstart,r,h,0.,,,"Start time of simulation"
 tstop,r,h,0.01,,,"Stop time of simulation"
 Streamfile,s,lq,"Stream.fits",,,"File name of TES stream file"
-TesTriggerfile,s,lq,"TesTriggers",,,"File name of output FITS stream"
+TesTriggerfile,s,lq,"TesTriggers",,,"File name of output TES record file"
 TriggerSize,i,h,10000,,,"Number of samples per trigger"
 PreBufferSize,i,h,1000,,,"Number of samples before the impact in the trigger"
 pixels,s,h,1,,,"IDs of the pixels to be read. Either 'all' or one ID or a range with 'IDStart-IDStop'"
