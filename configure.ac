@@ -156,6 +156,7 @@ AC_CONFIG_FILES([Makefile
 		tools/gennoisespec/Makefile
 		tools/tesconstpileup/Makefile
 		tools/xml2svg/Makefile
+		tools/tesreconstruction/Makefile
 		extlib/Makefile
 		extlib/Utils/Makefile])
 
