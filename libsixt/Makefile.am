@@ -57,7 +57,7 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  tesstreamfile.c testriggerfile.c testimg.c 		\
 		  projectedmask.c repix.c tesinitialization.c	        \
 		  comaevent.c skyimage.c detstruct2obj2d.c obj2d.c 	\
-		  sixtesvg.c
+		  sixtesvg.c tesrecord.c
 		  
 ############ HEADERS #################
 
@@ -84,5 +84,4 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		tesnoisespectrum.h tesproftemplates.h maskshadow.h      \
 		tesstreamfile.h testriggerfile.h testimg.h  		\
 		projectedmask.h repix.h tesinitialization.h skyimage.h	\
-		detstruct2obj2d.h obj2d.h sixtesvg.h
-		
+		detstruct2obj2d.h obj2d.h sixtesvg.h tesrecord.h
