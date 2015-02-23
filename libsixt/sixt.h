@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <expat.h>
+#include <stdint.h>
 
 #ifdef _OPENMP
 #include <omp.h>
