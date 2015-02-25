@@ -18,15 +18,8 @@
    Copyright 2007-2014 Christian Schmid, FAU
 */
 
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
-
 #include "eventlist.h"
-
+#include "sixt.h"
 
 int openEventList(EventList* ef, char* filename, int access_mode)
 {

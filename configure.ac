@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.4], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.5], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -27,15 +27,10 @@ AC_LIB_HAVE_LINKFLAGS([simput],[hdio ape hdinit hdio hdutils hdinit],[],[],[libs
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
 CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
-CFLAGS="$CFLAGS -I${prefix}/include -I$LIBSIMPUT_PREFIX/include"
-
 CPPFLAGS="$CPPCFLAGS -I${prefix}/include -I$LIBSIMPUT_PREFIX/include"
 
 # Linker Flags:
-# LDFLAGS="$LDFLAGS -g -W -Wall"
 LDFLAGS="$LDFLAGS -g -W -Wall -L${prefix}/lib -L$LIBSIMPUT_PREFIX/lib"
-
-
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).
@@ -99,7 +94,7 @@ AC_SEARCH_LIBS([freeRMF], [simput], [], [AC_MSG_ERROR([ libsimput not found! spe
 # that is filled with definitions from this script.
 # The 'config.h' contains for example the name of the package and can be
 # included in the programm sources.
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADER([sixteconfig.h])
 
 # Create the following Makefiles (including subdirectories).
 # A Makefile that is not listed here will not be created by 'automake'!

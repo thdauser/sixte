@@ -21,11 +21,7 @@
 #ifndef SIXT_H
 #define SIXT_H 1
 
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
+#include <sixteconfig.h>
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,4 @@
-AM_CFLAGS =-I@includedir@
-AM_CFLAGS +=-I@top_srcdir@/libsixt
-AM_CFLAGS+=-Wall 
+AM_CPPFLAGS =-I@top_srcdir@/libsixt
 
 ########## DIRECTORIES ##############
 
@@ -8,7 +6,7 @@ AM_CFLAGS+=-Wall
 pfilesdir=$(pkgdatadir)/pfiles
 dist_pfiles_DATA=makespec.par
 
-AM_CFLAGS+=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
+AM_CFLAGS=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 ############ BINARIES #################
 

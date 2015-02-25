@@ -12,6 +12,8 @@ autom4te.cache
 configure
 config.h
 config.h.in
+sixteconfig.h
+sixteconfig.h.in
 config.log
 config.status
 config.guess

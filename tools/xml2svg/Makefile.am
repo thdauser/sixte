@@ -1,5 +1,5 @@
-AM_CFLAGS =-I@top_srcdir@/libsixt
-AM_CFLAGS+=-Wall 
+AM_CPPFLAGS =-I@top_srcdir@/libsixt
+ 
 
 ########## DIRECTORIES ###############
 

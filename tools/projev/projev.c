@@ -18,13 +18,6 @@
    Copyright 2007-2014 Christian Schmid, FAU
 */
 
-#if HAVE_CONFIG_H
-#include <config.h>
-#else
-#error "Do not compile outside Autotools!"
-#endif
-
-
 #include "sixt.h"
 #include "attitude.h"
 #include "eventfile.h"

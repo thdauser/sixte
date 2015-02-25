@@ -1,6 +1,5 @@
-AM_CXXFLAGS =-I@top_srcdir@/libsixt
-AM_CXXFLAGS+=-I@top_srcdir@/extlib/Utils
-AM_CXXFLAGS+=-Wall 
+AM_CPPFLAGS =-I@top_srcdir@/libsixt
+AM_CPPFLAGS+=-I@top_srcdir@/extlib/Utils
 
 ########## DIRECTORIES ###############
 
