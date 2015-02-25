@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.5], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.6], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -17,7 +17,14 @@ AM_PROG_AR
 
 AC_PROG_LIBTOOL
 
-AC_LIB_HAVE_LINKFLAGS([simput],[hdio ape hdinit hdio hdutils hdinit],[],[],[libsimput not found! specify path with --with-libsimput-prefix])
+# find SIMPUT library
+AC_ARG_WITH(simput,
+	[AC_HELP_STRING([--with-simput=<SIMPUT path>],
+	[Provide an alternative path to the SIMPUT software])],
+	simput_dir=$withval,
+	simput_dir=${prefix}
+)  
+
 
 # Compiler Flags:
 # "-g -W -Wall -O0" for debugging
@@ -27,10 +34,10 @@ AC_LIB_HAVE_LINKFLAGS([simput],[hdio ape hdinit hdio hdutils hdinit],[],[],[libs
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
 CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
-CPPFLAGS="$CPPCFLAGS -I${prefix}/include -I$LIBSIMPUT_PREFIX/include"
+CPPFLAGS="$CPPCFLAGS -I$simput_dir/include"
 
 # Linker Flags:
-LDFLAGS="$LDFLAGS -g -W -Wall -L${prefix}/lib -L$LIBSIMPUT_PREFIX/lib"
+LDFLAGS="$LDFLAGS -g -W -Wall -L$simput_dir/lib"
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).
