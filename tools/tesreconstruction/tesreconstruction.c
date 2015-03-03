@@ -89,12 +89,13 @@ int tesreconstruction_main() {
     ReconstructInit* reconstruct_init = newReconstructInit(&status);
     CHECK_STATUS_BREAK(status);
     initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
-    		par.PulseTemplateFile,par.Threshold,par.Calfac,&status);
+    		par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
+    		par.DerivateExclusion,par.SaturationValue,&status);
     CHECK_STATUS_BREAK(status);
 
     // Build up TesRecord to read the file
     TesRecord* record = newTesRecord(&status);
-    allocateTesRecord(record,record_file->trigger_size,&status);
+    allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
     CHECK_STATUS_BREAK(status);
 
     //Build up TesEventList to recover the results of the reconstruction
@@ -105,9 +106,8 @@ int tesreconstruction_main() {
 
     // Iterate of records and do the reconstruction
     while(getNextRecord(record_file,record,&status)){
-    	reconstructRecord(record,event_list,reconstruct_init,&status);
+    	reconstructRecord(record,event_list,reconstruct_init,0,&status);
     	saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
-
     	//Reinitialize event list
     	event_list->index=0;
     }
@@ -196,6 +196,24 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_int("EventListSize", &par->EventListSize);
   if (EXIT_SUCCESS!=status) {
 	  SIXT_ERROR("failed reading the EventListSize parameter");
+	  return(status);
+  }
+
+  status=ape_trad_query_int("NormalExclusion", &par->NormalExclusion);
+  if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("failed reading the NormalExclusion parameter");
+	  return(status);
+  }
+
+  status=ape_trad_query_int("DerivateExclusion", &par->DerivateExclusion);
+  if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("failed reading the DerivateExclusion parameter");
+	  return(status);
+  }
+
+  status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
+  if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("failed reading the SaturationValue parameter");
 	  return(status);
   }
 

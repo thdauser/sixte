@@ -55,15 +55,19 @@ struct Parameters {
   int preBufferSize;
   int PulseLength;
   int EventListSize;
+  int NormalExclusion;
+  int DerivateExclusion;
 
   double tstart;
   double tstop;
   double Threshold;
   double Calfac;
+  double SaturationValue;
   
   char writeStreamFile;
   char Reconstruct;
   char WriteRecordFile;
+  char Identify;
   char clobber;
   char history;
   

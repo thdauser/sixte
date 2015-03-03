@@ -35,6 +35,7 @@ TesEventList* newTesEventList(int* const status){
 	event_list->energies=NULL;
 	event_list->grades1=NULL;
 	event_list->grades2=NULL;
+	event_list->ph_ids=NULL;
 
 	// Initialize values
 	event_list->size=0;
@@ -52,13 +53,14 @@ void freeTesEventList(TesEventList* event_list){
 		free(event_list->energies);
 		free(event_list->grades1);
 		free(event_list->grades2);
+		free(event_list->ph_ids);
 		free(event_list);
 		event_list=NULL;
 	}
 }
 
 /** Allocates memory for a TesEventList structure for the triggering stage:
- *  only event_index and pulse_height */
+ *  only event_index, pulse_height */
 void allocateTesEventListTrigger(TesEventList* event_list,int size,int* const status){
 	event_list->event_indexes = malloc(size*sizeof*(event_list->event_indexes));
 	if (NULL == event_list->event_indexes){
@@ -73,31 +75,34 @@ void allocateTesEventListTrigger(TesEventList* event_list,int size,int* const st
 		SIXT_ERROR("memory allocation for pulse_height array in TesEventList failed");
 		CHECK_STATUS_VOID(*status);
 	}
+
+	event_list->grades1 = malloc(size*sizeof*(event_list->grades1));
+	if (NULL == event_list->grades1){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("memory allocation for grade1 array in TesEventList failed");
+		CHECK_STATUS_VOID(*status);
+	}
+
 	event_list->size = size;
 }
 
 /** Allocates memory for the energy, grade1, and grade2 arrays according to
  *  current size */
-void allocateWholeTesEventList(TesEventList* event_list,int* const status){
+void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_ph,int* const status){
 	//Only allocate if necessary
 	if (event_list->size_energy < event_list->size) {
 		//Free previous lists if they were already used
 		if (NULL != event_list->energies) {
 			free(event_list->energies);
-			free(event_list->grades1);
 			free(event_list->grades2);
+			if(NULL!= event_list->ph_ids){
+				free(event_list->ph_ids);
+			}
 		}
 		event_list->energies = malloc(event_list->size*sizeof*(event_list->energies));
 		if (NULL == event_list->energies){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
-			CHECK_STATUS_VOID(*status);
-		}
-
-		event_list->grades1 = malloc(event_list->size*sizeof*(event_list->grades1));
-		if (NULL == event_list->grades1){
-			*status=EXIT_FAILURE;
-			SIXT_ERROR("memory allocation for grade1 array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
 
@@ -107,46 +112,58 @@ void allocateWholeTesEventList(TesEventList* event_list,int* const status){
 			SIXT_ERROR("memory allocation for grade2 array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
+
+		if (allocate_ph){
+			event_list->ph_ids = malloc(event_list->size*sizeof*(event_list->ph_ids));
+			if (NULL == event_list->ph_ids){
+				*status=EXIT_FAILURE;
+				SIXT_ERROR("memory allocation for ph_ids array in TesEventList failed");
+				CHECK_STATUS_VOID(*status);
+			}
+		}
+
 		event_list->size_energy = event_list->size;
 	}
 }
 
 /** Appends the index and pulse_height lists to the list */
-void addEventToList(TesEventList* event_list,int index,double pulse_height,int* const status) {
+void addEventToList(TesEventList* event_list,int index,double pulse_height,int grade1,int* const status) {
 	//If the list is not big enough, increase size
 	if (event_list->index >= event_list->size) {
+		//Increase size value
+		event_list->size = event_list->size * 2;
+
 		//Allocate new arrays
-		int * new_event_index_array = malloc((2*event_list->size)*sizeof(*new_event_index_array));
-		if (NULL == new_event_index_array){
+		int * new_event_index_array = realloc(event_list->event_indexes,(event_list->size)*sizeof(*(event_list->event_indexes)));
+		if (!new_event_index_array){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation during size update of TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
-		double * new_pulse_height_array = malloc((2*event_list->size)*sizeof(*new_pulse_height_array));
-		if (NULL == new_pulse_height_array){
+		double * new_pulse_height_array = realloc(event_list->pulse_heights,(event_list->size)*sizeof(*(event_list->pulse_heights)));
+		if (!new_pulse_height_array){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation during size update of TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
-
-		//Copy previous values
-		memcpy(new_event_index_array,event_list->event_indexes,event_list->index*sizeof(int));
-		memcpy(new_pulse_height_array,event_list->pulse_heights,event_list->index*sizeof(double));
-
-		//Free old arrays
-		free(event_list->event_indexes);
-		free(event_list->pulse_heights);
+		int * new_grades1 = realloc(event_list->grades1,(event_list->size)*sizeof(*(event_list->grades1)));
+		if (!new_grades1){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation during size update of TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
 
 		//Assign Struct arrays to the new ones
 		event_list->event_indexes = new_event_index_array;
 		event_list->pulse_heights = new_pulse_height_array;
-
-		//Increase size value
-		event_list->size = event_list->size * 2;
+		event_list->grades1 = new_grades1;
 	}
 	//Add data to lists
 	event_list->event_indexes[event_list->index] = index;
 	event_list->pulse_heights[event_list->index] = pulse_height;
+	event_list->grades1[event_list->index] = grade1;
+
+
 	event_list->index++;
 }
 
@@ -171,6 +188,7 @@ TesEventFile* newTesEventFile(int* const status){
 	file->grade1Col =3;
 	file->grade2Col =4;
 	file->pixIDCol  =5;
+	file->phIDCol   =6;
 
 	return(file);
 }
@@ -178,13 +196,6 @@ TesEventFile* newTesEventFile(int* const status){
 /** TesEventFile Destructor. */
 void freeTesEventFile(TesEventFile* file, int* const status){
 	if (NULL!=file) {
-		file->row  	      =0;
-		file->timeCol     =0;
-		file->energyCol   =0;
-		file->grade1Col   =0;
-		file->grade2Col   =0;
-		file->pixIDCol    =0;
-
 		if (NULL!=file->fptr) {
 			fits_close_file(file->fptr, status);
 			headas_chat(5, "closed TesEventFile list file");
@@ -251,13 +262,13 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 	int tlen=9;
 
-	char *ttype[5];
-	char *tform[5];
-	char *tunit[5];
+	char *ttype[6];
+	char *tform[6];
+	char *tunit[6];
 
 	int ii;
 
-	for(ii=0; ii<5; ii++){
+	for(ii=0; ii<6; ii++){
 		ttype[ii]=(char*)malloc(tlen*sizeof(char));
 		if(ttype[ii]==NULL){
 			*status=EXIT_FAILURE;
@@ -301,21 +312,27 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	sprintf(tunit[3], "");
 	CHECK_STATUS_RET(*status,file);
 
-	//Create five column PIXID
+	//Create fifth column PIXID
 	sprintf(ttype[4], "PIXID");
 	sprintf(tform[4], "1J");
 	sprintf(tunit[4], "");
 	CHECK_STATUS_RET(*status,file);
 
+	//Create sixth column PH_ID
+	sprintf(ttype[5], "PH_ID");
+	sprintf(tform[5], "1J");
+	sprintf(tunit[5], "");
+	CHECK_STATUS_RET(*status,file);
+
 	char extName[9];
 	sprintf(extName,"EVENTS");
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 5,
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 6,
 			ttype, tform, tunit,extName, status);
 	//Add keywords to other extension
 	CHECK_STATUS_RET(*status,file);
 
 	//Free memory
-	for(ii=0; ii<5; ii++){
+	for(ii=0; ii<6; ii++){
 		free(ttype[ii]);
 		ttype[ii]=NULL;
 		free(tform[ii]);
@@ -358,6 +375,13 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 	fits_write_col(file->fptr, TINT, file->grade2Col,
 					file->row, 1, event_list->index, event_list->grades2, status);
 	CHECK_STATUS_VOID(*status);
+
+	//If PH_ID was computed, save it
+	if(NULL!=event_list->ph_ids){
+		fits_write_col(file->fptr, TLONG, file->phIDCol,
+						file->row, 1, event_list->index, event_list->ph_ids, status);
+		CHECK_STATUS_VOID(*status);
+	}
 
 	file->row = file->row + event_list->index;
 

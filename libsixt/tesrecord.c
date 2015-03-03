@@ -44,8 +44,9 @@ TesRecord* newTesRecord(int* const status){
 }
 
 /** Allocates memory for a RecordStruct data */
-void allocateTesRecord(TesRecord * record,int triggerSize,int* const status){
+void allocateTesRecord(TesRecord * record,int triggerSize,double delta_t,unsigned char wait_list,int* const status){
 	record->trigger_size = triggerSize;
+	record->delta_t = delta_t;
 
 	//Allocate adc_array
 	record->adc_array = malloc(triggerSize*sizeof(*(record->adc_array)));
@@ -64,7 +65,7 @@ void allocateTesRecord(TesRecord * record,int triggerSize,int* const status){
 	}
 
 	//Allocate phid_list
-	record->phid_list = newAllocatedPhIDList(MAXIMPACTNUMBER,0,status);
+	record->phid_list = newAllocatedPhIDList(MAXIMPACTNUMBER,wait_list,status);
 	CHECK_STATUS_VOID(*status);
 
 }
@@ -125,6 +126,7 @@ void freePhIDList(PhIDList * list){
 			free(list->times);
 		}
 	}
+	free(list);
 	list=NULL;
 }
 
@@ -163,8 +165,8 @@ int popPhID(PhIDList * const list,long* ph_id,double* time,int* const status){
 	if(list->n_elements==0){
 		return(0);
 	}
-	*ph_id = list->phid_array[(list->index-list->n_elements+1) % list->size];
-	*time = list->times[(list->index-list->n_elements+1) % list->size];
+	*ph_id = list->phid_array[(list->index-list->n_elements) % list->size];
+	*time = list->times[(list->index-list->n_elements) % list->size];
 	list->n_elements--;
 	return(1);
 }

@@ -31,6 +31,8 @@ OptimalFilterCollection* newOptimalFilterCollection(int* const status){
   }
   
   opt_filter_collection->nfilters = 0;
+  opt_filter_collection->ph_a = 0;
+  opt_filter_collection->ph_b = 0;
   opt_filter_collection->optimal_filters = NULL;
 
   return(opt_filter_collection);
@@ -86,7 +88,7 @@ void allocateOptimalFilter(OptimalFilter* opt_filter,int filter_duration,int* co
 }
 
 /** OptimalFilter destructor. */
-void freeOptimalFilter(OptimalFilter* const opt_filter){
+void freeOptimalFilter(OptimalFilter* opt_filter){
 	if (NULL!=opt_filter) {
 		free(opt_filter->filter);
 		opt_filter->filter_duration=0;
@@ -134,8 +136,21 @@ OptimalFilterCollection*  getOptimalFilterCollection(const char* const filename,
 		//Actually read column and save it into the structure
 		fits_read_col(fptr, TDOUBLE, column_number, 1,1,filter_duration,NULL, opt_filter_collection->optimal_filters[i].filter, &anynul, status);
 		CHECK_STATUS_RET(*status, opt_filter_collection);
-
 	}
+	//Get the pulse height to keV conversion parameters
+	sprintf(column_name, "PH_A");
+	fits_get_colnum(fptr, CASEINSEN,column_name, &column_number, status);
+	CHECK_STATUS_RET(*status, opt_filter_collection);
+	fits_read_col(fptr, TDOUBLE, column_number, 1,1,1,NULL, &(opt_filter_collection->ph_a), &anynul, status);
+	CHECK_STATUS_RET(*status, opt_filter_collection);
+	sprintf(column_name, "PH_B");
+	fits_get_colnum(fptr, CASEINSEN,column_name, &column_number, status);
+	CHECK_STATUS_RET(*status, opt_filter_collection);
+	fits_read_col(fptr, TDOUBLE, column_number, 1,1,1,NULL, &(opt_filter_collection->ph_b), &anynul, status);
+	CHECK_STATUS_RET(*status, opt_filter_collection);
+
+	fits_close_file(fptr, status);
+	CHECK_STATUS_RET(*status, opt_filter_collection);
 
 	return(opt_filter_collection);
 }
@@ -166,64 +181,118 @@ double filterPulse(double * data_stream,int pulse_time,double * filter,int filte
 }
 
 /** Trigger on the pulses and updates the event_list accordingly */
-void triggerEvents(TesRecord* record,TesEventList* event_list,double * derivated_pulse,int derivated_pulse_length,double threshold,double pulse_template_height,int* const status){
+int triggerEvents(TesRecord* record,TesEventList* event_list,double * derivated_pulse,int derivated_pulse_length,
+		double threshold,double pulse_template_height,double saturation_value,int derivate_exclusion,
+		int normal_exclusion,int* const status){
 	//Derivate the data stream
 	double * derivated_stream = malloc((record->trigger_size - 1)*sizeof(*derivated_stream));
 	if (NULL==derivated_stream){
 		*status=EXIT_FAILURE;
 		SIXT_ERROR("memory allocation for derivated_stream failed");
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,1);
 	}
-	derivate_stream(record->adc_double,derivated_stream,record->trigger_size - 1);
+	derivate_stream(record->adc_double,derivated_stream,record->trigger_size);
 
 	//Iterate over the data points and trigger
 	int ii = 1;
 	int pulse_detected=0;
 	double pulse_height=0;
 	int pulse_time = 0;
-	while(ii < record->trigger_size - 1){
-		//Triggering part
-		if(!pulse_detected){
-			if(derivated_stream[ii]>threshold){
-				pulse_height = derivated_stream[ii];
-				pulse_time = ii-1;
-				pulse_detected=1;
-			}
-		//We triggered, look for pulse height
-		} else {
-			if(derivated_stream[ii] > pulse_height){
-				pulse_height = derivated_stream[ii];
-			//We have reached the top of the pulse -> check for pileup, remove pulse from stream and add event to list
-			} else {
-				//Test if we have a pileup by checking whether the pulse subtraction would be too big
-				if((derivated_stream[pulse_time+1] - pulse_height/pulse_template_height*derivated_pulse[1]) < -0.75*threshold){
-					//This is a pileup, re-evaluate pulse height
-					pulse_height = derivated_stream[pulse_time+1]/derivated_pulse[1]*pulse_template_height;
-				}
-
-				//Remove pulse from stream for future detections
-				subtractPulse(derivated_stream,pulse_time+1,derivated_pulse,pulse_height/pulse_template_height,derivated_pulse_length,record->trigger_size - 1);
-
-				//Add Event to list
-				addEventToList(event_list,pulse_time+1,pulse_height,status);
-				CHECK_STATUS_VOID(*status);
-
-				//Reboot search to pulse time
-				ii = pulse_time+1;
-				pulse_detected = 0;
-			}
+	int grade1 = 0;
+	int distance_to_wrong_reconstruction = normal_exclusion;
+	int ii_end = record->trigger_size - 1;
+	char current_value_is_saturated=0;
+	char next_value_is_saturated=0;
+	//If we start already above half of the threshold, the start of the stream is probably not event clean
+	if (derivated_stream[0] > 0.5*threshold){
+		distance_to_wrong_reconstruction = 0;
+	}
+	while(ii < ii_end){
+		//Handle incomplete record
+		if (record->adc_double[ii+1]==0){
+			break;
 		}
 
+		//Detect when we are in the tail of a non-suppressed pulse
+		if (derivated_stream[ii]<-0.5*threshold){
+			distance_to_wrong_reconstruction=0;
+		} else{
+			distance_to_wrong_reconstruction++;
+		}
+
+		//Detect saturated pulses
+		current_value_is_saturated = (record->adc_double[ii] >= saturation_value || record->adc_double[ii+1] >= saturation_value);
+		if (current_value_is_saturated && !pulse_detected){
+			if (event_list->index>0 && event_list->grades1[event_list->index-1] != -3){
+				event_list->grades1[event_list->index-1] = -2;
+			}
+		} else {
+
+			//Triggering part
+			if(!pulse_detected){
+				if(derivated_stream[ii]>threshold){
+					pulse_height = derivated_stream[ii];
+					pulse_time = ii-1;
+					pulse_detected=1;
+				}
+				//We triggered, look for pulse height
+			} else {
+				next_value_is_saturated = (ii<ii_end-1 && (record->adc_double[ii+1] >= saturation_value || record->adc_double[ii+2] >= saturation_value));
+				if(derivated_stream[ii] > pulse_height && !next_value_is_saturated){
+					pulse_height = derivated_stream[ii];
+					//We have reached the top of the pulse -> check for pileup, remove pulse from stream and add event to list
+				} else {
+					//It the pulse peak is saturated, estimate pulse height from last correct value
+					if(current_value_is_saturated){
+						pulse_height = (derivated_stream[pulse_time+1]-derivated_stream[pulse_time])/derivated_pulse[0]*pulse_template_height;
+					} else if (ii<ii_end-1 && next_value_is_saturated){
+						pulse_height = (pulse_height-derivated_stream[pulse_time])/derivated_pulse[ii-pulse_time-1]*pulse_template_height;
+					}
+
+					//Test if we have a pileup by checking whether the pulse subtraction would be too big
+					if((derivated_stream[pulse_time+1] - pulse_height/pulse_template_height*derivated_pulse[0]) < -0.75*threshold){
+						//This is a pileup, re-evaluate pulse height
+						pulse_height = derivated_stream[pulse_time+1]/derivated_pulse[0]*pulse_template_height;
+					}
+
+					//Detect wrong reconstructions
+					if (distance_to_wrong_reconstruction < derivate_exclusion || (pulse_time>0 && record->adc_double[pulse_time-1] >= saturation_value) || record->adc_double[pulse_time] >= saturation_value || record->adc_double[pulse_time+1] >= saturation_value){
+						grade1 = -3;
+					} else if (distance_to_wrong_reconstruction < normal_exclusion){
+						grade1 = -2;
+					} else {
+						grade1 = -1;
+					}
+
+					//Remove pulse from stream for future detections
+					subtractPulse(derivated_stream,pulse_time+1,derivated_pulse,pulse_height/pulse_template_height,derivated_pulse_length,record->trigger_size - 1);
+
+					//If after subtraction, there is some residual signal, flag the event as misreconstructed
+					if(derivated_stream[pulse_time] > 0.75*threshold || derivated_stream[pulse_time]<-0.75*threshold){
+						grade1 = -3;
+					}
+
+					//Add Event to list
+					addEventToList(event_list,pulse_time+1,pulse_height,grade1,status);
+					CHECK_STATUS_RET(*status,ii+1);
+
+					//Reboot search to pulse time
+					ii = pulse_time+1;
+					pulse_detected = 0;
+				}
+			}
+		}
 		ii++;
 	}
 	free(derivated_stream);
+	return(ii+1);
 }
 
 /** Computes the energy of the detected pulses and save the result in the event list */
 void computeEnergy(TesRecord* record,TesEventList* event_list,OptimalFilterCollection* opt_filter_collection,double * pulse_template,
-		int pulse_length,double calfac,int* const status){
+		int pulse_length,double calfac,const char identify,int* const status){
 	//Add dummy event to correctly compute the grades
-	addEventToList(event_list,record->trigger_size-1,0.,status);
+	addEventToList(event_list,record->trigger_size-1,0.,0,status);
 	CHECK_STATUS_VOID(*status);
 
 	//Nominal optimal_filter index
@@ -234,32 +303,87 @@ void computeEnergy(TesRecord* record,TesEventList* event_list,OptimalFilterColle
 	int filter_index;
 	int current_pulse_duration;
 	double energy;
+	long ph_id;
+	double impact_time;
+	double pulse_real_time;
+	double pulse_distance;
+	if(identify){
+		popPhID(record->phid_list,&ph_id,&impact_time,status);
+	}
 	for (int i=0; i < event_list->index -1 ; i++){
 		pulse_time = event_list->event_indexes[i];
-		if((event_list->event_indexes[i+1] - pulse_time)>=pulse_length){
+		pulse_distance = event_list->event_indexes[i+1] - pulse_time;
+		if(pulse_distance>=pulse_length && event_list->grades1[i] > -2){
 			current_pulse_duration = opt_filter_collection->optimal_filters[nominal_filter_index].filter_duration;
 			//Compute energy
 			event_list->energies[i] = filterPulse(record->adc_double,pulse_time,opt_filter_collection->optimal_filters[nominal_filter_index].filter,
 					current_pulse_duration)/calfac;
 			event_list->grades1[i] = current_pulse_duration;
-		} else if((event_list->event_indexes[i+1] - pulse_time)>=4) {
+		} else if(pulse_distance>=4 && event_list->grades1[i] > -2) {
 			//Get available optimal filter index
-			filter_index = floor(log(event_list->event_indexes[i+1] - pulse_time)/log(2)) - 2;
+			filter_index = floor(log(pulse_distance)/log(2)) - 2;
 			current_pulse_duration = opt_filter_collection->optimal_filters[filter_index].filter_duration;
 			//Compute energy
 			energy = filterPulse(record->adc_double,pulse_time,opt_filter_collection->optimal_filters[filter_index].filter,
 					current_pulse_duration);
 			//Remove pulse from data
 			subtractPulse(record->adc_double,pulse_time,pulse_template,energy,
-					current_pulse_duration,record->trigger_size-1);
+					pulse_length,record->trigger_size);
 			//Update list
 			event_list->energies[i] = energy/calfac;
+		} else{
+			if (i>0 && event_list->grades1[i-1]==-3 && (pulse_time - event_list->event_indexes[i-1])==1){
+				current_pulse_duration = -3;
+			} else {
+				current_pulse_duration = event_list->grades1[i];
+			}
+			//Compute energy
+			energy = (opt_filter_collection->ph_a*event_list->pulse_heights[i]*0.5 + opt_filter_collection->ph_b);
+			event_list->energies[i] = energy/calfac;
+			//Remove pulse from data
+			subtractPulse(record->adc_double,pulse_time,pulse_template,energy,
+					pulse_length,record->trigger_size);
 		}
 		event_list->grades1[i] = current_pulse_duration;
 		if(i>0){
 			event_list->grades2[i] = pulse_time - event_list->event_indexes[i-1];
 		} else {
 			event_list->grades2[i] = pulse_length;
+		}
+
+		if(identify){
+			pulse_real_time = record->time + pulse_time*record->delta_t;
+			//Get next impact until it has a chance to match the pulse
+			while(impact_time<pulse_real_time-record->delta_t){
+				if (!popPhID(record->phid_list,&ph_id,&impact_time,status)){
+					break;
+				}
+			}
+			//This impact does match the reconstructed pulse -> add its ph_id
+			if(fabs((impact_time-pulse_real_time)) < record->delta_t){
+				event_list->ph_ids[i] = ph_id;
+			} else { //this is a False detection...
+				event_list->ph_ids[i] = 0;
+				//if this was not found as misreconstructed, flag as real false detection
+				if (event_list->grades1[i] !=-3){
+					event_list->grades1[i] = -4;
+				//otherwise flag as correctable false detection
+				} else {
+					event_list->grades1[i]=-5;
+				}
+			}
+			//Test if this is not a pileup. This test is only valid because we are not simulating
+			//the pulse phase wrt the sampling process yet.
+			//Will need to refine this once we know the behavior of the pulse reconstruction in this case.
+			//This will for instance be more complicated in cases like this:
+			//   |  |  |
+			//   V  V  V
+			//  |    |    |
+			//The pulse processing might either associate the first two or the last two (TBC) while for now it is always
+			//the first two. Test on energy?
+			while (popPhID(record->phid_list,&ph_id,&impact_time,status) && fabs(impact_time-pulse_real_time) < record->delta_t){
+				event_list->ph_ids[i] = -ph_id;
+			}
 		}
 	}
 	event_list->index--;
@@ -268,12 +392,15 @@ void computeEnergy(TesRecord* record,TesEventList* event_list,OptimalFilterColle
 
 
 /** Wrapper around the whole pulse reconstruction */
-void reconstructRecord(TesRecord* record,TesEventList* event_list,ReconstructInit* reconstruct_init,int* const status){
-	triggerEvents(record,event_list,reconstruct_init->derivated_template,reconstruct_init->pulse_length-1,
-			reconstruct_init->threshold,reconstruct_init->pulse_template_height,status);
-	allocateWholeTesEventList(event_list,status);
+void reconstructRecord(TesRecord* record,TesEventList* event_list,ReconstructInit* reconstruct_init,const char identify,int* const status){
+	//printf("You lazy guy. Put that in reconstruct init\n");
+	int final_length = triggerEvents(record,event_list,reconstruct_init->derivated_template,reconstruct_init->pulse_length-1,
+			reconstruct_init->threshold,reconstruct_init->pulse_template_height,reconstruct_init->saturation_value,
+			reconstruct_init->derivate_exclusion,reconstruct_init->normal_exclusion,status);
+	record->trigger_size = final_length;
+	allocateWholeTesEventList(event_list,identify,status);
 	computeEnergy(record,event_list,reconstruct_init->opt_filter_collection,reconstruct_init->pulse_template,
-			reconstruct_init->pulse_length,reconstruct_init->calfac,status);
+			reconstruct_init->pulse_length,reconstruct_init->calfac,identify,status);
 }
 
 
@@ -308,12 +435,14 @@ void freeReconstructInit(ReconstructInit* reconstruct_init){
 		free(reconstruct_init->pulse_template);
 		free(reconstruct_init->derivated_template);
 	}
+	free(reconstruct_init);
 	reconstruct_init = NULL;
 }
 
 /** Initializes the different variables necessary for the reconstruction */
 void initializeReconstruction(ReconstructInit* reconstruct_init,char* const optimal_filter_file,int pulse_length,
-		char* const pulse_template_file,double threshold,double calfac,int* const status){
+		char* const pulse_template_file,double threshold,double calfac,int normal_exclusion,int derivate_exclusion,
+		double saturation_value,int* const status){
 	// Load OptimalFilterCollection structure
 	reconstruct_init->opt_filter_collection = getOptimalFilterCollection(optimal_filter_file, floor(log(pulse_length)/log(2)) - 1,status);
 	CHECK_STATUS_VOID(*status);
@@ -356,6 +485,9 @@ void initializeReconstruction(ReconstructInit* reconstruct_init,char* const opti
 	reconstruct_init->pulse_length=pulse_length;
 	reconstruct_init->threshold=threshold;
 	reconstruct_init->calfac=calfac;
+	reconstruct_init->normal_exclusion=normal_exclusion;
+	reconstruct_init->derivate_exclusion=derivate_exclusion;
+	reconstruct_init->saturation_value=saturation_value;
 }
 
 

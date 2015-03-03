@@ -54,6 +54,15 @@ struct Parameters {
 	//Default size of the event list
 	int EventListSize;
 
+	//Minimal distance before using OFs after a mireconstruction
+	int NormalExclusion;
+
+	//Minimal distance before reconstructing any event after a mireconstruction
+	int DerivateExclusion;
+
+	//Saturation level of the ADC curves
+	double SaturationValue;
+
 	//Boolean to choose whether to erase an already existing event list
 	char clobber;
 

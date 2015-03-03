@@ -188,13 +188,14 @@ int runtes_main() {
 		reconstruct_init = newReconstructInit(&status);
 		CHECK_STATUS_BREAK(status);
 		initializeReconstruction(reconstruct_init,partmp.OptimalFilterFile,partmp.PulseLength,
-				partmp.PulseTemplateFile,partmp.Threshold,partmp.Calfac,&status);
+				partmp.PulseTemplateFile,partmp.Threshold,partmp.Calfac,partmp.NormalExclusion,
+	    		partmp.DerivateExclusion,partmp.SaturationValue,&status);
 		CHECK_STATUS_BREAK(status);
     }
 
     //Trigerring part
     triggerWithImpact(stream,&par,init,monoen,partmp.WriteRecordFile,partmp.Reconstruct,
-    		reconstruct_init,partmp.TesEventFile,partmp.EventListSize,&status);
+    		reconstruct_init,partmp.TesEventFile,partmp.EventListSize,partmp.Identify,&status);
 
   } while(0); // END of the error handling loop.
 
@@ -251,13 +252,13 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_bool("Reconstruct", &par->Reconstruct);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the history parameter");
+    SIXT_ERROR("failed reading the Reconstruct parameter");
     return(status);
   }
 
   status=ape_trad_query_bool("WriteRecordFile", &par->WriteRecordFile);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the history parameter");
+    SIXT_ERROR("failed reading the WriteRecordFile parameter");
     return(status);
   }
 
@@ -347,6 +348,30 @@ int getpar(struct Parameters* const par)
 	  status=ape_trad_query_int("EventListSize", &par->EventListSize);
 	  if (EXIT_SUCCESS!=status) {
 		  SIXT_ERROR("failed reading the EventListSize parameter");
+		  return(status);
+	  }
+
+	  status=ape_trad_query_int("NormalExclusion", &par->NormalExclusion);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the NormalExclusion parameter");
+		  return(status);
+	  }
+
+	  status=ape_trad_query_int("DerivateExclusion", &par->DerivateExclusion);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the DerivateExclusion parameter");
+		  return(status);
+	  }
+
+	  status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the SaturationValue parameter");
+		  return(status);
+	  }
+
+	  status=ape_trad_query_bool("Identify", &par->Identify);
+	  if (EXIT_SUCCESS!=status) {
+		  SIXT_ERROR("failed reading the Identify parameter");
 		  return(status);
 	  }
   }

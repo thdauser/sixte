@@ -52,6 +52,9 @@ typedef struct {
 	/** Grade 2: distance in samples to the previous pulse */
 	int * grades2;
 
+	/** PH_ID of the reconstructed photons */
+	long * ph_ids;
+
 } TesEventList;
 
 typedef struct {
@@ -64,7 +67,7 @@ typedef struct {
 	long row;
 
 	/** Column numbers for time, energy, grade1, grade2, and pixID columns */
-	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol;
+	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol;
 
 } TesEventFile;
 
@@ -80,15 +83,15 @@ TesEventList* newTesEventList(int* const status);
 void freeTesEventList(TesEventList* event_list);
 
 /** Allocates memory for a TesEventList structure for the triggering stage:
- *  only event_index and pulse_height */
+ *  only event_index, pulse_height and grades1 */
 void allocateTesEventListTrigger(TesEventList* event_list,int size,int* const status);
 
-/** Allocates memory for the energy, grade1, and grade2 arrays according to
- *  current size if necessary */
-void allocateWholeTesEventList(TesEventList* event_list,int* const status);
+/** Allocates memory for the energy and grade2 arrays according to
+ *  current size if necessary. Only allocate ph_id if specified */
+void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_ph,int* const status);
 
 /** Appends the index and pulse_height lists to the list */
-void addEventToList(TesEventList* event_list,int index,double pulse_height,int* const status);
+void addEventToList(TesEventList* event_list,int index,double pulse_height,int grade1,int* const status);
 
 
 /** TesEventFile constructor. Returns a pointer to an empty TesEventFile data

@@ -98,7 +98,7 @@ void saveTriggerKeywords(fitsfile* fptr,int firstpix,int lastpix,int numberpix,f
 void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 		TESInitStruct* init,float monoen,const char write_file,const char reconstruct,
 		ReconstructInit* reconstruct_init,char* const tes_event_file,int event_list_size,
-		int* const status);
+		const char identify,int* const status);
 
 
 /** Populates a TesRecord structure with the next record */

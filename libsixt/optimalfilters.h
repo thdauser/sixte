@@ -44,6 +44,12 @@ typedef struct {
   /** Number of optimal filters in the structure. */
   int nfilters;
 
+  /** Oth order coeff in pulse height to keV conversion */
+  double ph_b;
+
+  /** 1th order coeff in pulse height to keV conversion */
+  double ph_a;
+
   /** Array containing all the optimal filters. */
   OptimalFilter* optimal_filters;
 
@@ -72,6 +78,15 @@ typedef struct {
 	/** Trigger threshold */
 	double threshold;
 
+	/** Minimal distance before using OFs after a mireconstruction */
+	int normal_exclusion;
+
+	/** Minimal distance before reconstructing any event after a mireconstruction */
+	int derivate_exclusion;
+
+	/** Saturation level of the ADC curves */
+	double saturation_value;
+
 
 } ReconstructInit;
 
@@ -99,7 +114,7 @@ OptimalFilter* newOptimalFilter(int* const status);
 void allocateOptimalFilter(OptimalFilter* opt_filter,int filter_duration,int* const status);
 
 /** OptimalFilter destructor. */
-void freeOptimalFilter(OptimalFilter* const opt_filter);
+void freeOptimalFilter(OptimalFilter* opt_filter);
 
 
 
@@ -117,14 +132,16 @@ void subtractPulse(double * data_stream,int pulse_time,double * pulse_template,d
 double filterPulse(double * data_stream,int pulse_time,double * filter,int filter_length);
 
 /** Trigger on the pulses and updates the event_list accordingly */
-void triggerEvents(TesRecord* record,TesEventList* event_list,double * derivated_pulse,int derivated_pulse_length,double threshold,double pulse_template_height,int* const status);
+int triggerEvents(TesRecord* record,TesEventList* event_list,double * derivated_pulse,int derivated_pulse_length,
+		double threshold,double pulse_template_height,double saturation_value,int derivate_exclusion,
+		int normal_exclusion,int* const status);
 
 /** Computes the energy of the detected pulses and save the result in the event list */
 void computeEnergy(TesRecord* record,TesEventList* event_list,OptimalFilterCollection* opt_filter_collection,double * pulse_template,
-		int pulse_length,double calfac,int* const status);
+		int pulse_length,double calfac,const char identify,int* const status);
 
 /** Wrapper around the whole pulse reconstruction */
-void reconstructRecord(TesRecord* record,TesEventList* event_list,ReconstructInit* reconstruct_init,int* const status);
+void reconstructRecord(TesRecord* record,TesEventList* event_list,ReconstructInit* reconstruct_init,const char identify,int* const status);
 
 
 /** Constructor. Returns a pointer to an empty ReconstructInit data
@@ -136,6 +153,7 @@ void freeReconstructInit(ReconstructInit* reconstruct_init);
 
 /** Initializes the different variables necessary for the reconstruction */
 void initializeReconstruction(ReconstructInit* reconstruct_init,char* const optimal_filter_file,int pulse_length,
-		char* const pulse_template_file,double threshold,double calfac,int* const status);
+		char* const pulse_template_file,double threshold,double calfac,int normal_exclusion,int derivate_exclusion,
+		double saturation_value,int* const status);
 
 #endif /* OPTIMALFILTERS_H */

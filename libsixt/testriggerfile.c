@@ -276,7 +276,7 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,int* const
 void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 		TESInitStruct* init,float monoen,const char write_file,const char reconstruct,
 		ReconstructInit* reconstruct_init,char* const tes_event_file,int event_list_size,
-		int* const status){
+		const char identify,int* const status){
 
 	//Get parameters from structures
 	char* const xmlfile = par->XMLFile;
@@ -415,7 +415,7 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 	//Initializations
 	for(ii=0; ii<Npix; ii++){
 		records[ii] = newTesRecord(status);
-		allocateTesRecord(records[ii],triggerSize,status);
+		allocateTesRecord(records[ii],triggerSize,1./sampleFreq,identify,status);
 		CHECK_STATUS_VOID(*status);
 		positionInTrigger[ii]=-1;
 		numberTrigger[ii]=0;
@@ -449,14 +449,14 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 					while(popPhID(preBuffPhIDLists[impact.pixID-pixlow],&old_ph_id,&old_impact_time,status)){
 						if(t<old_impact_time){
 							numberTrigger[impact.pixID-pixlow]++;
-							appendPhID(records[impact.pixID-pixlow]->phid_list,old_ph_id,0.,status);
+							appendPhID(records[impact.pixID-pixlow]->phid_list,old_ph_id,old_impact_time,status);
 						}
 					}
 				}
 				//If the pulse is gonna be in the currently recorded trigger, increase numberTrigger and save ph_id (no need to save time)
 				if (impact.time< (t+(double)(triggerSize-positionInTrigger[impact.pixID-pixlow])/sampleFreq)){
 					numberTrigger[impact.pixID-pixlow]++;
-					appendPhID(records[impact.pixID-pixlow]->phid_list,impact.ph_id,0.,status);
+					appendPhID(records[impact.pixID-pixlow]->phid_list,impact.ph_id,impact.time,status);
 				// If the pulse has a chance to fall in the missed part of the data, save its time and ph_id in case another "saves" it
 				} else if (impact.time<(t+(double)(triggerSize-positionInTrigger[impact.pixID-pixlow]+preBufferSize)/sampleFreq)){
 					appendPhID(preBuffPhIDLists[impact.pixID-pixlow],impact.ph_id,impact.time,status);
@@ -482,24 +482,24 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 			if (positionInTrigger[pixNumber]==triggerSize){
 				records[pixNumber]->time = t-(triggerSize-1)/sampleFreq;
 				records[pixNumber]->pixid = pixNumber+pixlow+1;
+				nRecords++;//count records
 				if(write_file){
 					writeRecord(outputFile,records[pixNumber],status);
 					CHECK_STATUS_VOID(*status);
-					nRecords++;//count records
 				}
 				if(reconstruct){
-					reconstructRecord(records[pixNumber],event_list,reconstruct_init,status);
+					reconstructRecord(records[pixNumber],event_list,reconstruct_init,identify,status);
 					saveEventListToFile(out_event_file,event_list,records[pixNumber]->time,1./sampleFreq,records[pixNumber]->pixid,status);
 					CHECK_STATUS_VOID(*status);
 
 					//Reinitialize event list
 					event_list->index=0;
-					nRecords++;//count records
 				}
 
 				//Reinitialize for next record
 				positionInTrigger[pixNumber]=-1;
 				records[pixNumber]->phid_list->index=0;
+				records[pixNumber]->phid_list->n_elements=0;
 				/*if(forceRecord[pixNumber]){
 					positionInTrigger[pixNumber]=0;
 					forceRecord[pixNumber] = 0;
@@ -508,7 +508,6 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 				}*/
 			}
 		}
-		fflush(stdout);
 		tlong++;
 		t=tstart+tlong/sampleFreq;
 	}
@@ -520,18 +519,17 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 				records[pixNumber]->adc_array[j] = 0;
 				records[pixNumber]->adc_double[j] = 0;
 			}
-			records[pixNumber]->time = t-(triggerSize-1)/sampleFreq;
+			records[pixNumber]->time = t-(positionInTrigger[pixNumber]-1)/sampleFreq;
 			records[pixNumber]->pixid = pixNumber+pixlow+1;
+			nRecords++;//count records
 			if(write_file){
 				writeRecord(outputFile,records[pixNumber],status);
 				CHECK_STATUS_VOID(*status);
-				nRecords++;//count records
 			}
 			if(reconstruct){
-				reconstructRecord(records[pixNumber],event_list,reconstruct_init,status);
+				reconstructRecord(records[pixNumber],event_list,reconstruct_init,identify,status);
 				saveEventListToFile(out_event_file,event_list,records[pixNumber]->time,1./sampleFreq,records[pixNumber]->pixid,status);
 				CHECK_STATUS_VOID(*status);
-				nRecords++;//count records
 			}
 		}
 	}
@@ -582,6 +580,7 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 	for (int ii = 0 ; ii < Npix;ii++){
 		freeTesRecord(&(records[ii]));
 	}
+	free(records);
 	if(NULL!=preBuffPhIDLists){
 		for(ii=0;ii<Npix;ii++){
 			freePhIDList(preBuffPhIDLists[ii]);

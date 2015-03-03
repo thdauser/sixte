@@ -61,6 +61,9 @@ typedef struct{
 	/** Start time of the record */
 	double time;
 
+	/** Time difference between two samples */
+	double delta_t;
+
 	/** Buffer to read a record of ADC values */
 	uint16_t* adc_array;
 
@@ -85,7 +88,7 @@ typedef struct{
 TesRecord* newTesRecord(int* const status);
 
 /** Allocates memory for a RecordStruct data */
-void allocateTesRecord(TesRecord * record,int triggerSize,int* const status);
+void allocateTesRecord(TesRecord * record,int triggerSize,double delta_t,unsigned char wait_list,int* const status);
 
 /** Destructor of the RecordStruct data structure. */
 void freeTesRecord(TesRecord** const record);
