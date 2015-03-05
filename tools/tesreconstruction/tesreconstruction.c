@@ -26,6 +26,7 @@ int tesreconstruction_main() {
   // Containing all programm parameters read by PIL.
   struct Parameters par;
 
+
   // Error status.
   int status=EXIT_SUCCESS;
 
@@ -40,47 +41,17 @@ int tesreconstruction_main() {
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
 
-    // Open record file
-    TesTriggerFile* record_file = openexistingTesTriggerFile(par.RecordFile,&status);
+    // Sixt standard keywords structure
+    SixtStdKeywords* keywords = newSixtStdKeywords(&status);
     CHECK_STATUS_BREAK(status);
 
-    // Read keywords from input file
-    char telescop[MAXMSG];
-    char instrume[MAXMSG];
-    char filter[MAXMSG];
-    char ancrfile[MAXMSG];
-    char respfile[MAXMSG];
-    double mjdref;
-    double timezero;
-    double tstart;
-    double tstop;
-    int hdu_type;
-    fits_movabs_hdu(record_file->fptr,1, &hdu_type, &status);
-    sixt_read_fits_stdkeywords(record_file->fptr,
-    		telescop,
-    		instrume,
-    		filter,
-    		ancrfile,
-    		respfile,
-    		&mjdref,
-    		&timezero,
-    		&tstart,
-    		&tstop,
-    		&status);
-    fits_movabs_hdu(record_file->fptr,2, &hdu_type, &status);
+    // Open record file
+    TesTriggerFile* record_file = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
     CHECK_STATUS_BREAK(status);
 
     //Open outfile
     TesEventFile * outfile = opennewTesEventFile(par.TesEventFile,
-    		telescop,
-    		instrume,
-    		filter,
-    		ancrfile,
-    		respfile,
-    		mjdref,
-    		timezero,
-    		tstart,
-    		tstop,
+    		keywords,
     		par.clobber,
     		&status);
     CHECK_STATUS_BREAK(status);
@@ -119,6 +90,7 @@ int tesreconstruction_main() {
     freeTesEventFile(outfile,&status);
     freeTesEventList(event_list);
     freeTesRecord(&record);
+    freeSixtStdKeywords(keywords);
     CHECK_STATUS_BREAK(status);
 
 

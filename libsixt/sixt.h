@@ -121,6 +121,42 @@ extern const double xmmmjdref;
 // Warnings.
 #define SIXT_WARNING(msg) (sixt_warning(msg))
 
+/////////////////////////////////////////////////////////////////
+// Type declarations.
+/////////////////////////////////////////////////////////////////
+
+typedef struct {
+	/** Telescope keyword */
+	char* telescop;
+
+	/** Instrument keyword */
+	char* instrume;
+
+	/** Filter keyword */
+	char* filter;
+
+	/** Ancillary response file */
+	char* ancrfile;
+
+	/** Response file */
+	char* respfile;
+
+	/** Extension name */
+	char* extname;
+
+	/** Reference MJD*/
+	double mjdref;
+
+	/** Time offset */
+	double timezero;
+
+	/** Start time */
+	double tstart;
+
+	/** Stop time */
+	double tstop;
+
+} SixtStdKeywords;
 
 /////////////////////////////////////////////////////////////////
 // Function declarations.
@@ -199,7 +235,7 @@ void sixt_get_date_time(const double mjdref,
 			int* const status);
 
 /** Add standard FITS header keywords to the specified file. */
-void sixt_add_fits_stdkeywords(fitsfile* const fptr,
+void sixt_add_fits_stdkeywords_obsolete(fitsfile* const fptr,
 			       const int hdunum,
 			       char* const telescop,
 			       char* const instrume,
@@ -213,7 +249,7 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 			       int* const status);
 
 /** Reads standard header keywords from a FITS file. */
-void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+void sixt_read_fits_stdkeywords_obsolete(fitsfile* const ifptr,
 			       char* const telescop,
 			       char* const instrume,
 			       char* const filter,
@@ -268,6 +304,39 @@ float getEBOUNDSEnergy(const long channel,
 		       const struct RMF* const rmf, 
 		       int* const status);
 
+/** Add standard FITS header keywords to the specified file using info
+ *  contained in a SixtStdKeywords structure. */
+void sixt_add_fits_stdkeywords(fitsfile* const fptr,
+		const int hdunum,
+		SixtStdKeywords * keyword_struct,
+		int* const status);
+
+/** Reads standard header keywords from a FITS file using a
+ *  SixtStdKeywords structure. Does at the same time the
+ *  malloc of the different char arrays. */
+void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+		SixtStdKeywords* keyword_struct,
+		int* const status);
+
+/** Constructor of the SixtStdKeywords structure: returns a pointer to an empty structure of this type */
+SixtStdKeywords* newSixtStdKeywords(int* const status);
+
+/** Builds a SixtStdKeywords struct from the individual keywords.
+ * 	Does at the same time the malloc of the different char arrays. */
+SixtStdKeywords* buildSixtStdKeywords(char* const telescop,
+	       char* const instrume,
+	       char* const filter,
+	       char* const ancrfile,
+	       char* const respfile,
+	       char* const extname,
+	       double mjdref,
+	       double timezero,
+	       double tstart,
+	       double tstop,
+	       int* const status);
+
+/** Destructor of the SixtStdKeywordsStructure */
+void freeSixtStdKeywords(SixtStdKeywords* keyword_struct);
 
 #endif /* SIXT_H */
 

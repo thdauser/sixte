@@ -29,7 +29,7 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
   init->impfile=openPixImpFile(par->PixImpList, READONLY,status);
   CHECK_STATUS_VOID(*status);
   // Read keywords from input file
-  sixt_read_fits_stdkeywords(init->impfile->fptr,
+  sixt_read_fits_stdkeywords_obsolete(init->impfile->fptr,
 			     init->telescop,
 			     init->instrume,
 			     init->filter,

@@ -82,7 +82,7 @@ int piximpacts_main() {
     CHECK_STATUS_BREAK(status);
     
     // Read keywords from input file
-    sixt_read_fits_stdkeywords(ilf->fptr,
+    sixt_read_fits_stdkeywords_obsolete(ilf->fptr,
 			       telescop,
 			       instrume,
 			       filter,

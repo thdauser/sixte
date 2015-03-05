@@ -208,15 +208,7 @@ void freeTesEventFile(TesEventFile* file, int* const status){
 
 /** Create and open a new TesEventFile. */
 TesEventFile* opennewTesEventFile(const char* const filename,
-				  char* const telescop,
-				  char* const instrume,
-				  char* const filter,
-				  char* const ancrfile,
-				  char* const respfile,
-				  const double mjdref,
-				  const double timezero,
-				  const double tstart,
-				  const double tstop,
+				  SixtStdKeywords* keywords,
 				  const char clobber,
 				  int* const status){
 	TesEventFile* file = newTesEventFile(status);
@@ -248,9 +240,7 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	fits_update_key(file->fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
 	fits_update_key(file->fptr, TINT, "BITPIX", &(bitpix), NULL, status);
 	fits_update_key(file->fptr, TINT, "NAXIS", &(naxis), NULL, status);
-	sixt_add_fits_stdkeywords(file->fptr, 1, telescop, instrume, filter,
-			ancrfile, respfile, mjdref, timezero,
-			tstart, tstop, status);
+	sixt_add_fits_stdkeywords(file->fptr,1,keywords,status);
 	CHECK_STATUS_RET(*status,file);
 
 	//Write XML into header
@@ -328,7 +318,12 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	sprintf(extName,"EVENTS");
 	fits_create_tbl(file->fptr, BINARY_TBL, 0, 6,
 			ttype, tform, tunit,extName, status);
-	//Add keywords to other extension
+	//Add keywords to new extension
+	if(keywords->extname!=NULL){
+		  free(keywords->extname);
+	  }
+	keywords->extname=strdup(extName);
+	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
 
 	//Free memory

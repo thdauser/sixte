@@ -68,17 +68,9 @@ void freeTesTriggerFile(TesTriggerFile** const file, int* const status){
 
 /** Create and open a new TesTriggerFile. */
 TesTriggerFile* opennewTesTriggerFile(const char* const filename,
-				  char* const telescop,
-				  char* const instrume,
-				  char* const filter,
-				  char* const ancrfile,
-				  char* const respfile,
+				  SixtStdKeywords * keywords,
 				  char* const xmlfile,
 				  char* const impactlist,
-				  const double mjdref,
-				  const double timezero,
-				  const double tstart,
-				  const double tstop,
 				  int triggerSize,
 				  int preBufferSize,
 				  double sampleFreq,
@@ -114,13 +106,11 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_update_key(file->fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
   fits_update_key(file->fptr, TINT, "BITPIX", &(bitpix), NULL, status);
   fits_update_key(file->fptr, TINT, "NAXIS", &(naxis), NULL, status);
+  sixt_add_fits_stdkeywords(file->fptr, 1,keywords, status);
   fits_update_key(file->fptr, TINT, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
   fits_update_key(file->fptr, TINT, "PREBUFF", &(preBufferSize), "Number of samples before start of pulse", status);
   double deltat = 1./sampleFreq;
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &(deltat), "Time resolution of data stream", status);
-  sixt_add_fits_stdkeywords(file->fptr, 1, telescop, instrume, filter,
-			    ancrfile, respfile, mjdref, timezero, 
-			    tstart, tstop, status);
   CHECK_STATUS_RET(*status,file);
   
   //Write XML into header
@@ -195,6 +185,11 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_update_key(file->fptr, TINT, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
   fits_update_key(file->fptr, TINT, "PREBUFF", &(preBufferSize), "Number of samples before start of pulse", status);
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &(deltat), "Time resolution of data stream", status);
+  if(keywords->extname!=NULL){
+	  free(keywords->extname);
+  }
+  keywords->extname=strdup(extName);
+  sixt_add_fits_stdkeywords(file->fptr, 2,keywords, status);
   CHECK_STATUS_RET(*status,file);
 
   //Free memory
@@ -232,7 +227,7 @@ void saveTriggerKeywords(fitsfile* fptr,int firstpix,int lastpix,int numberpix,f
 }
 
 /** Open an existing TesTriggerFile. */
-TesTriggerFile* openexistingTesTriggerFile(const char* const filename,int* const status){
+TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKeywords* keywords,int* const status){
 	TesTriggerFile* file = newTesTriggerFile(0,status);
 	CHECK_STATUS_RET(*status, file);
 
@@ -240,8 +235,16 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,int* const
 	fits_open_file(&(file->fptr), filename, READONLY, status);
 	CHECK_STATUS_RET(*status, file);
 
-	//Move to the first hdu
+	//Move to the primary hdu
 	int hdu_type;
+	fits_movabs_hdu(file->fptr,1, &hdu_type, status);
+	CHECK_STATUS_RET(*status, file);
+
+	//Read keywords
+	sixt_read_fits_stdkeywords_with_struct(file->fptr,keywords,status);
+	CHECK_STATUS_RET(*status, file);
+
+	//Move to the binary table
 	fits_movabs_hdu(file->fptr,2, &hdu_type, status);
 	CHECK_STATUS_RET(*status, file);
 
@@ -298,24 +301,12 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 	TesTriggerFile* outputFile = NULL;
 	TesEventList* event_list = NULL;
 	TesEventFile* out_event_file = NULL;
+	SixtStdKeywords* keywords = buildSixtStdKeywords(init->telescop,init->instrume,init->filter,
+			init->ancrfile,init->respfile,"NONE",init->mjdref,init->timezero,tstart,tstop,status);
+
 	if (write_file){
-		outputFile = opennewTesTriggerFile(tesTriggerFilename,
-				init->telescop,
-				init->instrume,
-				init->filter,
-				init->ancrfile,
-				init->respfile,
-				xmlfile,
-				impactlist,
-				init->mjdref,
-				init->timezero,
-				tstart,
-				tstop,
-				triggerSize,
-				preBufferSize,
-				sampleFreq,
-				clobber,
-				status);
+		outputFile = opennewTesTriggerFile(tesTriggerFilename,keywords,xmlfile,impactlist,
+				triggerSize,preBufferSize,sampleFreq,clobber,status);
 		CHECK_STATUS_VOID(*status);
 	}
 	if (reconstruct){
@@ -325,18 +316,7 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 		CHECK_STATUS_VOID(*status);
 
 		//Open TesEventFile
-		out_event_file = opennewTesEventFile(tes_event_file,
-				init->telescop,
-				init->instrume,
-				init->filter,
-				init->ancrfile,
-				init->respfile,
-				init->mjdref,
-				init->timezero,
-				tstart,
-				tstop,
-				clobber,
-				status);
+		out_event_file = opennewTesEventFile(tes_event_file,keywords,clobber,status);
 		CHECK_STATUS_VOID(*status);
 	}
 	////////////////////////////////
@@ -587,6 +567,7 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 		}
 		free(preBuffPhIDLists);
 	}
+	freeSixtStdKeywords(keywords);
 
 }
 

@@ -237,10 +237,10 @@ int epicmos2_events_main()
     }
 
     // Insert the standard header keywords.
-    sixt_add_fits_stdkeywords(fptr, 1, "XMM", "EM2", "", ancrfile, respfile,
+    sixt_add_fits_stdkeywords_obsolete(fptr, 1, "XMM", "EM2", "", ancrfile, respfile,
 			      mjdref, timezero, tstart, tstop, &status);
     CHECK_STATUS_BREAK(status);
-    sixt_add_fits_stdkeywords(fptr, 2, "XMM", "EM2", "", ancrfile, respfile,
+    sixt_add_fits_stdkeywords_obsolete(fptr, 2, "XMM", "EM2", "", ancrfile, respfile,
 			      mjdref, timezero, tstart, tstop, &status);
     CHECK_STATUS_BREAK(status);
 

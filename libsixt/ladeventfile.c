@@ -105,11 +105,11 @@ LADEventFile* openNewLADEventFile(const char* const filename,
   CHECK_STATUS_RET(*status, NULL);
 
   // Insert header keywords to 1st and 2nd HDU.
-  sixt_add_fits_stdkeywords(fptr, 1, "LOFT", "LAD", "NONE",
+  sixt_add_fits_stdkeywords_obsolete(fptr, 1, "LOFT", "LAD", "NONE",
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
-  sixt_add_fits_stdkeywords(fptr, 2, "LOFT", "LAD", "NONE",
+  sixt_add_fits_stdkeywords_obsolete(fptr, 2, "LOFT", "LAD", "NONE",
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);

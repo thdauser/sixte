@@ -100,15 +100,7 @@ TesEventFile* newTesEventFile(int* const status);
 
 /** Create and open a new TesEventFile. */
 TesEventFile* opennewTesEventFile(const char* const filename,
-				  char* const telescop,
-				  char* const instrume,
-				  char* const filter,
-				  char* const ancrfile,
-				  char* const respfile,
-				  const double mjdref,
-				  const double timezero,
-				  const double tstart,
-				  const double tstop,
+				  SixtStdKeywords* keywords,
 				  const char clobber,
 				  int* const status);
 

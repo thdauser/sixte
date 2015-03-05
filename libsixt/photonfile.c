@@ -159,11 +159,11 @@ PhotonFile* openNewPhotonFile(const char* const filename,
   CHECK_STATUS_RET(*status, plf);
 
   // Insert header keywords to 1st and 2nd HDU.
-  sixt_add_fits_stdkeywords(plf->fptr, 1, telescop, instrume, filter,
+  sixt_add_fits_stdkeywords_obsolete(plf->fptr, 1, telescop, instrume, filter,
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, plf);
-  sixt_add_fits_stdkeywords(plf->fptr, 2, telescop, instrume, filter,
+  sixt_add_fits_stdkeywords_obsolete(plf->fptr, 2, telescop, instrume, filter,
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, plf);

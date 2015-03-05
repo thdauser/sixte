@@ -210,7 +210,7 @@ void createTESFitsStreamFile(fitsfile **fptr,
   fits_update_key(*fptr, TINT, "BITPIX", &(bitpix), NULL, status);
   fits_update_key(*fptr, TINT, "NAXIS", &(naxis), NULL, status);
   
-  sixt_add_fits_stdkeywords(*fptr, 1, telescop, instrume, filter,
+  sixt_add_fits_stdkeywords_obsolete(*fptr, 1, telescop, instrume, filter,
 			    ancrfile, respfile, mjdref, timezero, 
 			    tstart, tstop, status);
   CHECK_STATUS_VOID(*status);

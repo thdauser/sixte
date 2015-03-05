@@ -69,18 +69,10 @@ TesTriggerFile* newTesTriggerFile(int triggerSize,int* const status);
 void freeTesTriggerFile(TesTriggerFile** const file, int* const status);
 
 /** Create and open a new TesTriggerFile. */
-TesTriggerFile*  opennewTesTriggerFile(const char* const filename,
-				  char* const telescop,
-				  char* const instrume,
-				  char* const filter,
-				  char* const ancrfile,
-				  char* const respfile,
+TesTriggerFile* opennewTesTriggerFile(const char* const filename,
+				  SixtStdKeywords * keywords,
 				  char* const xmlfile,
 				  char* const impactlist,
-				  const double mjdref,
-				  const double timezero,
-				  const double tstart,
-				  const double tstop,
 				  int triggerSize,
 				  int preBufferSize,
 				  double sampleFreq,
@@ -88,7 +80,7 @@ TesTriggerFile*  opennewTesTriggerFile(const char* const filename,
 				  int* const status);
 
 /** Create and open a new TesTriggerFile. */
-TesTriggerFile* openexistingTesTriggerFile(const char* const filename,int* const status);
+TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKeywords* keywords,int* const status);
 
 /** Save pixels, NES/NET and monoen keywords to the given FITS file */
 void saveTriggerKeywords(fitsfile* fptr,int firstpix,int lastpix,int numberpix,float monoen,

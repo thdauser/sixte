@@ -90,7 +90,7 @@ int streamtotriggers_main() {
 
     // Read keywords from tes file
     if (fits_movabs_hdu(tesfile->fptr,1, &hdu_type, &status)) break;
-    sixt_read_fits_stdkeywords(tesfile->fptr,
+    sixt_read_fits_stdkeywords_obsolete(tesfile->fptr,
 			       init->telescop,
 			       init->instrume,
 			       init->filter,

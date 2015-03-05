@@ -315,7 +315,7 @@ void sixt_get_date_time(const double mjdref,
 }
 
 
-void sixt_add_fits_stdkeywords(fitsfile* const fptr,
+void sixt_add_fits_stdkeywords_obsolete(fitsfile* const fptr,
 			       const int hdunum,
 			       char* const telescop,
 			       char* const instrume,
@@ -425,7 +425,7 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 }
 
 
-void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+void sixt_read_fits_stdkeywords_obsolete(fitsfile* const ifptr,
 			       char* const telescop,
 			       char* const instrume,
 			       char* const filter,
@@ -617,3 +617,179 @@ float getEBOUNDSEnergy(const long channel,
   CHECK_STATUS_RET(*status, 0.0);
   return(r*lo + (1.0-r)*hi);
 }
+
+/** Add standard FITS header keywords to the specified file using info
+ *  contained in a SixtStdKeywords structure. */
+void sixt_add_fits_stdkeywords(fitsfile* const fptr,
+		const int hdunum,
+		SixtStdKeywords * keyword_struct,
+		int* const status){
+	// Run usual function
+	sixt_add_fits_stdkeywords_obsolete(fptr,hdunum,keyword_struct->telescop,keyword_struct->instrume,keyword_struct->filter,
+			keyword_struct->ancrfile,keyword_struct->respfile,keyword_struct->mjdref,keyword_struct->timezero,
+			keyword_struct->tstart,keyword_struct->tstop,status);
+	CHECK_STATUS_VOID(*status);
+
+	// Add extname keyword if we are not on the primary header
+	if(hdunum>1){
+		// Determine the current HDU.
+		int prev_hdunum=0;
+		fits_get_hdu_num(fptr, &prev_hdunum);
+		CHECK_STATUS_VOID(*status);
+
+		// Move to requested HDU
+		if(prev_hdunum!=hdunum){
+			int hdutype=0;
+			fits_movabs_hdu(fptr, hdunum, &hdutype, status);
+			CHECK_STATUS_VOID(*status);
+		}
+		fits_update_key(fptr, TSTRING, "EXTNAME", keyword_struct->extname,
+				"Name of this extension", status);
+		CHECK_STATUS_VOID(*status);
+
+		// Move back to the original HDU.
+		if (prev_hdunum!=hdunum) {
+			int hdutype=0;
+			fits_movabs_hdu(fptr, prev_hdunum, &hdutype, status);
+			CHECK_STATUS_VOID(*status);
+		}
+	}
+}
+
+
+/** Reads standard header keywords from a FITS file using a
+ *  SixtStdKeywords structure. Does at the same time the
+ *  malloc of the different char arrays. */
+void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
+		SixtStdKeywords* keyword_struct,
+		int* const status){
+
+	char comment[MAXMSG];
+	char keyword[MAXMSG];
+	//Read string keywords
+	fits_read_key(ifptr, TSTRING, "TELESCOP", keyword, comment, status);
+	if(NULL!=keyword_struct->telescop){
+		free(keyword_struct->telescop);
+	}
+	keyword_struct->telescop = strdup(keyword);
+	fits_read_key(ifptr, TSTRING, "INSTRUME", keyword, comment, status);
+
+	if(NULL!=keyword_struct->instrume){
+		free(keyword_struct->instrume);
+	}
+	keyword_struct->instrume = strdup(keyword);
+
+	fits_read_key(ifptr, TSTRING, "FILTER", keyword, comment, status);
+	if(NULL!=keyword_struct->filter){
+		free(keyword_struct->filter);
+	}
+	keyword_struct->filter = strdup(keyword);
+
+	fits_read_key(ifptr, TSTRING, "ANCRFILE", keyword, comment, status);
+	if(NULL!=keyword_struct->ancrfile){
+		free(keyword_struct->ancrfile);
+	}
+	keyword_struct->ancrfile = strdup(keyword);
+
+	fits_read_key(ifptr, TSTRING, "RESPFILE", keyword, comment, status);
+	if(NULL!=keyword_struct->respfile){
+		free(keyword_struct->respfile);
+	}
+	keyword_struct->respfile = strdup(keyword);
+	CHECK_STATUS_VOID(*status);
+
+	fits_read_key(ifptr, TDOUBLE, "MJDREF", &keyword_struct->mjdref, comment, status);
+	fits_read_key(ifptr, TDOUBLE, "TIMEZERO", &keyword_struct->timezero, comment, status);
+	fits_read_key(ifptr, TDOUBLE, "TSTART", &keyword_struct->tstart, comment, status);
+	fits_read_key(ifptr, TDOUBLE, "TSTOP", &keyword_struct->tstop, comment, status);
+	CHECK_STATUS_VOID(*status);
+
+	// Determine the current HDU.
+	int hdunum=0;
+	fits_get_hdu_num(ifptr, &hdunum);
+	CHECK_STATUS_VOID(*status);
+
+	// If we are not on the primary HDU, read extname
+	if(hdunum>1){
+		fits_read_key(ifptr,TSTRING, "EXTNAME", keyword, comment, status);
+		if(NULL!=keyword_struct->extname){
+			free(keyword_struct->extname);
+		}
+		keyword_struct->extname = strdup(keyword);
+		CHECK_STATUS_VOID(*status);
+	}
+
+}
+
+/** Constructor of the SixtStdKeywords structure: returns a pointer to an empty structure of this type */
+SixtStdKeywords* newSixtStdKeywords(int* const status){
+	SixtStdKeywords* keywords=malloc(sizeof(*keywords));
+	if (NULL==keywords) {
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("memory allocation for SixtStdKeywords failed");
+		return(keywords);
+	}
+	keywords->telescop=NULL;
+	keywords->instrume=NULL;
+	keywords->filter=NULL;
+	keywords->ancrfile=NULL;
+	keywords->respfile=NULL;
+	keywords->extname=NULL;
+
+	keywords->mjdref = 0;
+	keywords->timezero = 0;
+	keywords->tstart = 0;
+	keywords->tstop = 0;
+
+	return(keywords);
+}
+
+
+/** Builds a SixtStdKeywords struct from the individual keywords.
+ * 	Does at the same time the malloc of the different char arrays. */
+SixtStdKeywords* buildSixtStdKeywords(char* const telescop,
+	       char* const instrume,
+	       char* const filter,
+	       char* const ancrfile,
+	       char* const respfile,
+	       char* const extname,
+	       double mjdref,
+	       double timezero,
+	       double tstart,
+	       double tstop,
+	       int* const status){
+
+	SixtStdKeywords* keywords = newSixtStdKeywords(status);
+	CHECK_STATUS_RET(*status,keywords);
+
+	keywords->telescop = strdup(telescop);
+	keywords->instrume = strdup(instrume);
+	keywords->filter = strdup(filter);
+	keywords->ancrfile = strdup(ancrfile);
+	keywords->respfile = strdup(respfile);
+	keywords->extname = strdup(extname);
+
+	keywords->mjdref = mjdref;
+	keywords->timezero = timezero;
+	keywords->tstart = tstart;
+	keywords->tstop = tstop;
+
+	return(keywords);
+}
+
+/** Destructor of the SixtStdKeywordsStructure */
+void freeSixtStdKeywords(SixtStdKeywords* keyword_struct){
+	if(NULL!=keyword_struct){
+		free(keyword_struct->telescop);
+		free(keyword_struct->instrume);
+		free(keyword_struct->filter);
+		free(keyword_struct->ancrfile);
+		free(keyword_struct->respfile);
+		free(keyword_struct->extname);
+	}
+	free(keyword_struct);
+	keyword_struct=NULL;
+}
+
+
+

@@ -151,11 +151,11 @@ PixImpFile* openNewPixImpFile(const char* const filename,
   CHECK_STATUS_RET(*status, file);
 
   // Insert header keywords to 1st and 2nd HDU.
-  sixt_add_fits_stdkeywords(file->fptr, 1, telescop, instrume, filter,
+  sixt_add_fits_stdkeywords_obsolete(file->fptr, 1, telescop, instrume, filter,
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
-  sixt_add_fits_stdkeywords(file->fptr, 2, telescop, instrume, filter,
+  sixt_add_fits_stdkeywords_obsolete(file->fptr, 2, telescop, instrume, filter,
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
