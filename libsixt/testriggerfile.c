@@ -241,7 +241,7 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 	CHECK_STATUS_RET(*status, file);
 
 	//Read keywords
-	sixt_read_fits_stdkeywords_with_struct(file->fptr,keywords,status);
+	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
 	CHECK_STATUS_RET(*status, file);
 
 	//Move to the binary table
