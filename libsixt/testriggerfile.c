@@ -499,7 +499,7 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 				records[pixNumber]->adc_array[j] = 0;
 				records[pixNumber]->adc_double[j] = 0;
 			}
-			records[pixNumber]->time = t-(positionInTrigger[pixNumber]-1)/sampleFreq;
+			records[pixNumber]->time = t-(positionInTrigger[pixNumber])/sampleFreq;
 			records[pixNumber]->pixid = pixNumber+pixlow+1;
 			nRecords++;//count records
 			if(write_file){
