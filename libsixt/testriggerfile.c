@@ -444,7 +444,6 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 				}
 				CHECK_STATUS_VOID(*status);
 				numberSimulated[impact.pixID-pixlow]++;
-				numberTrigger[impact.pixID-pixlow]++;
 			}
 			CHECK_STATUS_VOID(*status);
 			piximpstatus=getNextImpactFromPixImpFile(impfile,&impact,status);
