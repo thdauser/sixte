@@ -307,6 +307,7 @@ void computeEnergy(TesRecord* record,TesEventList* event_list,OptimalFilterColle
 	double impact_time;
 	double pulse_real_time;
 	double pulse_distance;
+	char pulse_identified=0;
 	if(identify){
 		popPhID(record->phid_list,&ph_id,&impact_time,status);
 	}
@@ -362,7 +363,9 @@ void computeEnergy(TesRecord* record,TesEventList* event_list,OptimalFilterColle
 			//This impact does match the reconstructed pulse -> add its ph_id
 			if(fabs((impact_time-pulse_real_time)) < record->delta_t){
 				event_list->ph_ids[i] = ph_id;
+				pulse_identified=1;
 			} else { //this is a False detection...
+				pulse_identified=0;
 				event_list->ph_ids[i] = 0;
 				//if this was not found as misreconstructed, flag as real false detection
 				if (event_list->grades1[i] !=-3){
@@ -381,7 +384,7 @@ void computeEnergy(TesRecord* record,TesEventList* event_list,OptimalFilterColle
 			//  |    |    |
 			//The pulse processing might either associate the first two or the last two (TBC) while for now it is always
 			//the first two. Test on energy?
-			while (popPhID(record->phid_list,&ph_id,&impact_time,status) && fabs(impact_time-pulse_real_time) < record->delta_t){
+			while (pulse_identified && popPhID(record->phid_list,&ph_id,&impact_time,status) && fabs(impact_time-pulse_real_time) < record->delta_t){
 				event_list->ph_ids[i] = -ph_id;
 			}
 		}
