@@ -41,18 +41,23 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
 			     &(init->tstop), 
 			     status);
   CHECK_STATUS_VOID(*status);
-  printf("Pixel impact file reaches from %lfs-%lfs .\n", init->tstart, init->tstop);
-  if(init->tstart>par->tstart){
-    puts("Program parameter tstart smaller as in input file.");    
-  }else{
-    init->tstart=par->tstart;
+  if(par->check_times){
+	  printf("Pixel impact file reaches from %lfs-%lfs .\n", init->tstart, init->tstop);
+	  if(init->tstart>par->tstart){
+		  puts("Program parameter tstart smaller than in input file.");
+	  }else{
+		  init->tstart=par->tstart;
+	  }
+	  if(init->tstop<par->tstop){
+		  puts("Program parameter tstop larger than in input file.");
+	  }else{
+		  init->tstop=par->tstop;
+	  }
+	  printf("Simulate from %lfs-%lfs .\n", init->tstart, init->tstop);
+  } else {
+	  init->tstart = par->tstart;
+	  init->tstop = par->tstop;
   }
-  if(init->tstop<par->tstop){
-    puts("Program parameter tstop larger as in input file.");
-  }else{
-    init->tstop=par->tstop;
-  }
-  printf("Simulate from %lfs-%lfs .\n", init->tstart, init->tstop);
   
   // Load the detector structure
   init->det=loadAdvDet(par->XMLFile,status);
@@ -128,7 +133,18 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
     CHECK_STATUS_VOID(*status);
   }
     
-
+  //Open output files if needed
+  SixtStdKeywords* keywords = buildSixtStdKeywords(init->telescop,init->instrume,init->filter,
+		  init->ancrfile,init->respfile,"NONE",init->mjdref,init->timezero,init->tstart,init->tstop,status);
+  if(par->WriteRecordFile){
+	  init->record_file= opennewTesTriggerFile(par->tesTriggerFile,keywords,par->XMLFile,par->PixImpList,
+			  par->triggerSize,par->preBufferSize,init->det->SampleFreq,par->clobber,status);
+	  CHECK_STATUS_VOID(*status);
+  }
+  if (par->Reconstruct){
+	  init->event_file = opennewTesEventFile(par->TesEventFile,keywords,par->clobber,status);
+	  CHECK_STATUS_VOID(*status);
+  }
 }
 
 /** Constructor. Returns a pointer to an empty TESInitStruct data
@@ -147,6 +163,8 @@ TESInitStruct* newInitStruct(int* const status){
   init->det           =NULL;
   init->activearray   =NULL;
   init->Nevts         =NULL;
+  init->record_file   =NULL;
+  init->event_file    =NULL;
   
   // Initialize values.
   init->mjdref	   =0;
@@ -165,6 +183,8 @@ void freeTESInitStruct(TESInitStruct** const init, int* const status){
     freePixImpFile(&((*init)->impfile), status);
     destroyTESProfiles((*init)->profiles);
     destroyAdvDet(&((*init)->det));
+    freeTesTriggerFile(&((*init)->record_file), status);
+    freeTesEventFile((*init)->event_file,status);
     
     if((*init)->activearray!=NULL){
       free((*init)->activearray);

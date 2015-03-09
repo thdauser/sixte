@@ -322,6 +322,9 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   
   par->clobber=partmp.clobber;
   par->history=partmp.history;
+  par->check_times=1;
+  par->Reconstruct=0;
+  par->WriteRecordFile=0;
 
   par->seed=partmp.seed;
 }

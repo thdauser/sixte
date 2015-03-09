@@ -28,6 +28,7 @@
 #include "tesproftemplates.h"
 #include "tesnoisespectrum.h"
 #include "tesdatastream.h"
+#include "testriggerfile.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
@@ -41,6 +42,7 @@ typedef struct {
   char XMLFile[MAXFILENAME];
   char streamname[MAXFILENAME];
   char tesTriggerFile[MAXFILENAME];
+  char TesEventFile[MAXFILENAME];
   
   char activePixels[9];
   int Nactive;
@@ -56,6 +58,9 @@ typedef struct {
   char writeStreamFile;
   char clobber;
   char history;
+  char Reconstruct;
+  char WriteRecordFile;
+  char check_times;
 
   unsigned long int seed;
 
@@ -75,6 +80,12 @@ typedef struct {
 
   /** Advanced detector structure */
   AdvDet *det;
+
+  /** Record file */
+  TesTriggerFile* record_file;
+
+  /** Event File */
+  TesEventFile* event_file;
   
   /** Array of active pixels */
   int *activearray;
@@ -102,7 +113,7 @@ typedef struct {
 
 /** Initializes the different variables necessary fo the simulations. Depending
     on the tool calling this function, not all the variables are set. */
-void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par, int* const status); 
+void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par, int* const status);
 
 /** Constructor. Returns a pointer to an empty TESInitStruct data
     structure. */

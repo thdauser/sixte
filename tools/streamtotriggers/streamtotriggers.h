@@ -30,7 +30,7 @@
 #include "tesnoisespectrum.h"
 #include "tesdatastream.h"
 #include "tesstreamfile.h"
-#include "testriggerfile.h"
+#include "testrigger.h"
 #include "tesinitialization.h"
 
 #define TOOLSUB streamtotriggers_main

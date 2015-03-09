@@ -194,8 +194,7 @@ int runtes_main() {
     }
 
     //Trigerring part
-    triggerWithImpact(stream,&par,init,monoen,partmp.WriteRecordFile,partmp.Reconstruct,
-    		reconstruct_init,partmp.TesEventFile,partmp.EventListSize,partmp.Identify,&status);
+    triggerWithImpact(stream,&par,init,monoen,reconstruct_init,partmp.EventListSize,partmp.Identify,&status);
 
   } while(0); // END of the error handling loop.
 
@@ -449,7 +448,7 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   strcpy(par->XMLFile,partmp.XMLFile);
   strcpy(par->streamname,partmp.streamname);
   strcpy(par->tesTriggerFile,partmp.tesTriggerFile);
-
+  strcpy(par->TesEventFile,partmp.TesEventFile);
   strcpy(par->activePixels,partmp.activePixels);
   par->Nactive=partmp.Nactive;
   par->Npix=partmp.Npix;
@@ -464,6 +463,9 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   par->writeStreamFile=partmp.writeStreamFile;
   par->clobber=partmp.clobber;
   par->history=partmp.history;
+  par->Reconstruct=partmp.Reconstruct;
+  par->WriteRecordFile=partmp.WriteRecordFile;
+  par->check_times=1;
 
   par->seed=partmp.seed;
 }

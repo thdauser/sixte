@@ -31,7 +31,7 @@
 #include "tesnoisespectrum.h"
 #include "tesdatastream.h"
 #include "tesinitialization.h"
-#include "testriggerfile.h"
+#include "testrigger.h"
 #include "optimalfilters.h"
 
 #define TOOLSUB runtes_main

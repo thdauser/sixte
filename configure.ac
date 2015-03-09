@@ -159,6 +159,7 @@ AC_CONFIG_FILES([Makefile
 		tools/tesconstpileup/Makefile
 		tools/xml2svg/Makefile
 		tools/tesreconstruction/Makefile
+		tools/xifupipeline/Makefile
 		extlib/Makefile
 		extlib/Utils/Makefile])
 

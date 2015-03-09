@@ -149,8 +149,7 @@ int streamtotriggers_main() {
 
     // Copy parameters in general parameters structure
     copyParams2GeneralStruct(par,&generic_par);
-    triggerWithImpact(stream,&generic_par,init,monoen,1,0,NULL,"dummy",0,0,&status);
-
+    triggerWithImpact(stream,&generic_par,init,monoen,NULL,0,0,&status);
   } while(0); // END of the error handling loop.
 
   //Free memory
@@ -297,6 +296,8 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   par->tstart=partmp.tstart;
   par->tstop=partmp.tstop;
 
+  par->Reconstruct=0;
+  par->WriteRecordFile=1;
   par->clobber=partmp.clobber;
   par->history=partmp.history;
 }
