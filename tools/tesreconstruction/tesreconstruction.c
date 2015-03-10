@@ -84,6 +84,10 @@ int tesreconstruction_main() {
     }
     CHECK_STATUS_BREAK(status);
 
+    // Copy trigger keywords to event file
+    copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
+    CHECK_STATUS_BREAK(status);
+
     //Free memory
     freeReconstructInit(reconstruct_init);
     freeTesTriggerFile(&record_file,&status);

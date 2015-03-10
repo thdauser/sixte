@@ -23,10 +23,41 @@
 /** Save pixels, NES/NET and monoen keywords to the given FITS file */
 void saveTriggerKeywords(fitsfile* fptr,int firstpix,int lastpix,int numberpix,float monoen,
 		int* const numberSimulated,int* const numberTrigger,int* const status){
-	fits_update_key(fptr, TINT, "FIRSTPIX", &firstpix, "First pixel in trigger file", status);
-	fits_update_key(fptr, TINT, "LASTPIX", &lastpix, "Last pixel in trigger file", status);
-	fits_update_key(fptr, TINT, "NPIX", &numberpix, "Number of pixels in trigger file", status);
-	fits_update_key(fptr, TFLOAT, "MONOEN", &monoen, "Monochromatic energy of photons [keV]", status);
+	int old_firstpix,old_lastpix,old_numberpix;
+	long net_tot,nes_tot;
+	float old_monoen;
+	char comment[MAXMSG];
+
+	//Read old keywords
+	fits_read_key(fptr, TINT, "FIRSTPIX", &old_firstpix, comment, status);
+	fits_read_key(fptr, TINT, "LASTPIX", &old_lastpix, comment, status);
+	fits_read_key(fptr, TINT, "NPIX", &old_numberpix, comment, status);
+	fits_read_key(fptr, TFLOAT, "MONOEN", &old_monoen, comment, status);
+	fits_read_key(fptr, TLONG, "NESTOT", &nes_tot, comment, status);
+	fits_read_key(fptr, TLONG, "NETTOT", &net_tot, comment, status);
+
+
+	//If this is actually the first time the header is set, simply save the given keywords
+	if(old_monoen==-1 || old_firstpix==0 || old_lastpix==0 || old_numberpix==0 || nes_tot==0 || net_tot==0){
+		if(!(old_monoen==-1 && old_firstpix==0 && old_lastpix==0 && old_numberpix==0 && nes_tot==0 && net_tot==0)){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("One of the trigger keywords of the given file has been changed without the others. File probably corrupted, abort");
+			CHECK_STATUS_VOID(*status);
+		}
+		fits_update_key(fptr, TINT, "FIRSTPIX", &firstpix, "First pixel in record file", status);
+		fits_update_key(fptr, TINT, "LASTPIX", &lastpix, "Last pixel in record file", status);
+		fits_update_key(fptr, TINT, "NPIX", &numberpix, "Number of pixels in record file", status);
+		fits_update_key(fptr, TFLOAT, "MONOEN", &monoen, "Monochromatic energy of photons [keV]", status);
+	} else{
+		if(firstpix<old_firstpix) fits_update_key(fptr, TINT, "FIRSTPIX", &firstpix, "First pixel in record file", status);
+		if(lastpix>old_lastpix) fits_update_key(fptr, TINT, "LASTPIX", &lastpix, "Last pixel in record file", status);
+		old_numberpix = old_numberpix+numberpix;
+		fits_update_key(fptr, TINT, "NPIX", &old_numberpix, "Number of pixels in record file", status);
+		if(!(old_monoen && monoen && old_monoen==monoen)) {
+			old_monoen=0;
+			fits_update_key(fptr, TFLOAT, "MONOEN", &old_monoen, "Monochromatic energy of photons [keV]", status);
+		}
+	}
 	CHECK_STATUS_VOID(*status);
 
 	//Save keywords with number of counts
@@ -34,10 +65,82 @@ void saveTriggerKeywords(fitsfile* fptr,int firstpix,int lastpix,int numberpix,f
 	for (int pixNumber=0;pixNumber<numberpix;pixNumber++) {
 		sprintf(keyword,"NES%05d",pixNumber+firstpix);
 		fits_update_key(fptr, TINT, keyword, &(numberSimulated[pixNumber]), "Number of simulated pulses", status);
+		nes_tot+=numberSimulated[pixNumber];
 		sprintf(keyword,"NET%05d",pixNumber+firstpix);
 		fits_update_key(fptr, TINT, keyword, &(numberTrigger[pixNumber]), "Number of triggered pulses", status);
+		net_tot+=numberTrigger[pixNumber];
 	}
 	CHECK_STATUS_VOID(*status);
+	fits_update_key(fptr, TLONG, "NESTOT", &nes_tot, "Total number of events simulated", status);
+	fits_update_key(fptr, TLONG, "NETTOT", &net_tot, "Total number of events actually triggered", status);
+	CHECK_STATUS_VOID(*status);
+}
+
+void copyTriggerKeywords(fitsfile* fptr,fitsfile* fptr2,int* const status){
+	int firstpix,lastpix,numberpix;
+	long net_tot,nes_tot,nes,net;
+	float monoen;
+	char comment[MAXMSG];
+	char keyword[9];
+
+	//Read keywords in first file and dump it in new one
+	fits_read_key(fptr, TINT, "FIRSTPIX", &firstpix, comment, status);
+	fits_update_key(fptr2, TINT, "FIRSTPIX", &firstpix, comment, status);
+	CHECK_STATUS_VOID(*status);
+
+	fits_read_key(fptr, TINT, "LASTPIX", &lastpix, comment, status);
+	fits_update_key(fptr2, TINT, "LASTPIX", &lastpix, comment, status);
+	CHECK_STATUS_VOID(*status);
+
+	fits_read_key(fptr, TINT, "NPIX", &numberpix, comment, status);
+	fits_update_key(fptr2, TINT, "NPIX", &numberpix, comment, status);
+	CHECK_STATUS_VOID(*status);
+
+	fits_read_key(fptr, TFLOAT, "MONOEN", &monoen, comment, status);
+	fits_update_key(fptr2, TFLOAT, "MONOEN", &monoen, comment, status);
+	CHECK_STATUS_VOID(*status);
+
+	fits_read_key(fptr, TLONG, "NESTOT", &nes_tot, comment, status);
+	if (*status==KEY_NO_EXIST){ // to allow the reading of old record files that did not have this keyword
+		*status=EXIT_SUCCESS;
+	} else{
+		fits_update_key(fptr2, TLONG, "NESTOT", &nes_tot, comment, status);
+	}
+	CHECK_STATUS_VOID(*status);
+
+	fits_read_key(fptr, TLONG, "NETTOT", &net_tot, comment, status);
+	if (*status==KEY_NO_EXIST){ // to allow the reading of old record files that did not have this keyword
+		*status=EXIT_SUCCESS;
+	} else{
+		fits_update_key(fptr2, TLONG, "NETTOT", &net_tot, comment, status);
+	}
+	CHECK_STATUS_VOID(*status);
+
+	int status_to_check_key=EXIT_SUCCESS;
+	for (int i=firstpix; i <=lastpix;i++){
+		sprintf(keyword,"NES%05d",i);
+		fits_read_key(fptr, TLONG, keyword, &nes, comment, &status_to_check_key);
+		if(status_to_check_key==EXIT_SUCCESS){
+			fits_update_key(fptr2, TLONG, keyword, &nes, comment, status);
+		} else if (status_to_check_key!=KEY_NO_EXIST){
+			*status = status_to_check_key;
+		} else {
+			status_to_check_key=EXIT_SUCCESS;
+		}
+		CHECK_STATUS_VOID(*status);
+
+		sprintf(keyword,"NET%05d",i);
+		fits_read_key(fptr, TLONG, keyword, &net, comment, &status_to_check_key);
+		if(status_to_check_key==EXIT_SUCCESS){
+			fits_update_key(fptr2, TLONG, keyword, &net, comment, status);
+		} else if (status_to_check_key!=KEY_NO_EXIST){
+			*status = status_to_check_key;
+		} else {
+			status_to_check_key=EXIT_SUCCESS;
+		}
+		CHECK_STATUS_VOID(*status);
+	}
+
 }
 
 void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
@@ -45,14 +148,12 @@ void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 		const char identify,int* const status){
 
 	//Get parameters from structures
-	char* const xmlfile = par->XMLFile;
 	char* const impactlist = par->PixImpList;
 	double tstart = init->tstart;
 	double tstop = init->tstop;
 	const int triggerSize = par->triggerSize;
 	const int preBufferSize = par->preBufferSize;
 	const double sampleFreq = init->det->SampleFreq;
-	char clobber = par->clobber;
 	const int pixlow = par->nlo;
 	const int Npix = par->nhi-par->nlo+1;
 

@@ -28,6 +28,9 @@
 void saveTriggerKeywords(fitsfile* fptr,int firstpix,int lastpix,int numberpix,float monoen,
 		int* const numberSimulated,int* const numberTrigger,int* const status);
 
+/** Copy pixels, NES/NET and monoen keywords from one file to another */
+void copyTriggerKeywords(fitsfile* fptr,fitsfile* fptr2,int* const status);
+
 /** Writes the ADC curves in the TES trigger format*/
 void triggerWithImpact(TESDataStream* const stream,TESGeneralParameters * par,
 		TESInitStruct* init,float monoen,ReconstructInit* reconstruct_init,int event_list_size,

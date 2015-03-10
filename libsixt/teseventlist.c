@@ -326,6 +326,17 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
 
+	int firstpix=0,lastpix=0,numberpix=0;
+	float monoen=-1.;
+	long nes_tot=0,net_tot=0;
+	fits_update_key(file->fptr, TINT, "FIRSTPIX", &firstpix, "First pixel in record file", status);
+	fits_update_key(file->fptr, TINT, "LASTPIX", &lastpix, "Last pixel in record file", status);
+	fits_update_key(file->fptr, TINT, "NPIX", &numberpix, "Number of pixels in record file", status);
+	fits_update_key(file->fptr, TFLOAT, "MONOEN", &monoen, "Monochromatic energy of photons [keV]", status);
+	fits_update_key(file->fptr, TLONG, "NESTOT", &nes_tot, "Total number of events simulated", status);
+	fits_update_key(file->fptr, TLONG, "NETTOT", &net_tot, "Total number of events actually triggered", status);
+	CHECK_STATUS_RET(*status,file);
+
 	//Free memory
 	for(ii=0; ii<6; ii++){
 		free(ttype[ii]);
