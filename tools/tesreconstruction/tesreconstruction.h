@@ -25,6 +25,7 @@
 #include "testriggerfile.h"
 #include "teseventlist.h"
 #include "tesproftemplates.h"
+#include "testrigger.h"
 
 #define TOOLSUB tesreconstruction_main
 #include "headas_main.c"
