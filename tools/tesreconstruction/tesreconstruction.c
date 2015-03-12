@@ -88,6 +88,11 @@ int tesreconstruction_main() {
     copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
     CHECK_STATUS_BREAK(status);
 
+    // Save GTI extension to event file
+    GTI* gti=getGTIFromFileOrContinuous("none",keywords->tstart, keywords->tstop,keywords->mjdref, &status);
+    saveGTIExt(outfile->fptr, "STDGTI", gti, &status);
+    CHECK_STATUS_BREAK(status);
+
     //Free memory
     freeReconstructInit(reconstruct_init);
     freeTesTriggerFile(&record_file,&status);

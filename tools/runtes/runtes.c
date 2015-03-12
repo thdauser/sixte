@@ -37,6 +37,7 @@ int runtes_main() {
   TESDataStream* stream=NULL;
   fitsfile *ofptr=NULL;
   ReconstructInit* reconstruct_init = NULL;
+  GTI* gti=NULL;
 
   int ismonoc=0;
   float monoen=0.;
@@ -195,6 +196,14 @@ int runtes_main() {
 
     //Trigerring part
     triggerWithImpact(stream,&par,init,monoen,reconstruct_init,partmp.EventListSize,partmp.Identify,&status);
+    CHECK_STATUS_BREAK(status);
+
+    //Add GTI extension to event file if relevant
+    if(partmp.Reconstruct){
+    	gti=getGTIFromFileOrContinuous("none",init->tstart, init->tstop,init->mjdref, &status);
+    	saveGTIExt(init->event_file->fptr, "STDGTI", gti, &status);
+    	CHECK_STATUS_BREAK(status);
+    }
 
   } while(0); // END of the error handling loop.
 
