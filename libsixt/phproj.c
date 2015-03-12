@@ -94,3 +94,88 @@ void phproj(GenInst* const inst,
   CHECK_STATUS_VOID(*status);
   // END of LOOP over all events.
 }
+
+
+void phproj_advdet(GenInst* const inst,
+		AdvDet* const adv_det,
+	    Attitude* const ac,
+	    TesEventFile* const event_file,
+	    const double t0,
+	    const double exposure,
+	    int* const status)
+{
+	//const double cosrota=cos(inst->det->pixgrid->rota);
+	//const double sinrota=sin(inst->det->pixgrid->rota);
+
+
+	// Load detector geometry from advanced XML file
+	Obj2D_instance * general_geometry= getObj2DFromAdvdet(adv_det,status);
+	CHECK_STATUS_VOID(*status);
+
+	// LOOP over all events in the input file.
+	long pixid;
+	double time,ra,dec;
+	int anynul=0;
+	while (event_file->row <= event_file->nrows) {
+
+		// Read the next pixID from the file.
+		fits_read_col(event_file->fptr, TLONG, event_file->pixIDCol,
+							  event_file->row,1,1,0,&pixid, &anynul,status);
+		fits_read_col(event_file->fptr, TDOUBLE, event_file->timeCol,
+							  event_file->row,1,1,0,&time, &anynul,status);
+		CHECK_STATUS_BREAK(*status);
+
+		// Check whether we are still within the requested time interval.
+		if (time < t0) continue;
+		if (time > t0+exposure) break;
+
+		// Determine the Position of the source on the sky:
+		// First determine telescope pointing direction at the current time.
+		Vector nx, ny, nz;
+		getTelescopeAxes(ac, &nx, &ny, &nz, time, status);
+		CHECK_STATUS_BREAK(*status);
+
+		// Determine RA and DEC of the photon origin.
+		// Exact position on the pixel.
+		double xpix=(sixt_get_random_number(status)-0.5)*general_geometry->subobj[pixid-1]->geometry->width;
+		CHECK_STATUS_BREAK(*status);
+		double ypix=(sixt_get_random_number(status)-0.5)*general_geometry->subobj[pixid-1]->geometry->height;
+		CHECK_STATUS_BREAK(*status);
+
+		// Exact position in the detector sytem
+//		double xr=cosrota*xb -sinrota*yb;
+//		double yr=sinrota*xb +cosrota*yb;
+		double cosrota = cos(general_geometry->subobj[pixid-1]->geometry->rota);
+		double sinrota = sin(general_geometry->subobj[pixid-1]->geometry->rota);
+		struct Point2d detpos;
+		detpos.x=general_geometry->subobj[pixid-1]->geometry->cx + cosrota*xpix - sinrota*ypix;
+		detpos.y=general_geometry->subobj[pixid-1]->geometry->cy + sinrota*xpix + cosrota*ypix;
+
+		// Determine the source position on the sky using the telescope
+		// axis pointing vector and a vector from the point of the intersection
+		// of the optical axis with the sky plane to the source position.
+		Vector srcpos;
+		srcpos.x = nz.x
+				+detpos.x/inst->tel->focal_length*nx.x
+				+detpos.y/inst->tel->focal_length*ny.x;
+		srcpos.y = nz.y
+				+detpos.x/inst->tel->focal_length*nx.y
+				+detpos.y/inst->tel->focal_length*ny.y;
+		srcpos.z = nz.z
+				+detpos.x/inst->tel->focal_length*nx.z
+				+detpos.y/inst->tel->focal_length*ny.z;
+		srcpos = normalize_vector(srcpos);
+
+		// Determine the equatorial coordinates RA and DEC
+		// (RA and DEC are in the range [-pi:pi] and [-pi/2:pi/2] respectively).
+		calculate_ra_dec(srcpos, &ra, &dec);
+
+		// Update the data in the TES event list file.
+		updateRaDec(event_file,ra,dec,status);
+		CHECK_STATUS_BREAK(*status);
+
+		event_file->row++;
+	}
+	CHECK_STATUS_VOID(*status);
+	// END of LOOP over all events.
+}

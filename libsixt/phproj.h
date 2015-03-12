@@ -28,6 +28,9 @@
 #include "geninst.h"
 #include "point.h"
 #include "vector.h"
+#include "advdet.h"
+#include "teseventlist.h"
+#include "detstruct2obj2d.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -38,6 +41,15 @@
 void phproj(GenInst* const inst,
 	    Attitude* const ac,
 	    EventFile* const plf,
+	    const double t0,
+	    const double exposure,
+	    int* const status);
+
+/** Update RA DEC column of the given file using the PIXID column */
+void phproj_advdet(GenInst* const inst,
+		AdvDet* const adv_det,
+	    Attitude* const ac,
+	    TesEventFile* const event_file,
 	    const double t0,
 	    const double exposure,
 	    int* const status);

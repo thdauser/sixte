@@ -66,8 +66,11 @@ typedef struct {
 	has been read or written so far. */
 	long row;
 
-	/** Column numbers for time, energy, grade1, grade2, and pixID columns */
-	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol;
+	/** Total number of rows */
+	long nrows;
+
+	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
+	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol;
 
 } TesEventFile;
 
@@ -104,11 +107,17 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 				  const char clobber,
 				  int* const status);
 
+/** Opens a TES event file with the given mode */
+TesEventFile* openTesEventFile(const char* const filename,const int mode, int* const status);
+
 /** TesEventFile Destructor. */
 void freeTesEventFile(TesEventFile* file, int* const status);
 
 /** Adds the data contained in the event list to the given file */
 void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 		double start_time,double delta_t,long pixID,int* const status);
+
+/** Updates the RA and DEC columns with the given coordinates */
+void updateRaDec(TesEventFile* file,double ra, double dec, int* const status);
 
 #endif /* TESEVENTLIST_H */

@@ -35,6 +35,7 @@ struct Parameters {
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
   char XMLFile[MAXFILENAME];
+  char AdvXml[MAXFILENAME];
   char Attitude[MAXFILENAME];
 
   /** [deg] */
@@ -61,11 +62,17 @@ int projev_main() {
   // Event file.
   EventFile* elf=NULL;
 
+  // TES event file.
+  TesEventFile* tes_elf=NULL;
+
   // Attitude catalog.
   Attitude* ac=NULL;
 
   // Instrument data structure (containing the focal length, FoV, ...).
   GenInst* inst=NULL;
+
+  // Advanced detectector data structure
+  AdvDet* adv_det=NULL;
 
   // Error status.
   int status=EXIT_SUCCESS;   
@@ -126,7 +133,18 @@ int projev_main() {
     // END of setting up the attitude.
 
     // Set the event file.
-    elf=openEventFile(par.EventList, READWRITE, &status);
+    strcpy(ucase_buffer,par.AdvXml);
+    strtoupper(ucase_buffer);
+    if (0==strcmp(ucase_buffer, "NONE")){
+    	// Load classic event file
+    	elf=openEventFile(par.EventList, READWRITE, &status);
+    	if(status==COL_NOT_FOUND){
+    		SIXT_WARNING("You may have given this tool a TES event file as input without giving it an advanced xml file");
+    	}
+    } else {
+    	// Load Tes event file
+    	tes_elf=openTesEventFile(par.EventList,READWRITE,&status);
+    }
     CHECK_STATUS_BREAK(status);
 
     // --- END of Initialization ---
@@ -138,7 +156,13 @@ int projev_main() {
     headas_chat(5, "start sky projection process ...\n");
 
     // Run the pattern projection.
-    phproj(inst, ac, elf, par.TSTART, par.Exposure, &status);
+    if (NULL!=elf){
+    	phproj(inst, ac, elf, par.TSTART, par.Exposure, &status);
+    } else {
+    	adv_det = loadAdvDet(par.AdvXml,&status);
+		CHECK_STATUS_BREAK(status);
+    	phproj_advdet(inst,adv_det,ac,tes_elf,par.TSTART,par.Exposure,&status);
+    }
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
@@ -153,8 +177,12 @@ int projev_main() {
   // Destroy the GenInst data structure.
   destroyGenInst(&inst, &status);
   
+  // Destroy the AdvDet data structure
+  destroyAdvDet(&adv_det);
+
   // Close the files.
   freeEventFile(&elf, &status);
+  freeTesEventFile(tes_elf,&status);
 
   // Release memory of Attitude.
   freeAttitude(&ac);
@@ -218,6 +246,14 @@ int projev_getpar(struct Parameters* par)
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
+  status=ape_trad_query_string("AdvXml", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the advanced detector XML file");
+    return(status);
+  }
+  strcpy(par->AdvXml, sbuffer);
+  free(sbuffer);
+
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude");
@@ -270,7 +306,7 @@ int projev_getpar(struct Parameters* par)
   }
 
   return(status);
-}
 
+}
 
 

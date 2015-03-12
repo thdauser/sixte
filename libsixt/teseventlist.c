@@ -183,12 +183,15 @@ TesEventFile* newTesEventFile(int* const status){
 
 	// Initialize values.
 	file->row  	    =1;
+	file->nrows     =0;
 	file->timeCol   =1;
 	file->energyCol =2;
 	file->grade1Col =3;
 	file->grade2Col =4;
 	file->pixIDCol  =5;
 	file->phIDCol   =6;
+	file->raCol     =7;
+	file->decCol    =8;
 
 	return(file);
 }
@@ -252,13 +255,13 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 	int tlen=9;
 
-	char *ttype[6];
-	char *tform[6];
-	char *tunit[6];
+	char *ttype[8];
+	char *tform[8];
+	char *tunit[8];
 
 	int ii;
 
-	for(ii=0; ii<6; ii++){
+	for(ii=0; ii<8; ii++){
 		ttype[ii]=(char*)malloc(tlen*sizeof(char));
 		if(ttype[ii]==NULL){
 			*status=EXIT_FAILURE;
@@ -314,9 +317,21 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	sprintf(tunit[5], "");
 	CHECK_STATUS_RET(*status,file);
 
+	//Create seventh column RA
+	sprintf(ttype[6], "RA");
+	sprintf(tform[6], "1D");
+	sprintf(tunit[6], "deg");
+	CHECK_STATUS_RET(*status,file);
+
+	//Create eighth column DEC
+	sprintf(ttype[7], "DEC");
+	sprintf(tform[7], "1D");
+	sprintf(tunit[7], "deg");
+	CHECK_STATUS_RET(*status,file);
+
 	char extName[9];
 	sprintf(extName,"EVENTS");
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 6,
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 8,
 			ttype, tform, tunit,extName, status);
 	//Add keywords to new extension
 	if(keywords->extname!=NULL){
@@ -338,7 +353,7 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	CHECK_STATUS_RET(*status,file);
 
 	//Free memory
-	for(ii=0; ii<6; ii++){
+	for(ii=0; ii<8; ii++){
 		free(ttype[ii]);
 		ttype[ii]=NULL;
 		free(tform[ii]);
@@ -349,6 +364,30 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 
 	return(file);
 
+}
+
+/** Opens a TES event file with the given mode */
+TesEventFile* openTesEventFile(const char* const filename,const int mode, int* const status){
+	TesEventFile * file = newTesEventFile(status);
+	headas_chat(3, "open TES event file '%s' ...\n", filename);
+	fits_open_table(&file->fptr, filename, mode, status);
+	CHECK_STATUS_RET(*status, file);
+
+	// Determine the row numbers.
+	fits_get_num_rows(file->fptr, &(file->nrows), status);
+
+	// Determine the column numbers.
+	fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->timeCol, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->energyCol, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->grade1Col, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "GRADE2", &file->grade2Col, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->pixIDCol, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->phIDCol, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
+	CHECK_STATUS_RET(*status, file);
+
+	return(file);
 }
 
 /** Adds the data contained in the event list to the given file */
@@ -390,5 +429,18 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 	}
 
 	file->row = file->row + event_list->index;
+	file->nrows+= event_list->index;
 
+}
+
+/** Updates the RA and DEC columns with the given coordinates */
+void updateRaDec(TesEventFile* file,double ra, double dec, int* const status){
+	double dbuffer=ra*180./M_PI;
+	fits_write_col(file->fptr, TDOUBLE, file->raCol,
+						file->row, 1, 1,&dbuffer, status);
+	CHECK_STATUS_VOID(*status);
+	dbuffer=dec*180./M_PI;
+	fits_write_col(file->fptr, TDOUBLE, file->decCol,
+						file->row, 1, 1,&dbuffer, status);
+	CHECK_STATUS_VOID(*status);
 }

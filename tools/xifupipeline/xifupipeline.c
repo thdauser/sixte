@@ -368,6 +368,37 @@ int xifupipeline_main()
 				CHECK_STATUS_BREAK(status);
 			}
 
+			// Piximpact list file.
+			if (NULL!=pixilf) {
+				fits_update_key(pixilf->fptr, TDOUBLE, "RA_PNT", &ra,
+						"RA of pointing direction [deg]", &status);
+				fits_update_key(pixilf->fptr, TDOUBLE, "DEC_PNT", &dec,
+						"Dec of pointing direction [deg]", &status);
+				fits_update_key(pixilf->fptr, TFLOAT, "PA_PNT", &rollangle,
+						"Roll angle [deg]", &status);
+				CHECK_STATUS_BREAK(status);
+			}
+
+			// Record file.
+			if (NULL!=init->record_file) {
+				fits_update_key(init->record_file->fptr, TDOUBLE, "RA_PNT", &ra,
+						"RA of pointing direction [deg]", &status);
+				fits_update_key(init->record_file->fptr, TDOUBLE, "DEC_PNT", &dec,
+						"Dec of pointing direction [deg]", &status);
+				fits_update_key(init->record_file->fptr, TFLOAT, "PA_PNT", &rollangle,
+						"Roll angle [deg]", &status);
+				CHECK_STATUS_BREAK(status);
+			}
+
+			// Tes event file
+			fits_update_key(init->event_file->fptr, TDOUBLE, "RA_PNT", &ra,
+					"RA of pointing direction [deg]", &status);
+			fits_update_key(init->event_file->fptr, TDOUBLE, "DEC_PNT", &dec,
+					"Dec of pointing direction [deg]", &status);
+			fits_update_key(init->event_file->fptr, TFLOAT, "PA_PNT", &rollangle,
+					"Roll angle [deg]", &status);
+			CHECK_STATUS_BREAK(status);
+
 		} else {
 			// An explicit attitude file is given.
 			if (NULL!=plf) {
@@ -378,6 +409,16 @@ int xifupipeline_main()
 				fits_update_key(ilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 						"attitude file", &status);
 			}
+			if (NULL!=pixilf) {
+				fits_update_key(pixilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
+						"attitude file", &status);
+			}
+			if (NULL!=init->record_file) {
+				fits_update_key(init->record_file->fptr, TSTRING, "ATTITUDE", par.Attitude,
+						"attitude file", &status);
+			}
+			fits_update_key(init->event_file->fptr, TSTRING, "ATTITUDE", par.Attitude,
+					"attitude file", &status);
 			CHECK_STATUS_BREAK(status);
 		}
 
@@ -570,17 +611,13 @@ int xifupipeline_main()
 			fflush(progressfile);
 		}
 
-		// Store the GTI extension in the event file.
-		saveGTIExt(init->event_file->fptr, "STDGTI", gti, &status);
+		headas_chat(3, "start sky projection ...\n");
+		init->event_file->row=1;
+		phproj_advdet(inst,init->det,ac,init->event_file,par.TSTART,par.Exposure,&status);
 		CHECK_STATUS_BREAK(status);
 
-
-		//headas_chat(3, "start sky projection ...\n");
-		//phproj(inst, ac, patf, par.TSTART, par.Exposure, &status);
-		//CHECK_STATUS_BREAK(status);
-
-		// Store the GTI extension in the pattern file.
-		//saveGTIExt(patf->fptr, "STDGTI", gti, &status);
+		// Store the GTI extension in the event file.
+		saveGTIExt(init->event_file->fptr, "STDGTI", gti, &status);
 		CHECK_STATUS_BREAK(status);
 
 		// --- End of simulation process ---
