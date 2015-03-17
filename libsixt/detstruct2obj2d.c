@@ -186,7 +186,7 @@ Obj2D_instance *getObj2DFromXML(char *XMLName, int* const status){
     }else{
       detstatus=EXIT_SUCCESS;
       AdvDet *adet=loadAdvDet(XMLName, &detstatus);
-      
+
       if(detstatus==EXIT_SUCCESS){
 	obj=getObj2DFromAdvdet(adet, status);
 	if(*status!=EXIT_SUCCESS){
@@ -208,7 +208,7 @@ Obj2D_instance *getObj2DFromXML(char *XMLName, int* const status){
     free(obj);
     obj=NULL;
   }
-  
+  CHECK_STATUS_RET(*status,obj);
   printf("getObj2DFromXML returns object with %d subobjects.\n", obj->n_subobj);
   return obj;
 }
