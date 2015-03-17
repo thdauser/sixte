@@ -253,6 +253,9 @@ void parseAdvDetXML(AdvDet* const det,
   expandXML(xmlbuffer, status);
   CHECK_STATUS_VOID(*status);
 
+  // Expand the eventual hexagonloop structure
+  expandHexagon(xmlbuffer,status);
+  CHECK_STATUS_VOID(*status);
 
   // Parse XML code in the xmlbuffer using the expat library.
   // Get an XML_Parser object.
@@ -330,7 +333,12 @@ static void AdvDetXMLElementStart(void* parsedata,
     }
     xmlparsedata->det->sx=getXMLAttributeDouble(attr, "XOFF");
     xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");    
-  } else if (!strcmp(Uelement, "PIXEL")) {
+  } else if (!strcmp(Uelement, "PIXEL")) { 
+    if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
+      xmlparsedata->status=EXIT_FAILURE;
+      SIXT_ERROR("Number of pixels given at pixdetector level does not match the number of pixel subelements");
+      return;
+    }
     int posx, posy;
     posx=getXMLAttributeInt(attr, "POSX");
     posy=getXMLAttributeInt(attr, "POSY");

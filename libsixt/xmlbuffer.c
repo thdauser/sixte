@@ -866,4 +866,282 @@ long getXMLAttributeLong(const char** attr, const char* const key)
   return(atol(buffer));
 }
 
+static void expandHexagonElementStart(void* data, const char* el,
+				  const char** attr)
+{
+  struct XMLHexParseData* mydata=(struct XMLHexParseData*)data;
+
+  // Pointer to the right output buffer (either mydata->output_buffer
+  // or mydata->loop_buffer).
+  struct XMLBuffer* output=mydata->output_buffer;
+
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG]; // Upper case version of XML element
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+
+  // Check if the element is a loop tag.
+  if (!strcmp(Uelement, "HEXAGONLOOP")) {
+
+	  int ii=0;
+	  while (attr[ii]) {
+		  char Uattribute[MAXMSG];
+		  char Uvalue[MAXMSG];
+		  strcpy(Uattribute, attr[ii]);
+		  strtoupper(Uattribute);
+		  strcpy(Uvalue, attr[ii+1]);
+		  strtoupper(Uvalue);
+
+		  if (!strcmp(Uattribute, "RADIUS")) {
+			  mydata->radius=atof(attr[ii+1]);
+		  } else if (!strcmp(Uattribute, "PIXELPITCH")) {
+			  mydata->pixelpitch=atof(attr[ii+1]);
+		  }
+		  ii+=2;
+	  }
+	  // END of loop over all attributes.
+
+	  // Check if parameters are set to valid values.
+	  if (mydata->radius<=mydata->pixelpitch){
+		  mydata->status=EXIT_FAILURE;
+		  SIXT_ERROR("invalid XML hexagonal loop parameters");
+		  return;
+	  }
+	  mydata->inside_loop = 1;
+	  return;
+
+  }
+  // END of check for loop tag.
+
+  // If we are inside a loop, print to the loop buffer.
+  if (mydata->inside_loop) {
+	  output=mydata->loop_buffer;
+  }
+
+  // Print the start tag to the right buffer.
+  char buffer[MAXMSG];
+  if (sprintf(buffer, "<%s", el)>=MAXMSG) {
+	  mydata->status=EXIT_FAILURE;
+	  SIXT_ERROR("XML element string too long");
+	  return;
+  }
+  addString2XMLBuffer(output, buffer, &mydata->status);
+  CHECK_STATUS_VOID(mydata->status);
+
+  int ii=0;
+  while(attr[ii]) {
+	  if (sprintf(buffer, " %s=\"%s\"", attr[ii], attr[ii+1])>=MAXMSG) {
+		  mydata->status=EXIT_FAILURE;
+		  SIXT_ERROR("XML element string too long");
+		  return;
+	  }
+	  addString2XMLBuffer(output, buffer, &mydata->status);
+	  CHECK_STATUS_VOID(mydata->status);
+
+	  ii+=2;
+  }
+
+  addString2XMLBuffer(output, ">", &mydata->status);
+  CHECK_STATUS_VOID(mydata->status);
+}
+
+static void expandHexagonElementEnd(void* data, const char* el)
+{
+  struct XMLHexParseData* mydata=(struct XMLHexParseData*)data;
+
+  // Pointer to the right output buffer (either mydata->output_buffer
+  // or mydata->loop_buffer).
+  struct XMLBuffer* output=mydata->output_buffer;
+
+  // Convert the element to an upper case string.
+  char Uelement[MAXMSG]; // Upper case version of XML element
+  strcpy(Uelement, el);
+  strtoupper(Uelement);
+
+  // Check if the element is a loop end tag.
+  if (!strcmp(Uelement, "HEXAGONLOOP")) {
+
+	  // Check if the outer loop is finished.
+	  // In that case add the loop buffer n-times to the output buffer.
+	  if (mydata->inside_loop) {
+		  double fov_circle_radius = cos(M_PI/6.)*mydata->radius;
+		  int n_pixels_line = 0;
+		  double current_radius = 0.;
+		  int ii,posx,posy;
+		  int n_pixels_tot=0;
+
+		  // Upper part of the hexagon
+		  double current_height = 0.;
+		  int line_number = 0;
+		  while (current_height+.5*mydata->pixelpitch < fov_circle_radius){
+			  current_radius = mydata->radius - current_height/tan(M_PI/3.);
+			  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch)+1;
+			  n_pixels_tot+=n_pixels_line;
+			  for(ii=0;ii<n_pixels_line;ii++){
+				  posx = ii-(n_pixels_line-1)/2;
+				  posy = line_number;
+
+				  // Copy loop buffer to separate XMLBuffer
+				  struct XMLBuffer* replacedBuffer=newXMLBuffer(&mydata->status);
+				  CHECK_STATUS_VOID(mydata->status);
+				  copyXMLBuffer(replacedBuffer, mydata->loop_buffer, &mydata->status);
+				  CHECK_STATUS_VOID(mydata->status);
+
+				  // Replace $x,$y,$p by their values.
+				  if (strlen(replacedBuffer->text)>0) {
+					  char stringvalue[MAXMSG];
+					  sprintf(stringvalue, "%g",mydata->pixelpitch);
+					  replaceInXMLBuffer(replacedBuffer, "$p",
+							  stringvalue, &mydata->status);
+					  CHECK_STATUS_VOID(mydata->status);
+					  sprintf(stringvalue, "%d",posx);
+					  replaceInXMLBuffer(replacedBuffer, "$x",
+							  stringvalue, &mydata->status);
+					  CHECK_STATUS_VOID(mydata->status);
+					  sprintf(stringvalue, "%d",posy);
+					  replaceInXMLBuffer(replacedBuffer, "$y",
+							  stringvalue, &mydata->status);
+					  CHECK_STATUS_VOID(mydata->status);
+				  }
+
+				  // Add the loop content to the output buffer.
+				  addString2XMLBuffer(mydata->output_buffer, replacedBuffer->text,
+						  &mydata->status);
+				  CHECK_STATUS_VOID(mydata->status);
+
+				  freeXMLBuffer(&replacedBuffer);
+			  }
+			  current_height+=mydata->pixelpitch;
+			  line_number++;
+		  }
+
+		  // Lower part of the hexagon
+		  current_height = mydata->pixelpitch;
+		  line_number = -1;
+		  while (current_height+.5*mydata->pixelpitch < fov_circle_radius){
+			  current_radius = mydata->radius - current_height/tan(M_PI/3.);
+			  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch)+1;
+			  n_pixels_tot+=n_pixels_line;
+			  for(ii=0;ii<n_pixels_line;ii++){
+				  posx = ii-(n_pixels_line-1)/2;
+				  posy = line_number;
+
+				  // Copy loop buffer to separate XMLBuffer
+				  struct XMLBuffer* replacedBuffer=newXMLBuffer(&mydata->status);
+				  CHECK_STATUS_VOID(mydata->status);
+				  copyXMLBuffer(replacedBuffer, mydata->loop_buffer, &mydata->status);
+				  CHECK_STATUS_VOID(mydata->status);
+
+				  // Replace $x,$y,$p by their values.
+				  if (strlen(replacedBuffer->text)>0) {
+					  char stringvalue[MAXMSG];
+					  sprintf(stringvalue, "%g",mydata->pixelpitch);
+					  replaceInXMLBuffer(replacedBuffer, "$p",
+							  stringvalue, &mydata->status);
+					  CHECK_STATUS_VOID(mydata->status);
+					  sprintf(stringvalue, "%d",posx);
+					  replaceInXMLBuffer(replacedBuffer, "$x",
+							  stringvalue, &mydata->status);
+					  CHECK_STATUS_VOID(mydata->status);
+					  sprintf(stringvalue, "%d",posy);
+					  replaceInXMLBuffer(replacedBuffer, "$y",
+							  stringvalue, &mydata->status);
+					  CHECK_STATUS_VOID(mydata->status);
+				  }
+
+				  // Add the loop content to the output buffer.
+				  addString2XMLBuffer(mydata->output_buffer, replacedBuffer->text,
+						  &mydata->status);
+				  CHECK_STATUS_VOID(mydata->status);
+
+				  freeXMLBuffer(&replacedBuffer);
+			  }
+			  current_height+=mydata->pixelpitch;
+			  line_number--;
+		  }
+
+		  // Clear the loop buffer.
+		  freeXMLBuffer(&mydata->loop_buffer);
+		  mydata->loop_buffer=newXMLBuffer(&mydata->status);
+		  CHECK_STATUS_VOID(mydata->status);
+
+		  // Now we are outside of any loop.
+		  mydata->inside_loop = 0;
+		  headas_chat(0,"Expected number of pixels in hexagon: %d\n",n_pixels_tot);
+		  return;
+	  }
+  }
+
+  // If we are inside a loop, print to the loop buffer.
+  if (mydata->inside_loop) {
+	  output=mydata->loop_buffer;
+  }
+
+  // Print the end tag to the right buffer.
+  char buffer[MAXMSG];
+  if (sprintf(buffer, "</%s>", el)>=MAXMSG) {
+	  mydata->status=EXIT_FAILURE;
+	  SIXT_ERROR("XML string element too long");
+	  return;
+  }
+  addString2XMLBuffer(output, buffer, &mydata->status);
+  if (EXIT_SUCCESS!=mydata->status) return;
+}
+
+void expandHexagon(struct XMLBuffer* const buffer, int* const status)
+{
+  struct XMLHexParseData data;
+
+  // Parse XML code in the xmlbuffer using the expat library.
+  // Get an XML_Parser object.
+  XML_Parser parser=XML_ParserCreate(NULL);
+  if (NULL==parser) {
+	  *status=EXIT_FAILURE;
+	  SIXT_ERROR("could not allocate memory for XML parser");
+	  return;
+  }
+
+  // Set data that is passed to the handler functions.
+  XML_SetUserData(parser, &data);
+
+  // Set the handler functions.
+  XML_SetElementHandler(parser, expandHexagonElementStart, expandHexagonElementEnd);
+
+  // Set initial values.
+  data.radius = 0.;
+  data.pixelpitch = 0.;
+  data.inside_loop = 0;
+  data.output_buffer =newXMLBuffer(status);
+  data.loop_buffer   =newXMLBuffer(status);
+  data.status=EXIT_SUCCESS;
+
+  // Process all the data in the string buffer.
+  const int done=1;
+  if (!XML_Parse(parser, buffer->text, strlen(buffer->text), done)) {
+	  // Parse error.
+	  *status=EXIT_FAILURE;
+	  char msg[MAXMSG];
+	  sprintf(msg, "parsing XML code failed:\n%s\n",
+			  XML_ErrorString(XML_GetErrorCode(parser)));
+	  printf("%s", buffer->text);
+	  SIXT_ERROR(msg);
+	  return;
+  }
+  // Check for errors.
+  if (EXIT_SUCCESS!=data.status) {
+	  *status=data.status;
+	  return;
+  }
+
+  // Copy the output XMLBuffer to the input XMLBuffer ...
+  copyXMLBuffer(buffer, data.output_buffer, status);
+  if (EXIT_SUCCESS!=*status) return;
+  // ... and release allocated memory.
+  freeXMLBuffer(&data.output_buffer);
+  freeXMLBuffer(&data.loop_buffer);
+
+  XML_ParserFree(parser);
+}
+
+
 
