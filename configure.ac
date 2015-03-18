@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.6], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.7], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -25,6 +25,13 @@ AC_ARG_WITH(simput,
 	simput_dir=${prefix}
 )  
 
+AC_ARG_WITH(gsl,
+	[AC_HELP_STRING([--with-gsl=<GSL path>],
+	[Provide an alternative path to the GSL software (requires lib to be in <path>/lib and includes in <path>/includes])],
+	gsl_dir=$withval,
+	gsl_dir=no
+)  
+
 
 # Compiler Flags:
 # "-g -W -Wall -O0" for debugging
@@ -37,7 +44,14 @@ CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIX
 CPPFLAGS="$CPPCFLAGS -I$simput_dir/include"
 
 # Linker Flags:
-LDFLAGS="$LDFLAGS -g -W -Wall -L$simput_dir/lib"
+LDFLAGS="$LDFLAGS -g -W -Wall  -L$simput_dir/lib"
+
+
+if test "x$gsl_dir" != xno; then
+CPPFLAGS="$CPPFLAGS -I$gsl_dir/include"
+LDFLAGS="$LDFLAGS -L$gsl_dir/lib"
+fi
+
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).
@@ -69,10 +83,12 @@ AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboo
 
 #################################### 
 # GSL Libraries:
-AC_SEARCH_LIBS(cblas_sdot, [gslcblas], [], \
+
+AC_SEARCH_LIBS([cblas_sdot], [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])
-AC_SEARCH_LIBS(gsl_sf_erf_Q, [gsl], [], \
+AC_SEARCH_LIBS([gsl_sf_erf_Q], [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
+
 
 #################################### 
 
