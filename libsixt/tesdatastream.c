@@ -203,27 +203,22 @@ void createTESFitsStreamFile(fitsfile **fptr,
   }
   fits_create_file(fptr, filename, status);
   CHECK_STATUS_VOID(*status);
+
   int logic=(int)'T';
   int bitpix=8;
   int naxis=0;
   fits_update_key(*fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
   fits_update_key(*fptr, TINT, "BITPIX", &(bitpix), NULL, status);
   fits_update_key(*fptr, TINT, "NAXIS", &(naxis), NULL, status);
-  
   sixt_add_fits_stdkeywords_obsolete(*fptr, 1, telescop, instrume, filter,
 			    ancrfile, respfile, mjdref, timezero, 
 			    tstart, tstop, status);
   CHECK_STATUS_VOID(*status);
   
-  //Write XML into header
-  char comment[MAXMSG];
-  sprintf(comment, "XMLFILE: %s", xmlfile);
-  fits_write_comment(*fptr, comment, status);
-  CHECK_STATUS_VOID(*status);
-  
-  //Write pixel impact file into header
-  sprintf(comment, "PIXFILE: %s", impactlist);
-  fits_write_comment(*fptr, comment, status);
+  //Write XML and pixel impact file info into header
+  fits_update_key(*fptr,TSTRING,"XMLFILE",xmlfile,"detector XML description",status);
+  fits_update_key(*fptr,TSTRING,"PIXFILE",impactlist,"Pixel impact file for this stream",status);
+
   CHECK_STATUS_VOID(*status);
 }
 
@@ -341,7 +336,7 @@ void writeTESFitsStream(fitsfile *fptr,
   CHECK_STATUS_VOID(*status);
   
   int firstpix, lastpix;
-  
+
   // Write header keywords
   fits_update_key(fptr, TDOUBLE, "TSTART",
         &tstart, "Start time of data stream", status);
