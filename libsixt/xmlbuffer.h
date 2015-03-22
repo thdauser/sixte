@@ -78,6 +78,23 @@ struct XMLPreParseData {
   int status;
 };
 
+/** Data structure given to the XML Hexagon-Parser. */
+struct XMLHexParseData {
+	/** Radius [m] of the hexagon to realize */
+	double radius;
+	/** Pitch [m] in the two directions between the pixels */
+	double pixelpitch;
+	/** Bool to know whether we are still in the loop */
+	char inside_loop;
+
+	/** Output buffer for processed XML data. */
+	struct XMLBuffer* output_buffer;
+	/** Buffer for XML code inside the loop. */
+	struct XMLBuffer* loop_buffer;
+
+	int status;
+};
+
 
 /////////////////////////////////////////////////////////////////
 // Function Declarations.
@@ -123,6 +140,9 @@ int getXMLAttributeInt(const char** attr, const char* const key);
 
 /** Read the long value of an XML element. */
 long getXMLAttributeLong(const char** attr, const char* const key);
+
+/** Expand the hexagonal detector loop in the advanced detector definition */
+void expandHexagon(struct XMLBuffer* const buffer, int* const status);
 
 
 #endif /* XMLBUFFER_H */

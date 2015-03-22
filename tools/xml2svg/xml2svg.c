@@ -60,6 +60,7 @@ int xml2svg_main() {
       obj[ii]=getObj2DFromXML(xmls[ii], &status);
       CHECK_STATUS_BREAK(status);
     }    
+    CHECK_STATUS_BREAK(status);
     // Find min, max values in all objects.
     Obj2D_inst_findBBLimits(obj[0], &xmin, &xmax, &ymin, &ymax);
     if(nxmls>1){
