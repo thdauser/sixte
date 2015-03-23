@@ -54,6 +54,15 @@ int xifupipeline_main()
 	// Piximpact file.
 	PixImpFile* pixilf=NULL;
 
+	// Event list file
+	TesEventFile* event_file=NULL;
+
+	// FITS standard keywords
+	SixtStdKeywords* keywords=NULL;
+
+	// Advanced detector structure
+	AdvDet* det=NULL;
+
 	// Output file for progress status.
 	FILE* progressfile=NULL;
 
@@ -298,30 +307,39 @@ int xifupipeline_main()
 		CHECK_STATUS_BREAK(status);
 
 		// ---- TES initialization ----
-		// Not in Christian's initialization part, but for the moment we need and already existing piximpact file
+		// Not in Christian's initialization part, but for the moment we need an already existing piximpact file
+		if (!par.UseRMF){
 
-		// Copy parameters in general parameters structure
-		copyParams2GeneralStruct(par,&genpar,par.TSTART,tstop);
+			// Copy parameters in general parameters structure
+			copyParams2GeneralStruct(par,&genpar,par.TSTART,tstop);
 
-		// Build up init structure
-		init = newInitStruct(&status);
-		CHECK_STATUS_BREAK(status);
-		tesinitialization(init,&genpar,&status);
-		CHECK_STATUS_BREAK(status);
-		// Only one piximpact file should be open at a time
-		freePixImpFile(&(init->impfile), &status);
-		// Deactivate all pixels because we want to treat one by one
-		for (int i=0;i<init->det->npix;i++){
-			init->activearray[i]=-1;
+			// Build up init structure
+			init = newInitStruct(&status);
+			CHECK_STATUS_BREAK(status);
+			tesinitialization(init,&genpar,&status);
+			CHECK_STATUS_BREAK(status);
+			// Only one piximpact file should be open at a time
+			freePixImpFile(&(init->impfile), &status);
+			// Deactivate all pixels because we want to treat one by one
+			for (int i=0;i<init->det->npix;i++){
+				init->activearray[i]=-1;
+			}
+			event_file = init->event_file;
+			det=init->det;
+
+			//Initialize reconstruction
+			reconstruct_init = newReconstructInit(&status);
+			CHECK_STATUS_BREAK(status);
+			initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
+					par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
+					par.DerivateExclusion,par.SaturationValue,&status);
+			CHECK_STATUS_BREAK(status);
+		} else{
+			det = loadAdvDet(par.AdvXml,&status);
+			keywords = buildSixtStdKeywords(telescop,instrume,"Normal",inst->tel->arf_filename, inst->det->rmf_filename,"NONE",par.MJDREF, 0.0, par.TSTART, tstop,&status);
+			event_file = opennewTesEventFile(par.TesEventFile,keywords,par.clobber,&status);
+			loadRMFLibrary(det,&status);
 		}
-
-		//Initialize reconstruction
-		reconstruct_init = newReconstructInit(&status);
-		CHECK_STATUS_BREAK(status);
-		initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
-				par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
-				par.DerivateExclusion,par.SaturationValue,&status);
-		CHECK_STATUS_BREAK(status);
 
 		// ---- End of TES initialization ----
 
@@ -380,7 +398,7 @@ int xifupipeline_main()
 			}
 
 			// Record file.
-			if (NULL!=init->record_file) {
+			if (!par.UseRMF && NULL!=init->record_file) {
 				fits_update_key(init->record_file->fptr, TDOUBLE, "RA_PNT", &ra,
 						"RA of pointing direction [deg]", &status);
 				fits_update_key(init->record_file->fptr, TDOUBLE, "DEC_PNT", &dec,
@@ -391,11 +409,11 @@ int xifupipeline_main()
 			}
 
 			// Tes event file
-			fits_update_key(init->event_file->fptr, TDOUBLE, "RA_PNT", &ra,
+			fits_update_key(event_file->fptr, TDOUBLE, "RA_PNT", &ra,
 					"RA of pointing direction [deg]", &status);
-			fits_update_key(init->event_file->fptr, TDOUBLE, "DEC_PNT", &dec,
+			fits_update_key(event_file->fptr, TDOUBLE, "DEC_PNT", &dec,
 					"Dec of pointing direction [deg]", &status);
-			fits_update_key(init->event_file->fptr, TFLOAT, "PA_PNT", &rollangle,
+			fits_update_key(event_file->fptr, TFLOAT, "PA_PNT", &rollangle,
 					"Roll angle [deg]", &status);
 			CHECK_STATUS_BREAK(status);
 
@@ -413,11 +431,11 @@ int xifupipeline_main()
 				fits_update_key(pixilf->fptr, TSTRING, "ATTITUDE", par.Attitude,
 						"attitude file", &status);
 			}
-			if (NULL!=init->record_file) {
+			if (!par.UseRMF && NULL!=init->record_file) {
 				fits_update_key(init->record_file->fptr, TSTRING, "ATTITUDE", par.Attitude,
 						"attitude file", &status);
 			}
-			fits_update_key(init->event_file->fptr, TSTRING, "ATTITUDE", par.Attitude,
+			fits_update_key(event_file->fptr, TSTRING, "ATTITUDE", par.Attitude,
 					"attitude file", &status);
 			CHECK_STATUS_BREAK(status);
 		}
@@ -448,6 +466,7 @@ int xifupipeline_main()
 		int gtibin=0;
 		double simtime=0.;
 		long current_impact_row = 0;
+		long current_impact_write_row = 0;
 		do {
 			// Currently regarded interval.
 			double t0=gti->start[gtibin];
@@ -497,7 +516,7 @@ int xifupipeline_main()
 
 				// Piximpacts stage
 				PixImpact *piximp=NULL;
-				int newPixImpacts=AdvImpactList(init->det, &imp, &piximp);
+				int newPixImpacts=AdvImpactList(det, &imp, &piximp);
 				if(newPixImpacts>0){
 					for(int jj=0; jj<newPixImpacts; jj++){
 						addImpact2PixImpFile(pixilf, &(piximp[jj]), &status);
@@ -524,72 +543,82 @@ int xifupipeline_main()
 			// END of photon processing loop for the current interval.
 
 
-			// Generate the data streams for each pixel that has been hit
-			int* list_pixels=NULL;
-			getListPixelsHit(pixilf,&list_pixels,init->det->npix,&status);
-			CHECK_STATUS_BREAK(status);
+			if (!par.UseRMF){
+				headas_chat(3, "\nstart event reconstruction ...\n");
+				// Generate the data streams for each pixel that has been hit
+				int* list_pixels=NULL;
+				getListPixelsHit(pixilf,&list_pixels,init->det->npix,&status);
+				CHECK_STATUS_BREAK(status);
 
-			// Close piximpact file
-			long current_impact_write_row = pixilf->row;
-			freePixImpFile(&pixilf, &status);
+				// Close piximpact file
+				current_impact_write_row = pixilf->row;
+				freePixImpFile(&pixilf, &status);
 
-			init->impfile=openPixImpFile(piximpactlist_filename, READONLY,&status);
-			//CHECK_STATUS_BREAK(status);
+				init->impfile=openPixImpFile(piximpactlist_filename, READONLY,&status);
+				//CHECK_STATUS_BREAK(status);
 
-			// Iterate over the pixels that were hit and run simulation
-			for(int i=0;i<init->det->npix;i++){
-				if(list_pixels[i]){
-					// Activate corresponding pixel
-					init->activearray[i]=0;
-					genpar.nlo=i;
-					genpar.nhi=i;
+				// Iterate over the pixels that were hit and run simulation
+				for(int i=0;i<det->npix;i++){
+					if(list_pixels[i]){
+						// Activate corresponding pixel
+						init->activearray[i]=0;
+						genpar.nlo=i;
+						genpar.nhi=i;
 
-					// Reinitialize impact file
-					init->impfile->row = current_impact_row;
+						// Reinitialize impact file
+						init->impfile->row = current_impact_row;
 
-					// Stream generation
-					TESDataStream* stream=newTESDataStream(&status);
-					CHECK_STATUS_BREAK(status);
-					int ismonoc=0;
-					float monoen=0.;
+						// Stream generation
+						TESDataStream* stream=newTESDataStream(&status);
+						CHECK_STATUS_BREAK(status);
+						int ismonoc=0;
+						float monoen=0.;
 
-					getTESDataStream(stream,
-							init->impfile,
-							init->profiles,
-							init->det,
-							t0,
-							t1,
-							init->det->npix,
-							1,
-							init->activearray,
-							init->Nevts,
-							&ismonoc,
-							&monoen,
-							genpar.seed, // should modify this, we already have a random generator
-							&status);
-					CHECK_STATUS_BREAK(status);
+						getTESDataStream(stream,
+								init->impfile,
+								init->profiles,
+								init->det,
+								t0,
+								t1,
+								init->det->npix,
+								1,
+								init->activearray,
+								init->Nevts,
+								&ismonoc,
+								&monoen,
+								genpar.seed, // should modify this, we already have a random generator
+								&status);
+						CHECK_STATUS_BREAK(status);
 
-					// Trigger and reconstruction
-					triggerWithImpact(stream,&genpar,init,monoen,reconstruct_init,par.EventListSize,par.Identify,&status);
-					CHECK_STATUS_BREAK(status);
+						// Trigger and reconstruction
+						triggerWithImpact(stream,&genpar,init,monoen,reconstruct_init,par.EventListSize,par.Identify,&status);
+						CHECK_STATUS_BREAK(status);
 
-					// Release this stream and deactivate the treated pixel
-					destroyTESDataStream(stream);
-					init->activearray[i]=-1;
+						// Release this stream and deactivate the treated pixel
+						destroyTESDataStream(stream);
+						init->activearray[i]=-1;
 
+					}
 				}
+				free(list_pixels);
+				CHECK_STATUS_BREAK(status);
+
+				// Close piximpact file in read mode (there should be only one file open)
+				// after saving current row of impact file (this saves the row for next GTI)
+				current_impact_row = init->impfile->row;
+				freePixImpFile(&(init->impfile), &status);
+
+				// Reopen piximpact file for writing for next gti
+				pixilf = openPixImpFile(piximpactlist_filename,READWRITE,&status);
+				pixilf->row = current_impact_write_row;
+			} else{
+				headas_chat(3, "\nstart event reconstruction ...\n");
+				current_impact_write_row = pixilf->row;
+				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
+				processImpactsWithRMF(det,pixilf,event_file,&status);
+				pixilf->row=current_impact_write_row;
+				current_impact_row=current_impact_write_row;
 			}
-			free(list_pixels);
-			CHECK_STATUS_BREAK(status);
-
-			// Close piximpact file in read mode (there should be only one file open)
-			// after saving current row of impact file (this saves the row for next GTI)
-			current_impact_row = init->impfile->row;
-			freePixImpFile(&(init->impfile), &status);
-
-			// Reopen piximpact file for writing for next gti
-			pixilf = openPixImpFile(piximpactlist_filename,READWRITE,&status);
-			pixilf->row = current_impact_write_row;
 
 			// Proceed to the next GTI interval.
 			simtime+=gti->stop[gtibin]-gti->start[gtibin];
@@ -612,12 +641,12 @@ int xifupipeline_main()
 		}
 
 		headas_chat(3, "start sky projection ...\n");
-		init->event_file->row=1;
-		phproj_advdet(inst,init->det,ac,init->event_file,par.TSTART,par.Exposure,&status);
+		event_file->row=1;
+		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,&status);
 		CHECK_STATUS_BREAK(status);
 
 		// Store the GTI extension in the event file.
-		saveGTIExt(init->event_file->fptr, "STDGTI", gti, &status);
+		saveGTIExt(event_file->fptr, "STDGTI", gti, &status);
 		CHECK_STATUS_BREAK(status);
 
 		// --- End of simulation process ---
@@ -642,6 +671,10 @@ int xifupipeline_main()
 	destroyGenInst(&inst, &status);
 	freeTESInitStruct(&init,&status);
 	freeReconstructInit(reconstruct_init);
+	if(par.UseRMF){
+		destroyAdvDet(&det);
+		freeTesEventFile(event_file,&status);
+	}
 
 	if (NULL!=progressfile) {
 		fclose(progressfile);
@@ -943,6 +976,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 	status=ape_trad_query_bool("Identify", &par->Identify);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the Identify parameter");
+		return(status);
+	}
+
+	status=ape_trad_query_bool("UseRMF", &par->UseRMF);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the UseRMF parameter");
 		return(status);
 	}
 

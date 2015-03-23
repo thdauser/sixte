@@ -40,6 +40,7 @@
 #include "pixelimpactfile.h"
 #include "tesinitialization.h"
 #include "testrigger.h"
+#include "teseventlist.h"
 
 #define TOOLSUB xifupipeline_main
 #include "headas_main.c"
@@ -107,6 +108,7 @@ struct Parameters {
   char Reconstruct;
   char WriteRecordFile;
   char Identify;
+  char UseRMF;
 
   char history;
   char clobber;

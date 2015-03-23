@@ -444,3 +444,40 @@ void updateRaDec(TesEventFile* file,double ra, double dec, int* const status){
 						file->row, 1, 1,&dbuffer, status);
 	CHECK_STATUS_VOID(*status);
 }
+
+/** Add event as reconstructed with the RMF method */
+void addRMFImpact(TesEventFile* file,PixImpact * impact,int* const status){
+	//Save time column
+	fits_write_col(file->fptr, TDOUBLE, file->timeCol,
+			file->row, 1, 1, &(impact->time), status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save energy column
+	double energy = (double)impact->energy;
+	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
+			file->row, 1, 1, &energy, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grade1 column
+	int grade=0;
+	fits_write_col(file->fptr, TINT, file->grade1Col,
+			file->row, 1, 1, &grade, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grade2 column
+	fits_write_col(file->fptr, TINT, file->grade2Col,
+			file->row, 1, 1, &grade, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save PIXID column
+	fits_write_col(file->fptr, TLONG, file->pixIDCol,
+			file->row, 1, 1, &(impact->pixID), status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save PH_ID column
+	fits_write_col(file->fptr, TLONG, file->phIDCol,
+			file->row, 1, 1, &(impact->ph_id), status);
+	CHECK_STATUS_VOID(*status);
+	file->row++;
+	file->nrows++;
+}

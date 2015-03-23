@@ -26,6 +26,15 @@
 #include "pixelimpact.h"
 #include "point.h"
 #include "xmlbuffer.h"
+#include "teseventlist.h"
+#include "pixelimpactfile.h"
+
+////////////////////////////////////////////////////////////////////////
+// Constants.
+////////////////////////////////////////////////////////////////////////
+
+/** Initial size of RMFLibrary. */
+#define RMFLIBRARYSIZE (10)
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -98,9 +107,30 @@ typedef struct{
   /** Noise properties of pixel noise */
   TESNoiseProperties* TESNoise;
 
+  /** Response matrix file */
+  char* rmffile;
+
+  /** ID of the rmf inside general detector (to avoid loading one rmf per pixel) */
+  int rmfID;
+
 }AdvPix;
 
+/** Data structure containing a library of different RMFs */
+typedef struct{
 
+	/** Current size of the allocated library */
+	int size;
+
+	/** Number of RMFs in the library */
+	int n_rmf;
+
+	/** Array containing the filenames of the loaded rmfs */
+	char** filenames;
+
+	/** Array containing the rmf structures */
+	struct RMF** rmf_array;
+
+}RMFLibrary;
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -142,6 +172,9 @@ typedef struct{
 
   /** Signal if the OofNoise is requested in at least one pixel */
   int oof_activated;
+
+  /** RMF library */
+  RMFLibrary* rmf_library;
 
 }AdvDet;
 
@@ -192,5 +225,16 @@ void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp);
     event. Gives the number of pixels that were hit.*/
 int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp);
 
+/** Iterates the different pixels and loads the necessary RMFLibrary */
+void loadRMFLibrary(AdvDet* det, int* const status);
+
+/** Adds an RMF to the RMF library. The RMF will only be added if it is not already in the library */
+void addRMF(AdvDet* det,AdvPix* pixel,int* const status);
+
+/** Destructor of the RMF library structure */
+void freeRMFLibrary(RMFLibrary* library);
+
+/** Process the impacts contained in the piximpacts file with the RMF method */
+void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
 
 #endif /* ADVDET_H */

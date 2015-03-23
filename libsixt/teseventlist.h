@@ -22,6 +22,7 @@
 #define TESEVENTLIST_H 1
 
 #include "sixt.h"
+#include "pixelimpact.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
@@ -119,5 +120,8 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 
 /** Updates the RA and DEC columns with the given coordinates */
 void updateRaDec(TesEventFile* file,double ra, double dec, int* const status);
+
+/** Add event as reconstructed with the RMF method */
+void addRMFImpact(TesEventFile* file,PixImpact * impact,int* const status);
 
 #endif /* TESEVENTLIST_H */

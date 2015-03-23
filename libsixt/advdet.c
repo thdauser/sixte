@@ -84,6 +84,7 @@ void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
     destroyTESNoiseProperties(pix->TESNoise);
     free(pix->TESNoise);
+    free(pix->rmffile);
   }
 }
 
@@ -108,6 +109,7 @@ AdvDet* newAdvDet(int* const status){
   det->tesnoisefilter=0;
   det->inpixel=0;
   det->oof_activated=0;
+  det->rmf_library=NULL;
 
   return(det);
 }
@@ -127,6 +129,7 @@ void destroyAdvDet(AdvDet **det){
     if(NULL!=(*det)->filepath){
       free((*det)->filepath);
     }
+    freeRMFLibrary((*det)->rmf_library);
   }
 }
 
@@ -351,6 +354,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 			return;
 		}
 		xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=NULL;
+		xmlparsedata->det->pix[xmlparsedata->det->cpix].rmffile=NULL;
 		xmlparsedata->det->inpixel=1;
 	} else if (!strcmp(Uelement, "SHAPE")){
 		if (!xmlparsedata->det->inpixel){
@@ -443,6 +447,16 @@ static void AdvDetXMLElementStart(void* parsedata,
 			SIXT_ERROR("XML syntax error: noisezero used outside of tesnoisefilter.");
 			return;
 		}
+	} else if (!strcmp(Uelement, "PIXRMF")) {
+		if (!xmlparsedata->det->inpixel){
+			xmlparsedata->status=EXIT_FAILURE;
+			SIXT_ERROR("XML syntax error: rmf used outside of pixel");
+			return;
+		}
+		char rmffile[MAXFILENAME];
+		getXMLAttributeString(attr, "FILENAME", rmffile);
+		xmlparsedata->det->pix[xmlparsedata->det->cpix].rmffile=strdup(rmffile);
+		xmlparsedata->det->pix[xmlparsedata->det->cpix].rmfID=-1;
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
 		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
@@ -527,5 +541,145 @@ AdvDet* loadAdvDet(const char* const filename,
   CHECK_STATUS_RET(*status, det);
   
   return(det);
+}
+
+
+/** Iterates the different pixels and loads the necessary RMFLibrary */
+void loadRMFLibrary(AdvDet* det, int* const status){
+	det->rmf_library = malloc(sizeof(*(det->rmf_library)));
+	if (NULL == det->rmf_library){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation for rmf library failed");
+		return;
+	}
+	det->rmf_library->rmf_array = malloc(RMFLIBRARYSIZE*sizeof(*(det->rmf_library->rmf_array)));
+	if (NULL == det->rmf_library->rmf_array){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation for rmf library failed");
+		return;
+	}
+	det->rmf_library->filenames = malloc(RMFLIBRARYSIZE*sizeof(*(det->rmf_library->filenames)));
+	if (NULL == det->rmf_library->filenames){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation for rmf library failed");
+		return;
+	}
+
+	det->rmf_library->size = RMFLIBRARYSIZE;
+	det->rmf_library->n_rmf = 0;
+
+	for (int i=0;i<RMFLIBRARYSIZE;i++){
+		det->rmf_library->rmf_array[i]=NULL;
+		det->rmf_library->filenames[i]=NULL;
+	}
+
+	for (int i=0;i<det->npix;i++){
+		addRMF(det,&(det->pix[i]),status);
+		CHECK_STATUS_VOID(*status);
+	}
+}
+
+/** Adds an RMF to the RMF library. The RMF will only be added if it is not already in the library */
+void addRMF(AdvDet* det,AdvPix* pixel,int* const status){
+	if(NULL==pixel->rmffile){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("Tried to load pixel RMF whereas no RMF file was given in XML. Abort");
+		return;
+	}
+	for (int i=0;i<det->rmf_library->n_rmf;i++){
+		if(!strcmp(det->rmf_library->filenames[i],pixel->rmffile)){
+			pixel->rmfID=i;
+			return; //If the rmf is already in there, just update the rmfID and return
+		}
+	}
+
+	// Update size if necessary
+	if (det->rmf_library->n_rmf>=det->rmf_library->size){
+		det->rmf_library->size = det->rmf_library->size*2;
+		struct RMF** new_rmf_array = realloc(det->rmf_library->rmf_array,det->rmf_library->size*sizeof(*(det->rmf_library->rmf_array)));
+		if (NULL==new_rmf_array){
+			*status = EXIT_FAILURE;
+			SIXT_ERROR("Size update of RMF library failed");
+			return;
+		}
+		char** new_filenames = realloc(det->rmf_library->filenames,det->rmf_library->size*sizeof(*(det->rmf_library->filenames)));
+		if (NULL==new_filenames){
+			*status = EXIT_FAILURE;
+			SIXT_ERROR("Size update of RMF library failed");
+			return;
+		}
+
+		det->rmf_library->rmf_array=new_rmf_array;
+		det->rmf_library->filenames=new_filenames;
+	}
+
+	//Add RMF to the library
+	char filepathname[MAXFILENAME];
+	strcpy(filepathname,det->filepath);
+	strcat(filepathname,pixel->rmffile);
+	det->rmf_library->rmf_array[det->rmf_library->n_rmf] = loadRMF(filepathname,status);
+	det->rmf_library->filenames[det->rmf_library->n_rmf] = strdup(pixel->rmffile);
+	pixel->rmfID=det->rmf_library->n_rmf;
+	det->rmf_library->n_rmf++;
+}
+
+/** Destructor of the RMF library structure */
+void freeRMFLibrary(RMFLibrary* library){
+	if (NULL!=library){
+		for(int i=0;i<library->size;i++){
+			freeRMF(library->rmf_array[i]);
+			free(library->filenames[i]);
+		}
+		free(library->rmf_array);
+		free(library->filenames);
+		free(library);
+	}
+	library=NULL;
+}
+
+/** Process the impacts contained in the piximpacts file with the RMF method */
+void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status){
+	PixImpact impact;
+	long channel;
+	struct RMF* rmf;
+
+	while(getNextImpactFromPixImpFile(piximpacfile,&impact,status)){
+		//printf("%d ",impact.pixID);
+		//////////////////////////////////
+		//Copied and adapted from addGenDetPhotonImpact
+		//////////////////////////////////
+		CHECK_STATUS_VOID(*status);
+
+		rmf = det->rmf_library->rmf_array[det->pix[impact.pixID].rmfID];
+
+		// Determine the measured detector channel (PI channel) according
+		// to the RMF.
+		// The channel is obtained from the RMF using the corresponding
+		// HEAdas routine which is based on drawing a random number.
+		returnRMFChannel(rmf, impact.energy, &channel);
+
+		// Check if the photon is really measured. If the PI channel
+		// returned by the HEAdas RMF function is '-1', the photon is not
+		// detected. This should not happen as the rmf is supposedly
+		// normalized
+		if (channel<rmf->FirstChannel) {
+			SIXT_WARNING("Impact found as not detected due to failure during RMF based energy allocation");
+			continue; // go to next photon (photon is not detected).
+		}
+
+		// Determine the corresponding detected energy.
+		// NOTE: In this simulation the collected charge is represented
+		// by the nominal photon energy [keV], which corresponds to the
+		// PI channel according to the EBOUNDS table.
+		impact.energy=getEBOUNDSEnergy(channel, rmf, status);
+		//printf("%f ",impact.energy);
+		CHECK_STATUS_VOID(*status);
+		assert(impact.energy>=0.);
+
+		// Add final impact to event file
+		addRMFImpact(event_file,&impact,status);
+		CHECK_STATUS_VOID(*status);
+	}
+
 }
 
