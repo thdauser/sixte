@@ -203,13 +203,13 @@ void createTESFitsStreamFile(fitsfile **fptr,
   }
   fits_create_file(fptr, filename, status);
   CHECK_STATUS_VOID(*status);
-
   int logic=(int)'T';
   int bitpix=8;
   int naxis=0;
   fits_update_key(*fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
   fits_update_key(*fptr, TINT, "BITPIX", &(bitpix), NULL, status);
   fits_update_key(*fptr, TINT, "NAXIS", &(naxis), NULL, status);
+  
   sixt_add_fits_stdkeywords_obsolete(*fptr, 1, telescop, instrume, filter,
 			    ancrfile, respfile, mjdref, timezero, 
 			    tstart, tstop, status);
@@ -336,7 +336,7 @@ void writeTESFitsStream(fitsfile *fptr,
   CHECK_STATUS_VOID(*status);
   
   int firstpix, lastpix;
-
+  
   // Write header keywords
   fits_update_key(fptr, TDOUBLE, "TSTART",
         &tstart, "Start time of data stream", status);
@@ -369,213 +369,220 @@ void writeTESFitsStream(fitsfile *fptr,
 }
 
 void getTESDataStream(TESDataStream* TESData, 
-		      PixImpFile* PixFile, 
-		      TESProfiles* TESProf,
-		      AdvDet* det,
-		      double tstart, 
-		      double tstop,
-		      int Ndetpix,
-		      int Nactive,
-		      int* activearray,
-		      long* Nevts,
-		      int *ismonoc,
-		      float *monoen,
-		      unsigned long int seed,
-		      int* const status) 
+		PixImpFile* PixFile,
+		TESProfiles* TESProf,
+		AdvDet* det,
+		double tstart,
+		double tstop,
+		int Ndetpix,
+		int Nactive,
+		int* activearray,
+		long* Nevts,
+		int *ismonoc,
+		float *monoen,
+		unsigned long int seed,
+		int* const status)
 {
-			     
-  /* Parameters that need to be obtained from elsewhere */
-  
-  double SampleFreq;     /* Sample Frequency / From XML 10^6 Hz */
-  uint16_t Offset;       /* Baseline of ADC output / From XML */ 
-  int Npix;              /* Number of active pixels*/
-  double CalFactor;      /* ADC / energy calibration factor */
-  
-  /* Local variables */
-  int inoise;            /* Position index in noise buffer */
-  int ipix;              /* Pixel index */
-  double t;              /* Time index */
-  double PixVal;         /* Pixel value (double) */
-  PixImpact impact;      /* Current impact */
-  
-  
-  /* Status of getNextImpactFromPixImpFile */
-  int piximpstatus=0;
-  int evtpixid=-1; // PixID of event
-  
-  // total number of simulated events
-  long ntot=0;
-  
-  /* Initialize running indices */
-  t=tstart;
-  inoise=NOISEBUFFERSIZE;
-  
-  /* Temporary definition of variables / Exposure of 10 ms */
-  SampleFreq=det->SampleFreq;    	/* Hertz */
-  Offset=(uint16_t)det->ADCOffset;     /* ADC offset */
-  Npix=Nactive;       		  	/* Number of pixels */
-  CalFactor=det->calfactor;      	/* Calibration factor for events */
-  
-  long Nt=(tstop-tstart)*SampleFreq; // Number of time steps
-  long tstep=0; // active timestep
-  
-  /* Initialize rng */
-  gsl_rng *rng;
-  setNoiseGSLSeed(&rng, seed);
-  
-  /* allocate output stream structure */
-  allocateTESDataStream(TESData, Nt, Npix, status);
-  CHECK_STATUS_VOID(*status);
-  
-  /* Initialize Noise Spectrum and Noise buffer */
-  NoiseSpectrum* Noise=newNoiseSpectrum(det, status);
-  CHECK_STATUS_VOID(*status);
-  NoiseBuffer* NBuffer=newNoiseBuffer(status, &Npix);
-  CHECK_STATUS_VOID(*status);
-  
-  /* Initialize 1/F noise arrays */
-  NoiseOoF* OFNoise=NULL;
-  if(det->TESNoise->OoFRMS!=0.){
-    OFNoise=newNoiseOoF(status,&rng,det); 
-    CHECK_STATUS_VOID(*status);
-  }
-  
-  /* Initialize array of linked lists containing active pulses */
-  EvtNode** ActPulses=NULL;
-  ActPulses=newEventNodes(&Npix,status);
-  CHECK_STATUS_VOID(*status);
-  if(ActPulses==NULL){
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("ActPulses was NULL after memory allocation.");
-  }
-  CHECK_STATUS_VOID(*status);
-  
-  t=tstart;
-  long t_long = 0;
-  EvtNode *current;
-  
-  printf("Simulate %ld time steps for %d pixels.\n", Nt, Npix);
-  
-  *ismonoc=1;
-  
-  /* While loop over all time bins */
-  while (tstep<Nt) {
 
-    /* Write time stamp */
-    TESData->time[tstep]=t;
-    
-    /* Fill Noise buffer */
-    if (inoise==NOISEBUFFERSIZE) {
-      genNoiseSpectrum(Noise,NBuffer,&SampleFreq,&rng,status);
-      CHECK_STATUS_VOID(*status);
-      inoise=0;
-    }
-    
-    /* Calculate next state of 1/f noise base array */
-    if(det->TESNoise->OoFRMS!=0.){
-      getNextOoFNoiseSumval(OFNoise, &rng, status);
-    }
-    
-    
-    /* Get first event from the impact file */
-    if (tstep==0) {
-      piximpstatus=getNextImpactFromPixImpFile(PixFile,&impact,status);
-      CHECK_STATUS_VOID(*status);
-    }
-    
-    /* If the event occurs in this time bin and is in an active pixel, */ 
-    /* add it to the node list */
-    while ((piximpstatus>0) &&(impact.time>=t)&&(impact.time<t+(1.0/SampleFreq))) {
-      evtpixid=checkPixIfActive(impact.pixID, Ndetpix, activearray);
-      if(evtpixid>-1){
-	int profver=det->pix[impact.pixID].profVersionID;
-	int eindex=findTESProfileEnergyIndex(TESProf, 
-			      profver, 
-			      impact.energy);
-	addEventToNode(ActPulses,TESProf,&impact,evtpixid,profver,eindex,status);
+	/* Parameters that need to be obtained from elsewhere */
+
+	double SampleFreq;     /* Sample Frequency / From XML 10^6 Hz */
+	int Npix;              /* Number of active pixels*/
+	AdvPix** simulated_pixels = getSimulatedPixelArray(det,activearray,Ndetpix,Nactive,status); /* Array containing pointers to the pixels actually simulated */
+
+	/* Local variables */
+	int inoise;            /* Position index in noise buffer */
+	int ipix;              /* Pixel index */
+	double t;              /* Time index */
+	double PixVal;         /* Pixel value (double) */
+	PixImpact impact;      /* Current impact */
+
+
+	/* Status of getNextImpactFromPixImpFile */
+	int piximpstatus=0;
+	int evtpixid=-1; // PixID of event
+
+	// total number of simulated events
+	long ntot=0;
+
+	/* Initialize running indices */
+	t=tstart;
+	inoise=NOISEBUFFERSIZE;
+
+	/* Temporary definition of variables / Exposure of 10 ms */
+	SampleFreq=det->SampleFreq;    	/* Hertz */
+	Npix=Nactive;       		  	/* Number of pixels */
+
+	long Nt=(tstop-tstart)*SampleFreq; // Number of time steps
+	long tstep=0; // active timestep
+
+	/* Initialize rng */
+	gsl_rng *rng;
+	setNoiseGSLSeed(&rng, seed);
+
+	/* allocate output stream structure */
+	allocateTESDataStream(TESData, Nt, Npix, status);
 	CHECK_STATUS_VOID(*status);
-	Nevts[impact.pixID]=Nevts[impact.pixID]+1;
-	if(ActPulses[evtpixid]==NULL){
-	  *status=EXIT_FAILURE;
-	  SIXT_ERROR("Added impact but pointer is NULL.");
-	  CHECK_STATUS_VOID(*status);
+
+	/* Initialize Noise buffer */
+	NoiseBuffer* NBuffer=newNoiseBuffer(status, &Npix);
+	CHECK_STATUS_VOID(*status);
+
+	/* Initialize 1/F noise arrays */
+	NoiseOoF** OFNoise=NULL;
+	if (det->oof_activated){
+		OFNoise = malloc(Nactive*sizeof(*OFNoise));
+		if(OFNoise==NULL){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("Memory allocation for OFNoise failed");
+			CHECK_STATUS_VOID(*status);
+		}
+		for(int i=0;i<Nactive;i++){
+			if(simulated_pixels[i]->TESNoise->OoFRMS!=0.){
+				OFNoise[i]=newNoiseOoF(status,&rng,SampleFreq,simulated_pixels[i]);
+				CHECK_STATUS_VOID(*status);
+			} else{
+				OFNoise[i]=NULL;
+			}
+		}
+	}
+
+	/* Initialize array of linked lists containing active pulses */
+	EvtNode** ActPulses=NULL;
+	ActPulses=newEventNodes(&Npix,status);
+	CHECK_STATUS_VOID(*status);
+	if(ActPulses==NULL){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("ActPulses was NULL after memory allocation.");
 	}
 	CHECK_STATUS_VOID(*status);
-	if(*ismonoc==1){
-	  if(ntot==0){
-	    *monoen=impact.energy;
-	  }else{
-	    if(impact.energy!=(*monoen)){
-	      *monoen=0.;
-	      *ismonoc=0;
-	    }
-	  }
+
+	t=tstart;
+	long t_long = 0;
+	EvtNode *current;
+
+	printf("Simulate %ld time steps for %d pixels.\n", Nt, Npix);
+
+	*ismonoc=1;
+
+	/* While loop over all time bins */
+	while (tstep<Nt) {
+
+		/* Write time stamp */
+		TESData->time[tstep]=t;
+
+		/* Fill Noise buffer */
+		if (inoise==NOISEBUFFERSIZE) {
+			genNoiseSpectrum(simulated_pixels,NBuffer,&SampleFreq,&rng,status);
+			CHECK_STATUS_VOID(*status);
+			inoise=0;
+		}
+
+		/* Calculate next state of 1/f noise base array */
+		if(det->oof_activated){
+			getNextOoFNoiseSumval(OFNoise, &rng,Nactive);
+		}
+
+
+		/* Get first event from the impact file */
+		if (tstep==0) {
+			piximpstatus=getNextImpactFromPixImpFile(PixFile,&impact,status);
+			CHECK_STATUS_VOID(*status);
+		}
+
+		/* If the event occurs in this time bin and is in an active pixel, */
+		/* add it to the node list */
+		while ((piximpstatus>0) &&(impact.time>=t)&&(impact.time<t+(1.0/SampleFreq))) {
+			evtpixid=checkPixIfActive(impact.pixID, Ndetpix, activearray);
+			if(evtpixid>-1){
+				int profver=det->pix[impact.pixID].profVersionID;
+				int eindex=findTESProfileEnergyIndex(TESProf,
+						profver,
+						impact.energy);
+				addEventToNode(ActPulses,TESProf,&impact,evtpixid,profver,eindex,status);
+				CHECK_STATUS_VOID(*status);
+				Nevts[impact.pixID]=Nevts[impact.pixID]+1;
+				if(ActPulses[evtpixid]==NULL){
+					*status=EXIT_FAILURE;
+					SIXT_ERROR("Added impact but pointer is NULL.");
+					CHECK_STATUS_VOID(*status);
+				}
+				CHECK_STATUS_VOID(*status);
+				if(*ismonoc==1){
+					if(ntot==0){
+						*monoen=impact.energy;
+					}else{
+						if(impact.energy!=(*monoen)){
+							*monoen=0.;
+							*ismonoc=0;
+						}
+					}
+				}
+				ntot++;
+			}
+			CHECK_STATUS_VOID(*status);
+			piximpstatus=getNextImpactFromPixImpFile(PixFile,&impact,status);
+			CHECK_STATUS_VOID(*status);
+		}
+
+		for (ipix=0;ipix<Npix;ipix++) {
+			/* Add the offset first */
+			TESData->adc_value[tstep][ipix]=(uint16_t)simulated_pixels[ipix]->ADCOffset;
+			PixVal=0.;
+
+			/* Add 1/f noise to the pixel value (double) */
+			CHECK_STATUS_VOID(*status);
+			if(det->oof_activated && simulated_pixels[ipix]->TESNoise->OoFRMS!=0.){
+				PixVal= PixVal + OFNoise[ipix]->Sumrval + gsl_ran_gaussian(rng,OFNoise[ipix]->Sigma);
+			}
+			CHECK_STATUS_VOID(*status);
+
+			/* Add noise to the pixel value (double) */
+			PixVal=PixVal + NBuffer->Buffer[inoise][ipix];
+
+			/* Loop over linked list and add pulse values */
+			current=ActPulses[ipix];
+			while (current!=NULL) {
+				PixVal=PixVal + simulated_pixels[ipix]->calfactor * current->adcpulse[(long)(current->count)];
+				CHECK_STATUS_VOID(*status);
+				current->count=current->count+(1./SampleFreq)/(current->time[1]-current->time[0]);
+				current=current->next;
+			}
+
+			/* The digitization step */
+			double tesdbl=TESData->adc_value[tstep][ipix] + PixVal;
+			if(tesdbl<0.){
+				tesdbl=0.;
+			}
+			if(tesdbl>65534.){//maximum coded value -1
+				tesdbl=65534.;
+			}
+			TESData->adc_value[tstep][ipix]=(uint16_t)round(tesdbl); //TODO Noise buffer seems to contain repeated shapes. Needs to be investigated.
+			if(TESData->adc_value[tstep][ipix]==65535){
+				printf("tstep=%ld ipix=%d noise=%lf, inoise=%d, tesdbl=%le\n", tstep, ipix, PixVal, inoise, tesdbl);
+			}
+
+			/* If the end of the Pulse template is reached, remove the event */
+			while (ActPulses[ipix]!=NULL && ActPulses[ipix]->count>=(double)(ActPulses[ipix]->Nt-1)) {
+				removeEventFromNode(ActPulses,&ipix);
+				CHECK_STATUS_VOID(*status);
+			}
+		}
+
+		/* Go to next time step */
+		inoise=inoise+1;
+		t_long++;
+		t=tstart+t_long/SampleFreq;
+		tstep++;
+
 	}
-	ntot++;
-      }
-      CHECK_STATUS_VOID(*status);
-      piximpstatus=getNextImpactFromPixImpFile(PixFile,&impact,status);
-      CHECK_STATUS_VOID(*status);
-    }
-    
-    for (ipix=0;ipix<Npix;ipix++) {       
-	/* Add the offset first */
-        TESData->adc_value[tstep][ipix]=Offset;
-	PixVal=0.;
-	
-        /* Add 1/f noise to the pixel value (double) */
-	CHECK_STATUS_VOID(*status);
-	if(det->TESNoise->OoFRMS!=0.){
-	  PixVal= PixVal + OFNoise->Sumrval + gsl_ran_gaussian(rng,OFNoise->Sigma);
+
+	/* Clean dynamic memory */
+	for (ipix=0;ipix<Npix;ipix++) {
+		destroyEventNode(ActPulses[ipix]);
 	}
-	CHECK_STATUS_VOID(*status);
-    
-	/* Add noise to the pixel value (double) */
-	PixVal=PixVal + NBuffer->Buffer[inoise][ipix];
-	
-	/* Loop over linked list and add pulse values */
-	current=ActPulses[ipix];
-	while (current!=NULL) {
-	  PixVal=PixVal + CalFactor * current->adcpulse[(long)(current->count)];
-	  CHECK_STATUS_VOID(*status);
-	  current->count=current->count+(1./SampleFreq)/(current->time[1]-current->time[0]);
-	  current=current->next;
-	}
-	
-	/* The digitization step */
-	double tesdbl=TESData->adc_value[tstep][ipix] + PixVal;
-	if(tesdbl<0.){
-	  tesdbl=0.;
-	}
-	if(tesdbl>65534.){//maximum coded value -1
-	  tesdbl=65534.;
-	}
-	TESData->adc_value[tstep][ipix]=(uint16_t)round(tesdbl); //TODO Noise buffer seems to contain repeated shapes. Needs to be investigated.
-	if(TESData->adc_value[tstep][ipix]==65535){
-	  printf("tstep=%ld ipix=%d noise=%lf, inoise=%d, tesdbl=%le\n", tstep, ipix, PixVal, inoise, tesdbl);
-	}
-	
-	/* If the end of the Pulse template is reached, remove the event */
-	while (ActPulses[ipix]!=NULL && ActPulses[ipix]->count>=(double)(ActPulses[ipix]->Nt-1)) {
-	  removeEventFromNode(ActPulses,&ipix);
-	  CHECK_STATUS_VOID(*status);
-	}
-    }
-   
-    /* Go to next time step */
-    inoise=inoise+1;
-    t_long++;
-    t=tstart+t_long/SampleFreq;
-    tstep++;
-  
-  }
-  
-  /* Clean dynamic memory */
-  for (ipix=0;ipix<Npix;ipix++) {
-    destroyEventNode(ActPulses[ipix]);
-  }
-  destroyNoiseSpectrum(Noise,status);
-  destroyNoiseBuffer(NBuffer,status);
+	destroyNoiseBuffer(NBuffer,status);
+	free(simulated_pixels);
 }
 
 
@@ -682,4 +689,26 @@ int checkPixIfActive(int pixID, int Npix, int* activearray){
   } else {
     return -1;
   }
+}
+
+AdvPix** getSimulatedPixelArray(AdvDet* det,const int* const activearray,const int Ndetpix,const int Nactive,int* const status){
+	int current_pixel=0;
+	AdvPix** simulated_pixels = malloc(Nactive*sizeof(*simulated_pixels));
+	if (NULL==simulated_pixels){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation for simulated_pixels failed");
+		CHECK_STATUS_RET(*status,simulated_pixels);
+	}
+	for (int i=0;i<Ndetpix;i++){
+		if(activearray[i]>-1){
+			if (current_pixel>=Nactive){
+				*status=EXIT_FAILURE;
+				SIXT_ERROR("More active pixels than expected at begining of tesstream generation");
+				CHECK_STATUS_RET(*status,simulated_pixels);
+			}
+			simulated_pixels[current_pixel]=&(det->pix[i]);
+			current_pixel++;
+		}
+	}
+	return(simulated_pixels);
 }

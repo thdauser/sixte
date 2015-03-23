@@ -30,50 +30,50 @@ void setNoiseGSLSeed(gsl_rng **r, unsigned long int seed){
 }
 
 
-NoiseSpectrum* newNoiseSpectrum(AdvDet *det, 
-				int* const status) {
-    
-    NoiseSpectrum* Noise=malloc(sizeof(NoiseSpectrum));
-    if(Noise==NULL){
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for noise spectrum failed");
-      CHECK_STATUS_RET(*status, Noise);
-    }
-    int ii;
-    
-    /* Set noise parameters */
-    Noise->WhiteRMS=det->TESNoise->WhiteRMS;  /* White Noise normalisation */
-    Noise->H0=det->TESNoise->H0;              /* Noise filter normalisation */
-    Noise->Nz=det->TESNoise->Nz;              /* Number of zeros in the noise spectrum */
-    Noise->Np=det->TESNoise->Np;              /* Number of poles in the noise spectrum */
-
-    Noise->Poles=NULL;
-    Noise->Zeros=NULL;
-    
-    if(Noise->Np>0){
-      Noise->Poles=(double*)malloc(Noise->Np*sizeof(double));
-      if(Noise->Poles==NULL){
-	*status=EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for noise spectrum failed");
-	CHECK_STATUS_RET(*status, Noise);
-      }
-      for(ii=0; ii<Noise->Np; ii++){
-	Noise->Poles[ii]=det->TESNoise->Poles[ii];
-      }
-    }
-    if(Noise->Nz>0){
-      Noise->Zeros=(double*)malloc(Noise->Nz*sizeof(double));
-      if(Noise->Zeros==NULL){
-	*status=EXIT_FAILURE;
-	SIXT_ERROR("memory allocation for noise spectrum failed");
-	CHECK_STATUS_RET(*status, Noise);
-      }
-      for(ii=0; ii<Noise->Nz; ii++){
-	Noise->Zeros[ii]=det->TESNoise->Zeros[ii];
-      }
-    }
-    return Noise;
-}    
+//NoiseSpectrum* newNoiseSpectrum(AdvDet *det,
+//				int* const status) {
+//
+//    NoiseSpectrum* Noise=malloc(sizeof(NoiseSpectrum));
+//    if(Noise==NULL){
+//      *status=EXIT_FAILURE;
+//      SIXT_ERROR("memory allocation for noise spectrum failed");
+//      CHECK_STATUS_RET(*status, Noise);
+//    }
+//    int ii;
+//
+//    /* Set noise parameters */
+//    Noise->WhiteRMS=det->TESNoise->WhiteRMS;  /* White Noise normalisation */
+//    Noise->H0=det->TESNoise->H0;              /* Noise filter normalisation */
+//    Noise->Nz=det->TESNoise->Nz;              /* Number of zeros in the noise spectrum */
+//    Noise->Np=det->TESNoise->Np;              /* Number of poles in the noise spectrum */
+//
+//    Noise->Poles=NULL;
+//    Noise->Zeros=NULL;
+//
+//    if(Noise->Np>0){
+//      Noise->Poles=(double*)malloc(Noise->Np*sizeof(double));
+//      if(Noise->Poles==NULL){
+//	*status=EXIT_FAILURE;
+//	SIXT_ERROR("memory allocation for noise spectrum failed");
+//	CHECK_STATUS_RET(*status, Noise);
+//      }
+//      for(ii=0; ii<Noise->Np; ii++){
+//	Noise->Poles[ii]=det->TESNoise->Poles[ii];
+//      }
+//    }
+//    if(Noise->Nz>0){
+//      Noise->Zeros=(double*)malloc(Noise->Nz*sizeof(double));
+//      if(Noise->Zeros==NULL){
+//	*status=EXIT_FAILURE;
+//	SIXT_ERROR("memory allocation for noise spectrum failed");
+//	CHECK_STATUS_RET(*status, Noise);
+//      }
+//      for(ii=0; ii<Noise->Nz; ii++){
+//	Noise->Zeros[ii]=det->TESNoise->Zeros[ii];
+//      }
+//    }
+//    return Noise;
+//}
 
 
 NoiseBuffer* newNoiseBuffer(int* const status, 
@@ -110,10 +110,7 @@ NoiseBuffer* newNoiseBuffer(int* const status,
     return NBuffer;
 }
 
-NoiseOoF* newNoiseOoF(int* const status,
-                      gsl_rng **r,
-		      AdvDet* det) 
-{
+NoiseOoF* newNoiseOoF(int* const status,gsl_rng **r,double sample_freq,AdvPix* pixel) {
     int j;
     double OffSet, diff;
     
@@ -125,12 +122,12 @@ NoiseOoF* newNoiseOoF(int* const status,
       CHECK_STATUS_RET(*status, OFNoise);
     } 
     
-    OffSet=(double) det->ADCOffset;
+    OffSet=(double) pixel->ADCOffset;
     
     /* Length of the 1/f noise arrays */
-    OFNoise->Length=(int) (det->SampleFreq * 0.3678)/det->TESNoise->OoFKnee;            
+    OFNoise->Length=(int) (sample_freq * 0.3678)/pixel->TESNoise->OoFKnee;
     /* Noise level */
-    OFNoise->Sigma=det->TESNoise->OoFRMS;              
+    OFNoise->Sigma=pixel->TESNoise->OoFRMS;
     
     OFNoise->RValues=(double*)malloc(OFNoise->Length*sizeof(double));
     
@@ -164,13 +161,12 @@ NoiseOoF* newNoiseOoF(int* const status,
 }
 
 
-int genNoiseSpectrum(NoiseSpectrum* Noise, 
+int genNoiseSpectrum(AdvPix** simulated_pixels,
 		     NoiseBuffer* NBuffer, 
 		     double *SampFreq, 
 		     gsl_rng **r,
                      int* const status) 
 {
-    
     double Gx, Gy, sigma, df;
     const double pi=3.14159265359;
     int i,j, k;
@@ -214,17 +210,17 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
 	w=2.0*pi*f;
 
 	/* Multiply all the zeros */
-        for (k=0;k<Noise->Nz;k++) {
-          Ze = Ze * (1.0 + Noise->Zeros[k] * w * I);
+        for (k=0;k<simulated_pixels[j]->TESNoise->Nz;k++) {
+          Ze = Ze * (1.0 + simulated_pixels[j]->TESNoise->Zeros[k] * w * I);
         }
 	
 	/* Multiply all the poles */
-	for (k=0;k<Noise->Np;k++) {
-	  Po = Po * (1.0 + Noise->Poles[k] * w * I);
+	for (k=0;k<simulated_pixels[j]->TESNoise->Np;k++) {
+	  Po = Po * (1.0 + simulated_pixels[j]->TESNoise->Poles[k] * w * I);
 	}
 	
 	/* Calculate the filter amplitude (complex) */
-	H = Noise->H0 * Ze / Po; 
+	H = simulated_pixels[j]->TESNoise->H0 * Ze / Po;
 	
 	if (i==NBuffer->BufferSize/2) { // At Nyquist freq, the FT is purely real-> draw only one gaussian variable
 	  /* Create a complex white noise spectrum */
@@ -232,7 +228,7 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
 	  in[i]=Gx + 0.0*I;
 	  
 	  /* Multiply the noise filter with the white noise */
-	  in[i]=in[i] * abs(H) * Noise->WhiteRMS * sqrt(df) / sqrt(2.);
+	  in[i]=in[i] * abs(H) * simulated_pixels[j]->TESNoise->WhiteRMS * sqrt(df) / sqrt(2.);
 	} else {
 	  /* Create a complex white noise spectrum */
 	  Gx=gsl_ran_gaussian(*r,sigma); 
@@ -240,7 +236,7 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
 	  in[i]=Gx + Gy*I;
 
 	  /* Multiply the noise filter with the white noise */
-	  in[i]=in[i] * H * Noise->WhiteRMS *sqrt(df) / sqrt(2.);
+	  in[i]=in[i] * H * simulated_pixels[j]->TESNoise->WhiteRMS *sqrt(df) / sqrt(2.);
 	}
       }
       in[0]=0.0 + 0.0*I;
@@ -260,53 +256,55 @@ int genNoiseSpectrum(NoiseSpectrum* Noise,
     return *status;
 }
 
-int getNextOoFNoiseSumval(NoiseOoF* OFNoise,  /* */ 
+void getNextOoFNoiseSumval(NoiseOoF** OFNoise,  /* */
                           gsl_rng **r,        /* Random number generator */
-		          int* const status)
+                          int Nactive)
 {
-    int i, c;
-    double src;
-    
-    i=OFNoise->Index;
-    
-    i++;
-    OFNoise->Index=i;
-    
-    if (i==OFNoise->Length) {
-      OFNoise->Index=0;
-      return *status; 
-    }
-    
-    c=0;
-    while( (i & 1) == 0 ) {
-      i = i >> 1;
-      c++;
-    }
-    
-    src=gsl_ran_gaussian(*r,OFNoise->Sigma);
-    OFNoise->Sumrval=OFNoise->Sumrval + src - OFNoise->RValues[c];
-    OFNoise->RValues[c]=src;
+	for(int pixNumber=0;pixNumber<Nactive;pixNumber++){
+		if (OFNoise[pixNumber]!=NULL){
+			int i, c;
+			double src;
 
-    return *status;
+			i=OFNoise[pixNumber]->Index;
+
+			i++;
+			OFNoise[pixNumber]->Index=i;
+
+			if (i==OFNoise[pixNumber]->Length) {
+				OFNoise[pixNumber]->Index=0;
+				continue;
+			}
+
+			c=0;
+			while( (i & 1) == 0 ) {
+				i = i >> 1;
+				c++;
+			}
+
+			src=gsl_ran_gaussian(*r,OFNoise[pixNumber]->Sigma);
+			OFNoise[pixNumber]->Sumrval=OFNoise[pixNumber]->Sumrval + src - OFNoise[pixNumber]->RValues[c];
+			OFNoise[pixNumber]->RValues[c]=src;
+		}
+	}
 }		      
 
 
-int destroyNoiseSpectrum(NoiseSpectrum* Noise, 
-			 int* const status) 
-{
-    
-  if(Noise->Poles!=NULL){
-    free(Noise->Poles);
-  }
-  if(Noise->Zeros!=NULL){
-    free(Noise->Zeros);
-  }
-  if(Noise!=NULL){
-    free(Noise);
-  }
-    
-    return *status;
-}
+//int destroyNoiseSpectrum(NoiseSpectrum* Noise,
+//			 int* const status)
+//{
+//
+//  if(Noise->Poles!=NULL){
+//    free(Noise->Poles);
+//  }
+//  if(Noise->Zeros!=NULL){
+//    free(Noise->Zeros);
+//  }
+//  if(Noise!=NULL){
+//    free(Noise);
+//  }
+//
+//    return *status;
+//}
 
 int destroyNoiseBuffer(NoiseBuffer* NBuffer, 
 		       int* const status) {

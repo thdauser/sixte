@@ -36,27 +36,27 @@
 // Type Declarations.
 /////////////////////////////////////////////////////////////////
 
-/** Noise spectrum input parameters */
-typedef struct {
-  /** White noise RMS value */
-  double WhiteRMS;
-  
-  /** Normalisation of the filter function */
-  double H0;
-  
-  /** Number of zeros */
-  int Nz;
-  
-  /** Zeros */
-  double *Zeros;
-  
-  /** Number of poles */
-  int Np;
-  
-  /** Poles */
-  double *Poles;
-  
-} NoiseSpectrum;
+///** Noise spectrum input parameters */
+//typedef struct {
+//  /** White noise RMS value */
+//  double WhiteRMS;
+//
+//  /** Normalisation of the filter function */
+//  double H0;
+//
+//  /** Number of zeros */
+//  int Nz;
+//
+//  /** Zeros */
+//  double *Zeros;
+//
+//  /** Number of poles */
+//  int Np;
+//
+//  /** Poles */
+//  double *Poles;
+//
+//} NoiseSpectrum;
 
 
 /** Noise buffer (output) */
@@ -100,33 +100,31 @@ typedef struct {
 /** Function to generate a rng for the noise buffer */
 void setNoiseGSLSeed(gsl_rng **r, unsigned long int seed);
 
-/** Function to allocate and fill noise parameter struct */
-NoiseSpectrum* newNoiseSpectrum(AdvDet *det, 
-				int* const status);
+///** Function to allocate and fill noise parameter struct */
+//NoiseSpectrum* newNoiseSpectrum(AdvDet *det,
+//				int* const status);
 NoiseBuffer* newNoiseBuffer(int* const status, 
 			    int *NumberOfPixels);
 
 /** Function to initialise arrays for 1/f noise generation */
-NoiseOoF* newNoiseOoF(int* const status,
-                      gsl_rng **r, 
-		      AdvDet* det); 
+NoiseOoF* newNoiseOoF(int* const status,gsl_rng **r,double sample_freq,AdvPix* pixel);
 		      
 /** Generate noise data from a noise spectrum */
-int genNoiseSpectrum(NoiseSpectrum* Noise, 
+int genNoiseSpectrum(AdvPix** simulated_pixels,
 		     NoiseBuffer* NBuffer, 
 		     double *SampFreq,  
 		     gsl_rng **r,
 		     int* const status);
 		     
-int getNextOoFNoiseSumval(NoiseOoF* OFNoise,  /* */ 
+void getNextOoFNoiseSumval(NoiseOoF** OFNoise,  /* */
                           gsl_rng **r,        /* Random number generator */
-		          int* const status);
+                          int Nactive);
 
 /** Function to deallocate buffer memory */
 int destroyNoiseBuffer(NoiseBuffer* NBuffer, 
 		       int* const status);
-int destroyNoiseSpectrum(NoiseSpectrum* Noise, 
-			 int* const status);
+//int destroyNoiseSpectrum(NoiseSpectrum* Noise,
+//			 int* const status);
 
 int destroyNoiseOoF(NoiseOoF* OFNoise, 
 		       int* const status);

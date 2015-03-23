@@ -31,6 +31,38 @@
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
 
+/** Data structure describing the noise properties of calorimeter
+ pixels */
+typedef struct{
+
+  /** White noise RMS value */
+  double WhiteRMS;
+
+  /** Normalisation of the filter function */
+  double H0;
+
+  /** Number of zeros */
+  int Nz;
+
+  /** Zeros */
+  double *Zeros;
+
+  /** Number of poles */
+  int Np;
+
+  /** Poles */
+  double *Poles;
+
+  /** 1/f noise properties */
+  /** 1/f rms value */
+  double OoFRMS;
+
+  /** 1/f knee frequency (e.g. the pole where the flat power spectrum
+      turns into a 1/f curve) */
+  double OoFKnee;
+
+}TESNoiseProperties;
+
 /** Data structure describing a pixel with arbitrary geometry.
     Current implementation: only rectangulars, parallel to detector
     coordinate system. */
@@ -51,48 +83,23 @@ typedef struct{
   /** Index of pixel in detector structure. */
   int pindex;
   
-  /** Name of file of pulse template. */
-  char tesproffilename[MAXFILENAME];
-  
   /** Version of pulse template. */
   char version[10];
   
   /** Version index of pulse template */
   int profVersionID;
 
+  /** Sampling frequency */
+  int ADCOffset;
+
+  /** Sampling frequency */
+  double calfactor;
+
+  /** Noise properties of pixel noise */
+  TESNoiseProperties* TESNoise;
+
 }AdvPix;
 
-/** Data structure describing the noise properties of calorimeter 
- pixels */
-typedef struct{
-  
-  /** White noise RMS value */
-  double WhiteRMS;
-  
-  /** Normalisation of the filter function */
-  double H0;
-  
-  /** Number of zeros */
-  int Nz;
-  
-  /** Zeros */
-  double *Zeros;
-  
-  /** Number of poles */
-  int Np;
-  
-  /** Poles */
-  double *Poles;
-  
-  /** 1/f noise properties */
-  /** 1/f rms value */
-  double OoFRMS;
-  
-  /** 1/f knee frequency (e.g. the pole where the flat power spectrum 
-      turns into a 1/f curve) */
-  double OoFKnee;
-  
-}TESNoiseProperties;
 
 
 /** Data structure describing the geometry of a pixel detector with
@@ -121,20 +128,20 @@ typedef struct{
   /** Path to the FITS file containing the XML detector definition. */
   char* filepath;
   
+  /** Name of file of pulse templates. */
+  char tesproffilename[MAXFILENAME];
+
   /** Sampling frequency */
   double SampleFreq;
-  
-  /** Sampling frequency */
-  int ADCOffset;
-  
-  /** Sampling frequency */
-  double calfactor;
-  
-  /** Noise properties of calorimeter noise */
-  TESNoiseProperties* TESNoise;
-  
+
   /** Signal if being inside the 'tesnoisefilter' tag of xml */
   int tesnoisefilter;
+
+  /** Signal if being inside the 'pixel' tag of xml */
+  int inpixel;
+
+  /** Signal if the OofNoise is requested in at least one pixel */
+  int oof_activated;
 
 }AdvDet;
 
@@ -146,8 +153,17 @@ typedef struct{
     structure. */
 TESNoiseProperties* newTESNoise(int* const status);
 
+/** Allocates zeros and poles arrays. */
+void allocateZerosPoles(TESNoiseProperties* noise,int nzeros,int npoles,int* const status);
+
+/** Duplicates a TESNoiseProperties structure into another. If given structure is NULL, allocate new one. */
+TESNoiseProperties* duplicateTESNoise(TESNoiseProperties* noise,int nzeros,int npoles,int* const status);
+
 /** Destructor. Releases all allocated memory. */
 void destroyTESNoiseProperties(TESNoiseProperties* noise);
+
+/** Destructore of the AdvPix structure */
+void freeAdvPix(AdvPix* pix);
 
 /** Read the advanced detector syntax from the specified XML */
 void parseAdvDetXML(AdvDet* const det, 

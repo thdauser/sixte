@@ -214,4 +214,7 @@ EvtNode** newEventNodes(int *NPixel, int* const status);
 /** Checks if the pixID is in the list of active pixels */
 int checkPixIfActive(int pixID, int Npix, int* activearray);
 
+/** Get array containing the pointers to the pixels actually being simulated */
+AdvPix** getSimulatedPixelArray(AdvDet* det,const int* const activearray,const int Ndetpix,const int Nactive,int* const status);
+
 #endif /* TESDATASTREAM_H */

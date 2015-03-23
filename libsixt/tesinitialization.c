@@ -111,7 +111,7 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
     int versionindex=findTESProfileVersionIndex(init->profiles, init->det->pix[ii].version);
     if(init->activearray[ii]>-1 && versionindex<0){
       char profilename[MAXFILENAME];
-      sprintf(profilename, "%s%s", init->det->filepath, init->det->pix[ii].tesproffilename);
+      sprintf(profilename, "%s%s", init->det->filepath, init->det->tesproffilename);
       readTESProfiles(profilename,
 		      init->det->pix[ii].version, 
 		      init->profiles, 
