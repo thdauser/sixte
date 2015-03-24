@@ -338,7 +338,7 @@ int getImpactPos_wcs (struct wcsprm* wcs, struct Point2d* const position, const 
 int getImpactPos_protoMirax(struct wcsprm* wcs, struct wcsprm* wcs2, struct Point2d* const position,
 			   const CodedMask* const mask, double const photon_ra, double const photon_dec,
 			   float const det_pixelwidth, const float det_width, const float x_det,
-			   const float y_det, int* const status)
+			   const float y_det, const float wall, int* const status)
 {
   // Check if a CodedMask is specified. If not, break.
   if (NULL==mask) return(0);
@@ -407,14 +407,22 @@ int getImpactPos_protoMirax(struct wcsprm* wcs, struct wcsprm* wcs2, struct Poin
   int y_detector=(int)(position->y/det_width);
 
   //ensure that photon does not hit the outer walls
-  if (position->x > x_det || position->x < 0. || position->y > y_det || position->y < 0.){
+  if(position->x > x_det || position->x < 0. || position->y > y_det || position->y < 0.){
     return(0);
   }
 
-  //ensure that photon does not hit the collimator walls
-  if (x_coll_det != x_detector || y_coll_det != y_detector){
+  //ensure that photon does not travel through collimator walls and hit another detector
+  if(x_coll_det != x_detector || y_coll_det != y_detector){
     return(0);
   }
+
+  //switch to coordinate sys of one detector (that is surrounded by the collimator)
+  position->x=position->x-(x_detector*det_width);  //position [m] [0:det_width]
+  position->y=position->y-(y_detector*det_width);
+
+  if(position->x <= wall || position->x > (det_width-wall) || position->y <= wall || position->y > (det_width-wall)){
+    return(0);
+    }
 
   return(1);
 }

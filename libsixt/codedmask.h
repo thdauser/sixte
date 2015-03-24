@@ -105,7 +105,7 @@ int getImpactPos_wcs (struct wcsprm* wcs, struct Point2d* const position, const 
 int getImpactPos_protoMirax(struct wcsprm* wcs, struct wcsprm* wcs2, struct Point2d* const position,
 			   const CodedMask* const mask, double const photon_ra, double const photon_dec,
 			   float const det_pixelwidth, const float det_width, const float x_det,
-			   const float y_det, int* const status);
+			    const float y_det, const float wall, int* const status);
 
 
 #endif /* CODEDMASK_H */
