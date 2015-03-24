@@ -197,8 +197,8 @@ int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp){
   for(ii=0; ii<det->npix; ii++){
     if(CheckAdvPixImpact(det->pix[ii], &detimp)!=0){
       nimpacts++;
-      *piximp=(PixImpact*)realloc(*piximp, nimpacts*sizeof(PixImpact));
-      piximp[nimpacts-1]->pixID=(long)ii;
+      *piximp=realloc(*piximp, nimpacts*sizeof(**piximp));
+      (*piximp)[nimpacts-1].pixID=(long)ii;
       CalcAdvPixImpact(det->pix[ii], &detimp, &((*piximp)[nimpacts-1]));
     }
   }
@@ -540,6 +540,9 @@ AdvDet* loadAdvDet(const char* const filename,
   parseAdvDetXML(det, filename, status);
   CHECK_STATUS_RET(*status, det);
   
+  // Remove overlapping pixels with the rule newest survives
+  removeOverlapping(det,status);
+
   return(det);
 }
 
@@ -683,3 +686,51 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 
 }
 
+/** Function to remove overlapping pixels from the detector */
+void removeOverlapping(AdvDet* det,int* const status){
+	char * active_pixels = malloc(det->npix*sizeof(*active_pixels));
+	if (NULL==active_pixels){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation failed for active_pixels in removeOverlapping");
+		return;
+	}
+
+	AdvPix* current_pixel=NULL;
+	AdvPix* pixel_to_compare=NULL;
+	int number_active_pixels=0;
+	for (int i=0;i<det->npix;i++){
+		active_pixels[i]=1;
+		current_pixel = &(det->pix[i]);
+		number_active_pixels++;
+		for (int j=0;j<i;j++){
+			pixel_to_compare = &(det->pix[j]);
+			if(!(current_pixel->sx-.5*current_pixel->width > pixel_to_compare->sx + .5*pixel_to_compare->width || current_pixel->sx+.5*current_pixel->width < pixel_to_compare->sx-.5*pixel_to_compare->width ||
+					current_pixel->sy -.5*current_pixel->height > pixel_to_compare->sy+.5*pixel_to_compare->height || current_pixel->sy+.5*current_pixel->height<pixel_to_compare->sy-.5*pixel_to_compare->height)){
+				if (active_pixels[j]) number_active_pixels--;
+				active_pixels[j]=0;
+			}
+		}
+	}
+
+	AdvPix* new_pix_array=malloc(number_active_pixels*sizeof(*(new_pix_array)));
+	if(NULL==new_pix_array){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation failed for new pixel array in removeOverlapping");
+		return;
+	}
+
+	det->cpix=0;
+	for (int i=0;i<det->npix;i++){
+		if(active_pixels[i]){
+			new_pix_array[det->cpix]=det->pix[i];
+			det->cpix++;
+		} else{
+			freeAdvPix(&(det->pix[i]));
+		}
+	}
+	free(det->pix);
+	det->pix = new_pix_array;
+	det->npix=number_active_pixels;
+	free(active_pixels);
+	headas_chat(0,"Number of pixels after removing overlaps: %d\n",number_active_pixels);
+}

@@ -237,4 +237,7 @@ void freeRMFLibrary(RMFLibrary* library);
 /** Process the impacts contained in the piximpacts file with the RMF method */
 void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
 
+/** Function to remove overlapping pixels from the detector */
+void removeOverlapping(AdvDet* det,int* const status);
+
 #endif /* ADVDET_H */
