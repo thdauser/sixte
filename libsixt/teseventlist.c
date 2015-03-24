@@ -470,8 +470,9 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int* const status){
 	CHECK_STATUS_VOID(*status);
 
 	//Save PIXID column
+	long pixID = impact->pixID+1;
 	fits_write_col(file->fptr, TLONG, file->pixIDCol,
-			file->row, 1, 1, &(impact->pixID), status);
+			file->row, 1, 1, &pixID, status);
 	CHECK_STATUS_VOID(*status);
 
 	//Save PH_ID column
