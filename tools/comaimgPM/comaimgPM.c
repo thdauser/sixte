@@ -69,7 +69,7 @@ int comaimgPM_main() {
     //Width of one detector-element that is surrounded by the collimator
     float det_width = par.det_width; 
      //Width of collimator wall
-    //float wall = par.wall;
+    float wall = par.wall;
     //current telescope pointing
     double ra = par.RA;
     double dec = par.DEC;
@@ -89,14 +89,10 @@ int comaimgPM_main() {
     float x_mask=mask->naxis1*mask->cdelt1;
     float y_mask=mask->naxis2*mask->cdelt2;
 
-    float fov_min_align=0.;
-    float phi_max=det_phi_max(distance,x_mask,y_mask,x_det,y_det);
-    fov_min_align = cos(phi_max);
-
     //Calculate min cos-value for sources inside FOV.
-    /*float a=sqrt(2)/2*x_mask;
+    float a=sqrt(2)/2*x_mask;
     float b=sqrt(a*a+distance*distance);
-    const float fov_min_align = (a*a-b*b-distance*distance)/(-2*b*distance);*/ //equals cos(phi)
+    const float fov_min_align = (a*a-b*b-distance*distance)/(-2*b*distance); //equals cos(phi)
 
     //Set up the telescope attitude:
 
@@ -269,7 +265,7 @@ int comaimgPM_main() {
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
 	int reval=getImpactPos_protoMirax(&wcs,&wcs2,&position,mask,photon.ra*180./M_PI,
 					  photon.dec*180./M_PI,det_pixelwidth,det_width,
-					  x_det,y_det,&status);
+					  x_det,y_det,wall,&status);
 	CHECK_STATUS_BREAK(status);
 
 	if (reval == 1){
