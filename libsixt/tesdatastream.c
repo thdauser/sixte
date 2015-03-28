@@ -144,17 +144,12 @@ TESFitsStream* newTESFitsStream(int* const status){
 
 void destroyTESFitsStream(TESFitsStream* stream){
   
-  if(stream->time!=NULL){
-    free(stream->time);
-    stream->time=NULL;
-  }
-  
   if(stream->pixID!=NULL){
     free(stream->pixID);
     stream->pixID=NULL;
   }
-  
-  if(stream->time!=NULL) {
+
+  if(stream->time!=NULL){
     free(stream->time);
     stream->time=NULL;
   }
@@ -236,33 +231,22 @@ void allocateTESFitsStream(TESFitsStream* stream,
   stream->Ntime=Nt;
   
   stream->pixID=(int*)malloc(Npix*sizeof(int));
-  if(stream->pixID==NULL){
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("memory allocation for TESFitsStream failed");
-    CHECK_STATUS_VOID(*status);
-  }
+  CHECK_NULL_VOID(stream->pixID,*status,
+		  "Memory allocation failed for TESFitsStream: pixID");
   
   stream->time=(double*)malloc(Nt*sizeof(double));
-  if(stream->time==NULL){
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("memory allocation for TESFitsStream failed");
-    CHECK_STATUS_VOID(*status);
-  }
+  CHECK_NULL_VOID(stream->time,*status,
+		  "Memory allocation failed for TESFitsStream: time");
   
   stream->adc_value=(uint16_t**)malloc(Npix*sizeof(uint16_t*));
-  if(stream->adc_value==NULL){
-    *status=EXIT_FAILURE;
-    SIXT_ERROR("memory allocation for TESFitsStream failed");
-    CHECK_STATUS_VOID(*status);
-  }
+  CHECK_NULL_VOID(stream->adc_value,*status,
+		  "Memory allocation failed for TESFitsStream: adc_value");
+
   int ii;
   for(ii=0; ii<Npix; ii++){
     stream->adc_value[ii]=(uint16_t*)malloc(Nt*sizeof(uint16_t));
-    if(stream->adc_value[ii]==NULL){
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for TESFitsStream failed");
-      CHECK_STATUS_VOID(*status);
-    }
+    CHECK_NULL_VOID(stream->adc_value[ii],*status,
+		    "Memory allocation failed for TESFitsStream: adc_value[i]");
   }
 }
 
@@ -371,6 +355,13 @@ void writeTESFitsStream(fitsfile *fptr,
   }
   CHECK_STATUS_VOID(*status);
   
+  // free allocated memory
+  for (ii=0; ii<ncolumns; ii++) {
+    free(ttype[ii]);
+    free(tform[ii]);
+    free(tunit[ii]);
+  }
+
 }
 
 void getTESDataStream(TESDataStream* TESData, 
