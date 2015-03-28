@@ -154,6 +154,11 @@ void destroyTESFitsStream(TESFitsStream* stream){
     stream->pixID=NULL;
   }
   
+  if(stream->time!=NULL) {
+    free(stream->time);
+    stream->time=NULL;
+  }
+
   if(stream->adc_value!=NULL){
     int ii;
     for(ii=0; ii<stream->Npix; ii++){
