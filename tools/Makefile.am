@@ -6,6 +6,6 @@ SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         imgev comaphovign ladsim erosim makespec makelc fudgexp evpat	\
         orbatt nustarsim athenapwfisim epicpn_events epicmos1_events    \
         epicmos2_events piximpacts tesstream pixdetillum pulsetemplgen  \
-        pulsetemplimport streamtotriggers runtes tesconstpileup         \
+        pulsetemplimport streamtotriggers runtes tesconstpileup tessim  \
 	comaimgPM comabackpro trigger pulsegrade filter pseudoenergy  \
         energy gennoisespec xml2svg tesreconstruction xifupipeline

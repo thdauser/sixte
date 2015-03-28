@@ -161,6 +161,7 @@ AC_CONFIG_FILES([Makefile
 		tools/epicmos2_events/Makefile
 		tools/piximpacts/Makefile
 		tools/tesstream/Makefile
+		tools/tessim/Makefile
 		tools/pixdetillum/Makefile
 		tools/pulsetemplgen/Makefile
 		tools/pulsetemplimport/Makefile
