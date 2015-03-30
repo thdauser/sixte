@@ -1,6 +1,8 @@
+#include <assert.h>
 #include <parinput.h>
 #include "tessim.h"
 #include <stdlib.h>
+
 
 #define TOOLSUB tessim_main
 #include "headas_main.c"
@@ -69,13 +71,20 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_double("tstart", &(par->tstart), status);
   query_simput_parameter_double("tstop", &(par->tstop), status);
   query_simput_parameter_double("sample_rate",&(par->sample_rate),status);
+  assert(par->sample_rate>0);
   query_simput_parameter_double("T_start", &(par->T_start), status);
+  assert(par->T_start>0);
   query_simput_parameter_double("Tb", &(par->Tb), status);
+  assert(par->Tb>0);
   query_simput_parameter_double("R0", &(par->R0), status);
+  assert(par->R0>0);
   query_simput_parameter_double("RL", &(par->RL), status);
+  assert(par->RL>=0);
   query_simput_parameter_double("alpha", &(par->alpha), status);
+  assert(par->alpha>0);
   query_simput_parameter_double("beta", &(par->beta), status);
   query_simput_parameter_double("Lin", &(par->Lin), status);
+  assert(par->Lin>0);
   query_simput_parameter_double("n", &(par->n), status);
   query_simput_parameter_double("imin", &(par->imin), status);
   query_simput_parameter_double("imax", &(par->imax), status);
@@ -96,5 +105,4 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
 
   query_simput_parameter_bool("clobber", &par->clobber, status);
   
-
 }

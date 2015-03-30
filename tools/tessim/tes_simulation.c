@@ -22,6 +22,25 @@
 // - rename T_start to T0_start
 // - use T0 instead of T1 for current temperature
 
+//
+// TODO:
+// * separate impact file from simulation code
+// * write meta interfaces to simulation code
+//     - read from impact file
+//     - work on photon event list
+// * have routine write stream file or return stream
+// * switch from stream to record format
+// * write current to file
+// * improve TES diagnostics
+// * calculate taup/taum using proper complex arithmetic!
+// * build in material database (for n et al., see I&H, table 2)
+// * take into account proper time of arrival of event
+// * use stochastic equation solver
+// * implement saturation regime
+//
+//
+//
+
 #include "tessim.h"
 
 #include <stdio.h>
@@ -303,8 +322,15 @@ void tes_print_params(tesparams *tes) {
 
   // RL<<R0: voltage bias case
   // the question is how to define "<<"...
-  if (tes->RL/tes->R0 < 1e-4 ) {
-    headas_chat(0,"RL<1e-4 R0: detector is voltage biased\n");
+  if (tes->RL/tes->R0 < 0.1 ) {
+    headas_chat(0,"RL<0.1 R0: detector is voltage biased\n");
+  } else {
+    // RL>>R0: current bias case
+    if (tes->RL/tes->R0 > 1.5 ) {
+      headas_chat(0,"RL> 1.5 R0: detector is current biased\n");
+    } else {
+      headas_chat(0,"WARNING: RL approx R0: expect small/no electrothermal feedback\n");
+    }
   }
 
 
@@ -348,17 +374,22 @@ void tes_print_params(tesparams *tes) {
 
   if (tau_I<0.) {
     headas_chat(0,"WARNING: constant current tau is negative!\n");
-    headas_chat(0,"         Detector is instable to thermal runaway\n");
+    headas_chat(0,"         The TES might be instable to thermal runaway\n");
+    headas_chat(0,"         (but see below)\n");
   }
 
   // pulse shape timescales
+
+  // NOTE: the following needs to be checked a little bit more, since even
+  // for negative tsqrt we might be able to obtain a stable solution!
   double tsqrt=pow((1./tau_el - 1./tau_I),2.)-4.*tes->R0*ell*(2.+tes->beta)/(tau*tes->Lin);
   if (tsqrt<0.) {
-    headas_chat(0,"WARNING: Negative root\n");
-    headas_chat(0,"Instable detector - Cannot determine pulse profile!\n");
-    headas_chat(0,"PROCEED WITH CAUTION!\n");
+    headas_chat(0,"WARNING: Detector is underdamped\n");
+    headas_chat(0,"PROCEED WITH CAUTION AND HOPE JOERN IMPROVES THE DIAGNOSTICS!\n");
   } 
 
+  //TODO: we need to be more careful in the next equations and do the
+  //      calculation using complex numbers!
   double taum=1./tau_el + 1./tau_I;
   double taup=2./(taum+tsqrt);
   taum=2./(taum-tsqrt);
@@ -373,18 +404,31 @@ void tes_print_params(tesparams *tes) {
   //
   // stability criteria
   //
-  double Lsqrt=2.*sqrt(ell*(2.+tes->beta)*(ell*(1.-RLR0)+1.+tes->beta+RLR0));
   double Lsum=ell*(3.+tes->beta-RLR0)+1.+tes->beta+RLR0;
+  double Lsqrt=2.*sqrt(ell*(2.+tes->beta)*(ell*(1.-RLR0)+1.+tes->beta+RLR0));
   double Lfac=tes->R0*tau/((ell-1.)*(ell-1.));
 
   double Lcritp=(Lsum+Lsqrt)*Lfac;
   double Lcritm=(Lsum-Lsqrt)*Lfac;
   
-  headas_chat(0,"Critical L:\n");
-  headas_chat(0,"    L_plus                             : %10.5e\n",Lcritp);
-  headas_chat(0,"    L_minus                            : %10.5e\n",Lcritm);
+  headas_chat(0,"Inductance at critical damping:\n");
+  headas_chat(0,"    L_plus [H]                         : %10.5e\n",Lcritp);
+  headas_chat(0,"    L_minus[H]                         : %10.5e\n",Lcritm);
 
+  if (tsqrt<0.) {
+    // criteria for underdamped detector
+    if (tau>(ell-1.)*tau_el) {
+      headas_chat(0,"tau>(ell-1)*tau_el: TES is underdamped, but stable!\n");
+    } else {
+      headas_chat(0,"WARNING: TES is underdamped and NOT stable\n");
+      double Lthresh=tau*(tes->RL+tes->R0*(1.+tes->beta))/(ell-1.0);
+      headas_chat(0,"         To be stable, circuit inductance needs to be < %15.5e",Lthresh);
+    }
+  }
 
+  if (taup<taum) {
+    headas_chat(0,"Tau(rise)<Tau(fall): System is overdamped\n");
+  }
   if (fabs(taup/taum)-1. < 1e-5) {
     headas_chat(0,"Tau(rise)=Tau(fall): System is critically damped\n");
   }
@@ -403,8 +447,28 @@ void tes_print_params(tesparams *tes) {
     headas_chat(0,"L > L_plus: System is overdamped\n");
   }
 
+  if ( (Lcritm < tes->Lin) && (tes->Lin<Lcritp) ) {
+    headas_chat(0,"L_minus < L < L_plus: System is underdamped\n");
+  }
 
+  //
+  // Noise and predicted energy resolution
+  //
 
+  // TES voltage noise
+  double SV_tes=4.*kBoltz*tes->T_start*tes->R0*(1.+2.*tes->beta);
+
+  // Load voltage noise
+  double SV_L=4.*kBoltz*tes->T_start*tes->RL;
+
+  // TFN power noise
+  double SP_tfn=4.*kBoltz*tes->T_start*tes->T_start*tes->Gb1*tpow(tes);
+  double ell2=ell*ell;
+  double I02=tes->I0*tes->I0;
+  double FWHM=2.*sqrt(2.*log(2.))*sqrt(
+	      tau/ell2*sqrt((ell2*SP_tfn+I02*SV_tes+pow(ell-1.,2.)*I02*SV_L)*
+		       (I02*SV_tes+I02*SV_L)));
+  headas_chat(0,"Predicted energy resolution (FWHM, eV): %10.3f\n",FWHM/eV);
 }
 
 
@@ -492,6 +556,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->mech=0;         // thermal coupling
 
   //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
+  // see discussion in I&H around eq 112
   tes->Gb1=220e-12*pow(tes->T_start/0.1,tes->n-1.); 
   tes->therm=1.0; // absorber thermalization time (in units of the step size h). 
                     // For a delta function input of power into the absorber 
@@ -502,6 +567,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 		    (pow(tes->T_start,tes->n)-pow(tes->Tb,tes->n))/tes->R0);
 
   //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
+  //JW see discussion around I&H, eq. 111
   tes->Ce1=0.86e-12*(tes->T_start/0.1); //Absorber+TES heat capacity at Tc
   tes->dRdT=tes->alpha*tes->R0/tes->T_start;
   tes->dRdI=tes->beta*tes->R0/tes->I0_start;
