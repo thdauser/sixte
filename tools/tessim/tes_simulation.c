@@ -320,14 +320,16 @@ void tes_print_params(tesparams *tes) {
   // I have not yet checked the equations for correctness
   //
 
-  // RL<<R0: voltage bias case
-  // the question is how to define "<<"...
-  if (tes->RL/tes->R0 < 0.1 ) {
-    headas_chat(0,"RL<0.1 R0: detector is voltage biased\n");
+  // Biasing of the detector (Smith, thesis, p.19)
+  // NOTE: the |0.3| is arbitrary
+  double biaspar=(tes->R0 - tes->RL)/(tes->R0+tes->RL);
+  headas_chat(0,"TES bias parameter (R0-RL)/(R0+RL):  %15.5f\n",biaspar);
+  if (biaspar > 0.3 ) {
+    headas_chat(0,"       detector is voltage biased\n");
   } else {
     // RL>>R0: current bias case
-    if (tes->RL/tes->R0 > 1.5 ) {
-      headas_chat(0,"RL> 1.5 R0: detector is current biased\n");
+    if (biaspar < -0.3 ) {
+      headas_chat(0,"     detector is current biased\n");
     } else {
       headas_chat(0,"WARNING: RL approx R0: expect small/no electrothermal feedback\n");
     }
@@ -426,13 +428,15 @@ void tes_print_params(tesparams *tes) {
     }
   }
 
+#ifndef SHOW_NOT_TRUSTWORTHY
   if (taup<taum) {
     headas_chat(0,"Tau(rise)<Tau(fall): System is overdamped\n");
   }
   if (fabs(taup/taum)-1. < 1e-5) {
     headas_chat(0,"Tau(rise)=Tau(fall): System is critically damped\n");
   }
-  if (fabs(tes->Lin/Lcritp)-1. < 1e-5) {
+#endif
+  if (fabs(tes->Lin/Lcritp)-1. < 1e-6) {
     headas_chat(0,"L=L_plus: System is critically damped\n");
   }
   if (fabs(tes->Lin/Lcritm)-1. < 1e-5) {
