@@ -16,6 +16,11 @@
 
 //
 // ASTRONOMERS BEWARE: This code uses MKS units!
+//
+//
+// Mapping to I&H
+// - rename T_start to T0_start
+// - use T0 instead of T1 for current temperature
 
 #include "tessim.h"
 
@@ -23,6 +28,9 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <fitsio.h>
+
+#include <assert.h>
 
 gsl_rng *rng;
 
@@ -99,35 +107,53 @@ int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *p
 double tnoi (double T1, double T0, tesparams *tes) {
   // Thermal (phonon) noise terms
 
-  double beta=tes->n-1.;
-  double G1=tes->Gb1*pow(T1/tes->T_start,beta);
+  double n1=tes->n-1.;
+  double G1=tes->Gb1*pow(T1/tes->T_start,n1);
   
   double gamma;
 
   // Irwin, eq. 93
   if (tes->mech==0) {
-    gamma=(pow(T0/T1,beta+2.0)+1.0)/2.0;
+    gamma=(pow(T0/T1,n1+2.0)+1.0)/2.0;
   } else {
     gamma=1.;
   }
  
   // use gsl_ran_gaussian instead?
-  return(gsl_ran_ugaussian(rng)*sqrt(4*kBoltz*T1*T1*G1*gamma*tes->bandwidth));
+  return(gsl_ran_gaussian(rng, sqrt(4*kBoltz*T1*T1*G1*gamma*tes->bandwidth) ));
 }
 
-double tpow(double T1,double T0, tesparams *tes) {
+double tpow(tesparams *tes) {
   // Calculate the power flow between elements of the pixel
-  double beta=tes->n-1.0;
-  double G1=tes->Gb1*pow(T1/tes->T_start,beta);
+  //
+  // This uses Irwin and Hilton, eq. (5):
+  //
+  // flow to bath:
+  //   P_bath=K (T^n - Tb^n)
+  // where n=beta+1 and where beta: thermal conductance coefficient
+  //   (see McCammon).
+  // K= G/(n T^{n-1})
+  // therefore
+  //   P_bath=G/(n T^{n-1}) (T^n-Tb^n)
+  //         
+  //  G1= G(T/T_start)^(n-1)
 
-  return G1*(pow(T1,tes->n)-pow(T0,tes->n))/(tes->n*pow(T1,beta));
+  double beta_th=tes->n-1.0;
+  double G1=tes->Gb1*pow(tes->T1/tes->T_start,beta_th);
+
+  return G1*(pow(tes->T1,tes->n)-pow(tes->Tb,tes->n))/(tes->n*pow(tes->T1,beta_th));
+
 }
 
 void AddToStream(double time,double pulse, tesparams *tes) {
   // only write sample if we still have space in the stream
   if (tes->streamind < tes->stream->Ntime) {
     tes->stream->time[tes->streamind]=time;
-    tes->stream->adc_value[tes->streamind++][0]=(uint16_t) (pulse*tes->adu);
+    if ((pulse<tes->imin) || (pulse>tes->imax)) {
+      tes->stream->adc_value[tes->streamind++][0]=0xFFFF;
+    } else {
+	tes->stream->adc_value[tes->streamind++][0]=(uint16_t) ((pulse-tes->imin)*tes->aducnv);
+    }
   }
 }
 
@@ -149,6 +175,11 @@ void WriteStream(tesparams *tes, int * const status) {
 			  tes->keywords->tstop,
 			  'y', //clobber
 			  status);
+
+  CHECK_STATUS_VOID(*status);
+  
+  // add properties of simulation to header
+  tes_fits_write_params(fptr,tes,status);
 
   TESFitsStream *stream=newTESFitsStream(status);
   snprintf(stream->name,9,"ADC%03d",1);
@@ -176,20 +207,62 @@ void WriteStream(tesparams *tes, int * const status) {
 }
 
 
+//
+// Add properties of tes to the header of fptr. 
+// 
+// Note: differently to tes_print_params we write all information
+// using SI units (so no conversion to mA etc.!)
+//
+void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
+  // bail out if status is not ok
+  CHECK_STATUS_VOID(*status);
+
+  fits_update_key(fptr,TDOUBLE,"DELTAT",&tes->delta_t,"Integration step size [s]",status);
+  fits_update_key(fptr,TDOUBLE,"IMIN",&tes->imin,"Current corresponding to 0 ADU [A]",status);
+  fits_update_key(fptr,TDOUBLE,"IMAX",&tes->imax,"Current corresponding to 65534 ADU [A]",status);
+  double dummy=1.0/tes->aducnv;
+  fits_update_key(fptr,TDOUBLE,"ADUCNV",&dummy,"ADU conversion factor [A/ADU]",status);
+  fits_update_key(fptr,TDOUBLE,"I0_START",&tes->I0_start,"Initial bias current [A]",status);
+  fits_update_key(fptr,TDOUBLE,"R0",&tes->R0,"Operating point resistance [Ohm]",status);
+  fits_update_key(fptr,TDOUBLE,"RL",&tes->RL,"Shunt/load resistor value [Ohm]",status);
+  fits_update_key(fptr,TDOUBLE,"LIN",&tes->Lin,"Circuit inductance [H]",status);
+  fits_update_key(fptr,TDOUBLE,"ALPHA",&tes->alpha,"TES sensitivity T/R*dR/dT (alpha)",status);
+  fits_update_key(fptr,TDOUBLE,"BETA",&tes->beta,"TES current dependence I/R*dR/dI (beta)",status);
+  fits_update_key(fptr,TDOUBLE,"T_START",&tes->T_start,"Initial operating temperature [K]",status);
+  fits_update_key(fptr,TDOUBLE,"TB",&tes->Tb,"Heat sink temperature [K]",status);
+  fits_update_key(fptr,TDOUBLE,"N",&tes->n,"Heat sink coupling parameter n",status);
+  fits_update_key(fptr,TDOUBLE,"CE1",&tes->Ce1,"Absorber+TES heat capacity at Tc",status);
+  fits_update_key(fptr,TDOUBLE,"PB1",&tes->Pb1,"Thermal power flow",status);
+  fits_update_key(fptr,TDOUBLE,"GB1",&tes->Gb1,"Heat link thermal conductance at Tc",status);
+  fits_update_key(fptr,TDOUBLE,"SEED",&tes->seed,"Seed of random number generator",status);
+  if (tes->simnoise) {
+    fits_update_key(fptr,TINT,"SIMNOISE",&tes->simnoise,"Simulating noise terms",status);
+  } else {
+    fits_update_key(fptr,TINT,"SIMNOISE",&tes->simnoise,"Not simulating noise terms",status);
+  }
+}
+
+
 void tes_print_params(tesparams *tes) {
+  //
+  // print TES properties to console. If something changes here, do not forget
+  // to also edit tes_fits_write_params!
+  
   headas_chat(0,"\nStatus of TES Pixel with ID: %s\n",tes->ID);
   headas_chat(0,"\n");
   headas_chat(0,"Start time of simulation [s]           : %15.6f\n",tes->tstart);
   headas_chat(0,"Current time of simulation [s]         : %15.6f\n",tes->time);
   headas_chat(0,"Sample rate [Hz]                       : %15.6f\n",tes->sample_rate);
   headas_chat(0,"Integration step size [ms]             : %15.6f\n",1000.*tes->delta_t);
-  headas_chat(0,"ADU conversion factor [ADU/A]          : %15.1f\n",tes->adu);
+  headas_chat(0,"Current corresponding to 0 ADU [mA]    : %15.1f\n",1000.*tes->imin);
+  headas_chat(0,"Current corresponding to 65534 ADU [mA]: %15.1f\n",1000.*tes->imax);
+  headas_chat(0,"ADU to current conv. factor [mA/ADU]   : %15.8e\n",1000./(tes->aducnv));
   headas_chat(0,"\n");
 
-  headas_chat(0,"Initial bias current [mA]              : %10.5f\n",1000.*tes->I0_start);
-  headas_chat(0,"Operating point resistance [mOhm]      : %10.5f\n",1000.*tes->R0);
-  headas_chat(0,"Shunt/load resistor value [mOhm]       : %10.5f\n",1000.*tes->RL);
-  headas_chat(0,"Circuit inductance [H]                 : %10.5f\n",tes->Lin);
+  headas_chat(0,"Initial bias current [A]               : %10.5f\n",1000.*tes->I0_start);
+  headas_chat(0,"Operating point resistance R0 [mOhm]   : %10.5f\n",1000.*tes->R0);
+  headas_chat(0,"Shunt/load resistor value RL [mOhm]    : %10.5f\n",1000.*tes->RL);
+  headas_chat(0,"Circuit inductance [nH]                : %10.5f\n",1e9*tes->Lin);
   headas_chat(0,"TES sensitivity T/R*dR/dT (alpha)      : %10.3f\n",tes->alpha);
   headas_chat(0,"TES current dependence I/R*dR/dI (beta): %10.3f\n",tes->beta);
   headas_chat(0,"\n");
@@ -199,9 +272,9 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"Heat sink coupling parameter n         : %10.2f\n",tes->n);
   headas_chat(0,"\n");
 
-  headas_chat(0,"Absorber+TES heat capacity at Tc       : %10.5f\n",tes->Ce1);
-  headas_chat(0,"Thermal power flow                     : %10.5f\n",tes->Pb1);
-  headas_chat(0,"Heat link thermal conductance at Tc    : %10.5f\n",tes->Gb1);
+  headas_chat(0,"Absorber+TES heat capacity at Tc       : %10.5e\n",tes->Ce1);
+  headas_chat(0,"Thermal power flow                     : %10.5e\n",tes->Pb1);
+  headas_chat(0,"Heat link thermal conductance at Tc    : %10.5e\n",tes->Gb1);
   headas_chat(0,"\n");
 
   headas_chat(0,"Effective bias voltage [mV]            : %10.5f\n",1000.*tes->V0);
@@ -211,12 +284,126 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"\n");
     
   headas_chat(0,"Seed of random number generator        : %10lu\n",tes->seed);
-
   if (tes->simnoise) {
     headas_chat(0,"Simulating noise terms\n");
   } else {
     headas_chat(0,"NOT simulating noise terms\n");
   }
+
+  headas_chat(0,"\n**********************************************************\n");
+  headas_chat(0,"Derived Properties of the TES\n");
+  headas_chat(0,"\n");
+
+  //
+  // The following equations are from Irwin & Hilton, Table 1
+  //
+  // NOTE: This part was typed jetlagging on a plane somewhere over Greenland.
+  // I have not yet checked the equations for correctness
+  //
+
+  // RL<<R0: voltage bias case
+  // the question is how to define "<<"...
+  if (tes->RL/tes->R0 < 1e-4 ) {
+    headas_chat(0,"RL<1e-4 R0: detector is voltage biased\n");
+  }
+
+
+  // joule power
+  double Pj=tes->I0_start*tes->I0_start*tes->R0; 
+
+  // thermal conductance (I&H, after eq. 6)
+  double G=tes->Gb1;  // CHECK!
+
+  // loop gain
+  double ell=Pj*tes->alpha/(G*tes->T_start);
+
+  headas_chat(0,"Joule power  [J]                       : %10.5e\n",1000.*Pj);
+  headas_chat(0,"Loop gain                              : %10.5f\n",ell);
+
+  // heat capacity
+  double C=tes->Ce1;
+
+  //
+  // time scales
+  //
+
+  // natural
+  double tau=C/G;
+
+  // constant current
+  double tau_I=tau/(1.-ell);
+
+  // zero-inductance effective thermal
+  double RLR0=tes->RL/tes->R0;
+  double tau_eff=tau*(1.+tes->beta+RLR0)/(1.+tes->beta+RLR0+(1.-RLR0)*ell);
+
+  // electrical
+  double tau_el=tes->Lin/(tes->RL+tes->R0*(1.+tes->beta));
+
+  headas_chat(0,"Characteristic timescales (all in ms)\n");
+  headas_chat(0,"    natural                            : %10.5f\n",1000.*tau);
+  headas_chat(0,"    constant current                   : %10.5f\n",1000.*tau_I);
+  headas_chat(0,"    zero-inductance effective thermal  : %10.5f\n",1000.*tau_eff);
+  headas_chat(0,"    electrical                         : %10.5f\n",1000.*tau_el);
+
+  if (tau_I<0.) {
+    headas_chat(0,"WARNING: constant current tau is negative!\n");
+    headas_chat(0,"         Detector is instable to thermal runaway\n");
+  }
+
+  // pulse shape timescales
+  double tsqrt=pow((1./tau_el - 1./tau_I),2.)-4.*tes->R0*ell*(2.+tes->beta)/(tau*tes->Lin);
+  if (tsqrt<0.) {
+    headas_chat(0,"WARNING: Negative root\n");
+    headas_chat(0,"Instable detector - Cannot determine pulse profile!\n");
+    headas_chat(0,"PROCEED WITH CAUTION!\n");
+  } 
+
+  double taum=1./tau_el + 1./tau_I;
+  double taup=2./(taum+tsqrt);
+  taum=2./(taum-tsqrt);
+
+  headas_chat(0,"Pulse timescales (in ms)\n");
+  headas_chat(0,"    rise                               : %10.5f\n",1000.*taup);
+  headas_chat(0,"    fall                               : %10.5f\n",1000.*taum);
+
+  //
+  // TO DO: estimate pulse heights
+
+  //
+  // stability criteria
+  //
+  double Lsqrt=2.*sqrt(ell*(2.+tes->beta)*(ell*(1.-RLR0)+1.+tes->beta+RLR0));
+  double Lsum=ell*(3.+tes->beta-RLR0)+1.+tes->beta+RLR0;
+  double Lfac=tes->R0*tau/((ell-1.)*(ell-1.));
+
+  double Lcritp=(Lsum+Lsqrt)*Lfac;
+  double Lcritm=(Lsum-Lsqrt)*Lfac;
+  
+  headas_chat(0,"Critical L:\n");
+  headas_chat(0,"    L_plus                             : %10.5e\n",Lcritp);
+  headas_chat(0,"    L_minus                            : %10.5e\n",Lcritm);
+
+
+  if (fabs(taup/taum)-1. < 1e-5) {
+    headas_chat(0,"Tau(rise)=Tau(fall): System is critically damped\n");
+  }
+  if (fabs(tes->Lin/Lcritp)-1. < 1e-5) {
+    headas_chat(0,"L=L_plus: System is critically damped\n");
+  }
+  if (fabs(tes->Lin/Lcritm)-1. < 1e-5) {
+    headas_chat(0,"L=L_minus: System is critically damped\n");
+  }
+
+  if (tes->Lin < Lcritm) {
+    headas_chat(0,"L < L_minus: System is overdamped\n");
+  }
+
+  if (tes->Lin > Lcritp) {
+    headas_chat(0,"L > L_plus: System is overdamped\n");
+  }
+
+
 
 }
 
@@ -273,7 +460,12 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   tes->decimate_factor=1; // step size wrt. sample rate
 
-  tes->adu=par->adu;
+  // current to ADU conversion
+  // note: we require imin<imax!
+  assert(par->imin<par->imax);
+  tes->imin=par->imin;
+  tes->imax=par->imax;
+  tes->aducnv=0xFFFE/(tes->imax-tes->imin);
 
   tes->tstart=par->tstart; // current time is starting time
   tes->time=tes->tstart;
@@ -299,6 +491,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // hardcode for the moment!
   tes->mech=0;         // thermal coupling
 
+  //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   tes->Gb1=220e-12*pow(tes->T_start/0.1,tes->n-1.); 
   tes->therm=1.0; // absorber thermalization time (in units of the step size h). 
                     // For a delta function input of power into the absorber 
@@ -307,11 +500,14 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // Calculate initial bias current from thermal power balance
   tes->I0_start=sqrt(tes->Gb1/(tes->n*pow(tes->T_start,tes->n-1.))*
 		    (pow(tes->T_start,tes->n)-pow(tes->Tb,tes->n))/tes->R0);
+
+  //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   tes->Ce1=0.86e-12*(tes->T_start/0.1); //Absorber+TES heat capacity at Tc
   tes->dRdT=tes->alpha*tes->R0/tes->T_start;
   tes->dRdI=tes->beta*tes->R0/tes->I0_start;
  
   // level of SQUID readout and electronics noise
+  //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   tes->squid_noise=2e-12*sqrt(tes->sample_rate/2*32*M_PI)*tes->simnoise;
 
   // set-up initial input conditions
@@ -321,14 +517,14 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->T1=tes->T_start;
 
   // power flow
-  tes->Pb1=tpow(tes->T1,tes->Tb,tes); 
+  tes->Pb1=tpow(tes); 
 
 
   // noise terms
+  tes->Pnb1=0.;
   tes->Vdn=0.;
   tes->Vexc=0.;
   tes->Vcn=0.;
-  tes->Pnb1=0.;
 
   // ...define ODE system
   tes->odesys=malloc(sizeof(gsl_odeiv2_system));
@@ -408,9 +604,9 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       tes->Pnb1=tnoi(tes->T1,tes->Tb,tes);
 
       // Johnson noise terms
-      tes->Vdn =gsl_ran_gaussian(rng,sqrt(4*kBoltz*tes->T1*tes->RT*tes->bandwidth));
-      tes->Vexc=gsl_ran_gaussian(rng,sqrt(4*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->beta));
-      tes->Vcn =gsl_ran_gaussian(rng,sqrt(4*kBoltz*tes->Tb*tes->RL*tes->bandwidth));
+      tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
+      tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->beta));
+      tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->RL*tes->bandwidth));
     }
 
     // absorb next photon?
@@ -453,7 +649,7 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       // pulses so they are all +ve
       double pulse=tes->I0_start-tes->I0;
       if (tes->simnoise) {
-	pulse += gsl_ran_gaussian(rng,tes->squid_noise);
+	//	pulse += gsl_ran_gaussian(rng,tes->squid_noise);
       }
 
       // write the sucker
@@ -469,7 +665,7 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
     tes->RT=tes->R0+tes->dRdT*(tes->T1-tes->T_start)+tes->dRdI*(tes->I0-tes->I0_start);
 
     // thermal power flow
-    tes->Pb1=tpow(tes->T1,tes->Tb,tes); 
+    tes->Pb1=tpow(tes); 
 
   }
 

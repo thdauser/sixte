@@ -37,7 +37,8 @@ typedef struct {
   double n;      // Temperature dependence of the power flow to the heat sink
 
   double sample_rate; // sample rate (Hz)
-  double adu;    // conversion factor I1->ADU
+  double imin;    // minimum current to encode [A]
+  double imax;    // maximum current to encode [A]
 
   int clobber;  // overwrite output files? -- IGNORED SO FAR
   int simnoise; // simulator noise 
@@ -57,7 +58,9 @@ typedef struct {
   double sample_rate; // sample rate (Hz)
   double timeres;     // time resolution for this stream (1/sample_rate)
 
-  double adu;    // conversion factor I1->ADU
+  double imin;    // minimum current to encode [A]
+  double imax;    // maximum current to encode [A]
+  double aducnv;  // conversion factor current->adu
 
   double bandwidth; // needed for the noise simulation --- EXPAND
   int decimate_factor; // step size vs. sample rate
@@ -127,5 +130,6 @@ tesparams *tes_init(tespxlparams *par,int *status);
 int tes_propagate(tesparams *tes, double tstop, int *status);
 void tes_free(tesparams *tes);
 void tes_print_params(tesparams *tes);
+void tes_fits_write_params(fitsfile *fptr,tesparams *tes, int *status);
 
 #endif
