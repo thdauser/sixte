@@ -132,4 +132,24 @@ void tes_free(tesparams *tes);
 void tes_print_params(tesparams *tes);
 void tes_fits_write_params(fitsfile *fptr,tesparams *tes, int *status);
 
+// type for a photon that is processed with the tes simulator
+typedef struct {
+  double time;   // time in MET [s]
+  double energy; // energy [keV] [!!]
+} tes_photon;
+
+// photon provider function
+// a call to this function returns the next photon to be processed
+typedef tes_photon * (*tes_photon_provider) (void *data);
+
+
+// photon provider functions
+
+//get photon from impact file
+tes_photon *tes_photon_from_impact(void *data);
+
+tes_photon *tes_photon_from_array(void *data);
+
+
+
 #endif

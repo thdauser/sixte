@@ -269,40 +269,41 @@ void tes_print_params(tesparams *tes) {
   
   headas_chat(0,"\nStatus of TES Pixel with ID: %s\n",tes->ID);
   headas_chat(0,"\n");
-  headas_chat(0,"Start time of simulation [s]           : %15.6f\n",tes->tstart);
-  headas_chat(0,"Current time of simulation [s]         : %15.6f\n",tes->time);
-  headas_chat(0,"Sample rate [Hz]                       : %15.6f\n",tes->sample_rate);
-  headas_chat(0,"Integration step size [ms]             : %15.6f\n",1000.*tes->delta_t);
-  headas_chat(0,"Current corresponding to 0 ADU [mA]    : %15.1f\n",1000.*tes->imin);
-  headas_chat(0,"Current corresponding to 65534 ADU [mA]: %15.1f\n",1000.*tes->imax);
-  headas_chat(0,"ADU to current conv. factor [mA/ADU]   : %15.8e\n",1000./(tes->aducnv));
+  headas_chat(0,"Start time of simulation [s]            : %15.6f\n",tes->tstart);
+  headas_chat(0,"Current time of simulation [s]          : %15.6f\n",tes->time);
+  headas_chat(0,"Sample rate [Hz]                        : %15.6f\n",tes->sample_rate);
+  headas_chat(0,"Integration step size [mus]             : %15.6f\n",1e6*tes->delta_t);
+  headas_chat(0,"Current corresponding to 0 ADU [muA]    : %15.1f\n",1e6*tes->imin);
+  headas_chat(0,"Current corresponding to 65534 ADU [muA]: %15.1f\n",1e6*tes->imax);
+  headas_chat(0,"ADU to current conv. factor [muA/ADU]   : %15.8e\n",1e6/(tes->aducnv));
   headas_chat(0,"\n");
 
-  headas_chat(0,"Initial bias current [A]               : %10.5f\n",1000.*tes->I0_start);
-  headas_chat(0,"Operating point resistance R0 [mOhm]   : %10.5f\n",1000.*tes->R0);
-  headas_chat(0,"Shunt/load resistor value RL [mOhm]    : %10.5f\n",1000.*tes->RL);
-  headas_chat(0,"Circuit inductance [nH]                : %10.5f\n",1e9*tes->Lin);
-  headas_chat(0,"TES sensitivity T/R*dR/dT (alpha)      : %10.3f\n",tes->alpha);
-  headas_chat(0,"TES current dependence I/R*dR/dI (beta): %10.3f\n",tes->beta);
+  headas_chat(0,"Initial bias current [mA]               : %10.5f\n",1000.*tes->I0_start);
+  headas_chat(0,"Operating point resistance R0 [mOhm]    : %10.5f\n",1000.*tes->R0);
+  headas_chat(0,"Shunt/load resistor value RL [mOhm]     : %10.5f\n",1000.*tes->RL);
+  headas_chat(0,"Circuit inductance [nH]                 : %10.5f\n",1e9*tes->Lin);
+  headas_chat(0,"TES sensitivity T/R*dR/dT (alpha)       : %10.3f\n",tes->alpha);
+  headas_chat(0,"TES current dependence I/R*dR/dI (beta) : %10.3f\n",tes->beta);
   headas_chat(0,"\n");
 
-  headas_chat(0,"Initial operating temperature [mK]     : %10.3f\n",1000.*tes->T_start);
-  headas_chat(0,"Heat sink temperature [mK]             : %10.3f\n",1000.*tes->Tb);
-  headas_chat(0,"Heat sink coupling parameter n         : %10.2f\n",tes->n);
+  headas_chat(0,"Initial operating temperature [mK]      : %10.3f\n",1000.*tes->T_start);
+  headas_chat(0,"Heat sink temperature [mK]              : %10.3f\n",1000.*tes->Tb);
+  headas_chat(0,"Heat sink coupling parameter n          : %10.2f\n",tes->n);
   headas_chat(0,"\n");
 
-  headas_chat(0,"Absorber+TES heat capacity at Tc       : %10.5e\n",tes->Ce1);
-  headas_chat(0,"Thermal power flow                     : %10.5e\n",tes->Pb1);
-  headas_chat(0,"Heat link thermal conductance at Tc    : %10.5e\n",tes->Gb1);
+  // CHECK UNITS!
+  headas_chat(0,"Absorber+TES heat capacity at Tc [J/K]  : %10.5e\n",tes->Ce1);
+  headas_chat(0,"Thermal power flow                      : %10.5e\n",tes->Pb1);
+  headas_chat(0,"Heat link thermal conductance at Tc     : %10.5e\n",tes->Gb1);
   headas_chat(0,"\n");
 
-  headas_chat(0,"Effective bias voltage [mV]            : %10.5f\n",1000.*tes->V0);
-  headas_chat(0,"Current [mA]                           : %10.5f\n",1000.*tes->I0);
-  headas_chat(0,"Temperature [mK]                       : %10.5f\n",1000.*tes->T1);
-  headas_chat(0,"Current Resistivity [Ohm]              : %10.5f\n",tes->RT);
+  headas_chat(0,"Effective bias voltage [muV]            : %10.5f\n",1e6*tes->V0);
+  headas_chat(0,"Current [mA]                            : %10.5f\n",1000.*tes->I0);
+  headas_chat(0,"Temperature [mK]                        : %10.5f\n",1000.*tes->T1);
+  headas_chat(0,"Current Resistivity [mOhm]              : %10.5f\n",1000.*tes->RT);
   headas_chat(0,"\n");
     
-  headas_chat(0,"Seed of random number generator        : %10lu\n",tes->seed);
+  headas_chat(0,"Seed of random number generator         : %10lu\n",tes->seed);
   if (tes->simnoise) {
     headas_chat(0,"Simulating noise terms\n");
   } else {
@@ -323,13 +324,13 @@ void tes_print_params(tesparams *tes) {
   // Biasing of the detector (Smith, thesis, p.19)
   // NOTE: the |0.3| is arbitrary
   double biaspar=(tes->R0 - tes->RL)/(tes->R0+tes->RL);
-  headas_chat(0,"TES bias parameter (R0-RL)/(R0+RL):  %15.5f\n",biaspar);
+  headas_chat(0,"TES bias parameter (R0-RL)/(R0+RL)     :  %15.5f\n",biaspar);
   if (biaspar > 0.3 ) {
-    headas_chat(0,"       detector is voltage biased\n");
+    headas_chat(0,"       --> detector is voltage biased\n");
   } else {
     // RL>>R0: current bias case
     if (biaspar < -0.3 ) {
-      headas_chat(0,"     detector is current biased\n");
+      headas_chat(0,"     --> detector is current biased\n");
     } else {
       headas_chat(0,"WARNING: RL approx R0: expect small/no electrothermal feedback\n");
     }
