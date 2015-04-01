@@ -1,10 +1,5 @@
-// 
-// meta struct containing all physical parameters of the TES pixel
-//
-
 #ifndef TESSIM_H
 #define TESSIM_H
-
 
 #include "sixt.h"
 
@@ -19,10 +14,13 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
 
+
+
+// parameters for the initializer
 typedef struct {
   char *ID;         // pixel ID 
   char *impactlist; // file to read impacts from
-  char *streamfile; // file name of output FITS stream
+  char *streamfile; // file to write data to
 
   double tstart; // start time of simulation
   double tstop;  // stop time of simulation
@@ -47,13 +45,41 @@ typedef struct {
   
 } tespxlparams;
 
+// photon provider function
+// a call to this function returns the next photon to be processed
+// providerinfo contains arbitrary information used by the function
+// must return 1 if successful, 0 if no further photon to process
+typedef int (*tes_photon_provider) (PixImpact *photon, void *providerinfo, int *status);
 
+// photon provider functions and their associated data
+
+//get photon from impact file
+void tes_photon_from_impact(void *data);
+
+typedef struct {
+  char *impactlist;            // file name of impactlist
+  PixImpFile *impfile;         // impact file
+  SixtStdKeywords *keywords;   // Standard SIXT Keywords
+} tes_impactfile_info;
+
+tes_impactfile_info *tes_init_impactlist(char *impactfile, int *status);
+int tes_photon_from_impactlist(PixImpact *photon,void *data, int *status);
+void tes_free_impactlist(tes_impactfile_info **data, int *status);
+
+// stream write function
+// this function is called whenever pulse data are written for the pixel
+typedef void (*tes_stream_writer) (double time, double pulse, void *data, int *status);
+
+
+// 
+// meta struct containing all physical parameters of the TES pixel
+//
 typedef struct {
   char *ID;      // string containing the pixel ID
 
   double time;   // current time
   double tstart; // start of simulation
-  double tstop;  // end of integration WILL BE REMOVED!!!!!!
+
   double delta_t;     // integration step size
   double sample_rate; // sample rate (Hz)
   double timeres;     // time resolution for this stream (1/sample_rate)
@@ -64,8 +90,6 @@ typedef struct {
 
   double bandwidth; // needed for the noise simulation --- EXPAND
   int decimate_factor; // step size vs. sample rate
-
-
 
   double T_start; // initial operating temperature of the TES [K]
   double Tb;     // Heat sink/bath temperature [K]
@@ -87,8 +111,6 @@ typedef struct {
 
   double Pnb1;   // thermal noise
 
-  double squid_noise; // SQUID readout and electronics noise
-
   double I0_start; // initial bias current [A]
 
   double V0;     // Effective bias voltage
@@ -97,59 +119,63 @@ typedef struct {
 
   double RT;     // resistance(T)
 
+  unsigned long seed; // rng seed at start of simulation
+
   double Vdn;    // Johnson noise terms
   double Vcn;
   double Vexc;
 
+  double squid_noise; // SQUID readout and electronics noise
+
   double En1;   // energy absorbed by a photon during this step [J]
 
-  int mech;     // 1 for (MCCAMMON or IRWIN/HINTON CHAPTER)
+  int mech;     // 1 for XXXX (MCCAMMON or IRWIN/HINTON CHAPTER)
   double therm; // thermalization timescale in units of step size
 
-  gsl_odeiv2_system *odesys; // differential equation system
+  gsl_odeiv2_system *odesys;    // differential equation system
   gsl_odeiv2_driver *odedriver; // ODS solver
 
-  char *impactlist;    // file name of impactlist
-  PixImpFile *impfile; // impact file (this will need to be changed for the case
-                       // of multiple pixels)
+  long Nevts;                      // number of simulated events
+  void *photoninfo;                // information for photon provider
+  tes_photon_provider get_photon;  // photon provider (function pointer)
 
-  long Nevts;          // number of simulated events
-
-  unsigned long seed; // rng seed at start of simulation
-
-  TESDataStream *stream; // output stream
-  long streamind;    // index of next sample to write
-  char *streamfile;  // file name of output FITS stream
-
-  long Nt;           // number of elements in output buffer
-  SixtStdKeywords *keywords;   //Standard SIXT Keywords
+  void *streaminfo;              // data for pulse
+  tes_stream_writer write_to_stream; // function to write the pulse (function pointer)
 
 } tesparams;
 
+
+
+// stream write function using TESDataStream
+typedef struct {
+  TESDataStream *stream; // output stream
+  long streamind;    // index of next sample to write
+  double tstart;     // starting time
+  double tstop;      // end time
+  double imin;       // minimum current to encode
+  double imax;       // maximum current to encode
+  double aducnv;     // conversion factor
+  long Nt;           // number of elements in output buffer
+} tes_datastream_info;
+
+// initialize a TES data stream
+tes_datastream_info *tes_init_datastream(double tstart, double tstop, tesparams *tes, int *status);
+// append a pulse to the data stream. data points on a tes_datastream_info structure
+void tes_append_datastream(double time,double pulse,void *data,int *status);
+// write the TES data stream to file
+void tes_save_datastream(char *streamfile, char *impactfile,tes_datastream_info *data, 
+			 tesparams *tes, SixtStdKeywords *keywords, int *status);
+// cleanup the TES data stream
+void tes_free_datastream(tes_datastream_info **data, int *status);
+
+
+
+// general functions
 tesparams *tes_init(tespxlparams *par,int *status);
 int tes_propagate(tesparams *tes, double tstop, int *status);
 void tes_free(tesparams *tes);
 void tes_print_params(tesparams *tes);
 void tes_fits_write_params(fitsfile *fptr,tesparams *tes, int *status);
-
-// type for a photon that is processed with the tes simulator
-typedef struct {
-  double time;   // time in MET [s]
-  double energy; // energy [keV] [!!]
-} tes_photon;
-
-// photon provider function
-// a call to this function returns the next photon to be processed
-typedef tes_photon * (*tes_photon_provider) (void *data);
-
-
-// photon provider functions
-
-//get photon from impact file
-tes_photon *tes_photon_from_impact(void *data);
-
-tes_photon *tes_photon_from_array(void *data);
-
 
 
 #endif

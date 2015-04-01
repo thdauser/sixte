@@ -24,12 +24,10 @@
 
 //
 // TODO:
-// * separate impact file from simulation code
 // * write meta interfaces to simulation code
 //     - read from impact file
 //     - work on photon event list
-// * have routine write stream file or return stream
-// * switch from stream to record format
+// * build interface based on record format (tesrecord.h)
 // * write current to file
 // * improve TES diagnostics
 // * calculate taup/taum using proper complex arithmetic!
@@ -37,7 +35,8 @@
 // * take into account proper time of arrival of event
 // * use stochastic equation solver
 // * implement saturation regime
-//
+// * generate bitstreams of varying bit length (rather than assuming 16bit)
+// * progress bar
 //
 //
 
@@ -57,9 +56,15 @@ const double kBoltz=1.3806488e-23; // Boltzmann constant [m^2 kg/s^2]
 const double eV=1.602176565e-19 ;  // 1eV [J]
 const double keV=1.602176565e-16 ;  // 1keV [J]
 
+
 // Differential equations for the TES to solve. This is the simplest
 // calorimeter model assuming a single heat capacity for the 
 // TES and absorber
+
+// time is not used in TES_Tdifferential_NL and TES_JAC. 
+// Switch off the related warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *params) {
 
   // index 0: electrical equation I0=Y[0]
@@ -121,116 +126,41 @@ int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *p
 
   return GSL_SUCCESS;
 }
+#pragma GCC diagnostic pop
 
 
-double tnoi (double T1, double T0, tesparams *tes) {
+double tnoi(tesparams *tes) {
   // Thermal (phonon) noise terms
-
+ 
   double n1=tes->n-1.;
-  double G1=tes->Gb1*pow(T1/tes->T_start,n1);
+  double G1=tes->Gb1*pow(tes->T1/tes->T_start,n1);
   
   double gamma;
 
   // Irwin, eq. 93
   if (tes->mech==0) {
-    gamma=(pow(T0/T1,n1+2.0)+1.0)/2.0;
+    gamma=(pow(tes->Tb/tes->T1,n1+2.0)+1.0)/2.0;
   } else {
     gamma=1.;
   }
  
-  // use gsl_ran_gaussian instead?
-  return(gsl_ran_gaussian(rng, sqrt(4*kBoltz*T1*T1*G1*gamma*tes->bandwidth) ));
+  return(gsl_ran_gaussian(rng, sqrt(4*kBoltz*tes->T1*tes->T1*G1*gamma*tes->bandwidth) ));
 }
 
 double tpow(tesparams *tes) {
   // Calculate the power flow between elements of the pixel
   //
-  // This uses Irwin and Hilton, eq. (5):
-  //
-  // flow to bath:
-  //   P_bath=K (T^n - Tb^n)
-  // where n=beta+1 and where beta: thermal conductance coefficient
-  //   (see McCammon).
-  // K= G/(n T^{n-1})
-  // therefore
-  //   P_bath=G/(n T^{n-1}) (T^n-Tb^n)
-  //         
-  //  G1= G(T/T_start)^(n-1)
 
   double beta_th=tes->n-1.0;
   double G1=tes->Gb1*pow(tes->T1/tes->T_start,beta_th);
 
   return G1*(pow(tes->T1,tes->n)-pow(tes->Tb,tes->n))/(tes->n*pow(tes->T1,beta_th));
-
 }
-
-void AddToStream(double time,double pulse, tesparams *tes) {
-  // only write sample if we still have space in the stream
-  if (tes->streamind < tes->stream->Ntime) {
-    tes->stream->time[tes->streamind]=time;
-    if ((pulse<tes->imin) || (pulse>tes->imax)) {
-      tes->stream->adc_value[tes->streamind++][0]=0xFFFF;
-    } else {
-	tes->stream->adc_value[tes->streamind++][0]=(uint16_t) ((pulse-tes->imin)*tes->aducnv);
-    }
-  }
-}
-
-void WriteStream(tesparams *tes, int * const status) {
-
-  fitsfile *fptr;
-  createTESFitsStreamFile(&fptr,
-			  tes->streamfile,
-			  tes->keywords->telescop,
-			  tes->keywords->instrume,
-			  tes->keywords->filter,
-			  tes->keywords->ancrfile,
-			  tes->keywords->respfile,
-			  "none", // xmlfile
-			  tes->impfile->fptr->Fptr->filename, // name of impactfile
-			  tes->keywords->mjdref,
-			  tes->keywords->timezero,
-			  tes->keywords->tstart,
-			  tes->keywords->tstop,
-			  'y', //clobber
-			  status);
-
-  CHECK_STATUS_VOID(*status);
-  
-  // add properties of simulation to header
-  tes_fits_write_params(fptr,tes,status);
-
-  TESFitsStream *stream=newTESFitsStream(status);
-  snprintf(stream->name,9,"ADC%03d",1);
-  allocateTESFitsStream(stream,tes->stream->Ntime,1,status);
-  // copy over (this is stupid for a single pixel)
-  long ii;
-  stream->pixID[0]=0;
-  for (ii=0; ii<stream->Ntime; ii++) {
-    stream->time[ii]=tes->stream->time[ii];
-    stream->adc_value[0][ii]=tes->stream->adc_value[ii][0];
-  }
-  writeTESFitsStream(fptr,
-		     stream,
-		     tes->keywords->tstart,
-		     tes->keywords->tstop,
-		     tes->timeres,
-		     &(tes->Nevts), 
-		     0,-1,status);
-  fits_close_file(fptr,status);
-  CHECK_STATUS_VOID(*status);
-
-  destroyTESFitsStream(stream);
-  free(stream);
-
-}
-
 
 //
 // Add properties of tes to the header of fptr. 
 // 
-// Note: differently to tes_print_params we write all information
-// using SI units (so no conversion to mA etc.!)
+// Note: we write all information using SI units (so no conversion to mA etc.!)
 //
 void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   // bail out if status is not ok
@@ -253,7 +183,7 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   fits_update_key(fptr,TDOUBLE,"CE1",&tes->Ce1,"Absorber+TES heat capacity at Tc",status);
   fits_update_key(fptr,TDOUBLE,"PB1",&tes->Pb1,"Thermal power flow",status);
   fits_update_key(fptr,TDOUBLE,"GB1",&tes->Gb1,"Heat link thermal conductance at Tc",status);
-  fits_update_key(fptr,TDOUBLE,"SEED",&tes->seed,"Seed of random number generator",status);
+  fits_update_key(fptr,TLONG,"SEED",&tes->seed,"Seed of random number generator",status);
   if (tes->simnoise) {
     fits_update_key(fptr,TINT,"SIMNOISE",&tes->simnoise,"Simulating noise terms",status);
   } else {
@@ -500,29 +430,15 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   }
   gsl_rng_set(rng,tes->seed);
 
+  // ID of this pixel
   tes->ID=strdup(par->ID);
 
-  tes->streamfile=strdup(par->streamfile);
-
-
-  // Open the pixel impact file
-  // in this initial version we assume that we have one
-  // impact file per pixel. 
-  // This will obviously be changed later!!
-  tes->impactlist=strdup(par->impactlist);
-
-  tes->impfile=openPixImpFile(tes->impactlist, READONLY,status);
-  CHECK_STATUS_RET(*status,NULL);
+  // The photon provider needs to be initialized outside of this
+  tes->photoninfo=NULL;
+  tes->get_photon=NULL;
 
   // we have not yet dealt with events
   tes->Nevts=0;
-
-  // Read standard SIXTE keywords from input file
-  tes->keywords=newSixtStdKeywords(status);
-  sixt_read_fits_stdkeywords(tes->impfile->fptr,
-			     tes->keywords,
-			     status);
-  CHECK_STATUS_RET(*status,NULL);
 
   tes->sample_rate=par->sample_rate; // Sample rate in Hz (typical 100-200kHz)
   tes->timeres=1./tes->sample_rate; // time resolution
@@ -531,15 +447,14 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   // current to ADU conversion
   // note: we require imin<imax!
+  // note: we assume 16 bits encoding
   assert(par->imin<par->imax);
   tes->imin=par->imin;
   tes->imax=par->imax;
   tes->aducnv=0xFFFE/(tes->imax-tes->imin);
 
-  tes->tstart=par->tstart; // current time is starting time
-  tes->time=tes->tstart;
-
-  tes->tstop=par->tstop; // DUMMY FOR THE MOMENT - MAX. TIME FOR INTEGRATION
+  tes->tstart=par->tstart; // remember the starting time
+  tes->time=tes->tstart;   // current time
 
   tes->delta_t=1./(tes->sample_rate*tes->decimate_factor); //integration step size
 
@@ -609,24 +524,6 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // setup integrator
   tes->odedriver=gsl_odeiv2_driver_alloc_y_new(tes->odesys,gsl_odeiv2_step_rk4,
 					       tes->delta_t,1e-6,1e-6);
-
-  //
-  // allocate memory for output
-  // (this should be done in a more intelligent way
-  // - we should not have to allocate the stream in memory!)
-  //
-
-  tes->Nt=(long) ((tes->tstop-tes->tstart)*tes->sample_rate);
-
-  tes->streamind=0;
-  tes->stream=newTESDataStream(status);
-  if (*status==EXIT_FAILURE) {
-    SIXT_ERROR("memory allocation failed for stream structure");
-    CHECK_STATUS_RET(*status,NULL);
-  }
-  allocateTESDataStream(tes->stream,tes->Nt,1,status);
-  CHECK_STATUS_RET(*status,NULL);
-
   return(tes);
 }
 
@@ -636,43 +533,35 @@ void tes_free(tesparams *tes) {
   free(tes->ID);
   tes->ID=NULL;
 
-
   gsl_odeiv2_driver_free(tes->odedriver);
   tes->odedriver=NULL;
 
   free(tes->odesys);
   tes->odesys=NULL;
 
-  free(tes->impactlist);
-  tes->impactlist=NULL;
-
-  int status;
-  freePixImpFile(&(tes->impfile),&status);
-  
-  destroyTESDataStream(tes->stream);
-  free(tes->stream);
-  tes->stream=NULL;
-
-  free(tes->streamfile);
-  tes->streamfile=NULL;
-
-  freeSixtStdKeywords(tes->keywords);
 }
 
 
+//
+// logic problem in multiple calls: a photon read here that is
+// after tstop will get lost
 int tes_propagate(tesparams *tes, double tstop, int *status) {
-
-  // first photon
-  PixImpact impact;
-  getNextImpactFromPixImpFile(tes->impfile,&impact,status);
   CHECK_STATUS_RET(*status,-1);
+
+  // get first photon to deal with
+  PixImpact impact;
+  impact.time=tstop+100; // initialize to NO photon 
+  if (tes->get_photon != NULL) {
+    tes->get_photon(&impact,tes->photoninfo,status);
+    CHECK_STATUS_RET(*status,-1);
+  }
 
   int samples=0;
   while (tes->time<=tstop) {
 
     if (tes->simnoise) {
       // thermal noise
-      tes->Pnb1=tnoi(tes->T1,tes->Tb,tes);
+      tes->Pnb1=tnoi(tes);
 
       // Johnson noise terms
       tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
@@ -687,12 +576,12 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       tes->En1=impact.energy*keV/(tes->delta_t*tes->therm);
 
       // get the next photon 
-      int success=getNextImpactFromPixImpFile(tes->impfile,&impact,status);
+      int success=tes->get_photon(&impact,tes->photoninfo,status);
       CHECK_STATUS_RET(*status,-1);
       if (success==0) {
-	// no further photon to read. Set next impact time to
+	// there is no further photon to read. Set next impact time to
 	// a time outside much after this
-	impact.time=tes->keywords->tstop+100.;
+	impact.time=tstop+100.;
       }
     }
     double Y[2];
@@ -720,11 +609,16 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       // pulses so they are all +ve
       double pulse=tes->I0_start-tes->I0;
       if (tes->simnoise) {
-	//	pulse += gsl_ran_gaussian(rng,tes->squid_noise);
+	pulse += gsl_ran_gaussian(rng,tes->squid_noise);
       }
 
       // write the sucker
-      AddToStream(tes->time,pulse,tes);
+      // (note that we do allow NULL here. This could be used,
+      // e.g., to propagate the TES for a while without producing
+      // output
+      if (tes->write_to_stream != NULL ) {
+	tes->write_to_stream(tes->time,pulse,tes->streaminfo,status);
+      }
 
       samples=0;
     }
@@ -740,15 +634,6 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
 
   }
 
-  // Dump results
-  WriteStream(tes,status);
-
-  // cleanup
-  //  freePixImpFile(&(tes->impfile), status);
-  // CHECK_STATUS_RET(*status,-1);
-
-  // gsl_odeiv2_driver_free(d);
-  // gsl_rng_free(rng);
-
   return(0);
 }
+
