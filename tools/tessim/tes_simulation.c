@@ -13,7 +13,14 @@
 // Code by J. Wilms based on the IDL-program pulses_NL.pr by
 // Stephen J. Smith - NASA GSFC - 08/APRIL/2009
 //
-
+//
+// current; muA
+// J/K -> pJ/K
+// power flow: pW/K   (differential conductance)
+//   specify the K and n, spit out G
+//   practical use: G is preferred
+//      -> allow either G or K, print out both
+//  add flag to invert signal, do mapping with imin,imax only
 //
 // ASTRONOMERS BEWARE: This code uses MKS units!
 //
@@ -25,7 +32,6 @@
 //
 // TODO:
 // * write meta interfaces to simulation code
-//     - read from impact file
 //     - work on photon event list
 // * build interface based on record format (tesrecord.h)
 // * write current to file
@@ -637,3 +643,4 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
   return(0);
 }
 
+//int tes_propagate_(tesparams
