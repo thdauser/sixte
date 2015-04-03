@@ -887,104 +887,105 @@ int xifupipeline_getpar(struct Parameters* const par)
 	strcpy(par->ProgressFile, sbuffer);
 	free(sbuffer);
 
-	status=ape_trad_query_string("TesTriggerFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the TES Trigger output file");
-		return(status);
-	}
-	strcpy(par->TesTriggerFile, sbuffer);
-	free(sbuffer);
-
-	status=ape_trad_query_int("TriggerSize", &par->triggerSize);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the TriggerSize parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_int("PreBufferSize", &par->preBufferSize);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the PreBufferSize parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_string("TesEventFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the event file");
-		return(status);
-	}
-	strcpy(par->TesEventFile, sbuffer);
-	free(sbuffer);
-
-	status=ape_trad_query_string("OptimalFilterFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the optimal filter file");
-		return(status);
-	}
-	strcpy(par->OptimalFilterFile, sbuffer);
-	free(sbuffer);
-
-	status=ape_trad_query_string("PulseTemplateFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the pulse template file");
-		return(status);
-	}
-	strcpy(par->PulseTemplateFile, sbuffer);
-	free(sbuffer);
-
-	status=ape_trad_query_int("PulseLength", &par->PulseLength);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the PulseLength parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_double("Threshold", &par->Threshold);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Threshold parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_double("Calfac", &par->Calfac);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Calfac parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_int("EventListSize", &par->EventListSize);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the EventListSize parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_int("NormalExclusion", &par->NormalExclusion);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the NormalExclusion parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_int("DerivateExclusion", &par->DerivateExclusion);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the DerivateExclusion parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the SaturationValue parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_bool("Identify", &par->Identify);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Identify parameter");
-		return(status);
-	}
-
 	status=ape_trad_query_bool("UseRMF", &par->UseRMF);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the UseRMF parameter");
 		return(status);
 	}
 
+	if (!par->UseRMF){
+		status=ape_trad_query_string("TesTriggerFile", &sbuffer);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the name of the TES Trigger output file");
+			return(status);
+		}
+		strcpy(par->TesTriggerFile, sbuffer);
+		free(sbuffer);
+
+		status=ape_trad_query_int("TriggerSize", &par->triggerSize);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the TriggerSize parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_int("PreBufferSize", &par->preBufferSize);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the PreBufferSize parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_string("TesEventFile", &sbuffer);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the name of the event file");
+			return(status);
+		}
+		strcpy(par->TesEventFile, sbuffer);
+		free(sbuffer);
+
+		status=ape_trad_query_string("OptimalFilterFile", &sbuffer);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the name of the optimal filter file");
+			return(status);
+		}
+		strcpy(par->OptimalFilterFile, sbuffer);
+		free(sbuffer);
+
+		status=ape_trad_query_string("PulseTemplateFile", &sbuffer);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the name of the pulse template file");
+			return(status);
+		}
+		strcpy(par->PulseTemplateFile, sbuffer);
+		free(sbuffer);
+
+		status=ape_trad_query_int("PulseLength", &par->PulseLength);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the PulseLength parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_double("Threshold", &par->Threshold);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the Threshold parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_double("Calfac", &par->Calfac);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the Calfac parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_int("EventListSize", &par->EventListSize);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the EventListSize parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_int("NormalExclusion", &par->NormalExclusion);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the NormalExclusion parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_int("DerivateExclusion", &par->DerivateExclusion);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the DerivateExclusion parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the SaturationValue parameter");
+			return(status);
+		}
+
+		status=ape_trad_query_bool("Identify", &par->Identify);
+		if (EXIT_SUCCESS!=status) {
+			SIXT_ERROR("failed reading the Identify parameter");
+			return(status);
+		}
+	}
 	status=ape_trad_query_bool("clobber", &par->clobber);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the clobber parameter");
