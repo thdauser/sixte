@@ -422,9 +422,15 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // if seed is 0, do NOT use the rng's default seed (per gsl), but
   // initialize from the system clock
   if (par->seed==0) {
+    #ifdef __APPLE__ && __MACH__
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    tes->seed=1000000*tv.tv_sec+tv.tv_usec;
+    #else
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC,&tp);
     tes->seed=tp.tv_nsec;
+    #endif
   } else {
     tes->seed=par->seed;
   }
