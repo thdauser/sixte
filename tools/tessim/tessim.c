@@ -90,19 +90,24 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_double("tstop", &(par->tstop), status);
   query_simput_parameter_double("sample_rate",&(par->sample_rate),status);
   assert(par->sample_rate>0);
-  query_simput_parameter_double("T_start", &(par->T_start), status);
+  query_simput_parameter_double("T_start", &(par->T_start), status); //mK
   assert(par->T_start>0);
-  query_simput_parameter_double("Tb", &(par->Tb), status);
+  par->T_start*=1e-3; // mK -> K
+  query_simput_parameter_double("Tb", &(par->Tb), status); // mK
   assert(par->Tb>0);
-  query_simput_parameter_double("R0", &(par->R0), status);
+  par->Tb*=1e-3; // mK->K
+  query_simput_parameter_double("R0", &(par->R0), status); // mOhm
   assert(par->R0>0);
-  query_simput_parameter_double("RL", &(par->RL), status);
+  par->R0*=1e-3; // mOhm->Ohm
+  query_simput_parameter_double("RL", &(par->RL), status); // mOhm
   assert(par->RL>=0);
+  par->RL*=1e-3; // mOhm->Ohm
   query_simput_parameter_double("alpha", &(par->alpha), status);
   assert(par->alpha>0);
   query_simput_parameter_double("beta", &(par->beta), status);
-  query_simput_parameter_double("Lin", &(par->Lin), status);
+  query_simput_parameter_double("Lin", &(par->Lin), status); //nH
   assert(par->Lin>0);
+  par->Lin*=1e-9;
   query_simput_parameter_double("n", &(par->n), status);
   query_simput_parameter_double("imin", &(par->imin), status);
   query_simput_parameter_double("imax", &(par->imax), status);
@@ -114,6 +119,12 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   }
 
   query_simput_parameter_bool("simnoise", &par->simnoise, status);
+  
+  if (&par->simnoise) {
+    query_simput_parameter_double("m_unknown",&par->m_unknown,status);
+  } else {
+    par->m_unknown=0.; // switch explicitly off if not simulating noise
+  }
 
   long seed; // needed because par->seed is an unsigned long
   query_simput_parameter_long("seed", &seed, status);

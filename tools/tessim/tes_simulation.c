@@ -85,12 +85,12 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
   double RT=tes->R0+tes->dRdT*(TT-tes->T_start)+tes->dRdI*(II-tes->I0_start);
 
   // Electrical circuit equation: dI/dt -- dy_0/dt=f_0(t,y_0(t),y_1(t))
-  // note: Vdn, Vexc, Vcn are the Johnson noise terms
-  eqn[0]=(tes->V0-II*(tes->RL+RT)+tes->Vdn+tes->Vexc+tes->Vcn)/tes->Lin;
+  // note: Vdn, Vexc, Vcn are the Johnson noise terms, Vunk is the unknown noise
+  eqn[0]=(tes->V0-II*(tes->RL+RT)+tes->Vdn+tes->Vexc+tes->Vcn+tes->Vunk)/tes->Lin;
 
   // Thermal equation: dT/dt -- dy_1/dt=f_1(t,y_0(t),y_1(t))
   eqn[1]=(II*II*RT-tes->Pb1
-	  -II*(tes->Vdn+tes->Vexc)
+	  -II*(tes->Vdn+tes->Vexc+tes->Vunk)
 	  +tes->Pnb1+tes->En1)/tes->Ce1;
 
   return GSL_SUCCESS;
@@ -195,6 +195,7 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   } else {
     fits_update_key(fptr,TINT,"SIMNOISE",&tes->simnoise,"Not simulating noise terms",status);
   }
+  fits_update_key(fptr,TDOUBLE,"M_UNKNOWN",&tes->m_unknown,"Magnitude of unknown noise",status);
 }
 
 
@@ -214,7 +215,7 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"ADU to current conv. factor [muA/ADU]   : %15.8e\n",1e6/(tes->aducnv));
   headas_chat(0,"\n");
 
-  headas_chat(0,"Initial bias current [mA]               : %10.5f\n",1000.*tes->I0_start);
+  headas_chat(0,"Initial bias current [muA]              : %10.5f\n",1e6*tes->I0_start);
   headas_chat(0,"Operating point resistance R0 [mOhm]    : %10.5f\n",1000.*tes->R0);
   headas_chat(0,"Shunt/load resistor value RL [mOhm]     : %10.5f\n",1000.*tes->RL);
   headas_chat(0,"Circuit inductance [nH]                 : %10.5f\n",1e9*tes->Lin);
@@ -228,13 +229,13 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"\n");
 
   // CHECK UNITS!
-  headas_chat(0,"Absorber+TES heat capacity at Tc [J/K]  : %10.5e\n",tes->Ce1);
-  headas_chat(0,"Thermal power flow                      : %10.5e\n",tes->Pb1);
+  headas_chat(0,"Absorber+TES heat capacity at Tc [pJ/K] : %10.5f\n",1e12*tes->Ce1);
+  headas_chat(0,"Thermal power flow  [pW/K]              : %10.5f\n",1e12*tes->Pb1);
   headas_chat(0,"Heat link thermal conductance at Tc     : %10.5e\n",tes->Gb1);
   headas_chat(0,"\n");
 
   headas_chat(0,"Effective bias voltage [muV]            : %10.5f\n",1e6*tes->V0);
-  headas_chat(0,"Current [mA]                            : %10.5f\n",1000.*tes->I0);
+  headas_chat(0,"Current [muA]                           : %10.5f\n",1e6*tes->I0);
   headas_chat(0,"Temperature [mK]                        : %10.5f\n",1000.*tes->T1);
   headas_chat(0,"Current Resistivity [mOhm]              : %10.5f\n",1000.*tes->RT);
   headas_chat(0,"\n");
@@ -428,15 +429,15 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // if seed is 0, do NOT use the rng's default seed (per gsl), but
   // initialize from the system clock
   if (par->seed==0) {
-    #ifdef __APPLE__ && __MACH__
+#if defined( __APPLE__) && defined(__MACH__)
     struct timeval tv;
     gettimeofday(&tv,NULL);
     tes->seed=1000000*tv.tv_sec+tv.tv_usec;
-    #else
+#else
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC,&tp);
     tes->seed=tp.tv_nsec;
-    #endif
+#endif
   } else {
     tes->seed=par->seed;
   }
@@ -523,6 +524,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->Vdn=0.;
   tes->Vexc=0.;
   tes->Vcn=0.;
+  tes->Vunk=0.;
 
   // ...define ODE system
   tes->odesys=malloc(sizeof(gsl_odeiv2_system));
@@ -579,6 +581,7 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
       tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->beta));
       tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->RL*tes->bandwidth));
+      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth)*(1.+2*tes->beta) )*tes->m_unknown*tes->m_unknown;
     }
 
     // absorb next photon?

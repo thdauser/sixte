@@ -41,6 +41,8 @@ typedef struct {
   int clobber;  // overwrite output files? -- IGNORED SO FAR
   int simnoise; // simulator noise 
 
+  double m_unknown; // magnitude of unknown noise
+
   unsigned long seed; // seed of random number generator
   
 } tespxlparams;
@@ -105,6 +107,8 @@ typedef struct {
 
   int simnoise;  // simulate noise?
 
+  double m_unknown; // magnitude of unknown noise
+
   double Ce1;    // absorber+TES heat capacity at Tc
   double Pb1;    // thermal power flow 
   double Gb1;    // thermal conductance of the bath heat link at Tc
@@ -124,6 +128,7 @@ typedef struct {
   double Vdn;    // Johnson noise terms
   double Vcn;
   double Vexc;
+  double Vunk;
 
   double squid_noise; // SQUID readout and electronics noise
 
