@@ -65,7 +65,7 @@ AM_CONDITIONAL([RCL], [test x$rcl = xtrue])
 # Check for libraries: (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
 
-AC_SEARCH_LIBS([clock_gettime], [rt], [], [AC_MSG_ERROR([No Real Time library found!])], [])
+AC_SEARCH_LIBS([clock_gettime], [rt], [], [ echo "Warning:  No Real Time library found! (This is ok on a Mac OSX)"], [])
 
 ####################################
 # expat
