@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.7], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.8], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -64,6 +64,8 @@ AM_CONDITIONAL([RCL], [test x$rcl = xtrue])
 ####################################
 # Check for libraries: (objdump -R/-T libncurses...)
 AC_SEARCH_LIBS(sin, m, [], [AC_MSG_ERROR([No math library found!])], [])
+
+AC_SEARCH_LIBS([clock_gettime], [rt], [], [AC_MSG_ERROR([No Real Time library found!])], [])
 
 ####################################
 # expat
