@@ -14,7 +14,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  Trigger has been developed by the INSTITUTO DE FISICA DE 
+   Copyright 2014:  PULSEPROCESS has been developed by the INSTITUTO DE FISICA DE
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
@@ -95,18 +95,22 @@
 	int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int lastPulse, double lrs, double lb, double B, int sizepulse, double *pulseheight, FILE * temporalFile);
 	int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *pulseheight, FILE *temporalFile);
 
-	int find_model(double ph, gsl_matrix *modelsvalues, gsl_matrix *models, gsl_vector **modelFound, FILE * temporalFile);
+	int find_model(double ph, gsl_vector *modelsvalues, gsl_matrix *models, gsl_vector **modelFound, FILE * temporalFile);
 	int find_model1stSample(double firstSample, gsl_vector *firstSamples, gsl_matrix *models, gsl_vector **modelFound, FILE * temporalFile);
 	int firstSampleModels (gsl_matrix *templates, double threshold, gsl_vector **firstSamples, gsl_vector **index_firstSamples, FILE *temporalFile);
 	int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *modelIn1, double ph_modelIn1, gsl_vector *modelIn2, double ph_modelIn2, FILE * temporalFile);
 
-	int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp, double safetyMargin,
+	int findTstartOLD (gsl_vector *der, double adaptativethreshold, int nSamplesUp, double safetyMargin,
 		int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, 
 		gsl_vector **tstartgslOUT, gsl_vector **tstartgslOUTNEW, gsl_vector **flagTruncated, 
 		gsl_vector **tstartDERgsl, gsl_vector **tmaxDERgsl, gsl_vector **maxDERgsl, 
 		gsl_vector **tendDERgsl, FILE * temporalFile);
+	int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp,
+			int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
+			gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl,
+			FILE * temporalFile);
 
-	int findPulses
+	int findPulsesOLD
 	(
 		gsl_vector *vectorin,
 		gsl_vector *vectorinDER,
@@ -140,8 +144,40 @@
 		FILE * temporalFile,
 
 		int index);
+	int findPulses
+	(
+		gsl_vector *vectorin,
+		gsl_vector *vectorinDER,
+		gsl_vector **tstart,
+		gsl_vector **quality,
+		gsl_vector **energy,
 
-	int findSePulses
+		int *nPulses,
+
+		int opmode,
+
+		double taufall,
+		double scalefactor,
+		int sizepulsebins,
+		double samplingRate,
+
+		int samplesup,
+		double nsgms,
+
+		double lb,
+		double lrs,
+
+		gsl_matrix *librarymatrix,
+		gsl_matrix *modelsmatrix,
+
+		double stopcriteriamkc,
+		double kappamkc,
+		double levelprvpulse,
+
+		FILE * temporalFile);
+
+
+	int findSePulsesOLD
 	(
 		gsl_vector *vectorin,
 		gsl_vector *vectorinDER,
@@ -191,6 +227,51 @@
 		FILE * temporalFile,
 
 		int indice);
+
+	int findSePulses
+	(
+		gsl_vector *vectorin,
+		gsl_vector *vectorinDER,
+		gsl_vector **vectorinDERComposed,
+
+		double thresholdmediankappaSingle,
+
+		gsl_vector **tstart,
+		gsl_vector **quality,
+		gsl_vector **energy,
+		gsl_vector **maxDER,
+
+		gsl_vector **newPulses,
+
+		int *nPulses,
+
+		/*gsl_vector *startsaturated,
+		gsl_vector *endsaturated,
+		int nSaturated,*/
+
+		double taufall,
+		double scalefactor,
+		int sizepulse,
+		double samplingRate,
+
+		int samplesup,
+		double nsgms,
+
+		gsl_vector *B,
+		double lrs,
+		gsl_vector *lb,
+
+		gsl_matrix *library,
+		gsl_matrix *models,
+		gsl_vector *model,
+
+		double stopCriteriamkc,
+		double kappamkc,
+		double levelprvpulse,
+
+		FILE * temporalFile);
+
+	int derivative (gsl_vector **invector,int szVct);
 
 	using namespace std;
 

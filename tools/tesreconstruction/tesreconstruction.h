@@ -27,6 +27,7 @@
 #include "tesproftemplates.h"
 #include "testrigger.h"
 #include "gti.h"
+#include "integraSIRENA.h"
 
 #define TOOLSUB tesreconstruction_main
 #include "headas_main.c"
@@ -71,8 +72,79 @@ struct Parameters {
 	//Boolean to choose to save the run parameters in the output file
 	char history;
 
+	//Reconstruction Method (PP or SIRENA)
+	char Rcmethod[7];
+	
+	//
+	// SIRENA parameters
+	//
+	//File containing the library
+	char LibraryFile[MAXFILENAME];
+	
+	//Scale Factor for initial filtering
+	double scaleFactor;
+	
+	//Fall time of the pulses
+	double tauFall;
+	
+	//Number of samples for threshold trespassing
+	double samplesUp;
+	
+	//Number of standard deviations in the kappa-clipping process for threshold estimation
+	double nSgms;
+	
+	//Run for Library creation?: Y (1), N(0)
+	int crtLib;
+	
+	//Calibration run (0) or energy reconstruction run (1)?
+	int mode;
+
+	/** Monochromatic energy for library creation **/
+	double monoenergy;
+	
+	/** Running sum length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
+	double LrsT;
+	
+	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
+	double LbT;
+	
+	//Noise filename
+	char NoiseFile[MAXFILENAME];
+	
+	//Filtering Domain: Time(T) or Frequency(F)
+	char FilterDomain[2];
+
+	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
+	char FilterMethod[3];
+	
+	//Linear (1) or Quadratic calibration of the energies (2)
+	int calibLQ;
+	
+	//Linear calibration factor
+	double b_cF;
+	
+	//Quadratic calibration factor
+	double c_cF;
+	
+	//Write intermediate files (Yes:1, No:0)
+	int intermediate;
+	
+	// File with the output detections 
+	char detectFile[256];
+	
+	// File with the output filter (only in calibration)
+	char filterFile[256];
+	
+	// Second calibration file to calculate calibration factors b,c (if mode=0 & crtLib=0)
+	char RecordFileCalib2[256];
+	
+	/** Monochromatic energy of the second calibration file to calculate calibration factors b,c (if mode=0 & crtLib=0)**/
+	double monoenergy2;
+	
+	// END SIRENA PARAMETERS
 };
 
 int getpar(struct Parameters* const par);
+
 
 #endif /* TESRECONSTRUCTION_H */

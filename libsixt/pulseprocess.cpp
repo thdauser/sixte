@@ -14,7 +14,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  Trigger has been developed by the INSTITUTO DE FISICA DE 
+   Copyright 2014:  PULSEPROCESS has been developed by the INSTITUTO DE FISICA DE
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
@@ -134,6 +134,9 @@
 *    Dec/14   Migrated to CFITSIO (removal of ISDC DAL)
 *             Errors processing changed
 *             Deleted some non used functions
+*  26/01/15   In 'getB': tstart -> Convertion to 'int'
+*  30/01/15   Changes in 'findSePulses' in order to work properly with close pulses (not piled-up) and truncated pulses at the beginning
+*             and at the end of a record
 ***********************************************************************/
 
 /******************************************************************************
@@ -493,6 +496,11 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 
 	for (int i=0;i<nPulses;i++)
 	{
+		gsl_vector_set(tstart,i,(int)(gsl_vector_get(tstart,i)));
+	}
+
+	for (int i=0;i<nPulses;i++)
+	{
 		if (i == 0)		// First pulse into a row=event
 		//  Current pulse
 		//      //\\          /\     /\       /\
@@ -516,7 +524,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 				gsl_vector_free(input);
 			}
 			else if ((gsl_vector_get(tstart,0)<gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,0)>1))
-		    // 0<tstart<lb => Sum the available number of samples (although the available number of samples was lower than lb)
+		    	// 0<tstart<lb => Sum the available number of samples (although the available number of samples was lower than lb)
 			// 0<length_(1)<lb
 			{
 				input = gsl_vector_alloc(gsl_vector_get(tstart,0));
@@ -552,59 +560,122 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 							input = gsl_vector_alloc(gsl_vector_get(*lb,0));
 							temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
 							gsl_vector_memcpy(input, &temp.vector);
+
+							// Sum all the elements of input
+							if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+							{
+								message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
+								EP_PRINT_ERROR(message,EPFAIL);
+							}
+							gsl_vector_free(input);
+
+							break;
 						}
-						else if (gsl_vector_get(tstart,j)-tendprev < gsl_vector_get(*lb,0))
+						else if ((gsl_vector_get(tstart,j)-tendprev < gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,j)-tendprev > 1))
 						// 0<length_(j)<lb (j/=nPulses)
 						{
 							input = gsl_vector_alloc(gsl_vector_get(tstart,j)-tendprev-1);
 							temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j)-tendprev-1);
 							gsl_vector_memcpy(input, &temp.vector);
 							gsl_vector_set(*lb,0,gsl_vector_get(tstart,j)-tendprev-1);
-						}
-
-						// Sum all the elements of input
-						if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-						{
-							message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
-							EP_PRINT_ERROR(message,EPFAIL);
-						}
-						gsl_vector_free(input);
-
-						break;
-					}
-
-					if (j == nPulses-1)	// Last pulse into the row=event
-					// (5) is analyzed
-					{
-						tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
-						if (vectorin->size-tendprev >= gsl_vector_get(*lb,0))
-						{
-							input = gsl_vector_alloc(gsl_vector_get(*lb,0));
-							temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,0));
-							gsl_vector_memcpy(input, &temp.vector);
 
 							// Sum all the elements of input
 							if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
 							{
-								message = "Cannot run gsl_vector_Sumsubvector routine when last pulse in row & vectorin>tendprev>lb";
+								message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
 								EP_PRINT_ERROR(message,EPFAIL);
 							}
 							gsl_vector_free(input);
-						}
-						else if ((vectorin->size-tendprev < gsl_vector_get(*lb,0)) && (vectorin->size-tendprev > 1))
-						{
-							input = gsl_vector_alloc(vectorin->size-tendprev-1);
-							temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
-							gsl_vector_memcpy(input, &temp.vector);
 
-							// Sum all the elements of input
-							if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+							break;
+						}
+						else
+						{
+							for (int j=i;j<nPulses;j++)	// From the current pulse
+							// (2),(3),(4) and (5) are analyzed
+							// When 0<length_(j)<lb => 'break' => Out of the 'for' loop
 							{
-								message = "Cannot run gsl_vector_Sumsubvector routine when last pulse in row";
-								EP_PRINT_ERROR(message,EPFAIL);
+								tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
+								if (tendprev >= vectorin->size)
+								{
+									tendprev = vectorin->size-1;
+								}
+								if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
+								{
+									if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,i))
+									{
+										input = gsl_vector_alloc(gsl_vector_get(*lb,i));
+										temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
+										gsl_vector_memcpy(input, &temp.vector);
+
+										// Sum all the elements of input
+										if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+										{
+											message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
+											EP_PRINT_ERROR(message,EPFAIL);
+										}
+										gsl_vector_free(input);
+
+										break;
+									}
+									else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,i)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
+									{
+										input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1);
+										temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
+										gsl_vector_memcpy(input, &temp.vector);
+
+										// Sum all the elements of input
+										if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+										{
+											message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
+											EP_PRINT_ERROR(message,EPFAIL);
+										}
+										gsl_vector_set(*lb,i,gsl_vector_get(tstart,j+1)-tendprev-1);
+										gsl_vector_free(input);
+
+										break;
+									}
+								}
+
+								if (j == nPulses-1)	// Last pulse into the row=event
+								// (5) is analyzed
+								{
+									if (vectorin->size-tendprev >= gsl_vector_get(*lb,i))
+									{
+										input = gsl_vector_alloc(gsl_vector_get(*lb,i));
+										temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,i));
+										gsl_vector_memcpy(input, &temp.vector);
+
+										// Sum all the elements of input
+										if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+										{
+											message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+											EP_PRINT_ERROR(message,EPFAIL);
+										}
+										gsl_vector_free(input);
+
+										break;
+									}
+									//else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev != 1))
+									else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev > 1))
+									{
+										input = gsl_vector_alloc(vectorin->size-tendprev-1);
+										temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
+										gsl_vector_memcpy(input, &temp.vector);
+										gsl_vector_set(*lb,i,vectorin->size-tendprev-1);
+
+										// Sum all the elements of input
+										if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+										{
+											message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+											EP_PRINT_ERROR(message,EPFAIL);
+										}
+										gsl_vector_free(input);
+
+										break;
+									}
+								}
 							}
-							gsl_vector_set(*lb,0,vectorin->size-tendprev-1);
-							gsl_vector_free(input);
 						}
 					}
 				}
@@ -706,6 +777,16 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 							input = gsl_vector_alloc(gsl_vector_get(*lb,i));
 							temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,i));
 							gsl_vector_memcpy(input, &temp.vector);
+
+							// Sum all the elements of input
+							if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+							{
+								message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+								EP_PRINT_ERROR(message,EPFAIL);
+							}
+							gsl_vector_free(input);
+
+							break;
 						}
 						//else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev != 1))
 						else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev > 1))
@@ -714,6 +795,16 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 							temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
 							gsl_vector_memcpy(input, &temp.vector);
 							gsl_vector_set(*lb,i,vectorin->size-tendprev-1);
+
+							// Sum all the elements of input
+							if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+							{
+								message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+								EP_PRINT_ERROR(message,EPFAIL);
+							}
+							gsl_vector_free(input);
+
+							break;
 						}
 						//else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev == 1))
 						else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev <= 1))
@@ -722,14 +813,6 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 
 							break;
 						}
-
-						// Sum all the elements of input
-						if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-						{
-							message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-							EP_PRINT_ERROR(message,EPFAIL);
-						}
-						gsl_vector_free(input);
 					}
 				}
 			}
@@ -898,11 +981,11 @@ int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *puls
 *
 * Parameters:
 * - ph: Pulse height (or energy) of the pulse whose pulse template is looking for
-* - modelsvalues: Matrix where the values of Energy of each pulse template are stored
+* - modelsvalues: Vector where the values of Energy of each pulse template are stored
 * - models: Matrix where all the pulse templates of the pulse templates library are going to be stored
 * - modelFound: Found template of the pulse whose pulse height is 'ph'
 ****************************************/
-int find_model(double ph, gsl_matrix *modelsvalues, gsl_matrix *models, gsl_vector **modelFound, FILE * temporalFile)
+int find_model(double ph, gsl_vector *modelsvalues, gsl_matrix *models, gsl_vector **modelFound, FILE * temporalFile)
 {
 	char val[256];
 	char val_aux[256];
@@ -910,13 +993,13 @@ int find_model(double ph, gsl_matrix *modelsvalues, gsl_matrix *models, gsl_vect
 	int status=EPOK;
 	string message = "";
 
-	long nummodels = modelsvalues->size1;
+	long nummodels = modelsvalues->size;
 
-	if (ph < gsl_matrix_get(modelsvalues,0,0))
+	if (ph < gsl_vector_get(modelsvalues,0))
 	{
 		gsl_matrix_get_row(*modelFound,models,0);
 	}
-	else if (ph > gsl_matrix_get(modelsvalues,nummodels-1,0))
+	else if (ph > gsl_vector_get(modelsvalues,nummodels-1))
 	{
 		gsl_matrix_get_row(*modelFound,models,nummodels-1);
 	}
@@ -924,13 +1007,13 @@ int find_model(double ph, gsl_matrix *modelsvalues, gsl_matrix *models, gsl_vect
 	{
 		for (int i=0;i<nummodels;i++)
 		{
-			if (ph == gsl_matrix_get(modelsvalues,i,0))
+			if (ph == gsl_vector_get(modelsvalues,i))
 			{
 				gsl_matrix_get_row(*modelFound,models,i);
 
 				break;
 			}
-			else if ((ph > gsl_matrix_get(modelsvalues,i,0)) && (ph < gsl_matrix_get(modelsvalues,i+1,0)))
+			else if ((ph > gsl_vector_get(modelsvalues,i)) && (ph < gsl_vector_get(modelsvalues,i+1)))
 			{
 				// Interpolate between the two corresponding rows in "models"
 				gsl_vector *modelAux = gsl_vector_alloc(models->size2);
@@ -939,7 +1022,7 @@ int find_model(double ph, gsl_matrix *modelsvalues, gsl_matrix *models, gsl_vect
 				gsl_vector *model2 = gsl_vector_alloc(models->size2);
 				gsl_matrix_get_row(model1,models,i);
 				gsl_matrix_get_row(model2,models,i+1);
-				if (interpolate_model(&modelAux,ph,model1,gsl_matrix_get(modelsvalues,i,0),model2,gsl_matrix_get(modelsvalues,i+1,0), temporalFile))
+				if (interpolate_model(&modelAux,ph,model1,gsl_vector_get(modelsvalues,i),model2,gsl_vector_get(modelsvalues,i+1), temporalFile))
 				{
 				    message = "Cannot run interpolate_model with two rows in models";
 				    EP_PRINT_ERROR(message,EPFAIL);
@@ -1048,6 +1131,7 @@ int find_model1stSample(double firstSample, gsl_vector *firstSamples, gsl_matrix
 				    message = "Cannot run interpolate_model with two rows in models";
 				    EP_PRINT_ERROR(message,EPFAIL);
 				}
+				//cout<<"Modelo interpolado entre "<<i<<" e "<<i+1<<endl;
 				gsl_vector_memcpy(*modelFound,modelAux);
 				gsl_vector_free(modelAux);
 				gsl_vector_free(model1);
@@ -1158,7 +1242,7 @@ int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *mode
 * - maxDERgsl: Maximum of the first derivative
 * - tendDERgsl: Point where the first derivative crosses below the threshold
 ******************************************************************************/
-int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp, double safetyMargin, int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, gsl_vector **tstartgslOUT, gsl_vector **tstartgslOUTNEW, gsl_vector **flagTruncated, gsl_vector **tstartDERgsl, gsl_vector **tmaxDERgsl, gsl_vector **maxDERgsl, gsl_vector **tendDERgsl, FILE * temporalFile)
+int findTstartOLD (gsl_vector *der, double adaptativethreshold, int nSamplesUp, double safetyMargin, int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, gsl_vector **tstartgslOUT, gsl_vector **tstartgslOUTNEW, gsl_vector **flagTruncated, gsl_vector **tstartDERgsl, gsl_vector **tmaxDERgsl, gsl_vector **maxDERgsl, gsl_vector **tendDERgsl, FILE * temporalFile)
 {
 	// Provisional => Delete in future
 	char val[256];
@@ -1319,6 +1403,148 @@ int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp, dou
 
 	return (EPOK);
 }
+int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp, int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, FILE * temporalFile)
+{
+	// Provisional => Delete in future
+	char val[256];
+	char val_aux[256];
+
+	int status=EPOK;
+	//int verbosity = 3;			// Verbosity level of the output log file
+
+	// Declare variables
+	int szRw = der->size;		 // Size of segment of process
+	*numberPulses = 0;
+	*thereIsPulse = 0;
+	int i = 0;					 // To go through the elements of a vector
+	bool prevPulse = false;		 // false: It looks for nSamplesUp consecutive samples over the threshold
+	                             // true: It looks for nSamplesUp consecutive samples below the threshold
+	int cntDown = 0;			 // To taking into account how many consecutive samples are down the threshold
+	int cntUp = 0;				 // To taking into account how many consecutive samples are over the threshold
+	int possibleTstart;			 // To store the first of the nSamplesUp consecutive samples over the threshold
+	int possibleTend;			 // To store the first of the nSamplesUp consecutive samples below the threshold
+	int maxDER_index;			 // Maximum of the derivative between tstartDER and tendDER
+	gsl_vector_view temp;		 // In order to handle with gsl_vector_view (subvectors)
+	bool lastPulse = true;
+
+	// Allocate GSL vectors
+	gsl_vector *tstartDER = gsl_vector_alloc(szRw);		// tstarts referred to the derivative
+	gsl_vector *tendDER = gsl_vector_alloc(szRw);		// tends referred to the derivative
+	gsl_vector_set_zero(tendDER);
+	*tstartgsl = gsl_vector_alloc(szRw);				// tstarts referred to the not filtered event
+	*flagTruncated = gsl_vector_alloc(szRw);
+	gsl_vector_set_zero(*flagTruncated);
+	*maxDERgsl = gsl_vector_alloc(szRw);				// Maximum of the first derivative
+
+	// Obtain tstart of each pulse in the derivative
+	while (i < szRw-1)
+	{
+		if ((gsl_vector_get(der,i) > adaptativethreshold) && (prevPulse == false))
+		{
+			if (cntUp == 0)
+			{
+				possibleTstart=i;
+
+				if ((nSamplesUp == 1) || ((nSamplesUp != 1) && (i == szRw-2)))
+				{
+					if (possibleTstart == 0)
+					{
+						gsl_vector_set(tstartDER,*numberPulses,possibleTstart);
+						gsl_vector_set(*flagTruncated,*numberPulses,1);
+						*numberPulses = *numberPulses +1;
+						if (allPulsesMode == 0) break;
+						prevPulse = true;
+					}
+					else
+					{
+						gsl_vector_set(tstartDER,*numberPulses,possibleTstart);
+						*numberPulses = *numberPulses +1;
+						if (allPulsesMode == 0) break;
+						prevPulse = true;
+					}
+					cntDown = 0;
+				}
+			}
+			else if (cntUp == nSamplesUp-1)
+			{
+				if (possibleTstart == 0)
+				{
+					gsl_vector_set(tstartDER,*numberPulses,possibleTstart);
+					gsl_vector_set(*flagTruncated,*numberPulses,1);
+					*numberPulses = *numberPulses +1;
+					if (allPulsesMode == 0) break;
+					prevPulse = true;
+				}
+				else
+				{
+					gsl_vector_set(tstartDER,*numberPulses,possibleTstart);
+					*numberPulses = *numberPulses +1;
+					if (allPulsesMode == 0) break;
+					prevPulse = true;
+				}
+				cntDown = 0;
+			}
+
+			i++;
+			cntUp = cntUp+1;
+		}
+		else if ((gsl_vector_get(der,i) > adaptativethreshold) && (prevPulse == true))
+		{
+			i++;
+			cntDown = 0;
+		}
+		else if (gsl_vector_get(der,i) <= adaptativethreshold)
+		{
+			if (prevPulse == true)
+			{
+				cntDown = cntDown+1;
+				if (cntDown == 1)
+				{
+					possibleTend = i;
+					if (nSamplesUp == 1)
+					{
+						gsl_vector_set(tendDER,*numberPulses-1,possibleTend);
+						prevPulse = false;
+					}
+				}
+				else if (cntDown == nSamplesUp)
+				{
+					gsl_vector_set(tendDER,*numberPulses-1,possibleTend);
+					prevPulse = false;
+				}
+			}
+			cntUp = 0;
+			i++;
+		}
+	}
+
+	if (lastPulse == false) *numberPulses = *numberPulses-1;
+
+	// Just in case there is a truncated pulse at the end of the record whose tend has not been found and it is still 0.0
+	// (and protected just in case there are no pulses)
+	if ((*numberPulses != 0) && (gsl_vector_get(tendDER,*numberPulses-1) == 0.0))
+	{
+		gsl_vector_set(tendDER,*numberPulses-1,szRw-1);
+		gsl_vector_set(*flagTruncated,*numberPulses-1,1.0);
+	}
+
+	// Obtain tstart of each pulse in the not filtered signal
+	// Once pulses are located in the first derivative of the filtered event, tstarts in the derivative have to be
+	// converted into the tstarts in the not filtered record
+	for (int i=0;i<*numberPulses;i++)
+	{
+		temp = gsl_vector_subvector(der,gsl_vector_get(tstartDER,i),gsl_vector_get(tendDER,i)-gsl_vector_get(tstartDER,i));
+		gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+	}
+	gsl_vector_memcpy(*tstartgsl,tstartDER);
+
+	gsl_vector_free(tstartDER);
+	gsl_vector_free(tendDER);
+
+	if (*numberPulses > 0) *thereIsPulse = 1;
+
+	return (EPOK);
+}
 /*xxxx end of SECTION 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
@@ -1370,7 +1596,7 @@ int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp, dou
 * - kappamkc: Used in medianKappaClipping
 * - levelprvpulse: Secondary pulses must be 1/levelPrvPulse times larger than the preceding pulse
 ****************************************/
-int findPulses (
+int findPulsesOLD (
 	gsl_vector *vectorin,
 	gsl_vector *vectorinDER,
 	gsl_vector **tstart,
@@ -1451,17 +1677,22 @@ int findPulses (
 	    message = "Cannot run medianKappaClipping looking for single pulses";
 	    EP_PRINT_ERROR(message,EPFAIL);
 	}
+	/*sprintf(val,"thresholdmediankappa: %.12e",thresholdmediankappa);
+	strcat(val,"\n");
+	fputs(val,temporalFile);*/
 
-	if (findTstart (vectorinDER, thresholdmediankappa, samplesup, safetymargintstart, 1, samplingRate, nPulses, &pulseFound, tstart, &tstartNOsmt, quality, &tstartDERgsl, &tmaxDERgsl, &maxDERgsl,&tendDERgsl, temporalFile))
+	if (findTstartOLD (vectorinDER, thresholdmediankappa, samplesup, safetymargintstart, 1, samplingRate, nPulses, &pulseFound, tstart, &tstartNOsmt, quality, &tstartDERgsl, &tmaxDERgsl, &maxDERgsl,&tendDERgsl, temporalFile))
 	{
 	  message = "Cannot run findTstart with two rows in models";
 	  EP_PRINT_ERROR(message,EPFAIL);
 	}
+	//cout<<"Pulsos iniciales: "<<*nPulses<<endl;
 
 	for (int i=0;i<*nPulses;i++)
 	{
 		gsl_vector_set(SorSeorPrgsl,i,0);
 		gsl_vector_set(newPulsesgsl,i,1);
+		//cout<<i<<" "<<gsl_vector_get(*tstart,i)<<endl;
 	}
 
 	// In order to look for saturated pulses
@@ -1618,7 +1849,7 @@ int findPulses (
 			Bprev = gsl_vector_get(Bgsl,*nPulses-1);
 
 			nPulsesRowAux = *nPulses;
-			if (findSePulses(vectorin, vectorinDER, &vectorDERComposed,
+			if (findSePulsesOLD(vectorin, vectorinDER, &vectorDERComposed,
 					 thresholdmediankappa,
 					 tstart, &tstartNOsmt, quality, energy, &tstartDERgsl, &tmaxDERgsl, &tendDERgsl, &maxDERgsl,
 					 &SorSeorPrgsl, &newPulsesgsl,
@@ -1637,8 +1868,10 @@ int findPulses (
 			}
 
 			nNewPulses = *nPulses - nPulsesRowAux;
+			//cout<<"Pulsos secundarios: "<<nNewPulses<<endl;
 			for (int j=0;j<*nPulses;j++)
 			{
+				//cout<<j<<" "<<gsl_vector_get(*tstart,j)<<endl;
 				if ((gsl_vector_get(newPulsesgsl,j) == 2.0) && (gsl_vector_get(SorSeorPrgsl,j) == 1.0))
 				{
 					nNewPulses = nNewPulses-1;
@@ -1663,6 +1896,292 @@ int findPulses (
 	gsl_vector_free(end0);
 	gsl_vector_free(vectorAUX);
 	gsl_vector_free(tstartNOsmt);
+	gsl_vector_free(Lbgsl);
+	if (opmode == 1)
+	{
+		gsl_vector_free(model);
+		gsl_vector_free(vectorDERComposed);
+	}
+
+	return(EPOK);
+}
+int findPulses (
+	gsl_vector *vectorin,
+	gsl_vector *vectorinDER,
+	gsl_vector **tstart,
+	gsl_vector **quality,
+	gsl_vector **energy,
+
+	int *nPulses,
+
+	int opmode,
+
+	double taufall,
+	double scalefactor,
+	int sizepulsebins,
+	double samplingRate,
+
+	int samplesup,
+	double nsgms,
+
+	double lb,
+	double lrs,
+
+	gsl_matrix *librarymatrix,
+	gsl_matrix *modelsmatrix,
+
+	double stopcriteriamkc,
+	double kappamkc,
+	double levelprvpulse,
+
+	FILE * temporalFile)
+{
+	char val[256];
+	char val_aux[256];
+
+ 	int status=EPOK;
+	string message = "";
+
+	const double pi = 4.0 * atan(1.0);
+
+	// Declare variables
+	int pulseFound;
+	double thresholdmediankappa;	// Threshold to look for pulses in the first derivative
+	gsl_vector *model;				// Pulse which is going to be used as template (or model)
+		                        	// (selected row of the PULSE column of the LIBRARY extension
+									// from the pulses templates library file)
+									// It will be overwritten with its first derivative
+		// To look for single pulses during the first step
+	gsl_vector *maxDERgsl = gsl_vector_alloc(vectorinDER->size);
+		// To look for secondary pulses during the second step
+	gsl_vector *vectorDERComposed = gsl_vector_alloc(vectorinDER->size);
+	gsl_vector *newPulsesgsl = gsl_vector_alloc(vectorinDER->size); // If a pulse is new => Look again for more pulses
+	gsl_vector_set_zero(newPulsesgsl);
+	gsl_vector *Lbgsl = gsl_vector_alloc(vectorinDER->size);	    // If there is no free-pulses segments longer than Lb=>
+	gsl_vector_set_all(Lbgsl,lb);                                   // segments shorter than Lb will be useed and its length (< Lb)
+	                                                                // must be used instead Lb in RS_filter
+	gsl_vector *Bgsl;
+	double Bprev = -999;
+	gsl_vector *Bauxgsl;
+	bool flagContinue = true;
+
+	gsl_vector_set_zero(*quality);
+	gsl_vector_set_zero(*energy);									// Estimated energy of the single pulses
+																	// In order to choose the proper pulse template to calculate
+																	// the adjusted derivative and to fill in the Energy column
+		                                                            // in the output FITS file
+
+	// First step to look for single pulses
+	if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*taufall*scalefactor), &thresholdmediankappa, temporalFile))
+	{
+	    message = "Cannot run medianKappaClipping looking for single pulses";
+	    EP_PRINT_ERROR(message,EPFAIL);
+	}
+	/*sprintf(val,"thresholdmediankappa: %.12e",thresholdmediankappa);
+	strcat(val,"\n");
+	fputs(val,temporalFile);*/
+
+	if (findTstart (vectorinDER, thresholdmediankappa, samplesup, 1, samplingRate, nPulses, &pulseFound, tstart, quality, &maxDERgsl, temporalFile))
+	{
+	  message = "Cannot run findTstart with two rows in models";
+	  EP_PRINT_ERROR(message,EPFAIL);
+	}
+	//cout<<"Pulsos iniciales: "<<*nPulses<<endl;
+
+	for (int i=0;i<*nPulses;i++)
+	{
+		gsl_vector_set(newPulsesgsl,i,1);
+		//cout<<i<<" "<<gsl_vector_get(*tstart,i)<<endl;
+	}
+
+	// In order to look for saturated pulses
+	/*// In order to look for saturated pulses
+	double maxvectorNOTFIL = gsl_vector_max(vectorin);
+	long indexmaxvectorNOTFIL = gsl_vector_max_index(vectorin);
+	int cntstart = 0;
+	int cntend = 0;
+	int possiblestart0 = indexmaxvectorNOTFIL;
+	int possibleend0 = indexmaxvectorNOTFIL;
+	int prevsaturated = 0;
+	gsl_vector *start0 = gsl_vector_alloc(vectorin->size-indexmaxvectorNOTFIL);
+	gsl_vector *end0 = gsl_vector_alloc(vectorin->size-indexmaxvectorNOTFIL);
+	gsl_vector_set_zero(end0);
+	int numSaturated = 0;
+	gsl_vector_view temp;					// In order to handle with gsl_vector_view (subvectors)
+	gsl_vector *vectorAUX = gsl_vector_alloc(vectorin->size-indexmaxvectorNOTFIL);
+	temp = gsl_vector_subvector(vectorin,indexmaxvectorNOTFIL,vectorin->size-indexmaxvectorNOTFIL);
+	gsl_vector_memcpy(vectorAUX,&temp.vector);
+
+	for (int i=0;i<vectorAUX->size;i++)
+	{
+		if ((gsl_vector_get(vectorAUX,i) == maxvectorNOTFIL) && (prevsaturated == 0))
+		{
+			if (cntstart == 0)
+			{
+				possiblestart0 = i;
+			}
+
+			cntstart = cntstart +1;
+
+			if (cntstart == 2)	// HARDPOINT!!
+			{
+				gsl_vector_set(start0,numSaturated,possiblestart0+indexmaxvectorNOTFIL);
+				prevsaturated = 1;
+				numSaturated = numSaturated+1;
+			}
+			cntend = 0;
+		}
+		else if ((gsl_vector_get(vectorAUX,i) == maxvectorNOTFIL) && (prevsaturated == 1))
+		{
+			cntend = 0;
+		}
+		else
+		{
+			cntstart = 0;
+			if (prevsaturated == 1)
+			{
+				cntend = cntend +1;
+				if (cntend == 1)
+				{
+					possibleend0 = i;
+				//}
+				//else if (cntend == 5)	// HARDPOINT!!
+				//{
+					gsl_vector_set(end0,numSaturated-1,possibleend0+indexmaxvectorNOTFIL);
+					prevsaturated = 0;
+				}
+			}
+		}
+	}
+
+	for (int i=0;i<numSaturated;i++)
+	{
+		if ((i == numSaturated-1) && (gsl_vector_get(end0,i) == 0))		gsl_vector_set(end0,i,vectorin->size);
+
+		for (int j=0;j<*nPulses;j++)
+		{
+			if (j != *nPulses-1)
+			{
+				if ((gsl_vector_get(start0,i)>gsl_vector_get(*tstart,j)+safetymargintstart) && (gsl_vector_get(end0,i)<gsl_vector_get(*tstart,j+1)+safetymargintstart))
+				{
+					gsl_vector_set(*quality,j,gsl_vector_get(*quality,j)+2);
+				}
+			}
+			else
+			{
+				if ((gsl_vector_get(start0,i)>gsl_vector_get(*tstart,j)) && (gsl_vector_get(end0,i)<= vectorin->size))
+				{
+					gsl_vector_set(*quality,j,gsl_vector_get(*quality,j)+2);
+				}
+			}
+
+		}
+	}*/
+
+	if ((opmode == 0) && (*nPulses != 0))
+	{
+		if (getB(vectorin, *tstart, *nPulses, &Lbgsl, sizepulsebins, &Bgsl, temporalFile))
+		{
+		    message = "Cannot run getB routine with opmode=0 & nPulses != 0";
+		    EP_PRINT_ERROR(message,EPFAIL);
+		}
+		double energyaux = gsl_vector_get(*energy,0);
+		for (int i=0;i<*nPulses;i++)
+		{
+			if (i != *nPulses-1)	// Not last pulse in the record
+			{
+				if (getPulseHeight(vectorin, gsl_vector_get(*tstart,i), gsl_vector_get(*tstart,i+1), 0, lrs, gsl_vector_get(Lbgsl,i), gsl_vector_get(Bgsl,i), sizepulsebins, &energyaux, temporalFile))
+				{
+				    message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is not the last pulse";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+			}
+			else
+			{
+				if (getPulseHeight(vectorin, gsl_vector_get(*tstart,i), gsl_vector_get(*tstart,i+1), 1, lrs, gsl_vector_get(Lbgsl,i), gsl_vector_get(Bgsl,i), sizepulsebins, &energyaux, temporalFile))
+				{
+				    message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is the last pulse";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+			}
+			gsl_vector_set(*energy,i,energyaux);
+		}
+	}
+	else if ((opmode == 1) && (*nPulses != 0))  // Iterative pulse searching
+	{
+		gsl_vector_memcpy(vectorDERComposed, vectorinDER); 	// Some parts will be overwritten
+		model = gsl_vector_alloc(modelsmatrix->size2);
+
+		int nPulsesRowAux;
+		int nNewPulses;
+
+		do
+		{
+			// To estimate the pulse height of each pulse
+			// Sum of the Lb digitized data samples of a pulse-free interval immediately before the current pulse, B
+			if (getB(vectorin, *tstart, *nPulses, &Lbgsl, sizepulsebins, &Bgsl, temporalFile))
+			{
+			    message = "Cannot run getB routine with opmode=1 & nPulses != 0";
+			    EP_PRINT_ERROR(message,EPFAIL);
+			}
+			Bauxgsl = gsl_vector_alloc(Bgsl->size);
+			gsl_vector_set_all(Bauxgsl,999);
+			gsl_vector_add(Bauxgsl,Bgsl);
+			if (gsl_vector_isnull(Bauxgsl) == 1) // All the elements of Bgsl are -999
+			{
+				if (Bprev == -999)	break;	// Out of the do_while
+				gsl_vector_set_all(Bgsl,Bprev);
+			}
+			else
+			{
+				for (int i=0;i<*nPulses;i++)
+				{
+				    if (gsl_vector_get(Bgsl,i) == -999)
+					{
+						gsl_vector_set(Bgsl,i,Bprev);
+						if (Bprev == -999)	flagContinue = false;
+					}
+				}
+				if (flagContinue == false) break;	// Out of the do_while
+
+			}
+			gsl_vector_free(Bauxgsl);
+			Bprev = gsl_vector_get(Bgsl,*nPulses-1);
+
+			nPulsesRowAux = *nPulses;
+			if (findSePulses(vectorin, vectorinDER, &vectorDERComposed,
+					 thresholdmediankappa,
+					 tstart, quality, energy, &maxDERgsl,
+		             &newPulsesgsl,
+					 nPulses,
+					 taufall, scalefactor, sizepulsebins, samplingRate,
+					 samplesup, nsgms,
+					 Bgsl, lrs, Lbgsl,
+					 librarymatrix, modelsmatrix, model,
+					 stopcriteriamkc, kappamkc, levelprvpulse,
+					 temporalFile))
+			{
+				message = "Cannot run findPulses routine with opmode=1 & nPulses != 0";
+				EP_PRINT_ERROR(message,EPFAIL);
+			}
+
+			nNewPulses = *nPulses - nPulsesRowAux;
+
+			for (int j=0;j<*nPulses;j++)
+			{
+				gsl_vector_set(newPulsesgsl,j,gsl_vector_get(newPulsesgsl,j)-1.0);
+			}
+
+		} while (nNewPulses > 0);
+	}
+
+	// Free allocate of GSL vectors
+	gsl_vector_free(maxDERgsl);
+	gsl_vector_free(newPulsesgsl);
+	/*gsl_vector_free(start0);
+	gsl_vector_free(end0);
+	gsl_vector_free(vectorAUX);*/
+
 	gsl_vector_free(Lbgsl);
 	if (opmode == 1)
 	{
@@ -1752,7 +2271,7 @@ int findPulses (
 * - kappamkc: Used in medianKappaClipping
 * - levelprvpulse: Secondary pulses must be 1/levelPrvPulse times larger than the preceding pulse
 ****************************************/
-int findSePulses(
+int findSePulsesOLD(
 	gsl_vector *vectorin,
 	gsl_vector *vectorinDER,
 	gsl_vector **vectorinDERComposed,
@@ -1772,7 +2291,6 @@ int findSePulses(
 	gsl_vector **newPulses,
 
 	int *nPulses,
-	//int *nPulsesNew,
 
 	gsl_vector *startsaturated,
 	gsl_vector *endsaturated,
@@ -1844,6 +2362,8 @@ int findSePulses(
     gsl_vector *maxDERSecondary =  gsl_vector_alloc(vectorinDER->size);
     gsl_vector *tendDERSecondary =  gsl_vector_alloc(vectorinDER->size);
 
+    int boxLength = (int)pi*taufall*scalefactor*samplingRate;
+
     int indSaturated = 0;
 
     double pulseheight;
@@ -1867,6 +2387,10 @@ int findSePulses(
 		lastOne = 0;
 		if ((*nPulses == 1) || ((*nPulses !=1) && (i == *nPulses-1)))	lastOne = 1;
 
+		/*sprintf(val,"tstart y tstartDER(%d): %.12e %.12e",i,gsl_vector_get(*tstart,i),gsl_vector_get(*tstartDER,i));
+					strcat(val,"\n");
+					fputs(val,temporalFile);*/
+
 		if (gsl_vector_get(*newPulses,i) == 1)
 		{
 			// For the moment, we need to store in the output FITS file the estimated energy
@@ -1878,46 +2402,109 @@ int findSePulses(
 			gsl_vector_set(*energy,i,pulseheight);
 
 			// Cut the record part corresponding to a pulse
-			if (i != *nPulses-1)		// Neither single pulse nor last pulse
-			{
-				limInf = gsl_vector_get(*tstartDER,i);
-				limSup = gsl_vector_get(*tstartDER,i+1);
-
-				pulse = gsl_vector_alloc(limSup-limInf);
-				temp = gsl_vector_subvector(vectorinDER,limInf,limSup-limInf);
-
-				gsl_vector_memcpy(pulse, &temp.vector);
-			}
-			else						// Either single pulse or last pulse
-			{
-				limInf = gsl_vector_get(*tstartDER,i);
-				limSup = vectorin->size;
-
-				pulse = gsl_vector_alloc(limSup-limInf);
-				temp = gsl_vector_subvector(vectorinDER,limInf,limSup-limInf);
-
-				gsl_vector_memcpy(pulse, &temp.vector);
-			}
+			limInf = gsl_vector_get(*tstartDER,i);
+			limSup =limInf+sizepulse-1;
+			if (limSup>vectorin->size)	limSup = vectorin->size;
+			pulse = gsl_vector_alloc(limSup-limInf);
+			temp = gsl_vector_subvector(*vectorinDERComposed,limInf,limSup-limInf);
+			//temp = gsl_vector_subvector(vectorinDER,limInf,limSup-limInf);
+			gsl_vector_memcpy(pulse, &temp.vector);
 
 			// Estimate the amplitude of the first sample over the threshold to choose the proper pulse template ("model")
 			// of the pulse templates library ("models")
 			index_firstSampleOverThreshold = 0; //Because the 'pulse' starts in tstartDER
 			firstSampleOverThreshold = gsl_vector_get(pulse,index_firstSampleOverThreshold);
-
-			// Find the proper pulse model in the pulse templates library
-			if (find_model1stSample(firstSampleOverThreshold, firstSamplesgsl, models, &model, temporalFile))
+			/*for (int j=0;j<pulse->size;j++)
 			{
-			    message = "Cannot run find_model1stSample routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
-			    EP_PRINT_ERROR(message,EPFAIL);
-			}
-			for (int j=0;j<models->size2;j++)
-			{
-				if (gsl_vector_get(model,j) > thresholdmediankappaSingle)
+				if (gsl_vector_get(pulse,j) > thresholdmediankappaSingle)
 				{
-					index_firstSampleOverThreshold_Model = j;
-					firstSampleOverThreshold_Model = gsl_vector_get(model,j);
+					index_firstSampleOverThreshold=j;
+					firstSampleOverThreshold = gsl_vector_get(pulse,j);
 
 					break;
+				}
+			}*/
+
+			// Find the proper pulse model in the pulse templates library
+			if (gsl_vector_get(*tstartDER,i) == 0) // Truncated pulse at the beginnig of the record
+			{
+				// Establish a new threshold with the first sample (a bit fewer) => New firstSamplesgsl
+				gsl_vector *firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(firstSamplesgsl_aux,0);
+				gsl_vector *index_firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(index_firstSamplesgsl_aux,0);
+				if (firstSampleModels (models, gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100, &firstSamplesgsl_aux, &index_firstSamplesgsl_aux, temporalFile))
+				{
+				    message = "Cannot run firstSampleModels routine to get the value of the first sample over the threshold and the index of that sample";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				if (find_model1stSample(gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100, firstSamplesgsl_aux, models, &model, temporalFile))
+				{
+				    message = "Cannot run find_model1stSample routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				for (int j=0;j<models->size2;j++)
+				{
+					if (gsl_vector_get(model,j) > gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100)
+					{
+						index_firstSampleOverThreshold_Model = j;
+						firstSampleOverThreshold_Model = gsl_vector_get(model,j);
+
+						break;
+					}
+				}
+
+				gsl_vector_free(firstSamplesgsl_aux);
+				gsl_vector_free(index_firstSamplesgsl_aux);
+			}
+			/*else if ((i != 0) && (gsl_vector_get(*tstartDER,i)-gsl_vector_get(*tstartDER,i-1) < sizepulse))
+			{
+				// Establish a new threshold with the first sample (a bit fewer) => New firstSamplesgsl
+				gsl_vector *firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(firstSamplesgsl_aux,0);
+				gsl_vector *index_firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(index_firstSamplesgsl_aux,0);
+
+				if (firstSampleModels (models, gsl_vector_get(vectorinDER,gsl_vector_get(*tstartDER,i))-gsl_vector_get(vectorinDER,gsl_vector_get(*tstartDER,i))/100, &firstSamplesgsl_aux, &index_firstSamplesgsl_aux, temporalFile))
+				{
+				    message = "Cannot run firstSampleModels routine to get the value of the first sample over the threshold and the index of that sample";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				if (find_model1stSample(gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100, firstSamplesgsl_aux, models, &model, temporalFile))
+				{
+				    message = "Cannot run find_model1stSample routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				for (int j=0;j<models->size2;j++)
+				{
+					if (gsl_vector_get(model,j) > gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100)
+					{
+						index_firstSampleOverThreshold_Model = j;
+						firstSampleOverThreshold_Model = gsl_vector_get(model,j);
+
+						break;
+					}
+				}
+
+				gsl_vector_free(firstSamplesgsl_aux);
+				gsl_vector_free(index_firstSamplesgsl_aux);
+			}*/
+			else
+			{
+				if (find_model1stSample(firstSampleOverThreshold, firstSamplesgsl, models, &model, temporalFile))
+				{
+					message = "Cannot run find_model1stSample routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+					EP_PRINT_ERROR(message,EPFAIL);
+				}
+				for (int j=0;j<models->size2;j++)
+				{
+					if (gsl_vector_get(model,j) > thresholdmediankappaSingle)
+					{
+						index_firstSampleOverThreshold_Model = j;
+						firstSampleOverThreshold_Model = gsl_vector_get(model,j);
+
+						break;
+					}
 				}
 			}
 
@@ -1975,13 +2562,23 @@ int findSePulses(
 			// Difference between each pulse and the corresponding shifted and scaled pulse template
 			gsl_vector_memcpy(diff,pulse);
 			gsl_vector_sub(diff,modelShifted);
+			/*if ((indice == 49) && ((i == *nPulses-2) || (i == *nPulses-1)))
+			{
+				for (int k=0;k<pulse->size;k++)
+				{
+					sprintf(val,"%d %.12e %.12e %.12e",k,gsl_vector_get(pulse,k),gsl_vector_get(modelShifted,k),gsl_vector_get(diff,k));
+					strcat(val,"\n");
+					fputs(val,temporalFile);
+				}
+			}*/
 
 			// Overwrite some parts of 'vectorinDERComposed' where there is a pulse with 'diff'
 			// (and with 0 some samples)
 			if (i != *nPulses-1)		// Nor single pulse nor last pulse
 			{
 				limInf = gsl_vector_get(*tstartDER,i);
-				limSup = gsl_vector_get(*tstartDER,i+1);
+				limSup =limInf+sizepulse-1;
+				if (limSup>=(vectorin->size))	limSup = vectorin->size-boxLength;
 
 				for (int j=limInf;j<limSup;j++)
 				{
@@ -2004,7 +2601,8 @@ int findSePulses(
 				if (gsl_vector_get(*quality,i) == 1)
 				{
 					limInf = gsl_vector_get(*tstartDER,i);
-					limSup = vectorin->size;	//HARDPOINT!!!
+					limSup =limInf+sizepulse-1;
+					if (limSup>=(vectorin->size))	limSup = vectorin->size-boxLength;
 
 					for (int j=limInf;j<limSup;j++)
 					{
@@ -2025,7 +2623,9 @@ int findSePulses(
 				else
 				{
 					limInf = gsl_vector_get(*tstartDER,i);
-					limSup = vectorin->size;
+					limSup =limInf+sizepulse-1;
+					if (limSup>=(vectorin->size))	limSup = vectorin->size-boxLength;
+
 
 					for (int j=limInf;j<limSup;j++)
 					{
@@ -2060,7 +2660,17 @@ int findSePulses(
 		}
 	}
 
+
 	gsl_vector_free(modelScaled);
+	/*if (indice == 49)
+				{
+					for (int k=9650;k<9800;k++)
+					{
+						sprintf(val,"%d %.12e",k,gsl_vector_get(*vectorinDERComposed,k));
+						strcat(val,"\n");
+						fputs(val,temporalFile);
+					}
+				}*/
 
 	// Look for secondary pulses into 'vectorinDERComposed'
 	if (medianKappaClipping (*vectorinDERComposed, kappamkc, stopCriteriamkc, nsgms, (int)(pi*samplingRate*taufall*scalefactor), &thresholdmediankappaSecondary, temporalFile))
@@ -2068,8 +2678,11 @@ int findSePulses(
 	    message = "Cannot run medianKappaClipping routine to look for secondary pulses into 'vectorinDERComposed'";
 	    EP_PRINT_ERROR(message,EPFAIL);
 	}
+	/*sprintf(val,"thresholdmediankappaSecondary: %.12e",thresholdmediankappaSecondary);
+	strcat(val,"\n");
+	fputs(val,temporalFile);*/
 
-	if (findTstart (*vectorinDERComposed, thresholdmediankappaSecondary, samplesup, safetymargintstart, 1, samplingRate, &nSecondaryPulses, &istherePulse, &tstartSecondary, &tstartSecondaryNOsmt, &qualitySecondary, &tstartDERSecondary, &tmaxDERSecondary, &maxDERSecondary, &tendDERSecondary,temporalFile))
+	if (findTstartOLD (*vectorinDERComposed, thresholdmediankappaSecondary, samplesup, safetymargintstart, 1, samplingRate, &nSecondaryPulses, &istherePulse, &tstartSecondary, &tstartSecondaryNOsmt, &qualitySecondary, &tstartDERSecondary, &tmaxDERSecondary, &maxDERSecondary, &tendDERSecondary,temporalFile))
 	{
 	    message = "Cannot run findTstart routine to look for secondary pulses into 'vectorinDERComposed'";
 	    EP_PRINT_ERROR(message,EPFAIL);
@@ -2084,9 +2697,14 @@ int findSePulses(
 
 		for (int i=0;i<nSecondaryPulses;i++)
 		{
+			/*sprintf(val,"tstart y tstartDER Secondary(%d): %.12e %.12e",i,gsl_vector_get(tstartSecondary,i),gsl_vector_get(tstartDERSecondary,i));
+			strcat(val,"\n");
+			fputs(val,temporalFile);*/
+
 			for (int j=0;j<*nPulses;j++)
 			{
-				if ((gsl_vector_get(tstartSecondary,i) == gsl_vector_get(*tstart,j)) || (gsl_vector_get(tstartSecondary,i) == (gsl_vector_get(*tstart,j)+1)) || (gsl_vector_get(tstartDERSecondary,i) == gsl_vector_get(limSup_vector,j)))
+				//if ((gsl_vector_get(tstartSecondary,i) == gsl_vector_get(*tstart,j)) || (gsl_vector_get(tstartSecondary,i) == (gsl_vector_get(*tstart,j)+1)) || (gsl_vector_get(tstartDERSecondary,i) == gsl_vector_get(limSup_vector,j)))
+				if (gsl_vector_get(tstartDERSecondary,i) == gsl_vector_get(*tstartDER,j))
 				{
 					gsl_vector_set(trueSecondary,i,0);
 
@@ -2261,4 +2879,604 @@ int findSePulses(
 
 	return(EPOK);
 }
+int findSePulses(
+	gsl_vector *vectorin,
+	gsl_vector *vectorinDER,
+	gsl_vector **vectorinDERComposed,
+
+	double thresholdmediankappaSingle,
+
+	gsl_vector **tstart,
+	gsl_vector **quality,
+	gsl_vector **energy,
+	gsl_vector **maxDER,
+
+	gsl_vector **newPulses,
+
+	int *nPulses,
+
+	/*gsl_vector *startsaturated,
+	gsl_vector *endsaturated,
+	int nSaturated,*/
+
+	double taufall,
+	double scalefactor,
+	int sizepulse,
+	double samplingRate,
+
+	int samplesup,
+	double nsgms,
+
+	gsl_vector *B,
+	double lrs,
+	gsl_vector *lb,
+
+	gsl_matrix *library,
+	gsl_matrix *models,
+	gsl_vector *model,
+
+	double stopCriteriamkc,
+	double kappamkc,
+	double levelprvpulse,
+
+	FILE * temporalFile)
+{
+	char val[256];
+	char val_aux[256];
+
+	int status=EPOK;
+	string message = "";
+
+	const double pi = 4.0 * atan(1.0);
+
+	// Declare variables & allocate GSL vectors
+	double firstSampleOverThreshold;
+	long index_firstSampleOverThreshold;
+	double firstSampleOverThreshold_Model;
+	long index_firstSampleOverThreshold_Model;
+	gsl_vector *firstSamplesgsl = gsl_vector_alloc(models->size1);
+	gsl_vector_set_all(firstSamplesgsl,0);
+	gsl_vector *index_firstSamplesgsl = gsl_vector_alloc(models->size1);
+	gsl_vector_set_all(index_firstSamplesgsl,0);
+
+    int ind;
+    int ind1;
+
+    int istherePulse;
+    	// To look for secondary pulses
+    int lastOne;				// If 1 => The pulse is the last one of the row=record (or the only one)
+    gsl_vector *modelScaled;	// Pulse template scaled according to each pulse
+    long shift;					// Shift between each pulse and the pulse template
+    gsl_vector *modelShifted;	// The scaled pulse template is also shifted to align it with each pulse
+    gsl_vector *diff;			// Pulse - Shifted scaled pulse template
+    int limInf, limSup;
+    gsl_vector *limSup_vector=gsl_vector_alloc(*nPulses);
+    gsl_vector_set_zero(limSup_vector);
+    double thresholdmediankappaSecondary;
+    int nSecondaryPulses = 0;
+    gsl_vector *tstartSecondary =  gsl_vector_alloc(vectorinDER->size);
+
+    gsl_vector *qualitySecondary =  gsl_vector_alloc(vectorinDER->size);
+    gsl_vector *maxDERSecondary =  gsl_vector_alloc(vectorinDER->size);
+
+    int boxLength = (int)pi*taufall*scalefactor*samplingRate;
+
+    //int indSaturated = 0;
+
+    double pulseheight;
+
+	// Auxiliary variables
+	gsl_vector *pulse;
+	gsl_vector_view temp;					// In order to handle with gsl_vector_view (subvectors)
+
+	// The thresholdmediankappaSingle input parameter is applied to the set of templates (from the library) in order to get
+	// the value of the first sample over the threshold and the index of that sample
+	if (firstSampleModels (models, thresholdmediankappaSingle, &firstSamplesgsl, &index_firstSamplesgsl, temporalFile))
+	{
+	    message = "Cannot run firstSampleModels routine to get the value of the first sample over the threshold and the index of that sample";
+	    EP_PRINT_ERROR(message,EPFAIL);
+	}
+
+	// Build 'vectorinDERComposed'
+	modelScaled = gsl_vector_alloc(models->size2);
+	for (int i=0;i<*nPulses;i++)
+	{
+		lastOne = 0;
+		if ((*nPulses == 1) || ((*nPulses !=1) && (i == *nPulses-1)))	lastOne = 1;
+
+		/*sprintf(val,"tstart y tstartDER(%d): %.12e %.12e",i,gsl_vector_get(*tstart,i),gsl_vector_get(*tstartDER,i));
+					strcat(val,"\n");
+					fputs(val,temporalFile);*/
+
+		if (gsl_vector_get(*newPulses,i) == 1)
+		{
+			// For the moment, we need to store in the output FITS file the estimated energy
+			if (getPulseHeight(vectorin, gsl_vector_get(*tstart,i), gsl_vector_get(*tstart,i+1), lastOne, lrs, gsl_vector_get(lb,i), gsl_vector_get(B,i), sizepulse, &pulseheight, temporalFile))
+			{
+			    message = "Cannot run getPulseHeight routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+			    EP_PRINT_ERROR(message,EPFAIL);
+			}
+			gsl_vector_set(*energy,i,pulseheight);
+
+			// Cut the record part corresponding to a pulse
+			limInf = gsl_vector_get(*tstart,i);
+			limSup =limInf+sizepulse-1;
+			if (limSup>vectorin->size)	limSup = vectorin->size;
+			pulse = gsl_vector_alloc(limSup-limInf);
+			temp = gsl_vector_subvector(*vectorinDERComposed,limInf,limSup-limInf);
+			//temp = gsl_vector_subvector(vectorinDER,limInf,limSup-limInf);
+			gsl_vector_memcpy(pulse, &temp.vector);
+
+			// Estimate the amplitude of the first sample over the threshold to choose the proper pulse template ("model")
+			// of the pulse templates library ("models")
+			index_firstSampleOverThreshold = 0; //Because the 'pulse' starts in tstartDER
+			firstSampleOverThreshold = gsl_vector_get(pulse,index_firstSampleOverThreshold);
+			/*for (int j=0;j<pulse->size;j++)
+			{
+				if (gsl_vector_get(pulse,j) > thresholdmediankappaSingle)
+				{
+					index_firstSampleOverThreshold=j;
+					firstSampleOverThreshold = gsl_vector_get(pulse,j);
+
+					break;
+				}
+			}*/
+
+			// Find the proper pulse model in the pulse templates library
+			if (gsl_vector_get(*tstart,i) == 0) // Truncated pulse at the beginnig of the record
+			{
+				// Establish a new threshold with the first sample (a bit fewer) => New firstSamplesgsl
+				gsl_vector *firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(firstSamplesgsl_aux,0);
+				gsl_vector *index_firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(index_firstSamplesgsl_aux,0);
+
+				if (firstSampleModels (models, gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100, &firstSamplesgsl_aux, &index_firstSamplesgsl_aux, temporalFile))
+				{
+				    message = "Cannot run firstSampleModels routine to get the value of the first sample over the threshold and the index of that sample";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				if (find_model1stSample(gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100, firstSamplesgsl_aux, models, &model, temporalFile))
+				{
+				    message = "Cannot run find_model1stSample routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				for (int j=0;j<models->size2;j++)
+				{
+					if (gsl_vector_get(model,j) > gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100)
+					{
+						index_firstSampleOverThreshold_Model = j;
+						firstSampleOverThreshold_Model = gsl_vector_get(model,j);
+
+						break;
+					}
+				}
+
+				gsl_vector_free(firstSamplesgsl_aux);
+				gsl_vector_free(index_firstSamplesgsl_aux);
+			}
+			/*else if ((i != 0) && (gsl_vector_get(*tstartDER,i)-gsl_vector_get(*tstartDER,i-1) < sizepulse))
+			{
+				// Establish a new threshold with the first sample (a bit fewer) => New firstSamplesgsl
+				gsl_vector *firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(firstSamplesgsl_aux,0);
+				gsl_vector *index_firstSamplesgsl_aux = gsl_vector_alloc(models->size1);
+				gsl_vector_set_all(index_firstSamplesgsl_aux,0);
+
+				if (firstSampleModels (models, gsl_vector_get(vectorinDER,gsl_vector_get(*tstartDER,i))-gsl_vector_get(vectorinDER,gsl_vector_get(*tstartDER,i))/100, &firstSamplesgsl_aux, &index_firstSamplesgsl_aux, temporalFile))
+				{
+				    message = "Cannot run firstSampleModels routine to get the value of the first sample over the threshold and the index of that sample";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				if (find_model1stSample(gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100, firstSamplesgsl_aux, models, &model, temporalFile))
+				{
+				    message = "Cannot run find_model1stSample routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+				    EP_PRINT_ERROR(message,EPFAIL);
+				}
+				for (int j=0;j<models->size2;j++)
+				{
+					if (gsl_vector_get(model,j) > gsl_vector_get(vectorinDER,0)-gsl_vector_get(vectorinDER,0)/100)
+					{
+						index_firstSampleOverThreshold_Model = j;
+						firstSampleOverThreshold_Model = gsl_vector_get(model,j);
+
+						break;
+					}
+				}
+
+				gsl_vector_free(firstSamplesgsl_aux);
+				gsl_vector_free(index_firstSamplesgsl_aux);
+			}*/
+			else
+			{
+				if (find_model1stSample(firstSampleOverThreshold, firstSamplesgsl, models, &model, temporalFile))
+				{
+					message = "Cannot run find_model1stSample routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+					EP_PRINT_ERROR(message,EPFAIL);
+				}
+				for (int j=0;j<models->size2;j++)
+				{
+					if (gsl_vector_get(model,j) > thresholdmediankappaSingle)
+					{
+						index_firstSampleOverThreshold_Model = j;
+						firstSampleOverThreshold_Model = gsl_vector_get(model,j);
+
+						break;
+					}
+				}
+			}
+
+			// Scale the template according to the maximum of the pulse
+			gsl_vector_memcpy(modelScaled,model);
+			gsl_vector_scale(modelScaled,firstSampleOverThreshold/firstSampleOverThreshold_Model);
+
+			// Calculate the shift between the template and the pulse
+			shift = index_firstSampleOverThreshold-index_firstSampleOverThreshold_Model;
+
+			// Allocate the shifted-scaled template and the difference between the pulse and the shifted-scaled template
+			modelShifted = gsl_vector_alloc(pulse->size);
+			diff = gsl_vector_alloc(pulse->size);
+
+			// Shift the scaled template according to 'shift' (load the 'modelShifted' vector)
+			if (shift == 0)
+			{
+				if (modelShifted->size < modelScaled->size)		// 'modelShifted' is a subvector of 'modelScaled'
+				{
+					temp = gsl_vector_subvector(modelScaled,0,modelShifted->size);
+					gsl_vector_memcpy(modelShifted, &temp.vector);
+				}
+				else											// 'modelShifted' is 'modelScaled' extended
+				{
+					gsl_vector_set_all(modelShifted,gsl_vector_get(modelScaled,modelScaled->size-1));
+					for (int k=0;k<modelScaled->size;k++)
+					{
+						gsl_vector_set(modelShifted,k,gsl_vector_get(modelScaled,k));
+					}
+				}
+			}
+			else if (shift > 0)		// Pulse template must be delayed
+			{
+				gsl_vector_set_all(modelShifted,gsl_vector_get(modelScaled,0));
+				for (int k=0;k<modelShifted->size-shift;k++)
+				{
+					if (k < modelScaled->size)
+					{
+						gsl_vector_set(modelShifted,k+shift,gsl_vector_get(modelScaled,k));
+					}
+				}
+			}
+			else if (shift < 0)		// Pulse template must be moved forward
+			{
+				gsl_vector_set_all(modelShifted,gsl_vector_get(modelScaled,modelScaled->size-1));
+				for (int k=0;k<modelShifted->size;k++)
+				{
+					if (k+fabs(shift) < modelScaled->size)
+					{
+						gsl_vector_set(modelShifted,k,gsl_vector_get(modelScaled,k+fabs(shift)));
+					}
+				}
+			}
+
+			// Difference between each pulse and the corresponding shifted and scaled pulse template
+			gsl_vector_memcpy(diff,pulse);
+			gsl_vector_sub(diff,modelShifted);
+			/*if ((indice == 49) && ((i == *nPulses-2) || (i == *nPulses-1)))
+			{
+				for (int k=0;k<pulse->size;k++)
+				{
+					sprintf(val,"%d %.12e %.12e %.12e",k,gsl_vector_get(pulse,k),gsl_vector_get(modelShifted,k),gsl_vector_get(diff,k));
+					strcat(val,"\n");
+					fputs(val,temporalFile);
+				}
+			}*/
+
+			// Overwrite some parts of 'vectorinDERComposed' where there is a pulse with 'diff'
+			// (and with 0 some samples)
+			if (i != *nPulses-1)		// Nor single pulse nor last pulse
+			{
+				limInf = gsl_vector_get(*tstart,i);
+				limSup =limInf+sizepulse-1;
+				if (limSup>=(vectorin->size))	limSup = vectorin->size-boxLength;
+
+				for (int j=limInf;j<limSup;j++)
+				{
+					if (gsl_vector_get(diff,j-limInf) < -1e10)
+					{
+						gsl_vector_set(*vectorinDERComposed,j,-1e10);
+					}
+					else if (gsl_vector_get(diff,j-limInf) > 1e10)
+					{
+						gsl_vector_set(*vectorinDERComposed,j,1e10);
+					}
+					else
+					{
+						gsl_vector_set(*vectorinDERComposed,j,gsl_vector_get(diff,j-limInf));
+					}
+				}
+			}
+			else						// Or single pulse or last pulse
+			{
+				if (gsl_vector_get(*quality,i) == 1)
+				{
+					limInf = gsl_vector_get(*tstart,i);
+					limSup =limInf+sizepulse-1;
+					if (limSup>=(vectorin->size))	limSup = vectorin->size-boxLength;
+
+					for (int j=limInf;j<limSup;j++)
+					{
+						if (gsl_vector_get(diff,j-limInf) < -1e10)
+						{
+							gsl_vector_set(*vectorinDERComposed,j,-1e10);
+						}
+						else if (gsl_vector_get(diff,j-limInf) > 1e10)
+						{
+							gsl_vector_set(*vectorinDERComposed,j,1e10);
+						}
+						else
+						{
+							gsl_vector_set(*vectorinDERComposed,j,gsl_vector_get(diff,j-limInf));
+						}
+					}
+				}
+				else
+				{
+					limInf = gsl_vector_get(*tstart,i);
+					limSup =limInf+sizepulse-1;
+					if (limSup>=(vectorin->size))	limSup = vectorin->size-boxLength;
+
+
+					for (int j=limInf;j<limSup;j++)
+					{
+						if (gsl_vector_get(diff,j-limInf) < -1e10)
+						{
+							gsl_vector_set(*vectorinDERComposed,j,-1e10);
+						}
+						else if (gsl_vector_get(diff,j-limInf) > 1e10)
+						{
+							gsl_vector_set(*vectorinDERComposed,j,1e10);
+						}
+						else
+						{
+							gsl_vector_set(*vectorinDERComposed,j,gsl_vector_get(diff,j-limInf));
+						}
+					}
+				}
+			}
+
+			/*for (int j=0;j<nSaturated;j++)
+			{
+				for (int k=gsl_vector_get(startsaturated,j);k<gsl_vector_get(endsaturated,j);k++)
+				{
+					gsl_vector_set(*vectorinDERComposed,k,0.0);
+				}
+			}*/
+
+			// Free allocate of GSL vectors
+			gsl_vector_free(pulse);
+			gsl_vector_free(modelShifted);
+			gsl_vector_free(diff);
+		}
+	}
+
+
+	gsl_vector_free(modelScaled);
+	/*if (indice == 49)
+				{
+					for (int k=9650;k<9800;k++)
+					{
+						sprintf(val,"%d %.12e",k,gsl_vector_get(*vectorinDERComposed,k));
+						strcat(val,"\n");
+						fputs(val,temporalFile);
+					}
+				}*/
+
+	// Look for secondary pulses into 'vectorinDERComposed'
+	if (medianKappaClipping (*vectorinDERComposed, kappamkc, stopCriteriamkc, nsgms, (int)(pi*samplingRate*taufall*scalefactor), &thresholdmediankappaSecondary, temporalFile))
+	{
+	    message = "Cannot run medianKappaClipping routine to look for secondary pulses into 'vectorinDERComposed'";
+	    EP_PRINT_ERROR(message,EPFAIL);
+	}
+	/*sprintf(val,"thresholdmediankappaSecondary: %.12e",thresholdmediankappaSecondary);
+	strcat(val,"\n");
+	fputs(val,temporalFile);*/
+
+	if (findTstart (*vectorinDERComposed, thresholdmediankappaSecondary, samplesup, 1, samplingRate, &nSecondaryPulses, &istherePulse, &tstartSecondary, &qualitySecondary, &maxDERSecondary, temporalFile))
+	{
+	    message = "Cannot run findTstart routine to look for secondary pulses into 'vectorinDERComposed'";
+	    EP_PRINT_ERROR(message,EPFAIL);
+
+	}
+	ind = 0;
+	ind1 = 0;
+	if (nSecondaryPulses != 0)
+	{
+		gsl_vector *trueSecondary = gsl_vector_alloc(nSecondaryPulses);
+		gsl_vector_set_all(trueSecondary,1);
+
+		for (int i=0;i<nSecondaryPulses;i++)
+		{
+			/*sprintf(val,"tstart y tstartDER Secondary(%d): %.12e %.12e",i,gsl_vector_get(tstartSecondary,i),gsl_vector_get(tstartDERSecondary,i));
+			strcat(val,"\n");
+			fputs(val,temporalFile);*/
+
+			for (int j=0;j<*nPulses;j++)
+			{
+				//if ((gsl_vector_get(tstartSecondary,i) == gsl_vector_get(*tstart,j)) || (gsl_vector_get(tstartSecondary,i) == (gsl_vector_get(*tstart,j)+1)) || (gsl_vector_get(tstartDERSecondary,i) == gsl_vector_get(limSup_vector,j)))
+				if (gsl_vector_get(tstartSecondary,i) == gsl_vector_get(*tstart,j))
+				{
+					gsl_vector_set(trueSecondary,i,0);
+
+					break;
+				}
+				else
+				{
+					gsl_vector_set(trueSecondary,i,1);
+				}
+			}
+
+			if (gsl_vector_get(trueSecondary,i) == 1)
+			{
+				if (gsl_vector_get(tstartSecondary,i) == 0)
+				{
+					gsl_vector *pulseaux = gsl_vector_alloc(samplesup);
+					temp = gsl_vector_subvector(*vectorinDERComposed,0,pulseaux->size);
+					gsl_vector_memcpy(pulseaux, &temp.vector);
+					if (gsl_vector_isnull(pulseaux) == 1)
+					{
+						gsl_vector_set(trueSecondary,i,0);
+					}
+					gsl_vector_free(pulseaux);
+				}
+			}
+
+			// Secondary pulses must be larger than 1/levelPrvPulse times the preceding pulse to
+			// avoid being considered as noise
+			if (gsl_vector_get(trueSecondary,i) == 1)
+			{
+				if (*nPulses == 1)	// Only a single pulse
+				{
+					if (gsl_vector_get(maxDERSecondary,i) > gsl_vector_get(*maxDER,0)/levelprvpulse)
+					{
+						gsl_vector_set(trueSecondary,i,1);
+					}
+					else
+					{
+						gsl_vector_set(trueSecondary,i,0);
+					}
+				}
+				else				// More than one a single pulse
+				{
+					for (int j=0;j<*nPulses;j++)
+					{
+						if (j != *nPulses-1)
+						{
+							if ((gsl_vector_get(*tstart,j)<gsl_vector_get(tstartSecondary,i)) && (gsl_vector_get(tstartSecondary,i)<gsl_vector_get(*tstart,j+1)))
+							{
+								if (gsl_vector_get(maxDERSecondary,i) > gsl_vector_get(*maxDER,j)/levelprvpulse)
+								{
+									gsl_vector_set(trueSecondary,i,1);
+								}
+								else
+								{
+									gsl_vector_set(trueSecondary,i,0);
+								}
+								break;
+							}
+						}
+						else
+						{
+							if ((gsl_vector_get(*tstart,j)<gsl_vector_get(tstartSecondary,i)) && (gsl_vector_get(tstartSecondary,i)<vectorin->size))
+							{
+								if (gsl_vector_get(maxDERSecondary,i) > gsl_vector_get(*maxDER,j)/levelprvpulse)
+								{
+									gsl_vector_set(trueSecondary,i,1);
+								}
+								else
+								{
+									gsl_vector_set(trueSecondary,i,0);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		for (int i=0;i<nSecondaryPulses;i++)
+		{
+			if (gsl_vector_get(trueSecondary,i) == 1)
+			{
+				gsl_vector_set(*tstart,ind+*nPulses,gsl_vector_get(tstartSecondary,ind1));
+				gsl_vector_set(*maxDER,ind+*nPulses,gsl_vector_get(maxDERSecondary,ind1));
+				gsl_vector_set(*newPulses,ind+*nPulses,2);
+				gsl_vector_set(*quality,ind+*nPulses,gsl_vector_get(qualitySecondary,ind1));
+				ind = ind+1;
+				ind1 = ind1+1;
+			}
+			else
+			{
+				ind1 = ind1+1;
+			}
+		}
+
+		gsl_vector_free(trueSecondary);
+	}
+	nSecondaryPulses = ind;
+
+	// Add the single and the secondary pulses found
+	*nPulses = *nPulses + nSecondaryPulses;
+
+	if (nSecondaryPulses != 0)
+	{
+		// Order the found pulses (and all their data) according to 'tstartNOsmt'
+		gsl_vector *tstartaux = gsl_vector_alloc(*nPulses); // 'tstartNOsmt' subvector
+		temp = gsl_vector_subvector(*tstart,0,*nPulses);
+		gsl_vector_memcpy(tstartaux, &temp.vector);
+		gsl_permutation *perm = gsl_permutation_alloc(tstartaux->size);
+		// 'gsl_sort_vector_index' indirectly sorts the elements of the vector v into ascending order, storing the resulting
+		// permutation in p. The elements of p give the index of the vector element which would have been stored in that position
+		// if the vector had been sorted in place. The first element of p gives the index of the least element in v, and the last
+		// element of p gives the index of the greatest element in v. The vector v is not changed.
+		// Example: tstartaux=(5200 6000 200 3000) tauxsorted=(200 3000 5200 6000) perm=(2 3 0 1)
+		gsl_sort_vector_index(perm,tstartaux);
+		gsl_vector *tstartaux1 = gsl_vector_alloc(vectorin->size);
+		gsl_vector *newPulsesaux = gsl_vector_alloc(vectorin->size);
+		gsl_vector *energyaux = gsl_vector_alloc(vectorin->size);
+		gsl_vector *qualityaux = gsl_vector_alloc(vectorin->size);
+		gsl_vector *maxDERaux = gsl_vector_alloc(vectorin->size);
+		for (int i=0;i<*nPulses;i++)
+		{
+			gsl_vector_set(tstartaux1,i,gsl_vector_get(*tstart,gsl_permutation_get(perm,i)));
+			gsl_vector_set(newPulsesaux,i,gsl_vector_get(*newPulses,gsl_permutation_get(perm,i)));
+			gsl_vector_set(energyaux,i,gsl_vector_get(*energy,gsl_permutation_get(perm,i)));
+			gsl_vector_set(qualityaux,i,gsl_vector_get(*quality,gsl_permutation_get(perm,i)));
+			gsl_vector_set(maxDERaux,i,gsl_vector_get(*maxDER,gsl_permutation_get(perm,i)));
+		}
+		gsl_vector_memcpy(*tstart,tstartaux1);
+		gsl_vector_memcpy(*newPulses,newPulsesaux);
+		gsl_vector_memcpy(*energy,energyaux);
+		gsl_vector_memcpy(*quality,qualityaux);
+		gsl_vector_memcpy(*maxDER,maxDERaux);
+		gsl_vector_free(tstartaux);
+		gsl_permutation_free(perm);
+		gsl_vector_free(tstartaux1);
+		gsl_vector_free(newPulsesaux);
+		gsl_vector_free(energyaux);
+		gsl_vector_free(qualityaux);
+		gsl_vector_free(maxDERaux);
+	}
+
+	gsl_vector_free(limSup_vector);
+	gsl_vector_free(firstSamplesgsl);
+	gsl_vector_free(index_firstSamplesgsl);
+
+	return(EPOK);
+}
+
 /*xxxx end of SECTION 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION X ************************************************************
+* derivative function: This function applies the derivative method (x_i-x_(i-1)) to the input vector
+*
+* The derivative method provides more sensitivity to handle with pilot pulses.
+* Moreover, little variations of the baseline will not affect.
+*
+* Arguments:
+* 	- invector: Input/Ouput vector (derivative)
+* 	- szVct: Size of invector
+******************************************************************************/
+int derivative (gsl_vector **invector,int szVct)
+{
+	int status = EPOK;
+
+	for (int i=0; i<szVct-1; i++)
+	{
+		gsl_vector_set(*invector,i,gsl_vector_get(*invector,i+1)-gsl_vector_get(*invector,i));
+	}
+	gsl_vector_set(*invector,szVct-1,gsl_vector_get(*invector,szVct-2));
+	//gsl_vector_set(*invector,szVct-1,-999);
+
+	return (EPOK);
+}
+/*xxxx end of SECTION X xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

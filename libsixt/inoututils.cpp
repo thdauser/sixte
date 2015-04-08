@@ -109,7 +109,7 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 	}
 	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
 	{
-	    message = "Cannot access column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+	    message = "Cannot access column " + string(obj.nameCol) + "in table " + string(obj.nameTable);
 	    EP_PRINT_ERROR(message,status);
 	}
 	
@@ -120,30 +120,32 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 			bufferD = new double [nRows];
 			if (fits_read_col(obj.inObject, TDOUBLE, colnum, obj.iniRow, 1, nRows, &nullval, bufferD, &anynulls, &status))
 			{
-				message = "Cannot read column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);
+				message = "Cannot read column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+				EP_PRINT_ERROR(message,status);return(EPFAIL);
 			}
-			status = toGslVector((void **)&bufferD,&(*result),nRows,0,type);
+
+			status = toGslVector((void **)&bufferD,&(*result),nRows,0,obj.type);
+
 			delete bufferD;
 			break;
 		case TINT:
 			bufferJ = new int [nRows];
 			if (fits_read_col(obj.inObject, TINT, colnum, obj.iniRow, 1, nRows, &nullval, bufferJ, &anynulls, &status))
 			{
-				message = "Cannot access column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);
+				message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+				EP_PRINT_ERROR(message,status);return(EPFAIL);
 			}
-			status = toGslVector((void **)&bufferJ,&(*result),nRows,0,type);
+			status = toGslVector((void **)&bufferJ,&(*result),nRows,0,obj.type);
 			delete bufferJ;
 			break;
 		case TSHORT:
 			bufferI = new short [nRows];
 			if (fits_read_col(obj.inObject, TSHORT, colnum, obj.iniRow, 1, nRows, &nullval, bufferI, &anynulls, &status))
 			{
-				message = "Cannot access column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);
+				message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+				EP_PRINT_ERROR(message,status);return(EPFAIL);
 			}
-			status = toGslVector((void **)&bufferI,&(*result),nRows,0,type);
+			status = toGslVector((void **)&bufferI,&(*result),nRows,0,obj.type);
 			delete bufferI;
 			break;
 	}

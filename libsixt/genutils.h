@@ -77,6 +77,7 @@
 	#include <gsl/gsl_statistics.h>
 	#include <gsl/gsl_interp.h>
 	#include <gsl/gsl_spline.h>
+	#include <fftw3.h>
 
 // General
 
@@ -96,7 +97,6 @@
 	#include <sstream>
 	#include <ctype.h>
 	#include <sys/stat.h>
-        #include <complex>
 
 	#ifndef EPOK	//Event Processing OK
 	#define EPOK                 (0)
