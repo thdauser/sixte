@@ -2050,7 +2050,8 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 		}
 
 		model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
-		gsl_vector *filtergsl_aux = gsl_vector_alloc(matchedfilters->size2);
+		gsl_vector *filtergsl_aux;
+		
 
 		for (int i=0; i<(*pulsesInRecord)->ndetpulses ;i++)
 		{
@@ -2058,15 +2059,14 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 			if ((*pulsesInRecord)->pulses_detected[i].quality == 0)	// Neither truncated or saturated
 			{
 				// Filter
+				filtergsl_aux = gsl_vector_alloc(matchedfilters->size2);
 				if (getMatchedFilter(runF0orB0val, (*pulsesInRecord)->pulses_detected[i].pulse_height, estenergylibrary, matchedfilters, matchedfiltersb0, &filtergsl_aux))
 				{
 					message = "Cannot run routine getMatchedFilter";
 					EP_EXIT_ERROR(message,EPFAIL);
 				}
-
 				resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
 				resize_mf = pow(2,floor(log2(resize_mf)));
-
 				filtergsl = gsl_vector_alloc(resize_mf);			// Filter values
 				temp = gsl_vector_subvector(filtergsl_aux,0,resize_mf);
 				gsl_vector_memcpy(filtergsl,&temp.vector);
@@ -2077,21 +2077,18 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 				pulse = gsl_vector_alloc(resize_mf);
 				temp = gsl_vector_subvector(recordAux,tstartSamplesRecord,resize_mf);
 				gsl_vector_memcpy(pulse,&temp.vector);
-
 				// Calculate the optimal filter
 				if (calculus_optimalFilter (filtergsl, filtergsl->size, 1/record->delta_t, runF0orB0val, freqgsl, csdgsl, &optimalfilter_SHORT, &optimalfilter_f_SHORT, &optimalfilter_FFT_SHORT, &normalizationFactor))
 				{
 					message = "Cannot run routine calculus_optimalFilter";
 				    EP_EXIT_ERROR(message,EPFAIL);
 				}
-
 				// Calculate the uncalibrated energy of each pulse
 				if (calculateUCEnergy(pulse,optimalfilter_SHORT,TorF,normalizationFactor,1/record->delta_t,&uncE))
 				{
 					message = "Cannot run calculateUCEnergy routine for pulse i=" + boost::lexical_cast<std::string>(i);
 					EP_PRINT_ERROR(message,EPFAIL);
 				}
-
 				// Subtract pulse model from the record
 				if (find_model(uncE, energylibrary, templateslibraryb0, &model, temporalFile))
 				{
@@ -2639,11 +2636,13 @@ int getMatchedFilter(int runF0orB0val_getMatchedFilter, double pheight, gsl_vect
 	// Obtain the matched filter by interpolating
 	if (runF0orB0val_getMatchedFilter == 0)
 	{
+
 		if (find_matchedfilter(pheight, estenergylibrary_getMatchedFilter, matchedfilters_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
 		{
 			message = "Cannot run routine find_matchedfilter for filter interpolation";
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
+	  
 	}
 	else if (runF0orB0val_getMatchedFilter == 1)
 	{
@@ -2668,11 +2667,12 @@ int find_matchedfilter(double ph, gsl_vector *energiesvalues, gsl_matrix *matche
 	string message = "";
 	long nummodels = energiesvalues->size;
 
-	if (ph < gsl_vector_get(energiesvalues,0))
+	
+	if (ph <= gsl_vector_get(energiesvalues,0))
 	{
 		gsl_matrix_get_row(*matchedfilterFound,matchedfilters,0);
 	}
-	else if (ph > gsl_vector_get(energiesvalues,nummodels-1))
+	else if (ph >= gsl_vector_get(energiesvalues,nummodels-1))
 	{
 		gsl_matrix_get_row(*matchedfilterFound,matchedfilters,nummodels-1);
 	}
@@ -2701,7 +2701,7 @@ int find_matchedfilter(double ph, gsl_vector *energiesvalues, gsl_matrix *matche
 				    message = "Cannot run interpolate_model routine for model interpolation";
 				    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 				}
-				*matchedfilterFound = gsl_vector_alloc(matchedfilterAux->size);
+				//*matchedfilterFound = gsl_vector_alloc(matchedfilterAux->size);
 				gsl_vector_memcpy(*matchedfilterFound,matchedfilterAux);
 
 				gsl_vector_free(matchedfilterAux);

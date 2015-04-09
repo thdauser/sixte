@@ -121,7 +121,6 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 				runEnergy(&reconstruct_init, &pulsesInRecord);
 			}
 		}
-
 		if (nRecord == 1)
 		{
 			(*pulsesAll)->ndetpulses = pulsesInRecord->ndetpulses;
@@ -156,7 +155,6 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 				(*pulsesAll)->pulses_detected[i+pulsesAllAux->ndetpulses] = pulsesInRecord->pulses_detected[i];
 			}
 		}
-		
 		// Fill TesEventList structure
 		event_list->index = pulsesInRecord->ndetpulses;
 		event_list->energies = new double[event_list->index];
