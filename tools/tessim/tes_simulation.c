@@ -53,6 +53,7 @@
 #include <string.h>
 #include <time.h>
 #include <fitsio.h>
+#include <sys/time.h>
 
 #include <assert.h>
 
