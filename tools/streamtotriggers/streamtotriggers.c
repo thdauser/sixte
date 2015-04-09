@@ -33,15 +33,12 @@ int streamtotriggers_main() {
   
   //Pointers
   TESDataStream* stream=NULL;
-  AdvDet *det=NULL;
   TesStreamFile* tesfile=NULL;
   TESInitStruct* init=NULL;
 
   float monoen;
   
-  int ii;
   int hdu_type=0;
-  int act=0;
 
   char comment[MAXMSG];
 
@@ -56,39 +53,22 @@ int streamtotriggers_main() {
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
 
-    // Load the detector structure
-    det=loadAdvDet(par.XMLFile, &status);
-    CHECK_STATUS_BREAK(status);
-    
-    // Check and eventually modifies the active pixels
-    if(par.Nactive==-1){
-      par.Nactive=det->npix;
-      par.nlo=0;
-      par.nhi=det->npix-1;
-    }
-    for(ii=0; ii<det->npix; ii++){
-      if(ii>=par.nlo && ii<=par.nhi){
-	act++;
-      }
-    }
-    if(act!=par.Nactive){
-      status=EXIT_FAILURE;
-      char msg[MAXMSG];
-      sprintf(msg, "Number of active pixels has been corrupted. Counted %d instead of %d pixels.", act, par.Nactive);
-      SIXT_ERROR(msg);
-      CHECK_STATUS_BREAK(status);
-    }
+    // Copy parameters in general parameters structure
+    copyParams2GeneralStruct(par,&generic_par);
     
     // Initialization structure necessary for trigger step
     init = newInitStruct(&status);
+    CHECK_STATUS_BREAK(status);
+    tesinitialization(init,&generic_par,&status);
     CHECK_STATUS_BREAK(status);
 
     //Open TesStream File
     tesfile = openTesStreamFile(par.streamname,par.nlo,par.nhi,READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
-
     // Read keywords from tes file
+    double tstart_stream;
+    double tstop_stream;
     if (fits_movabs_hdu(tesfile->fptr,1, &hdu_type, &status)) break;
     sixt_read_fits_stdkeywords_obsolete(tesfile->fptr,
 			       init->telescop,
@@ -98,8 +78,8 @@ int streamtotriggers_main() {
 			       init->respfile,
 			       &init->mjdref,
 			       &init->timezero,
-			       &init->tstart,
-			       &init->tstop,
+			       &tstart_stream,
+			       &tstop_stream,
 			       &status);
     CHECK_STATUS_BREAK(status);
 
@@ -114,29 +94,29 @@ int streamtotriggers_main() {
     CHECK_STATUS_BREAK(status);
 
 
-
-    double tstart_stream;
-    printf("TES stream file reaches from %lfs-%lfs .\n", init->tstart, init->tstop);
-    tstart_stream = init->tstart;
-    if(init->tstart>par.tstart){
-      if(init->tstart>par.tstop){
-	SIXT_ERROR("Program parameter tstop smaller than tstart in TES stream file -> abort");
-	status=EXIT_FAILURE;
-	CHECK_STATUS_BREAK(status);
-      }
-      puts("Program parameter tstart smaller as in TES stream file.");    
-    }else{
-      init->tstart=par.tstart;
+    if(init->tstart>init->tstop){
+    	SIXT_ERROR("Program parameter tstop smaller than tstart -> abort");
+    	status=EXIT_FAILURE;
+    	CHECK_STATUS_BREAK(status);
     }
-    if(init->tstop<par.tstop){
-      if(init->tstop<par.tstart){
-	SIXT_ERROR("Program parameter tstart larger than tstop in TES stream file -> abort");
-	status=EXIT_FAILURE;
-	CHECK_STATUS_BREAK(status);
-      }
-      puts("Program parameter tstop larger as in TES stream file.");
-    }else{
-      init->tstop=par.tstop;
+    printf("TES stream file reaches from %lfs-%lfs .\n", tstart_stream,tstop_stream);
+    if(tstart_stream>init->tstart){
+    	if(tstart_stream>init->tstop){
+    		SIXT_ERROR("Program parameter tstop smaller than tstart in TES stream file -> abort");
+    		status=EXIT_FAILURE;
+    		CHECK_STATUS_BREAK(status);
+    	}
+    	puts("Program parameter tstart smaller than in TES stream file.");
+    	init->tstart=tstart_stream;
+    }
+    if(tstop_stream<init->tstop){
+    	if(tstop_stream<init->tstart){
+    		SIXT_ERROR("Program parameter tstart larger than tstop in TES stream file -> abort");
+    		status=EXIT_FAILURE;
+    		CHECK_STATUS_BREAK(status);
+    	}
+    	puts("Program parameter tstop larger than in TES stream file.");
+    	init->tstop=tstop_stream;
     }
     printf("Retrieving TES Stream from %lfs-%lfs .\n", init->tstart, init->tstop);
 
@@ -144,16 +124,13 @@ int streamtotriggers_main() {
     stream = newTESDataStream(&status);
     CHECK_STATUS_BREAK(status);
     stream = generateTESDataStreamFromFile(stream,tesfile,tstart_stream,init->tstart,init->tstop,
-					   det->SampleFreq,&status);
+					   init->det->SampleFreq,&status);
     CHECK_STATUS_BREAK(status);
 
-    // Copy parameters in general parameters structure
-    copyParams2GeneralStruct(par,&generic_par);
     triggerWithImpact(stream,&generic_par,init,monoen,NULL,0,0,&status);
   } while(0); // END of the error handling loop.
 
   //Free memory
-  destroyAdvDet(&det);
   freeTESInitStruct(&init,&status);
   destroyTESDataStream(stream);
   freeTesStreamFile(&tesfile,&status);
@@ -300,5 +277,6 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   par->WriteRecordFile=1;
   par->clobber=partmp.clobber;
   par->history=partmp.history;
+  par->check_times=0;
 }
 
