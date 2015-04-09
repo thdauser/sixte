@@ -29,8 +29,6 @@
 #include "tesrecord.h"
 #include "teseventlist.h"
 
-
-
 typedef struct {
   /** Duration of the pulse template in the library */
   int template_duration;
@@ -173,6 +171,9 @@ typedef struct {
         /** LibraryCollection structure (pulse templates and matched filters)*/		
 	LibraryCollection* library_collection;
 	
+	/** Threshold of each record **/
+	double threshold;
+
 	/** Library file (to be used or to be created) **/
 	char library_file[256];
 	
@@ -268,7 +269,7 @@ extern "C"
 	double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode, double LrsT, 
 	double LbT,char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF,
 	double monoenergy, int interm, char* detectFile, char* filterFile, char clobber, int* const status);*/
-void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const library_file, char* const record_file,
+void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, char* const library_file,
 	double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode, double LrsT,
 	double LbT,char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF,
 	double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int* const status);

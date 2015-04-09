@@ -160,6 +160,7 @@ MAP OF SECTIONS IN THIS FILE:
  - 12. findTstart
  - 13. findPulses
  - 14. findSePulses
+ - 15. derivative
 
 *******************************************************************************/
 
@@ -993,15 +994,17 @@ int find_model(double ph, gsl_vector *modelsvalues, gsl_matrix *models, gsl_vect
 	int status=EPOK;
 	string message = "";
 
+	gsl_vector *modelFound_aux = gsl_vector_alloc(models->size2);
+
 	long nummodels = modelsvalues->size;
 
 	if (ph < gsl_vector_get(modelsvalues,0))
 	{
-		gsl_matrix_get_row(*modelFound,models,0);
+		gsl_matrix_get_row(modelFound_aux,models,0);
 	}
 	else if (ph > gsl_vector_get(modelsvalues,nummodels-1))
 	{
-		gsl_matrix_get_row(*modelFound,models,nummodels-1);
+		gsl_matrix_get_row(modelFound_aux,models,nummodels-1);
 	}
 	else
 	{
@@ -1009,7 +1012,7 @@ int find_model(double ph, gsl_vector *modelsvalues, gsl_matrix *models, gsl_vect
 		{
 			if (ph == gsl_vector_get(modelsvalues,i))
 			{
-				gsl_matrix_get_row(*modelFound,models,i);
+				gsl_matrix_get_row(modelFound_aux,models,i);
 
 				break;
 			}
@@ -1027,7 +1030,7 @@ int find_model(double ph, gsl_vector *modelsvalues, gsl_matrix *models, gsl_vect
 				    message = "Cannot run interpolate_model with two rows in models";
 				    EP_PRINT_ERROR(message,EPFAIL);
 				}
-				gsl_vector_memcpy(*modelFound,modelAux);
+				gsl_vector_memcpy(modelFound_aux,modelAux);
 				gsl_vector_free(modelAux);
 				gsl_vector_free(model1);
 				gsl_vector_free(model2);
@@ -1036,6 +1039,10 @@ int find_model(double ph, gsl_vector *modelsvalues, gsl_matrix *models, gsl_vect
 			}
 		}
 	}
+
+	gsl_vector_view temp;
+	temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
+	gsl_vector_memcpy(*modelFound,&temp.vector);
 
     return(EPOK);
 }
@@ -1913,6 +1920,7 @@ int findPulses (
 	gsl_vector **energy,
 
 	int *nPulses,
+	double *threshold,
 
 	int opmode,
 
@@ -1977,6 +1985,7 @@ int findPulses (
 	    message = "Cannot run medianKappaClipping looking for single pulses";
 	    EP_PRINT_ERROR(message,EPFAIL);
 	}
+	*threshold = thresholdmediankappa;
 	/*sprintf(val,"thresholdmediankappa: %.12e",thresholdmediankappa);
 	strcat(val,"\n");
 	fputs(val,temporalFile);*/

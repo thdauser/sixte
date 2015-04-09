@@ -153,6 +153,7 @@
 		gsl_vector **energy,
 
 		int *nPulses,
+		double *threshold,
 
 		int opmode,
 

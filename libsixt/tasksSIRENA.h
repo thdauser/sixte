@@ -51,10 +51,10 @@ int writeLibrary(ReconstructInitSIRENA* reconstruct_init_writeLibrary, double es
 void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilter, ReconstructInitSIRENA** reconstruct_init, PulsesCollection *pulsesAll_runFilter, PulsesCollection** pulsesInRecord, OptimalFilterSIRENA **optimalFilter_runFilter);
 
 int initLibraryFilter(ReconstructInitSIRENA* reconstruct_init_initLibraryFilter, gsl_vector **energylibrary_initLibraryFilter, gsl_vector **estenergylibrary_initLibraryFilter,
-		gsl_matrix **templateslibrary_initLibraryFilter, gsl_matrix **templateslibraryb0_initLibraryFilter,
+		gsl_matrix **templateslibrary_initLibraryFilter, gsl_matrix **templateslibrary_filder_initLibraryFilter, gsl_matrix **templateslibraryb0_initLibraryFilter,
 		gsl_matrix **matchedfilters_initLibraryFilter, gsl_matrix **matchedfiltersb0_initLibraryFilter);
 int loadLibraryFilter(ReconstructInitSIRENA* reconstruct_init_loadLibraryFilter, gsl_vector **energylibrary_initLibraryFilter, gsl_vector **estenergylibrary_initLibraryFilter,
-		gsl_matrix **templateslibrary_initLibraryFilter, gsl_matrix **templateslibraryb0_initLibraryFilter,
+		gsl_matrix **templateslibrary_initLibraryFilter, gsl_matrix **templateslibrary_filder_loadLibraryFilter, gsl_matrix **templateslibraryb0_initLibraryFilter,
 		gsl_matrix **matchedfilters_initLibraryFilter, gsl_matrix **matchedfiltersb0_initLibraryFilter);
 int initNoisespectrum(ReconstructInitSIRENA* reconstruct_init_initNoisespectrum, gsl_vector **freqgsl_initNoisespectrum, gsl_vector **csdgsl_initNoisespectrum);
 int loadNoisespectrum(ReconstructInitSIRENA* reconstruct_init_loadNoisespectrum, gsl_vector **freqgsl_loadNoisespectrum, gsl_vector **csdgsl_loadNoisespectrum);
@@ -62,6 +62,7 @@ int find_energy(double energyKeyword, gsl_vector *energygsl, long *rowFound);
 int calculus_optimalFilter(gsl_vector *matchedfiltergsl, long mf_size, double samprate, int runF0orB0val_calculusOptimalFilter, gsl_vector *freqgsl_calculusOptimalFilter, gsl_vector *csdgsl_calculusOptimalFilter, gsl_vector **optimal_filtergsl, gsl_vector **of_f, gsl_vector **of_FFT, double *normalizationFactor_calculusOptimalFilter);
 int interpolatePOS (gsl_vector *x_in, gsl_vector *y_in, long size, double step, gsl_vector **x_out, gsl_vector **y_out, long *numzerosstart, long *numzerosend);
 int getMatchedFilter(int runF0orB0val_getMatchedFilter, double pheight, gsl_vector *estenergylibrary_getMatchedFilter, gsl_matrix *matchedfilters_getMatchedFilter, gsl_matrix *matchedfiltersb0_getMatchedFilter, gsl_vector **matchedfilter_getMatchedFilter);
+int getMatchedFilterProduction(int runF0orB0val_getMatchedFilter, double threshold, double tstart_pulse, gsl_vector *pulse, gsl_vector *pulse_filder, double firstSample_pulse, gsl_vector *firstSamples, gsl_matrix *models, gsl_matrix *matchedfilters_getMatchedFilter, gsl_matrix *matchedfiltersb0_getMatchedFilter, gsl_vector **matchedfilter_getMatchedFilter);
 int find_matchedfilter(double ph, gsl_vector *energiesvalues, gsl_matrix *matchedfilters, gsl_vector **matchedfilterFound, FILE * temporalFile);
 int calculateUCEnergy (gsl_vector *vector, gsl_vector *filter, int domain, double nrmfctr, double samprate, double *calculatedEnergy);
 int writeFilter(ReconstructInitSIRENA *reconstruct_init_writeFilter, double normalizationFactor_writeFilter, gsl_vector *optimalfilter, gsl_vector *optimalfilter_f, gsl_vector *optimalfilter_FFT, fitsfile **dtcObject_writeFilter, const char *create_writeFilter);

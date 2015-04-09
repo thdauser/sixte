@@ -697,6 +697,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init_procRecord, double tstar
 
 	// Initialize variables
 	int numPulses = 0;
+	double threshold = 0.0;
 
 	double asquid = 1.0;
 	double plspolar = 1.0;
@@ -814,7 +815,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init_procRecord, double tstar
 	if ((*reconstruct_init_procRecord)->crtLib == 0)
 	{
 		if (findPulses (recordNOTFILTERED, recordDERIVATIVE, &tstartgsl, &qualitygsl, &pulseHeightsgsl,
-				&numPulses,
+				&numPulses, &threshold,
 				1,
 				tauFALL, scaleFactor, sizePulse_b, samprate,
 				samplesUp, nSgms,
@@ -832,7 +833,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init_procRecord, double tstar
 	else if ((*reconstruct_init_procRecord)->crtLib == 1)
 	{
 		if (findPulses (recordNOTFILTERED, recordDERIVATIVE, &tstartgsl, &qualitygsl, &pulseHeightsgsl,
-				&numPulses,
+				&numPulses, &threshold,
 				0,
 				tauFALL, scaleFactor, sizePulse_b, samprate,
 				samplesUp, nSgms,
@@ -847,6 +848,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init_procRecord, double tstar
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
 	}
+	(*reconstruct_init_procRecord)->threshold = threshold;
 
 	for (int i=0;i<numPulses;i++)
 	{
@@ -1796,10 +1798,12 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 	int status = EPOK;
 
 	fitsfile *dtcObject = NULL;	    // Object which contains information of the output FITS file
-	if((*reconstruct_init)->intermediate==1){
-	    char dtcName[256];
-	    strcpy(dtcName,(*reconstruct_init)->detectFile);
+	if ((*reconstruct_init)->intermediate == 1)
+	{
+		char dtcName[256];
+		strcpy(dtcName,(*reconstruct_init)->detectFile);
 	}
+
 	int TorF;
 	if (strcmp((*reconstruct_init)->FilterDomain,"T") == 0)
 	{
@@ -1847,9 +1851,11 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 	gsl_vector *energylibrary;
 	gsl_vector *estenergylibrary;
 	gsl_matrix *templateslibrary;
+	gsl_matrix *templateslibrary_filder;
 	gsl_matrix *templateslibraryb0;
 	gsl_matrix *matchedfilters;
 	gsl_matrix *matchedfiltersb0;
+	gsl_vector *firstSamples;
 
 	gsl_vector *freqgsl;
 	gsl_vector *csdgsl;
@@ -1861,10 +1867,13 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 	gsl_vector *model;
 
 	gsl_vector *recordAux;
+	gsl_vector *recordAux_filder;
 
-	gsl_vector *pulse=NULL;
+	gsl_vector *pulse = NULL;
+	gsl_vector *pulse_filder = NULL;
+	double firstSample_pulse;
 
-	gsl_vector *filtergsl=NULL;			// Matched filter values (time domain)
+	gsl_vector *filtergsl = NULL;			// Matched filter values (time domain)
 
 	int iter;
 	gsl_vector_view(temp);
@@ -1874,17 +1883,30 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 	double tstartRecordSamples = floor(record->time/record->delta_t+0.5);	// Close integer
 
 	// Initialize the vectors/matrix of the library
-	if (initLibraryFilter(*reconstruct_init,&energylibrary, &estenergylibrary, &templateslibrary, &templateslibraryb0,&matchedfilters, &matchedfiltersb0))
+	if (initLibraryFilter(*reconstruct_init,&energylibrary, &estenergylibrary, &templateslibrary, &templateslibrary_filder, &templateslibraryb0,
+			&matchedfilters, &matchedfiltersb0))
 	{
 		message = "Cannot run routine initLibraryFilter to initialize library";
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 
 	// Store the library data, which are stored in reconstruct_init->library_collection, in gsl vectors/matrix
-	if (loadLibraryFilter(*reconstruct_init, &energylibrary, &estenergylibrary, &templateslibrary, &templateslibraryb0,&matchedfilters, &matchedfiltersb0))
+	if (loadLibraryFilter(*reconstruct_init, &energylibrary, &estenergylibrary, &templateslibrary, &templateslibrary_filder, &templateslibraryb0,
+			&matchedfilters, &matchedfiltersb0))
 	{
 	   	message = "Cannot run routine readLib to read pulses library";
 	  	EP_EXIT_ERROR(message,EPFAIL);
+	}
+
+	firstSamples = gsl_vector_alloc((*reconstruct_init)->library_collection->ntemplates);
+	/*if (firstSampleModels(templateslibrary_filder, (*reconstruct_init)->threshold, &firstSamples, &indexfirstSamples, temporalFile))
+	{
+		message = "Cannot run routine firstSampleModels in runFilter";
+	  	EP_EXIT_ERROR(message,EPFAIL);
+	}*/
+	for (int i=0;i<(*reconstruct_init)->library_collection->ntemplates;i++)
+	{
+		gsl_vector_set(firstSamples,i,gsl_matrix_get(templateslibrary_filder,i,0));
 	}
 
 	// Initialize the vectors of the noise spectrum
@@ -1909,6 +1931,17 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 	//int eventsz = recordAux->size;	// Just in case the last record has been filled in with 0's => Re-allocate invector
+
+	// Low-pass filtering
+	recordAux_filder = gsl_vector_alloc(recordAux->size);
+	gsl_vector_memcpy(recordAux_filder,recordAux);
+	status = lpf_boxcar(&recordAux_filder,recordAux->size,(*reconstruct_init)->scaleFactor*(*reconstruct_init)->tauFall,1/record->delta_t);
+	// Derivative after filtering
+	if (derivative (&recordAux_filder, recordAux->size))
+	{
+	    message = "Cannot run routine derivative for derivative after filtering";
+	    EP_EXIT_ERROR(message,EPFAIL);
+	}
 
 	if (runF0orB0val == 1)
 	{
@@ -2022,6 +2055,7 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 						EP_PRINT_ERROR(message,EPFAIL);
 					}
 				}
+
 				(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = 0.0;
 				(*pulsesInRecord)->pulses_detected[i].energy = 0.0;
@@ -2051,51 +2085,67 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 
 		model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
 		gsl_vector *filtergsl_aux;
-		
 
 		for (int i=0; i<(*pulsesInRecord)->ndetpulses ;i++)
 		{
 			// Pulses are going to be validated by checking its quality
 			if ((*pulsesInRecord)->pulses_detected[i].quality == 0)	// Neither truncated or saturated
 			{
+				resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
+				//resize_mf = pow(2,floor(log2(resize_mf)));
+
+				// Pulse
+				tstartSamplesRecord = floor((*pulsesInRecord)->pulses_detected[i].Tstart/record->delta_t+0.5)-tstartRecordSamples;
+				pulse_filder = gsl_vector_alloc(resize_mf);
+				temp = gsl_vector_subvector(recordAux_filder,tstartSamplesRecord,resize_mf);
+				gsl_vector_memcpy(pulse_filder,&temp.vector);
+				for (int j=0;j<pulse_filder->size;j++)
+				{
+					if (gsl_vector_get(pulse_filder,j) > (*reconstruct_init)->threshold)
+					{
+						firstSample_pulse = gsl_vector_get(pulse_filder,j);
+
+						break;
+					}
+				}
+				pulse = gsl_vector_alloc(resize_mf);
+				temp = gsl_vector_subvector(recordAux,tstartSamplesRecord,resize_mf);
+				gsl_vector_memcpy(pulse,&temp.vector);
+
 				// Filter
-				filtergsl_aux = gsl_vector_alloc(matchedfilters->size2);
-				if (getMatchedFilter(runF0orB0val, (*pulsesInRecord)->pulses_detected[i].pulse_height, estenergylibrary, matchedfilters, matchedfiltersb0, &filtergsl_aux))
+				filtergsl_aux= gsl_vector_alloc(matchedfilters->size2);
+				if (getMatchedFilterProduction(runF0orB0val, (*reconstruct_init)->threshold, tstartSamplesRecord, pulse, pulse_filder, firstSample_pulse, firstSamples, templateslibrary_filder, matchedfilters, matchedfiltersb0, &filtergsl_aux))
 				{
 					message = "Cannot run routine getMatchedFilter";
 					EP_EXIT_ERROR(message,EPFAIL);
 				}
-				resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
-				resize_mf = pow(2,floor(log2(resize_mf)));
+
 				filtergsl = gsl_vector_alloc(resize_mf);			// Filter values
 				temp = gsl_vector_subvector(filtergsl_aux,0,resize_mf);
 				gsl_vector_memcpy(filtergsl,&temp.vector);
 				gsl_vector_free(filtergsl_aux);
 
-				// Pulse
-				tstartSamplesRecord = floor((*pulsesInRecord)->pulses_detected[i].Tstart/record->delta_t+0.5)-tstartRecordSamples;
-				pulse = gsl_vector_alloc(resize_mf);
-				temp = gsl_vector_subvector(recordAux,tstartSamplesRecord,resize_mf);
-				gsl_vector_memcpy(pulse,&temp.vector);
 				// Calculate the optimal filter
 				if (calculus_optimalFilter (filtergsl, filtergsl->size, 1/record->delta_t, runF0orB0val, freqgsl, csdgsl, &optimalfilter_SHORT, &optimalfilter_f_SHORT, &optimalfilter_FFT_SHORT, &normalizationFactor))
 				{
 					message = "Cannot run routine calculus_optimalFilter";
 				    EP_EXIT_ERROR(message,EPFAIL);
 				}
+
 				// Calculate the uncalibrated energy of each pulse
 				if (calculateUCEnergy(pulse,optimalfilter_SHORT,TorF,normalizationFactor,1/record->delta_t,&uncE))
 				{
 					message = "Cannot run calculateUCEnergy routine for pulse i=" + boost::lexical_cast<std::string>(i);
 					EP_PRINT_ERROR(message,EPFAIL);
 				}
+
 				// Subtract pulse model from the record
 				if (find_model(uncE, energylibrary, templateslibraryb0, &model, temporalFile))
 				{
 				    message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i);
 				    EP_PRINT_ERROR(message,EPFAIL);
 				}
-				for (int j=tstartSamplesRecord;j<tstartSamplesRecord+(*reconstruct_init)->pulse_length;j++)
+				for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+(*reconstruct_init)->pulse_length);j++)
 				{
 					gsl_vector_set(recordAux,j,gsl_vector_get(recordAux,j)-gsl_vector_get(model,j-tstartSamplesRecord));
 				}
@@ -2121,7 +2171,7 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 				gsl_vector_set_zero(optimalfilter_SHORT);
 				gsl_vector_set_zero(optimalfilter_f_SHORT);
 				gsl_vector_set_zero(optimalfilter_FFT_SHORT);
-				
+
 				if ((*reconstruct_init)->intermediate == 1)
 				{
 					if (writeFilterHDU(reconstruct_init, i, 0.0, 0.0, optimalfilter_SHORT, optimalfilter_f_SHORT, optimalfilter_FFT_SHORT, &dtcObject, create))
@@ -2138,18 +2188,29 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 			gsl_vector_free(optimalfilter_SHORT);
 			gsl_vector_free(optimalfilter_f_SHORT);
 			gsl_vector_free(optimalfilter_FFT_SHORT);
-			if((*pulsesInRecord)->pulses_detected[i].quality == 0)gsl_vector_free(pulse);
-			if((*pulsesInRecord)->pulses_detected[i].quality == 0)gsl_vector_free(filtergsl);
+			if((*pulsesInRecord)->pulses_detected[i].quality == 0)
+			{
+				gsl_vector_free(pulse);
+				gsl_vector_free(pulse_filder);
+				gsl_vector_free(filtergsl);
+				//gsl_vector_free(model);
+			}
 		} // End for
+
 		gsl_vector_free(recordAux);
+		gsl_vector_free(recordAux_filder);
 		gsl_vector_free(model);
 	} // End if
+
 	gsl_vector_free(energylibrary);
 	gsl_vector_free(estenergylibrary);
 	gsl_matrix_free(templateslibrary);
+	gsl_matrix_free(templateslibrary_filder);
 	gsl_matrix_free(templateslibraryb0);
 	gsl_matrix_free(matchedfilters);
 	gsl_matrix_free(matchedfiltersb0);
+	gsl_vector_free(firstSamples);
+	//gsl_vector_free(indexfirstSamples);
 
 	gsl_vector_free(freqgsl);
 	gsl_vector_free(csdgsl);
@@ -2164,7 +2225,7 @@ void runFilter(TesRecord* record, int nRecord_runFilter, int lastRecord_runFilte
 *
 ******************************************************************************/
 int initLibraryFilter(ReconstructInitSIRENA* reconstruct_init_initLibraryFilter, gsl_vector **energylibrary_initLibraryFilter, gsl_vector **estenergylibrary_initLibraryFilter,
-		gsl_matrix **templateslibrary_initLibraryFilter, gsl_matrix **templateslibraryb0_initLibraryFilter,
+		gsl_matrix **templateslibrary_initLibraryFilter, gsl_matrix **templateslibrary_filder_initLibraryFilter, gsl_matrix **templateslibraryb0_initLibraryFilter,
 		gsl_matrix **matchedfilters_initLibraryFilter, gsl_matrix **matchedfiltersb0_initLibraryFilter)
 {
 	int nummodels = reconstruct_init_initLibraryFilter->library_collection->ntemplates;
@@ -2173,6 +2234,7 @@ int initLibraryFilter(ReconstructInitSIRENA* reconstruct_init_initLibraryFilter,
 	*energylibrary_initLibraryFilter = gsl_vector_alloc(nummodels);					// reconstruct_init->LibraryCollection->energies
 	*estenergylibrary_initLibraryFilter = gsl_vector_alloc(nummodels);				// reconstruct_init->LibraryCollection->pulse_heights
 	*templateslibrary_initLibraryFilter = gsl_matrix_alloc(nummodels,eventsz_initLibraryFilter);	// All the pulse templates
+	*templateslibrary_filder_initLibraryFilter = gsl_matrix_alloc(nummodels,eventsz_initLibraryFilter);	// All the filtered and derivative pulse templates
 	*templateslibraryb0_initLibraryFilter = gsl_matrix_alloc(nummodels,eventsz_initLibraryFilter);	// All the pulse templates_B0
 	*matchedfilters_initLibraryFilter = gsl_matrix_alloc(nummodels,eventsz_initLibraryFilter);		// All the matched_filters
 	*matchedfiltersb0_initLibraryFilter = gsl_matrix_alloc(nummodels,eventsz_initLibraryFilter);	// All the matched_filters_B0
@@ -2187,7 +2249,7 @@ int initLibraryFilter(ReconstructInitSIRENA* reconstruct_init_initLibraryFilter,
 *
 ******************************************************************************/
 int loadLibraryFilter(ReconstructInitSIRENA* reconstruct_init_loadLibraryFilter, gsl_vector **energylibrary_loadLibraryFilter, gsl_vector **estenergylibrary_loadLibraryFilter,
-		gsl_matrix **templateslibrary_loadLibraryFilter, gsl_matrix **templateslibraryb0_loadLibraryFilter,
+		gsl_matrix **templateslibrary_loadLibraryFilter, gsl_matrix **templateslibrary_filder_loadLibraryFilter, gsl_matrix **templateslibraryb0_loadLibraryFilter,
 		gsl_matrix **matchedfilters_loadLibraryFilter, gsl_matrix **matchedfiltersb0_loadLibraryFilter)
 {
 	for (int i=0;i<reconstruct_init_loadLibraryFilter->library_collection->ntemplates;i++)
@@ -2197,6 +2259,7 @@ int loadLibraryFilter(ReconstructInitSIRENA* reconstruct_init_loadLibraryFilter,
 		for (int j=0;j<reconstruct_init_loadLibraryFilter->library_collection->pulse_templates->template_duration;j++)
 		{
 			gsl_matrix_set(*templateslibrary_loadLibraryFilter,i,j,(reconstruct_init_loadLibraryFilter->library_collection->pulse_templates[i].ptemplate[j]));
+			gsl_matrix_set(*templateslibrary_filder_loadLibraryFilter,i,j,(reconstruct_init_loadLibraryFilter->library_collection->pulse_templates_filder[i].ptemplate[j]));
 			gsl_matrix_set(*templateslibraryb0_loadLibraryFilter,i,j,(reconstruct_init_loadLibraryFilter->library_collection->pulse_templates_B0[i].ptemplate[j]));
 			gsl_matrix_set(*matchedfilters_loadLibraryFilter,i,j,(reconstruct_init_loadLibraryFilter->library_collection->matched_filters[i].mfilter[j]));
 			gsl_matrix_set(*matchedfiltersb0_loadLibraryFilter,i,j,(reconstruct_init_loadLibraryFilter->library_collection->matched_filters_B0[i].mfilter[j]));
@@ -2636,13 +2699,11 @@ int getMatchedFilter(int runF0orB0val_getMatchedFilter, double pheight, gsl_vect
 	// Obtain the matched filter by interpolating
 	if (runF0orB0val_getMatchedFilter == 0)
 	{
-
 		if (find_matchedfilter(pheight, estenergylibrary_getMatchedFilter, matchedfilters_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
 		{
 			message = "Cannot run routine find_matchedfilter for filter interpolation";
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
-	  
 	}
 	else if (runF0orB0val_getMatchedFilter == 1)
 	{
@@ -2659,6 +2720,123 @@ int getMatchedFilter(int runF0orB0val_getMatchedFilter, double pheight, gsl_vect
 
 
 /***** SECTION BX ************************************************************
+* getMatchedFilterProduction: This function ...
+*
+******************************************************************************/
+int getMatchedFilterProduction(int runF0orB0val_getMatchedFilter, double threshold, double tstart_pulse, gsl_vector *pulse, gsl_vector *pulse_filder, double firstSample_pulse, gsl_vector *firstSamples, gsl_matrix *models, gsl_matrix *matchedfilters_getMatchedFilter, gsl_matrix *matchedfiltersb0_getMatchedFilter, gsl_vector **matchedfilter_getMatchedFilter)
+{
+	string message = "";
+
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// Provisional => To be deleted in future
+	FILE * temporalFile;
+	char temporalFileName[256];
+	sprintf(temporalFileName,"auxfile");
+	strcat(temporalFileName,".txt");
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	if (tstart_pulse == 0) // Truncated pulse at the beginnig of the record
+	{
+		// Establish a new threshold with the first sample (a bit fewer) => New firstSamplesgsl
+		gsl_vector *firstSamples_aux = gsl_vector_alloc(models->size1);
+		gsl_vector_set_all(firstSamples_aux,0);
+		gsl_vector *indexfirstSamples_aux = gsl_vector_alloc(models->size1);
+		gsl_vector_set_all(indexfirstSamples_aux,0);
+
+		if (firstSampleModels (models, gsl_vector_get(pulse_filder,0)-gsl_vector_get(pulse_filder,0)/100, &firstSamples_aux, &indexfirstSamples_aux, temporalFile))
+		{
+		    message = "Cannot run firstSampleModels routine to get the value of the first sample over the threshold and the index of that sample";
+		    EP_PRINT_ERROR(message,EPFAIL);
+		}
+
+		// Obtain the matched filter by interpolating
+		if (runF0orB0val_getMatchedFilter == 0)
+		{
+			if (find_matchedfilter(firstSample_pulse, firstSamples_aux, matchedfilters_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
+			{
+				message = "Cannot run routine find_matchedfilter for filter interpolation";
+				EP_EXIT_ERROR(message,EPFAIL);
+			}
+		}
+		else if (runF0orB0val_getMatchedFilter == 1)
+		{
+			if (find_matchedfilter(firstSample_pulse, firstSamples_aux, matchedfiltersb0_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
+			{
+				message = "Cannot run routine find_matchedfilter for filter interpolation";
+				EP_EXIT_ERROR(message,EPFAIL);
+			}
+		}
+
+		gsl_vector_free(firstSamples_aux);
+		gsl_vector_free(indexfirstSamples_aux);
+	}
+	else
+	{
+		// Obtain the matched filter by interpolating
+		if (runF0orB0val_getMatchedFilter == 0)
+		{
+			if (find_matchedfilter(firstSample_pulse, firstSamples, matchedfilters_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
+			{
+				message = "Cannot run routine find_matchedfilter for filter interpolation";
+				EP_EXIT_ERROR(message,EPFAIL);
+			}
+		}
+		else if (runF0orB0val_getMatchedFilter == 1)
+		{
+			if (find_matchedfilter(firstSample_pulse, firstSamples, matchedfiltersb0_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
+			{
+				message = "Cannot run routine find_matchedfilter for filter interpolation";
+				EP_EXIT_ERROR(message,EPFAIL);
+			}
+		}
+	}
+
+	return(EPOK);
+}
+/*xxxx end of SECTION BX xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION BX ************************************************************
+* getMatchedFilter: This function ...
+*
+******************************************************************************/
+/*int getMatchedFilterNEW
+	string message = "";
+
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// Provisional => To be deleted in future
+	FILE * temporalFile;
+	char temporalFileName[256];
+	sprintf(temporalFileName,"auxfile");
+	strcat(temporalFileName,".txt");
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	// Obtain the matched filter by interpolating
+	if (runF0orB0val_getMatchedFilter == 0)
+	{
+		if (find_matchedfilter(pheight, estenergylibrary_getMatchedFilter, matchedfilters_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
+		{
+			message = "Cannot run routine find_matchedfilter for filter interpolation";
+			EP_EXIT_ERROR(message,EPFAIL);
+		}
+	}
+	else if (runF0orB0val_getMatchedFilter == 1)
+	{
+		if (find_matchedfilter(pheight, estenergylibrary_getMatchedFilter, matchedfiltersb0_getMatchedFilter, matchedfilter_getMatchedFilter, temporalFile))
+		{
+			message = "Cannot run routine find_matchedfilter for filter interpolation";
+			EP_EXIT_ERROR(message,EPFAIL);
+		}
+	}
+
+	return(EPOK);
+}*/
+/*xxxx end of SECTION BX xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+
+
+/***** SECTION BX ************************************************************
 * find_matchedfilter:
 ****************************************/
 int find_matchedfilter(double ph, gsl_vector *energiesvalues, gsl_matrix *matchedfilters, gsl_vector **matchedfilterFound, FILE * temporalFile)
@@ -2667,12 +2845,11 @@ int find_matchedfilter(double ph, gsl_vector *energiesvalues, gsl_matrix *matche
 	string message = "";
 	long nummodels = energiesvalues->size;
 
-	
-	if (ph <= gsl_vector_get(energiesvalues,0))
+	if (ph < gsl_vector_get(energiesvalues,0))
 	{
 		gsl_matrix_get_row(*matchedfilterFound,matchedfilters,0);
 	}
-	else if (ph >= gsl_vector_get(energiesvalues,nummodels-1))
+	else if (ph > gsl_vector_get(energiesvalues,nummodels-1))
 	{
 		gsl_matrix_get_row(*matchedfilterFound,matchedfilters,nummodels-1);
 	}
@@ -2701,7 +2878,6 @@ int find_matchedfilter(double ph, gsl_vector *energiesvalues, gsl_matrix *matche
 				    message = "Cannot run interpolate_model routine for model interpolation";
 				    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 				}
-				//*matchedfilterFound = gsl_vector_alloc(matchedfilterAux->size);
 				gsl_vector_memcpy(*matchedfilterFound,matchedfilterAux);
 
 				gsl_vector_free(matchedfilterAux);
@@ -3273,13 +3449,15 @@ void runEnergy(ReconstructInitSIRENA** reconstruct_init, PulsesCollection** puls
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 
-	if((*reconstruct_init)->intermediate==1){
+	if ((*reconstruct_init)->intermediate == 1)
+	{
 		if (writeEnergy(reconstruct_init,*pulsesInRecord, create))
 		{
 			message = "Cannot run writeEnergy in runEnergy";
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
 	}
+
 	return;
 }
 /*xxxx end of SECTION C xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

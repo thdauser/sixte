@@ -30,7 +30,9 @@
 
 extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file,
 		char* const library_file, double tauFall,int pulse_length, double scaleFactor, double samplesUp,
-		double nSgms, int crtLib, int mode, double LrsT, double LbT,char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF, double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int* const status){
+		double nSgms, int crtLib, int mode, double LrsT, double LbT,char* const noise_file, char* filter_domain, char* filter_method,
+		int calibLQ,  double b_cF, double c_cF, double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2,
+		double monoenergy2, char clobber, int* const status){
 
 	// Load LibraryCollection structure if library file exists
 	int exists=0;
@@ -48,9 +50,15 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 		EP_PRINT_ERROR((char*)"Error accessing library file: it does not exists ",EPFAIL); 
 		*status=EPFAIL;return;
 	}
+	if (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration)
+	{
+		EP_PRINT_ERROR("Templates length in the library file must be at least as the pulse length",EPFAIL);
+		*status=EPFAIL;return;
+	}
 	//Load NoiseSpec structure
 	reconstruct_init->noise_spectrum = NULL;
-	if(crtLib==0){
+	if (crtLib == 0)
+	{
 		exists=0;
 		if(fits_file_exists(noise_file, &exists, status)){
 			EP_PRINT_ERROR("Error checking if noise file exists",*status);
@@ -58,7 +66,7 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 		}
 		reconstruct_init->noise_spectrum = getNoiseSpec(noise_file, status);
 		if(*status){
-			EP_PRINT_ERROR((char*)"Error in getNoiseSpec",EPFAIL); 
+			EP_PRINT_ERROR((char*)"Error in getNoiseSpec",EPFAIL);
 			*status=EPFAIL;return;
 		}
 	}
@@ -66,6 +74,7 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	//Get pulse height  CHECK THAT!!!!!!!!!!!!!!!!!!!!!
 	strcpy(reconstruct_init->record_file,record_file);
 	strcpy(reconstruct_init->library_file,library_file);
+	reconstruct_init->threshold 	= 0.0;
 	reconstruct_init->pulse_length 	= pulse_length;
 	reconstruct_init->tauFall       = tauFall;
 	reconstruct_init->scaleFactor  	= scaleFactor;
@@ -121,6 +130,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 				runEnergy(&reconstruct_init, &pulsesInRecord);
 			}
 		}
+
 		if (nRecord == 1)
 		{
 			(*pulsesAll)->ndetpulses = pulsesInRecord->ndetpulses;
@@ -155,6 +165,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 				(*pulsesAll)->pulses_detected[i+pulsesAllAux->ndetpulses] = pulsesInRecord->pulses_detected[i];
 			}
 		}
+		
 		// Fill TesEventList structure
 		event_list->index = pulsesInRecord->ndetpulses;
 		event_list->energies = new double[event_list->index];
@@ -196,6 +207,7 @@ extern "C" ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status){
 	
 	// Initialize values for SIRENA
 	strcpy(reconstruct_init->library_file,"");
+	reconstruct_init->threshold=0.;
 	reconstruct_init->pulse_length=0;	
 	reconstruct_init->tauFall=0.;
 	reconstruct_init->scaleFactor=0.;
