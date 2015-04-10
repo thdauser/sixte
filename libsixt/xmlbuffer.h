@@ -66,6 +66,8 @@ struct XMLPreParseData {
   int loop_depth;
   /** Start, end, and increment of the outermost loop. */
   int loop_start, loop_end, loop_increment;
+  /** Offset parameter */
+  double offset;
   /** Loop counter variable. This variable can be used in the XML text
       as $[NAME]. */
   char loop_variable[MAXMSG];
@@ -84,6 +86,8 @@ struct XMLHexParseData {
 	double radius;
 	/** Pitch [m] in the two directions between the pixels */
 	double pixelpitch;
+	/** Bool to know whether we put the a cross or a pixel in the middle */
+	int cross;
 	/** Bool to know whether we are still in the loop */
 	char inside_loop;
 

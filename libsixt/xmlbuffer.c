@@ -153,6 +153,8 @@ static void expandXMLElementStart(void* data, const char* el,
 	  mydata->loop_increment=atoi(attr[ii+1]);
 	} else if (!strcmp(Uattribute, "VARIABLE")) {
 	  strcpy(mydata->loop_variable, attr[ii+1]);
+	} else if (!strcmp(Uattribute, "OFFSET")) {
+	  mydata->offset=atof(attr[ii+1]);
 	}
 
 	ii+=2;
@@ -478,10 +480,10 @@ static void expandXMLElementEnd(void* data, const char* el)
 	copyXMLBuffer(replacedBuffer, mydata->loop_buffer, &mydata->status);
 	CHECK_STATUS_VOID(mydata->status);
 
-	// Replace $variables by integer values.
+	// Replace $variables by double values.
 	if (strlen(replacedBuffer->text)>0) {
 	  char stringvalue[MAXMSG];
-	  sprintf(stringvalue, "%d", ii);
+	  sprintf(stringvalue, "%f", ii+mydata->offset);
 	  replaceInXMLBuffer(replacedBuffer, mydata->loop_variable,
 			     stringvalue, &mydata->status);
 	  CHECK_STATUS_VOID(mydata->status);
@@ -764,6 +766,7 @@ void expandXML(struct XMLBuffer* const buffer, int* const status)
     data.loop_start    =0;
     data.loop_end      =0;
     data.loop_increment=0;
+    data.offset        =0;
     data.output_buffer =newXMLBuffer(status);
     data.loop_buffer   =newXMLBuffer(status);
     data.status=EXIT_SUCCESS;
@@ -896,6 +899,13 @@ static void expandHexagonElementStart(void* data, const char* el,
 			  mydata->radius=atof(attr[ii+1]);
 		  } else if (!strcmp(Uattribute, "PIXELPITCH")) {
 			  mydata->pixelpitch=atof(attr[ii+1]);
+		  } else if (!strcmp(Uattribute, "CROSS")) {
+			  mydata->cross=atoi(attr[ii+1]);
+			  if(mydata->cross && mydata->cross!=1){
+				  mydata->status=EXIT_FAILURE;
+				  SIXT_ERROR("Cross XML parameter can only be equal to 1 or 0");
+				  return;
+			  }
 		  }
 		  ii+=2;
 	  }
@@ -964,21 +974,32 @@ static void expandHexagonElementEnd(void* data, const char* el)
 	  // Check if the outer loop is finished.
 	  // In that case add the loop buffer n-times to the output buffer.
 	  if (mydata->inside_loop) {
-		  double fov_circle_radius = cos(M_PI/6.)*mydata->radius;
 		  int n_pixels_line = 0;
 		  double current_radius = 0.;
-		  int ii,posx,posy;
+		  int ii;
+		  double posx,posy;
 		  int n_pixels_tot=0;
 
 		  // Upper part of the hexagon
-		  double current_height = 0.;
-		  int line_number = 0;
-		  while (current_height+.5*mydata->pixelpitch < fov_circle_radius){
+		  double current_height;
+		  float line_number;
+		  if(mydata->cross){
+			  current_height=.5*mydata->pixelpitch;
+			  line_number=.5;
+		  } else {
+			  current_height=0.;
+			  line_number=0;
+		  }
+		  while (current_height < 0.5*mydata->radius*sqrt(3)){
 			  current_radius = mydata->radius - current_height/tan(M_PI/3.);
-			  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch)+1;
+			  if (mydata->cross){
+				  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch+.5);
+			  } else {
+				  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch)+1;
+			  }
 			  n_pixels_tot+=n_pixels_line;
 			  for(ii=0;ii<n_pixels_line;ii++){
-				  posx = ii-(n_pixels_line-1)/2;
+				  posx = ii-(n_pixels_line-1)/2.;
 				  posy = line_number;
 
 				  // Copy loop buffer to separate XMLBuffer
@@ -994,11 +1015,11 @@ static void expandHexagonElementEnd(void* data, const char* el)
 					  replaceInXMLBuffer(replacedBuffer, "$p",
 							  stringvalue, &mydata->status);
 					  CHECK_STATUS_VOID(mydata->status);
-					  sprintf(stringvalue, "%d",posx);
+					  sprintf(stringvalue, "%g",posx);
 					  replaceInXMLBuffer(replacedBuffer, "$x",
 							  stringvalue, &mydata->status);
 					  CHECK_STATUS_VOID(mydata->status);
-					  sprintf(stringvalue, "%d",posy);
+					  sprintf(stringvalue, "%g",posy);
 					  replaceInXMLBuffer(replacedBuffer, "$y",
 							  stringvalue, &mydata->status);
 					  CHECK_STATUS_VOID(mydata->status);
@@ -1016,14 +1037,23 @@ static void expandHexagonElementEnd(void* data, const char* el)
 		  }
 
 		  // Lower part of the hexagon
-		  current_height = mydata->pixelpitch;
-		  line_number = -1;
-		  while (current_height+.5*mydata->pixelpitch < fov_circle_radius){
+		  if(mydata->cross){
+			  current_height=.5*mydata->pixelpitch;
+			  line_number = -.5;
+		  } else {
+			  current_height = mydata->pixelpitch;
+			  line_number = -1;
+		  }
+		  while (current_height < 0.5*mydata->radius*sqrt(3)){
 			  current_radius = mydata->radius - current_height/tan(M_PI/3.);
-			  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch)+1;
+			  if (mydata->cross){
+				  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch+.5);
+			  } else {
+				  n_pixels_line = 2*floor(current_radius/mydata->pixelpitch)+1;
+			  }
 			  n_pixels_tot+=n_pixels_line;
 			  for(ii=0;ii<n_pixels_line;ii++){
-				  posx = ii-(n_pixels_line-1)/2;
+				  posx = ii-(n_pixels_line-1)/2.;
 				  posy = line_number;
 
 				  // Copy loop buffer to separate XMLBuffer
@@ -1039,11 +1069,11 @@ static void expandHexagonElementEnd(void* data, const char* el)
 					  replaceInXMLBuffer(replacedBuffer, "$p",
 							  stringvalue, &mydata->status);
 					  CHECK_STATUS_VOID(mydata->status);
-					  sprintf(stringvalue, "%d",posx);
+					  sprintf(stringvalue, "%f",posx);
 					  replaceInXMLBuffer(replacedBuffer, "$x",
 							  stringvalue, &mydata->status);
 					  CHECK_STATUS_VOID(mydata->status);
-					  sprintf(stringvalue, "%d",posy);
+					  sprintf(stringvalue, "%f",posy);
 					  replaceInXMLBuffer(replacedBuffer, "$y",
 							  stringvalue, &mydata->status);
 					  CHECK_STATUS_VOID(mydata->status);
@@ -1111,6 +1141,7 @@ void expandHexagon(struct XMLBuffer* const buffer, int* const status)
   data.radius = 0.;
   data.pixelpitch = 0.;
   data.inside_loop = 0;
+  data.cross=0;
   data.output_buffer =newXMLBuffer(status);
   data.loop_buffer   =newXMLBuffer(status);
   data.status=EXIT_SUCCESS;

@@ -347,85 +347,128 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 		xmlparsedata->det->sx=getXMLAttributeDouble(attr, "XOFF");
 		xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");
+		for (int i=0;i<xmlparsedata->det->npix;i++){
+			xmlparsedata->det->pix[i].TESNoise=NULL;
+			xmlparsedata->det->pix[i].rmffile=NULL;
+		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
 			xmlparsedata->status=EXIT_FAILURE;
-			SIXT_ERROR("Number of pixels given at pixdetector level does not match the number of pixel subelements");
+			SIXT_ERROR("Number of pixels given at pixdetector level lower than the number of pixel subelements");
 			return;
 		}
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=NULL;
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].rmffile=NULL;
 		xmlparsedata->det->inpixel=1;
 	} else if (!strcmp(Uelement, "SHAPE")){
-		if (!xmlparsedata->det->inpixel){
+		double posx, posy;
+		posx=getXMLAttributeDouble(attr, "POSX");
+		posy=getXMLAttributeDouble(attr, "POSY");
+		if (xmlparsedata->det->inpixel){
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].sx=posx*getXMLAttributeDouble(attr, "DELX");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].sy=posy*getXMLAttributeDouble(attr, "DELY");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].width=getXMLAttributeDouble(attr, "WIDTH");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].height=getXMLAttributeDouble(attr, "HEIGHT");
+		} else {
 			xmlparsedata->status=EXIT_FAILURE;
 			SIXT_ERROR("XML syntax error: shape used outside of pixel");
 			return;
 		}
-		int posx, posy;
-		posx=getXMLAttributeInt(attr, "POSX");
-		posy=getXMLAttributeInt(attr, "POSY");
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].sx=(double)posx*getXMLAttributeDouble(attr, "DELX");
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].sy=(double)posy*getXMLAttributeDouble(attr, "DELY");
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].width=getXMLAttributeDouble(attr, "WIDTH");
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].height=getXMLAttributeDouble(attr, "HEIGHT");
 	} else if (!strcmp(Uelement,"PULSESHAPE")){
-		if (!xmlparsedata->det->inpixel){
-			xmlparsedata->status=EXIT_FAILURE;
-			SIXT_ERROR("XML syntax error: pulseshape used outside of pixel");
-			return;
+		if (xmlparsedata->det->inpixel){
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].calfactor=getXMLAttributeDouble(attr, "CALFACTOR");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].ADCOffset=getXMLAttributeInt(attr, "ADCOFFSET");
+			getXMLAttributeString(attr, "TESPROFVER", xmlparsedata->det->pix[xmlparsedata->det->cpix].version);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].profVersionID=-1;
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				xmlparsedata->det->pix[i].calfactor=getXMLAttributeDouble(attr, "CALFACTOR");
+				xmlparsedata->det->pix[i].ADCOffset=getXMLAttributeInt(attr, "ADCOFFSET");
+				getXMLAttributeString(attr, "TESPROFVER", xmlparsedata->det->pix[i].version);
+				xmlparsedata->det->pix[i].profVersionID=-1;
+			}
 		}
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].calfactor=getXMLAttributeDouble(attr, "CALFACTOR");
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].ADCOffset=getXMLAttributeInt(attr, "ADCOFFSET");
-		getXMLAttributeString(attr, "TESPROFVER", xmlparsedata->det->pix[xmlparsedata->det->cpix].version);
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].profVersionID=-1;
 	} else if (!strcmp(Uelement, "TESWHITENOISE")) {
-		if (!xmlparsedata->det->inpixel){
-			xmlparsedata->status=EXIT_FAILURE;
-			SIXT_ERROR("XML syntax error: teswhitenoise used outside of pixel");
-			return;
+		if (xmlparsedata->det->inpixel){
+			if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise==NULL){
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=newTESNoise(&(xmlparsedata->status));
+				CHECK_STATUS_VOID(xmlparsedata->status);
+			}
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->WhiteRMS=getXMLAttributeDouble(attr, "RMS");
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				if(xmlparsedata->det->pix[i].TESNoise==NULL){
+					xmlparsedata->det->pix[i].TESNoise=newTESNoise(&(xmlparsedata->status));
+					CHECK_STATUS_VOID(xmlparsedata->status);
+				}
+				xmlparsedata->det->pix[i].TESNoise->WhiteRMS=getXMLAttributeDouble(attr, "RMS");
+			}
 		}
-		if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise==NULL){
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=newTESNoise(&(xmlparsedata->status));
-			CHECK_STATUS_VOID(xmlparsedata->status);
-		}
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->WhiteRMS=getXMLAttributeDouble(attr, "RMS");
 	} else if (!strcmp(Uelement, "TESOOFNOISE")) {
-		if (!xmlparsedata->det->inpixel){
-			xmlparsedata->status=EXIT_FAILURE;
-			SIXT_ERROR("XML syntax error: tesoofnoise used outside of pixel");
-			return;
+		if (xmlparsedata->det->inpixel){
+			if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise==NULL){
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=newTESNoise(&(xmlparsedata->status));
+				CHECK_STATUS_VOID(xmlparsedata->status);
+			}
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->OoFRMS=getXMLAttributeDouble(attr, "RMS");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->OoFKnee=getXMLAttributeDouble(attr, "FKNEE");
+			if (!xmlparsedata->det->oof_activated){
+				xmlparsedata->det->oof_activated=1;
+			}
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				if(xmlparsedata->det->pix[i].TESNoise==NULL){
+					xmlparsedata->det->pix[i].TESNoise=newTESNoise(&(xmlparsedata->status));
+					CHECK_STATUS_VOID(xmlparsedata->status);
+				}
+				xmlparsedata->det->pix[i].TESNoise->OoFRMS=getXMLAttributeDouble(attr, "RMS");
+				xmlparsedata->det->pix[i].TESNoise->OoFKnee=getXMLAttributeDouble(attr, "FKNEE");
+			}
+			xmlparsedata->det->oof_activated=1;
 		}
-		if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise==NULL){
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=newTESNoise(&(xmlparsedata->status));
-			CHECK_STATUS_VOID(xmlparsedata->status);
-		}
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->OoFRMS=getXMLAttributeDouble(attr, "RMS");
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->OoFKnee=getXMLAttributeDouble(attr, "FKNEE");
-		xmlparsedata->det->oof_activated=1;
 	} else if (!strcmp(Uelement, "TESNOISEFILTER")) {
-		if (!xmlparsedata->det->inpixel){
-			xmlparsedata->status=EXIT_FAILURE;
-			SIXT_ERROR("XML syntax error: tesnoisefilter used outside of pixel");
-			return;
+		if (xmlparsedata->det->inpixel){
+			if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise==NULL){
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=newTESNoise(&(xmlparsedata->status));
+				CHECK_STATUS_VOID(xmlparsedata->status);
+			}
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->H0=getXMLAttributeDouble(attr, "NORM");
+			xmlparsedata->det->tesnoisefilter=1;
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				if(xmlparsedata->det->pix[i].TESNoise==NULL){
+					xmlparsedata->det->pix[i].TESNoise=newTESNoise(&(xmlparsedata->status));
+					CHECK_STATUS_VOID(xmlparsedata->status);
+				}
+				xmlparsedata->det->pix[i].TESNoise->H0=getXMLAttributeDouble(attr, "NORM");
+				xmlparsedata->det->tesnoisefilter=1;
+				xmlparsedata->det->pix[i].TESNoise->Np=0;
+				xmlparsedata->det->pix[i].TESNoise->Nz=0;
+			}
 		}
-		if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise==NULL){
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise=newTESNoise(&(xmlparsedata->status));
-			CHECK_STATUS_VOID(xmlparsedata->status);
-		}
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->H0=getXMLAttributeDouble(attr, "NORM");
-		xmlparsedata->det->tesnoisefilter=1;
 	} else if (!strcmp(Uelement, "NOISEPOLE")) {
 		if(xmlparsedata->det->tesnoisefilter==1){
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Np++;
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles=(double*)realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles,
-					xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Np*sizeof(double));
-			if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles==NULL){
-				xmlparsedata->status=EXIT_FAILURE;
-				SIXT_ERROR("Realloc of noise poles array failed.");
-				return;
+			if(xmlparsedata->det->inpixel){
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Np++;
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles=(double*)realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles,
+						xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Np*sizeof(double));
+				if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles==NULL){
+					xmlparsedata->status=EXIT_FAILURE;
+					SIXT_ERROR("Realloc of noise poles array failed.");
+					return;
+				}
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles[xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Np-1]=getXMLAttributeDouble(attr, "POLE");
+			} else {
+				for (int i=0;i<xmlparsedata->det->npix;i++){
+					xmlparsedata->det->pix[i].TESNoise->Np++;
+					xmlparsedata->det->pix[i].TESNoise->Poles=(double*)realloc(xmlparsedata->det->pix[i].TESNoise->Poles,
+							xmlparsedata->det->pix[i].TESNoise->Np*sizeof(double));
+					if(xmlparsedata->det->pix[i].TESNoise->Poles==NULL){
+						xmlparsedata->status=EXIT_FAILURE;
+						SIXT_ERROR("Realloc of noise poles array failed.");
+						return;
+					}
+					xmlparsedata->det->pix[i].TESNoise->Poles[xmlparsedata->det->pix[i].TESNoise->Np-1]=getXMLAttributeDouble(attr, "POLE");
+				}
 			}
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Poles[xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Np-1]=getXMLAttributeDouble(attr, "POLE");
 		}else{
 			xmlparsedata->status=EXIT_FAILURE;
 			SIXT_ERROR("XML syntax error: noisepole used outside of tesnoisefilter.");
@@ -433,30 +476,48 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 	} else if (!strcmp(Uelement, "NOISEZERO")) {
 		if(xmlparsedata->det->tesnoisefilter==1){
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Nz++;
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros=(double*)realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros,
-					xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Nz*sizeof(double));
-			if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros==NULL){
-				xmlparsedata->status=EXIT_FAILURE;
-				SIXT_ERROR("Realloc of noise zeros array failed.");
-				return;
+			if(xmlparsedata->det->inpixel){
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Nz++;
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros=(double*)realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros,
+						xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Nz*sizeof(double));
+				if(xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros==NULL){
+					xmlparsedata->status=EXIT_FAILURE;
+					SIXT_ERROR("Realloc of noise zeros array failed.");
+					return;
+				}
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros[xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Nz-1]=getXMLAttributeDouble(attr, "ZERO");
+			} else {
+				for (int i=0;i<xmlparsedata->det->npix;i++){
+					xmlparsedata->det->pix[i].TESNoise->Nz++;
+					xmlparsedata->det->pix[i].TESNoise->Zeros=(double*)realloc(xmlparsedata->det->pix[i].TESNoise->Zeros,
+							xmlparsedata->det->pix[i].TESNoise->Nz*sizeof(double));
+					if(xmlparsedata->det->pix[i].TESNoise->Zeros==NULL){
+						xmlparsedata->status=EXIT_FAILURE;
+						SIXT_ERROR("Realloc of noise zeros array failed.");
+						return;
+					}
+					xmlparsedata->det->pix[i].TESNoise->Zeros[xmlparsedata->det->pix[i].TESNoise->Nz-1]=getXMLAttributeDouble(attr, "ZERO");
+				}
 			}
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Zeros[xmlparsedata->det->pix[xmlparsedata->det->cpix].TESNoise->Nz-1]=getXMLAttributeDouble(attr, "ZERO");
 		}else{
 			xmlparsedata->status=EXIT_FAILURE;
 			SIXT_ERROR("XML syntax error: noisezero used outside of tesnoisefilter.");
 			return;
 		}
 	} else if (!strcmp(Uelement, "PIXRMF")) {
-		if (!xmlparsedata->det->inpixel){
-			xmlparsedata->status=EXIT_FAILURE;
-			SIXT_ERROR("XML syntax error: rmf used outside of pixel");
-			return;
+		if (xmlparsedata->det->inpixel){
+			char rmffile[MAXFILENAME];
+			getXMLAttributeString(attr, "FILENAME", rmffile);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].rmffile=strdup(rmffile);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].rmfID=-1;
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				char rmffile[MAXFILENAME];
+				getXMLAttributeString(attr, "FILENAME", rmffile);
+				xmlparsedata->det->pix[i].rmffile=strdup(rmffile);
+				xmlparsedata->det->pix[i].rmfID=-1;
+			}
 		}
-		char rmffile[MAXFILENAME];
-		getXMLAttributeString(attr, "FILENAME", rmffile);
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].rmffile=strdup(rmffile);
-		xmlparsedata->det->pix[xmlparsedata->det->cpix].rmfID=-1;
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
 		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
