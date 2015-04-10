@@ -46,15 +46,16 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 		      EP_PRINT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
 		      *status=EPFAIL;return;
 		}
+		if (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration)
+		{  
+		      EP_PRINT_ERROR("Templates length in the library file must be at least as the pulse length",EPFAIL);
+		      *status=EPFAIL;return;
+		}
 	}else if(!exists && crtLib==0){
 		EP_PRINT_ERROR((char*)"Error accessing library file: it does not exists ",EPFAIL); 
 		*status=EPFAIL;return;
 	}
-	if (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration)
-	{
-		EP_PRINT_ERROR("Templates length in the library file must be at least as the pulse length",EPFAIL);
-		*status=EPFAIL;return;
-	}
+	
 	//Load NoiseSpec structure
 	reconstruct_init->noise_spectrum = NULL;
 	if (crtLib == 0)
