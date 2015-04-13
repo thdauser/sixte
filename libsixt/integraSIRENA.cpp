@@ -62,7 +62,7 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	{
 		exists=0;
 		if(fits_file_exists(noise_file, &exists, status)){
-			EP_PRINT_ERROR("Error checking if noise file exists",*status);
+			EP_PRINT_ERROR((char*)"Error checking if noise file exists",*status);
 			return;
 		}
 		reconstruct_init->noise_spectrum = getNoiseSpec(noise_file, status);
@@ -86,6 +86,11 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	reconstruct_init->LrsT		= LrsT;
 	reconstruct_init->LbT		= LbT;
 	reconstruct_init->monoenergy 	= monoenergy;
+	if(crtLib==1 && monoenergy < 0){
+		EP_PRINT_ERROR((char*)"Error: Parameter 'monoenergy' must be provided for library creation",EPFAIL);
+		*status=EPFAIL;return;
+	
+	}
 	strcpy(reconstruct_init->FilterDomain,filter_domain);
 	strcpy(reconstruct_init->FilterMethod,filter_method);
 	reconstruct_init->calibLQ       = calibLQ;
@@ -96,6 +101,11 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	strcpy(reconstruct_init->filterFile,filterFile);
 	strcpy(reconstruct_init->record_file2,record_file2);
 	reconstruct_init->monoenergy2 	= monoenergy2;
+	if(crtLib==0 && mode == 0 && calibLQ==2){
+		EP_PRINT_ERROR((char*)"Error: Parameter 'monoenergy2' must be provided for calibration run",EPFAIL);
+		*status=EPFAIL;return;
+	
+	}
 	if(0!=clobber){
 	    reconstruct_init->clobber = 1;
 	}else{

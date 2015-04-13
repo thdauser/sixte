@@ -173,6 +173,7 @@ AC_CONFIG_FILES([Makefile
 		tools/xml2svg/Makefile
 		tools/tesreconstruction/Makefile
 		tools/xifupipeline/Makefile
+		tools/gennoisespec/Makefile
 		extlib/Makefile])
 
 AC_OUTPUT
