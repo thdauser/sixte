@@ -922,10 +922,10 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 
 		sprintf(straux,"%d",ntotalrows);
 		message = "-------------> Record: " + string(straux);
-		sprintf(straux,"%d",eventcnt);
+		sprintf(straux,"%ld",eventcnt);
 		message += " of " + string(straux) + " <------------------ ";
 		writeLog(fileRef,"Log", verbosity,message);
-		sprintf(val,"-------------> Record: %d of %d <------------------ ",ntotalrows,eventcnt);
+		sprintf(val,"-------------> Record: %d of %ld <------------------ ",ntotalrows,eventcnt);
 		/*strcat(val,"\n");
 		fputs(val,temporalFile);*/
 
