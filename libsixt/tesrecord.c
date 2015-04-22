@@ -44,7 +44,7 @@ TesRecord* newTesRecord(int* const status){
 }
 
 /** Allocates memory for a RecordStruct data */
-void allocateTesRecord(TesRecord * record,int triggerSize,double delta_t,unsigned char wait_list,int* const status){
+void allocateTesRecord(TesRecord * record,unsigned long triggerSize,double delta_t,unsigned char wait_list,int* const status){
 	record->trigger_size = triggerSize;
 	record->delta_t = delta_t;
 

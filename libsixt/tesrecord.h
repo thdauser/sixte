@@ -56,7 +56,7 @@ typedef struct{
 
 typedef struct{
 	/** Number of ADC values in the record */
-	int trigger_size;
+	unsigned long trigger_size;
 
 	/** Start time of the record */
 	double time;
@@ -88,7 +88,7 @@ typedef struct{
 TesRecord* newTesRecord(int* const status);
 
 /** Allocates memory for a RecordStruct data */
-void allocateTesRecord(TesRecord * record,int triggerSize,double delta_t,unsigned char wait_list,int* const status);
+void allocateTesRecord(TesRecord * record,unsigned long triggerSize,double delta_t,unsigned char wait_list,int* const status);
 
 /** Destructor of the RecordStruct data structure. */
 void freeTesRecord(TesRecord** const record);

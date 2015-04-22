@@ -22,7 +22,7 @@
 
 /** Constructor. Returns a pointer to an empty TesTriggerFile data
     structure. */
-TesTriggerFile* newTesTriggerFile(int triggerSize,int* const status) {
+TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int* const status) {
   TesTriggerFile* file=(TesTriggerFile*)malloc(sizeof(TesTriggerFile));
   if (NULL==file) {
     *status=EXIT_FAILURE;
@@ -71,7 +71,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 				  SixtStdKeywords * keywords,
 				  char* const xmlfile,
 				  char* const impactlist,
-				  int triggerSize,
+				  unsigned long triggerSize,
 				  int preBufferSize,
 				  double sampleFreq,
 				  const char clobber,
@@ -107,7 +107,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_update_key(file->fptr, TINT, "BITPIX", &(bitpix), NULL, status);
   fits_update_key(file->fptr, TINT, "NAXIS", &(naxis), NULL, status);
   sixt_add_fits_stdkeywords(file->fptr, 1,keywords, status);
-  fits_update_key(file->fptr, TINT, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
+  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
   fits_update_key(file->fptr, TINT, "PREBUFF", &(preBufferSize), "Number of samples before start of pulse", status);
   double deltat = 1./sampleFreq;
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &(deltat), "Time resolution of data stream", status);
@@ -162,7 +162,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   
   //Create second column ADC
   sprintf(ttype[1], "ADC");
-  sprintf(tform[1], "%dU",triggerSize);
+  sprintf(tform[1], "%ldU",triggerSize);
   sprintf(tunit[1], "ADC");
 
   //Create third column PIXID
@@ -182,7 +182,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_create_tbl(file->fptr, BINARY_TBL, 0, 4,
 		  ttype, tform, tunit,extName, status);
   //Add keywords to other extension
-  fits_update_key(file->fptr, TINT, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
+  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
   fits_update_key(file->fptr, TINT, "PREBUFF", &(preBufferSize), "Number of samples before start of pulse", status);
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &(deltat), "Time resolution of data stream", status);
   if(keywords->extname!=NULL){
@@ -245,7 +245,7 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 	CHECK_STATUS_RET(*status, file);
 
 	//Get trigger_size
-	fits_read_key(file->fptr, TINT, "TRIGGSZ", &(file->trigger_size), comment, status);
+	fits_read_key(file->fptr, TULONG, "TRIGGSZ", &(file->trigger_size), comment, status);
 	CHECK_STATUS_RET(*status, file);
 
 	//Get delta_t
@@ -278,7 +278,7 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 
 
 	if (file->row<=file->nrows) {
-		fits_read_col(file->fptr, TUSHORT, file->trigCol,
+		fits_read_col(file->fptr, TULONG, file->trigCol,
 					  file->row,1,file->trigger_size,0,record->adc_array, &anynul,status);
 		CHECK_STATUS_RET(*status,0);
 
@@ -294,7 +294,7 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 					  file->row,1,1,0,&(record->time), &anynul,status);
 		CHECK_STATUS_RET(*status,0);
 
-		for (int i=0 ; i < file->trigger_size ; i++) {
+		for (unsigned long i=0 ; i < file->trigger_size ; i++) {
 			record->adc_double[i]= (double) (record->adc_array[i]);
 		}
 
@@ -311,7 +311,7 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status){
 	fits_write_col(outputFile->fptr, TDOUBLE, outputFile->timeCol,
 			outputFile->row, 1, 1, &(record->time), status);
-	fits_write_col(outputFile->fptr, TUSHORT, outputFile->trigCol,
+	fits_write_col(outputFile->fptr, TULONG, outputFile->trigCol,
 			outputFile->row, 1, record->trigger_size,record->adc_array, status);
 	fits_write_col(outputFile->fptr, TLONG, outputFile->pixIDCol,
 			outputFile->row, 1, 1, &(record->pixid), status);

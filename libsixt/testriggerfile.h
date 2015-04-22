@@ -45,7 +45,7 @@ typedef struct{
 	long row;
 
 	/** Number of ADC values per record */
-	int trigger_size;
+	unsigned long trigger_size;
 
 	/** Time interval between two ADC values in the file */
 	double delta_t;
@@ -62,7 +62,7 @@ typedef struct{
 
 /** Constructor. Returns a pointer to an empty TesTriggerFile data
     structure. */
-TesTriggerFile* newTesTriggerFile(int triggerSize,int* const status);
+TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int* const status);
 
 /** Destructor. */
 void freeTesTriggerFile(TesTriggerFile** const file, int* const status);
@@ -72,7 +72,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 				  SixtStdKeywords * keywords,
 				  char* const xmlfile,
 				  char* const impactlist,
-				  int triggerSize,
+				  unsigned long triggerSize,
 				  int preBufferSize,
 				  double sampleFreq,
 				  const char clobber,

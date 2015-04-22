@@ -158,16 +158,16 @@ OptimalFilterCollection*  getOptimalFilterCollection(const char* const filename,
 
 
 /** Derivate a stream */
-void derivate_stream(double * data_stream,double * derivated_stream,int stream_length){
-	for (int i=0 ; i < stream_length-1 ; i++) {
+void derivate_stream(double * data_stream,double * derivated_stream,unsigned long stream_length){
+	for (unsigned long i=0 ; i < stream_length-1 ; i++) {
 		derivated_stream[i] = data_stream[i+1]-data_stream[i];
 	}
 }
 
 /** Remove a pulse from a data stream */
-void subtractPulse(double * data_stream,int pulse_time,double * pulse_template,double factor,int pulse_length,int stream_length){
-	for (int i=pulse_time; (i < stream_length && i < (pulse_time+pulse_length)) ; i++){
-		data_stream[i] = data_stream[i] - factor*pulse_template[i-pulse_time];
+void subtractPulse(double * data_stream,unsigned long pulse_time,double * pulse_template,double factor,int pulse_length,unsigned long stream_length){
+	for (unsigned long i=pulse_time; (i < stream_length && i < (pulse_time+pulse_length)); i++){
+		data_stream[i] -= factor*pulse_template[i-pulse_time];
 	}
 }
 
@@ -185,7 +185,7 @@ int triggerEvents(TesRecord* record,TesEventList* event_list,double * derivated_
 		double threshold,double pulse_template_height,double saturation_value,int derivate_exclusion,
 		int normal_exclusion,int* const status){
 	//Derivate the data stream
-	double * derivated_stream = malloc((record->trigger_size - 1)*sizeof(*derivated_stream));
+	double *derivated_stream = malloc((record->trigger_size - 1)*sizeof(*derivated_stream));
 	if (NULL==derivated_stream){
 		*status=EXIT_FAILURE;
 		SIXT_ERROR("memory allocation for derivated_stream failed");
@@ -194,13 +194,13 @@ int triggerEvents(TesRecord* record,TesEventList* event_list,double * derivated_
 	derivate_stream(record->adc_double,derivated_stream,record->trigger_size);
 
 	//Iterate over the data points and trigger
-	int ii = 1;
+	unsigned long ii = 1;
 	int pulse_detected=0;
 	double pulse_height=0;
-	int pulse_time = 0;
+	unsigned long pulse_time = 0;
 	int grade1 = 0;
 	int distance_to_wrong_reconstruction = normal_exclusion;
-	int ii_end = record->trigger_size - 1;
+	unsigned long ii_end = record->trigger_size - 1;
 	char current_value_is_saturated=0;
 	char next_value_is_saturated=0;
 	//If we start already above half of the threshold, the start of the stream is probably not event clean
@@ -492,21 +492,4 @@ void initializeReconstruction(ReconstructInit* reconstruct_init,char* const opti
 	reconstruct_init->derivate_exclusion=derivate_exclusion;
 	reconstruct_init->saturation_value=saturation_value;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -373,7 +373,8 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init_createDetectFile, d
 	string message = "";
 
 	char dtcName[256];
-	strcpy(dtcName,reconstruct_init_createDetectFile->detectFile);
+	strncpy(dtcName,reconstruct_init_createDetectFile->detectFile,255);
+	dtcName[255]='\0'; // enforce zero ending string in case of buffer overflows
 
 	// Create output FITS file: If it does not exist yet
 	// If dtcName does not finish as '.fits' and the file dtcName+'.fits' already exists =>
@@ -382,21 +383,18 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init_createDetectFile, d
 	if (strlen(dtcName)<6)
 	{
 		// dtcName has 5 or less characters => Does not contain '.fits' =>Append '.fits' to dtcName
-		char dtcNameaux[255];
-		sprintf(dtcNameaux,dtcName);
-		strcat(dtcNameaux,".fits");
-		strcpy(dtcName,dtcNameaux);
+	  strcat(dtcName,".fits"); // NB we can use strcat since no buffer
+	                           // overflow will happen
+	  
 	}
-	else if (strlen(dtcName)>=6)
+	else 
 	{
 		// Check if dtcName has '.fits' and if not, append it
 		if (strncmp(strndup(dtcName+strlen(dtcName)-5, 5),".fits",5) != 0)
 		{
 			// dtcName does not finish as '.fits' => Append '.fits' to dtcName
-			char dtcNameaux[255];
-			sprintf(dtcNameaux,dtcName);
-			strcat(dtcNameaux,".fits");
-			strcpy(dtcName,dtcNameaux);
+		  strncat(dtcName,".fits",255);
+		  dtcName[255]='\0';
 		}
 	}
 
@@ -522,7 +520,7 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init_createDetectFile, d
 		char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init_createDetectFile->pulse_length);
 		char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init_createDetectFile->tauFall);
 		char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init_createDetectFile->scaleFactor);
-		char str_samplesUp[125];	sprintf(str_samplesUp,"%d",reconstruct_init_createDetectFile->samplesUp);
+		char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init_createDetectFile->samplesUp);
 		char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init_createDetectFile->nSgms);
 		char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init_createDetectFile->mode);
 		char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init_createDetectFile->crtLib);

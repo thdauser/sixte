@@ -123,10 +123,10 @@ OptimalFilterCollection*  getOptimalFilterCollection(const char* const filename,
 
 
 /** Derivate a stream */
-void derivate_stream(double * data_stream,double * derivated_stream,int stream_length);
+void derivate_stream(double * data_stream,double * derivated_stream,unsigned long stream_length);
 
 /** Remove a pulse from a data stream */
-void subtractPulse(double * data_stream,int pulse_time,double * pulse_template,double factor,int pulse_length,int stream_length);
+void subtractPulse(double * data_stream,unsigned long pulse_time,double * pulse_template,double factor,int pulse_length,unsigned long stream_length);
 
 /** Filter the pulse and return the energy */
 double filterPulse(double * data_stream,int pulse_time,double * filter,int filter_length);
