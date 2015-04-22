@@ -156,9 +156,9 @@ double tnoi(tesparams *tes) {
 
 double tpow(tesparams *tes) {
   // Calculate the power flow between elements of the pixel
-  //
 
   double beta_th=tes->n-1.0;
+
   double G1=tes->Gb1*pow(tes->T1/tes->T_start,beta_th);
 
   return G1*(pow(tes->T1,tes->n)-pow(tes->Tb,tes->n))/(tes->n*pow(tes->T1,beta_th));
@@ -451,6 +451,11 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->photoninfo=NULL;
   tes->get_photon=NULL;
 
+  // writing info
+  tes->write_to_stream=NULL;
+  tes->write_photon=NULL;
+  tes->streaminfo=NULL;
+
   // we have not yet dealt with events
   tes->Nevts=0;
 
@@ -503,6 +508,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   //JW see discussion around I&H, eq. 111
   tes->Ce1=0.86e-12*(tes->T_start/0.1); //Absorber+TES heat capacity at Tc
+
   tes->dRdT=tes->alpha*tes->R0/tes->T_start;
   tes->dRdI=tes->beta*tes->R0/tes->I0_start;
  
@@ -519,12 +525,12 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // power flow
   tes->Pb1=tpow(tes); 
 
-
   // noise terms
   tes->Pnb1=0.;
   tes->Vdn=0.;
   tes->Vexc=0.;
   tes->Vcn=0.;
+  tes->m_unknown=0.;
   tes->Vunk=0.;
 
   // ...define ODE system
@@ -590,6 +596,11 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
     if (tes->time>=impact.time) {
       tes->Nevts++;
       tes->En1=impact.energy*keV/(tes->delta_t*tes->therm);
+      
+      // remember that we've processed this photon
+      if (tes->write_photon!=NULL) {
+	tes->write_photon(impact.time,impact.ph_id,tes->streaminfo,status);
+      }
 
       // get the next photon 
       int success=tes->get_photon(&impact,tes->photoninfo,status);

@@ -9,7 +9,7 @@ tes_datastream_info *tes_init_datastream(double tstart, double tstop,tesparams *
   tes_datastream_info *data=(tes_datastream_info *)malloc(sizeof(tes_datastream_info));
   CHECK_NULL_RET(data,*status,"Memory allocation failed for TES Datastream structure",NULL);
 
-  data->Nt=(long) ((tstop-tstart)*tes->sample_rate);
+  data->Nt=(unsigned long) ((tstop-tstart)*tes->sample_rate);
   data->streamind=0;
   data->tstart=0;
   data->tstop=0;
@@ -77,7 +77,7 @@ void tes_save_datastream(char *streamfile, char *impactfile,
   snprintf(stream->name,9,"ADC%03d",1);
   allocateTESFitsStream(stream,data->stream->Ntime,1,status);
   // copy over (this is stupid for a single pixel)
-  long ii;
+  unsigned long ii;
   stream->pixID[0]=0;
   for (ii=0; ii<stream->Ntime; ii++) {
     stream->time[ii]=data->stream->time[ii];

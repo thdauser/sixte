@@ -4,6 +4,17 @@
 #include <stdlib.h>
 
 
+// todo:
+// is a separate stream argument really needed in the tes_save_... functions?
+// (all info exists in the tes-structure)
+
+// define TES_DATASTREAM to use the datastream interface
+// define TES_TESRECORD to use the (better) TESRECORD interface
+//#define TES_DATASTREAM
+#define TES_TESRECORD
+
+
+
 #define TOOLSUB tessim_main
 #include "headas_main.c"
 
@@ -47,9 +58,18 @@ int tessim_main() {
     tes->get_photon=&tes_photon_from_impactlist; // note: function pointer!
 
     // initialize stream writer
+#ifdef TES_DATASTREAM
     tes->streaminfo=tes_init_datastream(par.tstart,par.tstop,tes,&status);
     CHECK_STATUS_BREAK(status);
     tes->write_to_stream=&tes_append_datastream; // note: function pointer!
+    tes->write_photon=NULL; 
+#endif
+#ifdef TES_TESRECORD
+    tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,&status);
+    CHECK_STATUS_BREAK(status);
+    tes->write_to_stream=&tes_append_tesrecord;
+    tes->write_photon=&tes_append_photon_tesrecord;
+#endif
 
     // Run the simulation
     printf("RUNNING!\n");
@@ -58,14 +78,20 @@ int tessim_main() {
     CHECK_STATUS_BREAK(status);
 
     // write the file
+#ifdef TES_DATASTREAM
     tes_save_datastream(par.streamfile,par.impactlist,(tes_datastream_info *) tes->streaminfo,
 			tes, ((tes_impactfile_info *) (tes->photoninfo))->keywords,&status);
-
+#endif
+#ifdef TES_TESRECORD
+    tes_save_tesrecord(par.streamfile,par.impactlist,(tes_record_info *) tes->streaminfo,
+			tes, ((tes_impactfile_info *) (tes->photoninfo))->keywords,&status);
+#endif
     // if we're done: free all allocated memory and deallocate the TES
     // (not really necessary here, but let's be anally retentive)
     tes_free_impactlist((tes_impactfile_info **) &tes->photoninfo, &status);
+#ifdef TES_DATASTREAM
     tes_free_datastream((tes_datastream_info **) &tes->streaminfo, &status);
-
+#endif
     tes_free(tes);
     free(tes);
 
