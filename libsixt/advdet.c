@@ -518,6 +518,18 @@ static void AdvDetXMLElementStart(void* parsedata,
 				xmlparsedata->det->pix[i].rmfID=-1;
 			}
 		}
+	} else if (!strcmp(Uelement, "PIXARF")) {
+		if (xmlparsedata->det->inpixel){
+			char arffile[MAXFILENAME];
+			getXMLAttributeString(attr, "FILENAME", arffile);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].arffile=strdup(arffile);
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				char arffile[MAXFILENAME];
+				getXMLAttributeString(attr, "FILENAME", arffile);
+				xmlparsedata->det->pix[i].arffile=strdup(arffile);
+			}
+		}
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
 		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");

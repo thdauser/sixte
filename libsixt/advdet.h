@@ -113,6 +113,9 @@ typedef struct{
   /** ID of the rmf inside general detector (to avoid loading one rmf per pixel) */
   int rmfID;
 
+  /** Ancillary response file */
+  char* arffile;
+
 }AdvPix;
 
 /** Data structure containing a library of different RMFs */
