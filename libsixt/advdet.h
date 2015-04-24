@@ -116,6 +116,9 @@ typedef struct{
   /** Ancillary response file */
   char* arffile;
 
+  /** ID of the arf inside general detector (to avoid loading one arf per pixel) */
+  int arfID;
+
 }AdvPix;
 
 /** Data structure containing a library of different RMFs */
@@ -134,6 +137,23 @@ typedef struct{
 	struct RMF** rmf_array;
 
 }RMFLibrary;
+
+/** Data structure containing a library of different ARFs */
+typedef struct{
+
+	/** Current size of the allocated library */
+	int size;
+
+	/** Number of ARFs in the library */
+	int n_arf;
+
+	/** Array containing the filenames of the loaded arfs */
+	char** filenames;
+
+	/** Array containing the arf structures */
+	struct ARF** arf_array;
+
+}ARFLibrary;
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -178,6 +198,9 @@ typedef struct{
 
   /** RMF library */
   RMFLibrary* rmf_library;
+
+  /** ARF library */
+  ARFLibrary* arf_library;
 
 }AdvDet;
 
@@ -236,6 +259,15 @@ void addRMF(AdvDet* det,AdvPix* pixel,int* const status);
 
 /** Destructor of the RMF library structure */
 void freeRMFLibrary(RMFLibrary* library);
+
+/** Iterates the different pixels and loads the necessary ARFLibrary */
+void loadARFLibrary(AdvDet* det, int* const status);
+
+/** Adds an ARF to the ARF library. The ARF will only be added if it is not already in the library */
+void addARF(AdvDet* det,AdvPix* pixel,int* const status);
+
+/** Destructor of the ARF library structure */
+void freeARFLibrary(ARFLibrary* library);
 
 /** Process the impacts contained in the piximpacts file with the RMF method */
 void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
