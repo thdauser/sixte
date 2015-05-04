@@ -21,6 +21,7 @@
 #include "sixt.h"
 #include "event.h"
 #include "eventfile.h"
+#include "teseventlist.h"
 
 #define TOOLSUB imgev_main
 #include "headas_main.c"
@@ -54,6 +55,12 @@ int imgev_main() {
 
   // Input event file.
   EventFile* elf=NULL;
+
+  // Input TES event file.
+  TesEventFile* tes_elf=NULL;
+
+  // Input file (either TES or normal event file).
+  fitsfile* input_fptr=NULL;
 
   // Output image.
   long** img=NULL;
@@ -91,7 +98,20 @@ int imgev_main() {
     headas_chat(3, "initialize ...\n");
 
     // Set the event file.
+    long nrows = 0;
     elf=openEventFile(par.EventList, READWRITE, &status);
+    if(status==COL_NOT_FOUND){
+      headas_chat(3, "Given file is not a standard Event File, trying to read it as TES Event File...\n");
+      status=EXIT_SUCCESS;
+      freeEventFile(&elf, &status);
+      CHECK_STATUS_BREAK(status);
+      tes_elf=openTesEventFile(par.EventList,READWRITE,&status);
+      nrows = tes_elf->nrows;
+      input_fptr = tes_elf->fptr;
+    } else {
+      nrows = elf->nrows;
+      input_fptr = elf->fptr;
+    }
     CHECK_STATUS_BREAK(status);
 
     // Allocate memory for the output image.
@@ -161,31 +181,44 @@ int imgev_main() {
 
     // LOOP over all events in the FITS table.
     long row;
-    for (row=0; row<elf->nrows; row++) {
+    double ra,dec;
+    int anynul=0;
+    double dnull=0.;
+    for (row=0; row<nrows; row++) {
       
-      // Read the next event from the file.
-      Event event;
-      getEventFromFile(elf, row+1, &event, &status);
-      CHECK_STATUS_BREAK(status);
-
+      if (elf!=NULL){
+	// Read the next event from the file.
+	Event event;
+	getEventFromFile(elf, row+1, &event, &status);
+	CHECK_STATUS_BREAK(status);
+	ra = event.ra;
+	dec = event.dec;
+      } else {
+	fits_read_col(tes_elf->fptr, TDOUBLE, tes_elf->raCol, row+1, 1, 1,
+		      &dnull, &ra, &anynul, &status);
+	ra*=M_PI/180.;
+	fits_read_col(tes_elf->fptr, TDOUBLE, tes_elf->decCol, row+1, 1, 1,
+		      &dnull, &dec, &anynul, &status);
+	dec*=M_PI/180.;
+      }
       // Convert the coordinates to the desired coordinate system.
       double lon, lat; // [rad].
       if (0==par.coordinatesystem) {
 	// Equatorial coordinates.
-	lon=event.ra*180./M_PI;
-	lat=event.dec*180./M_PI;
+	lon=ra*180./M_PI;
+	lat=dec*180./M_PI;
       } else {
 	// Galactic coordinates.
 	const double l_ncp=2.145566759798267518;
 	const double ra_ngp=3.366033268750003918;
 	const double cos_d_ngp=0.8899880874849542;
 	const double sin_d_ngp=0.4559837761750669;
-	double cos_d=cos(event.dec);
-	double sin_d=sin(event.dec);
-	lon=(l_ncp-atan2(cos_d*sin(event.ra-ra_ngp), 
-			 cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(event.ra-ra_ngp)))
+	double cos_d=cos(dec);
+	double sin_d=sin(dec);
+	lon=(l_ncp-atan2(cos_d*sin(ra-ra_ngp),
+			 cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(ra-ra_ngp)))
 	  *180./M_PI;
-	lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(event.ra-ra_ngp))*180./M_PI;
+	lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(ra-ra_ngp))*180./M_PI;
       }
 
       // Determine the image coordinates corresponding to the event.
@@ -237,11 +270,11 @@ int imgev_main() {
 
     // Copy the mission header keywords.
     char comment[MAXMSG], telescop[MAXMSG]={""}, instrume[MAXMSG]={""};
-    fits_read_key(elf->fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
+    fits_read_key(input_fptr, TSTRING, "TELESCOP", &telescop, comment, &status);
     CHECK_STATUS_BREAK(status);
     fits_update_key(imgfptr, TSTRING, "TELESCOP", telescop, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_read_key(elf->fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
+    fits_read_key(input_fptr, TSTRING, "INSTRUME", &instrume, comment, &status);
     CHECK_STATUS_BREAK(status);
     fits_update_key(imgfptr, TSTRING, "INSTRUME", instrume, comment, &status);
     CHECK_STATUS_BREAK(status);
@@ -280,6 +313,7 @@ int imgev_main() {
 
   // Close the files.
   freeEventFile(&elf, &status);
+  freeTesEventFile(tes_elf,&status);
 
   // Close image file.
   if (NULL!=imgfptr) fits_close_file(imgfptr, &status);
