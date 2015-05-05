@@ -10,8 +10,8 @@
 
 // define TES_DATASTREAM to use the datastream interface
 // define TES_TESRECORD to use the (better) TESRECORD interface
-//#define TES_DATASTREAM
-#define TES_TESRECORD
+#define TES_DATASTREAM
+//#define TES_TESRECORD
 
 
 
@@ -116,6 +116,15 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_double("tstop", &(par->tstop), status);
   query_simput_parameter_double("sample_rate",&(par->sample_rate),status);
   assert(par->sample_rate>0);
+
+  query_simput_parameter_double("Ce",&(par->Ce1),status);
+  assert(par->Ce1>0);
+  par->Ce1*=1e-12; // pJ/K -> J/K
+
+  query_simput_parameter_double("Gb",&(par->Gb1),status);
+  assert(par->Gb1>0);
+  par->Gb1*=1e-12; // pW/K -> W/K
+
   query_simput_parameter_double("T_start", &(par->T_start), status); //mK
   assert(par->T_start>0);
   par->T_start*=1e-3; // mK -> K
@@ -125,6 +134,11 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_double("R0", &(par->R0), status); // mOhm
   assert(par->R0>0);
   par->R0*=1e-3; // mOhm->Ohm
+
+  query_simput_parameter_double("I0", &(par->I0), status); // muA
+  assert(par->I0>0);
+  par->I0*=1e-6; // muA->A
+
   query_simput_parameter_double("RL", &(par->RL), status); // mOhm
   assert(par->RL>=0);
   par->RL*=1e-3; // mOhm->Ohm
@@ -151,6 +165,8 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   } else {
     par->m_unknown=0.; // switch explicitly off if not simulating noise
   }
+  assert(par->m_unknown>=0);
+
 
   long seed; // needed because par->seed is an unsigned long
   query_simput_parameter_long("seed", &seed, status);

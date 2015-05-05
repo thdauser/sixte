@@ -33,7 +33,10 @@ typedef struct {
   double alpha;  // TES sensitivity (T/R*dR/dT)
   double beta;   // TES current dependence (I/R*dR/dI)
   double Lin;    // Circuit inductance [H]
+  double Ce1;    // absorber+TES heat capacity at Tc [J/K]
+  double Gb1;    // thermal conductance of the bath heat link at Tc [W/K]
   double n;      // Temperature dependence of the power flow to the heat sink
+  double I0;     // current at I0 [A]
 
   double sample_rate; // sample rate (Hz)
   double imin;    // minimum current to encode [A]
@@ -112,9 +115,9 @@ typedef struct {
   int mech;     // 1 for XXXX (MCCAMMON or IRWIN/HINTON CHAPTER) 
   double therm; // thermalization timescale in units of step size
 
-  double Ce1;    // absorber+TES heat capacity at Tc 
+  double Ce1;    // absorber+TES heat capacity at Tc [J/K]
+  double Gb1;    // thermal conductance of the bath heat link at Tc [W/K]
   double Pb1;    // thermal power flow
-  double Gb1;    // thermal conductance of the bath heat link at Tc
 
 
   double I0_start; // initial bias current [A]

@@ -209,44 +209,47 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"\n");
   headas_chat(0,"Start time of simulation [s]            : %15.6f\n",tes->tstart);
   headas_chat(0,"Current time of simulation [s]          : %15.6f\n",tes->time);
-  headas_chat(0,"Sample rate [Hz]                        : %15.6f\n",tes->sample_rate);
+  headas_chat(0,"Sample rate [kHz]                       : %15.6f\n",1e-3*tes->sample_rate);
   headas_chat(0,"Integration step size [mus]             : %15.6f\n",1e6*tes->delta_t);
   headas_chat(0,"Current corresponding to 0 ADU [muA]    : %15.1f\n",1e6*tes->imin);
   headas_chat(0,"Current corresponding to 65534 ADU [muA]: %15.1f\n",1e6*tes->imax);
   headas_chat(0,"ADU to current conv. factor [muA/ADU]   : %15.8e\n",1e6/(tes->aducnv));
   headas_chat(0,"\n");
 
-  headas_chat(0,"Initial bias current [muA]              : %10.5f\n",1e6*tes->I0_start);
-  headas_chat(0,"Operating point resistance R0 [mOhm]    : %10.5f\n",1000.*tes->R0);
-  headas_chat(0,"Shunt/load resistor value RL [mOhm]     : %10.5f\n",1000.*tes->RL);
-  headas_chat(0,"Circuit inductance [nH]                 : %10.5f\n",1e9*tes->Lin);
+  headas_chat(0,"Bath thermal conductance at Tc[pW/K]    : %10.5f\n",1e12*tes->Gb1);
+  headas_chat(0,"Absorber+TES heat capacity at Tc [pJ/K] : %10.5f\n",1e12*tes->Ce1);
+  headas_chat(0,"Heat sink coupling parameter n          : %10.2f\n",tes->n);
+  headas_chat(0,"Thermal power flow  [pW/K]              : %10.5f\n",1e12*tes->Pb1);
+  headas_chat(0,"\n");
+
   headas_chat(0,"TES sensitivity T/R*dR/dT (alpha)       : %10.3f\n",tes->alpha);
   headas_chat(0,"TES current dependence I/R*dR/dI (beta) : %10.3f\n",tes->beta);
+  headas_chat(0,"Operating point resistance R0 [mOhm]    : %10.5f\n",1000.*tes->R0);
+  headas_chat(0,"Shunt/load resistor value RL [mOhm]     : %10.5f\n",1000.*tes->RL);
+  headas_chat(0,"Initial bias current [muA]              : %10.5f\n",1e6*tes->I0_start);
+
+  headas_chat(0,"Circuit inductance [nH]                 : %10.5f\n",1e9*tes->Lin);
   headas_chat(0,"\n");
 
   headas_chat(0,"Initial operating temperature [mK]      : %10.3f\n",1000.*tes->T_start);
   headas_chat(0,"Heat sink temperature [mK]              : %10.3f\n",1000.*tes->Tb);
-  headas_chat(0,"Heat sink coupling parameter n          : %10.2f\n",tes->n);
   headas_chat(0,"\n");
 
-  // CHECK UNITS!
-  headas_chat(0,"Absorber+TES heat capacity at Tc [pJ/K] : %10.5f\n",1e12*tes->Ce1);
-  headas_chat(0,"Thermal power flow  [pW/K]              : %10.5f\n",1e12*tes->Pb1);
-  headas_chat(0,"Heat link thermal conductance at Tc     : %10.5e\n",tes->Gb1);
-  headas_chat(0,"\n");
+  headas_chat(0,"Seed of random number generator         : %10lu\n",tes->seed);
+  if (tes->simnoise) {
+    headas_chat(0,"Simulating noise terms\n");
+    headas_chat(0,"Unexplained noise factor                : %10.2f\n",tes->m_unknown);
+  } else {
+    headas_chat(0,"NOT simulating noise terms\n");
+  }
 
+  headas_chat(0,"\nTES values at the current time:\n");
   headas_chat(0,"Effective bias voltage [muV]            : %10.5f\n",1e6*tes->V0);
   headas_chat(0,"Current [muA]                           : %10.5f\n",1e6*tes->I0);
   headas_chat(0,"Temperature [mK]                        : %10.5f\n",1000.*tes->T1);
   headas_chat(0,"Current Resistivity [mOhm]              : %10.5f\n",1000.*tes->RT);
   headas_chat(0,"\n");
     
-  headas_chat(0,"Seed of random number generator         : %10lu\n",tes->seed);
-  if (tes->simnoise) {
-    headas_chat(0,"Simulating noise terms\n");
-  } else {
-    headas_chat(0,"NOT simulating noise terms\n");
-  }
 
   headas_chat(0,"\n**********************************************************\n");
   headas_chat(0,"Derived Properties of the TES\n");
@@ -284,7 +287,7 @@ void tes_print_params(tesparams *tes) {
   // loop gain
   double ell=Pj*tes->alpha/(G*tes->T_start);
 
-  headas_chat(0,"Joule power  [J]                       : %10.5e\n",1000.*Pj);
+  headas_chat(0,"Joule power  [pW]                       : %10.5f\n",1e12*Pj);
   headas_chat(0,"Loop gain                              : %10.5f\n",ell);
 
   // heat capacity
@@ -307,11 +310,11 @@ void tes_print_params(tesparams *tes) {
   // electrical
   double tau_el=tes->Lin/(tes->RL+tes->R0*(1.+tes->beta));
 
-  headas_chat(0,"Characteristic timescales (all in ms)\n");
-  headas_chat(0,"    natural                            : %10.5f\n",1000.*tau);
-  headas_chat(0,"    constant current                   : %10.5f\n",1000.*tau_I);
-  headas_chat(0,"    zero-inductance effective thermal  : %10.5f\n",1000.*tau_eff);
-  headas_chat(0,"    electrical                         : %10.5f\n",1000.*tau_el);
+  headas_chat(0,"Characteristic timescales (all in mus)\n");
+  headas_chat(0,"    natural                             : %10.5f\n",1e6*tau);
+  headas_chat(0,"    constant current                    : %10.5f\n",1e6*tau_I);
+  headas_chat(0,"    zero-inductance eff. thermal tau_eff: %10.5f\n",1e6*tau_eff);
+  headas_chat(0,"    electrical                          : %10.5f\n",1e6*tau_el);
 
   if (tau_I<0.) {
     headas_chat(0,"WARNING: constant current tau is negative!\n");
@@ -335,9 +338,9 @@ void tes_print_params(tesparams *tes) {
   double taup=2./(taum+tsqrt);
   taum=2./(taum-tsqrt);
 
-  headas_chat(0,"Pulse timescales (in ms)\n");
-  headas_chat(0,"    rise                               : %10.5f\n",1000.*taup);
-  headas_chat(0,"    fall                               : %10.5f\n",1000.*taum);
+  headas_chat(0,"Pulse timescales\n");
+  headas_chat(0,"    rise [mus]                        : %10.5f\n",1e6*taup);
+  headas_chat(0,"    fall [mus]                        : %10.5f\n",1e6*taum);
 
   //
   // TO DO: estimate pulse heights
@@ -353,8 +356,8 @@ void tes_print_params(tesparams *tes) {
   double Lcritm=(Lsum-Lsqrt)*Lfac;
   
   headas_chat(0,"Inductance at critical damping:\n");
-  headas_chat(0,"    L_plus [H]                         : %10.5e\n",Lcritp);
-  headas_chat(0,"    L_minus[H]                         : %10.5e\n",Lcritm);
+  headas_chat(0,"    L_plus [nH]                         : %10.5f\n",1e9*Lcritp);
+  headas_chat(0,"    L_minus[nH]                         : %10.5f\n",1e9*Lcritm);
 
   if (tsqrt<0.) {
     // criteria for underdamped detector
@@ -496,18 +499,20 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   // see discussion in I&H around eq 112
-  tes->Gb1=220e-12*pow(tes->T_start/0.1,tes->n-1.); 
+  // tes->Gb1=220e-12*pow(tes->T_start/0.1,tes->n-1.); 
+  tes->Gb1=par->Gb1;
   tes->therm=1.0; // absorber thermalization time (in units of the step size h). 
-                    // For a delta function input of power into the absorber 
-                    // it is just set to 1
+                  // set to 1 for a delta function
 
   // Calculate initial bias current from thermal power balance
-  tes->I0_start=sqrt(tes->Gb1/(tes->n*pow(tes->T_start,tes->n-1.))*
-		    (pow(tes->T_start,tes->n)-pow(tes->Tb,tes->n))/tes->R0);
+  //  tes->I0_start=sqrt(tes->Gb1/(tes->n*pow(tes->T_start,tes->n-1.))*
+  //		    (pow(tes->T_start,tes->n)-pow(tes->Tb,tes->n))/tes->R0);
+  tes->I0_start=par->I0;
 
   //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   //JW see discussion around I&H, eq. 111
-  tes->Ce1=0.86e-12*(tes->T_start/0.1); //Absorber+TES heat capacity at Tc
+  // tes->Ce1=0.86e-12*(tes->T_start/0.1); //Absorber+TES heat capacity at Tc
+  tes->Ce1=par->Ce1;
 
   tes->dRdT=tes->alpha*tes->R0/tes->T_start;
   tes->dRdI=tes->beta*tes->R0/tes->I0_start;
@@ -530,7 +535,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->Vdn=0.;
   tes->Vexc=0.;
   tes->Vcn=0.;
-  tes->m_unknown=0.;
+  tes->m_unknown=par->m_unknown;
   tes->Vunk=0.;
 
   // ...define ODE system
