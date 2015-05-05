@@ -176,6 +176,17 @@ void writeTESFitsStream(fitsfile *fptr,
 			float monoen,
 			int* const status);
 
+/** Function to append a TESFitsStream to an existing FITS Extension. */
+void appendTESFitsStream(fitsfile *fptr, 
+			TESFitsStream *stream,
+			double tstart,
+			double tstop,
+			double timeres,
+			long *Nevts,
+			int ismonoen,
+			float monoen,
+			int* const status);
+
 /** Main engine generating TES data stream */
 void getTESDataStream(TESDataStream* TESData, 
 		      PixImpFile* PixFile, 

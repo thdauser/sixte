@@ -110,6 +110,7 @@ AdvDet* newAdvDet(int* const status){
   det->inpixel=0;
   det->oof_activated=0;
   det->rmf_library=NULL;
+  det->arf_library=NULL;
 
   return(det);
 }
@@ -130,6 +131,7 @@ void destroyAdvDet(AdvDet **det){
       free((*det)->filepath);
     }
     freeRMFLibrary((*det)->rmf_library);
+    freeARFLibrary((*det)->arf_library);
   }
 }
 
@@ -518,6 +520,18 @@ static void AdvDetXMLElementStart(void* parsedata,
 				xmlparsedata->det->pix[i].rmfID=-1;
 			}
 		}
+	} else if (!strcmp(Uelement, "PIXARF")) {
+		if (xmlparsedata->det->inpixel){
+			char arffile[MAXFILENAME];
+			getXMLAttributeString(attr, "FILENAME", arffile);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].arffile=strdup(arffile);
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				char arffile[MAXFILENAME];
+				getXMLAttributeString(attr, "FILENAME", arffile);
+				xmlparsedata->det->pix[i].arffile=strdup(arffile);
+			}
+		}
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
 		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
@@ -695,6 +709,99 @@ void freeRMFLibrary(RMFLibrary* library){
 			free(library->filenames[i]);
 		}
 		free(library->rmf_array);
+		free(library->filenames);
+		free(library);
+	}
+	library=NULL;
+}
+
+/** Iterates the different pixels and loads the necessary ARFLibrary */
+void loadARFLibrary(AdvDet* det, int* const status){
+	det->arf_library = malloc(sizeof(*(det->arf_library)));
+	if (NULL == det->arf_library){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation for arf library failed");
+		return;
+	}
+	det->arf_library->arf_array = malloc(RMFLIBRARYSIZE*sizeof(*(det->arf_library->arf_array)));
+	if (NULL == det->arf_library->arf_array){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation for arf library failed");
+		return;
+	}
+	det->arf_library->filenames = malloc(RMFLIBRARYSIZE*sizeof(*(det->arf_library->filenames)));
+	if (NULL == det->arf_library->filenames){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Memory allocation for arf library failed");
+		return;
+	}
+
+	det->arf_library->size = RMFLIBRARYSIZE;
+	det->arf_library->n_arf = 0;
+
+	for (int i=0;i<RMFLIBRARYSIZE;i++){
+		det->arf_library->arf_array[i]=NULL;
+		det->arf_library->filenames[i]=NULL;
+	}
+
+	for (int i=0;i<det->npix;i++){
+		addARF(det,&(det->pix[i]),status);
+		CHECK_STATUS_VOID(*status);
+	}
+}
+
+/** Adds an ARF to the ARF library. The ARF will only be added if it is not already in the library */
+void addARF(AdvDet* det,AdvPix* pixel,int* const status){
+	if(NULL==pixel->arffile){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("Tried to load pixel ARF whereas no ARF file was given in XML. Abort");
+		return;
+	}
+	for (int i=0;i<det->arf_library->n_arf;i++){
+		if(!strcmp(det->arf_library->filenames[i],pixel->arffile)){
+			pixel->arfID=i;
+			return; //If the arf is already in there, just update the arfID and return
+		}
+	}
+
+	// Update size if necessary
+	if (det->arf_library->n_arf>=det->arf_library->size){
+		det->arf_library->size = det->arf_library->size*2;
+		struct ARF** new_arf_array = realloc(det->arf_library->arf_array,det->arf_library->size*sizeof(*(det->arf_library->arf_array)));
+		if (NULL==new_arf_array){
+			*status = EXIT_FAILURE;
+			SIXT_ERROR("Size update of ARF library failed");
+			return;
+		}
+		char** new_filenames = realloc(det->arf_library->filenames,det->arf_library->size*sizeof(*(det->arf_library->filenames)));
+		if (NULL==new_filenames){
+			*status = EXIT_FAILURE;
+			SIXT_ERROR("Size update of ARF library failed");
+			return;
+		}
+
+		det->arf_library->arf_array=new_arf_array;
+		det->arf_library->filenames=new_filenames;
+	}
+
+	//Add ARF to the library
+	char filepathname[MAXFILENAME];
+	strcpy(filepathname,det->filepath);
+	strcat(filepathname,pixel->arffile);
+	det->arf_library->arf_array[det->arf_library->n_arf] = loadARF(filepathname,status);
+	det->arf_library->filenames[det->arf_library->n_arf] = strdup(pixel->arffile);
+	pixel->arfID=det->arf_library->n_arf;
+	det->arf_library->n_arf++;
+}
+
+/** Destructor of the ARF library structure */
+void freeARFLibrary(ARFLibrary* library){
+	if (NULL!=library){
+		for(int i=0;i<library->size;i++){
+			freeARF(library->arf_array[i]);
+			free(library->filenames[i]);
+		}
+		free(library->arf_array);
 		free(library->filenames);
 		free(library);
 	}

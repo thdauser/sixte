@@ -104,12 +104,6 @@
 
 	FILE *fileRef;						// Pointer for file which contains errors and warnings
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// Provisional => To be deleted in future
-	FILE * temporalFile;
-	/*char temporalFileName[255];*/
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 // INPUT KEYWORDS
 
 	long eventcnt;		// Number of rows
@@ -199,7 +193,83 @@
 	int createTPSreprFile ();
 	int writeTPSreprExten ();
 
-	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *baseline, FILE *temporalFile);
+	int findPulsesNoise
+	(
+		gsl_vector *vectorin,
+		gsl_vector *vectorinDER,
+		gsl_vector **tstart,
+		gsl_vector **quality,
+		gsl_vector **energy,
+
+		int *nPulses,
+		double *threshold,
+
+		int opmode,
+
+		double taufall,
+		double scalefactor,
+		int sizepulsebins,
+		double samplingRate,
+
+		int samplesup,
+		double nsgms,
+
+		double lb,
+		double lrs,
+
+		gsl_matrix *librarymatrix,
+		gsl_matrix *modelsmatrix,
+
+		double stopcriteriamkc,
+		double kappamkc,
+		double levelprvpulse);
+
+	/*int findSePulsesNoise
+	(
+		gsl_vector *vectorin,
+		gsl_vector *vectorinDER,
+		gsl_vector **vectorinDERComposed,
+
+		double thresholdmediankappaSingle,
+
+		gsl_vector **tstart,
+		gsl_vector **quality,
+		gsl_vector **energy,
+		gsl_vector **maxDER,
+		gsl_vector **index_maxDER,
+
+		gsl_vector **newPulses,
+
+		int *nPulses,
+
+		//gsl_vector *startsaturated,
+		//gsl_vector *endsaturated,
+		//int nSaturated,
+
+		double taufall,
+		double scalefactor,
+		int sizepulse,
+		double samplingRate,
+
+		int samplesup,
+		double nsgms,
+
+		gsl_vector *B,
+		double lrs,
+		gsl_vector *lb,
+
+		gsl_matrix *library,
+		gsl_matrix *models,
+		gsl_vector *model,
+
+		double stopCriteriamkc,
+		double kappamkc,
+		double levelprvpulse);
+
+	int firstSampleModelsNoise (gsl_matrix *templates, double threshold, gsl_vector **firstSamples, gsl_vector **index_firstSamples);
+	int find_model1stSampleNoise(double firstSample, gsl_vector *firstSamples, gsl_matrix *models, gsl_vector **modelFound);*/
+
+	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *baseline);
 
 	using namespace std;
 

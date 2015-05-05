@@ -518,10 +518,17 @@ void exit_error(const char* const func, string msg, int status)
 *****************************************************************************/
 void print_error( const char* const func, string message, int status)
 {
-    cout<<"Error in "<<string(func)<<": "<<message<<endl;
-    if (status > 10)  // CFITSIO Error
+    if (status > 0 && status <= 10)
+    {
+	cout<<"Error in "<<string(func)<<": "<<message<<endl;
+    }
+    else if (status > 10)  // CFITSIO Error
     {
     	fits_report_error(stderr, status); /* print error report */
+    }
+    else if (status == -999)
+    {
+        cout<<"Warning in "<<string(func)<<": "<<message<<endl;
     }
     return;
 }

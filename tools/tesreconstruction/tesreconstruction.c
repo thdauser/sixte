@@ -26,7 +26,6 @@ int tesreconstruction_main() {
   // Containing all programm parameters read by PIL.
   struct Parameters par;
 
-
   // Error status.
   int status=EXIT_SUCCESS;
 
@@ -79,7 +78,7 @@ int tesreconstruction_main() {
     }else{
 	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, par.LibraryFile,
 		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.crtLib,
-		par.mode, par.LrsT, par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod,
+		par.mode, par.LrsT, par.LbT, par.baseline, par.NoiseFile, par.FilterDomain, par.FilterMethod,
 		par.calibLQ, par.b_cF,par.b_cF, par.monoenergy, par.intermediate, par.detectFile,
 		par.filterFile, par.RecordFileCalib2, par.monoenergy2, par.clobber, &status);
     }  
@@ -104,8 +103,10 @@ int tesreconstruction_main() {
 	}else{
 	    nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
+	    //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
 	    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
 				    lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
+	    //printf("%s","Fuera de reconstructRecordSIRENA\n");
 	}	
  	CHECK_STATUS_BREAK(status);
 
@@ -354,6 +355,35 @@ int getpar(struct Parameters* const par)
 		return(status);
 	}
 	
+	status=ape_trad_query_double("baseline", &par->baseline);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the baseline parameter");
+		return(status);
+	}
+
+	status=ape_trad_query_int("intermediate", &par->intermediate);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the intermediate parameter");
+		return(status);
+	}
+	if(par->intermediate){
+		status=ape_trad_query_string("detectFile", &sbuffer);
+		if (EXIT_SUCCESS!=status) {
+		    SIXT_ERROR("failed reading the name of the detections output intermediate file");
+		    return(status);
+		}
+		strcpy(par->detectFile, sbuffer);
+		free(sbuffer);
+
+		status=ape_trad_query_string("filterFile", &sbuffer);
+		if (EXIT_SUCCESS!=status) {
+		    SIXT_ERROR("failed reading the name of the filters output intermediate file");
+		    return(status);
+		}
+		strcpy(par->filterFile, sbuffer);
+		free(sbuffer);
+	} // if intermediate
+
 	if(par->mode==0){
 		status=ape_trad_query_double("monoenergy", &par->monoenergy);
 		if (EXIT_SUCCESS!=status) {
@@ -406,28 +436,6 @@ int getpar(struct Parameters* const par)
 			return(status);
 		}
 
-		status=ape_trad_query_int("intermediate", &par->intermediate);
-		if (EXIT_SUCCESS!=status) {
-			SIXT_ERROR("failed reading the intermediate parameter");
-			return(status);
-		}
-		if(par->intermediate){
-			status=ape_trad_query_string("detectFile", &sbuffer);
-			if (EXIT_SUCCESS!=status) {
-			    SIXT_ERROR("failed reading the name of the detections output intermediate file");
-			    return(status);
-			}
-			strcpy(par->detectFile, sbuffer);
-			free(sbuffer);
-			
-			status=ape_trad_query_string("filterFile", &sbuffer);
-			if (EXIT_SUCCESS!=status) {
-			    SIXT_ERROR("failed reading the name of the filters output intermediate file");
-			    return(status);
-			}
-			strcpy(par->filterFile, sbuffer);
-			free(sbuffer); 
-		} // if intermediate
 		if(par->mode == 0){
 			status=ape_trad_query_string("RecordFileCalib2", &sbuffer);
 			if (EXIT_SUCCESS!=status) {

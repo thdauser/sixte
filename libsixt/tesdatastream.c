@@ -303,11 +303,94 @@ void writeTESFitsStream(fitsfile *fptr,
     sprintf(tform[ii+1], "1U");
     sprintf(tunit[ii+1], "ADC");
   }
-  CHECK_STATUS_VOID(*status);
   
   fits_create_tbl(fptr, BINARY_TBL, 0, ncolumns,
 	ttype, tform, tunit, stream->name, status);
   CHECK_STATUS_VOID(*status);
+  
+  // Write columns
+  fits_write_col(fptr, TDOUBLE, 1, 1, 1, nrows, stream->time, status);
+  CHECK_STATUS_VOID(*status);
+  for(ii=0; ii<stream->Npix; ii++){
+    fits_write_col(fptr, TUSHORT, 2+ii, 1, 1, nrows, stream->adc_value[ii], status);
+    CHECK_STATUS_VOID(*status);
+    
+    char nev[tlen];
+    sprintf(nev, "NES%05d", stream->pixID[ii]+1);
+    fits_update_key(fptr, TLONG, nev, &Nevts[stream->pixID[ii]],
+      "Number of simulated events in pixel stream", status);
+    CHECK_STATUS_VOID(*status);
+  }
+  CHECK_STATUS_VOID(*status);
+  
+  int firstpix, lastpix;
+  
+  // Write header keywords
+  fits_update_key(fptr, TSTRING, "EXTNAME",
+		  "TESDATASTREAM","Name of this extension",status);
+  fits_update_key(fptr, TDOUBLE, "TSTART",
+        &tstart, "Start time of data stream", status);
+  fits_update_key(fptr, TDOUBLE, "TSTOP",
+        &tstop, "Stop time of data stream", status);
+  fits_update_key(fptr, TDOUBLE, "DELTAT",
+        &timeres, "Time resolution of data stream", status);
+  fits_update_key(fptr, TINT, "NPIX",
+        &(stream->Npix), "Number of pixel streams in extension", status);
+  firstpix=stream->pixID[0]+1;
+  fits_update_key(fptr, TINT, "FIRSTPIX",
+        &(firstpix), "ID of first pixel in extension", status);
+  lastpix=stream->pixID[stream->Npix-1]+1;
+  fits_update_key(fptr, TINT, "LASTPIX",
+        &(lastpix), "ID of last pixel in extension", status);
+  CHECK_STATUS_VOID(*status);
+  
+  if(ismonoen==1){    
+    fits_update_key(fptr, TFLOAT, "MONOEN",
+        &monoen, "Monochromatic energy of photons [keV]", status);
+    CHECK_STATUS_VOID(*status);
+  }
+  CHECK_STATUS_VOID(*status);
+  
+  // free allocated memory
+  for (ii=0; ii<ncolumns; ii++) {
+    free(ttype[ii]);
+    free(tform[ii]);
+    free(tunit[ii]);
+  }
+
+}
+
+void appendTESFitsStream(fitsfile *fptr, 
+			TESFitsStream *stream,
+			double tstart,
+			double tstop,
+			double timeres,
+			long *Nevts,
+			int ismonoen,
+			float monoen,
+			int* const status)
+{
+  
+  // append to a table
+  long nrows=(long)stream->Ntime;
+  int ncolumns=1+stream->Npix;
+  
+  fits_movnam_hdu(fptr,BINARY_TBL,"TESDATASTREAM",0,status);
+  CHECK_STATUS_VOID(*status);
+
+
+  // get the respective column numbers
+  int timecol=fits_get_colnum(fptr,CASESEN,"TIME",status);
+  int ii;
+  char ttype[9];
+  int colnum[ncolumns];
+  for(ii=0; ii<stream->Npix; ii++){
+    sprintf(ttype, "PXL%05d", stream->pixID[ii]+1);
+    colnum[ii]=fits_get_colnum(fptr,CASESEN,ttype,status);
+  }
+  CHECK_STATUS_VOID(*status);
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
   
   // Write columns
   fits_write_col(fptr, TDOUBLE, 1, 1, 1, nrows, stream->time, status);

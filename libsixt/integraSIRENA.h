@@ -29,12 +29,14 @@
 #include "tesrecord.h"
 #include "teseventlist.h"
 
+#include <gsl/gsl_vector.h>
+
 typedef struct {
   /** Duration of the pulse template in the library */
   int template_duration;
 
-  /** Array containing the pulse template */
-  double* ptemplate;
+  /** Vector containing the pulse template */
+  gsl_vector *ptemplate;
 
   /** Energy of the template */
   double energy;
@@ -48,8 +50,8 @@ typedef struct {
   /** Duration of the matched filter in the library */
   int mfilter_duration;
 
-  /** Array containing the matched filter */
-  double* mfilter;
+  /** Vector containing the matched filter */
+  gsl_vector *mfilter;
 
   /** Energy of the mfilter */
   double energy;
@@ -63,8 +65,8 @@ typedef struct {
   // Duration of the optimalfilter
   int ofilter_duration;
 
-  // Array containing the optimal filter
-  double* ofilter;
+  // Vector containing the optimal filter
+  gsl_vector *ofilter;
 
   // Normalization factor
   double nrmfctr;
@@ -76,24 +78,27 @@ typedef struct {
   int ntemplates;
 
   /** Energies of the templates */
-  double* energies;
+  gsl_vector *energies;
 
   /** Pulse Heights of the templates */
-  double* pulse_heights;
+  gsl_vector *pulse_heights;
 
-  /** Array containing all the pulse templates from the library */
+  /** Vector containing all the pulse templates from the library */
   PulseTemplate* pulse_templates;
 
-  /** Array containing all the pulse templates filtered & derivated from the library */
+  /** Vector containing all the pulse templates filtered & derivated from the library */
   PulseTemplate* pulse_templates_filder;
 
-  /** Array containing all the pulse templates from the library */
+  /** Maximum of pulse_templates_filder */
+  gsl_vector *maxDERs;
+
+  /** Vector containing all the pulse templates from the library */
   PulseTemplate* pulse_templates_B0;
   
-  /** Array containing all the matched filters from the library */
+  /** Vector containing all the matched filters from the library */
   MatchedFilter* matched_filters;
 
-  /** Array containing all the matched filters from the library */
+  /** Vector containing all the matched filters from the library */
   MatchedFilter* matched_filters_B0;
 
 } LibraryCollection;
@@ -103,11 +108,11 @@ typedef struct {
   /** Duration of the noise spectrum */
   int noise_duration;
 	
-  /** Array containing the noise spectrum */
-  double* noisespec;
+  /** Vector containing the noise spectrum */
+  gsl_vector *noisespec;
 
-  /** Array containing the frequecies of the noise spectrum */
-  double* noisefreqs;
+  /** Vector containing the frequecies of the noise spectrum */
+  gsl_vector *noisefreqs;
 
 } NoiseSpec;
 
@@ -125,8 +130,8 @@ typedef struct {
   /** PIX_ID of the detected pulse*/
   int pixid;
   
-  /** Array containing the pulse adc values */
-  double* pulse_adc;
+  /** Vector containing the pulse adc values */
+  gsl_vector *pulse_adc;
 
   /** Start time of the Pulse */
   double Tstart;
@@ -142,6 +147,9 @@ typedef struct {
 
   /** Pulse height of the Pulse */
   double pulse_height;
+
+  /** Maximum of the filtered-derived pulse */
+  double maxDER;
 
   /** Uncalibrated Energy (eV) of the Pulse */
   double ucenergy;
@@ -210,6 +218,9 @@ typedef struct {
 	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
 	double LbT;
 	
+	/** Baseline (in ADC units) **/
+	double baseline;
+
     /** Run mode (0: calibration/lib creation  1:energy reconstruction) **/
 	int mode;
 
@@ -265,13 +276,10 @@ ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status);
 #ifdef __cplusplus
 extern "C"
 #endif
-/*void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const library_file, char* const record_file,
-	double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode, double LrsT, 
-	double LbT,char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF,
-	double monoenergy, int interm, char* detectFile, char* filterFile, char clobber, int* const status);*/
+
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, char* const library_file,
 	double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode, double LrsT,
-	double LbT,char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF,
+	double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF,
 	double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int* const status);
 
 /** Constructor. Returns a pointer to an empty PulsesCollection data structure. */
@@ -301,8 +309,6 @@ void freeOptimalFilterSIRENA(OptimalFilterSIRENA* PulsesColl);
 #ifdef __cplusplus
 extern "C"
 #endif
-//void writeCalibKeywords(outfile->fptr,b_cF, c_cF);
-//void writeCalibKeywords(fitsfile* fptr, double const b_cF, double const c_cF, int* const status);
 void writeCalibKeywords(fitsfile* fptr, double b_cF, double c_cF, int* const status);
 
 /** Run reconstruction method with an option for SIRENA*/
@@ -310,11 +316,6 @@ void writeCalibKeywords(fitsfile* fptr, double b_cF, double c_cF, int* const sta
 extern "C"
 #endif
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
-
-
-
-
-
 
 /** Create and retrieve a LibraryCollection from a file. */
 LibraryCollection* getLibraryCollection(const char* const filename, int* const status);
@@ -327,7 +328,6 @@ void freeLibraryCollection(LibraryCollection** const library_collection);
 
 /** Allocates memory for an LibraryCollection structure. */
 void allocateLibraryCollection(LibraryCollection* library_collection,int ntemplates,int* const status);
-
 
 /** Create and retrieve a NoiseSpec from a file. */
 NoiseSpec* getNoiseSpec(const char* const filename,int* const status);
