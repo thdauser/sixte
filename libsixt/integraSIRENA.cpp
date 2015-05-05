@@ -30,7 +30,7 @@
 
 extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file,
 		char* const library_file, double tauFall,int pulse_length, double scaleFactor, double samplesUp,
-		double nSgms, int crtLib, int mode, double LrsT, double LbT,char* const noise_file, char* filter_domain, char* filter_method,
+		double nSgms, int crtLib, int mode, double LrsT, double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method,
 		int calibLQ,  double b_cF, double c_cF, double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2,
 		double monoenergy2, char clobber, int* const status){
 
@@ -47,22 +47,22 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 		      *status=EPFAIL;return;
 		}
 		if (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration)
-		{  
-		      EP_PRINT_ERROR("Templates length in the library file must be at least as the pulse length",EPFAIL);
-		      *status=EPFAIL;return;
+		{
+			EP_PRINT_ERROR("Templates length in the library file must be at least as the pulse length",EPFAIL);
+			*status=EPFAIL;return;
 		}
 	}else if(!exists && crtLib==0){
 		EP_PRINT_ERROR((char*)"Error accessing library file: it does not exists ",EPFAIL); 
 		*status=EPFAIL;return;
 	}
-	
+
 	//Load NoiseSpec structure
 	reconstruct_init->noise_spectrum = NULL;
 	if (crtLib == 0)
 	{
 		exists=0;
 		if(fits_file_exists(noise_file, &exists, status)){
-			EP_PRINT_ERROR((char*)"Error checking if noise file exists",*status);
+			EP_PRINT_ERROR("Error checking if noise file exists",*status);
 			return;
 		}
 		reconstruct_init->noise_spectrum = getNoiseSpec(noise_file, status);
@@ -85,12 +85,8 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	reconstruct_init->mode		= mode;
 	reconstruct_init->LrsT		= LrsT;
 	reconstruct_init->LbT		= LbT;
+	reconstruct_init->baseline		= baseline;
 	reconstruct_init->monoenergy 	= monoenergy;
-	if(crtLib==1 && monoenergy < 0){
-		EP_PRINT_ERROR((char*)"Error: Parameter 'monoenergy' must be provided for library creation",EPFAIL);
-		*status=EPFAIL;return;
-	
-	}
 	strcpy(reconstruct_init->FilterDomain,filter_domain);
 	strcpy(reconstruct_init->FilterMethod,filter_method);
 	reconstruct_init->calibLQ       = calibLQ;
@@ -101,17 +97,13 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	strcpy(reconstruct_init->filterFile,filterFile);
 	strcpy(reconstruct_init->record_file2,record_file2);
 	reconstruct_init->monoenergy2 	= monoenergy2;
-	if(crtLib==0 && mode == 0 && calibLQ==2){
-		EP_PRINT_ERROR((char*)"Error: Parameter 'monoenergy2' must be provided for calibration run",EPFAIL);
-		*status=EPFAIL;return;
-	
-	}
 	if(0!=clobber){
 	    reconstruct_init->clobber = 1;
 	}else{
 	    reconstruct_init->clobber = 0;
 	} 
 }
+
 extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init,  int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status){
 		// Inititalize structure PulsesCollection
 		PulsesCollection* pulsesInRecord = new PulsesCollection;
@@ -129,7 +121,15 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		if(reconstruct_init->pulse_length > record->trigger_size){
 		    EP_PRINT_ERROR("Warning: pulse length is larger than record size. Pulse length set to maximum value (record size)",EPFAIL);
 		}
+
 		runDetect(record, lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
+		if(pulsesInRecord->ndetpulses == 0) // No pulses found in record
+		{
+		      delete(pulsesAllAux);
+		      delete(pulsesInRecord);
+		      return;
+		}
+		
 		if (reconstruct_init->crtLib == 0)
 		{
 			// filter pulses and calculates energy
@@ -177,6 +177,8 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			}
 		}
 		
+		//cout<<"pulsesAll: "<<(*pulsesAll)->ndetpulses<<endl;
+
 		// Fill TesEventList structure
 		event_list->index = pulsesInRecord->ndetpulses;
 		event_list->energies = new double[event_list->index];
@@ -204,6 +206,10 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		    event_list->ph_ids[ip]   = 0;
 		    
 		}
+		delete(pulsesAllAux);
+		delete(pulsesInRecord);
+		//cout<<"ofilter_duration: "<<(*optimalFilter)->ofilter_duration<<endl;
+		//cout<<"Sale de reconstructRecordSIRENA"<<endl;
 		return;
 }
 
@@ -324,17 +330,17 @@ LibraryCollection* getLibraryCollection(const char* const filename,int* const st
 	if (fits_get_num_rows(fptr,&ntemplates, status)){
 	      EP_PRINT_ERROR("Cannot get number of rows in library file",*status);
 	      return(library_collection);}
-	      
+
 	// Allocate library structure
 	library_collection->ntemplates = (int)ntemplates;
-	library_collection->energies           		  = new double[ntemplates];
-	library_collection->pulse_heights      		  = new double[ntemplates];
+	library_collection->energies           		  = gsl_vector_alloc(ntemplates);
+	library_collection->pulse_heights      		  = gsl_vector_alloc(ntemplates);
+	library_collection->maxDERs      		      = gsl_vector_alloc(ntemplates);
 	library_collection->pulse_templates           = new PulseTemplate[ntemplates];
 	library_collection->pulse_templates_filder    = new PulseTemplate[ntemplates];
 	library_collection->pulse_templates_B0        = new PulseTemplate[ntemplates];
 	library_collection->matched_filters           = new MatchedFilter[ntemplates];
 	library_collection->matched_filters_B0        = new MatchedFilter[ntemplates];
-
 	
 	//Get energy (ENERGY), template (PULSE) and matched filter ("MF") column numbers
 	char column_name[12];
@@ -401,27 +407,70 @@ LibraryCollection* getLibraryCollection(const char* const filename,int* const st
 	int anynul=0;
 
 	//Read ENERGY column for PulseTemplates and MatchedFilters
-	if(fits_read_col(fptr, TDOUBLE, energy_colnum, 1,1, ntemplates, NULL, library_collection->energies, &anynul,status)){
-		EP_PRINT_ERROR("Cannot read column ENERGY",*status);
-		*status=EPFAIL; return(library_collection);
+	IOData obj;
+	obj.inObject = fptr;
+	obj.nameTable = new char [255];
+	strcpy(obj.nameTable,"LIBRARY");
+	obj.iniCol = 0;
+	obj.nameCol = new char [255];
+	obj.unit = new char [255];
+	strcpy(obj.nameCol,"ENERGY");
+	obj.type = TDOUBLE;
+	obj.iniRow = 1;
+	obj.endRow = ntemplates;
+	if (readFitsSimple (obj,&library_collection->energies))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(library_collection);
 	}
+
 	//Read PHEIGHT column for PulseTemplates and MatchedFilters
-	if(fits_read_col(fptr, TDOUBLE, pheight_colnum, 1,1, ntemplates, NULL, library_collection->pulse_heights, &anynul,status)){
-		EP_PRINT_ERROR("Cannot read column PHEIGHT",*status);
-		*status=EPFAIL; return(library_collection);
+	strcpy(obj.nameCol,"PHEIGHT");
+	if (readFitsSimple (obj,&library_collection->pulse_heights))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(library_collection);
 	}
+
 	//Read Templates and matched filter columns and populate LibraryCollection structure
-	//library_collection->pulse_templates->ptemplate    = new double[template_duration];
-        //library_collection->pulse_templates_B0->ptemplate = new double[template_duration];
-	//library_collection->matched_filters->mfilter      = new double[mfilter_duration];
-	//library_collection->matched_filters_B0->mfilter   = new double[mfilter_duration];
+	gsl_matrix *matrixAux_PULSE = gsl_matrix_alloc(ntemplates,template_duration);
+	strcpy(obj.nameCol,"PULSE");
+	if (readFitsComplex (obj,&matrixAux_PULSE))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(library_collection);
+	}
+
+	gsl_matrix *matrixAux_PULSEB0 = gsl_matrix_alloc(ntemplates,template_duration);
+	strcpy(obj.nameCol,"PULSEB0");
+	if (readFitsComplex (obj,&matrixAux_PULSEB0))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(library_collection);
+	}
+
+	gsl_matrix *matrixAux_MF = gsl_matrix_alloc(ntemplates,mfilter_duration);
+	strcpy(obj.nameCol,"MF");
+	if (readFitsComplex (obj,&matrixAux_MF))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(library_collection);
+	}
+
+	gsl_matrix *matrixAux_MFB0 = gsl_matrix_alloc(ntemplates,mfilter_duration);
+	strcpy(obj.nameCol,"MFB0");
+	if (readFitsComplex (obj,&matrixAux_MFB0))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(library_collection);
+	}
 
 	for (int it = 0 ; it < ntemplates ; it++){
-		library_collection->pulse_templates[it].ptemplate    		= new double[template_duration];
-		library_collection->pulse_templates_filder[it].ptemplate    = new double[template_duration];
-		library_collection->pulse_templates_B0[it].ptemplate 		= new double[template_duration];
-		library_collection->matched_filters[it].mfilter      		= new double[mfilter_duration];
-		library_collection->matched_filters_B0[it].mfilter   		= new double[mfilter_duration];
+		library_collection->pulse_templates[it].ptemplate    		= gsl_vector_alloc(template_duration);
+		library_collection->pulse_templates_filder[it].ptemplate    = gsl_vector_alloc(template_duration);
+		library_collection->pulse_templates_B0[it].ptemplate 		= gsl_vector_alloc(template_duration);
+		library_collection->matched_filters[it].mfilter      		= gsl_vector_alloc(mfilter_duration);
+		library_collection->matched_filters_B0[it].mfilter   		= gsl_vector_alloc(mfilter_duration);
 
 		library_collection->pulse_templates[it].template_duration    		= template_duration;
 		library_collection->pulse_templates_filder[it].template_duration    = -1;
@@ -429,37 +478,21 @@ LibraryCollection* getLibraryCollection(const char* const filename,int* const st
 		library_collection->matched_filters[it].mfilter_duration     		= mfilter_duration;
 		library_collection->matched_filters_B0[it].mfilter_duration  		= mfilter_duration;
 
+		library_collection->pulse_templates[it].energy    		= gsl_vector_get(library_collection->energies,it);
+		library_collection->pulse_templates_filder[it].energy	= gsl_vector_get(library_collection->energies,it);
+		library_collection->pulse_templates_B0[it].energy 		= gsl_vector_get(library_collection->energies,it);
+		library_collection->matched_filters[it].energy    		= gsl_vector_get(library_collection->energies,it);
+		library_collection->matched_filters_B0[it].energy 		= gsl_vector_get(library_collection->energies,it);
 
-		library_collection->pulse_templates[it].energy    		= library_collection->energies[it];
-		library_collection->pulse_templates_filder[it].energy	= library_collection->energies[it];
-		library_collection->pulse_templates_B0[it].energy 		= library_collection->energies[it];
-		library_collection->matched_filters[it].energy    		= library_collection->energies[it];
-		library_collection->matched_filters_B0[it].energy 		= library_collection->energies[it];
-
-		//Actually read template columns and save them into the LibraryCollection structure
-		if(fits_read_col(fptr, TDOUBLE, template_colnum, it+1,1, template_duration, 
-			NULL, library_collection->pulse_templates[it].ptemplate, &anynul,status)){
-		  	EP_PRINT_ERROR("Error: cannot read template from PULSE column",*status);
-			*status=EPFAIL; return(library_collection);
-		}
-		if(fits_read_col(fptr, TDOUBLE, template_colnum_B0, it+1,1, template_duration, 
-			NULL, library_collection->pulse_templates_B0[it].ptemplate, &anynul,status)){
-			EP_PRINT_ERROR("Error: cannot read template from PULSEB0 column",*status);
-			*status=EPFAIL; return(library_collection);
-		}
-
-		if(fits_read_col(fptr, TDOUBLE, mfilter_colnum, it+1,1, mfilter_duration, 
-			NULL, library_collection->matched_filters[it].mfilter, &anynul,status)){
-			EP_PRINT_ERROR("Error: cannot read matched filter from MF column",*status);
-			*status=EPFAIL; return(library_collection);
-		}
-		
-		if(fits_read_col(fptr, TDOUBLE, mfilter_colnum_B0, it+1,1, mfilter_duration, 
-			NULL, library_collection->matched_filters_B0[it].mfilter, &anynul,status)){
-			EP_PRINT_ERROR("Error: cannot read matched filter from MF column",EPFAIL);
-			*status=EPFAIL; return(library_collection);
-		}
+		gsl_matrix_get_row(library_collection->pulse_templates[it].ptemplate,matrixAux_PULSE,it);
+		gsl_matrix_get_row(library_collection->pulse_templates_B0[it].ptemplate,matrixAux_PULSEB0,it);
+		gsl_matrix_get_row(library_collection->matched_filters[it].mfilter,matrixAux_MF,it);
+		gsl_matrix_get_row(library_collection->matched_filters_B0[it].mfilter,matrixAux_MFB0,it);
 	}
+	gsl_matrix_free(matrixAux_PULSE);
+	gsl_matrix_free(matrixAux_PULSEB0);
+	gsl_matrix_free(matrixAux_MF);
+	gsl_matrix_free(matrixAux_MFB0);
 
 	if (fits_close_file(fptr, status)){
 			EP_PRINT_ERROR("Error closing library file",*status);
@@ -502,8 +535,8 @@ NoiseSpec* getNoiseSpec(const char* const filename,int* const status){
 	noise_spectrum->noise_duration = noise_duration/2;
 	
 	//Allocate NoiseSpec structure
-	noise_spectrum->noisespec  = new double[noise_duration];
-	noise_spectrum->noisefreqs = new double[noise_duration];
+	noise_spectrum->noisespec  = gsl_vector_alloc(noise_duration);
+	noise_spectrum->noisefreqs = gsl_vector_alloc(noise_duration);
 	
 	//Get noise spectrum (CSD), and noise frequencies (FREQ) column numbers
 	char column_name[12];
@@ -520,16 +553,31 @@ NoiseSpec* getNoiseSpec(const char* const filename,int* const status){
 		EP_PRINT_ERROR("Cannot get column number for FREQ in noise file", *status);
 		*status=EPFAIL; return(noise_spectrum);
 	}	
+
 	// Read column CSD and save it into the structure
-	if(fits_read_col(fptr, TDOUBLE, CSD_colnum,1,1, noise_duration, NULL, noise_spectrum->noisespec, &anynul,status)){
-		EP_PRINT_ERROR("Error: cannot read noise spectrum from CSD column",*status);
-		*status=EPFAIL; return(noise_spectrum);
+	IOData obj;
+	obj.inObject = fptr;
+	obj.nameTable = new char [255];
+	strcpy(obj.nameTable,"NOISEALL");
+	obj.iniCol = 0;
+	obj.nameCol = new char [255];
+	obj.unit = new char [255];
+	strcpy(obj.nameCol,"CSD");
+	obj.type = TDOUBLE;
+	obj.iniRow = 1;
+	obj.endRow = noise_duration;
+	if (readFitsSimple (obj,&noise_spectrum->noisespec))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(noise_spectrum);
 	}
 
 	// Read column FREQ and save it into the structure
-	if(fits_read_col(fptr, TDOUBLE, FREQ_colnum,1,1, noise_duration, NULL, noise_spectrum->noisefreqs, &anynul, status)){
-		EP_PRINT_ERROR("Error: cannot read noise frequencies from FREQ column",*status);
-		*status=EPFAIL; return(noise_spectrum);
+	strcpy(obj.nameCol,"FREQ");
+	if (readFitsSimple (obj,&noise_spectrum->noisefreqs))
+	{
+	   EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+	   *status=EPFAIL; return(noise_spectrum);
 	}
 
 	return(noise_spectrum);
@@ -546,9 +594,9 @@ extern "C" void runEnergyCalib(ReconstructInitSIRENA* reconstruct_init, PulsesCo
 	int status = EPOK;
 
 	long nx, ny;
-	double E0x, E0y;
-	gsl_vector *xi;
-	gsl_vector *yi;
+	double E0x, E0y; // keV
+	gsl_vector *xi;  // keV
+	gsl_vector *yi;  // keV
 
 	if (loadUCEnergies(reconstruct_init, pulsesAll_runEnergyCalib, &nx, &xi, &E0x))
 	{

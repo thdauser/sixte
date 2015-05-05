@@ -108,6 +108,9 @@ struct Parameters {
 	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
 	double LbT;
 	
+	/** Baseline (in ADC units) **/
+	double baseline;
+
 	//Noise filename
 	char NoiseFile[MAXFILENAME];
 	

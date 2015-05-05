@@ -83,67 +83,28 @@
 	#include <genutils.h>
 	#include <inoututils.h>
 
-
+	#include <integraSIRENA.h>
 
 	int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRate);
 	int derMTHSimple (gsl_vector **invector,gsl_vector **sign, int szVct);
 
-	int findMeanSigma (gsl_vector *invector, double *mean, double *sigma, FILE * temporalFile);
-	int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, int boxLPF,double *threshold, FILE * temporalFile);
+	int findMeanSigma (gsl_vector *invector, double *mean, double *sigma);
+	int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, int boxLPF,double *threshold);
 
-	int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb, int sizepulse, gsl_vector **B, FILE * temporalFile);
-	int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int lastPulse, double lrs, double lb, double B, int sizepulse, double *pulseheight, FILE * temporalFile);
-	int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *pulseheight, FILE *temporalFile);
+	int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb, int sizepulse, gsl_vector **B);
+	int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int lastPulse, double lrs, double lb, double B, int sizepulse, double *pulseheight);
+	int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *pulseheight);
 
-	int find_model(double ph, gsl_vector *modelsvalues, gsl_matrix *models, gsl_vector **modelFound, FILE * temporalFile);
-	int find_model1stSample(double firstSample, gsl_vector *firstSamples, gsl_matrix *models, gsl_vector **modelFound, FILE * temporalFile);
-	int firstSampleModels (gsl_matrix *templates, double threshold, gsl_vector **firstSamples, gsl_vector **index_firstSamples, FILE *temporalFile);
-	int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *modelIn1, double ph_modelIn1, gsl_vector *modelIn2, double ph_modelIn2, FILE * temporalFile);
+	int find_model_energies(double ph, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+	int find_model_maxDERs(double ph, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+	int find_model1stSample(double firstSample, gsl_vector *firstSamples, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+	int firstSampleModels (ReconstructInitSIRENA *reconstruct_init, double threshold, gsl_vector **firstSamples, gsl_vector **index_firstSamples);
+	int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *modelIn1, double ph_modelIn1, gsl_vector *modelIn2, double ph_modelIn2);
 
-	int findTstartOLD (gsl_vector *der, double adaptativethreshold, int nSamplesUp, double safetyMargin,
-		int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, 
-		gsl_vector **tstartgslOUT, gsl_vector **tstartgslOUTNEW, gsl_vector **flagTruncated, 
-		gsl_vector **tstartDERgsl, gsl_vector **tmaxDERgsl, gsl_vector **maxDERgsl, 
-		gsl_vector **tendDERgsl, FILE * temporalFile);
 	int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp,
 			int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
-			gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl,
-			FILE * temporalFile);
+			gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl);
 
-	int findPulsesOLD
-	(
-		gsl_vector *vectorin,
-		gsl_vector *vectorinDER,
-		gsl_vector **tstart,
-		gsl_vector **quality,
-		gsl_vector **energy,
-
-		int *nPulses,
-
-		int opmode,
-
-		double taufall,
-		double scalefactor,
-		int sizepulsebins,
-		double samplingRate,
-
-		int samplesup,
-		double nsgms,
-
-		double lb,
-		double lrs,
-
-		gsl_matrix *librarymatrix,
-		gsl_matrix *modelsmatrix,
-
-		double safetymargintstart,
-		double stopcriteriamkc,
-		double kappamkc,
-		double levelprvpulse,
-
-		FILE * temporalFile,
-
-		int index);
 	int findPulses
 	(
 		gsl_vector *vectorin,
@@ -151,6 +112,7 @@
 		gsl_vector **tstart,
 		gsl_vector **quality,
 		gsl_vector **energy,
+		gsl_vector **maxDERgsl,
 
 		int *nPulses,
 		double *threshold,
@@ -168,66 +130,11 @@
 		double lb,
 		double lrs,
 
-		gsl_matrix *librarymatrix,
-		gsl_matrix *modelsmatrix,
+		ReconstructInitSIRENA *reconstruct_init,
 
 		double stopcriteriamkc,
 		double kappamkc,
-		double levelprvpulse,
-
-		FILE * temporalFile);
-
-
-	int findSePulsesOLD
-	(
-		gsl_vector *vectorin,
-		gsl_vector *vectorinDER,
-		gsl_vector **vectorinDERComposed,
-
-		double thresholdmediankappaSingle,
-
-		gsl_vector **tstart,
-		gsl_vector **tstartNOsmt,
-		gsl_vector **quality,
-		gsl_vector **energy,
-		gsl_vector **tstartDER,
-		gsl_vector **tmaxDER,
-		gsl_vector **tendDER,
-		gsl_vector **maxDER,
-
-		gsl_vector **SorSeorPr,
-		gsl_vector **newPulses,
-
-		int *nPulses,
-
-		gsl_vector *startsaturated,
-		gsl_vector *endsaturated,
-		int nSaturated,
-
-		double taufall,
-		double scalefactor,
-		int sizepulse,
-		double samplingRate,
-
-		int samplesup,
-		double nsgms,
-
-		gsl_vector *B,
-		double lrs,
-		gsl_vector *lb,
-
-		gsl_matrix *library,
-		gsl_matrix *models,
-		gsl_vector *model,
-
-		double safetymargintstart,
-		double stopCriteriamkc,
-		double kappamkc,
-		double levelprvpulse,
-
-		FILE * temporalFile,
-
-		int indice);
+		double levelprvpulse);
 
 	int findSePulses
 	(
@@ -239,8 +146,9 @@
 
 		gsl_vector **tstart,
 		gsl_vector **quality,
-		gsl_vector **energy,
+		//gsl_vector **energy,
 		gsl_vector **maxDER,
+		gsl_vector **index_maxDER,
 
 		gsl_vector **newPulses,
 
@@ -258,19 +166,12 @@
 		int samplesup,
 		double nsgms,
 
-		gsl_vector *B,
-		double lrs,
-		gsl_vector *lb,
-
-		gsl_matrix *library,
-		gsl_matrix *models,
 		gsl_vector *model,
+		ReconstructInitSIRENA *reconstruct_init,
 
 		double stopCriteriamkc,
 		double kappamkc,
-		double levelprvpulse,
-
-		FILE * temporalFile);
+		double levelprvpulse);
 
 	int derivative (gsl_vector **invector,int szVct);
 
