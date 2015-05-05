@@ -914,7 +914,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 		message += " of " + string(straux) + " <------------------ ";
 		writeLog(fileRef,"Log", verbosity,message);
 
-		sprintf(val,"-------------> Record: %d of %d <------------------ ",ntotalrows,eventcnt);
+		sprintf(val,"-------------> Record: %d of %ld <------------------ ",ntotalrows,eventcnt);
 
 		// Information has been read by blocks (with nrows per block)
 		// Now, information is going to be used by rows

@@ -298,7 +298,7 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 
 	char dtcName[256];
 
-	strncpy(dtcName,reconstruct_init_createDetectFile->detectFile,255);
+	strncpy(dtcName,reconstruct_init->detectFile,255);
 	dtcName[255]='\0'; // enforce zero ending string in case of buffer overflows
 
 	// Create output FITS file: If it does not exist yet
@@ -442,16 +442,16 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 		}
 
 		// Set PROCESS keyword
-		char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init_createDetectFile->pulse_length);
-		char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init_createDetectFile->tauFall);
-		char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init_createDetectFile->scaleFactor);
-		char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init_createDetectFile->samplesUp);
-		char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init_createDetectFile->nSgms);
-		char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init_createDetectFile->mode);
-		char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init_createDetectFile->crtLib);
-		char str_LrsT[125];			sprintf(str_LrsT,"%e",reconstruct_init_createDetectFile->LrsT);
-		char str_LbT[125];			sprintf(str_LbT,"%e",reconstruct_init_createDetectFile->LbT);
-		char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init_createDetectFile->clobber);
+		char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init->pulse_length);
+		char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init->tauFall);
+		char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init->scaleFactor);
+		char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init->samplesUp);
+		char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init->nSgms);
+		char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init->mode);
+		char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init->crtLib);
+		char str_LrsT[125];			sprintf(str_LrsT,"%e",reconstruct_init->LrsT);
+		char str_LbT[125];			sprintf(str_LbT,"%e",reconstruct_init->LbT);
+		char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
 
 		string process (string(" runDetect") 		+ ' ' +
 		string(reconstruct_init->record_file)          + ' ' + string(reconstruct_init->library_file)		+ ' ' + string(dtcName)		+ ' ' +
