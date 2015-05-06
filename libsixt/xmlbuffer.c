@@ -483,7 +483,12 @@ static void expandXMLElementEnd(void* data, const char* el)
 	// Replace $variables by double values.
 	if (strlen(replacedBuffer->text)>0) {
 	  char stringvalue[MAXMSG];
-	  sprintf(stringvalue, "%f", ii+mydata->offset);
+
+	  if (mydata->offset){
+	        sprintf(stringvalue, "%f", ii+mydata->offset);
+	  } else {
+	        sprintf(stringvalue, "%d", ii);
+	  }
 	  replaceInXMLBuffer(replacedBuffer, mydata->loop_variable,
 			     stringvalue, &mydata->status);
 	  CHECK_STATUS_VOID(mydata->status);
