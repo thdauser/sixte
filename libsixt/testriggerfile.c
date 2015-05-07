@@ -278,7 +278,7 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 
 
 	if (file->row<=file->nrows) {
-		fits_read_col(file->fptr, TULONG, file->trigCol,
+		fits_read_col(file->fptr, TUSHORT, file->trigCol,
 					  file->row,1,file->trigger_size,0,record->adc_array, &anynul,status);
 		CHECK_STATUS_RET(*status,0);
 
@@ -311,7 +311,7 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status){
 	fits_write_col(outputFile->fptr, TDOUBLE, outputFile->timeCol,
 			outputFile->row, 1, 1, &(record->time), status);
-	fits_write_col(outputFile->fptr, TULONG, outputFile->trigCol,
+	fits_write_col(outputFile->fptr, TUSHORT, outputFile->trigCol,
 			outputFile->row, 1, record->trigger_size,record->adc_array, status);
 	fits_write_col(outputFile->fptr, TLONG, outputFile->pixIDCol,
 			outputFile->row, 1, 1, &(record->pixid), status);
