@@ -113,7 +113,7 @@ int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *p
   double J01=-tes->dRdT*II/tes->Lin;
 
   // J_10 = df_1(t,y)/dy0
-  double J10=(2.0*I*RT-II*II*tes->dRdT-(tes->Vdn+tes->Vexc))/tes->Ce1;
+  double J10=(2.0*II*RT-II*II*tes->dRdT-(tes->Vdn+tes->Vexc))/tes->Ce1;
 
   // J_11 = dt_1(t,y)/dy1
   double J11=II*II*tes->dRdT/tes->Ce1;
