@@ -105,8 +105,8 @@ int tesreconstruction_main() {
       else
       {
 	    nrecord = nrecord + 1;
-	    /*if(nrecord == record_file->nrows) lastRecord=1;
-	    if(nrecord <1395) {
+	    if(nrecord == record_file->nrows) lastRecord=1;
+	    /*if(nrecord <1395) {
 	      continue;
 	    }else if(nrecord>1395){
 	      status=1;
