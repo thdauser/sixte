@@ -200,7 +200,7 @@ typedef struct {
 	/** Detection scaleFactor (0.005 – no filtering) **/
 	double scaleFactor;
 	
-	/** Detection samplesUp (samples to confirm threshold overcoming **/
+	/** Detection samplesUp (samples to confirm threshold overcoming) **/
     double samplesUp;
 
 	/** Detection nSgms (sigmas to establish a threshold for detection) **/
@@ -258,6 +258,9 @@ typedef struct {
 	/** Overwrite files? **/
 	int clobber;
 	
+	/** PP's parameter **/
+	int maxPulsesPerRecord;
+
 } ReconstructInitSIRENA;
 
 /** Destructor. */
@@ -280,7 +283,8 @@ extern "C"
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, char* const library_file,
 	double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode, double LrsT,
 	double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF,
-	double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int* const status);
+	double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int maxPulsesPerRecord,
+	int* const status);
 
 /** Constructor. Returns a pointer to an empty PulsesCollection data structure. */
 #ifdef __cplusplus

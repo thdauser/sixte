@@ -96,32 +96,33 @@
 	int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *pulseheight);
 
 	int find_model_energies(double ph, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
-	int find_model_maxDERs(double ph, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+	int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
 	int find_model1stSample(double firstSample, gsl_vector *firstSamples, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
 	int firstSampleModels (ReconstructInitSIRENA *reconstruct_init, double threshold, gsl_vector **firstSamples, gsl_vector **index_firstSamples);
 	int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *modelIn1, double ph_modelIn1, gsl_vector *modelIn2, double ph_modelIn2);
 
-	int findTstart (gsl_vector *der, double adaptativethreshold, int nSamplesUp,
+	int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
 			int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
-			gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl);
+			gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
 
-	int findPulses
+	int findTstartPROD (int maxPulsesPerRecord, gsl_vector *adjustedDerivative, double adaptativethreshold, int nSamplesUp,
+				ReconstructInitSIRENA *reconstruct_init,
+				int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
+
+	int findPulsesCAL
 	(
 		gsl_vector *vectorin,
 		gsl_vector *vectorinDER,
 		gsl_vector **tstart,
 		gsl_vector **quality,
-		gsl_vector **energy,
+		gsl_vector **pulseheight,
 		gsl_vector **maxDERgsl,
 
 		int *nPulses,
 		double *threshold,
 
-		int opmode,
-
 		double taufall,
 		double scalefactor,
-		int sizepulsebins,
 		double samplingRate,
 
 		int samplesup,
@@ -133,45 +134,28 @@
 		ReconstructInitSIRENA *reconstruct_init,
 
 		double stopcriteriamkc,
-		double kappamkc,
-		double levelprvpulse);
+		double kappamkc);
 
-	int findSePulses
-	(
-		gsl_vector *vectorin,
+	int findPulsesPROD (
 		gsl_vector *vectorinDER,
-		gsl_vector **vectorinDERComposed,
-
-		double thresholdmediankappaSingle,
-
 		gsl_vector **tstart,
 		gsl_vector **quality,
-		//gsl_vector **energy,
-		gsl_vector **maxDER,
-		gsl_vector **index_maxDER,
-
-		gsl_vector **newPulses,
+		gsl_vector **maxDERgsl,
 
 		int *nPulses,
-
-		/*gsl_vector *startsaturated,
-		gsl_vector *endsaturated,
-		int nSaturated,*/
+		double *threshold,
 
 		double taufall,
 		double scalefactor,
-		int sizepulse,
 		double samplingRate,
 
 		int samplesup,
 		double nsgms,
 
-		gsl_vector *model,
 		ReconstructInitSIRENA *reconstruct_init,
 
-		double stopCriteriamkc,
-		double kappamkc,
-		double levelprvpulse);
+		double stopcriteriamkc,
+		double kappamkc);
 
 	int derivative (gsl_vector **invector,int szVct);
 

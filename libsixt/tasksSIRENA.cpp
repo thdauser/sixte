@@ -17,7 +17,8 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 
 	fitsfile *dtcObject = NULL;	    // Object which contains information of the output FITS file
 	char dtcName[256];
-	strcpy(dtcName,(*reconstruct_init)->detectFile);
+	strncpy(dtcName,(*reconstruct_init)->detectFile,255);
+	dtcName[255]='\0';
 
 	int eventsz = record->trigger_size;
 	double tstartRecord;
@@ -64,7 +65,6 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 	    message = "Cannot run routine procRecord for record processing";
 	    EP_EXIT_ERROR(message,EPFAIL);
 	}
-
 	int extver=0;
 	char extname[20];
 	
@@ -77,14 +77,14 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 		if (fits_movnam_hdu(dtcObject, ANY_HDU,extname, extver, &status))
 		{
 			message = "Cannot move to HDU " + string(extname) +" in " + string(dtcName);
-			EP_EXIT_ERROR(message,status);
+			EP_EXIT_ERROR(message,EPFAIL);
 		}
 		
 		long totalpulses;
 		if (fits_get_num_rows(dtcObject,&totalpulses, &status))
 		{
 			message = "Cannot get number of rows in " + string(dtcName);
-			EP_EXIT_ERROR(message,status);
+			EP_EXIT_ERROR(message,EPFAIL);
 		}
 
 		int ttpls1 = (int) totalpulses;
@@ -97,11 +97,11 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 		if(fits_write_key(dtcObject,TINT,keyname,&ttpls1,comment,&status))
 		{
 			message = "Cannot write keyword " + string(keyname) +" in " + string(dtcName);
-			EP_EXIT_ERROR(message,status);
+			EP_EXIT_ERROR(message,EPFAIL);
 		}
 	}
 
-	if ((lastRecord == 1) && (*reconstruct_init)->crtLib == 1)	// CREATIONLIB run mode => Calculate the pulse template by averaging some found pulses
+	if ((lastRecord == 1) && (*reconstruct_init)->crtLib == 1 && pulsesAll->ndetpulses>0)	// CREATIONLIB run mode => Calculate the pulse template by averaging some found pulses
 	{
 		gsl_vector *pulsetemplate = gsl_vector_alloc((*reconstruct_init)->pulse_length);
 		double pulseheighttemplate = 0;
@@ -115,7 +115,7 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 		    message = "Cannot run routine calculateTemplate in creationlib run mode";
 		    EP_EXIT_ERROR(message,EPFAIL);
 		}
-		
+
 		if (writeLibrary(*reconstruct_init, pulseheighttemplate, &pulsetemplate, appendToLibrary, &inLibObject))
 		{
 		    message = "Cannot run routine writeLibrary in crationlib run mode";
@@ -130,11 +130,12 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 		if (fits_close_file(dtcObject,&status))
 		{
 			message = "Cannot close file " + string(dtcName);
-			EP_EXIT_ERROR(message,status);
+			EP_EXIT_ERROR(message,EPFAIL);
 		}
 	}
 
 	gsl_vector_free(invector);
+
 	return;
 }
 /*xxxx end of SECTION A xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -157,7 +158,7 @@ int handleLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToL
 			if (createLibraryDetect(reconstruct_init, appendToLibrary, inLibObject, create))
 			{
 				message = "Cannot run routine createLibraryDetect to create pulses library";
-				EP_EXIT_ERROR(message,EPFAIL);
+				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 			}
 		}
 	}
@@ -180,8 +181,9 @@ int createLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToL
 	char keyname[10];
 	char *comment=NULL;
 
-	char inLibName[200];
-	strcpy(inLibName, reconstruct_init->library_file);
+	char inLibName[256];
+	strncpy(inLibName, reconstruct_init->library_file,255);
+	inLibName[255]='\0';
 
 	char keyvalstr[1000];
 	char *tform[1];
@@ -246,7 +248,7 @@ int createLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToL
 		if (eventcntLib <= 0)
 		{
 		    message = "Legal values for EVENTCNT (LIBRARY) are integer numbers greater than 0";
-		    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 		if (fits_write_key(*inLibObject,TLONG,keyname,&eventcntLib,comment,&status))
 		{
@@ -297,7 +299,6 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 	string message = "";
 
 	char dtcName[256];
-
 	strncpy(dtcName,reconstruct_init->detectFile,255);
 	dtcName[255]='\0'; // enforce zero ending string in case of buffer overflows
 
@@ -308,18 +309,18 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 	if (strlen(dtcName)<6)
 	{
 		// dtcName has 5 or less characters => Does not contain '.fits' =>Append '.fits' to dtcName
-	  strcat(dtcName,".fits"); // NB we can use strcat since no buffer
-	                           // overflow will happen
-	  
+		strcat(dtcName,".fits");
 	}
-	else 
+	else
 	{
 		// Check if dtcName has '.fits' and if not, append it
 		if (strncmp(strndup(dtcName+strlen(dtcName)-5, 5),".fits",5) != 0)
 		{
 			// dtcName does not finish as '.fits' => Append '.fits' to dtcName
-		  strncat(dtcName,".fits",255);
-		  dtcName[255]='\0';
+			char dtcNameaux[255];
+			sprintf(dtcNameaux,dtcName);
+			strcat(dtcNameaux,".fits");
+			strcpy(dtcName,dtcNameaux);
 		}
 	}
 
@@ -395,13 +396,11 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 		strcpy(keyname,"EVENTSZ");
-		//if (sizePulse_b <= 0)
 		if (reconstruct_init->pulse_length <= 0)
 		{
 			message = "Legal values for EVENTSZ (PULSES) are integer numbers greater than 0";
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
-		//if (fits_write_key(dtcObject,TINT,keyname,&sizePulse_b,comment,&status))
 		if (fits_write_key(*dtcObject,TINT,keyname,&(reconstruct_init->pulse_length),comment,&status))
 		{
 			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
@@ -534,7 +533,7 @@ int filderLibrary(ReconstructInitSIRENA** reconstruct_init, double samprate)
 			if (derivative (&model,model->size))
 			{
 				message = "Cannot run routine derMTHSimple to calculate derivative";
-				EP_PRINT_ERROR(message,EPFAIL);
+				EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 			}
 
 			gsl_vector_memcpy((*reconstruct_init)->library_collection->pulse_templates_filder[i].ptemplate,model);
@@ -629,11 +628,11 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	gsl_vector *recordDERIVATIVE = gsl_vector_alloc(record->size);  	// Derivative of invectorFILTERED
 
 	// To look for pulses
-	gsl_vector *tstartgsl = gsl_vector_alloc(record->size);
-	gsl_vector *tendgsl = gsl_vector_alloc(record->size);
-	gsl_vector *qualitygsl = gsl_vector_alloc(record->size);
-	gsl_vector *pulseHeightsgsl = gsl_vector_alloc(record->size);
-	gsl_vector *maxDERgsl = gsl_vector_alloc(record->size);
+	gsl_vector *tstartgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
+	gsl_vector *tendgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
+	gsl_vector *qualitygsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
+	gsl_vector *pulseHeightsgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
+	gsl_vector *maxDERgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
 	gsl_vector_set_zero(qualitygsl);
 	gsl_vector_set_zero(pulseHeightsgsl);						// In order to choose the proper pulse model to calculate
 	                                                            // the adjusted derivative and to fill in the ESTENRGY column
@@ -651,13 +650,15 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	}
 
 	char dtcName[256];
-	strcpy(dtcName,(*reconstruct_init)->detectFile);
+	strncpy(dtcName,(*reconstruct_init)->detectFile,255);
+	dtcName[255]='\0';
+
 	if ((*reconstruct_init)->intermediate == 1)
 	{
 		if (fits_open_file(&dtcObject,dtcName,1,&status))
 		{
 			message = "Cannot open file " +  string(dtcName);
-			EP_EXIT_ERROR(message,status);
+			EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
 		char extname[20];
 		char keyname[10];
@@ -706,9 +707,9 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	if (status == 4)
 	{
 		message = "lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low";
-		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
-
+	
 	// Derivative after filtering
 	if (derivative (&record, record->size))
 	{
@@ -716,41 +717,41 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	gsl_vector_memcpy(recordDERIVATIVE,record);
-
+	/*for(int j=0; j<recordDERIVATIVE->size;j++){
+		cout<<j<<" "<<gsl_vector_get(recordDERIVATIVE,j)<<endl;
+	}*/
+	
+	
 	// Find pulses of the record
 	if ((*reconstruct_init)->crtLib == 0)
 	{
-		if (findPulses (recordNOTFILTERED, recordDERIVATIVE, &tstartgsl, &qualitygsl, &pulseHeightsgsl, &maxDERgsl,
-				&numPulses, &threshold,
-				1,
-				tauFALL, scaleFactor, sizePulse_b, samprate,
-				samplesUp, nSgms,
-				Lb, Lrs,
-				(*reconstruct_init),
-				stopCriteriaMKC,
-				kappaMKC,
-				levelPrvPulse))
-		{
-			message = "Cannot run routine findPulses";
-			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-		}
+		if (findPulsesPROD (recordDERIVATIVE, &tstartgsl, &qualitygsl, &maxDERgsl,
+						&numPulses, &threshold,
+						tauFALL, scaleFactor, samprate,
+						samplesUp, nSgms,
+						(*reconstruct_init),
+						stopCriteriaMKC,
+						kappaMKC))
+				{
+					message = "Cannot run routine findPulsesPROD";
+					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+				}
 	}
 	else if ((*reconstruct_init)->crtLib == 1)
 	{
-		if (findPulses (recordNOTFILTERED, recordDERIVATIVE, &tstartgsl, &qualitygsl, &pulseHeightsgsl, &maxDERgsl,
-				&numPulses, &threshold,
-				0,
-				tauFALL, scaleFactor, sizePulse_b, samprate,
-				samplesUp, nSgms,
-				Lb, Lrs,
-				(*reconstruct_init),
-				stopCriteriaMKC,
-				kappaMKC,
-				levelPrvPulse))
-		{
-			message = "Cannot run routine findPulses";
-			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-		}
+		if (findPulsesCAL (recordNOTFILTERED, recordDERIVATIVE, &tstartgsl, &qualitygsl, &pulseHeightsgsl, &maxDERgsl,
+						&numPulses, &threshold,
+						tauFALL, scaleFactor, samprate,
+						samplesUp, nSgms,
+						Lb, Lrs,
+						(*reconstruct_init),
+						stopCriteriaMKC,
+						kappaMKC))
+				{
+					message = "Cannot run routine findPulsesCAL";
+					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+				}
+
 	}
 	(*reconstruct_init)->threshold = threshold;
 
@@ -772,10 +773,9 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 			}
 		}
 	}
-
 	// Obtain the approximate rise and fall times of each pulse
-	gsl_vector *tauRisegsl = gsl_vector_alloc(recordDERIVATIVE->size);
-	gsl_vector *tauFallgsl = gsl_vector_alloc(recordDERIVATIVE->size);
+	gsl_vector *tauRisegsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
+	gsl_vector *tauFallgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
 	gsl_vector_set_zero(tauRisegsl);
 	gsl_vector_set_zero(tauFallgsl);
 	/*if (obtainTau (recordNOTFILTERED, tstartgsl, tendgsl, *numPulses, &tauRisegsl, &tauFallgsl))
@@ -814,6 +814,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		foundPulses->pulses_detected[i].maxDER = gsl_vector_get(maxDERgsl,i);
 		// 'ucenergy' and 'energy' will be known after running runFilter and runEnergy respectively
 		foundPulses->pulses_detected[i].quality = gsl_vector_get(qualitygsl,i);
+		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<", pulse_duration= "<<foundPulses->pulses_detected[i].pulse_duration<<",quality= "<<foundPulses->pulses_detected[i].quality<<endl;
 	}
 
 	// Write pulses info in output FITS file
@@ -849,7 +850,6 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 * writePulses function:
 *
 ******************************************************************************/
-//int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, double initialtime, gsl_vector *invectorNOTFIL, int numPulsesRecord, gsl_vector *tstart, gsl_vector *tend, gsl_vector *quality, gsl_vector *taurise, gsl_vector *taufall, gsl_vector *pulseheights, fitsfile *dtcObject)
 int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, double initialtime, gsl_vector *invectorNOTFIL, int numPulsesRecord, gsl_vector *tstart, gsl_vector *tend, gsl_vector *quality, gsl_vector *taurise, gsl_vector *taufall, fitsfile *dtcObject)
 {
 	int status = EPOK;
@@ -862,7 +862,8 @@ int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, doubl
 	gsl_vector_view temp;
 
 	char dtcName[256];
-	strcpy(dtcName,(*reconstruct_init)->detectFile);
+	strncpy(dtcName,(*reconstruct_init)->detectFile,255);
+	dtcName[255]='\0';
 
     // If intermediate=1 => First record, createDetectFile
     //	                    Change clobber to 2
@@ -871,14 +872,14 @@ int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, doubl
 	if ((*reconstruct_init)->clobber == 1)
 	{
 		totalpulses = 0;
-		if ((*reconstruct_init)->crtLib == 1 )	(*reconstruct_init)->clobber = 2;
+		if ((*reconstruct_init)->crtLib == 1)	(*reconstruct_init)->clobber = 2;
 	}
 	else if ((*reconstruct_init)->clobber == 2)
 	{
 		if (fits_get_num_rows(dtcObject,&totalpulses, &status))
 		{
 			message = "Cannot get number of rows in " + string(dtcName);
-			EP_EXIT_ERROR(message,status);
+			EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
 	}
 
@@ -935,7 +936,7 @@ int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, doubl
 		// Creating I0 Column
 		strcpy(obj.nameCol,"I0");
 		obj.type = TDOUBLE;
-		strcpy(obj.unit,"Amps");
+		strcpy(obj.unit,"a.u.");
 		if (writeFitsComplex(obj, vgslout2))
 		{
 			message = "Cannot run routine writeFitsComplex for column IO";
@@ -974,7 +975,7 @@ int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, doubl
 		// Creating QUALITY Column
 		strcpy(obj.nameCol,"QUALITY");
 		obj.type = TSHORT;
-		strcpy(obj.unit,"bits");
+		strcpy(obj.unit," ");
 		temp = gsl_vector_subvector(quality,0,numPulsesRecord);
 		if (writeFitsSimple(obj, &temp.vector))
 		{
@@ -986,6 +987,10 @@ int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, doubl
 
 		// Free allocate GSL vectors
 		gsl_matrix_free (vgslout2);
+
+		delete [] obj.nameTable;
+		delete [] obj.nameCol;
+		delete [] obj.unit;
 	}
 
 	return (EPOK);
@@ -1125,7 +1130,7 @@ int calculateTemplate (ReconstructInitSIRENA *reconstruct_init, PulsesCollection
 	if (findMeanSigma (&temp.vector, &meanLast200points, &sgLast200points))
 	{
 		message = "Cannot run findMeanSigma routine for kappa-sigma iteration";
-		EP_PRINT_ERROR(message,EPFAIL);
+		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	if (fabs(gsl_vector_get(*pulseaverage,0))>fabs(meanLast200points)+3*sgLast200points)
 	{
@@ -1260,6 +1265,8 @@ int align(double samprate, gsl_vector **vector1, gsl_vector **vector2)
 	// Phases of the FFT_vector1 and FFT_vector2, *size/(2*pi)
 	vector1fft_ph= gsl_complex_arg(gsl_vector_complex_get(vector1fft,1))*size/(2*pi);
 	vector2fft_ph= gsl_complex_arg(gsl_vector_complex_get(vector2fft,1))*size/(2*pi);
+	gsl_vector_complex_free(vector1fft);
+	gsl_vector_complex_free(vector2fft);
 
 	// Shift between the input vectors
 	shiftdouble = vector1fft_ph-vector2fft_ph;
@@ -1288,6 +1295,8 @@ int align(double samprate, gsl_vector **vector1, gsl_vector **vector2)
 		}
 		gsl_vector_memcpy(*vector2,vector2shifted);
 	}
+
+	gsl_vector_free(vector2shifted);
 
 	return (EPOK);
 }
@@ -1348,8 +1357,9 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
 	int extver=0;
 	string message = "";
 
-	char inLibName[200];
-	strcpy(inLibName, reconstruct_init->library_file);
+	char inLibName[256];
+	strncpy(inLibName, reconstruct_init->library_file,255);
+	inLibName[255]='\0';
 
 	// Declare variables
 	gsl_vector *energyoutgsl = gsl_vector_alloc(1);
@@ -1376,15 +1386,11 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	if (eventcntLib <= 0)
     	{
     		message = "Legal values for read EVENTCNT (LIBRARY) are integer numbers greater than 0";
-    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
     	}
-    	int eventcntLib1 = eventcntLib + 1;
+    	long eventcntLib1 = eventcntLib + 1;
     	strcpy(keyname,"EVENTCNT");
-    	if (eventcntLib1 <= eventcntLib)
-    	{
-    		message = "Legal value for written EVENTCNT (LIBRARY) is read EVENTCNT (LIBRARY) plus 1";
-    		EP_PRINT_ERROR(message,status); return(EPFAIL);
-    	}
+	
     	if (fits_update_key(*inLibObject,TLONG,keyname, &eventcntLib1,comment,&status))
     	{
     	    message = "Cannot update keyword " + string(keyname);
@@ -1407,11 +1413,12 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_matrix *matchedfiltersb0aux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->pulse_length);
     	gsl_matrix *matchedfiltersaux1 = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->pulse_length);
     	gsl_matrix *matchedfiltersb0aux1 = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->pulse_length);
-
-    	gsl_vector_memcpy(energycolumn,reconstruct_init->library_collection->energies);
-    	gsl_vector_memcpy(estenergycolumn,reconstruct_init->library_collection->pulse_heights);
+	
     	for (int i=0;i<eventcntLib;i++)
     	{
+		gsl_vector_set(energycolumn,i,gsl_vector_get(reconstruct_init->library_collection->energies,i));
+                gsl_vector_set(estenergycolumn,i,gsl_vector_get(reconstruct_init->library_collection->pulse_heights,i));
+		
     		gsl_matrix_set_row(modelsaux,i,reconstruct_init->library_collection->pulse_templates[i].ptemplate);
     		gsl_matrix_set_row(modelsb0aux,i,reconstruct_init->library_collection->pulse_templates_B0[i].ptemplate);
     		gsl_matrix_set_row(matchedfiltersaux,i,reconstruct_init->library_collection->matched_filters[i].mfilter);
@@ -1461,9 +1468,11 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     		gsl_matrix_get_row(matchedfiltersrowb0,matchedfiltersb0aux,gsl_permutation_get(perm,i));
     		gsl_matrix_set_row(matchedfiltersb0aux1,i,matchedfiltersrowb0);
     	}
+
     	gsl_vector_memcpy(energycolumn,energycolumnaux);
     	gsl_vector_memcpy(estenergycolumn,estenergycolumnaux);
     	gsl_matrix_memcpy(modelsaux,modelsaux1);
+
     	gsl_matrix_memcpy(modelsb0aux,modelsb0aux1);
     	gsl_matrix_memcpy(matchedfiltersaux,matchedfiltersaux1);
     	gsl_matrix_memcpy(matchedfiltersb0aux,matchedfiltersb0aux1);
@@ -1506,7 +1515,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	    }
 
     	    strcpy(obj.nameCol,"PULSE");
-    	    strcpy(obj.unit,"Amps");
+    	    strcpy(obj.unit,"a.u.");
     	    gsl_matrix_get_row(modelsrow,modelsaux,i);
     	    gsl_matrix_set_row(pulsetemplates_matrix,0,modelsrow);
     	    if (writeFitsComplex(obj, pulsetemplates_matrix))
@@ -1516,7 +1525,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	    }
 
     	    strcpy(obj.nameCol,"PULSEB0");
-    	    strcpy(obj.unit,"Amps");
+    	    strcpy(obj.unit,"a.u.");
     	    gsl_matrix_get_row(modelsrowb0,modelsb0aux,i);
     	    gsl_matrix_set_row(pulsetemplatesb0_matrix,0,modelsrowb0);
     	    if (writeFitsComplex(obj, pulsetemplatesb0_matrix))
@@ -1547,6 +1556,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
        	    }
 
     	}
+
     	gsl_vector_free(modelsrow);
     	gsl_vector_free(modelsrowb0);
     	gsl_vector_free(matchedfiltersrow);
@@ -1558,6 +1568,10 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_matrix_free(modelsb0aux);
     	gsl_matrix_free(matchedfiltersaux);
     	gsl_matrix_free(matchedfiltersb0aux);
+
+    	delete [] obj.nameTable;
+    	delete [] obj.nameCol;
+    	delete [] obj.unit;
     }
     else
     {
@@ -1619,7 +1633,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
 
     	// Creating PULSE Column
     	strcpy(obj.nameCol,"PULSE");
-    	strcpy(obj.unit,"Amps");
+    	strcpy(obj.unit,"a.u.");
     	if (writeFitsComplex(obj, pulsetemplates_matrix))
     	{
     		message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
@@ -1628,7 +1642,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
 
     	// Creating PULSEB0 Column
     	strcpy(obj.nameCol,"PULSEB0");
-    	strcpy(obj.unit,"Amps");
+    	strcpy(obj.unit,"a.u.");
     	if (writeFitsComplex(obj, pulsetemplatesb0_matrix))
     	{
     		message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
@@ -1654,14 +1668,17 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     		message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
     		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
     	}
+
+    	delete [] obj.nameTable;
+    	delete [] obj.nameCol;
+    	delete [] obj.unit;
     }
 
     if (fits_close_file(*inLibObject,&status))
     {
     	message = "Cannot close file " + string(inLibName);
-        EP_EXIT_ERROR(message,status);
+    	EP_PRINT_ERROR(message,status);return(EPFAIL);
     }
-
 
     // Free allocate of GSL vectors
     gsl_vector_free(energyoutgsl);
@@ -1692,7 +1709,8 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 	if ((*reconstruct_init)->intermediate == 1)
 	{
 		char dtcName[256];
-		strcpy(dtcName,(*reconstruct_init)->detectFile);
+		strncpy(dtcName,(*reconstruct_init)->detectFile,255);
+		dtcName[255]='\0';
 	}
 
 	int TorF;
@@ -1731,20 +1749,16 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 	double uncE;
 
 	// Declare variables
-	//gsl_vector *firstSamples;
-
 	gsl_vector *optimalfilter_SHORT;	// Resized optimal filter expressed in the time domain (optimalfilter(t))
-	gsl_vector *optimalfilter_f_SHORT;		// Resized optimal filter f's when f's are according to [0,...fmax,-fmax,...] (frequency domain)
-	gsl_vector *optimalfilter_FFT_SHORT;	// Resized optimal filter magnitudes when f's are according to [0,...fmax,-fmax,...] (frequency domain)
+	gsl_vector *optimalfilter_f_SHORT = NULL;		// Resized optimal filter f's when f's are according to [0,...fmax,-fmax,...] (frequency domain)
+	gsl_vector *optimalfilter_FFT_SHORT = NULL;	// Resized optimal filter magnitudes when f's are according to [0,...fmax,-fmax,...] (frequency domain)
+	gsl_vector_complex *optimalfilter_FFT_complex = NULL;
 
 	gsl_vector *model;
 
 	gsl_vector *recordAux;
-	//gsl_vector *recordAux_filder;
 
 	gsl_vector *pulse = NULL;
-	gsl_vector *pulse_filder = NULL;
-	//double firstSample_pulse;
 
 	gsl_vector *filtergsl = NULL;			// Matched filter values (time domain)
 
@@ -1772,10 +1786,9 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 		gsl_vector_free(baselinegsl);
 	}
 
-
 	if ((*reconstruct_init)->mode == 0)
 	{
-		gsl_vector *filtergsl = gsl_vector_alloc((*reconstruct_init)->pulse_length);			// Filter values
+		filtergsl = gsl_vector_alloc((*reconstruct_init)->pulse_length);			// Filter values
 
 		if (nRecord == 1)
 		{
@@ -1787,7 +1800,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 			}
 
 			// Optimal filter
-			if (calculus_optimalFilter (filtergsl, filtergsl->size, 1/record->delta_t, runF0orB0val, (*reconstruct_init)->noise_spectrum->noisefreqs, (*reconstruct_init)->noise_spectrum->noisespec, &optimalfilter_SHORT, &optimalfilter_f_SHORT, &optimalfilter_FFT_SHORT, &normalizationFactor))
+			if (calculus_optimalFilter (TorF, (*reconstruct_init)->intermediate, (*reconstruct_init)->mode, filtergsl, filtergsl->size, 1/record->delta_t, runF0orB0val, (*reconstruct_init)->noise_spectrum->noisefreqs, (*reconstruct_init)->noise_spectrum->noisespec, &optimalfilter_SHORT, &optimalfilter_f_SHORT, &optimalfilter_FFT_SHORT, &optimalfilter_FFT_complex, &normalizationFactor))
 			{
 				message = "Cannot run routine calculus_optimalFilter";
 				EP_EXIT_ERROR(message,EPFAIL);
@@ -1811,6 +1824,8 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 		else
 		{
 			optimalfilter_SHORT = gsl_vector_alloc((*optimalFilter)->ofilter_duration);
+			optimalfilter_FFT_complex = gsl_vector_complex_alloc((*optimalFilter)->ofilter_duration);
+			gsl_vector_complex_set_zero(optimalfilter_FFT_complex);
 			normalizationFactor = (*optimalFilter)->nrmfctr;
 			gsl_vector_memcpy(optimalfilter_SHORT,(*optimalFilter)->ofilter);
 		}
@@ -1826,7 +1841,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 		}
 		if (iter == (*pulsesInRecord)->ndetpulses)
 		{
-			message = "There are no valid pulses (quality == 0) in the record";
+			message = "There are no valid pulses (quality == 0) in one record";
 			EP_PRINT_ERROR(message,-999);
 		}
 
@@ -1842,19 +1857,21 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 				gsl_vector_memcpy(pulse,&temp.vector);
 
 				// Calculate the uncalibrated energy of each pulse
-				if (calculateUCEnergy(pulse,optimalfilter_SHORT,TorF,normalizationFactor,1/record->delta_t,&uncE))
+				if (calculateUCEnergy(pulse,optimalfilter_SHORT,optimalfilter_FFT_complex,TorF,(*reconstruct_init)->mode,normalizationFactor,1/record->delta_t,&uncE))
 				{
 					message = "Cannot run calculateUCEnergy routine for pulse i=" + boost::lexical_cast<std::string>(i);
-					EP_PRINT_ERROR(message,EPFAIL);
+					EP_EXIT_ERROR(message,EPFAIL);
 				}
+				gsl_vector_free(pulse);
 
 				if ((*reconstruct_init)->intermediate == 1)
 				{
 					if (writeUCEnergy(reconstruct_init, pulsesAll, *pulsesInRecord, i, uncE, &dtcObject, create))
 					{
 						message = "Cannot run writeUCEnergy routine for pulse i=" + boost::lexical_cast<std::string>(i);
-						EP_PRINT_ERROR(message,EPFAIL);
+						EP_EXIT_ERROR(message,EPFAIL);
 					}
+					//reconstruct_init->clobber = 2;
 				}
 
 				(*pulsesInRecord)->pulses_detected[i].grade1 = optimalfilter_SHORT->size;
@@ -1868,8 +1885,9 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 					if (writeUCEnergy(reconstruct_init, pulsesAll, *pulsesInRecord, i, uncE, &dtcObject, create))
 					{
 						message = "Cannot run writeUCEnergy routine for pulse i=" + boost::lexical_cast<std::string>(i);
-						EP_PRINT_ERROR(message,EPFAIL);
+						EP_EXIT_ERROR(message,EPFAIL);
 					}
+					//reconstruct_init->clobber = 2;
 				}
 
 				(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
@@ -1879,6 +1897,10 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 		}
 
 		gsl_vector_free(optimalfilter_SHORT);
+		if (optimalfilter_f_SHORT != NULL) gsl_vector_free(optimalfilter_f_SHORT);
+		if (optimalfilter_FFT_SHORT != NULL) gsl_vector_free(optimalfilter_FFT_SHORT);
+		gsl_vector_complex_free(optimalfilter_FFT_complex);
+		gsl_vector_free(filtergsl);
 	}
 	else if ((*reconstruct_init)->mode == 1)
 	{
@@ -1911,7 +1933,6 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 				resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
 				//resize_mf = pow(2,floor(log2(resize_mf)));
 
-				//cout<<"resize_mf:"<<resize_mf<<endl;
 				// Pulse
 				tstartSamplesRecord = floor((*pulsesInRecord)->pulses_detected[i].Tstart/record->delta_t+0.5)-tstartRecordSamples;
 				pulse = gsl_vector_alloc(resize_mf);
@@ -1930,16 +1951,16 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 				temp = gsl_vector_subvector(filtergsl_aux,0,resize_mf);
 				gsl_vector_memcpy(filtergsl,&temp.vector);
 				gsl_vector_free(filtergsl_aux);
-				
+
 				// Calculate the optimal filter
-				if (calculus_optimalFilter (filtergsl, filtergsl->size, 1/record->delta_t, runF0orB0val, (*reconstruct_init)->noise_spectrum->noisefreqs, (*reconstruct_init)->noise_spectrum->noisespec, &optimalfilter_SHORT, &optimalfilter_f_SHORT, &optimalfilter_FFT_SHORT, &normalizationFactor))
+				if (calculus_optimalFilter (TorF, (*reconstruct_init)->intermediate, (*reconstruct_init)->mode, filtergsl, filtergsl->size, 1/record->delta_t, runF0orB0val, (*reconstruct_init)->noise_spectrum->noisefreqs, (*reconstruct_init)->noise_spectrum->noisespec, &optimalfilter_SHORT, &optimalfilter_f_SHORT, &optimalfilter_FFT_SHORT, &optimalfilter_FFT_complex, &normalizationFactor))
 				{
 					message = "Cannot run routine calculus_optimalFilter";
-				    EP_EXIT_ERROR(message,EPFAIL);
+					EP_EXIT_ERROR(message,EPFAIL);
 				}
 
 				// Calculate the uncalibrated energy of each pulse
-				if (calculateUCEnergy(pulse,optimalfilter_SHORT,TorF,normalizationFactor,1/record->delta_t,&uncE))
+				if (calculateUCEnergy(pulse,optimalfilter_SHORT,optimalfilter_FFT_complex,TorF,(*reconstruct_init)->mode,normalizationFactor,1/record->delta_t,&uncE))
 				{
 					message = "Cannot run calculateUCEnergy routine for pulse i=" + boost::lexical_cast<std::string>(i);
 					EP_EXIT_ERROR(message,EPFAIL);
@@ -1951,10 +1972,10 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 				    message = "Cannot run find_model_energies routine for pulse i=" + boost::lexical_cast<std::string>(i);
 				    EP_EXIT_ERROR(message,EPFAIL);
 				}
-				//for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+(*reconstruct_init)->pulse_length);j++)
-				for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+resize_mf-1);j++)
+
+				//for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+resize_mf-1);j++)
+				for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+resize_mf);j++)
 				{
-				  
 					gsl_vector_set(recordAux,j,gsl_vector_get(recordAux,j)-gsl_vector_get(model,j-tstartSamplesRecord));
 				}
 
@@ -1993,23 +2014,21 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = 0.0;
 				(*pulsesInRecord)->pulses_detected[i].energy = 0.0;
 			} // End if
+
 			gsl_vector_free(optimalfilter_SHORT);
 			gsl_vector_free(optimalfilter_f_SHORT);
 			gsl_vector_free(optimalfilter_FFT_SHORT);
+			gsl_vector_complex_free(optimalfilter_FFT_complex);
 			if((*pulsesInRecord)->pulses_detected[i].quality == 0)
 			{
 				gsl_vector_free(pulse);
-				//gsl_vector_free(pulse_filder);
 				gsl_vector_free(filtergsl);
 			}
 		} // End for
 
 		gsl_vector_free(recordAux);
-		//gsl_vector_free(recordAux_filder);
 		gsl_vector_free(model);
 	} // End if
-
-	//gsl_vector_free(firstSamples);
 
 	return;
 }
@@ -2042,7 +2061,7 @@ int find_energy(double energyKeyword, gsl_vector *energygsl, long *rowFound)
 /***** SECTION BX ************************************************************
 * calculus_optimalFilter:
 ****************************************/
-int calculus_optimalFilter(gsl_vector *matchedfiltergsl, long mf_size, double samprate, int runF0orB0val, gsl_vector *freqgsl, gsl_vector *csdgsl, gsl_vector **optimal_filtergsl, gsl_vector **of_f, gsl_vector **of_FFT, double *normalizationFactor)
+int calculus_optimalFilter(int TorF, int intermediate, int mode, gsl_vector *matchedfiltergsl, long mf_size, double samprate, int runF0orB0val, gsl_vector *freqgsl, gsl_vector *csdgsl, gsl_vector **optimal_filtergsl, gsl_vector **of_f, gsl_vector **of_FFT, gsl_vector_complex **of_FFT_complex, double *normalizationFactor)
 {
 	// FFT calculus of the filter template (MATCHED FILTER->matchedfiltergsl)
 	// Declare variables
@@ -2221,13 +2240,14 @@ int calculus_optimalFilter(gsl_vector *matchedfiltergsl, long mf_size, double sa
 	gsl_vector_mul(n_FFT_2,n_FFT_2);
 
 	gsl_vector_memcpy(*of_FFT,mf_FFT);
-	gsl_vector_complex *of_FFT_complex = gsl_vector_complex_alloc(mf_size);
+	//gsl_vector_complex *of_FFT_complex = gsl_vector_complex_alloc(mf_size);
+	*of_FFT_complex = gsl_vector_complex_alloc(mf_size);
 	for (int i=0;i<mf_size;i++)
 	{
-		gsl_vector_complex_set(of_FFT_complex,i,gsl_complex_div_real(gsl_vector_complex_get(mfFFTcomp_conj,i),gsl_vector_get(n_FFT_2,i)));
+		gsl_vector_complex_set(*of_FFT_complex,i,gsl_complex_div_real(gsl_vector_complex_get(mfFFTcomp_conj,i),gsl_vector_get(n_FFT_2,i)));
 	}
 
-	gsl_vector_complex_absRIFCA(*of_FFT,of_FFT_complex);
+	gsl_vector_complex_absRIFCA(*of_FFT,*of_FFT_complex);
 
 	// Calculus of the normalization factor
 	*normalizationFactor = 0;
@@ -2239,23 +2259,31 @@ int calculus_optimalFilter(gsl_vector *matchedfiltergsl, long mf_size, double sa
 	gsl_vector_free(mf_FFT_2);
 	gsl_vector_free(n_FFT_2);
 
-	// Inverse FFT (to get the expression of the optimal filter in time domain)
-	// Complex OptimalFilter(f) => Taking into account magnitude (MatchedFilter(f)/N^2(f)) and phase (given by MatchedFilter(f))
-	gsl_vector_complex *of_FFTcomp = gsl_vector_complex_alloc(mf_size);
-	*optimal_filtergsl = gsl_vector_alloc(mf_size);
-	for (int i=0;i<mf_size;i++)
+	if ((TorF == 0) || (intermediate == 1) || (mode == 0))
 	{
-		gsl_vector_complex_set(of_FFTcomp,i,gsl_complex_polar(gsl_complex_abs(gsl_vector_complex_get(of_FFT_complex,i)),gsl_vector_get(mf_arg,i)));
+		// Inverse FFT (to get the expression of the optimal filter in time domain)
+		// Complex OptimalFilter(f) => Taking into account magnitude (MatchedFilter(f)/N^2(f)) and phase (given by MatchedFilter(f))
+		gsl_vector_complex *of_FFTcomp = gsl_vector_complex_alloc(mf_size);
+		*optimal_filtergsl = gsl_vector_alloc(mf_size);
+		for (int i=0;i<mf_size;i++)
+		{
+			gsl_vector_complex_set(of_FFTcomp,i,gsl_complex_polar(gsl_complex_abs(gsl_vector_complex_get(*of_FFT_complex,i)),gsl_vector_get(mf_arg,i)));
+		}
+		if (FFTinverse(of_FFTcomp,*optimal_filtergsl,SelectedTimeDuration))
+		{
+			message = "Cannot run routine FFTinverse to get optimal filter in time domain";
+			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		}
 
+		gsl_vector_complex_free(of_FFTcomp);
 	}
-	if (FFTinverse(of_FFTcomp,*optimal_filtergsl,SelectedTimeDuration))
+	else
 	{
-	    message = "Cannot run routine FFTinverse to get optimal filter in time domain";
-	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		*optimal_filtergsl = gsl_vector_alloc(mf_size);
+		gsl_vector_set_zero(*optimal_filtergsl);
 	}
 
-	gsl_vector_complex_free(of_FFTcomp);
-	gsl_vector_complex_free(of_FFT_complex);
+	//gsl_vector_complex_free(of_FFT_complex);
 	gsl_vector_complex_free(mfFFTcomp_conj);
 	gsl_vector_free(mf_f);
 	gsl_vector_free(mf_FFT);
@@ -2350,73 +2378,6 @@ int interpolatePOS (gsl_vector *x_in, gsl_vector *y_in, long size, double step, 
 
 
 /***** SECTION BX ************************************************************
-* getMatchedFilter: This function ...
-*
-******************************************************************************/
-int getMatchedFilter(int runF0orB0val, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilter)
-{
-	string message = "";
-
-	// Obtain the matched filter by interpolating
-	if (find_matchedfilter(runF0orB0val, reconstruct_init->monoenergy, reconstruct_init->library_collection->energies, reconstruct_init, matchedfilter))
-	{
-		message = "Cannot run routine find_matchedfilter for filter interpolation";
-		EP_EXIT_ERROR(message,EPFAIL);
-	}
-
-	return(EPOK);
-}
-/*xxxx end of SECTION BX xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
-
-
-/***** SECTION BX ************************************************************
-* getMatchedFilterProduction: This function ...
-*
-******************************************************************************/
-int getMatchedFilterProduction(int runF0orB0val, double tstart_pulse, gsl_vector *pulse, gsl_vector *pulse_filder, double firstSample_pulse, gsl_vector *firstSamples, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilter)
-{
-	string message = "";
-
-	if (tstart_pulse == 0) // Truncated pulse at the beginnig of the record
-	{
-		// Establish a new threshold with the first sample (a bit fewer) => New firstSamplesgsl
-		gsl_vector *firstSamples_aux = gsl_vector_alloc(reconstruct_init->library_collection->ntemplates);
-		gsl_vector_set_all(firstSamples_aux,0);
-		gsl_vector *indexfirstSamples_aux = gsl_vector_alloc(reconstruct_init->library_collection->ntemplates);
-		gsl_vector_set_all(indexfirstSamples_aux,0);
-
-		if (firstSampleModels (reconstruct_init, gsl_vector_get(pulse_filder,0)-gsl_vector_get(pulse_filder,0)/100, &firstSamples_aux, &indexfirstSamples_aux))
-		{
-		    message = "Cannot run firstSampleModels routine to get the value of the first sample over the threshold and the index of that sample";
-		    EP_PRINT_ERROR(message,EPFAIL);
-		}
-
-		// Obtain the matched filter by interpolating
-		if (find_matchedfilter(runF0orB0val, firstSample_pulse, firstSamples_aux, reconstruct_init, matchedfilter))
-		{
-			message = "Cannot run routine find_matchedfilter for filter interpolation";
-			EP_EXIT_ERROR(message,EPFAIL);
-		}
-
-		gsl_vector_free(firstSamples_aux);
-		gsl_vector_free(indexfirstSamples_aux);
-	}
-	else
-	{
-		// Obtain the matched filter by interpolating
-		if (find_matchedfilter(runF0orB0val, firstSample_pulse, firstSamples, reconstruct_init, matchedfilter))
-		{
-			message = "Cannot run routine find_matchedfilter for filter interpolation";
-			EP_EXIT_ERROR(message,EPFAIL);
-		}
-	}
-
-	return(EPOK);
-}
-/*xxxx end of SECTION BX xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
-
-
-/***** SECTION BX ************************************************************
 * find_matchedfilter:
 ****************************************/
 int find_matchedfilter(int runF0orB0val, double ph, gsl_vector *energiesvalues, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound)
@@ -2428,11 +2389,15 @@ int find_matchedfilter(int runF0orB0val, double ph, gsl_vector *energiesvalues, 
 	{
 		if (runF0orB0val == 0)	gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters[0].mfilter);
 		else					gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters_B0[0].mfilter);
+
+		gsl_vector_scale(*matchedfilterFound,ph/gsl_vector_get(energiesvalues,0));
 	}
 	else if (ph > gsl_vector_get(energiesvalues,nummodels-1))
 	{
 		if (runF0orB0val == 0)	gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters[nummodels-1].mfilter);
 		else					gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters_B0[nummodels-1].mfilter);
+
+		gsl_vector_scale(*matchedfilterFound,ph/gsl_vector_get(energiesvalues,nummodels-1));
 	}
 	else
 	{
@@ -2442,6 +2407,8 @@ int find_matchedfilter(int runF0orB0val, double ph, gsl_vector *energiesvalues, 
 			{
 				if (runF0orB0val == 0)	gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters[i].mfilter);
 				else					gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters_B0[i].mfilter);
+
+				gsl_vector_scale(*matchedfilterFound,ph/gsl_vector_get(energiesvalues,i));
 
 				break;
 			}
@@ -2485,7 +2452,7 @@ int find_matchedfilter(int runF0orB0val, double ph, gsl_vector *energiesvalues, 
 /***** SECTION BX ************************************************************
 * calculateUCEnergy function:
 ****************************************************************************/
-int calculateUCEnergy (gsl_vector *vector, gsl_vector *filter, int domain, double nrmfctr, double samprate, double *calculatedEnergy)
+int calculateUCEnergy (gsl_vector *vector, gsl_vector *filter, gsl_vector_complex *filterFFT, int domain, int mode, double nrmfctr, double samprate, double *calculatedEnergy)
 {
 	string message = "";
 
@@ -2512,27 +2479,41 @@ int calculateUCEnergy (gsl_vector *vector, gsl_vector *filter, int domain, doubl
 		{
 			// Declare variables
 			gsl_vector_complex *vectorFFT = gsl_vector_complex_alloc(vector->size);
-			gsl_vector_complex *filterFFT = gsl_vector_complex_alloc(filter->size);
 
 			if (FFT(vector,vectorFFT,SelectedTimeDuration))
 			{
 				message = "Cannot run routine FFT";
 				EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 			}
-			if (FFT(filter,filterFFT,SelectedTimeDuration))
-			{
-				message = "Cannot run routine FFT when domain=1)";
-				EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-			}
+
 			*calculatedEnergy = 0.0;
-			for (int i=0;i<vector->size;i++)
+
+			if (mode == 0)
 			{
-				*calculatedEnergy = *calculatedEnergy + gsl_complex_abs(gsl_vector_complex_get(vectorFFT,i))*gsl_complex_abs(gsl_vector_complex_get(filterFFT,i));
+				gsl_vector_complex *filterFFT_aux = gsl_vector_complex_alloc(filter->size);
+				if (FFT(filter,filterFFT_aux,SelectedTimeDuration))
+				{
+					message = "Cannot run routine FFT when domain=1)";
+					EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+				}
+				for (int i=0;i<vector->size;i++)
+				{
+					*calculatedEnergy = *calculatedEnergy + gsl_complex_abs(gsl_vector_complex_get(vectorFFT,i))*gsl_complex_abs(gsl_vector_complex_get(filterFFT_aux,i));
+				}
+
+				gsl_vector_complex_free(filterFFT_aux);
 			}
+			else if (mode == 1)
+			{
+				for (int i=0;i<vector->size;i++)
+				{
+					*calculatedEnergy = *calculatedEnergy + gsl_complex_abs(gsl_vector_complex_get(vectorFFT,i))*gsl_complex_abs(gsl_vector_complex_get(filterFFT,i));
+				}
+			}
+
 			*calculatedEnergy = *calculatedEnergy/nrmfctr;
 
 			gsl_vector_complex_free(vectorFFT);
-			gsl_vector_complex_free(filterFFT);
 		}
     }
 
@@ -2552,7 +2533,8 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 
 	fitsfile *fltObject;
 	char fltName[256];
-	strcpy(fltName,reconstruct_init->filterFile);
+	strncpy(fltName,reconstruct_init->filterFile,255);
+	fltName[255]='\0';
 
 	char *tt[1];
 	char *tf[1];
@@ -2582,8 +2564,8 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 	{
 	    if(fits_create_file(&fltObject, fltName, &status))
 	    {
-	      message = "Cannot create file " + string(fltName);
-	      EP_PRINT_ERROR(message,status); return(EPFAIL);
+	    	message = "Cannot create file " + string(fltName);
+	    	EP_PRINT_ERROR(message,status); return(EPFAIL);
 	    }
 	}
 
@@ -2597,7 +2579,7 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 	if (fits_create_tbl(fltObject, BINARY_TBL,0,0,tt,tf,tu,extname,&status))
 	{
 		message = "Cannot create table " + string(extname) + " in output detect file " + string(fltName);
-		EP_EXIT_ERROR(message,status);
+		EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
 
 	strcpy(extname,"FILTER");
@@ -2660,11 +2642,11 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 	obj.iniRow = 1;
 	obj.endRow = optimalfilter->size;
 	strcpy(obj.nameCol,"OPTIMALF");
-	strcpy(obj.unit,"--");
+	strcpy(obj.unit," ");
 	if (writeFitsSimple (obj,optimalfilter))
 	{
 	    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) + " column";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 
 	// FREQ column
@@ -2673,16 +2655,16 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 	if (writeFitsSimple (obj,optimalfilter_f))
 	{
 	    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) + " column";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 
 	// OPTIMALFF column
 	strcpy(obj.nameCol,"OptimalFF");
-	strcpy(obj.unit,"--");
+	strcpy(obj.unit," ");
 	if (writeFitsSimple (obj,optimalfilter_FFT))
 	{
 	    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) + " column";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 
 	// Write output keywords
@@ -2691,20 +2673,20 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 	if (fits_write_key(fltObject,TLONG,keyname,&keyvalint,comment,&status))
 	{
 	    message = "Cannot write key " + string(keyname) + " in " + string(fltName);
-	    EP_EXIT_ERROR(message,status);
+	    EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
 	strcpy(keyname,"EVENTSZ");
 	keyvalint = 1;
 	if (fits_write_key(fltObject,TLONG,keyname,&keyvalint,comment,&status))
 	{
 	    message = "Cannot write key " + string(keyname) + " in " + string(fltName);
-	    EP_EXIT_ERROR(message,status);
+	    EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
 	strcpy(keyname,"NRMFCTR");
 	if (fits_write_key(fltObject,TDOUBLE,keyname,&normalizationFactor,comment,&status))
 	{
 	    message = "Cannot write key " + string(keyname) + " in " + string(fltName);
-	    EP_EXIT_ERROR(message,status);
+	    EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
 
 	if (fits_close_file(fltObject,&status))
@@ -2713,10 +2695,13 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 	    EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
 
+	delete [] obj.nameTable;
+	delete [] obj.nameCol;
+	delete [] obj.unit;
+
 	return(EPOK);
 }
 /*xxxx end of SECTION BX xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
-
 
 
 /***** SECTION BX ************************************************************
@@ -2729,7 +2714,8 @@ int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pu
 	int status = EPOK;
 
 	char dtcName[256];
-	strcpy(dtcName,(*reconstruct_init)->detectFile);
+	strncpy(dtcName,(*reconstruct_init)->detectFile,255);
+	dtcName[255]='\0';
 
 	char extname[20];
 	int extver = 0;
@@ -2763,7 +2749,7 @@ int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pu
 	if (writeFitsSimple (obj,uncEgsl))
 	{
 	    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) + " column in PULSES";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	gsl_vector_free(uncEgsl);
 
@@ -2783,7 +2769,7 @@ int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pu
 		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
 		{
 		    message = "Cannot write key " + string(keyname) + " in " + string(dtcName);
-		    EP_EXIT_ERROR(message,status);
+		    EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
 		if (fits_update_key_longstr(*dtcObject,keyname,keyvalstr,comment,&status))
 		{
@@ -2791,8 +2777,7 @@ int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pu
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
-		//(*reconstruct_init)->clobber = 2;
-		//if ((*reconstruct_init)->mode == 0) (*reconstruct_init)->clobber = 2;
+		if ((*reconstruct_init)->mode == 0) (*reconstruct_init)->clobber = 2;
 	}
 
 	if (fits_close_file(*dtcObject,&status))
@@ -2800,6 +2785,10 @@ int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pu
 	    message = "Cannot close file " + string(dtcName);
 	    EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
+
+	delete [] obj.nameTable;
+	delete [] obj.nameCol;
+	delete [] obj.unit;
 
 	return(EPOK);
 }
@@ -2818,7 +2807,8 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	long totalpulses = 0;
 
 	char dtcName[256];
-	strcpy(dtcName,(*reconstruct_init)->detectFile);
+	strncpy(dtcName,(*reconstruct_init)->detectFile,255);
+	dtcName[255]='\0';
 
 	char *tt[1];
 	char *tf[1];
@@ -2841,7 +2831,7 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 		if (fits_create_tbl(*dtcObject, BINARY_TBL,0,0,tt,tf,tu,extname,&status))
 		{
 			message = "Cannot create table " + string(extname) + " in output detect file " + string(dtcName);
-			EP_EXIT_ERROR(message,status);
+			EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
 	}
 
@@ -2886,11 +2876,11 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	obj.iniRow = totalpulses+1;
 	obj.endRow = totalpulses+1;
 	strcpy(obj.nameCol,"OPTIMALF");
-	strcpy(obj.unit,"--");
+	strcpy(obj.unit," ");
 	if (writeFitsComplex (obj,optimalfilter_matrix))
 	{
 	    message = "Cannot run routine writeFitsComplex to write " + string(obj.nameCol) + " column in FILTER";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	gsl_matrix_free(optimalfilter_matrix);
 
@@ -2902,7 +2892,7 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	{
 	    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) +
 	    		" column in FILTER";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	gsl_vector_free(oflength);
 
@@ -2913,7 +2903,7 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	if (writeFitsSimple (obj,nrmfctr))
 	{
 	    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) + " column in FILTER";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	gsl_vector_free(nrmfctr);
 
@@ -2923,17 +2913,17 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	if (writeFitsComplex (obj,optimalfilter_f_matrix))
 	{
 	    message = "Cannot run routine writeFitsComplex to write " + string(obj.nameCol) + " column in FILTER";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	gsl_matrix_free(optimalfilter_f_matrix);
 
 	// OPTIMALFF column
 	strcpy(obj.nameCol,"OPTIMALFF");
-	strcpy(obj.unit,"--");
+	strcpy(obj.unit," ");
 	if (writeFitsComplex (obj,optimalfilter_FFT_matrix))
 	{
 	    message = "Cannot run routine writeFitsComplex to write " + string(obj.nameCol) + " column in FILTER";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	gsl_matrix_free(optimalfilter_FFT_matrix);
 
@@ -2948,7 +2938,7 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	if (writeFitsSimple (obj,uncEgsl))
 	{
 	    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) + " column in PULSES";
-	    EP_EXIT_ERROR(message,EPFAIL);
+	    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	gsl_vector_free(uncEgsl);
 
@@ -2968,7 +2958,7 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
 		{
 		    message = "Cannot write key " + string(keyname) + " in " + string(dtcName);
-		    EP_EXIT_ERROR(message,status);
+		    EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
 		if (fits_update_key_longstr(*dtcObject,keyname,keyvalstr,comment,&status))
 		{
@@ -2988,6 +2978,10 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	    message = "Cannot close file " + string(dtcName);
 	    EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
+
+	delete [] obj.nameTable;
+	delete [] obj.nameCol;
+	delete [] obj.unit;
 
 	return(EPOK);
 }
@@ -3163,7 +3157,8 @@ int writeEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *puls
 
 	fitsfile *dtcObject;
 	char dtcName[256];
-	strcpy(dtcName,(*reconstruct_init)->detectFile);
+	strncpy(dtcName,(*reconstruct_init)->detectFile,255);
+	dtcName[255]='\0';
 
 	char *tt[1];
 	char *tf[1];
@@ -3215,7 +3210,7 @@ int writeEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *puls
 		{
 		    message = "Cannot run routine writeFitsSimple to write " + string(obj.nameCol) +
 		    		" column in FILTER";
-		    EP_EXIT_ERROR(message,EPFAIL);
+		    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
 		gsl_vector_free(energy);
 	}
@@ -3229,7 +3224,7 @@ int writeEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *puls
 		if (fits_write_key(dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
 		{
 		    message = "Cannot write key " + string(keyname) + " in " + string(dtcName);
-		    EP_EXIT_ERROR(message,status);
+		    EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
 		if (fits_update_key_longstr(dtcObject,keyname,keyvalstr,comment,&status))
 		{
@@ -3245,6 +3240,10 @@ int writeEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *puls
 	    message = "Cannot close file " + string(dtcName);
 	    EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
+
+	delete [] obj.nameTable;
+	delete [] obj.nameCol;
+	delete [] obj.unit;
 
 	return(EPOK);
 }

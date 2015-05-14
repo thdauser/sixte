@@ -224,50 +224,9 @@
 		double kappamkc,
 		double levelprvpulse);
 
-	/*int findSePulsesNoise
-	(
-		gsl_vector *vectorin,
-		gsl_vector *vectorinDER,
-		gsl_vector **vectorinDERComposed,
-
-		double thresholdmediankappaSingle,
-
-		gsl_vector **tstart,
-		gsl_vector **quality,
-		gsl_vector **energy,
-		gsl_vector **maxDER,
-		gsl_vector **index_maxDER,
-
-		gsl_vector **newPulses,
-
-		int *nPulses,
-
-		//gsl_vector *startsaturated,
-		//gsl_vector *endsaturated,
-		//int nSaturated,
-
-		double taufall,
-		double scalefactor,
-		int sizepulse,
-		double samplingRate,
-
-		int samplesup,
-		double nsgms,
-
-		gsl_vector *B,
-		double lrs,
-		gsl_vector *lb,
-
-		gsl_matrix *library,
-		gsl_matrix *models,
-		gsl_vector *model,
-
-		double stopCriteriamkc,
-		double kappamkc,
-		double levelprvpulse);
-
-	int firstSampleModelsNoise (gsl_matrix *templates, double threshold, gsl_vector **firstSamples, gsl_vector **index_firstSamples);
-	int find_model1stSampleNoise(double firstSample, gsl_vector *firstSamples, gsl_matrix *models, gsl_vector **modelFound);*/
+	int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
+				int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
+				gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl);
 
 	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *baseline);
 

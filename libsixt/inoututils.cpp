@@ -126,7 +126,7 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 
 			status = toGslVector((void **)&bufferD,&(*result),nRows,0,obj.type);
 
-			delete bufferD;
+			delete[] bufferD;
 			break;
 		case TINT:
 			bufferJ = new int [nRows];
@@ -136,7 +136,7 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 				EP_PRINT_ERROR(message,status);return(EPFAIL);
 			}
 			status = toGslVector((void **)&bufferJ,&(*result),nRows,0,obj.type);
-			delete bufferJ;
+			delete[] bufferJ;
 			break;
 		case TSHORT:
 			bufferI = new short [nRows];
@@ -146,7 +146,7 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 				EP_PRINT_ERROR(message,status);return(EPFAIL);
 			}
 			status = toGslVector((void **)&bufferI,&(*result),nRows,0,obj.type);
-			delete bufferI;
+			delete[] bufferI;
 			break;
 	}
 	
@@ -214,7 +214,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferD,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete bufferD;
+			delete[] bufferD;
 			break;
 		case TINT:
 			bufferJ = new int [matrixdim];
@@ -224,7 +224,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferJ,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete bufferJ;
+			delete[] bufferJ;
 			break;
 		case TSHORT:
 			bufferI = new short [matrixdim];
@@ -234,7 +234,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferI,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete bufferI;
+			delete[] bufferI;
 			break;
 	}
 

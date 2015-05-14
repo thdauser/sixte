@@ -96,80 +96,61 @@ int tesreconstruction_main() {
 
     // Iterate of records and do the reconstruction
     int lastRecord = 0, nrecord = 0; //last record required for SIRENA library creation
-    while(getNextRecord(record_file,record,&status))
-    {
-      if(!strcmp(par.Rcmethod,"PP"))
-      {
-	    reconstructRecord(record,event_list,reconstruct_init,0,&status);
-	  }
-      else
-      {
+    while(getNextRecord(record_file,record,&status)){
+
+	if(!strcmp(par.Rcmethod,"PP")){
+	      reconstructRecord(record,event_list,reconstruct_init,0,&status);
+	}else{
 	    nrecord = nrecord + 1;
-	    /*if(nrecord == record_file->nrows) lastRecord=1;
-	    if(nrecord <1395) {
-	      continue;
-	    }else if(nrecord>1395){
-	      status=1;
-	      CHECK_STATUS_BREAK(status);
-	    }*/
+	    if(nrecord == record_file->nrows) lastRecord=1;
 	    //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
 	    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
 				    lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
-	  }
- 	  CHECK_STATUS_BREAK(status);
+	}	
+ 	CHECK_STATUS_BREAK(status);
 
-	  saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
- 	  CHECK_STATUS_BREAK(status);
-	  //Reinitialize event list
-	  event_list->index=0;
+	saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
+ 	CHECK_STATUS_BREAK(status);
+	//Reinitialize event list
+	event_list->index=0;
+	
     }
-    
-    
     if(pulsesAll->ndetpulses == 0)  printf("%s","WARNING: no pulses have been detected\n");
     
     // If SIRENA processing is in calibration (b,c calibration factors calculations)
-    if(!strcmp(par.Rcmethod,"SIRENA") && par.mode==0 && par.crtLib==0)
-    {
-      // Open second record file (calibration)
-      TesTriggerFile* record_file2 = openexistingTesTriggerFile(par.RecordFileCalib2,keywords,&status);
-      CHECK_STATUS_BREAK(status);
+    if(!strcmp(par.Rcmethod,"SIRENA") && par.mode==0 && par.crtLib==0){
+        // Open second record file (calibration)
+        TesTriggerFile* record_file2 = openexistingTesTriggerFile(par.RecordFileCalib2,keywords,&status);
+        CHECK_STATUS_BREAK(status);
 
-	  // Build up TesRecord to read the 2nd file
-	  TesRecord* record2 = newTesRecord(&status);
-	  allocateTesRecord(record2,record_file2->trigger_size,record_file2->delta_t,0,&status);
-	  CHECK_STATUS_BREAK(status);
+	// Build up TesRecord to read the 2nd file
+	TesRecord* record2 = newTesRecord(&status);
+	allocateTesRecord(record2,record_file2->trigger_size,record_file2->delta_t,0,&status);
+	CHECK_STATUS_BREAK(status);
 	
-	  reconstruct_init_sirena->clobber = 1;
-	  // Iterate of records and do the reconstruction
-	  lastRecord = 0, nrecord = 0;
-	  while(getNextRecord(record_file2,record2,&status))
-	  {
+	// Iterate of records and do the reconstruction
+	lastRecord = 0, nrecord = 0; 
+	while(getNextRecord(record_file2,record2,&status)){
 	    nrecord = nrecord + 1;
 	    if(nrecord == record_file2->nrows) lastRecord=1;
-	    //printf("%s %d %s","**TESRECONSTRUCTION nrecord2 = ",nrecord,"\n");
 	    reconstructRecordSIRENA(record2, event_list, reconstruct_init_sirena,
 				    lastRecord, nrecord, &pulsesAll2, &optimalFilter, &status);
 	    saveEventListToFile(outfile,event_list,record2->time,record_file2->delta_t,
 				record2->pixid,&status);
 	    //Reinitialize event list
 	    event_list->index=0;
-	  }
-	  CHECK_STATUS_BREAK(status);
-
-	  if(pulsesAll2->ndetpulses == 0)  printf("%s","WARNING: no pulses have been detected in second file (calibration)\n");
-	  else
-	  {
-	    double b_cF = 0.0, c_cF = 0.0;
-	    runEnergyCalib(reconstruct_init_sirena, pulsesAll, pulsesAll2, &b_cF, &c_cF);
+	}
+	CHECK_STATUS_BREAK(status);
+	double b_cF = 0.0, c_cF = 0.0;
+	runEnergyCalib(reconstruct_init_sirena, pulsesAll, pulsesAll2, &b_cF, &c_cF);
 	
-	    // Copy calib keywords to event file
-	    writeCalibKeywords(outfile->fptr,b_cF, c_cF,&status);
-	    CHECK_STATUS_BREAK(status);
-	  }
+	// Copy calib keywords to event file
+	writeCalibKeywords(outfile->fptr,b_cF, c_cF,&status);
+	CHECK_STATUS_BREAK(status);
 	
-	  // free calibration memory
-	  freeTesTriggerFile(&record_file2,&status);
-	  freeTesRecord(&record2);
+	// free calibration memory
+	freeTesTriggerFile(&record_file2,&status);
+	freeTesRecord(&record2);
     }
     
     // Copy trigger keywords to event file

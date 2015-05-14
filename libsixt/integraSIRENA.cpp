@@ -31,8 +31,8 @@
 extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file,
 		char* const library_file, double tauFall,int pulse_length, double scaleFactor, double samplesUp,
 		double nSgms, int crtLib, int mode, double LrsT, double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method,
-		int calibLQ,  double b_cF, double c_cF, double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2,
-		double monoenergy2, char clobber, int* const status){
+		int calibLQ,  double b_cF, double c_cF, double monoenergy, int interm, char* const detectFile, char* const filterFile, char* const record_file2,
+		double monoenergy2, char clobber, int maxPulsesPerRecord, int* const status){
 
 	// Load LibraryCollection structure if library file exists
 	int exists=0;
@@ -73,8 +73,16 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	}
 
 	//Get pulse height  CHECK THAT!!!!!!!!!!!!!!!!!!!!!
-	strcpy(reconstruct_init->record_file,record_file);
-	strcpy(reconstruct_init->library_file,library_file);
+	strncpy(reconstruct_init->record_file,record_file,255);
+	reconstruct_init->record_file[255]='\0';
+	strncpy(reconstruct_init->library_file,library_file,255);
+	reconstruct_init->library_file[255]='\0';
+	strncpy(reconstruct_init->detectFile,detectFile,255);
+	reconstruct_init->detectFile[255]='\0';
+	strncpy(reconstruct_init->filterFile,filterFile,255);
+	reconstruct_init->filterFile[255]='\0';
+	strncpy(reconstruct_init->record_file2,record_file2,255);
+	reconstruct_init->record_file2[255]='\0';
 	reconstruct_init->threshold 	= 0.0;
 	reconstruct_init->pulse_length 	= pulse_length;
 	reconstruct_init->tauFall       = tauFall;
@@ -93,15 +101,13 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	reconstruct_init->b_cF          = b_cF;
 	reconstruct_init->c_cF          = c_cF;
 	reconstruct_init->intermediate  = interm;
-	strcpy(reconstruct_init->detectFile,detectFile);
-	strcpy(reconstruct_init->filterFile,filterFile);
-	strcpy(reconstruct_init->record_file2,record_file2);
 	reconstruct_init->monoenergy2 	= monoenergy2;
 	if(0!=clobber){
 	    reconstruct_init->clobber = 1;
 	}else{
 	    reconstruct_init->clobber = 0;
 	} 
+	reconstruct_init->maxPulsesPerRecord = maxPulsesPerRecord;
 }
 
 extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init,  int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status){
@@ -121,25 +127,28 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		if(reconstruct_init->pulse_length > record->trigger_size){
 		    EP_PRINT_ERROR("Warning: pulse length is larger than record size. Pulse length set to maximum value (record size)",EPFAIL);
 		}
-
 		runDetect(record, lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
+		//cout<<"Acaba runDetect"<<endl;
+
 		if(pulsesInRecord->ndetpulses == 0) // No pulses found in record
 		{
-		      delete(pulsesAllAux);
-		      delete(pulsesInRecord);
-		      return;
+			delete(pulsesAllAux);
+		    delete(pulsesInRecord);
+		    return;
 		}
 		
 		if (reconstruct_init->crtLib == 0)
 		{
 			// filter pulses and calculates energy
 			runFilter(record, nRecord, lastRecord, &reconstruct_init, *pulsesAll, &pulsesInRecord, optimalFilter);
+			//cout<<"Acaba runFilter"<<endl;
 
 			if (reconstruct_init->mode == 1)
 			{
 				// calibrated energy of pulses
 				runEnergy(&reconstruct_init, &pulsesInRecord);
 			}
+			//cout<<"Acaba runEnergy"<<endl;
 		}
 
 		if (nRecord == 1)
@@ -154,6 +163,12 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		}
 		else
 		{
+			if(event_list->energies != NULL) delete [] event_list->energies;
+			if(event_list->grades1 != NULL) delete [] event_list->grades1;
+			if(event_list->grades2 != NULL) delete [] event_list->grades2;
+			if(event_list->pulse_heights != NULL) delete [] event_list->pulse_heights;
+			if(event_list->ph_ids != NULL) delete [] event_list->ph_ids;
+		
 			pulsesAllAux->ndetpulses = (*pulsesAll)->ndetpulses;
 			pulsesAllAux->pulses_detected = new PulseDetected[(*pulsesAll)->ndetpulses];
 
@@ -163,7 +178,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			}
 			(*pulsesAll)->ndetpulses = (*pulsesAll)->ndetpulses + pulsesInRecord->ndetpulses;
 
-			if((*pulsesAll)->pulses_detected != NULL) delete [] (*pulsesAll)->pulses_detected;
+			if((*pulsesAll)->pulses_detected != NULL) delete [] (*pulsesAll)->pulses_detected; 
 			(*pulsesAll)->pulses_detected = new PulseDetected[(*pulsesAll)->ndetpulses];
 			// save pulses detected in previous records
 			for (int i=0;i<pulsesAllAux->ndetpulses;i++)
@@ -179,7 +194,8 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		
 		//cout<<"pulsesAll: "<<(*pulsesAll)->ndetpulses<<endl;
 
-		// Fill TesEventList structure
+		// Free & Fill TesEventList structure
+		
 		event_list->index = pulsesInRecord->ndetpulses;
 		event_list->energies = new double[event_list->index];
 		event_list->grades1  = new int[event_list->index];
@@ -206,10 +222,9 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		    event_list->ph_ids[ip]   = 0;
 		    
 		}
-		delete(pulsesAllAux);
-		delete(pulsesInRecord);
-		//cout<<"ofilter_duration: "<<(*optimalFilter)->ofilter_duration<<endl;
-		//cout<<"Sale de reconstructRecordSIRENA"<<endl;
+		delete pulsesAllAux;
+		delete pulsesInRecord;
+
 		return;
 }
 
@@ -346,38 +361,20 @@ LibraryCollection* getLibraryCollection(const char* const filename,int* const st
 	char column_name[12];
 	int template_colnum = 0;
 	int mfilter_colnum = 0;
-	int template_colnum_B0 = 0;
-	int mfilter_colnum_B0 = 0;
-	int energy_colnum = 0;
-	int pheight_colnum = 0;
+
 	strcpy(column_name,"PULSE");
 	if(fits_get_colnum(fptr, CASEINSEN,column_name, &template_colnum, status)){
 		EP_PRINT_ERROR("Cannot get column number for PULSE in library file",*status);
 		*status=EPFAIL; return(library_collection);}
 		
-	strcpy(column_name,"PULSEB0");
+	/*strcpy(column_name,"PULSEB0");
 	if(fits_get_colnum(fptr, CASEINSEN,column_name, &template_colnum_B0, status)){
 		EP_PRINT_ERROR("Cannot get column number for PULSEB0 in library file",*status);
 		*status=EPFAIL; return(library_collection);}
-		
+	*/	
  	strcpy(column_name,"MF");
 	if(fits_get_colnum(fptr, CASEINSEN,column_name, &mfilter_colnum, status)){
 		EP_PRINT_ERROR("Cannot get column number for MF in library file",*status);
-		*status=EPFAIL; return(library_collection);}
-		
-	strcpy(column_name,"MFB0");
-	if(fits_get_colnum(fptr, CASEINSEN,column_name, &mfilter_colnum_B0, status)){
-		EP_PRINT_ERROR("Cannot get column number for MFB0 in library file",*status);
-		*status=EPFAIL; return(library_collection);}
-		
-	strcpy(column_name,"ENERGY");
-	if(fits_get_colnum(fptr, CASEINSEN,column_name, &energy_colnum, status)){
-		EP_PRINT_ERROR("Cannot get column number for ENERGY in library file",*status);
-		*status=EPFAIL; return(library_collection);}
-		
-	strcpy(column_name,"PHEIGHT");
-	if(fits_get_colnum(fptr, CASEINSEN,column_name, &pheight_colnum, status)){
-		EP_PRINT_ERROR("Cannot get column number for PHEIGHT in library file",*status);
 		*status=EPFAIL; return(library_collection);}
 
 	//Get template duration
@@ -581,12 +578,13 @@ NoiseSpec* getNoiseSpec(const char* const filename,int* const status){
 	}
 
 	return(noise_spectrum);
+	delete fptr;
 }
 
 /***** SECTION CX ************************************************************
 * runEnergyCalib: This function...
 ****************************************************************************/
-extern "C" void runEnergyCalib(ReconstructInitSIRENA* reconstruct_init, PulsesCollection* pulsesAll_runEnergyCalib, PulsesCollection* pulsesAll2_runEnergyCalib, double *b_cF_runEnergyCalib, double *c_cF_runEnergyCalib)
+extern "C" void runEnergyCalib(ReconstructInitSIRENA* reconstruct_init, PulsesCollection* pulsesAll, PulsesCollection* pulsesAll2, double *b_cF, double *c_cF)
 {
 	const char * create= "runEnergyCalib v.1.0.0";	//Set "CREATOR" keyword of output FITS file
 
@@ -598,23 +596,25 @@ extern "C" void runEnergyCalib(ReconstructInitSIRENA* reconstruct_init, PulsesCo
 	gsl_vector *xi;  // keV
 	gsl_vector *yi;  // keV
 
-	if (loadUCEnergies(reconstruct_init, pulsesAll_runEnergyCalib, &nx, &xi, &E0x))
+	if (loadUCEnergies(reconstruct_init, pulsesAll, &nx, &xi, &E0x))
 	{
 		message = "Cannot run loadUCEnergies in calibration mode in runEenergyCalib";
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 
-	if (loadUCEnergies(reconstruct_init, pulsesAll2_runEnergyCalib, &ny, &yi, &E0y))
+	if (loadUCEnergies(reconstruct_init, pulsesAll2, &ny, &yi, &E0y))
 	{
 		message = "Cannot run loadUCEnergies in calibration mode in runEenergyCalib";
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 
-	if (calculus_bc(reconstruct_init->calibLQ,nx,xi,E0x,ny,yi,E0y, b_cF_runEnergyCalib, c_cF_runEnergyCalib))
+	if (calculus_bc(reconstruct_init->calibLQ,nx,xi,E0x,ny,yi,E0y, b_cF, c_cF))
 	{
 		message = "Cannot run calculus_bc in calibration mode in runEenergyCalib";
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
+	cout<<"b_cF: "<<*b_cF<<endl;
+	cout<<"c_cF: "<<*c_cF<<endl;
 
 	gsl_vector_free(xi);
 	gsl_vector_free(yi);
