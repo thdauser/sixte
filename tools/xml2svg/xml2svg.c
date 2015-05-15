@@ -166,7 +166,7 @@ int parse_xmlnames(char *xmlnames, int *nxmls, char ***xmls){
       SIXT_ERROR("failed allocating memory for XML file names.");
       return EXIT_FAILURE;
     }
-    (*xmls)[*nxmls]=(char*)malloc((strlen(buffer+1)*sizeof(char)));
+    (*xmls)[*nxmls]=(char*)malloc(((strlen(buffer)+1)*sizeof(char)));
     if((*xmls)[*nxmls]==NULL){
       SIXT_ERROR("failed allocating memory for XML file names.");
       return EXIT_FAILURE;

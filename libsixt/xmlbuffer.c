@@ -771,7 +771,7 @@ void expandXML(struct XMLBuffer* const buffer, int* const status)
     data.loop_start    =0;
     data.loop_end      =0;
     data.loop_increment=0;
-    data.offset        =0;
+    data.offset        =0.;
     data.output_buffer =newXMLBuffer(status);
     data.loop_buffer   =newXMLBuffer(status);
     data.status=EXIT_SUCCESS;
