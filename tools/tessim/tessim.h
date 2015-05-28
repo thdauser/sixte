@@ -15,8 +15,6 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
 
-
-
 // parameters for the initializer
 typedef struct {
   char *ID;         // pixel ID 
@@ -72,18 +70,20 @@ tes_impactfile_info *tes_init_impactlist(char *impactfile, int *status);
 int tes_photon_from_impactlist(PixImpact *photon,void *data, int *status);
 void tes_free_impactlist(tes_impactfile_info **data, int *status);
 
+// forward declare of tesparams
+typedef struct tesparams tesparams;
+
 // stream write function
 // this function is called whenever pulse data are written for the pixel
-typedef void (*tes_stream_writer) (double time, double pulse, void *data, int *status);
+typedef void (*tes_stream_writer) (tesparams *tes,double time, double pulse, int *status);
 
 // this function is called whenever photon data are written. Data is the streaminfo of tesparams
-typedef void (*tes_photon_writer) (double time, long phid, void *data, int *status);
-
+typedef void (*tes_photon_writer) (tesparams *tes, double time, long phid, int *status);
 
 // 
 // meta struct containing all physical parameters of the TES pixel
 //
-typedef struct {
+struct tesparams {
   char *ID;      // string containing the pixel ID
 
   double time;   // current time
@@ -110,7 +110,6 @@ typedef struct {
 
   double dRdT;   // dR/dT at Tc
   double dRdI;   // dR/dI at Tc
-
 
   int mech;     // 1 for XXXX (MCCAMMON or IRWIN/HINTON CHAPTER) 
   double therm; // thermalization timescale in units of step size
@@ -144,7 +143,6 @@ typedef struct {
 
   double En1;   // energy absorbed by a photon during this step [J]
 
-
   gsl_odeiv2_system *odesys;    // differential equation system
   gsl_odeiv2_driver *odedriver; // ODS solver
 
@@ -156,9 +154,11 @@ typedef struct {
   tes_stream_writer write_to_stream; // function to write the pulse (function pointer)
   tes_photon_writer write_photon; // function to save a processed photon (function pointer)
 
-} tesparams;
+};
 
+//
 // stream write function using TESDataStream
+//
 typedef struct {
   TESDataStream *stream; // output stream
   long streamind;    // index of next sample to write
@@ -173,37 +173,53 @@ typedef struct {
 // initialize a TES data stream
 tes_datastream_info *tes_init_datastream(double tstart, double tstop, tesparams *tes, int *status);
 // append a pulse to the data stream. data points on a tes_datastream_info structure
-void tes_append_datastream(double time,double pulse,void *data,int *status);
+void tes_append_datastream(tesparams *tes,double time,double pulse,int *status);
 // write the TES data stream to file
-void tes_save_datastream(char *streamfile, char *impactfile,tes_datastream_info *data, 
-			 tesparams *tes, SixtStdKeywords *keywords, int *status);
+void tes_close_datastream(tesparams *tes,char *streamfile, char *impactfile,tes_datastream_info *data, 
+			 SixtStdKeywords *keywords, int *status);
 // cleanup the TES data stream
 void tes_free_datastream(tes_datastream_info **data, int *status);
 
+//
 // stream write function using TesRecords
+//
+
+// buffer size of the tesrecord buffer
+// this is a compromise between memory usage and speed
+#define TESRECORD_BUFFERSIZE 5000000
+
 typedef struct {
   TesRecord *stream; // output stream
-  unsigned long streamind;    // index of next sample to write
+  LONGLONG streamind;    // index of next sample to write
   double tstart;     // starting time
   double tstop;      // end time
   double imin;       // minimum current to encode
   double imax;       // maximum current to encode
   double aducnv;     // conversion factor
-  unsigned long Nt;  // number of elements in output buffer
+  long Nt;           // number of elements in output buffer
+  int clobber;       // clobber?
+  char *streamfile;  // file name of file we're going to write
+  char *impactfile;  // impact file we're using
+  fitsfile *fptr;    // file to write to
+  SixtStdKeywords *keywords;   // Standard SIXT Keywords
+  LONGLONG row;      // last row in fptr we've written
+  int timecol;       // column for the time
+  int adccol;        // column for the ADC value
+  int curcol;        // column for the current
 } tes_record_info;
 
 // initialize a TES data stream
-tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, int *status);
+tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, 
+				    char *streamfile, char *impactfile,int clobber,
+				    SixtStdKeywords *keywords,
+				    int *status);
 // append a pulse to the data stream. data points on a tes_datastream_info structure
-void tes_append_tesrecord(double time,double pulse,void *data,int *status);
+void tes_append_tesrecord(tesparams *tes,double time,double pulse,int *status);
 // append a photon to the data stream
-void tes_append_photon_tesrecord(double time, long phid, void *data, int *status);
+void tes_append_photon_tesrecord(tesparams *tes, double time, long phid, int *status);
 
-
-// write the TES data stream to file
-void tes_save_tesrecord(char *streamfile, char *impactfile,tes_record_info *data, 
-			 tesparams *tes, SixtStdKeywords *keywords, int *status);
-
+// finish writing datastream to a file
+void tes_close_tesrecord(tesparams *tes, int *status);
 
 // cleanup the TES data stream
 void tes_free_tesrecord(tes_record_info **data, int *status);

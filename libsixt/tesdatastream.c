@@ -69,26 +69,27 @@ void allocateTESDataStream(TESDataStream* stream,
 }
 
 void destroyTESDataStream(TESDataStream* stream){
-  
-  if(stream!=NULL){
-    if(stream->time!=NULL){
-      free(stream->time);
-      stream->time=NULL;
-    }
-    if(stream->adc_value!=NULL){
-      int ii;
-      for(ii=0; ii<stream->Ntime; ii++){
-	if(stream->adc_value[ii]!=NULL){
-	  free(stream->adc_value[ii]);
-	  stream->adc_value[ii]=NULL;
-	}
-      }
-      free(stream->adc_value);
-      stream->adc_value=NULL;
-    }
-    stream->Npix=0;
-    stream->Ntime=0;
+  if(stream==NULL){
+    return;
   }
+
+  if(stream->time!=NULL){
+    free(stream->time);
+    stream->time=NULL;
+  }
+  if(stream->adc_value!=NULL){
+    int ii;
+    for(ii=0; ii<stream->Ntime; ii++){
+      if(stream->adc_value[ii]!=NULL){
+	free(stream->adc_value[ii]);
+	stream->adc_value[ii]=NULL;
+      }
+    }
+    free(stream->adc_value);
+    stream->adc_value=NULL;
+  }
+  stream->Npix=0;
+  stream->Ntime=0;
 }
 
 TESPulseProperties* newTESPulseProperties(int* const status){
@@ -138,6 +139,7 @@ TESFitsStream* newTESFitsStream(int* const status){
   stream->time=NULL;
   stream->pixID=NULL;
   stream->adc_value=NULL;
+  stream->name[0]='\0';
   
   return stream;
 }
@@ -185,23 +187,7 @@ void createTESFitsStreamFile(fitsfile **fptr,
 			     const char clobber, 
 			     int* const status)
 {
-  int exists;
-  fits_file_exists(filename, &exists, status);
-  CHECK_STATUS_VOID(*status);
-  if (0!=exists) {
-    if (0!=clobber) {
-      // Delete the file.
-      remove(filename);
-    } else {
-      // Throw an error.
-      char msg[MAXMSG];
-      sprintf(msg, "file '%s' already exists", filename);
-      SIXT_ERROR(msg);
-      *status=EXIT_FAILURE;
-      CHECK_STATUS_VOID(*status);
-    }
-  }
-  fits_create_file(fptr, filename, status);
+  fits_create_file_clobber(fptr,filename,clobber,status);
   CHECK_STATUS_VOID(*status);
   int logic=(int)'T';
   int bitpix=8;
@@ -294,9 +280,9 @@ void writeTESFitsStream(fitsfile *fptr,
   }
   CHECK_STATUS_VOID(*status);
   
-  sprintf(ttype[0], "TIME");
-  sprintf(tform[0], "1D");
-  sprintf(tunit[0], "s");
+  ttype[0]="TIME";
+  tform[0]="1D";
+  tunit[0]="s";
   
   for(ii=0; ii<stream->Npix; ii++){
     sprintf(ttype[ii+1], "PXL%05d", stream->pixID[ii]+1);
@@ -305,7 +291,7 @@ void writeTESFitsStream(fitsfile *fptr,
   }
   
   fits_create_tbl(fptr, BINARY_TBL, 0, ncolumns,
-	ttype, tform, tunit, stream->name, status);
+	ttype, tform, tunit, "TESDATASTREAM", status);
   CHECK_STATUS_VOID(*status);
   
   // Write columns
@@ -326,8 +312,6 @@ void writeTESFitsStream(fitsfile *fptr,
   int firstpix, lastpix;
   
   // Write header keywords
-  fits_update_key(fptr, TSTRING, "EXTNAME",
-		  "TESDATASTREAM","Name of this extension",status);
   fits_update_key(fptr, TDOUBLE, "TSTART",
         &tstart, "Start time of data stream", status);
   fits_update_key(fptr, TDOUBLE, "TSTOP",
@@ -360,6 +344,63 @@ void writeTESFitsStream(fitsfile *fptr,
 
 }
 
+void appendTESFitsStream(fitsfile *fptr, 
+			TESFitsStream *stream,
+			double tstart,
+			double tstop,
+			long *Nevts,
+			int* const status)
+{
+  
+  // append to a table
+  //
+  // NOTE: THIS FUNCTION IS NOT WELL TESTED YET - USE WITH CAUTION 
+  //
+  long nrows=(long)stream->Ntime;
+  int ncolumns=1+stream->Npix;
+  
+  fits_movnam_hdu(fptr,BINARY_TBL,"TESDATASTREAM",0,status);
+  CHECK_STATUS_VOID(*status);
+
+  // get the required column numbers
+  int timecol;
+  fits_get_colnum(fptr,CASESEN,"TIME",&timecol,status);
+  int ii;
+  char ttype[9];
+  int colnum[ncolumns];
+  for(ii=0; ii<stream->Npix; ii++){
+    sprintf(ttype, "PXL%05d", stream->pixID[ii]+1);
+    fits_get_colnum(fptr,CASESEN,ttype,colnum+ii,status);
+  }
+  CHECK_STATUS_VOID(*status);
+  
+  // get number of rows in the table and append
+  LONGLONG tablenrows;
+  fits_get_num_rowsll(fptr, &tablenrows, status);
+  CHECK_STATUS_VOID(*status);
+
+  // append data to the table
+  fits_write_col(fptr, TDOUBLE, timecol, tablenrows+1, 1, nrows, stream->time, status);
+  CHECK_STATUS_VOID(*status);
+  for(ii=0; ii<stream->Npix; ii++){
+    fits_write_col(fptr, TUSHORT, colnum[ii], tablenrows+1, 1, nrows, stream->adc_value[ii], status);
+    CHECK_STATUS_VOID(*status);
+    
+    char nev[9];
+    sprintf(nev, "NES%05d", stream->pixID[ii]+1);
+    fits_update_key(fptr, TLONG, nev, &Nevts[stream->pixID[ii]],
+      "Number of simulated events in pixel stream", status);
+    CHECK_STATUS_VOID(*status);
+  }
+
+  // update header keywords
+  fits_update_key(fptr, TDOUBLE, "TSTART",
+        &tstart, "Start time of data stream", status);
+  CHECK_STATUS_VOID(*status);
+  fits_update_key(fptr, TDOUBLE, "TSTOP",
+        &tstop, "Stop time of data stream", status);
+  CHECK_STATUS_VOID(*status);
+}
 
 void getTESDataStream(TESDataStream* TESData, 
 		PixImpFile* PixFile,

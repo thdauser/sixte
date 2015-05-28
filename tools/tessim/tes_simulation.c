@@ -33,8 +33,6 @@
 // TODO:
 // * write meta interfaces to simulation code
 //     - work on photon event list
-// * build interface based on record format (tesrecord.h)
-// * write current to file
 // * improve TES diagnostics
 // * calculate taup/taum using proper complex arithmetic!
 // * build in material database (for n et al., see I&H, table 2)
@@ -581,6 +579,17 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
     tes->get_photon(&impact,tes->photoninfo,status);
     CHECK_STATUS_RET(*status,-1);
   }
+  
+  // write initial status of the TES to the stream
+  // NB we will need logic in tes->write_to_stream that
+  // disallows duplicate writes of the same element
+  if (tes->write_to_stream != NULL ) {
+    double pulse=tes->I0_start-tes->I0;
+    if (tes->simnoise) {
+      pulse += gsl_ran_gaussian(rng,tes->squid_noise);
+    }
+    tes->write_to_stream(tes,tes->time,pulse,status);
+  }
 
   int samples=0;
   while (tes->time<=tstop) {
@@ -590,10 +599,12 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       tes->Pnb1=tnoi(tes);
 
       // Johnson noise terms
+      // (this should now be ok for the excess/unknown noise, but needs somebody
+      // else to check this again to be 100% sure)
       tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
       tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->beta));
       tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->RL*tes->bandwidth));
-      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth)*(1.+2*tes->beta) )*tes->m_unknown*tes->m_unknown;
+      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->beta)*tes->m_unknown*tes->m_unknown) );
     }
 
     // absorb next photon?
@@ -604,7 +615,7 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       
       // remember that we've processed this photon
       if (tes->write_photon!=NULL) {
-	tes->write_photon(impact.time,impact.ph_id,tes->streaminfo,status);
+	tes->write_photon(tes,impact.time,impact.ph_id,status);
       }
 
       // get the next photon 
@@ -647,9 +658,9 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       // write the sucker
       // (note that we do allow NULL here. This could be used,
       // e.g., to propagate the TES for a while without producing
-      // output
+      // output)
       if (tes->write_to_stream != NULL ) {
-	tes->write_to_stream(tes->time,pulse,tes->streaminfo,status);
+	tes->write_to_stream(tes,tes->time,pulse,status);
       }
 
       samples=0;
@@ -668,5 +679,3 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
 
   return(0);
 }
-
-//int tes_propagate_(tesparams

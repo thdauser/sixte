@@ -335,8 +335,17 @@ SixtStdKeywords* buildSixtStdKeywords(char* const telescop,
 	       double tstop,
 	       int* const status);
 
+/** copies a SixtStdKeywords structure (in case many keywords are to be duplicated) **/
+SixtStdKeywords* duplicateSixtStdKeywords(const SixtStdKeywords *key, int* const status);
+
+
 /** Destructor of the SixtStdKeywordsStructure */
 void freeSixtStdKeywords(SixtStdKeywords* keyword_struct);
+
+/** convenience function to create a FITS-file or to error out depending on the value of **/
+/** clobber **/
+int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *status);
+
 
 #endif /* SIXT_H */
 

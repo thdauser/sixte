@@ -10,8 +10,8 @@
 
 // define TES_DATASTREAM to use the datastream interface
 // define TES_TESRECORD to use the (better) TESRECORD interface
-#define TES_DATASTREAM
-//#define TES_TESRECORD
+//#define TES_DATASTREAM
+#define TES_TESRECORD
 
 
 
@@ -65,7 +65,11 @@ int tessim_main() {
     tes->write_photon=NULL; 
 #endif
 #ifdef TES_TESRECORD
-    tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,&status);
+    tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,
+				       par.streamfile,par.impactlist,
+				       par.clobber,
+				       ((tes_impactfile_info *) (tes->photoninfo))->keywords,
+				       &status);
     CHECK_STATUS_BREAK(status);
     tes->write_to_stream=&tes_append_tesrecord;
     tes->write_photon=&tes_append_photon_tesrecord;
@@ -77,21 +81,18 @@ int tessim_main() {
     printf("DONE!\n");
     CHECK_STATUS_BREAK(status);
 
-    // write the file
+    // write the file and free all allocated memory
 #ifdef TES_DATASTREAM
-    tes_save_datastream(par.streamfile,par.impactlist,(tes_datastream_info *) tes->streaminfo,
-			tes, ((tes_impactfile_info *) (tes->photoninfo))->keywords,&status);
+    tes_close_datastream(tes,par.streamfile,par.impactlist,(tes_datastream_info *) tes->streaminfo,
+			((tes_impactfile_info *) (tes->photoninfo))->keywords,&status);
+    tes_free_datastream((tes_datastream_info **) (tes->streaminfo), &status);
 #endif
 #ifdef TES_TESRECORD
-    tes_save_tesrecord(par.streamfile,par.impactlist,(tes_record_info *) tes->streaminfo,
-			tes, ((tes_impactfile_info *) (tes->photoninfo))->keywords,&status);
+    tes_close_tesrecord(tes,&status);
+    tes_free_tesrecord((tes_record_info **) &tes->streaminfo, &status);
 #endif
-    // if we're done: free all allocated memory and deallocate the TES
-    // (not really necessary here, but let's be anally retentive)
+
     tes_free_impactlist((tes_impactfile_info **) &tes->photoninfo, &status);
-#ifdef TES_DATASTREAM
-    tes_free_datastream((tes_datastream_info **) &tes->streaminfo, &status);
-#endif
     tes_free(tes);
     free(tes);
 

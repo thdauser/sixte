@@ -73,6 +73,7 @@ typedef struct{
 typedef struct{
   
   /** Name of the stream. */
+  // NOTE: THIS WILL BE IGNORED!
   char name[9];
   
   /** Number of pixels in the struct. Maximum TESFITSMAXPIX. */
@@ -181,10 +182,7 @@ void appendTESFitsStream(fitsfile *fptr,
 			TESFitsStream *stream,
 			double tstart,
 			double tstop,
-			double timeres,
 			long *Nevts,
-			int ismonoen,
-			float monoen,
 			int* const status);
 
 /** Main engine generating TES data stream */

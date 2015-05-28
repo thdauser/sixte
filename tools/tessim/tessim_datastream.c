@@ -26,10 +26,10 @@ tes_datastream_info *tes_init_datastream(double tstart, double tstop,tesparams *
   return(data);
 }
 
-void tes_append_datastream(double time,double pulse,void *dataptr, int *status) {
+void tes_append_datastream(tesparams *tes,double time,double pulse, int *status) {
   CHECK_STATUS_VOID(*status); 
 
-  tes_datastream_info *data=(tes_datastream_info *) dataptr;
+  tes_datastream_info *data=(tes_datastream_info *) (tes->streaminfo);
 
   if (data->streamind==0) {
     data->tstart=time;
@@ -48,8 +48,8 @@ void tes_append_datastream(double time,double pulse,void *dataptr, int *status) 
 }
 
 // write the datastream described by argument data to a file
-void tes_save_datastream(char *streamfile, char *impactfile,
-			 tes_datastream_info *data, tesparams *tes, 
+void tes_close_datastream(tesparams *tes, char *streamfile, char *impactfile,
+			 tes_datastream_info *data, 
 			 SixtStdKeywords *keywords, int *status) {
   fitsfile *fptr;
   createTESFitsStreamFile(&fptr,
@@ -79,7 +79,7 @@ void tes_save_datastream(char *streamfile, char *impactfile,
   // copy over (this is stupid for a single pixel)
   unsigned long ii;
   stream->pixID[0]=0;
-  for (ii=0; ii<stream->Ntime; ii++) {
+  for (ii=0; ii<(unsigned long) stream->Ntime; ii++) {
     stream->time[ii]=data->stream->time[ii];
     stream->adc_value[0][ii]=data->stream->adc_value[ii][0];
   }
@@ -92,10 +92,10 @@ void tes_save_datastream(char *streamfile, char *impactfile,
 		     0,-1,status);
   fits_close_file(fptr,status);
   CHECK_STATUS_VOID(*status);
-
+  printf("Before destroy\n");
   destroyTESFitsStream(stream);
+  printf("Before destroy\n");
   free(stream);
-
 }
 
 void tes_free_datastream(tes_datastream_info **data,int *status) {

@@ -253,90 +253,58 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	//CHECK_STATUS_RET(*status,file);
 
 	// Create table
-	int tlen=9;
 
 	char *ttype[8];
 	char *tform[8];
 	char *tunit[8];
 
-	int ii;
+	//first column TIME
+	ttype[0]="TIME";
+	tform[0]="1D";
+	tunit[0]="s";
 
-	for(ii=0; ii<8; ii++){
-		ttype[ii]=(char*)malloc(tlen*sizeof(char));
-		if(ttype[ii]==NULL){
-			*status=EXIT_FAILURE;
-			SIXT_ERROR("memory allocation for ttype failed");
-			CHECK_STATUS_RET(*status,file);
-		}
-		tform[ii]=(char*)malloc(tlen*sizeof(char));
-		if(tform[ii]==NULL){
-			*status=EXIT_FAILURE;
-			SIXT_ERROR("memory allocation for tform failed");
-			CHECK_STATUS_RET(*status,file);
-		}
-		tunit[ii]=(char*)malloc(tlen*sizeof(char));
-		if(tunit[ii]==NULL){
-			*status=EXIT_FAILURE;
-			SIXT_ERROR("memory allocation for tunit failed");
-			CHECK_STATUS_RET(*status,file);
-		}
-	}
-	CHECK_STATUS_RET(*status,file);
+	//second column signal (i.e. energy)
+	ttype[1]="SIGNAL";
+	tform[1]="1D";
+	tunit[1]="keV";
 
-	//Create first column TIME
-	sprintf(ttype[0], "TIME");
-	sprintf(tform[0], "1D");
-	sprintf(tunit[0], "s");
+	//third column Grade1
+	ttype[2]="GRADE1";
+	tform[2]="1I";
+	tunit[2]="";
 
-	//Create second column signal (i.e. energy)
-	sprintf(ttype[1], "SIGNAL");
-	sprintf(tform[1], "1D");
-	sprintf(tunit[1], "keV");
+	//fourth column Grade2
+	ttype[3]="GRADE2";
+	tform[3]="1I";
+	tunit[3]="";
 
-	//Create third column Grade1
-	sprintf(ttype[2], "GRADE1");
-	sprintf(tform[2], "1I");
-	sprintf(tunit[2], "");
-	CHECK_STATUS_RET(*status,file);
+	//fifth column PIXID
+	ttype[4]="PIXID";
+	tform[4]="1J";
+	tunit[4]="";
 
-	//Create fourth column Grade2
-	sprintf(ttype[3], "GRADE2");
-	sprintf(tform[3], "1I");
-	sprintf(tunit[3], "");
-	CHECK_STATUS_RET(*status,file);
+	//sixth column PH_ID
+	ttype[5]="PH_ID";
+	tform[5]="1J";
+	tunit[5]="";
 
-	//Create fifth column PIXID
-	sprintf(ttype[4], "PIXID");
-	sprintf(tform[4], "1J");
-	sprintf(tunit[4], "");
-	CHECK_STATUS_RET(*status,file);
+	//seventh column RA
+	ttype[6]="RA";
+	tform[6]="1D";
+	tunit[6]="deg";
 
-	//Create sixth column PH_ID
-	sprintf(ttype[5], "PH_ID");
-	sprintf(tform[5], "1J");
-	sprintf(tunit[5], "");
-	CHECK_STATUS_RET(*status,file);
+	//eighth column DEC
+	ttype[7]="DEC";
+	tform[7]="1D";
+	tunit[7]="deg";
 
-	//Create seventh column RA
-	sprintf(ttype[6], "RA");
-	sprintf(tform[6], "1D");
-	sprintf(tunit[6], "deg");
-	CHECK_STATUS_RET(*status,file);
-
-	//Create eighth column DEC
-	sprintf(ttype[7], "DEC");
-	sprintf(tform[7], "1D");
-	sprintf(tunit[7], "deg");
-	CHECK_STATUS_RET(*status,file);
-
-	char extName[9];
-	sprintf(extName,"EVENTS");
+	char *extName="EVENTS";
 	fits_create_tbl(file->fptr, BINARY_TBL, 0, 8,
 			ttype, tform, tunit,extName, status);
 	//Add keywords to new extension
 	if(keywords->extname!=NULL){
-		  free(keywords->extname);
-	  }
+	  free(keywords->extname);
+	}
 	keywords->extname=strdup(extName);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -351,16 +319,6 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	fits_update_key(file->fptr, TLONG, "NESTOT", &nes_tot, "Total number of events simulated", status);
 	fits_update_key(file->fptr, TLONG, "NETTOT", &net_tot, "Total number of events actually triggered", status);
 	CHECK_STATUS_RET(*status,file);
-
-	//Free memory
-	for(ii=0; ii<8; ii++){
-		free(ttype[ii]);
-		ttype[ii]=NULL;
-		free(tform[ii]);
-		tform[ii]=NULL;
-		free(tunit[ii]);
-		tunit[ii]=NULL;
-	}
 
 	return(file);
 

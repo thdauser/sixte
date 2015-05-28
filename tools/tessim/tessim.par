@@ -1,4 +1,4 @@
-PixelID,s,lq,"test",,,"ID of pixel"
+PixelID,s,lq,"1",,,"ID of pixel"
 PixImpList,s,lq,"test_slow.fits",,,"File name of pixel impact list"
 Streamfile,s,lq,"stream.fits",,,"File name of output FITS stream"
 tstart,r,h,0.,,,"Start time of simulation [s]"

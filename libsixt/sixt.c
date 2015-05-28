@@ -628,10 +628,10 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 	sixt_add_fits_stdkeywords_obsolete(fptr,hdunum,keyword_struct->telescop,keyword_struct->instrume,keyword_struct->filter,
 			keyword_struct->ancrfile,keyword_struct->respfile,keyword_struct->mjdref,keyword_struct->timezero,
 			keyword_struct->tstart,keyword_struct->tstop,status);
-	CHECK_STATUS_VOID(*status);
 
 	// Add extname keyword if we are not on the primary header
-	if(hdunum>1){
+	// and if the extname is non-NULL
+	if((hdunum>1) && (keyword_struct->extname!=NULL)){
 		// Determine the current HDU.
 		int prev_hdunum=0;
 		fits_get_hdu_num(fptr, &prev_hdunum);
@@ -777,6 +777,22 @@ SixtStdKeywords* buildSixtStdKeywords(char* const telescop,
 	return(keywords);
 }
 
+/** Duplicate a SixtStdKeywords structure **/
+SixtStdKeywords* duplicateSixtStdKeywords(const SixtStdKeywords *key,int* const status) {
+  return buildSixtStdKeywords(key->telescop,
+			      key->instrume,
+			      key->filter,
+			      key->ancrfile,
+			      key->respfile,
+			      key->extname,
+			      key->mjdref,
+			      key->timezero,
+			      key->tstart,
+			      key->tstop,
+			      status);
+}
+
+
 /** Destructor of the SixtStdKeywordsStructure */
 void freeSixtStdKeywords(SixtStdKeywords* keyword_struct){
 	if(NULL!=keyword_struct){
@@ -791,5 +807,27 @@ void freeSixtStdKeywords(SixtStdKeywords* keyword_struct){
 	keyword_struct=NULL;
 }
 
+/** convenience function to create a FITS-file or to error out depending on the value of **/
+/** clobber **/
+int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *status) {
+  CHECK_STATUS_RET(*status,0);
 
-
+  int exists;
+  fits_file_exists(filename, &exists, status);
+  if (0!=exists) {
+    if (clobber) {
+      // Delete the file.
+      remove(filename);
+    } else {
+      // Throw an error.
+      char msg[MAXMSG];
+      snprintf(msg,MAXMSG,"file '%s' already exists", filename);
+      msg[MAXMSG]='\0';
+      SIXT_ERROR(msg);
+      *status=EXIT_FAILURE;
+      CHECK_STATUS_RET(*status,0);
+    }
+  }
+  int ret=fits_create_file(fptr, filename, status);
+  return ret;
+}
