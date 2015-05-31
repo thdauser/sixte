@@ -17,7 +17,8 @@
 
 // parameters for the initializer
 typedef struct {
-  char *ID;         // pixel ID 
+  char *type;       // type of this pixel
+  int id;           // number of the pixel
   char *impactlist; // file to read impacts from
   char *streamfile; // file to write data to
 
@@ -43,7 +44,7 @@ typedef struct {
   int clobber;  // overwrite output files? -- IGNORED SO FAR
   int simnoise; // simulator noise 
 
-  double m_unknown; // magnitude of unknown noise
+  double m_excess; // magnitude of excess noise
 
   unsigned long seed; // seed of random number generator
   
@@ -84,10 +85,11 @@ typedef void (*tes_photon_writer) (tesparams *tes, double time, long phid, int *
 // meta struct containing all physical parameters of the TES pixel
 //
 struct tesparams {
-  char *ID;      // string containing the pixel ID
+  char *type;         // string containing the pixel type
+  int id;             // number of the pixel
 
-  double time;   // current time
-  double tstart; // start of simulation
+  double time;        // current simulation time
+  double tstart;      // start of simulation
 
   double delta_t;     // integration step size
   double sample_rate; // sample rate (Hz)
@@ -136,8 +138,8 @@ struct tesparams {
   double Vdn;    // Johnson noise terms
   double Vcn;    // 
   double Vexc;   // 
-  double Vunk;   // unknown noise 
-  double m_unknown; // magnitude of unknown noise relative to Johnson (bath) noise
+  double Vunk;   // excess noise 
+  double m_excess; // magnitude of excess noise relative to Johnson (bath) noise
 
   double squid_noise; // SQUID readout and electronics noise 
 
@@ -231,6 +233,7 @@ int tes_propagate(tesparams *tes, double tstop, int *status);
 void tes_free(tesparams *tes);
 void tes_print_params(tesparams *tes);
 void tes_fits_write_params(fitsfile *fptr,tesparams *tes, int *status);
+void tes_fits_read_params(char *file,tespxlparams *tes, int *status);
 
 
 #endif

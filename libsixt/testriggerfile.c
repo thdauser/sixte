@@ -91,7 +91,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
       remove(buffer);
     } else {
       // Throw an error.
-      char msg[MAXMSG];
+      char msg[FLEN_ERRMSG];
       sprintf(msg, "file '%s' already exists", buffer);
       SIXT_ERROR(msg);
       *status=EXIT_FAILURE;
@@ -100,95 +100,45 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   }
   fits_create_file(&file->fptr,buffer, status);
   CHECK_STATUS_RET(*status,file);
-  int logic=(int)'T';
+  int logic=TRUE;
   int bitpix=8;
   int naxis=0;
-  fits_update_key(file->fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
-  fits_update_key(file->fptr, TINT, "BITPIX", &(bitpix), NULL, status);
-  fits_update_key(file->fptr, TINT, "NAXIS", &(naxis), NULL, status);
+  fits_update_key(file->fptr, TLOGICAL, "SIMPLE", &logic, NULL, status);
+  fits_update_key(file->fptr, TINT, "BITPIX", &bitpix, NULL, status);
+  fits_update_key(file->fptr, TINT, "NAXIS", &naxis, NULL, status);
   sixt_add_fits_stdkeywords(file->fptr, 1,keywords, status);
-  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
-  fits_update_key(file->fptr, TINT, "PREBUFF", &(preBufferSize), "Number of samples before start of pulse", status);
+  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in triggers", status);
+  fits_update_key(file->fptr, TINT, "PREBUFF", &preBufferSize, "Number of samples before start of pulse", status);
   double deltat = 1./sampleFreq;
-  fits_update_key(file->fptr, TDOUBLE, "DELTAT", &(deltat), "Time resolution of data stream", status);
-  CHECK_STATUS_RET(*status,file);
+  fits_update_key(file->fptr, TDOUBLE, "DELTAT", &deltat, "Time resolution of data stream", status);
   
-  //Write XML into header
-  char comment[MAXMSG];
-  sprintf(comment, "XMLFILE: %s", xmlfile);
-  fits_write_comment(file->fptr, comment, status);
-  CHECK_STATUS_RET(*status,file);
-  
-  //Write pixel impact file into header
-  sprintf(comment, "PIXFILE: %s", impactlist);
-  fits_write_comment(file->fptr, comment, status);
+  //Write XML and pixel impact filenames into header
+  fits_update_key(file->fptr,TSTRING,"XMLFILE",xmlfile,NULL,status);
+  fits_update_key(file->fptr,TSTRING,"PIXFILE",impactlist,NULL,status);
   CHECK_STATUS_RET(*status,file);
 
    // Create table
-  int tlen=9;
+  char *ttype[]={"TIME","ADC","PIXID","PH_ID"};
+  char *tunit[]={"s","ADU","",""};
+  char *tform[]={"1D",NULL,"1J",NULL};
   
-  char *ttype[4];
-  char *tform[4];
-  char *tunit[4];
+  tform[1]=malloc(FLEN_KEYWORD*sizeof(char));
+  tform[2]=malloc(FLEN_KEYWORD*sizeof(char));
   
-  int ii;
-  
-  for(ii=0; ii<4; ii++){
-    ttype[ii]=(char*)malloc(tlen*sizeof(char));
-    if(ttype[ii]==NULL){
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for ttype failed");
-      CHECK_STATUS_RET(*status,file);
-    }
-    tform[ii]=(char*)malloc(tlen*sizeof(char));
-    if(tform[ii]==NULL){
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for tform failed");
-      CHECK_STATUS_RET(*status,file);
-    }
-    tunit[ii]=(char*)malloc(tlen*sizeof(char));
-    if(tunit[ii]==NULL){
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("memory allocation for tunit failed");
-      CHECK_STATUS_RET(*status,file);
-    }
-  }
-  CHECK_STATUS_RET(*status,file);
-  
-  //Create first column TIME
-  sprintf(ttype[0], "TIME");
-  sprintf(tform[0], "1D");
-  sprintf(tunit[0], "s");
-  
-  //Create second column ADC
-  sprintf(ttype[1], "ADC");
   sprintf(tform[1], "%ldU",triggerSize);
-  sprintf(tunit[1], "ADC");
-
-  //Create third column PIXID
-  sprintf(ttype[2], "PIXID");
-  sprintf(tform[2], "1J");
-  sprintf(tunit[2], "");
-  CHECK_STATUS_RET(*status,file);
-
-  //Create fourth column PH_ID
-  sprintf(ttype[3], "PH_ID");
+  CHECK_NULL_RET(tform[1],*status,"Memory allocation failed",NULL);
   sprintf(tform[3], "1PJ(%d)",MAXIMPACTNUMBER);
-  sprintf(tunit[3], "");
-  CHECK_STATUS_RET(*status,file);
+  CHECK_NULL_RET(tform[3],*status,"Memory allocation failed",NULL);
 
-  char extName[9];
-  sprintf(extName,"RECORDS");
-  fits_create_tbl(file->fptr, BINARY_TBL, 0, 4,
-		  ttype, tform, tunit,extName, status);
+  fits_create_tbl(file->fptr, BINARY_TBL, 0, 4, ttype, tform, tunit,"RECORDS", status);
   //Add keywords to other extension
-  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &(triggerSize), "Number of samples in triggers", status);
-  fits_update_key(file->fptr, TINT, "PREBUFF", &(preBufferSize), "Number of samples before start of pulse", status);
-  fits_update_key(file->fptr, TDOUBLE, "DELTAT", &(deltat), "Time resolution of data stream", status);
+  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in triggers", status);
+  fits_update_key(file->fptr, TINT, "PREBUFF", &preBufferSize, "Number of samples before start of pulse", status);
+  fits_update_key(file->fptr, TDOUBLE, "DELTAT", &deltat, "Time resolution of data stream", status);
   if(keywords->extname!=NULL){
 	  free(keywords->extname);
   }
-  keywords->extname=strdup(extName);
+  keywords->extname="RECORDS";
   sixt_add_fits_stdkeywords(file->fptr, 2,keywords, status);
   CHECK_STATUS_RET(*status,file);
 
@@ -204,14 +154,8 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   CHECK_STATUS_RET(*status,file);
 
   //Free memory
-  for(ii=0; ii<4; ii++){
-    free(ttype[ii]);
-    ttype[ii]=NULL;
-    free(tform[ii]);
-    tform[ii]=NULL;
-    free(tunit[ii]);
-    tunit[ii]=NULL;
-  }
+  free(tform[1]);
+  free(tform[2]);
 
   return(file);
 
@@ -220,48 +164,38 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 /** Open an existing TesTriggerFile. */
 TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKeywords* keywords,int* const status){
 	TesTriggerFile* file = newTesTriggerFile(0,status);
-	CHECK_STATUS_RET(*status, file);
 
 	//Open record file in READONLY mode
 	fits_open_file(&(file->fptr), filename, READONLY, status);
-	CHECK_STATUS_RET(*status, file);
 
 	//Move to the primary hdu
 	int hdu_type;
 	fits_movabs_hdu(file->fptr,1, &hdu_type, status);
-	CHECK_STATUS_RET(*status, file);
 
 	//Read keywords
 	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
-	CHECK_STATUS_RET(*status, file);
 
 	//Move to the binary table
 	fits_movabs_hdu(file->fptr,2, &hdu_type, status);
-	CHECK_STATUS_RET(*status, file);
 
 	//Get number of rows
-	char comment[MAXMSG];
+	char comment[FLEN_COMMENT];
 	fits_read_key(file->fptr, TINT, "NAXIS2", &(file->nrows), comment, status);
-	CHECK_STATUS_RET(*status, file);
+
 
 	//Get trigger_size
 	fits_read_key(file->fptr, TULONG, "TRIGGSZ", &(file->trigger_size), comment, status);
-	CHECK_STATUS_RET(*status, file);
 
 	//Get delta_t
 	fits_read_key(file->fptr, TDOUBLE, "DELTAT", &(file->delta_t), comment, status);
-	CHECK_STATUS_RET(*status, file);
 
 
 	//Associate column numbers
 	fits_get_colnum(file->fptr, CASEINSEN,"TIME", &(file->timeCol), status);
-	CHECK_STATUS_RET(*status, file);
 	fits_get_colnum(file->fptr, CASEINSEN,"ADC", &(file->trigCol), status);
-	CHECK_STATUS_RET(*status, file);
 	fits_get_colnum(file->fptr, CASEINSEN,"PIXID", &(file->pixIDCol), status);
-	CHECK_STATUS_RET(*status, file);
 	fits_get_colnum(file->fptr, CASEINSEN,"PH_ID", &(file->ph_idCol), status);
-	CHECK_STATUS_RET(*status, file);
+	CHECK_STATUS_RET(*status, NULL);
 
 	return(file);
 
@@ -320,4 +254,3 @@ void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status)
 	outputFile->nrows++;
 	outputFile->row++;
 }
-

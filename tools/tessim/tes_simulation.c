@@ -171,30 +171,95 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   // bail out if status is not ok
   CHECK_STATUS_VOID(*status);
 
-  fits_update_key(fptr,TDOUBLE,"DELTAT",&tes->delta_t,"Integration step size [s]",status);
-  fits_update_key(fptr,TDOUBLE,"IMIN",&tes->imin,"Current corresponding to 0 ADU [A]",status);
-  fits_update_key(fptr,TDOUBLE,"IMAX",&tes->imax,"Current corresponding to 65534 ADU [A]",status);
+  fits_update_key(fptr,TSTRING,"TESTYPE",tes->type,"Type identifier of TES",status);
+  // this allows to find the extension in the file
+  fits_update_key(fptr,TSTRING,"HDUNAME",tes->type,"Type identifier of TES",status);
+  int version=1;
+  fits_update_key(fptr,TINT,"EXTVER",&version,"extension version",status);
+  
+  fits_update_key(fptr,TINT,"TESID",&tes->id,"Pixel ID of this pixel",status);
+  fits_update_key(fptr,TDOUBLE,"DELTAT",&tes->delta_t,"[s] Integration step size",status);
+  fits_update_key(fptr,TDOUBLE,"IMIN",&tes->imin,"[A] Current corresponding to 0 ADU",status);
+  fits_update_key(fptr,TDOUBLE,"IMAX",&tes->imax,"[A] Current corresponding to 65534 ADU",status);
   double dummy=1.0/tes->aducnv;
-  fits_update_key(fptr,TDOUBLE,"ADUCNV",&dummy,"ADU conversion factor [A/ADU]",status);
-  fits_update_key(fptr,TDOUBLE,"I0_START",&tes->I0_start,"Initial bias current [A]",status);
-  fits_update_key(fptr,TDOUBLE,"R0",&tes->R0,"Operating point resistance [Ohm]",status);
-  fits_update_key(fptr,TDOUBLE,"RL",&tes->RL,"Shunt/load resistor value [Ohm]",status);
-  fits_update_key(fptr,TDOUBLE,"LIN",&tes->Lin,"Circuit inductance [H]",status);
+  fits_update_key(fptr,TDOUBLE,"ADUCNV",&dummy,"[A/ADU] ADU conversion factor",status);
+  fits_update_key(fptr,TDOUBLE,"I0_START",&tes->I0_start,"[A] Initial bias current",status);
+  fits_update_key(fptr,TDOUBLE,"R0",&tes->R0,"[Ohm] Operating point resistance",status);
+  fits_update_key(fptr,TDOUBLE,"RL",&tes->RL,"[Ohm] Shunt/load resistor value",status);
+  fits_update_key(fptr,TDOUBLE,"LIN",&tes->Lin,"[H] Circuit inductance",status);
   fits_update_key(fptr,TDOUBLE,"ALPHA",&tes->alpha,"TES sensitivity T/R*dR/dT (alpha)",status);
   fits_update_key(fptr,TDOUBLE,"BETA",&tes->beta,"TES current dependence I/R*dR/dI (beta)",status);
-  fits_update_key(fptr,TDOUBLE,"T_START",&tes->T_start,"Initial operating temperature [K]",status);
-  fits_update_key(fptr,TDOUBLE,"TB",&tes->Tb,"Heat sink temperature [K]",status);
+  fits_update_key(fptr,TDOUBLE,"T_START",&tes->T_start,"[K] Initial operating temperature",status);
+  fits_update_key(fptr,TDOUBLE,"TB",&tes->Tb,"[K] Heat sink temperature",status);
   fits_update_key(fptr,TDOUBLE,"N",&tes->n,"Heat sink coupling parameter n",status);
-  fits_update_key(fptr,TDOUBLE,"CE1",&tes->Ce1,"Absorber+TES heat capacity at Tc",status);
-  fits_update_key(fptr,TDOUBLE,"PB1",&tes->Pb1,"Thermal power flow",status);
-  fits_update_key(fptr,TDOUBLE,"GB1",&tes->Gb1,"Heat link thermal conductance at Tc",status);
+  fits_update_key(fptr,TDOUBLE,"CE1",&tes->Ce1,"[J/K] Absorber+TES heat capacity at Tc",status);
+  fits_update_key(fptr,TDOUBLE,"PB1",&tes->Pb1,"[W/K] Thermal power flow",status);
+  fits_update_key(fptr,TDOUBLE,"GB1",&tes->Gb1,"[W/Heat link thermal conductance at Tc",status);
   fits_update_key(fptr,TLONG,"SEED",&tes->seed,"Seed of random number generator",status);
   if (tes->simnoise) {
-    fits_update_key(fptr,TINT,"SIMNOISE",&tes->simnoise,"Simulating noise terms",status);
+    fits_update_key(fptr,TLOGICAL,"SIMNOISE",&tes->simnoise,"Simulating noise terms",status);
   } else {
-    fits_update_key(fptr,TINT,"SIMNOISE",&tes->simnoise,"Not simulating noise terms",status);
+    fits_update_key(fptr,TLOGICAL,"SIMNOISE",&tes->simnoise,"Not simulating noise terms",status);
   }
-  fits_update_key(fptr,TDOUBLE,"M_UNKNOWN",&tes->m_unknown,"Magnitude of unknown noise",status);
+  fits_update_key(fptr,TDOUBLE,"M_EXCESS",&tes->m_excess,"Magnitude of excess noise",status);
+}
+
+void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
+
+  // bail out if status is not ok
+  CHECK_STATUS_VOID(*status);
+
+  // read all non-derived TES parameters from file "fitsfile"
+  char comment[MAXMSG];
+  fitsfile *fptr;
+  fits_open_file(&fptr,file,READONLY,status);
+  CHECK_STATUS_VOID(*status);
+
+  // does the current extension contain the TESTYPE keyword?
+  char string[FLEN_VALUE]; // max length of a fits keyword string
+  fits_read_key(fptr,TSTRING,"TESTYPE",string,comment,status);
+  if (*status == KEY_NO_EXIST ) {
+    // No -> search for first TESDATASTREAM extension
+    // and (try to) read the key again
+    // (only one error checking is necessary here!)
+    *status=0;
+    fits_movnam_hdu(fptr,ANY_HDU,"TESDATASTREAM",0,status);
+    CHECK_STATUS_VOID(*status);
+    fits_read_key(fptr,TSTRING,"TESTYPE",string,comment,status);
+    CHECK_STATUS_VOID(*status);
+  }
+
+  par->type=strdup(string);
+
+  fits_read_key(fptr,TINT,"TESID",&par->id,comment,status);
+  fits_read_key(fptr,TDOUBLE,"DELTAT",&par->sample_rate,comment,status);
+  par->sample_rate=1./par->sample_rate; // delta t -> Hz
+
+  fits_read_key(fptr,TDOUBLE,"CE1",&par->Ce1,comment,status);
+  fits_read_key(fptr,TDOUBLE,"GB1",&par->Gb1,comment,status);
+
+  fits_read_key(fptr,TDOUBLE,"T_START",&par->T_start,comment,status);
+  fits_read_key(fptr,TDOUBLE,"TB",&par->Tb,comment,status);
+
+  fits_read_key(fptr,TDOUBLE,"R0",&par->R0,comment,status);
+
+  // yes, really
+  fits_read_key(fptr,TDOUBLE,"I0_START",&par->I0,comment,status);
+  fits_read_key(fptr,TDOUBLE,"RL",&par->RL,comment,status);
+
+  fits_read_key(fptr,TDOUBLE,"ALPHA",&par->alpha,comment,status);
+  fits_read_key(fptr,TDOUBLE,"BETA",&par->beta,comment,status);
+  fits_read_key(fptr,TDOUBLE,"LIN",&par->Lin,comment,status);
+
+  fits_read_key(fptr,TDOUBLE,"N",&par->n,comment,status);
+  fits_read_key(fptr,TDOUBLE,"IMIN",&par->imin,comment,status);
+  fits_read_key(fptr,TDOUBLE,"IMAX",&par->imax,comment,status);
+  fits_read_key(fptr,TINT,"SIMNOISE",&par->simnoise,comment,status);
+
+  fits_read_key(fptr,TDOUBLE,"M_EXCESS",&par->m_excess,comment,status);
+
+  fits_close_file(fptr,status);
+  CHECK_STATUS_VOID(status);
 }
 
 
@@ -203,7 +268,8 @@ void tes_print_params(tesparams *tes) {
   // print TES properties to console. If something changes here, do not forget
   // to also edit tes_fits_write_params!
   
-  headas_chat(0,"\nStatus of TES Pixel with ID: %s\n",tes->ID);
+  headas_chat(0,"\nStatus of TES Pixel with type: %s\n",tes->type);
+  headas_chat(0,"Pixel ID                     : %u\n",tes->id);
   headas_chat(0,"\n");
   headas_chat(0,"Start time of simulation [s]            : %15.6f\n",tes->tstart);
   headas_chat(0,"Current time of simulation [s]          : %15.6f\n",tes->time);
@@ -236,7 +302,7 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"Seed of random number generator         : %10lu\n",tes->seed);
   if (tes->simnoise) {
     headas_chat(0,"Simulating noise terms\n");
-    headas_chat(0,"Unexplained noise factor                : %10.2f\n",tes->m_unknown);
+    headas_chat(0,"Unexplained (excess) noise factor     : %10.2f\n",tes->m_excess);
   } else {
     headas_chat(0,"NOT simulating noise terms\n");
   }
@@ -446,7 +512,8 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   gsl_rng_set(rng,tes->seed);
 
   // ID of this pixel
-  tes->ID=strdup(par->ID);
+  tes->type=strdup(par->type);
+  tes->id=par->id;
 
   // The photon provider needs to be initialized outside of this
   tes->photoninfo=NULL;
@@ -533,7 +600,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->Vdn=0.;
   tes->Vexc=0.;
   tes->Vcn=0.;
-  tes->m_unknown=par->m_unknown;
+  tes->m_excess=par->m_excess;
   tes->Vunk=0.;
 
   // ...define ODE system
@@ -554,8 +621,8 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 void tes_free(tesparams *tes) {
   //
   // clean up a tes structure, freeing all memory
-  free(tes->ID);
-  tes->ID=NULL;
+  free(tes->type);
+  tes->type=NULL;
 
   gsl_odeiv2_driver_free(tes->odedriver);
   tes->odedriver=NULL;
@@ -592,19 +659,19 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
   }
 
   int samples=0;
-  while (tes->time<=tstop) {
+  while (tes->time<tstop) {
 
     if (tes->simnoise) {
       // thermal noise
       tes->Pnb1=tnoi(tes);
 
       // Johnson noise terms
-      // (this should now be ok for the excess/unknown noise, but needs somebody
+      // (this should now be ok for the excess noise, but needs somebody
       // else to check this again to be 100% sure)
       tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
       tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->beta));
       tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->RL*tes->bandwidth));
-      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->beta)*tes->m_unknown*tes->m_unknown) );
+      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->beta)*tes->m_excess*tes->m_excess) );
     }
 
     // absorb next photon?

@@ -16,8 +16,8 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
 
   data->Nt=TESRECORD_BUFFERSIZE;
   data->streamind=0;
-  data->tstart=0;
-  data->tstop=0;
+  data->tstart=tstart; // note: tstart/tstop are overwritten in tes_append_tesrecord
+  data->tstop=tstop;   // -> need to see whether we really need these parameters here
   data->imin=tes->imin;
   data->imax=tes->imax;
   data->aducnv=tes->aducnv;
@@ -25,7 +25,7 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
   data->stream=newTesRecord(status);
   allocateTesRecord(data->stream,(int) data->Nt, 1./tes->sample_rate, 0, status);
   CHECK_STATUS_RET(*status,NULL);
-  data->stream->pixid=atoi(tes->ID); // hmmm....
+  data->stream->pixid=tes->id;
 
   data->streamfile=strdup(streamfile);
   data->impactfile=strdup(impactfile);

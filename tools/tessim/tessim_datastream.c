@@ -74,7 +74,7 @@ void tes_close_datastream(tesparams *tes, char *streamfile, char *impactfile,
   tes_fits_write_params(fptr,tes,status);
 
   TESFitsStream *stream=newTESFitsStream(status);
-  snprintf(stream->name,9,"ADC%03d",1);
+  snprintf(stream->name,9,"ADC%03ud",tes->id);
   allocateTESFitsStream(stream,data->stream->Ntime,1,status);
   // copy over (this is stupid for a single pixel)
   unsigned long ii;

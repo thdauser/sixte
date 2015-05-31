@@ -4,10 +4,6 @@
 #include <stdlib.h>
 
 
-// todo:
-// is a separate stream argument really needed in the tes_save_... functions?
-// (all info exists in the tes-structure)
-
 // define TES_DATASTREAM to use the datastream interface
 // define TES_TESRECORD to use the (better) TESRECORD interface
 //#define TES_DATASTREAM
@@ -48,6 +44,15 @@ int tessim_main() {
     // exit program if we only want to display the properties
     // of the TES
     if (properties) {
+      if (strcmp(par.streamfile,"none")!=0) {
+	fitsfile *fptr;
+	fits_create_file_clobber(&fptr,par.streamfile,par.clobber,&status); 
+	fits_create_tbl(fptr,BINARY_TBL,0,0,NULL,NULL,NULL,"TESDATASTREAM",&status);
+	printf("XXX%iXXX\n",status);
+	tes_fits_write_params(fptr,tes,&status);
+	fits_close_file(fptr,&status);
+	CHECK_STATUS_BREAK(status);
+      }
       status=EXIT_SUCCESS; // NEED TO CHECK HERE
       break;
     }
@@ -96,7 +101,7 @@ int tessim_main() {
     tes_free(tes);
     free(tes);
 
-    free(par.ID);
+    free(par.type);
     free(par.impactlist);
     free(par.streamfile);
 
@@ -110,64 +115,80 @@ int tessim_main() {
 }
 
 void tessim_getpar(tespxlparams *par, int *properties, int *status) {
-  query_simput_parameter_string("PixelID", &(par->ID), status);
+  query_simput_parameter_string("PixType", &(par->type), status);
+
+  int fromfile=0;
+
+  
+  query_simput_parameter_int("PixID",&(par->id),status);
   query_simput_parameter_file_name("PixImpList", &(par->impactlist), status);
   query_simput_parameter_file_name("Streamfile", &(par->streamfile), status);
   query_simput_parameter_double("tstart", &(par->tstart), status);
   query_simput_parameter_double("tstop", &(par->tstop), status);
-  query_simput_parameter_double("sample_rate",&(par->sample_rate),status);
-  assert(par->sample_rate>0);
 
-  query_simput_parameter_double("Ce",&(par->Ce1),status);
-  assert(par->Ce1>0);
-  par->Ce1*=1e-12; // pJ/K -> J/K
-
-  query_simput_parameter_double("Gb",&(par->Gb1),status);
-  assert(par->Gb1>0);
-  par->Gb1*=1e-12; // pW/K -> W/K
-
-  query_simput_parameter_double("T_start", &(par->T_start), status); //mK
-  assert(par->T_start>0);
-  par->T_start*=1e-3; // mK -> K
-  query_simput_parameter_double("Tb", &(par->Tb), status); // mK
-  assert(par->Tb>0);
-  par->Tb*=1e-3; // mK->K
-  query_simput_parameter_double("R0", &(par->R0), status); // mOhm
-  assert(par->R0>0);
-  par->R0*=1e-3; // mOhm->Ohm
-
-  query_simput_parameter_double("I0", &(par->I0), status); // muA
-  assert(par->I0>0);
-  par->I0*=1e-6; // muA->A
-
-  query_simput_parameter_double("RL", &(par->RL), status); // mOhm
-  assert(par->RL>=0);
-  par->RL*=1e-3; // mOhm->Ohm
-  query_simput_parameter_double("alpha", &(par->alpha), status);
-  assert(par->alpha>0);
-  query_simput_parameter_double("beta", &(par->beta), status);
-  query_simput_parameter_double("Lin", &(par->Lin), status); //nH
-  assert(par->Lin>0);
-  par->Lin*=1e-9;
-  query_simput_parameter_double("n", &(par->n), status);
-  query_simput_parameter_double("imin", &(par->imin), status);
-  query_simput_parameter_double("imax", &(par->imax), status);
-
-  if (par->imax<=par->imin) {
-    SIXT_ERROR("imax MUST be larger imin\n");
-    *status=EXIT_FAILURE;
-    return;
+  if (strncmp(par->type,"file:",5)==0) {
+    char *file=strdup(par->type+5);
+    tes_fits_read_params(file,par,status);
+    CHECK_STATUS_VOID(*status);
+    fromfile=1;
   }
 
-  query_simput_parameter_bool("simnoise", &par->simnoise, status);
+  if (!fromfile){
+    query_simput_parameter_double("sample_rate",&(par->sample_rate),status);
+    assert(par->sample_rate>0);
+
+    query_simput_parameter_double("Ce",&(par->Ce1),status);
+    assert(par->Ce1>0);
+    par->Ce1*=1e-12; // pJ/K -> J/K
+
+    query_simput_parameter_double("Gb",&(par->Gb1),status);
+    assert(par->Gb1>0);
+    par->Gb1*=1e-12; // pW/K -> W/K
+
+    query_simput_parameter_double("T_start", &(par->T_start), status); //mK
+    assert(par->T_start>0);
+    par->T_start*=1e-3; // mK -> K
+    query_simput_parameter_double("Tb", &(par->Tb), status); // mK
+    assert(par->Tb>0);
+    par->Tb*=1e-3; // mK->K
+    query_simput_parameter_double("R0", &(par->R0), status); // mOhm
+    assert(par->R0>0);
+    par->R0*=1e-3; // mOhm->Ohm
+
+    query_simput_parameter_double("I0", &(par->I0), status); // muA
+    assert(par->I0>0);
+    par->I0*=1e-6; // muA->A
+
+    query_simput_parameter_double("RL", &(par->RL), status); // mOhm
+    assert(par->RL>=0);
+    par->RL*=1e-3; // mOhm->Ohm
+    query_simput_parameter_double("alpha", &(par->alpha), status);
+    assert(par->alpha>0);
+    query_simput_parameter_double("beta", &(par->beta), status);
+    query_simput_parameter_double("Lin", &(par->Lin), status); //nH
+    assert(par->Lin>0);
+    par->Lin*=1e-9;
+    query_simput_parameter_double("n", &(par->n), status);
+    query_simput_parameter_double("imin", &(par->imin), status);
+    query_simput_parameter_double("imax", &(par->imax), status);
+
+    if (par->imax<=par->imin) {
+      SIXT_ERROR("imax MUST be larger imin\n");
+      *status=EXIT_FAILURE;
+      return;
+    }
+
+    query_simput_parameter_bool("simnoise", &par->simnoise, status);
   
-  if (&par->simnoise) {
-    query_simput_parameter_double("m_unknown",&par->m_unknown,status);
-  } else {
-    par->m_unknown=0.; // switch explicitly off if not simulating noise
+    if (&par->simnoise) {
+      query_simput_parameter_double("m_excess",&par->m_excess,status);
+    } else {
+      par->m_excess=0.; // switch explicitly off if not simulating noise
+    }
+    assert(par->m_excess>=0);
   }
-  assert(par->m_unknown>=0);
 
+  // read for all input parameter possibilities
 
   long seed; // needed because par->seed is an unsigned long
   query_simput_parameter_long("seed", &seed, status);
