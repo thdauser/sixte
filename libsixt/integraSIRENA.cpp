@@ -29,7 +29,7 @@
 /** Initializes the structure ReconstructInitSIRENA with the variables required for SIRENA reconstruction */
 
 extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file,
-		char* const library_file, double tauFall,int pulse_length, double scaleFactor, double samplesUp,
+		char* const library_file, char* const event_file, double tauFall,int pulse_length, double scaleFactor, double samplesUp,
 		double nSgms, int crtLib, int mode, double LrsT, double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method,
 		int calibLQ,  double b_cF, double c_cF, double monoenergy, int interm, char* const detectFile, char* const filterFile, char* const record_file2,
 		double monoenergy2, char clobber, int maxPulsesPerRecord, int* const status){
@@ -77,6 +77,10 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	reconstruct_init->record_file[255]='\0';
 	strncpy(reconstruct_init->library_file,library_file,255);
 	reconstruct_init->library_file[255]='\0';
+	strncpy(reconstruct_init->noise_file,noise_file,255);
+	reconstruct_init->noise_file[255]='\0';
+	strncpy(reconstruct_init->event_file,event_file,255);
+	reconstruct_init->event_file[255]='\0';
 	strncpy(reconstruct_init->detectFile,detectFile,255);
 	reconstruct_init->detectFile[255]='\0';
 	strncpy(reconstruct_init->filterFile,filterFile,255);
@@ -193,6 +197,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		}
 		
 		//cout<<"pulsesAll: "<<(*pulsesAll)->ndetpulses<<endl;
+		//cout<<"pulsesInRecord: "<<pulsesInRecord->ndetpulses<<endl;
 
 		// Free & Fill TesEventList structure
 		
@@ -239,6 +244,8 @@ extern "C" ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status){
 	
 	// Initialize values for SIRENA
 	strcpy(reconstruct_init->library_file,"");
+	strcpy(reconstruct_init->noise_file,"");
+	strcpy(reconstruct_init->event_file,"");
 	reconstruct_init->threshold=0.;
 	reconstruct_init->pulse_length=0;	
 	reconstruct_init->tauFall=0.;
@@ -613,8 +620,8 @@ extern "C" void runEnergyCalib(ReconstructInitSIRENA* reconstruct_init, PulsesCo
 		message = "Cannot run calculus_bc in calibration mode in runEenergyCalib";
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
-	cout<<"b_cF: "<<*b_cF<<endl;
-	cout<<"c_cF: "<<*c_cF<<endl;
+	//cout<<"b_cF: "<<*b_cF<<endl;
+	//cout<<"c_cF: "<<*c_cF<<endl;
 
 	gsl_vector_free(xi);
 	gsl_vector_free(yi);

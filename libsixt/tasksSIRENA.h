@@ -51,7 +51,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 int find_energy(double energyKeyword, gsl_vector *energygsl, long *rowFound);
 int calculus_optimalFilter(int TorF, int intermediate, int mode, gsl_vector *matchedfiltergsl, long mf_size, double samprate, int runF0orB0val, gsl_vector *freqgsl, gsl_vector *csdgsl, gsl_vector **optimal_filtergsl, gsl_vector **of_f, gsl_vector **of_FFT, gsl_vector_complex **of_FFT_complex, double *normalizationFactor);
 int interpolatePOS (gsl_vector *x_in, gsl_vector *y_in, long size, double step, gsl_vector **x_out, gsl_vector **y_out, long *numzerosstart, long *numzerosend);
-int find_matchedfilter(int runF0orB0val, double ph, gsl_vector *energiesvalues, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound);
+int find_matchedfilter(int runF0orB0val, double parameterToUse, gsl_vector *valuesToCompare, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound);
 int calculateUCEnergy (gsl_vector *vector, gsl_vector *filter, gsl_vector_complex *filterFFT, int domain, int mode, double nrmfctr, double samprate, double *calculatedEnergy);
 int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFactor, gsl_vector *optimalfilter, gsl_vector *optimalfilter_f, gsl_vector *optimalfilter_FFT, fitsfile **dtcObject, const char *create);
 int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, int pulse_index, double uncE, fitsfile **dtcObject, const char *create);

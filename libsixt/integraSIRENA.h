@@ -191,6 +191,9 @@ typedef struct {
 	/** Noise file (to be used) **/
 	char noise_file[256];
 
+	/** Output event file **/
+	char event_file[256];
+
 	/** Pulse length */
 	int pulse_length;
 	
@@ -281,9 +284,10 @@ extern "C"
 #endif
 
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, char* const library_file,
-	double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode, double LrsT,
-	double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method, int calibLQ,  double b_cF, double c_cF,
-	double monoenergy, int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int maxPulsesPerRecord,
+	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode,
+	double LrsT, double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method,
+	int calibLQ,  double b_cF, double c_cF,	double monoenergy,
+	int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int maxPulsesPerRecord,
 	int* const status);
 
 /** Constructor. Returns a pointer to an empty PulsesCollection data structure. */

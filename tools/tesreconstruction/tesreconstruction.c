@@ -76,7 +76,7 @@ int tesreconstruction_main() {
     		par.DerivateExclusion,par.SaturationValue,&status);
 	  
     }else{
-	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, par.LibraryFile,
+	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, par.LibraryFile, par.TesEventFile,
 		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.crtLib,
 		par.mode, par.LrsT, par.LbT, par.baseline, par.NoiseFile, par.FilterDomain, par.FilterMethod,
 		par.calibLQ, par.b_cF,par.c_cF, par.monoenergy, par.intermediate, par.detectFile,
@@ -106,9 +106,9 @@ int tesreconstruction_main() {
       {
 	    nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
-	    /*if(nrecord <1395) {
+	    /*if(nrecord <35) {
 	      continue;
-	    }else if(nrecord>1395){
+	    }else if(nrecord>35){
 	      status=1;
 	      CHECK_STATUS_BREAK(status);
 	    }*/
@@ -123,7 +123,6 @@ int tesreconstruction_main() {
 	  //Reinitialize event list
 	  event_list->index=0;
     }
-    
     
     if(pulsesAll->ndetpulses == 0)  printf("%s","WARNING: no pulses have been detected\n");
     

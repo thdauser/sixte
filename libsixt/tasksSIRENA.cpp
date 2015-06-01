@@ -65,6 +65,7 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 	    message = "Cannot run routine procRecord for record processing";
 	    EP_EXIT_ERROR(message,EPFAIL);
 	}
+
 	int extver=0;
 	char extname[20];
 	
@@ -228,7 +229,7 @@ int createLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToL
 		    EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
-		// Create extension LIBRARY
+		// Create LIBRARY extension
 		strcpy(extname,"LIBRARY");
 		if (fits_create_tbl(*inLibObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
 		{
@@ -256,16 +257,277 @@ int createLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToL
 		    EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
+		// Primary HDU
+		strcpy(extname,"Primary");
+		int *hdutype;
+		if (fits_movabs_hdu(*inLibObject, 1, hdutype, &status))
+		{
+			message = "Cannot move to HDU " + string(extname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
 		strcpy(keyname,"CREATOR");
-		strcpy(keyvalstr,create);
+		string creator (string("File CREATED by") + ' ' + (string) create);
+		strcpy(keyvalstr,creator.c_str());
 		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
 		{
-		    message = "Cannot write keyword " + string(keyname) + " in library";
-		    EP_PRINT_ERROR(message,status); return(EPFAIL);
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strcpy(keyname,"PROC0");
+		const char * charproc= "PROC0 Starting parameter list";
+		strcpy(keyvalstr,charproc);
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		string strproc (string("RecordFile = ") + reconstruct_init->record_file);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("TesEventFile = ") + reconstruct_init->event_file;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("LibraryFile = ") + reconstruct_init->library_file;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("NoiseFile = ") + reconstruct_init->noise_file;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init->mode);
+		strproc = string("mode = ") + string(str_mode);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init->crtLib);
+		strproc=string("crtLib = ") + string(str_crtLib);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("FilterDomain = ") + reconstruct_init->FilterDomain;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("FilterMethod = ") + reconstruct_init->FilterMethod;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_calibLQ[125];      sprintf(str_calibLQ,"%d",reconstruct_init->calibLQ);
+		strproc=string("calibLQ = ") + string(str_calibLQ);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_b_cF[125];	sprintf(str_b_cF,"%f",reconstruct_init->b_cF);
+		strproc=string("b_cF = ") + string(str_b_cF);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_c_cF[125];	sprintf(str_c_cF,"%f",reconstruct_init->c_cF);
+		strproc=string("c_cF = ") + string(str_c_cF);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_maxPulsesPerRecord[125];	sprintf(str_maxPulsesPerRecord,"%d",reconstruct_init->maxPulsesPerRecord);
+		strproc=string("LibraryFile = ") + string(str_maxPulsesPerRecord);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init->pulse_length);
+		strproc=string("PulseLength = ") + string(str_pulse_length);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init->tauFall);
+		strproc=string("tauFall = ") + string(str_tauFall);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init->scaleFactor);
+		strproc=string("scaleFactor = ") + string(str_scaleFactor);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init->samplesUp);
+		strproc=string("samplesUp = ") + string(str_samplesUp);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init->nSgms);
+		strproc=string("nSgms = ") + string(str_nSgms);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_baseline[125];	sprintf(str_baseline,"%f",reconstruct_init->baseline);
+		strproc=string("baseline = ") + string(str_baseline);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_LrsT[125];			sprintf(str_LrsT,"%e",reconstruct_init->LrsT);
+		strproc=string("LrsT = ") + string(str_LrsT);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_LbT[125];			sprintf(str_LbT,"%e",reconstruct_init->LbT);
+		strproc=string("LbT = ") + string(str_LbT);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_monoenergy[125];	sprintf(str_monoenergy,"%f",reconstruct_init->monoenergy);
+		strproc=string("monoenergy = ") + string(str_monoenergy);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_intermediate[125];      sprintf(str_intermediate,"%d",reconstruct_init->intermediate);
+		strproc=string("intermediate = ") + string(str_intermediate);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("detectFile = ") + reconstruct_init->detectFile;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("RecordFileCalib2 = ") + reconstruct_init->record_file2;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_monoenergy2[125];	sprintf(str_monoenergy2,"%f",reconstruct_init->monoenergy2);
+		strproc=string("monoenergy2 = ") + string(str_monoenergy2);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strproc=string("filterFile = ") + reconstruct_init->filterFile;
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
+		strproc=string("clobber = ") + string(str_clobber);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		charproc= "PROC0 Ending parameter list";
+		strcpy(keyvalstr,charproc);
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 	}
 
-	char str_energy[125];       sprintf(str_energy,"%f",reconstruct_init->monoenergy);
+	/*char str_energy[125];       sprintf(str_energy,"%f",reconstruct_init->monoenergy);
 
 	string process (string("") 	+ ' ' +
 	string(inLibName) 	  + ' ' +
@@ -283,7 +545,7 @@ int createLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToL
 	{
 	    message = "Cannot write keyword " + string(keyname) + " in library";
 	    EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
+	}*/
 
 	return (EPOK);
 }
@@ -369,6 +631,7 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 
 	if (reconstruct_init->clobber == 1)
 	{
+		// PULSES HDU
 		strcpy(extname,"PULSES");
 		if (fits_create_tbl(*dtcObject, BINARY_TBL,0,0,tt,tf,tu,extname,&status))
 		{
@@ -376,7 +639,6 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
-		// Create keywords
 		strcpy(extname,"PULSES");
 		if (fits_movnam_hdu(*dtcObject, ANY_HDU,extname, extver, &status))
 		{
@@ -432,48 +694,276 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
+
+		// Primary HDU
+		strcpy(extname,"Primary");
+		int *hdutype;
+		if (fits_movabs_hdu(*dtcObject, 1, hdutype, &status))
+		{
+			message = "Cannot move to HDU " + string(extname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
 		strcpy(keyname,"CREATOR");
-		strcpy(keyvalstr,create);
+		string creator (string("File CREATED by") + ' ' + (string) create);
+		strcpy(keyvalstr,creator.c_str());
 		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
 		{
 			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
-		// Set PROCESS keyword
-		char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init->pulse_length);
-		char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init->tauFall);
-		char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init->scaleFactor);
-		char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init->samplesUp);
-		char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init->nSgms);
-		char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init->mode);
-		char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init->crtLib);
-		char str_LrsT[125];			sprintf(str_LrsT,"%e",reconstruct_init->LrsT);
-		char str_LbT[125];			sprintf(str_LbT,"%e",reconstruct_init->LbT);
-		char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
-
-		string process (string(" runDetect") 		+ ' ' +
-		string(reconstruct_init->record_file)          + ' ' + string(reconstruct_init->library_file)		+ ' ' + string(dtcName)		+ ' ' +
-		string(str_mode) 				+ ' ' + string(str_crtLib) 		+ ' ' +
-		string(str_LrsT)   	    		+ ' ' + string(str_LbT)         + ' ' +
-		string(str_tauFall)     		+ ' ' + string(str_scaleFactor) + ' ' +
-		string(str_samplesUp)   		+ ' ' + string(str_nSgms)       + ' ' +
-		string(str_pulse_length) 		+ ' ' +
-		string(str_clobber) + ' ' +
-		string("(") + (string) create + string(")"));
-
-		strcpy(keyname,"PROC0");
-		strcpy(keyvalstr,process.c_str());
-		if (fits_write_key_longwarn(*dtcObject,&status))
-		{
-			message = "Cannot write long warn in output detect file " + string(dtcName);
-			EP_PRINT_ERROR(message,status); return(EPFAIL);
-		}
-		if (fits_write_key_longstr(*dtcObject,keyname,keyvalstr,comment,&status))
+		strcpy(keyname,"HISTORY");
+		const char * charhistory= "HISTORY Starting parameter list";
+		strcpy(keyvalstr,charhistory);
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
 		{
 			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
+
+		string strhistory (string("RecordFile = ") + reconstruct_init->record_file);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("TesEventFile = ") + reconstruct_init->event_file;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("LibraryFile = ") + reconstruct_init->library_file;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("NoiseFile = ") + reconstruct_init->noise_file;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init->mode);
+		strhistory = string("mode = ") + string(str_mode);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init->crtLib);
+		strhistory=string("crtLib = ") + string(str_crtLib);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("FilterDomain = ") + reconstruct_init->FilterDomain;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("FilterMethod = ") + reconstruct_init->FilterMethod;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_calibLQ[125];      sprintf(str_calibLQ,"%d",reconstruct_init->calibLQ);
+		strhistory=string("calibLQ = ") + string(str_calibLQ);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_b_cF[125];	sprintf(str_b_cF,"%f",reconstruct_init->b_cF);
+		strhistory=string("b_cF = ") + string(str_b_cF);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_c_cF[125];	sprintf(str_c_cF,"%f",reconstruct_init->c_cF);
+		strhistory=string("c_cF = ") + string(str_c_cF);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_maxPulsesPerRecord[125];	sprintf(str_maxPulsesPerRecord,"%d",reconstruct_init->maxPulsesPerRecord);
+		strhistory=string("LibraryFile = ") + string(str_maxPulsesPerRecord);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init->pulse_length);
+		strhistory=string("PulseLength = ") + string(str_pulse_length);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init->tauFall);
+		strhistory=string("tauFall = ") + string(str_tauFall);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init->scaleFactor);
+		strhistory=string("scaleFactor = ") + string(str_scaleFactor);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init->samplesUp);
+		strhistory=string("samplesUp = ") + string(str_samplesUp);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init->nSgms);
+		strhistory=string("nSgms = ") + string(str_nSgms);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_baseline[125];	sprintf(str_baseline,"%f",reconstruct_init->baseline);
+		strhistory=string("baseline = ") + string(str_baseline);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_LrsT[125];			sprintf(str_LrsT,"%e",reconstruct_init->LrsT);
+		strhistory=string("LrsT = ") + string(str_LrsT);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_LbT[125];			sprintf(str_LbT,"%e",reconstruct_init->LbT);
+		strhistory=string("LbT = ") + string(str_LbT);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_monoenergy[125];	sprintf(str_monoenergy,"%f",reconstruct_init->monoenergy);
+		strhistory=string("monoenergy = ") + string(str_monoenergy);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_intermediate[125];      sprintf(str_intermediate,"%d",reconstruct_init->intermediate);
+		strhistory=string("intermediate = ") + string(str_intermediate);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("detectFile = ") + reconstruct_init->detectFile;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("RecordFileCalib2 = ") + reconstruct_init->record_file2;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_monoenergy2[125];	sprintf(str_monoenergy2,"%f",reconstruct_init->monoenergy2);
+		strhistory=string("monoenergy2 = ") + string(str_monoenergy2);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		strhistory=string("filterFile = ") + reconstruct_init->filterFile;
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
+		strhistory=string("clobber = ") + string(str_clobber);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		charhistory= "HISTORY Ending parameter list";
+		strcpy(keyvalstr,charhistory);
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
 	}
 
 	return EPOK;
@@ -717,10 +1207,8 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	gsl_vector_memcpy(recordDERIVATIVE,record);
-	/*for(int j=0; j<recordDERIVATIVE->size;j++){
-		cout<<j<<" "<<gsl_vector_get(recordDERIVATIVE,j)<<endl;
-	}*/
-	
+	//cout<<"recordDerivative"<<endl;
+	//for (int j=990;j<1030;j++) cout<<j<<" "<<gsl_vector_get(recordDERIVATIVE,j)<<endl;
 	
 	// Find pulses of the record
 	if ((*reconstruct_init)->crtLib == 0)
@@ -762,7 +1250,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		if (gsl_vector_get(tendgsl,i) >= recordDERIVATIVE->size)	// Truncated pulses at the end of the record
 		{
 			gsl_vector_set(tendgsl,i,(recordDERIVATIVE->size)-1);
-			gsl_vector_set (qualitygsl,i,1);
+			gsl_vector_set (qualitygsl,i,2);
 		}
 
 		if ((numPulses !=1) && (i != numPulses-1)) 		// More than one pulse in the record and not the last one
@@ -773,6 +1261,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 			}
 		}
 	}
+
 	// Obtain the approximate rise and fall times of each pulse
 	gsl_vector *tauRisegsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
 	gsl_vector *tauFallgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
@@ -801,6 +1290,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		{
 			foundPulses->pulses_detected[i].grade2 = (*reconstruct_init)->pulse_length;
 		}
+
 		foundPulses->pulses_detected[i].pulse_adc = gsl_vector_alloc(foundPulses->pulses_detected[i].pulse_duration);
 		temp = gsl_vector_subvector(recordNOTFILTERED,gsl_vector_get(tstartgsl,i),foundPulses->pulses_detected[i].pulse_duration);
 
@@ -814,7 +1304,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		foundPulses->pulses_detected[i].maxDER = gsl_vector_get(maxDERgsl,i);
 		// 'ucenergy' and 'energy' will be known after running runFilter and runEnergy respectively
 		foundPulses->pulses_detected[i].quality = gsl_vector_get(qualitygsl,i);
-		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<", pulse_duration= "<<foundPulses->pulses_detected[i].pulse_duration<<",quality= "<<foundPulses->pulses_detected[i].quality<<endl;
+		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<", maxDER= "<<foundPulses->pulses_detected[i].maxDER<<", pulse_duration= "<<foundPulses->pulses_detected[i].pulse_duration<<",quality= "<<foundPulses->pulses_detected[i].quality<<endl;
 	}
 
 	// Write pulses info in output FITS file
@@ -1182,40 +1672,63 @@ int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhistogsl, gsl_ve
     invectoraux2 = gsl_vector_alloc(ind);
     gsl_vector_memcpy(invectoraux2, &temp.vector);
     size = invectoraux2->size;
+    gsl_vector_free(invectoraux);
 
-    // Obtain invector_max
-    for (int i=0; i<size; i++)
+    // To check if all the values of the invector are the same
+    // For example, high energies and no noise => Saturated pulses
+    invectoraux = gsl_vector_alloc(size);
+    gsl_vector *invectoraux1 = gsl_vector_alloc(size);
+    gsl_vector_memcpy(invectoraux,invectoraux2);
+    gsl_vector_set_all(invectoraux1,gsl_vector_get(invectoraux2,0));
+    gsl_vector_scale(invectoraux1,-1.0);
+    gsl_vector_add(invectoraux,invectoraux1);
+    gsl_vector_free(invectoraux1);
+
+    if (gsl_vector_isnull(invectoraux) == 1) // All the values are the same
     {
-    	if (invectormax < gsl_vector_get (invectoraux2,i))	invectormax = gsl_vector_get (invectoraux2,i);
+    	gsl_vector_free(*xhistogsl);
+    	gsl_vector_free(*yhistogsl);
+    	*xhistogsl = gsl_vector_alloc(1);
+    	*yhistogsl = gsl_vector_alloc(1);
+    	gsl_vector_set(*xhistogsl,0,gsl_vector_get(invectoraux2,0));
+        gsl_vector_set(*yhistogsl,0,1); //It doesn't matter the value because the maximum is going to look for
     }
-    // Obtain invector_min
-    for (int i=0; i<size; i++)
+    else
     {
-    	if (invectormin > gsl_vector_get (invectoraux2,i))	invectormin = gsl_vector_get (invectoraux2,i);
-    }
+    	// Obtain invector_max
+    	for (int i=0; i<size; i++)
+    	{
+    		if (invectormax < gsl_vector_get (invectoraux2,i))	invectormax = gsl_vector_get (invectoraux2,i);
+    	}
+    	// Obtain invector_min
+    	for (int i=0; i<size; i++)
+    	{
+    		if (invectormin > gsl_vector_get (invectoraux2,i))	invectormin = gsl_vector_get (invectoraux2,i);
+    	}
 
-    if (invectormax == invectormin)
-    {
-    	message = "Invectormax == invectormin";
-    	EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-    }
+    	if (invectormax == invectormin)
+    	{
+    		message = "Invectormax == invectormin";
+    		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+    	}
 
-    if ((invectormax != 0) && (invectormin != 1e10))
-    {
-    	// Obtain binSize
-        binSize = (invectormax - invectormin) / nbins;        // Size of each bin of the histogram
+    	if ((invectormax != 0) && (invectormin != 1e10))
+    	{
+    		// Obtain binSize
+    		binSize = (invectormax - invectormin) / nbins;        // Size of each bin of the histogram
 
-        // Create histogram x-axis
-        for (int i=0; i<nbins; i++)	{gsl_vector_set (*xhistogsl,i,binSize*i+invectormin+binSize/2);}
+    		// Create histogram x-axis
+    		for (int i=0; i<nbins; i++)	{gsl_vector_set (*xhistogsl,i,binSize*i+invectormin+binSize/2);}
 
-        // Create histogram y-axis
-        gsl_vector_set_zero (*yhistogsl);
-        for (int i=0; i<size; i++)
-        {
-        	ind = (int) ((gsl_vector_get(invectoraux2,i) - invectormin) / binSize);
-            if (ind == nbins) ind--;
-            gsl_vector_set (*yhistogsl,ind, gsl_vector_get(*yhistogsl,ind) + 1);
-        }
+    		// Create histogram y-axis
+    		gsl_vector_set_zero (*yhistogsl);
+    		for (int i=0; i<size; i++)
+    		{
+    			ind = (int) ((gsl_vector_get(invectoraux2,i) - invectormin) / binSize);
+    			if (ind == nbins) ind--;
+    			gsl_vector_set (*yhistogsl,ind, gsl_vector_get(*yhistogsl,ind) + 1);
+    		}
+    	}
     }
 
     // Free allocate of GSL vectors
@@ -1572,6 +2085,278 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	delete [] obj.nameTable;
     	delete [] obj.nameCol;
     	delete [] obj.unit;
+
+    	// Primary HDU
+    	strcpy(extname,"Primary");
+    	int *hdutype;
+    	if (fits_movabs_hdu(*inLibObject, 1, hdutype, &status))
+    	{
+    		message = "Cannot move to HDU " + string(extname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char keyvalstr[1000];
+
+    	/*strcpy(keyname,"PROC");
+    	const char *procnumber = (char) eventcntLib;
+    	strcat(keyname,procnumber);
+    	const char * charproc;
+    	strcpy(keyvalstr,"PROC");
+    	strcat(keyvalstr,"0");
+    	strcat(keyvalstr," Starting parameter list");*/
+    	char str_procnumber[125];			sprintf(str_procnumber,"%d",eventcntLib);
+    	string strprocname (string("PROC") + string(str_procnumber));
+    	strcpy(keyname,strprocname.c_str());
+    	string strprocval (string("PROC") + string(str_procnumber) + string(" Starting parameter list"));
+    	strcpy(keyvalstr,strprocval.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	string strproc (string("RecordFile = ") + reconstruct_init->record_file);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("TesEventFile = ") + reconstruct_init->event_file;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("LibraryFile = ") + reconstruct_init->library_file;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("NoiseFile = ") + reconstruct_init->noise_file;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init->mode);
+    	strproc = string("mode = ") + string(str_mode);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init->crtLib);
+    	strproc=string("crtLib = ") + string(str_crtLib);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("FilterDomain = ") + reconstruct_init->FilterDomain;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("FilterMethod = ") + reconstruct_init->FilterMethod;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_calibLQ[125];      sprintf(str_calibLQ,"%d",reconstruct_init->calibLQ);
+    	strproc=string("calibLQ = ") + string(str_calibLQ);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_b_cF[125];	sprintf(str_b_cF,"%f",reconstruct_init->b_cF);
+    	strproc=string("b_cF = ") + string(str_b_cF);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_c_cF[125];	sprintf(str_c_cF,"%f",reconstruct_init->c_cF);
+    	strproc=string("c_cF = ") + string(str_c_cF);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_maxPulsesPerRecord[125];	sprintf(str_maxPulsesPerRecord,"%d",reconstruct_init->maxPulsesPerRecord);
+    	strproc=string("LibraryFile = ") + string(str_maxPulsesPerRecord);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init->pulse_length);
+    	strproc=string("PulseLength = ") + string(str_pulse_length);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init->tauFall);
+    	strproc=string("tauFall = ") + string(str_tauFall);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init->scaleFactor);
+    	strproc=string("scaleFactor = ") + string(str_scaleFactor);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init->samplesUp);
+    	strproc=string("samplesUp = ") + string(str_samplesUp);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init->nSgms);
+    	strproc=string("nSgms = ") + string(str_nSgms);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_baseline[125];	sprintf(str_baseline,"%f",reconstruct_init->baseline);
+    	strproc=string("baseline = ") + string(str_baseline);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_LrsT[125];			sprintf(str_LrsT,"%e",reconstruct_init->LrsT);
+    	strproc=string("LrsT = ") + string(str_LrsT);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_LbT[125];			sprintf(str_LbT,"%e",reconstruct_init->LbT);
+    	strproc=string("LbT = ") + string(str_LbT);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_monoenergy[125];	sprintf(str_monoenergy,"%f",reconstruct_init->monoenergy);
+    	strproc=string("monoenergy = ") + string(str_monoenergy);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_intermediate[125];      sprintf(str_intermediate,"%d",reconstruct_init->intermediate);
+    	strproc=string("intermediate = ") + string(str_intermediate);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("detectFile = ") + reconstruct_init->detectFile;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("RecordFileCalib2 = ") + reconstruct_init->record_file2;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_monoenergy2[125];	sprintf(str_monoenergy2,"%f",reconstruct_init->monoenergy2);
+    	strproc=string("monoenergy2 = ") + string(str_monoenergy2);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strproc=string("filterFile = ") + reconstruct_init->filterFile;
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
+    	strproc=string("clobber = ") + string(str_clobber);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	strcpy(keyname,strprocname.c_str());
+    	strprocval = string("PROC") + string(str_procnumber) + string(" Ending parameter list");
+    	strcpy(keyvalstr,strprocval.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
     }
     else
     {
@@ -1863,6 +2648,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 					EP_EXIT_ERROR(message,EPFAIL);
 				}
 				gsl_vector_free(pulse);
+				//cout<<"Pulso "<<i<<" "<<uncE<<endl;
 
 				if ((*reconstruct_init)->intermediate == 1)
 				{
@@ -1874,7 +2660,9 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 					//reconstruct_init->clobber = 2;
 				}
 
-				(*pulsesInRecord)->pulses_detected[i].grade1 = optimalfilter_SHORT->size;
+				if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
+				else								 (*pulsesInRecord)->pulses_detected[i].grade1 = optimalfilter_SHORT->size;
+				//(*pulsesInRecord)->pulses_detected[i].grade1 = optimalfilter_SHORT->size;
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = uncE/1e3;	// In SIXTE, SIGNAL is in keV
 				(*pulsesInRecord)->pulses_detected[i].energy = uncE/1e3;
 			}
@@ -1890,7 +2678,9 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 					//reconstruct_init->clobber = 2;
 				}
 
-				(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
+				if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
+				else														(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
+				//(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = 0.0;
 				(*pulsesInRecord)->pulses_detected[i].energy = 0.0;
 			}
@@ -1910,7 +2700,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 		iter = 0;
 		for (int i=0; i<(*pulsesInRecord)->ndetpulses;i++)
 		{
-			if ((*pulsesInRecord)->pulses_detected[i].quality > 1)  //saturated
+			if ((*pulsesInRecord)->pulses_detected[i].quality >= 10)  //saturated
 			{
 				iter++;
 			}
@@ -1928,7 +2718,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 		for (int i=0; i<(*pulsesInRecord)->ndetpulses ;i++)
 		{
 			// Pulses are going to be validated by checking its quality
-			if ((*pulsesInRecord)->pulses_detected[i].quality <= 1)	// Neither truncated or saturated
+			if ((*pulsesInRecord)->pulses_detected[i].quality < 10)	// Neither truncated or saturated
 			{
 				resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
 				//resize_mf = pow(2,floor(log2(resize_mf)));
@@ -1988,7 +2778,9 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 					}
 				}
 
-				(*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
+				if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
+				else												 (*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
+				//(*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = uncE/1e3; // In SIXTE, SIGNAL is in keV
 				(*pulsesInRecord)->pulses_detected[i].energy = uncE/1e3;
 			}
@@ -2010,7 +2802,9 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 					}
 				}
 
-				(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
+				if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
+				else														(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
+				//(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = 0.0;
 				(*pulsesInRecord)->pulses_detected[i].energy = 0.0;
 			} // End if
@@ -2018,11 +2812,11 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 			gsl_vector_free(optimalfilter_SHORT);
 			gsl_vector_free(optimalfilter_f_SHORT);
 			gsl_vector_free(optimalfilter_FFT_SHORT);
-			gsl_vector_complex_free(optimalfilter_FFT_complex);
-			if((*pulsesInRecord)->pulses_detected[i].quality == 0)
+			if((*pulsesInRecord)->pulses_detected[i].quality < 10)
 			{
 				gsl_vector_free(pulse);
 				gsl_vector_free(filtergsl);
+				gsl_vector_complex_free(optimalfilter_FFT_complex);
 			}
 		} // End for
 
@@ -2380,47 +3174,47 @@ int interpolatePOS (gsl_vector *x_in, gsl_vector *y_in, long size, double step, 
 /***** SECTION BX ************************************************************
 * find_matchedfilter:
 ****************************************/
-int find_matchedfilter(int runF0orB0val, double ph, gsl_vector *energiesvalues, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound)
+int find_matchedfilter(int runF0orB0val, double parameterToUse, gsl_vector *valuesToCompare, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound)
 {
 	string message = "";
-	long nummodels = energiesvalues->size;
+	long nummodels = valuesToCompare->size;
 
-	if (ph < gsl_vector_get(energiesvalues,0))
+	if (parameterToUse < gsl_vector_get(valuesToCompare,0))
 	{
 		if (runF0orB0val == 0)	gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters[0].mfilter);
 		else					gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters_B0[0].mfilter);
 
-		gsl_vector_scale(*matchedfilterFound,ph/gsl_vector_get(energiesvalues,0));
+		//gsl_vector_scale(*matchedfilterFound,parameterToUse/gsl_vector_get(valuesToCompare,0));
 	}
-	else if (ph > gsl_vector_get(energiesvalues,nummodels-1))
+	else if (parameterToUse > gsl_vector_get(valuesToCompare,nummodels-1))
 	{
 		if (runF0orB0val == 0)	gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters[nummodels-1].mfilter);
 		else					gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters_B0[nummodels-1].mfilter);
 
-		gsl_vector_scale(*matchedfilterFound,ph/gsl_vector_get(energiesvalues,nummodels-1));
+		//gsl_vector_scale(*matchedfilterFound,parameterToUse/gsl_vector_get(valuesToCompare,nummodels-1));
 	}
 	else
 	{
 		for (int i=0;i<nummodels;i++)
 		{
-			if (ph == gsl_vector_get(energiesvalues,i))
+			if (parameterToUse == gsl_vector_get(valuesToCompare,i))
 			{
 				if (runF0orB0val == 0)	gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters[i].mfilter);
 				else					gsl_vector_memcpy(*matchedfilterFound,reconstruct_init->library_collection->matched_filters_B0[i].mfilter);
 
-				gsl_vector_scale(*matchedfilterFound,ph/gsl_vector_get(energiesvalues,i));
+				//gsl_vector_scale(*matchedfilterFound,parameterToUse/gsl_vector_get(valuesToCompare,i));
 
 				break;
 			}
-			else if ((ph > gsl_vector_get(energiesvalues,i)) && (ph < gsl_vector_get(energiesvalues,i+1)))
+			else if ((parameterToUse > gsl_vector_get(valuesToCompare,i)) && (parameterToUse < gsl_vector_get(valuesToCompare,i+1)))
 			{
 				// Interpolate between the two corresponding rows in "models"
 				gsl_vector *matchedfilterAux = gsl_vector_alloc(reconstruct_init->library_collection->matched_filters[0].mfilter_duration);
 				gsl_vector_set_zero(matchedfilterAux);
 				if (runF0orB0val == 0)
 				{
-					if (interpolate_model(&matchedfilterAux,ph,reconstruct_init->library_collection->matched_filters[i].mfilter,gsl_vector_get(energiesvalues,i),
-							reconstruct_init->library_collection->matched_filters[i+1].mfilter,gsl_vector_get(energiesvalues,i+1)))
+					if (interpolate_model(&matchedfilterAux,parameterToUse,reconstruct_init->library_collection->matched_filters[i].mfilter,gsl_vector_get(valuesToCompare,i),
+							reconstruct_init->library_collection->matched_filters[i+1].mfilter,gsl_vector_get(valuesToCompare,i+1)))
 					{
 						message = "Cannot run interpolate_model routine for model interpolation";
 						EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
@@ -2428,8 +3222,8 @@ int find_matchedfilter(int runF0orB0val, double ph, gsl_vector *energiesvalues, 
 				}
 				else
 				{
-					if (interpolate_model(&matchedfilterAux,ph,reconstruct_init->library_collection->matched_filters_B0[i].mfilter,gsl_vector_get(energiesvalues,i),
-							reconstruct_init->library_collection->matched_filters_B0[i+1].mfilter,gsl_vector_get(energiesvalues,i+1)))
+					if (interpolate_model(&matchedfilterAux,parameterToUse,reconstruct_init->library_collection->matched_filters_B0[i].mfilter,gsl_vector_get(valuesToCompare,i),
+							reconstruct_init->library_collection->matched_filters_B0[i+1].mfilter,gsl_vector_get(valuesToCompare,i+1)))
 					{
 						message = "Cannot run interpolate_model routine for model interpolation";
 						EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
@@ -2575,6 +3369,7 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
+	// FILTER HDU
 	strcpy(extname,"FILTER");
 	if (fits_create_tbl(fltObject, BINARY_TBL,0,0,tt,tf,tu,extname,&status))
 	{
@@ -2589,14 +3384,6 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
-	strcpy(keyname,"CREATOR");
-	strcpy(keyvalstr,create);
-	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
-	{
-		message = "Cannot write keyword " + string(keyname) + " in " + string(fltName);
-		EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
-
 	strcpy(keyname,"NRMFCTR");
 	if (fits_write_key(fltObject,TDOUBLE,keyname,&normalizationFactor,comment,&status))
 	{
@@ -2604,29 +3391,273 @@ int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFac
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
-	// Set PROCESS keyword
-	//char str_TorF[125];			sprintf(str_TorF,"%d",TorF);
-	//char str_runF0orB0[125];	sprintf(str_runF0orB0,"%d",runF0orB0val);
-	char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
-
-	string processoutFLT (string(" runFilter") 	       + ' ' +
-	string(reconstruct_init->record_file)  + ' ' + string(reconstruct_init->library_file) + ' ' +
-	string(fltName)	                                   + ' ' + string(reconstruct_init->noise_file)   + ' ' +
-	string(reconstruct_init->FilterDomain) + ' ' + string(reconstruct_init->FilterMethod) 	    + ' ' +
-	string(str_clobber) + ' ' +
-	string("(") + (string) create + string(")"));
-
-	strcpy(keyname,"PROC0");
-	if (fits_write_key_longwarn(fltObject,&status))
+	// Primary HDU
+	strcpy(extname,"Primary");
+	int *hdutype;
+	if (fits_movabs_hdu(fltObject, 1, hdutype, &status))
 	{
-	    message = "Cannot write long warn in output file " + string(fltName);
-	    EP_PRINT_ERROR(message,status);return(EPFAIL);
+		message = "Cannot move to HDU " + string(extname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
-	strcpy(keyvalstr,processoutFLT.c_str());
-	if (fits_write_key_longstr(fltObject,keyname,keyvalstr,comment,&status))
+
+	strcpy(keyname,"CREATOR");
+	string creator (string("File CREATED by") + ' ' + (string) create);
+	strcpy(keyvalstr,creator.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
 	{
-	    message = "Cannot write keyword " + string(keyname) + " in " + string(fltName);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strcpy(keyname,"HISTORY");
+	const char * charhistory= "HISTORY Starting parameter list";
+	strcpy(keyvalstr,charhistory);
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	string strhistory (string("RecordFile = ") + reconstruct_init->record_file);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("TesEventFile = ") + reconstruct_init->event_file;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("LibraryFile = ") + reconstruct_init->library_file;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("NoiseFile = ") + reconstruct_init->noise_file;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_mode[125];			sprintf(str_mode,"%d",reconstruct_init->mode);
+	strhistory = string("mode = ") + string(str_mode);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_crtLib[125];		sprintf(str_crtLib,"%d",reconstruct_init->crtLib);
+	strhistory=string("crtLib = ") + string(str_crtLib);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("FilterDomain = ") + reconstruct_init->FilterDomain;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("FilterMethod = ") + reconstruct_init->FilterMethod;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_calibLQ[125];      sprintf(str_calibLQ,"%d",reconstruct_init->calibLQ);
+	strhistory=string("calibLQ = ") + string(str_calibLQ);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_b_cF[125];	sprintf(str_b_cF,"%f",reconstruct_init->b_cF);
+	strhistory=string("b_cF = ") + string(str_b_cF);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_c_cF[125];	sprintf(str_c_cF,"%f",reconstruct_init->c_cF);
+	strhistory=string("c_cF = ") + string(str_c_cF);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_maxPulsesPerRecord[125];	sprintf(str_maxPulsesPerRecord,"%d",reconstruct_init->maxPulsesPerRecord);
+	strhistory=string("LibraryFile = ") + string(str_maxPulsesPerRecord);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_pulse_length[125];	sprintf(str_pulse_length,"%d",reconstruct_init->pulse_length);
+	strhistory=string("PulseLength = ") + string(str_pulse_length);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_tauFall[125];		sprintf(str_tauFall,"%e",reconstruct_init->tauFall);
+	strhistory=string("tauFall = ") + string(str_tauFall);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_scaleFactor[125];	sprintf(str_scaleFactor,"%f",reconstruct_init->scaleFactor);
+	strhistory=string("scaleFactor = ") + string(str_scaleFactor);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_samplesUp[125];	sprintf(str_samplesUp,"%f",reconstruct_init->samplesUp);
+	strhistory=string("samplesUp = ") + string(str_samplesUp);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_nSgms[125];	    sprintf(str_nSgms,"%f",reconstruct_init->nSgms);
+	strhistory=string("nSgms = ") + string(str_nSgms);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_baseline[125];	sprintf(str_baseline,"%f",reconstruct_init->baseline);
+	strhistory=string("baseline = ") + string(str_baseline);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_LrsT[125];			sprintf(str_LrsT,"%e",reconstruct_init->LrsT);
+	strhistory=string("LrsT = ") + string(str_LrsT);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_LbT[125];			sprintf(str_LbT,"%e",reconstruct_init->LbT);
+	strhistory=string("LbT = ") + string(str_LbT);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_monoenergy[125];	sprintf(str_monoenergy,"%f",reconstruct_init->monoenergy);
+	strhistory=string("monoenergy = ") + string(str_monoenergy);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_intermediate[125];      sprintf(str_intermediate,"%d",reconstruct_init->intermediate);
+	strhistory=string("intermediate = ") + string(str_intermediate);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("detectFile = ") + reconstruct_init->detectFile;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("RecordFileCalib2 = ") + reconstruct_init->record_file2;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_monoenergy2[125];	sprintf(str_monoenergy2,"%f",reconstruct_init->monoenergy2);
+	strhistory=string("monoenergy2 = ") + string(str_monoenergy2);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	strhistory=string("filterFile = ") + reconstruct_init->filterFile;
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
+	strhistory=string("clobber = ") + string(str_clobber);
+	strcpy(keyvalstr,strhistory.c_str());
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	charhistory= "HISTORY Ending parameter list";
+	strcpy(keyvalstr,charhistory);
+	if (fits_write_key(fltObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in output detect file " + string(fltName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
 	IOData obj;
@@ -2753,13 +3784,14 @@ int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pu
 	}
 	gsl_vector_free(uncEgsl);
 
-	if ((*reconstruct_init)->clobber == 1)
+	if (((*reconstruct_init)->clobber == 1) && (pulse_index == 0))
 	{
-		strcpy(extname,"PULSES");
-		if (fits_movnam_hdu(*dtcObject, ANY_HDU,extname, extver, &status))
+		strcpy(extname,"Primary");
+		int *hdutype;
+		if (fits_movabs_hdu(*dtcObject, 1, hdutype, &status))
 		{
-			message = "Cannot move to HDU " + string(extname) + " in file " + string(dtcName);
-			EP_PRINT_ERROR(message,status);return(EPFAIL);
+			message = "Cannot move to HDU " + string(extname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
 		string mod1 (string("File MODIFIED by") + ' ' +	(string) create);
@@ -2942,13 +3974,20 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 	}
 	gsl_vector_free(uncEgsl);
 
-	if ((*reconstruct_init)->clobber == 1)
+	if (fits_get_num_rows(*dtcObject,&totalpulses, &status))
 	{
-		strcpy(extname,"PULSES");
-		if (fits_movnam_hdu(*dtcObject, ANY_HDU,extname, extver, &status))
+		message = "Cannot get number of rows in " + string(dtcName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+
+	if (((*reconstruct_init)->clobber == 1) && (pulse_index == 0))
+	{
+		strcpy(extname,"Primary");
+		int *hdutype;
+		if (fits_movabs_hdu(*dtcObject, 1, hdutype, &status))
 		{
-			message = "Cannot move to HDU " + string(extname) + " in file " + string(dtcName);
-			EP_PRINT_ERROR(message,status);return(EPFAIL);
+			message = "Cannot move to HDU " + string(extname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
 		string mod1 (string("File MODIFIED by") + ' ' +	(string) create);
@@ -2965,12 +4004,6 @@ int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, do
 			message = "Cannot write keyword " + string(keyname) + " in " + string(dtcName);
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
-	}
-
-	if (fits_get_num_rows(*dtcObject,&totalpulses, &status))
-	{
-		message = "Cannot get number of rows in " + string(dtcName);
-		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
 	if (fits_close_file(*dtcObject,&status))
@@ -3217,6 +4250,14 @@ int writeEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *puls
 
 	if ((*reconstruct_init)->clobber == 1)
 	{
+		strcpy(extname,"Primary");
+		int *hdutype;
+		if (fits_movabs_hdu(dtcObject, 1, hdutype, &status))
+		{
+			message = "Cannot move to HDU " + string(extname) + " in output detect file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
 		string mod1 (string("File MODIFIED by") + ' ' +	(string) create);
 
 		strcpy(keyname,"MOD1");

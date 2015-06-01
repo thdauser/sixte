@@ -86,7 +86,6 @@
 	#include <integraSIRENA.h>
 
 	int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRate);
-	int derMTHSimple (gsl_vector **invector,gsl_vector **sign, int szVct);
 
 	int findMeanSigma (gsl_vector *invector, double *mean, double *sigma);
 	int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, int boxLPF,double *threshold);
@@ -95,10 +94,8 @@
 	int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int lastPulse, double lrs, double lb, double B, int sizepulse, double *pulseheight);
 	int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *pulseheight);
 
-	int find_model_energies(double ph, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+	int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
 	int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
-	int find_model1stSample(double firstSample, gsl_vector *firstSamples, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
-	int firstSampleModels (ReconstructInitSIRENA *reconstruct_init, double threshold, gsl_vector **firstSamples, gsl_vector **index_firstSamples);
 	int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *modelIn1, double ph_modelIn1, gsl_vector *modelIn2, double ph_modelIn2);
 
 	int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,

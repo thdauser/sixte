@@ -91,7 +91,6 @@
 
 // Constants
 
-	//double safetyMarginTstart = 50e-6;
 	double stopCriteriaMKC = 1.0;  			// Used in medianKappaClipping
 											// Given in %
 	double kappaMKC = 3.0;					// Used in medianKappaClipping
@@ -104,7 +103,7 @@
 
 	FILE *fileRef;						// Pointer for file which contains errors and warnings
 
-// INPUT KEYWORDS
+// INPUT KEYWORDS	int opmode,
 
 	long eventcnt;		// Number of rows
 	long eventsz;		// TRIGGSZ
@@ -187,7 +186,7 @@
 
 	int initModule (int argc, char **argv);
 
-	int findInterval(gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, double tau, int interval, int *ni, gsl_vector **startinterval);
+	int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, double tau, int interval, int *ni, gsl_vector **startinterval);
 	int findIntervalN(gsl_vector *invector, int interval, int *ni, gsl_vector **startinterval);
 
 	int createTPSreprFile ();
@@ -203,8 +202,6 @@
 
 		int *nPulses,
 		double *threshold,
-
-		int opmode,
 
 		double taufall,
 		double scalefactor,
@@ -228,7 +225,7 @@
 				int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
 				gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl);
 
-	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *baseline);
+	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *mean, double *sigma, double *baseline);
 
 	using namespace std;
 
