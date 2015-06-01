@@ -123,7 +123,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   char *tform[]={"1D",NULL,"1J",NULL};
   
   tform[1]=malloc(FLEN_KEYWORD*sizeof(char));
-  tform[2]=malloc(FLEN_KEYWORD*sizeof(char));
+  tform[3]=malloc(FLEN_KEYWORD*sizeof(char));
   
   sprintf(tform[1], "%ldU",triggerSize);
   CHECK_NULL_RET(tform[1],*status,"Memory allocation failed",NULL);
@@ -155,7 +155,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 
   //Free memory
   free(tform[1]);
-  free(tform[2]);
+  free(tform[3]);
 
   return(file);
 
