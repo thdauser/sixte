@@ -82,19 +82,22 @@ int tesconstpileup_main(){
     CHECK_STATUS_BREAK(status);
     
     // necessary initialization to have the correct first impact (10 samples after 0)
-    double time=(par.preBufferSize-par.triggerSize-90+par.pulseDistance)/det->SampleFreq+.5/det->SampleFreq; 
+    int total_pulse_distance = par.pulseDistance + par.pulseDistance2;
+    double time=(par.preBufferSize-par.triggerSize-90+total_pulse_distance)/det->SampleFreq+par.offset/det->SampleFreq; 
+    
     ii=0;
     PixImpact piximp;
+    piximp.ph_id=0;
     while(time<=par.tstop){
       //////////////////////////////////////
       //First impact
       //////////////////////////////////////
-      time=time+(par.triggerSize+100-par.pulseDistance)/det->SampleFreq;
+      time=time+(par.triggerSize+100-total_pulse_distance)/det->SampleFreq;
       // populate impact structure
       piximp.pixID=0; //fixed pixID (no need to randomize here)
       piximp.time=time;
       piximp.energy=(float)par.energy;
-      piximp.ph_id=2*ii;
+      piximp.ph_id=piximp.ph_id+1;
       piximp.src_id=0;
       piximp.pixposition.x=(-0.5)*det->pix[0].width;
       piximp.pixposition.y=(-0.5)*det->pix[0].height;
@@ -104,13 +107,13 @@ int tesconstpileup_main(){
       addImpact2PixImpFile(plf, &piximp, &status);
 
       //////////////////////////////////////
-      //Pileup impact
+      //Second impact
       //////////////////////////////////////
       time=time+par.pulseDistance/det->SampleFreq;
       piximp.pixID=0;
       piximp.time=time;
-      piximp.energy=(float)par.energy;
-      piximp.ph_id=2*ii+1;
+      piximp.energy=(float)par.energy2;
+      piximp.ph_id=piximp.ph_id+1;
       piximp.src_id=0;
       piximp.pixposition.x=(-0.5)*det->pix[0].width;
       piximp.pixposition.y=(-0.5)*det->pix[0].height;
@@ -119,6 +122,23 @@ int tesconstpileup_main(){
       // save impact      
       addImpact2PixImpFile(plf, &piximp, &status);
 
+      //////////////////////////////////////
+      //Third impact if relevant
+      //////////////////////////////////////
+      if (par.pulseDistance2!=0) {
+	time=time+par.pulseDistance2/det->SampleFreq;
+	piximp.pixID=0;
+	piximp.time=time;
+	piximp.energy=(float)par.energy3;
+	piximp.ph_id=piximp.ph_id+1;
+	piximp.src_id=0;
+	piximp.pixposition.x=(-0.5)*det->pix[0].width;
+	piximp.pixposition.y=(-0.5)*det->pix[0].height;
+	piximp.detposition.x=piximp.pixposition.x+det->pix[0].sx;
+	piximp.detposition.y=piximp.pixposition.y+det->pix[0].sy;
+	// save impact      
+	addImpact2PixImpFile(plf, &piximp, &status);
+      }
       ii++;
     }
     
@@ -234,10 +254,40 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the energy parameter");
     return(status);
   }
-  
+
+  status=ape_trad_query_double("energy2", &par->energy2);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the energy parameter");
+    return(status);
+  }
+  if (par->energy2==-1) {
+    par->energy2=par->energy;
+  }
+
+  status=ape_trad_query_double("energy3", &par->energy3);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the middle energy parameter");
+    return(status);
+  }
+  if (par->energy3==-1) {
+    par->energy3=par->energy;
+  }
+
+  status=ape_trad_query_double("offset", &par->offset);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the middle energy parameter");
+    return(status);
+  }
+
   status=ape_trad_query_int("pulseDistance", &par->pulseDistance);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the pulse distance");
+    return(status);
+  }
+
+  status=ape_trad_query_int("pulseDistance2", &par->pulseDistance2);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the second pulse distance");
     return(status);
   }
   

@@ -49,10 +49,14 @@ struct Parameters {
   double timezero;
   double tstop;
 
-  int pulseDistance; // separation in samples between the 2 pileup events
-  double energy; // energy of the photons
+  int pulseDistance; // separation in samples between the first 2 pileup events
+  int pulseDistance2; // separation in samples between the middle and third events
+  double energy; // energy of the primary photons
+  double energy2;// energy of the secondary photons
+  double energy3;// energy of the tertiary photons
+  double offset;// offset in time bin
 
-  //Necessary to ensure exactly 2 pulses per trigger
+  //Necessary to ensure exactly 2/3 pulses per trigger
   int preBufferSize;
   int triggerSize;
   
