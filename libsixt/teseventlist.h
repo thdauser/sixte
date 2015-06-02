@@ -71,7 +71,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol;
+	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,gradingCol;
 
 } TesEventFile;
 
@@ -122,6 +122,6 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 void updateRaDec(TesEventFile* file,double ra, double dec, int* const status);
 
 /** Add event as reconstructed with the RMF method */
-void addRMFImpact(TesEventFile* file,PixImpact * impact,int* const status);
+void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1, int grade2, int grading, int* const status);
 
 #endif /* TESEVENTLIST_H */

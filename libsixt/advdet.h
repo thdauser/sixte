@@ -204,6 +204,14 @@ typedef struct{
 
 }AdvDet;
 
+typedef struct{
+
+	PixImpact *next;
+	PixImpact *current;
+	PixImpact *previous;
+
+}pixImpPointer;
+
 /////////////////////////////////////////////////////////////////////
 // Function Declarations.
 /////////////////////////////////////////////////////////////////////
@@ -268,6 +276,12 @@ void addARF(AdvDet* det,AdvPix* pixel,int* const status);
 
 /** Destructor of the ARF library structure */
 void freeARFLibrary(ARFLibrary* library);
+
+/** given grade1 and grade 2, make a decision about the high/mid/los res events **/
+int makeGrading(int grade1,int grade2);
+
+/** calculate the grading in samples from the a given impact, and its previous and next impact **/
+void calcGradingTimes(double sample_length, pixImpPointer pnt,int *grade1, int *grade2, int* status);
 
 /** Process the impacts contained in the piximpacts file with the RMF method */
 void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);

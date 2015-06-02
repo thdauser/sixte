@@ -192,6 +192,7 @@ TesEventFile* newTesEventFile(int* const status){
 	file->phIDCol   =6;
 	file->raCol     =7;
 	file->decCol    =8;
+	file->gradingCol=9;
 
 	return(file);
 }
@@ -254,9 +255,10 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 
 	// Create table
 
-	char *ttype[8];
-	char *tform[8];
-	char *tunit[8];
+	int num_entries=9;
+	char *ttype[num_entries];
+	char *tform[num_entries];
+	char *tunit[num_entries];
 
 	//first column TIME
 	ttype[0]="TIME";
@@ -298,8 +300,13 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	tform[7]="1D";
 	tunit[7]="deg";
 
+	//third column Grade1
+	ttype[8]="GRADING";
+	tform[8]="1I";
+	tunit[8]="";
+
 	char *extName="EVENTS";
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 8,
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, num_entries,
 			ttype, tform, tunit,extName, status);
 	//Add keywords to new extension
 	if(keywords->extname!=NULL){
@@ -343,6 +350,7 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->phIDCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "GRADING", &file->gradingCol, status);
 	CHECK_STATUS_RET(*status, file);
 
 	return(file);
@@ -379,6 +387,12 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 					file->row, 1, event_list->index, event_list->grades2, status);
 	CHECK_STATUS_VOID(*status);
 
+	//Save grade2 column
+	int dummy_grading = 0;
+	fits_write_col(file->fptr, TINT, file->gradingCol,
+					file->row, 1, event_list->index, &dummy_grading, status);
+	CHECK_STATUS_VOID(*status);
+
 	//If PH_ID was computed, save it
 	if(NULL!=event_list->ph_ids){
 		fits_write_col(file->fptr, TLONG, file->phIDCol,
@@ -404,7 +418,7 @@ void updateRaDec(TesEventFile* file,double ra, double dec, int* const status){
 }
 
 /** Add event as reconstructed with the RMF method */
-void addRMFImpact(TesEventFile* file,PixImpact * impact,int* const status){
+void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,int grading, int* const status){
 	//Save time column
 	fits_write_col(file->fptr, TDOUBLE, file->timeCol,
 			file->row, 1, 1, &(impact->time), status);
@@ -417,14 +431,18 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int* const status){
 	CHECK_STATUS_VOID(*status);
 
 	//Save grade1 column
-	int grade=0;
 	fits_write_col(file->fptr, TINT, file->grade1Col,
-			file->row, 1, 1, &grade, status);
+			file->row, 1, 1, &grade1, status);
 	CHECK_STATUS_VOID(*status);
 
 	//Save grade2 column
 	fits_write_col(file->fptr, TINT, file->grade2Col,
-			file->row, 1, 1, &grade, status);
+			file->row, 1, 1, &grade2, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grading column
+	fits_write_col(file->fptr, TINT, file->gradingCol,
+			file->row, 1, 1, &grading, status);
 	CHECK_STATUS_VOID(*status);
 
 	//Save PIXID column
