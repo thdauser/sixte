@@ -20,6 +20,7 @@ dist_fitstemplates_DATA+=makespec.tpl
 dist_fitstemplates_DATA+=makelc.tpl
 dist_fitstemplates_DATA+=htrs.eventlist.tpl
 dist_fitstemplates_DATA+=pixelimpactfile.tpl
+dist_fitstemplates_DATA+=pixelimpactfile_gradingcols.tpl
 
 
 ########### LIBRARIES #################

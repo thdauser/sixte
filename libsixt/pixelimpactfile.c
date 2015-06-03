@@ -20,6 +20,7 @@
 
 #include "pixelimpactfile.h"
 
+#define hasgradingcols 1
 
 PixImpFile* newPixImpFile(int* const status){
   
@@ -45,6 +46,13 @@ PixImpFile* newPixImpFile(int* const status){
   file->cv	=0;
   file->cx	=0;
   file->cy	=0;
+  if (hasgradingcols==1){
+	  file->cgrade1 = 0;
+	  file->cgrade2 = 0;
+  } else {
+	  file->cgrade1 = -1;
+	  file->cgrade2 = -1;
+  }
 
   return(file);
 }
@@ -101,6 +109,10 @@ PixImpFile* openPixImpFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->cpix_id, status);
+  if (hasgradingcols == 1){
+	  fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->cgrade1, status);
+	  fits_get_colnum(file->fptr, CASEINSEN, "GRADE2", &file->cgrade2, status);
+  }
   CHECK_STATUS_RET(*status, file);
 
   return(file);
@@ -145,8 +157,13 @@ PixImpFile* openNewPixImpFile(const char* const filename,
   // Create a new impact list FITS file from the template.
   
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
-	  "/templates/pixelimpactfile.tpl");
+  if (hasgradingcols==1){
+	  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
+			  "/templates/pixelimpactfile_gradingcols.tpl");
+  } else {
+	  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
+				  "/templates/pixelimpactfile.tpl");
+  }
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 
@@ -257,6 +274,13 @@ int getNextImpactFromPixImpFile(PixImpFile* const file,
   CHECK_STATUS_RET(*status, 0);
   impact->pixID=impact->pixID-1;
   
+  if (hasgradingcols==1){
+	  fits_read_col(file->fptr, TLONG, file->cgrade1, file->row, 1, 1,
+	  		&impact->grade1, &impact->grade1, &anynul, status);
+	  fits_read_col(file->fptr, TLONG, file->cgrade2, file->row, 1, 1,
+	  		&impact->grade2, &impact->grade2, &anynul, status);
+  }
+
   
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
@@ -295,6 +319,30 @@ void addImpact2PixImpFile(PixImpFile* const ilf,
 		 ilf->row, 1, 1, &impact->src_id, status);
   fits_write_col(ilf->fptr, TLONG, ilf->cpix_id, 
 		 ilf->row, 1, 1, &impact->pixID, status);
+
+  long default_grade=0;
+  if (hasgradingcols==1){
+	  fits_write_col(ilf->fptr, TLONG, ilf->cgrade1,
+			 ilf->row, 1, 1, &default_grade, status);
+	  fits_write_col(ilf->fptr, TLONG, ilf->cgrade2,
+			 ilf->row, 1, 1, &default_grade, status);
+  }
+}
+
+void updateGradingPixImp(PixImpFile* const ilf,
+		  int row, long grade1, long grade2,
+		  int* const status){
+	if (row>ilf->nrows){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("updating of grading in pixImpact File failed");
+		return;
+
+	}
+	fits_write_col(ilf->fptr, TLONG, ilf->cgrade1,
+			row, 1, 1, &grade1, status);
+	fits_write_col(ilf->fptr, TLONG, ilf->cgrade2,
+			row, 1, 1, &grade2, status);
+
 }
 
 void getPixImpFileTimeValues(PixImpFile* const ilf,

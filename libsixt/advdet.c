@@ -809,39 +809,35 @@ void freeARFLibrary(ARFLibrary* library){
 }
 
 /** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(int grade1,int grade2){
-	const int hires = 1;
-	const int midres = 2;
-	const int lores = 3;
-	const int invres = -1;
+int makeGrading(long grade1,long grade2){
 
 	if ((grade1 >= 1024) && (grade2>=128)) {
-		return hires;
+		return HIRESGRADE;
 	} else if ((grade1 >= 64) && (grade2>=128)) {
-		return midres;
+		return MEDRESGRADE;
 	} else if (grade2 >= 128) {
-		return lores;
+		return LORESGRADE;
 	} else {
-		return invres;
+		return INVGRADE;
 	}
 
 }
 
 /** calculate the grading in samples from the a given impact, and its previous and next impact **/
-void calcGradingTimes(double sample_length, pixImpPointer pnt,int *grade1, int *grade2, int* status){
+void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status){
 
 	// TODO: make this an input value
 	const int default_good_sample = 10000;
 
-	if (pnt.next==NULL){
+	if (pnt.next<0){
 		*grade1 = default_good_sample;
-		*grade2 = floor ((pnt.current->time - pnt.previous->time)/sample_length);
-	} else if (pnt.previous==NULL){
-		*grade1 = floor ((pnt.next->time - pnt.current->time)/sample_length);
+		*grade2 = floor ((pnt.current - pnt.previous)/sample_length);
+	} else if (pnt.previous<0){
+		*grade1 = floor ((pnt.next - pnt.current)/sample_length);
 		*grade2 = default_good_sample;
 	} else {
-		*grade1 = floor((pnt.next->time - pnt.current->time)/sample_length);
-		*grade2 = floor((pnt.current->time - pnt.previous->time)/sample_length);
+		*grade1 = floor((pnt.next - pnt.current)/sample_length);
+		*grade2 = floor((pnt.current - pnt.previous)/sample_length);
 	}
 
 	//printf("grade1: %i grade2 %i => %i\n",*grade1,*grade2,makeGrading(*grade1,*grade2));
@@ -853,43 +849,81 @@ void calcGradingTimes(double sample_length, pixImpPointer pnt,int *grade1, int *
 	}
 }
 
+
+/** writes the grading to an existing piximpact file **/
+void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status){
+
+	long grade1, grade2;
+	const double sample_length = 1./(det->SampleFreq);
+
+	PixImpact impact;
+
+	pixGrade pnt[det->npix];
+	for (int ii=0;ii<det->npix;ii++){
+		pnt[ii].times = NULL;
+	}
+
+	int id = -1;
+	while (getNextImpactFromPixImpFile(piximpacfile,&impact,status)){
+		id = impact.pixID;
+		if (pnt[id].times == NULL){
+			pnt[id].times = (gradingTimeStruct*) malloc (sizeof(gradingTimeStruct));
+			pnt[id].times->previous = -1.0;
+			pnt[id].times->current = impact.time;
+			pnt[id].times->next = -1.0;
+
+			pnt[id].row = piximpacfile->row;
+		} else {
+			// save the time
+			pnt[id].times->next = impact.time;
+
+			// calculate grading
+			calcGradingTimes(sample_length,*(pnt[id].times),&grade1,&grade2,status);
+
+			// add grading to file
+			updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,status);
+
+
+			// move one ahead
+			pnt[id].times->previous = pnt[id].times->current;
+			pnt[id].times->current = pnt[id].times->next;
+			pnt[id].times->next = -1.0;
+			pnt[id].row = piximpacfile->row;
+		}
+	}
+
+	// now we need to clean the impact-array and write the remaining impact grade to the file
+	// TODO: only fo over the pixels that were hit
+	for (int ii=0;ii<det->npix;ii++){
+		if (pnt[ii].times != NULL){
+			calcGradingTimes(sample_length,*(pnt[ii].times),&grade1,&grade2,status);
+			updateGradingPixImp(piximpacfile, pnt[ii].row, grade1, grade2,status);
+			free(pnt[ii].times);
+		}
+	}
+
+}
+
+
+
 /** Process the impacts contained in the piximpacts file with the RMF method */
 void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status){
 	long channel;
 	struct RMF* rmf;
-	int grade1, grade2,grading;
-
-	const double sample_length = 1./(det->SampleFreq);
+	int grading;
 
 	// initialize
 	PixImpact impact;
-	PixImpact impact_next;
-	PixImpact impact_before;
-	pixImpPointer pnt;
-	pnt.next=&impact_next;
-	pnt.current=&impact;
-	pnt.previous=NULL;
 
-	// need to always look one impact ahead to do the grading
-	int is_impact_next = getNextImpactFromPixImpFile(piximpacfile,&impact,status);
-	CHECK_STATUS_VOID(*status);
-	while(is_impact_next){
+	while(getNextImpactFromPixImpFile(piximpacfile,&impact,status)){
 
-		if (0 == getNextImpactFromPixImpFile(piximpacfile,&impact_next,status)){
-			pnt.next=NULL;
-			is_impact_next = 0;
-		}
-		CHECK_STATUS_VOID(*status);
-
-		calcGradingTimes(sample_length,pnt,&grade1,&grade2,status);
-		grading = makeGrading(grade1,grade2);
-		CHECK_STATUS_VOID(*status);
-		//printf("%d ",impact.pixID);
 		//////////////////////////////////
 		//Copied and adapted from addGenDetPhotonImpact
 		//////////////////////////////////
 
 		rmf = det->rmf_library->rmf_array[det->pix[impact.pixID].rmfID];
+
+		grading = makeGrading(impact.grade1,impact.grade2);
 
 		// Determine the measured detector channel (PI channel) according
 		// to the RMF.
@@ -916,16 +950,9 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 		assert(impact.energy>=0.);
 
 		// Add final impact to event file
-		addRMFImpact(event_file,&impact,grade1,grade2,grading,status);
+		addRMFImpact(event_file,&impact,impact.grade1,impact.grade2,grading,status);
 		CHECK_STATUS_VOID(*status);
 
-		// set the pointers to the next impact
-//		is_impact_before = is_impact;
-//		is_impact = is_impact_next;
-		impact_before = impact;
-		impact = impact_next;
-		// initialize previous impact pointer now
-		pnt.previous=&impact_before;
 	}
 
 }

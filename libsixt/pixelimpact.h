@@ -54,6 +54,12 @@ typedef struct {
   /** Unique source identifier for the originating X-ray source. */
   long src_id;
 
+  /** time in samples after this impact **/
+  long grade1;
+
+  /** time in samples before this impact **/
+  long grade2;
+
 } PixImpact;
 
 

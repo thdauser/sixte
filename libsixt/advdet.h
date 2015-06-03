@@ -36,6 +36,11 @@
 /** Initial size of RMFLibrary. */
 #define RMFLIBRARYSIZE (10)
 
+#define HIRESGRADE 1
+#define MEDRESGRADE 2
+#define LORESGRADE 3
+#define INVGRADE -1
+
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
@@ -204,13 +209,21 @@ typedef struct{
 
 }AdvDet;
 
-typedef struct{
 
+typedef struct{
 	PixImpact *next;
 	PixImpact *current;
 	PixImpact *previous;
-
 }pixImpPointer;
+
+typedef struct{
+	double next,current,previous;
+}gradingTimeStruct;
+
+typedef struct {
+	gradingTimeStruct *times;
+	long row;
+}pixGrade;
 
 /////////////////////////////////////////////////////////////////////
 // Function Declarations.
@@ -278,10 +291,10 @@ void addARF(AdvDet* det,AdvPix* pixel,int* const status);
 void freeARFLibrary(ARFLibrary* library);
 
 /** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(int grade1,int grade2);
+int makeGrading(long grade1,long grade2);
 
 /** calculate the grading in samples from the a given impact, and its previous and next impact **/
-void calcGradingTimes(double sample_length, pixImpPointer pnt,int *grade1, int *grade2, int* status);
+void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status);
 
 /** Process the impacts contained in the piximpacts file with the RMF method */
 void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);

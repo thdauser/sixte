@@ -612,10 +612,15 @@ int xifupipeline_main()
 				pixilf = openPixImpFile(piximpactlist_filename,READWRITE,&status);
 				pixilf->row = current_impact_write_row;
 			} else{
-				headas_chat(3, "\nstart event reconstruction ...\n");
+				headas_chat(3, "\nstart event grading ...\n");
 				current_impact_write_row = pixilf->row;
 				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
+				writeGrading2PixImpactFile(det,pixilf,&status);
+
+				headas_chat(3, "\nstart event reconstruction ...\n");
+				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
 				processImpactsWithRMF(det,pixilf,event_file,&status);
+
 				pixilf->row=current_impact_write_row;
 				current_impact_row=current_impact_write_row;
 			}

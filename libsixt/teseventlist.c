@@ -272,12 +272,12 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 
 	//third column Grade1
 	ttype[2]="GRADE1";
-	tform[2]="1I";
+	tform[2]="1J";
 	tunit[2]="";
 
 	//fourth column Grade2
 	ttype[3]="GRADE2";
-	tform[3]="1I";
+	tform[3]="1J";
 	tunit[3]="";
 
 	//fifth column PIXID
@@ -431,12 +431,12 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,in
 	CHECK_STATUS_VOID(*status);
 
 	//Save grade1 column
-	fits_write_col(file->fptr, TINT, file->grade1Col,
+	fits_write_col(file->fptr, TLONG, file->grade1Col,
 			file->row, 1, 1, &grade1, status);
 	CHECK_STATUS_VOID(*status);
 
 	//Save grade2 column
-	fits_write_col(file->fptr, TINT, file->grade2Col,
+	fits_write_col(file->fptr, TLONG, file->grade2Col,
 			file->row, 1, 1, &grade2, status);
 	CHECK_STATUS_VOID(*status);
 
