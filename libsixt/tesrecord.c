@@ -70,6 +70,29 @@ void allocateTesRecord(TesRecord * record,unsigned long triggerSize,double delta
 
 }
 
+/** Change the record length of a tes record **/
+void resizeTesRecord(TesRecord *record,unsigned long triggerSize, int* const status) {
+  CHECK_STATUS_VOID(*status);
+
+  // only allow to shorten the buffer if no data are lost
+  if (triggerSize<index) {
+    SIXT_ERROR("Cannot shorten tesrecord: I will not overwrite existing data");
+    *status=EXIT_FAILURE;
+    return;
+  }
+
+  // otherwise: reallocate the buffers
+  uint16_t* new_adc=realloc(record->adc_array,triggerSize*sizeof(uint16_t));
+  CHECK_NULL_VOID(new_adc,*status,"Cannot reallocate ADC array");
+  double *new_doub=realloc(record->adc_double,triggerSize*sizeof(double));
+  CHECK_NULL_VOID(new_doub,*status,"Cannot reallocate ADC double array");
+
+  record->adc_array=new_adc;
+  record->adc_double=new_doub;
+  record->trigger_size=triggerSize;
+}
+
+
 /** Destructor of the RecordStruct data structure. */
 void freeTesRecord(TesRecord** const record){
 	if (*record!=NULL){
