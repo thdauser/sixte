@@ -868,6 +868,8 @@ void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status
 		id = impact.pixID;
 		if (pnt[id].times == NULL){
 			pnt[id].times = (gradingTimeStruct*) malloc (sizeof(gradingTimeStruct));
+			CHECK_NULL_VOID(pnt[id].times,*status,"malloc failed");
+
 			pnt[id].times->previous = -1.0;
 			pnt[id].times->current = impact.time;
 			pnt[id].times->next = -1.0;
