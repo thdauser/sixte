@@ -191,8 +191,7 @@ int comaphovign_main() {
     CHECK_STATUS_BREAK(status);
 
     // Move back to the second HDU.
-    int hdu_type;
-    fits_movabs_hdu(ofptr, 2, &hdu_type, &status);
+    fits_movabs_hdu(ofptr, 2,NULL, &status);
     CHECK_STATUS_BREAK(status);
     
     // Write FITS header keywords.
