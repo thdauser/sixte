@@ -811,9 +811,9 @@ void freeARFLibrary(ARFLibrary* library){
 /** given grade1 and grade 2, make a decision about the high/mid/los res events **/
 int makeGrading(long grade1,long grade2){
 
-	if ((grade1 >= 1024) && (grade2>=128)) {
+	if ((grade1 >= 512) && (grade2>=128)) {
 		return HIRESGRADE;
-	} else if ((grade1 >= 64) && (grade2>=128)) {
+	} else if ((grade1 >= 128) && (grade2>=128)) {
 		return MEDRESGRADE;
 	} else if (grade2 >= 128) {
 		return LORESGRADE;
