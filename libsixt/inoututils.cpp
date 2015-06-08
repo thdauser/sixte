@@ -648,14 +648,18 @@ int interactivePars(inparam *taskPars, int np, string task)
 		if (taskPars[i].type == "char")
 		{
 			cout << taskPars[i].description << " [" << taskPars[i].defValStr << "]:";
-			fgets(buf, sizeof(buf), stdin);
+			if ( fgets(buf, sizeof(buf), stdin)==NULL) {
+			  return(EPFAIL);
+			}
 			*strchr(buf, '\n') = '\0';
 			if (strlen(buf) != 0) taskPars[i].ValStr = buf;
 		}
 		else if (taskPars[i].type == "int")
 		{
 			cout << taskPars[i].description << " [" << taskPars[i].defValInt << "]:";
-			fgets(buf, sizeof buf, stdin);
+			if ( fgets(buf, sizeof buf, stdin)==NULL) {
+			  return(EPFAIL);
+			}
 			*strchr(buf, '\n') = '\0';
 			if (strlen(buf) != 0)
 			{
@@ -671,7 +675,9 @@ int interactivePars(inparam *taskPars, int np, string task)
 		else
 		{
 			cout << taskPars[i].description << " [" << taskPars[i].defValReal << "]:";
-			fgets(buf, sizeof buf, stdin);
+			if ( fgets(buf, sizeof buf, stdin)==NULL) {
+			  return(EPFAIL);
+			}
 			*strchr(buf, '\n') = '\0';
 			if (strlen(buf) != 0)
 			{

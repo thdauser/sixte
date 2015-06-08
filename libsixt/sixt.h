@@ -52,8 +52,8 @@
 /////////////////////////////////////////////////////////////////
 
 
-/** Maximum length of a filename. */
-#define MAXFILENAME (512)
+/** Maximum length of a filename in cfitsio. */
+#define MAXFILENAME FLEN_FILENAME
 /** Maximum length of a message string. */
 #define MAXMSG (512)
 
@@ -346,6 +346,8 @@ void freeSixtStdKeywords(SixtStdKeywords* keyword_struct);
 /** clobber **/
 int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *status);
 
+// convenience function: update checksum in current and primary HDU and close the file
+void fits_close_file_chksum(fitsfile *fptr,int *status);
 
 #endif /* SIXT_H */
 

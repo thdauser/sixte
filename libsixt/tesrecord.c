@@ -23,46 +23,37 @@
 /** Constructor. Returns a pointer to an empty RecordStruct data
     structure. */
 TesRecord* newTesRecord(int* const status){
-	TesRecord* record=malloc(sizeof(*record));
-	if (NULL==record) {
-		*status=EXIT_FAILURE;
-		SIXT_ERROR("memory allocation for TesRecord failed");
-		return(record);
-	}
+  CHECK_STATUS_RET(*status,NULL);
+  TesRecord* record=malloc(sizeof(TesRecord));
+  if (NULL==record) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("memory allocation for TesRecord failed");
+    return(NULL); // yes, we could return record here, but best be obvious
+  }
+  // Initialize pointers with NULL.
+  record->adc_array  = NULL;
+  record->adc_double = NULL;
+  record->phid_list  = NULL;
 
-	// Initialize pointers with NULL.
-	record->adc_array  = NULL;
-	record->adc_double = NULL;
-	record->phid_list  = NULL;
+  // Initialize values.
+  record->trigger_size =0;
+  record->time         =0;
+  record->pixid        =0;
 
-	// Initialize values.
-	record->trigger_size =0;
-	record->time         =0;
-	record->pixid        =0;
-
-	return(record);
+  return(record);
 }
 
-/** Allocates memory for a RecordStruct data */
+/** Allocate memory for a RecordStruct data */
 void allocateTesRecord(TesRecord * record,unsigned long triggerSize,double delta_t,unsigned char wait_list,int* const status){
 	record->trigger_size = triggerSize;
 	record->delta_t = delta_t;
 
 	//Allocate adc_array
 	record->adc_array = malloc(triggerSize*sizeof(*(record->adc_array)));
-	if (NULL==record->adc_array) {
-		*status=EXIT_FAILURE;
-		SIXT_ERROR("memory allocation for adc_array in TesRecord failed");
-		CHECK_STATUS_VOID(*status);
-	}
-
+	CHECK_NULL_VOID(record->adc_array,*status,"allocateTesRecord: adc_array: memory allocation failed");
 	//Allocate adc_double
 	record->adc_double = malloc(triggerSize*sizeof(*(record->adc_double)));
-	if (NULL==record->adc_double) {
-		*status=EXIT_FAILURE;
-		SIXT_ERROR("memory allocation for adc_double in TesRecord failed");
-		CHECK_STATUS_VOID(*status);
-	}
+	CHECK_NULL_VOID(record->adc_array,*status,"allocateTesRecord: adc_double: memory allocation failed");
 
 	//Allocate phid_list
 	record->phid_list = newAllocatedPhIDList(MAXIMPACTNUMBER,wait_list,status);
@@ -70,18 +61,23 @@ void allocateTesRecord(TesRecord * record,unsigned long triggerSize,double delta
 
 }
 
+// useful routine to generate a new tes record in one step
+TesRecord *createTesRecord(unsigned long triggerSize,double delta_t,unsigned char wait_list,int* const status){
+  TesRecord *record=newTesRecord(status);
+  CHECK_STATUS_RET(*status,NULL);
+  allocateTesRecord(record,triggerSize,delta_t,wait_list,status);
+  CHECK_STATUS_RET(*status,NULL);
+  return record;
+}
+
+
 /** Change the record length of a tes record **/
 void resizeTesRecord(TesRecord *record,unsigned long triggerSize, int* const status) {
   CHECK_STATUS_VOID(*status);
 
-  // only allow to shorten the buffer if no data are lost
-  if (triggerSize<index) {
-    SIXT_ERROR("Cannot shorten tesrecord: I will not overwrite existing data");
-    *status=EXIT_FAILURE;
-    return;
-  }
-
-  // otherwise: reallocate the buffers
+  // reallocate the buffers
+  // note: since a tes record has no concept of how full it is, 
+  // this can destroy data!
   uint16_t* new_adc=realloc(record->adc_array,triggerSize*sizeof(uint16_t));
   CHECK_NULL_VOID(new_adc,*status,"Cannot reallocate ADC array");
   double *new_doub=realloc(record->adc_double,triggerSize*sizeof(double));

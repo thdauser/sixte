@@ -47,30 +47,27 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
   return(data);
 }
 
+// write a pulse to the stream
+// this routine executes the trigger
 void tes_append_tesrecord(tesparams *tes,double time,double pulse, int *status) {
   CHECK_STATUS_VOID(*status); 
-
   tes_record_info *data=(tes_record_info *) (tes->streaminfo);
 
-  if (data->streamind==0) {
-    data->tstart=time;
-  }
-
-  // write data to file if the buffer is full
-  if (data->streamind==data->Nt) {
-    tes_write_tesrecord(tes,status);
-    CHECK_STATUS_VOID(*status);
-    data->streamind=0;
-  }
-
-  // save data in the record
+  // remember how far we've come
   data->tstop=time;
+
+  // save data in the fifo
   data->stream->adc_double[data->streamind]=pulse;
   if ((pulse<data->imin) || (pulse>data->imax)) {
     data->stream->adc_array[data->streamind++]=0xFFFF;
   } else {
     data->stream->adc_array[data->streamind++]=(uint16_t) ((pulse-data->imin)*data->aducnv);
   }
+
+  if (data->streamind==0) {
+    data->tstart=time;
+  }
+
 
 }
 
@@ -190,14 +187,7 @@ void tes_close_tesrecord(tesparams *tes,int *status) {
   CHECK_STATUS_VOID(*status);
   tes_record_info *streamptr=(tes_record_info *) tes->streaminfo;
   tes_write_tesrecord(tes,status);
-  // checksum the stream
-  fits_write_chksum(streamptr->fptr,status);
-  // move to primary HDU and checksum it as well
-  fits_movabs_hdu(streamptr->fptr,1,NULL,status);
-  fits_write_chksum(streamptr->fptr,status);
-  CHECK_STATUS_VOID(*status);
-  // done
-  fits_close_file(streamptr->fptr,status);
+  fits_close_file_chksum(streamptr->fptr,status);
   CHECK_STATUS_VOID(*status);
   streamptr->fptr=NULL;
 }

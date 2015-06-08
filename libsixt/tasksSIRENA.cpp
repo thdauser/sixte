@@ -576,13 +576,9 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 	else
 	{
 		// Check if dtcName has '.fits' and if not, append it
-		if (strncmp(strndup(dtcName+strlen(dtcName)-5, 5),".fits",5) != 0)
+		if (strncmp(dtcName+strlen(dtcName)-5,".fits",5) != 0)
 		{
-			// dtcName does not finish as '.fits' => Append '.fits' to dtcName
-			char dtcNameaux[255];
-			sprintf(dtcNameaux,dtcName);
-			strcat(dtcNameaux,".fits");
-			strcpy(dtcName,dtcNameaux);
+			strcat(dtcName,".fits");
 		}
 	}
 

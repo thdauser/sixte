@@ -2,7 +2,7 @@
 // input file containing an array of arrival times and photon
 // energies. Depending upon the decimation factor only 1 in x samples
 // of the data stream are written to an array. The code uses a 4th
-// order runge-kutta method to numerically integrate the system on
+// order Runge Kutta method to numerically integrate the system on
 // differential equations which describes the TES electro-thermal
 // response. Tn this code we use a simple linear transition shape with
 // alpha (TES temperature sensitivity) and beta (TES current

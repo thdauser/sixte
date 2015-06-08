@@ -621,39 +621,29 @@ float getEBOUNDSEnergy(const long channel,
 /** Add standard FITS header keywords to the specified file using info
  *  contained in a SixtStdKeywords structure. */
 void sixt_add_fits_stdkeywords(fitsfile* const fptr,
-		const int hdunum,
-		SixtStdKeywords * keyword_struct,
-		int* const status){
-	// Run usual function
-	sixt_add_fits_stdkeywords_obsolete(fptr,hdunum,keyword_struct->telescop,keyword_struct->instrume,keyword_struct->filter,
-			keyword_struct->ancrfile,keyword_struct->respfile,keyword_struct->mjdref,keyword_struct->timezero,
-			keyword_struct->tstart,keyword_struct->tstop,status);
-
-	// Add extname keyword if we are not on the primary header
-	// and if the extname is non-NULL
-	if((hdunum>1) && (keyword_struct->extname!=NULL)){
-		// Determine the current HDU.
-		int prev_hdunum=0;
-		fits_get_hdu_num(fptr, &prev_hdunum);
-		CHECK_STATUS_VOID(*status);
-
-		// Move to requested HDU
-		if(prev_hdunum!=hdunum){
-			int hdutype=0;
-			fits_movabs_hdu(fptr, hdunum, &hdutype, status);
-			CHECK_STATUS_VOID(*status);
-		}
-		fits_update_key(fptr, TSTRING, "EXTNAME", keyword_struct->extname,
-				"Name of this extension", status);
-		CHECK_STATUS_VOID(*status);
-
-		// Move back to the original HDU.
-		if (prev_hdunum!=hdunum) {
-			int hdutype=0;
-			fits_movabs_hdu(fptr, prev_hdunum, &hdutype, status);
-			CHECK_STATUS_VOID(*status);
-		}
-	}
+			       const int hdunum,
+			       SixtStdKeywords * keyword_struct,
+			       int* const status){
+  // Run usual function
+  sixt_add_fits_stdkeywords_obsolete(fptr,hdunum,keyword_struct->telescop,keyword_struct->instrume,keyword_struct->filter,
+				     keyword_struct->ancrfile,keyword_struct->respfile,keyword_struct->mjdref,keyword_struct->timezero,
+				     keyword_struct->tstart,keyword_struct->tstop,status);
+  CHECK_STATUS_VOID(*status);
+  
+  // Add extname keyword if we are:
+  //   * not on the primary header,
+  //   * if the extname is non-NULL, and 
+  //   * if no EXTNAME has been set
+  if((hdunum>1) && (keyword_struct->extname!=NULL)){
+    char keyval[FLEN_VALUE];
+    fits_read_key(fptr,TSTRING,"EXTNAME",keyval,NULL,status);
+    if (*status==VALUE_UNDEFINED) {
+      *status=0;
+      fits_update_key(fptr, TSTRING, "EXTNAME", keyword_struct->extname,
+		      "Name of this extension", status);
+      CHECK_STATUS_VOID(*status);
+    }
+  }
 }
 
 
@@ -664,8 +654,8 @@ void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
 		SixtStdKeywords* keyword_struct,
 		int* const status){
 
-	char comment[MAXMSG];
-	char keyword[MAXMSG];
+	char comment[FLEN_COMMENT];
+	char keyword[FLEN_KEYWORD];
 	//Read string keywords
 	fits_read_key(ifptr, TSTRING, "TELESCOP", keyword, comment, status);
 	if(NULL!=keyword_struct->telescop){
@@ -710,15 +700,16 @@ void sixt_read_fits_stdkeywords(fitsfile* const ifptr,
 	CHECK_STATUS_VOID(*status);
 
 	// If we are not on the primary HDU, read extname
+	if(NULL!=keyword_struct->extname){
+	  free(keyword_struct->extname);
+	}
 	if(hdunum>1){
 		fits_read_key(ifptr,TSTRING, "EXTNAME", keyword, comment, status);
-		if(NULL!=keyword_struct->extname){
-			free(keyword_struct->extname);
-		}
 		keyword_struct->extname = strdup(keyword);
 		CHECK_STATUS_VOID(*status);
+	} else {
+	  keyword_struct->extname=NULL;
 	}
-
 }
 
 /** Constructor of the SixtStdKeywords structure: returns a pointer to an empty structure of this type */
@@ -767,7 +758,11 @@ SixtStdKeywords* buildSixtStdKeywords(char* const telescop,
 	keywords->filter = strdup(filter);
 	keywords->ancrfile = strdup(ancrfile);
 	keywords->respfile = strdup(respfile);
-	keywords->extname = strdup(extname);
+	if (extname!=NULL) {
+	  keywords->extname = strdup(extname);
+	} else {
+	  keywords->extname=NULL;
+	}
 
 	keywords->mjdref = mjdref;
 	keywords->timezero = timezero;
@@ -778,13 +773,14 @@ SixtStdKeywords* buildSixtStdKeywords(char* const telescop,
 }
 
 /** Duplicate a SixtStdKeywords structure **/
+// we set the extname to NULL by default
 SixtStdKeywords* duplicateSixtStdKeywords(const SixtStdKeywords *key,int* const status) {
   return buildSixtStdKeywords(key->telescop,
 			      key->instrume,
 			      key->filter,
 			      key->ancrfile,
 			      key->respfile,
-			      key->extname,
+			      NULL,
 			      key->mjdref,
 			      key->timezero,
 			      key->tstart,
@@ -795,16 +791,19 @@ SixtStdKeywords* duplicateSixtStdKeywords(const SixtStdKeywords *key,int* const 
 
 /** Destructor of the SixtStdKeywordsStructure */
 void freeSixtStdKeywords(SixtStdKeywords* keyword_struct){
-	if(NULL!=keyword_struct){
-		free(keyword_struct->telescop);
-		free(keyword_struct->instrume);
-		free(keyword_struct->filter);
-		free(keyword_struct->ancrfile);
-		free(keyword_struct->respfile);
-		free(keyword_struct->extname);
-	}
-	free(keyword_struct);
-	keyword_struct=NULL;
+  if (keyword_struct==NULL) {
+    return;
+  }
+  free(keyword_struct->telescop);
+  free(keyword_struct->instrume);
+  free(keyword_struct->filter);
+  free(keyword_struct->ancrfile);
+  free(keyword_struct->respfile);
+  if (keyword_struct->extname!=NULL) {
+    free(keyword_struct->extname);
+  }
+  free(keyword_struct);
+  keyword_struct=NULL;
 }
 
 /** convenience function to create a FITS-file or to error out depending on the value of **/
@@ -830,4 +829,13 @@ int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *
   }
   int ret=fits_create_file(fptr, filename, status);
   return ret;
+}
+
+void fits_close_file_chksum(fitsfile *fptr,int *status) {
+  // close a file after updating the checksum in the current HDU
+  // and in the primary extension
+  fits_write_chksum(fptr,status);
+  fits_movabs_hdu(fptr,1,NULL,status);
+  fits_write_chksum(fptr,status);
+  fits_close_file(fptr,status);
 }

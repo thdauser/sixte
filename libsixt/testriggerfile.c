@@ -57,7 +57,7 @@ void freeTesTriggerFile(TesTriggerFile** const file, int* const status){
     (*file)->pixIDCol         =0;
     
     if (NULL!=(*file)->fptr) {
-      fits_close_file((*file)->fptr, status);
+      fits_close_file_chksum((*file)->fptr, status);
       headas_chat(5, "closed TesStream list file (containing %ld rows).\n", 
 		  (*file)->nrows);
     }
@@ -78,34 +78,23 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 				  int* const status){
 
   TesTriggerFile* file = newTesTriggerFile(triggerSize,status);
-  CHECK_STATUS_RET(*status, file);
+  CHECK_STATUS_RET(*status, NULL);
 
-  int exists;
-  char buffer[MAXFILENAME];
-  sprintf(buffer,"%s",filename);
-  fits_file_exists(buffer, &exists, status);
-  CHECK_STATUS_RET(*status,file);
-  if (0!=exists) {
-    if (0!=clobber) {
-      // Delete the file.
-      remove(buffer);
-    } else {
-      // Throw an error.
-      char msg[FLEN_ERRMSG];
-      sprintf(msg, "file '%s' already exists", buffer);
-      SIXT_ERROR(msg);
-      *status=EXIT_FAILURE;
-      CHECK_STATUS_RET(*status,file);
-    }
-  }
-  fits_create_file(&file->fptr,buffer, status);
-  CHECK_STATUS_RET(*status,file);
+  char buffer[FLEN_FILENAME];
+  strncpy(buffer,filename,FLEN_FILENAME);
+  buffer[FLEN_FILENAME-1]='\0';
+
+  fits_create_file_clobber(&file->fptr,buffer,clobber,status);
+  CHECK_STATUS_RET(*status,NULL);
+
   int logic=TRUE;
   int bitpix=8;
   int naxis=0;
   fits_update_key(file->fptr, TLOGICAL, "SIMPLE", &logic, NULL, status);
   fits_update_key(file->fptr, TINT, "BITPIX", &bitpix, NULL, status);
   fits_update_key(file->fptr, TINT, "NAXIS", &naxis, NULL, status);
+
+
   sixt_add_fits_stdkeywords(file->fptr, 1,keywords, status);
   fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in triggers", status);
   fits_update_key(file->fptr, TINT, "PREBUFF", &preBufferSize, "Number of samples before start of pulse", status);
@@ -115,32 +104,21 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   //Write XML and pixel impact filenames into header
   fits_update_key(file->fptr,TSTRING,"XMLFILE",xmlfile,NULL,status);
   fits_update_key(file->fptr,TSTRING,"PIXFILE",impactlist,NULL,status);
-  CHECK_STATUS_RET(*status,file);
+  CHECK_STATUS_RET(*status,NULL);
 
    // Create table
   char *ttype[]={"TIME","ADC","PIXID","PH_ID"};
   char *tunit[]={"s","ADU","",""};
-  char *tform[]={"1D",NULL,"1J",NULL};
+  char *tform[]={"1D","1PU","1J","1PJ"};
   
-  tform[1]=malloc(FLEN_KEYWORD*sizeof(char));
-  tform[3]=malloc(FLEN_KEYWORD*sizeof(char));
-  
-  sprintf(tform[1], "%ldU",triggerSize);
-  CHECK_NULL_RET(tform[1],*status,"Memory allocation failed",NULL);
-  sprintf(tform[3], "1PJ(%d)",MAXIMPACTNUMBER);
-  CHECK_NULL_RET(tform[3],*status,"Memory allocation failed",NULL);
-
   fits_create_tbl(file->fptr, BINARY_TBL, 0, 4, ttype, tform, tunit,"RECORDS", status);
   //Add keywords to other extension
-  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in triggers", status);
+  fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in a standard trigger", status);
   fits_update_key(file->fptr, TINT, "PREBUFF", &preBufferSize, "Number of samples before start of pulse", status);
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &deltat, "Time resolution of data stream", status);
-  if(keywords->extname!=NULL){
-	  free(keywords->extname);
-  }
-  keywords->extname="RECORDS";
+
   sixt_add_fits_stdkeywords(file->fptr, 2,keywords, status);
-  CHECK_STATUS_RET(*status,file);
+  CHECK_STATUS_RET(*status,NULL);
 
   int firstpix=0,lastpix=0,numberpix=0;
   float monoen=-1.;
@@ -151,11 +129,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_update_key(file->fptr, TFLOAT, "MONOEN", &monoen, "Monochromatic energy of photons [keV]", status);
   fits_update_key(file->fptr, TLONG, "NESTOT", &nes_tot, "Total number of events simulated", status);
   fits_update_key(file->fptr, TLONG, "NETTOT", &net_tot, "Total number of events actually triggered", status);
-  CHECK_STATUS_RET(*status,file);
-
-  //Free memory
-  free(tform[1]);
-  free(tform[3]);
+  CHECK_STATUS_RET(*status,NULL);
 
   return(file);
 
@@ -168,27 +142,22 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 	//Open record file in READONLY mode
 	fits_open_file(&(file->fptr), filename, READONLY, status);
 
-	//Move to the primary hdu
-	int hdu_type;
-	fits_movabs_hdu(file->fptr,1, &hdu_type, status);
-
-	//Read keywords
+	//Read standard keywords
+	//(shouldn't we read these from the record extension?)
 	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
 
 	//Move to the binary table
-	fits_movabs_hdu(file->fptr,2, &hdu_type, status);
+	fits_movnam_hdu(file->fptr,ANY_HDU,"RECORDS",0, status);
 
 	//Get number of rows
 	char comment[FLEN_COMMENT];
 	fits_read_key(file->fptr, TINT, "NAXIS2", &(file->nrows), comment, status);
-
 
 	//Get trigger_size
 	fits_read_key(file->fptr, TULONG, "TRIGGSZ", &(file->trigger_size), comment, status);
 
 	//Get delta_t
 	fits_read_key(file->fptr, TDOUBLE, "DELTAT", &(file->delta_t), comment, status);
-
 
 	//Associate column numbers
 	fits_get_colnum(file->fptr, CASEINSEN,"TIME", &(file->timeCol), status);
@@ -198,45 +167,57 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 	CHECK_STATUS_RET(*status, NULL);
 
 	return(file);
-
 }
 
 /** Populates a TesRecord structure with the next record */
 int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status){
-	int anynul=0;
-	if (NULL==file || NULL==file->fptr) {
-		*status=EXIT_FAILURE;
-		SIXT_ERROR("No opened trigger file to read from");
-		CHECK_STATUS_RET(*status,0);
-	}
+  int anynul=0;
+  if (NULL==file || NULL==file->fptr) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("No opened trigger file to read from");
+    CHECK_STATUS_RET(*status,0);
+  }
 
+  if (file->row<=file->nrows) {
+    // get length of this record
+    // (although unlikely, we might have a very large file, so we best
+    // use the LONGLONG interface to the descriptor
+    LONGLONG rec_trigsize;
+    LONGLONG offset;
+    fits_read_descriptll(file->fptr,file->trigCol,file->row,&rec_trigsize,&offset,status);
+    CHECK_STATUS_RET(*status,0);
 
-	if (file->row<=file->nrows) {
-		fits_read_col(file->fptr, TUSHORT, file->trigCol,
-					  file->row,1,file->trigger_size,0,record->adc_array, &anynul,status);
-		CHECK_STATUS_RET(*status,0);
+    // resize buffers if that is necessary
+    if (record->trigger_size!=(unsigned long) rec_trigsize) {
+      resizeTesRecord(record,(unsigned long) rec_trigsize,status);
+      CHECK_STATUS_RET(*status,0);
+    }
+
+    fits_read_col(file->fptr, TUSHORT, file->trigCol,
+		  file->row,1,record->trigger_size,0,record->adc_array, &anynul,status);
+    CHECK_STATUS_RET(*status,0);
 
 //		fits_read_col(file->fptr, TLONG, file->ph_idCol,
 //					  file->row,1,MAXIMPACTNUMBER,0,record->phid_array, &anynul,status);
 //		CHECK_STATUS_RET(*status,0);
 
-		fits_read_col(file->fptr, TLONG, file->pixIDCol,
-					  file->row,1,1,0,&(record->pixid), &anynul,status);
-		CHECK_STATUS_RET(*status,0);
-
-		fits_read_col(file->fptr, TDOUBLE, file->timeCol,
-					  file->row,1,1,0,&(record->time), &anynul,status);
-		CHECK_STATUS_RET(*status,0);
-
-		for (unsigned long i=0 ; i < file->trigger_size ; i++) {
-			record->adc_double[i]= (double) (record->adc_array[i]);
-		}
-
-		file->row++;
-		return(1);
-	} else {
-		return(0);
-	}
+    fits_read_col(file->fptr, TLONG, file->pixIDCol,
+		  file->row,1,1,0,&(record->pixid), &anynul,status);
+    CHECK_STATUS_RET(*status,0);
+    
+    fits_read_col(file->fptr, TDOUBLE, file->timeCol,
+		  file->row,1,1,0,&(record->time), &anynul,status);
+    CHECK_STATUS_RET(*status,0);
+    
+    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
+      record->adc_double[i]= (double) (record->adc_array[i]);
+    }
+    
+    file->row++;
+    return(1);
+  } else {
+    return(0);
+  }
 
 
 }

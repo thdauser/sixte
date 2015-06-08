@@ -6,6 +6,7 @@
 #include "sixteconfig.h"
 #include "tesdatastream.h"
 #include "pixelimpactfile.h"
+#include "testriggerfile.h"
 #include "tesrecord.h"
 
 #include <gsl/gsl_odeiv2.h>
@@ -14,6 +15,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
+
+
 
 // parameters for the initializer
 typedef struct {
@@ -40,6 +43,10 @@ typedef struct {
   double sample_rate; // sample rate (Hz)
   double imin;    // minimum current to encode [A]
   double imax;    // maximum current to encode [A]
+
+  char *trigger; // string defining the trigger strategy
+  unsigned long preBufferSize; // number of samples to keep before trigger
+  unsigned long triggerSize; // total number of samples to record
 
   int clobber;  // overwrite output files? -- IGNORED SO FAR
   int simnoise; // simulator noise 
@@ -210,12 +217,12 @@ typedef struct {
   int curcol;        // column for the current
 } tes_record_info;
 
-// initialize a TES data stream
+// initialize a TES datastream built on tesrecords
 tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, 
 				    char *streamfile, char *impactfile,int clobber,
 				    SixtStdKeywords *keywords,
 				    int *status);
-// append a pulse to the data stream. data points on a tes_datastream_info structure
+// append a pulse to the data stream. 
 void tes_append_tesrecord(tesparams *tes,double time,double pulse,int *status);
 // append a photon to the data stream
 void tes_append_photon_tesrecord(tesparams *tes, double time, long phid, int *status);
@@ -225,6 +232,63 @@ void tes_close_tesrecord(tesparams *tes, int *status);
 
 // cleanup the TES data stream
 void tes_free_tesrecord(tes_record_info **data, int *status);
+
+//
+// stream write function using TesRecords and triggers
+//
+
+typedef struct {
+  TesRecord *fifo; // buffer for our fifo
+  unsigned int fifoind; // next element to write in fifo
+
+  TesRecord *stream; // output stream after trigger
+  unsigned long preBufferSize; // number of samples to keep before trigger
+  unsigned long triggerSize; // total number of samples to record
+  unsigned int streamind;    // index of next sample to write
+
+  double tstart;     // starting time
+  double tstop;      // end time
+  double imin;       // minimum current to encode
+  double imax;       // maximum current to encode
+  double aducnv;     // conversion factor
+  int strategy;      // trigger strategy:
+                     //   1: moving average
+                     //   2: differentiation
+  double threshold;  // threshold above which trigger is valid
+  unsigned int npts; // number of previous points to include in trigger calculation
+  long helper[3]; // helper variables
+  unsigned int CanTrigger; // if 0(!!) we can trigger
+  unsigned int SuppressTrigger; // #samples not to trigger after a trigger
+  TesTriggerFile *fptr;    // file to write to
+} tes_trigger_info;
+
+// initialize a TES trigger built on tesrecords
+tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes, 
+				   int strategy,unsigned long preBufferSize,
+				   unsigned long triggerSize,
+				   double threshold,unsigned int npts,unsigned int suppress,
+				   char *streamfile, char *impactfile,int clobber,
+				   SixtStdKeywords *keywords,
+				   int *status);
+// append a pulse to the trigger data stream. 
+// this is the routine that also does the trigger
+void tes_append_trigger(tesparams *tes,double time,double pulse,int *status);
+
+// trigger types
+#define TRIGGER_MOVAVG 1
+#define TRIGGER_DIFF 2
+
+// append a photon to the data stream
+// NOT YET IMPLEMENTED!
+// void tes_append_photon_trigger(tesparams *tes, double time, long phid, int *status);
+
+// finish writing triggers
+void tes_close_trigger(tesparams *tes, int *status);
+
+// cleanup the TES data stream
+void tes_free_trigger(tes_trigger_info **data, int *status);
+
+
 
 
 // general functions

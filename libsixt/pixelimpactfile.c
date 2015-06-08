@@ -20,8 +20,6 @@
 
 #include "pixelimpactfile.h"
 
-#define hasgradingcols 1
-
 PixImpFile* newPixImpFile(int* const status){
   
   PixImpFile* file=(PixImpFile*)malloc(sizeof(PixImpFile));
@@ -46,13 +44,8 @@ PixImpFile* newPixImpFile(int* const status){
   file->cv	=0;
   file->cx	=0;
   file->cy	=0;
-  if (hasgradingcols==1){
-	  file->cgrade1 = 0;
-	  file->cgrade2 = 0;
-  } else {
-	  file->cgrade1 = -1;
-	  file->cgrade2 = -1;
-  }
+  file->cgrade1 = 0;
+  file->cgrade2 = 0;
 
   return(file);
 }
@@ -74,7 +67,7 @@ PixImpFile* openPixImpFile(const char* const filename,
 			   const int mode, int* const status)
 {
   PixImpFile* file=newPixImpFile(status);
-  CHECK_STATUS_RET(*status, file);
+  CHECK_STATUS_RET(*status, NULL);
   
   headas_chat(5, "open pixel impact list file '%s' ...\n", filename);
   
@@ -91,7 +84,7 @@ PixImpFile* openPixImpFile(const char* const filename,
     sprintf(msg, "no table extension available in file '%s'", 
 	    filename);
     SIXT_ERROR(msg);
-    return(file);
+    return(NULL);
   }
   
   // Determine the number of rows in the impact list.
@@ -109,12 +102,19 @@ PixImpFile* openPixImpFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->cpix_id, status);
-  if (hasgradingcols == 1){
-	  fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->cgrade1, status);
-	  fits_get_colnum(file->fptr, CASEINSEN, "GRADE2", &file->cgrade2, status);
+  CHECK_STATUS_RET(*status, NULL);
+  fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->cgrade1, status);
+  if (*status==COL_NOT_FOUND) {
+    file->cgrade1=-1;
+    *status=0;
   }
-  CHECK_STATUS_RET(*status, file);
-
+  CHECK_STATUS_RET(*status, NULL);
+  fits_get_colnum(file->fptr, CASEINSEN, "GRADE2", &file->cgrade2, status);
+  if (*status==COL_NOT_FOUND) {
+    file->cgrade2=-1;
+    *status=0;
+  }
+  CHECK_STATUS_RET(*status, NULL);
   return(file);
 }
 
@@ -157,13 +157,8 @@ PixImpFile* openNewPixImpFile(const char* const filename,
   // Create a new impact list FITS file from the template.
   
   char buffer[MAXFILENAME];
-  if (hasgradingcols==1){
-	  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
-			  "/templates/pixelimpactfile_gradingcols.tpl");
-  } else {
-	  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
-				  "/templates/pixelimpactfile.tpl");
-  }
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
+	  "/templates/pixelimpactfile_gradingcols.tpl");
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
 
@@ -226,65 +221,42 @@ int getNextImpactFromPixImpFile(PixImpFile* const file,
   if (file->row > file->nrows) {
     return 0;
   }
-  
+
   // Read in the data.
+  // JW: note: initialization of the data is NOT necessary 
+  // (only costs time)
   int anynul=0;
-  impact->time=0.;
   fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
-		&impact->time, &impact->time, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-
-  impact->energy = 0.;
+		NULL, &impact->time, &anynul, status);
   fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
-		&impact->energy, &impact->energy, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-
-  impact->detposition.x = 0.;
+		NULL, &impact->energy, &anynul, status);
   fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
-		&impact->detposition.x, &impact->detposition.x, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-
-  impact->detposition.y = 0.;
+		NULL, &impact->detposition.x, &anynul, status);
   fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
-		&impact->detposition.y, &impact->detposition.y, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-
-  impact->pixposition.x = 0.;
+		NULL, &impact->detposition.y, &anynul, status);
   fits_read_col(file->fptr, TDOUBLE, file->cu, file->row, 1, 1, 
-		&impact->pixposition.x, &impact->pixposition.x, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-
-  impact->pixposition.y = 0.;
+		NULL, &impact->pixposition.x, &anynul, status);
   fits_read_col(file->fptr, TDOUBLE, file->cv, file->row, 1, 1, 
-		&impact->pixposition.y, &impact->pixposition.y, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-
-  impact->ph_id = 0;
+		NULL, &impact->pixposition.y, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1, 
-		&impact->ph_id, &impact->ph_id, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-
-  impact->src_id = 0;
+		NULL, &impact->ph_id, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1, 
-		&impact->src_id, &impact->src_id, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-  impact->pixID=-1;
+		NULL, &impact->src_id, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cpix_id, file->row, 1, 1, 
-		&impact->pixID, &impact->pixID, &anynul, status);
-  CHECK_STATUS_RET(*status, 0);
-  impact->pixID=impact->pixID-1;
+		NULL, &impact->pixID, &anynul, status);
+  impact->pixID=impact->pixID-1; // why??
   
-  if (hasgradingcols==1){
-	  fits_read_col(file->fptr, TLONG, file->cgrade1, file->row, 1, 1,
-	  		&impact->grade1, &impact->grade1, &anynul, status);
-	  fits_read_col(file->fptr, TLONG, file->cgrade2, file->row, 1, 1,
-	  		&impact->grade2, &impact->grade2, &anynul, status);
+  if (file->cgrade1!=-1) {
+    fits_read_col(file->fptr, TLONG, file->cgrade1, file->row, 1, 1,
+		  NULL, &impact->grade1, &anynul, status);
   }
-
+  if (file->cgrade2!=-1) {
+    fits_read_col(file->fptr, TLONG, file->cgrade2, file->row, 1, 1,
+		  NULL, &impact->grade2, &anynul, status);
+  }
   
   // Check if an error occurred during the reading process.
-  if (0!=anynul) {
-    *status=EXIT_FAILURE;
+  if (*status!=0) {
     SIXT_ERROR("failed reading from pixel impact list file");
     return 0;
   }
@@ -321,9 +293,11 @@ void addImpact2PixImpFile(PixImpFile* const ilf,
 		 ilf->row, 1, 1, &impact->pixID, status);
 
   long default_grade=0;
-  if (hasgradingcols==1){
+  if (ilf->cgrade1!=-1) {
 	  fits_write_col(ilf->fptr, TLONG, ilf->cgrade1,
 			 ilf->row, 1, 1, &default_grade, status);
+  }
+  if (ilf->cgrade2!=-1) {
 	  fits_write_col(ilf->fptr, TLONG, ilf->cgrade2,
 			 ilf->row, 1, 1, &default_grade, status);
   }

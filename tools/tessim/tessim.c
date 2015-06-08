@@ -4,13 +4,6 @@
 #include <stdlib.h>
 
 
-// define TES_DATASTREAM to use the datastream interface
-// define TES_TESRECORD to use the (better) TESRECORD interface
-//#define TES_DATASTREAM
-#define TES_TESRECORD
-
-
-
 #define TOOLSUB tessim_main
 #include "headas_main.c"
 
@@ -22,14 +15,12 @@ int tessim_main() {
   
   // register HEATOOL
   set_toolname("tessim");
-  set_toolversion("0.01");
-
+  set_toolversion("0.02");
 
   do { // start of error handling loop
     // read parameters using PIL
     tespxlparams par;
     int properties;
-
 
     tessim_getpar(&par,&properties,&status);
     CHECK_STATUS_BREAK(status);
@@ -48,7 +39,6 @@ int tessim_main() {
 	fitsfile *fptr;
 	fits_create_file_clobber(&fptr,par.streamfile,par.clobber,&status); 
 	fits_create_tbl(fptr,BINARY_TBL,0,0,NULL,NULL,NULL,"TESDATASTREAM",&status);
-	printf("XXX%iXXX\n",status);
 	tes_fits_write_params(fptr,tes,&status);
 	fits_close_file(fptr,&status);
 	CHECK_STATUS_BREAK(status);
@@ -62,23 +52,79 @@ int tessim_main() {
     CHECK_STATUS_BREAK(status);
     tes->get_photon=&tes_photon_from_impactlist; // note: function pointer!
 
+    SixtStdKeywords *keywords=duplicateSixtStdKeywords(((tes_impactfile_info *) tes->photoninfo)->keywords,&status);
+
     // initialize stream writer
-#ifdef TES_DATASTREAM
-    tes->streaminfo=tes_init_datastream(par.tstart,par.tstop,tes,&status);
-    CHECK_STATUS_BREAK(status);
-    tes->write_to_stream=&tes_append_datastream; // note: function pointer!
-    tes->write_photon=NULL; 
-#endif
-#ifdef TES_TESRECORD
-    tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,
-				       par.streamfile,par.impactlist,
-				       par.clobber,
-				       ((tes_impactfile_info *) (tes->photoninfo))->keywords,
-				       &status);
-    CHECK_STATUS_BREAK(status);
-    tes->write_to_stream=&tes_append_tesrecord;
-    tes->write_photon=&tes_append_photon_tesrecord;
-#endif
+    if (strcmp(par.trigger,"stream")==0) {
+      tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,
+					 par.streamfile,par.impactlist,
+					 par.clobber,
+					 keywords,
+					 &status);
+      CHECK_STATUS_BREAK(status);
+      tes->write_to_stream=&tes_append_tesrecord;
+      tes->write_photon=&tes_append_photon_tesrecord;
+    } else {
+	double threshold;
+	unsigned int npts;
+	unsigned int suppress;
+	int strategy=-1;
+	if (strncmp(par.trigger,"movavg:",7)==0) {
+	  strategy=TRIGGER_MOVAVG;
+	  
+	  // threshold is float after movavg
+	  sscanf(par.trigger,"movavg:%u:%lf:%u",&npts,&threshold,&suppress);
+
+	  printf("\nChoosing movavg trigger strategy: %u points with threshold %f\n",npts,threshold);
+	  printf("Trigger suppression interval: %u\n\n",suppress);
+	  
+	  assert(npts<20);
+	  assert(threshold>0.0);
+	  
+	} else {
+	  if (strncmp(par.trigger,"diff:",5)==0) {
+	    strategy=TRIGGER_DIFF;
+	    // threshold is float after diff
+	    sscanf(par.trigger,"diff:%u:%lf:%u",&npts,&threshold,&suppress);
+	    
+	    printf("\nChoosing differential trigger of grade %u and threshold %f\n",npts,threshold);
+	    printf("Trigger suppression interval: %u\n\n",suppress);
+	    assert(threshold>0.0);
+	    
+	    unsigned int points[]={2,3,4,5,6,7,8,9,10};
+	    int found=0;
+	    for (int i=0; i<9; i++) {
+	      if (points[i]==npts) {
+		found=1;
+	      }
+	    }
+	    if (found==0) {
+	      fprintf(stderr,"Error: Grade of differential trigger must be one of ");
+	      char comma=' ';
+	      for (int i=0; i<10; i++) {
+		printf("%c %i",comma,points[i]);
+		comma=',';
+	      }
+	      exit(1);
+	    }
+	  } else {
+	    fprintf(stderr,"Trigger strategy must be one of stream, movavg or diff\n");
+	    exit(1);
+	  }
+	}
+
+	tes->streaminfo=tes_init_trigger(par.tstart,par.tstop,tes,strategy,
+					 par.preBufferSize,
+					 par.triggerSize,threshold,npts,suppress,
+					 par.streamfile,
+					 par.impactlist,
+					 par.clobber,
+					 keywords,
+					 &status);
+	CHECK_STATUS_BREAK(status);
+	tes->write_to_stream=&tes_append_trigger;
+	tes->write_photon=NULL;
+    }
 
     // Run the simulation
     printf("RUNNING!\n");
@@ -87,15 +133,13 @@ int tessim_main() {
     CHECK_STATUS_BREAK(status);
 
     // write the file and free all allocated memory
-#ifdef TES_DATASTREAM
-    tes_close_datastream(tes,par.streamfile,par.impactlist,(tes_datastream_info *) tes->streaminfo,
-			((tes_impactfile_info *) (tes->photoninfo))->keywords,&status);
-    tes_free_datastream((tes_datastream_info **) (tes->streaminfo), &status);
-#endif
-#ifdef TES_TESRECORD
-    tes_close_tesrecord(tes,&status);
-    tes_free_tesrecord((tes_record_info **) &tes->streaminfo, &status);
-#endif
+    if (strcmp(par.trigger,"stream")==0) {
+      tes_close_tesrecord(tes,&status);
+      tes_free_tesrecord((tes_record_info **) &tes->streaminfo, &status);
+    } else {
+      tes_close_trigger(tes,&status);
+      tes_free_trigger((tes_trigger_info **) &tes->streaminfo, &status);
+    }
 
     tes_free_impactlist((tes_impactfile_info **) &tes->photoninfo, &status);
     tes_free(tes);
@@ -118,7 +162,6 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_string("PixType", &(par->type), status);
 
   int fromfile=0;
-
   
   query_simput_parameter_int("PixID",&(par->id),status);
   query_simput_parameter_file_name("PixImpList", &(par->impactlist), status);
@@ -186,6 +229,24 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
     assert(par->m_excess>=0);
   }
 
+  query_simput_parameter_bool("simnoise", &par->simnoise, status);
+
+  // trigger strategy
+  par->trigger=malloc(MAXMSG*sizeof(char));
+  query_simput_parameter_string_buffer("triggertype",par->trigger,MAXMSG,status);
+  if (strcmp(par->trigger,"stream")==0) {
+    par->triggerSize=0;
+    par->preBufferSize=0;
+  } else {
+    long dummy;
+    query_simput_parameter_long("triggersize",&dummy,status);
+    par->triggerSize=(unsigned long) dummy;
+    query_simput_parameter_long("prebuffer",&dummy,status);
+    // To Do: proper error handling for this condition
+    par->preBufferSize=(unsigned long) dummy;
+    assert(par->triggerSize > par->preBufferSize);
+  } 
+
   // read for all input parameter possibilities
   query_simput_parameter_bool("simnoise", &par->simnoise, status);
 
@@ -196,5 +257,5 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_bool("propertiesonly",properties,status);
 
   query_simput_parameter_bool("clobber", &par->clobber, status);
-  
+
 }

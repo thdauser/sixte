@@ -255,64 +255,13 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 
 	// Create table
 
-	int num_entries=9;
-	char *ttype[num_entries];
-	char *tform[num_entries];
-	char *tunit[num_entries];
-
 	//first column TIME
-	ttype[0]="TIME";
-	tform[0]="1D";
-	tunit[0]="s";
+	char *ttype[]={"TIME","SIGNAL","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","GRADING"};
+	char *tform[]={"1D",  "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D", "1I"};
+	char *tunit[]={"s",   "keV",   "",      "",      "",     "",     "deg","deg",""};
 
-	//second column signal (i.e. energy)
-	ttype[1]="SIGNAL";
-	tform[1]="1D";
-	tunit[1]="keV";
-
-	//third column Grade1
-	ttype[2]="GRADE1";
-	tform[2]="1J";
-	tunit[2]="";
-
-	//fourth column Grade2
-	ttype[3]="GRADE2";
-	tform[3]="1J";
-	tunit[3]="";
-
-	//fifth column PIXID
-	ttype[4]="PIXID";
-	tform[4]="1J";
-	tunit[4]="";
-
-	//sixth column PH_ID
-	ttype[5]="PH_ID";
-	tform[5]="1J";
-	tunit[5]="";
-
-	//seventh column RA
-	ttype[6]="RA";
-	tform[6]="1D";
-	tunit[6]="deg";
-
-	//eighth column DEC
-	ttype[7]="DEC";
-	tform[7]="1D";
-	tunit[7]="deg";
-
-	//third column Grade1
-	ttype[8]="GRADING";
-	tform[8]="1I";
-	tunit[8]="";
-
-	char *extName="EVENTS";
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, num_entries,
-			ttype, tform, tunit,extName, status);
-	//Add keywords to new extension
-	if(keywords->extname!=NULL){
-	  free(keywords->extname);
-	}
-	keywords->extname=strdup(extName);
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 9,
+			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
 

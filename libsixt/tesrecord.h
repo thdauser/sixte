@@ -90,6 +90,11 @@ TesRecord* newTesRecord(int* const status);
 /** Allocates memory for a RecordStruct data */
 void allocateTesRecord(TesRecord * record,unsigned long triggerSize,double delta_t,unsigned char wait_list,int* const status);
 
+TesRecord *createTesRecord(unsigned long triggerSize,double delta_t,unsigned char wait_list,int* const status);
+
+/** resizes the  TesRecord **/
+void resizeTesRecord(TesRecord *record,unsigned long triggerSize, int* const status);
+
 /** Destructor of the RecordStruct data structure. */
 void freeTesRecord(TesRecord** const record);
 
