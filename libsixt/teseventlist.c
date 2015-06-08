@@ -336,7 +336,7 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	TesEventFile * file = newTesEventFile(status);
 	headas_chat(3, "open TES event file '%s' ...\n", filename);
 	fits_open_table(&file->fptr, filename, mode, status);
-	CHECK_STATUS_RET(*status, file);
+	CHECK_STATUS_RET(*status, NULL);
 
 	// Determine the row numbers.
 	fits_get_num_rows(file->fptr, &(file->nrows), status);
@@ -345,13 +345,27 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->timeCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->energyCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->grade1Col, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->grade1Col=-1;
+	  *status=0;
+	}
+
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADE2", &file->grade2Col, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->grade2Col=-1;
+	  *status=0;
+	}
 	fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->pixIDCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->phIDCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
+
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADING", &file->gradingCol, status);
-	CHECK_STATUS_RET(*status, file);
+	if (*status==COL_NOT_FOUND) {
+	  file->grade2Col=-1;
+	  *status=0;
+	}
+	CHECK_STATUS_RET(*status, NULL);
 
 	return(file);
 }
@@ -431,19 +445,25 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,in
 	CHECK_STATUS_VOID(*status);
 
 	//Save grade1 column
-	fits_write_col(file->fptr, TLONG, file->grade1Col,
-			file->row, 1, 1, &grade1, status);
-	CHECK_STATUS_VOID(*status);
+	if (file->grade1Col!=-1) {
+	  fits_write_col(file->fptr, TLONG, file->grade1Col,
+			 file->row, 1, 1, &grade1, status);
+	  CHECK_STATUS_VOID(*status);
+	}
 
 	//Save grade2 column
-	fits_write_col(file->fptr, TLONG, file->grade2Col,
-			file->row, 1, 1, &grade2, status);
-	CHECK_STATUS_VOID(*status);
+	if (file->grade2Col!=-1) {
+	  fits_write_col(file->fptr, TLONG, file->grade2Col,
+			 file->row, 1, 1, &grade2, status);
+	  CHECK_STATUS_VOID(*status);
+	}
 
 	//Save grading column
-	fits_write_col(file->fptr, TINT, file->gradingCol,
-			file->row, 1, 1, &grading, status);
-	CHECK_STATUS_VOID(*status);
+	if (file->gradingCol!=-1) {
+	  fits_write_col(file->fptr, TINT, file->gradingCol,
+			 file->row, 1, 1, &grading, status);
+	  CHECK_STATUS_VOID(*status);
+	}
 
 	//Save PIXID column
 	long pixID = impact->pixID+1;
