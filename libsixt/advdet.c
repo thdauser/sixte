@@ -532,10 +532,28 @@ static void AdvDetXMLElementStart(void* parsedata,
 				xmlparsedata->det->pix[i].arffile=strdup(arffile);
 			}
 		}
+	}  else if (!strcmp(Uelement,"GRADING")){
+		if (xmlparsedata->det->inpixel){
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].highres1=getXMLAttributeLong(attr, "HIGHRES1");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].highres2=getXMLAttributeLong(attr, "HIGHRES2");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].midres1=getXMLAttributeLong(attr, "MIDRES1");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].midres2=getXMLAttributeLong(attr, "MIDRES2");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].lowres1=getXMLAttributeLong(attr, "LOWRES1");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].lowres2=getXMLAttributeLong(attr, "LOWRES2");
+		} else {
+			for (int i=0;i<xmlparsedata->det->npix;i++){
+				xmlparsedata->det->pix[i].highres1=getXMLAttributeLong(attr, "HIGHRES1");
+				xmlparsedata->det->pix[i].highres2=getXMLAttributeLong(attr, "HIGHRES2");
+				xmlparsedata->det->pix[i].midres1=getXMLAttributeLong(attr, "MIDRES1");
+				xmlparsedata->det->pix[i].midres2=getXMLAttributeLong(attr, "MIDRES2");
+				xmlparsedata->det->pix[i].lowres1=getXMLAttributeLong(attr, "LOWRES1");
+				xmlparsedata->det->pix[i].lowres2=getXMLAttributeLong(attr, "LOWRES2");
+			}
+		}
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
 		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
-	}else {
+	} else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];
 		sprintf(msg, "unknown XML tag: <%s>", el);
@@ -809,13 +827,13 @@ void freeARFLibrary(ARFLibrary* library){
 }
 
 /** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(long grade1,long grade2){
+int makeGrading(long grade1,long grade2,AdvPix* pixel){
 
-	if ((grade1 >= 512) && (grade2>=128)) {
+	if ((grade1 >= pixel->highres1) && (grade2>=pixel->highres2)) {
 		return HIRESGRADE;
-	} else if ((grade1 >= 128) && (grade2>=128)) {
+	} else if ((grade1 >= pixel->midres1) && (grade2>=pixel->midres2)) {
 		return MEDRESGRADE;
-	} else if (grade2 >= 128) {
+	} else if ((grade2 >= pixel->lowres1) && (grade2 >= pixel->lowres2)){
 		return LORESGRADE;
 	} else {
 		return INVGRADE;
@@ -925,7 +943,7 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 
 		rmf = det->rmf_library->rmf_array[det->pix[impact.pixID].rmfID];
 
-		grading = makeGrading(impact.grade1,impact.grade2);
+		grading = makeGrading(impact.grade1,impact.grade2,&(det->pix[impact.pixID]));
 
 		// Determine the measured detector channel (PI channel) according
 		// to the RMF.

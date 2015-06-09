@@ -124,6 +124,14 @@ typedef struct{
   /** ID of the arf inside general detector (to avoid loading one arf per pixel) */
   int arfID;
 
+  /** Grading parameters */
+  long highres1;
+  long highres2;
+  long midres1;
+  long midres2;
+  long lowres1;
+  long lowres2;
+
 }AdvPix;
 
 /** Data structure containing a library of different RMFs */
@@ -291,10 +299,13 @@ void addARF(AdvDet* det,AdvPix* pixel,int* const status);
 void freeARFLibrary(ARFLibrary* library);
 
 /** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(long grade1,long grade2);
+int makeGrading(long grade1,long grade2,AdvPix* pixel);
 
 /** calculate the grading in samples from the a given impact, and its previous and next impact **/
 void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status);
+
+/** writes the grading to an existing piximpact file **/
+void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status);
 
 /** Process the impacts contained in the piximpacts file with the RMF method */
 void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
