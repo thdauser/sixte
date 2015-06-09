@@ -178,8 +178,6 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
       return;
     }
 
-    query_simput_parameter_bool("simnoise", &par->simnoise, status);
-  
     if (&par->simnoise) {
       query_simput_parameter_double("m_excess",&par->m_excess,status);
     } else {
@@ -189,6 +187,7 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   }
 
   // read for all input parameter possibilities
+  query_simput_parameter_bool("simnoise", &par->simnoise, status);
 
   long seed; // needed because par->seed is an unsigned long
   query_simput_parameter_long("seed", &seed, status);
