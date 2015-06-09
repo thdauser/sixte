@@ -254,7 +254,8 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
   fits_read_key(fptr,TDOUBLE,"N",&par->n,comment,status);
   fits_read_key(fptr,TDOUBLE,"IMIN",&par->imin,comment,status);
   fits_read_key(fptr,TDOUBLE,"IMAX",&par->imax,comment,status);
-  fits_read_key(fptr,TINT,"SIMNOISE",&par->simnoise,comment,status);
+  // for the moment
+  //  fits_read_key(fptr,TINT,"SIMNOISE",&par->simnoise,comment,status);
 
   fits_read_key(fptr,TDOUBLE,"M_EXCESS",&par->m_excess,comment,status);
 
