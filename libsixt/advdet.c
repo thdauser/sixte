@@ -84,7 +84,10 @@ void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
     destroyTESNoiseProperties(pix->TESNoise);
     free(pix->TESNoise);
-    free(pix->rmffile);
+    for (int i=0;i<pix->ngrades;i++){
+    	free(pix->grades[i].rmffile);
+    }
+    free(pix->grades);
   }
 }
 
@@ -351,7 +354,8 @@ static void AdvDetXMLElementStart(void* parsedata,
 		xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");
 		for (int i=0;i<xmlparsedata->det->npix;i++){
 			xmlparsedata->det->pix[i].TESNoise=NULL;
-			xmlparsedata->det->pix[i].rmffile=NULL;
+			xmlparsedata->det->pix[i].grades=NULL;
+			xmlparsedata->det->pix[i].ngrades=0;
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
@@ -506,48 +510,54 @@ static void AdvDetXMLElementStart(void* parsedata,
 			SIXT_ERROR("XML syntax error: noisezero used outside of tesnoisefilter.");
 			return;
 		}
-	} else if (!strcmp(Uelement, "PIXRMF")) {
-		if (xmlparsedata->det->inpixel){
-			char rmffile[MAXFILENAME];
-			getXMLAttributeString(attr, "FILENAME", rmffile);
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].rmffile=strdup(rmffile);
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].rmfID=-1;
-		} else {
-			for (int i=0;i<xmlparsedata->det->npix;i++){
-				char rmffile[MAXFILENAME];
-				getXMLAttributeString(attr, "FILENAME", rmffile);
-				xmlparsedata->det->pix[i].rmffile=strdup(rmffile);
-				xmlparsedata->det->pix[i].rmfID=-1;
-			}
-		}
 	} else if (!strcmp(Uelement, "PIXARF")) {
 		if (xmlparsedata->det->inpixel){
 			char arffile[MAXFILENAME];
 			getXMLAttributeString(attr, "FILENAME", arffile);
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].arffile=strdup(arffile);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].arffile=strndup(arffile,MAXFILENAME);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].arf=NULL;
 		} else {
 			for (int i=0;i<xmlparsedata->det->npix;i++){
 				char arffile[MAXFILENAME];
 				getXMLAttributeString(attr, "FILENAME", arffile);
-				xmlparsedata->det->pix[i].arffile=strdup(arffile);
+				xmlparsedata->det->pix[i].arffile=strndup(arffile,MAXFILENAME);
+				xmlparsedata->det->pix[i].arf=NULL;
 			}
 		}
 	}  else if (!strcmp(Uelement,"GRADING")){
 		if (xmlparsedata->det->inpixel){
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].highres1=getXMLAttributeLong(attr, "HIGHRES1");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].highres2=getXMLAttributeLong(attr, "HIGHRES2");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].midres1=getXMLAttributeLong(attr, "MIDRES1");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].midres2=getXMLAttributeLong(attr, "MIDRES2");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].lowres1=getXMLAttributeLong(attr, "LOWRES1");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].lowres2=getXMLAttributeLong(attr, "LOWRES2");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades=realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades,
+					(xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades+1)*sizeof(*(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades)));
+			if (xmlparsedata->det->pix[xmlparsedata->det->cpix].grades==NULL){
+				xmlparsedata->status=EXIT_FAILURE;
+				SIXT_ERROR("Realloc of grading array failed.");
+				return;
+			}
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].value=getXMLAttributeInt(attr, "NUM");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmf=NULL;
+			char rmffile[MAXFILENAME];
+			getXMLAttributeString(attr, "RMF", rmffile);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
+			xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades++;
 		} else {
 			for (int i=0;i<xmlparsedata->det->npix;i++){
-				xmlparsedata->det->pix[i].highres1=getXMLAttributeLong(attr, "HIGHRES1");
-				xmlparsedata->det->pix[i].highres2=getXMLAttributeLong(attr, "HIGHRES2");
-				xmlparsedata->det->pix[i].midres1=getXMLAttributeLong(attr, "MIDRES1");
-				xmlparsedata->det->pix[i].midres2=getXMLAttributeLong(attr, "MIDRES2");
-				xmlparsedata->det->pix[i].lowres1=getXMLAttributeLong(attr, "LOWRES1");
-				xmlparsedata->det->pix[i].lowres2=getXMLAttributeLong(attr, "LOWRES2");
+				xmlparsedata->det->pix[i].grades=realloc(xmlparsedata->det->pix[i].grades,
+						(xmlparsedata->det->pix[i].ngrades+1)*sizeof(*(xmlparsedata->det->pix[i].grades)));
+				if (xmlparsedata->det->pix[i].grades==NULL){
+					xmlparsedata->status=EXIT_FAILURE;
+					SIXT_ERROR("Realloc of grading array failed.");
+					return;
+				}
+				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].value=getXMLAttributeInt(attr, "NUM");
+				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
+				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmf=NULL;
+				char rmffile[MAXFILENAME];
+				getXMLAttributeString(attr, "RMF", rmffile);
+				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
+				xmlparsedata->det->pix[i].ngrades++;
 			}
 		}
 	} else if(!strcmp(Uelement, "TESPROFILE")){
@@ -670,21 +680,23 @@ void loadRMFLibrary(AdvDet* det, int* const status){
 	}
 
 	for (int i=0;i<det->npix;i++){
-		addRMF(det,&(det->pix[i]),status);
-		CHECK_STATUS_VOID(*status);
+		for (int j=0;j<det->pix[i].ngrades;j++){
+			addRMF(det,&(det->pix[i]),j,status);
+			CHECK_STATUS_VOID(*status);
+		}
 	}
 }
 
-/** Adds an RMF to the RMF library. The RMF will only be added if it is not already in the library */
-void addRMF(AdvDet* det,AdvPix* pixel,int* const status){
-	if(NULL==pixel->rmffile){
+/** Adds the RMF corresponding to the jth index in the pixel rmffiles array to the RMF library. The RMF will only be added if it is not already in the library */
+void addRMF(AdvDet* det,AdvPix* pixel,int rmf_index,int* const status){
+	if(NULL==pixel->grades){
 		*status=EXIT_FAILURE;
 		SIXT_ERROR("Tried to load pixel RMF whereas no RMF file was given in XML. Abort");
 		return;
 	}
 	for (int i=0;i<det->rmf_library->n_rmf;i++){
-		if(!strcmp(det->rmf_library->filenames[i],pixel->rmffile)){
-			pixel->rmfID=i;
+		if(!strcmp(det->rmf_library->filenames[i],pixel->grades[rmf_index].rmffile)){
+			pixel->grades[rmf_index].rmf=det->rmf_library->rmf_array[i];
 			return; //If the rmf is already in there, just update the rmfID and return
 		}
 	}
@@ -711,11 +723,11 @@ void addRMF(AdvDet* det,AdvPix* pixel,int* const status){
 
 	//Add RMF to the library
 	char filepathname[MAXFILENAME];
-	strcpy(filepathname,det->filepath);
-	strcat(filepathname,pixel->rmffile);
+	strncpy(filepathname,det->filepath,MAXFILENAME);
+	strncat(filepathname,pixel->grades[rmf_index].rmffile,MAXFILENAME);
 	det->rmf_library->rmf_array[det->rmf_library->n_rmf] = loadRMF(filepathname,status);
-	det->rmf_library->filenames[det->rmf_library->n_rmf] = strdup(pixel->rmffile);
-	pixel->rmfID=det->rmf_library->n_rmf;
+	det->rmf_library->filenames[det->rmf_library->n_rmf] = strndup(pixel->grades[rmf_index].rmffile,MAXFILENAME);
+	pixel->grades[rmf_index].rmf=det->rmf_library->rmf_array[det->rmf_library->n_rmf];
 	det->rmf_library->n_rmf++;
 }
 
@@ -777,7 +789,7 @@ void addARF(AdvDet* det,AdvPix* pixel,int* const status){
 	}
 	for (int i=0;i<det->arf_library->n_arf;i++){
 		if(!strcmp(det->arf_library->filenames[i],pixel->arffile)){
-			pixel->arfID=i;
+			pixel->arf=det->arf_library->arf_array[i];
 			return; //If the arf is already in there, just update the arfID and return
 		}
 	}
@@ -808,7 +820,7 @@ void addARF(AdvDet* det,AdvPix* pixel,int* const status){
 	strcat(filepathname,pixel->arffile);
 	det->arf_library->arf_array[det->arf_library->n_arf] = loadARF(filepathname,status);
 	det->arf_library->filenames[det->arf_library->n_arf] = strdup(pixel->arffile);
-	pixel->arfID=det->arf_library->n_arf;
+	pixel->arf=det->arf_library->arf_array[det->arf_library->n_arf];
 	det->arf_library->n_arf++;
 }
 
@@ -829,30 +841,24 @@ void freeARFLibrary(ARFLibrary* library){
 /** given grade1 and grade 2, make a decision about the high/mid/los res events **/
 int makeGrading(long grade1,long grade2,AdvPix* pixel){
 
-	if ((grade1 >= pixel->highres1) && (grade2>=pixel->highres2)) {
-		return HIRESGRADE;
-	} else if ((grade1 >= pixel->midres1) && (grade2>=pixel->midres2)) {
-		return MEDRESGRADE;
-	} else if ((grade2 >= pixel->lowres1) && (grade2 >= pixel->lowres2)){
-		return LORESGRADE;
-	} else {
-		return INVGRADE;
+	for (int i=0;i<pixel->ngrades;i++){
+		if((grade1 >= pixel->grades[i].gradelim_post) && (grade2>=pixel->grades[i].gradelim_pre)){
+			return i;
+		}
 	}
+	return -1;
 
 }
 
 /** calculate the grading in samples from the a given impact, and its previous and next impact **/
 void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status){
 
-	// TODO: make this an input value
-	const int default_good_sample = 10000;
-
 	if (pnt.next<0){
-		*grade1 = default_good_sample;
+		*grade1 = DEFAULTGOODSAMPLE;
 		*grade2 = floor ((pnt.current - pnt.previous)/sample_length);
 	} else if (pnt.previous<0){
 		*grade1 = floor ((pnt.next - pnt.current)/sample_length);
-		*grade2 = default_good_sample;
+		*grade2 = DEFAULTGOODSAMPLE;
 	} else {
 		*grade1 = floor((pnt.next - pnt.current)/sample_length);
 		*grade2 = floor((pnt.current - pnt.previous)/sample_length);
@@ -931,6 +937,7 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 	long channel;
 	struct RMF* rmf;
 	int grading;
+	int grading_index;
 
 	// initialize
 	PixImpact impact;
@@ -941,34 +948,40 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 		//Copied and adapted from addGenDetPhotonImpact
 		//////////////////////////////////
 
-		rmf = det->rmf_library->rmf_array[det->pix[impact.pixID].rmfID];
+		grading_index = makeGrading(impact.grade1,impact.grade2,&(det->pix[impact.pixID]));
 
-		grading = makeGrading(impact.grade1,impact.grade2,&(det->pix[impact.pixID]));
+		if (grading_index>=0){
 
-		// Determine the measured detector channel (PI channel) according
-		// to the RMF.
-		// The channel is obtained from the RMF using the corresponding
-		// HEAdas routine which is based on drawing a random number.
-		returnRMFChannel(rmf, impact.energy, &channel);
+			rmf = det->pix[impact.pixID].grades[grading_index].rmf;
+			grading = det->pix[impact.pixID].grades[grading_index].value;
 
-		// Check if the photon is really measured. If the PI channel
-		// returned by the HEAdas RMF function is '-1', the photon is not
-		// detected. This should not happen as the rmf is supposedly
-		// normalized
-		if (channel<rmf->FirstChannel) {
-			SIXT_WARNING("Impact found as not detected due to failure during RMF based energy allocation");
-			continue; // go to next photon (photon is not detected).
+			// Determine the measured detector channel (PI channel) according
+			// to the RMF.
+			// The channel is obtained from the RMF using the corresponding
+			// HEAdas routine which is based on drawing a random number.
+			returnRMFChannel(rmf, impact.energy, &channel);
+
+			// Check if the photon is really measured. If the PI channel
+			// returned by the HEAdas RMF function is '-1', the photon is not
+			// detected. This should not happen as the rmf is supposedly
+			// normalized
+			if (channel<rmf->FirstChannel) {
+				SIXT_WARNING("Impact found as not detected due to failure during RMF based energy allocation");
+				continue; // go to next photon (photon is not detected).
+			}
+
+			// Determine the corresponding detected energy.
+			// NOTE: In this simulation the collected charge is represented
+			// by the nominal photon energy [keV], which corresponds to the
+			// PI channel according to the EBOUNDS table.
+			impact.energy=getEBOUNDSEnergy(channel, rmf, status);
+			//printf("%f ",impact.energy);
+			CHECK_STATUS_VOID(*status);
+		} else {
+			impact.energy=0.;
+			grading=INVGRADE;
 		}
-
-		// Determine the corresponding detected energy.
-		// NOTE: In this simulation the collected charge is represented
-		// by the nominal photon energy [keV], which corresponds to the
-		// PI channel according to the EBOUNDS table.
-		impact.energy=getEBOUNDSEnergy(channel, rmf, status);
-		//printf("%f ",impact.energy);
-		CHECK_STATUS_VOID(*status);
 		assert(impact.energy>=0.);
-
 		// Add final impact to event file
 		addRMFImpact(event_file,&impact,impact.grade1,impact.grade2,grading,status);
 		CHECK_STATUS_VOID(*status);

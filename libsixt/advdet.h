@@ -36,10 +36,8 @@
 /** Initial size of RMFLibrary. */
 #define RMFLIBRARYSIZE (10)
 
-#define HIRESGRADE 1
-#define MEDRESGRADE 2
-#define LORESGRADE 3
 #define INVGRADE -1
+#define DEFAULTGOODSAMPLE 32768 // TODO : check whether we do want to leave that as a macro
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -77,6 +75,25 @@ typedef struct{
 
 }TESNoiseProperties;
 
+/** Data structure defining a grading */
+
+typedef struct{
+
+  /** Response matrix file */
+  char* rmffile;
+
+  /** ID of the rmf */
+  struct RMF* rmf;
+
+  /** The grade values */
+  int value;
+
+  /** Size in samples before and after one pulse defining the grade */
+  long gradelim_pre;
+  long gradelim_post;
+
+}TESGrade;
+
 /** Data structure describing a pixel with arbitrary geometry.
     Current implementation: only rectangulars, parallel to detector
     coordinate system. */
@@ -112,25 +129,17 @@ typedef struct{
   /** Noise properties of pixel noise */
   TESNoiseProperties* TESNoise;
 
-  /** Response matrix file */
-  char* rmffile;
+  /** Number of grades for this pixel */
+  int ngrades;
 
-  /** ID of the rmf inside general detector (to avoid loading one rmf per pixel) */
-  int rmfID;
+  /** Different grades for this pixel */
+  TESGrade* grades;
 
   /** Ancillary response file */
   char* arffile;
 
   /** ID of the arf inside general detector (to avoid loading one arf per pixel) */
-  int arfID;
-
-  /** Grading parameters */
-  long highres1;
-  long highres2;
-  long midres1;
-  long midres2;
-  long lowres1;
-  long lowres2;
+  struct ARF* arf;
 
 }AdvPix;
 
@@ -284,7 +293,7 @@ int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp);
 void loadRMFLibrary(AdvDet* det, int* const status);
 
 /** Adds an RMF to the RMF library. The RMF will only be added if it is not already in the library */
-void addRMF(AdvDet* det,AdvPix* pixel,int* const status);
+void addRMF(AdvDet* det,AdvPix* pixel,int rmf_index,int* const status);
 
 /** Destructor of the RMF library structure */
 void freeRMFLibrary(RMFLibrary* library);
