@@ -332,7 +332,7 @@ int getThresholdForSources(double pix, PixPositionList* ppl, SourceImage* sky_pi
   //pixval:current candidate for bright pix (e.g. a source)
   //ensure that deviation between pix and all other (background) pixels is still big enough
   sigma=getSdev(median_list, median_list_count); //standard deviation
-  printf("%f\n",sigma);
+  //printf("%f\n",sigma);
   if((pix!=0.) && ((pix-median) > factorOfSigma*sigma))
     { 
      th=1;

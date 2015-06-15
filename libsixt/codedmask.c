@@ -417,12 +417,12 @@ int getImpactPos_protoMirax(struct wcsprm* wcs, struct wcsprm* wcs2, struct Poin
   }
 
   //switch to coordinate sys of one detector (that is surrounded by the collimator)
-  position->x=position->x-(x_detector*det_width);  //position [m] [0:det_width]
-  position->y=position->y-(y_detector*det_width);
+  double x_within_det=position->x-(x_detector*det_width);  //position [m] [0:det_width]
+  double y_within_det=position->y-(y_detector*det_width);
 
-  if(position->x <= wall || position->x > (det_width-wall) || position->y <= wall || position->y > (det_width-wall)){
+  if(x_within_det <= wall || x_within_det > (det_width-wall) || y_within_det <= wall || y_within_det > (det_width-wall)){
     return(0);
-    }
+  }
 
   return(1);
 }
