@@ -2,7 +2,7 @@ Mask,fre,lq,"mirax_1camera_rnd.mask",,,"coded mask reconstruction image (FITS in
 EventList,fre,lq,"events.fits",,,"event list file (FITS input file)"
 Image,f,lq,"image.fits",,,"image file (FITS output file)"
 PositionList,f,lq,"position_list.fits",,,"source position table (FITS output file)"
-RA,r,lq,265.98,0.0,360.0,"right ascension of telescope pointing (ra)"
+RA,r,lq,265.98,0.0,360.0,"right ascension of telescope pointing (deg)"
 DEC,r,lq,-29.74,-90.0,90.0,"declination of telescope pointing (deg)"
 Width,i,lq,52,0,10000,"width of the detector (pixels)"
 Pixelwidth,r,h,0.005,0.0,500.0,"width of one detector pixel (m)"

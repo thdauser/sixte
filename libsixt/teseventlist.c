@@ -322,14 +322,18 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 /** Adds the data contained in the event list to the given file */
 void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 		double start_time,double delta_t,long pixID,int* const status){
-	//Save time column
+	//Save time, PIXID and dummy grading column
 	double time;
+	int dummy_grading = 0;
 	for (int i = 0 ; i<event_list->index ; i++){
 		time = start_time + delta_t*event_list->event_indexes[i];
 		fits_write_col(file->fptr, TDOUBLE, file->timeCol,
 					   file->row, 1, 1, &time, status);
 		fits_write_col(file->fptr, TLONG, file->pixIDCol,
 					   file->row, 1, 1, &pixID, status);
+		fits_write_col(file->fptr, TINT, file->gradingCol,
+				file->row, 1, 1, &dummy_grading, status);
+		CHECK_STATUS_VOID(*status);
 		file->row++;
 	}
 	file->row = file->row - event_list->index;
@@ -348,12 +352,6 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 	//Save grade2 column
 	fits_write_col(file->fptr, TINT, file->grade2Col,
 					file->row, 1, event_list->index, event_list->grades2, status);
-	CHECK_STATUS_VOID(*status);
-
-	//Save grade2 column
-	int dummy_grading = 0;
-	fits_write_col(file->fptr, TINT, file->gradingCol,
-					file->row, 1, event_list->index, &dummy_grading, status);
 	CHECK_STATUS_VOID(*status);
 
 	//If PH_ID was computed, save it
