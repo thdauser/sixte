@@ -174,6 +174,8 @@ AC_CONFIG_FILES([Makefile
 		tools/tesreconstruction/Makefile
 		tools/xifupipeline/Makefile
 		tools/gennoisespec/Makefile
-		extlib/Makefile])
+		extlib/Makefile
+		extlib/progressbar/Makefile
+		])
 
 AC_OUTPUT
