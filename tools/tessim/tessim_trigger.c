@@ -222,9 +222,11 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       // copy prebuffer into the new stream
       // note: fifo[fifoind]=pulse will be copied further down!
       data->stream->time=time-data->preBufferSize*tes->delta_t;
-      int ii=data->fifoind - data->preBufferSize;
-      if (ii<0) {
-	ii+=data->fifo->trigger_size;
+      unsigned long ii;
+      if (data->fifoind >= data->preBufferSize) {
+	ii=data->fifoind - data->preBufferSize;
+      } else {
+	ii=data->fifoind+data->fifo->trigger_size-data->preBufferSize;
       }
       for (unsigned int i=0; i<data->preBufferSize; i++) {
 	if (ii==data->fifo->trigger_size) {

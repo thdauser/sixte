@@ -31,8 +31,6 @@
 
 //
 // TODO:
-// * write meta interfaces to simulation code
-//     - work on photon event list
 // * improve TES diagnostics
 // * calculate taup/taum using proper complex arithmetic!
 // * build in material database (for n et al., see I&H, table 2)
@@ -40,7 +38,6 @@
 // * use stochastic equation solver
 // * implement saturation regime
 // * generate bitstreams of varying bit length (rather than assuming 16bit)
-// * progress bar
 //
 //
 
@@ -604,6 +601,9 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->m_excess=par->m_excess;
   tes->Vunk=0.;
 
+  // progress bar
+  tes->progressbar=par->progressbar;
+
   // ...define ODE system
   tes->odesys=malloc(sizeof(gsl_odeiv2_system));
   CHECK_NULL_RET(tes->odesys,*status,"cannot allocate ODE system",NULL);
@@ -659,8 +659,18 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
     tes->write_to_stream(tes,tes->time,pulse,status);
   }
 
-  int samples=0;
+  unsigned long samplestep=100000;
+  unsigned int samples=0;
   while (tes->time<tstop) {
+    
+    // update progress bar
+    if (tes->progressbar!=NULL && samplestep == 100000) {
+      progressbar_update(tes->progressbar,
+			 (unsigned long) ((tes->time - tes->tstart)*PROGRESSBAR_FACTOR));
+      samplestep=0;
+    } else {
+      samplestep++;
+    }
 
     if (tes->simnoise) {
       // thermal noise

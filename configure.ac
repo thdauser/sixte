@@ -73,9 +73,9 @@ AC_SEARCH_LIBS(XML_Parse, [expat],
 	[], [AC_MSG_ERROR([No expat library found!])], [])
 
 #################################### 
-# ncurses and readline (required by ape library)
-#AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
-#AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
+# ncurses and readline (required by ape and progressbar library)
+AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
+AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
 
 
 #################################### 

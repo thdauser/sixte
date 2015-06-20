@@ -2100,7 +2100,8 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	strcpy(keyvalstr,"PROC");
     	strcat(keyvalstr,"0");
     	strcat(keyvalstr," Starting parameter list");*/
-    	char str_procnumber[125];			sprintf(str_procnumber,"%d",eventcntLib);
+    	char str_procnumber[125];			
+	sprintf(str_procnumber,"%li",eventcntLib);
     	string strprocname (string("PROC") + string(str_procnumber));
     	strcpy(keyname,strprocname.c_str());
     	string strprocval (string("PROC") + string(str_procnumber) + string(" Starting parameter list"));

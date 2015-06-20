@@ -14,4 +14,4 @@ dist_pfiles_DATA=tessim.par
 bin_PROGRAMS=tessim
 
 tessim_SOURCES=tessim.c tessim.h tessim_datastream.c tessim_tesrecord.c tessim_impactlist.c tes_simulation.c tessim_trigger.c
-tessim_LDADD =@top_builddir@/libsixt/libsixt.la
+tessim_LDADD =@top_builddir@/libsixt/libsixt.la @top_builddir@/extlib/progressbar/libprogressbar.la

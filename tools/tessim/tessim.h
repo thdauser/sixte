@@ -8,6 +8,7 @@
 #include "pixelimpactfile.h"
 #include "testriggerfile.h"
 #include "tesrecord.h"
+#include "progressbar.h"
 
 #include <gsl/gsl_odeiv2.h>
 #include <gsl/gsl_errno.h>
@@ -48,12 +49,14 @@ typedef struct {
   unsigned long preBufferSize; // number of samples to keep before trigger
   unsigned long triggerSize; // total number of samples to record
 
-  int clobber;  // overwrite output files? -- IGNORED SO FAR
+  int clobber;  // overwrite output files?
   int simnoise; // simulator noise 
 
   double m_excess; // magnitude of excess noise
 
   unsigned long seed; // seed of random number generator
+
+  progressbar *progressbar; // progress bar (or NULL if we don't show it)
   
 } tespxlparams;
 
@@ -101,7 +104,7 @@ struct tesparams {
   double delta_t;     // integration step size
   double sample_rate; // sample rate (Hz)
   double timeres;     // time resolution for this stream (1/sample_rate)
-  int decimate_factor; // step size vs. sample rate
+  unsigned int decimate_factor; // step size vs. sample rate
   double bandwidth; // needed for the noise simulation
 
   double imin;    // minimum current to encode [A]
@@ -163,6 +166,7 @@ struct tesparams {
   tes_stream_writer write_to_stream; // function to write the pulse (function pointer)
   tes_photon_writer write_photon; // function to save a processed photon (function pointer)
 
+  progressbar *progressbar; // progress bar (or NULL if we don't show it)
 };
 
 //
@@ -299,5 +303,6 @@ void tes_print_params(tesparams *tes);
 void tes_fits_write_params(fitsfile *fptr,tesparams *tes, int *status);
 void tes_fits_read_params(char *file,tespxlparams *tes, int *status);
 
+#define PROGRESSBAR_FACTOR 10
 
 #endif

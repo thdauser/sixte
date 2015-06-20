@@ -127,9 +127,11 @@ int tessim_main() {
     }
 
     // Run the simulation
-    printf("RUNNING!\n");
+
     tes_propagate(tes,par.tstop,&status);
-    printf("DONE!\n");
+    if (tes->progressbar!=NULL) {
+      progressbar_finish(tes->progressbar);
+    }
     CHECK_STATUS_BREAK(status);
 
     // write the file and free all allocated memory
@@ -254,7 +256,16 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_long("seed", &seed, status);
   par->seed=labs(seed); 
 
+
   query_simput_parameter_bool("propertiesonly",properties,status);
+
+  int progressbar;
+  query_simput_parameter_bool("progressbar",&progressbar,status);
+  if (progressbar) {
+    par->progressbar=progressbar_new("simulating",
+				     (unsigned long) ((par->tstop-par->tstart)*PROGRESSBAR_FACTOR));
+  }
+
 
   query_simput_parameter_bool("clobber", &par->clobber, status);
 
