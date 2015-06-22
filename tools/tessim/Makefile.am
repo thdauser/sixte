@@ -1,5 +1,5 @@
 AM_CPPFLAGS =-I@top_srcdir@/libsixt
-AM_CFLAGS =-I@top_srcdir@/extlib/progressbar 
+AM_CFLAGS =-I@top_srcdir@/extlib/progressbar/include
 
 ########## DIRECTORIES ###############
 
