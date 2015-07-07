@@ -52,6 +52,7 @@ void phdetGenDet(GenDet* const det,
     // Add the impact to the detector array. If it is absorbed
     // by at least one valid pixel, increase the counter for
     // the number of detected photons.
+//   printf("new impact:\n time=%lf, det->frametime=%lf\n", impact->time, det->frametime);
     if (addGenDetPhotonImpact(det, impact, status) > 0) {
       n_detected_photons++;
     }

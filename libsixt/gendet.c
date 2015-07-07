@@ -482,6 +482,11 @@ void operateGenDetClock(GenDet* const det,
 	  det->clocklist->time       +=nframes*det->frametime;
 	  det->clocklist->frame      +=nframes;
 	  det->clocklist->readout_time=det->clocklist->time;
+	  // Don't forget to add the time difference also to the single lines
+	  int ii;
+	  for(ii=0; ii<det->pixgrid->ywidth; ii++){
+	    det->line[ii]->last_readouttime+=nframes*det->frametime;
+	  }
 	}
 
 	// Reset the flag.
@@ -975,7 +980,7 @@ int addDepfetSignal(GenDet* const det,
   
   double rtime=time-line->last_readouttime;
   //printf("New event: rtime=%lf\n", rtime);
-  
+//printf("last readout time of line: %lf\n", line->last_readouttime);  
   if(det->depfet.istorageflag==0){
     // Normal DEPFET.
       
@@ -983,6 +988,7 @@ int addDepfetSignal(GenDet* const det,
   
     // Check if the time makes sense
     if(rtime<0 || rtime>det->frametime){
+puts("time oob: rtime<0 || rtime>det->frametime");
       SIXT_ERROR("time since the start of the frame out of bounds.");
     }
     
@@ -1012,6 +1018,7 @@ int addDepfetSignal(GenDet* const det,
 	// In the following cases, there is always a carry to the next frame
 	line->anycarry=1;
 	sign=-1;
+//if(sign<0)printf("sign=%d: row=%d; rtime=%le; frametime=%le; t_wait=%le, \n", sign, row, rtime, det->frametime, t_wait);
 	
 	// Set PH_ID and SRC_ID in carry-arrays.
 	if (line->ccarry[colnum]<0.001) {
@@ -1079,9 +1086,11 @@ int addDepfetSignal(GenDet* const det,
     
     // Check if the time makes sense
     if(t_frame<0 || t_frame>det->frametime){
+puts("time oob: t_frame<0 || t_frame>det->frametime");
       SIXT_ERROR("time since the start of the frame out of bounds.");
     } 
     if(rtime<0 || rtime>det->frametime){
+puts("time oob: rtime<0 || rtime>det->frametime");
       SIXT_ERROR("time since the start of the frame out of bounds.");
     }
     
