@@ -97,26 +97,23 @@ void getGenDetAffectedPixel(const GenPixGrid* const grid,
     *xi=-1; 
     *yi=-1;
     return;
-  } 
-
-  // Check if the impact is located on the pixel border. 
-  else if (grid->xborder>0.) {
-    if ((grid->xrval+(*xi-grid->xrpix+1.5)*grid->xdelt-x<grid->xborder) ||
-	(x-grid->xrval+(*xi-grid->xrpix+0.5)*grid->xdelt<grid->xborder)) {
-      *xi=-1;
-      *yi=-1;
-      return;
+  } else { 
+    // Check if the impact is located on one of the pixel borders
+    if (grid->xborder>0. || grid->yborder>0.) {
+      if ((grid->xrval+(*xi-grid->xrpix+1.5)*grid->xdelt-x<grid->xborder) ||
+	  (x-grid->xrval+(*xi-grid->xrpix+0.5)*grid->xdelt<grid->xborder)) {
+	*xi=-1;
+	*yi=-1;
+	return;
+      }
+      if ((grid->yrval+(*yi-grid->yrpix+1.5)*grid->ydelt-y<grid->yborder) ||
+	  (y-grid->yrval+(*yi-grid->yrpix+0.5)*grid->ydelt<grid->yborder)) {
+	*xi=-1;
+	*yi=-1;
+	return;
+      }
     }
   }
-  else if (grid->yborder>0.) {
-    if ((grid->yrval+(*yi-grid->yrpix+1.5)*grid->ydelt-y<grid->yborder) ||
-	(y-grid->yrval+(*yi-grid->yrpix+0.5)*grid->ydelt<grid->yborder)) {
-      *xi=-1;
-      *yi=-1;
-      return;
-    }
-  }
-
 
   // Calculate the relative position with respect to the left 
   // and lower pixel boundaries.
