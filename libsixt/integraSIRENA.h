@@ -30,6 +30,19 @@
 #include "teseventlist.h"
 
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+
+typedef struct {
+  /** Number of rows */
+  int matrixRows;
+
+  /** Number of columns */
+    int matrixColumns;
+
+  /** Matrix */
+  gsl_matrix *matrixBody;
+
+} MatrixStruct;
 
 typedef struct {
   /** Duration of the pulse template in the library */
@@ -101,6 +114,28 @@ typedef struct {
   /** Vector containing all the matched filters from the library */
   MatchedFilter* matched_filters_B0;
 
+  /** Weight matrix */
+  //MatrixStruct* W;
+  gsl_matrix *W;
+
+  /** T vector */
+  gsl_matrix *T;
+
+  /** t escalar */
+  gsl_vector *t;
+
+  /** X matrix */
+  gsl_matrix *X;
+
+  /** Y vector */
+  gsl_matrix *Y;
+
+  /** Z vector */
+  gsl_matrix *Z;
+
+  /** r escalar */
+  gsl_vector *r;
+
 } LibraryCollection;
 
 typedef struct {
@@ -125,8 +160,13 @@ typedef struct {
   int grade1;
  
   /** Distance to previous pulse in record (samples)*/
+  /** tstart(i)-tend(i-1)*/
   int grade2;
   
+  /** Distance to the begining of the previous pulse in record (samples)*/
+  /** tstart(i)-tstart(i-1)*/
+  int grade2_1;
+
   /** PIX_ID of the detected pulse*/
   int pixid;
   
@@ -212,6 +252,9 @@ typedef struct {
     /** Library creation mode? (Y:1, N:0) **/
 	int crtLib;
 
+	/** Last energy to be included in the library file?? (Y:1, N:0) **/
+	int lastELibrary;
+
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
 	
@@ -230,11 +273,17 @@ typedef struct {
     /** Noise spectrum **/
 	NoiseSpec* noise_spectrum;
 
+	/** Pixel Type: SPA, LPA1, LPA2, LPA3 **/
+	char PixelType[5];
+
 	/** Filtering Domain: T (Time) or F (Frequency) **/
     char FilterDomain[2];
 
     /** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
     char FilterMethod[3];
+
+    /** Energy Method: NOLAGS, LAGS or WEIGHT **/
+    char EnergyMethod[7];
 
     /** Energy Calibration type: Linear (1), Quadratic (2) **/
     int calibLQ;
@@ -284,8 +333,8 @@ extern "C"
 #endif
 
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, char* const library_file,
-	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int mode,
-	double LrsT, double LbT, double baseline, char* const noise_file, char* filter_domain, char* filter_method,
+	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int lastELibrary,
+	int mode, double LrsT, double LbT, double baseline, char* const noise_file, char* pixel_type, char* filter_domain, char* filter_method, char* energy_method,
 	int calibLQ,  double b_cF, double c_cF,	double monoenergy,
 	int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int maxPulsesPerRecord,
 	int* const status);
@@ -326,7 +375,7 @@ extern "C"
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 /** Create and retrieve a LibraryCollection from a file. */
-LibraryCollection* getLibraryCollection(const char* const filename, int* const status);
+LibraryCollection* getLibraryCollection(const char* const filename, int mode, int crtLib, char *energy_method, int* const status);
 
 /** LibraryCollection constructor. Returns a pointer to an empty LibraryCollection data structure. */
 LibraryCollection* newLibraryCollection(int* const status);

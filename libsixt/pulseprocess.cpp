@@ -417,6 +417,7 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 	//if (mean2>1e10)	*threshold = 1e10;
 	//else	*threshold = mean2+nSigmas*sg2;	// HARDPOINT!!!!!!!!!!!!!!!!!!! (nSigmas)
 	*threshold = mean2+nSigmas*sg2;	// HARDPOINT!!!!!!!!!!!!!!!!!!! (nSigmas)
+	//cout<<"threshold: "<<*threshold<<" sg: "<<sg2<<endl;
 
 	gsl_vector_free(invectorNew);
 
@@ -1202,23 +1203,28 @@ int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethr
 	{
 		if ((gsl_vector_get(der,i) > adaptativethreshold) && (prevPulse == false))
 		{
+			//cout<<"IfA: "<<i<<endl;
 			if( i>1 && ((gsl_vector_get(der,i)-gsl_vector_get(der,i-1)) <
 			           0.5*(gsl_vector_get(der,i-1)-gsl_vector_get(der,i-2)))  )
 			{
 				maxFound = true;
+				//cout<<"IfA1: "<<i<<endl;
 			}
 		      
 			if (cntUp == 0)
 			{
+				//cout<<"IfA2: "<<i<<endl;
 				possibleTstart=i;
 
 				if(maxFound==false)
 				{
+					//cout<<"IfA2_1: "<<i<<endl;
 				    gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(der,i));
 				}
 
 				if ((nSamplesUp == 1) || ((nSamplesUp != 1) && (i == szRw-2)))
 				{
+					//cout<<"IfA3_1: "<<i<<endl;
 					if (possibleTstart == 0)
 					{
 					    gsl_vector_set(tstartDER,*numberPulses,possibleTstart);
@@ -1240,6 +1246,7 @@ int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethr
 			}
 			else if (cntUp == nSamplesUp-1)
 			{
+				//cout<<"IfA3: "<<i<<endl;
 				if (possibleTstart == 0)
 				{
 					gsl_vector_set(tstartDER,*numberPulses,possibleTstart);
@@ -1271,6 +1278,7 @@ int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethr
 		}
 		else if ((gsl_vector_get(der,i) > adaptativethreshold))
 		{
+			//cout<<"IfB: "<<i<<endl;
 			if (gsl_vector_get(der,i) > gsl_vector_get(*maxDERgsl,*numberPulses-1) &&
 					(gsl_vector_get(der,i) > gsl_vector_get(der,i-1)) &&
 					(maxFound == false))
@@ -1279,15 +1287,18 @@ int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethr
 				if(((gsl_vector_get(der,i)-gsl_vector_get(der,i-1)) <
 				      0.5*(gsl_vector_get(der,i-1)-gsl_vector_get(der,i-2))) && i>1)
 				{
+					//cout<<"IfB1_1: "<<i<<endl;
 					maxFound = true;
 				}
 				else
 				{
+					//cout<<"IfB2_2: "<<i<<endl;
 					gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(der,i));
-				  }
+				}
 			}
 			else if (gsl_vector_get(der,i) <= gsl_vector_get(der,i-1))
 			{
+				//cout<<"IfB2: "<<i<<endl;
 				maxFound = true;
 			}
 				
@@ -1296,11 +1307,13 @@ int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethr
 		}
 		else if (gsl_vector_get(der,i) <= adaptativethreshold)
 		{
+			//cout<<"IfC: "<<i<<endl;
 			if (prevPulse == true)
 			{
 				cntDown = cntDown+1;
 				if (cntDown == 1)
 				{
+					//cout<<"IfC_1: "<<i<<endl;
 					possibleTend = i;
 					if (nSamplesUp == 1)
 					{
@@ -1311,6 +1324,7 @@ int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethr
 				}
 				else if (cntDown == nSamplesUp)
 				{
+					//cout<<"IfC_2: "<<i<<endl;
 					gsl_vector_set(tendDER,*numberPulses-1,possibleTend);
 					prevPulse = false;
 					maxFound = false;
@@ -1443,12 +1457,17 @@ int findTstartPROD (int maxPulsesPerRecord, gsl_vector *adjustedDerivative, doub
 					}
 					else
 					{
+						//cout<<"If152 "<<i<<endl;
 						//cout<<"If152 "<<i<<" maxDER = "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						if (foundPulse == true)	gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,i));
 						else 					gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(adjustedDerivative,i));
 
 					}
 				}
+			}
+			else
+			{
+				cntUp = 0;
 			}
 
 			i++;
@@ -1458,18 +1477,25 @@ int findTstartPROD (int maxPulsesPerRecord, gsl_vector *adjustedDerivative, doub
 		if (foundPulse == true)
 		{
 			//cout<<"If2 "<<i<<" maxDER="<<gsl_vector_get(*maxDERgsl,*numberPulses-1)<<endl;
+			//cout<<"If2 "<<i<<endl;
 			if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,*numberPulses-1), reconstruct_init, &model))
 			{
 				message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
 				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 			}
 
+			//cout<<"jmin: "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<endl;
+			//cout<<"jmax: "<<min(gsl_vector_get(*tstartgsl,*numberPulses-1)+reconstruct_init->pulse_length,(double) sizeRecord)<<endl;
+			//cout<<"AD5097: "<<gsl_vector_get(adjustedDerivative,5097)<<endl;
+			//for (int k=gsl_vector_get(*tstartgsl,*numberPulses-1);k<gsl_vector_get(*tstartgsl,*numberPulses-1)+10;k++) cout<<k<<" "<<gsl_vector_get(adjustedDerivative,k)<<" "<<gsl_vector_get(model,k-gsl_vector_get(*tstartgsl,*numberPulses-1))<<endl;
 			for (int j=gsl_vector_get(*tstartgsl,*numberPulses-1);j<min(gsl_vector_get(*tstartgsl,*numberPulses-1)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
 			{
 				gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,*numberPulses-1)));
+
 			}
-			//cout<<"adjustedDerivative"<<*numberPulses<<endl;
-			//for (int j=995;j<1020;j++) cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<endl;
+			//cout<<"adjustedDerivative "<<*numberPulses<<endl;
+			//for (int j=995;j<1200;j++) cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<endl;
+			//for (int j=gsl_vector_get(*tstartgsl,*numberPulses-1);j<gsl_vector_get(*tstartgsl,*numberPulses-1)+10;j++) cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<endl;
 		}
 		i = i - nSamplesUp;
 

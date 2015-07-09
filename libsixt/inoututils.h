@@ -86,6 +86,7 @@
 
 	int readFitsSimple(IOData obj, gsl_vector **result);
 	int readFitsComplex(IOData obj, gsl_matrix **result);
+	int readFitsImage(IOData obj, gsl_matrix **result);
 
 	int writeFitsSimple (IOData obj,gsl_vector *vector);
 	int writeFitsComplex(IOData obj, gsl_matrix *matrix);

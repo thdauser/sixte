@@ -76,11 +76,13 @@ int tesreconstruction_main() {
     		par.DerivateExclusion,par.SaturationValue,&status);
 	  
     }else{
+    	//printf("Antes de initialize \n");
 	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, par.LibraryFile, par.TesEventFile,
-		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.crtLib,
-		par.mode, par.LrsT, par.LbT, par.baseline, par.NoiseFile, par.FilterDomain, par.FilterMethod,
+		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.crtLib, par.lastELibrary,
+		par.mode, par.LrsT, par.LbT, par.baseline, par.NoiseFile, par.PixelType, par.FilterDomain, par.FilterMethod, par.EnergyMethod,
 		par.calibLQ, par.b_cF,par.c_cF, par.monoenergy, par.intermediate, par.detectFile,
 		par.filterFile, par.RecordFileCalib2, par.monoenergy2, par.clobber, par.EventListSize, &status);
+	  //printf("Despues de initialize \n");
     }  
     CHECK_STATUS_BREAK(status);
 
@@ -106,11 +108,16 @@ int tesreconstruction_main() {
       {
 	    nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
-	    /*if(nrecord <35) {
+	    /*if(nrecord < 1) {
 	      continue;
-	    }else if(nrecord>35){
+	    }else if(nrecord > 1){
 	      status=1;
 	      CHECK_STATUS_BREAK(status);
+	    }*/
+	    /*if(nrecord > 2)
+	    {
+	    	status=1;
+	        CHECK_STATUS_BREAK(status);
 	    }*/
 	    //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
 	    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
@@ -360,6 +367,12 @@ int getpar(struct Parameters* const par)
 		SIXT_ERROR("parameter error: mode=1 (production) and crtLib=1 (library creation - calibration)");
 		return(status);
 	}
+
+	status=ape_trad_query_int("lastELibrary", &par->lastELibrary);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the lastELibrary parameter");
+		return(status);
+	}
   
 	status=ape_trad_query_double("LrsT", &par->LrsT);
 	if (EXIT_SUCCESS!=status) {
@@ -415,6 +428,14 @@ int getpar(struct Parameters* const par)
 	strcpy(par->NoiseFile, sbuffer);
 	free(sbuffer);
 		
+	status=ape_trad_query_string("PixelType", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the Pixel type");
+		return(status);
+	}
+	strcpy(par->PixelType, sbuffer);
+	free(sbuffer);
+
 	status=ape_trad_query_string("FilterDomain", &sbuffer);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the Filter domain");
@@ -429,6 +450,14 @@ int getpar(struct Parameters* const par)
 		return(status);
 	}
 	strcpy(par->FilterMethod, sbuffer);
+	free(sbuffer);
+
+	status=ape_trad_query_string("EnergyMethod", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the Energy method");
+		return(status);
+	}
+	strcpy(par->EnergyMethod, sbuffer);
 	free(sbuffer);
   
 	status=ape_trad_query_int("calibLQ", &par->calibLQ);

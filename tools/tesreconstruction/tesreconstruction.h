@@ -93,9 +93,12 @@ struct Parameters {
 	//Number of standard deviations in the kappa-clipping process for threshold estimation
 	double nSgms;
 	
-	//Run for Library creation?: Y (1), N(0)
+	//Run for Library creation?: Y(1), N(0)
 	int crtLib;
 	
+	//Last energy to be included in the library file?: Y(1), N(0)
+	int lastELibrary;
+
 	//Calibration run (0) or energy reconstruction run (1)?
 	int mode;
 
@@ -114,12 +117,18 @@ struct Parameters {
 	//Noise filename
 	char NoiseFile[MAXFILENAME];
 	
+	//Pixel Type: SPA, LPA1, LPA2 or LPA3
+	char PixelType[5];
+
 	//Filtering Domain: Time(T) or Frequency(F)
 	char FilterDomain[2];
 
 	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
 	char FilterMethod[3];
 	
+	//Energy Method: NOLAGS, LAGS or WEIGHT **/
+	char EnergyMethod[7];
+
 	//Linear (1) or Quadratic calibration of the energies (2)
 	int calibLQ;
 	

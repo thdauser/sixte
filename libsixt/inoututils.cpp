@@ -249,6 +249,93 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 /*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
+int readFitsImage(IOData obj, gsl_matrix **result)
+{
+	long nRows = 0L;
+	int type,extver=0,colnum=0,anynulls=0;
+	int maxdim=1;
+	int naxis, status=EPOK;
+	long naxes=0, matrixdim, nelemsInRow;
+	double *bufferD = NULL;
+	int *bufferJ = NULL;
+	short *bufferI = NULL;
+	double nullval=-99;
+	string message = "";
+
+	if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
+	{
+	    message = "Cannot move to HDU " + string(obj.nameTable);
+	    EP_PRINT_ERROR(message,status);
+	}
+	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
+	{
+	    message = "Cannot access column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
+	    EP_PRINT_ERROR(message,status);
+
+	}
+	//MC read length of multidim array in each row (naxes[0] equal to the repeat count in the TFORM keyword: Ej. 703D)
+
+	if (fits_read_tdim(obj.inObject, colnum, 1, &naxis, &naxes, &status))
+	{
+	    message = "Cannot read multidim column " + string(obj.nameCol) + " information in table " + string(obj.nameTable);
+	    EP_PRINT_ERROR(message,status);
+	}
+	nelemsInRow = naxes;
+
+	nRows = obj.endRow - obj.iniRow + 1; // Number of rows of the fits to read
+	// binSize = obj.endCol - obj.iniCol + 1; //number of columns of the matrix to read
+	matrixdim = nelemsInRow*nRows;
+
+	//double *bufferD = new double [5];
+	//double bufferD[matrixdim];
+
+   	switch (obj.type)
+   	{
+		case TDOUBLE:
+			bufferD = new double [matrixdim];
+			if (fits_read_col(obj.inObject, TDOUBLE, colnum, obj.iniRow, 1, matrixdim, &nullval, bufferD, &anynulls, &status))
+			{
+				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+				EP_PRINT_ERROR(message,status);
+			}
+			//status = toGslMatrix((void **)&bufferD,&(*result),nelemsInRow,nRows,obj.type,0);
+			cout<<"InoutUtils1"<<endl;
+			status = toGslMatrix((void **)&bufferD,&(*result),nelemsInRow,nelemsInRow,obj.type,0);
+			cout<<"InoutUtils2"<<endl;
+			delete[] bufferD;
+			break;
+		case TINT:
+			bufferJ = new int [matrixdim];
+			if (fits_read_col(obj.inObject, TINT, colnum, obj.iniRow, 1, nRows, &nullval, bufferJ, &anynulls, &status))
+			{
+				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+				EP_PRINT_ERROR(message,status);
+			}
+			status = toGslMatrix((void **)&bufferJ,&(*result),nelemsInRow,nRows,obj.type,0);
+			delete[] bufferJ;
+			break;
+		case TSHORT:
+			bufferI = new short [matrixdim];
+			if (fits_read_col(obj.inObject, TSHORT, colnum, obj.iniRow, 1, nRows, &nullval, bufferI, &anynulls, &status))
+			{
+				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+				EP_PRINT_ERROR(message,status);
+			}
+			status = toGslMatrix((void **)&bufferI,&(*result),nelemsInRow,nRows,obj.type,0);
+			delete[] bufferI;
+			break;
+	}
+
+   	if (status == EPFAIL)
+   	{
+   		message = "Cannot convert " + string(obj.nameCol) + " to GSL vector";
+   		EP_PRINT_ERROR(message,EPFAIL);
+	}
+
+	return EPOK;
+}
+
+
 /***** SECTION 4 ************************************
 * writeFitsSimple function: This function reads values of a GSL vector.	After that, the function put it into a
 *                           column of output FITS file
@@ -387,7 +474,9 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 	char tform1[20];
 	string strtf1="",strcol="", message="";
 	
-	dim=matrix->size2;
+	//dim=matrix->size2;
+	if (matrix->size1 == 1)		dim = matrix->size2;
+	else						dim = matrix->size1*matrix->size2;
 	sprintf(chardim,"%d",dim);
 	switch ((int)obj.type)
 	{
@@ -648,18 +737,14 @@ int interactivePars(inparam *taskPars, int np, string task)
 		if (taskPars[i].type == "char")
 		{
 			cout << taskPars[i].description << " [" << taskPars[i].defValStr << "]:";
-			if ( fgets(buf, sizeof(buf), stdin)==NULL) {
-			  return(EPFAIL);
-			}
+			fgets(buf, sizeof(buf), stdin);
 			*strchr(buf, '\n') = '\0';
 			if (strlen(buf) != 0) taskPars[i].ValStr = buf;
 		}
 		else if (taskPars[i].type == "int")
 		{
 			cout << taskPars[i].description << " [" << taskPars[i].defValInt << "]:";
-			if ( fgets(buf, sizeof buf, stdin)==NULL) {
-			  return(EPFAIL);
-			}
+			fgets(buf, sizeof buf, stdin);
 			*strchr(buf, '\n') = '\0';
 			if (strlen(buf) != 0)
 			{
@@ -675,9 +760,7 @@ int interactivePars(inparam *taskPars, int np, string task)
 		else
 		{
 			cout << taskPars[i].description << " [" << taskPars[i].defValReal << "]:";
-			if ( fgets(buf, sizeof buf, stdin)==NULL) {
-			  return(EPFAIL);
-			}
+			fgets(buf, sizeof buf, stdin);
 			*strchr(buf, '\n') = '\0';
 			if (strlen(buf) != 0)
 			{
