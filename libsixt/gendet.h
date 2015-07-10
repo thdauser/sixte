@@ -196,6 +196,10 @@ typedef struct {
   
   /** Properties of the DEPFET sensor. */
   DepfetProp depfet;
+  
+  /** MIN and MAX indices of readout indices. */
+  int rawymin;
+  int rawymax;
 
 } GenDet;
 

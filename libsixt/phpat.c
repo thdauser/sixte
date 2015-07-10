@@ -368,8 +368,8 @@ void phpat(GenDet* const det,
 	      // Check for border pixels.
 	      if ((0==neighborlist[kk]->rawx)||
 		  (neighborlist[kk]->rawx==det->pixgrid->xwidth-1)||
-		  (0==neighborlist[kk]->rawy)||
-		  (neighborlist[kk]->rawy==det->pixgrid->ywidth-1)) {
+		  (det->rawymin==neighborlist[kk]->rawy)||
+		  (neighborlist[kk]->rawy==det->rawymax)) {
 		border=1;
 	      }
 	    }

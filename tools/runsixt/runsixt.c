@@ -156,7 +156,7 @@ int runsixt_main()
     // Load the instrument configuration.
     inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Set the usage of the detector background according to
     // the respective program parameter.
     setGenDetIgnoreBkg(inst->det, !par.Background);

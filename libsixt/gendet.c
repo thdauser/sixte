@@ -55,6 +55,8 @@ GenDet* newGenDet(int* const status)
   det->frametime    =0.;
   det->deadtime     =0.;
   det->cte          =1.;
+  det->rawymin	    =INT_MAX;
+  det->rawymax	    =0;
   det->threshold_readout_lo_keV=0.;
   det->threshold_event_lo_keV  =0.;
   det->threshold_split_lo_keV  =0.;
@@ -303,6 +305,7 @@ void GenDetReadoutLine(GenDet* const det,
   headas_chat(5, "read out line %d as %d\n", lineindex, readoutindex);
 
   GenDetLine* line=det->line[lineindex];
+  line->last_readouttime=det->clocklist->time;
 
   if (0!=line->anycharge) {
     int ii;
@@ -318,7 +321,6 @@ void GenDetReadoutLine(GenDet* const det,
     line->anycharge=line->anycarry;
     line->anycarry=0;
   }
-  line->last_readouttime=det->clocklist->time;
 }
 
 
@@ -925,34 +927,37 @@ void addGenDetCharge2Pixel(GenDet* const det,
 
   // Check if the pixel is sensitive right now.
   if ((time<line->deadtime[column])&&(time>=0.0)) return;
+  // Check if pixel is in a readout area
+  if(row>=det->rawymin && row<=det->rawymax){
   
-  float oldcharge=line->charge[column];
+    float oldcharge=line->charge[column];
 
-  // Add the signal.
-  int sign=1;
-  if(det->depfet.depfetflag!=1){
-    line->charge[column]+=signal;
-  }else{
-    sign=addDepfetSignal(det, column, row, signal, time, ph_id, src_id);
-  }
-  line->anycharge      =1;
+    // Add the signal if the event is inside the readout window.
+    int sign=1;
+    if(det->depfet.depfetflag!=1){
+      line->charge[column]+=signal;
+    }else{
+      sign=addDepfetSignal(det, column, row, signal, time, ph_id, src_id);
+    }
+    line->anycharge      =1;
   
-  // Set PH_ID and SRC_ID.
-  if (oldcharge<0.001) {
-    // If the charge collect in the pixel up to now is below 1eV,
-    // overwrite the old PH_ID and SRC_ID by the new value.
-    line->ph_id[column][0] =sign*ph_id;
-    line->src_id[column][0]=src_id;
+    // Set PH_ID and SRC_ID.
+    if (oldcharge<0.001) {
+      // If the charge collect in the pixel up to now is below 1eV,
+      // overwrite the old PH_ID and SRC_ID by the new value.
+      line->ph_id[column][0] =sign*ph_id;
+      line->src_id[column][0]=src_id;
 
-  } else if (signal>0.001) {
-    // Only store the PH_ID and SRC_ID of the new contribution
-    // if its signal is above 1eV.
-    long ii;
-    for (ii=0; ii<NEVENTPHOTONS; ii++) {
-      if (0==line->ph_id[column][ii]) {
-	line->ph_id[column][ii] =sign*ph_id;
-	line->src_id[column][ii]=src_id;
-	break;
+    } else if (signal>0.001) {
+      // Only store the PH_ID and SRC_ID of the new contribution
+      // if its signal is above 1eV.
+      long ii;
+      for (ii=0; ii<NEVENTPHOTONS; ii++) {
+	if (0==line->ph_id[column][ii]) {
+	  line->ph_id[column][ii] =sign*ph_id;
+	  line->src_id[column][ii]=src_id;
+	  break;
+	}
       }
     }
   }
@@ -989,6 +994,8 @@ int addDepfetSignal(GenDet* const det,
     // Check if the time makes sense
     if(rtime<0 || rtime>det->frametime){
 puts("time oob: rtime<0 || rtime>det->frametime");
+printf("line     =%d\nframe    =%ld\ntime     =%lf \nl_readout=%lf \nrtime    =%lf \nf_time   =%lf\n",
+	row, det->clocklist->frame, time, line->last_readouttime, rtime, det->frametime);
       SIXT_ERROR("time since the start of the frame out of bounds.");
     }
     

@@ -435,6 +435,12 @@ static void GenInstXMLElementStart(void* parsedata,
       SIXT_ERROR("negative index for readout line");
       return;
     }
+    if(readoutindex>xmlparsedata->inst->det->rawymax){
+      xmlparsedata->inst->det->rawymax=readoutindex;
+    }
+    if(readoutindex<xmlparsedata->inst->det->rawymin){
+      xmlparsedata->inst->det->rawymin=readoutindex;
+    }
     CLReadoutLine* clreadoutline=
       newCLReadoutLine(lineindex, readoutindex, &xmlparsedata->status);
     append2ClockList(xmlparsedata->inst->det->clocklist, CL_READOUTLINE, 
