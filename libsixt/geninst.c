@@ -296,6 +296,16 @@ void parseGenInstXML(GenInst* const inst,
       return;    
     }
   }
+  
+  
+    
+  // change borders for event driven detectors
+    
+  if(GENDET_TIME_TRIGGERED!=inst->det->readout_trigger){
+    inst->det->rawymin=0;	
+    inst->det->rawymax=inst->det->pixgrid->ywidth-1;
+  }
+    
   // END of checking, if all detector parameters have successfully been 
   // read from the XML file.
 }

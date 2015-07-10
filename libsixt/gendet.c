@@ -928,7 +928,7 @@ void addGenDetCharge2Pixel(GenDet* const det,
   // Check if the pixel is sensitive right now.
   if ((time<line->deadtime[column])&&(time>=0.0)) return;
   // Check if pixel is in a readout area
-  if(row>=det->rawymin && row<=det->rawymax){
+  if(GENDET_TIME_TRIGGERED==det->readout_trigger && (row>=det->rawymin && row<=det->rawymax)){
   
     float oldcharge=line->charge[column];
 
