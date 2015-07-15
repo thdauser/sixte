@@ -254,6 +254,9 @@ int ero_exposure_main()
     } else if (2==par.projection) {
       strcpy(wcs.ctype[0], "RA---SIN");
       strcpy(wcs.ctype[1], "DEC--SIN");
+    } else if (3==par.projection) {
+      strcpy(wcs.ctype[0], "GLON-AIT");
+      strcpy(wcs.ctype[1], "GLAT-AIT");
     } else {
       SIXT_ERROR("projection type not supported");
       status=EXIT_FAILURE;
@@ -639,7 +642,7 @@ int ero_exposure_getpar(struct Parameters *par)
   par->dec2*=M_PI/180.;
 
   // Convert angles from [arc min] to [rad].
-  par->fov_diameter*=M_PI/180.; 
+  par->fov_diameter*=M_PI/180./60.; 
   
   return(status);
 }
