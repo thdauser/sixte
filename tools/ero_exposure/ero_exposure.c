@@ -254,6 +254,9 @@ int ero_exposure_main()
     } else if (2==par.projection) {
       strcpy(wcs.ctype[0], "RA---SIN");
       strcpy(wcs.ctype[1], "DEC--SIN");
+    } else if (3==par.projection) {
+      strcpy(wcs.ctype[0], "GLON-AIT");
+      strcpy(wcs.ctype[1], "GLAT-AIT");
     } else {
       SIXT_ERROR("projection type not supported");
       status=EXIT_FAILURE;
