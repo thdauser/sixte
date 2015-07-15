@@ -264,6 +264,8 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   if (progressbar) {
     par->progressbar=progressbar_new("simulating",
 				     (unsigned long) ((par->tstop-par->tstart)*PROGRESSBAR_FACTOR));
+  } else {
+	par->progressbar=NULL;
   }
 
 
