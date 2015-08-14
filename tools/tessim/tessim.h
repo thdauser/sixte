@@ -29,13 +29,20 @@ typedef struct {
   double tstart; // start time of simulation
   double tstop;  // stop time of simulation
 
+  int acdc;    // ac biased?
+
   double T_start; // initial operating temperature of the TES [K]
   double Tb;     // Heat sink/bath temperature [K]
   double R0;     // Operating point resistance [Ohm]
-  double RL;     // Shut/load resistor value
+  double RL;     // Shut/load resistor value [Ohm]
+  double Rpara;  // Parasitic resistor value [Ohm]
+
+  double TTR;    // Transformer turns ratio
+
   double alpha;  // TES sensitivity (T/R*dR/dT)
   double beta;   // TES current dependence (I/R*dR/dI)
   double Lin;    // Circuit inductance [H]
+  double Lfilter;// Filter inductance [H]
   double Ce1;    // absorber+TES heat capacity at Tc [J/K]
   double Gb1;    // thermal conductance of the bath heat link at Tc [W/K]
   double n;      // Temperature dependence of the power flow to the heat sink
@@ -111,11 +118,25 @@ struct tesparams {
   double imax;    // maximum current to encode [A]
   double aducnv;  // conversion factor current->adu
 
+  int acdc;       // boolean for AC biased (true) or DC biased (false)
+
+
   double T_start; // initial operating temperature of the TES [K]
   double Tb;     // Heat sink/bath temperature [K]
   double R0;     // Operating point resistance [Ohm]
   double RL;     // Shunt/load resistor value [Ohm]
-  double Lin;    // Circuit inductance [H] S
+  double Rpara;  // Parasitic resistor value [Ohm]
+
+  double TTR;    // Transformer Turns Ratio
+
+  double Reff;   // effective resistance (derived from Rl or Rpara) [Ohm]
+
+
+  double Lin;    // Circuit inductance [H] [only used if DC biased]
+  double Lfilter;// Filter inductance [H] [only used if AC biased]
+
+  double Leff;   // Effective inductance (derived from Lin or Lfilter)
+
   double alpha;  // TES sensitivity (T/R*dR/dT)
   double beta;   // TES current dependence (I/R*dR/dI)
   double n;      // Temperature dependence of the power flow to the heat sink

@@ -179,6 +179,8 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   }
 
   if (!fromfile){
+    query_simput_parameter_bool("acbias", &par->acdc, status);
+
     query_simput_parameter_double("sample_rate",&(par->sample_rate),status);
     assert(par->sample_rate>0);
 
@@ -204,15 +206,40 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
     assert(par->I0>0);
     par->I0*=1e-6; // muA->A
 
-    query_simput_parameter_double("RL", &(par->RL), status); // mOhm
-    assert(par->RL>=0);
-    par->RL*=1e-3; // mOhm->Ohm
+    if (par->acdc) {
+      query_simput_parameter_double("Rparasitic", &(par->Rpara), status); // mOhm
+      assert(par->Rpara>=0);
+      par->Rpara*=1e-3; // mOhm->Ohm
+      par->RL=0;
+    } else {
+      query_simput_parameter_double("RL", &(par->RL), status); // mOhm
+      assert(par->RL>=0);
+      par->RL*=1e-3; // mOhm->Ohm
+      par->Rpara=0.;
+    } 
+
+    if (par->acdc) {
+      query_simput_parameter_double("TTR", &(par->TTR), status); 
+      assert(par->TTR>=0);
+    } else {
+      par->TTR=0.;
+    }
+
     query_simput_parameter_double("alpha", &(par->alpha), status);
     assert(par->alpha>0);
     query_simput_parameter_double("beta", &(par->beta), status);
-    query_simput_parameter_double("Lin", &(par->Lin), status); //nH
-    assert(par->Lin>0);
-    par->Lin*=1e-9;
+
+    if (par->acdc) {
+      query_simput_parameter_double("Lfilter", &(par->Lfilter), status); //muH
+      assert(par->Lfilter>0);
+      par->Lfilter*=1e-6;
+      par->Lin=0.;
+    } else {
+      query_simput_parameter_double("Lin", &(par->Lin), status); //nH
+      assert(par->Lin>0);
+      par->Lin*=1e-9;
+      par->Lfilter=0.;
+    }
     query_simput_parameter_double("n", &(par->n), status);
     query_simput_parameter_double("imin", &(par->imin), status);
     query_simput_parameter_double("imax", &(par->imax), status);

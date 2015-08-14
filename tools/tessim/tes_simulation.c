@@ -38,6 +38,7 @@
 // * use stochastic equation solver
 // * implement saturation regime
 // * generate bitstreams of varying bit length (rather than assuming 16bit)
+// * output temperature fluctuation
 //
 //
 
@@ -82,7 +83,10 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
 
   // Electrical circuit equation: dI/dt -- dy_0/dt=f_0(t,y_0(t),y_1(t))
   // note: Vdn, Vexc, Vcn are the Johnson noise terms, Vunk is the unknown noise
-  eqn[0]=(tes->V0-II*(tes->RL+RT)+tes->Vdn+tes->Vexc+tes->Vcn+tes->Vunk)/tes->Lin;
+  eqn[0]=(tes->V0-II*(tes->Reff+RT)+tes->Vdn+tes->Vexc+tes->Vcn+tes->Vunk)/tes->Leff;
+  if (tes->acdc) {
+    eqn[0]=eqn[0]/2.;
+  }
 
   // Thermal equation: dT/dt -- dy_1/dt=f_1(t,y_0(t),y_1(t))
   eqn[1]=(II*II*RT-tes->Pb1
@@ -102,10 +106,16 @@ int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *p
   double RT=tes->R0+tes->dRdT*(TT-tes->T_start)+tes->dRdI*(II-tes->I0_start);
 
   // J_00 = df_0(t,y)/dy0
-  double J00=(tes->RL+RT+II*tes->dRdI)/tes->Lin;
+  double J00=(tes->Reff+RT+II*tes->dRdI)/tes->Leff;
 
   // J_01 = df_0(t,y)/dy1
-  double J01=-tes->dRdT*II/tes->Lin;
+  double J01=-tes->dRdT*II/tes->Leff;
+
+  if (tes->acdc) {
+    J00*=0.5;
+    J01*=0.5;
+  }
+
 
   // J_10 = df_1(t,y)/dy0
   double J10=(2.0*II*RT-II*II*tes->dRdT-(tes->Vdn+tes->Vexc))/tes->Ce1;
@@ -181,9 +191,13 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   double dummy=1.0/tes->aducnv;
   fits_update_key(fptr,TDOUBLE,"ADUCNV",&dummy,"[A/ADU] ADU conversion factor",status);
   fits_update_key(fptr,TDOUBLE,"I0_START",&tes->I0_start,"[A] Initial bias current",status);
+  fits_update_key(fptr,TLOGICAL,"ACDC",&tes->acdc,"True if AC biased",status);
   fits_update_key(fptr,TDOUBLE,"R0",&tes->R0,"[Ohm] Operating point resistance",status);
   fits_update_key(fptr,TDOUBLE,"RL",&tes->RL,"[Ohm] Shunt/load resistor value",status);
+  fits_update_key(fptr,TDOUBLE,"RPARA",&tes->Rpara,"[Ohm] Parasitic resistor value",status);
+  fits_update_key(fptr,TDOUBLE,"TTR",&tes->TTR,"Transformer Turns Ratio",status);
   fits_update_key(fptr,TDOUBLE,"LIN",&tes->Lin,"[H] Circuit inductance",status);
+  fits_update_key(fptr,TDOUBLE,"LFILTER",&tes->Lfilter,"[H] Circuit filter inductance",status);
   fits_update_key(fptr,TDOUBLE,"ALPHA",&tes->alpha,"TES sensitivity T/R*dR/dT (alpha)",status);
   fits_update_key(fptr,TDOUBLE,"BETA",&tes->beta,"TES current dependence I/R*dR/dI (beta)",status);
   fits_update_key(fptr,TDOUBLE,"T_START",&tes->T_start,"[K] Initial operating temperature",status);
@@ -232,6 +246,8 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
   fits_read_key(fptr,TDOUBLE,"DELTAT",&par->sample_rate,comment,status);
   par->sample_rate=1./par->sample_rate; // delta t -> Hz
 
+  fits_read_key(fptr,TINT,"ACDC",&par->acdc,comment,status);
+
   fits_read_key(fptr,TDOUBLE,"CE1",&par->Ce1,comment,status);
   fits_read_key(fptr,TDOUBLE,"GB1",&par->Gb1,comment,status);
 
@@ -242,11 +258,27 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
 
   // yes, really
   fits_read_key(fptr,TDOUBLE,"I0_START",&par->I0,comment,status);
-  fits_read_key(fptr,TDOUBLE,"RL",&par->RL,comment,status);
+
+  if (par->acdc) {
+    fits_read_key(fptr,TDOUBLE,"RPARA",&par->Rpara,comment,status);
+    par->RL=0.;
+    fits_read_key(fptr,TDOUBLE,"TTR",&par->TTR,comment,status);
+  } else {
+    fits_read_key(fptr,TDOUBLE,"RL",&par->RL,comment,status);
+    par->Rpara=0.;
+    par->TTR=0.;
+  }
 
   fits_read_key(fptr,TDOUBLE,"ALPHA",&par->alpha,comment,status);
   fits_read_key(fptr,TDOUBLE,"BETA",&par->beta,comment,status);
-  fits_read_key(fptr,TDOUBLE,"LIN",&par->Lin,comment,status);
+
+  if (par->acdc) {
+    fits_read_key(fptr,TDOUBLE,"LFILTER",&par->Lfilter,comment,status);
+    par->Lin=0.;
+  } else {
+    fits_read_key(fptr,TDOUBLE,"LIN",&par->Lin,comment,status);
+    par->Lfilter=0.;
+  }
 
   fits_read_key(fptr,TDOUBLE,"N",&par->n,comment,status);
   fits_read_key(fptr,TDOUBLE,"IMIN",&par->imin,comment,status);
@@ -278,19 +310,33 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"ADU to current conv. factor [muA/ADU]   : %15.8e\n",1e6/(tes->aducnv));
   headas_chat(0,"\n");
 
+  if (tes->acdc) {
+    headas_chat(0,"TES is AC biased\n");
+  } else {
+    headas_chat(0,"TES is DC biased\n");
+  }
+
   headas_chat(0,"Bath thermal conductance at Tc[pW/K]    : %10.5f\n",1e12*tes->Gb1);
   headas_chat(0,"Absorber+TES heat capacity at Tc [pJ/K] : %10.5f\n",1e12*tes->Ce1);
   headas_chat(0,"Heat sink coupling parameter n          : %10.2f\n",tes->n);
-  headas_chat(0,"Thermal power flow  [pW/K]              : %10.5f\n",1e12*tes->Pb1);
   headas_chat(0,"\n");
 
   headas_chat(0,"TES sensitivity T/R*dR/dT (alpha)       : %10.3f\n",tes->alpha);
   headas_chat(0,"TES current dependence I/R*dR/dI (beta) : %10.3f\n",tes->beta);
   headas_chat(0,"Operating point resistance R0 [mOhm]    : %10.5f\n",1000.*tes->R0);
-  headas_chat(0,"Shunt/load resistor value RL [mOhm]     : %10.5f\n",1000.*tes->RL);
+  if (tes->acdc) {
+    headas_chat(0,"Parasitic resistor value Rpara [mOhm]   : %10.5f\n",1000.*tes->Rpara);
+  } else {
+    headas_chat(0,"Shunt/load resistor value RL [mOhm]     : %10.5f\n",1000.*tes->RL);
+  }
   headas_chat(0,"Initial bias current [muA]              : %10.5f\n",1e6*tes->I0_start);
 
-  headas_chat(0,"Circuit inductance [nH]                 : %10.5f\n",1e9*tes->Lin);
+  if (tes->acdc) {
+    headas_chat(0,"Transformer turns ratio                : %10.5f\n",tes->TTR);
+    headas_chat(0,"Filter inductance [muH]                : %10.5f\n",1e6*tes->Lfilter);
+  } else {
+    headas_chat(0,"Circuit inductance [nH]                 : %10.5f\n",1e9*tes->Lin);
+  }
   headas_chat(0,"\n");
 
   headas_chat(0,"Initial operating temperature [mK]      : %10.3f\n",1000.*tes->T_start);
@@ -317,6 +363,7 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"Derived Properties of the TES\n");
   headas_chat(0,"\n");
 
+
   //
   // The following equations are from Irwin & Hilton, Table 1
   //
@@ -324,10 +371,13 @@ void tes_print_params(tesparams *tes) {
   // I have not yet checked the equations for correctness
   //
 
+  //
+  headas_chat(0,"Thermal power flow  [pW/K]                        : %10.5f\n",1e12*tes->Pb1);
+
   // Biasing of the detector (Smith, thesis, p.19)
   // NOTE: the |0.3| is arbitrary
-  double biaspar=(tes->R0 - tes->RL)/(tes->R0+tes->RL);
-  headas_chat(0,"TES bias parameter (R0-RL)/(R0+RL)     :  %15.5f\n",biaspar);
+  double biaspar=(tes->R0 - tes->Reff)/(tes->R0+tes->Reff);
+  headas_chat(0,"TES bias parameter (R0-Reff)/(R0+Reff)            : %10.5f\n",biaspar);
   if (biaspar > 0.3 ) {
     headas_chat(0,"       --> detector is voltage biased\n");
   } else {
@@ -344,16 +394,23 @@ void tes_print_params(tesparams *tes) {
   double Pj=tes->I0_start*tes->I0_start*tes->R0; 
 
   // thermal conductance (I&H, after eq. 6)
-  double G=tes->Gb1;  // CHECK!
+  double G=tes->Gb1;
 
   // loop gain
   double ell=Pj*tes->alpha/(G*tes->T_start);
 
-  headas_chat(0,"Joule power  [pW]                       : %10.5f\n",1e12*Pj);
-  headas_chat(0,"Loop gain                              : %10.5f\n",ell);
+  headas_chat(0,"Joule power  [pW]                                 : %10.5f\n",1e12*Pj);
+  headas_chat(0,"Loop gain                                         : %10.5f\n",ell);
 
   // heat capacity
   double C=tes->Ce1;
+
+
+  // effective shunt resistance for the AC case
+  if (tes->acdc) {
+    headas_chat(0,"Effective parasitic circuit resistance [mOhm]     : %10.5f\n",1000.*tes->Reff);
+    headas_chat(0,"Effective circuit inductance  [nH]                : %10.5f\n",1e9*tes->Leff);
+  }
 
   //
   // time scales
@@ -366,17 +423,20 @@ void tes_print_params(tesparams *tes) {
   double tau_I=tau/(1.-ell);
 
   // zero-inductance effective thermal
-  double RLR0=tes->RL/tes->R0;
+  double RLR0=tes->Reff/tes->R0;
   double tau_eff=tau*(1.+tes->beta+RLR0)/(1.+tes->beta+RLR0+(1.-RLR0)*ell);
 
   // electrical
-  double tau_el=tes->Lin/(tes->RL+tes->R0*(1.+tes->beta));
+  double tau_el=tes->Leff/(tes->Reff+tes->R0*(1.+tes->beta));
+  if (tes->acdc) {
+    tau_el*=2.;
+  }
 
-  headas_chat(0,"Characteristic timescales (all in mus)\n");
-  headas_chat(0,"    natural                             : %10.5f\n",1e6*tau);
-  headas_chat(0,"    constant current                    : %10.5f\n",1e6*tau_I);
-  headas_chat(0,"    zero-inductance eff. thermal tau_eff: %10.5f\n",1e6*tau_eff);
-  headas_chat(0,"    electrical                          : %10.5f\n",1e6*tau_el);
+  headas_chat(0,"\nCharacteristic timescales (all in mus)\n");
+  headas_chat(0,"    natural                                       : %10.5f\n",1e6*tau);
+  headas_chat(0,"    zero-inductance eff. thermal tau_eff (tau_etf): %10.5f\n",1e6*tau_eff);
+  headas_chat(0,"    electrical                                    : %10.5f\n",1e6*tau_el);
+  headas_chat(0,"    constant current                              : %10.5f\n",1e6*tau_I);
 
   if (tau_I<0.) {
     headas_chat(0,"WARNING: constant current tau is negative!\n");
@@ -388,21 +448,23 @@ void tes_print_params(tesparams *tes) {
 
   // NOTE: the following needs to be checked a little bit more, since even
   // for negative tsqrt we might be able to obtain a stable solution!
-  double tsqrt=pow((1./tau_el - 1./tau_I),2.)-4.*tes->R0*ell*(2.+tes->beta)/(tau*tes->Lin);
+  double fac=(tes->acdc) ? 2. : 1.;
+
+  double tsqrt=pow((1./tau_el - 1./tau_I),2.) -  4.*tes->R0*ell* (2.+tes->beta)/(tau*tes->Leff*fac);
+
   if (tsqrt<0.) {
     headas_chat(0,"WARNING: Detector is underdamped\n");
     headas_chat(0,"PROCEED WITH CAUTION AND HOPE JOERN IMPROVES THE DIAGNOSTICS!\n");
   } 
-
   //TODO: we need to be more careful in the next equations and do the
   //      calculation using complex numbers!
   double taum=1./tau_el + 1./tau_I;
-  double taup=2./(taum+tsqrt);
-  taum=2./(taum-tsqrt);
+  double taup=2./(taum+sqrt(tsqrt));
+  taum=2./(taum-sqrt(tsqrt));
 
   headas_chat(0,"Pulse timescales\n");
-  headas_chat(0,"    rise [mus]                        : %10.5f\n",1e6*taup);
-  headas_chat(0,"    fall [mus]                        : %10.5f\n",1e6*taum);
+  headas_chat(0,"    tau_plus  (rise) [mus]                        : %10.5f\n",1e6*taup);
+  headas_chat(0,"    tau_minus (fall) [mus]                        : %10.5f\n",1e6*taum);
 
   //
   // TO DO: estimate pulse heights
@@ -418,8 +480,8 @@ void tes_print_params(tesparams *tes) {
   double Lcritm=(Lsum-Lsqrt)*Lfac;
   
   headas_chat(0,"Inductance at critical damping:\n");
-  headas_chat(0,"    L_plus [nH]                         : %10.5f\n",1e9*Lcritp);
-  headas_chat(0,"    L_minus[nH]                         : %10.5f\n",1e9*Lcritm);
+  headas_chat(0,"    L_plus [nH]                                   : %10.5f\n",1e9*Lcritp);
+  headas_chat(0,"    L_minus[nH]                                   : %10.5f\n",1e9*Lcritm);
 
   if (tsqrt<0.) {
     // criteria for underdamped detector
@@ -467,7 +529,7 @@ void tes_print_params(tesparams *tes) {
   double SV_tes=4.*kBoltz*tes->T_start*tes->R0*(1.+2.*tes->beta);
 
   // Load voltage noise
-  double SV_L=4.*kBoltz*tes->T_start*tes->RL;
+  double SV_L=4.*kBoltz*tes->T_start*tes->Reff;
 
   // TFN power noise
   double SP_tfn=4.*kBoltz*tes->T_start*tes->T_start*tes->Gb1*tpow(tes);
@@ -546,16 +608,31 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // bandwidth to calculate the noise
   tes->bandwidth=1./(tes->delta_t*2.);
 
+  tes->acdc=par->acdc;
+
   tes->T_start=par->T_start;// initial operating temperature of the TES [K]
   tes->Tb=par->Tb;      // Heat sink/bath temperature [K]
   tes->R0=par->R0;        // Operating point resistance [Ohm]
   tes->RL=par->RL;     // Shunt / load resistor value
+  tes->Rpara=par->Rpara; // Parasitic 
+  tes->TTR=par->TTR;
+
   tes->alpha=par->alpha;      // TES sensitivity (T/R*dR/dT)
   tes->beta=par->beta;       // TES current dependence (I/R*dR/dI)
   tes->Lin=par->Lin;     // Circuit inductance
+  tes->Lfilter=par->Lfilter; // Filter inductance
   tes->n=par->n;          // Temperature dependence of the power flow to the heat sink
   // use this to turn the noise on or off
   tes->simnoise=par->simnoise;
+
+  if (tes->acdc) {
+    tes->Reff=tes->Rpara/(tes->TTR*tes->TTR);
+    tes->Leff=tes->Lfilter/(tes->TTR*tes->TTR);
+  } else {
+    tes->Reff=tes->RL;
+    tes->Leff=tes->Lin;
+  }
+
 
   // hardcode for the moment!
   tes->mech=0;         // thermal coupling
@@ -581,12 +658,20 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->dRdI=tes->beta*tes->R0/tes->I0_start;
  
   // level of SQUID readout and electronics noise
-  //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
-  tes->squid_noise=2e-12*sqrt(tes->sample_rate/2*32*M_PI)*tes->simnoise;
+  //JW WE STILL NEED TO MAKE THIS MORE CONSISTENT AS
+  //WE UNDERSTAND THINGS BETTER...
+
+  if (tes->acdc) {
+    // this assumes FDM
+    tes->squid_noise*=tes->TTR*2e-12*sqrt(tes->sample_rate/2)*tes->simnoise;;
+  } else {
+    // this assumes TDM (extra sqrt(32pi))
+    tes->squid_noise=2e-12*sqrt(32*M_PI*tes->sample_rate/2)*tes->simnoise;
+  }
 
   // set-up initial input conditions
   tes->I0=tes->I0_start;
-  tes->V0=tes->I0*(tes->R0+tes->RL); // Effective bias voltage
+  tes->V0=tes->I0*(tes->R0+tes->Reff); // Effective bias voltage
   tes->RT=tes->R0;
   tes->T1=tes->T_start;
 
@@ -681,7 +766,7 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       // else to check this again to be 100% sure)
       tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
       tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->beta));
-      tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->RL*tes->bandwidth));
+      tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->Reff*tes->bandwidth));
       tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->beta)*tes->m_excess*tes->m_excess) );
     }
 
