@@ -31,3 +31,6 @@ TTYPE#		GRADE1		/ Time in samples after the impact
 TFORM#		J		/
 TTYPE#		GRADE2		/ Time in samples before the impact
 TFORM#		J		/
+TTYPE#		TOTALEN		/ Total energy potentially including energy from previous impacts (pileup)
+TFORM#		E		/
+TUNIT#  	keV             /

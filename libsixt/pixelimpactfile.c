@@ -46,6 +46,7 @@ PixImpFile* newPixImpFile(int* const status){
   file->cy	=0;
   file->cgrade1 = 0;
   file->cgrade2 = 0;
+  file->ctotalenergy = 0;
 
   return(file);
 }
@@ -112,6 +113,12 @@ PixImpFile* openPixImpFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "GRADE2", &file->cgrade2, status);
   if (*status==COL_NOT_FOUND) {
     file->cgrade2=-1;
+    *status=0;
+  }
+  CHECK_STATUS_RET(*status, NULL);
+  fits_get_colnum(file->fptr, CASEINSEN, "TOTALEN", &file->ctotalenergy, status);
+  if (*status==COL_NOT_FOUND) {
+    file->ctotalenergy=-1;
     *status=0;
   }
   CHECK_STATUS_RET(*status, NULL);
@@ -254,6 +261,10 @@ int getNextImpactFromPixImpFile(PixImpFile* const file,
     fits_read_col(file->fptr, TLONG, file->cgrade2, file->row, 1, 1,
 		  NULL, &impact->grade2, &anynul, status);
   }
+  if (file->ctotalenergy!=-1) {
+    fits_read_col(file->fptr, TDOUBLE, file->ctotalenergy, file->row, 1, 1,
+		  NULL, &impact->totalenergy, &anynul, status);
+  }
   
   // Check if an error occurred during the reading process.
   if (*status!=0) {
@@ -293,6 +304,7 @@ void addImpact2PixImpFile(PixImpFile* const ilf,
 		 ilf->row, 1, 1, &impact->pixID, status);
 
   long default_grade=0;
+  double default_totalenergy = 0.;
   if (ilf->cgrade1!=-1) {
 	  fits_write_col(ilf->fptr, TLONG, ilf->cgrade1,
 			 ilf->row, 1, 1, &default_grade, status);
@@ -301,10 +313,14 @@ void addImpact2PixImpFile(PixImpFile* const ilf,
 	  fits_write_col(ilf->fptr, TLONG, ilf->cgrade2,
 			 ilf->row, 1, 1, &default_grade, status);
   }
+  if (ilf->ctotalenergy!=-1) {
+	  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctotalenergy,
+			 ilf->row, 1, 1, &default_totalenergy, status);
+  }
 }
 
 void updateGradingPixImp(PixImpFile* const ilf,
-		  int row, long grade1, long grade2,
+		  int row, long grade1, long grade2,double totalenergy,
 		  int* const status){
 	if (row>ilf->nrows){
 		*status=EXIT_FAILURE;
@@ -316,6 +332,8 @@ void updateGradingPixImp(PixImpFile* const ilf,
 			row, 1, 1, &grade1, status);
 	fits_write_col(ilf->fptr, TLONG, ilf->cgrade2,
 			row, 1, 1, &grade2, status);
+	fits_write_col(ilf->fptr, TDOUBLE, ilf->ctotalenergy,
+			row, 1, 1, &totalenergy, status);
 
 }
 

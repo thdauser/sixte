@@ -37,6 +37,7 @@
 #define RMFLIBRARYSIZE (10)
 
 #define INVGRADE -1
+#define PILEUP -2
 #define DEFAULTGOODSAMPLE 32768 // TODO : check whether we do want to leave that as a macro
 
 ////////////////////////////////////////////////////////////////////////
@@ -240,6 +241,7 @@ typedef struct{
 typedef struct {
 	gradingTimeStruct *times;
 	long row;
+	double totalenergy;
 }pixGrade;
 
 /////////////////////////////////////////////////////////////////////

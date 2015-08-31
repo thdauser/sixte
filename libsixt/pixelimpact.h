@@ -60,6 +60,9 @@ typedef struct {
   /** time in samples before this impact **/
   long grade2;
 
+  /** total energy of the final impact potentially containing energy from previous impact (pileup) */
+  double totalenergy;
+
 } PixImpact;
 
 

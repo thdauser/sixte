@@ -43,7 +43,7 @@ typedef struct {
   long row;
 
   /** Column numbers in the FITS binary table. */
-  int ctime, cenergy, cx, cy, cph_id, csrc_id, cpix_id, cu, cv,cgrade1,cgrade2;
+  int ctime, cenergy, cx, cy, cph_id, csrc_id, cpix_id, cu, cv,cgrade1,cgrade2,ctotalenergy;
 
 } PixImpFile;
 
@@ -104,7 +104,7 @@ void getPixImpFileTimeValues(PixImpFile* const ilf,
 
 /** update the grading in the pixImpactFile **/
 void updateGradingPixImp(PixImpFile* const ilf,
-		  int row, long grade1, long grade2,
+		  int row, long grade1, long grade2,double totalenergy,
 		  int* const status);
 
 #endif /* PIXIMPFILE_H */
