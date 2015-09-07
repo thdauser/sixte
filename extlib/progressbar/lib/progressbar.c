@@ -27,9 +27,9 @@ progressbar *progressbar_new_with_format(char *label, unsigned long max, const c
   new->step = 0;
   new->progress_str = malloc(sizeof(char)*(PROGRESSBAR_WIDTH+1));
   new->format = malloc(sizeof(char)*4);
-  strcpy(new->format, format);
+  strncpy(new->format, format,4);
   memset(new->progress_str,' ', PROGRESSBAR_WIDTH);
-  new->progress_str[new->steps] = 0;
+  new->progress_str[new->steps] = '\0';
   new->last_printed = 0;
   new->termtype = getenv("TERM");
 
@@ -55,21 +55,22 @@ void progressbar_update_label(progressbar *bar, char *label)
   }
   // make sure newsteps is positive
   int maxstrlen = columns - 17;
-  if (maxstrlen - 10 > 10 && strlen(label) > maxstrlen - 10) {
+  int labellength=strlen(label);
+  if (maxstrlen - 10 > 10 && labellength > maxstrlen - 10) {
     label[maxstrlen - 10] = 0;
   }
-  if (strlen(label) >= maxstrlen) {
+  if ( labellength >= maxstrlen) {
     label[maxstrlen] = 0;
   }
   // Reserve two possible colums for pre- and post- spacing
   columns -= 2;
 
-  newsteps = columns - (strlen(label) + 17);
-  if (newsteps < 0)
+  newsteps = columns - (labellength + 17);
+  if (newsteps < 0) 
     newsteps = 0;
   if (newsteps > PROGRESSBAR_WIDTH - 1)
     newsteps = PROGRESSBAR_WIDTH - 1;
-  if (newsteps != bar->steps && bar->step >= bar->steps)
+  if (newsteps != (int) bar->steps && bar->step >= bar->steps)
     bar->step = 0;
   bar->steps = newsteps;
 }
@@ -94,10 +95,10 @@ void progressbar_update(progressbar *bar, unsigned long value)
   // has changed.
   if(1 || current_step != bar->step) {
     // Fill the bar to the current step...
-    for(int i=0;i<current_step;i++) {
+    for(unsigned int i=0;i<current_step;i++) {
       bar->progress_str[i] = bar->format[1];
     }
-    for(int i=current_step; i < bar->steps;i++) {
+    for(unsigned int i=current_step; i < bar->steps;i++) {
       bar->progress_str[i] = ' ';
     }
     bar->progress_str[bar->steps] = 0;
@@ -123,12 +124,29 @@ void progressbar_inc(progressbar *bar)
 
 void progressbar_draw(progressbar *bar,unsigned int timeleft)
 {
+  // depending on remaining time, round time appropriately
+  if (timeleft>600) {
+    // >10 minutes: round to a minute
+    timeleft=60*(timeleft/60);
+  } else {
+    // > 2 minutes: round to closest 30s
+    if (timeleft>120) {
+      timeleft=30*(timeleft/30);
+    } else {
+      if (timeleft>60) {
+	// > 1 minute: round to closest 5s
+	timeleft=5*(timeleft/5);
+      }
+    }
+  }
+
   // Convert the time to display into HHH:MM:SS
   unsigned int h = timeleft/3600;
   timeleft -= h*3600;
   unsigned int m = timeleft/60;
   timeleft -= m*60;
   unsigned int s = timeleft;
+
   // ...and display!
   bar->last_printed = fprintf(stderr,"%s %c%s%c ETA:%2dh%02dm%02ds\r",
     bar->label,bar->format[0],bar->progress_str,bar->format[2],h,m,s);
@@ -141,7 +159,7 @@ void progressbar_finish(progressbar *bar)
   // 00:00:00 remaining estimate.
   unsigned int offset = time(NULL) - (bar->start);
   // Make sure we fill the progressbar too, so things look complete.
-  for(int i=0;i<bar->steps;i++) {
+  for(unsigned int i=0;i<bar->steps;i++) {
     bar->progress_str[i] = bar->format[1];
   }
   progressbar_draw(bar,offset);
