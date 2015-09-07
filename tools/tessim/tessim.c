@@ -7,6 +7,11 @@
 #define TOOLSUB tessim_main
 #include "headas_main.c"
 
+//
+// THINGS TO FIX:
+// * parfile seems not to update properly (email megan, 22 Aug)
+//
+
 void tessim_getpar(tespxlparams *par, int *properties, int *status);
 
 int tessim_main() {
