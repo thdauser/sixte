@@ -15,7 +15,7 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
   CHECK_NULL_RET(data,*status,"Memory allocation failed in tes_init_tesrecord: data structure",NULL);
 
   data->Nt=TESRECORD_BUFFERSIZE;
-  data->streamind=0;
+  data->streamind=-1;
   data->tstart=tstart; // note: tstart/tstop are overwritten in tes_append_tesrecord
   data->tstop=tstop;   // -> need to see whether we really need these parameters here
   data->imin=tes->imin;
@@ -53,6 +53,19 @@ void tes_append_tesrecord(tesparams *tes,double time,double pulse, int *status) 
   CHECK_STATUS_VOID(*status); 
   tes_record_info *data=(tes_record_info *) (tes->streaminfo);
 
+  if (data->streamind==-1) {
+    data->tstart=time;
+    data->streamind=0;
+  }
+
+  // FIXME: should these to numbers not be of the same type by default then?
+  if ((unsigned long) data->streamind==data->stream->trigger_size) {
+    tes_write_tesrecord(tes,status);
+    data->streamind=0;
+    // avoid roundoff
+    data->stream->time+=data->stream->delta_t*data->stream->trigger_size;
+  }
+
   // remember how far we've come
   data->tstop=time;
 
@@ -63,11 +76,6 @@ void tes_append_tesrecord(tesparams *tes,double time,double pulse, int *status) 
   } else {
     data->stream->adc_array[data->streamind++]=(uint16_t) ((pulse-data->imin)*data->aducnv);
   }
-
-  if (data->streamind==0) {
-    data->tstart=time;
-  }
-
 
 }
 
@@ -162,7 +170,6 @@ void tes_write_tesrecord(tesparams *tes,int *status) {
     free(ttype[1]);
     free(ttype[2]);
   }
-
 
   LONGLONG nrows=dataptr->streamind; //this works because FITS is 1 based, arrays are 0 based
 
