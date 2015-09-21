@@ -174,6 +174,7 @@ AC_CONFIG_FILES([Makefile
 		tools/tesreconstruction/Makefile
 		tools/xifupipeline/Makefile
 		tools/gennoisespec/Makefile
+		tools/exposure_map/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
 		])
