@@ -31,9 +31,9 @@
 extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file,
 		char* const library_file, char* const event_file, double tauFall,int pulse_length, double scaleFactor, double samplesUp,
 		double nSgms, int crtLib, int lastELibrary, int mode, double LrsT, double LbT, double baseline, char* const noise_file,
-		char* pixel_type, char* filter_domain, char* filter_method, char* energy_method,
+		char* pixel_type, char* filter_domain, char* filter_method, char* energy_method, char* oflength_strategy, int oflength,
 		int calibLQ,  double b_cF, double c_cF, double monoenergy, int interm, char* const detectFile, char* const filterFile, char* const record_file2,
-		double monoenergy2, char clobber, int maxPulsesPerRecord, int* const status){
+		double monoenergy2, char clobber, int maxPulsesPerRecord, int tstartPulse1, int tstartPulse2, int tstartPulse3, int* const status){
 
 	// Load LibraryCollection structure if library file exists
 	int exists=0;
@@ -105,11 +105,17 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	strcpy(reconstruct_init->FilterDomain,filter_domain);
 	strcpy(reconstruct_init->FilterMethod,filter_method);
 	strcpy(reconstruct_init->EnergyMethod,energy_method);
+	strcpy(reconstruct_init->OFStrategy,oflength_strategy);
+	if ((strcmp(energy_method,"WEIGHT") == 0) || (strcmp(energy_method,"WEIGHTN") == 0))		{strcpy(reconstruct_init->FilterMethod,"F0");}
+	reconstruct_init->OFLength      = oflength;
 	reconstruct_init->calibLQ       = calibLQ;
 	reconstruct_init->b_cF          = b_cF;
 	reconstruct_init->c_cF          = c_cF;
 	reconstruct_init->intermediate  = interm;
 	reconstruct_init->monoenergy2 	= monoenergy2;
+	reconstruct_init->tstartPulse1 	= tstartPulse1;
+	reconstruct_init->tstartPulse2 	= tstartPulse2;
+	reconstruct_init->tstartPulse3 	= tstartPulse3;
 	if(0!=clobber){
 	    reconstruct_init->clobber = 1;
 	}else{
@@ -267,10 +273,15 @@ extern "C" ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status){
 	strcpy(reconstruct_init->FilterDomain,"");
 	strcpy(reconstruct_init->FilterMethod,"");
 	strcpy(reconstruct_init->EnergyMethod,"");
+	strcpy(reconstruct_init->OFStrategy,"");
+	reconstruct_init->OFLength = 0;
 	reconstruct_init->calibLQ=0;
 	reconstruct_init->b_cF=0.;
 	reconstruct_init->c_cF=0.;
 	reconstruct_init->clobber=0;
+	reconstruct_init->tstartPulse1=0;
+	reconstruct_init->tstartPulse2=0;
+	reconstruct_init->tstartPulse3=0;
 	
 	return(reconstruct_init);
   }
@@ -339,6 +350,7 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 	library_collection->pulse_templates_filder=NULL;
 	library_collection->matched_filters=NULL;
 	library_collection->matched_filters_B0=NULL;
+	library_collection->V=NULL;
 	library_collection->W=NULL;
 	library_collection->T=NULL;
 	library_collection->t=NULL;
@@ -346,10 +358,12 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 	library_collection->Y=NULL;
 	library_collection->Z=NULL;
 	library_collection->r=NULL;
+	library_collection->PAB=NULL;
+	library_collection->DAB=NULL;
 	
 	//Open FITS file in READONLY mode
 	fitsfile* fptr = NULL;
-	if (fits_open_file(&fptr, filename, READONLY, status)){ 					
+	if (fits_open_file(&fptr, filename, READONLY, status)){
 		EP_PRINT_ERROR("Error opening library file",*status);
 		return(library_collection);}
 
@@ -369,7 +383,7 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 	      return(library_collection);}
 
 	// Allocate library structure
-	library_collection->ntemplates = (int)ntemplates;
+	library_collection->ntemplates                = (int)ntemplates;
 	library_collection->energies           		  = gsl_vector_alloc(ntemplates);
 	library_collection->pulse_heights      		  = gsl_vector_alloc(ntemplates);
 	library_collection->maxDERs      		      = gsl_vector_alloc(ntemplates);
@@ -408,7 +422,8 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 		*status=EPFAIL; return(library_collection);
 	}
 	int template_duration = naxes;
-	
+
+	library_collection->V = gsl_matrix_alloc(ntemplates,template_duration*template_duration);
 	library_collection->W = gsl_matrix_alloc(ntemplates,template_duration*template_duration);
 	if (ntemplates > 1)
 	{
@@ -418,6 +433,8 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 		library_collection->Y = gsl_matrix_alloc(ntemplates-1,template_duration);
 		library_collection->Z = gsl_matrix_alloc(ntemplates-1,template_duration);
 		library_collection->r = gsl_vector_alloc(ntemplates-1);
+		library_collection->PAB = gsl_matrix_alloc(ntemplates-1,template_duration);
+		library_collection->DAB = gsl_matrix_alloc(ntemplates-1,template_duration);
 	}
 	else
 	{
@@ -427,6 +444,8 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 		library_collection->Y = gsl_matrix_alloc(1,template_duration);
 		library_collection->Z = gsl_matrix_alloc(1,template_duration);
 		library_collection->r = gsl_vector_alloc(1);
+		library_collection->PAB = gsl_matrix_alloc(1,template_duration);
+		library_collection->DAB = gsl_matrix_alloc(1,template_duration);
 	}
 
 	//Get mfilter duration
@@ -504,6 +523,8 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 	   *status=EPFAIL; return(library_collection);
 	}
 
+	gsl_matrix *matrixAux_V = NULL;
+	gsl_vector *vectorAux_V = NULL;
 	gsl_matrix *matrixAux_W = NULL;
 	gsl_vector *vectorAux_W = NULL;
 	gsl_matrix *matrixAux_T = NULL;
@@ -516,9 +537,22 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 	gsl_matrix *matrixAux_Z = NULL;
 	gsl_vector *vectorAux_Z = NULL;
 	gsl_vector *vectorAux_r = NULL;
-	//if (lastELibrary == 1)
-	if (strcmp(energy_method,"WEIGHT") == 0)
+	gsl_matrix *matrixAux_PAB = NULL;
+	gsl_vector *vectorAux_PAB = NULL;
+	gsl_matrix *matrixAux_DAB = NULL;
+	gsl_vector *vectorAux_DAB = NULL;
+
+	if ((strcmp(energy_method,"WEIGHT") == 0) || (strcmp(energy_method,"WEIGHTN") == 0))
 	{
+		matrixAux_V = gsl_matrix_alloc(ntemplates,template_duration*template_duration);
+		vectorAux_V = gsl_vector_alloc(template_duration*template_duration);
+		strcpy(obj.nameCol,"COVARM");
+		if (readFitsComplex (obj,&matrixAux_V))
+		{
+			EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+			*status=EPFAIL; return(library_collection);
+		}
+
 		matrixAux_W = gsl_matrix_alloc(ntemplates,template_duration*template_duration);
 		vectorAux_W = gsl_vector_alloc(template_duration*template_duration);
 		strcpy(obj.nameCol,"WEIGHTM");
@@ -530,58 +564,91 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 
 		if ((mode == 1) || (crtLib == 0))
 		{
-			obj.endRow = ntemplates-1;
-
-			matrixAux_T = gsl_matrix_alloc(ntemplates-1,template_duration);
-			vectorAux_T = gsl_vector_alloc(template_duration);
-			strcpy(obj.nameCol,"TV");
-			if (readFitsComplex (obj,&matrixAux_T))
+			int dim;
+			if (ntemplates == 1)
 			{
-				EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-				*status=EPFAIL; return(library_collection);
+				obj.endRow = 1;
+				dim = 1;
+			}
+			else
+			{
+				obj.endRow = ntemplates-1;
+				dim = ntemplates-1;
 			}
 
-			vectorAux_t = gsl_vector_alloc(ntemplates-1);
-			strcpy(obj.nameCol,"tE");
-			if (readFitsSimple (obj,&vectorAux_t))
+			if (strcmp(energy_method,"WEIGHT") == 0)
 			{
-				EP_PRINT_ERROR("Cannot run readFitsSimplex in integraSIRENA.cpp",*status);
-				*status=EPFAIL; return(library_collection);
-			}
+				matrixAux_T = gsl_matrix_alloc(dim,template_duration);
+				vectorAux_T = gsl_vector_alloc(template_duration);
+				strcpy(obj.nameCol,"TV");
+				if (readFitsComplex (obj,&matrixAux_T))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
 
-			matrixAux_X = gsl_matrix_alloc(ntemplates-1,template_duration*template_duration);
-			vectorAux_X = gsl_vector_alloc(template_duration*template_duration);
-			strcpy(obj.nameCol,"XM");
-			if (readFitsComplex (obj,&matrixAux_X))
-			{
-				EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-				*status=EPFAIL; return(library_collection);
-			}
+				vectorAux_t = gsl_vector_alloc(dim);
+				strcpy(obj.nameCol,"tE");
+				if (readFitsSimple (obj,&vectorAux_t))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsSimplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
 
-			matrixAux_Y = gsl_matrix_alloc(ntemplates-1,template_duration);
-			vectorAux_Y = gsl_vector_alloc(template_duration);
-			strcpy(obj.nameCol,"YV");
-			if (readFitsComplex (obj,&matrixAux_Y))
-			{
-				EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-				*status=EPFAIL; return(library_collection);
-			}
+				matrixAux_X = gsl_matrix_alloc(dim,template_duration*template_duration);
+				vectorAux_X = gsl_vector_alloc(template_duration*template_duration);
+				strcpy(obj.nameCol,"XM");
+				if (readFitsComplex (obj,&matrixAux_X))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
 
-			matrixAux_Z = gsl_matrix_alloc(ntemplates-1,template_duration);
-			vectorAux_Z = gsl_vector_alloc(template_duration);
-			strcpy(obj.nameCol,"ZV");
-			if (readFitsComplex (obj,&matrixAux_Z))
-			{
-				EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-				*status=EPFAIL; return(library_collection);
-			}
+				matrixAux_Y = gsl_matrix_alloc(dim,template_duration);
+				vectorAux_Y = gsl_vector_alloc(template_duration);
+				strcpy(obj.nameCol,"YV");
+				if (readFitsComplex (obj,&matrixAux_Y))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
 
-			vectorAux_r = gsl_vector_alloc(ntemplates-1);
-			strcpy(obj.nameCol,"rE");
-			if (readFitsSimple (obj,&vectorAux_r))
+				matrixAux_Z = gsl_matrix_alloc(dim,template_duration);
+				vectorAux_Z = gsl_vector_alloc(template_duration);
+				strcpy(obj.nameCol,"ZV");
+				if (readFitsComplex (obj,&matrixAux_Z))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
+
+				vectorAux_r = gsl_vector_alloc(dim);
+				strcpy(obj.nameCol,"rE");
+				if (readFitsSimple (obj,&vectorAux_r))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsSimplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
+			}
+			else if (strcmp(energy_method,"WEIGHTN") == 0)
 			{
-				EP_PRINT_ERROR("Cannot run readFitsSimplex in integraSIRENA.cpp",*status);
-				*status=EPFAIL; return(library_collection);
+				matrixAux_PAB = gsl_matrix_alloc(dim,template_duration);
+				vectorAux_PAB = gsl_vector_alloc(template_duration);
+				strcpy(obj.nameCol,"PAB");
+				if (readFitsComplex (obj,&matrixAux_PAB))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
+
+				matrixAux_DAB = gsl_matrix_alloc(dim,template_duration);
+				vectorAux_DAB = gsl_vector_alloc(template_duration);
+				strcpy(obj.nameCol,"DAB");
+				if (readFitsComplex (obj,&matrixAux_DAB))
+				{
+					EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+					*status=EPFAIL; return(library_collection);
+				}
 			}
 		}
 	}
@@ -611,9 +678,11 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 		gsl_matrix_get_row(library_collection->matched_filters[it].mfilter,matrixAux_MF,it);
 		gsl_matrix_get_row(library_collection->matched_filters_B0[it].mfilter,matrixAux_MFB0,it);
 
-		//if (lastELibrary == 1)
 		if (strcmp(energy_method,"WEIGHT") == 0)
 		{
+			gsl_matrix_get_row(vectorAux_V,matrixAux_V,it);
+			gsl_matrix_set_row(library_collection->V,it,vectorAux_V);
+
 			gsl_matrix_get_row(vectorAux_W,matrixAux_W,it);
 			gsl_matrix_set_row(library_collection->W,it,vectorAux_W);
 
@@ -636,11 +705,30 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 				gsl_vector_set(library_collection->r,it,gsl_vector_get(vectorAux_r,it));
 			}
 		}
+		else if (strcmp(energy_method,"WEIGHTN") == 0)
+		{
+			gsl_matrix_get_row(vectorAux_V,matrixAux_V,it);
+			gsl_matrix_set_row(library_collection->V,it,vectorAux_V);
+
+			gsl_matrix_get_row(vectorAux_W,matrixAux_W,it);
+			gsl_matrix_set_row(library_collection->W,it,vectorAux_W);
+
+			if (((mode == 1) || (crtLib == 0)) && (it < ntemplates-1))
+			{
+				gsl_matrix_get_row(vectorAux_PAB,matrixAux_PAB,it);
+				gsl_matrix_set_row(library_collection->PAB,it,vectorAux_PAB);
+
+				gsl_matrix_get_row(vectorAux_DAB,matrixAux_DAB,it);
+				gsl_matrix_set_row(library_collection->DAB,it,vectorAux_DAB);
+			}
+		}
 	}
 	gsl_matrix_free(matrixAux_PULSE);
 	gsl_matrix_free(matrixAux_PULSEB0);
 	gsl_matrix_free(matrixAux_MF);
 	gsl_matrix_free(matrixAux_MFB0);
+	gsl_matrix_free(matrixAux_V);
+	gsl_vector_free(vectorAux_V);
 	gsl_matrix_free(matrixAux_W);
 	gsl_vector_free(vectorAux_W);
 	gsl_matrix_free(matrixAux_T);
@@ -653,6 +741,9 @@ LibraryCollection* getLibraryCollection(const char* const filename,int mode, int
 	gsl_matrix_free(matrixAux_Z);
 	gsl_vector_free(vectorAux_Z);
 	gsl_vector_free(vectorAux_r);
+	gsl_matrix_free(matrixAux_PAB);
+	gsl_vector_free(vectorAux_PAB);
+	gsl_vector_free(vectorAux_DAB);
 
 	if (fits_close_file(fptr, status)){
 			EP_PRINT_ERROR("Error closing library file",*status);

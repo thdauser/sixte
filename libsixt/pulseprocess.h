@@ -32,47 +32,7 @@
 *
 *  Revision History:
 *
-*  08/10/08	First version
-*  19/01/09	Changed the parameters "beforeIndex" and "afterIndex" from double to integer in the findPulse function
-*  26/10/09 Old findMean and findPulses are called findMean_OLD and findPulses_OLD
-*           New findMean and findPulses added
-*  23/07/10	New functions added: "lpf_boxcar", "derMTH", "findTstart" & "findDerPoslength"
-*  29/03/11 Updated .h
-*  04/04/11 Input parameters findTstart
-*  26/05/11 findTstart renamed as findTstart_OLD
-*           New functions: findThreshold
-*                          kappaClipping
-*                          medianKappaClipping
-*                          findTstart
-*                          findMeanSigma
-*           New GSL libraries used
-*           inoutUtils.h used (just in case it was neccessary to write comments in a log file)
-*  04/08/11 New functions: derMTHSimple
-*                          findTstartPrimary
-*  24/10/11 Added a new input/output parameter in findTstart
-*  14/12/12 New input/output parameter maxDERgsl in findTstartPrimary
-*  14/03/13 findPulses renamed as findPulsesOLD
-*           New functions:
-*              findPulses
-*              getB
-*              gsl_vector_Sumsubvector
-*              findSePrPulses
-*              getPulseHeight
-*              find_model
-*              RS_filter
-*              interpolate_model
-*  15/02/13 Deleted in/out parameter tend in findPulses
-*  26/02/13 getPulseHeight: 'safetymargintstart' deleted as input/output parameter
-*           findTstart: New input/output parameter 'tstartgslOUTNEW'
-*           findSePrPulses: New input/output parameter 'tstartNOsmt'
-*  02/05/13 findSePrPulses: Improved the tstart by correcting the calculus with the pulse broadening ('ATstart1')
-*           find_model: Find the pulse broadening by using the pulse models library ('ATstart2' and 'A')
-*           interpolate_model: Interpolate (in general) between two pulse broadenings ('AIn1', 'AIn2' and 'Afound')
-*  08/05/13 findSePrPulses: New input/output parameter 'tstartMOD' (which is the precisely calculated tstart)
-*  02/10/13 findPulses, findSePrPulses, find_model and interpolate_model changed in order to not use PRETRIGS to
-*           calculate precisely the tstart
-*  08/10/13 Not used functions are deleted
-*  10/10/14 Deleted the input parameter 'nPulsesNew' in findSePrPulses
+*
 ************************************************************************/
 
 #ifndef PULSEPROCESS_H_
@@ -86,6 +46,7 @@
 	#include <integraSIRENA.h>
 
 	int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRate);
+	int derivative (gsl_vector **invector,int szVct);
 
 	int findMeanSigma (gsl_vector *invector, double *mean, double *sigma);
 	int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, int boxLPF,double *threshold);
@@ -97,14 +58,6 @@
 	int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
 	int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
 	int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *modelIn1, double ph_modelIn1, gsl_vector *modelIn2, double ph_modelIn2);
-
-	int findTstartCAL (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
-			int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
-			gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
-
-	int findTstartPROD (int maxPulsesPerRecord, gsl_vector *adjustedDerivative, double adaptativethreshold, int nSamplesUp,
-				ReconstructInitSIRENA *reconstruct_init,
-				int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
 
 	int findPulsesCAL
 	(
@@ -133,7 +86,8 @@
 		double stopcriteriamkc,
 		double kappamkc);
 
-	int findPulsesPROD (
+	int findPulsesPROD
+	(
 		gsl_vector *vectorinDER,
 		gsl_vector **tstart,
 		gsl_vector **quality,
@@ -154,7 +108,70 @@
 		double stopcriteriamkc,
 		double kappamkc);
 
-	int derivative (gsl_vector **invector,int szVct);
+	int findTstartCAL
+	(
+		int maxPulsesPerRecord,
+
+		gsl_vector *der,
+		double adaptativethreshold,
+		int nSamplesUp,
+
+		int allPulsesMode,
+
+		double sampling,
+
+		ReconstructInitSIRENA *reconstruct_init,
+
+		int *numberPulses,
+		int *thereIsPulse,
+
+		gsl_vector **tstartgsl,
+		gsl_vector **flagTruncated,
+		gsl_vector **maxDERgsl);
+
+	int findTstartPROD (int maxPulsesPerRecord, gsl_vector *adjustedDerivative, double adaptativethreshold, int nSamplesUp,
+			ReconstructInitSIRENA *reconstruct_init,
+			int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
+
+	int InitialTriggering
+	(
+		gsl_vector *derivative,
+
+		int nSamplesUp,
+		double nSgms,
+
+		double taufall,
+		double scalefactor,
+		double samplingRate,
+
+		double stopcriteriamkc,
+		double kappamkc,
+
+		bool *triggerCondition,
+		int *tstart,
+		int *flagTruncated,
+
+		double *threshold,
+
+		int tstartProvided = 0);
+
+	int FindSecondaries
+	(
+		int maxPulsesPerRecord,
+
+		gsl_vector *adjustedDerivative,
+		double threshold,
+
+		int nSamplesUp,
+
+		ReconstructInitSIRENA *reconstruct_init,
+
+		int tstartFirstEvent,
+
+		int *numberPulses,
+		gsl_vector **tstartgsl,
+		gsl_vector **flagTruncated,
+		gsl_vector **maxDERgsl);
 
 	using namespace std;
 

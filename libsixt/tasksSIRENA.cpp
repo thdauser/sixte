@@ -11,30 +11,6 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 	string message="";
 	int status=EPOK;
 
-	/*gsl_matrix *matrixaux = gsl_matrix_alloc(3,3);
-	gsl_vector *vectoraux = gsl_vector_alloc(3*3);
-	gsl_matrix *matrixauxout = gsl_matrix_alloc(3,3);
-	gsl_matrix_set(matrixaux,0,0,3);
-	gsl_matrix_set(matrixaux,0,1,4);
-	gsl_matrix_set(matrixaux,0,2,5);
-	gsl_matrix_set(matrixaux,1,0,4);
-	gsl_matrix_set(matrixaux,1,1,2);
-	gsl_matrix_set(matrixaux,1,2,3);
-	gsl_matrix_set(matrixaux,2,0,5);
-	gsl_matrix_set(matrixaux,2,1,3);
-	gsl_matrix_set(matrixaux,2,2,1);
-	matrix2vector(matrixaux,&vectoraux);
-	cout<<"matrix2vector:"<<endl;
-	cout<<gsl_vector_get(vectoraux,0)<<" "<<gsl_vector_get(vectoraux,1)<<" "<<gsl_vector_get(vectoraux,2)<<endl;
-	cout<<gsl_vector_get(vectoraux,3)<<" "<<gsl_vector_get(vectoraux,4)<<" "<<gsl_vector_get(vectoraux,5)<<endl;
-	cout<<gsl_vector_get(vectoraux,6)<<" "<<gsl_vector_get(vectoraux,7)<<" "<<gsl_vector_get(vectoraux,8)<<endl;
-	vector2matrix(vectoraux,&matrixauxout);
-	cout<<"vector2matrix:"<<endl;
-	cout<<gsl_matrix_get(matrixauxout,0,0)<<" "<<gsl_matrix_get(matrixauxout,0,1)<<" "<<gsl_matrix_get(matrixauxout,0,2)<<endl;
-	cout<<gsl_matrix_get(matrixauxout,1,0)<<" "<<gsl_matrix_get(matrixauxout,1,1)<<" "<<gsl_matrix_get(matrixauxout,1,2)<<endl;
-	cout<<gsl_matrix_get(matrixauxout,2,0)<<" "<<gsl_matrix_get(matrixauxout,2,1)<<" "<<gsl_matrix_get(matrixauxout,2,2)<<endl;*/
-
-
 	// Declare variables
 	fitsfile *inLibObject = NULL;	// Object which contains information of the library FITS file
 	bool appendToLibrary = false;	// Pulse templates library FITS file new (appendToLibrary=false) or not (appendToLibrary=true)
@@ -130,25 +106,31 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 	{
 		gsl_vector *pulsetemplate = gsl_vector_alloc((*reconstruct_init)->pulse_length);
 		double pulseheighttemplate = 0;
-		gsl_matrix *weight = NULL;
+		gsl_matrix *weight = gsl_matrix_alloc((*reconstruct_init)->pulse_length,(*reconstruct_init)->pulse_length);
+		gsl_matrix *covariance = gsl_matrix_alloc((*reconstruct_init)->pulse_length,(*reconstruct_init)->pulse_length);
+		gsl_matrix_set_zero(weight);
+		gsl_matrix_set_zero(covariance);
 
 		char extname[20];
 		char keyname[10];
 		char *comment=NULL;
 
-		if (calculateTemplate (*reconstruct_init, pulsesAll, *pulsesInRecord, 1/record->delta_t, &pulsetemplate, &pulseheighttemplate, &weight))
+		if (calculateTemplate (*reconstruct_init, pulsesAll, *pulsesInRecord, 1/record->delta_t, &pulsetemplate, &pulseheighttemplate, &covariance, &weight))
 		{
 		    message = "Cannot run routine calculateTemplate in creationlib run mode";
 		    EP_EXIT_ERROR(message,EPFAIL);
 		}
 
-		if (writeLibrary(*reconstruct_init, pulseheighttemplate, &pulsetemplate, weight, appendToLibrary, &inLibObject))
+		//cout<<"COVAR2 "<<gsl_matrix_get(covariance,0,1)<<" "<<gsl_matrix_get(covariance,0,2)<<" "<<gsl_matrix_get(covariance,0,3)<<endl;
+		//cout<<"COVAR2 "<<gsl_matrix_get(covariance,1,0)<<" "<<gsl_matrix_get(covariance,2,0)<<" "<<gsl_matrix_get(covariance,3,0)<<endl;
+
+		if (writeLibrary(*reconstruct_init, pulseheighttemplate, &pulsetemplate, covariance, weight, appendToLibrary, &inLibObject))
 		{
 		    message = "Cannot run routine writeLibrary in creationlib run mode";
 		    EP_EXIT_ERROR(message,EPFAIL);
 		}
 
-		if (((*reconstruct_init)->lastELibrary == 1) && (strcmp((*reconstruct_init)->EnergyMethod,"WEIGHT") == 0))
+		if (((*reconstruct_init)->lastELibrary == 1) && ((strcmp((*reconstruct_init)->EnergyMethod,"WEIGHT") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"WN") == 0)))
 		{
 			if (fillInLibraryData(*reconstruct_init))
 			{
@@ -159,6 +141,7 @@ void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, R
 
 		gsl_vector_free(pulsetemplate);
 		gsl_matrix_free(weight);
+		gsl_matrix_free(covariance);
 	}
 
 	if ((*reconstruct_init)->intermediate == 1)
@@ -580,6 +563,33 @@ int createLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToL
 
 		char str_clobber[125];      sprintf(str_clobber,"%d",reconstruct_init->clobber);
 		strproc=string("clobber = ") + string(str_clobber);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_tstartPulse1[125];	sprintf(str_tstartPulse1,"%d",reconstruct_init->tstartPulse1);
+		strproc=string("tstartPulse1 = ") + string(str_tstartPulse1);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_tstartPulse2[125];	sprintf(str_tstartPulse2,"%d",reconstruct_init->tstartPulse2);
+		strproc=string("tstartPulse2 = ") + string(str_tstartPulse2);
+		strcpy(keyvalstr,strproc.c_str());
+		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_tstartPulse3[125];	sprintf(str_tstartPulse3,"%d",reconstruct_init->tstartPulse3);
+		strproc=string("tstartPulse3 = ") + string(str_tstartPulse3);
 		strcpy(keyvalstr,strproc.c_str());
 		if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
 		{
@@ -1038,6 +1048,33 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, c
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
+		char str_tstartPulse1[125];	sprintf(str_tstartPulse1,"%d",reconstruct_init->tstartPulse1);
+		strhistory=string("tstartPulse1 = ") + string(str_tstartPulse1);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_tstartPulse2[125];	sprintf(str_tstartPulse2,"%d",reconstruct_init->tstartPulse2);
+		strhistory=string("tstartPulse2 = ") + string(str_tstartPulse2);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
+		char str_tstartPulse3[125];	sprintf(str_tstartPulse3,"%d",reconstruct_init->tstartPulse3);
+		strhistory=string("tstartPulse3 = ") + string(str_tstartPulse3);
+		strcpy(keyvalstr,strhistory.c_str());
+		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
+		{
+			message = "Cannot write keyword " + string(keyname) + " in library file " + string(dtcName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
+
 		charhistory= "HISTORY Ending parameter list";
 		strcpy(keyvalstr,charhistory);
 		if (fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,comment,&status))
@@ -1145,8 +1182,10 @@ int filderLibrary(ReconstructInitSIRENA** reconstruct_init, double samprate)
 
 
 /***** SECTION A7 ************************************************************
-* loadRecord:
+* loadRecord: This function loads the struture 'record' in the 'adc_double' vector.
+*             The time length of the record is stored in 'time_record'.
 *
+* It checks if the record has been filled in with 0's => It only loads the first values (which are different from 0).
 ******************************************************************************/
 int loadRecord(TesRecord* record, double *time_record, gsl_vector **adc_double)
 {
@@ -1314,12 +1353,12 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		gsl_vector_memcpy(recordDERIVATIVEOriginal,recordDERIVATIVE);
 	//}
 	//cout<<"recordDerivative"<<endl;
-	//for (int j=1000;j<1010;j++) cout<<j<<" "<<gsl_vector_get(recordNOTFILTERED,j)<<" "<<gsl_vector_get(recordDERIVATIVE,j)<<endl;
+	//for (int j=950;j<2010;j++) cout<<j<<" "<<gsl_vector_get(recordNOTFILTERED,j)<<" "<<gsl_vector_get(recordDERIVATIVE,j)<<endl;
 
 	// Find pulses of the record
 	if ((*reconstruct_init)->crtLib == 0)
 	{
-		if (findPulsesPROD (recordDERIVATIVE, &tstartgsl, &qualitygsl, &maxDERgsl,
+		/*if (findPulsesPROD (recordDERIVATIVE, &tstartgsl, &qualitygsl, &maxDERgsl,
 						&numPulses, &threshold,
 						tauFALL, scaleFactor, samprate,
 						samplesUp, nSgms,
@@ -1329,7 +1368,31 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 				{
 					message = "Cannot run routine findPulsesPROD";
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-				}
+				}*/
+		int tstartFirstEvent = 0;
+		bool triggerCondition;
+		//int tstart = 0;
+		int flagTruncated;
+		int tstartProvided;
+
+		if (InitialTriggering (recordDERIVATIVE, samplesUp, nSgms,
+				tauFALL, scaleFactor, samprate, stopCriteriaMKC, kappaMKC,
+				&triggerCondition, &tstartFirstEvent, &flagTruncated,
+				&threshold, (*reconstruct_init)->tstartPulse1))
+		{
+			message = "Cannot run routine InitialTriggering";
+			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
+
+		if (FindSecondaries	((*reconstruct_init)->maxPulsesPerRecord,
+				recordDERIVATIVE, threshold,
+				samplesUp,(*reconstruct_init),
+				tstartFirstEvent,
+				&numPulses,&tstartgsl,&qualitygsl, &maxDERgsl))
+		{
+			message = "Cannot run routine FindSecondaries";
+			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
 	}
 	else if ((*reconstruct_init)->crtLib == 1)
 	{
@@ -1348,6 +1411,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 
 	}
 	(*reconstruct_init)->threshold = threshold;
+	//cout<<"threshold: "<<threshold<<endl;
 
 	// To write test info
 	if ((*reconstruct_init)->intermediate == 1)
@@ -1698,7 +1762,7 @@ int writeTestInfo(ReconstructInitSIRENA* reconstruct_init, gsl_vector *recordNOT
 /***** SECTION  A11 ************************************************************
 * calculateTemplate function:
 ******************************************************************************/
-int calculateTemplate (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, double samprate, gsl_vector **pulseaverage, double *pulseaverageHeight, gsl_matrix **weight)
+int calculateTemplate (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, double samprate, gsl_vector **pulseaverage, double *pulseaverageHeight, gsl_matrix **covariance, gsl_matrix **weight)
 {
 	string message = "";
 
@@ -1825,15 +1889,16 @@ int calculateTemplate (ReconstructInitSIRENA *reconstruct_init, PulsesCollection
 
 	//cout<<"Pulsos usados para promediar "<<nonpileupPulses<<" de un total de "<<totalPulses<<" detectados"<<endl;
 
-	if (strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0)
+	if ((strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0) || (strcmp(reconstruct_init->EnergyMethod,"WN") == 0))
 	{
-		*weight = gsl_matrix_alloc(nonpileupPulses,nonpileupPulses);
-		if (weightMatrix(reconstruct_init, pulsesAll, pulsesInRecord, nonpileupPulses, nonpileup, *pulseaverage, weight))
+		if (weightMatrix(reconstruct_init, pulsesAll, pulsesInRecord, nonpileupPulses, nonpileup, *pulseaverage, covariance, weight))
 		{
 			message = "Cannot run weightMatrix routine";
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
 	}
+	//cout<<"COVAR1 "<<gsl_matrix_get(*covariance,0,1)<<" "<<gsl_matrix_get(*covariance,0,2)<<" "<<gsl_matrix_get(*covariance,0,3)<<endl;
+	//cout<<"COVAR1 "<<gsl_matrix_get(*covariance,1,0)<<" "<<gsl_matrix_get(*covariance,2,0)<<" "<<gsl_matrix_get(*covariance,3,0)<<endl;
 
 	//Just in case due to the noise influence in the alignment, the first sample of the pulseaverage is not around the baseline but higher
 	double meanLast200points, sgLast200points;
@@ -1869,6 +1934,20 @@ int calculateTemplate (ReconstructInitSIRENA *reconstruct_init, PulsesCollection
 
 /***** SECTION A12 ************************************************************
 * createHisto function: This function builds ...
+*
+* - Declare variables
+* - It is only going to work with the positive elements of the input vector -> invectoraux2
+* - Check if all the values of the invector are the same => Histogrm of only one bin
+* - Obtain invector_max and invector_min
+* - Obtain binSize
+* - Create histogram axis
+* - Free allocate of GSL vectors
+*
+* Parameters:
+* - invector: Input vector
+* - nbins: Number of bins to build the histogram
+* - xhistogsl: Output histogram x-axis
+* - yhistogsl: Output histogram y-axis
 ******************************************************************************/
 int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhistogsl, gsl_vector **yhistogsl)
 {
@@ -1884,6 +1963,7 @@ int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhistogsl, gsl_ve
     gsl_vector *invectoraux2;							// Auxiliary variable
     gsl_vector_view temp;								// In order to handle with gsl_vector_view (subvectors)
 
+    // It is only going to work with the positive elements of the input vector -> invectoraux2
     for (int i=0;i<size;i++)
     {
     	if (gsl_vector_get(invector,i) > 0)
@@ -2012,7 +2092,6 @@ int align(double samprate, gsl_vector **vector1, gsl_vector **vector2)
 	if ((shiftdouble > -1) && (shiftdouble < 1)) shiftint = 0;
 	else if (shiftdouble > 1)	shiftint = floor(shiftdouble);
 	else if (shiftdouble < -1)	shiftint = ceil(shiftdouble);
-	//cout<<"shiftint: "<<shiftint<<endl;
 
 	// Move forward or delay vector2 depending on positive or negative shift
 	if (shiftint > 0)
@@ -2042,8 +2121,7 @@ int align(double samprate, gsl_vector **vector1, gsl_vector **vector2)
 
 
 /***** SECTION A14 ************************************************************
-* shiftm function: This function returns (in vectorout) the vectorin delayed m samples
-*
+* shiftm function: This function returns (in vectorout) the vectorin delayed m samples.
 ******************************************************************************/
 int shiftm(gsl_vector *vectorin, gsl_vector *vectorout, int m)
 {
@@ -2064,8 +2142,7 @@ int shiftm(gsl_vector *vectorin, gsl_vector *vectorout, int m)
 
 
 /***** SECTION A15 ************************************************************
-* shift_m function: This function returns (in vectorout) the vectorin moved forward m samples
-*
+* shift_m function: This function returns (in vectorout) the vectorin moved forward m samples.
 ******************************************************************************/
 int shift_m(gsl_vector *vectorin, gsl_vector *vectorout, int m)
 {
@@ -2089,28 +2166,21 @@ int shift_m(gsl_vector *vectorin, gsl_vector *vectorout, int m)
 * weightMatrix function:
 *
 ******************************************************************************/
-int weightMatrix (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, long nonpileupPulses, gsl_vector *nonpileup, gsl_vector *pulseaverage, gsl_matrix **weight)
+int weightMatrix (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, long nonpileupPulses, gsl_vector *nonpileup, gsl_vector *pulseaverage, gsl_matrix **covariance, gsl_matrix **weight)
 {
-	//int totalPulses = nonpileup->size;
 	double elementValue = 0.0;
-	gsl_matrix *covariance = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
 	gsl_permutation *perm = gsl_permutation_alloc(reconstruct_init->pulse_length);
-	*weight = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
-	/*gsl_matrix *covariance = gsl_matrix_alloc(3,3);
-	gsl_permutation *perm = gsl_permutation_alloc(3);
-	gsl_matrix *covarianceinv = gsl_matrix_alloc(3,3);*/
 	int s=0;
 
-	// Elemnts of the diagonal of the matrix
+	// Elements of the diagonal of the matrix
 	for (int i=0;i<reconstruct_init->pulse_length;i++)
-	//for (int i=0;i<3;i++)
 	{
 		for (int p=0;p<pulsesAll->ndetpulses;p++)
 		{
 			if (gsl_vector_get(nonpileup,p) == 1)
 			{
 				elementValue = elementValue +
-						pow((gsl_vector_get(pulsesAll->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i))/1000.0,2.0); //KeV
+						pow(gsl_vector_get(pulsesAll->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i),2.0);
 			}
 		}
 		for (int p=0;p<pulsesInRecord->ndetpulses;p++)
@@ -2118,30 +2188,28 @@ int weightMatrix (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pul
 			if (gsl_vector_get(nonpileup,pulsesAll->ndetpulses+p) == 1)
 			{
 				elementValue = elementValue +
-						pow((gsl_vector_get(pulsesInRecord->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i))/1000.0,2.0); //KeV
+						pow(gsl_vector_get(pulsesInRecord->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i),2.0);
 			}
 		}
 		elementValue = elementValue/nonpileupPulses;
 
-		gsl_matrix_set(covariance,i,i,elementValue);
+		gsl_matrix_set(*covariance,i,i,elementValue);
 
 		elementValue = 0.0;
 	}
 
 	// Other elements
 	for (int i=0;i<reconstruct_init->pulse_length;i++)
-	//for (int i=0;i<3;i++)
 	{
 		for (int j=i+1;j<reconstruct_init->pulse_length;j++)
-		//for (int j=i+1;j<3;j++)
 		{
 			for (int p=0;p<pulsesAll->ndetpulses;p++)
 			{
 				if (gsl_vector_get(nonpileup,p) == 1)
 				{
 					elementValue = elementValue +
-						((gsl_vector_get(pulsesAll->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i))/1000.0)*
-						((gsl_vector_get(pulsesAll->pulses_detected[p].pulse_adc,j)-gsl_vector_get(pulseaverage,j))/1000.0);	//KeV
+						(gsl_vector_get(pulsesAll->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i))*
+						(gsl_vector_get(pulsesAll->pulses_detected[p].pulse_adc,j)-gsl_vector_get(pulseaverage,j));	//KeV
 				}
 			}
 			for (int p=0;p<pulsesInRecord->ndetpulses;p++)
@@ -2149,62 +2217,25 @@ int weightMatrix (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pul
 				if (gsl_vector_get(nonpileup,pulsesAll->ndetpulses+p) == 1)
 				{
 					elementValue = elementValue +
-						((gsl_vector_get(pulsesInRecord->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i))/1000.0)*
-						((gsl_vector_get(pulsesInRecord->pulses_detected[p].pulse_adc,j)-gsl_vector_get(pulseaverage,j))/1000.0);
+						(gsl_vector_get(pulsesInRecord->pulses_detected[p].pulse_adc,i)-gsl_vector_get(pulseaverage,i))*
+						(gsl_vector_get(pulsesInRecord->pulses_detected[p].pulse_adc,j)-gsl_vector_get(pulseaverage,j));
 				}
 			}
 			elementValue = elementValue/nonpileupPulses;
 
-			gsl_matrix_set(covariance,i,j,elementValue);
-			//cout<<i<<" "<<j<<" "<<elementValue<<endl;
-			gsl_matrix_set(covariance,j,i,elementValue);
+			gsl_matrix_set(*covariance,i,j,elementValue);
+			gsl_matrix_set(*covariance,j,i,elementValue);
 
 			elementValue = 0.0;
 		}
 	}
 
-	/*cout<<"0-0" <<gsl_matrix_get(covariance,0,0)<<endl;
-	cout<<"0-1 "<<gsl_matrix_get(covariance,0,1)<<endl;
-	cout<<"0-2 "<<gsl_matrix_get(covariance,0,2)<<endl;
-	cout<<"1-0 "<<gsl_matrix_get(covariance,1,0)<<endl;
-	cout<<"1-1 "<<gsl_matrix_get(covariance,1,1)<<endl;
-	cout<<"1-2 "<<gsl_matrix_get(covariance,1,2)<<endl;
-	cout<<"2-0 "<<gsl_matrix_get(covariance,2,0)<<endl;
-	cout<<"2-1 "<<gsl_matrix_get(covariance,2,1)<<endl;
-	cout<<"2-2 "<<gsl_matrix_get(covariance,2,2)<<endl;*/
+	gsl_matrix *covarianceaux = gsl_matrix_alloc((*covariance)->size1,(*covariance)->size2);
+	gsl_matrix_memcpy(covarianceaux,*covariance);
+	gsl_linalg_LU_decomp(covarianceaux, perm, &s);
+	gsl_linalg_LU_invert(covarianceaux, perm, *weight);
+	gsl_matrix_free(covarianceaux);
 
-	/*gsl_matrix *matrixaux = gsl_matrix_alloc(3,3);
-	gsl_matrix *matrixauxinv = gsl_matrix_alloc(3,3);
-	gsl_matrix_set(matrixaux,0,0,3);
-	gsl_matrix_set(matrixaux,0,1,4);
-	gsl_matrix_set(matrixaux,0,2,5);
-	gsl_matrix_set(matrixaux,1,0,4);
-	gsl_matrix_set(matrixaux,1,1,2);
-	gsl_matrix_set(matrixaux,1,2,3);
-	gsl_matrix_set(matrixaux,2,0,5);
-	gsl_matrix_set(matrixaux,2,1,3);
-	gsl_matrix_set(matrixaux,2,2,1);
-	int saux = 0;
-	gsl_permutation *permaux = gsl_permutation_alloc(3);
-	gsl_linalg_LU_decomp(matrixaux, permaux, &saux);
-	cout<<"Det(matrixaux): "<<gsl_linalg_LU_det(matrixaux, saux)<<endl;
-	gsl_linalg_LU_invert(matrixaux, permaux, matrixauxinv);
-	gsl_permutation_free(permaux);
-	cout<<"matrixauxinv:"<<endl;
-	cout<<gsl_matrix_get(matrixauxinv,0,0)<<" "<<gsl_matrix_get(matrixauxinv,0,1)<<" "<<gsl_matrix_get(matrixauxinv,0,2)<<" "<<gsl_matrix_get(matrixauxinv,1,0)<<" "<<gsl_matrix_get(matrixauxinv,1,1)<<" "<<gsl_matrix_get(matrixauxinv,1,2)<<" "<<gsl_matrix_get(matrixauxinv,2,0)<<" "<<gsl_matrix_get(matrixauxinv,2,1)<<" "<<gsl_matrix_get(matrixauxinv,2,2)<<endl;
-	gsl_matrix_free(matrixaux);
-	gsl_matrix_free(matrixauxinv);*/
-
-	gsl_linalg_LU_decomp(covariance, perm, &s);
-	//cout<<"Det(matrix): "<<gsl_linalg_LU_det(covariance, s)<<endl;
-	gsl_linalg_LU_invert(covariance, perm, *weight);
-	//gsl_linalg_LU_invert(covariance, perm, covarianceinv);
-	/*cout<<"weight:"<<endl;
-	cout<<gsl_matrix_get(*weight,0,0)<<" "<<gsl_matrix_get(*weight,0,1)<<" "<<gsl_matrix_get(*weight,0,2)<<" "<<gsl_matrix_get(*weight,1,0)<<" "<<gsl_matrix_get(*weight,1,1)<<" "<<gsl_matrix_get(*weight,1,2)<<" "<<gsl_matrix_get(*weight,2,0)<<" "<<gsl_matrix_get(*weight,2,1)<<" "<<gsl_matrix_get(*weight,2,2)<<endl;*/
-
-	//gsl_matrix_set_all(*weight,1.0);
-
-	gsl_matrix_free(covariance);
 	gsl_permutation_free(perm);
 
 	return (EPOK);
@@ -2216,7 +2247,7 @@ int weightMatrix (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pul
 * writeLibrary function:
 *
 ******************************************************************************/
-int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_vector **pulsetemplate, gsl_matrix *weight, bool appendToLibrary, fitsfile **inLibObject)
+int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_vector **pulsetemplate, gsl_matrix *covariance, gsl_matrix *weight, bool appendToLibrary, fitsfile **inLibObject)
 {
 	int status = EPOK;
 	int extver=0;
@@ -2234,6 +2265,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
 	gsl_matrix *matchedfilters_matrix = gsl_matrix_alloc(1,reconstruct_init->pulse_length);
 	gsl_matrix *matchedfiltersb0_matrix = gsl_matrix_alloc(1,reconstruct_init->pulse_length);
 	gsl_matrix *weight_matrix = gsl_matrix_alloc(1,reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+	gsl_matrix *covariance_matrix = gsl_matrix_alloc(1,reconstruct_init->pulse_length*reconstruct_init->pulse_length);
 
 	char keyname[10];
 	char *comment=NULL;
@@ -2284,6 +2316,10 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_matrix *weightaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->pulse_length*reconstruct_init->pulse_length);
     	gsl_matrix *weightaux1 = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->pulse_length*reconstruct_init->pulse_length);
 
+    	gsl_vector *covariancerow = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+    	gsl_matrix *covarianceaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+    	gsl_matrix *covarianceaux1 = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+
     	for (int i=0;i<eventcntLib;i++)
     	{
     		gsl_vector_set(energycolumn,i,gsl_vector_get(reconstruct_init->library_collection->energies,i));
@@ -2294,10 +2330,13 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     		gsl_matrix_set_row(matchedfiltersaux,i,reconstruct_init->library_collection->matched_filters[i].mfilter);
     		gsl_matrix_set_row(matchedfiltersb0aux,i,reconstruct_init->library_collection->matched_filters_B0[i].mfilter);
 
-    		if (strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0)
+    		if ((strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0) || (strcmp(reconstruct_init->EnergyMethod,"WN") == 0))
     		{
     			gsl_matrix_get_row(weightrow,reconstruct_init->library_collection->W,i);
     			gsl_matrix_set_row(weightaux,i,weightrow);
+
+    			gsl_matrix_get_row(covariancerow,reconstruct_init->library_collection->V,i);
+    			gsl_matrix_set_row(covarianceaux,i,covariancerow);
     		}
     	}
 
@@ -2322,10 +2361,13 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_matrix_set_row(matchedfiltersb0aux,eventcntLib,row_aux);
     	gsl_vector_free(row_aux);
 
-    	if (strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0)
+    	if ((strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0) || (strcmp(reconstruct_init->EnergyMethod,"WN") == 0))
     	{
     		matrix2vector(weight,&weightrow);
     		gsl_matrix_set_row(weightaux,eventcntLib,weightrow);
+
+    		matrix2vector(covariance,&covariancerow);
+    		gsl_matrix_set_row(covarianceaux,eventcntLib,covariancerow);
     	}
 
     	gsl_permutation *perm = gsl_permutation_alloc(eventcntLib+1);
@@ -2350,10 +2392,13 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     		gsl_matrix_get_row(matchedfiltersrowb0,matchedfiltersb0aux,gsl_permutation_get(perm,i));
     		gsl_matrix_set_row(matchedfiltersb0aux1,i,matchedfiltersrowb0);
 
-    		if (strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0)
+    		if ((strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0) || (strcmp(reconstruct_init->EnergyMethod,"WN") == 0))
     		{
     			gsl_matrix_get_row(weightrow,weightaux,gsl_permutation_get(perm,i));
     			gsl_matrix_set_row(weightaux1,i,weightrow);
+
+    			gsl_matrix_get_row(covariancerow,covarianceaux,gsl_permutation_get(perm,i));
+    			gsl_matrix_set_row(covarianceaux1,i,covariancerow);
     		}
     	}
 
@@ -2365,13 +2410,12 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_matrix_memcpy(matchedfiltersaux,matchedfiltersaux1);
     	gsl_matrix_memcpy(matchedfiltersb0aux,matchedfiltersb0aux1);
 
-    	if (strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0)
+    	if ((strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0) || (strcmp(reconstruct_init->EnergyMethod,"WN") == 0))
     	{
     		gsl_matrix_memcpy(weightaux,weightaux1);
-    	}
 
-    	//cout<<gsl_matrix_get(weightaux,0,0)<<" "<<gsl_matrix_get(weightaux,0,1)<<" "<<gsl_matrix_get(weightaux,0,2)<<endl;
-    	//cout<<gsl_matrix_get(weightaux,1,0)<<" "<<gsl_matrix_get(weightaux,1,1)<<" "<<gsl_matrix_get(weightaux,1,2)<<endl;
+    		gsl_matrix_memcpy(covarianceaux,covarianceaux1);
+    	}
 
     	gsl_permutation_free(perm);
     	gsl_vector_free(energycolumnaux);
@@ -2381,6 +2425,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_matrix_free(matchedfiltersaux1);
     	gsl_matrix_free(matchedfiltersb0aux1);
     	gsl_matrix_free(weightaux1);
+    	gsl_matrix_free(covarianceaux1);
 
     	obj.inObject = *inLibObject;
     	obj.nameTable = new char [255];
@@ -2452,8 +2497,18 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
        	      	EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
        	    }
 
-       	    if (strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0)
+       	    if ((strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0) || (strcmp(reconstruct_init->EnergyMethod,"WN") == 0))
        	    {
+       	    	strcpy(obj.nameCol,"COVARM");
+       	    	strcpy(obj.unit," ");
+       	    	gsl_matrix_get_row(covariancerow,covarianceaux,i);
+       	    	gsl_matrix_set_row(covariance_matrix,0,covariancerow);
+       	    	if (writeFitsComplex(obj, covariance_matrix))
+       	    	{
+       	    		message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+       	    		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+       	    	}
+
        	    	strcpy(obj.nameCol,"WEIGHTM");
        	    	strcpy(obj.unit," ");
        	    	gsl_matrix_get_row(weightrow,weightaux,i);
@@ -2472,6 +2527,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_vector_free(matchedfiltersrowb0);
 
     	gsl_vector_free(weightrow);
+    	gsl_vector_free(covariancerow);
 
     	gsl_vector_free (energycolumn);
     	gsl_vector_free (estenergycolumn);
@@ -2481,6 +2537,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     	gsl_matrix_free(matchedfiltersb0aux);
 
     	gsl_matrix_free(weightaux);
+    	gsl_matrix_free(covarianceaux);
 
     	delete [] obj.nameTable;
     	delete [] obj.nameCol;
@@ -2497,13 +2554,6 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
 
     	char keyvalstr[1000];
 
-    	/*strcpy(keyname,"PROC");
-    	const char *procnumber = (char) eventcntLib;
-    	strcat(keyname,procnumber);
-    	const char * charproc;
-    	strcpy(keyvalstr,"PROC");
-    	strcat(keyvalstr,"0");
-    	strcat(keyvalstr," Starting parameter list");*/
     	char str_procnumber[125];			sprintf(str_procnumber,"%d",eventcntLib);
     	string strprocname (string("PROC") + string(str_procnumber));
     	strcpy(keyname,strprocname.c_str());
@@ -2774,6 +2824,33 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     		EP_PRINT_ERROR(message,status); return(EPFAIL);
     	}
 
+    	char str_tstartPulse1[125];	sprintf(str_tstartPulse1,"%d",reconstruct_init->tstartPulse1);
+    	strproc=string("tstartPulse1 = ") + string(str_tstartPulse1);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_tstartPulse2[125];	sprintf(str_tstartPulse2,"%d",reconstruct_init->tstartPulse2);
+    	strproc=string("tstartPulse2 = ") + string(str_tstartPulse2);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
+    	char str_tstartPulse3[125];	sprintf(str_tstartPulse3,"%d",reconstruct_init->tstartPulse3);
+    	strproc=string("tstartPulse3 = ") + string(str_tstartPulse3);
+    	strcpy(keyvalstr,strproc.c_str());
+    	if (fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,comment,&status))
+    	{
+    		message = "Cannot write keyword " + string(keyname) + " in library file " + string(inLibName);
+    		EP_PRINT_ERROR(message,status); return(EPFAIL);
+    	}
+
     	strcpy(keyname,strprocname.c_str());
     	strprocval = string("PROC") + string(str_procnumber) + string(" Ending parameter list");
     	strcpy(keyvalstr,strprocval.c_str());
@@ -2879,8 +2956,17 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
     		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
     	}
 
-    	if (strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0)
+    	if ((strcmp(reconstruct_init->EnergyMethod,"WEIGHT") == 0) || (strcmp(reconstruct_init->EnergyMethod,"WN") == 0))
     	{
+    		// Creating COVARM Column
+    		strcpy(obj.nameCol,"COVARM");
+    		strcpy(obj.unit," ");
+    		if (writeFitsComplex(obj, covariance))
+    		{
+    			message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+    			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+    		}
+
     		// Creating WEIGHTM Column
     		strcpy(obj.nameCol,"WEIGHTM");
     		strcpy(obj.unit," ");
@@ -2917,8 +3003,9 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double estenergy, gsl_
 
 
 /***** SECTION A18 ************************************************************
-* matrix2vector function:
-*
+* matrix2vector function: This function transforms an input n x n square matrix into an output n^2 vector.
+*                         It puts the first row of the matrix (n elements) in the first n elements of the vector (from 0 to n-1),
+*                         the second row of the matrix in the (n,2n-1)elements of the vector and so on.
 ******************************************************************************/
 int matrix2vector (gsl_matrix *matrixin, gsl_vector **vectorout)
 {
@@ -2945,8 +3032,9 @@ int matrix2vector (gsl_matrix *matrixin, gsl_vector **vectorout)
 
 
 /***** SECTION A19 ************************************************************
-* vector2matrix function:
-*
+* vector2matrix function: This function transforms an input n^2 vector into an output n x n square matrix.
+*                         It puts the first n elements of the vector in the first row of the matrix,
+*                         the second group of n elements (from n to 2n-1) of the vector in the second row and so on.
 ******************************************************************************/
 int vector2matrix (gsl_vector *vectorin, gsl_matrix **matrixout)
 {
@@ -2990,6 +3078,7 @@ int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init)
 
 	IOData obj;
 
+	gsl_vector *vectorAux_E;
 	gsl_matrix *matrixAux_PULSE;
 	gsl_matrix *matrixAux_W;
 	gsl_vector *matrixrow = gsl_vector_alloc(reconstruct_init->pulse_length);
@@ -3003,6 +3092,9 @@ int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init)
 	gsl_vector *Y = gsl_vector_alloc(reconstruct_init->pulse_length);
 	gsl_vector *Z = gsl_vector_alloc(reconstruct_init->pulse_length);
 	double r;
+	double Ea, Eb;
+	gsl_vector *Pab = gsl_vector_alloc(reconstruct_init->pulse_length);
+	gsl_vector *Dab = gsl_vector_alloc(reconstruct_init->pulse_length);
 	gsl_vector *vector_aux = gsl_vector_alloc(1);
 	gsl_vector *vector_aux2 = gsl_vector_alloc(reconstruct_init->pulse_length);
 	gsl_matrix *matrix_aux = gsl_matrix_alloc(1,reconstruct_init->pulse_length);
@@ -3038,6 +3130,14 @@ int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init)
 
 	obj.iniRow = 1;
 	obj.endRow = totalrows;
+	strcpy(obj.nameCol,"ENERGY");
+	vectorAux_E = gsl_vector_alloc(totalrows);
+	if (readFitsSimple (obj,&vectorAux_E))
+	{
+		message = "Cannot run readFitsSimple routine for column " + string(obj.nameCol);
+		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+	}
+
 	strcpy(obj.nameCol,"PULSE");
 	matrixAux_PULSE = gsl_matrix_alloc(totalrows,reconstruct_init->pulse_length);
 	if (readFitsComplex (obj,&matrixAux_PULSE))
@@ -3065,8 +3165,6 @@ int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init)
 		gsl_vector_memcpy(T,matrixrow);
 		gsl_matrix_get_row(matrixrow,matrixAux_PULSE,i);
 		gsl_vector_sub(T,matrixrow);
-		gsl_vector_scale(T,1/1000.0); //KeV
-		//for (int j=0;j<1024;j++)	cout<<j<<" "<<gsl_vector_get(T,j)<<endl;
 		gsl_matrix_set_row(matrix_aux,0,T);
 		if (writeFitsComplex(obj, matrix_aux))
 		{
@@ -3133,6 +3231,32 @@ int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init)
 			message = "Cannot run writeFitsSimple routine for column " + string(obj.nameCol);
 		    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
+
+		strcpy(obj.nameCol,"PAB");
+		strcpy(obj.unit," ");
+		Ea = gsl_vector_get(vectorAux_E,i);
+		Eb = gsl_vector_get(vectorAux_E,i+1);
+		gsl_vector_memcpy(Pab,T);
+		gsl_vector_scale(Pab,-Ea/(Eb-Ea));
+		gsl_matrix_get_row(matrixrow,matrixAux_PULSE,i);
+		gsl_vector_add(Pab,matrixrow);
+		gsl_matrix_set_row(matrix_aux,0,Pab);
+		if (writeFitsComplex(obj, matrix_aux))
+		{
+			message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+		    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
+
+		strcpy(obj.nameCol,"DAB");
+		strcpy(obj.unit," ");
+		gsl_vector_memcpy(Dab,T);
+		gsl_vector_scale(Dab,1/(Eb-Ea));
+		gsl_matrix_set_row(matrix_aux,0,Dab);
+		if (writeFitsComplex(obj, matrix_aux))
+		{
+			message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+		    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
 	}
 
 	// Close the library FITS file
@@ -3142,6 +3266,7 @@ int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init)
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 
+	gsl_vector_free(vectorAux_E);
 	gsl_matrix_free(matrixAux_PULSE);
 	gsl_matrix_free(matrixAux_W);
 	gsl_vector_free(matrixrow);
@@ -3152,11 +3277,12 @@ int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init)
 	gsl_vector_free(Xvector);
 	gsl_vector_free(Y);
 	gsl_vector_free(Z);
+	gsl_vector_free(Pab);
+	gsl_vector_free(Dab);
 	gsl_vector_free(vector_aux);
 	gsl_vector_free(vector_aux2);
 	gsl_matrix_free(matrix_aux);
 	gsl_matrix_free(matrix_aux2);
-	cout<<"Paso8"<<endl;
 
 	return(EPOK);
 }
@@ -3225,9 +3351,36 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 	{
 		runEMethod = 2;
 	}
+	else if (strcmp((*reconstruct_init)->EnergyMethod,"WEIGHTN") == 0)
+	{
+		runEMethod = 3;
+	}
 	else
 	{
-	    message = "Parameter reconstruct_init->EnergyMethod out of range: [NOLAGS/LAGS/WEIGHT]";
+	    message = "Parameter reconstruct_init->EnergyMethod out of range: [NOLAGS/LAGS/WEIGHT/WEIGHTN]";
+	    EP_EXIT_ERROR(message,EPFAIL);
+	}
+
+	int OFlength_strategy;
+	if (strcmp((*reconstruct_init)->OFStrategy,"FREE") == 0)
+	{
+		OFlength_strategy = 0;
+	}
+	else if (strcmp((*reconstruct_init)->OFStrategy,"BASE2") == 0)
+	{
+		OFlength_strategy = 1;
+	}
+	else if (strcmp((*reconstruct_init)->OFStrategy,"BYGRADE") == 0)
+	{
+		OFlength_strategy = 2;
+	}
+	else if (strcmp((*reconstruct_init)->OFStrategy,"FIXED") == 0)
+	{
+		OFlength_strategy = 3;
+	}
+	else
+	{
+	    message = "Parameter reconstruct_init->OFStrategy out of range: [FREE/BASE2/BYGRADE/FIXED]";
 	    EP_EXIT_ERROR(message,EPFAIL);
 	}
 
@@ -3237,7 +3390,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 	double uncE;
 
 	// Declare variables
-	gsl_vector *optimalfilter_SHORT;	// Resized optimal filter expressed in the time domain (optimalfilter(t))
+	gsl_vector *optimalfilter_SHORT = NULL;	// Resized optimal filter expressed in the time domain (optimalfilter(t))
 	gsl_vector *optimalfilter_f_SHORT = NULL;		// Resized optimal filter f's when f's are according to [0,...fmax,-fmax,...] (frequency domain)
 	gsl_vector *optimalfilter_FFT_SHORT = NULL;	// Resized optimal filter magnitudes when f's are according to [0,...fmax,-fmax,...] (frequency domain)
 	gsl_vector_complex *optimalfilter_FFT_complex = NULL;
@@ -3271,6 +3424,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 
 	if (runF0orB0val == 1)
 	{
+	    //cout<<"Elimina la baseline"<<endl;
 		gsl_vector *baselinegsl = gsl_vector_alloc(recordAux->size);
 		gsl_vector_set_all(baselinegsl,-1.0*(*reconstruct_init)->baseline);
 		gsl_vector_add(recordAux,baselinegsl);
@@ -3281,7 +3435,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 	{
 		filtergsl = gsl_vector_alloc((*reconstruct_init)->pulse_length);			// Filter values
 
-		if (strcmp((*reconstruct_init)-> EnergyMethod,"WEIGHT") != 0)
+		if ((strcmp((*reconstruct_init)-> EnergyMethod,"WEIGHT") != 0) && (strcmp((*reconstruct_init)-> EnergyMethod,"WEIGHTN") != 0))
 		{
 		if (nRecord == 1)
 		{
@@ -3431,29 +3585,28 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 			// Pulses are going to be validated by checking its quality
 			if ((*pulsesInRecord)->pulses_detected[i].quality < 10)	// Neither truncated or saturated
 			{
-				resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
+				//resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
 				//resize_mf = pow(2,floor(log2(resize_mf)));
 
 				if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
-				else												 		(*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
+				//else												 		(*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
+				else												 		(*pulsesInRecord)->pulses_detected[i].grade1 = (*pulsesInRecord)->pulses_detected[i].pulse_duration;
 
-				if (strcmp((*reconstruct_init)-> EnergyMethod,"WEIGHT") != 0)
+				if (pulseGrading(*reconstruct_init,(*pulsesInRecord)->pulses_detected[i].grade1,(*pulsesInRecord)->pulses_detected[i].grade2_1,OFlength_strategy,&pulseGrade,&resize_mf))
 				{
-					if (pulseGrading(*reconstruct_init,(*pulsesInRecord)->pulses_detected[i].grade1,(*pulsesInRecord)->pulses_detected[i].grade2_1,&pulseGrade))
-					{
-						message = "Cannot run routine pulseGrading";
-						EP_EXIT_ERROR(message,EPFAIL);
-					}
+					message = "Cannot run routine pulseGrading";
+					EP_EXIT_ERROR(message,EPFAIL);
 				}
+				//cout<<"resize_mf="<<resize_mf<<endl;
 
 				// Pulse
 				tstartSamplesRecord = floor((*pulsesInRecord)->pulses_detected[i].Tstart/record->delta_t+0.5)-tstartRecordSamples;
 				pulse = gsl_vector_alloc(resize_mf);
 				temp = gsl_vector_subvector(recordAux,tstartSamplesRecord,resize_mf);
 				gsl_vector_memcpy(pulse,&temp.vector);
-				
-				// EnergyMethod != WEIGHT => Filter and optimal filter
-				if (strcmp((*reconstruct_init)-> EnergyMethod,"WEIGHT") != 0)
+
+				// EnergyMethod != WEIGHT/WEIGHTN => Filter and optimal filter
+				if ((strcmp((*reconstruct_init)-> EnergyMethod,"WEIGHT") != 0) && (strcmp((*reconstruct_init)-> EnergyMethod,"WEIGHTN") != 0))
 				{
 					// Filter
 					filtergsl_aux= gsl_vector_alloc((*reconstruct_init)->library_collection->matched_filters[0].mfilter_duration);
@@ -3498,8 +3651,7 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 				    EP_EXIT_ERROR(message,EPFAIL);
 				}
 
-				//for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+resize_mf-1);j++)
-				for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+resize_mf);j++)
+				for (int j=tstartSamplesRecord;j<(tstartSamplesRecord+(model->size));j++)
 				{
 					gsl_vector_set(recordAux,j,gsl_vector_get(recordAux,j)-gsl_vector_get(model,j-tstartSamplesRecord));
 				}
@@ -3513,9 +3665,6 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 					}
 				}
 
-				//if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
-				//else												 (*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
-				//(*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = uncE/1e3; // In SIXTE, SIGNAL is in keV
 				(*pulsesInRecord)->pulses_detected[i].energy = uncE/1e3;
 			}
@@ -3539,7 +3688,6 @@ void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSI
 
 				if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
 				else														(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
-				//(*pulsesInRecord)->pulses_detected[i].grade1 = 0;
 				(*pulsesInRecord)->pulses_detected[i].ucenergy = 0.0;
 				(*pulsesInRecord)->pulses_detected[i].energy = 0.0;
 			} // End if
@@ -3986,6 +4134,11 @@ int find_Esboundary(double parameterToUse, gsl_vector *valuesToCompare, Reconstr
 	string message = "";
 	int nummodels = valuesToCompare->size;
 
+	/*cout<<"parameterToUse: "<<parameterToUse<<endl;
+	cout<<"valuesToCompare0: "<<gsl_vector_get(valuesToCompare,0)<<endl;
+	cout<<"valuesToCompare1: "<<gsl_vector_get(valuesToCompare,1)<<endl;
+	cout<<"valuesToCompare2: "<<gsl_vector_get(valuesToCompare,2)<<endl;*/
+
 	if (parameterToUse < gsl_vector_get(valuesToCompare,0))
 	{
 		*indexEalpha = 0;
@@ -4024,7 +4177,7 @@ int find_Esboundary(double parameterToUse, gsl_vector *valuesToCompare, Reconstr
 /***** SECTION BX ************************************************************
 * pulseGrading:
 ****************************************/
-int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade2_1, int *pulseGrade)
+int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade2_1, int OFlength_strategy, int *pulseGrade, long *OFlength)
 {
 	// SPA
 	//			 Next pulse  Previous pulse
@@ -4066,13 +4219,45 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
 
 	//cout<<"grade1: "<<grade1<<endl;
 	//cout<<"grade2_1: "<<grade2_1<<endl;
-	if (grade2_1 < L2)	*pulseGrade = -1;
+	if (grade2_1 < L2)
+	{
+		*pulseGrade = -1;
+		if (OFlength_strategy == 0) 		*OFlength = grade1;
+		else if (OFlength_strategy == 1) 	*OFlength = pow(2,floor(log2(grade1)));
+		//else if (OFlength_strategy == 2) 	*OFlength = L2;
+		else if (OFlength_strategy == 2) 	*OFlength = grade1;
+	}
 	else
 	{
-		if (grade1 >= H1) 		*pulseGrade = 0;
-		else if (grade1 >= M1)	*pulseGrade = 1;
-		else					*pulseGrade = -1;
+		if (grade1 >= H1)
+		{
+			*pulseGrade = 0;
+			if (OFlength_strategy == 0)			*OFlength = grade1;
+			else if (OFlength_strategy == 1) 	*OFlength = pow(2,floor(log2(grade1)));
+			else if (OFlength_strategy == 2) 	*OFlength = H1;
+			else if (OFlength_strategy == 3) 	*OFlength = reconstruct_init->OFLength;
+		}
+		else if (grade1 >= M1)
+		{
+			*pulseGrade = 1;
+			if (OFlength_strategy == 0) 		*OFlength = grade1;
+			else if (OFlength_strategy == 1) 	*OFlength = pow(2,floor(log2(grade1)));
+			else if (OFlength_strategy == 2)	*OFlength = H1/4;
+			else if (OFlength_strategy == 3) 	*OFlength = reconstruct_init->OFLength;
+		}
+		else
+		{
+			*pulseGrade = -1;
+			if (OFlength_strategy == 0)			*OFlength = grade1;
+			else if (OFlength_strategy == 1) 	*OFlength = pow(2,floor(log2(grade1)));
+			//else if (OFlength_strategy == 2) 	*OFlength = L2;
+			else if (OFlength_strategy == 2) 	*OFlength = grade1;
+			else if (OFlength_strategy == 3) 	*OFlength = reconstruct_init->OFLength;
+		}
 	}
+
+	//cout<<"pulseGrade: "<<*pulseGrade<<endl;
+	//cout<<"OFlength: "<<*OFlength<<endl;
 
 	return EPOK;
 }
@@ -4137,7 +4322,7 @@ int calculateUCEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, g
 					//cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", E="<<gsl_vector_get(calculatedEnergy_vector,j)<<endl;
 				}
 
-				if (pulseGrade < 0)		*calculatedEnergy = gsl_vector_get(calculatedEnergy_vector,0);
+				if ((pulseGrade < 0) || (runEMethod == 0))		*calculatedEnergy = gsl_vector_get(calculatedEnergy_vector,0);
 				else
 				{
 					if (polyFit (lags_vector, calculatedEnergy_vector, &a, &b, &c))
@@ -4249,7 +4434,7 @@ int calculateUCEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, g
 		gsl_vector_free(lags_vector);
 		gsl_vector_free(calculatedEnergy_vector);
 	}
-	else if (runEMethod == 2)
+	else if (runEMethod == 2) //WEIGHT
 	{
 		int pulselength = reconstruct_init->pulse_length;
 		gsl_vector *D = gsl_vector_alloc(vector->size);
@@ -4263,50 +4448,42 @@ int calculateUCEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, g
 		double scalar_aux2;
 		double scalar_aux3;
 		gsl_vector *vector_aux = gsl_vector_alloc(vector->size);
+		gsl_vector *vector_aux1 = gsl_vector_alloc(reconstruct_init->pulse_length);
 		gsl_vector *vector_auxlong = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
 		gsl_matrix *matrix_auxlong = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
 
-		gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates[indexEalpha].ptemplate,0,vector->size);
+		tempv = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates[indexEalpha].ptemplate,0,vector->size);
 		gsl_vector_memcpy(Salpha,&tempv.vector);
 		gsl_vector_memcpy(D,vector);
 		gsl_vector_sub(D,Salpha);
-		gsl_vector_scale(D,1/1000.0); //KeV
 
-		gsl_matrix_get_row(vector_aux,reconstruct_init->library_collection->Y,indexEalpha);
-		gsl_vector_subvector(vector_aux,0,vector->size);
+		gsl_matrix_get_row(vector_aux1,reconstruct_init->library_collection->Y,indexEalpha);
+		tempv = gsl_vector_subvector(vector_aux1,0,vector->size);
 		gsl_vector_memcpy(Y,&tempv.vector);
 		gsl_blas_ddot(D,Y,&scalar_aux1);
 		scalar_aux1 = 2*scalar_aux1;
-		cout<<"scalar_aux1_1: "<<scalar_aux1<<endl;
 
 		gsl_matrix_get_row(vector_auxlong,reconstruct_init->library_collection->X,indexEalpha);
 		vector2matrix(vector_auxlong,&matrix_auxlong);
-		gsl_matrix_submatrix(matrix_auxlong,0,0,vector->size,vector->size);
+		tempm = gsl_matrix_submatrix(matrix_auxlong,0,0,vector->size,vector->size);
 		gsl_matrix_memcpy(X,&tempm.matrix);
 		gsl_blas_dgemv(CblasNoTrans, 1.0, X, D, 0.0, vector_aux);
 		gsl_blas_ddot(D,vector_aux,&scalar_aux2);
-		cout<<"scalar_aux2_1: "<<scalar_aux2<<endl;
 
 		scalar_aux1 = scalar_aux1-scalar_aux2;
 		scalar_aux1 = 3*scalar_aux1/gsl_vector_get(reconstruct_init->library_collection->r,indexEalpha);
-		cout<<"scalar_aux1_2: "<<scalar_aux1<<endl;
 
-		gsl_matrix_get_row(vector_aux,reconstruct_init->library_collection->Z,indexEalpha);
-		gsl_vector_subvector(vector_aux,0,vector->size);
+		gsl_matrix_get_row(vector_aux1,reconstruct_init->library_collection->Z,indexEalpha);
+		tempv = gsl_vector_subvector(vector_aux1,0,vector->size);
 		gsl_vector_memcpy(Z,&tempv.vector);
 		gsl_blas_ddot(D,Z,&scalar_aux3);
-		cout<<"scalar_aux3_1: "<<scalar_aux3<<endl;
-		scalar_aux2 = (2*scalar_aux3-1)*2;
-		cout<<"scalar_aux2_2: "<<scalar_aux2<<endl;
+		scalar_aux2 = pow(2*scalar_aux3-1,2.0);
 
 		scalar_aux1 = sqrt(scalar_aux1+scalar_aux2);
-		cout<<"scalar_aux1_3: "<<scalar_aux1<<endl;
 
 		scalar_aux3 = 2*scalar_aux3-1;
-		cout<<"scalar_aux3_2: "<<scalar_aux3<<endl;
 
 		scalar_aux1 = (scalar_aux3 + scalar_aux1)*(gsl_vector_get(reconstruct_init->library_collection->r,indexEalpha)/3)*(gsl_vector_get(reconstruct_init->library_collection->energies,indexEbeta)-gsl_vector_get(reconstruct_init->library_collection->energies,indexEalpha));
-		cout<<"scalar_aux1_4: "<<scalar_aux1<<endl;
 
 		*calculatedEnergy = gsl_vector_get(reconstruct_init->library_collection->energies,indexEalpha) + scalar_aux1;
 		cout<<"*calculatedEnergy: "<<*calculatedEnergy<<endl;
@@ -4317,8 +4494,51 @@ int calculateUCEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, g
 		gsl_vector_free(Y);
 		gsl_vector_free(Z);
 		gsl_vector_free(vector_aux);
+		gsl_vector_free(vector_aux1);
 		gsl_vector_free(vector_auxlong);
 		gsl_matrix_free(matrix_auxlong);
+	}
+	else if (runEMethod == 3) //WEIGHTN
+	{
+		cout<<"Paso1"<<endl;
+		gsl_vector *P_Pab = gsl_vector_alloc(reconstruct_init->pulse_length);
+		gsl_vector *Dab = gsl_vector_alloc(reconstruct_init->pulse_length);
+		gsl_matrix *Wm = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
+		gsl_vector *Wv = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+		gsl_vector *WDab = gsl_vector_alloc(reconstruct_init->pulse_length);
+		double DabWDab;
+		gsl_vector *Dab_mod = gsl_vector_alloc(reconstruct_init->pulse_length);
+		gsl_vector *WP_Pab = gsl_vector_alloc(reconstruct_init->pulse_length);
+
+		gsl_matrix_get_row(Dab,reconstruct_init->library_collection->DAB,indexEalpha);
+		cout<<"Paso3"<<endl;
+
+		gsl_matrix_get_row(P_Pab,reconstruct_init->library_collection->PAB,indexEalpha);
+		cout<<"Paso4"<<endl;
+
+		gsl_matrix_get_row(Wv,reconstruct_init->library_collection->W,indexEalpha);
+		vector2matrix(Wv,&Wm);
+		gsl_blas_dgemv(CblasNoTrans, 1.0, Wm, Dab, 0.0, WDab);
+		gsl_blas_ddot(Dab,WDab,&DabWDab);
+		cout<<"Paso5"<<endl;
+
+		gsl_vector_memcpy(Dab_mod,Dab);
+		gsl_vector_scale(Dab_mod,1/DabWDab);
+		cout<<"Paso6"<<endl;
+
+		gsl_blas_dgemv(CblasNoTrans, 1.0, Wm, P_Pab, 0.0, WDab);
+		gsl_blas_ddot(Dab_mod,WP_Pab,calculatedEnergy);
+		cout<<"Paso7"<<endl;
+		cout<<"*calculatedEnergy: "<<*calculatedEnergy<<endl;
+
+		gsl_vector_free(P_Pab);
+		gsl_vector_free(Dab);
+		gsl_matrix_free(Wm);
+		gsl_vector_free(Wv);
+		gsl_vector_free(WDab);
+		gsl_vector_free(Dab_mod);
+		gsl_vector_free(WP_Pab);
+		cout<<"Paso8"<<endl;
 	}
 
     return EPOK;
@@ -5083,30 +5303,30 @@ void runEnergy(ReconstructInitSIRENA** reconstruct_init, PulsesCollection** puls
 ****************************************************************************/
 int loadUCEnergies(ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, long *nz, gsl_vector **zi, double *E0z)
 {
-	*E0z = reconstruct_init->monoenergy/1e3;  // keV
+        *E0z = reconstruct_init->monoenergy/1e3;  // keV
 
-	*nz = 0;
+        *nz = 0;
 
-	gsl_vector *ziAUX = gsl_vector_alloc(pulsesAll->ndetpulses);
-	gsl_vector_set_zero(ziAUX);
+        gsl_vector *ziAUX = gsl_vector_alloc(pulsesAll->ndetpulses);
+        gsl_vector_set_zero(ziAUX);
 
-	for (int i=0;i<pulsesAll->ndetpulses;i++)
-	{
-		if (pulsesAll->pulses_detected[i].quality == 0)
-		{
-			gsl_vector_set(ziAUX, *nz, pulsesAll->pulses_detected[i].ucenergy);  // Already in keV
-			*nz = *nz + 1;
-		}
-	}
+        for (int i=0;i<pulsesAll->ndetpulses;i++)
+        {
+                if (pulsesAll->pulses_detected[i].quality == 0)
+                {
+                        gsl_vector_set(ziAUX, *nz, pulsesAll->pulses_detected[i].ucenergy);  // Already in keV
+                        *nz = *nz + 1;
+                }
+        }
 
-	gsl_vector_view temp;
-	*zi = gsl_vector_alloc(*nz);
-	gsl_vector_subvector(ziAUX,0,*nz);
-	gsl_vector_memcpy(*zi,&temp.vector);
+        gsl_vector_view temp;
+        *zi = gsl_vector_alloc(*nz);
+        gsl_vector_subvector(ziAUX,0,*nz);
+        gsl_vector_memcpy(*zi,&temp.vector);
 
-	gsl_vector_free(ziAUX);
+        gsl_vector_free(ziAUX);
 
-	return(EPOK);
+        return(EPOK);
 }
 /*xxxx end of SECTION CX xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
@@ -5177,7 +5397,15 @@ int calculus_bc (int calibLQ, long nx, gsl_vector *xi, double E0x, long ny, gsl_
 
 
 /***** SECTION CX ************************************************************
-* calculateEnergy: This function...
+* calculateEnergy: This function converts uncalibrated energies (e) into energies (E).
+*
+* It reads the uncalibrated energies of the found pulses from the 'pulses' structure and it write the energies in the same structure.
+*
+* It uses the info in the 'reconstruct_init' structure: calilbration factors ('b_cF' and 'c_cF') and the 'calibLQ' element to know
+* if the calibration of the energies is linear or quadratic:
+*
+* Linear: E = b·e
+* Quadratic: E = b·e + c·e²
 ****************************************************************************/
 int calculateEnergy(ReconstructInitSIRENA *reconstruct_init, PulsesCollection **pulses)
 {

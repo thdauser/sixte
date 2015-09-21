@@ -126,8 +126,14 @@ struct Parameters {
 	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
 	char FilterMethod[3];
 	
-	//Energy Method: NOLAGS, LAGS or WEIGHT **/
-	char EnergyMethod[7];
+	//Energy Method: NOLAGS, LAGS, WEIGHT or WEIGHTN **/
+	char EnergyMethod[8];
+
+	//Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
+	char OFStrategy[8];
+
+	//Optimal Filter length (taken into account if OFStrategy=FIXED) **/
+	int OFLength;
 
 	//Linear (1) or Quadratic calibration of the energies (2)
 	int calibLQ;
@@ -153,6 +159,11 @@ struct Parameters {
 	/** Monochromatic energy of the second calibration file to calculate calibration factors b,c (if mode=0 & crtLib=0)**/
 	double monoenergy2;
 	
+	// Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0)
+	int tstartPulse1;
+	int tstartPulse2;
+	int tstartPulse3;
+
 	// END SIRENA PARAMETERS
 };
 
