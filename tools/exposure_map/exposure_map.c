@@ -393,7 +393,6 @@ static int get_pixel_hit(GenInst **inst,int ninst, Vector pixel_skypos, double t
 }
 
 static float get_single_expos_value(int x,int y, struct wcsprm *wcs,
-		struct Parameters par,Vignetting *vignetting,
 		struct Telescope telescope, GenInst **inst, int ninst, int *status){
 
 	// get world coordinates from the projection
@@ -420,18 +419,13 @@ static float get_single_expos_value(int x,int y, struct wcsprm *wcs,
 
 			// Add the exposure time step weighted with the vignetting
 			// factor for this particular off-axis angle at 1 keV.
-			double addvalue=par.dt;
 			// Calculate the off-axis angle ([rad])
-			double delta=acos(scalar_product(&telescope.nz, &pixpos));
-			if (NULL!=vignetting) {
-				addvalue*=get_Vignetting_Factor(vignetting, 1., delta, 0.);
-			}
-			return addvalue;
+			return  acos(scalar_product(&telescope.nz, &pixpos));
 		} else {
-			return 0.0;
+			return -1.0;
 		}
 	} else {
-		return 0.0;
+		return -1.0;
 	}
 }
 
@@ -452,6 +446,18 @@ static void get_geninst_all(GenInst **inst,xmlarray xmls,const unsigned int seed
     	}
     }
 
+}
+
+static void release_expoMap(float *** expoMap, int n){
+if (NULL!=*expoMap) {
+	  long x;
+	  for (x=0; x<n; x++) {
+		  if (NULL!=(*expoMap)[x]) {
+			  free((*expoMap)[x]);
+		  }
+	  }
+	  free(*expoMap);
+}
 }
 
 static int check_consist(GenInst **inst, int n){
@@ -480,7 +486,6 @@ int exposure_map_main()
   set_toolname("exposure_map");
   set_toolversion("0.1");
 
-  float** expoMap=NULL;
   struct wcsprm wcs={ .flag=-1 };
 
 
@@ -497,9 +502,21 @@ int exposure_map_main()
     status=exposure_map_getpar(&par);
     CHECK_STATUS_BREAK(status);
 
+    // init expo map
+    float** expoMap=NULL;
     // Array for the calculation of the exposure map.
     init_expoMap(par,&expoMap,&status);
     CHECK_STATUS_BREAK(status);
+
+    // see if we need the raw map (without vignetting)
+    double rawMap = 0;
+    float** rawExpoMap=NULL;
+    if (strcmp(par.RawExposuremap,"NONE")!=0){
+    	rawMap = 1;
+        init_expoMap(par,&rawExpoMap,&status);
+        CHECK_STATUS_BREAK(status);
+    }
+
 
     // WCS data structure used for projection.
     init_expo_wcs(par,&wcs,&status);
@@ -539,6 +556,9 @@ int exposure_map_main()
 
     // Calculate the minimum cos-value for sources inside the FOV: (angle(x0,source) <= 1/2 * diameter)
     // (now we can choose the first one as we checked and all are the same)
+    if (par.fov_diameter > 0){
+    	inst[0]->tel->fov_diameter = par.fov_diameter; // we only use the [0] one in the following
+    }
     double field_min_align = get_min_fov_align(inst[0], par);
 
     // ######## --- END of Initialization --- ######### //
@@ -602,11 +622,19 @@ int exposure_map_main()
       // are currently within the FOV.
 
       long x;
+      float delta;
       for (x=0; x<par.ra_bins; x++) {
     	  long y;
     	  for (y=0; y<par.dec_bins; y++) {
-    		  expoMap[x][y]+=get_single_expos_value(x,y,&wcs,par,vignetting,
+    		  delta = get_single_expos_value(x,y,&wcs,
     				  telescope,inst,xmls.n,&status);
+    		  if (delta>=0){
+    			  expoMap[x][y]+=par.dt*get_Vignetting_Factor(vignetting, 1., delta, 0.);
+    			  if (rawMap==1){
+    				  rawExpoMap[x][y]+=par.dt;
+    			  }
+    		  }
+
     		  CHECK_STATUS_BREAK(status);
     	  }
      }
@@ -642,15 +670,28 @@ int exposure_map_main()
 
     // END of generating the exposure map.
 
+
+
     // Store the exposure map in the output file.
-    saveExpoMap(expoMap, par.Exposuremap, par.ra_bins, par.dec_bins, 
+    saveExpoMap(expoMap, par.Exposuremap, par.ra_bins, par.dec_bins,
 		&wcs, par.clobber, &status);
-    CHECK_STATUS_BREAK(status);
+    release_expoMap(&expoMap,par.ra_bins);
+
+    // Write Raw Map?
+    if (rawMap==1){
+        saveExpoMap(rawExpoMap, par.RawExposuremap, par.ra_bins, par.dec_bins,
+    		&wcs, par.clobber, &status);
+        release_expoMap(&rawExpoMap,par.ra_bins);
+        CHECK_STATUS_BREAK(status);
+    }
+
 
     int ii;
     for (ii=0;ii<xmls.n;ii++){
     	destroyGenInst(&(inst[ii]),&status);
     }
+
+
 
   } while(0); // END of the error handling loop.
 
@@ -667,17 +708,6 @@ int exposure_map_main()
   destroyVignetting(&vignetting);
   wcsfree(&wcs);
 
-  // Release memory of exposure map.
-  if (NULL!=expoMap) {
-    long x;
-    for (x=0; x<par.ra_bins; x++) {
-      if (NULL!=expoMap[x]) {
-	free(expoMap[x]);
-	expoMap[x]=NULL;
-      }
-    }
-    free(expoMap);
-  }
 
   if (EXIT_SUCCESS==status) headas_chat(3, "finished successfully!\n\n");
   return(status);
@@ -694,6 +724,7 @@ int exposure_map_getpar(struct Parameters *par)
   query_simput_parameter_file_name("Attitude",&(par->Attitude), &status);
   query_simput_parameter_file_name("Vignetting",&(par->Vignetting), &status);
   query_simput_parameter_string("Exposuremap",&(par->Exposuremap), &status);
+  query_simput_parameter_string("RawExposuremap",&(par->RawExposuremap), &status);
 
 
   query_simput_parameter_float("RA",&par->RA, &status);
@@ -702,7 +733,7 @@ int exposure_map_getpar(struct Parameters *par)
 
 
   // Read the diameter of the FOV (in arcmin).(Todo: do we really need this??)
-  // query_simput_parameter_float("fov_diameter",&(par->fov_diameter), &status);
+  query_simput_parameter_float("fov_diameter",&(par->fov_diameter), &status);
   query_simput_parameter_file_name("XMLFile",&(par->XMLFile), &status);
 
   // Get the start time of the exposure map calculation.
@@ -738,6 +769,7 @@ int exposure_map_getpar(struct Parameters *par)
   par->ra2 *=M_PI/180.;
   par->dec1*=M_PI/180.;
   par->dec2*=M_PI/180.;
+  par->fov_diameter*=M_PI/180./60; // given in arcmin
 
   return(status);
 }

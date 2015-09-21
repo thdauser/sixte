@@ -45,6 +45,7 @@ struct Parameters {
   char *Attitude;    // filename of the attitude file
   char *Vignetting;  // filename of the vignetting file
   char *Exposuremap; // output: exposure map
+  char *RawExposuremap; // output: raw exposure map (no vignetting)
   char *ProgressFile;
   char *XMLFile;
 
@@ -64,6 +65,8 @@ struct Parameters {
   double dec1, dec2;
   /** Number of pixels in right ascension and declination. */
   int ra_bins, dec_bins;
+
+  float fov_diameter;
 
   /** Projection method (1: AIT, 2: SIN). */
   int projection;
