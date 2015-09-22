@@ -834,8 +834,12 @@ int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *
 void fits_close_file_chksum(fitsfile *fptr,int *status) {
   // close a file after updating the checksum in the current HDU
   // and in the primary extension
-  fits_write_chksum(fptr,status);
-  fits_movabs_hdu(fptr,1,NULL,status);
-  fits_write_chksum(fptr,status);
+  int iomode;
+  fits_file_mode(fptr,&iomode,status);
+  if (iomode==READWRITE){
+    fits_write_chksum(fptr,status);
+    fits_movabs_hdu(fptr,1,NULL,status);
+    fits_write_chksum(fptr,status);
+  }
   fits_close_file(fptr,status);
 }
