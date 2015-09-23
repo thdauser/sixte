@@ -897,6 +897,7 @@ void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status
 			pnt[id].times->previous = -1.0;
 			pnt[id].times->current = impact.time;
 			pnt[id].times->next = -1.0;
+			pnt[id].totalenergy = impact.energy;
 
 			pnt[id].row = piximpacfile->row;
 		} else {
@@ -906,24 +907,39 @@ void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status
 			// calculate grading
 			calcGradingTimes(sample_length,*(pnt[id].times),&grade1,&grade2,status);
 
-			// add grading to file
-			updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,status);
+			// treat pileup case
+			// TODO : add pileup limit as a pixel parameter (for the moment, equal to one sample)
+			if (grade1==0){
+				// add energy to total instead of replacing
+				pnt[id].totalenergy+=impact.energy;
+				grade1=-1;
+				// add grading to file
+				updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,0,status);
 
+				// do not change grading times in this case as this is a pileup (this event will no be saved in the end)
 
-			// move one ahead
-			pnt[id].times->previous = pnt[id].times->current;
-			pnt[id].times->current = pnt[id].times->next;
-			pnt[id].times->next = -1.0;
+			} else {
+				// add grading to file
+				updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,pnt[id].totalenergy,status);
+
+				// move one ahead
+				pnt[id].totalenergy=impact.energy;
+				pnt[id].times->previous = pnt[id].times->current;
+				pnt[id].times->current = pnt[id].times->next;
+			}
+
+			// finishing moving ahead
+			pnt[id].times->next = -1.0; // is this useful?
 			pnt[id].row = piximpacfile->row;
 		}
 	}
 
 	// now we need to clean the impact-array and write the remaining impact grade to the file
-	// TODO: only fo over the pixels that were hit
+	// TODO: only for over the pixels that were hit
 	for (int ii=0;ii<det->npix;ii++){
 		if (pnt[ii].times != NULL){
 			calcGradingTimes(sample_length,*(pnt[ii].times),&grade1,&grade2,status);
-			updateGradingPixImp(piximpacfile, pnt[ii].row, grade1, grade2,status);
+			updateGradingPixImp(piximpacfile, pnt[ii].row, grade1, grade2,pnt[ii].totalenergy,status);
 			free(pnt[ii].times);
 		}
 	}
@@ -948,38 +964,48 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 		//Copied and adapted from addGenDetPhotonImpact
 		//////////////////////////////////
 
-		grading_index = makeGrading(impact.grade1,impact.grade2,&(det->pix[impact.pixID]));
-
-		if (grading_index>=0){
-
-			rmf = det->pix[impact.pixID].grades[grading_index].rmf;
-			grading = det->pix[impact.pixID].grades[grading_index].value;
-
-			// Determine the measured detector channel (PI channel) according
-			// to the RMF.
-			// The channel is obtained from the RMF using the corresponding
-			// HEAdas routine which is based on drawing a random number.
-			returnRMFChannel(rmf, impact.energy, &channel);
-
-			// Check if the photon is really measured. If the PI channel
-			// returned by the HEAdas RMF function is '-1', the photon is not
-			// detected. This should not happen as the rmf is supposedly
-			// normalized
-			if (channel<rmf->FirstChannel) {
-				SIXT_WARNING("Impact found as not detected due to failure during RMF based energy allocation");
-				continue; // go to next photon (photon is not detected).
-			}
-
-			// Determine the corresponding detected energy.
-			// NOTE: In this simulation the collected charge is represented
-			// by the nominal photon energy [keV], which corresponds to the
-			// PI channel according to the EBOUNDS table.
-			impact.energy=getEBOUNDSEnergy(channel, rmf, status);
-			//printf("%f ",impact.energy);
-			CHECK_STATUS_VOID(*status);
-		} else {
+		if (impact.grade1==-1){ // this is a pile-up event that was added to the following event, i.e. not detected
+			grading = PILEUP;
 			impact.energy=0.;
-			grading=INVGRADE;
+		} else { // this is an event that was actually detected
+			grading_index = makeGrading(impact.grade1,impact.grade2,&(det->pix[impact.pixID]));
+
+			if (grading_index>=0){
+
+				rmf = det->pix[impact.pixID].grades[grading_index].rmf;
+				grading = det->pix[impact.pixID].grades[grading_index].value;
+
+				// Determine the measured detector channel (PI channel) according
+				// to the RMF.
+				// The channel is obtained from the RMF using the corresponding
+				// HEAdas routine which is based on drawing a random number.
+				returnRMFChannel(rmf, impact.totalenergy, &channel); //use total energy here to take pileup into account
+
+				// Check if the photon is really measured. If the PI channel
+				// returned by the HEAdas RMF function is '-1', the photon is not
+				// detected. This should not happen as the rmf is supposedly
+				// normalized
+				if (channel<rmf->FirstChannel) {
+					// flag as invalid (seemed better than discarding)
+					char msg[MAXMSG];
+					sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV and phi_id %d",impact.totalenergy,impact.ph_id);
+					SIXT_WARNING(msg);
+					impact.energy=0.;
+					grading=INVGRADE;
+				} else {
+
+					// Determine the corresponding detected energy.
+					// NOTE: In this simulation the collected charge is represented
+					// by the nominal photon energy [keV], which corresponds to the
+					// PI channel according to the EBOUNDS table.
+					impact.energy=getEBOUNDSEnergy(channel, rmf, status);
+					//printf("%f ",impact.energy);
+					CHECK_STATUS_VOID(*status);
+				}
+			} else {
+				impact.energy=0.;
+				grading=INVGRADE;
+			}
 		}
 		assert(impact.energy>=0.);
 		// Add final impact to event file

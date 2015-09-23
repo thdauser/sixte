@@ -79,9 +79,11 @@ int tesreconstruction_main() {
     	//printf("Antes de initialize \n");
 	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, par.LibraryFile, par.TesEventFile,
 		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.crtLib, par.lastELibrary,
-		par.mode, par.LrsT, par.LbT, par.baseline, par.NoiseFile, par.PixelType, par.FilterDomain, par.FilterMethod, par.EnergyMethod,
+		par.mode, par.LrsT, par.LbT, par.baseline, par.NoiseFile, par.PixelType, par.FilterDomain,
+		par.FilterMethod, par.EnergyMethod, par.OFStrategy, par.OFLength,
 		par.calibLQ, par.b_cF,par.c_cF, par.monoenergy, par.intermediate, par.detectFile,
-		par.filterFile, par.RecordFileCalib2, par.monoenergy2, par.clobber, par.EventListSize, &status);
+		par.filterFile, par.RecordFileCalib2, par.monoenergy2, par.clobber, par.EventListSize,
+		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, &status);
 	  //printf("Despues de initialize \n");
     }  
     CHECK_STATUS_BREAK(status);
@@ -106,7 +108,7 @@ int tesreconstruction_main() {
 	  }
       else
       {
-	    nrecord = nrecord + 1;
+    	nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
 	    /*if(nrecord < 1) {
 	      continue;
@@ -459,6 +461,20 @@ int getpar(struct Parameters* const par)
 	}
 	strcpy(par->EnergyMethod, sbuffer);
 	free(sbuffer);
+
+	status=ape_trad_query_string("OFStrategy", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the Optimal Filter length Strategy");
+		return(status);
+	}
+	strcpy(par->OFStrategy, sbuffer);
+	free(sbuffer);
+
+	status=ape_trad_query_int("OFLength", &par->OFLength);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the Optimal Filter length");
+		return(status);
+	}
   
 	status=ape_trad_query_int("calibLQ", &par->calibLQ);
 	if (EXIT_SUCCESS!=status) {
@@ -478,7 +494,6 @@ int getpar(struct Parameters* const par)
 		return(status);
 	}
 
-
 	status=ape_trad_query_string("RecordFileCalib2", &sbuffer);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the name of second calibration file");
@@ -490,6 +505,22 @@ int getpar(struct Parameters* const par)
 	status=ape_trad_query_double("monoenergy2", &par->monoenergy2);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the monoenergy2 parameter");
+		return(status);
+	}
+
+	status=ape_trad_query_int("tstartPulse1", &par->tstartPulse1);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the tstartPulse1 parameter");
+		return(status);
+	}
+	status=ape_trad_query_int("tstartPulse2", &par->tstartPulse2);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the tstartPulse3 parameter");
+		return(status);
+	}
+	status=ape_trad_query_int("tstartPulse3", &par->tstartPulse3);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the tstartPulse3 parameter");
 		return(status);
 	}
 		  

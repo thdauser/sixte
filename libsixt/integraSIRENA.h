@@ -116,6 +116,7 @@ typedef struct {
 
   /** Weight matrix */
   //MatrixStruct* W;
+  gsl_matrix *V;
   gsl_matrix *W;
 
   /** T vector */
@@ -135,6 +136,12 @@ typedef struct {
 
   /** r escalar */
   gsl_vector *r;
+
+  /** PAB vector */
+  gsl_matrix *PAB;
+
+  /** DAB vector */
+  gsl_matrix *DAB;
 
 } LibraryCollection;
 
@@ -282,8 +289,14 @@ typedef struct {
     /** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
     char FilterMethod[3];
 
-    /** Energy Method: NOLAGS, LAGS or WEIGHT **/
-    char EnergyMethod[7];
+    /** Energy Method: NOLAGS, LAGS, WEIGHT or WEIGHTN **/
+    char EnergyMethod[8];
+
+    /** Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
+    char OFStrategy[8];
+
+    //Optimal Filter length (taken into account if OFStrategy=FIXED) **/
+    int OFLength;
 
     /** Energy Calibration type: Linear (1), Quadratic (2) **/
     int calibLQ;
@@ -313,6 +326,11 @@ typedef struct {
 	/** PP's parameter **/
 	int maxPulsesPerRecord;
 
+	/** Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0) **/
+	int tstartPulse1;
+	int tstartPulse2;
+	int tstartPulse3;
+
 } ReconstructInitSIRENA;
 
 /** Destructor. */
@@ -334,10 +352,11 @@ extern "C"
 
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, char* const library_file,
 	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int lastELibrary,
-	int mode, double LrsT, double LbT, double baseline, char* const noise_file, char* pixel_type, char* filter_domain, char* filter_method, char* energy_method,
+	int mode, double LrsT, double LbT, double baseline, char* const noise_file, char* pixel_type, char* filter_domain,
+	char* filter_method, char* energy_method, char* oflength_strategy, int oflength,
 	int calibLQ,  double b_cF, double c_cF,	double monoenergy,
 	int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int maxPulsesPerRecord,
-	int* const status);
+	int tstartPulse1, int tstartPulse2, int tstartPulse3, int* const status);
 
 /** Constructor. Returns a pointer to an empty PulsesCollection data structure. */
 #ifdef __cplusplus

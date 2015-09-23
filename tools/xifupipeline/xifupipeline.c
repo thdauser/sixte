@@ -467,6 +467,7 @@ int xifupipeline_main()
 		double simtime=0.;
 		long current_impact_row = 0;
 		long current_impact_write_row = 0;
+		long nimpacts=0;
 		do {
 			// Currently regarded interval.
 			double t0=gti->start[gtibin];
@@ -517,6 +518,7 @@ int xifupipeline_main()
 				// Piximpacts stage
 				PixImpact *piximp=NULL;
 				int newPixImpacts=AdvImpactList(det, &imp, &piximp);
+				nimpacts+=newPixImpacts;
 				if(newPixImpacts>0){
 					for(int jj=0; jj<newPixImpacts; jj++){
 						addImpact2PixImpFile(pixilf, &(piximp[jj]), &status);
@@ -649,7 +651,11 @@ int xifupipeline_main()
 		event_file->row=1;
 		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,&status);
 		CHECK_STATUS_BREAK(status);
-
+		
+		//Store number of impacts in event file
+		fits_update_key(event_file->fptr, TLONG, "NIMP", &nimpacts,
+				"Number of impacts", &status);
+		
 		// Store the GTI extension in the event file.
 		saveGTIExt(event_file->fptr, "STDGTI", gti, &status);
 		CHECK_STATUS_BREAK(status);

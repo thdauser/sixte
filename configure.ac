@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.10], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.11], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -174,6 +174,7 @@ AC_CONFIG_FILES([Makefile
 		tools/tesreconstruction/Makefile
 		tools/xifupipeline/Makefile
 		tools/gennoisespec/Makefile
+		tools/exposure_map/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
 		])
