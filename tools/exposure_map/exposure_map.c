@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015 Thomas Dauser, FAU
 */
 
 #include "exposure_map.h"
@@ -221,6 +221,12 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
     } else if (2==par.projection) {
       strcpy(wcs->ctype[0], "RA---SIN");
       strcpy(wcs->ctype[1], "DEC--SIN");
+    } else if (3==par.projection) {
+      strcpy(wcs->ctype[0], "GLONG---AIT");
+      strcpy(wcs->ctype[1], "GLAT--AIT");
+    } else if (4==par.projection) {
+      strcpy(wcs->ctype[0], "GLONG---SIN");
+      strcpy(wcs->ctype[1], "GLAT--SIN");
     } else {
       SIXT_ERROR("projection type not supported");
       *status=EXIT_FAILURE;
