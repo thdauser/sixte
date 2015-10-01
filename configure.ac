@@ -86,6 +86,10 @@ AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboo
 #################################### 
 # GSL Libraries:
 
+AX_PATH_GSL(1.16,
+           [],
+           [AC_MSG_ERROR(could not find required version of GSL >= 1.19)])
+
 AC_SEARCH_LIBS([cblas_sdot], [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])
 AC_SEARCH_LIBS([gsl_sf_erf_Q], [gsl], [], \
