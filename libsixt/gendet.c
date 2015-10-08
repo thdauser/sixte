@@ -948,7 +948,7 @@ void addGenDetCharge2Pixel(GenDet* const det,
       line->ph_id[column][0] =sign*ph_id;
       line->src_id[column][0]=src_id;
 
-    } else if (signal>0.001) {
+    } else if ((signal>0.001) ) {
       // Only store the PH_ID and SRC_ID of the new contribution
       // if its signal is above 1eV.
       long ii;
@@ -1146,7 +1146,9 @@ puts("time oob: rtime<0 || rtime>det->frametime");
 	if(t_frame<=rtime){
       
 	  line->anycarry=1;
-	  sign=-1;
+	  //	  sign=0; // (set it to zero, as no charge is transfered in on
+	          // the current cycle)
+	  
       
 	  // Set PH_ID and SRC_ID in carry-arrays.
 	  if (line->ccarry[colnum]<0.001) {
