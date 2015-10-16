@@ -71,7 +71,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,gradingCol;
+	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,gradingCol,srcIDCol;
 
 } TesEventFile;
 
