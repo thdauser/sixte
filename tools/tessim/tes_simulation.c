@@ -663,7 +663,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   if (tes->acdc) {
     // this assumes FDM
-    tes->squid_noise*=tes->TTR*2e-12*sqrt(tes->sample_rate/2)*tes->simnoise;;
+    tes->squid_noise=tes->TTR*2e-12*sqrt(tes->sample_rate/2)*tes->simnoise;
   } else {
     // this assumes TDM (extra sqrt(32pi))
     tes->squid_noise=2e-12*sqrt(32*M_PI*tes->sample_rate/2)*tes->simnoise;
