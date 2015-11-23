@@ -746,6 +746,7 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
 
   unsigned long samplestep=100000;
   unsigned int samples=0;
+  unsigned long step_nb=1;
   while (tes->time<tstop) {
     
     // update progress bar
@@ -765,9 +766,9 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
       // (this should now be ok for the excess noise, but needs somebody
       // else to check this again to be 100% sure)
       tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
-      tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->beta));
+      tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->dRdI*tes->I0/tes->RT));
       tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->Reff*tes->bandwidth));
-      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->beta)*tes->m_excess*tes->m_excess) );
+      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->dRdI*tes->I0/tes->RT)*tes->m_excess*tes->m_excess) );
     }
 
     // absorb next photon?
@@ -795,12 +796,14 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
     Y[1]=tes->T1; // temperature
 
     int s=gsl_odeiv2_driver_apply_fixed_step(tes->odedriver,&(tes->time),tes->delta_t,1,Y);
+    tes->time=tes->tstart+step_nb*tes->delta_t;
     if (s!=GSL_SUCCESS) {
       fprintf(stderr,"Driver error: %d\n",s);
       return(1);
     }
 
     samples++;
+    step_nb++;
 
     tes->I0=Y[0];
     tes->T1=Y[1];
