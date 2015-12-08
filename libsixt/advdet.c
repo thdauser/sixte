@@ -84,11 +84,18 @@ void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
     destroyTESNoiseProperties(pix->TESNoise);
     free(pix->TESNoise);
+    freeGrading(pix);
+  }
+}
+
+void freeGrading(AdvPix* pix){
     for (int i=0;i<pix->ngrades;i++){
     	free(pix->grades[i].rmffile);
     }
     free(pix->grades);
-  }
+    pix->ngrades=0;
+    pix->grades=NULL;
+    pix->global_grading=0;
 }
 
 AdvDet* newAdvDet(int* const status){
@@ -356,6 +363,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[i].TESNoise=NULL;
 			xmlparsedata->det->pix[i].grades=NULL;
 			xmlparsedata->det->pix[i].ngrades=0;
+			xmlparsedata->det->pix[i].global_grading=0;
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
@@ -526,6 +534,10 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 	}  else if (!strcmp(Uelement,"GRADING")){
 		if (xmlparsedata->det->inpixel){
+			if (xmlparsedata->det->pix[xmlparsedata->det->cpix].global_grading) {
+				freeGrading(&(xmlparsedata->det->pix[xmlparsedata->det->cpix]));
+				xmlparsedata->det->pix[xmlparsedata->det->cpix].global_grading=0;
+			}
 			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades=realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades,
 					(xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades+1)*sizeof(*(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades)));
 			if (xmlparsedata->det->pix[xmlparsedata->det->cpix].grades==NULL){
@@ -558,6 +570,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 				getXMLAttributeString(attr, "RMF", rmffile);
 				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
 				xmlparsedata->det->pix[i].ngrades++;
+				xmlparsedata->det->pix[i].global_grading=1;
 			}
 		}
 	} else if(!strcmp(Uelement, "TESPROFILE")){
@@ -853,15 +866,15 @@ int makeGrading(long grade1,long grade2,AdvPix* pixel){
 /** calculate the grading in samples from the a given impact, and its previous and next impact **/
 void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status){
 
-	if (pnt.next<0){
+	if ((pnt.next<0) || (pnt.next - pnt.current > sample_length*DEFAULTGOODSAMPLE)){
 		*grade1 = DEFAULTGOODSAMPLE;
-		*grade2 = floor ((pnt.current - pnt.previous)/sample_length);
-	} else if (pnt.previous<0){
+	} else {
 		*grade1 = floor ((pnt.next - pnt.current)/sample_length);
+	}
+	if ((pnt.previous<0) || (pnt.current - pnt.previous > sample_length*DEFAULTGOODSAMPLE)){
 		*grade2 = DEFAULTGOODSAMPLE;
 	} else {
-		*grade1 = floor((pnt.next - pnt.current)/sample_length);
-		*grade2 = floor((pnt.current - pnt.previous)/sample_length);
+		*grade2 = floor ((pnt.current - pnt.previous)/sample_length);
 	}
 
 	//printf("grade1: %i grade2 %i => %i\n",*grade1,*grade2,makeGrading(*grade1,*grade2));
@@ -906,6 +919,7 @@ void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status
 
 			// calculate grading
 			calcGradingTimes(sample_length,*(pnt[id].times),&grade1,&grade2,status);
+			CHECK_STATUS_VOID(*status);
 
 			// treat pileup case
 			// TODO : add pileup limit as a pixel parameter (for the moment, equal to one sample)
@@ -927,6 +941,7 @@ void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status
 				pnt[id].times->previous = pnt[id].times->current;
 				pnt[id].times->current = pnt[id].times->next;
 			}
+			CHECK_STATUS_VOID(*status);
 
 			// finishing moving ahead
 			pnt[id].times->next = -1.0; // is this useful?
@@ -988,7 +1003,7 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 				if (channel<rmf->FirstChannel) {
 					// flag as invalid (seemed better than discarding)
 					char msg[MAXMSG];
-					sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV and phi_id %d",impact.totalenergy,impact.ph_id);
+					sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV and phi_id %ld",impact.totalenergy,impact.ph_id);
 					SIXT_WARNING(msg);
 					impact.energy=0.;
 					grading=INVGRADE;

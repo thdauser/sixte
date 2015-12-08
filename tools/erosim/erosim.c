@@ -141,10 +141,6 @@ int erosim_main()
       strcat(patternlist_filename_template, par.PatternList);
     }
 
-    // Initialize the random number generator.
-    unsigned int seed=getSeed(par.Seed);
-    sixt_init_rng(seed, &status);
-    CHECK_STATUS_BREAK(status);
 
     // Set the progress status output file.
     strcpy(ucase_buffer, par.ProgressFile);
@@ -163,8 +159,17 @@ int erosim_main()
 		     "SRG", "eROSITA", "", &status);
     CHECK_STATUS_BREAK(status);
 
+    unsigned int seed;
     // Load the configurations of all seven sub-instruments.
     for (ii=0; ii<7; ii++) {
+
+    // Initialize the random number generator for each Telescope
+    // TODO: Use a more clever way here
+      seed=getSeed(par.Seed+ii);
+      sixt_init_rng(seed, &status);
+      CHECK_STATUS_BREAK(status);
+
+
       // Check if a particular XML file is given for this 
       // sub-instrument. If not, use the default XML file.
       char buffer[MAXFILENAME];

@@ -136,6 +136,9 @@ typedef struct{
   /** Different grades for this pixel */
   TESGrade* grades;
 
+  /** Signal if grading has already been defined globally */
+  int global_grading;
+
   /** Ancillary response file */
   char* arffile;
 
@@ -261,8 +264,11 @@ TESNoiseProperties* duplicateTESNoise(TESNoiseProperties* noise,int nzeros,int n
 /** Destructor. Releases all allocated memory. */
 void destroyTESNoiseProperties(TESNoiseProperties* noise);
 
-/** Destructore of the AdvPix structure */
+/** Destructor of the AdvPix structure */
 void freeAdvPix(AdvPix* pix);
+
+/** Remove the existing grading scheme from the pixel */
+void freeGrading(AdvPix* pix);
 
 /** Read the advanced detector syntax from the specified XML */
 void parseAdvDetXML(AdvDet* const det, 

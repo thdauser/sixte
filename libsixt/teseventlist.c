@@ -193,6 +193,7 @@ TesEventFile* newTesEventFile(int* const status){
 	file->raCol     =7;
 	file->decCol    =8;
 	file->gradingCol=9;
+	file->srcIDCol  =10;
 
 	return(file);
 }
@@ -256,11 +257,11 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char *ttype[]={"TIME","SIGNAL","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","GRADING"};
-	char *tform[]={"1D",  "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D", "1I"};
-	char *tunit[]={"s",   "keV",   "",      "",      "",     "",     "deg","deg",""};
+	char *ttype[]={"TIME","SIGNAL","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","GRADING","SRC_ID"};
+	char *tform[]={"1D",  "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D", "1I","1J"};
+	char *tunit[]={"s",   "keV",   "",      "",      "",     "",     "deg","deg","",""};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 9,
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 10,
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -311,7 +312,12 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADING", &file->gradingCol, status);
 	if (*status==COL_NOT_FOUND) {
-	  file->grade2Col=-1;
+	  file->gradingCol=-1;
+	  *status=0;
+	}
+	fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->srcIDCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->srcIDCol=-1;
 	  *status=0;
 	}
 	CHECK_STATUS_RET(*status, NULL);
@@ -422,6 +428,13 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,in
 	fits_write_col(file->fptr, TLONG, file->phIDCol,
 			file->row, 1, 1, &(impact->ph_id), status);
 	CHECK_STATUS_VOID(*status);
+
+	//Save SRC_ID column
+	if (file->srcIDCol!=-1) {
+	  fits_write_col(file->fptr, TINT, file->srcIDCol,
+			 file->row, 1, 1, &(impact->src_id), status);
+	  CHECK_STATUS_VOID(*status);
+	}
 	file->row++;
 	file->nrows++;
 }

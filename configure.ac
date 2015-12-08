@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.11], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.0.12], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -85,6 +85,10 @@ AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboo
 
 #################################### 
 # GSL Libraries:
+
+AX_PATH_GSL(1.16,
+           [],
+           [AC_MSG_ERROR(could not find required version of GSL >= 1.16)])
 
 AC_SEARCH_LIBS([cblas_sdot], [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])

@@ -463,17 +463,35 @@ PSF* newPSF(const char* const filename,
 
 	// Determine the WCS keywords of the PSF array from the header.
 	if (fits_read_key(fptr, TDOUBLE, "CDELT1", &(psf->data[index1][index2][index3].cdelt1), 
-			  comment, status)) break;
+			  comment, status)){
+		SIXT_ERROR("could not find the CDELT1 keyword in the PSF");
+		break;
+	}
 	if (fits_read_key(fptr, TDOUBLE, "CDELT2", &(psf->data[index1][index2][index3].cdelt2), 
-			  comment, status)) break;
+			  comment, status)){
+		SIXT_ERROR("could not find the CDELT2 keyword in the PSF");
+		break;
+	}
 	if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &(psf->data[index1][index2][index3].crpix1), 
-			  comment, status)) break;
+			  comment, status)){
+		SIXT_ERROR("could not find the CRPIX1 keyword in the PSF");
+		break;
+	}
 	if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &(psf->data[index1][index2][index3].crpix2), 
-			  comment, status)) break;
+			  comment, status)){
+		SIXT_ERROR("could not find the CRPIX2 keyword in the PSF");
+		break;
+	}
 	if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &(psf->data[index1][index2][index3].crval1), 
-			  comment, status)) break;
+			  comment, status)){
+		SIXT_ERROR("could not find the CRVAL1 keyword in the PSF");
+		break;
+	}
 	if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &(psf->data[index1][index2][index3].crval2), 
-			  comment, status)) break;
+			  comment, status)){
+		SIXT_ERROR("could not find the CRVAL2 keyword in the PSF");
+		break;
+	}
 
 	// Check whether units of PSF image are given in [m].
 	char cunit1[MAXMSG]="", cunit2[MAXMSG]="";
