@@ -360,7 +360,7 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 * - nPulses: Number of pulses into the record
 * - lb: Vector containing the baseline averaging length used for each pulse
 *       All its elements are equal to the 'Lb' global variable at the beginning
-* - sizePulse:  Size of the pulse in bins, ntaus * tauFALL in bins (equal to 'sizePulse_b' global variable)
+* - sizePulse:  Size of the pulse in samples, ntaus * tauFALL in samples (equal to 'sizePulse_b' global variable)
 * - B: In general, sum of the Lb digitized data samples of a pulse-free interval immediately before
 *      the current pulse
 ****************************************/
@@ -725,7 +725,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 * - lb: Baseline averaging length used for the pulse whose pulse height is going to be estimated
 * - B: In general, sum of the Lb digitized data samples of a pulse-free interval immediately before
 *      the current pulse
-* - sizepulse: Size of the pulse in bins, ntaus * tauFALL in bins (equal to 'sizePulse_b' global variable)
+* - sizepulse: Size of the pulse in samples, ntaus * tauFALL in samples (equal to 'sizePulse_b' global variable)
 * - pulseheight: Estimated pulse height of the pulse
 ****************************************/
 int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int lastPulse, double lrs, double lb, double B, int sizepulse, double *pulseheight)
@@ -856,7 +856,9 @@ int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *puls
 * Parameters:
 * - energy: Energy of the pulse whose pulse template is looking for
 * - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
-*                     It includes in library_collection the energies of all the models and their templates
+*                     This function uses the energies of all the models ('energies') and their templates ('pulse_templates')
+*                     This function uses the energies of the models ('energies'), the number of templates in the library ('ntemplates'), the template duration ('template_duration'),
+*                     the 'pulse_templates_B0'
 * - modelFound: Found template of the pulse whose energy is 'energy'
 ****************************************/
 int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,gsl_vector **modelFound)
@@ -924,7 +926,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 *                              pulse template (pulse_templates_filder) of the pulse templates library.
 *
 * It finds the two maxDER closer in the pulse models library and interpolates ('interpolate_model')
-* 	- If maxDER is lower than the lower maxDER in the pulse models library => The model with
+*   - If maxDER is lower than the lower maxDER in the pulse models library => The model with
 *     a lower maxDER in the pulse models library is chosen
 *   - If maxDER is higher than the higher maxDER in the pulse models library => The model with
 *     a higher maxDER in the pulse models library is chosen
@@ -932,8 +934,9 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 * Parameters:
 * - maxDER: Maximum of the derivative of the filtered pulse whose pulse template is looking for
 * - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
-*                     It includes in library_collection the energies of all the models and their templates
-* - modelFound: Found template of the pulse whose energy is 'energy'
+*                     This function uses the number of templates in the library ('ntemplates'), the template duration ('template_duration'),
+*                     the filtered and derived templates ('pulse_templates_filder') and the 'maxDERs' of the templates
+* - modelFound: Found template of the pulse whose maximum of the derivative of the filtered version is 'maxDER'
 ****************************************/
 int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound)
 {
@@ -1008,7 +1011,7 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 * The more intelligent averaging (2) is used instead the simplest method (1).
 *
 * Parameters:
-* - modelFound: Found model of the pulse whose pulse height is ph_model
+* - modelFound: Found model of the pulse whose energy or maxDER is p_model
 * - p_model: Parameter (energy or maxDER) of the pulse whose model is looking for
 * - modelIn1: Model of the pulse whose parameter (energy or maxDER) is immediately lower than p_model in the library FITS file
 * - p_modelIn1: Parameter (energy or maxDER) immediately lower than p_model in the library FITS file
@@ -1057,10 +1060,10 @@ int interpolate_model(gsl_vector **modelFound, double p_model, gsl_vector *model
 * Parameters:
 * - vectorin: Input vector (not filtered record)
 * - vectorinDER: Derivative of the low-pass filtered 'vectorin'
-* - tstart: Starting time of the found pulses into the record
+* - tstart: Starting time of the found pulses into the record (in samples)
 * - quality: Quality of the found pulses into the record
 * - pulseheight: Pulse height of the found pulses into the record
-* - maxDERgsl: Maximum of the derivative of the found low-pass filtered pulses into the record
+* - maxDERgsl: Maximum of the derivative of the found low-pass filtered pulses into the record inside each found pulse
 *
 * - nPulses: Number of found pulses
 * - threshold: Threshold used to find the pulses (output parameter because it is necessary out of the function)
@@ -1182,9 +1185,9 @@ int findPulsesCAL (
 *
 * Parameters:
 * - vectorinDER: Input vector (derivative of the low-pass filtered record)
-* - tstart: Starting time of the found pulses into the record
+* - tstart: Starting time of the found pulses into the record (in samples)
 * - quality: Quality of the found pulses into the record
-* - maxDERgsl: Maximum of the derivative of the found low-pass filtered pulses into the record
+* - maxDERgsl: Maximum of the derivative of the found low-pass filtered pulses into the record inside each found pulse
 *
 * - nPulses: Number of found pulses
 * - threshold: Threshold used to find the pulses (output parameter because it is necessary out of the function)
@@ -1265,33 +1268,42 @@ int findPulsesPROD (
 *
 * - Declare variables
 * - Allocate GSL vectors
-* - Obtain tstart of each pulse in the derivative:
-* 	-If der_i>threshold and prevPulse=false, it looks for nSamplesUp consecutive samples over the threshold
-*   	- If not, it looks again for a pulse crossing over the threshold
-*       - If yes => Pulse found (truncated if at the beginning)
-*   - If der_i>threshold and prevPulse=true, it looks for a sample below the threshold
-*     	- If not, it looks again for a sample below the threshold
-*       - If yes, it looks for nSamplesUp consecutive samples below the threshold and again it starts to look for a pulse
-* - Indentify if there is a truncated pulse at the end (it has not found its tend)
-* - Obtain tstart of each pulse in the not filtered signal???
+* - It is possible to find the tstarts...
+* 	- Obtain tstart of each pulse in the derivative:
+* 		-If der_i>threshold and prevPulse=false, it looks for nSamplesUp consecutive samples over the threshold
+*   		- If not, it looks again for a pulse crossing over the threshold
+*	        - If yes => Pulse found (truncated if at the beginning)
+*	   - If der_i>threshold and prevPulse=true, it looks for a sample below the threshold
+*   	  	- If not, it looks again for a sample below the threshold
+*       	- If yes, it looks for nSamplesUp consecutive samples below the threshold and again it starts to look for a pulse
+*	 - Indentify if there is a truncated pulse at the end (it has not found its tend)
+*	 - Obtain tstart of each pulse in the not filtered signal??? CURRENTLY NOT USED
+* - ...or to use the tstart provided as input parameters
+* 	- Obtain the maxDERs of the pulses whose tstarts have been provided
 *
 * Parameters:
 * - maxPulsesPerRecord: Expected maximum number of pulses per record
 *                       (in order to not allocate the gsl variables with the size of the input vector)
+*
 * - der: First derivative of the low-pass filtered record (input vector)
 * - adaptativethreshold: Threshold
-* - nSamplesUp: Number of consecutive bins over the threshold to 'find' a pulse
+* - nSamplesUp: Number of consecutive samples over the threshold to 'find' a pulse
+*
 * - allPulsesMode: 0-> If it finds a pulse the function returns
 *                  1-> It finds all pulses of the record
-* - sampling: Sampling rate
-*             Necessary to recalculate the tstart by establishing a safety margin
+*
+* - sampling: Sampling rate => Not neccessary => To be deleted
+*
+* - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
+*
 * - numberPulses: Number of found pulses
 * - thereIsPulse: 0 -> the algorithm has not found any pulse
 *                 1 -> the algorithm has found unless one pulse
-* - tstartgsl: Pulses tstart (bins)
+*
+* - tstartgsl: Pulses tstart (in samples)
 * - flagTruncated: Flag indicating if the pulse is truncated
 *                 (inside this function only initial truncated pulses are classified)
-* - maxDERgsl: Maximum of the first derivative of the low-pass filtered record
+* - maxDERgsl: Maximum of the first derivative of the low-pass filtered record inside each found pulse
 ******************************************************************************/
 int findTstartCAL (
 	int maxPulsesPerRecord,
@@ -1302,7 +1314,7 @@ int findTstartCAL (
 
 	int allPulsesMode,
 
-	double sampling,
+	double sampling,	// It should be deleted as input parameter of the function!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	ReconstructInitSIRENA *reconstruct_init,
 
@@ -1488,43 +1500,61 @@ int findTstartCAL (
 			temp = gsl_vector_subvector(der,gsl_vector_get(tstartDER,i),gsl_vector_get(tendDER,i)-gsl_vector_get(tstartDER,i));
 			gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
 		}*/
-		gsl_vector_memcpy(*tstartgsl,tstartDER);
 	}
 	else
 	{
-		//cout<<"PasoB"<<endl;
 		gsl_vector_view temp;
-
+		
 		gsl_vector *model = gsl_vector_alloc(reconstruct_init->pulse_length);
 
 		gsl_vector *tstartPulsei = gsl_vector_alloc(3);
 		gsl_vector_set(tstartPulsei,0,reconstruct_init->tstartPulse1);
 		gsl_vector_set(tstartPulsei,1,reconstruct_init->tstartPulse2);
 		gsl_vector_set(tstartPulsei,2,reconstruct_init->tstartPulse3);
-		//cout<<"PasoB1"<<endl;
 
-		if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
-		else										*numberPulses = 3;
+		if (reconstruct_init->tstartPulse2 == 0) 	*numberPulses = 1;
+		else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
+		else						*numberPulses = 3;
 
+		double maxPulse;
+		int cnt;
 		for (int i=0;i<*numberPulses;i++)
 		{
-			//cout<<"PasoB2 "<<i<<endl;
 			gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
-			//cout<<"PasoB3 "<<i<<" "<<szRw<<" "<<gsl_vector_get(tstartPulsei,i)<<" "<<gsl_vector_get(tstartPulsei,i+1)<<" "<<der->size<<endl;
 
-			if (i != *numberPulses-1) 	temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-			else						temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),szRw-gsl_vector_get(tstartPulsei,i));
-			//cout<<"PasoB4 "<<i<<endl;
+			if (i != *numberPulses-1)	temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+			else				temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),szRw-gsl_vector_get(tstartPulsei,i));
 
-			if (i == 0)		gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+			/*if (i == 0)		gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&tempder.vector));
 			else
 			{
 				if (i != *numberPulses-1)	temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-				else						temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),szRw-gsl_vector_get(tstartPulsei,i));
-
+				else				temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),szRw-gsl_vector_get(tstartPulsei,i));
+				
 				gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
-			}
-			//cout<<"PasoB5 "<<i<<endl;
+			}*/
+			
+			gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+			
+			//cout<<"pulsederiv: "<<gsl_vector_get(*maxDERgsl,i)<<endl;
+			//if (i==0) for (int k=0;k<(&temp.vector)->size;k++) cout<<"pulsederiv("<<k<<"): "<<gsl_vector_get(&temp.vector,k)<<endl;
+			
+			/*maxPulse = gsl_vector_max(&tempin.vector);
+			cnt = 0;
+			for (int j=0;j<(&tempder.vector)->size;j++)
+			{
+				if ((gsl_vector_get(&tempder.vector,j) == 0) && (gsl_vector_get(&tempin.vector,j) == maxPulse))
+				{
+					cnt++;
+					//cout<<j<<" "<<gsl_vector_get(&tempin.vector,j)<<" "<<gsl_vector_get(&tempder.vector,j)<<" cnt="<<cnt<<endl;
+					if (cnt == 2)		
+					{
+						  gsl_vector_set(*flagTruncated,i,gsl_vector_get(*flagTruncated,i)+10);
+						  break;	// Saturated pulse if two consecutive points of the derivative are equal to 0
+					}
+				}
+				else cnt = 0;
+			}*/
 		}
 
 		gsl_vector_free(tstartPulsei);
@@ -1542,38 +1572,39 @@ int findTstartCAL (
 
 
 /***** SECTION 14 ************************************************************
-* findTstartPROD function: This function finds the pulses tstarts in the input vector (adjusted derivative of the record)
+* findTstartPROD function: This function finds the pulses tstarts in the input vector (first derivative of the filtered
+* 					   record)
 *
-* It only identifies the truncated pulses at the beginning of a record
+* It only identifies the truncated pulses at the beginning of the record
 *
 * - Declare variables
-* - It looks for a pulse:
-*	If a pulse is found (foundPulse==true) => It looks for another pulse
-* 	- It looks for a pulse since the beginning (or the previous pulse) to the end of the record
-* 		- The first condition to detect a pulse is that the adjustedDerivative was over the threshold
-* 		- In general, nSamplesUp over the threshold to 'find' a pulse
-* 	- Subtract the model from the adjusted derivative
-* 		- Select the model of the found pulse from the libary by using the maximum of the deruvative (maxDER)
-* 		- Subtract
+* - It is possible to find the tstarts...
+* 	- It looks for a pulse:
+*     If a pulse is found (foundPulse==true) => It looks for another pulse
+* 		- It looks for a pulse since the beginning (or the previous pulse) to the end of the record
+* 			- The first condition to detect a pulse is that the adjustedDerivative was over the threshold
+* 			- In general, nSamplesUp over the threshold to 'find' a pulse
+* 		- Subtract the model from the adjusted derivative
+* 			- Select the model of the found pulse from the libary by using the maximum of the derivative (maxDER)
+* 			- Subtract
+* - ...or to use the tstart provided as input parameters
+* 	- Obtain the maxDERs of the pulses whose tstarts have been provided
 * - Free GSL vectors
 *
 * Parameters:
 * - maxPulsesPerRecord: Expected maximum number of pulses per record
 *                       (in order to not allocate the gsl variables with the size of the input vector)
-* - der: First derivative of the low-pass filtered record (input vector)
+* - adjustedDerivative: First derivative of the low-pass filtered record (input vector)
 * - adaptativethreshold: Threshold
-* - nSamplesUp: Number of consecutive bins over the threshold to 'find' a pulse
-* - allPulsesMode: 0-> If it finds a pulse the function returns
-*                  1-> It finds all pulses of the record
-* - sampling: Sampling rate
-*             Necessary to recalculate the tstart by establishing a safety margin
+* - nSamplesUp: Number of consecutive samples over the threshold to 'find' a pulse
+*
+* - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
+*
 * - numberPulses: Number of found pulses
-* - thereIsPulse: 0 -> the algorithm has not found any pulse
-*                 1 -> the algorithm has found unless one pulse
-* - tstartgsl: Pulses tstart (bins)
+* - tstartgsl: Pulses tstart (in samples)
 * - flagTruncated: Flag indicating if the pulse is truncated
 *                 (inside this function only initial truncated pulses are classified)
-* - maxDERgsl: Maximum of the first derivative of the low-pass filtered record
+* - maxDERgsl: Maximum of the first derivative of the low-pass filtered record inside each found pulse
 ****************************************/
 int findTstartPROD (
 	int maxPulsesPerRecord,
@@ -1591,7 +1622,7 @@ int findTstartPROD (
 {
 	string message="";
 
-	// Decalre variables
+	// Declare variables
 	bool foundPulse = false;
 	int sizeRecord = adjustedDerivative->size;		 	// Size of segment to process
 	*numberPulses = 0;
@@ -1623,36 +1654,30 @@ int findTstartPROD (
 			while (i < sizeRecord-1)
 			{
 				// The first condition to detect a pulse is that the adjustedDerivative was over the threshold
-				//if ((i>950)&& (i<2010))cout<<"while: "<<i<<" "<<"der = "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 				if (gsl_vector_get(adjustedDerivative,i) > adaptativethreshold)
 				{
 					// To locate the maximum of the derivative properly
-					//if ((i>950)&& (i<2010)) cout<<"If1 "<<i<<" cntUp="<<cntUp<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 					if ((i>1) && ((gsl_vector_get(adjustedDerivative,i)-gsl_vector_get(adjustedDerivative,i-1)) <
 							0.2*(gsl_vector_get(adjustedDerivative,i-1)-gsl_vector_get(adjustedDerivative,i-2)))
 							&& (foundPulse == true))
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If11 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						maxFound = true;
 						break;
 					}
 
 					if ((i>1) && (gsl_vector_get(adjustedDerivative,i)-gsl_vector_get(adjustedDerivative,i-1) < 0))
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If12 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						cntUp = 0;
 					}
 
 					if (cntUp == 0)
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If13 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						possibleTstart = i;
 					}
 
 					// In general, nSamplesUp over the threshold
 					if ((foundPulse == false) && ((nSamplesUp == 1) || ((nSamplesUp != 1) && (i == sizeRecord-2)) || (cntUp == nSamplesUp-1)))
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If14 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<" cntUp="<<cntUp<<endl;
 						// Avoid finding two pulses with the same tstart (I think it's not necessary)
 						for (int j=0;j<*numberPulses;j++)
 						{
@@ -1681,12 +1706,10 @@ int findTstartPROD (
 					{
 						if ((i>1) && (gsl_vector_get(adjustedDerivative,i)-gsl_vector_get(adjustedDerivative,i-1) < 0))
 						{
-							//if ((i>950)&& (i<2010)) cout<<"If151 "<<i<<endl;
 							maxFound == true;
 						}
 						else
 						{
-							//if ((i>950)&& (i<2010)) cout<<"If152 "<<i<<" maxDER = "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 							if (foundPulse == true)	gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,i));
 							else 					gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(adjustedDerivative,i));
 
@@ -1704,8 +1727,7 @@ int findTstartPROD (
 			// Subtract the model from the adjusted derivative
 			if (foundPulse == true)
 			{
-				// Select the model of the found pulse from the libary by using the maximum of the deruvative (maxDER)
-				//if ((i>950)&& (i<2010)) cout<<"If2 "<<i<<" maxDER="<<gsl_vector_get(*maxDERgsl,*numberPulses-1)<<endl;
+				// Select the model of the found pulse from the libary by using the maximum of the derivative (maxDER)
 				if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,*numberPulses-1), reconstruct_init, &model))
 				{
 					message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
@@ -1773,16 +1795,40 @@ int findTstartPROD (
 
 
 /***** SECTION 15 ************************************************************
-* InitialTriggering function:
+* InitialTriggering function: This function is going to find the first pulse in the input vector (first derivative of the filtered
+* 					   record)
+*
+* - Declare variables
+* - Stablish the threshold
+* - It is possible to find the tstart of the first pulse...
+* 	-  Obtain tstart of the first pulse in the derivative:
+* 		-If der_i>threshold, it looks for nSamplesUp consecutive samples over the threshold
+*   		- If not, it looks again for a pulse crossing over the threshold
+*	        - If yes => Pulse found (truncated if at the beginning)
+* - ...or to use the tstart provided as input parameter
 *
 * Parameters:
 * - derivative: First derivative of the low-pass filtered record (input vector)
-* - nSamplesUp: Number of consecutive bins over the threshold to 'find' an event
+*
+* - nSamplesUp: Number of consecutive samples over the threshold to 'find' an event
+* - nSgms: Number of Sigmas to establish the threshold
+*
+* - taufall: Fall time of the pulses (seconds)
+* - scalefactor: Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length
+* - samplingRate: Sampling rate
+*
+* - stopCriteriamkc: Used in medianKappaClipping (%)
+* - kappamkc: Used in medianKappaClipping
+*
 * - triggerCondition: true -> the algorithm has not found any event
 *                     false -> the algorithm has found the first event
-* - tstart: First event tstart (bins)
+* - tstart: First event tstart (in samples)
 * - flagTruncated: Flag indicating if the event is truncated ???????????????????
 *                 (inside this function only initial truncated events are classified)
+*
+* - threshold: Calculated threshold  (output parameter because it is necessary out of the function)
+*
+* - tstartProvided: Tstart of the first pulse provided as input parameter
 ****************************************/
 int InitialTriggering
 (
@@ -1808,6 +1854,7 @@ int InitialTriggering
 {
 	string message = "";
 
+	// Declare variables
 	const double pi = 4.0 * atan(1.0);
 	int sizeRecord = derivative->size;		 	// Size of segment to process
 	int cntUp = 0;
@@ -1815,8 +1862,6 @@ int InitialTriggering
 	int possibleTstart;
 
 	*triggerCondition = false;
-
-	//gsl_vector_set_zero(*quality);
 
 	// Stablish the threshold
 	if (medianKappaClipping (derivative, kappamkc, stopcriteriamkc, nSgms, (int)(pi*samplingRate*taufall*scalefactor), threshold))
@@ -1867,7 +1912,7 @@ int InitialTriggering
 		*triggerCondition = true;
 		*tstart = tstartProvided;
 		if (*tstart == 0)	*flagTruncated = 1;
-		else				*flagTruncated = 0;
+		else			*flagTruncated = 0;
 	}
 
 	return(EPOK);
@@ -1876,16 +1921,43 @@ int InitialTriggering
 
 
 /***** SECTION 16 ************************************************************
-* FindSecondaries function:
+* FindSecondaries function: This function runs after InitialTriggering to find all the events (except the first one) in the record (first derivative of the filtered
+* 					   record)
+*
+* - Declare variables
+* - It is possible to find the tstarts...
+* - It looks for an event:
+*     If a pulse is found (foundPulse==true) => It looks for another event
+* 		- It looks for an event since the beginning (or the previous event) to the end of the record
+* 			- The first condition to detect an event is that the adjustedDerivative was over the threshold
+* 			- In general, nSamplesUp over the threshold to 'find' an event
+* 		- Subtract the model from the adjusted derivative
+* 			- Select the model of the found event from the libary by using the maximum of the derivative (maxDER)
+* 			- Subtract
+* - ...or to use the tstart provided as input parameters
+* 	- Obtain the maxDERs of the events whose tstarts have been provided
+* - Free GSL vectors
 *
 * Parameters:
-* - derivative: First derivative of the low-pass filtered record (input vector)
-* - nSamplesUp: Number of consecutive bins over the threshold to 'find' an event
-* - triggerCondition: true -> the algorithm has not found any event
-*                     false -> the algorithm has found the first event
-* - tstart: First event tstart (bins)
-* - flagTruncated: Flag indicating if the event is truncated ???????????????????
-*                 (inside this function only initial truncated events are classified)
+* - maxPulsesPerRecord: Expected maximum number of events per record
+*                       (in order to not allocate the gsl variables with the size of the input vector)
+*
+* - adjustedDerivative: First derivative of the low-pass filtered record (input vector)
+* - adaptativethreshold: Threshold
+*
+* - nSamplesUp: Number of consecutive samples over the threshold to 'find' an event (=pulse)
+*
+* - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
+*                     This function uses some parameters ('pulse_length', 'tstartPulsex',...), the templates...
+*
+* - tstartFirstEvent: Tstart of the first event of the record (in samples)
+*                     Already found by InitialTriggering
+*
+* - numberPulses: Number of found events
+* - tstartgsl: Events tstart (in samples)
+* - flagTruncated: Flag indicating if the event is truncated ?????????????
+*                 (inside this function only initial truncated pulses are classified)
+* - maxDERgsl: Maximum of the first derivative of the low-pass filtered record inside each found event
 ****************************************/
 int FindSecondaries
 (
@@ -1907,7 +1979,7 @@ int FindSecondaries
 {
 	string message = "";
 
-	// Decalre variables
+	// Declare variables
 	bool foundPulse = false;
 	int sizeRecord = adjustedDerivative->size;		 	// Size of segment to process
 	*numberPulses = 0;
@@ -1939,36 +2011,30 @@ int FindSecondaries
 			while (i < sizeRecord-1)
 			{
 				// The first condition to detect a pulse is that the adjustedDerivative was over the threshold
-				//if ((i>950)&& (i<2010))cout<<"while: "<<i<<" "<<"der = "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 				if (gsl_vector_get(adjustedDerivative,i) > adaptativethreshold)
 				{
 					// To locate the maximum of the derivative properly
-					//if ((i>950)&& (i<2010)) cout<<"If1 "<<i<<" cntUp="<<cntUp<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 					if ((i>1) && ((gsl_vector_get(adjustedDerivative,i)-gsl_vector_get(adjustedDerivative,i-1)) <
 							0.2*(gsl_vector_get(adjustedDerivative,i-1)-gsl_vector_get(adjustedDerivative,i-2)))
 							&& (foundPulse == true))
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If11 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						maxFound = true;
 						break;
 					}
 
 					if ((i>1) && (gsl_vector_get(adjustedDerivative,i)-gsl_vector_get(adjustedDerivative,i-1) < 0))
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If12 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						cntUp = 0;
 					}
 
 					if (cntUp == 0)
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If13 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						possibleTstart = i;
 					}
 
 					// In general, nSamplesUp over the threshold
 					if ((foundPulse == false) && ((nSamplesUp == 1) || ((nSamplesUp != 1) && (i == sizeRecord-2)) || (cntUp == nSamplesUp-1)))
 					{
-						//if ((i>950)&& (i<2010)) cout<<"If14 "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<" cntUp="<<cntUp<<endl;
 						// Avoid finding two pulses with the same tstart (I think it's not necessary)
 						for (int j=0;j<*numberPulses;j++)
 						{
@@ -1982,7 +2048,6 @@ int FindSecondaries
 						if (validPulse)
 						{
 							gsl_vector_set(*tstartgsl,*numberPulses,possibleTstart);
-							//cout<<"Pulso "<<*numberPulses<<" en "<<gsl_vector_get(*tstartgsl,*numberPulses)<<" con maxDER en "<<gsl_vector_get(*maxDERgsl,*numberPulses)<<endl;
 
 							if (possibleTstart == 0)	gsl_vector_set(*flagTruncated,*numberPulses,1);
 
@@ -1997,12 +2062,10 @@ int FindSecondaries
 					{
 						if ((i>1) && (gsl_vector_get(adjustedDerivative,i)-gsl_vector_get(adjustedDerivative,i-1) < 0))
 						{
-							//if ((i>950)&& (i<2010)) cout<<"If151 "<<i<<endl;
 							maxFound == true;
 						}
 						else
 						{
-							//if ((i>950)&& (i<2010)) cout<<"If152 "<<i<<" maxDER = "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 							if (foundPulse == true)	gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,i));
 							else 					gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(adjustedDerivative,i));
 
@@ -2020,8 +2083,7 @@ int FindSecondaries
 			// Subtract the model from the adjusted derivative
 			if (foundPulse == true)
 			{
-				// Select the model of the found pulse from the libary by using the maximum of the deruvative (maxDER)
-				//if ((i>950)&& (i<2010)) cout<<"If2 "<<i<<" maxDER="<<gsl_vector_get(*maxDERgsl,*numberPulses-1)<<endl;
+				// Select the model of the found pulse from the libary by using the maximum of the derivative (maxDER)
 				if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,*numberPulses-1), reconstruct_init, &model))
 				{
 					message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
@@ -2047,16 +2109,16 @@ int FindSecondaries
 		gsl_vector_set(tstartPulsei,2,reconstruct_init->tstartPulse3);
 
 		if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
-		else										*numberPulses = 3;
+		else						*numberPulses = 3;
 
 		for (int i=0;i<*numberPulses;i++)
 		{
 			gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
 
 			if (i != *numberPulses-1) 	temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-			else						temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+			else				temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
 
-			if (i == 0)		gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+			if (i == 0)	gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
 			else
 			{
 				if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init, &model))
@@ -2071,10 +2133,13 @@ int FindSecondaries
 				}
 
 				if (i != *numberPulses-1)	temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-				else						temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
-
+				else				temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+				
 				gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
 			}
+			//cout<<"gsl_vector_max(&temp.vector): "<<gsl_vector_max(&temp.vector)<<endl;
+			//cout<<"gsl_vector_max_index(&temp.vector): "<<gsl_vector_max_index(&temp.vector)<<endl;
+			//for (int k=0;k<50;k++) cout<<"pulsederiv("<<k<<"): "<<gsl_vector_get(&temp.vector,k)<<endl;
 		}
 
 		gsl_vector_free(tstartPulsei);

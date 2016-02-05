@@ -65,9 +65,7 @@ int tesreconstruction_main() {
     PulsesCollection* pulsesAll = newPulsesCollection(&status);
     CHECK_STATUS_BREAK(status);  
     OptimalFilterSIRENA* optimalFilter = newOptimalFilterSIRENA(&status);
-    CHECK_STATUS_BREAK(status);// define a second structure for calibration 
-    PulsesCollection* pulsesAll2 = newPulsesCollection(&status);
-    CHECK_STATUS_BREAK(status);    
+    CHECK_STATUS_BREAK(status);// define a second structure for calibration
     
     if(!strcmp(par.Rcmethod,"PP")){
     
@@ -76,15 +74,13 @@ int tesreconstruction_main() {
     		par.DerivateExclusion,par.SaturationValue,&status);
 	  
     }else{
-    	//printf("Antes de initialize \n");
-	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, par.LibraryFile, par.TesEventFile,
-		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.crtLib, par.lastELibrary,
-		par.mode, par.LrsT, par.LbT, par.baseline, par.NoiseFile, par.PixelType, par.FilterDomain,
-		par.FilterMethod, par.EnergyMethod, par.OFStrategy, par.OFLength,
-		par.calibLQ, par.b_cF,par.c_cF, par.monoenergy, par.intermediate, par.detectFile,
-		par.filterFile, par.RecordFileCalib2, par.monoenergy2, par.clobber, par.EventListSize,
+	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile,
+		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, 
+		par.mode, par.LrsT, par.LbT, par.NoiseFile, par.PixelType, par.FilterDomain,
+		par.FilterMethod, par.EnergyMethod, par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
+		par.monoenergy, par.intermediate, par.detectFile,
+		par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
 		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, &status);
-	  //printf("Despues de initialize \n");
     }  
     CHECK_STATUS_BREAK(status);
 
@@ -108,19 +104,24 @@ int tesreconstruction_main() {
 	  }
       else
       {
-    	nrecord = nrecord + 1;
+	    nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
-	    /*if(nrecord < 1) {
+	    /*if(nrecord < 2) {
 	      continue;
-	    }else if(nrecord > 1){
+	    }else if(nrecord > 2){
 	      status=1;
 	      CHECK_STATUS_BREAK(status);
 	    }*/
-	    /*if(nrecord > 2)
+	    /*if(nrecord > 1)
 	    {
 	    	status=1;
 	        CHECK_STATUS_BREAK(status);
 	    }*/
+	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RBIS") == 0))
+	    {
+	    	//reconstruct_init_sirena->baseline		= par.baseline;
+	    	strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
+	    }
 	    //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
 	    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
 				    lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
@@ -135,51 +136,6 @@ int tesreconstruction_main() {
     
     if(pulsesAll->ndetpulses == 0)  printf("%s","WARNING: no pulses have been detected\n");
     
-    // If SIRENA processing is in calibration (b,c calibration factors calculations)
-    if(!strcmp(par.Rcmethod,"SIRENA") && par.mode==0 && par.crtLib==0)
-    {
-      // Open second record file (calibration)
-      TesTriggerFile* record_file2 = openexistingTesTriggerFile(par.RecordFileCalib2,keywords,&status);
-      CHECK_STATUS_BREAK(status);
-
-	  // Build up TesRecord to read the 2nd file
-	  TesRecord* record2 = newTesRecord(&status);
-	  allocateTesRecord(record2,record_file2->trigger_size,record_file2->delta_t,0,&status);
-	  CHECK_STATUS_BREAK(status);
-	
-	  reconstruct_init_sirena->clobber = 1;
-	  // Iterate of records and do the reconstruction
-	  lastRecord = 0, nrecord = 0;
-	  while(getNextRecord(record_file2,record2,&status))
-	  {
-	    nrecord = nrecord + 1;
-	    if(nrecord == record_file2->nrows) lastRecord=1;
-	    //printf("%s %d %s","**TESRECONSTRUCTION nrecord2 = ",nrecord,"\n");
-	    reconstructRecordSIRENA(record2, event_list, reconstruct_init_sirena,
-				    lastRecord, nrecord, &pulsesAll2, &optimalFilter, &status);
-	    saveEventListToFile(outfile,event_list,record2->time,record_file2->delta_t,
-				record2->pixid,&status);
-	    //Reinitialize event list
-	    event_list->index=0;
-	  }
-	  CHECK_STATUS_BREAK(status);
-
-	  if(pulsesAll2->ndetpulses == 0)  printf("%s","WARNING: no pulses have been detected in second file (calibration)\n");
-	  else
-	  {
-	    double b_cF = 0.0, c_cF = 0.0;
-	    runEnergyCalib(reconstruct_init_sirena, pulsesAll, pulsesAll2, &b_cF, &c_cF);
-	
-	    // Copy calib keywords to event file
-	    writeCalibKeywords(outfile->fptr,b_cF, c_cF,&status);
-	    CHECK_STATUS_BREAK(status);
-	  }
-	
-	  // free calibration memory
-	  freeTesTriggerFile(&record_file2,&status);
-	  freeTesRecord(&record2);
-    }
-    
     // Copy trigger keywords to event file
     copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
     CHECK_STATUS_BREAK(status);
@@ -192,7 +148,6 @@ int tesreconstruction_main() {
     freeReconstructInit(reconstruct_init);
     freeReconstructInitSIRENA(reconstruct_init_sirena);
     freePulsesCollection(pulsesAll);
-    freePulsesCollection(pulsesAll2);
     freeOptimalFilterSIRENA(optimalFilter);
     freeTesTriggerFile(&record_file,&status);
     freeTesEventFile(outfile,&status);
@@ -228,7 +183,6 @@ int getpar(struct Parameters* const par)
   strcpy(par->Rcmethod, sbuffer);
   free(sbuffer);
 
-  
   status=ape_trad_query_string("RecordFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the optimal filter file");
@@ -250,6 +204,7 @@ int getpar(struct Parameters* const par)
 	  SIXT_ERROR("failed reading the PulseLength parameter");
 	  return(status);
   }
+  assert(&par->PulseLength > 0);
 
   status=ape_trad_query_int("EventListSize", &par->EventListSize);
   if (EXIT_SUCCESS!=status) {
@@ -266,6 +221,12 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_bool("history", &par->history);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the history parameter");
+    return(status);
+  }
+  
+  status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the SaturationValue parameter");
     return(status);
   }
 
@@ -312,218 +273,144 @@ int getpar(struct Parameters* const par)
 		return(status);
 	}
 
-	status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
+	/*status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the SaturationValue parameter");
 		return(status);
-	}
+	}*/
 	
   }else if(strcmp(par->Rcmethod,"SIRENA")==0){
 	
 	// SIRENA parameters
 	status=ape_trad_query_string("LibraryFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the library file");
-		return(status);
-	}
 	strcpy(par->LibraryFile, sbuffer);
 	free(sbuffer);
 
 	status=ape_trad_query_double("scaleFactor", &par->scaleFactor);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the scaleFactor parameter");
-		return(status);
-	}
   
 	status=ape_trad_query_double("tauFall", &par->tauFall);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the tauFall parameter");
-		return(status);
-	}
   
 	status=ape_trad_query_double("samplesUp", &par->samplesUp);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the samplesUp parameter");
-		return(status);
-	}
   
 	status=ape_trad_query_double("nSgms", &par->nSgms);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the nSgms parameter");
-		return(status);
-	}
   
 	status=ape_trad_query_int("mode", &par->mode);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the mode parameter");
-		return(status);
-	}
-	
-	status=ape_trad_query_int("crtLib", &par->crtLib);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the crtLib parameter");
-		return(status);
-	}
-
-	if(par->mode==1 && par->crtLib==1){
-		SIXT_ERROR("parameter error: mode=1 (production) and crtLib=1 (library creation - calibration)");
-		return(status);
-	}
-
-	status=ape_trad_query_int("lastELibrary", &par->lastELibrary);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the lastELibrary parameter");
-		return(status);
-	}
   
 	status=ape_trad_query_double("LrsT", &par->LrsT);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the LrsT parameter");
-		return(status);
-	}
 
 	status=ape_trad_query_double("LbT", &par->LbT);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the LbT parameter");
-		return(status);
-	}
 	
-	status=ape_trad_query_double("baseline", &par->baseline);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the baseline parameter");
-		return(status);
-	}
+	//status=ape_trad_query_double("baseline", &par->baseline);
 
 	status=ape_trad_query_int("intermediate", &par->intermediate);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the intermediate parameter");
-		return(status);
-	}
 
 	status=ape_trad_query_string("detectFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the detections output intermediate file");
-		return(status);
-	}
 	strcpy(par->detectFile, sbuffer);
 	free(sbuffer);
 
 	status=ape_trad_query_string("filterFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the filters output intermediate file");
-		return(status);
-	}
 	strcpy(par->filterFile, sbuffer);
 	free(sbuffer);
 
 	status=ape_trad_query_double("monoenergy", &par->monoenergy);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the monoenergy parameter");
-		return(status);
-	}
 
 	status=ape_trad_query_string("NoiseFile", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the noise file");
-		return(status);
-	}
 	strcpy(par->NoiseFile, sbuffer);
 	free(sbuffer);
 		
 	status=ape_trad_query_string("PixelType", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Pixel type");
-		return(status);
-	}
 	strcpy(par->PixelType, sbuffer);
 	free(sbuffer);
-
+	
 	status=ape_trad_query_string("FilterDomain", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Filter domain");
-		return(status);
-	}
 	strcpy(par->FilterDomain, sbuffer);
 	free(sbuffer);
 	
 	status=ape_trad_query_string("FilterMethod", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Filter method");
-		return(status);
-	}
 	strcpy(par->FilterMethod, sbuffer);
 	free(sbuffer);
 
 	status=ape_trad_query_string("EnergyMethod", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Energy method");
-		return(status);
-	}
 	strcpy(par->EnergyMethod, sbuffer);
 	free(sbuffer);
 
+	status=ape_trad_query_int("LagsOrNot", &par->LagsOrNot);
+
+	status=ape_trad_query_int("OFIter", &par->OFIter);
+
+	status=ape_trad_query_bool("OFLib", &par->OFLib);
+
+	status=ape_trad_query_string("OFInterp", &sbuffer);
+	strcpy(par->OFInterp, sbuffer);
+	free(sbuffer);
+		
 	status=ape_trad_query_string("OFStrategy", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Optimal Filter length Strategy");
-		return(status);
-	}
 	strcpy(par->OFStrategy, sbuffer);
 	free(sbuffer);
-
-	status=ape_trad_query_int("OFLength", &par->OFLength);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the Optimal Filter length");
-		return(status);
-	}
-  
-	status=ape_trad_query_int("calibLQ", &par->calibLQ);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the calibLQ parameter");
-		return(status);
-	}
-	  
-	status=ape_trad_query_double("b_cF", &par->b_cF);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the b_cF parameter");
-		return(status);
-	}
-	  
-	status=ape_trad_query_double("c_cF", &par->c_cF);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the c_cF parameter");
-		return(status);
-	}
-
-	status=ape_trad_query_string("RecordFileCalib2", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of second calibration file");
-		return(status);
-	}
-	strcpy(par->RecordFileCalib2, sbuffer);
-	free(sbuffer);
 	
-	status=ape_trad_query_double("monoenergy2", &par->monoenergy2);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the monoenergy2 parameter");
-		return(status);
-	}
+	status=ape_trad_query_int("OFLength", &par->OFLength);
 
 	status=ape_trad_query_int("tstartPulse1", &par->tstartPulse1);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the tstartPulse1 parameter");
-		return(status);
-	}
+	
 	status=ape_trad_query_int("tstartPulse2", &par->tstartPulse2);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the tstartPulse3 parameter");
-		return(status);
-	}
+	
 	status=ape_trad_query_int("tstartPulse3", &par->tstartPulse3);
+	
 	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the tstartPulse3 parameter");
+		SIXT_ERROR("failed reading some SIRENA parameter");
 		return(status);
 	}
-		  
+	
+	assert((par->mode ==0) || (par->mode ==1));
+	
+	assert((par->intermediate ==0) || (par->intermediate ==1));
+	
+	assert(&par->monoenergy > 0);
+	
+	assert((strcmp(par->PixelType,"SPA") == 0) || (strcmp(par->PixelType,"LPA1") == 0) || (strcmp(par->PixelType,"LPA2") == 0) ||
+		(strcmp(par->PixelType,"LPA3") == 0));
+
+	
+	assert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0));
+	
+	assert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0));
+	
+	assert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
+		(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBIS") == 0));
+	
+	assert((par->LagsOrNot ==0) || (par->LagsOrNot ==1));
+
+	if (((strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0)) && (par->LagsOrNot == 1))
+	{
+		SIXT_ERROR("parameter error: EnergyMethod=WEIGHT/WEIGHTN and Lags not implemented yet");
+		return(EXIT_FAILURE);
+	}
+	
+	assert((par->OFIter ==0) || (par->OFIter ==1));
+	
+	if ((par->OFLib == 1) && (strcmp(par->FilterMethod,"F0") != 0))
+	{
+		SIXT_ERROR("parameter error: If OFLib=yes => FilterMethod must be F0");
+		return(EXIT_FAILURE);
+	}
+	if (((strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0)) && (par->OFLib == 1))
+	{
+		SIXT_ERROR("parameter error: EnergyMethod=WEIGHT/WEIGHTN  => OFLib should be 'no'");
+		return(EXIT_FAILURE);
+	}
+	
+	assert((strcmp(par->OFInterp,"MF") == 0) || (strcmp(par->OFInterp,"DAB") == 0));
+	
+	assert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0));
+	
+	assert(&par->OFLength > 0);
+	
+	if (((strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBIS") == 0)) && (par->tstartPulse1 == 0))
+	{
+		printf("%s %d %s","Error",status,"\n");
+		SIXT_ERROR("parameter error: EnergyMethod=I2R/I2RBIS and tstartPulse1=0 (If I2R/I2RBIS, tstartPulsex must be always provided)");
+		return(EXIT_FAILURE);
+	}	  
   } else {
 	SIXT_ERROR("failed reading the Rcmethod parameter");
 	return(EXIT_FAILURE);

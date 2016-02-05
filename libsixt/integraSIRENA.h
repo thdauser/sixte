@@ -81,6 +81,9 @@ typedef struct {
   // Vector containing the optimal filter
   gsl_vector *ofilter;
 
+  /** Energy of the ofilter */
+  double energy;
+
   // Normalization factor
   double nrmfctr;
 
@@ -96,23 +99,35 @@ typedef struct {
   /** Pulse Heights of the templates */
   gsl_vector *pulse_heights;
 
-  /** Vector containing all the pulse templates from the library */
+  /** Structure containing all the pulse templates from the library */
   PulseTemplate* pulse_templates;
 
-  /** Vector containing all the pulse templates filtered & derivated from the library */
+  /** Structure containing all the pulse templates filtered & derivated from the library */
   PulseTemplate* pulse_templates_filder;
 
   /** Maximum of pulse_templates_filder */
   gsl_vector *maxDERs;
 
-  /** Vector containing all the pulse templates from the library */
+  /** Structure containing all the pulse templates from the library */
   PulseTemplate* pulse_templates_B0;
   
-  /** Vector containing all the matched filters from the library */
+  /** Structure containing all the matched filters from the library */
   MatchedFilter* matched_filters;
 
-  /** Vector containing all the matched filters from the library */
+  /** Structure containing all the matched filters from the library */
   MatchedFilter* matched_filters_B0;
+
+  /** Structure containing all the optimal filters from the library */
+  OptimalFilterSIRENA* optimal_filters;
+
+  /** Normalization factors of the optimal filters */
+  gsl_vector *nrmfctrs;
+  
+  /** Structure containing all the optimal filters AB from the library */
+  //OptimalFilterSIRENA* optimal_filtersab;
+
+  /** Normalization factors of the optimal filters AB */
+  //gsl_vector *nrmfctrsab;
 
   /** Weight matrix */
   //MatrixStruct* W;
@@ -142,10 +157,22 @@ typedef struct {
 
   /** DAB vector */
   gsl_matrix *DAB;
+  
+  /** Structure containing all the optimal filters AB from the library */
+  OptimalFilterSIRENA* optimal_filtersab;
+
+  /** Normalization factors of the optimal filters AB */
+  gsl_vector *nrmfctrsab;
 
 } LibraryCollection;
 
 typedef struct {
+
+  /** Noise standard deviation */
+  double noiseStd;
+  
+  /** Baseline: BASELINE or BASELINR */
+  double baseline;
   
   /** Duration of the noise spectrum */
   int noise_duration;
@@ -198,10 +225,7 @@ typedef struct {
   /** Maximum of the filtered-derived pulse */
   double maxDER;
 
-  /** Uncalibrated Energy (eV) of the Pulse */
-  double ucenergy;
-
-  /** Calibrated Energy (eV) of the Pulse */
+  /** Energy (KeV) of the Pulse */
   double energy;
 
   /** Quality of the Pulse */
@@ -235,6 +259,9 @@ typedef struct {
 	/** records file (if any) **/
 	char record_file[256];
 	
+	/** records file pointer **/
+	fitsfile *record_file_fptr;
+
 	/** Noise file (to be used) **/
 	char noise_file[256];
 
@@ -245,86 +272,82 @@ typedef struct {
 	int pulse_length;
 	
 	/** Pulses Fall time (s)**/
-    double tauFall;
+	double tauFall;
 
 	/** Detection scaleFactor (0.005 – no filtering) **/
 	double scaleFactor;
 	
 	/** Detection samplesUp (samples to confirm threshold overcoming) **/
-    double samplesUp;
+	double samplesUp;
 
 	/** Detection nSgms (sigmas to establish a threshold for detection) **/
 	double nSgms;
 
-    /** Library creation mode? (Y:1, N:0) **/
-	int crtLib;
-
-	/** Last energy to be included in the library file?? (Y:1, N:0) **/
-	int lastELibrary;
-
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
 	
-	/** Running sum length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
+	/** Running sum length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LrsT;
 	
-	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
+	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LbT;
 	
 	/** Baseline (in ADC units) **/
-	double baseline;
+	//double baseline;
 
-    /** Run mode (0: calibration/lib creation  1:energy reconstruction) **/
+	/** Run mode (0: calibration/lib creation  1:energy reconstruction) **/
 	int mode;
 
-    /** Noise spectrum **/
+	/** Noise spectrum **/
 	NoiseSpec* noise_spectrum;
 
 	/** Pixel Type: SPA, LPA1, LPA2, LPA3 **/
 	char PixelType[5];
 
 	/** Filtering Domain: T (Time) or F (Frequency) **/
-    char FilterDomain[2];
+	char FilterDomain[2];
 
-    /** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
-    char FilterMethod[3];
+	/** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
+	char FilterMethod[3];
 
-    /** Energy Method: NOLAGS, LAGS, WEIGHT or WEIGHTN **/
-    char EnergyMethod[8];
+	/** Energy Method: OPTFILT, WEIGHT, WEIGHTN or I2R **/
+	char EnergyMethod[8];
 
-    /** Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
-    char OFStrategy[8];
+	//LagsOrNot: LAGS == True or NOLAGS == False **/
+	int LagsOrNot;
 
-    //Optimal Filter length (taken into account if OFStrategy=FIXED) **/
-    int OFLength;
+	//OFIter: Iterate == 1 or NOTIterate == 0 **/
+	int OFIter;
 
-    /** Energy Calibration type: Linear (1), Quadratic (2) **/
-    int calibLQ;
+	/** Use a library with optimal filters (1) or calculate the optimal filter to each pulse (0) **/
+	int OFLib;
+	
+	//Optimal Filter by using the Matched Filter (MF) or the DAB as matched filter (MF, DAB) **/
+	char OFInterp[4];
 
-    /** Linear Calibration Factor (externally input) **/
-	double b_cF;
+	/** Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
+	char OFStrategy[8];
 
-    /** Quadratic Calibration Factor (externally input) **/
-    double c_cF;
+	//Optimal Filter length (taken into account if OFStrategy=FIXED) **/
+	int OFLength;
 
 	/** Write intermediate files **/
 	int intermediate;
 	
-	/** File with the output detections **/
+	/** Intermediate file **/
 	char detectFile[256];
 	
-	/** File with the output detections **/
+	/** File with the optimal filter info **/
 	char filterFile[256];
 	
-	/** Second records file (if mode=0 & crtLib=0) **/
-	char record_file2[256];
-	double monoenergy2;
-
 	/** Overwrite files? **/
 	int clobber;
 	
 	/** PP's parameter **/
 	int maxPulsesPerRecord;
+	
+	/** Saturation level of the ADC curves **/
+	double SaturationValue;
 
 	/** Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0) **/
 	int tstartPulse1;
@@ -350,12 +373,11 @@ ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status);
 extern "C"
 #endif
 
-void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, char* const library_file,
-	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, int crtLib, int lastELibrary,
-	int mode, double LrsT, double LbT, double baseline, char* const noise_file, char* pixel_type, char* filter_domain,
-	char* filter_method, char* energy_method, char* oflength_strategy, int oflength,
-	int calibLQ,  double b_cF, double c_cF,	double monoenergy,
-	int interm, char* detectFile, char* filterFile, char* record_file2, double monoenergy2, char clobber, int maxPulsesPerRecord,
+void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, fitsfile *fptr, char* const library_file,
+	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, 
+	int mode, double LrsT, double LbT, char* const noise_file, char* pixel_type, char* filter_domain,
+	char* filter_method, char* energy_method, int lagsornot, int ofiter, char oflib, char* ofinterp, char* oflength_strategy, int oflength,
+	double monoenergy, int interm, char* detectFile, char* filterFile, char clobber, int maxPulsesPerRecord, double SaturationValue,
 	int tstartPulse1, int tstartPulse2, int tstartPulse3, int* const status);
 
 /** Constructor. Returns a pointer to an empty PulsesCollection data structure. */
@@ -382,11 +404,6 @@ extern "C"
 #endif
 void freeOptimalFilterSIRENA(OptimalFilterSIRENA* PulsesColl);
 
-#ifdef __cplusplus
-extern "C"
-#endif
-void writeCalibKeywords(fitsfile* fptr, double b_cF, double c_cF, int* const status);
-
 /** Run reconstruction method with an option for SIRENA*/
 #ifdef __cplusplus
 extern "C"
@@ -394,7 +411,7 @@ extern "C"
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 /** Create and retrieve a LibraryCollection from a file. */
-LibraryCollection* getLibraryCollection(const char* const filename, int mode, int crtLib, char *energy_method, int* const status);
+LibraryCollection* getLibraryCollection(const char* const filename, int mode, char *energy_method, char *filter_method, char oflib, char **ofinterp, int* const status);
 
 /** LibraryCollection constructor. Returns a pointer to an empty LibraryCollection data structure. */
 LibraryCollection* newLibraryCollection(int* const status);
@@ -406,7 +423,7 @@ void freeLibraryCollection(LibraryCollection** const library_collection);
 void allocateLibraryCollection(LibraryCollection* library_collection,int ntemplates,int* const status);
 
 /** Create and retrieve a NoiseSpec from a file. */
-NoiseSpec* getNoiseSpec(const char* const filename,int* const status);
+NoiseSpec* getNoiseSpec(const char* const filename,int mode,char *energy_method,char *filter_method,int* const status);
 
 /** NoiseSpec constructor. Returns a pointer to an empty NoiseSpec data structure. */
 NoiseSpec* newNoiseSpec(int* const status);
@@ -424,11 +441,6 @@ void freePulsetemplate(PulseTemplate* pulse_template);
 void allocateMatchedFilter(MatchedFilter* matched_filter,int mfilter_duration,int* const status);
 /** MatchedFilter destructor. */
 void freeMatchedFilter(MatchedFilter* matched_filter);
-
-#ifdef __cplusplus
-extern "C"
-#endif
-void runEnergyCalib(ReconstructInitSIRENA* reconstruct_init, PulsesCollection* pulsesAll_runEnergyCalib, PulsesCollection* pulsesAll2_runEnergyCalib, double *b_cF_runEnergyCalib, double *c_cF_runEnergyCalib);
 
 #endif /* INTEGRASIRENA_H */
 

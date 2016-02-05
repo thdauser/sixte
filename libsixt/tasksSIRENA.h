@@ -31,47 +31,40 @@
 
 void runDetect(TesRecord* record, int lastRecord, PulsesCollection *pulsesAll, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord);
 
-int handleLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToLibrary, int lastRecord, fitsfile **inLibObject, const char * create);
-int createLibraryDetect(ReconstructInitSIRENA* reconstruct_init, bool *appendToLibrary, fitsfile **inLibObject, const char * create);
+int createLibrary(ReconstructInitSIRENA* reconstruct_init, bool *appendToLibrary, fitsfile **inLibObject, const char * create);
 int createDetectFile(ReconstructInitSIRENA* reconstruct_init, double samprate, const char * create, fitsfile **dtcObject);
 int filderLibrary(ReconstructInitSIRENA** reconstruct_init, double samprate);
 int loadRecord(TesRecord* record, double *time_record, gsl_vector **adc_double);
-int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, double samprate, fitsfile *dtcObject, gsl_vector *record, PulsesCollection *foundPulses);
-int obtainTau (gsl_vector *invector, gsl_vector *tstartgsl, gsl_vector *tendgsl, int nPulses, gsl_vector **taurisegsl, gsl_vector **taufallgsl);
+int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, double samprate, fitsfile *dtcObject, gsl_vector *record, gsl_vector *recordWithoutCovert2R, PulsesCollection *foundPulses);
 int writePulses(ReconstructInitSIRENA** reconstruct_init, double samprate, double initialtime, gsl_vector *invectorNOTFIL, int numPulsesRecord, gsl_vector *tstart, gsl_vector *tend, gsl_vector *quality, gsl_vector *taurise, gsl_vector *taufall, fitsfile *dtcObject);
-int writeTestInfo(ReconstructInitSIRENA* reconstruct_init, gsl_vector *recordNOTFILTERED, gsl_vector *recordDERIVATIVE, double threshold, fitsfile *dtcObject);
+int writeTestInfo(ReconstructInitSIRENA* reconstruct_init, gsl_vector *recordDERIVATIVE, double threshold, fitsfile *dtcObject);
 int calculateTemplate (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, double samprate, gsl_vector **pulseaverage, double *pulseaverageHeight, gsl_matrix **covariance, gsl_matrix **weight);
 int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhisto, gsl_vector **yhisto);
 int align(double samprate, gsl_vector **vector1, gsl_vector ** vector2);
 int shiftm(gsl_vector *vectorin, gsl_vector *vectorout, int m);
 int shift_m(gsl_vector *vectorin, gsl_vector *vectorout, int m);
-int weightMatrix (ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, long nonpileupPulses, gsl_vector *nonpileup, gsl_vector *pulseaverage, gsl_matrix **covariance, gsl_matrix **weight);
-int writeLibrary(ReconstructInitSIRENA* reconstruct_init, double estenergy, gsl_vector **pulsetemplate, gsl_matrix *covariance, gsl_matrix *weight, bool appenToLibrary, fitsfile **inLibObject);
+int weightMatrix (ReconstructInitSIRENA *reconstruct_init, bool saturatedPulses, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, long nonpileupPulses, gsl_vector *nonpileup, gsl_vector *pulseaverage, gsl_matrix **covariance, gsl_matrix **weight);
+int eigenVV (gsl_matrix *matrixin, gsl_matrix **eigenvectors, gsl_vector **eigenvalues);
+int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double samprate, double estenergy, gsl_vector *pulsetemplate, gsl_matrix *covariance, gsl_matrix *weight, bool appendToLibrary, fitsfile **inLibObject);
+int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject, double samprate, int runF0orB0val, gsl_vector *E, gsl_vector *PHEIGHT, gsl_matrix *PULSE, gsl_matrix *PULSEB0, gsl_matrix *MF, gsl_matrix *MFB0, gsl_matrix *COVAR, gsl_matrix *WEIGHT);
+int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibObject,double samprate,int eventcntLib, double estenergy, gsl_vector *pulsetemplate,gsl_matrix *covariance, gsl_matrix *weight);
+int calculateIntParams(ReconstructInitSIRENA *reconstruct_init, int indexa, int indexb, double samprate, int runF0orB0val, gsl_matrix *modelsaux,gsl_matrix *weightaux,gsl_vector *energycolumn, gsl_matrix **TVaux,gsl_vector **tEcolumn,gsl_matrix **XMaux,gsl_matrix **YVaux,gsl_matrix **ZVaux,gsl_vector **rEcolumn, gsl_matrix **Pabaux, gsl_matrix **Dabaux, gsl_matrix **optimalfiltersabaux, gsl_vector **nrmfctrabcolumn);
 int matrix2vector (gsl_matrix *matrixin, gsl_vector **vectorout);
 int vector2matrix (gsl_vector *vectorin, gsl_matrix **matrixout);
-int fillInLibraryData (ReconstructInitSIRENA* reconstruct_init);
+int convertI2R (ReconstructInitSIRENA** reconstruct_init, TesRecord **record, gsl_vector **invector);
 
-void runFilter(TesRecord* record, int nRecord, int lastRecord, ReconstructInitSIRENA** reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection** pulsesInRecord, OptimalFilterSIRENA **optimalFilter);
+void runEnergy(TesRecord* record, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord, OptimalFilterSIRENA **optimalFilter);
 
-int find_energy(double energyKeyword, gsl_vector *energygsl, long *rowFound);
 int calculus_optimalFilter(int TorF, int intermediate, int mode, gsl_vector *matchedfiltergsl, long mf_size, double samprate, int runF0orB0val, gsl_vector *freqgsl, gsl_vector *csdgsl, gsl_vector **optimal_filtergsl, gsl_vector **of_f, gsl_vector **of_FFT, gsl_vector_complex **of_FFT_complex, double *normalizationFactor);
-int interpolatePOS (gsl_vector *x_in, gsl_vector *y_in, long size, double step, gsl_vector **x_out, gsl_vector **y_out, long *numzerosstart, long *numzerosend);
-int find_matchedfilter(int runF0orB0val, double parameterToUse, gsl_vector *valuesToCompare, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound);
-int find_Esboundary(double parameterToUse, gsl_vector *valuesToCompare, ReconstructInitSIRENA *reconstruct_init, int *indexEalpha, int *indexEbeta);
+int interpolatePOS (gsl_vector *x_in, gsl_vector *y_in, long size, double step, gsl_vector **x_out, gsl_vector **y_out);
+int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound, double *Ealpha, double *Ebeta);
+int find_matchedfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta);
+int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **optimalfilterFound, double *nrmfctrFound, double *Ealpha, double *Ebeta);
+int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **optimalfilterFound, double *nrmfctrFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta);
+int find_Esboundary(double maxDER, gsl_vector *maxDERs, int *indexEalpha, int *indexEbeta);
 int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade2, int OFlength_strategy, int *pulseGrade, long *OFlength);
-int calculateUCEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl_vector_complex *filterFFT, int runEMethod, int indexEalpha, int indexEbeta, ReconstructInitSIRENA *reconstruct_init, int domain, int mode, double nrmfctr, double samprate, double *calculatedEnergy);
-int writeFilter(ReconstructInitSIRENA *reconstruct_init, double normalizationFactor, gsl_vector *optimalfilter, gsl_vector *optimalfilter_f, gsl_vector *optimalfilter_FFT, fitsfile **dtcObject, const char *create);
-int writeUCEnergy(ReconstructInitSIRENA **reconstruct_init, PulsesCollection *pulsesAll, PulsesCollection *pulsesInRecord, int pulse_index, double uncE, fitsfile **dtcObject, const char *create);
-int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, double normalizationFactor, double uncE, gsl_vector *optimalfilter, gsl_vector *optimalfilter_f, gsl_vector *optimalfilter_FFT, fitsfile **dtcObject, const char * create);
-
-void runEnergy(ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord);
-
-int loadUCEnergies(ReconstructInitSIRENA *reconstruct_init, PulsesCollection *pulsesAll, long *nz, gsl_vector **zi, double *E0z);
-int calculus_bc (int calibLQ, long nx, gsl_vector *xi, double E0x, long ny, gsl_vector *yj, double E0y, double *b_cF, double *c_cF);
-int calculateEnergy(ReconstructInitSIRENA *reconstruct_init, PulsesCollection **pulses);
-int writeEnergy(ReconstructInitSIRENA **reconstruct_init,PulsesCollection *pulsesInRecord, const char *create);
-
-
+int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl_vector_complex *filterFFT, int runEMethod, int indexEalpha, int indexEbeta, ReconstructInitSIRENA *reconstruct_init, int domain, double nrmfctr, double samprate, gsl_vector *Pab, double *calculatedEnergy);
+int writeFilterHDU(ReconstructInitSIRENA **reconstruct_init, int pulse_index, double normalizationFactor, double energy, gsl_vector *optimalfilter, gsl_vector *optimalfilter_f, gsl_vector *optimalfilter_FFT, fitsfile **dtcObject, const char * create);
 
 #endif /* TASKSSIRENA_H */
 
