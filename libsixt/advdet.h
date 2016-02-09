@@ -44,6 +44,11 @@
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
 
+
+typedef struct MatrixCrossTalk MatrixCrossTalk;
+typedef struct Channel Channel;
+
+
 /** Data structure describing the noise properties of calorimeter
  pixels */
 typedef struct{
@@ -98,7 +103,7 @@ typedef struct{
 /** Data structure describing a pixel with arbitrary geometry.
     Current implementation: only rectangulars, parallel to detector
     coordinate system. */
-typedef struct{
+struct AdvPix{
   
   /** x-shift of pixel in respect to the detector reference point */
   double sx;
@@ -145,7 +150,19 @@ typedef struct{
   /** ID of the arf inside general detector (to avoid loading one arf per pixel) */
   struct ARF* arf;
 
-}AdvPix;
+  /** Frequency of the pixel */
+  double freq;
+
+  /** Read-out channel to which it blongs */
+  Channel* channel;
+
+  /** Cross-talk structures */
+  MatrixCrossTalk* electrical_cross_talk;
+  MatrixCrossTalk* thermal_cross_talk;
+
+}; typedef struct AdvPix AdvPix;
+
+
 
 /** Data structure containing a library of different RMFs */
 typedef struct{
@@ -246,6 +263,68 @@ typedef struct {
 	long row;
 	double totalenergy;
 }pixGrade;
+
+
+/////////////////////////////////////////////////////////////////////
+// Structures for the Crosstalk
+/////////////////////////////////////////////////////////////////////
+
+
+/** Structure defining the cross talk between pixels, which can be approximated
+    by a simple matrix containing weights */
+struct MatrixCrossTalk{
+	/** number of cross-talk pixels */
+	int num_cross_talk_pixels;
+
+	/** Array containing cross-talk pixels */
+	AdvPix** cross_talk_pixels;
+
+	/** Cross-talk weights*/
+	double* cross_talk_weights;
+
+};
+
+/** Structure defining the cross talk between pixels, which can be approximated
+    by a simple matrix containing weights */
+struct IntermodulationCrossTalk{
+	/** number of cross-talk pixels */
+	int num_cross_talk_pixels;
+
+	/** numbrer of combiniations for each pixel */
+	int* num_pixel_combinations;
+
+	/** Array containing cross-talk pixels */
+	AdvPix*** cross_talk_pixels;
+
+	/** Cross-talk weights*/
+	void* cross_talk_info;
+
+};
+
+
+/** Structure of a single channel, including all its contained pixels*/
+struct Channel{
+	AdvPix** pixels;
+	int num_pixels;
+	int channel_id;
+};
+
+/** Structure containing a certain amount of Impacts, which are not written
+    to the output file yet, as further modifications due to additional
+    (crosstalk) events might happen or that these events directly influence
+    other events */
+typedef struct channelImpacts{
+	double time_diff_criteria;
+	Impact** impacts_saved; // length = num_pixels
+	Channel* channel;
+} channelImpacts;
+
+/** Structure combining all readout channels */
+typedef struct{
+	Channel* channels;
+	int num_channels;
+} ReadoutChannels;
+
 
 /////////////////////////////////////////////////////////////////////
 // Function Declarations.
