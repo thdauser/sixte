@@ -365,7 +365,7 @@ void SixteSVG_open_text(SixteSVGObj *svg,
   r[0]=svg->scalefactor*(x-svg->x0);
   r[1]=svg->canvasheight-svg->scalefactor*(y-svg->y0);
 
-  fprintf(svg->file, "\n<text x=\"%.3lf\" y=\"%.3lf\" font-family=\"arial\" font-size=\"%.1lfpx\">\n", r[0], r[1], size*svg->scalefactor);
+  fprintf(svg->file, "\n<text x=\"%.3lf\" y=\"%.3lf\" font-family=\"arial\" font-size=\"%.1lfpx\" text-anchor=\"middle\" alignment-baseline=\"middle\">\n", r[0], r[1]+0.5*size, size);
   svg->text_open=1;
 }
 
@@ -395,4 +395,34 @@ void SixteSVG_write_text(SixteSVGObj *svg,
   
   fprintf(svg->file, "\n%s", text);  
      
+}
+
+void SixteSVG_write_centered_text(SixteSVGObj *svg, 
+			     char* text, 
+			     double cx,
+			     double cy,
+			     double textsize,
+			     int* const status){
+			       
+  if(*status!=EXIT_SUCCESS){
+    return;
+  }
+  
+  SixteSVG_open_text(svg, cx, cy, textsize, status);
+  if(*status!=EXIT_SUCCESS){
+    SIXT_ERROR("SixteSVG failed to open text object.");
+    return;
+  }
+  
+  SixteSVG_write_text(svg, text, status);
+  if(*status!=EXIT_SUCCESS){
+    SIXT_ERROR("SixteSVG failed to write text object.");
+    return;
+  }
+  
+  SixteSVG_close_text(svg, status);
+  if(*status!=EXIT_SUCCESS){
+    SIXT_ERROR("SixteSVG failed to close text object.");
+    return;
+  }
 }

@@ -359,11 +359,12 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 		xmlparsedata->det->sx=getXMLAttributeDouble(attr, "XOFF");
 		xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");
-		for (int i=0;i<xmlparsedata->det->npix;i++){
-			xmlparsedata->det->pix[i].TESNoise=NULL;
-			xmlparsedata->det->pix[i].grades=NULL;
-			xmlparsedata->det->pix[i].ngrades=0;
-			xmlparsedata->det->pix[i].global_grading=0;
+		for (int ii=0;ii<xmlparsedata->det->npix;ii++){
+			xmlparsedata->det->pix[ii].TESNoise=NULL;
+			xmlparsedata->det->pix[ii].grades=NULL;
+			xmlparsedata->det->pix[ii].ngrades=0;
+			xmlparsedata->det->pix[ii].global_grading=0;
+			xmlparsedata->det->pix[ii].global_grading=0;
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
@@ -1068,6 +1069,7 @@ void removeOverlapping(AdvDet* det,int* const status){
 	for (int i=0;i<det->npix;i++){
 		if(active_pixels[i]){
 			new_pix_array[det->cpix]=det->pix[i];
+			new_pix_array[det->cpix].pindex=det->cpix;
 			det->cpix++;
 		} else{
 			freeAdvPix(&(det->pix[i]));

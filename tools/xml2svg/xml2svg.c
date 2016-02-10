@@ -38,7 +38,40 @@ int xml2svg_main() {
   
   char *linecolor[]={"black", "red"};
   char *fillcolor[]={"#ffeeaa", "white"};
+  char *altcolor[]={"#ff7979",
+		    "#72bfd2",
+		    "#d2bf72",
+		    "#d272c6",
+		    "#78d272",
+		    "#b1d272",
+		    "#72d2ad",
+		    "#edb2bb",
+		    "#ede7b2",
+		    "#edceb2",
+		    "#b2edcb",
+		    "#b2e3ed",
+		    "#b9b2ed",
+		    "#e5b2ed",
+		    "#d9d9d9",
+		    "#828282",
+		    "#ff34c3",
+		    "#34ff47",
+		    "#fff834",
+		    "#ff4234",
+		    "#5a34ff",
+		    "#34b5ff",
+		    "#0a9f3f",
+		    "#c13d1a",
+		    "#c17c1a",
+		    "#9cc11a",
+		    "#1ac17c",
+		    "#291ac1",
+		    "#861bae",
+		    "#875681",
+		    "#d2143c"
+  };
   double linewidth[2]={2.0, 1.0};
+  double textsize[2]={5.,4.};
   int fill[2]={1, 0};
   
   Obj2D_instance **obj=NULL;
@@ -61,6 +94,10 @@ int xml2svg_main() {
       CHECK_STATUS_BREAK(status);
     }    
     CHECK_STATUS_BREAK(status);
+    int writeid=0;
+    if(par.writeid!=0){
+      writeid=1;
+    }
     // Find min, max values in all objects.
     Obj2D_inst_findBBLimits(obj[0], &xmin, &xmax, &ymin, &ymax);
     if(nxmls>1){
@@ -99,6 +136,8 @@ int xml2svg_main() {
 			    fillcolor, 
 			    fill,
 			    par.drawn,
+			    writeid,
+			    textsize,
 			    &status);
     CHECK_STATUS_BREAK(status);
     }
@@ -243,6 +282,12 @@ int xml2svg_getpar(struct Parameters* const par,
   }
   for(ii=0; ii<(*nxmls); ii++){
     (*obj)[ii]=NULL;
+  }
+  
+  status=ape_trad_query_bool("WriteID", &par->writeid);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the WriteID parameter");
+    return(status);
   }
   
   return status;

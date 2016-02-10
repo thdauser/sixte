@@ -46,6 +46,8 @@ void Obj2D_DrawObjectSVG(Obj2D *obj,
 			 char *linecolor,
 			 char *fillcolor,
 			 int fill,
+			 int writeid,
+			 double textsize,
 			 int* const status);
 
 /** Draw an Obj2D_instance recursively to a SVG file. */
@@ -56,6 +58,8 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			   char **fillcolor,
 			   int *fill,
 			   int ndraw,
+			   int writeid,
+			   double *textsize,
 			   int* const status);
 
 

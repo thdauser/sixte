@@ -38,6 +38,7 @@ struct Parameters {
   double svgwidth;
   double border;
   int drawn;
+  char writeid;
 };
 
 int parse_xmlnames(char *xmlnames, int *nxmls, char ***xmls);

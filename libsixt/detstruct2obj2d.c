@@ -219,6 +219,8 @@ void Obj2D_DrawObjectSVG(Obj2D *obj,
 			 char *linecolor,
 			 char *fillcolor,
 			 int fill,
+			 int writeid,
+			 double textsize,
 			 int* const status){
 				   
   if(obj->type==OBJ2D_CIRC){
@@ -250,6 +252,21 @@ void Obj2D_DrawObjectSVG(Obj2D *obj,
       return ;
     }
   }
+
+  if(writeid){
+    char label[10];
+    sprintf(label, "%d", obj->id);
+    SixteSVG_write_centered_text(svg, 
+				 label, 
+				 obj->cx,
+				 obj->cy,
+				 textsize,
+				 status);
+    if(*status!=EXIT_SUCCESS){
+      SIXT_ERROR("Writing text to SVG failed.");
+      return ;
+    }
+  }
   
 }
 
@@ -260,6 +277,8 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			   char **fillcolor,
 			   int *fill,
 			   int ndraw,
+			   int writeid,
+			   double *textsize,
 			   int* const status){
 			     
   int ii, nmax;
@@ -270,6 +289,8 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			linecolor[0],
 			fillcolor[0],
 			fill[0],
+			writeid,
+			textsize[0],
 			status);
     if(*status!=EXIT_SUCCESS){
       return ;
@@ -290,6 +311,8 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			    &(fillcolor[1]),
 			    &(fill[1]),
 			    ndraw,
+			    writeid,
+			    &(textsize[1]),
 			    status);
       if(*status!=EXIT_SUCCESS){
 	return ;
