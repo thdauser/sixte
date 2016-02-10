@@ -299,6 +299,9 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
   
   if(ndraw>=0){
     nmax=ndraw;
+    if(nmax>obj->n_subobj){
+      nmax=obj->n_subobj;
+    }
   }else{
     nmax=obj->n_subobj;
   }
