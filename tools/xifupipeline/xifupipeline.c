@@ -442,6 +442,18 @@ int xifupipeline_main()
 
 		// --- End of opening files ---
 
+		// --- Initialize Crosstalk Structure ---
+		if (par.doCrosstalk){
+			headas_chat(3, "initializing crosstalk ...\n");
+		//	init_crosstalk(det, &status);
+			if (status==EXIT_FAILURE){
+				SIXT_ERROR("error when initializing crosstalk setup");
+				return EXIT_FAILURE;
+			}
+			headas_chat(3, "... done\n");
+		}
+
+		return 0;
 
 		// --- Simulation Process ---
 
@@ -543,7 +555,6 @@ int xifupipeline_main()
 			} while(1);
 			CHECK_STATUS_BREAK(status);
 			// END of photon processing loop for the current interval.
-
 
 			if (!par.UseRMF){
 				headas_chat(3, "\nstart event reconstruction ...\n");
@@ -903,6 +914,8 @@ int xifupipeline_getpar(struct Parameters* const par)
 		SIXT_ERROR("failed reading the UseRMF parameter");
 		return(status);
 	}
+
+	query_simput_parameter_bool("doCrosstalk", &par->doCrosstalk, &status );
 
 	if (!par->UseRMF){
 		status=ape_trad_query_string("TesTriggerFile", &sbuffer);

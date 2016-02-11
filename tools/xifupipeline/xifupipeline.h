@@ -41,6 +41,8 @@
 #include "tesinitialization.h"
 #include "testrigger.h"
 #include "teseventlist.h"
+#include "crosstalk.h"
+#include "parinput.h"
 
 #define TOOLSUB xifupipeline_main
 #include "headas_main.c"
@@ -109,6 +111,8 @@ struct Parameters {
   char WriteRecordFile;
   char Identify;
   char UseRMF;
+
+  int doCrosstalk;
 
   char history;
   char clobber;

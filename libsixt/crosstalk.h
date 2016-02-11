@@ -29,11 +29,25 @@
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
 
+typedef struct {
+	int* pixid;
+	int* chan;
+	double* freq;
+	int len;
+} channel_list;
+
 ////////////////////////////////////////////////////////////////////////
 // Function Declarations.
 ////////////////////////////////////////////////////////////////////////
 
+/** Destructor of the ARF library structure */
+void init_crosstalk(AdvDet* det, int* status);
 
+/** Load the Channel-Frequency List */
+channel_list* load_channel_list(char* fname, int* status);
+
+/** Load the Channel-Frequency List */
+channel_list* init_readout_channels(AdvDet* det, int* status);
 
 #endif /* CROSSTALK_H */
 

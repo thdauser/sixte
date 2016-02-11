@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2014 Thorsten Brand, FAU
+   Copyright 2014-2016 Thorsten Brand, Thomas Dauser, Philippe Peille, FAU
 */
 
 #include "advdet.h"
@@ -116,11 +116,21 @@ AdvDet* newAdvDet(int* const status){
   det->sy=0.;
   det->npix=0;
   det->cpix=0;
+  det->SampleFreq=-1.0;
   det->tesnoisefilter=0;
   det->inpixel=0;
   det->oof_activated=0;
   det->rmf_library=NULL;
   det->arf_library=NULL;
+
+  det->xt_dist_thermal=NULL;
+  det->xt_weight_thermal=NULL;
+  det->xt_num_thermal=0;
+
+  det->channel_file=NULL;
+  det->crosstalk_intermod_file=NULL;
+  det->crosstalk_timedep_file=NULL;
+
 
   return(det);
 }
@@ -216,6 +226,8 @@ int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp){
   }
   return nimpacts;
 }
+
+
 
 void parseAdvDetXML(AdvDet* const det, 
 	       const char* const filename,
@@ -577,6 +589,47 @@ static void AdvDetXMLElementStart(void* parsedata,
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
 		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
+
+	} else if(!strcmp(Uelement, "CHANNEL_FREQ_LIST"))  {
+		xmlparsedata->det->channel_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->channel_file);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->channel_file);
+
+	} else if(!strcmp(Uelement, "CROSSTALK"))  {
+		// Need to check if we have channels defined
+		if (xmlparsedata->det->channel_file == NULL){
+			SIXT_ERROR("Trying to implement crosstalk, but no file defining the channels specified in the XML.");
+			return;
+		}
+	} else if(!strcmp(Uelement, "THERMALCROSSTALK"))  {
+
+		xmlparsedata->det->xt_dist_thermal = realloc(xmlparsedata->det->xt_dist_thermal,
+				(xmlparsedata->det->xt_num_thermal+1)*sizeof(*(xmlparsedata->det->xt_dist_thermal)) );
+		CHECK_MALLOC_VOID(xmlparsedata->det->xt_dist_thermal);
+		xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal] =
+				getXMLAttributeDouble(attr, "DISTANCE");
+
+
+		xmlparsedata->det->xt_weight_thermal = realloc(xmlparsedata->det->xt_weight_thermal,
+				(xmlparsedata->det->xt_num_thermal+1)*sizeof(*(xmlparsedata->det->xt_weight_thermal)) );
+		CHECK_MALLOC_VOID(xmlparsedata->det->xt_weight_thermal);
+		xmlparsedata->det->xt_weight_thermal[xmlparsedata->det->xt_num_thermal] =
+				getXMLAttributeDouble(attr, "WEIGHT");
+
+		xmlparsedata->det->xt_num_thermal++;
+
+	} else if(!strcmp(Uelement, "TIMEDEPENDENCE"))  {
+
+		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_timedep_file);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_timedep_file);
+
+	} else if(!strcmp(Uelement, "INTERMODULATION"))  {
+
+		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_timedep_file);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_intermod_file);
+
 	} else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];

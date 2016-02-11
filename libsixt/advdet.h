@@ -47,6 +47,8 @@
 
 typedef struct MatrixCrossTalk MatrixCrossTalk;
 typedef struct Channel Channel;
+typedef struct IntermodulationCrossTalk IntermodulationCrossTalk;
+typedef struct ReadoutChannels ReadoutChannels;
 
 
 /** Data structure describing the noise properties of calorimeter
@@ -159,6 +161,8 @@ struct AdvPix{
   /** Cross-talk structures */
   MatrixCrossTalk* electrical_cross_talk;
   MatrixCrossTalk* thermal_cross_talk;
+  IntermodulationCrossTalk* intermodulation_cross_talk;
+
 
 }; typedef struct AdvPix AdvPix;
 
@@ -197,6 +201,17 @@ typedef struct{
 	struct ARF** arf_array;
 
 }ARFLibrary;
+
+
+/** structure defining the time dependent weights for the crosstalk*/
+typedef struct{
+	int length;
+	char* name_type;
+	char* file;
+	double* time;
+	double* weight;
+} crosstalk_timedep;
+
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -245,8 +260,27 @@ typedef struct{
   /** ARF library */
   ARFLibrary* arf_library;
 
-}AdvDet;
+  /** File listing for each pixel the channel and frequency */
+  char* channel_file;
 
+  /** List of all readout channels */
+  ReadoutChannels* readout_channels;
+
+  /** File containing the intermodulation crosstalk table */
+  char* crosstalk_intermod_file;
+
+  /** File containing the time dependence crosstalk table */
+  char* crosstalk_timedep_file;
+
+  /** Structure containing the time dependence of the pixels */
+  crosstalk_timedep* crosstalk_timedep;
+
+  /** information about thermal cross talk*/
+  int xt_num_thermal;
+  double* xt_dist_thermal;
+  double* xt_weight_thermal;
+
+}AdvDet;
 
 typedef struct{
 	PixImpact *next;
@@ -268,7 +302,6 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////
 // Structures for the Crosstalk
 /////////////////////////////////////////////////////////////////////
-
 
 /** Structure defining the cross talk between pixels, which can be approximated
     by a simple matrix containing weights */
@@ -320,10 +353,10 @@ typedef struct channelImpacts{
 } channelImpacts;
 
 /** Structure combining all readout channels */
-typedef struct{
+struct ReadoutChannels{
 	Channel* channels;
 	int num_channels;
-} ReadoutChannels;
+} ;
 
 
 /////////////////////////////////////////////////////////////////////

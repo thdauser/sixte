@@ -117,6 +117,17 @@ extern const double xmmmjdref;
 
 #define CHECK_NULL(a,status,msg) CHECK_NULL_RET(a,status,msg,NULL);
 
+#define CHECK_MALLOC_RET_NULL(a) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			return NULL;\
+		}
+
+#define CHECK_MALLOC_VOID(a) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			return;\
+		}
 
 // Warnings.
 #define SIXT_WARNING(msg) (sixt_warning(msg))
