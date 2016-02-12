@@ -377,6 +377,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].ngrades=0;
 			xmlparsedata->det->pix[ii].global_grading=0;
 			xmlparsedata->det->pix[ii].global_grading=0;
+			xmlparsedata->det->pix[ii].channel=NULL;
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
@@ -620,14 +621,14 @@ static void AdvDetXMLElementStart(void* parsedata,
 
 	} else if(!strcmp(Uelement, "TIMEDEPENDENCE"))  {
 
-		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		xmlparsedata->det->crosstalk_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_timedep_file);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_timedep_file);
 
 	} else if(!strcmp(Uelement, "INTERMODULATION"))  {
 
 		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
-		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_timedep_file);
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_file);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_intermod_file);
 
 	} else {

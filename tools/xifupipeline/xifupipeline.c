@@ -445,15 +445,13 @@ int xifupipeline_main()
 		// --- Initialize Crosstalk Structure ---
 		if (par.doCrosstalk){
 			headas_chat(3, "initializing crosstalk ...\n");
-		//	init_crosstalk(det, &status);
-			if (status==EXIT_FAILURE){
-				SIXT_ERROR("error when initializing crosstalk setup");
+			init_crosstalk(det, &status);
+			if (status!=EXIT_SUCCESS){
+				SIXT_ERROR("failed when initializing crosstalk setup");
 				return EXIT_FAILURE;
 			}
 			headas_chat(3, "... done\n");
 		}
-
-		return 0;
 
 		// --- Simulation Process ---
 

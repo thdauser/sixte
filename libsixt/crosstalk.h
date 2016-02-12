@@ -36,6 +36,8 @@ typedef struct {
 	int len;
 } channel_list;
 
+
+
 ////////////////////////////////////////////////////////////////////////
 // Function Declarations.
 ////////////////////////////////////////////////////////////////////////
@@ -47,7 +49,7 @@ void init_crosstalk(AdvDet* det, int* status);
 channel_list* load_channel_list(char* fname, int* status);
 
 /** Load the Channel-Frequency List */
-channel_list* init_readout_channels(AdvDet* det, int* status);
+ReadoutChannels* get_readout_channels(AdvDet* det, int* status);
 
 #endif /* CROSSTALK_H */
 
