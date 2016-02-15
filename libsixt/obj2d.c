@@ -289,12 +289,9 @@ void Obj2D_assign_group_attribute(Obj2D_instance *obj,
 				  int *group_id,
 				  double *attribute){
   
-  puts("assign...");
   if(obj!=NULL){
-    puts("there is an object...");
     if(group_id!=NULL){
       obj->geometry->group_id=(*group_id);
-      printf("Channel ID %d\n", *group_id);
     }
     if(attribute!=NULL){
       obj->geometry->attribute=(*attribute);
