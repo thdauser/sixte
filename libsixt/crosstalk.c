@@ -1,10 +1,129 @@
 #include "crosstalk.h"
 
+/** Calculates distance between two pixels */
+static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
+	// Note: this assumes no pixel overlap (this was ensured at detector loading stage)
+
+	// pix1 is on the right of pix2
+	if(pix1->sx>pix2->sx + .5*pix2->width){
+		// pix1 is above pix2
+		if (pix1->sy > pix2->sy + .5*pix2->height){
+			// distance is distance between bottom left corner of pix1 and top right corner of pix2
+			return sqrt(pow(pix1->sx - .5*pix1->width - (pix2->sx + .5*pix2->width),2) +
+					pow(pix1->sy - .5*pix1->height - (pix2->sy + .5*pix2->height),2));
+		}
+		// pix1 is below pix2
+		if (pix1->sy < pix2->sy - .5*pix2->height){
+			// distance is distance between top left corner of pix1 and bottom right corner of pix2
+			return sqrt(pow(pix1->sx - .5*pix1->width - (pix2->sx + .5*pix2->width),2) +
+					pow(pix1->sy + .5*pix1->height - (pix2->sy - .5*pix2->height),2));
+		}
+		// pix1 is at the same level as pix2
+		// distance is distance between left edge of pix1 and right edge of pix2
+		return pix1->sx - .5*pix1->width - (pix2->sx + .5*pix2->width);
+	}
+
+	// pix1 is on the left of pix2
+	if(pix1->sx<pix2->sx - .5*pix2->width){
+		// pix1 is above pix2
+		if (pix1->sy > pix2->sy + .5*pix2->height){
+			// distance is distance between bottom right corner of pix1 and top left corner of pix2
+			return sqrt(pow(pix1->sx + .5*pix1->width - (pix2->sx - .5*pix2->width),2) +
+					pow(pix1->sy - .5*pix1->height - (pix2->sy + .5*pix2->height),2));
+		}
+		// pix1 is below pix2
+		if (pix1->sy < pix2->sy - .5*pix2->height){
+			// distance is distance between top right corner of pix1 and bottom left corner of pix2
+			return sqrt(pow(pix1->sx + .5*pix1->width - (pix2->sx - .5*pix2->width),2) +
+					pow(pix1->sy + .5*pix1->height - (pix2->sy - .5*pix2->height),2));
+		}
+		// pix1 is at the same level as pix2
+		// distance is distance between right edge of pix1 and left edge of pix2
+		return (pix2->sx - .5*pix2->width) - (pix1->sx + .5*pix1->width);
+
+	}
+
+	// pix1 is at the same left/right position as pix2
+
+	// pix1 is above pix2
+	if (pix1->sy > pix2->sy){
+		// distance is distance between bottom edge of pix1 and top edge of pix2
+		return (pix1->sy - .5*pix1->height - (pix2->sy + .5*pix2->height));
+	}
+	// pix1 is below pix2
+	// distance is distance between top edge of pix1 and bottom edge of pix2
+	return (pix2->sy - .5*pix2->height - (pix1->sy + .5*pix1->height));
+}
+
+/** Adds a cross talk pixel to the matrix */
+static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,double xt_weigth,int* const status){
+	assert(matrix !=NULL);
+
+	// Increase matrix size
+	matrix->cross_talk_pixels = realloc(matrix->cross_talk_pixels,(matrix->num_cross_talk_pixels+1)*sizeof(*(matrix->cross_talk_pixels)));
+	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_pixels,*status);
+	matrix->cross_talk_weights = realloc(matrix->cross_talk_weights,(matrix->num_cross_talk_pixels+1)*sizeof(*(matrix->cross_talk_weights)));
+	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_weights,*status);
+
+	// Affect new values
+	matrix->cross_talk_pixels[matrix->num_cross_talk_pixels] = pixel;
+	matrix->cross_talk_weights[matrix->num_cross_talk_pixels] = xt_weigth;
+
+	// Now, we can say that the matrix is effectively bigger
+	matrix->num_cross_talk_pixels++;
+}
+
+// Loads thermal cross-talk for requested pixel
+// Concretely, iterates over all the pixels to find neighbours
+static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
+	// TODO : for the moment, assumes that the distances are ordered, need to check that first
+	double max_cross_talk_dist = det->xt_dist_thermal[det->xt_num_thermal-1];
+	AdvPix* concerned_pixel = &(det->pix[pixid]);
+	for (int i=0;i<det->npix;i++){
+		// Cross-talk is not with yourself ;)
+		if (i==pixid){
+			continue;
+		}
+		AdvPix* current_pixel = &(det->pix[i]);
+
+		// Initial quick distance check to avoid spending time on useless pixels
+		if((fabs(current_pixel->sx-concerned_pixel->sx) > .5*(current_pixel->width+concerned_pixel->width)+max_cross_talk_dist) ||
+				(fabs(current_pixel->sy-concerned_pixel->sy) > .5*(current_pixel->height+concerned_pixel->height)+max_cross_talk_dist)){
+			continue;
+		}
+
+		// Get distance between two pixels
+		double pixel_distance = distance_two_pixels(current_pixel,concerned_pixel);
+		assert(pixel_distance>0); // distance should be positive
+		//printf("%d - %d : %f\n",pixid,i,pixel_distance*1e6);
+
+		// Iterate over cross-talk values and look for the first matching one
+		for (int xt_index=0;xt_index<det->xt_num_thermal;xt_index++){
+			if (pixel_distance<det->xt_dist_thermal[xt_index]){
+				if (concerned_pixel->thermal_cross_talk == NULL){
+					concerned_pixel->thermal_cross_talk = newMatrixCrossTalk(status);
+				}
+				add_xt_pixel(concerned_pixel->thermal_cross_talk,current_pixel,det->xt_weight_thermal[xt_index],status);
+				// If one cross talk was identified, go to next pixel (the future cross-talks should be lower order cases)
+				break;
+			}
+		}
+	}
+}
+
 void init_crosstalk(AdvDet* det, int* status){
 	// load the channel list
 	if (det->readout_channels==NULL){
 		det->readout_channels = get_readout_channels(det,status);
 		CHECK_STATUS_VOID(*status);
+	}
+
+	// load thermal cross talk
+	if (det->xt_num_thermal>0){
+		for (int i=0;i<det->npix;i++){
+			load_thermal_cross_talk(det,i,status);
+			CHECK_STATUS_VOID(*status);
+		}
 	}
 }
 

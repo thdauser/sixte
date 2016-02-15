@@ -445,4 +445,10 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 /** Function to remove overlapping pixels from the detector */
 void removeOverlapping(AdvDet* det,int* const status);
 
+/** Constructor for MatrixCrossTalk structure */
+MatrixCrossTalk* newMatrixCrossTalk(int* const status);
+
+/** Destructor for MatrixCrossTalk structure */
+void freeMatrixCrossTalk(MatrixCrossTalk** matrix);
+
 #endif /* ADVDET_H */

@@ -85,6 +85,8 @@ void freeAdvPix(AdvPix* pix){
     destroyTESNoiseProperties(pix->TESNoise);
     free(pix->TESNoise);
     freeGrading(pix);
+    freeMatrixCrossTalk(&(pix->thermal_cross_talk));
+    freeMatrixCrossTalk(&(pix->electrical_cross_talk));
   }
 }
 
@@ -387,6 +389,8 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].global_grading=0;
 			xmlparsedata->det->pix[ii].global_grading=0;
 			xmlparsedata->det->pix[ii].channel=NULL;
+			xmlparsedata->det->pix[ii].thermal_cross_talk=NULL;
+			xmlparsedata->det->pix[ii].electrical_cross_talk=NULL;
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
@@ -1143,4 +1147,26 @@ void removeOverlapping(AdvDet* det,int* const status){
 	det->npix=number_active_pixels;
 	free(active_pixels);
 	headas_chat(0,"Number of pixels after removing overlaps: %d\n",number_active_pixels);
+}
+
+/** Constructor for MatrixCrossTalk structure */
+MatrixCrossTalk* newMatrixCrossTalk(int* const status){
+	MatrixCrossTalk* matrix = (MatrixCrossTalk*) malloc(sizeof(*matrix));
+	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
+
+	matrix->num_cross_talk_pixels=0;
+	matrix->cross_talk_pixels = NULL;
+	matrix->cross_talk_weights = NULL;
+
+	return matrix;
+}
+
+/** Destructor for MatrixCrossTalk structure */
+void freeMatrixCrossTalk(MatrixCrossTalk** matrix){
+	if (*matrix!=NULL){
+		free((*matrix)->cross_talk_pixels);
+		free((*matrix)->cross_talk_weights);
+	}
+	free(*matrix);
+	*matrix=NULL;
 }
