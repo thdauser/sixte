@@ -48,6 +48,7 @@ struct Parameters {
   int Seed;
   
   char clobber;
+  char ProjCenter;
 };
 
 
@@ -157,11 +158,11 @@ int projev_main() {
 
     // Run the pattern projection.
     if (NULL!=elf){
-    	phproj(inst, ac, elf, par.TSTART, par.Exposure, &status);
+    	phproj(inst, ac, elf, par.TSTART, par.Exposure,&status);
     } else {
     	adv_det = loadAdvDet(par.AdvXml,&status);
 		CHECK_STATUS_BREAK(status);
-    	phproj_advdet(inst,adv_det,ac,tes_elf,par.TSTART,par.Exposure,&status);
+    	phproj_advdet(inst,adv_det,ac,tes_elf,par.TSTART,par.Exposure,par.ProjCenter,&status);
     }
     CHECK_STATUS_BREAK(status);
 
@@ -304,6 +305,13 @@ int projev_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
+
+  status=ape_trad_query_bool("ProjCenter", &par->ProjCenter);
+  if (EXIT_SUCCESS!=status) {
+	  SIXT_ERROR("failed reading the ProjCenter parameter");
+	  return(status);
+  }
+
 
   return(status);
 

@@ -38,6 +38,7 @@ Seed,i,lh,-1,,,"seed for random number generator (-1: initialize with system tim
 ProgressFile,s,h,"STDOUT",,,"output file for simulation progress status"
 UseRmf,b,h,yes,,,"option to use the RMFs to determine the energy instead of simulating the TES streams"
 doCrosstalk,b,h,yes,,,"option to include crosstalk effects in the simulation (requires compatible AdvDet XML)"
+ProjCenter,b,h,no,,,"option to turn off the inside pixel position randomization during sky projection"
 chatter,i,lh,3,,,"verbosity"
 clobber,b,h,no,,,"overwrite output files if exist?"
 history,b,lh,true,,,"write a history block with program parameters to each FITS file?"

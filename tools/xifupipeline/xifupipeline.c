@@ -658,7 +658,7 @@ int xifupipeline_main()
 
 		headas_chat(3, "start sky projection ...\n");
 		event_file->row=1;
-		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,&status);
+		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,par.ProjCenter,&status);
 		CHECK_STATUS_BREAK(status);
 		
 		//Store number of impacts in event file
@@ -1011,6 +1011,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 	status=ape_trad_query_bool("clobber", &par->clobber);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the clobber parameter");
+		return(status);
+	}
+
+	status=ape_trad_query_bool("ProjCenter", &par->ProjCenter);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the ProjCenter parameter");
 		return(status);
 	}
 

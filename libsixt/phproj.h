@@ -52,6 +52,7 @@ void phproj_advdet(GenInst* const inst,
 	    TesEventFile* const event_file,
 	    const double t0,
 	    const double exposure,
+	    char proj_center,
 	    int* const status);
 
 

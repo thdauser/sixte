@@ -111,6 +111,7 @@ struct Parameters {
   char WriteRecordFile;
   char Identify;
   char UseRMF;
+  char ProjCenter;
 
   int doCrosstalk;
 
