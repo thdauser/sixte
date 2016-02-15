@@ -98,6 +98,13 @@ void freeGrading(AdvPix* pix){
     pix->global_grading=0;
 }
 
+void freeReadoutChannels(ReadoutChannels* rc){
+	if ( rc != NULL ){
+		free(rc->channels);
+	}
+	free( rc );
+}
+
 AdvDet* newAdvDet(int* const status){
   
   // Allocate memory.
@@ -131,28 +138,30 @@ AdvDet* newAdvDet(int* const status){
   det->crosstalk_intermod_file=NULL;
   det->crosstalk_timedep_file=NULL;
 
+  det->readout_channels=NULL;
+
 
   return(det);
 }
 
 void destroyAdvDet(AdvDet **det){
-  
-  if(NULL!=(*det)){
-    if(NULL!=(*det)->pix){
-      for(int i=0;i<(*det)->npix;i++){
-	freeAdvPix(&(*det)->pix[i]);
-      }
-      free((*det)->pix);
-    }
-    if(NULL!=(*det)->filename){
-      free((*det)->filename);
-    }
-    if(NULL!=(*det)->filepath){
-      free((*det)->filepath);
-    }
-    freeRMFLibrary((*det)->rmf_library);
-    freeARFLibrary((*det)->arf_library);
-  }
+
+	if(NULL!=(*det)){
+		if(NULL!=(*det)->pix){
+			for(int i=0;i<(*det)->npix;i++){
+				freeAdvPix(&(*det)->pix[i]);
+			}
+			free((*det)->pix);
+		}
+		if(NULL!=(*det)->filename){
+			free((*det)->filename);
+		}
+		if(NULL!=(*det)->filepath){
+			free((*det)->filepath);
+		}
+		freeRMFLibrary((*det)->rmf_library);
+		freeARFLibrary((*det)->arf_library);
+	}
 }
 
 int CheckAdvPixImpact(AdvPix pix, Impact *imp){

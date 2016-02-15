@@ -1,7 +1,5 @@
 #include "crosstalk.h"
 
-
-
 void init_crosstalk(AdvDet* det, int* status){
 	// load the channel list
 	if (det->readout_channels==NULL){
@@ -9,16 +7,6 @@ void init_crosstalk(AdvDet* det, int* status){
 		CHECK_STATUS_VOID(*status);
 	}
 }
-
-/**static Channel* newChannel(*ReadoutChannels, status){
-	Channel* chan = (Channel*) malloc(sizeof (Channel) );
-	CHECK_MALLOC_RET_NULL_STATUS(chan,*status);
-
-	chan->channel_id=-1;
-	chan->num_pixels=0;
-	chan->pixels=NULL;
-	return chan;
-}*/
 
 static void add_pixel_to_readout(ReadoutChannels* read_chan, AdvPix* pix, int ic, int* status){
 
@@ -87,7 +75,8 @@ static ReadoutChannels* init_newReadout(int num_chan, int* status){
 ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 
 	// get the complete file name
-	char* fullfilename = strdup(det->filepath);
+	char fullfilename[MAXFILENAME];
+	strcpy(fullfilename,det->filepath);
 	strncat(fullfilename,det->channel_file,MAXFILENAME);
 
 	// get the channel list
@@ -135,20 +124,17 @@ ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 //				pix->pindex,pix->channel->channel_id,pix->freq);
 	}
 
+	// free the channel list
+	free_channel_list(&chans);
+
 	return read_chan;
 }
 
 void free_channel_list(channel_list** chans){
 	if (*(chans)!=NULL){
-		if ((*chans)->chan != NULL){
-			free((*chans)->chan);
-		}
-		if ((*chans)->pixid != NULL){
-			free((*chans)->pixid);
-		}
-		if ((*chans)->freq != NULL){
-			free((*chans)->freq);
-		}
+		free((*chans)->chan);
+		free((*chans)->pixid);
+		free((*chans)->freq);
 		free(*chans);
 	}
 }
@@ -168,25 +154,37 @@ channel_list* load_channel_list(char* fname, int* status){
 	FILE *file=NULL;
 	file=fopen(fname, "r");
 
-	int n=0;
+	if (file == NULL){
+		printf("*** error reading file %s \n",fname);
+	 	 *status=EXIT_FAILURE;
+	 	 return NULL;
+	}
 
+	int n=0;
+	int* cha;
+	int* pix;
+	double* freq;
 	while(!feof(file)){
 
-	     chans->pixid= realloc(chans->pixid, (n+1)*sizeof(int));
-	     chans->chan = realloc(chans->chan,  (n+1)*sizeof(int));
-	     chans->freq = realloc(chans->freq,  (n+1)*sizeof(double));
+	     pix = realloc(chans->pixid, (n+1)*sizeof(int));
+	     cha = realloc(chans->chan,  (n+1)*sizeof(int));
+	     freq = realloc(chans->freq,  (n+1)*sizeof(double));
 
-	     if ((chans->pixid==NULL)||(chans->freq==NULL)||(chans->chan==NULL)){
+	     if ((cha==NULL)||(pix==NULL)||(freq==NULL)){
 	    	 	 free_channel_list(&chans);
 	    	 	 SIXT_ERROR("error when reallocating arrays");
 	    	 	 *status=EXIT_FAILURE;
-	    	 	 break;
+	    	 	 return NULL;
+	     } else {
+	    	 chans->pixid = pix;
+	    	 chans->chan  = cha;
+	    	 chans->freq  = freq;
 	     }
 	     // check that always all three numbers are matched
 	     if ( (fscanf(file, "%i %i %lf\n",&(chans->pixid[n]),&(chans->chan[n]),&(chans->freq[n]))) != 3){
 	    	 printf("*** formatting error in line %i of the channel file %s: check your input file\n",n+1,fname);
 	    	 *status=EXIT_FAILURE;
-	    	 break;
+	    	 return NULL;
 	     }
 	      // printf("reading channel list (line %i): %i %i %lf\n",n+1,chans->pixid[n],chans->chan[n],chans->freq[n]);
 	     n++;
@@ -194,4 +192,11 @@ channel_list* load_channel_list(char* fname, int* status){
     chans->len = n;
 
 	return chans;
+}
+
+
+void freeCrosstalk(AdvDet** det){
+
+	freeReadoutChannels( (*det)->readout_channels);
+
 }

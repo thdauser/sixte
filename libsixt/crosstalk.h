@@ -51,6 +51,12 @@ channel_list* load_channel_list(char* fname, int* status);
 /** Load the Channel-Frequency List */
 ReadoutChannels* get_readout_channels(AdvDet* det, int* status);
 
+/** free the crosstalk structures */
+void freeCrosstalk(AdvDet** det);
+
+/** free the channel list */
+void free_channel_list(channel_list** chans);
+
 #endif /* CROSSTALK_H */
 
 

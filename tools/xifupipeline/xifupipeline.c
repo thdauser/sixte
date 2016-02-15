@@ -696,6 +696,10 @@ int xifupipeline_main()
 		freeTesEventFile(event_file,&status);
 	}
 
+	if(par.doCrosstalk){
+		freeCrosstalk(&det);
+	}
+
 	if (NULL!=progressfile) {
 		fclose(progressfile);
 		progressfile=NULL;

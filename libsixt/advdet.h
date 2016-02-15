@@ -382,6 +382,9 @@ void freeAdvPix(AdvPix* pix);
 /** Remove the existing grading scheme from the pixel */
 void freeGrading(AdvPix* pix);
 
+/** Free the Readout Channel Structure */
+void freeReadoutChannels(ReadoutChannels* rc);
+
 /** Read the advanced detector syntax from the specified XML */
 void parseAdvDetXML(AdvDet* const det, 
 	       const char* const filename,
