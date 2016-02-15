@@ -52,6 +52,11 @@ Obj2D_instance *getObj2DFromAdvdet(AdvDet *det, int* const status){
 							0.,
 							status);
       CHECK_STATUS_BREAK(*status);
+      if(det->pix[ii].channel!=NULL){
+	Obj2D_assign_group_attribute(obj->subobj[ii],
+				    &(det->pix[ii].channel->channel_id),
+				    &(det->pix[ii].freq));
+      }
       obj->subobj[ii]->parent=obj;
     }
     CHECK_STATUS_BREAK(*status);
@@ -188,6 +193,10 @@ Obj2D_instance *getObj2DFromXML(char *XMLName, int* const status){
       AdvDet *adet=loadAdvDet(XMLName, &detstatus);
 
       if(detstatus==EXIT_SUCCESS){
+	if(adet->channel_file!=NULL){
+	  puts("Found crosstalk information in AdvDet XML file.");
+	  init_crosstalk(adet, status);
+	}
 	obj=getObj2DFromAdvdet(adet, status);
 	if(*status!=EXIT_SUCCESS){
 	  SIXT_ERROR("Converting AdvDet XML file failed.");
@@ -279,15 +288,20 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			   int ndraw,
 			   int writeid,
 			   double *textsize,
+			   int usegcol,
 			   int* const status){
 			     
   int ii, nmax;
   if(obj->geometry!=NULL){
+    char *fc=fillcolor[0];
+    if(usegcol!=0){
+      fc=fillcolor[(obj->geometry->group_id % usegcol)];
+    }
     Obj2D_DrawObjectSVG(obj->geometry, 
 			svg,
 			linewidth[0],
 			linecolor[0],
-			fillcolor[0],
+			fc,
 			fill[0],
 			writeid,
 			textsize[0],
@@ -305,17 +319,22 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
   }else{
     nmax=obj->n_subobj;
   }
+  char **nextfill=&(fillcolor[1]);
+  if(usegcol!=0){
+    nextfill=fillcolor;
+  }
   if(obj->n_subobj>0){
     for(ii=0; ii<nmax; ii++){
       Obj2D_DrawInstanceSVG(obj->subobj[ii], 
 			    svg,
 			    &(linecolor[1]),
 			    &(linewidth[1]),
-			    &(fillcolor[1]),
+			    nextfill,
 			    &(fill[1]),
 			    ndraw,
 			    writeid,
 			    &(textsize[1]),
+			    usegcol,
 			    status);
       if(*status!=EXIT_SUCCESS){
 	return ;

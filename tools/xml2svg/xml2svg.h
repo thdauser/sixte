@@ -39,6 +39,7 @@ struct Parameters {
   double border;
   int drawn;
   char writeid;
+  char usegcol;
 };
 
 int parse_xmlnames(char *xmlnames, int *nxmls, char ***xmls);

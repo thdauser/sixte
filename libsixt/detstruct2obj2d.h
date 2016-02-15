@@ -27,6 +27,7 @@
 #include "gendet.h"
 #include "geninst.h"
 #include "sixtesvg.h"
+#include "crosstalk.h"
 
 /** Function declarations */
 
@@ -60,6 +61,7 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			   int ndraw,
 			   int writeid,
 			   double *textsize,
+			   int usegcol,
 			   int* const status);
 
 
