@@ -79,12 +79,13 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 	// TODO : for the moment, assumes that the distances are ordered, need to check that first
 	double max_cross_talk_dist = det->xt_dist_thermal[det->xt_num_thermal-1];
 	AdvPix* concerned_pixel = &(det->pix[pixid]);
+	AdvPix* current_pixel = NULL;
 	for (int i=0;i<det->npix;i++){
 		// Cross-talk is not with yourself ;)
 		if (i==pixid){
 			continue;
 		}
-		AdvPix* current_pixel = &(det->pix[i]);
+		current_pixel = &(det->pix[i]);
 
 		// Initial quick distance check to avoid spending time on useless pixels
 		if((fabs(current_pixel->sx-concerned_pixel->sx) > .5*(current_pixel->width+concerned_pixel->width)+max_cross_talk_dist) ||
@@ -111,6 +112,42 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 	}
 }
 
+// Loads electrical cross-talk for requested pixel
+// Concretely, iterates over all the pixels of the channel
+static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
+	AdvPix* concerned_pixel = &(det->pix[pixid]);
+	AdvPix* current_pixel = NULL;
+	double weight=0.;
+
+	// TODO: need to get the following values from the XML
+	double R0=1.e-3;
+	double Lprime_j = 120.e-6;
+	double Lc = 2.5e-9;
+	double Lj = 2e-6;
+
+	// Iterate over the channel
+	for (int i=0;i<concerned_pixel->channel->num_pixels;i++){
+		current_pixel = concerned_pixel->channel->pixels[i];
+
+		// Cross-talk is not with yourself ;)
+		if (current_pixel==concerned_pixel) continue;
+
+		// Carrier overlap
+		weight = pow(R0/(4*M_PI*(concerned_pixel->freq - current_pixel->freq)*Lprime_j),2);
+
+		// Common impedence
+		weight+=pow(concerned_pixel->freq*Lc/(2*(concerned_pixel->freq - current_pixel->freq)*Lj),2);
+
+		// Add cross-talk pixel
+		if (concerned_pixel->electrical_cross_talk == NULL){
+			concerned_pixel->electrical_cross_talk = newMatrixCrossTalk(status);
+		}
+		add_xt_pixel(concerned_pixel->electrical_cross_talk,current_pixel,weight,status);
+
+	}
+
+}
+
 void init_crosstalk(AdvDet* det, int* status){
 	// load the channel list
 	if (det->readout_channels==NULL){
@@ -122,6 +159,14 @@ void init_crosstalk(AdvDet* det, int* status){
 	if (det->xt_num_thermal>0){
 		for (int i=0;i<det->npix;i++){
 			load_thermal_cross_talk(det,i,status);
+			CHECK_STATUS_VOID(*status);
+		}
+	}
+
+	// load electrical cross talk
+	if (det->xt_num_thermal>0){
+		for (int i=0;i<det->npix;i++){
+			load_electrical_cross_talk(det,i,status);
 			CHECK_STATUS_VOID(*status);
 		}
 	}
