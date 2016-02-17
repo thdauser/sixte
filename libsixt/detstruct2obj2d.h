@@ -48,6 +48,7 @@ void Obj2D_DrawObjectSVG(Obj2D *obj,
 			 char *fillcolor,
 			 int fill,
 			 int writeid,
+			 int writeatt,
 			 double textsize,
 			 int* const status);
 
@@ -60,6 +61,7 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			   int *fill,
 			   int ndraw,
 			   int writeid,
+			   int writeatt,
 			   double *textsize,
 			   int usegcol,
 			   int* const status);

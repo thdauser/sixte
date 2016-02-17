@@ -39,10 +39,15 @@ struct Parameters {
   double border;
   int drawn;
   char writeid;
+  char writeatt;
   char usegcol;
+  char *CFillFile;
+  char *COutlFile;
 };
 
 int parse_xmlnames(char *xmlnames, int *nxmls, char ***xmls);
+
+void get_collist(char *filename, int *ncols, char ***cols, int *status);
 
 int xml2svg_getpar(struct Parameters* const par, 
 		   int *nxmls, 

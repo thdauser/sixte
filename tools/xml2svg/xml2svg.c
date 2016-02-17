@@ -72,7 +72,11 @@ int xml2svg_main() {
   double worldxmin, worldxmax, worldymin, worldymax, worldborder;
   
   char *linecolor[]={"black", "red"};
+  char **lc_file=NULL;
+  int n_lc_file=0;
   char *fillcolor[]={"#ffeeaa", "white"};
+  char **fc_file=NULL;
+  int n_fc_file=0;
   double linewidth[2]={2.0, 1.0};
   double textsize[2]={5.,4.};
   int fill[2]={1, 0};
@@ -92,6 +96,16 @@ int xml2svg_main() {
     // Read the parameters using PIL.
     status=xml2svg_getpar(&par, &nxmls, &xmls, &obj);
     CHECK_STATUS_BREAK(status);    
+    
+    if(par.CFillFile!=NULL){
+      get_collist(par.CFillFile, &n_fc_file, &fc_file, &status);
+      CHECK_STATUS_BREAK(status);
+    } 
+    if(par.COutlFile!=NULL){
+      get_collist(par.COutlFile, &n_lc_file, &lc_file, &status);
+      CHECK_STATUS_BREAK(status);
+    }
+    
     for(ii=0; ii<nxmls; ii++){
       obj[ii]=getObj2DFromXML(xmls[ii], &status);
       CHECK_STATUS_BREAK(status);
@@ -100,6 +114,10 @@ int xml2svg_main() {
     int writeid=0;
     if(par.writeid!=0){
       writeid=1;
+    }
+    int writeatt=0;
+    if(par.writeatt!=0){
+      writeatt=1;
     }
     int usegcol=0;
     char **fillc=fillcolor;
@@ -137,16 +155,26 @@ int xml2svg_main() {
 		  &status);
     CHECK_STATUS_BREAK(status);
     SixteSVG_makeHeader(svg, &status);   
-    // Draw all Objects    
+    // Draw all Objects
+    char **filling=fillc;
+    char **linec=linecolor;
+    if(fc_file!=NULL){
+      filling=fc_file;
+      usegcol=n_fc_file;
+    }
+    if(n_lc_file>1){
+      linec=lc_file;
+    }
     for(ii=0; ii<nxmls; ii++){
       Obj2D_DrawInstanceSVG(obj[ii], 
 			    svg, 
-			    linecolor, 
+			    linec, 
 			    linewidth, 
-			    fillc, 
+			    filling, 
 			    fill,
 			    par.drawn,
 			    writeid,
+			    writeatt,
 			    textsize,
 			    usegcol,
 			    &status);
@@ -301,11 +329,81 @@ int xml2svg_getpar(struct Parameters* const par,
     return(status);
   }
   
+  status=ape_trad_query_bool("WriteAtt", &par->writeatt);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the WriteAtt parameter");
+    return(status);
+  }
+  
   status=ape_trad_query_bool("UseGCol", &par->usegcol);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the UseGCol parameter");
     return(status);
   }
   
+  status=ape_trad_query_string("CFillFile", &(par->CFillFile));
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the fill color file.");
+    return(status);
+  }
+  if((!strcmp(par->CFillFile, "NONE"))||(!strcmp(par->CFillFile, "None"))||(!strcmp(par->CFillFile, "none"))){
+    free(par->CFillFile);
+    par->CFillFile=NULL;
+  }
+  
+  status=ape_trad_query_string("COutlFile", &(par->COutlFile));
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the outline color file.");
+    return(status);
+  }
+  if((!strcmp(par->COutlFile, "NONE"))||(!strcmp(par->COutlFile, "None"))||(!strcmp(par->COutlFile, "none"))){
+    free(par->COutlFile);
+    par->COutlFile=NULL;
+  }
+  
   return status;
+}
+
+void get_collist(char *filename, int *ncols, char ***cols, int *status){
+  
+  FILE *f=NULL;
+  f=fopen(filename, "r");
+  
+  if(f==NULL){
+    printf("%s was not found.\n", filename);
+    SIXT_ERROR("Unable to load color list.");
+    *status=EXIT_FAILURE;
+    return;
+  }
+  
+  *ncols=0;
+  
+  while(!feof(f)){
+    char coldummy[32];
+    fscanf(f, "%s", coldummy);
+    if(coldummy[0]!='#'){
+      printf("%s is not a valid color. Colors must be in hex format (rrggbb) and start with '#'.\n", coldummy);
+      *status=EXIT_FAILURE;
+      break;
+    }
+    char **c=(char**)realloc(*cols, sizeof(char*)*((*ncols)+1));
+    if(c==NULL){
+      SIXT_ERROR("Allocation for color array failed.");
+      *status=EXIT_FAILURE;
+      break;
+    }
+    (*cols)=c;
+    (*cols)[(*ncols)]=strdup(coldummy);
+    if((*cols)[(*ncols)]==NULL){
+      SIXT_ERROR("Allocation for color array failed.");
+      *status=EXIT_FAILURE;
+      break;
+    }
+    (*ncols)++;
+  }
+  
+  fclose(f);
+  
+  printf("Found %d colors in file %s\n", *ncols, filename);
+  return;
 }
