@@ -212,6 +212,13 @@ typedef struct{
 	double* weight;
 } crosstalk_timedep;
 
+/** structure defining the parameters of the electrical crosstalk */
+typedef struct{
+	double R0; // set point resistance
+	double Lfprim; // filter inductance in primary circuit
+	double Lcommon; // common inductance in secondary circuit
+	double Lfsec; // filter inductance in secondary circuit
+} ElecCrosstalkPar;
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -275,10 +282,13 @@ typedef struct{
   /** Structure containing the time dependence of the pixels */
   crosstalk_timedep* crosstalk_timedep;
 
-  /** information about thermal cross talk*/
+  /** information about thermal cross talk */
   int xt_num_thermal;
   double* xt_dist_thermal;
   double* xt_weight_thermal;
+
+  /** information about electrical cross talk */
+  ElecCrosstalkPar* elec_xt_par;
 
 }AdvDet;
 

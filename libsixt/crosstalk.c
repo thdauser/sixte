@@ -57,7 +57,12 @@ static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
 
 /** Adds a cross talk pixel to the matrix */
 static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,double xt_weigth,int* const status){
-	assert(matrix !=NULL);
+	CHECK_STATUS_VOID(*status);
+	if(matrix==NULL){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Tried to add crosstalk pixel to non-allocated crosstalk matrix");
+		return;
+	}
 
 	// Increase matrix size
 	matrix->cross_talk_pixels = realloc(matrix->cross_talk_pixels,(matrix->num_cross_talk_pixels+1)*sizeof(*(matrix->cross_talk_pixels)));
@@ -76,7 +81,6 @@ static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,double xt_weigth,
 // Loads thermal cross-talk for requested pixel
 // Concretely, iterates over all the pixels to find neighbours
 static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
-	// TODO : for the moment, assumes that the distances are ordered, need to check that first
 	double max_cross_talk_dist = det->xt_dist_thermal[det->xt_num_thermal-1];
 	AdvPix* concerned_pixel = &(det->pix[pixid]);
 	AdvPix* current_pixel = NULL;
@@ -95,7 +99,11 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 
 		// Get distance between two pixels
 		double pixel_distance = distance_two_pixels(current_pixel,concerned_pixel);
-		assert(pixel_distance>0); // distance should be positive
+		if (pixel_distance<0){ // distance should be positive
+			*status = EXIT_FAILURE;
+			printf("*** error: Distance between pixels %d and %d is negative\n",current_pixel->pindex,concerned_pixel->pindex);
+			return;
+		}
 		//printf("%d - %d : %f\n",pixid,i,pixel_distance*1e6);
 
 		// Iterate over cross-talk values and look for the first matching one
@@ -105,6 +113,7 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 					concerned_pixel->thermal_cross_talk = newMatrixCrossTalk(status);
 				}
 				add_xt_pixel(concerned_pixel->thermal_cross_talk,current_pixel,det->xt_weight_thermal[xt_index],status);
+				CHECK_STATUS_VOID(*status);
 				// If one cross talk was identified, go to next pixel (the future cross-talks should be lower order cases)
 				break;
 			}
@@ -115,15 +124,17 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 // Loads electrical cross-talk for requested pixel
 // Concretely, iterates over all the pixels of the channel
 static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
+	CHECK_STATUS_VOID(*status);
+	if (det->elec_xt_par==NULL){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Tried to load electrical crosstalk with no corresponding information available at detector level");
+		return;
+	}
+
 	AdvPix* concerned_pixel = &(det->pix[pixid]);
 	AdvPix* current_pixel = NULL;
 	double weight=0.;
 
-	// TODO: need to get the following values from the XML
-	double R0=1.e-3;
-	double Lprime_j = 120.e-6;
-	double Lc = 2.5e-9;
-	double Lj = 2e-6;
 
 	// Iterate over the channel
 	for (int i=0;i<concerned_pixel->channel->num_pixels;i++){
@@ -133,16 +144,17 @@ static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 		if (current_pixel==concerned_pixel) continue;
 
 		// Carrier overlap
-		weight = pow(R0/(4*M_PI*(concerned_pixel->freq - current_pixel->freq)*Lprime_j),2);
+		weight = pow(det->elec_xt_par->R0/(4*M_PI*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfprim),2);
 
 		// Common impedence
-		weight+=pow(concerned_pixel->freq*Lc/(2*(concerned_pixel->freq - current_pixel->freq)*Lj),2);
+		weight+=pow(concerned_pixel->freq*det->elec_xt_par->Lcommon/(2*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfsec),2);
 
 		// Add cross-talk pixel
 		if (concerned_pixel->electrical_cross_talk == NULL){
 			concerned_pixel->electrical_cross_talk = newMatrixCrossTalk(status);
 		}
 		add_xt_pixel(concerned_pixel->electrical_cross_talk,current_pixel,weight,status);
+		CHECK_STATUS_VOID(*status);
 
 	}
 
@@ -164,7 +176,7 @@ void init_crosstalk(AdvDet* det, int* status){
 	}
 
 	// load electrical cross talk
-	if (det->xt_num_thermal>0){
+	if (det->elec_xt_par!=NULL){
 		for (int i=0;i<det->npix;i++){
 			load_electrical_cross_talk(det,i,status);
 			CHECK_STATUS_VOID(*status);

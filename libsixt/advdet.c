@@ -141,7 +141,7 @@ AdvDet* newAdvDet(int* const status){
   det->crosstalk_timedep_file=NULL;
 
   det->readout_channels=NULL;
-
+  det->elec_xt_par=NULL;
 
   return(det);
 }
@@ -163,6 +163,7 @@ void destroyAdvDet(AdvDet **det){
 		}
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
+		free((*det)->elec_xt_par);
 	}
 }
 
@@ -622,7 +623,13 @@ static void AdvDetXMLElementStart(void* parsedata,
 		CHECK_MALLOC_VOID(xmlparsedata->det->xt_dist_thermal);
 		xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal] =
 				getXMLAttributeDouble(attr, "DISTANCE");
-
+		// check that distances are in increasing order
+		if((xmlparsedata->det->xt_num_thermal>0) &&
+				(xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal]<xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal-1])){
+			xmlparsedata->status=EXIT_FAILURE;
+			SIXT_ERROR("Thermal crosstalk distances are supposed to be given in increasing order");
+			return;
+		}
 
 		xmlparsedata->det->xt_weight_thermal = realloc(xmlparsedata->det->xt_weight_thermal,
 				(xmlparsedata->det->xt_num_thermal+1)*sizeof(*(xmlparsedata->det->xt_weight_thermal)) );
@@ -631,6 +638,15 @@ static void AdvDetXMLElementStart(void* parsedata,
 				getXMLAttributeDouble(attr, "WEIGHT");
 
 		xmlparsedata->det->xt_num_thermal++;
+
+	} else if(!strcmp(Uelement, "ELECTRICALCROSSTALK")){
+
+		xmlparsedata->det->elec_xt_par = (ElecCrosstalkPar*)malloc(sizeof(ElecCrosstalkPar));
+		CHECK_MALLOC_VOID(xmlparsedata->det->elec_xt_par);
+		xmlparsedata->det->elec_xt_par->R0 = getXMLAttributeDouble(attr, "R0");
+		xmlparsedata->det->elec_xt_par->Lfprim = getXMLAttributeDouble(attr, "LFPRIM");
+		xmlparsedata->det->elec_xt_par->Lcommon = getXMLAttributeDouble(attr, "LCOMMON");
+		xmlparsedata->det->elec_xt_par->Lfsec = getXMLAttributeDouble(attr, "LFSEC");
 
 	} else if(!strcmp(Uelement, "TIMEDEPENDENCE"))  {
 
