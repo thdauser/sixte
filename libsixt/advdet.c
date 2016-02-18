@@ -139,6 +139,7 @@ AdvDet* newAdvDet(int* const status){
   det->channel_file=NULL;
   det->crosstalk_intermod_file=NULL;
   det->crosstalk_timedep_file=NULL;
+  det->crosstalk_timedep=NULL;
 
   det->readout_channels=NULL;
   det->elec_xt_par=NULL;
@@ -1186,3 +1187,27 @@ void freeMatrixCrossTalk(MatrixCrossTalk** matrix){
 	free(*matrix);
 	*matrix=NULL;
 }
+
+/** Constructor for CrosstalkTimdep structure */
+CrosstalkTimedep* newCrossTalkTimedep(int* const status){
+	CrosstalkTimedep* crosstalk_timedep = (CrosstalkTimedep*)malloc(sizeof(*crosstalk_timedep));
+	CHECK_MALLOC_RET_NULL_STATUS(crosstalk_timedep,*status);
+	crosstalk_timedep->length=0;
+	crosstalk_timedep->name_type=NULL; // Useless for the moment
+	crosstalk_timedep->time=NULL;
+	crosstalk_timedep->weight=NULL;
+
+	return crosstalk_timedep;
+}
+
+/** Destructor for CrosstalkTimdep structure */
+void freeCrosstalkTimedep(CrosstalkTimedep** timedep){
+	if(*timedep!=NULL){
+		free((*timedep)->name_type);
+		free((*timedep)->time);
+		free((*timedep)->weight);
+	}
+	free(*timedep);
+	*timedep=NULL;
+}
+

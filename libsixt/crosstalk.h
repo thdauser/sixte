@@ -43,7 +43,7 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////
 
 /** Destructor of the ARF library structure */
-void init_crosstalk(AdvDet* det, int* status);
+void init_crosstalk(AdvDet* det, int* const status);
 
 /** Load the Channel-Frequency List */
 channel_list* load_channel_list(char* fname, int* status);

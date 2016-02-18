@@ -56,26 +56,27 @@ static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
 }
 
 /** Adds a cross talk pixel to the matrix */
-static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,double xt_weigth,int* const status){
+static void add_xt_pixel(MatrixCrossTalk** matrix,AdvPix* pixel,double xt_weigth,int* const status){
 	CHECK_STATUS_VOID(*status);
-	if(matrix==NULL){
-		*status = EXIT_FAILURE;
-		SIXT_ERROR("Tried to add crosstalk pixel to non-allocated crosstalk matrix");
-		return;
+
+	// Allocate matrix if necessary
+	if(*matrix==NULL){
+		*matrix = newMatrixCrossTalk(status);
+		CHECK_MALLOC_VOID_STATUS(*matrix,*status);
 	}
 
 	// Increase matrix size
-	matrix->cross_talk_pixels = realloc(matrix->cross_talk_pixels,(matrix->num_cross_talk_pixels+1)*sizeof(*(matrix->cross_talk_pixels)));
-	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_pixels,*status);
-	matrix->cross_talk_weights = realloc(matrix->cross_talk_weights,(matrix->num_cross_talk_pixels+1)*sizeof(*(matrix->cross_talk_weights)));
-	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_weights,*status);
+	(*matrix)->cross_talk_pixels = realloc((*matrix)->cross_talk_pixels,((*matrix)->num_cross_talk_pixels+1)*sizeof(*((*matrix)->cross_talk_pixels)));
+	CHECK_MALLOC_VOID_STATUS((*matrix)->cross_talk_pixels,*status);
+	(*matrix)->cross_talk_weights = realloc((*matrix)->cross_talk_weights,((*matrix)->num_cross_talk_pixels+1)*sizeof(*((*matrix)->cross_talk_weights)));
+	CHECK_MALLOC_VOID_STATUS((*matrix)->cross_talk_weights,*status);
 
 	// Affect new values
-	matrix->cross_talk_pixels[matrix->num_cross_talk_pixels] = pixel;
-	matrix->cross_talk_weights[matrix->num_cross_talk_pixels] = xt_weigth;
+	(*matrix)->cross_talk_pixels[(*matrix)->num_cross_talk_pixels] = pixel;
+	(*matrix)->cross_talk_weights[(*matrix)->num_cross_talk_pixels] = xt_weigth;
 
 	// Now, we can say that the matrix is effectively bigger
-	matrix->num_cross_talk_pixels++;
+	(*matrix)->num_cross_talk_pixels++;
 }
 
 // Loads thermal cross-talk for requested pixel
@@ -109,10 +110,7 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 		// Iterate over cross-talk values and look for the first matching one
 		for (int xt_index=0;xt_index<det->xt_num_thermal;xt_index++){
 			if (pixel_distance<det->xt_dist_thermal[xt_index]){
-				if (concerned_pixel->thermal_cross_talk == NULL){
-					concerned_pixel->thermal_cross_talk = newMatrixCrossTalk(status);
-				}
-				add_xt_pixel(concerned_pixel->thermal_cross_talk,current_pixel,det->xt_weight_thermal[xt_index],status);
+				add_xt_pixel(&concerned_pixel->thermal_cross_talk,current_pixel,det->xt_weight_thermal[xt_index],status);
 				CHECK_STATUS_VOID(*status);
 				// If one cross talk was identified, go to next pixel (the future cross-talks should be lower order cases)
 				break;
@@ -150,17 +148,77 @@ static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 		weight+=pow(concerned_pixel->freq*det->elec_xt_par->Lcommon/(2*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfsec),2);
 
 		// Add cross-talk pixel
-		if (concerned_pixel->electrical_cross_talk == NULL){
-			concerned_pixel->electrical_cross_talk = newMatrixCrossTalk(status);
-		}
-		add_xt_pixel(concerned_pixel->electrical_cross_talk,current_pixel,weight,status);
+		add_xt_pixel(&concerned_pixel->electrical_cross_talk,current_pixel,weight,status);
 		CHECK_STATUS_VOID(*status);
 
 	}
 
 }
 
-void init_crosstalk(AdvDet* det, int* status){
+/** Load crosstalk timedependence information */
+static void load_crosstalk_timedep(AdvDet* det,int* const status){
+	if(det->crosstalk_timedep_file==NULL){
+		*status=EXIT_FAILURE;
+		SIXT_ERROR("Tried to load crosstalk without timedependence information");
+		return;
+	}
+
+	char fullfilename[MAXFILENAME];
+	strcpy(fullfilename,det->filepath);
+	strncat(fullfilename,det->crosstalk_timedep_file,MAXFILENAME);
+
+	// open the file
+	FILE *file=NULL;
+	file=fopen(fullfilename, "r");
+	if (file == NULL){
+		printf("*** error reading file %s \n",fullfilename);
+		*status=EXIT_FAILURE;
+		return;
+	}
+
+	// initialize crosstalk_timedep structure
+	det->crosstalk_timedep = newCrossTalkTimedep(status);
+	CHECK_STATUS_VOID(*status);
+
+	double* time=NULL;
+	double* weight=NULL;
+
+	// Ignore first line
+	char buffer[1000];
+	fgets(buffer, 1000, file);
+
+	// Read time dep info
+	while(!feof(file)){
+		time = realloc(det->crosstalk_timedep->time, (det->crosstalk_timedep->length+1)*sizeof(double));
+		weight = realloc(det->crosstalk_timedep->weight, (det->crosstalk_timedep->length+1)*sizeof(double));
+
+		if ((time==NULL)||(weight==NULL)){
+			freeCrosstalkTimedep(&det->crosstalk_timedep);
+			SIXT_ERROR("error when reallocating arrays in crosstalk timedep loading");
+			*status=EXIT_FAILURE;
+			return;
+		} else {
+			det->crosstalk_timedep->time = time;
+			det->crosstalk_timedep->weight = weight;
+		}
+		// check that always all three numbers are matched
+		if ( (fscanf(file, "%lg %lg\n",&(det->crosstalk_timedep->time[det->crosstalk_timedep->length]),&(det->crosstalk_timedep->weight[det->crosstalk_timedep->length]))) != 2){
+			printf("*** formatting error in line %i of the channel file %s: check your input file\n",det->crosstalk_timedep->length+1,fullfilename);
+			*status=EXIT_FAILURE;
+			return;
+		}
+		// printf("reading channel list (line %i): %i %i %lf\n",n+1,chans->pixid[n],chans->chan[n],chans->freq[n]);
+		det->crosstalk_timedep->length++;
+	}
+	fclose(file);
+
+}
+
+void init_crosstalk(AdvDet* det, int* const status){
+	// load time dependence
+	load_crosstalk_timedep(det,status);
+	CHECK_STATUS_VOID(*status);
+
 	// load the channel list
 	if (det->readout_channels==NULL){
 		det->readout_channels = get_readout_channels(det,status);

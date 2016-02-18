@@ -206,11 +206,10 @@ typedef struct{
 /** structure defining the time dependent weights for the crosstalk*/
 typedef struct{
 	int length;
-	char* name_type;
-	char* file;
+	char* name_type; // Useless for the moment
 	double* time;
 	double* weight;
-} crosstalk_timedep;
+} CrosstalkTimedep;
 
 /** structure defining the parameters of the electrical crosstalk */
 typedef struct{
@@ -280,7 +279,7 @@ typedef struct{
   char* crosstalk_timedep_file;
 
   /** Structure containing the time dependence of the pixels */
-  crosstalk_timedep* crosstalk_timedep;
+  CrosstalkTimedep* crosstalk_timedep;
 
   /** information about thermal cross talk */
   int xt_num_thermal;
@@ -460,5 +459,11 @@ MatrixCrossTalk* newMatrixCrossTalk(int* const status);
 
 /** Destructor for MatrixCrossTalk structure */
 void freeMatrixCrossTalk(MatrixCrossTalk** matrix);
+
+/** Constructor for CrosstalkTimdep structure */
+CrosstalkTimedep* newCrossTalkTimedep(int* const status);
+
+/** Destructor for CrosstalkTimdep structure */
+void freeCrosstalkTimedep(CrosstalkTimedep** timedep);
 
 #endif /* ADVDET_H */
