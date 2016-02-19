@@ -211,6 +211,34 @@ typedef struct{
 	double* weight;
 } CrosstalkTimedep;
 
+
+typedef struct{
+
+	double*** matrix; // 3d table containing the frequency weights
+
+	double* ampl1;
+	double* ampl2;
+	double* dt;
+
+	int n_ampl1;
+	int n_ampl2;
+	int n_dt;
+
+}ImodTab;
+
+/** structure containing the full the intermodulation crosstalk table*/
+typedef struct{
+
+	ImodTab* w_f2pf1;      //   f1 + f2
+	ImodTab* w_f2mf1;      //   f1 - f2
+	ImodTab* w_2f1pf2;     // 2*f2 + f1
+	ImodTab* w_2f2pf1;     // 2*f1 + f2
+	ImodTab* w_2f1mf2;     // 2*f2 - f1
+	ImodTab* w_2f2mf1;     // 2*f1 - f2
+
+} ImodFreqTable;
+
+
 /** structure defining the parameters of the electrical crosstalk */
 typedef struct{
 	double R0; // set point resistance
@@ -274,6 +302,7 @@ typedef struct{
 
   /** File containing the intermodulation crosstalk table */
   char* crosstalk_intermod_file;
+  ImodFreqTable* crosstalk_intermod_table;
 
   /** File containing the time dependence crosstalk table */
   char* crosstalk_timedep_file;
@@ -465,5 +494,12 @@ CrosstalkTimedep* newCrossTalkTimedep(int* const status);
 
 /** Destructor for CrosstalkTimdep structure */
 void freeCrosstalkTimedep(CrosstalkTimedep** timedep);
+
+/** free Intermod Table and Strcture */
+void freeImodTab(ImodTab* tab);
+void freeImodFreqTable(ImodFreqTable* tab);
+
+/** free the crosstalk structures */
+void freeCrosstalk(AdvDet** det);
 
 #endif /* ADVDET_H */

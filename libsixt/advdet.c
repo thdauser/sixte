@@ -107,6 +107,43 @@ void freeReadoutChannels(ReadoutChannels* rc){
 	free( rc );
 }
 
+void freeImodTab(ImodTab* tab){
+	if (tab != NULL){
+		if (tab->matrix!=NULL){
+			for(int ii=0; ii < tab->n_ampl1 ; ii++){
+				if (tab->matrix[ii]!=NULL){
+					for(int jj=0; jj < tab->n_ampl2 ; jj++){
+						free(tab->matrix[ii][jj]);
+					}
+					free(tab->matrix[ii]);
+				}
+			}
+			free(tab->matrix);
+		}
+		free(tab->ampl1);
+		free(tab->ampl2);
+		free(tab->dt);
+		free(tab);
+	}
+}
+
+void freeImodFreqTable(ImodFreqTable* tab){
+	if (tab != NULL){
+		freeImodTab(tab->w_2f1mf2);
+		freeImodTab(tab->w_2f1pf2);
+		freeImodTab(tab->w_2f2mf1);
+		freeImodTab(tab->w_2f2pf1);
+		freeImodTab(tab->w_f2pf1);
+		freeImodTab(tab->w_f2mf1);
+	}
+	free(tab);
+}
+
+void freeCrosstalk(AdvDet** det){
+	freeReadoutChannels( (*det)->readout_channels);
+	freeImodFreqTable((*det)->crosstalk_intermod_table);
+}
+
 AdvDet* newAdvDet(int* const status){
   
   // Allocate memory.
@@ -165,7 +202,9 @@ void destroyAdvDet(AdvDet **det){
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
 		free((*det)->elec_xt_par);
+
 		freeCrosstalk(det);
+
 	}
 }
 

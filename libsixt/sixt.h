@@ -123,6 +123,14 @@ extern const double xmmmjdref;
 			return NULL;\
 		}
 
+#define CHECK_MALLOC_RET_STATUS(a,b,status) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			status=EXIT_FAILURE; \
+			return b;\
+		}
+
+
 #define CHECK_MALLOC_RET_NULL_STATUS(a,status) \
 		if (NULL==a) { \
 			SIXT_ERROR("memory allocation failed"); \

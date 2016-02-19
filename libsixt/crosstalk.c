@@ -214,6 +214,118 @@ static void load_crosstalk_timedep(AdvDet* det,int* const status){
 
 }
 
+static void initImodTab(ImodTab** tab, int n_ampl1, int n_ampl2, int n_dt, int* status){
+
+	(*tab) = (ImodTab*) malloc (sizeof (ImodTab));
+	CHECK_MALLOC_VOID_STATUS(tab,*status);
+
+	// make a short pointer
+	ImodTab* t = (*tab);
+
+	t->ampl1 = (double*) malloc(n_ampl1 * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->ampl1,*status);
+
+	t->ampl2 = (double*) malloc(n_ampl2 * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->ampl2,*status);
+
+	t->dt = (double*) malloc(n_dt * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->dt,*status);
+
+	t->n_ampl1 = n_ampl1;
+	t->n_ampl2 = n_ampl2;
+	t->n_dt    = n_dt;
+
+	// allocate the 3d matrix
+	t->matrix = (double***) malloc (n_ampl1*sizeof(double**));
+	CHECK_MALLOC_VOID_STATUS(t->matrix,*status);
+
+	for (int ii=0; ii<n_ampl1; ii++){
+		t->matrix[ii] = (double**) malloc (n_ampl2*sizeof(double*));
+		CHECK_MALLOC_VOID_STATUS(t->matrix[ii],*status);
+
+		for (int jj=0; jj<n_ampl2; jj++){
+			t->matrix[ii][jj] = (double*) malloc (n_dt*sizeof(double));
+			CHECK_MALLOC_VOID_STATUS(t->matrix[ii][jj],*status);
+		}
+	}
+
+	return;
+}
+
+static ImodFreqTable* newIntermodFreqTable(int n_ampl1, int n_ampl2, int n_dt, int* status){
+	ImodFreqTable* tab = (ImodFreqTable*) malloc (sizeof (ImodFreqTable));
+	CHECK_MALLOC_RET_NULL(tab);
+
+	initImodTab(&(tab->w_2f1mf2),n_ampl1,n_ampl2,n_dt,status);
+	initImodTab(&(tab->w_2f1pf2),n_ampl1,n_ampl2,n_dt,status);
+	initImodTab(&(tab->w_2f2mf1),n_ampl1,n_ampl2,n_dt,status);
+	initImodTab(&(tab->w_2f2pf1),n_ampl1,n_ampl2,n_dt,status);
+	initImodTab(&(tab->w_f2pf1) ,n_ampl1,n_ampl2,n_dt,status);
+	initImodTab(&(tab->w_f2mf1) ,n_ampl1,n_ampl2,n_dt,status);
+
+	return tab;
+}
+
+/** load the intermodulation frequency table */
+static void load_intermod_freq_table(AdvDet* det, int* status){
+
+	// check if the table exists
+	CHECK_NULL_VOID(det->crosstalk_intermod_file,*status,"no file for the intermodulation table specified");
+
+	char fullfilename[MAXFILENAME];
+	strcpy(fullfilename,det->filepath);
+	strncat(fullfilename,det->crosstalk_intermod_file,MAXFILENAME);
+
+	// open the file
+	FILE *file=NULL;
+	file=fopen(fullfilename, "r");
+	char msg[MAXFILENAME];
+	sprintf(msg,"*** error reading file %s \n",fullfilename);
+	CHECK_NULL_VOID(file,*status,strdup(msg));
+
+	// Ignore first line
+	char buffer[1000];
+	fgets(buffer, 1000, file);
+
+	// TODO: do not hard code it in the end. just for testing !!!!
+	int n_ampl1 = 11;
+	int n_ampl2 = 11;
+	int n_dt    = 11;
+
+	det->crosstalk_intermod_table = newIntermodFreqTable( n_ampl1, n_ampl2, n_dt, status);
+	if (*status!=EXIT_SUCCESS){
+		SIXT_ERROR("loading intermodulation table in memory failed");
+		return;
+	}
+
+	for (int ii=0; ii<n_ampl1; ii++){
+		for (int jj=0; jj<n_ampl2; jj++){
+			for (int kk=0; kk<n_dt; kk++){
+
+				// TODO: READING OF THE FILE NOW HERE
+
+			}
+		}
+
+	}
+
+	fclose(file);
+	return;
+}
+
+/** Load intermodulation cross talk information into a single AdvPix*/
+static void load_intermod_cross_talk(AdvDet* det, int pixid, int* const status){
+
+	/** make sure the information is loaded in the table */
+	if (det->crosstalk_intermod_table==NULL){
+		load_intermod_freq_table(det,status);
+		CHECK_STATUS_VOID(*status);
+	}
+
+	return;
+
+}
+
 void init_crosstalk(AdvDet* det, int* const status){
 	// load time dependence
 	load_crosstalk_timedep(det,status);
@@ -227,19 +339,28 @@ void init_crosstalk(AdvDet* det, int* const status){
 
 	// load thermal cross talk
 	if (det->xt_num_thermal>0){
-		for (int i=0;i<det->npix;i++){
-			load_thermal_cross_talk(det,i,status);
+		for (int ii=0;ii<det->npix;ii++){
+			load_thermal_cross_talk(det,ii,status);
 			CHECK_STATUS_VOID(*status);
 		}
 	}
 
 	// load electrical cross talk
 	if (det->elec_xt_par!=NULL){
-		for (int i=0;i<det->npix;i++){
-			load_electrical_cross_talk(det,i,status);
+		for (int ii=0;ii<det->npix;ii++){
+			load_electrical_cross_talk(det,ii,status);
 			CHECK_STATUS_VOID(*status);
 		}
 	}
+
+	// load electrical cross talk
+	if (det->crosstalk_intermod_file!=NULL){
+		for (int ii=0;ii<det->npix;ii++){
+			load_intermod_cross_talk(det,ii,status);
+			CHECK_STATUS_VOID(*status);
+		}
+	}
+
 }
 
 static void add_pixel_to_readout(ReadoutChannels* read_chan, AdvPix* pix, int ic, int* status){
@@ -428,10 +549,4 @@ channel_list* load_channel_list(char* fname, int* status){
     chans->len = n;
 
 	return chans;
-}
-
-void freeCrosstalk(AdvDet** det){
-
-	freeReadoutChannels( (*det)->readout_channels);
-
 }
