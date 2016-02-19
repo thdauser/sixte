@@ -423,11 +423,12 @@ channel_list* load_channel_list(char* fname, int* status){
 	      // printf("reading channel list (line %i): %i %i %lf\n",n+1,chans->pixid[n],chans->chan[n],chans->freq[n]);
 	     n++;
 	}
+	fclose(file);
+
     chans->len = n;
 
 	return chans;
 }
-
 
 void freeCrosstalk(AdvDet** det){
 

@@ -165,6 +165,7 @@ void destroyAdvDet(AdvDet **det){
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
 		free((*det)->elec_xt_par);
+		freeCrosstalk(det);
 	}
 }
 
