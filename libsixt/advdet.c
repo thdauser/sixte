@@ -175,6 +175,7 @@ AdvDet* newAdvDet(int* const status){
 
   det->channel_file=NULL;
   det->crosstalk_intermod_file=NULL;
+  det->crosstalk_intermod_table=NULL;
   det->crosstalk_timedep_file=NULL;
   det->crosstalk_timedep=NULL;
 
