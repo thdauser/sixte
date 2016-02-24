@@ -153,15 +153,15 @@ int erosim_main()
       CHECK_NULL_BREAK(progressfile, status, msg);
     }
 
-    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
-		     "SRG", "eROSITA", "", &status);
-    CHECK_STATUS_BREAK(status);
 
     unsigned int seed;
     // Load the configurations of all seven sub-instruments.
     for (ii=0; ii<7; ii++) {
+      
+      sixt_get_eroXMLFile(xml_filename,
+			  ii,
+			  &status);
 
     // Initialize the random number generator for each Telescope
     // TODO: Use a more clever way here
@@ -207,6 +207,8 @@ int erosim_main()
 
       // Load the instrument configuration either with the
       // specific (if available) or the default XML file.
+      
+      printf("Telescope %ld, use XML file\n%s\n", ii+1, xml_filename);
       subinst[ii]=loadGenInst(buffer, seed, &status);
       CHECK_STATUS_BREAK(status);
 

@@ -260,6 +260,12 @@ void sixt_get_XMLFile(char* const filename,
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);
 
+/** Determine the eROSITA XMLFilename if different 
+ *telescopes are used. */
+void sixt_get_eroXMLFile(char *filename,
+			const int telescop_index,
+			int* const status);
+
 /** Determine a date and a time string for the specified MJDREF offset
     and time given in seconds since MJDREF. */
 void sixt_get_date_time(const double mjdref,

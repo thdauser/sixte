@@ -180,7 +180,7 @@ void sixt_get_XMLFile(char* const filename,
     if (0==strcmp(Mission, "SRG")) {
       strcat(filename, "/srg");
       if (0==strcmp(Instrument, "EROSITA")) {
-	strcat(filename, "/erosita.xml");
+	strcat(filename, "/erosita_dummy.xml");
       } else {
 	*status=EXIT_FAILURE;
 	SIXT_ERROR("selected instrument is not supported");
@@ -272,6 +272,14 @@ void sixt_get_LADXMLFile(char* const filename,
     // The XML filename has been given explicitly.
     strcpy(filename, xmlfile);
   }
+}
+
+void sixt_get_eroXMLFile(char *filename,
+			const int telescop_index,
+			int* const status){
+  
+  sprintf(filename, "%s/instruments/srg/erosita_%d.xml", SIXT_DATA_PATH, telescop_index+1);
+  
 }
 
 
