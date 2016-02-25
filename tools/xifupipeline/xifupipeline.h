@@ -43,6 +43,7 @@
 #include "teseventlist.h"
 #include "crosstalk.h"
 #include "parinput.h"
+#include "grading.h"
 
 #define TOOLSUB xifupipeline_main
 #include "headas_main.c"
@@ -114,6 +115,7 @@ struct Parameters {
   char ProjCenter;
 
   int doCrosstalk;
+  int saveCrosstalk;
 
   char history;
   char clobber;

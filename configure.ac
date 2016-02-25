@@ -179,6 +179,7 @@ AC_CONFIG_FILES([Makefile
 		tools/xifupipeline/Makefile
 		tools/gennoisespec/Makefile
 		tools/exposure_map/Makefile
+		tools/gradeddetection/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
 		])

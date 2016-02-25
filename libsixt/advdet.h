@@ -36,8 +36,6 @@
 /** Initial size of RMFLibrary. */
 #define RMFLIBRARYSIZE (10)
 
-#define INVGRADE -1
-#define PILEUP -2
 #define DEFAULTGOODSAMPLE 32768 // TODO : check whether we do want to leave that as a macro
 
 ////////////////////////////////////////////////////////////////////////
@@ -318,23 +316,10 @@ typedef struct{
   /** information about electrical cross talk */
   ElecCrosstalkPar* elec_xt_par;
 
+  /** Trigger threshold */
+  double threshold_event_lo_keV;
+
 }AdvDet;
-
-typedef struct{
-	PixImpact *next;
-	PixImpact *current;
-	PixImpact *previous;
-}pixImpPointer;
-
-typedef struct{
-	double next,current,previous;
-}gradingTimeStruct;
-
-typedef struct {
-	gradingTimeStruct *times;
-	long row;
-	double totalenergy;
-}pixGrade;
 
 
 /////////////////////////////////////////////////////////////////////
@@ -467,18 +452,6 @@ void addARF(AdvDet* det,AdvPix* pixel,int* const status);
 
 /** Destructor of the ARF library structure */
 void freeARFLibrary(ARFLibrary* library);
-
-/** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(long grade1,long grade2,AdvPix* pixel);
-
-/** calculate the grading in samples from the a given impact, and its previous and next impact **/
-void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status);
-
-/** writes the grading to an existing piximpact file **/
-void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status);
-
-/** Process the impacts contained in the piximpacts file with the RMF method */
-void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
 
 /** Function to remove overlapping pixels from the detector */
 void removeOverlapping(AdvDet* det,int* const status);

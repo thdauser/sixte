@@ -550,3 +550,37 @@ channel_list* load_channel_list(char* fname, int* status){
 
 	return chans;
 }
+
+/** Compute influence of the crosstalk event on an impact using the timedependence table */
+int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk,double* influence){
+	assert(impact->pixID == crosstalk->pixID);
+	// For the moment, the crosstalk event is supposed to happen afterwards, but this could be modified if needed
+	double time_difference = crosstalk->time - impact->time;
+	double energy_influence = 0.;
+	if ((time_difference>=0) && (time_difference<det->crosstalk_timedep->time[det->crosstalk_timedep->length-1])){ // if impact is close enough to have an influence
+		// Binary search for to find interpolation interval
+		int high=det->crosstalk_timedep->length-1;
+		int low=0;
+		int mid;
+		while (high > low) {
+			mid=(low+high)/2;
+			if (det->crosstalk_timedep->time[mid] < time_difference) {
+				low=mid+1;
+			} else {
+				high=mid;
+			}
+		}
+		int timedep_index = low-1;
+		assert(timedep_index<det->crosstalk_timedep->length-1);
+
+		// influence previous impact
+		energy_influence= crosstalk->energy*(det->crosstalk_timedep->weight[timedep_index]+
+				(det->crosstalk_timedep->weight[timedep_index+1]-det->crosstalk_timedep->weight[timedep_index])/(det->crosstalk_timedep->time[timedep_index+1]-det->crosstalk_timedep->time[timedep_index])*(time_difference-det->crosstalk_timedep->time[timedep_index]));
+		impact->energy+=energy_influence;
+		*influence+=energy_influence;
+		return 1;
+	}
+	return 0;
+}
+
+

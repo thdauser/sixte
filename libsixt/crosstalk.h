@@ -23,6 +23,7 @@
 
 #include "sixt.h"
 #include "advdet.h"
+#include "pixelimpact.h"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -53,6 +54,9 @@ ReadoutChannels* get_readout_channels(AdvDet* det, int* status);
 
 /** free the channel list */
 void free_channel_list(channel_list** chans);
+
+/** Compute influence of the crosstalk event on an impact using the timedependence table */
+int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk,double* influence);
 
 #endif /* CROSSTALK_H */
 

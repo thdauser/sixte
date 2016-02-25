@@ -626,11 +626,12 @@ int xifupipeline_main()
 				headas_chat(3, "\nstart event grading ...\n");
 				current_impact_write_row = pixilf->row;
 				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
-				writeGrading2PixImpactFile(det,pixilf,&status);
-
-				headas_chat(3, "\nstart event reconstruction ...\n");
-				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
-				processImpactsWithRMF(det,pixilf,event_file,&status);
+//				writeGrading2PixImpactFile(det,pixilf,&status);
+//
+//				headas_chat(3, "\nstart event reconstruction ...\n");
+//				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
+//				processImpactsWithRMF(det,pixilf,event_file,&status);
+				impactsToEvents(det,pixilf,event_file,par.saveCrosstalk,&status);
 
 				pixilf->row=current_impact_write_row;
 				current_impact_row=current_impact_write_row;
@@ -914,6 +915,7 @@ int xifupipeline_getpar(struct Parameters* const par)
 	}
 
 	query_simput_parameter_bool("doCrosstalk", &par->doCrosstalk, &status );
+	query_simput_parameter_bool("saveCrosstalk", &par->saveCrosstalk, &status );
 
 	if (!par->UseRMF){
 		status=ape_trad_query_string("TesTriggerFile", &sbuffer);

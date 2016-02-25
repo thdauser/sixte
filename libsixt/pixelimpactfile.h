@@ -107,4 +107,7 @@ void updateGradingPixImp(PixImpFile* const ilf,
 		  int row, long grade1, long grade2,double totalenergy,
 		  int* const status);
 
+/** copy impact2 into impact1 */
+void copyPixImpact(PixImpact* impact1, PixImpact* impact2);
+
 #endif /* PIXIMPFILE_H */

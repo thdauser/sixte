@@ -182,6 +182,8 @@ AdvDet* newAdvDet(int* const status){
   det->readout_channels=NULL;
   det->elec_xt_par=NULL;
 
+  det->threshold_event_lo_keV=0.;
+
   return(det);
 }
 
@@ -429,7 +431,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].TESNoise=NULL;
 			xmlparsedata->det->pix[ii].grades=NULL;
 			xmlparsedata->det->pix[ii].ngrades=0;
-			xmlparsedata->det->pix[ii].global_grading=0;
 			xmlparsedata->det->pix[ii].global_grading=0;
 			xmlparsedata->det->pix[ii].channel=NULL;
 			xmlparsedata->det->pix[ii].thermal_cross_talk=NULL;
@@ -702,6 +703,8 @@ static void AdvDetXMLElementStart(void* parsedata,
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_file);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_intermod_file);
 
+	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
+		xmlparsedata->det->threshold_event_lo_keV = getXMLAttributeDouble(attr,"VALUE");
 	} else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];
@@ -975,186 +978,6 @@ void freeARFLibrary(ARFLibrary* library){
 		free(library);
 	}
 	library=NULL;
-}
-
-/** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(long grade1,long grade2,AdvPix* pixel){
-
-	for (int i=0;i<pixel->ngrades;i++){
-		if((grade1 >= pixel->grades[i].gradelim_post) && (grade2>=pixel->grades[i].gradelim_pre)){
-			return i;
-		}
-	}
-	return -1;
-
-}
-
-/** calculate the grading in samples from the a given impact, and its previous and next impact **/
-void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status){
-
-	if ((pnt.next<0) || (pnt.next - pnt.current > sample_length*DEFAULTGOODSAMPLE)){
-		*grade1 = DEFAULTGOODSAMPLE;
-	} else {
-		*grade1 = floor ((pnt.next - pnt.current)/sample_length);
-	}
-	if ((pnt.previous<0) || (pnt.current - pnt.previous > sample_length*DEFAULTGOODSAMPLE)){
-		*grade2 = DEFAULTGOODSAMPLE;
-	} else {
-		*grade2 = floor ((pnt.current - pnt.previous)/sample_length);
-	}
-
-	//printf("grade1: %i grade2 %i => %i\n",*grade1,*grade2,makeGrading(*grade1,*grade2));
-
-	if ( (*grade1<0) || (*grade2<0) ){
-		*status = EXIT_FAILURE;
-		SIXT_ERROR("Grading of impacts failed in calcGradingTimes");
-		return;
-	}
-}
-
-
-/** writes the grading to an existing piximpact file **/
-void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status){
-
-	long grade1, grade2;
-	const double sample_length = 1./(det->SampleFreq);
-
-	PixImpact impact;
-
-	pixGrade pnt[det->npix];
-	for (int ii=0;ii<det->npix;ii++){
-		pnt[ii].times = NULL;
-	}
-
-	int id = -1;
-	while (getNextImpactFromPixImpFile(piximpacfile,&impact,status)){
-		id = impact.pixID;
-		if (pnt[id].times == NULL){
-			pnt[id].times = (gradingTimeStruct*) malloc (sizeof(gradingTimeStruct));
-			CHECK_NULL_VOID(pnt[id].times,*status,"malloc failed");
-
-			pnt[id].times->previous = -1.0;
-			pnt[id].times->current = impact.time;
-			pnt[id].times->next = -1.0;
-			pnt[id].totalenergy = impact.energy;
-
-			pnt[id].row = piximpacfile->row;
-		} else {
-			// save the time
-			pnt[id].times->next = impact.time;
-
-			// calculate grading
-			calcGradingTimes(sample_length,*(pnt[id].times),&grade1,&grade2,status);
-			CHECK_STATUS_VOID(*status);
-
-			// treat pileup case
-			// TODO : add pileup limit as a pixel parameter (for the moment, equal to one sample)
-			if (grade1==0){
-				// add energy to total instead of replacing
-				pnt[id].totalenergy+=impact.energy;
-				grade1=-1;
-				// add grading to file
-				updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,0,status);
-
-				// do not change grading times in this case as this is a pileup (this event will no be saved in the end)
-
-			} else {
-				// add grading to file
-				updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,pnt[id].totalenergy,status);
-
-				// move one ahead
-				pnt[id].totalenergy=impact.energy;
-				pnt[id].times->previous = pnt[id].times->current;
-				pnt[id].times->current = pnt[id].times->next;
-			}
-			CHECK_STATUS_VOID(*status);
-
-			// finishing moving ahead
-			pnt[id].times->next = -1.0; // is this useful?
-			pnt[id].row = piximpacfile->row;
-		}
-	}
-
-	// now we need to clean the impact-array and write the remaining impact grade to the file
-	// TODO: only for over the pixels that were hit
-	for (int ii=0;ii<det->npix;ii++){
-		if (pnt[ii].times != NULL){
-			calcGradingTimes(sample_length,*(pnt[ii].times),&grade1,&grade2,status);
-			updateGradingPixImp(piximpacfile, pnt[ii].row, grade1, grade2,pnt[ii].totalenergy,status);
-			free(pnt[ii].times);
-		}
-	}
-
-}
-
-
-
-/** Process the impacts contained in the piximpacts file with the RMF method */
-void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status){
-	long channel;
-	struct RMF* rmf;
-	int grading;
-	int grading_index;
-
-	// initialize
-	PixImpact impact;
-
-	while(getNextImpactFromPixImpFile(piximpacfile,&impact,status)){
-
-		//////////////////////////////////
-		//Copied and adapted from addGenDetPhotonImpact
-		//////////////////////////////////
-
-		if (impact.grade1==-1){ // this is a pile-up event that was added to the following event, i.e. not detected
-			grading = PILEUP;
-			impact.energy=0.;
-		} else { // this is an event that was actually detected
-			grading_index = makeGrading(impact.grade1,impact.grade2,&(det->pix[impact.pixID]));
-
-			if (grading_index>=0){
-
-				rmf = det->pix[impact.pixID].grades[grading_index].rmf;
-				grading = det->pix[impact.pixID].grades[grading_index].value;
-
-				// Determine the measured detector channel (PI channel) according
-				// to the RMF.
-				// The channel is obtained from the RMF using the corresponding
-				// HEAdas routine which is based on drawing a random number.
-				returnRMFChannel(rmf, impact.totalenergy, &channel); //use total energy here to take pileup into account
-
-				// Check if the photon is really measured. If the PI channel
-				// returned by the HEAdas RMF function is '-1', the photon is not
-				// detected. This should not happen as the rmf is supposedly
-				// normalized
-				if (channel<rmf->FirstChannel) {
-					// flag as invalid (seemed better than discarding)
-					char msg[MAXMSG];
-					sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV and phi_id %ld",impact.totalenergy,impact.ph_id);
-					SIXT_WARNING(msg);
-					impact.energy=0.;
-					grading=INVGRADE;
-				} else {
-
-					// Determine the corresponding detected energy.
-					// NOTE: In this simulation the collected charge is represented
-					// by the nominal photon energy [keV], which corresponds to the
-					// PI channel according to the EBOUNDS table.
-					impact.energy=getEBOUNDSEnergy(channel, rmf, status);
-					//printf("%f ",impact.energy);
-					CHECK_STATUS_VOID(*status);
-				}
-			} else {
-				impact.energy=0.;
-				grading=INVGRADE;
-			}
-		}
-		assert(impact.energy>=0.);
-		// Add final impact to event file
-		addRMFImpact(event_file,&impact,impact.grade1,impact.grade2,grading,status);
-		CHECK_STATUS_VOID(*status);
-
-	}
-
 }
 
 /** Function to remove overlapping pixels from the detector */

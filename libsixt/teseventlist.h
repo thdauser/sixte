@@ -71,7 +71,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,gradingCol,srcIDCol;
+	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,gradingCol,srcIDCol,nxtCol,extCol;
 
 } TesEventFile;
 
@@ -122,6 +122,12 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 void updateRaDec(TesEventFile* file,double ra, double dec, int* const status);
 
 /** Add event as reconstructed with the RMF method */
-void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1, int grade2, int grading, int* const status);
+void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,int grading,int n_xt,double e_xt,int* const status);
+
+/** Adds an event whose signal as not been evaluated yet (necessity in order to keep causality in event file) */
+void addEmptyEvent(TesEventFile* file,PixImpact* impact, int* const status);
+
+/** Update signal and grading columns of an event */
+void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status);
 
 #endif /* TESEVENTLIST_H */

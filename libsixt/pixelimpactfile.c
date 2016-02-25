@@ -354,3 +354,15 @@ void getPixImpFileTimeValues(PixImpFile* const ilf,
   fits_read_key(ilf->fptr, TDOUBLE, "TSTOP", tstop, comment, status);
   CHECK_STATUS_VOID(*status);
 }
+
+void copyPixImpact(PixImpact* impact1, PixImpact* impact2){
+	impact1->pixID = impact2->pixID;
+	impact1->time = impact2->time;
+	impact1->energy = impact2->energy;
+	impact1->detposition.x = impact2->detposition.x;
+	impact1->detposition.y = impact2->detposition.y;
+	impact1->pixposition.x = impact2->pixposition.x;
+	impact1->pixposition.y = impact2->pixposition.y;
+	impact1->ph_id = impact2->ph_id;
+	impact1->src_id = impact2->src_id;
+}
