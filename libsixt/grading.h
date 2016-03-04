@@ -71,6 +71,10 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
 		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
 
+/** Same as "applyMatrixCrosstalk", but for the more complicated intermodulation crosstalk */
+void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
+
 /** Processes a crosstalk event using addCrosstalkEvent or processGradedEvent depending on whether it is above threshold or not */
 void processCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
 

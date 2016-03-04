@@ -205,8 +205,8 @@ void freeTesEventFile(TesEventFile* file, int* const status){
 	if (NULL!=file) {
 		if (NULL!=file->fptr) {
 			fits_close_file(file->fptr, status);
-			headas_chat(5, "closed TesEventFile list file");
 			CHECK_STATUS_VOID(*status);
+			headas_chat(5, "closed TesEventFile list file\n");
 		}
 		free(file);
 		file=NULL;

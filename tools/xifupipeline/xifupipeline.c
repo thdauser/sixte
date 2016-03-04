@@ -135,15 +135,21 @@ int xifupipeline_main()
 
 		//Determine the tes record output file.
 		char tesrecord_filename[MAXFILENAME];
-		strcpy(ucase_buffer, par.TesTriggerFile);
-		strtoupper(ucase_buffer);
-		if (0==strcmp(ucase_buffer,"NONE")) {
-			strcpy(tesrecord_filename, "");
+		if (! par.UseRMF) {
+			strcpy(ucase_buffer, par.TesTriggerFile);
+			strtoupper(ucase_buffer);
+			if (0==strcmp(ucase_buffer,"NONE")) {
+				strcpy(tesrecord_filename, "");
+			} else {
+				strcpy(tesrecord_filename, par.Prefix);
+				strcat(tesrecord_filename, par.TesTriggerFile);
+			}
+			strcpy(par.TesTriggerFile,tesrecord_filename);
+			free(tesrecord_filename);
 		} else {
-			strcpy(tesrecord_filename, par.Prefix);
-			strcat(tesrecord_filename, par.TesTriggerFile);
+			strcpy(par.TesTriggerFile, "");
 		}
-		strcpy(par.TesTriggerFile,tesrecord_filename);
+
 
 		//Determine the event output file.
 		char eventlist_filename[MAXFILENAME];
@@ -696,6 +702,7 @@ int xifupipeline_main()
 		destroyAdvDet(&det);
 		freeTesEventFile(event_file,&status);
 	}
+
 
 	if (NULL!=progressfile) {
 		fclose(progressfile);

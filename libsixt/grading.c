@@ -233,6 +233,11 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 			applyMatrixCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
 		}
 
+		// intermod crosstalk
+		if (det->pix[id].intermodulation_cross_talk !=NULL){
+			applyIntermodCrossTalk(det->pix[id].intermodulation_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+		}
+
 		// Process impact
 		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,status);
 	}
@@ -247,6 +252,45 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		free(grade_proxys[ii].crosstalk);
 	}
 }
+
+
+/** get the weight for the intermodulation crosstalk */
+static double get_intermod_weight(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,
+		PixImpact* impact,int* const status){
+
+	return -1.0;
+}
+
+/** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
+void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
+
+	// This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
+	PixImpact crosstalk_impact;
+	crosstalk_impact.detposition.x = 0.;
+	crosstalk_impact.detposition.y = 0.;
+	crosstalk_impact.pixposition.x = 0.;
+	crosstalk_impact.pixposition.y = 0.;
+
+	// Iterate over affected pixels
+	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
+
+		int num_comb = cross_talk->num_pixel_combinations[ii];
+
+		for (int jj=0;jj<num_comb;jj++){
+			double crosstalk_weight = get_intermod_weight(cross_talk,grade_proxys,impact,status);
+			if (crosstalk_weight > 0){
+				crosstalk_impact.energy = impact->energy*crosstalk_weight; // need to do this differently !! (depends on ampl1 and ampl2 and dt)
+				crosstalk_impact.pixID = cross_talk->cross_talk_pixels[ii][jj]->pindex;
+				crosstalk_impact.time = impact->time;
+				crosstalk_impact.ph_id = -impact->ph_id;
+				crosstalk_impact.src_id = impact->src_id;
+				processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,det,event_file,save_crosstalk,status);
+			}
+		}
+	}
+}
+
 
 /** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
 void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
@@ -269,6 +313,7 @@ void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,c
 		processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,det,event_file,save_crosstalk,status);
 	}
 }
+
 
 /** Processes a crosstalk event using addCrosstalkEvent or processGradedEvent depending on whether it is above threshold or not */
 void processCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
@@ -318,7 +363,8 @@ void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImp
 				grade_proxy->nb_crosstalk_influence = nb_influence;
 				grade_proxy->crosstalk_energy = influence;
 			}
-		// If they did not happen in the same time bin, the previous one was indeed not detected and can safely be treated for possible influence on the previous triggered event
+		// If they did not happen in the same time bin, the previous one was indeed not detected and can
+	    // safely be treated for possible influence on the previous triggered event
 		} else {
 			if(grade_proxy->times!=NULL){ //if there indeed was a previous impact
 				int has_affected = computeCrosstalkInfluence(det,grade_proxy->impact,grade_proxy->crosstalk,&(grade_proxy->crosstalk_energy));

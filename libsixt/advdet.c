@@ -110,9 +110,9 @@ void freeReadoutChannels(ReadoutChannels* rc){
 void freeImodTab(ImodTab* tab){
 	if (tab != NULL){
 		if (tab->matrix!=NULL){
-			for(int ii=0; ii < tab->n_ampl1 ; ii++){
+			for(int ii=0; ii < tab->n_dt ; ii++){
 				if (tab->matrix[ii]!=NULL){
-					for(int jj=0; jj < tab->n_ampl2 ; jj++){
+					for(int jj=0; jj < tab->n_ampl ; jj++){
 						free(tab->matrix[ii][jj]);
 					}
 					free(tab->matrix[ii]);
@@ -120,8 +120,7 @@ void freeImodTab(ImodTab* tab){
 			}
 			free(tab->matrix);
 		}
-		free(tab->ampl1);
-		free(tab->ampl2);
+		free(tab->ampl);
 		free(tab->dt);
 		free(tab);
 	}
@@ -435,6 +434,8 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].channel=NULL;
 			xmlparsedata->det->pix[ii].thermal_cross_talk=NULL;
 			xmlparsedata->det->pix[ii].electrical_cross_talk=NULL;
+			xmlparsedata->det->pix[ii].intermodulation_cross_talk=NULL;
+
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {

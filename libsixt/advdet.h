@@ -214,12 +214,10 @@ typedef struct{
 
 	double*** matrix; // 3d table containing the frequency weights
 
-	double* ampl1;
-	double* ampl2;
+	double* ampl;
 	double* dt;
 
-	int n_ampl1;
-	int n_ampl2;
+	int n_ampl;
 	int n_dt;
 
 }ImodTab;
