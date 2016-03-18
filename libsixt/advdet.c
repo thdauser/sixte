@@ -87,6 +87,7 @@ void freeAdvPix(AdvPix* pix){
     freeGrading(pix);
     freeMatrixCrossTalk(&(pix->thermal_cross_talk));
     freeMatrixCrossTalk(&(pix->electrical_cross_talk));
+    freeImodCrossTalk(&(pix->intermodulation_cross_talk));
   }
 }
 
@@ -1032,13 +1033,14 @@ void removeOverlapping(AdvDet* det,int* const status){
 }
 
 /** Constructor for MatrixCrossTalk structure */
-MatrixCrossTalk* newMatrixCrossTalk(int* const status){
-	MatrixCrossTalk* matrix = (MatrixCrossTalk*) malloc(sizeof(*matrix));
+IntermodulationCrossTalk* newImodCrossTalk(int* const status){
+	IntermodulationCrossTalk* matrix = (IntermodulationCrossTalk*) malloc(sizeof(IntermodulationCrossTalk));
 	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
 
 	matrix->num_cross_talk_pixels=0;
+
 	matrix->cross_talk_pixels = NULL;
-	matrix->cross_talk_weights = NULL;
+	matrix->cross_talk_info = NULL;
 
 	return matrix;
 }
@@ -1052,6 +1054,36 @@ void freeMatrixCrossTalk(MatrixCrossTalk** matrix){
 	free(*matrix);
 	*matrix=NULL;
 }
+
+/** Destructor for MatrixCrossTalk structure */
+void freeImodCrossTalk(IntermodulationCrossTalk** matrix){
+	if (*matrix!=NULL){
+		for (int ii=0; ii <  (*matrix)->num_cross_talk_pixels; ii++){
+			free((*matrix)->cross_talk_pixels[ii]);
+		}
+		free((*matrix)->cross_talk_info);
+/*		for (int ii=0; ii <  (*matrix)->num_cross_talk_pixels; ii++){
+			free((*matrix)->cross_talk_pixels[ii]);
+			free((*matrix)->cross_talk_info[ii]);
+		}
+		free((*matrix)->num_pixel_combinations); */
+	}
+	free(*matrix);
+}
+
+
+/** Constructor for MatrixCrossTalk structure */
+MatrixCrossTalk* newMatrixCrossTalk(int* const status){
+	MatrixCrossTalk* matrix = (MatrixCrossTalk*) malloc(sizeof(*matrix));
+	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
+
+	matrix->num_cross_talk_pixels=0;
+	matrix->cross_talk_pixels = NULL;
+	matrix->cross_talk_weights = NULL;
+
+	return matrix;
+}
+
 
 /** Constructor for CrosstalkTimdep structure */
 CrosstalkTimedep* newCrossTalkTimedep(int* const status){

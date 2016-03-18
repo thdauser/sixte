@@ -457,13 +457,127 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 	return;
 }
 
+/** check if frequencies cause crosstalk */
+static int check_frequencies(double f, double f1, double f2){
+
+	double prec = 1e-3; // todo: which value is correct here?
+
+	if        ( fabs( fabs(f1+f2) - f ) < prec ){
+		return 0;
+	} else if ( fabs( (f1-f2) - f )     < prec ){
+		return 1;
+	} else if ( fabs( (2*f2+f1) - f )   < prec ) {
+		return 2;
+	} else if ( fabs( (2*f2-f1) - f )   < prec ) {
+		return 3;
+	} else if ( fabs( (2*f1-f2) - f )   < prec ) {
+		return 4;
+	} else if ( fabs( (2*f1+f2) - f )   < prec ) {
+		return 5;
+	} else {
+		return -1;
+	}
+
+}
+
+static void add_to_intermod_channel_matrix(AdvDet* det, AdvPix* pix, AdvPix* pix1, AdvPix* pix2, int freq_num, int* status){
+//static IntermodulationCrossTalk* add_to_intermod_channel_matrix(AdvDet* det, AdvPix* pix, AdvPix* pix1, AdvPix* pix2, int freq_num, int* status){
+
+	// Important: Needs to exactly fit to the output of freq_num
+	ImodTab* itab[]  = {
+			(det->crosstalk_intermod_table->w_f2pf1),
+			(det->crosstalk_intermod_table->w_f2mf1),
+			(det->crosstalk_intermod_table->w_2f2pf1),
+			(det->crosstalk_intermod_table->w_2f2mf1),
+			(det->crosstalk_intermod_table->w_2f1mf2),
+			(det->crosstalk_intermod_table->w_2f1pf2)
+	};
+
+	IntermodulationCrossTalk** imod_xt = &(pix->intermodulation_cross_talk);
+
+	if ((*imod_xt)==NULL){
+		(*imod_xt) = newImodCrossTalk(status);
+		CHECK_STATUS_VOID(status);
+	}
+
+	// Increase matrix size
+	(*imod_xt)->cross_talk_pixels = (AdvPix***) realloc((*imod_xt)->cross_talk_pixels,((*imod_xt)->num_cross_talk_pixels+1)*sizeof(AdvPix**));
+	CHECK_MALLOC_VOID_STATUS((*imod_xt)->cross_talk_pixels,*status);
+
+	// crosstalk produced by two pixels
+	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels] = NULL;
+	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels] =
+			(AdvPix**) realloc((*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels],(2*sizeof(AdvPix*)));
+	CHECK_MALLOC_VOID_STATUS((*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels],*status);
+
+	(*imod_xt)->cross_talk_info = (ImodTab**) realloc((*imod_xt)->cross_talk_info,((*imod_xt)->num_cross_talk_pixels+1)*sizeof(ImodTab*));
+	CHECK_MALLOC_VOID_STATUS((*imod_xt)->cross_talk_pixels,*status);
+
+	// Affect new values
+	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels][0] = pix1;
+	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels][1] = pix2;
+	(*imod_xt)->cross_talk_info[(*imod_xt)->num_cross_talk_pixels] = itab[freq_num];
+
+	// Now, we can say that the matrix is effectively bigger
+	(*imod_xt)->num_cross_talk_pixels++;
+
+	// check that now the intermodulation table does exist
+	assert(pix->intermodulation_cross_talk != NULL);
+}
+
+/** set for one pixels the pixel-combinations for the intermodulation crosstalk */
+static void set_advpix_intermod_cross_talk(AdvDet* det, AdvPix* pix, int* status){
+
+	double f1 = 0.0;
+	double f2 = 0.0;
+
+	int nchanpix = pix->channel->num_pixels;
+
+	headas_chat(5,"\n Determining Intermodulation Crosstalk for the following pixels:\n\n");
+
+	/** loop over the all pixels in the channel */
+	for (int ii=0; ii< nchanpix; ii++){
+		f1 = pix->channel->pixels[ii]->freq;
+
+		// starting at jj=ii+1 removes the diagonal and duplicated entries
+		for (int jj=ii+1; jj< nchanpix; jj++){
+
+			f2 = pix->channel->pixels[jj]->freq;
+
+			int freq_num = check_frequencies(pix->freq, f1, f2);
+			if (freq_num >= 0){
+				//pix->intermodulation_cross_talk =
+				add_to_intermod_channel_matrix(det,pix,pix->channel->pixels[ii],pix->channel->pixels[jj],freq_num,status);
+				headas_chat(5,"Pixel %i is influenced by (%i %i) -> crosstalk type %i  \n",
+						pix->pindex, pix->channel->pixels[ii]->pindex,pix->channel->pixels[jj]->pindex,freq_num);
+
+				if (pix->intermodulation_cross_talk == NULL){
+					printf("noooooo \n");
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
 /** Load intermodulation cross talk information into a single AdvPix*/
 static void load_intermod_cross_talk(AdvDet* det, int pixid, int* status){
 
-	/** make sure the information is loaded in the table */
-	if (det->crosstalk_intermod_table==NULL){
-		load_intermod_freq_table(det,status);
-		CHECK_STATUS_VOID(*status);
+
+	/** we only need to set the intermod for the pixel, if it wasn't already done */
+	if (det->pix[pixid].intermodulation_cross_talk==NULL){
+
+		/** make sure the information is loaded in the table */
+		if (det->crosstalk_intermod_table==NULL){
+			load_intermod_freq_table(det,status);
+			CHECK_STATUS_VOID(*status);
+		}
+
+		set_advpix_intermod_cross_talk(det, &(det->pix[pixid]), status);
+
 	}
 
 	return;

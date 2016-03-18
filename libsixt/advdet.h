@@ -345,13 +345,13 @@ struct IntermodulationCrossTalk{
 	int num_cross_talk_pixels;
 
 	/** numbrer of combiniations for each pixel */
-	int* num_pixel_combinations;
+//	int* num_pixel_combinations;
 
 	/** Array containing cross-talk pixels */
 	AdvPix*** cross_talk_pixels;
 
 	/** Cross-talk weights*/
-	void* cross_talk_info;
+	ImodTab** cross_talk_info;
 
 };
 
@@ -459,6 +459,12 @@ MatrixCrossTalk* newMatrixCrossTalk(int* const status);
 
 /** Destructor for MatrixCrossTalk structure */
 void freeMatrixCrossTalk(MatrixCrossTalk** matrix);
+
+/** Constructor for IntermodulationCrossTalk structure */
+IntermodulationCrossTalk* newImodCrossTalk(int* const status);
+
+/** Destructor for IntermodulationCrossTalk structure */
+void freeImodCrossTalk(IntermodulationCrossTalk** matrix);
 
 /** Constructor for CrosstalkTimdep structure */
 CrosstalkTimedep* newCrossTalkTimedep(int* const status);
