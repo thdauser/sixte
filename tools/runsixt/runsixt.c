@@ -299,6 +299,11 @@ int runsixt_main()
 			  inst->det->pixgrid->ywidth,
 			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
+    
+    float rotation_angle=inst->det->pixgrid->rota*180./M_PI;
+    fits_update_key(elf->fptr, TFLOAT, "CCDROTA", &rotation_angle, "CCD rotation angle [deg]", &status);
+    fits_update_key(patf->fptr, TFLOAT, "CCDROTA", &rotation_angle, "CCD rotation angle [deg]", &status);
+    CHECK_STATUS_BREAK(status);
 
     // Set FITS header keywords.
     // If this is a pointing attitude, store the direction in the output
