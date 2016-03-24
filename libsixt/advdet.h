@@ -317,6 +317,9 @@ typedef struct{
   /** Trigger threshold */
   double threshold_event_lo_keV;
 
+  /** Crosstalk ID (which effects should be included */
+  int crosstalk_id;
+
 }AdvDet;
 
 
@@ -376,8 +379,8 @@ typedef struct channelImpacts{
 /** Structure combining all readout channels */
 struct ReadoutChannels{
 	Channel* channels;
-	int num_channels;
-} ;
+	double* df_information_band; //in [Hz];
+	int num_channels;} ;
 
 
 /////////////////////////////////////////////////////////////////////

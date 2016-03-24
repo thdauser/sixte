@@ -80,7 +80,8 @@ int gradeddetection_main() {
 		CHECK_STATUS_BREAK(status);
 
 		// Load crosstalk if needed
-		if (par.doCrosstalk){
+		det->crosstalk_id=par.doCrosstalk;
+		if (det->crosstalk_id>0){
 			headas_chat(3, "initializing crosstalk ...\n");
 			init_crosstalk(det, &status);
 			if (status!=EXIT_SUCCESS){
@@ -120,7 +121,20 @@ void gradeddetection_getpar(struct Parameters* const par,int* const status) {
 	query_simput_parameter_file_name("TesEventFile", &(par->TesEventFile), status);
 	query_simput_parameter_double("tstart", &(par->tstart), status);
 	query_simput_parameter_double("tstop", &(par->tstop), status);
-	query_simput_parameter_bool("doCrosstalk", &(par->doCrosstalk), status);
+// 	query_simput_parameter_bool("doCrosstalk", &(par->doCrosstalk), status);
+	char *buf;
+	query_simput_parameter_string("doCrosstalk", &buf, status );
+	if (strncmp(buf,"yes",3)==0 ||strncmp(buf,"all",3)==0  ){
+		par->doCrosstalk = CROSSTALK_ID_ALL;
+	} else if (strncmp(buf,"elec",4)==0){
+		par->doCrosstalk = CROSSTALK_ID_ELEC;
+	} else if (strncmp(buf,"therm",5)==0){
+		par->doCrosstalk = CROSSTALK_ID_THERM;
+	} else if (strncmp(buf,"imod",4)==0){
+		par->doCrosstalk = CROSSTALK_ID_IMOD;
+	} else {
+		par->doCrosstalk=CROSSTALK_ID_NONE;
+	}
 	query_simput_parameter_bool("saveCrosstalk", &(par->saveCrosstalk), status);
 	query_simput_parameter_int("seed", &par->seed, status);
 	query_simput_parameter_bool("clobber", &par->clobber, status);

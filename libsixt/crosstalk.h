@@ -25,6 +25,11 @@
 #include "advdet.h"
 #include "pixelimpact.h"
 
+#define CROSSTALK_ID_NONE 0
+#define CROSSTALK_ID_ALL 1
+#define CROSSTALK_ID_THERM 2
+#define CROSSTALK_ID_ELEC 3
+#define CROSSTALK_ID_IMOD 4
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.

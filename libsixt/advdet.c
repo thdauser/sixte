@@ -104,6 +104,7 @@ void freeGrading(AdvPix* pix){
 void freeReadoutChannels(ReadoutChannels* rc){
 	if ( rc != NULL ){
 		free(rc->channels);
+		free(rc->df_information_band);
 	}
 	free( rc );
 }
@@ -183,6 +184,8 @@ AdvDet* newAdvDet(int* const status){
   det->elec_xt_par=NULL;
 
   det->threshold_event_lo_keV=0.;
+
+  det->crosstalk_id=0;
 
   return(det);
 }

@@ -226,11 +226,11 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		id = impact.pixID;
 		// thermal crosstalk
 		if (det->pix[id].thermal_cross_talk !=NULL){
-			applyMatrixCrossTalk(det->pix[id].thermal_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+	//		applyMatrixCrossTalk(det->pix[id].thermal_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
 		}
 		// electrical crosstalk
 		if (det->pix[id].electrical_cross_talk !=NULL){
-			applyMatrixCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+	//		applyMatrixCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
 		}
 
 		// intermod crosstalk
@@ -277,7 +277,7 @@ static int binary_search(double val, double* arr, int n){
 	int mid;
 	while (high > low) {
 		mid=(low+high)/2;
-		if (arr[mid] < val) {
+		if (arr[mid] <= val) {
 			low=mid+1;
 		} else {
 			high=mid;
@@ -321,7 +321,7 @@ static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
 
 		ind_ampl[ii] = inv_binary_search(ampl[ii],cross_talk->ampl,cross_talk->n_ampl);
 		if (ind_ampl[ii] < 0 ){
-			headas_chat(3," *** warning: intermodulation cross talk amplitute %.3e not tabulated, skipping this event",ampl[ii]);
+			headas_chat(3," *** warning: intermodulation cross talk amplitude %.3e not tabulated, skipping this event",ampl[ii]);
 			return 0.0;
 		}
 		assert ( (ind_ampl[ii]) >= 0 && (ind_ampl[ii] < cross_talk->n_ampl) );
@@ -335,6 +335,8 @@ static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
 
 	assert ( (ind_dt) >= 0 && (ind_dt < cross_talk->n_dt) );
 	double d_dt =  (dt - cross_talk->dt[ind_dt]) / ( cross_talk->dt[ind_dt+1] - cross_talk->dt[ind_dt] );
+
+	// printf(" --> %i (%.3e) %i (%.3e) %i (%.3e) \n",ind_ampl[0],d_ampl[0],ind_ampl[1],d_ampl[1],ind_dt,d_dt);
 
 	// interpolate in 3d: start with interpolation in dt
 	double c00 = cross_talk->matrix[ ind_dt ][ind_ampl[0]][ind_ampl[1]] * (1-d_dt) +
@@ -351,7 +353,9 @@ static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
 	double c1 = c01 * (1-d_ampl[0]) + c11 * d_ampl[0];
 
 	// ... and finally the last step
-	cross_talk_weight  = c1 * (1-d_ampl[1]) + c0 * d_ampl[0];
+	cross_talk_weight  = c0 * (1-d_ampl[1]) + c1 * d_ampl[1];
+
+	// printf("  |-> weights: %.3e %.3e %.3e %.3e | %.3e %.3e | %.3e \n",c00,c01,c10,c11,c0,c1,cross_talk_weight);
 
 	// check that the outcome has a reasonable value
 	if (cross_talk_weight < 0 ){
@@ -376,14 +380,15 @@ void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* gra
 	crosstalk_impact.pixposition.x = 0.;
 	crosstalk_impact.pixposition.y = 0.;
 
+	int num_xt_pix = 0;
+	int* ind_xt_pix = NULL;
+
 	// Iterate over affected pixels
 	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
 
-		int ind_pix1 = cross_talk->cross_talk_pixels[ii][0]->pindex;
-		int ind_pix2 = cross_talk->cross_talk_pixels[ii][1]->pindex;
+		int ind_pix = cross_talk->cross_talk_pixels[ii][0]->pindex;
+		int ind_pix_xt = cross_talk->cross_talk_pixels[ii][1]->pindex;
 
-		int ind[] = {ind_pix1, ind_pix2};
-		double dt_arr[] = {-1.0,-1.0};
 
 		// use the last bin of the tabulated time table for tmax (todo: should this value be fixed?)
 		double tmax = cross_talk->cross_talk_info[ii]->dt[cross_talk->cross_talk_info[ii]->n_dt-1];
@@ -393,81 +398,37 @@ void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* gra
 		// -> these events are negelegted (but not deleted, as important for grading!)
 
 		// is there already an impact in the pixel
-		if (grade_proxys[ind_pix1].times!=NULL){
-			dt_arr[0] = (impact->time - grade_proxys[ind[0]].times->current);
-		}
-
-		// is there already an impact in the other pixel
-		if (grade_proxys[ind_pix2].times!=NULL){
-			dt_arr[1] = (impact->time - grade_proxys[ind[1]].times->current);
-		}
-
-
 		double dt = -1.0;
-		int index_impact = -1;
-		int index_xt = -1;
-		if (dt_arr[0] >= 0 || dt_arr[1] >= 0 ){
-
-			if (dt_arr[0] >= 0){
-				if (dt_arr[1] >= 0){
-					if (dt_arr[0] < dt_arr[1]){
-						index_impact = 0;
-					} else {
-						index_impact = 1;
-					}
-				} else {
-				index_impact = 0;
-				}
-			} else {
-				index_impact = 1;
-			}
-			dt = dt_arr[index_impact];
-
-			// no intermodulation cross talk if second event is too far away
-			if (dt > tmax){
-				return ;
-			}
-
-			// if one of the two pixels has a hit, the cross talk will be produced by the other one
-			if (index_impact == 1){
-				index_xt = 0;
-			} else {
-				index_xt = 1;
-			}
-
-
-		} else {
-			// no intermodulation cross talk
-			return ;
+		if (grade_proxys[ind_pix].times!=NULL){
+			dt = (impact->time - grade_proxys[ind_pix].times->current);
 		}
 
-		// check that the time is indeed greater than 0
-		assert(dt>=0);
-		assert(index_impact>=0);
-		assert(index_xt>=0);
-		assert(index_impact != index_xt);
 
-		// todo: require a minimum value of the amplitude?
+		// imod crosstalk only if 0 <= dt <= tmax (currently > 0 to avoid secondary imod events!)
+		if ( (dt > 0) && (dt <= tmax) ){
 
-		// get the amplitude of the cross talk event
-		double crosstalk_ampli = get_intermod_weight(cross_talk->cross_talk_info[ii],
-				impact, grade_proxys[ind[index_impact]].impact, dt , status);
+			// check that the time is indeed greater than 0
+
+			// get the amplitude of the cross talk event
+			double crosstalk_ampli = get_intermod_weight(cross_talk->cross_talk_info[ii],
+					impact, grade_proxys[ind_pix].impact, dt , status);
 
 
-		if (crosstalk_ampli > 0){
-			crosstalk_impact.energy = get_imod_xt_energy(crosstalk_ampli);
-			crosstalk_impact.pixID = ind[index_xt];
-			crosstalk_impact.time = impact->time;       // will have the time of the latest impact
-			crosstalk_impact.ph_id = -impact->ph_id;
-			crosstalk_impact.src_id = -1;   // todo: what should we set here? could be two different sources
+			if (crosstalk_ampli > 0){
+				crosstalk_impact.energy = get_imod_xt_energy(crosstalk_ampli);
+				crosstalk_impact.pixID = ind_pix_xt;
+				crosstalk_impact.time = impact->time;       // will have the time of the latest impact
+				crosstalk_impact.ph_id = -impact->ph_id;
+				crosstalk_impact.src_id = -1;   // todo: what should we set here? could be two different sources
 
-			// we have indeed intermodulation cross talk
-			headas_chat(7,"t=%.4e: Hits in %i and %i spaced dt=%.3e produce XT-signal with E=%.3e in %i \n",
-							crosstalk_impact.time,impact->pixID,ind[index_impact],dt,
-							get_imod_xt_energy(crosstalk_ampli),ind[index_xt]);
+				// we have indeed intermodulation cross talk
+				headas_chat(7,"t=%.4e: Impact in %i and previous event in %i spaced dt=%.3e produce XT-signal with E=%.3e (%.3e) in %i \n",
+						crosstalk_impact.time,impact->pixID+1,ind_pix+1,dt,
+						get_imod_xt_energy(crosstalk_ampli),crosstalk_ampli,ind_pix_xt+1);
 
 
-			processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,det,event_file,save_crosstalk,status);
+				processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,det,event_file,save_crosstalk,status);
+			}
 		}
 	}
 }
