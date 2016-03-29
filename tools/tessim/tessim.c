@@ -258,6 +258,10 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
     assert(par->m_excess>=0);
   }
 
+  // get optional effective voltage bias
+  query_simput_parameter_double("V0",&(par->V0),status);
+  par->V0*=1e-6;
+
   query_simput_parameter_bool("simnoise", &par->simnoise, status);
 
   // trigger strategy

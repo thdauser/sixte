@@ -47,6 +47,7 @@ typedef struct {
   double Gb1;    // thermal conductance of the bath heat link at Tc [W/K]
   double n;      // Temperature dependence of the power flow to the heat sink
   double I0;     // current at I0 [A]
+  double V0;     // voltage bias [V] (computed for initial equilibrium if negative)
 
   double sample_rate; // sample rate (Hz)
   double imin;    // minimum current to encode [A]
