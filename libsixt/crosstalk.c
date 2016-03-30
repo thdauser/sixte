@@ -1,7 +1,27 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2016 Philippe Peille, IRAP; Thomas Dauser, ECAP
+*/
+
 #include "crosstalk.h"
 
 int num_imod = 6;
-char* imod_xt_names[] = { " |f2 - f1|", "  f2 + f1","2*f2 - f1","2*f1 - f2", "2*f2 + f1", "2*f1 + f2" };
+char* imod_xt_names[] = { "|f2 - f1|", " f2 + f1 ","2*f2 - f1","2*f1 - f2", "2*f2 + f1", "2*f1 + f2" };
 int counting_imod_xt[] = {0, 0, 0, 0, 0, 0 };
 
 
@@ -564,8 +584,9 @@ static void set_advpix_intermod_cross_talk(AdvDet* det, AdvPix* pix, int* status
 					// count each pair only once (definition to match Roland's files)
 					if (f1 > pix->freq){
 						counting_imod_xt[freq_num]++;
-						headas_chat(7,"Pixel %03i is influenced by (%03i %03i) -> crosstalk type %i \n",
-							pix->channel->pixels[jj]->pindex+1, pix->pindex+1,pix->channel->pixels[ii]->pindex+1,freq_num);
+						headas_chat(7,"Pixel %03i is influenced by (%03i %03i) -> crosstalk type %i (%.3f %.3f -> %.3f) \n",
+							pix->channel->pixels[jj]->pindex+1, pix->pindex+1,pix->channel->pixels[ii]->pindex+1,freq_num,
+							pix->freq*1e-3,pix->channel->pixels[ii]->freq*1e-3,pix->channel->pixels[jj]->freq*1e-3);
 					}
 
 				}

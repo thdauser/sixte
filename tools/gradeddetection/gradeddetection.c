@@ -121,7 +121,6 @@ void gradeddetection_getpar(struct Parameters* const par,int* const status) {
 	query_simput_parameter_file_name("TesEventFile", &(par->TesEventFile), status);
 	query_simput_parameter_double("tstart", &(par->tstart), status);
 	query_simput_parameter_double("tstop", &(par->tstop), status);
-// 	query_simput_parameter_bool("doCrosstalk", &(par->doCrosstalk), status);
 	char *buf;
 	query_simput_parameter_string("doCrosstalk", &buf, status );
 	if (strncmp(buf,"yes",3)==0 ||strncmp(buf,"all",3)==0  ){

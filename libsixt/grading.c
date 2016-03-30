@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016 Philippe Peille, IRAP; Thomas Dauser, ECAP
 */
 
 #include "grading.h"
@@ -200,6 +200,21 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 }
 
 
+static imodProxy* newImodProxy(int* status){
+	imodProxy* ipro = (imodProxy*) malloc ( sizeof(imodProxy)  );
+	CHECK_MALLOC_RET_STATUS(ipro,NULL,*status);
+	ipro->pixelHits = NULL;
+	ipro->num_pix = 0;
+	return ipro;
+}
+static void freeImodProxy(imodProxy* ipro){
+	if (ipro != NULL){
+		free(ipro->pixelHits);
+	}
+	free(ipro);
+}
+
+
 /** Processes the impacts, including crosstalk and RMF energy randomization **/
 void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_file,int save_crosstalk,int* const status){
 
@@ -226,16 +241,20 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		id = impact.pixID;
 		// thermal crosstalk
 		if (det->pix[id].thermal_cross_talk !=NULL){
-	//		applyMatrixCrossTalk(det->pix[id].thermal_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			applyMatrixCrossTalk(det->pix[id].thermal_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			CHECK_STATUS_VOID(*status);
 		}
 		// electrical crosstalk
 		if (det->pix[id].electrical_cross_talk !=NULL){
-	//		applyMatrixCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			applyMatrixCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			CHECK_STATUS_VOID(*status);
 		}
 
 		// intermod crosstalk
 		if (det->pix[id].intermodulation_cross_talk !=NULL){
-			applyIntermodCrossTalk(det->pix[id].intermodulation_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			applyIntermodCrossTalk(det->pix[id].intermodulation_cross_talk,grade_proxys,sample_length,
+					&impact,det,event_file,save_crosstalk,status);
+			CHECK_STATUS_VOID(*status);
 		}
 
 		// Process impact
@@ -321,7 +340,7 @@ static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
 
 		ind_ampl[ii] = inv_binary_search(ampl[ii],cross_talk->ampl,cross_talk->n_ampl);
 		if (ind_ampl[ii] < 0 ){
-			headas_chat(3," *** warning: intermodulation cross talk amplitude %.3e not tabulated, skipping this event",ampl[ii]);
+			headas_chat(3," *** warning: intermodulation cross talk amplitude %.3e not tabulated, skipping this event\n",ampl[ii]);
 			return 0.0;
 		}
 		assert ( (ind_ampl[ii]) >= 0 && (ind_ampl[ii] < cross_talk->n_ampl) );
@@ -369,9 +388,24 @@ static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
 }
 
 
-/** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
-void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
+/** check if a pixel is already in the intermodulation proxy
+ * (means that it produced intermodulation crosstalk before and has to be skipped */
+static int isPixelInProxy(imodProxy* ipro, long pindex){
+
+	// make sure that the proxy is not NULL
+	assert(ipro!=NULL);
+
+	for (int ii=0; ii<ipro->num_pix; ii++){
+		if (ipro->pixelHits[ii] == pindex){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static void doImodCrossTalk_iter(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+		PixImpact* impact,long pindex_parent, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
+
 
 	// This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
 	PixImpact crosstalk_impact;
@@ -380,29 +414,29 @@ void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* gra
 	crosstalk_impact.pixposition.x = 0.;
 	crosstalk_impact.pixposition.y = 0.;
 
-	int num_xt_pix = 0;
-	int* ind_xt_pix = NULL;
-
 	// Iterate over affected pixels
 	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
 
 		int ind_pix = cross_talk->cross_talk_pixels[ii][0]->pindex;
 		int ind_pix_xt = cross_talk->cross_talk_pixels[ii][1]->pindex;
 
+		// make sure that in the parent crosstalk pixel no event is created
+//		if (pindex_parent == ind_pix_xt ){
+//			//isPixelInProxy(imod_proxy,ind_pix)){
+//			printf(" ** pixel %i is already in proxy, skipping ... \n", ind_pix_xt+1);
+//			continue;
+//		}
+
+		// is there already an impact in the pixel
+		// double dt = -1.0;
+		if (grade_proxys[ind_pix].times==NULL){
+			continue;
+		}
+
+		double dt = (impact->time - grade_proxys[ind_pix].times->current);
 
 		// use the last bin of the tabulated time table for tmax (todo: should this value be fixed?)
 		double tmax = cross_talk->cross_talk_info[ii]->dt[cross_talk->cross_talk_info[ii]->n_dt-1];
-
-		// assumption for intermodulation crosstalk:
-		// crosstalk events below the threshold will not produce noticable intermod crosstalk
-		// -> these events are negelegted (but not deleted, as important for grading!)
-
-		// is there already an impact in the pixel
-		double dt = -1.0;
-		if (grade_proxys[ind_pix].times!=NULL){
-			dt = (impact->time - grade_proxys[ind_pix].times->current);
-		}
-
 
 		// imod crosstalk only if 0 <= dt <= tmax (currently > 0 to avoid secondary imod events!)
 		if ( (dt > 0) && (dt <= tmax) ){
@@ -421,16 +455,35 @@ void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* gra
 				crosstalk_impact.ph_id = -impact->ph_id;
 				crosstalk_impact.src_id = -1;   // todo: what should we set here? could be two different sources
 
-				// we have indeed intermodulation cross talk
+				// we have produced intermodulation cross talk
 				headas_chat(7,"t=%.4e: Impact in %i and previous event in %i spaced dt=%.3e produce XT-signal with E=%.3e (%.3e) in %i \n",
 						crosstalk_impact.time,impact->pixID+1,ind_pix+1,dt,
 						get_imod_xt_energy(crosstalk_ampli),crosstalk_ampli,ind_pix_xt+1);
 
-
 				processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,det,event_file,save_crosstalk,status);
+
+				// now that we created another event, we need to see if it produces crosstalk as well
+//				doImodCrossTalk_iter(det->pix[crosstalk_impact.pixID].intermodulation_cross_talk,grade_proxys,
+//						sample_length,crosstalk_impact,impact->pixID,det,event_file,save_crosstalk,status);
+
 			}
 		}
 	}
+
+}
+
+/** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
+void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+		PixImpact* impact, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
+
+	imodProxy* imod_proxy = newImodProxy(status);
+	CHECK_STATUS_VOID(*status);
+
+	doImodCrossTalk_iter(cross_talk,grade_proxys,sample_length,
+			impact,-1,det,event_file,save_crosstalk,status);
+
+
+	freeImodProxy(imod_proxy);
 }
 
 
