@@ -72,8 +72,8 @@ int gendetsim_main() {
     strcpy(impactlist_filename, par.ImpactList);
     
     // Determine the event list output file.
-    char eventlist_filename[MAXFILENAME];
-    strcpy(eventlist_filename, par.EventList);
+    char rawdata_filename[MAXFILENAME];
+    strcpy(rawdata_filename, par.RawData);
 
     // Initialize the random number generator.
     unsigned int seed=getSeed(par.Seed);
@@ -110,7 +110,7 @@ int gendetsim_main() {
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    elf=openNewEventFile(eventlist_filename, 
+    elf=openNewEventFile(rawdata_filename,
 			 telescop, instrume, "Normal", 
 			 inst->tel->arf_filename, inst->det->rmf_filename,
 			 par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
@@ -212,6 +212,10 @@ int getpar(struct Parameters* const par)
   // Error status.
   int status=EXIT_SUCCESS; 
 
+  // check if any obsolete keywords are given
+  sixt_check_obsolete_keyword(&status);
+  CHECK_STATUS_RET(status,EXIT_FAILURE);
+
   // Read all parameters via the ape_trad_ routines.
 
   status=ape_trad_query_file_name("ImpactList", &sbuffer);
@@ -222,12 +226,12 @@ int getpar(struct Parameters* const par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("EventList", &sbuffer);
+  status=ape_trad_query_string("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

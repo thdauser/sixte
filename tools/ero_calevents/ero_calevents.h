@@ -39,7 +39,7 @@
 
 
 struct Parameters {
-  char PatternList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char eroEventList[MAXFILENAME];
   char Attitude[MAXFILENAME];
 

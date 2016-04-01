@@ -389,5 +389,8 @@ int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *
 // convenience function: update checksum in current and primary HDU and close the file
 void fits_close_file_chksum(fitsfile *fptr,int *status);
 
+// check for obsolete input keywords
+void sixt_check_obsolete_keyword(int* status);
+
 #endif /* SIXT_H */
 

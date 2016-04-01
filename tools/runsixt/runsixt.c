@@ -107,27 +107,29 @@ int runsixt_main()
     }
     
     // Determine the single-pixel event output file.
-    char eventlist_filename[MAXFILENAME];
-    strcpy(ucase_buffer, par.EventList);
+    char rawdata_filename[MAXFILENAME];
+    strcpy(ucase_buffer, par.RawData);
     strtoupper(ucase_buffer);
+    int delete_rawdata = 0;
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(eventlist_filename, par.Prefix);
-      strcat(eventlist_filename, "events.fits");
+      delete_rawdata = 1;
+      strcpy(rawdata_filename, par.Prefix);
+      strcat(rawdata_filename, "raw.fits");
     } else {
-      strcpy(eventlist_filename, par.Prefix);
-      strcat(eventlist_filename, par.EventList);
+      strcpy(rawdata_filename, par.Prefix);
+      strcat(rawdata_filename, par.RawData);
     }
 
     // Determine the event pattern output file.
-    char patternlist_filename[MAXFILENAME];
-    strcpy(ucase_buffer, par.PatternList);
+    char evtfile_filename[MAXFILENAME];
+    strcpy(ucase_buffer, par.EvtFile);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(patternlist_filename, par.Prefix);
-      strcat(patternlist_filename, "pattern.fits");
+      strcpy(evtfile_filename, par.Prefix);
+      strcat(evtfile_filename, "evt.fits");
     } else {
-      strcpy(patternlist_filename, par.Prefix);
-      strcat(patternlist_filename, par.PatternList);
+      strcpy(evtfile_filename, par.Prefix);
+      strcat(evtfile_filename, par.EvtFile);
     }
 
     // Initialize the random number generator.
@@ -278,7 +280,7 @@ int runsixt_main()
     }
 
     // Open the output event list file.
-    elf=openNewEventFile(eventlist_filename, 
+    elf=openNewEventFile(rawdata_filename,
 			 telescop, instrume, "Normal",
 			 inst->tel->arf_filename, inst->det->rmf_filename,
 			 par.MJDREF, 0.0, par.TSTART, tstop,
@@ -291,7 +293,7 @@ int runsixt_main()
     setGenDetEventFile(inst->det, elf);
 
     // Open the output pattern list file.
-    patf=openNewEventFile(patternlist_filename,
+    patf=openNewEventFile(evtfile_filename,
 			  telescop, instrume, "Normal",
 			  inst->tel->arf_filename, inst->det->rmf_filename,
 			  par.MJDREF, 0.0, par.TSTART, tstop,
@@ -571,6 +573,12 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // --- End of simulation process ---
+    // remove RawData files if not requested
+    if (delete_rawdata){
+    	headas_chat(5,"removing unwanted RawData file %s \n",rawdata_filename);
+    	status = remove (rawdata_filename);
+    	CHECK_STATUS_BREAK(status);
+    }
 
 
   } while(0); // END of ERROR HANDLING Loop.
@@ -643,20 +651,20 @@ int runsixt_getpar(struct Parameters* const par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("EventList", &sbuffer);
+  status=ape_trad_query_string("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("PatternList", &sbuffer);
+  status=ape_trad_query_string("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
   } 
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

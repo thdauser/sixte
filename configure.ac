@@ -148,7 +148,7 @@ AC_CONFIG_FILES([Makefile
 		tools/erosim/Makefile
 		tools/comaexp/Makefile
 		tools/nustarsim/Makefile
-		tools/athenapwfisim/Makefile
+		tools/athenawfisim/Makefile
 		tools/htrssim/Makefile
 		tools/tes_grades/Makefile
 		tools/gendetsim/Makefile

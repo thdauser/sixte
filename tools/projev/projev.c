@@ -30,7 +30,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char EventList[MAXFILENAME];
+  char RawData[MAXFILENAME];
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
@@ -81,7 +81,7 @@ int projev_main() {
 
   // Register HEATOOL:
   set_toolname("projev");
-  set_toolversion("0.04");
+  set_toolversion("0.05");
 
 
   do {  // Beginning of the ERROR handling loop (will at most be run once)
@@ -138,13 +138,13 @@ int projev_main() {
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer, "NONE")){
     	// Load classic event file
-    	elf=openEventFile(par.EventList, READWRITE, &status);
+    	elf=openEventFile(par.RawData, READWRITE, &status);
     	if(status==COL_NOT_FOUND){
     		SIXT_WARNING("You may have given this tool a TES event file as input without giving it an advanced xml file");
     	}
     } else {
     	// Load Tes event file
-    	tes_elf=openTesEventFile(par.EventList,READWRITE,&status);
+    	tes_elf=openTesEventFile(par.RawData,READWRITE,&status);
     }
     CHECK_STATUS_BREAK(status);
 
@@ -205,14 +205,19 @@ int projev_getpar(struct Parameters* par)
   // Error status.
   int status=EXIT_SUCCESS; 
 
+  // check if any obsolete keywords are given
+  sixt_check_obsolete_keyword(&status);
+  CHECK_STATUS_RET(status,EXIT_FAILURE);
+
+
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("EventList", &sbuffer);
+  status=ape_trad_query_file_name("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event file");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

@@ -44,7 +44,7 @@ int evpat_main()
 
   // Register HEATOOL:
   set_toolname("evpat");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -67,21 +67,21 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Determine the event list file name.
-    char eventlist_filename[MAXFILENAME];
-    strcpy(eventlist_filename, par.EventList);
+    char rawdata_filename[MAXFILENAME];
+    strcpy(rawdata_filename, par.RawData);
 
     // Determine the output file.
-    char pattern_filename[MAXFILENAME];
-    strcpy(pattern_filename, par.PatternList);
+    char evtfile_filename[MAXFILENAME];
+    strcpy(evtfile_filename, par.EvtFile);
 
     // Load the GTI extension from the event file.
-    gti=loadGTI(eventlist_filename, &status);
+    gti=loadGTI(rawdata_filename, &status);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "start pattern recombination ...\n");
 
     // Open the input event file.
-    elf=openEventFile(eventlist_filename, READONLY, &status);
+    elf=openEventFile(rawdata_filename, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Read the timing keywords.
@@ -105,7 +105,7 @@ int evpat_main()
     if (NULL!=inst->instrume) {
       strcpy(instrume, inst->instrume);
     }
-    plf=openNewEventFile(pattern_filename, 
+    plf=openNewEventFile(evtfile_filename,
 			 telescop, instrume, "Normal",
 			 inst->tel->arf_filename,
 			 inst->det->rmf_filename,
@@ -153,20 +153,24 @@ int getpar(struct Parameters* const par)
   // Error status.
   int status=EXIT_SUCCESS;
 
-  status=ape_trad_query_file_name("EventList", &sbuffer);
+  // check if any obsolete keywords are given
+  sixt_check_obsolete_keyword(&status);
+  CHECK_STATUS_RET(status,EXIT_FAILURE);
+
+  status=ape_trad_query_file_name("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the input event list");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_file_name("PatternList", &sbuffer);
+  status=ape_trad_query_file_name("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output pattern list");
     return(status);
   } 
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("Mission", &sbuffer);

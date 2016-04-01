@@ -50,8 +50,8 @@ struct Parameters {
   char Prefix[MAXFILENAME];
   char PhotonList[MAXFILENAME];
   char ImpactList[MAXFILENAME];
-  char EventList[MAXFILENAME];
-  char PatternList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
+  char RawData[MAXFILENAME];
   char Attitude[MAXFILENAME];
   char GTIFile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];

@@ -40,7 +40,7 @@
 
 struct Parameters {
   char ImpactList[MAXFILENAME];
-  char EventList[MAXFILENAME];
+  char RawData[MAXFILENAME];
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];

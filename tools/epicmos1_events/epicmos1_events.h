@@ -18,7 +18,7 @@
 
 
 struct Parameters {
-  char PatternList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char EPICmos1EventList[MAXFILENAME];
 
   char clobber;

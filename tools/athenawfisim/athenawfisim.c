@@ -126,7 +126,9 @@ int athenapwfisim_main()
     strtoupper(ucase_buffer);
     strcpy(rawdata_filename_template, par.Prefix);
     strcat(rawdata_filename_template, "chip%d_");
+    int delete_rawdata = 0;
     if (0==strcmp(ucase_buffer,"NONE")) {
+    	delete_rawdata = 1;
       strcat(rawdata_filename_template, "raw.fits");
     } else {
       strcat(rawdata_filename_template, par.RawData);
@@ -681,12 +683,14 @@ int athenapwfisim_main()
     // --- End of simulation process ---
 
     // remove RawData files if not requested
-    for (ii=0; ii<nchips; ii++) {
-      char rawdata_filename[MAXFILENAME];
-      sprintf(rawdata_filename, rawdata_filename_template, ii);
-      headas_chat(5,"removing unwanted RawData file %s \n",rawdata_filename);
-      status = remove (rawdata_filename);
-      CHECK_STATUS_BREAK(status);
+    if (delete_rawdata){
+    	for (ii=0; ii<nchips; ii++) {
+    		char rawdata_filename[MAXFILENAME];
+    		sprintf(rawdata_filename, rawdata_filename_template, ii);
+    		headas_chat(5,"removing unwanted RawData file %s \n",rawdata_filename);
+    		status = remove (rawdata_filename);
+    		CHECK_STATUS_BREAK(status);
+    	}
     }
 
 
