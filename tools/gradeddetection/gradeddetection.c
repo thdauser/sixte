@@ -68,7 +68,7 @@ int gradeddetection_main() {
 		sixt_read_fits_stdkeywords(piximp_file->fptr,keywords,&status);
 		CHECK_STATUS_BREAK(status);
 
-		event_file = opennewTesEventFile(par.TesEventFile,keywords,par.clobber,&status);
+		event_file = opennewTesEventFile(par.EvtFile,keywords,par.clobber,&status);
 		CHECK_STATUS_BREAK(status);
 
 		// Load advanced detector
@@ -118,7 +118,7 @@ int gradeddetection_main() {
 void gradeddetection_getpar(struct Parameters* const par,int* const status) {
 	query_simput_parameter_file_name("PixImpList", &(par->PixImpList), status);
 	query_simput_parameter_file_name("AdvXml", &(par->AdvXml), status);
-	query_simput_parameter_file_name("TesEventFile", &(par->TesEventFile), status);
+	query_simput_parameter_file_name("EvtFile", &(par->EvtFile), status);
 	query_simput_parameter_double("tstart", &(par->tstart), status);
 	query_simput_parameter_double("tstop", &(par->tstop), status);
 	char *buf;

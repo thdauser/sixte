@@ -59,7 +59,7 @@ struct Parameters {
   char ImpactList[MAXFILENAME];
   char PixImpactList[MAXFILENAME];
   char TesTriggerFile[MAXFILENAME];
-  char TesEventFile[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char AdvXml[MAXFILENAME];
   char Attitude[MAXFILENAME];

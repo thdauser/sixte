@@ -66,9 +66,9 @@ int makespec_main() {
     strcpy(ucase_buffer, par.EventFilter);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcpy(evtlistfiltered, par.EventList);
+      strcpy(evtlistfiltered, par.EvtFile);
     }else{
-      if(0>=sprintf(evtlistfiltered, "%s[EVENTS][%s]", par.EventList, par.EventFilter)){
+      if(0>=sprintf(evtlistfiltered, "%s[EVENTS][%s]", par.EvtFile, par.EventFilter)){
 	status=EXIT_FAILURE;
 	SIXT_ERROR("Assembling file name failed.");
 	break;
@@ -140,7 +140,7 @@ int makespec_main() {
 
     // Load the GTI extension in order to be able to determine the 
     // exposure time.
-    gti=loadGTI(par.EventList, &status);
+    gti=loadGTI(par.EvtFile, &status);
     CHECK_STATUS_BREAK(status);
     double exposure=sumGTI(gti);
 
@@ -316,12 +316,12 @@ int makespec_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("EventList", &sbuffer);
+  status=ape_trad_query_file_name("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list file");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("EventFilter", &sbuffer);

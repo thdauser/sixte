@@ -78,7 +78,7 @@ int xifupipeline_main()
 
 	// Register HEATOOL
 	set_toolname("xifupipeline");
-	set_toolversion("0.05");
+	set_toolversion("0.06");
 
 
 	do { // Beginning of ERROR HANDLING Loop.
@@ -124,7 +124,9 @@ int xifupipeline_main()
 		char piximpactlist_filename[MAXFILENAME]={""};
 		strcpy(ucase_buffer, par.PixImpactList);
 		strtoupper(ucase_buffer);
+		int delete_rawdata=0;
 		if (0==strcmp(ucase_buffer,"NONE")) {
+			delete_rawdata=1;
 			strcpy(piximpactlist_filename, par.Prefix);
 			strcat(piximpactlist_filename, "piximpact.fits");
 		} else {
@@ -152,17 +154,17 @@ int xifupipeline_main()
 
 
 		//Determine the event output file.
-		char eventlist_filename[MAXFILENAME];
-		strcpy(ucase_buffer, par.TesEventFile);
+		char evtlist_filename[MAXFILENAME];
+		strcpy(ucase_buffer, par.EvtFile);
 		strtoupper(ucase_buffer);
 		if (0==strcmp(ucase_buffer,"NONE")) {
-			strcpy(eventlist_filename, par.Prefix);
-			strcat(eventlist_filename, "events.fits");
+			strcpy(evtlist_filename, par.Prefix);
+			strcat(evtlist_filename, "evt.fits");
 		} else {
-			strcpy(eventlist_filename, par.Prefix);
-			strcat(eventlist_filename, par.TesEventFile);
+			strcpy(evtlist_filename, par.Prefix);
+			strcat(evtlist_filename, par.EvtFile);
 		}
-		strcpy(par.TesEventFile,eventlist_filename);
+		strcpy(par.EvtFile,evtlist_filename);
 
 		// Initialize the random number generator.
 		unsigned int seed=getSeed(par.Seed);
@@ -343,7 +345,7 @@ int xifupipeline_main()
 		} else{
 			det = loadAdvDet(par.AdvXml,&status);
 			keywords = buildSixtStdKeywords(telescop,instrume,"Normal",inst->tel->arf_filename, inst->det->rmf_filename,"NONE",par.MJDREF, 0.0, par.TSTART, tstop,&status);
-			event_file = opennewTesEventFile(par.TesEventFile,keywords,par.clobber,&status);
+			event_file = opennewTesEventFile(par.EvtFile,keywords,par.clobber,&status);
 			loadRMFLibrary(det,&status);
 		}
 
@@ -679,6 +681,13 @@ int xifupipeline_main()
 
 		// --- End of simulation process ---
 
+		if (delete_rawdata){
+			headas_chat(3,"removing unwanted RawData file %s \n",piximpactlist_filename);
+			status = remove (piximpactlist_filename);
+			CHECK_STATUS_BREAK(status);
+		}
+
+
 
 	} while(0); // END of ERROR HANDLING Loop.
 
@@ -730,6 +739,10 @@ int xifupipeline_getpar(struct Parameters* const par)
 	// Error status.
 	int status=EXIT_SUCCESS;
 
+	// check if any obsolete keywords are given
+	sixt_check_obsolete_keyword(&status);
+	CHECK_STATUS_RET(status,EXIT_FAILURE);
+
 	// Read all parameters via the ape_trad_ routines.
 
 	status=ape_trad_query_string("Prefix", &sbuffer);
@@ -764,12 +777,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 	strcpy(par->PixImpactList, sbuffer);
 	free(sbuffer);
 
-	status=ape_trad_query_string("TesEventFile", &sbuffer);
+	status=ape_trad_query_string("EvtFile", &sbuffer);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the name of the event list");
 		return(status);
 	}
-	strcpy(par->TesEventFile, sbuffer);
+	strcpy(par->EvtFile, sbuffer);
 	free(sbuffer);
 
 	status=ape_trad_query_string("XMLFile", &sbuffer);
@@ -925,7 +938,6 @@ int xifupipeline_getpar(struct Parameters* const par)
 	// query_simput_parameter_bool("doCrosstalk", &par->doCrosstalk, &status );
 	char *buf;
 	query_simput_parameter_string("doCrosstalk", &buf, &status );
-	printf(" XXXXXXXXXXX %s \n",buf);
 	if (strncmp(buf,"yes",3)==0 ||strncmp(buf,"all",3)==0  ){
 		par->doCrosstalk = CROSSTALK_ID_ALL;
 	} else if (strncmp(buf,"elec",4)==0){
@@ -961,12 +973,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 			return(status);
 		}
 
-		status=ape_trad_query_string("TesEventFile", &sbuffer);
+		status=ape_trad_query_string("EvtFile", &sbuffer);
 		if (EXIT_SUCCESS!=status) {
 			SIXT_ERROR("failed reading the name of the event file");
 			return(status);
 		}
-		strcpy(par->TesEventFile, sbuffer);
+		strcpy(par->EvtFile, sbuffer);
 		free(sbuffer);
 
 		status=ape_trad_query_string("OptimalFilterFile", &sbuffer);
@@ -1054,7 +1066,7 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
 	strcpy(par->PixImpList,partmp.PixImpactList);
 	strcpy(par->XMLFile,partmp.AdvXml);
 	strcpy(par->tesTriggerFile,partmp.TesTriggerFile);
-	strcpy(par->TesEventFile,partmp.TesEventFile);
+	strcpy(par->TesEventFile,partmp.EvtFile);
 
 	par->Nactive=-1;
 	par->nlo=-1;

@@ -35,7 +35,7 @@
 
 struct Parameters {
   char* PixImpList;
-  char* TesEventFile;
+  char* EvtFile;
   char* AdvXml;
   
   double tstart;

@@ -54,7 +54,7 @@ int makelc_main() {
     headas_chat(3, "initialize ...\n");
 
     // Set the input event file.
-    fits_open_table(&infptr, par.EventList, READONLY, &status);
+    fits_open_table(&infptr, par.EvtFile, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Determine timing keywords.
@@ -304,12 +304,12 @@ int makelc_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("EventList", &sbuffer);
+  status=ape_trad_query_file_name("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list file");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("LightCurve", &sbuffer);

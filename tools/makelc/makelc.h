@@ -29,7 +29,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char EventList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char LightCurve[MAXFILENAME];
 
   /** Start time [s]. */
