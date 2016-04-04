@@ -65,19 +65,22 @@ TESNoiseProperties* newTESNoise(int* const status){
 }
 
 void destroyTESNoiseProperties(TESNoiseProperties* noise){
-  
-  if(noise->Zeros!=NULL){
-    free(noise->Zeros);
+  if (NULL!=noise){
+    if(noise->Zeros!=NULL){
+      free(noise->Zeros);
+    }
+    if(noise->Poles!=NULL){
+      free(noise->Poles);
+    }
+    noise->WhiteRMS=0.;
+    noise->H0=1.;
+    noise->Nz=0;
+    noise->Np=0;
+    noise->OoFRMS=0.;
+    noise->OoFKnee=0.;
   }
-  if(noise->Poles!=NULL){
-    free(noise->Poles);
-  }
-  noise->WhiteRMS=0.;
-  noise->H0=1.;
-  noise->Nz=0;
-  noise->Np=0;
-  noise->OoFRMS=0.;
-  noise->OoFKnee=0.;
+  free(noise);
+  noise=NULL;
 }
 
 void freeAdvPix(AdvPix* pix){
