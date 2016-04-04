@@ -671,7 +671,12 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   // set-up initial input conditions
   tes->I0=tes->I0_start;
-  tes->V0=tes->I0*(tes->R0+tes->Reff); // Effective bias voltage
+  // if the effective voltage bias is negative (typically if not given at command line), compute it                                                                  
+  if (par->V0 <0){
+    tes->V0=tes->I0*(tes->R0+tes->Reff); // Effective bias voltage                                                                                                                
+  } else {
+    tes->V0 = par->V0;
+  }
   tes->RT=tes->R0;
   tes->T1=tes->T_start;
 
