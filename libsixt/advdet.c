@@ -86,7 +86,6 @@ void destroyTESNoiseProperties(TESNoiseProperties* noise){
 void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
     destroyTESNoiseProperties(pix->TESNoise);
-    free(pix->TESNoise);
     freeGrading(pix);
     freeMatrixCrossTalk(&(pix->thermal_cross_talk));
     freeMatrixCrossTalk(&(pix->electrical_cross_talk));
