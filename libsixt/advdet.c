@@ -654,8 +654,19 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
-		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
-
+		double new_samplefreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
+		if ((xmlparsedata->det->SampleFreq!=-1) && (xmlparsedata->det->SampleFreq!=new_samplefreq)){
+			SIXT_ERROR("Incompatible sampling frequency values encountered.");
+			return;
+		}
+		xmlparsedata->det->SampleFreq=new_samplefreq;
+	} else if(!strcmp(Uelement, "SAMPLEFREQ")){
+		double new_samplefreq=getXMLAttributeDouble(attr, "VALUE");
+		if ((xmlparsedata->det->SampleFreq!=-1) && (xmlparsedata->det->SampleFreq!=new_samplefreq)){
+			SIXT_ERROR("Incompatible sampling frequency values encountered.");
+			return;
+		}
+		xmlparsedata->det->SampleFreq=new_samplefreq;
 	} else if(!strcmp(Uelement, "CHANNEL_FREQ_LIST"))  {
 		xmlparsedata->det->channel_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->channel_file);

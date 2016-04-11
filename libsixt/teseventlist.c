@@ -192,10 +192,12 @@ TesEventFile* newTesEventFile(int* const status){
 	file->phIDCol   =6;
 	file->raCol     =7;
 	file->decCol    =8;
-	file->gradingCol=9;
-	file->srcIDCol  =10;
-	file->nxtCol    =11;
-	file->extCol    =12;
+	file->detxCol   =9;
+	file->detyCol   =10;
+	file->gradingCol=11;
+	file->srcIDCol  =12;
+	file->nxtCol    =13;
+	file->extCol    =14;
 
 	return(file);
 }
@@ -259,11 +261,11 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char *ttype[]={"TIME","SIGNAL","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","GRADING","SRC_ID","N_XT","E_XT"};
-	char *tform[]={"1D",  "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D", "1I","1J","1I","1D"};
-	char *tunit[]={"s",   "keV",   "",      "",      "",     "",     "deg","deg","","","","keV"};
+	char *ttype[]={"TIME","SIGNAL","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"};
+	char *tform[]={"1D",  "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",      "",      "",     "",     "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 12,
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 14,
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -311,6 +313,17 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->phIDCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
+
+	fits_get_colnum(file->fptr, CASEINSEN, "DETX", &file->detxCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->detxCol=-1;
+	  *status=0;
+	}
+	fits_get_colnum(file->fptr, CASEINSEN, "DETY", &file->detyCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->detyCol=-1;
+	  *status=0;
+	}
 
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADING", &file->gradingCol, status);
 	if (*status==COL_NOT_FOUND) {
@@ -384,8 +397,8 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 
 }
 
-/** Updates the RA and DEC columns with the given coordinates */
-void updateRaDec(TesEventFile* file,double ra, double dec, int* const status){
+/** Updates the RA, DEC and DETX/Y columns with the given coordinates */
+void updateRaDecDetXY(TesEventFile* file,double ra, double dec, float detx,float dety,int* const status){
 	double dbuffer=ra*180./M_PI;
 	fits_write_col(file->fptr, TDOUBLE, file->raCol,
 						file->row, 1, 1,&dbuffer, status);
@@ -393,6 +406,12 @@ void updateRaDec(TesEventFile* file,double ra, double dec, int* const status){
 	dbuffer=dec*180./M_PI;
 	fits_write_col(file->fptr, TDOUBLE, file->decCol,
 						file->row, 1, 1,&dbuffer, status);
+	CHECK_STATUS_VOID(*status);
+	fits_write_col(file->fptr, TFLOAT, file->detxCol,
+						file->row, 1, 1,&detx, status);
+	CHECK_STATUS_VOID(*status);
+	fits_write_col(file->fptr, TFLOAT, file->detyCol,
+						file->row, 1, 1,&dety, status);
 	CHECK_STATUS_VOID(*status);
 }
 

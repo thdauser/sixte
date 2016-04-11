@@ -174,7 +174,7 @@ void phproj_advdet(GenInst* const inst,
 		calculate_ra_dec(srcpos, &ra, &dec);
 
 		// Update the data in the TES event list file.
-		updateRaDec(event_file,ra,dec,status);
+		updateRaDecDetXY(event_file,ra,dec,detpos.x,detpos.y,status);
 		CHECK_STATUS_BREAK(*status);
 
 		event_file->row++;
