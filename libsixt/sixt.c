@@ -857,8 +857,8 @@ void sixt_check_obsolete_keyword(int* status){
 
 	int num_obs_keys = 4;
 
-	char* old_names[] = {"EventList","EventFile","PatternList","PatternFile","TesEventFile"};
-	char* new_names[] = {"RawData","RawData","EvtFile","EvtFile","EvtFile"};
+	char* old_names[] = {"EventList","EventFile","PatternList","PatternFile","TesEventFile","eroEventList"};
+	char* new_names[] = {"RawData","RawData","EvtFile","EvtFile","EvtFile","eroEvtFile"};
 
 	int retval;
 

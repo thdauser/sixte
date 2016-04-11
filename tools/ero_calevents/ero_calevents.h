@@ -40,7 +40,7 @@
 
 struct Parameters {
   char EvtFile[MAXFILENAME];
-  char eroEventList[MAXFILENAME];
+  char eroEvtFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
 
   int CCDNr;

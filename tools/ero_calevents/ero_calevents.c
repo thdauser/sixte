@@ -180,16 +180,16 @@ int ero_calevents_main()
 
     // Check if the output file already exists.
     int exists;
-    fits_file_exists(par.eroEventList, &exists, &status);
+    fits_file_exists(par.eroEvtFile, &exists, &status);
     CHECK_STATUS_BREAK(status);
     if (0!=exists) {
       if (0!=par.clobber) {
 	// Delete the file.
-	remove(par.eroEventList);
+	remove(par.eroEvtFile);
       } else {
 	// Throw an error.
 	char msg[MAXMSG];
-	sprintf(msg, "file '%s' already exists", par.eroEventList);
+	sprintf(msg, "file '%s' already exists", par.eroEvtFile);
 	SIXT_ERROR(msg);
 	status=EXIT_FAILURE;
 	break;
@@ -198,8 +198,8 @@ int ero_calevents_main()
 
     // Create and open a new FITS file.
     headas_chat(3, "create new eROSITA event list file '%s' ...\n",
-		par.eroEventList);
-    fits_create_file(&fptr, par.eroEventList, &status);
+		par.eroEvtFile);
+    fits_create_file(&fptr, par.eroEvtFile, &status);
     CHECK_STATUS_BREAK(status);
 
     // Create the event table.
@@ -220,7 +220,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not create binary table for events "
-	      "in file '%s'", par.eroEventList);
+	      "in file '%s'", par.eroEvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -918,12 +918,12 @@ int getpar(struct Parameters* const par)
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_file_name("eroEventList", &sbuffer);
+  status=ape_trad_query_file_name("eroEvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output event list");
     return(status);
   } 
-  strcpy(par->eroEventList, sbuffer);
+  strcpy(par->eroEvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_int("CCDNr", &par->CCDNr);

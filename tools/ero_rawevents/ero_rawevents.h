@@ -36,8 +36,8 @@
 
 
 struct Parameters {
-  char EventList[MAXFILENAME];
-  char eroEventList[MAXFILENAME];
+  char RawData[MAXFILENAME];
+  char eroEvtFile[MAXFILENAME];
 
   int CCDNr;
 
