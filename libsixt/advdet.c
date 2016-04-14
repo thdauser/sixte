@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2014 Thorsten Brand, FAU
+   Copyright 2014-2016 Thorsten Brand, Thomas Dauser, Philippe Peille, FAU
 */
 
 #include "advdet.h"
@@ -65,26 +65,31 @@ TESNoiseProperties* newTESNoise(int* const status){
 }
 
 void destroyTESNoiseProperties(TESNoiseProperties* noise){
-  
-  if(noise->Zeros!=NULL){
-    free(noise->Zeros);
+  if (NULL!=noise){
+    if(noise->Zeros!=NULL){
+      free(noise->Zeros);
+    }
+    if(noise->Poles!=NULL){
+      free(noise->Poles);
+    }
+    noise->WhiteRMS=0.;
+    noise->H0=1.;
+    noise->Nz=0;
+    noise->Np=0;
+    noise->OoFRMS=0.;
+    noise->OoFKnee=0.;
   }
-  if(noise->Poles!=NULL){
-    free(noise->Poles);
-  }
-  noise->WhiteRMS=0.;
-  noise->H0=1.;
-  noise->Nz=0;
-  noise->Np=0;
-  noise->OoFRMS=0.;
-  noise->OoFKnee=0.;
+  free(noise);
+  noise=NULL;
 }
 
 void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
     destroyTESNoiseProperties(pix->TESNoise);
-    free(pix->TESNoise);
     freeGrading(pix);
+    freeMatrixCrossTalk(&(pix->thermal_cross_talk));
+    freeMatrixCrossTalk(&(pix->electrical_cross_talk));
+    freeImodCrossTalk(&(pix->intermodulation_cross_talk));
   }
 }
 
@@ -96,6 +101,50 @@ void freeGrading(AdvPix* pix){
     pix->ngrades=0;
     pix->grades=NULL;
     pix->global_grading=0;
+}
+
+void freeReadoutChannels(ReadoutChannels* rc){
+	if ( rc != NULL ){
+		free(rc->channels);
+		free(rc->df_information_band);
+	}
+	free( rc );
+}
+
+void freeImodTab(ImodTab* tab){
+	if (tab != NULL){
+		if (tab->matrix!=NULL){
+			for(int ii=0; ii < tab->n_dt ; ii++){
+				if (tab->matrix[ii]!=NULL){
+					for(int jj=0; jj < tab->n_ampl ; jj++){
+						free(tab->matrix[ii][jj]);
+					}
+					free(tab->matrix[ii]);
+				}
+			}
+			free(tab->matrix);
+		}
+		free(tab->ampl);
+		free(tab->dt);
+		free(tab);
+	}
+}
+
+void freeImodFreqTable(ImodFreqTable* tab){
+	if (tab != NULL){
+		freeImodTab(tab->w_2f1mf2);
+		freeImodTab(tab->w_2f1pf2);
+		freeImodTab(tab->w_2f2mf1);
+		freeImodTab(tab->w_2f2pf1);
+		freeImodTab(tab->w_f2pf1);
+		freeImodTab(tab->w_f2mf1);
+	}
+	free(tab);
+}
+
+void freeCrosstalk(AdvDet** det){
+	freeReadoutChannels( (*det)->readout_channels);
+	freeImodFreqTable((*det)->crosstalk_intermod_table);
 }
 
 AdvDet* newAdvDet(int* const status){
@@ -116,33 +165,55 @@ AdvDet* newAdvDet(int* const status){
   det->sy=0.;
   det->npix=0;
   det->cpix=0;
+  det->SampleFreq=-1.0;
   det->tesnoisefilter=0;
   det->inpixel=0;
   det->oof_activated=0;
   det->rmf_library=NULL;
   det->arf_library=NULL;
 
+  det->xt_dist_thermal=NULL;
+  det->xt_weight_thermal=NULL;
+  det->xt_num_thermal=0;
+
+  det->channel_file=NULL;
+  det->crosstalk_intermod_file=NULL;
+  det->crosstalk_intermod_table=NULL;
+  det->crosstalk_timedep_file=NULL;
+  det->crosstalk_timedep=NULL;
+
+  det->readout_channels=NULL;
+  det->elec_xt_par=NULL;
+
+  det->threshold_event_lo_keV=0.;
+
+  det->crosstalk_id=0;
+
   return(det);
 }
 
 void destroyAdvDet(AdvDet **det){
-  
-  if(NULL!=(*det)){
-    if(NULL!=(*det)->pix){
-      for(int i=0;i<(*det)->npix;i++){
-	freeAdvPix(&(*det)->pix[i]);
-      }
-      free((*det)->pix);
-    }
-    if(NULL!=(*det)->filename){
-      free((*det)->filename);
-    }
-    if(NULL!=(*det)->filepath){
-      free((*det)->filepath);
-    }
-    freeRMFLibrary((*det)->rmf_library);
-    freeARFLibrary((*det)->arf_library);
-  }
+
+	if(NULL!=(*det)){
+		if(NULL!=(*det)->pix){
+			for(int i=0;i<(*det)->npix;i++){
+				freeAdvPix(&(*det)->pix[i]);
+			}
+			free((*det)->pix);
+		}
+		if(NULL!=(*det)->filename){
+			free((*det)->filename);
+		}
+		if(NULL!=(*det)->filepath){
+			free((*det)->filepath);
+		}
+		freeRMFLibrary((*det)->rmf_library);
+		freeARFLibrary((*det)->arf_library);
+		free((*det)->elec_xt_par);
+
+		freeCrosstalk(det);
+
+	}
 }
 
 int CheckAdvPixImpact(AdvPix pix, Impact *imp){
@@ -216,6 +287,8 @@ int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp){
   }
   return nimpacts;
 }
+
+
 
 void parseAdvDetXML(AdvDet* const det, 
 	       const char* const filename,
@@ -359,11 +432,16 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 		xmlparsedata->det->sx=getXMLAttributeDouble(attr, "XOFF");
 		xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");
-		for (int i=0;i<xmlparsedata->det->npix;i++){
-			xmlparsedata->det->pix[i].TESNoise=NULL;
-			xmlparsedata->det->pix[i].grades=NULL;
-			xmlparsedata->det->pix[i].ngrades=0;
-			xmlparsedata->det->pix[i].global_grading=0;
+		for (int ii=0;ii<xmlparsedata->det->npix;ii++){
+			xmlparsedata->det->pix[ii].TESNoise=NULL;
+			xmlparsedata->det->pix[ii].grades=NULL;
+			xmlparsedata->det->pix[ii].ngrades=0;
+			xmlparsedata->det->pix[ii].global_grading=0;
+			xmlparsedata->det->pix[ii].channel=NULL;
+			xmlparsedata->det->pix[ii].thermal_cross_talk=NULL;
+			xmlparsedata->det->pix[ii].electrical_cross_talk=NULL;
+			xmlparsedata->det->pix[ii].intermodulation_cross_talk=NULL;
+
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
@@ -575,7 +653,76 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
-		xmlparsedata->det->SampleFreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
+		double new_samplefreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
+		if ((xmlparsedata->det->SampleFreq!=-1) && (xmlparsedata->det->SampleFreq!=new_samplefreq)){
+			SIXT_ERROR("Incompatible sampling frequency values encountered.");
+			return;
+		}
+		xmlparsedata->det->SampleFreq=new_samplefreq;
+	} else if(!strcmp(Uelement, "SAMPLEFREQ")){
+		double new_samplefreq=getXMLAttributeDouble(attr, "VALUE");
+		if ((xmlparsedata->det->SampleFreq!=-1) && (xmlparsedata->det->SampleFreq!=new_samplefreq)){
+			SIXT_ERROR("Incompatible sampling frequency values encountered.");
+			return;
+		}
+		xmlparsedata->det->SampleFreq=new_samplefreq;
+	} else if(!strcmp(Uelement, "CHANNEL_FREQ_LIST"))  {
+		xmlparsedata->det->channel_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->channel_file);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->channel_file);
+
+	} else if(!strcmp(Uelement, "CROSSTALK"))  {
+		// Need to check if we have channels defined
+		if (xmlparsedata->det->channel_file == NULL){
+			SIXT_ERROR("Trying to implement crosstalk, but no file defining the channels specified in the XML.");
+			return;
+		}
+	} else if(!strcmp(Uelement, "THERMALCROSSTALK"))  {
+
+		xmlparsedata->det->xt_dist_thermal = realloc(xmlparsedata->det->xt_dist_thermal,
+				(xmlparsedata->det->xt_num_thermal+1)*sizeof(*(xmlparsedata->det->xt_dist_thermal)) );
+		CHECK_MALLOC_VOID(xmlparsedata->det->xt_dist_thermal);
+		xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal] =
+				getXMLAttributeDouble(attr, "DISTANCE");
+		// check that distances are in increasing order
+		if((xmlparsedata->det->xt_num_thermal>0) &&
+				(xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal]<xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal-1])){
+			xmlparsedata->status=EXIT_FAILURE;
+			SIXT_ERROR("Thermal crosstalk distances are supposed to be given in increasing order");
+			return;
+		}
+
+		xmlparsedata->det->xt_weight_thermal = realloc(xmlparsedata->det->xt_weight_thermal,
+				(xmlparsedata->det->xt_num_thermal+1)*sizeof(*(xmlparsedata->det->xt_weight_thermal)) );
+		CHECK_MALLOC_VOID(xmlparsedata->det->xt_weight_thermal);
+		xmlparsedata->det->xt_weight_thermal[xmlparsedata->det->xt_num_thermal] =
+				getXMLAttributeDouble(attr, "WEIGHT");
+
+		xmlparsedata->det->xt_num_thermal++;
+
+	} else if(!strcmp(Uelement, "ELECTRICALCROSSTALK")){
+
+		xmlparsedata->det->elec_xt_par = (ElecCrosstalkPar*)malloc(sizeof(ElecCrosstalkPar));
+		CHECK_MALLOC_VOID(xmlparsedata->det->elec_xt_par);
+		xmlparsedata->det->elec_xt_par->R0 = getXMLAttributeDouble(attr, "R0");
+		xmlparsedata->det->elec_xt_par->Lfprim = getXMLAttributeDouble(attr, "LFPRIM");
+		xmlparsedata->det->elec_xt_par->Lcommon = getXMLAttributeDouble(attr, "LCOMMON");
+		xmlparsedata->det->elec_xt_par->Lfsec = getXMLAttributeDouble(attr, "LFSEC");
+
+	} else if(!strcmp(Uelement, "TIMEDEPENDENCE"))  {
+
+		xmlparsedata->det->crosstalk_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_timedep_file);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_timedep_file);
+
+	} else if(!strcmp(Uelement, "INTERMODULATION"))  {
+
+		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_file);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_intermod_file);
+
+	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
+		xmlparsedata->det->threshold_event_lo_keV = getXMLAttributeDouble(attr,"VALUE");
 	} else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];
@@ -851,186 +998,6 @@ void freeARFLibrary(ARFLibrary* library){
 	library=NULL;
 }
 
-/** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(long grade1,long grade2,AdvPix* pixel){
-
-	for (int i=0;i<pixel->ngrades;i++){
-		if((grade1 >= pixel->grades[i].gradelim_post) && (grade2>=pixel->grades[i].gradelim_pre)){
-			return i;
-		}
-	}
-	return -1;
-
-}
-
-/** calculate the grading in samples from the a given impact, and its previous and next impact **/
-void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status){
-
-	if ((pnt.next<0) || (pnt.next - pnt.current > sample_length*DEFAULTGOODSAMPLE)){
-		*grade1 = DEFAULTGOODSAMPLE;
-	} else {
-		*grade1 = floor ((pnt.next - pnt.current)/sample_length);
-	}
-	if ((pnt.previous<0) || (pnt.current - pnt.previous > sample_length*DEFAULTGOODSAMPLE)){
-		*grade2 = DEFAULTGOODSAMPLE;
-	} else {
-		*grade2 = floor ((pnt.current - pnt.previous)/sample_length);
-	}
-
-	//printf("grade1: %i grade2 %i => %i\n",*grade1,*grade2,makeGrading(*grade1,*grade2));
-
-	if ( (*grade1<0) || (*grade2<0) ){
-		*status = EXIT_FAILURE;
-		SIXT_ERROR("Grading of impacts failed in calcGradingTimes");
-		return;
-	}
-}
-
-
-/** writes the grading to an existing piximpact file **/
-void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status){
-
-	long grade1, grade2;
-	const double sample_length = 1./(det->SampleFreq);
-
-	PixImpact impact;
-
-	pixGrade pnt[det->npix];
-	for (int ii=0;ii<det->npix;ii++){
-		pnt[ii].times = NULL;
-	}
-
-	int id = -1;
-	while (getNextImpactFromPixImpFile(piximpacfile,&impact,status)){
-		id = impact.pixID;
-		if (pnt[id].times == NULL){
-			pnt[id].times = (gradingTimeStruct*) malloc (sizeof(gradingTimeStruct));
-			CHECK_NULL_VOID(pnt[id].times,*status,"malloc failed");
-
-			pnt[id].times->previous = -1.0;
-			pnt[id].times->current = impact.time;
-			pnt[id].times->next = -1.0;
-			pnt[id].totalenergy = impact.energy;
-
-			pnt[id].row = piximpacfile->row;
-		} else {
-			// save the time
-			pnt[id].times->next = impact.time;
-
-			// calculate grading
-			calcGradingTimes(sample_length,*(pnt[id].times),&grade1,&grade2,status);
-			CHECK_STATUS_VOID(*status);
-
-			// treat pileup case
-			// TODO : add pileup limit as a pixel parameter (for the moment, equal to one sample)
-			if (grade1==0){
-				// add energy to total instead of replacing
-				pnt[id].totalenergy+=impact.energy;
-				grade1=-1;
-				// add grading to file
-				updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,0,status);
-
-				// do not change grading times in this case as this is a pileup (this event will no be saved in the end)
-
-			} else {
-				// add grading to file
-				updateGradingPixImp(piximpacfile, pnt[id].row, grade1, grade2,pnt[id].totalenergy,status);
-
-				// move one ahead
-				pnt[id].totalenergy=impact.energy;
-				pnt[id].times->previous = pnt[id].times->current;
-				pnt[id].times->current = pnt[id].times->next;
-			}
-			CHECK_STATUS_VOID(*status);
-
-			// finishing moving ahead
-			pnt[id].times->next = -1.0; // is this useful?
-			pnt[id].row = piximpacfile->row;
-		}
-	}
-
-	// now we need to clean the impact-array and write the remaining impact grade to the file
-	// TODO: only for over the pixels that were hit
-	for (int ii=0;ii<det->npix;ii++){
-		if (pnt[ii].times != NULL){
-			calcGradingTimes(sample_length,*(pnt[ii].times),&grade1,&grade2,status);
-			updateGradingPixImp(piximpacfile, pnt[ii].row, grade1, grade2,pnt[ii].totalenergy,status);
-			free(pnt[ii].times);
-		}
-	}
-
-}
-
-
-
-/** Process the impacts contained in the piximpacts file with the RMF method */
-void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status){
-	long channel;
-	struct RMF* rmf;
-	int grading;
-	int grading_index;
-
-	// initialize
-	PixImpact impact;
-
-	while(getNextImpactFromPixImpFile(piximpacfile,&impact,status)){
-
-		//////////////////////////////////
-		//Copied and adapted from addGenDetPhotonImpact
-		//////////////////////////////////
-
-		if (impact.grade1==-1){ // this is a pile-up event that was added to the following event, i.e. not detected
-			grading = PILEUP;
-			impact.energy=0.;
-		} else { // this is an event that was actually detected
-			grading_index = makeGrading(impact.grade1,impact.grade2,&(det->pix[impact.pixID]));
-
-			if (grading_index>=0){
-
-				rmf = det->pix[impact.pixID].grades[grading_index].rmf;
-				grading = det->pix[impact.pixID].grades[grading_index].value;
-
-				// Determine the measured detector channel (PI channel) according
-				// to the RMF.
-				// The channel is obtained from the RMF using the corresponding
-				// HEAdas routine which is based on drawing a random number.
-				returnRMFChannel(rmf, impact.totalenergy, &channel); //use total energy here to take pileup into account
-
-				// Check if the photon is really measured. If the PI channel
-				// returned by the HEAdas RMF function is '-1', the photon is not
-				// detected. This should not happen as the rmf is supposedly
-				// normalized
-				if (channel<rmf->FirstChannel) {
-					// flag as invalid (seemed better than discarding)
-					char msg[MAXMSG];
-					sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV and phi_id %ld",impact.totalenergy,impact.ph_id);
-					SIXT_WARNING(msg);
-					impact.energy=0.;
-					grading=INVGRADE;
-				} else {
-
-					// Determine the corresponding detected energy.
-					// NOTE: In this simulation the collected charge is represented
-					// by the nominal photon energy [keV], which corresponds to the
-					// PI channel according to the EBOUNDS table.
-					impact.energy=getEBOUNDSEnergy(channel, rmf, status);
-					//printf("%f ",impact.energy);
-					CHECK_STATUS_VOID(*status);
-				}
-			} else {
-				impact.energy=0.;
-				grading=INVGRADE;
-			}
-		}
-		assert(impact.energy>=0.);
-		// Add final impact to event file
-		addRMFImpact(event_file,&impact,impact.grade1,impact.grade2,grading,status);
-		CHECK_STATUS_VOID(*status);
-
-	}
-
-}
-
 /** Function to remove overlapping pixels from the detector */
 void removeOverlapping(AdvDet* det,int* const status){
 	char * active_pixels = malloc(det->npix*sizeof(*active_pixels));
@@ -1068,6 +1035,7 @@ void removeOverlapping(AdvDet* det,int* const status){
 	for (int i=0;i<det->npix;i++){
 		if(active_pixels[i]){
 			new_pix_array[det->cpix]=det->pix[i];
+			new_pix_array[det->cpix].pindex=det->cpix;
 			det->cpix++;
 		} else{
 			freeAdvPix(&(det->pix[i]));
@@ -1079,3 +1047,80 @@ void removeOverlapping(AdvDet* det,int* const status){
 	free(active_pixels);
 	headas_chat(0,"Number of pixels after removing overlaps: %d\n",number_active_pixels);
 }
+
+/** Constructor for MatrixCrossTalk structure */
+IntermodulationCrossTalk* newImodCrossTalk(int* const status){
+	IntermodulationCrossTalk* matrix = (IntermodulationCrossTalk*) malloc(sizeof(IntermodulationCrossTalk));
+	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
+
+	matrix->num_cross_talk_pixels=0;
+
+	matrix->cross_talk_pixels = NULL;
+	matrix->cross_talk_info = NULL;
+
+	return matrix;
+}
+
+/** Destructor for MatrixCrossTalk structure */
+void freeMatrixCrossTalk(MatrixCrossTalk** matrix){
+	if (*matrix!=NULL){
+		free((*matrix)->cross_talk_pixels);
+		free((*matrix)->cross_talk_weights);
+	}
+	free(*matrix);
+	*matrix=NULL;
+}
+
+/** Destructor for MatrixCrossTalk structure */
+void freeImodCrossTalk(IntermodulationCrossTalk** matrix){
+	if (*matrix!=NULL){
+		for (int ii=0; ii <  (*matrix)->num_cross_talk_pixels; ii++){
+			free((*matrix)->cross_talk_pixels[ii]);
+		}
+		free((*matrix)->cross_talk_info);
+/*		for (int ii=0; ii <  (*matrix)->num_cross_talk_pixels; ii++){
+			free((*matrix)->cross_talk_pixels[ii]);
+			free((*matrix)->cross_talk_info[ii]);
+		}
+		free((*matrix)->num_pixel_combinations); */
+	}
+	free(*matrix);
+}
+
+
+/** Constructor for MatrixCrossTalk structure */
+MatrixCrossTalk* newMatrixCrossTalk(int* const status){
+	MatrixCrossTalk* matrix = (MatrixCrossTalk*) malloc(sizeof(*matrix));
+	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
+
+	matrix->num_cross_talk_pixels=0;
+	matrix->cross_talk_pixels = NULL;
+	matrix->cross_talk_weights = NULL;
+
+	return matrix;
+}
+
+
+/** Constructor for CrosstalkTimdep structure */
+CrosstalkTimedep* newCrossTalkTimedep(int* const status){
+	CrosstalkTimedep* crosstalk_timedep = (CrosstalkTimedep*)malloc(sizeof(*crosstalk_timedep));
+	CHECK_MALLOC_RET_NULL_STATUS(crosstalk_timedep,*status);
+	crosstalk_timedep->length=0;
+	crosstalk_timedep->name_type=NULL; // Useless for the moment
+	crosstalk_timedep->time=NULL;
+	crosstalk_timedep->weight=NULL;
+
+	return crosstalk_timedep;
+}
+
+/** Destructor for CrosstalkTimdep structure */
+void freeCrosstalkTimedep(CrosstalkTimedep** timedep){
+	if(*timedep!=NULL){
+		free((*timedep)->name_type);
+		free((*timedep)->time);
+		free((*timedep)->weight);
+	}
+	free(*timedep);
+	*timedep=NULL;
+}
+

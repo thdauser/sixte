@@ -45,6 +45,8 @@ Obj2D *getObj2D(int* const status){
   obj->vert_x=NULL;
   obj->vert_y=NULL;
   obj->type=OBJ2D_UNDEF;
+  obj->group_id=0;
+  obj->attribute=0.;  
   
   return obj;
   
@@ -73,6 +75,8 @@ void freeObj2D(Obj2D *obj){
   obj->rota=0.;
   obj->nvertices=0;
   obj->type=OBJ2D_UNDEF;
+  obj->group_id=0;
+  obj->attribute=0.;  
 }
 
 Obj2D_instance *getObj2D_instance(int* const status){
@@ -279,4 +283,18 @@ void Obj2D_inst_findBBLimits(Obj2D_instance *obj,
     }
   }
   
+}
+
+void Obj2D_assign_group_attribute(Obj2D_instance *obj,
+				  int *group_id,
+				  double *attribute){
+  
+  if(obj!=NULL){
+    if(group_id!=NULL){
+      obj->geometry->group_id=(*group_id);
+    }
+    if(attribute!=NULL){
+      obj->geometry->attribute=(*attribute);
+    }
+  }
 }

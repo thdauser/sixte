@@ -37,7 +37,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char EventList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char Spectrum[MAXFILENAME];
   char RSPPath[MAXFILENAME];
   char EventFilter[MAXFILENAME];

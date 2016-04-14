@@ -92,12 +92,6 @@ struct Parameters {
 	
 	//Number of standard deviations in the kappa-clipping process for threshold estimation
 	double nSgms;
-	
-	//Run for Library creation?: Y(1), N(0)
-	int crtLib;
-	
-	//Last energy to be included in the library file?: Y(1), N(0)
-	int lastELibrary;
 
 	//Calibration run (0) or energy reconstruction run (1)?
 	int mode;
@@ -105,10 +99,10 @@ struct Parameters {
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
 	
-	/** Running sum length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
+	/** Running sum length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LrsT;
 	
-	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in crtLib=0) **/
+	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LbT;
 	
 	/** Baseline (in ADC units) **/
@@ -126,23 +120,26 @@ struct Parameters {
 	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
 	char FilterMethod[3];
 	
-	//Energy Method: NOLAGS, LAGS, WEIGHT or WEIGHTN **/
+	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R or I2RBIS **/
 	char EnergyMethod[8];
 
+	//LagsOrNot: LAGS == 1 or NOLAGS == 0 **/
+	int LagsOrNot;
+
+	//OFIter: Iterate == 1 or NOTIterate == 0 **/
+	int OFIter;
+
+	//Boolean to choose whether to use a library with optimal filters or calculate the optimal filter to each pulse
+	char OFLib;
+
+	//Optimal Filter by using the Matched Filter (MF) or the DAB as matched filter (MF, DAB) **/
+	char OFInterp[4];
+	
 	//Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
 	char OFStrategy[8];
 
 	//Optimal Filter length (taken into account if OFStrategy=FIXED) **/
 	int OFLength;
-
-	//Linear (1) or Quadratic calibration of the energies (2)
-	int calibLQ;
-	
-	//Linear calibration factor
-	double b_cF;
-	
-	//Quadratic calibration factor
-	double c_cF;
 	
 	//Write intermediate files (Yes:1, No:0)
 	int intermediate;
@@ -152,12 +149,6 @@ struct Parameters {
 	
 	// File with the output filter (only in calibration)
 	char filterFile[256];
-	
-	// Second calibration file to calculate calibration factors b,c (if mode=0 & crtLib=0)
-	char RecordFileCalib2[256];
-	
-	/** Monochromatic energy of the second calibration file to calculate calibration factors b,c (if mode=0 & crtLib=0)**/
-	double monoenergy2;
 	
 	// Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0)
 	int tstartPulse1;

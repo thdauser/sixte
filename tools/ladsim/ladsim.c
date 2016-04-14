@@ -600,14 +600,14 @@ int ladsim_main()
 
     // Determine the event list output file.
     char eventlist_filename[MAXFILENAME];
-    strcpy(ucase_buffer, par.EventList);
+    strcpy(ucase_buffer, par.EvtFile);
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(eventlist_filename, par.Prefix);
-      strcat(eventlist_filename, "events.fits");
+      strcat(eventlist_filename, "evt.fits");
     } else {
       strcpy(eventlist_filename, par.Prefix);
-      strcat(eventlist_filename, par.EventList);
+      strcat(eventlist_filename, par.EvtFile);
     }
 
     // Initialize the random number generator.
@@ -1237,7 +1237,7 @@ int ladsim_getpar(struct Parameters* const par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("SignalList", &sbuffer);
+  status=ape_trad_query_string("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the raw event list!\n", 
 		   status);
@@ -1246,12 +1246,12 @@ int ladsim_getpar(struct Parameters* const par)
   strcpy(par->SignalList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("EventList", &sbuffer);
+  status=ape_trad_query_string("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the event list!\n", status);
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("XMLFile", &sbuffer);

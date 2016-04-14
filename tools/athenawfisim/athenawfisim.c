@@ -18,11 +18,12 @@
    Copyright 2007-2014 Christian Schmid, FAU
 */
 
-#include "athenapwfisim.h"
+#include "athenawfisim.h"
 
 
 int athenapwfisim_main() 
 {
+
   // Program parameters.
   struct Parameters par;
   
@@ -76,7 +77,7 @@ int athenapwfisim_main()
 
   // Register HEATOOL
   set_toolname("athenapwfisim");
-  set_toolversion("0.07");
+  set_toolversion("0.08");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -120,27 +121,29 @@ int athenapwfisim_main()
     }
     
     // Determine the event list output file.
-    char eventlist_filename_template[MAXFILENAME];
-    strcpy(ucase_buffer, par.EventList);
+    char rawdata_filename_template[MAXFILENAME];
+    strcpy(ucase_buffer, par.RawData);
     strtoupper(ucase_buffer);
-    strcpy(eventlist_filename_template, par.Prefix);
-    strcat(eventlist_filename_template, "chip%d_");
+    strcpy(rawdata_filename_template, par.Prefix);
+    strcat(rawdata_filename_template, "chip%d_");
+    int delete_rawdata = 0;
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcat(eventlist_filename_template, "events.fits");
+    	delete_rawdata = 1;
+      strcat(rawdata_filename_template, "raw.fits");
     } else {
-      strcat(eventlist_filename_template, par.EventList);
+      strcat(rawdata_filename_template, par.RawData);
     }
 
     // Determine the pattern list output file.
-    char patternlist_filename_template[MAXFILENAME];
-    strcpy(ucase_buffer, par.PatternList);
+    char evtfile_filename_template[MAXFILENAME];
+    strcpy(ucase_buffer, par.EvtFile);
     strtoupper(ucase_buffer);
-    strcpy(patternlist_filename_template, par.Prefix);
-    strcat(patternlist_filename_template, "chip%d_");
+    strcpy(evtfile_filename_template, par.Prefix);
+    strcat(evtfile_filename_template, "chip%d_");
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcat(patternlist_filename_template, "pattern.fits");
+      strcat(evtfile_filename_template, "evt.fits");
     } else {
-      strcat(patternlist_filename_template, par.PatternList);
+      strcat(evtfile_filename_template, par.EvtFile);
     }
 
     // Initialize the random number generator.
@@ -329,9 +332,9 @@ int athenapwfisim_main()
 
     // Open the output event list files.
     for (ii=0; ii<nchips; ii++) {
-      char eventlist_filename[MAXFILENAME];
-      sprintf(eventlist_filename, eventlist_filename_template, ii);
-      elf[ii]=openNewEventFile(eventlist_filename, 
+      char rawdata_filename[MAXFILENAME];
+      sprintf(rawdata_filename, rawdata_filename_template, ii);
+      elf[ii]=openNewEventFile(rawdata_filename,
 			       telescop, instrume, "Normal", 
 			       subinst[0]->tel->arf_filename,
 			       subinst[0]->det->rmf_filename,
@@ -349,9 +352,9 @@ int athenapwfisim_main()
 
     // Open the output pattern list files.
     for (ii=0; ii<nchips; ii++) {
-      char patternlist_filename[MAXFILENAME];
-      sprintf(patternlist_filename, patternlist_filename_template, ii);
-      patf[ii]=openNewEventFile(patternlist_filename, 
+      char evtfile_filename[MAXFILENAME];
+      sprintf(evtfile_filename, evtfile_filename_template, ii);
+      patf[ii]=openNewEventFile(evtfile_filename,
 				telescop, instrume, "Normal", 
 				subinst[0]->tel->arf_filename,
 				subinst[0]->det->rmf_filename,
@@ -679,12 +682,25 @@ int athenapwfisim_main()
 
     // --- End of simulation process ---
 
+    // remove RawData files if not requested
+    if (delete_rawdata){
+    	for (ii=0; ii<nchips; ii++) {
+    		char rawdata_filename[MAXFILENAME];
+    		sprintf(rawdata_filename, rawdata_filename_template, ii);
+    		headas_chat(5,"removing unwanted RawData file %s \n",rawdata_filename);
+    		status = remove (rawdata_filename);
+    		CHECK_STATUS_BREAK(status);
+    	}
+    }
+
+
   } while(0); // END of ERROR HANDLING Loop.
 
 
   // --- Clean up ---
   
   headas_chat(3, "\ncleaning up ...\n");
+
 
   // Release memory.
   freeImpactFile(&ilf, &status);
@@ -725,6 +741,10 @@ int athenapwfisim_getpar(struct Parameters* const par)
   // Error status.
   int status=EXIT_SUCCESS; 
 
+  // check if any obsolete keywords are given
+  sixt_check_obsolete_keyword(&status);
+  CHECK_STATUS_RET(status,EXIT_FAILURE);
+
   // Read all parameters via the ape_trad_ routines.
 
   status=ape_trad_query_string("Prefix", &sbuffer);
@@ -751,20 +771,20 @@ int athenapwfisim_getpar(struct Parameters* const par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("EventList", &sbuffer);
+  status=ape_trad_query_string("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the event list");
+    SIXT_ERROR("failed reading the name of the raw data output file");
     return(status);
   }
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("PatternList", &sbuffer);
+  status=ape_trad_query_string("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the pattern list");
+    SIXT_ERROR("failed reading the name of the output event file");
     return(status);
   }
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("XMLFile0", &sbuffer);

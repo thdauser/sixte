@@ -44,8 +44,8 @@ struct Parameters {
   char Mode[MAXMSG];
   char XMLFile[MAXFILENAME];
 
-  char EventList[MAXFILENAME];
-  char PatternList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
+  char RawData[MAXFILENAME];
 
   /** Skip invalid patterns when producing the output file. */
   char SkipInvalids;

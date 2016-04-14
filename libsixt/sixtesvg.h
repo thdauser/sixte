@@ -166,4 +166,12 @@ void SixteSVG_write_text(SixteSVGObj *svg,
 			 char* text, 
 			 int* const status);
 
+/** Function to write text centered to a given point */
+void SixteSVG_write_centered_text(SixteSVGObj *svg, 
+			     char* text, 
+			     double cx,
+			     double cy,
+			     double textsize,
+			     int* const status);
+
 #endif /* SIXTESVG_H */

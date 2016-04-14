@@ -29,7 +29,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char EventList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char Image[MAXFILENAME];
 
   int coordinatesystem;
@@ -99,13 +99,13 @@ int imgev_main() {
 
     // Set the event file.
     long nrows = 0;
-    elf=openEventFile(par.EventList, READWRITE, &status);
+    elf=openEventFile(par.EvtFile, READWRITE, &status);
     if(status==COL_NOT_FOUND){
       headas_chat(3, "Given file is not a standard Event File, trying to read it as TES Event File...\n");
       status=EXIT_SUCCESS;
       freeEventFile(&elf, &status);
       CHECK_STATUS_BREAK(status);
-      tes_elf=openTesEventFile(par.EventList,READWRITE,&status);
+      tes_elf=openTesEventFile(par.EvtFile,READWRITE,&status);
       nrows = tes_elf->nrows;
       input_fptr = tes_elf->fptr;
     } else {
@@ -354,12 +354,12 @@ static int imgev_getpar(struct Parameters* par)
 
   // Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_file_name("EventList", &sbuffer);
+  status=ape_trad_query_file_name("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event file");
     return(status);
   } 
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_file_name("Image", &sbuffer);

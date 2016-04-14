@@ -72,7 +72,7 @@ int erosim_main()
 
   // Register HEATOOL
   set_toolname("erosim");
-  set_toolversion("0.05");
+  set_toolversion("0.06");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -118,27 +118,29 @@ int erosim_main()
     }
     
     // Determine the event list output file.
-    char eventlist_filename_template[MAXFILENAME];
-    strcpy(ucase_buffer, par.EventList);
+    char rawdata_filename_template[MAXFILENAME];
+    strcpy(ucase_buffer, par.RawData);
     strtoupper(ucase_buffer);
-    strcpy(eventlist_filename_template, par.Prefix);
-    strcat(eventlist_filename_template, "ccd%d_");
+    strcpy(rawdata_filename_template, par.Prefix);
+    strcat(rawdata_filename_template, "ccd%d_");
+    int delete_rawdata = 0;
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcat(eventlist_filename_template, "events.fits");
+    	delete_rawdata = 1;
+      strcat(rawdata_filename_template, "raw.fits");
     } else {
-      strcat(eventlist_filename_template, par.EventList);
+      strcat(rawdata_filename_template, par.RawData);
     }
 
     // Determine the pattern list output file.
-    char patternlist_filename_template[MAXFILENAME];
-    strcpy(ucase_buffer, par.PatternList);
+    char evtfile_filename_template[MAXFILENAME];
+    strcpy(ucase_buffer, par.EvtFile);
     strtoupper(ucase_buffer);
-    strcpy(patternlist_filename_template, par.Prefix);
-    strcat(patternlist_filename_template, "ccd%d_");
+    strcpy(evtfile_filename_template, par.Prefix);
+    strcat(evtfile_filename_template, "ccd%d_");
     if (0==strcmp(ucase_buffer,"NONE")) {
-      strcat(patternlist_filename_template, "pattern.fits");
+      strcat(evtfile_filename_template, "evt.fits");
     } else {
-      strcat(patternlist_filename_template, par.PatternList);
+      strcat(evtfile_filename_template, par.EvtFile);
     }
 
 
@@ -153,15 +155,15 @@ int erosim_main()
       CHECK_NULL_BREAK(progressfile, status, msg);
     }
 
-    // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
-		     "SRG", "eROSITA", "", &status);
-    CHECK_STATUS_BREAK(status);
 
     unsigned int seed;
     // Load the configurations of all seven sub-instruments.
     for (ii=0; ii<7; ii++) {
+      
+      sixt_get_eroXMLFile(xml_filename,
+			  ii,
+			  &status);
 
     // Initialize the random number generator for each Telescope
     // TODO: Use a more clever way here
@@ -207,6 +209,8 @@ int erosim_main()
 
       // Load the instrument configuration either with the
       // specific (if available) or the default XML file.
+      
+      printf("Telescope %ld, use XML file\n%s\n", ii+1, xml_filename);
       subinst[ii]=loadGenInst(buffer, seed, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -391,9 +395,9 @@ int erosim_main()
 	strcpy(instrume, subinst[ii]->instrume);
       }
 
-      char eventlist_filename[MAXFILENAME];
-      sprintf(eventlist_filename, eventlist_filename_template, ii+1);
-      elf[ii]=openNewEventFile(eventlist_filename, 
+      char rawdata_filename[MAXFILENAME];
+      sprintf(rawdata_filename, rawdata_filename_template, ii+1);
+      elf[ii]=openNewEventFile(rawdata_filename,
 			       telescop, instrume, "Normal", 
 			       subinst[ii]->tel->arf_filename, 
 			       subinst[ii]->det->rmf_filename,
@@ -420,9 +424,9 @@ int erosim_main()
 	strcpy(instrume, subinst[ii]->instrume);
       }
       
-      char patternlist_filename[MAXFILENAME];
-      sprintf(patternlist_filename, patternlist_filename_template, ii+1);
-      patf[ii]=openNewEventFile(patternlist_filename, 
+      char evtfile_filename[MAXFILENAME];
+      sprintf(evtfile_filename, evtfile_filename_template, ii+1);
+      patf[ii]=openNewEventFile(evtfile_filename,
 				telescop, instrume, "Normal", 
 				subinst[ii]->tel->arf_filename, 
 				subinst[ii]->det->rmf_filename,
@@ -767,6 +771,17 @@ int erosim_main()
 
     // --- End of simulation process ---
 
+    // remove RawData files if not requested
+    if (delete_rawdata){
+    	for (ii=0; ii<7; ii++) {
+    		char rawdata_filename[MAXFILENAME];
+    		sprintf(rawdata_filename, rawdata_filename_template, ii+1);
+    		headas_chat(5,"removing unwanted RawData file %s \n",rawdata_filename);
+    		status = remove (rawdata_filename);
+    		CHECK_STATUS_BREAK(status);
+    	}
+    }
+
   } while(0); // END of ERROR HANDLING Loop.
 
 
@@ -813,6 +828,10 @@ int erosim_getpar(struct Parameters* const par)
   // Error status.
   int status=EXIT_SUCCESS; 
 
+  // check if any obsolete keywords are given
+  sixt_check_obsolete_keyword(&status);
+  CHECK_STATUS_RET(status,EXIT_FAILURE);
+
   // Read all parameters via the ape_trad_ routines.
 
   status=ape_trad_query_string("Prefix", &sbuffer);
@@ -839,20 +858,20 @@ int erosim_getpar(struct Parameters* const par)
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("EventList", &sbuffer);
+  status=ape_trad_query_string("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
   }
-  strcpy(par->EventList, sbuffer);
+  strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("PatternList", &sbuffer);
+  status=ape_trad_query_string("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
   }
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("XMLFile", &sbuffer);

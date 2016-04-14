@@ -67,7 +67,7 @@ int ero_calevents_main()
 
 
     // Open the input event file.
-    elf=openEventFile(par.PatternList, READONLY, &status);
+    elf=openEventFile(par.EvtFile, READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
     // Check if the input file contains recombined event patterns.
@@ -92,7 +92,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'MJDREF' from input "
-	      "event list '%s'", par.PatternList);
+	      "event list '%s'", par.EvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -111,7 +111,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'DATE-OBS' from input "
-	      "event list '%s'", par.PatternList);
+	      "event list '%s'", par.EvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -121,7 +121,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'TIME-OBS' from input "
-	      "event list '%s'", par.PatternList);
+	      "event list '%s'", par.EvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -131,7 +131,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'DATE-END' from input "
-	      "event list '%s'", par.PatternList);
+	      "event list '%s'", par.EvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -141,7 +141,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'TIME-END' from input "
-	      "event list '%s'", par.PatternList);
+	      "event list '%s'", par.EvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -151,7 +151,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'TSTART' from input "
-	      "event list '%s'", par.PatternList);
+	      "event list '%s'", par.EvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -161,7 +161,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not read FITS keyword 'TSTOP' from input "
-	      "event list '%s'", par.PatternList);
+	      "event list '%s'", par.EvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -180,16 +180,16 @@ int ero_calevents_main()
 
     // Check if the output file already exists.
     int exists;
-    fits_file_exists(par.eroEventList, &exists, &status);
+    fits_file_exists(par.eroEvtFile, &exists, &status);
     CHECK_STATUS_BREAK(status);
     if (0!=exists) {
       if (0!=par.clobber) {
 	// Delete the file.
-	remove(par.eroEventList);
+	remove(par.eroEvtFile);
       } else {
 	// Throw an error.
 	char msg[MAXMSG];
-	sprintf(msg, "file '%s' already exists", par.eroEventList);
+	sprintf(msg, "file '%s' already exists", par.eroEvtFile);
 	SIXT_ERROR(msg);
 	status=EXIT_FAILURE;
 	break;
@@ -198,8 +198,8 @@ int ero_calevents_main()
 
     // Create and open a new FITS file.
     headas_chat(3, "create new eROSITA event list file '%s' ...\n",
-		par.eroEventList);
-    fits_create_file(&fptr, par.eroEventList, &status);
+		par.eroEvtFile);
+    fits_create_file(&fptr, par.eroEvtFile, &status);
     CHECK_STATUS_BREAK(status);
 
     // Create the event table.
@@ -220,7 +220,7 @@ int ero_calevents_main()
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
       sprintf(msg, "could not create binary table for events "
-	      "in file '%s'", par.eroEventList);
+	      "in file '%s'", par.eroEvtFile);
       SIXT_ERROR(msg);
       break;
     }
@@ -627,7 +627,7 @@ int ero_calevents_main()
     headas_chat(3, "append GTI extension ...\n");
 
     // Load the GTI extension from the input file.
-    gti=loadGTI(par.PatternList, &status);
+    gti=loadGTI(par.EvtFile, &status);
     CHECK_STATUS_BREAK(status);
 
     // Make sure that the MJDREF of the GTI extension agrees with
@@ -906,20 +906,24 @@ int getpar(struct Parameters* const par)
   // Error status.
   int status=EXIT_SUCCESS;
 
-  status=ape_trad_query_file_name("PatternList", &sbuffer);
+  // check if any obsolete keywords are given
+  sixt_check_obsolete_keyword(&status);
+  CHECK_STATUS_RET(status,EXIT_FAILURE);
+
+  status=ape_trad_query_file_name("EvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the input pattern list");
     return(status);
   } 
-  strcpy(par->PatternList, sbuffer);
+  strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_file_name("eroEventList", &sbuffer);
+  status=ape_trad_query_file_name("eroEvtFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output event list");
     return(status);
   } 
-  strcpy(par->eroEventList, sbuffer);
+  strcpy(par->eroEvtFile, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_int("CCDNr", &par->CCDNr);

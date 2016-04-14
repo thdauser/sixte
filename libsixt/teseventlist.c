@@ -192,8 +192,12 @@ TesEventFile* newTesEventFile(int* const status){
 	file->phIDCol   =6;
 	file->raCol     =7;
 	file->decCol    =8;
-	file->gradingCol=9;
-	file->srcIDCol  =10;
+	file->detxCol   =9;
+	file->detyCol   =10;
+	file->gradingCol=11;
+	file->srcIDCol  =12;
+	file->nxtCol    =13;
+	file->extCol    =14;
 
 	return(file);
 }
@@ -203,8 +207,8 @@ void freeTesEventFile(TesEventFile* file, int* const status){
 	if (NULL!=file) {
 		if (NULL!=file->fptr) {
 			fits_close_file(file->fptr, status);
-			headas_chat(5, "closed TesEventFile list file");
 			CHECK_STATUS_VOID(*status);
+			headas_chat(5, "closed TesEventFile list file\n");
 		}
 		free(file);
 		file=NULL;
@@ -257,11 +261,11 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char *ttype[]={"TIME","SIGNAL","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","GRADING","SRC_ID"};
-	char *tform[]={"1D",  "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D", "1I","1J"};
-	char *tunit[]={"s",   "keV",   "",      "",      "",     "",     "deg","deg","",""};
+	char *ttype[]={"TIME","SIGNAL","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"};
+	char *tform[]={"1D",  "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",      "",      "",     "",     "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 10,
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 14,
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -310,6 +314,17 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
 
+	fits_get_colnum(file->fptr, CASEINSEN, "DETX", &file->detxCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->detxCol=-1;
+	  *status=0;
+	}
+	fits_get_colnum(file->fptr, CASEINSEN, "DETY", &file->detyCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->detyCol=-1;
+	  *status=0;
+	}
+
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADING", &file->gradingCol, status);
 	if (*status==COL_NOT_FOUND) {
 	  file->gradingCol=-1;
@@ -318,6 +333,16 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->srcIDCol, status);
 	if (*status==COL_NOT_FOUND) {
 	  file->srcIDCol=-1;
+	  *status=0;
+	}
+	fits_get_colnum(file->fptr, CASEINSEN, "N_XT", &file->nxtCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->nxtCol=-1;
+	  *status=0;
+	}
+	fits_get_colnum(file->fptr, CASEINSEN, "E_XT", &file->extCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->extCol=-1;
 	  *status=0;
 	}
 	CHECK_STATUS_RET(*status, NULL);
@@ -372,8 +397,8 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 
 }
 
-/** Updates the RA and DEC columns with the given coordinates */
-void updateRaDec(TesEventFile* file,double ra, double dec, int* const status){
+/** Updates the RA, DEC and DETX/Y columns with the given coordinates */
+void updateRaDecDetXY(TesEventFile* file,double ra, double dec, float detx,float dety,int* const status){
 	double dbuffer=ra*180./M_PI;
 	fits_write_col(file->fptr, TDOUBLE, file->raCol,
 						file->row, 1, 1,&dbuffer, status);
@@ -382,10 +407,16 @@ void updateRaDec(TesEventFile* file,double ra, double dec, int* const status){
 	fits_write_col(file->fptr, TDOUBLE, file->decCol,
 						file->row, 1, 1,&dbuffer, status);
 	CHECK_STATUS_VOID(*status);
+	fits_write_col(file->fptr, TFLOAT, file->detxCol,
+						file->row, 1, 1,&detx, status);
+	CHECK_STATUS_VOID(*status);
+	fits_write_col(file->fptr, TFLOAT, file->detyCol,
+						file->row, 1, 1,&dety, status);
+	CHECK_STATUS_VOID(*status);
 }
 
 /** Add event as reconstructed with the RMF method */
-void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,int grading, int* const status){
+void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,int grading,int n_xt,double e_xt,int* const status){
 	//Save time column
 	fits_write_col(file->fptr, TDOUBLE, file->timeCol,
 			file->row, 1, 1, &(impact->time), status);
@@ -435,6 +466,71 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,in
 			 file->row, 1, 1, &(impact->src_id), status);
 	  CHECK_STATUS_VOID(*status);
 	}
+
+	//Save N_XT and E_XT columns
+	fits_write_col(file->fptr, TINT, file->nxtCol,
+			file->row, 1, 1, &n_xt, status);
+	fits_write_col(file->fptr, TDOUBLE, file->extCol,
+			file->row, 1, 1, &e_xt, status);
+	CHECK_STATUS_VOID(*status);
+
+
 	file->row++;
 	file->nrows++;
+}
+
+/** Adds an event whose signal as not been evaluated yet (necessity in order to keep causality in event file) */
+void addEmptyEvent(TesEventFile* file,PixImpact* impact, int* const status){
+	//Save time column
+	fits_write_col(file->fptr, TDOUBLE, file->timeCol,
+			file->row, 1, 1, &(impact->time), status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save PIXID column
+	long pixID = impact->pixID+1;
+	fits_write_col(file->fptr, TLONG, file->pixIDCol,
+			file->row, 1, 1, &pixID, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save PH_ID column
+	fits_write_col(file->fptr, TLONG, file->phIDCol,
+			file->row, 1, 1, &(impact->ph_id), status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save SRC_ID column
+	fits_write_col(file->fptr, TINT, file->srcIDCol,
+			file->row, 1, 1, &(impact->src_id), status);
+	CHECK_STATUS_VOID(*status);
+	file->row++;
+	file->nrows++;
+}
+
+/** Update signal and grading columns of an event */
+void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){
+	//Save energy column
+	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
+			row, 1, 1, &energy, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grade1 column
+	fits_write_col(file->fptr, TLONG, file->grade1Col,
+			row, 1, 1, &grade1, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grade2 column
+	fits_write_col(file->fptr, TLONG, file->grade2Col,
+			row, 1, 1, &grade2, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grading column
+	fits_write_col(file->fptr, TINT, file->gradingCol,
+			row, 1, 1, &grading, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save N_XT and E_XT columns
+	fits_write_col(file->fptr, TINT, file->nxtCol,
+			row, 1, 1, &n_xt, status);
+	fits_write_col(file->fptr, TDOUBLE, file->extCol,
+			row, 1, 1, &e_xt, status);
+	CHECK_STATUS_VOID(*status);
 }

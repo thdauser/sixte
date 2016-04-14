@@ -52,6 +52,11 @@ Obj2D_instance *getObj2DFromAdvdet(AdvDet *det, int* const status){
 							0.,
 							status);
       CHECK_STATUS_BREAK(*status);
+      if(det->pix[ii].channel!=NULL){
+	Obj2D_assign_group_attribute(obj->subobj[ii],
+				    &(det->pix[ii].channel->channel_id),
+				    &(det->pix[ii].freq));
+      }
       obj->subobj[ii]->parent=obj;
     }
     CHECK_STATUS_BREAK(*status);
@@ -188,6 +193,10 @@ Obj2D_instance *getObj2DFromXML(char *XMLName, int* const status){
       AdvDet *adet=loadAdvDet(XMLName, &detstatus);
 
       if(detstatus==EXIT_SUCCESS){
+	if(adet->channel_file!=NULL){
+	  puts("Found crosstalk information in AdvDet XML file.");
+	  init_crosstalk(adet, status);
+	}
 	obj=getObj2DFromAdvdet(adet, status);
 	if(*status!=EXIT_SUCCESS){
 	  SIXT_ERROR("Converting AdvDet XML file failed.");
@@ -219,6 +228,9 @@ void Obj2D_DrawObjectSVG(Obj2D *obj,
 			 char *linecolor,
 			 char *fillcolor,
 			 int fill,
+			 int writeid,
+			 int writeatt,
+			 double textsize,
 			 int* const status){
 				   
   if(obj->type==OBJ2D_CIRC){
@@ -250,6 +262,44 @@ void Obj2D_DrawObjectSVG(Obj2D *obj,
       return ;
     }
   }
+
+  double idcy=obj->cy;
+  double atcy=obj->cy;
+  
+  if(writeid && writeatt){
+    idcy=idcy+(0.6*textsize)/svg->scalefactor;
+    atcy=atcy-(0.6*textsize)/svg->scalefactor;
+  }
+  
+  if(writeid){
+    char label[10];
+    sprintf(label, "%d", obj->id);
+    SixteSVG_write_centered_text(svg, 
+				 label, 
+				 obj->cx,
+				 idcy,
+				 textsize,
+				 status);
+    if(*status!=EXIT_SUCCESS){
+      SIXT_ERROR("Writing text to SVG failed.");
+      return ;
+    }
+  }
+  
+  if(writeatt){
+    char label2[20];
+    sprintf(label2, "%8.1f", obj->attribute/1000.);
+    SixteSVG_write_centered_text(svg, 
+				 label2, 
+				 obj->cx,
+				 atcy,
+				 textsize*0.75,
+				 status);
+    if(*status!=EXIT_SUCCESS){
+      SIXT_ERROR("Writing text to SVG failed.");
+      return ;
+    }
+  }
   
 }
 
@@ -260,16 +310,27 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			   char **fillcolor,
 			   int *fill,
 			   int ndraw,
+			   int writeid,
+			   int writeatt,
+			   double *textsize,
+			   int usegcol,
 			   int* const status){
 			     
   int ii, nmax;
   if(obj->geometry!=NULL){
+    char *fc=fillcolor[0];
+    if(usegcol!=0){
+      fc=fillcolor[(obj->geometry->group_id % usegcol)];
+    }
     Obj2D_DrawObjectSVG(obj->geometry, 
 			svg,
 			linewidth[0],
 			linecolor[0],
-			fillcolor[0],
+			fc,
 			fill[0],
+			writeid,
+			writeatt,
+			textsize[0],
 			status);
     if(*status!=EXIT_SUCCESS){
       return ;
@@ -278,8 +339,15 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
   
   if(ndraw>=0){
     nmax=ndraw;
+    if(nmax>obj->n_subobj){
+      nmax=obj->n_subobj;
+    }
   }else{
     nmax=obj->n_subobj;
+  }
+  char **nextfill=&(fillcolor[1]);
+  if(usegcol!=0){
+    nextfill=fillcolor;
   }
   if(obj->n_subobj>0){
     for(ii=0; ii<nmax; ii++){
@@ -287,9 +355,13 @@ void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			    svg,
 			    &(linecolor[1]),
 			    &(linewidth[1]),
-			    &(fillcolor[1]),
+			    nextfill,
 			    &(fill[1]),
 			    ndraw,
+			    writeid,
+			    writeatt,
+			    &(textsize[1]),
+			    usegcol,
 			    status);
       if(*status!=EXIT_SUCCESS){
 	return ;

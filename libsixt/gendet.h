@@ -97,6 +97,11 @@ typedef struct{
   double t_clear;
   /** Settling time */
   double t_settling;
+  
+  /** clear function pointer */
+  double (*clear_fcn)(double time, double energy, double *constants);
+  /** clear function constants */
+  double *clear_const;
 
   /** Transfer time (only for IS-DEPFET) */
   double t_transfer;
@@ -218,6 +223,18 @@ GenDet* newGenDet(int* const status);
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenDet data structure to NULL. */
 void destroyGenDet(GenDet** const det);
+
+/** Function which returns the signal result of a photon impacting
+    during the depfet clear. Assumes a linear clear behaviour. */
+double depfet_get_linear_clear_signal(double time, 
+				      double energy,
+				      double *constants);
+
+/** Function which returns the signal result of a photon impacting
+    during the depfet clear. Assumes an exponential clear behaviour. */
+double depfet_get_exponential_clear_signal(double time, 
+					   double energy,
+					   double *constants);
 
 /** Add a new photon impact to the detector. The function return value
     is the number of affected valid detector pixels. */

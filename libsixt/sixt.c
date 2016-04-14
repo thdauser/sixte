@@ -180,7 +180,7 @@ void sixt_get_XMLFile(char* const filename,
     if (0==strcmp(Mission, "SRG")) {
       strcat(filename, "/srg");
       if (0==strcmp(Instrument, "EROSITA")) {
-	strcat(filename, "/erosita.xml");
+	strcat(filename, "/erosita_dummy.xml");
       } else {
 	*status=EXIT_FAILURE;
 	SIXT_ERROR("selected instrument is not supported");
@@ -272,6 +272,14 @@ void sixt_get_LADXMLFile(char* const filename,
     // The XML filename has been given explicitly.
     strcpy(filename, xmlfile);
   }
+}
+
+void sixt_get_eroXMLFile(char *filename,
+			const int telescop_index,
+			int* const status){
+  
+  sprintf(filename, "%s/instruments/srg/erosita_%d.xml", SIXT_DATA_PATH, telescop_index+1);
+  
 }
 
 
@@ -842,4 +850,31 @@ void fits_close_file_chksum(fitsfile *fptr,int *status) {
     fits_write_chksum(fptr,status);
   }
   fits_close_file(fptr,status);
+}
+
+
+void sixt_check_obsolete_keyword(int* status){
+
+	int num_obs_keys = 4;
+
+	char* old_names[] = {"EventList","EventFile","PatternList","PatternFile","TesEventFile","eroEventList"};
+	char* new_names[] = {"RawData","RawData","EvtFile","EvtFile","EvtFile","eroEvtFile"};
+
+	int retval;
+
+	for (int ii=0; ii<num_obs_keys; ii++){
+
+		char* sbuffer;
+		retval=ape_trad_query_string(old_names[ii], &sbuffer);
+		if (retval==EXIT_SUCCESS){
+			strtoupper(sbuffer);
+			if (0!=strcmp(sbuffer,"NONE")) {
+				printf("*** error reading parameters:  old name '%s' is obsolete. It is now called '%s'!  \n",
+						old_names[ii],new_names[ii]);
+				*status=EXIT_FAILURE;
+			}
+		}
+
+	}
+
 }

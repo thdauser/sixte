@@ -209,7 +209,9 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 		  file->row,1,1,0,&(record->time), &anynul,status);
     CHECK_STATUS_RET(*status,0);
     
-    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
+    //Changed below by MTC//    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
+    for (unsigned long i=0 ; i < record->trigger_size ; i++) {
+
       record->adc_double[i]= (double) (record->adc_array[i]);
     }
     

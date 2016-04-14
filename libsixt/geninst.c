@@ -782,6 +782,33 @@ static void GenInstXMLElementStart(void* parsedata,
 			    getXMLAttributeDouble(attr, "SETTLING");
     
     char type[MAXMSG];
+    getXMLAttributeString(attr, "CLEAR_FCN", type);
+    strtoupper(type);
+    
+    if(!strcmp(type, "EXPONENTIAL")){
+      
+      xmlparsedata->inst->det->depfet.clear_const=(double*)malloc(sizeof(double));
+      if(xmlparsedata->inst->det->depfet.clear_const==NULL){
+	xmlparsedata->status=EXIT_FAILURE;
+	SIXT_ERROR("memory allocation error for depfet constants.");
+	return;
+      }
+      xmlparsedata->inst->det->depfet.clear_const[0]=
+			    getXMLAttributeDouble(attr, "CLEAR_TAU");
+      xmlparsedata->inst->det->depfet.clear_fcn=&depfet_get_exponential_clear_signal;
+    }else{
+      
+      xmlparsedata->inst->det->depfet.clear_const=(double*)malloc(sizeof(double));
+      if(xmlparsedata->inst->det->depfet.clear_const==NULL){
+	xmlparsedata->status=EXIT_FAILURE;
+	SIXT_ERROR("memory allocation error for depfet constants.");
+	return;
+      }
+      xmlparsedata->inst->det->depfet.clear_const[0]=xmlparsedata->inst->det->depfet.t_clear;
+      
+      xmlparsedata->inst->det->depfet.clear_fcn=&depfet_get_linear_clear_signal;
+    }
+    
     getXMLAttributeString(attr, "TYPE", type);
     strtoupper(type);
     if(!strcmp(type, "NORMAL")) {

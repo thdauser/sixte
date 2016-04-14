@@ -72,6 +72,11 @@ typedef struct{
   double *vert_x;
   /** y-coordinate array for rectangulas and other polygons [m]. */
   double *vert_y;
+  
+  /** group to which the pixel belongs */
+  int group_id;
+  /** attribute of the pixel */
+  double attribute;
 
 }Obj2D;
 
@@ -144,5 +149,12 @@ void Obj2D_inst_findBBLimits(Obj2D_instance *obj,
 			     double *xmax, 
 			     double *ymin, 
 			     double *ymax);
+
+/** Function to assign a group id and an attribute to an object. */
+void Obj2D_assign_group_attribute(Obj2D_instance *obj,
+				  int *group_id,
+				  double *attribute);
+
+
 
 #endif /* OBJ2D_H */

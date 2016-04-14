@@ -102,6 +102,7 @@ void phproj_advdet(GenInst* const inst,
 	    TesEventFile* const event_file,
 	    const double t0,
 	    const double exposure,
+	    char proj_center,
 	    int* const status)
 {
 	//const double cosrota=cos(inst->det->pixgrid->rota);
@@ -137,11 +138,13 @@ void phproj_advdet(GenInst* const inst,
 
 		// Determine RA and DEC of the photon origin.
 		// Exact position on the pixel.
-		double xpix=(sixt_get_random_number(status)-0.5)*general_geometry->subobj[pixid-1]->geometry->width;
-		CHECK_STATUS_BREAK(*status);
-		double ypix=(sixt_get_random_number(status)-0.5)*general_geometry->subobj[pixid-1]->geometry->height;
-		CHECK_STATUS_BREAK(*status);
-
+		double xpix=0.,ypix=0.;
+		if (!proj_center){
+			xpix=(sixt_get_random_number(status)-0.5)*general_geometry->subobj[pixid-1]->geometry->width;
+			CHECK_STATUS_BREAK(*status);
+			ypix=(sixt_get_random_number(status)-0.5)*general_geometry->subobj[pixid-1]->geometry->height;
+			CHECK_STATUS_BREAK(*status);
+		}
 		// Exact position in the detector sytem
 //		double xr=cosrota*xb -sinrota*yb;
 //		double yr=sinrota*xb +cosrota*yb;
@@ -171,7 +174,7 @@ void phproj_advdet(GenInst* const inst,
 		calculate_ra_dec(srcpos, &ra, &dec);
 
 		// Update the data in the TES event list file.
-		updateRaDec(event_file,ra,dec,status);
+		updateRaDecDetXY(event_file,ra,dec,detpos.x,detpos.y,status);
 		CHECK_STATUS_BREAK(*status);
 
 		event_file->row++;

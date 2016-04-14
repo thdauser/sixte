@@ -41,6 +41,9 @@
 #include "tesinitialization.h"
 #include "testrigger.h"
 #include "teseventlist.h"
+#include "crosstalk.h"
+#include "parinput.h"
+#include "grading.h"
 
 #define TOOLSUB xifupipeline_main
 #include "headas_main.c"
@@ -56,7 +59,7 @@ struct Parameters {
   char ImpactList[MAXFILENAME];
   char PixImpactList[MAXFILENAME];
   char TesTriggerFile[MAXFILENAME];
-  char TesEventFile[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char AdvXml[MAXFILENAME];
   char Attitude[MAXFILENAME];
@@ -109,6 +112,10 @@ struct Parameters {
   char WriteRecordFile;
   char Identify;
   char UseRMF;
+  char ProjCenter;
+
+  int doCrosstalk;
+  int saveCrosstalk;
 
   char history;
   char clobber;

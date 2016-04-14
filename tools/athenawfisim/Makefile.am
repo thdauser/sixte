@@ -4,7 +4,7 @@ AM_CPPFLAGS =-I@top_srcdir@/libsixt
 
 # Directory where to install the PIL parameter files.
 pfilesdir=$(pkgdatadir)/pfiles
-dist_pfiles_DATA=athenapwfisim.par
+dist_pfiles_DATA=athenawfisim.par
 
 AM_CFLAGS=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
@@ -12,7 +12,7 @@ AM_CFLAGS=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
 # The following line lists the programs that should be created and
 # stored in the 'bin' directory.
-bin_PROGRAMS=athenapwfisim
+bin_PROGRAMS=athenawfisim
 
-athenapwfisim_SOURCES=athenapwfisim.c athenapwfisim.h
-athenapwfisim_LDADD =@top_builddir@/libsixt/libsixt.la
+athenawfisim_SOURCES=athenawfisim.c athenawfisim.h
+athenawfisim_LDADD =@top_builddir@/libsixt/libsixt.la

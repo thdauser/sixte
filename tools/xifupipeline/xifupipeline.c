@@ -78,7 +78,7 @@ int xifupipeline_main()
 
 	// Register HEATOOL
 	set_toolname("xifupipeline");
-	set_toolversion("0.05");
+	set_toolversion("0.06");
 
 
 	do { // Beginning of ERROR HANDLING Loop.
@@ -124,7 +124,9 @@ int xifupipeline_main()
 		char piximpactlist_filename[MAXFILENAME]={""};
 		strcpy(ucase_buffer, par.PixImpactList);
 		strtoupper(ucase_buffer);
+		int delete_rawdata=0;
 		if (0==strcmp(ucase_buffer,"NONE")) {
+			delete_rawdata=1;
 			strcpy(piximpactlist_filename, par.Prefix);
 			strcat(piximpactlist_filename, "piximpact.fits");
 		} else {
@@ -135,28 +137,34 @@ int xifupipeline_main()
 
 		//Determine the tes record output file.
 		char tesrecord_filename[MAXFILENAME];
-		strcpy(ucase_buffer, par.TesTriggerFile);
-		strtoupper(ucase_buffer);
-		if (0==strcmp(ucase_buffer,"NONE")) {
-			strcpy(tesrecord_filename, "");
+		if (! par.UseRMF) {
+			strcpy(ucase_buffer, par.TesTriggerFile);
+			strtoupper(ucase_buffer);
+			if (0==strcmp(ucase_buffer,"NONE")) {
+				strcpy(tesrecord_filename, "");
+			} else {
+				strcpy(tesrecord_filename, par.Prefix);
+				strcat(tesrecord_filename, par.TesTriggerFile);
+			}
+			strcpy(par.TesTriggerFile,tesrecord_filename);
+			free(tesrecord_filename);
 		} else {
-			strcpy(tesrecord_filename, par.Prefix);
-			strcat(tesrecord_filename, par.TesTriggerFile);
+			strcpy(par.TesTriggerFile, "");
 		}
-		strcpy(par.TesTriggerFile,tesrecord_filename);
+
 
 		//Determine the event output file.
-		char eventlist_filename[MAXFILENAME];
-		strcpy(ucase_buffer, par.TesEventFile);
+		char evtlist_filename[MAXFILENAME];
+		strcpy(ucase_buffer, par.EvtFile);
 		strtoupper(ucase_buffer);
 		if (0==strcmp(ucase_buffer,"NONE")) {
-			strcpy(eventlist_filename, par.Prefix);
-			strcat(eventlist_filename, "events.fits");
+			strcpy(evtlist_filename, par.Prefix);
+			strcat(evtlist_filename, "evt.fits");
 		} else {
-			strcpy(eventlist_filename, par.Prefix);
-			strcat(eventlist_filename, par.TesEventFile);
+			strcpy(evtlist_filename, par.Prefix);
+			strcat(evtlist_filename, par.EvtFile);
 		}
-		strcpy(par.TesEventFile,eventlist_filename);
+		strcpy(par.EvtFile,evtlist_filename);
 
 		// Initialize the random number generator.
 		unsigned int seed=getSeed(par.Seed);
@@ -337,7 +345,7 @@ int xifupipeline_main()
 		} else{
 			det = loadAdvDet(par.AdvXml,&status);
 			keywords = buildSixtStdKeywords(telescop,instrume,"Normal",inst->tel->arf_filename, inst->det->rmf_filename,"NONE",par.MJDREF, 0.0, par.TSTART, tstop,&status);
-			event_file = opennewTesEventFile(par.TesEventFile,keywords,par.clobber,&status);
+			event_file = opennewTesEventFile(par.EvtFile,keywords,par.clobber,&status);
 			loadRMFLibrary(det,&status);
 		}
 
@@ -442,6 +450,17 @@ int xifupipeline_main()
 
 		// --- End of opening files ---
 
+		// --- Initialize Crosstalk Structure ---
+		det->crosstalk_id=par.doCrosstalk;
+		if (det->crosstalk_id>0){
+			headas_chat(3, "initializing crosstalk ...\n");
+			init_crosstalk(det, &status);
+			if (status!=EXIT_SUCCESS){
+				SIXT_ERROR("failed when initializing crosstalk setup");
+				return EXIT_FAILURE;
+			}
+			headas_chat(3, "... done\n");
+		}
 
 		// --- Simulation Process ---
 
@@ -544,7 +563,6 @@ int xifupipeline_main()
 			CHECK_STATUS_BREAK(status);
 			// END of photon processing loop for the current interval.
 
-
 			if (!par.UseRMF){
 				headas_chat(3, "\nstart event reconstruction ...\n");
 				// Generate the data streams for each pixel that has been hit
@@ -617,11 +635,12 @@ int xifupipeline_main()
 				headas_chat(3, "\nstart event grading ...\n");
 				current_impact_write_row = pixilf->row;
 				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
-				writeGrading2PixImpactFile(det,pixilf,&status);
-
-				headas_chat(3, "\nstart event reconstruction ...\n");
-				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
-				processImpactsWithRMF(det,pixilf,event_file,&status);
+//				writeGrading2PixImpactFile(det,pixilf,&status);
+//
+//				headas_chat(3, "\nstart event reconstruction ...\n");
+//				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
+//				processImpactsWithRMF(det,pixilf,event_file,&status);
+				impactsToEvents(det,pixilf,event_file,par.saveCrosstalk,&status);
 
 				pixilf->row=current_impact_write_row;
 				current_impact_row=current_impact_write_row;
@@ -649,7 +668,7 @@ int xifupipeline_main()
 
 		headas_chat(3, "start sky projection ...\n");
 		event_file->row=1;
-		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,&status);
+		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,par.ProjCenter,&status);
 		CHECK_STATUS_BREAK(status);
 		
 		//Store number of impacts in event file
@@ -661,6 +680,13 @@ int xifupipeline_main()
 		CHECK_STATUS_BREAK(status);
 
 		// --- End of simulation process ---
+
+		if (delete_rawdata){
+			headas_chat(3,"removing unwanted RawData file %s \n",piximpactlist_filename);
+			status = remove (piximpactlist_filename);
+			CHECK_STATUS_BREAK(status);
+		}
+
 
 
 	} while(0); // END of ERROR HANDLING Loop.
@@ -687,6 +713,7 @@ int xifupipeline_main()
 		freeTesEventFile(event_file,&status);
 	}
 
+
 	if (NULL!=progressfile) {
 		fclose(progressfile);
 		progressfile=NULL;
@@ -711,6 +738,10 @@ int xifupipeline_getpar(struct Parameters* const par)
 
 	// Error status.
 	int status=EXIT_SUCCESS;
+
+	// check if any obsolete keywords are given
+	sixt_check_obsolete_keyword(&status);
+	CHECK_STATUS_RET(status,EXIT_FAILURE);
 
 	// Read all parameters via the ape_trad_ routines.
 
@@ -746,12 +777,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 	strcpy(par->PixImpactList, sbuffer);
 	free(sbuffer);
 
-	status=ape_trad_query_string("TesEventFile", &sbuffer);
+	status=ape_trad_query_string("EvtFile", &sbuffer);
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the name of the event list");
 		return(status);
 	}
-	strcpy(par->TesEventFile, sbuffer);
+	strcpy(par->EvtFile, sbuffer);
 	free(sbuffer);
 
 	status=ape_trad_query_string("XMLFile", &sbuffer);
@@ -904,6 +935,23 @@ int xifupipeline_getpar(struct Parameters* const par)
 		return(status);
 	}
 
+	// query_simput_parameter_bool("doCrosstalk", &par->doCrosstalk, &status );
+	char *buf;
+	query_simput_parameter_string("doCrosstalk", &buf, &status );
+	if (strncmp(buf,"yes",3)==0 ||strncmp(buf,"all",3)==0  ){
+		par->doCrosstalk = CROSSTALK_ID_ALL;
+	} else if (strncmp(buf,"elec",4)==0){
+		par->doCrosstalk = CROSSTALK_ID_ELEC;
+	} else if (strncmp(buf,"therm",5)==0){
+		par->doCrosstalk = CROSSTALK_ID_THERM;
+	} else if (strncmp(buf,"imod",4)==0){
+		par->doCrosstalk = CROSSTALK_ID_IMOD;
+	} else {
+		par->doCrosstalk=CROSSTALK_ID_NONE;
+	}
+
+	query_simput_parameter_bool("saveCrosstalk", &par->saveCrosstalk, &status );
+
 	if (!par->UseRMF){
 		status=ape_trad_query_string("TesTriggerFile", &sbuffer);
 		if (EXIT_SUCCESS!=status) {
@@ -925,12 +973,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 			return(status);
 		}
 
-		status=ape_trad_query_string("TesEventFile", &sbuffer);
+		status=ape_trad_query_string("EvtFile", &sbuffer);
 		if (EXIT_SUCCESS!=status) {
 			SIXT_ERROR("failed reading the name of the event file");
 			return(status);
 		}
-		strcpy(par->TesEventFile, sbuffer);
+		strcpy(par->EvtFile, sbuffer);
 		free(sbuffer);
 
 		status=ape_trad_query_string("OptimalFilterFile", &sbuffer);
@@ -1003,6 +1051,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 		return(status);
 	}
 
+	status=ape_trad_query_bool("ProjCenter", &par->ProjCenter);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the ProjCenter parameter");
+		return(status);
+	}
+
 	return(status);
 }
 
@@ -1012,7 +1066,7 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
 	strcpy(par->PixImpList,partmp.PixImpactList);
 	strcpy(par->XMLFile,partmp.AdvXml);
 	strcpy(par->tesTriggerFile,partmp.TesTriggerFile);
-	strcpy(par->TesEventFile,partmp.TesEventFile);
+	strcpy(par->TesEventFile,partmp.EvtFile);
 
 	par->Nactive=-1;
 	par->nlo=-1;

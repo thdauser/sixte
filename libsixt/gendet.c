@@ -65,6 +65,8 @@ GenDet* newGenDet(int* const status)
   det->readout_trigger=0;
   det->depfet.depfetflag=0;
   det->depfet.istorageflag=0;
+  det->depfet.clear_const=NULL;
+  det->depfet.clear_fcn=NULL;
 
   // Get empty GenPixGrid.
   det->pixgrid=newGenPixGrid(status);
@@ -102,10 +104,28 @@ void destroyGenDet(GenDet** const det)
     destroyBadPixMap(&(*det)->badpixmap);
     destroyPHABkg(&(*det)->phabkg[0]);
     destroyPHABkg(&(*det)->phabkg[1]);
+    if((*det)->depfet.clear_const!=NULL){
+      free((*det)->depfet.clear_const);
+      (*det)->depfet.clear_const=NULL;
+    }
     
     free(*det);
     *det=NULL;
   }
+}
+
+double depfet_get_linear_clear_signal(double time, 
+				      double energy,
+				      double *constants){
+
+  return (energy*time/constants[0]);
+}
+
+double depfet_get_exponential_clear_signal(double time, 
+					   double energy,
+					   double *constants){
+  
+  return (energy*exp(-time/constants[0]));
 }
 
 
@@ -1053,7 +1073,7 @@ printf("line     =%d\nframe    =%ld\ntime     =%lf \nl_readout=%lf \nrtime    =%
 	  // It is cleared incompletely and the remaining signal
 	  // gets detected negatively in this frame, positively
 	  // in the next
-	  float rem=signal*tc/det->depfet.t_clear;
+	  float rem=det->depfet.clear_fcn(tc, signal, det->depfet.clear_const);
 	  line->charge[colnum]+=rem*(-1.);
 	  line->ccarry[colnum]+=rem;
 	  
@@ -1141,7 +1161,7 @@ puts("time oob: rtime<0 || rtime>det->frametime");
       // Check if the time is in the clear interval
       if(rtime>cstart && rtime<cstop){
 	
-	line->charge[colnum]+=signal*(cstop-rtime)/det->depfet.t_clear;
+	line->charge[colnum]+=det->depfet.clear_fcn((cstop-rtime), signal, det->depfet.clear_const);
       }else{
 	if(t_frame<=rtime){
       

@@ -39,8 +39,8 @@
 
 
 struct Parameters {
-  char PatternList[MAXFILENAME];
-  char eroEventList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
+  char eroEvtFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
 
   int CCDNr;

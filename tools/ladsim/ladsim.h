@@ -54,7 +54,7 @@ struct Parameters {
   char PhotonList[MAXFILENAME];
   char ImpactList[MAXFILENAME];
   char SignalList[MAXFILENAME];
-  char EventList[MAXFILENAME];
+  char EvtFile[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
   char Simput[MAXFILENAME];

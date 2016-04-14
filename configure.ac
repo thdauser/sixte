@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.0.12], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.1.0], [thomas.dauser@sternwarte.uni-erlangen.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -148,7 +148,7 @@ AC_CONFIG_FILES([Makefile
 		tools/erosim/Makefile
 		tools/comaexp/Makefile
 		tools/nustarsim/Makefile
-		tools/athenapwfisim/Makefile
+		tools/athenawfisim/Makefile
 		tools/htrssim/Makefile
 		tools/tes_grades/Makefile
 		tools/gendetsim/Makefile
@@ -179,6 +179,7 @@ AC_CONFIG_FILES([Makefile
 		tools/xifupipeline/Makefile
 		tools/gennoisespec/Makefile
 		tools/exposure_map/Makefile
+		tools/gradeddetection/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
 		])

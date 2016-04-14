@@ -36,13 +36,18 @@
 /** Initial size of RMFLibrary. */
 #define RMFLIBRARYSIZE (10)
 
-#define INVGRADE -1
-#define PILEUP -2
 #define DEFAULTGOODSAMPLE 32768 // TODO : check whether we do want to leave that as a macro
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
+
+
+typedef struct MatrixCrossTalk MatrixCrossTalk;
+typedef struct Channel Channel;
+typedef struct IntermodulationCrossTalk IntermodulationCrossTalk;
+typedef struct ReadoutChannels ReadoutChannels;
+
 
 /** Data structure describing the noise properties of calorimeter
  pixels */
@@ -98,7 +103,7 @@ typedef struct{
 /** Data structure describing a pixel with arbitrary geometry.
     Current implementation: only rectangulars, parallel to detector
     coordinate system. */
-typedef struct{
+struct AdvPix{
   
   /** x-shift of pixel in respect to the detector reference point */
   double sx;
@@ -145,7 +150,21 @@ typedef struct{
   /** ID of the arf inside general detector (to avoid loading one arf per pixel) */
   struct ARF* arf;
 
-}AdvPix;
+  /** Frequency of the pixel */
+  double freq;
+
+  /** Read-out channel to which it blongs */
+  Channel* channel;
+
+  /** Cross-talk structures */
+  MatrixCrossTalk* electrical_cross_talk;
+  MatrixCrossTalk* thermal_cross_talk;
+  IntermodulationCrossTalk* intermodulation_cross_talk;
+
+
+}; typedef struct AdvPix AdvPix;
+
+
 
 /** Data structure containing a library of different RMFs */
 typedef struct{
@@ -180,6 +199,49 @@ typedef struct{
 	struct ARF** arf_array;
 
 }ARFLibrary;
+
+
+/** structure defining the time dependent weights for the crosstalk*/
+typedef struct{
+	int length;
+	char* name_type; // Useless for the moment
+	double* time;
+	double* weight;
+} CrosstalkTimedep;
+
+
+typedef struct{
+
+	double*** matrix; // 3d table containing the frequency weights
+
+	double* ampl;
+	double* dt;
+
+	int n_ampl;
+	int n_dt;
+
+}ImodTab;
+
+/** structure containing the full the intermodulation crosstalk table*/
+typedef struct{
+
+	ImodTab* w_f2pf1;      //   f1 + f2
+	ImodTab* w_f2mf1;      //   f1 - f2
+	ImodTab* w_2f1pf2;     // 2*f2 + f1
+	ImodTab* w_2f2pf1;     // 2*f1 + f2
+	ImodTab* w_2f1mf2;     // 2*f2 - f1
+	ImodTab* w_2f2mf1;     // 2*f1 - f2
+
+} ImodFreqTable;
+
+
+/** structure defining the parameters of the electrical crosstalk */
+typedef struct{
+	double R0; // set point resistance
+	double Lfprim; // filter inductance in primary circuit
+	double Lcommon; // common inductance in secondary circuit
+	double Lfsec; // filter inductance in secondary circuit
+} ElecCrosstalkPar;
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -228,24 +290,98 @@ typedef struct{
   /** ARF library */
   ARFLibrary* arf_library;
 
+  /** File listing for each pixel the channel and frequency */
+  char* channel_file;
+
+  /** List of all readout channels */
+  ReadoutChannels* readout_channels;
+
+  /** File containing the intermodulation crosstalk table */
+  char* crosstalk_intermod_file;
+  ImodFreqTable* crosstalk_intermod_table;
+
+  /** File containing the time dependence crosstalk table */
+  char* crosstalk_timedep_file;
+
+  /** Structure containing the time dependence of the pixels */
+  CrosstalkTimedep* crosstalk_timedep;
+
+  /** information about thermal cross talk */
+  int xt_num_thermal;
+  double* xt_dist_thermal;
+  double* xt_weight_thermal;
+
+  /** information about electrical cross talk */
+  ElecCrosstalkPar* elec_xt_par;
+
+  /** Trigger threshold */
+  double threshold_event_lo_keV;
+
+  /** Crosstalk ID (which effects should be included */
+  int crosstalk_id;
+
 }AdvDet;
 
 
-typedef struct{
-	PixImpact *next;
-	PixImpact *current;
-	PixImpact *previous;
-}pixImpPointer;
+/////////////////////////////////////////////////////////////////////
+// Structures for the Crosstalk
+/////////////////////////////////////////////////////////////////////
 
-typedef struct{
-	double next,current,previous;
-}gradingTimeStruct;
+/** Structure defining the cross talk between pixels, which can be approximated
+    by a simple matrix containing weights */
+struct MatrixCrossTalk{
+	/** number of cross-talk pixels */
+	int num_cross_talk_pixels;
 
-typedef struct {
-	gradingTimeStruct *times;
-	long row;
-	double totalenergy;
-}pixGrade;
+	/** Array containing cross-talk pixels */
+	AdvPix** cross_talk_pixels;
+
+	/** Cross-talk weights*/
+	double* cross_talk_weights;
+
+};
+
+/** Structure defining the cross talk between pixels, which can be approximated
+    by a simple matrix containing weights */
+struct IntermodulationCrossTalk{
+	/** number of cross-talk pixels */
+	int num_cross_talk_pixels;
+
+	/** numbrer of combiniations for each pixel */
+//	int* num_pixel_combinations;
+
+	/** Array containing cross-talk pixels */
+	AdvPix*** cross_talk_pixels;
+
+	/** Cross-talk weights*/
+	ImodTab** cross_talk_info;
+
+};
+
+
+/** Structure of a single channel, including all its contained pixels*/
+struct Channel{
+	AdvPix** pixels;
+	int num_pixels;
+	int channel_id;
+};
+
+/** Structure containing a certain amount of Impacts, which are not written
+    to the output file yet, as further modifications due to additional
+    (crosstalk) events might happen or that these events directly influence
+    other events */
+typedef struct channelImpacts{
+	double time_diff_criteria;
+	Impact** impacts_saved; // length = num_pixels
+	Channel* channel;
+} channelImpacts;
+
+/** Structure combining all readout channels */
+struct ReadoutChannels{
+	Channel* channels;
+	double* df_information_band; //in [Hz];
+	int num_channels;} ;
+
 
 /////////////////////////////////////////////////////////////////////
 // Function Declarations.
@@ -269,6 +405,9 @@ void freeAdvPix(AdvPix* pix);
 
 /** Remove the existing grading scheme from the pixel */
 void freeGrading(AdvPix* pix);
+
+/** Free the Readout Channel Structure */
+void freeReadoutChannels(ReadoutChannels* rc);
 
 /** Read the advanced detector syntax from the specified XML */
 void parseAdvDetXML(AdvDet* const det, 
@@ -315,19 +454,32 @@ void addARF(AdvDet* det,AdvPix* pixel,int* const status);
 /** Destructor of the ARF library structure */
 void freeARFLibrary(ARFLibrary* library);
 
-/** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(long grade1,long grade2,AdvPix* pixel);
-
-/** calculate the grading in samples from the a given impact, and its previous and next impact **/
-void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status);
-
-/** writes the grading to an existing piximpact file **/
-void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status);
-
-/** Process the impacts contained in the piximpacts file with the RMF method */
-void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
-
 /** Function to remove overlapping pixels from the detector */
 void removeOverlapping(AdvDet* det,int* const status);
+
+/** Constructor for MatrixCrossTalk structure */
+MatrixCrossTalk* newMatrixCrossTalk(int* const status);
+
+/** Destructor for MatrixCrossTalk structure */
+void freeMatrixCrossTalk(MatrixCrossTalk** matrix);
+
+/** Constructor for IntermodulationCrossTalk structure */
+IntermodulationCrossTalk* newImodCrossTalk(int* const status);
+
+/** Destructor for IntermodulationCrossTalk structure */
+void freeImodCrossTalk(IntermodulationCrossTalk** matrix);
+
+/** Constructor for CrosstalkTimdep structure */
+CrosstalkTimedep* newCrossTalkTimedep(int* const status);
+
+/** Destructor for CrosstalkTimdep structure */
+void freeCrosstalkTimedep(CrosstalkTimedep** timedep);
+
+/** free Intermod Table and Strcture */
+void freeImodTab(ImodTab* tab);
+void freeImodFreqTable(ImodFreqTable* tab);
+
+/** free the crosstalk structures */
+void freeCrosstalk(AdvDet** det);
 
 #endif /* ADVDET_H */

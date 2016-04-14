@@ -117,6 +117,40 @@ extern const double xmmmjdref;
 
 #define CHECK_NULL(a,status,msg) CHECK_NULL_RET(a,status,msg,NULL);
 
+#define CHECK_MALLOC_RET_NULL(a) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			return NULL;\
+		}
+
+#define CHECK_MALLOC_RET_STATUS(a,b,status) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			status=EXIT_FAILURE; \
+			return b;\
+		}
+
+
+#define CHECK_MALLOC_RET_NULL_STATUS(a,status) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			status=EXIT_FAILURE; \
+			return NULL;\
+		}
+
+#define CHECK_MALLOC_VOID_STATUS(a,status) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			status=EXIT_FAILURE; \
+			return;\
+		}
+
+
+#define CHECK_MALLOC_VOID(a) \
+		if (NULL==a) { \
+			SIXT_ERROR("memory allocation failed"); \
+			return;\
+		}
 
 // Warnings.
 #define SIXT_WARNING(msg) (sixt_warning(msg))
@@ -225,6 +259,12 @@ void sixt_get_XMLFile(char* const filename,
 /** Determine the LAD XMLFilename. */
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);
+
+/** Determine the eROSITA XMLFilename if different 
+ *telescopes are used. */
+void sixt_get_eroXMLFile(char *filename,
+			const int telescop_index,
+			int* const status);
 
 /** Determine a date and a time string for the specified MJDREF offset
     and time given in seconds since MJDREF. */
@@ -348,6 +388,9 @@ int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *
 
 // convenience function: update checksum in current and primary HDU and close the file
 void fits_close_file_chksum(fitsfile *fptr,int *status);
+
+// check for obsolete input keywords
+void sixt_check_obsolete_keyword(int* status);
 
 #endif /* SIXT_H */
 
