@@ -14,3 +14,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS= --with-simput=${SIMPUT}
 
 # Define the headers that will be installed in $(includedir):
 include_HEADERS=sixteconfig.h
+
+.PHONY: test
+test:
+	cd test && make test
