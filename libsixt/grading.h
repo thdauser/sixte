@@ -31,6 +31,8 @@
 #define CROSSTALK -3
 #define WRONGE -4
 
+const double IMOD_XT_UPPER_TAU = 40;
+const double IMOD_XT_LOWER_TAU = 10;
 
 typedef struct{
 	double next,current,previous;
@@ -77,8 +79,11 @@ void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,c
 		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
 
 /** Same as "applyMatrixCrosstalk", but for the more complicated intermodulation crosstalk */
-void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-		PixImpact* impact, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
+void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* det,const double sample_length,
+		TesEventFile* event_file,int save_crosstalk,int* const status);
+//void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+//		PixImpact* impact, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
+
 
 /** Processes a crosstalk event using addCrosstalkEvent or processGradedEvent depending on whether it is above threshold or not */
 void processCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);

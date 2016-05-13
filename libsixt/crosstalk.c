@@ -243,7 +243,8 @@ static void load_crosstalk_timedep(AdvDet* det,int* const status){
 
 }
 
-static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, double* ampl, double* dt, int* status){
+static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, int n_freq,
+		double* ampl, double* dt, double* freq, int* status){
 
 	(*tab) = (ImodTab*) malloc (sizeof (ImodTab));
 	CHECK_MALLOC_VOID_STATUS(tab,*status);
@@ -253,6 +254,7 @@ static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, double* ampl, doubl
 
 	t->n_ampl = n_ampl;
 	t->n_dt   = n_dt;
+	t->n_freq = n_freq;
 
 	t->ampl = (double*) malloc(n_ampl * sizeof(double));
 	CHECK_MALLOC_VOID_STATUS(t->ampl,*status);
@@ -264,52 +266,41 @@ static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, double* ampl, doubl
 	t->dt = (double*) malloc(n_dt * sizeof(double));
 	CHECK_MALLOC_VOID_STATUS(t->dt,*status);
 
-	for (int ii=0; ii<n_ampl; ii++){
+	for (int ii=0; ii<n_dt; ii++){
 		t->dt[ii] = dt[ii];
 	}
 
+	t->freq = (double*) malloc(n_freq * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->freq,*status);
 
-	// allocate the 3d matrix (n_dt x n_ampl x nampl)
-	t->matrix = (double***) malloc (n_dt*sizeof(double**));
+	for (int ii=0; ii<n_freq; ii++){
+		t->freq[ii] = freq[ii];
+	}
+
+
+	// allocate the 4d matrix (n_freq x n_dt x n_ampl x nampl)
+	t->matrix = (double****) malloc (n_freq*sizeof(double***));
 	CHECK_MALLOC_VOID_STATUS(t->matrix,*status);
 
-	for (int ii=0; ii<n_dt; ii++){
-		t->matrix[ii] = (double**) malloc (n_ampl*sizeof(double*));
-		CHECK_MALLOC_VOID_STATUS(t->matrix[ii],*status);
+	for (int ll=0; ll<n_freq; ll++){               // FREQ-LOOP
+		t->matrix[ll] = (double***) malloc (n_dt*sizeof(double**));
+		CHECK_MALLOC_VOID_STATUS(t->matrix[ll],*status);
 
-		for (int jj=0; jj<n_ampl; jj++){
-			t->matrix[ii][jj] = (double*) malloc (n_ampl*sizeof(double));
-			CHECK_MALLOC_VOID_STATUS(t->matrix[ii][jj],*status);
-			for (int kk=0; kk<n_ampl; kk++){
-				t->matrix[ii][jj][kk] = 0.0;
+		for (int ii=0; ii<n_dt; ii++){             // DT-LOOP
+			t->matrix[ll][ii] = (double**) malloc (n_ampl*sizeof(double*));
+			CHECK_MALLOC_VOID_STATUS(t->matrix[ll][ii],*status);
+
+			for (int jj=0; jj<n_ampl; jj++){      // AMPL1-LOOP
+				t->matrix[ll][ii][jj] = (double*) malloc (n_ampl*sizeof(double));
+				CHECK_MALLOC_VOID_STATUS(t->matrix[ll][ii][jj],*status);
+
+				for (int kk=0; kk<n_ampl; kk++){  // AMPL2-LOOP
+					t->matrix[ll][ii][jj][kk] = 0.0;
+				}
 			}
 		}
 	}
-
 	return;
-}
-
-static ImodFreqTable* newIntermodFreqTable(int n_ampl, int n_dt, double* ampl, double* dt, int* status){
-	ImodFreqTable* tab = (ImodFreqTable*) malloc (sizeof (ImodFreqTable));
-	CHECK_MALLOC_RET_NULL(tab);
-
-	tab->w_2f1mf2 = NULL;
-	tab->w_2f1pf2 = NULL;
-	tab->w_2f2mf1 = NULL;
-	tab->w_2f2pf1 = NULL;
-	tab->w_f2mf1 = NULL;
-	tab->w_f2pf1 = NULL;
-
-	initImodTab(&(tab->w_2f1mf2),n_ampl,n_dt,ampl,dt,status);
-	initImodTab(&(tab->w_2f1pf2),n_ampl,n_dt,ampl,dt,status);
-	initImodTab(&(tab->w_2f2mf1),n_ampl,n_dt,ampl,dt,status);
-	initImodTab(&(tab->w_2f2pf1),n_ampl,n_dt,ampl,dt,status);
-	initImodTab(&(tab->w_f2pf1) ,n_ampl,n_dt,ampl,dt,status);
-	initImodTab(&(tab->w_f2mf1) ,n_ampl,n_dt,ampl,dt,status);
-
-	CHECK_STATUS_RET(*status,NULL);
-
-	return tab;
 }
 
 static void get_imodtable_axis(int* nrows, double** val, char* extname, char* colname, fitsfile* fptr, int* status){
@@ -343,68 +334,105 @@ static void get_imodtable_axis(int* nrows, double** val, char* extname, char* co
 	return;
 }
 
-
 /** read one intermodulation matrix from a fits file and store it in the structure */
-static void read_intermod_matrix(fitsfile* fptr,int n_ampl, int n_dt,
+static void read_intermod_matrix(fitsfile* fptr,int n_ampl, int n_dt, int n_freq,
 		ImodTab* tab, char* extname, int* status){
 
 	// ampl and dt arrays should be initialized before
 	assert(tab->ampl!=NULL);
 	assert(tab->dt!=NULL);
+	assert(tab->freq!=NULL);
 
 	// move to the extension containing the data
 	int extver = 0;
-	if (fits_movnam_hdu(fptr, BINARY_TBL, extname, extver ,status))	return;
-
-	// get number of rows
-	int colnum;
-	char* colname = "CROSSTALK";
-	if(fits_get_colnum(fptr, CASEINSEN,colname, &colnum, status)) return;
-
-	// get the number of rows
-	long n;
-	if (fits_get_num_rows(fptr, &n, status)) return;
-
-	// check if they agree with n_dt
-	if (n_dt != n){
-		printf(" *** error: dimension of intermodulation crosstalk weights not consistent with given TIMEOFFSET axis\n");
-		*status=EXIT_FAILURE;
+//	if (fits_movnam_hdu(fptr, BINARY_TBL, extname, extver ,status)){
+	if (fits_movnam_hdu(fptr, IMAGE_HDU, extname, extver ,status)){
+		printf(" error: moving to extension %s failed \n",extname);
 		return;
 	}
+
+	// get number of rows
+//	int colnum;
+//	if(fits_get_colnum(fptr, CASEINSEN,colname, &colnum, status)) return;
+	int naxis;
+	if (fits_get_img_dim(fptr, &naxis, status) && (naxis!=4)){
+		printf(" error: getting dimensions of intermodulation data array failed \n");
+		return;
+	}
+	long naxes[naxis];
+
+
+	if (fits_get_img_size(fptr, naxis, naxes, status) ){
+		printf(" error: getting dimensions of intermodulation data array failed \n");
+		return;
+	}
+	// check dimensions
+	if (naxes[0]!=n_freq || naxes[1]!=n_dt || naxes[2]!=n_ampl || naxes[3]!=n_ampl ){
+		*status=EXIT_FAILURE;
+		printf(" error: wrong dimensions of the intermodulation data array [%ld %ld %ld %ld] \n",
+				naxes[0],naxes[1],naxes[2],naxes[3]);
+	}
+
+
 
 	// actually read the table now
 	int anynul=0;
 	double* buf;
-	buf = (double*)malloc(n_ampl*n_ampl*sizeof(double));
+	buf = (double*)malloc(n_freq*n_dt*n_ampl*n_ampl*sizeof(double));
 	CHECK_MALLOC_VOID(buf);
 
 	double nullval=0.0;
-	LONGLONG firstelem = 1;
-	LONGLONG nelem = n_ampl*n_ampl;
+	long nelem = n_freq*n_dt*n_ampl*n_ampl;
+	long fpixel[naxis];
+	for (int ii=0;ii<naxis;ii++){
+		fpixel[ii]=1;
+	}
 
-	for (int ii=0; ii<n_dt ; ii++){  // timeoffset loop
+	fits_read_pix(fptr, TDOUBLE, fpixel,nelem, &nullval,buf, &anynul, status);
+	fits_report_error(stdout, *status);
+	CHECK_STATUS_VOID(*status);
 
-		LONGLONG firstrow = ii+1;
-		// read the full image in a 1d array
-	    fits_read_col(fptr, TDOUBLE, colnum , firstrow, firstelem,
-				nelem, &nullval, buf, &anynul, status);
-		fits_report_error(stdout, *status);
-		CHECK_STATUS_BREAK(*status);
-
-		// now write it in our matrix
-		for (int jj=0; jj<n_ampl ; jj++){
+	printf(" start reading the matrix \n");
+	for (int ii=0; ii<n_freq ; ii++){  // freq loop
+		for (int jj=0; jj<n_dt ; jj++){
 			for (int kk=0; kk<n_ampl ; kk++){
-				int ind = 	kk + (jj * n_ampl) ;
-				assert(ind < n_ampl*n_ampl);
-				tab->matrix[ii][jj][kk] = buf[ind];
+				for (int ll=0; ll<n_ampl ; ll++){
+					int ind = 	(( ll*n_ampl + kk ) * n_dt + jj ) * n_freq + ii;
+					assert(ind < n_dt*n_ampl*n_ampl*n_freq);
+					tab->matrix[ii][jj][kk][ll] = buf[ind];
+				}
 			}
 		}
-
-	} // ------------------------  //  end (timeoffset loop)
+	} // ------------------------  //  end (freq loop)
 
 	free(buf);
+	free(fpixel);
+	free(naxes);
 
 	return;
+}
+
+static void print_imod_matrix(ImodTab* tab){
+
+	FILE * fp;
+
+	fp = fopen ("output_tab.txt", "w+");
+
+	for (int ll=0; ll<tab->n_ampl ; ll++){
+		for (int kk=0; kk<tab->n_ampl ; kk++){
+			for (int jj=0; jj<tab->n_dt ; jj++){
+				for (int ii=0; ii<tab->n_freq ; ii++){  // freq loop
+					fprintf(fp, "%i \t %i \t %i \t %i \t %e \t %e \t %e \n",
+							ii,jj,kk,ll,tab->freq[ii],tab->dt[jj],
+							tab->matrix[ii][jj][kk][ll]);
+
+				}
+			}
+		}
+	} // ------------------------  //  end (freq loop)
+
+	fclose(fp);
+
 }
 
 /** load the intermodulation frequency table */
@@ -414,9 +442,14 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 	CHECK_NULL_VOID(det->crosstalk_intermod_file,*status,"no file for the intermodulation table specified");
 
 	char* EXTNAME_AMPLITUDE = "amplitude";
-	char* EXTNAME_TIMEOFFSET = "timeoffset";
+	char* EXTNAME_TIMEOFFSET = "time_offset";
+	char* EXTNAME_FREQOFFSET = "frequency_offset";
 	char* COLNAME_AMPLITUDE = "AMPLITUDE";
 	char* COLNAME_TIMEOFFSET = "DT_SEC";
+	char* COLNAME_FREQOFFSET = "D_FREQ";
+	char* EXTNAME_CROSSTALK = "crosstalk";
+//	char* COLNAME_CROSSTALK = "CROSSTALK";
+
 
 	fitsfile *fptr=NULL;
 
@@ -431,47 +464,32 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 		headas_chat(5, "\n[crosstalk] reading the intermodulation table %s \n",fullfilename);
 
 		// read the extensions specifying the axes of the 3d matrix
-		int n_ampl,n_dt;
+		int n_ampl,n_dt,n_freq;
 		double* ampl;
 		double* dt;
-		//get_imodtable_axis(&n_ampl,&ampl,EXTNAME_IMOD_AMPLITUDE,COLNAME_IMOD_AMPLITUDE,fptr,status);
+		double* freq;
 		get_imodtable_axis(&n_ampl,&ampl,EXTNAME_AMPLITUDE,COLNAME_AMPLITUDE,fptr,status);
 		CHECK_STATUS_BREAK(*status);
 		get_imodtable_axis(&n_dt,&dt,EXTNAME_TIMEOFFSET,COLNAME_TIMEOFFSET,fptr,status);
 		CHECK_STATUS_BREAK(*status);
+		get_imodtable_axis(&n_freq,&freq,EXTNAME_FREQOFFSET,COLNAME_FREQOFFSET,fptr,status);
+		CHECK_STATUS_BREAK(*status);
 
 		// initialize the intermodulation table
-		det->crosstalk_intermod_table = newIntermodFreqTable( n_ampl, n_dt, ampl, dt, status);
+		initImodTab(&(det->crosstalk_intermod_table), n_ampl, n_dt, n_freq, ampl, dt, freq, status);
 		if (*status!=EXIT_SUCCESS){
-			SIXT_ERROR("loading intermodulation table in memory failed");
+			SIXT_ERROR("initializing intermodulation table in memory failed");
 			break;
 		}
 
-		int nf = 6;
-		char* extname[] = { "f2mf1","f2pf1","2f1mf2", "2f2mf1","2f1pf2","2f2pf1" };
-		ImodTab* itab[]  = {
-				(det->crosstalk_intermod_table->w_f2mf1),
-				(det->crosstalk_intermod_table->w_f2pf1),
-				(det->crosstalk_intermod_table->w_2f1mf2),
-				(det->crosstalk_intermod_table->w_2f2mf1),
-				(det->crosstalk_intermod_table->w_2f1pf2),
-				(det->crosstalk_intermod_table->w_2f2pf1)
-		};
-
-		for (int ii=0; ii<nf; ii++){
-			read_intermod_matrix(fptr,n_ampl,n_dt, itab[ii], extname[ii], status);
-			if (*status != EXIT_SUCCESS){
-				printf(" *** error: reading intermodulation table %s of extension %s failed\n",
-						fullfilename,extname[ii]);
-				break;
-			}
-		}
-
-		if (*status!=EXIT_SUCCESS){
-			SIXT_ERROR("reading intermodulation table failed");
+		read_intermod_matrix(fptr,n_ampl,n_dt, n_freq, det->crosstalk_intermod_table,
+				EXTNAME_CROSSTALK,status);
+		if (*status != EXIT_SUCCESS){
+			printf(" *** error: reading intermodulation table %s  failed\n", fullfilename);
 			break;
 		}
 
+		print_imod_matrix(det->crosstalk_intermod_table);
 
 	} while(0); // END of Error handling loop
 
@@ -508,14 +526,15 @@ static void add_to_intermod_channel_matrix(AdvDet* det, AdvPix* pix_inp, AdvPix*
 
 
 	// Important: Needs to exactly fit to the output of freq_num
-	ImodTab* itab[]  = {
+/*	ImodTab* itab[]  = {
 			(det->crosstalk_intermod_table->w_f2mf1),
 			(det->crosstalk_intermod_table->w_f2pf1),
 			(det->crosstalk_intermod_table->w_2f2mf1),
 			(det->crosstalk_intermod_table->w_2f1mf2),
 			(det->crosstalk_intermod_table->w_2f2pf1),
 			(det->crosstalk_intermod_table->w_2f1pf2)
-	};
+	}; */
+	ImodTab **itab=NULL;
 
 
 	if (pix_inp->intermodulation_cross_talk==NULL){
@@ -613,7 +632,7 @@ static void get_sorted_list(double* freq, int nfreq){
 
 }
 
-static double get_min_carrier_spacing(double* freq, int nfreq){
+/**static double get_min_carrier_spacing(double* freq, int nfreq){
 
 	get_sorted_list(freq,nfreq);
 
@@ -628,12 +647,12 @@ static double get_min_carrier_spacing(double* freq, int nfreq){
 		}
 	}
 	return retval;
-}
+} */
 
 /** get the information bandwidth form the carrier spacing in each channel */
-static void set_df_information_band(ReadoutChannels* ro, int* status){
+/**static void set_df_information_band(ReadoutChannels* ro, int* status){
 
-	/** make sure the information is loaded in the table */
+	// make sure the information is loaded in the table
 	if (ro==NULL){
 		printf(" ** error: readout channels have to be set before calculating the information band\n");
 		*status=EXIT_FAILURE;
@@ -670,7 +689,7 @@ static void set_df_information_band(ReadoutChannels* ro, int* status){
 	}
 
 	return;
-}
+} */
 
 /** Load intermodulation cross talk information into a single AdvPix*/
 static void load_intermod_cross_talk(AdvDet* det, int pixid, int* status){
@@ -685,7 +704,7 @@ static void load_intermod_cross_talk(AdvDet* det, int pixid, int* status){
 			CHECK_STATUS_VOID(*status);
 		}
 
-		set_advpix_intermod_cross_talk(det, &(det->pix[pixid]), status);
+//		set_advpix_intermod_cross_talk(det, &(det->pix[pixid]), status);
 
 	}
 
@@ -755,7 +774,7 @@ void init_crosstalk(AdvDet* det, int* const status){
 			load_intermod_cross_talk(det,ii,status);
 			CHECK_STATUS_VOID(*status);
 		}
-		print_imod_statistics(det);
+//		print_imod_statistics(det);
 	}
 
 }
@@ -884,7 +903,7 @@ ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 	free_channel_list(&chans);
 
 	// set the information band for each channel now
-	set_df_information_band(read_chan,status);
+//	set_df_information_band(read_chan,status);
 
 	return read_chan;
 }
@@ -987,5 +1006,3 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 	}
 	return 0;
 }
-
-

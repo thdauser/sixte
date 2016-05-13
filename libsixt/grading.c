@@ -252,8 +252,8 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 
 		// intermod crosstalk
 		if (det->pix[id].intermodulation_cross_talk !=NULL){
-			applyIntermodCrossTalk(det->pix[id].intermodulation_cross_talk,grade_proxys,sample_length,
-					&impact,det,event_file,save_crosstalk,status);
+//			applyIntermodCrossTalk(det->pix[id].intermodulation_cross_talk,grade_proxys,sample_length,
+//					&impact,det,event_file,save_crosstalk,status);
 			CHECK_STATUS_VOID(*status);
 		}
 
@@ -323,9 +323,8 @@ static int inv_binary_search(double val, double* arr, int n){
 	return low-1;
 }
 
-
 /** get the weight for the intermodulation crosstalk */
-static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
+/**static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
 		PixImpact* imp2, double dt, int* const status){
 
 	double cross_talk_weight = 0.0;
@@ -385,12 +384,12 @@ static double get_intermod_weight(ImodTab* cross_talk,	PixImpact* imp1,
 	}
 
 	return cross_talk_weight;
-}
+} */
 
 
 /** check if a pixel is already in the intermodulation proxy
  * (means that it produced intermodulation crosstalk before and has to be skipped */
-static int isPixelInProxy(imodProxy* ipro, long pindex){
+/**static int isPixelInProxy(imodProxy* ipro, long pindex){
 
 	// make sure that the proxy is not NULL
 	assert(ipro!=NULL);
@@ -401,9 +400,9 @@ static int isPixelInProxy(imodProxy* ipro, long pindex){
 		}
 	}
 	return 0;
-}
+} */
 
-static void doImodCrossTalk_iter(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+/**static void doImodCrossTalk_iter(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
 		PixImpact* impact,long pindex_parent, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
 
 
@@ -470,21 +469,57 @@ static void doImodCrossTalk_iter(IntermodulationCrossTalk* cross_talk,GradeProxy
 		}
 	}
 
-}
-
-/** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
-void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-		PixImpact* impact, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
-
-	imodProxy* imod_proxy = newImodProxy(status);
-	CHECK_STATUS_VOID(*status);
-
-	doImodCrossTalk_iter(cross_talk,grade_proxys,sample_length,
-			impact,-1,det,event_file,save_crosstalk,status);
+} */
 
 
-	freeImodProxy(imod_proxy);
-}
+//static void calc_imod_xt_influence(GradeProxy* grade_proxys,PixImpact* signal, PixImpact* perturber, int* status){
+//}
+
+/** Apply matrix cross talk: create new events on concerned pixels if corresponding
+    energy is above the detection threshold, affect previous event otherwise */
+/*void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* det,
+		const double sample_length,TesEventFile* event_file,
+		int save_crosstalk,int* const status){
+
+
+	// find out the channel of pixel the photon hit
+	Channel* active_chan = det->pix[impact->pixID]->channel;
+
+	// loop over all pixels in the channel to see if there is a hit
+	for (int ii=0; ii < active_chan->num_pixels; ii++){
+		if (grade_proxys[active_chan->pixels[ii]->pindex].times!=NULL){
+
+			double active_ind = active_chan->pixels[ii]->pindex;
+			int dt = (impact->time - grade_proxys[active_ind].times->current);
+
+			assert(dt>=0);
+
+			// see if we need to calculate the crosstalk influence of
+			// the perturber on the signal
+			if (dt < IMOD_XT_UPPER_TAU*sample_length){
+				calc_imod_xt_influence(grade_proxys[active_ind],grade_proxys[active_ind].impact,
+						impact,status);
+
+				// if signals are very close the signel might also influence the
+ 				//   perturber pulse
+				//  Note: (1) we require here that the above impact is written to the proxy already
+				//         (2) only the absolute value is of importance at the current implementation
+				//             (actually it would be dt<0 in this case)
+				if (dt < IMOD_XT_LOWER_TAU*sample_length){
+					int perturb_ind = impact->pixID;
+					calc_imod_xt_influence(grade_proxys[perturb_ind],impact,
+							grade_proxys[perturb_ind].impact,status);
+				}
+
+				// process events now (not before!!)
+
+			}
+
+		}
+	}
+
+
+}  */
 
 
 /** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */

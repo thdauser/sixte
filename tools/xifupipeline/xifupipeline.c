@@ -461,7 +461,7 @@ int xifupipeline_main()
 			}
 			headas_chat(3, "... done\n");
 		}
-
+		break;
 		// --- Simulation Process ---
 
 		headas_chat(3, "start simulation ...\n");

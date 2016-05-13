@@ -114,37 +114,33 @@ void freeReadoutChannels(ReadoutChannels* rc){
 void freeImodTab(ImodTab* tab){
 	if (tab != NULL){
 		if (tab->matrix!=NULL){
-			for(int ii=0; ii < tab->n_dt ; ii++){
-				if (tab->matrix[ii]!=NULL){
-					for(int jj=0; jj < tab->n_ampl ; jj++){
-						free(tab->matrix[ii][jj]);
-					}
-					free(tab->matrix[ii]);
+
+			for(int kk=0; kk < tab->n_freq ; kk++){ //  --- freq --- //
+
+				if (tab->matrix[kk]!=NULL){
+					for(int ii=0; ii < tab->n_dt ; ii++){ // --- dt --- //
+						if (tab->matrix[kk][ii]!=NULL){
+							for(int jj=0; jj < tab->n_ampl ; jj++){
+								free(tab->matrix[kk][ii][jj]);
+							}
+							free(tab->matrix[kk][ii]);
+						}
+					}  // --- END dt --- //
+					free(tab->matrix[kk]);
 				}
-			}
+			}   //  --- END freq --- //
 			free(tab->matrix);
 		}
 		free(tab->ampl);
 		free(tab->dt);
+		free(tab->freq);
 		free(tab);
 	}
 }
 
-void freeImodFreqTable(ImodFreqTable* tab){
-	if (tab != NULL){
-		freeImodTab(tab->w_2f1mf2);
-		freeImodTab(tab->w_2f1pf2);
-		freeImodTab(tab->w_2f2mf1);
-		freeImodTab(tab->w_2f2pf1);
-		freeImodTab(tab->w_f2pf1);
-		freeImodTab(tab->w_f2mf1);
-	}
-	free(tab);
-}
-
 void freeCrosstalk(AdvDet** det){
 	freeReadoutChannels( (*det)->readout_channels);
-	freeImodFreqTable((*det)->crosstalk_intermod_table);
+	freeImodTab((*det)->crosstalk_intermod_table);
 }
 
 AdvDet* newAdvDet(int* const status){
