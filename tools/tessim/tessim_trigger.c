@@ -103,6 +103,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   // trigger based on data->strategy
   //   0: moving average
   //   1: differentiation
+  //   2: noise (no triggering, but output records)
   //
   // The following elements of the helper array are used by the
   // moving average calculation:
@@ -163,7 +164,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 	// trigger using differentiation
 	if (data->strategy==TRIGGER_DIFF) {
 	  // calculate filtered differential
-	  int ndx=data->fifoind-1;
+	  int ndx=data->fifoind-1; //// WRONG WRONG WRONG CHECK
 	  // this loop could be optimized making use of the symmetry
 	  // of the coefficients (we might also want to code this in a
 	  // different way to prevent integer overflows, although again
@@ -223,13 +224,13 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       data->stream->pixid=tes->id;
       // copy prebuffer into the new stream
       // note: fifo[fifoind]=pulse will be copied further down!
-      data->stream->time=time-data->preBufferSize*tes->delta_t;
-      unsigned long ii;
-      if (data->fifoind >= data->preBufferSize) {
-	ii=data->fifoind - data->preBufferSize;
-      } else {
-	ii=data->fifoind+data->fifo->trigger_size-data->preBufferSize;
+      data->stream->time=time - data->preBufferSize*tes->delta_t;
+
+      unsigned long ii=data->fifoind-1 - data->preBufferSize;
+      if (ii<0) {
+	ii+=data->fifo->trigger_size;
       }
+
       for (unsigned int i=0; i<data->preBufferSize; i++) {
 	if (ii==data->fifo->trigger_size) {
 	  ii=0;
@@ -238,6 +239,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 	data->stream->adc_double[i]=data->fifo->adc_double[ii];
 	ii++;
       }
+      
       data->streamind=data->preBufferSize;
     }
     CHECK_STATUS_VOID(*status);
