@@ -92,9 +92,7 @@ void tes_close_datastream(tesparams *tes, char *streamfile, char *impactfile,
 		     0,-1,status);
   fits_close_file(fptr,status);
   CHECK_STATUS_VOID(*status);
-  printf("Before destroy\n");
   destroyTESFitsStream(stream);
-  printf("Before destroy\n");
   free(stream);
 }
 
