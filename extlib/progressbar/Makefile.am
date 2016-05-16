@@ -11,6 +11,7 @@ lib_LTLIBRARIES=libprogressbar.la
 
 # include options
 libprogressbar_la_CFLAGS=-I./include
+libprogressbar_la_CPPFLAGS=-I./include
 
 # Sources
 libprogressbar_la_SOURCES=lib/progressbar.c lib/statusbar.c
