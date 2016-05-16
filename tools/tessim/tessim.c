@@ -106,8 +106,8 @@ int tessim_main() {
 	    if (found==0) {
 	      fprintf(stderr,"Error: Grade of differential trigger must be one of ");
 	      char comma=' ';
-	      for (int i=0; i<10; i++) {
-		printf("%c %i",comma,points[i]);
+	      for (unsigned int i=0; i<sizeof(points)/sizeof(unsigned int); i++) {
+		printf("%c %ui",comma,points[i]);
 		comma=',';
 	      }
 	      exit(1);
@@ -292,6 +292,7 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   query_simput_parameter_long("seed", &seed, status);
   par->seed=labs(seed); 
 
+      
 
   query_simput_parameter_bool("propertiesonly",properties,status);
 
