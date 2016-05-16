@@ -303,6 +303,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse,int *status);
 // trigger types
 #define TRIGGER_MOVAVG 1
 #define TRIGGER_DIFF 2
+#define TRIGGER_NOISE 3
 
 // append a photon to the data stream
 // NOT YET IMPLEMENTED!

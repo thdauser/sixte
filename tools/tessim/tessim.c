@@ -113,8 +113,16 @@ int tessim_main() {
 	      exit(1);
 	    }
 	  } else {
-	    fprintf(stderr,"Trigger strategy must be one of stream, movavg or diff\n");
-	    exit(1);
+	    if (strncmp(par.trigger,"noise",5)==0) {
+	      strategy=TRIGGER_NOISE;
+	      npts=0;
+	      suppress=par.triggerSize;
+	      threshold=0.;
+	      printf("\nChoosing noise output with record length %u\n",npts);
+	    } else {
+	      fprintf(stderr,"Trigger strategy must be one of stream, movavg, diff, or noise\n");
+	      exit(1);
+	    }
 	  }
 	}
 
@@ -155,7 +163,10 @@ int tessim_main() {
     free(par.type);
     free(par.impactlist);
     free(par.streamfile);
+    free(par.trigger);
 
+    freeSixtStdKeywords(keywords);
+    
   } while(0); // end of error handling loop
 
   if (EXIT_SUCCESS==status) {
@@ -180,6 +191,7 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
     char *file=strdup(par->type+5);
     tes_fits_read_params(file,par,status);
     CHECK_STATUS_VOID(*status);
+    free(file);
     fromfile=1;
   }
 

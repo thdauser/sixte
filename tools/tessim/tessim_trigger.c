@@ -109,7 +109,6 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   //   helper[0]: sum to calculate the moving average
   //   helper[1]: index into the fifo (for moving average calculation)
 
-
   CHECK_STATUS_VOID(*status); 
 
   tes_trigger_info *data=(tes_trigger_info *) (tes->streaminfo);
@@ -181,7 +180,11 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 	  }
 	  trigger=(diffsum > diffcoeff[data->npts].divisor*data->threshold);
 	} else {
-	  fprintf(stderr,"This should never happen!");
+	  if (data->strategy==TRIGGER_NOISE) {
+	    trigger=1;
+	  } else {
+	    fprintf(stderr,"This should never happen!");
+	  }
 	}
       }
     } else {
