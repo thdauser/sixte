@@ -84,5 +84,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		detstruct2obj2d.h obj2d.h sixtesvg.h tesrecord.h	\
 		teseventlist.h optimalfilters.h testrigger.h            \
 		integraSIRENA.h tasksSIRENA.h pulseprocess.h            \
-                inoututils.h genutils.h crosstalk.h grading.h
+                inoututils.h genutils.h crosstalk.h grading.h sixt_main.c
 

@@ -380,7 +380,13 @@ void get_collist(char *filename, int *ncols, char ***cols, int *status){
   
   while(!feof(f)){
     char coldummy[32];
-    fscanf(f, "%s", coldummy);
+    int retval=fscanf(f, "%s", coldummy);
+    if (retval==0) {
+      SIXT_ERROR("fscanf error in xml2svg");
+      *status=EXIT_FAILURE;
+      break;
+    }
+    
     if(coldummy[0]!='#'){
       printf("%s is not a valid color. Colors must be in hex format (rrggbb) and start with '#'.\n", coldummy);
       *status=EXIT_FAILURE;

@@ -69,6 +69,9 @@ extern const double eromjdref;
     to 1998-01-01T00:00:00.00. */
 extern const double xmmmjdref;
 
+/////////////////////////////////////////////////////////////////
+extern int sixt_argc;
+extern char **sixt_argv;
 
 /////////////////////////////////////////////////////////////////
 // Macro definitions.
