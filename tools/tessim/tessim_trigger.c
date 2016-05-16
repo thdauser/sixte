@@ -206,8 +206,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   }
 
   if (trigger) {
-    // prevent trigger happening for the next 10 samples
-    // (this should be a parameter)
+    // prevent trigger happening for the next SuppressTrigger samples
     data->CanTrigger=data->SuppressTrigger;
 
     // are we already accumulating data?
