@@ -229,6 +229,7 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
   // does the current extension contain the TESTYPE keyword?
   char string[FLEN_VALUE]; // max length of a fits keyword string
   fits_read_key(fptr,TSTRING,"TESTYPE",string,comment,status);
+
   if (*status == KEY_NO_EXIST ) {
     // No -> search for first TESDATASTREAM extension
     // and (try to) read the key again
@@ -250,15 +251,13 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
 
   fits_read_key(fptr,TDOUBLE,"CE1",&par->Ce1,comment,status);
   fits_read_key(fptr,TDOUBLE,"GB1",&par->Gb1,comment,status);
-
   fits_read_key(fptr,TDOUBLE,"T_START",&par->T_start,comment,status);
   fits_read_key(fptr,TDOUBLE,"TB",&par->Tb,comment,status);
-
   fits_read_key(fptr,TDOUBLE,"R0",&par->R0,comment,status);
+
 
   // yes, really
   fits_read_key(fptr,TDOUBLE,"I0_START",&par->I0,comment,status);
-
   if (par->acdc) {
     fits_read_key(fptr,TDOUBLE,"RPARA",&par->Rpara,comment,status);
     par->RL=0.;

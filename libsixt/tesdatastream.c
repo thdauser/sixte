@@ -362,6 +362,14 @@ void appendTESFitsStream(fitsfile *fptr,
   fits_movnam_hdu(fptr,BINARY_TBL,"TESDATASTREAM",0,status);
   CHECK_STATUS_VOID(*status);
 
+  // update header keywords
+  fits_update_key(fptr, TDOUBLE, "TSTART",
+        &tstart, "Start time of data stream", status);
+  CHECK_STATUS_VOID(*status);
+  fits_update_key(fptr, TDOUBLE, "TSTOP",
+        &tstop, "Stop time of data stream", status);
+  CHECK_STATUS_VOID(*status);
+  
   // get the required column numbers
   int timecol;
   fits_get_colnum(fptr,CASESEN,"TIME",&timecol,status);
@@ -373,8 +381,18 @@ void appendTESFitsStream(fitsfile *fptr,
     fits_get_colnum(fptr,CASESEN,ttype,colnum+ii,status);
   }
   CHECK_STATUS_VOID(*status);
+
+  // Update header keywords (doing this first avoid too many seeks in the
+  // table)
+  for(ii=0;ii<stream->Npix; ii++) {
+    char nev[9];
+    sprintf(nev, "NES%05d", stream->pixID[ii]+1);
+    fits_update_key(fptr, TLONG, nev, &Nevts[stream->pixID[ii]],
+      "Number of simulated events in pixel stream", status);
+    CHECK_STATUS_VOID(*status);
+  }
   
-  // get number of rows in the table and append
+  // get number of rows in the table
   LONGLONG tablenrows;
   fits_get_num_rowsll(fptr, &tablenrows, status);
   CHECK_STATUS_VOID(*status);
@@ -383,23 +401,11 @@ void appendTESFitsStream(fitsfile *fptr,
   fits_write_col(fptr, TDOUBLE, timecol, tablenrows+1, 1, nrows, stream->time, status);
   CHECK_STATUS_VOID(*status);
   for(ii=0; ii<stream->Npix; ii++){
-    fits_write_col(fptr, TUSHORT, colnum[ii], tablenrows+1, 1, nrows, stream->adc_value[ii], status);
-    CHECK_STATUS_VOID(*status);
-    
-    char nev[9];
-    sprintf(nev, "NES%05d", stream->pixID[ii]+1);
-    fits_update_key(fptr, TLONG, nev, &Nevts[stream->pixID[ii]],
-      "Number of simulated events in pixel stream", status);
+    fits_write_col(fptr, TUSHORT, colnum[ii], tablenrows+1, 1, nrows,
+		   stream->adc_value[ii], status);
     CHECK_STATUS_VOID(*status);
   }
 
-  // update header keywords
-  fits_update_key(fptr, TDOUBLE, "TSTART",
-        &tstart, "Start time of data stream", status);
-  CHECK_STATUS_VOID(*status);
-  fits_update_key(fptr, TDOUBLE, "TSTOP",
-        &tstop, "Stop time of data stream", status);
-  CHECK_STATUS_VOID(*status);
 }
 
 void getTESDataStream(TESDataStream* TESData, 
