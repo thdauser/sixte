@@ -163,8 +163,9 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       } else {
 	// trigger using differentiation
 	if (data->strategy==TRIGGER_DIFF) {
-	  // calculate filtered differential
-	  int ndx=data->fifoind-1; //// WRONG WRONG WRONG CHECK
+	  // calculate filtered derivative
+	  // ndx is the index of the newest sample
+	  int ndx=data->fifoind-1; 
 	  // this loop could be optimized making use of the symmetry
 	  // of the coefficients (we might also want to code this in a
 	  // different way to prevent integer overflows, although again
@@ -180,6 +181,9 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 	    ndx--;
 	  }
 	  trigger=(diffsum > diffcoeff[data->npts].divisor*data->threshold);
+
+	  //	  printf("   Derivval: %20.10f %20.10f\n",(double) diffsum/(double) diffcoeff[data->npts].divisor , data->threshold);
+
 	} else {
 	  if (data->strategy==TRIGGER_NOISE) {
 	    trigger=1;
@@ -210,12 +214,16 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   }
 
   if (trigger) {
+
+    //    printf("Trigger: %10.5f\n",time);
+    
     // prevent trigger happening for the next SuppressTrigger samples
     data->CanTrigger=data->SuppressTrigger;
 
     // are we already accumulating data?
     // if yes: increase the record size appropriately
     if (data->stream!=NULL) {
+      //      printf("Resizing record to length %ul\n",data->triggerSize+data->streamind);
       resizeTesRecord(data->stream,data->triggerSize+data->streamind,status);
     } else {
       // not accumulating yet: create new tes record
@@ -223,11 +231,10 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       data->streamind=0;
       data->stream->pixid=tes->id;
       // copy prebuffer into the new stream
-      // note: fifo[fifoind]=pulse will be copied further down!
       data->stream->time=time - data->preBufferSize*tes->delta_t;
 
       // find new starting index. In principle this is
-      // just ii=fifoind-preBufferSize-1 but we have to
+      // just ii=fifoind-1 -preBufferSize but we have to
       // be careful to always remain positive since
       // preBufferSize etc. are unsigned longs!
       unsigned long ii=data->fifoind;
@@ -235,7 +242,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       if (ii<=data->preBufferSize) {
 	ii+=data->fifo->trigger_size;
       }
-      ii-=data->preBufferSize+1;
+      ii=ii-1-data->preBufferSize;
 
       for (unsigned long i=0; i<data->preBufferSize; i++) {
 	if (ii==data->fifo->trigger_size) {
