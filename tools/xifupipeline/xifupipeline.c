@@ -136,8 +136,8 @@ int xifupipeline_main()
 		strcpy(par.PixImpactList,piximpactlist_filename);
 
 		//Determine the tes record output file.
-		char tesrecord_filename[MAXFILENAME];
 		if (! par.UseRMF) {
+			char tesrecord_filename[MAXFILENAME];
 			strcpy(ucase_buffer, par.TesTriggerFile);
 			strtoupper(ucase_buffer);
 			if (0==strcmp(ucase_buffer,"NONE")) {
@@ -147,7 +147,7 @@ int xifupipeline_main()
 				strcat(tesrecord_filename, par.TesTriggerFile);
 			}
 			strcpy(par.TesTriggerFile,tesrecord_filename);
-			free(tesrecord_filename);
+//			free(tesrecord_filename);
 		} else {
 			strcpy(par.TesTriggerFile, "");
 		}
@@ -461,7 +461,7 @@ int xifupipeline_main()
 			}
 			headas_chat(3, "... done\n");
 		}
-		break;
+
 		// --- Simulation Process ---
 
 		headas_chat(3, "start simulation ...\n");
@@ -543,6 +543,7 @@ int xifupipeline_main()
 						addImpact2PixImpFile(pixilf, &(piximp[jj]), &status);
 					}
 				}
+
 				free(piximp);
 				CHECK_STATUS_BREAK(status);
 
