@@ -282,8 +282,7 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
   fits_read_key(fptr,TDOUBLE,"N",&par->n,comment,status);
   fits_read_key(fptr,TDOUBLE,"IMIN",&par->imin,comment,status);
   fits_read_key(fptr,TDOUBLE,"IMAX",&par->imax,comment,status);
-  // for the moment
-  //  fits_read_key(fptr,TINT,"SIMNOISE",&par->simnoise,comment,status);
+  fits_read_key(fptr,TINT,"SIMNOISE",&par->simnoise,comment,status);
 
   fits_read_key(fptr,TDOUBLE,"M_EXCESS",&par->m_excess,comment,status);
 
@@ -497,7 +496,7 @@ void tes_print_params(tesparams *tes) {
   if (taup<taum) {
     headas_chat(0,"Tau(rise)<Tau(fall): System is overdamped\n");
   }
-  if (fabs(taup/taum)-1. < 1e-5) {
+  if (1e6*fabs(taup-taum) < 1e-5) {
     headas_chat(0,"Tau(rise)=Tau(fall): System is critically damped\n");
   }
 #endif
@@ -691,7 +690,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->Vunk=0.;
 
   // progress bar
-  tes->progressbar=par->progressbar;
+  tes->progressbar=NULL;
 
   // ...define ODE system
   tes->odesys=malloc(sizeof(gsl_odeiv2_system));

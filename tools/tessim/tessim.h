@@ -64,7 +64,7 @@ typedef struct {
 
   unsigned long seed; // seed of random number generator
 
-  progressbar *progressbar; // progress bar (or NULL if we don't show it)
+  int showprogress;   // show progressbar?
   
 } tespxlparams;
 

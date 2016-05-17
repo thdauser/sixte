@@ -22,9 +22,6 @@ int tessim_main() {
   // register HEATOOL
   set_toolname("tessim");
   set_toolversion("0.02");
-
-
-
   
   do { // start of error handling loop
     // read parameters using PIL
@@ -143,9 +140,15 @@ int tessim_main() {
 	tes->write_photon=NULL;
     }
 
-    // Run the simulation
+    // setup the progress bar
+    if (par.showprogress) {
+      tes->progressbar=progressbar_new("simulating",
+				       (unsigned long) ((par.tstop-par.tstart)*PROGRESSBAR_FACTOR));
+    }
 
+    // Run the simulation
     tes_propagate(tes,par.tstop,&status);
+    
     if (tes->progressbar!=NULL) {
       progressbar_finish(tes->progressbar);
     }
@@ -213,7 +216,7 @@ void sixt_init_query_commandline(int *status) {
 //
 int sixt_par_on_commandline(char *parname) {
   for (int i=1;i<query_argc;i++) {
-    if (strcasecmp(parname,query_cmdpars[i])!=0) {
+    if (strcasecmp(parname,query_cmdpars[i])==0) {
       return 1;
     }
   }
@@ -232,6 +235,94 @@ void sixt_free_query_commandline() {
   }
   free(query_cmdpars);
   query_cmdpars=NULL;
+}
+
+int cmd_query_simput_parameter_file_name(int fromcmd,char *name, char **field, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_file_name(name,field,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int cmd_query_simput_parameter_string(int fromcmd,char *name, char **field, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_string(name,field,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int cmd_query_simput_parameter_string_buffer(int fromcmd,char *name, char * const field, int buflen, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_string_buffer(name,field,buflen,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int cmd_query_simput_parameter_int(int fromcmd,char *name, int *field, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_int(name,field,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int cmd_query_simput_parameter_long(int fromcmd,char *name, long *field, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_long(name,field,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int cmd_query_simput_parameter_float(int fromcmd,char *name, float *field, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_float(name,field,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int cmd_query_simput_parameter_double(int fromcmd,char *name, double *field, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_double(name,field,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int cmd_query_simput_parameter_bool(int fromcmd,char *name, int *field, int *status) {
+  if (fromcmd || sixt_par_on_commandline(name)) {
+    query_simput_parameter_bool(name,field,status);
+    if (!fromcmd) {
+      printf("Overriding parameter %s from command line\n",name);
+    }
+    return 1;
+  }
+  return 0;
 }
 
 
@@ -262,117 +353,84 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
   // or
   // b) parameters have been read from a FITS file, BUT they are given
   //    on the command line
-  // The code is fast since it makes use of short-circuiting of the ||-operator
-  //
-  // We leave the asserts outside of the ifs in order to get some
-  // sanity checking for the parameters from the FITS file, i.e.,
-  // sixt_par_on_commandline is called ONLY if we got parameters from
-  // the command line and have to check whether they are overridden
-  //
-  
-  if (fromcmd || sixt_par_on_commandline("acbias")) {
-    query_simput_parameter_bool("acbias", &par->acdc, status);
-  }
+  // The code is fast since the cmd_... routines make use of short-circuiting of the ||-operator
+  cmd_query_simput_parameter_bool(fromcmd,"acbias", &par->acdc, status);
+  cmd_query_simput_parameter_double(fromcmd,"sample_rate",&(par->sample_rate),status);
 
-  if (fromcmd || sixt_par_on_commandline("sample_rate")) {
-    query_simput_parameter_double("sample_rate",&(par->sample_rate),status);
-  }
   assert(par->sample_rate>0);
 
-  if (fromcmd || sixt_par_on_commandline("Ce")) {
-    query_simput_parameter_double("Ce",&(par->Ce1),status);
+  if (cmd_query_simput_parameter_double(fromcmd,"Ce",&(par->Ce1),status) ) {
     par->Ce1*=1e-12; // pJ/K -> J/K
   }
   assert(par->Ce1>0);
 
-  if (fromcmd || sixt_par_on_commandline("Gb")) {
-    query_simput_parameter_double("Gb",&(par->Gb1),status);
+  if (cmd_query_simput_parameter_double(fromcmd,"Gb",&(par->Gb1),status) ) {
     par->Gb1*=1e-12; // pW/K -> W/K
   }
   assert(par->Gb1>0);
   
-  if (fromcmd || sixt_par_on_commandline("T_start")) {
-    query_simput_parameter_double("T_start", &(par->T_start), status); //mK
+  if (cmd_query_simput_parameter_double(fromcmd,"T_start", &(par->T_start), status) ) {
     par->T_start*=1e-3; // mK -> K
   }
   assert(par->T_start>0);
   
-  if (fromcmd || sixt_par_on_commandline("Tb")) {
-    query_simput_parameter_double("Tb", &(par->Tb), status); // mK
+  if (cmd_query_simput_parameter_double(fromcmd,"Tb", &(par->Tb), status) ) {
     par->Tb*=1e-3; // mK->K
   }
   assert(par->Tb>0);
   
-  if (fromcmd || sixt_par_on_commandline("R0")) {
-    query_simput_parameter_double("R0", &(par->R0), status); // mOhm
+  if (cmd_query_simput_parameter_double(fromcmd,"R0", &(par->R0), status) ) {
     par->R0*=1e-3; // mOhm->Ohm
   }
   assert(par->R0>0);
   
-  if (fromcmd || sixt_par_on_commandline("I0")) {
-    query_simput_parameter_double("I0", &(par->I0), status); // muA
+  if (cmd_query_simput_parameter_double(fromcmd,"I0", &(par->I0), status) ) {
     par->I0*=1e-6; // muA->A
   }
   assert(par->I0>0);
   
   if (par->acdc) {
-    if (fromcmd || sixt_par_on_commandline("Rparasitic")) {
-      query_simput_parameter_double("Rparasitic", &(par->Rpara), status); // mOhm
+    if (cmd_query_simput_parameter_double(fromcmd,"Rparasitic", &(par->Rpara), status)) {
       par->Rpara*=1e-3; // mOhm->Ohm
-      par->RL=0;
     }
+    par->RL=0;
     assert(par->Rpara>=0);
   } else {
-    if (fromcmd || sixt_par_on_commandline("RL")) {
-      query_simput_parameter_double("RL", &(par->RL), status); // mOhm
+    if (cmd_query_simput_parameter_double(fromcmd,"RL", &(par->RL), status)) {
       par->RL*=1e-3; // mOhm->Ohm
-      par->Rpara=0.;
     }
+    par->Rpara=0.;
     assert(par->RL>=0);
-  } 
+  }
 
   if (par->acdc) {
-    if (fromcmd || sixt_par_on_commandline("TRR")) {
-      query_simput_parameter_double("TTR", &(par->TTR), status); 
-      assert(par->TTR>=0);
-    }
+    cmd_query_simput_parameter_double(fromcmd,"TTR", &(par->TTR), status); 
+    assert(par->TTR>=0);
   } else {
     par->TTR=0.;
   }
 
-  if (fromcmd || sixt_par_on_commandline("alpha")) {
-    query_simput_parameter_double("alpha", &(par->alpha), status);
-  }
+  cmd_query_simput_parameter_double(fromcmd,"alpha", &(par->alpha), status);
   assert(par->alpha>0);
-  if (fromcmd || sixt_par_on_commandline("beta")) {
-    query_simput_parameter_double("beta", &(par->beta), status);
-  }
+  cmd_query_simput_parameter_double(fromcmd,"beta", &(par->beta), status);
   
   if (par->acdc) {
-    if (fromcmd || sixt_par_on_commandline("Lfilter")) {
-      query_simput_parameter_double("Lfilter", &(par->Lfilter), status); //muH
+    if (cmd_query_simput_parameter_double(fromcmd,"Lfilter", &(par->Lfilter), status)){
       par->Lfilter*=1e-6;
-      par->Lin=0.;
     }
+    par->Lin=0.;
     assert(par->Lfilter>0);
   } else {
-    if (fromcmd || sixt_par_on_commandline("Lin")) {
-      query_simput_parameter_double("Lin", &(par->Lin), status); //nH
+    if (cmd_query_simput_parameter_double(fromcmd,"Lin", &(par->Lin), status)) {
       par->Lin*=1e-9;
-      par->Lfilter=0.;
     }
+    par->Lfilter=0.;
     assert(par->Lin>0);
   }
 
-  if (fromcmd || sixt_par_on_commandline("n")) {
-    query_simput_parameter_double("n", &(par->n), status);
-  }
-  if (fromcmd || sixt_par_on_commandline("imin")) {
-    query_simput_parameter_double("imin", &(par->imin), status);
-  }
-  if (fromcmd || sixt_par_on_commandline("imax")) {
-    query_simput_parameter_double("imax", &(par->imax), status);
-  }
+  cmd_query_simput_parameter_double(fromcmd,"n", &(par->n), status);
+  cmd_query_simput_parameter_double(fromcmd,"imin", &(par->imin), status);
+  cmd_query_simput_parameter_double(fromcmd,"imax", &(par->imax), status);
 
   if (par->imax<=par->imin) {
     SIXT_ERROR("imax MUST be larger imin\n");
@@ -380,21 +438,16 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
     return;
   }
 
-  if (fromcmd || sixt_par_on_commandline("simnoise")) {
-    query_simput_parameter_bool("simnoise", &par->simnoise, status);
-  }
+  cmd_query_simput_parameter_bool(fromcmd,"simnoise", &par->simnoise, status);
 
   if (&par->simnoise) {
-    if (fromcmd || sixt_par_on_commandline("m_excess")) {
-      query_simput_parameter_double("m_excess",&par->m_excess,status);
-    }
+    cmd_query_simput_parameter_double(fromcmd,"m_excess",&par->m_excess,status);
   } else {
     par->m_excess=0.; // switch explicitly off if not simulating noise
   }
   assert(par->m_excess>=0);
 
   // get optional effective voltage bias
-  // NB: NOT stored in the FITS file (why?)
   query_simput_parameter_double("V0",&(par->V0),status);
   par->V0*=1e-6;
 
@@ -421,14 +474,7 @@ void tessim_getpar(tespxlparams *par, int *properties, int *status) {
 
   query_simput_parameter_bool("propertiesonly",properties,status);
 
-  int progressbar;
-  query_simput_parameter_bool("progressbar",&progressbar,status);
-  if (progressbar) {
-    par->progressbar=progressbar_new("simulating",
-				     (unsigned long) ((par->tstop-par->tstart)*PROGRESSBAR_FACTOR));
-  } else {
-	par->progressbar=NULL;
-  }
+  query_simput_parameter_bool("progressbar",&par->showprogress,status);
 
   query_simput_parameter_bool("clobber", &par->clobber, status);
 

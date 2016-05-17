@@ -226,12 +226,18 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       // note: fifo[fifoind]=pulse will be copied further down!
       data->stream->time=time - data->preBufferSize*tes->delta_t;
 
-      unsigned long ii=data->fifoind-1 - data->preBufferSize;
-      if (ii<0) {
+      // find new starting index. In principle this is
+      // just ii=fifoind-preBufferSize-1 but we have to
+      // be careful to always remain positive since
+      // preBufferSize etc. are unsigned longs!
+      unsigned long ii=data->fifoind;
+      // wrap around?
+      if (ii<=data->preBufferSize) {
 	ii+=data->fifo->trigger_size;
       }
+      ii-=data->preBufferSize+1;
 
-      for (unsigned int i=0; i<data->preBufferSize; i++) {
+      for (unsigned long i=0; i<data->preBufferSize; i++) {
 	if (ii==data->fifo->trigger_size) {
 	  ii=0;
 	}
