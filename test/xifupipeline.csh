@@ -19,7 +19,7 @@ xifupipeline  \
     RA=0.0 Dec=0.0 \
     Background=no \
     Simput=$indir/simput.fits \
-    Exposure=1. \
+    Exposure=10. \
     UseRMF=yes \
     doCrosstalk=no \
     chatter=3 \
@@ -34,7 +34,7 @@ xifupipeline  \
     RA=0.0 Dec=0.0 \
     Background=no \
     Simput=$indir/simput.fits \
-    Exposure=1. \
+    Exposure=10. \
     UseRMF=yes \
     doCrosstalk=no \
     chatter=3 \
