@@ -138,9 +138,35 @@ void freeImodTab(ImodTab* tab){
 	}
 }
 
+
+void freeElecTab(ElecTab* tab){
+	if (tab != NULL){
+		if (tab->matrix!=NULL){
+			for(int kk=0; kk < tab->n_freq_s ; kk++){ //  --- freq_p --- //
+				if (tab->matrix[kk]!=NULL){
+					for(int ii=0; ii < tab->n_freq_p ; ii++){ // --- freq_s --- //
+						if (tab->matrix[kk][ii]!=NULL){
+							free(tab->matrix[kk][ii]);
+						}
+					}  // --- END freq_s --- //
+					free(tab->matrix[kk]);
+				}
+			}   //  --- END freq_p --- //
+			free(tab->matrix);
+		}
+		free(tab->freq_s);
+		free(tab->freq_p);
+		free(tab->ener_p);
+		free(tab);
+	}
+}
+
+
 void freeCrosstalk(AdvDet** det){
 	freeReadoutChannels( (*det)->readout_channels);
 	freeImodTab((*det)->crosstalk_intermod_table);
+	freeElecTab((*det)->crosstalk_elec_carrier_olap);
+	freeElecTab((*det)->crosstalk_elec_common_imp);
 }
 
 AdvDet* newAdvDet(int* const status){
@@ -171,15 +197,18 @@ AdvDet* newAdvDet(int* const status){
   det->xt_dist_thermal=NULL;
   det->xt_weight_thermal=NULL;
   det->xt_num_thermal=0;
+  det->tau_crit=0;
 
   det->channel_file=NULL;
   det->crosstalk_intermod_file=NULL;
   det->crosstalk_intermod_table=NULL;
   det->crosstalk_timedep_file=NULL;
   det->crosstalk_timedep=NULL;
+  det->crosstalk_elec_file=NULL;
+  det->crosstalk_elec_carrier_olap=NULL;
+  det->crosstalk_elec_common_imp=NULL;
 
   det->readout_channels=NULL;
-  det->elec_xt_par=NULL;
 
   det->threshold_event_lo_keV=0.;
 
@@ -205,7 +234,6 @@ void destroyAdvDet(AdvDet **det){
 		}
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
-		free((*det)->elec_xt_par);
 
 		freeCrosstalk(det);
 
@@ -698,27 +726,39 @@ static void AdvDetXMLElementStart(void* parsedata,
 
 	} else if(!strcmp(Uelement, "ELECTRICALCROSSTALK")){
 
-		xmlparsedata->det->elec_xt_par = (ElecCrosstalkPar*)malloc(sizeof(ElecCrosstalkPar));
-		CHECK_MALLOC_VOID(xmlparsedata->det->elec_xt_par);
-		xmlparsedata->det->elec_xt_par->R0 = getXMLAttributeDouble(attr, "R0");
-		xmlparsedata->det->elec_xt_par->Lfprim = getXMLAttributeDouble(attr, "LFPRIM");
-		xmlparsedata->det->elec_xt_par->Lcommon = getXMLAttributeDouble(attr, "LCOMMON");
-		xmlparsedata->det->elec_xt_par->Lfsec = getXMLAttributeDouble(attr, "LFSEC");
+		xmlparsedata->det->crosstalk_elec_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_elec_file);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_elec_file);
+		if (strlen(xmlparsedata->det->crosstalk_elec_file) == 0){
+			free(xmlparsedata->det->crosstalk_elec_file);
+			xmlparsedata->det->crosstalk_elec_file=NULL;
+		}
 
 	} else if(!strcmp(Uelement, "TIMEDEPENDENCE"))  {
 
 		xmlparsedata->det->crosstalk_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_timedep_file);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_timedep_file);
+		if (strlen(xmlparsedata->det->crosstalk_timedep_file) == 0){
+			free(xmlparsedata->det->crosstalk_timedep_file);
+			xmlparsedata->det->crosstalk_timedep_file=NULL;
+		}
+
 
 	} else if(!strcmp(Uelement, "INTERMODULATION"))  {
 
 		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_file);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_intermod_file);
+		if (strlen(xmlparsedata->det->crosstalk_intermod_file) == 0){
+			free(xmlparsedata->det->crosstalk_intermod_file);
+			xmlparsedata->det->crosstalk_intermod_file=NULL;
+		}
 
 	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
 		xmlparsedata->det->threshold_event_lo_keV = getXMLAttributeDouble(attr,"VALUE");
+	} else if (!strcmp(Uelement,"TAUCRIT_MUS")){
+		xmlparsedata->det->tau_crit = getXMLAttributeDouble(attr,"VALUE");
 	} else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];

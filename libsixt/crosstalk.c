@@ -20,11 +20,6 @@
 
 #include "crosstalk.h"
 
-int num_imod = 6;
-char* imod_xt_names[] = { "|f2 - f1|", " f2 + f1 ","2*f2 - f1","2*f1 - f2", "2*f2 + f1", "2*f1 + f2" };
-int counting_imod_xt[] = {0, 0, 0, 0, 0, 0 };
-
-
 /** Calculates distance between two pixels */
 static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
 	// Note: this assumes no pixel overlap (this was ensured at detector loading stage)
@@ -144,15 +139,258 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 	}
 }
 
+static void initElecTab(ElecTab** tab, int n_freq_s, int n_freq_p, int n_ener_p,
+		double* freq_s, double* freq_p, double* ener_p, int* status){
+
+	(*tab) = (ElecTab*) malloc (sizeof (ElecTab));
+	CHECK_MALLOC_VOID_STATUS(tab,*status);
+
+	// make a short pointer
+	ElecTab* t = (*tab);
+
+	t->n_freq_s = n_freq_s;
+	t->n_freq_p  = n_freq_p;
+	t->n_ener_p = n_ener_p;
+
+	t->freq_s = (double*) malloc(n_freq_s * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->freq_s,*status);
+	for (int ii=0; ii<n_freq_s; ii++){
+		t->freq_s[ii] = freq_s[ii];
+	}
+
+	t->freq_p = (double*) malloc(n_freq_p * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->freq_p,*status);
+	for (int ii=0; ii<n_freq_p; ii++){
+		t->freq_p[ii] = freq_p[ii];
+	}
+
+	t->ener_p = (double*) malloc(n_ener_p * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->ener_p,*status);
+	for (int ii=0; ii<n_ener_p; ii++){
+		t->ener_p[ii] = ener_p[ii];
+	}
+
+
+	// allocate the 3d matrix (n_freq_s x n_freq_p x n_ener_p)
+	t->matrix = (double***) malloc (n_freq_s*sizeof(double**));
+	CHECK_MALLOC_VOID_STATUS(t->matrix,*status);
+
+	for (int ll=0; ll<n_freq_s; ll++){               // FREQ_S-LOOP
+		t->matrix[ll] = (double**) malloc (n_freq_p*sizeof(double*));
+		CHECK_MALLOC_VOID_STATUS(t->matrix[ll],*status);
+
+		for (int ii=0; ii<n_freq_p; ii++){             // FREQ_P-LOOP
+			t->matrix[ll][ii] = (double*) malloc (n_ener_p*sizeof(double));
+			CHECK_MALLOC_VOID_STATUS(t->matrix[ll][ii],*status);
+
+			for (int jj=0; jj<n_ener_p; jj++){      // ENER_P-LOOP
+				t->matrix[ll][ii][jj] = 0.0;
+			}
+		}
+	}
+	return;
+}
+
+static void get_imodtable_axis(int* nrows, double** val, char* extname, char* colname, fitsfile* fptr, int* status){
+
+	int extver = 0;
+	fits_movnam_hdu(fptr, BINARY_TBL, extname, extver ,status);
+	if (*status!=EXIT_SUCCESS){
+		printf(" *** error moving to extension %s\n",extname);
+		return;
+	}
+
+	// get the column id-number
+	int colnum;
+	if(fits_get_colnum(fptr, CASEINSEN, colname, &colnum, status)) return;
+
+	// get the number of rows
+	long n;
+	if (fits_get_num_rows(fptr, &n, status)) return;
+
+	// allocate memory for the array
+	*val=(double*)malloc(n*sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(*val,*status);
+
+    int anynul=0;
+    double nullval=0.0;
+    LONGLONG nelem = (LONGLONG) n;
+    fits_read_col(fptr, TDOUBLE, colnum, 1, 1, nelem ,&nullval,*val, &anynul, status);
+
+	(*nrows) = (int) n;
+
+	return;
+}
+
+/** read one intermodulation matrix from a fits file and store it in the structure */
+static void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p,
+		ElecTab* tab, char* extname, int* status){
+
+	// ampl and dt arrays should be initialized before
+	assert(tab->freq_s!=NULL);
+	assert(tab->freq_p!=NULL);
+	assert(tab->ener_p!=NULL);
+
+	// move to the extension containing the data
+	int extver = 0;
+	if (fits_movnam_hdu(fptr, IMAGE_HDU, extname, extver ,status)){
+		printf(" error: moving to extension %s failed \n",extname);
+		return;
+	}
+
+	// get number of rows
+	int naxis;
+	if (fits_get_img_dim(fptr, &naxis, status) && (naxis!=4)){
+		printf(" error: getting dimensions of intermodulation data array failed \n");
+		return;
+	}
+	long naxes[naxis];
+
+
+	if (fits_get_img_size(fptr, naxis, naxes, status) ){
+		printf(" error: getting dimensions of intermodulation data array failed \n");
+		return;
+	}
+	// check dimensions
+	if (naxes[0]!=n_freq_s || naxes[1]!=n_freq_p || naxes[2]!=n_ener_p ){
+		*status=EXIT_FAILURE;
+		printf(" error: wrong dimensions of the intermodulation data array [%ld %ld %ld] \n",
+				naxes[0],naxes[1],naxes[2]);
+	}
+
+
+
+	// actually read the table now
+	int anynul=0;
+	double* buf;
+	buf = (double*)malloc(n_freq_s*n_freq_p*n_ener_p*sizeof(double));
+	CHECK_MALLOC_VOID(buf);
+
+	double nullval=0.0;
+	long nelem = n_freq_s*n_freq_p*n_ener_p;
+	long fpixel[naxis];
+	for (int ii=0;ii<naxis;ii++){
+		fpixel[ii]=1;
+	}
+
+	fits_read_pix(fptr, TDOUBLE, fpixel,nelem, &nullval,buf, &anynul, status);
+	fits_report_error(stdout, *status);
+	CHECK_STATUS_VOID(*status);
+
+	headas_chat(7," start reading the electrical crosstalk matrix %s [%ld %ld %ld]",extname,n_freq_s,n_freq_p, n_ener_p);
+	for (int ii=0; ii<n_freq_s ; ii++){  // freq_s loop
+		for (int jj=0; jj<n_freq_p ; jj++){
+			for (int kk=0; kk<n_ener_p ; kk++){
+					int ind = 	( kk * n_freq_p + jj ) * n_freq_s + ii;
+					assert(ind < nelem);
+					tab->matrix[ii][jj][kk] = buf[ind];
+			}
+		}
+	} // ------------------------  //  end (freq_s loop)
+	headas_chat(7," ... done \n");
+
+	free(buf);
+
+	return;
+}
+
+/** load the electrical crosstalk tables */
+static void load_elec_table(AdvDet* det, int* status){
+
+	// check if the table exists
+	CHECK_NULL_VOID(det->crosstalk_elec_file,*status,"no file for the electrical crosstalk table specified");
+
+	char* EXTNAME_FREQ_SIGNAL = "freq_signal";
+	char* EXTNAME_FREQ_PERTURBER = "freq_perturber";
+	char* EXTNAME_ENER_PERTURBER = "ener_perturber";
+	char* COLNAME_FREQ_SIGNAL = "FREQ_S";
+	char* COLNAME_FREQ_PERTURBER = "FREQ_P";
+	char* COLNAME_ENER_PERTURBER = "EN_P";
+
+	// char* EXTNAME_CROSSTALK_TOTAL = "total_crosstalk";
+	char* EXTNAME_CARRIER_OVERLAP = "carrier_overlap";
+	char* EXTNAME_COMMON_IMPEDANCE = "common_impedance";
+
+	fitsfile *fptr=NULL;
+
+	do {
+
+		char fullfilename[MAXFILENAME];
+		strcpy(fullfilename,det->filepath);
+		strcat(fullfilename,det->crosstalk_elec_file);
+
+		// open the file
+		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
+		headas_chat(5, "\n[crosstalk] reading the electrical crosstalk table %s \n",fullfilename);
+
+		// read the extensions specifying the axes of the 3d matrix
+		int n_freq_s, n_freq_p, n_ener_p;
+		double* freq_s;
+		double* freq_p;
+		double* ener_p;
+		get_imodtable_axis(&n_freq_s,&freq_s,EXTNAME_FREQ_SIGNAL,COLNAME_FREQ_SIGNAL,fptr,status);
+		CHECK_STATUS_BREAK(*status);
+		get_imodtable_axis(&n_freq_p,&freq_p,EXTNAME_FREQ_PERTURBER,COLNAME_FREQ_PERTURBER,fptr,status);
+		CHECK_STATUS_BREAK(*status);
+		get_imodtable_axis(&n_ener_p,&ener_p,EXTNAME_ENER_PERTURBER,COLNAME_ENER_PERTURBER,fptr,status);
+		CHECK_STATUS_BREAK(*status);
+
+		// initialize the elec crosstalk tables
+		initElecTab(&(det->crosstalk_elec_carrier_olap), n_freq_s, n_freq_p, n_ener_p, freq_s, freq_p, ener_p, status);
+		if (*status!=EXIT_SUCCESS){
+			SIXT_ERROR("initializing electrical crosstalk table in memory failed");
+			break;
+		}
+
+		initElecTab(&(det->crosstalk_elec_common_imp), n_freq_s, n_freq_p, n_ener_p, freq_s, freq_p, ener_p, status);
+		if (*status!=EXIT_SUCCESS){
+			SIXT_ERROR("initializing electrical crosstalk table in memory failed");
+			break;
+		}
+
+
+		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, det->crosstalk_elec_carrier_olap,
+				EXTNAME_CARRIER_OVERLAP,status);
+		if (*status != EXIT_SUCCESS){
+			printf(" *** error: reading electrical crosstalk table (carrier overlap) %s  failed\n", fullfilename);
+			break;
+		}
+
+		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, det->crosstalk_elec_common_imp,
+				EXTNAME_COMMON_IMPEDANCE,status);
+		if (*status != EXIT_SUCCESS){
+			printf(" *** error: reading electrical crosstalk table (common impedance) %s  failed\n", fullfilename);
+			break;
+		}
+
+
+//		print_imod_matrix(det->crosstalk_intermod_table);
+
+	} while(0); // END of Error handling loop
+
+	if (fptr!=NULL) {fits_close_file(fptr,status);}
+
+	return;
+}
+
 // Loads electrical cross-talk for requested pixel
 // Concretely, iterates over all the pixels of the channel
 static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 	CHECK_STATUS_VOID(*status);
-	if (det->elec_xt_par==NULL){
+	if (det->crosstalk_elec_file==NULL){
 		*status = EXIT_FAILURE;
-		SIXT_ERROR("Tried to load electrical crosstalk with no corresponding information available at detector level");
+		SIXT_ERROR("Tried to load electrical crosstalk with no corresponding file given at detector level");
 		return;
 	}
+
+	// load the tables for the electrical crosstalk
+	if ((det->crosstalk_elec_carrier_olap == NULL) || (det->crosstalk_elec_common_imp == NULL) ){
+		load_elec_table(det, status);
+		CHECK_STATUS_VOID(*status);
+		assert(det->crosstalk_elec_carrier_olap != NULL);
+		assert(det->crosstalk_elec_common_imp != NULL);
+	}
+
 
 	AdvPix* concerned_pixel = &(det->pix[pixid]);
 	AdvPix* current_pixel = NULL;
@@ -167,10 +405,10 @@ static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 		if (current_pixel==concerned_pixel) continue;
 
 		// Carrier overlap
-		weight = pow(det->elec_xt_par->R0/(4*M_PI*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfprim),2);
+//		weight = pow(det->elec_xt_par->R0/(4*M_PI*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfprim),2);
 
 		// Common impedence
-		weight+=pow(concerned_pixel->freq*det->elec_xt_par->Lcommon/(2*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfsec),2);
+//		weight+=pow(concerned_pixel->freq*det->elec_xt_par->Lcommon/(2*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfsec),2);
 
 		// Add cross-talk pixel
 		add_xt_pixel(&concerned_pixel->electrical_cross_talk,current_pixel,weight,status);
@@ -241,6 +479,11 @@ static void load_crosstalk_timedep(AdvDet* det,int* const status){
 	}
 	fclose(file);
 
+	// convert time from unit tau_crit (given in mus) to seconds
+	for (int ii=0; ii<det->crosstalk_timedep->length;ii++){
+		det->crosstalk_timedep->time[ii] *=  det->tau_crit / 1e6;
+	}
+
 }
 
 static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, int n_freq,
@@ -303,37 +546,6 @@ static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, int n_freq,
 	return;
 }
 
-static void get_imodtable_axis(int* nrows, double** val, char* extname, char* colname, fitsfile* fptr, int* status){
-
-	int extver = 0;
-	fits_movnam_hdu(fptr, BINARY_TBL, extname, extver ,status);
-	if (*status!=EXIT_SUCCESS){
-		printf(" *** error moving to extension %s\n",extname);
-		return;
-	}
-
-	// get the column id-number
-	int colnum;
-	if(fits_get_colnum(fptr, CASEINSEN, colname, &colnum, status)) return;
-
-	// get the number of rows
-	long n;
-	if (fits_get_num_rows(fptr, &n, status)) return;
-
-	// allocate memory for the array
-	*val=(double*)malloc(n*sizeof(double));
-	CHECK_MALLOC_VOID_STATUS(*val,*status);
-
-    int anynul=0;
-    double nullval=0.0;
-    LONGLONG nelem = (LONGLONG) n;
-    fits_read_col(fptr, TDOUBLE, colnum, 1, 1, nelem ,&nullval,*val, &anynul, status);
-
-	(*nrows) = (int) n;
-
-	return;
-}
-
 /** read one intermodulation matrix from a fits file and store it in the structure */
 static void read_intermod_matrix(fitsfile* fptr,int n_ampl, int n_dt, int n_freq,
 		ImodTab* tab, char* extname, int* status){
@@ -392,22 +604,22 @@ static void read_intermod_matrix(fitsfile* fptr,int n_ampl, int n_dt, int n_freq
 	fits_report_error(stdout, *status);
 	CHECK_STATUS_VOID(*status);
 
-	printf(" start reading the matrix \n");
+	headas_chat(7," start reading the intermodulation crosstalk matrix [%i %i %i %i]",n_freq,n_dt,n_ampl,n_ampl);
 	for (int ii=0; ii<n_freq ; ii++){  // freq loop
 		for (int jj=0; jj<n_dt ; jj++){
 			for (int kk=0; kk<n_ampl ; kk++){
 				for (int ll=0; ll<n_ampl ; ll++){
 					int ind = 	(( ll*n_ampl + kk ) * n_dt + jj ) * n_freq + ii;
 					assert(ind < n_dt*n_ampl*n_ampl*n_freq);
-					tab->matrix[ii][jj][kk][ll] = buf[ind];
+					// amplitude is defined descending -> need to reverse it in output array
+					tab->matrix[ii][jj][n_ampl-kk-1][n_ampl-ll-1] = buf[ind];
 				}
 			}
 		}
 	} // ------------------------  //  end (freq loop)
+	headas_chat(7," ... done \n");
 
 	free(buf);
-	free(fpixel);
-	free(naxes);
 
 	return;
 }
@@ -416,15 +628,16 @@ static void print_imod_matrix(ImodTab* tab){
 
 	FILE * fp;
 
-	fp = fopen ("output_tab.txt", "w+");
+	fp = fopen ("imod_matrix_output_tab.txt", "w+");
 
 	for (int ll=0; ll<tab->n_ampl ; ll++){
 		for (int kk=0; kk<tab->n_ampl ; kk++){
 			for (int jj=0; jj<tab->n_dt ; jj++){
 				for (int ii=0; ii<tab->n_freq ; ii++){  // freq loop
-					fprintf(fp, "%i \t %i \t %i \t %i \t %e \t %e \t %e \n",
-							ii,jj,kk,ll,tab->freq[ii],tab->dt[jj],
-							tab->matrix[ii][jj][kk][ll]);
+					fprintf(fp, "%i \t %i \t %i \t %i \t %e \t %e \t %e \t %e \t %e \n",
+							ii,jj,kk,ll,tab->freq[ii],tab->dt[jj],tab->ampl[tab->n_ampl-kk-1],
+							tab->ampl[tab->n_ampl-ll-1],
+							tab->matrix[ii][jj][tab->n_ampl-kk-1][tab->n_ampl-ll-1]);
 
 				}
 			}
@@ -433,6 +646,15 @@ static void print_imod_matrix(ImodTab* tab){
 
 	fclose(fp);
 
+}
+
+static void reverse_array_dbl(double* arr, int n){
+	double t;
+	for (int ii = 0; ii < n/2; ii++) {
+		t           = arr[ii];
+		arr[ii]     = arr[n-1-ii];
+		arr[n-1-ii] = t;
+	}
 }
 
 /** load the intermodulation frequency table */
@@ -448,8 +670,6 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 	char* COLNAME_TIMEOFFSET = "DT_SEC";
 	char* COLNAME_FREQOFFSET = "D_FREQ";
 	char* EXTNAME_CROSSTALK = "crosstalk";
-//	char* COLNAME_CROSSTALK = "CROSSTALK";
-
 
 	fitsfile *fptr=NULL;
 
@@ -470,6 +690,10 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 		double* freq;
 		get_imodtable_axis(&n_ampl,&ampl,EXTNAME_AMPLITUDE,COLNAME_AMPLITUDE,fptr,status);
 		CHECK_STATUS_BREAK(*status);
+		// amplitude is defined descending -> need to reverse it
+		reverse_array_dbl(ampl,n_ampl);
+		assert(ampl[0]<ampl[1]);
+
 		get_imodtable_axis(&n_dt,&dt,EXTNAME_TIMEOFFSET,COLNAME_TIMEOFFSET,fptr,status);
 		CHECK_STATUS_BREAK(*status);
 		get_imodtable_axis(&n_freq,&freq,EXTNAME_FREQOFFSET,COLNAME_FREQOFFSET,fptr,status);
@@ -489,7 +713,7 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 			break;
 		}
 
-		print_imod_matrix(det->crosstalk_intermod_table);
+//		print_imod_matrix(det->crosstalk_intermod_table);
 
 	} while(0); // END of Error handling loop
 
@@ -498,229 +722,13 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 	return;
 }
 
-/** check if frequencies cause crosstalk */
-static int check_frequencies(double f, double f1, double f2,double prec){
-
-	prec= prec*1.001; // give a small error margin
-
-	if   ( fabs( fabs(f1-f2) - f )     <= prec ){
-		return 0;
-	} else if  ( fabs( (f1+f2) - f ) <= prec ){
-		return 1;
-	} else if ( fabs( (2*f2-f1) - f )   <= prec ) {
-		return 2;
-	} else if ( fabs( (2*f1-f2) - f )   <= prec ) {
-		return 3;
-	} else if ( fabs( (2*f2+f1) - f )   <= prec ) {
-		return 4;
-	} else if ( fabs( (2*f1+f2) - f )   <= prec ) {
-		return 5;
-	} else {
-		return -1;
-	}
-
-}
-
-static void add_to_intermod_channel_matrix(AdvDet* det, AdvPix* pix_inp, AdvPix* pix1, AdvPix* pix_xt, int freq_num, int* status){
-//static IntermodulationCrossTalk* add_to_intermod_channel_matrix(AdvDet* det, AdvPix* pix, AdvPix* pix1, AdvPix* pix2, int freq_num, int* status){
-
-
-	// Important: Needs to exactly fit to the output of freq_num
-/*	ImodTab* itab[]  = {
-			(det->crosstalk_intermod_table->w_f2mf1),
-			(det->crosstalk_intermod_table->w_f2pf1),
-			(det->crosstalk_intermod_table->w_2f2mf1),
-			(det->crosstalk_intermod_table->w_2f1mf2),
-			(det->crosstalk_intermod_table->w_2f2pf1),
-			(det->crosstalk_intermod_table->w_2f1pf2)
-	}; */
-	ImodTab **itab=NULL;
-
-
-	if (pix_inp->intermodulation_cross_talk==NULL){
-		pix_inp->intermodulation_cross_talk = newImodCrossTalk(status);
+/** Load intermodulation cross talk information into a single AdvPix*/
+static void load_intermod_cross_talk(AdvDet* det, int* status){
+	/** make sure the information is loaded in the table */
+	if (det->crosstalk_intermod_table==NULL){
+		load_intermod_freq_table(det,status);
 		CHECK_STATUS_VOID(*status);
 	}
-
-	IntermodulationCrossTalk** imod_xt = &(pix_inp->intermodulation_cross_talk);
-
-
-	// Increase matrix size
-	(*imod_xt)->cross_talk_pixels = (AdvPix***) realloc((*imod_xt)->cross_talk_pixels,((*imod_xt)->num_cross_talk_pixels+1)*sizeof(AdvPix**));
-	CHECK_MALLOC_VOID_STATUS((*imod_xt)->cross_talk_pixels,*status);
-
-	// crosstalk produced by two pixels
-	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels] = NULL;
-	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels] =
-			(AdvPix**) realloc((*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels],(2*sizeof(AdvPix*)));
-	CHECK_MALLOC_VOID_STATUS((*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels],*status);
-
-	(*imod_xt)->cross_talk_info = (ImodTab**) realloc((*imod_xt)->cross_talk_info,((*imod_xt)->num_cross_talk_pixels+1)*sizeof(ImodTab*));
-	CHECK_MALLOC_VOID_STATUS((*imod_xt)->cross_talk_pixels,*status);
-
-
-	// Affect new values
-	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels][0] = pix1;
-	(*imod_xt)->cross_talk_pixels[(*imod_xt)->num_cross_talk_pixels][1] = pix_xt;
-	(*imod_xt)->cross_talk_info[(*imod_xt)->num_cross_talk_pixels] = itab[freq_num];
-
-	// Now, we can say that the matrix is effectively bigger
-	(*imod_xt)->num_cross_talk_pixels++;
-
-	// check that now the intermodulation table does exist
-	assert(pix_inp->intermodulation_cross_talk != NULL);
-}
-
-/** set for one pixels the pixel-combinations for the intermodulation crosstalk */
-static void set_advpix_intermod_cross_talk(AdvDet* det, AdvPix* pix, int* status){
-
-	double f1 = 0.0;
-	double f_xt = 0.0;
-
-	int nchanpix = pix->channel->num_pixels;
-
-
-	/** loop over the all pixels in the channel */
-	for (int ii=0; ii< nchanpix; ii++){
-		f1 = pix->channel->pixels[ii]->freq;
-
-		// do not allow intermodulation cross talk with the pixel itself
-		if (fabs(f1-pix->freq) > 1e-3){
-
-			// starting at jj=ii+1 removes the diagonal and duplicated entries
-			for (int jj=0; jj< nchanpix; jj++){
-
-				f_xt = pix->channel->pixels[jj]->freq;
-
-				// check if input-freq and f1 can be somehow combined to produce f_xt
-				double df_band = det->readout_channels->df_information_band[pix->channel->channel_id-1];  // channelID starts at 1
-				int freq_num = check_frequencies(f_xt,pix->freq, f1,df_band);
-
-				if (freq_num >= 0){
-					add_to_intermod_channel_matrix(det,pix,pix->channel->pixels[ii],pix->channel->pixels[jj],freq_num,status);
-					CHECK_STATUS_VOID(*status);
-
-					// count each pair only once (definition to match Roland's files)
-					if (f1 > pix->freq){
-						counting_imod_xt[freq_num]++;
-						headas_chat(7,"Pixel %03i is influenced by (%03i %03i) -> crosstalk type %i (%.3f %.3f -> %.3f) \n",
-							pix->channel->pixels[jj]->pindex+1, pix->pindex+1,pix->channel->pixels[ii]->pindex+1,freq_num,
-							pix->freq*1e-3,pix->channel->pixels[ii]->freq*1e-3,pix->channel->pixels[jj]->freq*1e-3);
-					}
-
-				}
-			} // ----- end jj-loop
-
-		}
-
-	}  // ----- end ii-loop
-
-}
-
-static void get_sorted_list(double* freq, int nfreq){
-
-	for (int jj=0; jj<nfreq; jj++){
-		for (int kk=jj+1; kk<nfreq; kk++){
-			if (freq[jj]>freq[kk]){
-				double dummy=freq[jj];
-				freq[jj]=freq[kk];
-				freq[kk]=dummy;
-			}
-		}
-	}
-
-
-}
-
-/**static double get_min_carrier_spacing(double* freq, int nfreq){
-
-	get_sorted_list(freq,nfreq);
-
-	double retval=-1.0;
-	double val;
-	for (int ii=0;ii<nfreq-1;ii++){
-		val = freq[ii+1]-freq[ii];
-		if (ii>0){
-			retval = MIN(retval,val);
-		} else {
-			retval = val;
-		}
-	}
-	return retval;
-} */
-
-/** get the information bandwidth form the carrier spacing in each channel */
-/**static void set_df_information_band(ReadoutChannels* ro, int* status){
-
-	// make sure the information is loaded in the table
-	if (ro==NULL){
-		printf(" ** error: readout channels have to be set before calculating the information band\n");
-		*status=EXIT_FAILURE;
-		return;
-	}
-
-	double* freq=NULL;
-	int nfreq=0;
-
-	headas_chat(5,"\n[crosstalk] determining the bandwidth of a carrier:\n");
-
-	for (int ii=0; ii<ro->num_channels;ii++){
-
-		nfreq = ro->channels[ii].num_pixels;
-		freq = (double*) realloc(freq,nfreq*sizeof(double));
-		CHECK_MALLOC_VOID(freq);
-
-		for (int jj=0; jj<nfreq ; jj++){
-			freq[jj]=ro->channels[ii].pixels[jj]->freq;
-		}
-
-		// Roland's worst case assumption
-		ro->df_information_band[ii] = get_min_carrier_spacing(freq,nfreq)/6.0;
-
-		if (ro->df_information_band[ii] <= 0){
-			printf(" ** error: information band width could not be determined. Check your list of frequencies. \n");
-			*status=EXIT_FAILURE;
-			return ;
-		}
-
-		headas_chat(5," - chan %02i = %.3f [kHz] \n",
-				ro->channels[ii].channel_id,ro->df_information_band[ii]*1e-3);
-
-	}
-
-	return;
-} */
-
-/** Load intermodulation cross talk information into a single AdvPix*/
-static void load_intermod_cross_talk(AdvDet* det, int pixid, int* status){
-
-
-	/** we only need to set the intermod for the pixel, if it wasn't already done */
-	if (det->pix[pixid].intermodulation_cross_talk==NULL){
-
-		/** make sure the information is loaded in the table */
-		if (det->crosstalk_intermod_table==NULL){
-			load_intermod_freq_table(det,status);
-			CHECK_STATUS_VOID(*status);
-		}
-
-//		set_advpix_intermod_cross_talk(det, &(det->pix[pixid]), status);
-
-	}
-
-	return;
-
-}
-
-static void print_imod_statistics(AdvDet* det){
-
-	int nchan = det->readout_channels->num_channels;
-
-	headas_chat(5,"\n[crosstalk] statistics on the loaded Intermodulation Crosstalk:  \n" );
-	for (int ii=0; ii<num_imod; ii++){
-		headas_chat(3,"%s: %03i \n",imod_xt_names[ii],counting_imod_xt[ii]/nchan);
-	}
-
 }
 
 static int doCrosstalk(int id, AdvDet* det){
@@ -732,6 +740,16 @@ static int doCrosstalk(int id, AdvDet* det){
 }
 
 void init_crosstalk(AdvDet* det, int* const status){
+
+	headas_chat(5,"\n[crosstalk] the modes are switched on (%i): \n",det->crosstalk_id);
+
+	// check the existence of certain arguments
+	if (! (det->tau_crit > 0) ){
+		SIXT_ERROR("tau_crit not set in the XML File, but necessary for the crosstalk determination");
+		*status=EXIT_FAILURE;
+		return;
+	}
+
 	// load time dependence
 	load_crosstalk_timedep(det,status);
 	CHECK_STATUS_VOID(*status);
@@ -742,7 +760,6 @@ void init_crosstalk(AdvDet* det, int* const status){
 		CHECK_STATUS_VOID(*status);
 	}
 
-	headas_chat(5,"\n[crosstalk] the modes are switched on (%i): \n",det->crosstalk_id);
 
 	// load thermal cross talk
 	if (det->xt_num_thermal>0 && doCrosstalk(CROSSTALK_ID_THERM,det)){
@@ -754,7 +771,7 @@ void init_crosstalk(AdvDet* det, int* const status){
 	}
 
 	// load electrical cross talk
-	if (det->elec_xt_par!=NULL && doCrosstalk(CROSSTALK_ID_ELEC,det)){
+	if (doCrosstalk(CROSSTALK_ID_ELEC,det)){
 		headas_chat(5," - electrical crosstalk\n");
 		for (int ii=0;ii<det->npix;ii++){
 			load_electrical_cross_talk(det,ii,status);
@@ -765,16 +782,10 @@ void init_crosstalk(AdvDet* det, int* const status){
 	// load intermodulation cross talk
 	if (det->crosstalk_intermod_file!=NULL && doCrosstalk(CROSSTALK_ID_IMOD,det)){
 		headas_chat(5," - intermodulation crosstalk\n");
-		// count the number of combinations: set everything to zero here
-		for (int ii=0; ii<num_imod; ii++){
-			counting_imod_xt[ii] = 0;
-		}
+
 		// loop through all pixels
-		for (int ii=0;ii<det->npix;ii++){
-			load_intermod_cross_talk(det,ii,status);
-			CHECK_STATUS_VOID(*status);
-		}
-//		print_imod_statistics(det);
+		load_intermod_cross_talk(det,status);
+		CHECK_STATUS_VOID(*status);
 	}
 
 }

@@ -459,7 +459,7 @@ int xifupipeline_main()
 				SIXT_ERROR("failed when initializing crosstalk setup");
 				return EXIT_FAILURE;
 			}
-			headas_chat(3, "... done\n");
+			headas_chat(3, "\n");
 		}
 
 		// --- Simulation Process ---

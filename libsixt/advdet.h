@@ -225,14 +225,21 @@ typedef struct{
 
 }ImodTab;
 
-
-/** structure defining the parameters of the electrical crosstalk */
+/** structure containing the full the electrical crosstalk */
 typedef struct{
-	double R0; // set point resistance
-	double Lfprim; // filter inductance in primary circuit
-	double Lcommon; // common inductance in secondary circuit
-	double Lfsec; // filter inductance in secondary circuit
-} ElecCrosstalkPar;
+
+	double*** matrix; // 3d table containing the frequency weights
+
+	double* freq_s;
+	double* freq_p;
+	double* ener_p;
+
+	int n_freq_s;
+	int n_freq_p;
+	int n_ener_p;
+
+}ElecTab;
+
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -302,8 +309,13 @@ typedef struct{
   double* xt_dist_thermal;
   double* xt_weight_thermal;
 
-  /** information about electrical cross talk */
-  ElecCrosstalkPar* elec_xt_par;
+  /** define tau_crit for the crosstalk pulses */
+  double tau_crit;
+
+  /** File containing information about the electrical cross talk */
+  char* crosstalk_elec_file;
+  ElecTab* crosstalk_elec_carrier_olap;
+  ElecTab* crosstalk_elec_common_imp;
 
   /** Trigger threshold */
   double threshold_event_lo_keV;
