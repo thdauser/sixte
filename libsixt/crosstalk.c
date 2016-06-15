@@ -478,12 +478,6 @@ static void load_crosstalk_timedep(AdvDet* det,int* const status){
 		det->crosstalk_timedep->length++;
 	}
 	fclose(file);
-
-	// convert time from unit tau_crit (given in mus) to seconds
-	for (int ii=0; ii<det->crosstalk_timedep->length;ii++){
-		det->crosstalk_timedep->time[ii] *=  det->tau_crit / 1e6;
-	}
-
 }
 
 static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, int n_freq,
@@ -985,14 +979,16 @@ channel_list* load_channel_list(char* fname, int* status){
 	return chans;
 }
 
+
 /** Compute influence of the crosstalk event on an impact using the timedependence table */
 int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk,double* influence){
 	assert(impact->pixID == crosstalk->pixID);
 	// For the moment, the crosstalk event is supposed to happen afterwards, but this could be modified if needed
 	double time_difference = crosstalk->time - impact->time;
+	headas_chat(7,"TimeI:%g, TimeC:%g, CrosstalkE:%g",impact->time,crosstalk->time,crosstalk->energy);
 	double energy_influence = 0.;
 	// if impact is close enough to have an influence
-	if ((time_difference>=0) && (time_difference<det->crosstalk_timedep->time[det->crosstalk_timedep->length-1])){
+	if ((time_difference>det->crosstalk_timedep->time[0]) && (time_difference<det->crosstalk_timedep->time[det->crosstalk_timedep->length-1])){
 		// Binary search for to find interpolation interval
 		int high=det->crosstalk_timedep->length-1;
 		int low=0;
@@ -1013,7 +1009,109 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 				(det->crosstalk_timedep->weight[timedep_index+1]-det->crosstalk_timedep->weight[timedep_index])/(det->crosstalk_timedep->time[timedep_index+1]-det->crosstalk_timedep->time[timedep_index])*(time_difference-det->crosstalk_timedep->time[timedep_index]));
 		impact->energy+=energy_influence;
 		*influence+=energy_influence;
+		headas_chat(7,", Influence:%g\n",*influence);
 		return 1;
 	}
+	headas_chat(7,"\n");
 	return 0;
+}
+
+
+/** Cosntructor of CrosstalkProxy structure */
+CrosstalkProxy* newCrosstalkProxy(int* const status){
+	CrosstalkProxy* xtalk_proxy= (CrosstalkProxy*) malloc (sizeof (*xtalk_proxy));
+	CHECK_MALLOC_RET_NULL_STATUS(xtalk_proxy,*status);
+
+	xtalk_proxy->xtalk_impacts = (PixImpact**) malloc(INITXTALKNB*sizeof(PixImpact*));
+	CHECK_MALLOC_RET_NULL_STATUS(xtalk_proxy->xtalk_impacts,*status);
+	for (int ii=0;ii<INITXTALKNB;ii++){
+		xtalk_proxy->xtalk_impacts[ii] = (PixImpact*) malloc(sizeof(PixImpact));
+		CHECK_MALLOC_RET_NULL_STATUS(xtalk_proxy->xtalk_impacts[ii],*status);
+	}
+	xtalk_proxy->xtalk_proxy_size=INITXTALKNB;
+	xtalk_proxy->n_active_crosstalk=0;
+	xtalk_proxy->current_crosstalk_index=0;
+	xtalk_proxy->n_xtalk_pileup=0;
+
+	return xtalk_proxy;
+}
+
+/** Destructor of CrosstalkProxy structure */
+void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
+	if (*(xtalk_proxy)!=NULL){
+		if ((*xtalk_proxy)->xtalk_impacts !=NULL){
+			for (int ii=0;ii<((*xtalk_proxy)->xtalk_proxy_size);ii++){
+				free((*xtalk_proxy)->xtalk_impacts[ii]);
+			}
+			free((*xtalk_proxy)->xtalk_impacts);
+			free(*xtalk_proxy);
+		}
+	}
+}
+
+/** Add crosstalk to proxy */
+void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact,int* const status){
+	// Check that there is room left for new crosstalk
+	// If not, allocate new array of double size and copy old impacts (manual copy to reorder circular buffer, should happen rarely anyway)
+	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
+		PixImpact** piximp_list = (PixImpact**) malloc((xtalk_proxy->xtalk_proxy_size*2)*sizeof(PixImpact*));
+		CHECK_MALLOC_VOID_STATUS(piximp_list,*status);
+		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
+			piximp_list[ii] = xtalk_proxy->xtalk_impacts[(xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size];
+		}
+		for (int ii=xtalk_proxy->xtalk_proxy_size;ii<2*xtalk_proxy->xtalk_proxy_size;ii++){
+			piximp_list[ii] = (PixImpact*) malloc(sizeof(PixImpact));
+			CHECK_MALLOC_VOID_STATUS(piximp_list[ii],*status);
+		}
+		free(xtalk_proxy->xtalk_impacts);
+		xtalk_proxy->xtalk_impacts = piximp_list;
+		xtalk_proxy->current_crosstalk_index = xtalk_proxy->xtalk_proxy_size;
+		xtalk_proxy->xtalk_proxy_size*=2;
+	}
+	// Copy crosstalk to proxy
+	copyPixImpact(xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size],impact);
+	xtalk_proxy->n_active_crosstalk+=1;
+	xtalk_proxy->current_crosstalk_index+=1;
+	// Prevent meaningless overrun (TO CHECK)
+	if (xtalk_proxy->current_crosstalk_index>=2*xtalk_proxy->xtalk_proxy_size){
+		xtalk_proxy->current_crosstalk_index-=xtalk_proxy->xtalk_proxy_size;
+	}
+}
+
+/** Compute crosstalk influence */
+void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy* xtalk_proxy,double* xtalk_energy,int* nb_influences,
+		double current_time,int ignore_influence,int full_proxy){
+	// If there is no crosstalk in the proxy get out without any influence
+	if (xtalk_proxy==NULL || xtalk_proxy->n_active_crosstalk==0){
+		*xtalk_energy=0.;
+		*nb_influences=0;
+		return;
+	}
+
+	double energy_influence = 0.;
+	int has_influenced= 0;
+	PixImpact* crosstalk=NULL;
+	int erased_crosstalks=0;
+	for (int ii=0;ii<xtalk_proxy->n_active_crosstalk;ii++){
+		crosstalk = xtalk_proxy->xtalk_impacts[(xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size];
+		// Compute influence if asked or if the crosstalk is going to be erased (otherwise multiple counting)
+		// or if specifically asked to compute all the influences (typically used just before grading of a detected event)
+		if ((!ignore_influence) && (full_proxy || current_time-crosstalk->time > -det->crosstalk_timedep->time[0]) ){
+			energy_influence=0.;
+			has_influenced=computeCrosstalkInfluence(det,impact, crosstalk,&energy_influence);
+			if (has_influenced){
+				*nb_influences+=crosstalk->nb_pileup+1;
+				*xtalk_energy+=energy_influence;
+			}
+		}
+		// If the current crosstalk has no chance of influencing another event, we can clear it
+		if (current_time-crosstalk->time > -det->crosstalk_timedep->time[0]){
+			erased_crosstalks+=1;
+		}
+	}
+	xtalk_proxy->n_active_crosstalk-=erased_crosstalks;
+	// Reboot index if possible
+	if (xtalk_proxy->n_active_crosstalk==0){
+		xtalk_proxy->current_crosstalk_index=0;
+	}
 }

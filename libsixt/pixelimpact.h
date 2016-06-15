@@ -63,6 +63,9 @@ typedef struct {
   /** total energy of the final impact potentially containing energy from previous impact (pileup) */
   double totalenergy;
 
+  /** number of parent events */
+  int nb_pileup;
+
 } PixImpact;
 
 

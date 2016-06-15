@@ -211,8 +211,7 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		grade_proxys[ii].impact = (PixImpact*) malloc(sizeof(PixImpact));
 		CHECK_MALLOC_VOID_STATUS(grade_proxys[ii].impact,*status);
 		grade_proxys[ii].impact->energy=0.;
-		grade_proxys[ii].crosstalk = NULL;
-		grade_proxys[ii].n_active_crosstalk=0;
+		grade_proxys[ii].xtalk_proxy = NULL;
 		grade_proxys[ii].times = NULL;
 		grade_proxys[ii].row = event_file->row;
 		grade_proxys[ii].crosstalk_energy=0.;
@@ -243,6 +242,7 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 
 		// Process impact
 		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,status);
+		CHECK_STATUS_VOID(*status);
 	}
 
 	// now we need to clean the remaining events
@@ -252,7 +252,7 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 			free(grade_proxys[ii].times);
 		}
 		free(grade_proxys[ii].impact);
-		free(grade_proxys[ii].crosstalk);
+		freeCrosstalkProxy(&(grade_proxys[ii].xtalk_proxy));
 	}
 }
 
@@ -561,49 +561,44 @@ void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImp
 	if (save_crosstalk) addRMFImpact(event_file,impact,-2,-2,CROSSTALK,0,0.,status);
 
 	assert(impact->energy<det->threshold_event_lo_keV);
-	if (grade_proxy->crosstalk==NULL){
-		grade_proxy->crosstalk = (PixImpact*) malloc(sizeof(PixImpact));
-		CHECK_MALLOC_VOID_STATUS(grade_proxy->crosstalk,*status);
+	if(grade_proxy->xtalk_proxy==NULL){
+		grade_proxy->xtalk_proxy = newCrosstalkProxy(status);
+		CHECK_STATUS_VOID(*status);
 	}
 
 	// No crosstalk event available to possibly pileup with yet, copy info and go
-	if(grade_proxy->n_active_crosstalk==0){
-		copyPixImpact(grade_proxy->crosstalk,impact);
-		grade_proxy->n_active_crosstalk=1;
+	if(grade_proxy->xtalk_proxy->n_active_crosstalk==0){
+		addCrosstalk2Proxy(grade_proxy->xtalk_proxy,impact,status);
 	}
 	else{
 		// Should there be an assert(impact->time-grade_proxy->crosstalk->time>=0) ? I am worried about rounding errors but am not sure if I should be
 
 		// If the two crosstalks happened in the same time bin, their combined energy could reach the threshold -> add energy and try to trigger
-		if(impact->time-grade_proxy->crosstalk->time <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table ?)
-			grade_proxy->crosstalk->energy+=impact->energy;
-			grade_proxy->n_active_crosstalk++; // Update number of crosstalks
-			if (grade_proxy->crosstalk->energy >= det->threshold_event_lo_keV) {
+		PixImpact* previous_xtalk = grade_proxy->xtalk_proxy->xtalk_impacts[(grade_proxy->xtalk_proxy->current_crosstalk_index - 1)% grade_proxy->xtalk_proxy->xtalk_proxy_size];
+		if(impact->time-previous_xtalk->time <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table ?)
+			previous_xtalk->energy+=impact->energy;
+			previous_xtalk->nb_pileup++;// Update number of pileups
+			if (previous_xtalk->energy >= det->threshold_event_lo_keV) {
 				// Save crosstalk information
-				double influence = grade_proxy->crosstalk->energy;
-				int nb_influence = grade_proxy->n_active_crosstalk;
+				double influence = previous_xtalk->energy;
+				int nb_influence = previous_xtalk->nb_pileup;
 
 				// Process now triggered event
-				grade_proxy->n_active_crosstalk=0;// Crosstalk has been dealt with
-				grade_proxy->crosstalk->time = impact->time;// to conserve causality
-				processGradedEvent(grade_proxy,sample_length,grade_proxy->crosstalk,det,event_file,1,status);
+				grade_proxy->xtalk_proxy->n_active_crosstalk--;// Crosstalk has been dealt with
+				grade_proxy->xtalk_proxy->current_crosstalk_index--;
+				previous_xtalk->time = impact->time;// to conserve causality
+				processGradedEvent(grade_proxy,sample_length,previous_xtalk,det,event_file,1,status);
 
 				// This new event comes from crosstalk and we should know it
 				grade_proxy->nb_crosstalk_influence = nb_influence;
 				grade_proxy->crosstalk_energy = influence;
 			}
-		// If they did not happen in the same time bin, the previous one was indeed not detected and can
-	    // safely be treated for possible influence on the previous triggered event
+		// If they did not happen in the same time bin, treat crosstalk from events farther away than maximum backward influence (they will not
+		// affect other events) and add new one
 		} else {
-			if(grade_proxy->times!=NULL){ //if there indeed was a previous impact
-				int has_affected = computeCrosstalkInfluence(det,grade_proxy->impact,grade_proxy->crosstalk,&(grade_proxy->crosstalk_energy));
-				if (has_affected){
-					grade_proxy->nb_crosstalk_influence+=grade_proxy->n_active_crosstalk;
-				}
-			}
-			// Now that the previous crosstalk is dealt with, only keep info of the new one
-			copyPixImpact(grade_proxy->crosstalk,impact);
-			grade_proxy->n_active_crosstalk=1;
+			computeAllCrosstalkInfluence(det,grade_proxy->impact,grade_proxy->xtalk_proxy,&(grade_proxy->crosstalk_energy),
+					&(grade_proxy->nb_crosstalk_influence),impact->time,grade_proxy->times==NULL,0);
+			addCrosstalk2Proxy(grade_proxy->xtalk_proxy,impact,status);
 		}
 	}
 
@@ -628,18 +623,8 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 		grade_proxy->times->current = next_impact->time;
 		grade_proxy->times->next = -1.0;
 		copyPixImpact(grade_proxy->impact,next_impact);
-		// If by chance, there is a non-treated below threshold crosstalk event that happened just before
-		// and should pileup, treat this case. This in principle can only happen on the first triggered event
-		if (grade_proxy->n_active_crosstalk > 0){
-			if (next_impact->time-grade_proxy->crosstalk->time<sample_length){ // TODO: code pileup length at pixel level (or use timedep table ?)
-				grade_proxy->impact->energy+=grade_proxy->crosstalk->energy;
-				grade_proxy->crosstalk_energy+=grade_proxy->crosstalk->energy;
-				grade_proxy->nb_crosstalk_influence+=grade_proxy->n_active_crosstalk;
-				grade_proxy->n_active_crosstalk = 0; // crosstalk is dealt with
-			}
-		}
 	} else {
-		// Add assert that at this stage, any active crosstalk is between the two triggered impacts ?
+		// Add assert that at this stage, any active crosstalk is between the two triggered impacts ? NOT TRUE ANY MORE
 
 		// Update grade proxy
 		if (next_impact!=NULL){
@@ -656,28 +641,17 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 		if(grade1==0){
 			assert(next_impact!=NULL); // if next_impact is NULL, grade1 should be DEFAULTGOODSAMPLE
 			next_impact->energy+=grade_proxy->impact->energy;
-			// If there is a non triggered crosstalk between the two pileup events
-			if (grade_proxy->n_active_crosstalk>0){
-				next_impact->energy+=grade_proxy->crosstalk->energy;
-				grade_proxy->crosstalk_energy+=grade_proxy->crosstalk->energy;
-				grade_proxy->nb_crosstalk_influence+=grade_proxy->n_active_crosstalk;
-				grade_proxy->n_active_crosstalk=0; // crosstalk is dealt with
-			}
 			impact_to_save->energy=0.;
 			grade1=-1;
 			grading=PILEUP;
 			// do not change grading times in this case as this is a pileup (this event will no be saved in the end)
 		} else {
-			// Check whether there is some non-triggered crosstalk to take into account
-			if (grade_proxy->n_active_crosstalk>0){
-				int has_affected = computeCrosstalkInfluence(det,impact_to_save,grade_proxy->crosstalk,&(grade_proxy->crosstalk_energy));
-				if (has_affected){
-					grade_proxy->nb_crosstalk_influence+=grade_proxy->n_active_crosstalk;
-				}
-				grade_proxy->n_active_crosstalk=0;
-			}
+			// Get crosstalk influence from crosstalks closer to current time than max backward influence (others should have been dealt with)
+			computeAllCrosstalkInfluence(det,impact_to_save,grade_proxy->xtalk_proxy,&(grade_proxy->crosstalk_energy),
+					&(grade_proxy->nb_crosstalk_influence),grade_proxy->times->next,0,1);
 
 			grading_index = makeGrading(grade1,grade2,&(det->pix[impact_to_save->pixID]));
+
 			if (grading_index>=0){
 
 				rmf = det->pix[impact_to_save->pixID].grades[grading_index].rmf;
@@ -688,6 +662,7 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 				// The channel is obtained from the RMF using the corresponding
 				// HEAdas routine which is based on drawing a random number.
 				returnRMFChannel(rmf, grade_proxy->impact->energy, &channel); //use total energy here to take pileup into account
+				//printf("%f\n",grade_proxy->impact->energy);
 
 				// Check if the photon is really measured. If the PI channel
 				// returned by the HEAdas RMF function is '-1', the photon is not
@@ -710,6 +685,7 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 					// by the nominal photon energy [keV], which corresponds to the
 					// PI channel according to the EBOUNDS table.
 					impact_to_save->energy=getEBOUNDSEnergy(channel, rmf, status);
+					//printf("%f ",impact.energy);
 					CHECK_STATUS_VOID(*status);
 				}
 			} else {
@@ -729,10 +705,8 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 
 		// Finish moving ahead if worth it
 		if (next_impact!=NULL){
-			if (grading!=PILEUP){
-				grade_proxy->nb_crosstalk_influence = 0;
-				grade_proxy->crosstalk_energy=0.;
-			}
+			grade_proxy->nb_crosstalk_influence = 0;
+			grade_proxy->crosstalk_energy=0.;
 			copyPixImpact(grade_proxy->impact,next_impact);
 		}
 	}
