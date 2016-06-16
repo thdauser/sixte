@@ -241,7 +241,6 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		}
 
 		// Process impact
-		grade_proxys[id].nb_crosstalk_influence=0;
 		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,status);
 		CHECK_STATUS_VOID(*status);
 	}
