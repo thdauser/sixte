@@ -1077,6 +1077,7 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact,int* const
 	}
 	// Copy crosstalk to proxy
 	copyPixImpact(xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size],impact);
+	xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size]->nb_pileup=0;
 	xtalk_proxy->n_active_crosstalk+=1;
 	xtalk_proxy->current_crosstalk_index+=1;
 	// Prevent meaningless overrun (TO CHECK)

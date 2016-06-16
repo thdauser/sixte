@@ -30,7 +30,7 @@
 #define CROSSTALK_ID_THERM 2
 #define CROSSTALK_ID_ELEC 3
 #define CROSSTALK_ID_IMOD 4
-#define INITXTALKNB 2
+#define INITXTALKNB 100
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
