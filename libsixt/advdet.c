@@ -197,7 +197,6 @@ AdvDet* newAdvDet(int* const status){
   det->xt_dist_thermal=NULL;
   det->xt_weight_thermal=NULL;
   det->xt_num_thermal=0;
-  det->tau_crit=0;
 
   det->channel_file=NULL;
   det->crosstalk_intermod_file=NULL;
@@ -757,8 +756,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 
 	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
 		xmlparsedata->det->threshold_event_lo_keV = getXMLAttributeDouble(attr,"VALUE");
-	} else if (!strcmp(Uelement,"TAUCRIT_MUS")){
-		xmlparsedata->det->tau_crit = getXMLAttributeDouble(attr,"VALUE");
 	} else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];

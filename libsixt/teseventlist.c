@@ -530,6 +530,8 @@ void updateSignal(TesEventFile* file,long row,double energy,long grade1,long gra
 	//Save N_XT and E_XT columns
 	fits_write_col(file->fptr, TINT, file->nxtCol,
 			row, 1, 1, &n_xt, status);
+	CHECK_STATUS_VOID(*status);
+
 	fits_write_col(file->fptr, TDOUBLE, file->extCol,
 			row, 1, 1, &e_xt, status);
 	CHECK_STATUS_VOID(*status);

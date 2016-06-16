@@ -216,12 +216,16 @@ typedef struct{
 	double**** matrix; // 4d table containing the frequency weights
 
 	double* ampl;
-	double* dt;
+	double* dt; // in seconds
 	double* freq;
 
 	int n_ampl;
 	int n_dt;
 	int n_freq;
+
+	// an event is defined to extent and cause crosstalk from [dt_min,dt_max]
+	double dt_min; // in seconds
+	double dt_max; // in seconds
 
 }ImodTab;
 
@@ -308,9 +312,6 @@ typedef struct{
   int xt_num_thermal;
   double* xt_dist_thermal;
   double* xt_weight_thermal;
-
-  /** define tau_crit for the crosstalk pulses */
-  double tau_crit;
 
   /** File containing information about the electrical cross talk */
   char* crosstalk_elec_file;

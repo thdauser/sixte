@@ -241,6 +241,7 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		}
 
 		// Process impact
+		grade_proxys[id].nb_crosstalk_influence=0;
 		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,status);
 		CHECK_STATUS_VOID(*status);
 	}
@@ -466,15 +467,15 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 
 			double dt = (impact->time - grade_proxys[active_ind].times->current);
 
+			// events should always be in time order (although crosstalk can create events earlier than the current time)
 			assert(dt>=0);
 
 			// see if we need to calculate the crosstalk influence of
 			// the perturber on the signal
-			double dt_tau = dt*1e6/det->tau_crit;
-			if (dt_tau < IMOD_XT_UPPER_TAU){
+			if ( dt <= det->crosstalk_intermod_table->dt_max){
 
-				printf(" *** [dt=%.2f tau] trigger crosstalk event in pix=%ld (%.2f MHz), with perturber %ld (%.2f MHz)\n",
-						dt_tau, grade_proxys[active_ind].impact->pixID,
+				printf(" *** [dt=%.2f sec] trigger crosstalk event in pix=%ld (%.2f MHz), with perturber %ld (%.2f MHz)\n",
+						dt, grade_proxys[active_ind].impact->pixID,
 						det->pix[active_ind].freq*1e-6,
 						impact->pixID,det->pix[impact->pixID].freq*1e-6);
 
@@ -486,11 +487,8 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 				// if signals are very close the signel might also influence the
  				//   perturber pulse
 				//  Note:  (1) we require here that the above impact is written to the proxy already
-				//         (2) only the absolute value is of importance at the current implementation
-				//             (actually it would be dt<0 in this case)
-				if (dt_tau < IMOD_XT_LOWER_TAU){
-
-					// influence with -dt (!)
+				//         (2) dt -> -dt  in this case, as the order is reversed
+				if ( -dt >= det->crosstalk_intermod_table->dt_min){
 					dt = -dt;
 					calc_imod_xt_influence(det,impact, grade_proxys[active_ind].impact,
 							&crosstalk_impact_ind,dt,status);
@@ -560,6 +558,7 @@ void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImp
 	// save crosstalk event for debugging purposes ?
 	if (save_crosstalk) addRMFImpact(event_file,impact,-2,-2,CROSSTALK,0,0.,status);
 
+
 	assert(impact->energy<det->threshold_event_lo_keV);
 	if(grade_proxy->xtalk_proxy==NULL){
 		grade_proxy->xtalk_proxy = newCrosstalkProxy(status);
@@ -601,7 +600,6 @@ void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImp
 			addCrosstalk2Proxy(grade_proxy->xtalk_proxy,impact,status);
 		}
 	}
-
 }
 
 /** Processes a graded event : update grading proxy and save previous event */
@@ -700,8 +698,12 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 			}
 		}
 		// Add processed event to event file
-		updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
-		CHECK_STATUS_VOID(*status);
+		updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,
+				grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
+		if (*status!=EXIT_SUCCESS){
+			SIXT_ERROR("updating singal energy in the event file failed");
+			return;
+		}
 
 		// Finish moving ahead if worth it
 		if (next_impact!=NULL){

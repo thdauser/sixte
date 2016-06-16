@@ -125,7 +125,6 @@ static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 			printf("*** error: Distance between pixels %d and %d is negative\n",current_pixel->pindex,concerned_pixel->pindex);
 			return;
 		}
-		//printf("%d - %d : %f\n",pixid,i,pixel_distance*1e6);
 
 		// Iterate over cross-talk values and look for the first matching one
 		for (int xt_index=0;xt_index<det->xt_num_thermal;xt_index++){
@@ -300,9 +299,9 @@ static void load_elec_table(AdvDet* det, int* status){
 	// check if the table exists
 	CHECK_NULL_VOID(det->crosstalk_elec_file,*status,"no file for the electrical crosstalk table specified");
 
-	char* EXTNAME_FREQ_SIGNAL = "freq_signal";
-	char* EXTNAME_FREQ_PERTURBER = "freq_perturber";
-	char* EXTNAME_ENER_PERTURBER = "ener_perturber";
+	char* EXTNAME_FREQ_SIGNAL = "signal_frequency";
+	char* EXTNAME_FREQ_PERTURBER = "perturber_frequency";
+	char* EXTNAME_ENER_PERTURBER = "perturber_energy";
 	char* COLNAME_FREQ_SIGNAL = "FREQ_S";
 	char* COLNAME_FREQ_PERTURBER = "FREQ_P";
 	char* COLNAME_ENER_PERTURBER = "EN_P";
@@ -506,6 +505,8 @@ static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, int n_freq,
 	for (int ii=0; ii<n_dt; ii++){
 		t->dt[ii] = dt[ii];
 	}
+	t->dt_min=dt[0];
+	t->dt_max=dt[n_dt-1];
 
 	t->freq = (double*) malloc(n_freq * sizeof(double));
 	CHECK_MALLOC_VOID_STATUS(t->freq,*status);
@@ -665,6 +666,12 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 	char* COLNAME_FREQOFFSET = "D_FREQ";
 	char* EXTNAME_CROSSTALK = "crosstalk";
 
+	// we need the time dependence table here
+	if (det->crosstalk_timedep==NULL){
+		load_crosstalk_timedep(det,status);
+		CHECK_STATUS_VOID(*status);
+	}
+
 	fitsfile *fptr=NULL;
 
 	do {
@@ -698,6 +705,15 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 		if (*status!=EXIT_SUCCESS){
 			SIXT_ERROR("initializing intermodulation table in memory failed");
 			break;
+		}
+
+		// set the minimal and maximal dt value (dt_min<0 and dt_max>0 required in the current implementation)
+		assert(det->crosstalk_intermod_table->dt_min<0.0 && det->crosstalk_intermod_table->dt_max>0.0);
+		if (det->crosstalk_intermod_table->dt_min < det->crosstalk_timedep->time[0]){
+			det->crosstalk_intermod_table->dt_min = det->crosstalk_timedep->time[0];
+		}
+		if (det->crosstalk_intermod_table->dt_max > det->crosstalk_timedep->time[det->crosstalk_timedep->length-1]){
+			det->crosstalk_intermod_table->dt_max = det->crosstalk_timedep->time[det->crosstalk_timedep->length-1];
 		}
 
 		read_intermod_matrix(fptr,n_ampl,n_dt, n_freq, det->crosstalk_intermod_table,
@@ -736,13 +752,6 @@ static int doCrosstalk(int id, AdvDet* det){
 void init_crosstalk(AdvDet* det, int* const status){
 
 	headas_chat(5,"\n[crosstalk] the modes are switched on (%i): \n",det->crosstalk_id);
-
-	// check the existence of certain arguments
-	if (! (det->tau_crit > 0) ){
-		SIXT_ERROR("tau_crit not set in the XML File, but necessary for the crosstalk determination");
-		*status=EXIT_FAILURE;
-		return;
-	}
 
 	// load time dependence
 	load_crosstalk_timedep(det,status);
@@ -979,13 +988,12 @@ channel_list* load_channel_list(char* fname, int* status){
 	return chans;
 }
 
-
 /** Compute influence of the crosstalk event on an impact using the timedependence table */
 int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk,double* influence){
 	assert(impact->pixID == crosstalk->pixID);
 	// For the moment, the crosstalk event is supposed to happen afterwards, but this could be modified if needed
 	double time_difference = crosstalk->time - impact->time;
-	headas_chat(7,"TimeI:%g, TimeC:%g, CrosstalkE:%g",impact->time,crosstalk->time,crosstalk->energy);
+	headas_chat(7,"TimeI:%.3e \t TimeC:%.3e \t CrosstalkE:%.3 \t ",impact->time,crosstalk->time,crosstalk->energy);
 	double energy_influence = 0.;
 	// if impact is close enough to have an influence
 	if ((time_difference>det->crosstalk_timedep->time[0]) && (time_difference<det->crosstalk_timedep->time[det->crosstalk_timedep->length-1])){
@@ -1009,13 +1017,12 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 				(det->crosstalk_timedep->weight[timedep_index+1]-det->crosstalk_timedep->weight[timedep_index])/(det->crosstalk_timedep->time[timedep_index+1]-det->crosstalk_timedep->time[timedep_index])*(time_difference-det->crosstalk_timedep->time[timedep_index]));
 		impact->energy+=energy_influence;
 		*influence+=energy_influence;
-		headas_chat(7,", Influence:%g\n",*influence);
+		headas_chat(7,", Influence:%.3e (fraction:%.3e)\n",*influence,*influence/crosstalk->energy);
 		return 1;
 	}
 	headas_chat(7,"\n");
 	return 0;
 }
-
 
 /** Cosntructor of CrosstalkProxy structure */
 CrosstalkProxy* newCrosstalkProxy(int* const status){
