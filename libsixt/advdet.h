@@ -44,6 +44,7 @@
 
 
 typedef struct MatrixCrossTalk MatrixCrossTalk;
+typedef struct MatrixEnerdepCrossTalk MatrixEnerdepCrossTalk;
 typedef struct Channel Channel;
 typedef struct IntermodulationCrossTalk IntermodulationCrossTalk;
 typedef struct ReadoutChannels ReadoutChannels;
@@ -157,7 +158,7 @@ struct AdvPix{
   Channel* channel;
 
   /** Cross-talk structures */
-  MatrixCrossTalk* electrical_cross_talk;
+  MatrixEnerdepCrossTalk* electrical_cross_talk;
   MatrixCrossTalk* thermal_cross_talk;
   IntermodulationCrossTalk* intermodulation_cross_talk;
 
@@ -347,6 +348,23 @@ struct MatrixCrossTalk{
 
 /** Structure defining the cross talk between pixels, which can be approximated
     by a simple matrix containing weights */
+struct MatrixEnerdepCrossTalk{
+	/** number of cross-talk pixels */
+	int num_cross_talk_pixels;
+
+	/** Array containing cross-talk pixels */
+	AdvPix** cross_talk_pixels;
+
+	/** Cross-talk weights*/
+	double** cross_talk_weights;
+
+	int n_ener;
+
+};
+
+
+/** Structure defining the cross talk between pixels, which can be approximated
+    by a simple matrix containing weights */
 struct IntermodulationCrossTalk{
 	/** number of cross-talk pixels */
 	int num_cross_talk_pixels;
@@ -464,8 +482,14 @@ void removeOverlapping(AdvDet* det,int* const status);
 /** Constructor for MatrixCrossTalk structure */
 MatrixCrossTalk* newMatrixCrossTalk(int* const status);
 
+/** Constructor for MatrixEnerdepCrossTalk structure */
+MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int* const status);
+
 /** Destructor for MatrixCrossTalk structure */
 void freeMatrixCrossTalk(MatrixCrossTalk** matrix);
+
+/** Destructor for MatrixEnerdepCrossTalk structure */
+void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk** matrix);
 
 /** Constructor for IntermodulationCrossTalk structure */
 IntermodulationCrossTalk* newImodCrossTalk(int* const status);

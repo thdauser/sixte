@@ -46,15 +46,12 @@ void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, 
 		*grade2 = floor ((pnt.current - pnt.previous)/sample_length);
 	}
 
-	//printf("grade1: %i grade2 %i => %i\n",*grade1,*grade2,makeGrading(*grade1,*grade2));
-
 	if ( (*grade1<0) || (*grade2<0) ){
 		*status = EXIT_FAILURE;
 		SIXT_ERROR("Grading of impacts failed in calcGradingTimes");
 		return;
 	}
 }
-
 
 /** writes the grading to an existing piximpact file **/
 void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status){
@@ -229,7 +226,7 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		}
 		// electrical crosstalk
 		if (det->pix[id].electrical_cross_talk !=NULL){
-			applyMatrixCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			applyMatrixEnerdepCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
 			CHECK_STATUS_VOID(*status);
 		}
 
@@ -248,7 +245,11 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 	// now we need to clean the remaining events
 	for (int ii=0;ii<det->npix;ii++){
 		if (grade_proxys[ii].times != NULL){
-			processGradedEvent(&(grade_proxys[ii]),sample_length,NULL,det,event_file,0,status);
+			int is_crosstalk=0;
+			if (grade_proxys[ii].impact->ph_id<0){
+				is_crosstalk=1;
+			}
+			processGradedEvent(&(grade_proxys[ii]),sample_length,NULL,det,event_file,is_crosstalk,status);
 			free(grade_proxys[ii].times);
 		}
 		free(grade_proxys[ii].impact);
@@ -256,56 +257,42 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 	}
 }
 
-/**  Binary search for to find interpolation interval
- *   - return value is the bin [ind,ind+1]
- *   - assume list is sorted ascending */
-static int binary_search(double val, double* arr, int n){
-
-	if (val < arr[0] || val > arr[n-1]){
-		return -1;
-	}
-
-	int high=n-1;
-	int low=0;
-	int mid;
-	while (high > low) {
-		mid=(low+high)/2;
-		if (arr[mid] <= val) {
-			low=mid+1;
-		} else {
-			high=mid;
-		}
-	}
-	return low-1;
-}
-
-// 4d interpolation routine: expecting array with dimensions arr[][][][]:
+// 4d & 3d interpolation routine: expecting array with dimensions arr[][][][]:
 //  - fac and iarr has the length of the dimension (ndim=4 in this case)
 //  - always giving val[ii] = arr[iarr[0]]... and val[ii+1] = arr[iarr[0]+1]...
 //  TODO: Make it a general routine
 //double interp_lin_ndim(double**** arr, int* iarr, double* fac){
 double interp_lin_ndim(void* inp_arr, int* iarr, double* fac, int ndim){
 
-	if (ndim != 4){
-		printf(" *** error: only implmentend for 4 dimensions");
-		return 0.0;
-	}
-
-	double**** arr = (double****) inp_arr;
-
-//	const int ndim = 4;
-
 	double tmp_3d[8];
 
-	for (int ii=0;ii<2;ii++){
-		for (int jj=0;jj<2;jj++){
-			for (int kk=0;kk<2;kk++){
+	if (ndim==4){ // ***** 4D ****
+
+		double**** arr = (double****) inp_arr;
+		for (int ii=0;ii<2;ii++){
+			for (int jj=0;jj<2;jj++){
+				for (int kk=0;kk<2;kk++){
 					tmp_3d[ (ii*2+jj)*2 + kk ] =
 							arr[iarr[0]+ii][iarr[1]+jj][iarr[2]+kk][iarr[3]]  *(1-fac[3]) +
 							arr[iarr[0]+ii][iarr[1]+jj][iarr[2]+kk][iarr[3]+1]*(  fac[3]) ;
 
+				}
 			}
 		}
+	} else if (ndim==3){ // ***** 3D ****
+
+		double*** arr = (double***) inp_arr;
+		for (int ii=0;ii<2;ii++){
+			for (int jj=0;jj<2;jj++){
+				for (int kk=0;kk<2;kk++){
+					tmp_3d[ (ii*2+jj)*2 + kk ] =
+							arr[iarr[0]+ii][iarr[1]+jj][iarr[2]+kk];
+				}
+			}
+		}
+	} else{
+		printf(" *** error: interpolation not implmentend for %i dimensions",ndim);
+		return 0.0;
 	}
 
 	double tmp_2d[4];
@@ -331,8 +318,6 @@ double interp_lin_ndim(void* inp_arr, int* iarr, double* fac, int ndim){
 	return tmp_val;
 
 }
-
-
 
 /** get the weight (i.e. additional energy here) for the intermodulation crosstalk */
 static double get_intermod_weight(ImodTab* cross_talk, double df, double dt,
@@ -427,7 +412,7 @@ static void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* per
     crosstalk_impact->src_id = perturber->src_id;
 
 
-	printf(" -> energy %e eV ; dt=%e ; df=%.1f kHz \n",crosstalk_impact->energy*1e3,dt,df*1e-3);
+	headas_chat(7," -> energy %e eV ; dt=%e ; df=%.1f kHz \n",crosstalk_impact->energy*1e3,dt,df*1e-3);
 
 }
 
@@ -539,6 +524,55 @@ void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,c
 	}
 }
 
+/** Same as applyMatricCrosstalk , but now the weights are energy dependent */
+void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
+
+	// This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
+	PixImpact crosstalk_impact;
+	crosstalk_impact.detposition.x = 0.;
+	crosstalk_impact.detposition.y = 0.;
+	crosstalk_impact.pixposition.x = 0.;
+	crosstalk_impact.pixposition.y = 0.;
+
+	// make sure we have the same (length) energy array here
+	assert(cross_talk->n_ener == det->crosstalk_elec_carrier_olap->n_ener_p);
+	assert(cross_talk->n_ener == det->crosstalk_elec_common_imp->n_ener_p);
+	double * ener_p = det->crosstalk_elec_carrier_olap->ener_p; // every electrical crosstalk energy vector has to be the same
+
+	// Iterate over affected pixels
+	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
+
+		if ((impact->energy <= ener_p[0]) || (impact->energy >= ener_p[cross_talk->n_ener-1])) {
+			printf(" *** warning : impact event energy %g outside the tabulated values for electrical crosstalk [%g,%g]}n",
+					impact->energy,ener_p[0],ener_p[cross_talk->n_ener-1]);
+			printf("     ---> skipping this event!\n");
+		} else {
+
+			// now determine the energy bin
+			int ind = binary_search(impact->energy,det->crosstalk_elec_carrier_olap->ener_p,cross_talk->n_ener);
+
+			double fac = (impact->energy - ener_p[ind]) / (ener_p[ind+1] - ener_p[ind]);
+
+			crosstalk_impact.energy =
+					    (1-fac)*cross_talk->cross_talk_weights[ii][ind] +
+						(fac)*cross_talk->cross_talk_weights[ii][ind+1];
+			crosstalk_impact.pixID = cross_talk->cross_talk_pixels[ii]->pindex;
+			crosstalk_impact.time = impact->time;
+			crosstalk_impact.ph_id = -impact->ph_id;
+			crosstalk_impact.src_id = impact->src_id;
+
+//			printf(" [%ld] crosstalk energy %.3f keV (for impact %.1f keV, fs=%.0f, fp=%.0f) \n",
+//					crosstalk_impact.ph_id,crosstalk_impact.energy, impact->energy,
+//					det->pix[impact->pixID].freq*1e-3,det->pix[crosstalk_impact.pixID].freq*1e-3);
+
+
+			processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,
+					det,event_file,save_crosstalk,status);
+		}
+	}
+}
+
 
 /** Processes a crosstalk event using addCrosstalkEvent or processGradedEvent depending on whether it is above threshold or not */
 void processCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
@@ -556,7 +590,6 @@ void processCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,Pi
 void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
 	// save crosstalk event for debugging purposes ?
 	if (save_crosstalk) addRMFImpact(event_file,impact,-2,-2,CROSSTALK,0,0.,status);
-
 
 	assert(impact->energy<det->threshold_event_lo_keV);
 	if(grade_proxy->xtalk_proxy==NULL){
@@ -643,6 +676,9 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 			grading=PILEUP;
 			// do not change grading times in this case as this is a pileup (this event will no be saved in the end)
 		} else {
+
+//			printf(" energy : %e (%e) [%i]\n",impact_to_save->energy,grade_proxy->impact->energy,is_crosstalk);
+
 			// Get crosstalk influence from crosstalks closer to current time than max backward influence (others should have been dealt with)
 			computeAllCrosstalkInfluence(det,impact_to_save,grade_proxy->xtalk_proxy,&(grade_proxy->crosstalk_energy),
 					&(grade_proxy->nb_crosstalk_influence),grade_proxy->times->next,0,1);

@@ -99,6 +99,48 @@ static void add_xt_pixel(MatrixCrossTalk** matrix,AdvPix* pixel,double xt_weigth
 	(*matrix)->num_cross_talk_pixels++;
 }
 
+/** Adds a cross talk pixel to the matrix */
+static void add_xt_enerdep_pixel(MatrixEnerdepCrossTalk** matrix,AdvPix* pixel,double* xt_weigth,int n_ener,int* const status){
+	CHECK_STATUS_VOID(*status);
+
+	// Allocate matrix if necessary
+	if(*matrix==NULL){
+		*matrix = newMatrixEnerdepCrossTalk(status);
+		(*matrix)->n_ener = n_ener;
+		CHECK_MALLOC_VOID_STATUS(*matrix,*status);
+	}
+
+	if ((*matrix)->n_ener != n_ener){
+		printf(" *** error : number of energy bins is %i, but should be %i \n",
+				(*matrix)->n_ener,n_ener);
+		SIXT_ERROR(" adding energy-dependent crosstalk weight failed ");
+		*status=EXIT_FAILURE;
+		return;
+	}
+
+	// Increase matrix size
+	(*matrix)->cross_talk_pixels = realloc((*matrix)->cross_talk_pixels,
+			((*matrix)->num_cross_talk_pixels+1)*sizeof(*((*matrix)->cross_talk_pixels)));
+	CHECK_MALLOC_VOID_STATUS((*matrix)->cross_talk_pixels,*status);
+	(*matrix)->cross_talk_weights = realloc((*matrix)->cross_talk_weights,
+			((*matrix)->num_cross_talk_pixels+1)*sizeof(*((*matrix)->cross_talk_weights)));
+	CHECK_MALLOC_VOID_STATUS((*matrix)->cross_talk_weights,*status);
+
+	// allocate space for the array (n_ener bins)
+	(*matrix)->cross_talk_weights[(*matrix)->num_cross_talk_pixels] =
+			(double*) malloc( n_ener *sizeof(double) );
+
+	// Affect new values
+	(*matrix)->cross_talk_pixels[(*matrix)->num_cross_talk_pixels] = pixel;
+	for (int ii=0; ii<n_ener; ii++){
+		(*matrix)->cross_talk_weights[(*matrix)->num_cross_talk_pixels][ii] = xt_weigth[ii];
+	}
+
+	// Now, we can say that the matrix is effectively bigger
+	(*matrix)->num_cross_talk_pixels++;
+}
+
+
 // Loads thermal cross-talk for requested pixel
 // Concretely, iterates over all the pixels to find neighbours
 static void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
@@ -221,7 +263,7 @@ static void get_imodtable_axis(int* nrows, double** val, char* extname, char* co
 	return;
 }
 
-/** read one intermodulation matrix from a fits file and store it in the structure */
+/** read one electrical crosstalk matrix from a fits file and store it in the structure (units given in keV) */
 static void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p,
 		ElecTab* tab, char* extname, int* status){
 
@@ -282,7 +324,7 @@ static void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_en
 			for (int kk=0; kk<n_ener_p ; kk++){
 					int ind = 	( kk * n_freq_p + jj ) * n_freq_s + ii;
 					assert(ind < nelem);
-					tab->matrix[ii][jj][kk] = buf[ind];
+					tab->matrix[ii][jj][kk] = buf[ind]*1e-3;  // convert to keV !!!
 			}
 		}
 	} // ------------------------  //  end (freq_s loop)
@@ -333,6 +375,10 @@ static void load_elec_table(AdvDet* det, int* status){
 		CHECK_STATUS_BREAK(*status);
 		get_imodtable_axis(&n_ener_p,&ener_p,EXTNAME_ENER_PERTURBER,COLNAME_ENER_PERTURBER,fptr,status);
 		CHECK_STATUS_BREAK(*status);
+		// convert from eV to keV
+		for (int ii=0; ii<n_ener_p; ii++){
+			ener_p[ii] *=1e-3;
+		}
 
 		// initialize the elec crosstalk tables
 		initElecTab(&(det->crosstalk_elec_carrier_olap), n_freq_s, n_freq_p, n_ener_p, freq_s, freq_p, ener_p, status);
@@ -372,6 +418,68 @@ static void load_elec_table(AdvDet* det, int* status){
 	return;
 }
 
+static void print_elec_matrix(ElecTab* tab_cl,ElecTab* tab_ci){
+
+	FILE * fp;
+	fp = fopen ("elec_matrix_output_tab.txt", "w+");
+
+	for (int kk=0; kk<tab_cl->n_ener_p ; kk++){
+		for (int jj=0; jj<tab_cl->n_freq_p ; jj++){
+				for (int ii=0; ii<tab_cl->n_freq_s ; ii++){
+					fprintf(fp, "%i \t %i \t %i  \t %e \t %e \t %e \t %e \t %e \n",
+							ii,jj,kk,tab_cl->freq_s[ii],tab_cl->freq_p[jj],tab_cl->ener_p[kk],
+							tab_cl->matrix[ii][jj][kk],tab_ci->matrix[ii][jj][kk]);
+
+			}
+		}
+	} // ------------------------  //  end (freq loop)
+
+	fclose(fp);
+}
+
+// get the energy dependent weight (weight needs to be allocated before, values are added
+// to the already given values in weight)
+static void get_enerdep_weight(ElecTab* tab, double freq_s, double freq_p, double* weight, int n, int* status){
+
+	assert(tab->n_ener_p==n);
+
+	if ((freq_s > tab->freq_s[tab->n_freq_s-1] ) || (freq_s < tab->freq_s[0] )){
+		printf(" *** error: signal pixel frequency %g outside tabulated range [%g,%g] \n",
+				freq_s,tab->freq_s[0],tab->freq_s[tab->n_freq_s-1]);
+		SIXT_ERROR("failed interpolating electrical crosstalk table");
+		*status=EXIT_FAILURE;
+		return;
+	}
+	if ((freq_p > tab->freq_p[tab->n_freq_p-1] ) || (freq_p < tab->freq_p[0] )){
+		printf(" *** error: perturber pixel frequency %g outside tabulated range [%g,%g] \n",
+				freq_p,tab->freq_p[0],tab->freq_p[tab->n_freq_p-1]);
+		SIXT_ERROR("failed interpolating electrical crosstalk table");
+		*status=EXIT_FAILURE;
+		return;
+	}
+
+	// interpolate the arrays for the given frequencies
+	int ind_freq_s = binary_search(freq_s,tab->freq_s,tab->n_freq_s);
+	assert ( (ind_freq_s) >= 0 && (ind_freq_s < tab->n_freq_s-1) ); // should be valid after the above checks
+	double d_freq_s =  (freq_s - tab->freq_s[ind_freq_s]) / ( tab->freq_s[ind_freq_s+1] - tab->freq_s[ind_freq_s] );
+
+	// interpolate the arrays for the given frequencies
+	int ind_freq_p = binary_search(freq_p,tab->freq_p,tab->n_freq_p);
+	assert ( (ind_freq_p) >= 0 && (ind_freq_p < tab->n_freq_p-1) );  // should be valid after the above checks
+	double d_freq_p =  (freq_p - tab->freq_p[ind_freq_p]) / ( tab->freq_p[ind_freq_p+1] - tab->freq_p[ind_freq_p] );
+
+	// interpolate in 2d the weights
+	for (int ii=0;ii<tab->n_ener_p;ii++){
+		weight[ii] +=
+				tab->matrix[ind_freq_s][ind_freq_p][ii]*(1-d_freq_s)*(1-d_freq_p) +
+				tab->matrix[ind_freq_s+1][ind_freq_p][ii]*(d_freq_s)*(1-d_freq_p) +
+				tab->matrix[ind_freq_s][ind_freq_p+1][ii]*(1-d_freq_s)*(d_freq_p) +
+				tab->matrix[ind_freq_s+1][ind_freq_p+1][ii]*(d_freq_s)*(d_freq_p);
+
+	}
+
+}
+
 // Loads electrical cross-talk for requested pixel
 // Concretely, iterates over all the pixels of the channel
 static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
@@ -388,12 +496,18 @@ static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 		CHECK_STATUS_VOID(*status);
 		assert(det->crosstalk_elec_carrier_olap != NULL);
 		assert(det->crosstalk_elec_common_imp != NULL);
+	//	print_elec_matrix(det->crosstalk_elec_carrier_olap,det->crosstalk_elec_common_imp);
 	}
 
 
 	AdvPix* concerned_pixel = &(det->pix[pixid]);
 	AdvPix* current_pixel = NULL;
-	double weight=0.;
+
+	// as the electrical crosstalk depends on the energy of the perturber, we need an array
+	// of weights depending on the energy
+	assert( det->crosstalk_elec_common_imp->n_ener_p == det->crosstalk_elec_carrier_olap->n_ener_p );
+	int n_weight=det->crosstalk_elec_common_imp->n_ener_p;
+	double weight[n_weight];
 
 
 	// Iterate over the channel
@@ -403,14 +517,22 @@ static void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 		// Cross-talk is not with yourself ;)
 		if (current_pixel==concerned_pixel) continue;
 
-		// Carrier overlap
-//		weight = pow(det->elec_xt_par->R0/(4*M_PI*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfprim),2);
+		double freq_s = concerned_pixel->freq;
+		double freq_p = current_pixel->freq;
 
-		// Common impedence
-//		weight+=pow(concerned_pixel->freq*det->elec_xt_par->Lcommon/(2*(concerned_pixel->freq - current_pixel->freq)*det->elec_xt_par->Lfsec),2);
+		// set weights to zero;
+		for (int jj=0;jj<n_weight;jj++){
+			weight[jj] = 0.0;
+		}
+
+		// Add Carrier overlap
+		get_enerdep_weight(det->crosstalk_elec_carrier_olap,freq_s,freq_p,weight,n_weight,status);
+
+		// Add Common impedence
+		get_enerdep_weight(det->crosstalk_elec_common_imp,freq_s,freq_p,weight,n_weight,status);
 
 		// Add cross-talk pixel
-		add_xt_pixel(&concerned_pixel->electrical_cross_talk,current_pixel,weight,status);
+		add_xt_enerdep_pixel(&concerned_pixel->electrical_cross_talk,current_pixel,weight,n_weight,status);
 		CHECK_STATUS_VOID(*status);
 
 	}
@@ -993,10 +1115,11 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 	assert(impact->pixID == crosstalk->pixID);
 	// For the moment, the crosstalk event is supposed to happen afterwards, but this could be modified if needed
 	double time_difference = crosstalk->time - impact->time;
-	headas_chat(7,"TimeI:%.3e \t TimeC:%.3e \t CrosstalkE:%.3 \t ",impact->time,crosstalk->time,crosstalk->energy);
 	double energy_influence = 0.;
 	// if impact is close enough to have an influence
 	if ((time_difference>det->crosstalk_timedep->time[0]) && (time_difference<det->crosstalk_timedep->time[det->crosstalk_timedep->length-1])){
+
+		headas_chat(7,"TimeI:%.1e TimeC:%.2e CrosstalkE:%.2e ",impact->time,crosstalk->time,crosstalk->energy);
 		// Binary search for to find interpolation interval
 		int high=det->crosstalk_timedep->length-1;
 		int low=0;
@@ -1017,10 +1140,9 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 				(det->crosstalk_timedep->weight[timedep_index+1]-det->crosstalk_timedep->weight[timedep_index])/(det->crosstalk_timedep->time[timedep_index+1]-det->crosstalk_timedep->time[timedep_index])*(time_difference-det->crosstalk_timedep->time[timedep_index]));
 		impact->energy+=energy_influence;
 		*influence+=energy_influence;
-		headas_chat(7,", Influence:%.3e (fraction:%.3e)\n",*influence,*influence/crosstalk->energy);
+		headas_chat(7,", Influence:%.2e (fraction:%.2e)\n",*influence,*influence/crosstalk->energy);
 		return 1;
 	}
-	headas_chat(7,"\n");
 	return 0;
 }
 
@@ -1122,4 +1244,27 @@ void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy*
 	if (xtalk_proxy->n_active_crosstalk==0){
 		xtalk_proxy->current_crosstalk_index=0;
 	}
+}
+
+/**  Binary search for to find interpolation interval
+ *   - return value is the bin [ind,ind+1]
+ *   - assume list is sorted ascending */
+int binary_search(double val, double* arr, int n){
+
+	if (val < arr[0] || val > arr[n-1]){
+		return -1;
+	}
+
+	int high=n-1;
+	int low=0;
+	int mid;
+	while (high > low) {
+		mid=(low+high)/2;
+		if (arr[mid] <= val) {
+			low=mid+1;
+		} else {
+			high=mid;
+		}
+	}
+	return low-1;
 }

@@ -88,7 +88,7 @@ void freeAdvPix(AdvPix* pix){
     destroyTESNoiseProperties(pix->TESNoise);
     freeGrading(pix);
     freeMatrixCrossTalk(&(pix->thermal_cross_talk));
-    freeMatrixCrossTalk(&(pix->electrical_cross_talk));
+    freeMatrixEnerdepCrossTalk(&(pix->electrical_cross_talk));
     freeImodCrossTalk(&(pix->intermodulation_cross_talk));
   }
 }
@@ -1105,6 +1105,22 @@ void freeMatrixCrossTalk(MatrixCrossTalk** matrix){
 }
 
 /** Destructor for MatrixCrossTalk structure */
+void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk** matrix){
+	if (*matrix!=NULL){
+		if ( (*matrix)->cross_talk_weights!=NULL ){
+			for (int ii=0; ii<(*matrix)->num_cross_talk_pixels-1; ii++){
+				free( (*matrix)->cross_talk_weights[ii]);
+			}
+			free( (*matrix)->cross_talk_weights);
+		}
+		free((*matrix)->cross_talk_pixels);
+	}
+	free(*matrix);
+	*matrix=NULL;
+}
+
+
+/** Destructor for MatrixCrossTalk structure */
 void freeImodCrossTalk(IntermodulationCrossTalk** matrix){
 	if (*matrix!=NULL){
 		for (int ii=0; ii <  (*matrix)->num_cross_talk_pixels; ii++){
@@ -1129,6 +1145,19 @@ MatrixCrossTalk* newMatrixCrossTalk(int* const status){
 	matrix->num_cross_talk_pixels=0;
 	matrix->cross_talk_pixels = NULL;
 	matrix->cross_talk_weights = NULL;
+
+	return matrix;
+}
+
+/** Constructor for MatrixEnerdepCrossTalk structure */
+MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int* const status){
+	MatrixEnerdepCrossTalk* matrix = (MatrixEnerdepCrossTalk*) malloc(sizeof(*matrix));
+	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
+
+	matrix->num_cross_talk_pixels=0;
+	matrix->cross_talk_pixels = NULL;
+	matrix->cross_talk_weights = NULL;
+	matrix->n_ener=0;
 
 	return matrix;
 }

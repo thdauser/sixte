@@ -84,6 +84,11 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact,int* const
 void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy* xtalk_proxy,double* xtalk_energy,int* nb_influences,
 		double current_time,int ignore_influence,int full_proxy);
 
+/**  Binary search for to find interpolation interval
+ *   - return value is the bin [ind,ind+1]
+ *   - assume list is sorted ascending */
+int binary_search(double val, double* arr, int n);
+
 #endif /* CROSSTALK_H */
 
 
