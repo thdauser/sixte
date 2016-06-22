@@ -362,7 +362,7 @@ static void load_elec_table(AdvDet* det, int* status){
 
 		// open the file
 		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
-		headas_chat(5, "\n[crosstalk] reading the electrical crosstalk table %s \n",fullfilename);
+		headas_chat(5, "   ... reading the electrical crosstalk table %s \n",fullfilename);
 
 		// read the extensions specifying the axes of the 3d matrix
 		int n_freq_s, n_freq_p, n_ener_p;
@@ -804,7 +804,7 @@ static void load_intermod_freq_table(AdvDet* det, int* status){
 
 		// open the file
 		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
-		headas_chat(5, "\n[crosstalk] reading the intermodulation table %s \n",fullfilename);
+		headas_chat(5, "   ... reading the intermodulation table %s\n",fullfilename);
 
 		// read the extensions specifying the axes of the 3d matrix
 		int n_ampl,n_dt,n_freq;

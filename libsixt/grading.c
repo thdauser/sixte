@@ -219,6 +219,14 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 	// Iterate over impacts
 	while (getNextImpactFromPixImpFile(piximpactfile,&impact,status)){
 		id = impact.pixID;
+
+		// intermod crosstalk
+		if (det->crosstalk_intermod_table!=NULL){
+			applyIntermodCrossTalk(grade_proxys,&impact,det,
+					sample_length,event_file,save_crosstalk,status);
+			CHECK_STATUS_VOID(*status);
+		}
+
 		// thermal crosstalk
 		if (det->pix[id].thermal_cross_talk !=NULL){
 			applyMatrixCrossTalk(det->pix[id].thermal_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
@@ -227,13 +235,6 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		// electrical crosstalk
 		if (det->pix[id].electrical_cross_talk !=NULL){
 			applyMatrixEnerdepCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
-			CHECK_STATUS_VOID(*status);
-		}
-
-		// intermod crosstalk
-		if (det->crosstalk_intermod_table!=NULL){
-			applyIntermodCrossTalk(grade_proxys,&impact,det,
-					sample_length,event_file,save_crosstalk,status);
 			CHECK_STATUS_VOID(*status);
 		}
 
@@ -352,7 +353,7 @@ static double get_intermod_weight(ImodTab* cross_talk, double df, double dt,
 	// get the frequency bin in the weightening table
 	int ind_df = binary_search(df,cross_talk->freq,cross_talk->n_freq);
 
-	assert ( (ind_dt) >= 0 && (ind_dt < cross_talk->n_freq) );
+	assert ( (ind_df) >= 0 && (ind_df < cross_talk->n_freq) );
 	double d_df =  (df - cross_talk->freq[ind_df]) / ( cross_talk->freq[ind_df+1] - cross_talk->freq[ind_df] );
 
 	int iarr[] = {ind_df, ind_dt,ind_ampl[0],ind_ampl[1]};
@@ -382,12 +383,33 @@ static double conv_ener2ampli(double ener){
 
 
 // taken from Roland's Memo (V2, 10.06.2016)
-static double get_imod_df(double f_sig, double f_per){
+static double get_imod_df(double f_sig, double f_per, int* status){
+
+	double f_high = 5.6e6; // changed to 5.6MHz
+	double f_low  = 1.0e6;
+
+	// integrate check df_nlin < f_high-fg_low
+
+	if (f_sig > f_high || f_sig < f_low){
+		*status=EXIT_FAILURE;
+		printf(" *** error: expecting frequency %gMHz to be in the interval [%g,%g] MHz",
+				f_sig,f_low,f_high);
+		SIXT_ERROR("simulating non-linear crosstalk failed");
+		return 0;
+	}
+
+	if (f_per > f_high || f_per < f_low){
+		*status=EXIT_FAILURE;
+		printf(" *** error: expecting frequency %gMHz to be in the interval [%g,%g] MHz",
+				f_per,f_low,f_high);
+		SIXT_ERROR("simulating non-linear crosstalk failed");
+		return 0;
+	}
 
 	if (f_sig > f_per){
-		return (f_sig-f_per)*(1.0e6/f_per) ; // correspond to 1MHz
+		return (f_sig-f_per)*(f_low/f_per) ;
 	} else {
-		return (f_sig-f_per)*(5.0e6/f_per) ; // correspond to 5MHz
+		return (f_sig-f_per)*(f_high/f_per) ;
 	}
 
 }
@@ -395,13 +417,12 @@ static double get_imod_df(double f_sig, double f_per){
 static void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* perturber,
 		PixImpact* crosstalk_impact, double dt, int* status){
 
-	double df = get_imod_df(det->pix[signal->pixID].freq,det->pix[perturber->pixID].freq);
+	double df = get_imod_df(det->pix[signal->pixID].freq,det->pix[perturber->pixID].freq,status);
+	CHECK_STATUS_VOID(*status);
+
 	double ampli_signal = conv_ener2ampli((signal->energy));
 	double ampli_perturber = conv_ener2ampli((perturber->energy));
 
-
-//	printf("      [ using df=%.1f dt=%e ampli_pert=%e ampli_sig=%e ]\n",
-//			df,dt,ampli_perturber,ampli_signal);
 	double energy_weight = get_intermod_weight(det->crosstalk_intermod_table, df, dt,
 			ampli_perturber, ampli_signal, status);
 
@@ -412,7 +433,8 @@ static void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* per
     crosstalk_impact->src_id = perturber->src_id;
 
 
-	headas_chat(7," -> energy %e eV ; dt=%e ; df=%.1f kHz \n",crosstalk_impact->energy*1e3,dt,df*1e-3);
+	headas_chat(7," -> time: %g ; energy %e eV ; dt=%e ; df=%.1f kHz \n",crosstalk_impact->time,
+			crosstalk_impact->energy*1e3,dt,df*1e-3);
 
 }
 
@@ -456,13 +478,13 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 
 			// see if we need to calculate the crosstalk influence of
 			// the perturber on the signal
-			if ( dt <= det->crosstalk_intermod_table->dt_max){
+			// also check that the signal on the pixel is postive
+			if ( dt <= det->crosstalk_intermod_table->dt_max && grade_proxys[active_ind].impact->energy>0){
 
-				printf(" *** [dt=%.2f sec] trigger crosstalk event in pix=%ld (%.2f MHz), with perturber %ld (%.2f MHz)\n",
-						dt, grade_proxys[active_ind].impact->pixID,
+				headas_chat(7," *** [t=%g sec]->[t=%g sec] trigger non-linear crosstalk event in pix=%ld (%.2f MHz), with perturber %ld (%.2f MHz)\n",
+						impact->time, grade_proxys[active_ind].times->current,grade_proxys[active_ind].impact->pixID,
 						det->pix[active_ind].freq*1e-6,
 						impact->pixID,det->pix[impact->pixID].freq*1e-6);
-
 
 				calc_imod_xt_influence(det,grade_proxys[active_ind].impact,
 						impact,&crosstalk_impact,dt,status);
@@ -491,7 +513,7 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 
 
 
-				printf("  \n");
+				headas_chat(7,"  \n");
 
 			}
 
@@ -562,10 +584,9 @@ void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* 
 			crosstalk_impact.ph_id = -impact->ph_id;
 			crosstalk_impact.src_id = impact->src_id;
 
-//			printf(" [%ld] crosstalk energy %.3f keV (for impact %.1f keV, fs=%.0f, fp=%.0f) \n",
-//					crosstalk_impact.ph_id,crosstalk_impact.energy, impact->energy,
+//			printf(" [%ld%ld] crosstalk energy %.2e keV (for impact %.1f keV, fs=%.0f, fp=%.0f) \n",
+//					crosstalk_impact.pixID,crosstalk_impact.ph_id,crosstalk_impact.energy, impact->energy,
 //					det->pix[impact->pixID].freq*1e-3,det->pix[crosstalk_impact.pixID].freq*1e-3);
-
 
 			processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,
 					det,event_file,save_crosstalk,status);
@@ -658,13 +679,27 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 
 		// Update grade proxy
 		if (next_impact!=NULL){
-			grade_proxy->times->next = next_impact->time;
+			assert(grade_proxy->times->current>=0);
+			// very rare case that a real crosstalk event is produced before
+			if ( (next_impact->time < grade_proxy->times->current) ){
+				// switch the time of the events
+				grade_proxy->times->next = grade_proxy->times->current;
+				grade_proxy->times->current = next_impact->time;
+
+				// also switch the impacts
+				PixImpact* tmp_impact = next_impact;
+				next_impact=impact_to_save;
+				impact_to_save=tmp_impact;
+			} else {
+				grade_proxy->times->next = next_impact->time;
+			}
 		} else {
 			grade_proxy->times->next = -1.0;
 		}
 
 		// Calculate grades
 		calcGradingTimes(sample_length,*(grade_proxy->times),&grade1,&grade2,status);
+		CHECK_STATUS_VOID(*status);
 
 		// treat pileup case
 		// TODO : add pileup limit as a pixel parameter (for the moment, equal to one sample)
@@ -695,7 +730,6 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 				// The channel is obtained from the RMF using the corresponding
 				// HEAdas routine which is based on drawing a random number.
 				returnRMFChannel(rmf, grade_proxy->impact->energy, &channel); //use total energy here to take pileup into account
-				//printf("%f\n",grade_proxy->impact->energy);
 
 				// Check if the photon is really measured. If the PI channel
 				// returned by the HEAdas RMF function is '-1', the photon is not
@@ -703,10 +737,10 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 				// normalized
 				if (channel<rmf->FirstChannel) {
 					// flag as invalid (seemed better than discarding)
-					if (!is_crosstalk){
+					if (!is_crosstalk && grade_proxy->impact->ph_id>=0){
 						char msg[MAXMSG];
-						sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV and phi_id %ld",
-								grade_proxy->impact->energy,grade_proxy->impact->ph_id);
+						sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV (channel %ld) and phi_id %ld",
+								grade_proxy->impact->energy,channel,grade_proxy->impact->ph_id);
 						SIXT_WARNING(msg);
 					}
 					impact_to_save->energy=0.;
@@ -733,10 +767,16 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 			}
 		}
 		// Add processed event to event file
+//		printf(" ###### %i %e %i %i %i %e %ld %ld\n",grade_proxy->nb_crosstalk_influence,impact_to_save->energy,
+//				grade1,grade2,grading,grade_proxy->crosstalk_energy, impact_to_save->pixID,impact_to_save->ph_id);
 		updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,
 				grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
 		if (*status!=EXIT_SUCCESS){
-			SIXT_ERROR("updating singal energy in the event file failed");
+			printf(" ############################################# \n");
+//			printf(" ###### %i %e %i %i %i %e %ld %ld\n",grade_proxy->nb_crosstalk_influence,impact_to_save->energy,
+//					grade1,grade2,grading,grade_proxy->crosstalk_energy, impact_to_save->pixID,impact_to_save->ph_id);
+			*status=EXIT_SUCCESS;
+//			SIXT_ERROR("updating singal energy in the event file failed");
 			return;
 		}
 
