@@ -377,8 +377,9 @@ static double get_intermod_weight(ImodTab* cross_talk, double df, double dt,
 
 // Conversion from Energy to Amplitude
 // (Memo Roland, 10.06.2016 : 14keV = 0.25phi)
+// eMail Roland, 22.06.2016 : Take absolute value for conversion (as AC modulated signal)
 static double conv_ener2ampli(double ener){
-	return ener / 14.0 * 0.5;
+	return fabs(ener) / 14.0 * 0.5;
 }
 
 
@@ -479,7 +480,7 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 			// see if we need to calculate the crosstalk influence of
 			// the perturber on the signal
 			// also check that the signal on the pixel is postive
-			if ( dt <= det->crosstalk_intermod_table->dt_max && grade_proxys[active_ind].impact->energy>0){
+			if ( dt <= det->crosstalk_intermod_table->dt_max ){
 
 				headas_chat(7," *** [t=%g sec]->[t=%g sec] trigger non-linear crosstalk event in pix=%ld (%.2f MHz), with perturber %ld (%.2f MHz)\n",
 						impact->time, grade_proxys[active_ind].times->current,grade_proxys[active_ind].impact->pixID,
@@ -656,7 +657,8 @@ void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImp
 }
 
 /** Processes a graded event : update grading proxy and save previous event */
-void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* next_impact,AdvDet* det,TesEventFile* event_file,int is_crosstalk,int* const status){
+void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* next_impact,
+		AdvDet* det,TesEventFile* event_file,int is_crosstalk,int* const status){
 	long grade1, grade2;
 	int grading;
 	int grading_index;
@@ -767,16 +769,10 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 			}
 		}
 		// Add processed event to event file
-//		printf(" ###### %i %e %i %i %i %e %ld %ld\n",grade_proxy->nb_crosstalk_influence,impact_to_save->energy,
-//				grade1,grade2,grading,grade_proxy->crosstalk_energy, impact_to_save->pixID,impact_to_save->ph_id);
 		updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,
 				grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
 		if (*status!=EXIT_SUCCESS){
-			printf(" ############################################# \n");
-//			printf(" ###### %i %e %i %i %i %e %ld %ld\n",grade_proxy->nb_crosstalk_influence,impact_to_save->energy,
-//					grade1,grade2,grading,grade_proxy->crosstalk_energy, impact_to_save->pixID,impact_to_save->ph_id);
-			*status=EXIT_SUCCESS;
-//			SIXT_ERROR("updating singal energy in the event file failed");
+			SIXT_ERROR("updating singal energy in the event file failed");
 			return;
 		}
 
