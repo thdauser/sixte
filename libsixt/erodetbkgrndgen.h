@@ -43,6 +43,8 @@ typedef struct eroBackgroundInput {
   double intervalsum;
   gsl_rng *randgen;
   
+  double rate;
+
   char *timecolname;
   char *energycolname;
   char *xcolname;
