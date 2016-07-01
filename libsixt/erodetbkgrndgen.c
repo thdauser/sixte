@@ -24,16 +24,10 @@ static eroBackgroundInput bkginputdata;
 static eroBackgroundRateFct bkgratefct;
 static struct rateCurrentInterval rCurr = {0L, 0., NULL, 0L};
 
-/* Needed for dynamic rate adjustment during initialization. */
-static int rate_initialized = 0;
-
 struct timeb time_struct;
 
 /* internal functions */
 
-/* Count the number of separate events (i.e. the events without
- * secondary interactions) by looking at the timestamps.
- */
 int calcEvents(const double* const hit_time, const long numrows) {
   int cc = 0;
   int numevents = 1;
@@ -47,7 +41,6 @@ int calcEvents(const double* const hit_time, const long numrows) {
   return numevents;
 }
 
-/* Write positions of next separate events to an eventlist. */
 void fillEventList(const double* const hit_time, 
 		   const long numrows, 
 		   size_t* const eventlist) {
@@ -62,9 +55,13 @@ void fillEventList(const double* const hit_time,
   }
 }
 
-/* Calculate the number of events for the given interval. */
-inline double calcEventRate(const double interval) {
-  double eventrate = bkginputdata.rate;
+inline double calcEventRate(const double* const hit_time,
+			    const long numrows,
+			    const int numevents,
+			    const double interval) {
+  double eventrate = (double)numevents;
+
+  eventrate /= (hit_time[numrows - 1] - hit_time[0]);
   eventrate *= interval;
 
   return eventrate;
@@ -74,13 +71,9 @@ inline double calcEventRate(const double interval) {
 
 /* external functions */
 
-/* Initialize data structures and read background data table.
- * This function needs to be called once before background events can
- * be requested.
- */
 void eroBkgInitialize(const char* const filename,
-    const unsigned int seed,
-    int* const status) {
+		      const unsigned int seed,
+                      int* const status) {
 
   bkgratefct.numelements = 0L;
   bkgratefct.time = NULL;
@@ -92,8 +85,8 @@ void eroBkgInitialize(const char* const filename,
 
   bkginputdata.eventlist = NULL;
   bkginputdata.numrows = 0L;
-  bkginputdata.timecolname = "Frame";
-  bkginputdata.energycolname = "Edep";
+  bkginputdata.timecolname = "TIME CCD";
+  bkginputdata.energycolname = "PI CCD";
   bkginputdata.xcolname = "X";
   bkginputdata.ycolname = "Y";
   bkginputdata.interval = 0.;
@@ -102,16 +95,6 @@ void eroBkgInitialize(const char* const filename,
 
   fits_open_table(&bkginputdata.inputfptr, filename, READONLY, status);
   fits_report_error(stderr, *status);
-
-  /* If the rate has not been set explicitly, we use the value from the header keyword. */
-  if(rate_initialized == 0) {
-    fits_read_key(bkginputdata.inputfptr, TDOUBLE, "RATE", &bkginputdata.rate, NULL, status);
-    if(*status != 0) {
-      SIXT_ERROR("RATE keyword not found! Cannot set rate for background data.");
-      *status = EXIT_FAILURE;
-      return;
-    }
-  }
 
   fits_get_num_rows(bkginputdata.inputfptr, &bkginputdata.numrows, status);
   fits_report_error(stderr, *status);
@@ -137,18 +120,15 @@ void eroBkgInitialize(const char* const filename,
   bkginputdata.eventlist = (size_t*) calloc(bkginputdata.numevents, sizeof(size_t));
   fillEventList(bkginputdata.hit_time, bkginputdata.numrows, bkginputdata.eventlist);
 
+  bkginputdata.eventsperinterval = calcEventRate(bkginputdata.hit_time,
+                                                 bkginputdata.numrows,
+                                                 bkginputdata.numevents,
+                                                 bkginputdata.interval);
+
   bkginputdata.randgen = gsl_rng_alloc(gsl_rng_ranlux);
   gsl_rng_set(bkginputdata.randgen, seed);
 }
 
-void eroBkgInitialize_Rate(const char* const filename, const unsigned int seed,
-                const unsigned int rate, int* const status) {
-    bkginputdata.rate = rate;
-    rate_initialized = 1;
-    eroBkgInitialize(filename, seed, status);
-}
-
-/* Free passed background structure. */
 void eroBkgFree(eroBackgroundOutput* struct_to_free) {
 	if(struct_to_free->numhits != 0) {
 		free(struct_to_free->hit_xpos);
@@ -159,7 +139,6 @@ void eroBkgFree(eroBackgroundOutput* struct_to_free) {
   free(struct_to_free);
 }
 
-/* Clean up everything and close background file. */
 void eroBkgCleanUp(int* const status) {
 	fits_close_file(bkginputdata.inputfptr, status);
 	fits_report_error(stderr, *status);
@@ -173,7 +152,6 @@ void eroBkgCleanUp(int* const status) {
 	free(bkginputdata.hit_energy);
 }
 
-/* Optional: use a Simput light curve to manipulate the background rate over time. */
 void eroBkgSetRateFct(const char* const filename, int* const status) {
   SimputLC *rate_lc = NULL;
 
@@ -182,9 +160,9 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
 
     // Make sure that the light curve is given as a function of time.
     // Periodic light curves cannot be processed here.
-    if (rate_lc->time == NULL) {
-      SIXT_ERROR("Light curve for background variation does not contain TIME column");
-      *status = EXIT_FAILURE;
+    if (NULL==rate_lc->time) {
+      SIXT_ERROR("light curve for background variation does not contain TIME column");
+      *status=EXIT_FAILURE;
       return;
     }
 
@@ -217,7 +195,6 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
   }
 }
 
-/* Determine the background rate over a certain time interval. */
 void eroBkgGetRate(double interval) {
   double startfraction = 0.;
   double endfraction = 0.;
@@ -315,10 +292,6 @@ void eroBkgGetRate(double interval) {
   }
 }
 
-/* Returns a background structure with a random (poisson) number of background events
- * for the requested interval. A flat random distribution decides, which events from
- * the file will be returned in the end.
- */
 eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
   int cc = 0;
 	eroBackgroundOutput* bkgresultlist = NULL;
@@ -326,10 +299,13 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
   bkgresultlist->numevents = 0;
   bkgresultlist->numhits = 0;
 
-  // If the requested interval is valid we calculate the average number of events for this interval length.
+  // If the requested interval is valid we calculate the event rate of the background file
   if(interval > 0) {
     bkginputdata.interval = interval;
-    bkginputdata.eventsperinterval = calcEventRate(bkginputdata.interval);
+    bkginputdata.eventsperinterval = calcEventRate(bkginputdata.hit_time,
+                                                  bkginputdata.numrows,
+                                                  bkginputdata.numevents,
+                                                  bkginputdata.interval);
   } else {
     SIXT_ERROR("Invalid interval for background generation specified!");
     free(bkgresultlist);
@@ -359,17 +335,12 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
 
     for(cc = 0; cc < bkgresultlist->numevents; cc++) {
       rand = (int)floor((bkginputdata.numevents - 1) * gsl_ran_flat(bkginputdata.randgen, 0, 1));
-      /* Do this until we reach the next "real" event and add subevents to the list. Count their number with numhits. */
       do {
         bkgresultlist->hit_energy[bkgresultlist->numhits] = bkginputdata.hit_energy[bkginputdata.eventlist[rand] + hitcnt];
         bkgresultlist->hit_time[bkgresultlist->numhits] = bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt];
         bkgresultlist->hit_xpos[bkgresultlist->numhits] = bkginputdata.hit_xpos[bkginputdata.eventlist[rand] + hitcnt];
         bkgresultlist->hit_ypos[bkgresultlist->numhits] = bkginputdata.hit_ypos[bkginputdata.eventlist[rand] + hitcnt];
         bkgresultlist->numhits++;
-        
-        /* Check if we are currently inside a subevent (i.e. the next "event" in the list belongs to the same event -> same time).
-         * If yes, set hitcnt to something != 0
-         */
         if(&bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt] != &bkginputdata.hit_time[bkginputdata.numrows - 1]) {
           if(bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt + 1] != bkginputdata.hit_time[bkginputdata.eventlist[rand] + hitcnt]) {
             hitcnt = 0;
