@@ -115,6 +115,14 @@ eroBackgroundOutput* eroBkgGetBackgroundList(const double interval);
 void eroBkgInitialize(const char* const filename, const unsigned int seed, 
 		      int* const status);
 
+/** Wrapper function for eroBkgInitialize() which sets a specific value for the
+ *  rate of the background event file. If this function is not called, the rate
+ *  for the specified background event file will be read from its header keyword
+ *  RATE.
+ */
+void eroBkgInitialize_Rate(const char* const filename,
+    const unsigned int seed, const unsigned int rate, int* const status);
+
 /** free memory of passed eroBackgroundOutput structure */
 void eroBkgFree(eroBackgroundOutput* struct_to_free);
 
@@ -124,11 +132,8 @@ void eroBkgCleanUp(int* const status);
 /** determine how many events occur in the whole background simulation */
 int calcEvents(const double* const hit_time, const long numrows);
 
-/** calculate event rate out of interval and number of events */
-double calcEventRate(const double* hit_time,
-                            const long numrows,
-                            const int numevents,
-                            const double interval);
+/** calculate the number of background events for the given interval. */
+double calcEventRate(const double interval);
 
 void fillEventList(const double* const hit_time, const long numrows, size_t* const eventlist);
 

@@ -62,7 +62,7 @@ void fillEventList(const double* const hit_time,
   }
 }
 
-/* Calculate the event rate for the given interval. */
+/* Calculate the number of events for the given interval. */
 inline double calcEventRate(const double interval) {
   double eventrate = bkginputdata.rate;
   eventrate *= interval;
@@ -137,20 +137,10 @@ void eroBkgInitialize(const char* const filename,
   bkginputdata.eventlist = (size_t*) calloc(bkginputdata.numevents, sizeof(size_t));
   fillEventList(bkginputdata.hit_time, bkginputdata.numrows, bkginputdata.eventlist);
 
-//  bkginputdata.eventsperinterval = calcEventRate(bkginputdata.hit_time,
-//                                                 bkginputdata.numrows,
-//                                                 bkginputdata.numevents,
-//                                                 bkginputdata.interval);
-
   bkginputdata.randgen = gsl_rng_alloc(gsl_rng_ranlux);
   gsl_rng_set(bkginputdata.randgen, seed);
 }
 
-/** Wrapper function for eroBkgInitialize() which sets a specific value for the
- *  rate of the background event file. If this function is not called, the rate
- *  for the specified background event file will be read from its header keyword
- *  RATE.
- */
 void eroBkgInitialize_Rate(const char* const filename, const unsigned int seed,
                 const unsigned int rate, int* const status) {
     bkginputdata.rate = rate;
@@ -192,9 +182,9 @@ void eroBkgSetRateFct(const char* const filename, int* const status) {
 
     // Make sure that the light curve is given as a function of time.
     // Periodic light curves cannot be processed here.
-    if (NULL==rate_lc->time) {
-      SIXT_ERROR("light curve for background variation does not contain TIME column");
-      *status=EXIT_FAILURE;
+    if (rate_lc->time == NULL) {
+      SIXT_ERROR("Light curve for background variation does not contain TIME column");
+      *status = EXIT_FAILURE;
       return;
     }
 
@@ -339,10 +329,7 @@ eroBackgroundOutput* eroBkgGetBackgroundList(double interval) {
   // If the requested interval is valid we calculate the average number of events for this interval length.
   if(interval > 0) {
     bkginputdata.interval = interval;
-    bkginputdata.eventsperinterval = calcEventRate(bkginputdata.hit_time,
-                                                  bkginputdata.numrows,
-                                                  bkginputdata.numevents,
-                                                  bkginputdata.interval);
+    bkginputdata.eventsperinterval = calcEventRate(bkginputdata.interval);
   } else {
     SIXT_ERROR("Invalid interval for background generation specified!");
     free(bkgresultlist);
