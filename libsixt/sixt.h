@@ -157,6 +157,7 @@ extern char **sixt_argv;
 
 // Warnings.
 #define SIXT_WARNING(msg) (sixt_warning(msg))
+#define SIXT_DEPRECATED(fnc, alt) (sixt_deprecated(fnc, alt))
 
 /////////////////////////////////////////////////////////////////
 // Type declarations.
@@ -249,6 +250,10 @@ void sixt_error(const char* const func, const char* const msg);
 
 /** Print the given warning message. */
 void sixt_warning(const char* const msg);
+
+/** Print a message that this function is deprecated and propose
+    the given alternative (if supplied). */
+void sixt_deprecated(const char* const fnc, const char* const alt);
 
 /** Determine the XMLFilename according to the selected mission,
     instrument and mode. */

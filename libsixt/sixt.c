@@ -146,6 +146,15 @@ void sixt_warning(const char* const msg)
   headas_chat(1, "### Warning: %s!\n", msg);
 }
 
+void sixt_deprecated(const char* const fnc, const char* const alt)
+{
+  // Print a warning that this function is deprecated and propose the
+  // alternative supplied in alt (if not NULL).
+  printf("### Warning: The function %s is deprecated!\n", fnc);
+  if(alt != NULL && strlen(alt) > 0) {
+    printf("### Please consider using the function %s instead.\n", alt);
+  }
+}
 
 void sixt_get_XMLFile(char* const filename,
 		      const char* const xmlfile,
