@@ -21,8 +21,6 @@
 #ifndef _BACKGROUND_H_
 #define _BACKGROUND_H_ 1
 
-#define DEPRECATED(func) func __attribute__ ((deprecated))
-
 #include <ctype.h>
 #include <math.h>
 #include <sys/timeb.h>
@@ -149,13 +147,13 @@ void bkgCleanUp(int* const status);
 /************** DEPRECATED section ****************/
 
 /* DEPRECATED: defined for compatibility reasons. */
-typedef struct backgroundInput eroBackgroundInput;
+DEPRECATED(typedef struct backgroundInput eroBackgroundInput);
 
 /* DEPRECATED: defined for compatibility reasons. */
-typedef struct backgroundOutput eroBackgroundOutput;
+DEPRECATED(typedef struct backgroundOutput eroBackgroundOutput);
 
 /* DEPRECATED: defined for compatibility reasons. */
-typedef struct backgroundRateFct eroBackgroundRateFct;
+DEPRECATED(typedef struct backgroundRateFct eroBackgroundRateFct);
 
 /** DEPRECATED: see bkgSetRateFct. */
 DEPRECATED(void eroBkgSetRateFct(const char* const filename, int* const status));

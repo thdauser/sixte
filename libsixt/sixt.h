@@ -83,6 +83,9 @@ extern char **sixt_argv;
 /** Returns the minimum of 2 values. */
 #define MIN(a, b) ( (a)<(b) ? (a) : (b) )
 
+// Flag for deprecated functions.
+// Note: these functions should also make use of SIXT_DEPRECATED().
+#define DEPRECATED(func) func __attribute__ ((deprecated))
 
 // Error handling macros.
 #define SIXT_ERROR(msg) (sixt_error(__func__, msg))
