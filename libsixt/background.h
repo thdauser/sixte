@@ -138,6 +138,14 @@ void bkgInitialize_Rate(const char* const filename,
     const unsigned int rate,
     int* const status);
 
+/** Wrapper function for bkgInitialize() which allows user specified rates
+ *  for the background file with the bkgAux-structure.
+ */
+void bkgInitializeAux(const char* const filename,
+    const unsigned int seed,
+    bkgAux* bkgaux,
+    int* const status);
+
 /** Free memory of passed backgroundOutput structure */
 void bkgFree(backgroundOutput* struct_to_free);
 

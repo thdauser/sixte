@@ -197,8 +197,10 @@ void bkgInitializeAux(const char* const filename,
     int* const status) {
 
   if(bkgaux != NULL) {
-    bkginputdata.aux.rate = bkgaux->rate;
-    rate_initialized = 1;
+    if(bkgaux->rate>0.){
+      bkginputdata.aux.rate = bkgaux->rate;
+      rate_initialized = 1;
+    }
     bkgInitialize(filename, seed, status);
   } else {
     SIXT_ERROR("Invalid auxiliary information provided for init of background module!");
