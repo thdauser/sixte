@@ -99,7 +99,7 @@ void destroyGenInst(GenInst** const inst, int* const status)
       destroyGenDet(&(*inst)->det);
     }
     if (1==auxBkgInitialized) {
-      eroBkgCleanUp(status);
+      bkgCleanUp(status);
       auxBkgInitialized=0;
     }
     if (NULL!=(*inst)->filename) {

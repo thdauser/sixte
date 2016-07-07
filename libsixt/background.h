@@ -42,7 +42,7 @@ extern struct timeb time_struct;
  *  background module via 'bkgInitializeAux'.
  */
 typedef struct bkgAux {
-  double rate;  // sets the rate of the background event file.
+  double rate;  // sets the rate of the background event file [1/s].
 } bkgAux;
 
 /** Structure which contains all the input data from
@@ -53,6 +53,12 @@ typedef struct backgroundInput {
   double interval;
   double intervalsum;
   gsl_rng *randgen;
+  
+  double xmin_mm;
+  double xmax_mm;
+  double ymin_mm;
+  double ymax_mm;
+  double area_sqcm;
 
   char *timecolname;
   char *energycolname;

@@ -143,6 +143,33 @@ void bkgInitialize(const char* const filename,
 
   fits_open_table(&bkginputdata.inputfptr, filename, READONLY, status);
   fits_report_error(stderr, *status);
+  
+  /* lead keywords describing the detector size used in the background simulations.*/
+  fits_read_key(bkginputdata.inputfptr, TDOUBLE, "SAMINX", &bkginputdata.xmin_mm, NULL, status);
+  if(*status != 0) {
+    SIXT_ERROR("SAMINX keyword not found! Cannot set rate for background data.");
+    *status = EXIT_FAILURE;
+    return;
+  }
+  fits_read_key(bkginputdata.inputfptr, TDOUBLE, "SAMAXX", &bkginputdata.xmax_mm, NULL, status);
+  if(*status != 0) {
+    SIXT_ERROR("SAMAXX keyword not found! Cannot set rate for background data.");
+    *status = EXIT_FAILURE;
+    return;
+  }
+  fits_read_key(bkginputdata.inputfptr, TDOUBLE, "SAMINY", &bkginputdata.ymin_mm, NULL, status);
+  if(*status != 0) {
+    SIXT_ERROR("SAMINY keyword not found! Cannot set rate for background data.");
+    *status = EXIT_FAILURE;
+    return;
+  }
+  fits_read_key(bkginputdata.inputfptr, TDOUBLE, "SAMAXY", &bkginputdata.ymax_mm, NULL, status);
+  if(*status != 0) {
+    SIXT_ERROR("SAMAXY keyword not found! Cannot set rate for background data.");
+    *status = EXIT_FAILURE;
+    return;
+  }
+  bkginputdata.area_sqcm=(bkginputdata.xmax_mm-bkginputdata.xmin_mm)*(bkginputdata.ymax_mm-bkginputdata.ymin_mm)/100.;
 
   /* If the rate has not been set explicitly, we use the value from the header keyword. */
   if(rate_initialized == 0) {
@@ -153,6 +180,7 @@ void bkgInitialize(const char* const filename,
       return;
     }
   }
+  bkginputdata.aux.rate=bkginputdata.aux.rate*bkginputdata.area_sqcm;
 
   fits_get_num_rows(bkginputdata.inputfptr, &bkginputdata.numrows, status);
   fits_report_error(stderr, *status);
