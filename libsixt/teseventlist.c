@@ -310,7 +310,15 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	  *status=0;
 	}
 	fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->pixIDCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->pixIDCol=-1;
+	  *status=0;
+	}
 	fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->phIDCol, status);
+	if (*status==COL_NOT_FOUND) {
+	  file->phIDCol=-1;
+	  *status=0;
+	}
 	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
 
