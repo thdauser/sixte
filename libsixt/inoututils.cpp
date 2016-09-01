@@ -14,82 +14,53 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  Trigger has been developed by the INSTITUTO DE FISICA DE 
+   Copyright 2014:  INOUTUTILS has been developed by the INSTITUTO DE FISICA DE 
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
-   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
-   ESP2013-48637-C2-1-P.
+   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
+   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
 /***********************************************************************
 *                      INOUTUTILS
+*
+*  File:       inoututils.cpp
+*  Developers: Beatriz Cobo
+* 	       cobo@ifca.unican.es
+*              IFCA
+*              Maite Ceballos
+*              ceballos@ifca.unican.es
+* 	       IFCA
 *                                                                     
-*  File:      inoututils.cpp
-*  Developer: Beatriz Cobo Martín
-* 			  cobo@ifca.unican.es
-*             IFCA
-*             Irene Gonzélez Pérez
-*             José Ramón Rodón Ortiz
-*
-*  Revision History:
-*
-*  version 1.0.0: 21/09/06	First version           
-*  version 1.1.0: 16/04/07  Change readFitsSimple. Incluying new input parameter "obj" of type "IOData".
-* 							Change readFitsComplex. Incluying new input parameter "obj" of type "IOData".
-* 							Change writeFitsSimple. Incluying new input parameter "obj" of type "IOData".
-* 							Change writeFitsComplex. Incluying new input parameter "obj" of type "IOData".
-* 							IOData is a struct wich is has the next attributes:
-* 									dal_element *inObject; --> object to open.
-* 									char *nameTable; --> table to process.
-* 									char *nameCol; --> column to process.
-* 									char *unit; --> Information of unit of column.
-* 									dal_dataType type; --> type of column.
-* 									int iniCol; --> Only used in Complex Type. Number of inicial column.
-* 									int endCol;	--> Only used in Complex Type. Number of finish column.
-* 									int iniRow; Number of inicial row.
-* 									int endRow; Number of finish row.
-*  version 1.1.1 02/10/07	Change fromGslMatrix.
-*  version 1.2.0 03/04/08 	Changing function toGslVector: 
-* 							The input parameter "type "had been include. 
-* 							Type includes the kind of data of the buffer.
-*  version 1.4.0 16/09/08   Modify the function "writeFitsSimple2" and "int writeFitsComplex2"  
-* 							Adding function called "writeLog" to process of the each level message of log file.
-*  06/09/08	Adding new library "stdlib"
-*  08/07/14 Free of PIL and RIL
-*           New EPOK
-*           'writeLog' modified
-*  15/07/14 'interactivePars' modified in order to accept negative int or double (if parameters are asked for interactively)
 ***********************************************************************/
 
 /******************************************************************************
- DESCRIPTION:
-
- The objective of this package is to get a easy read and write of FITS files.
+DESCRIPTION:
  
- MAP OF SECTIONS IN THIS FILE:
+The objective of this package is to get a easy read and write of FITS files.
 
- - 1. INCLUDE's
- - 2. readFitsSimple
- - 3. readFitsComplex
- - 4. writeFitsSimple
- - 5. writeFitsComplex
- - 6. toGslMatrix
- - 7. toGslVector
- - 8. fromGslVector
- - 9. fromGslMatrix
- -10. interactivePars
+MAP OF SECTIONS IN THIS FILE:
+
+ - 1. readFitsSimple
+ - 2. readFitsComplex
+ - 3. writeFitsSimple
+ - 4. writeFitsComplex
+ - 5. toGslMatrix
+ - 6. toGslVector
+ - 7. fromGslVector
+ - 8. fromGslMatrix
+ - 9. interactivePars
 
 *******************************************************************************/
 
-
-/***** SECTION 1 ************************************
-*       INCLUDE's
-****************************************************/
 #include "inoututils.h"
 
-
-/***** SECTION 2 ************************************
-* readFitsSimple function: This function reads values of a simple column of a FITS file. After that, the
-*                          function puts them into a GSL vector to an easy process.
+/***** SECTION 1 ************************************
+* readFitsSimple function: This function reads values of a simple column of a FITS file. 
+*                          After that, the function puts them into a GSL vector for an easier processing.
+* 
+* Parameters:
+* - obj: Input object for (simple) FITS column
+* - result: Output GSL vector
 ****************************************************/
 int readFitsSimple(IOData obj,gsl_vector **result)
 {
@@ -104,13 +75,13 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 	
 	if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
+		message = "Cannot move to HDU " + string(obj.nameTable);
+		EP_PRINT_ERROR(message,status);
 	}
 	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
 	{
-	    message = "Cannot access column " + string(obj.nameCol) + "in table " + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
+		message = "Cannot access column " + string(obj.nameCol) + "in table " + string(obj.nameTable);
+		EP_PRINT_ERROR(message,status);
 	}
 	
 	nRows = obj.endRow - obj.iniRow + 1; // Number of rows to read
@@ -152,17 +123,21 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 	
 	if(status == EPFAIL)
 	{
-	  message = "Cannot convert " + string(obj.nameCol) + " to GSL vector";
-	  EP_PRINT_ERROR(message,EPFAIL);
+		message = "Cannot convert " + string(obj.nameCol) + " to GSL vector";
+		EP_PRINT_ERROR(message,EPFAIL);
 	}
     return EPOK;
 }
-/*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 3 ************************************
-* readFitsComplex function: This function reads values of a complex column of a FITS file. After that, the
-*                           function put it into a GSL matrix to an easy process.
+/***** SECTION 2 ************************************
+* readFitsComplex function: This function reads values of a complex column of a FITS file. 
+*                           After that, the function puts it into a GSL matrix for an easier processing.
+* 
+* Parameters:
+* - obj: Input object for complex FITS column
+* - result: Output GSL matrix
 ****************************************************/
 int readFitsComplex(IOData obj, gsl_matrix **result)
 {   
@@ -179,21 +154,21 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 	
 	if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
+		message = "Cannot move to HDU " + string(obj.nameTable);
+		EP_PRINT_ERROR(message,status);
 	}
 	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
 	{
-	    message = "Cannot access column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
+		message = "Cannot access column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
+		EP_PRINT_ERROR(message,status);
 	    
 	}
 	//MC read length of multidim array in each row (naxes[0] equal to the repeat count in the TFORM keyword: Ej. 703D)
 
 	if (fits_read_tdim(obj.inObject, colnum, 1, &naxis, &naxes, &status))
 	{
-	    message = "Cannot read multidim column " + string(obj.nameCol) + " information in table " + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
+		message = "Cannot read multidim column " + string(obj.nameCol) + " information in table " + string(obj.nameTable);
+		EP_PRINT_ERROR(message,status);
 	}
 	nelemsInRow = naxes;
 
@@ -246,99 +221,16 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 
 	return EPOK;
 }
-/*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-int readFitsImage(IOData obj, gsl_matrix **result)
-{
-	long nRows = 0L;
-	int type,extver=0,colnum=0,anynulls=0;
-	int maxdim=1;
-	int naxis, status=EPOK;
-	long naxes=0, matrixdim, nelemsInRow;
-	double *bufferD = NULL;
-	int *bufferJ = NULL;
-	short *bufferI = NULL;
-	double nullval=-99;
-	string message = "";
-
-	if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
-	{
-	    message = "Cannot move to HDU " + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
-	}
-	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
-	{
-	    message = "Cannot access column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
-
-	}
-	//MC read length of multidim array in each row (naxes[0] equal to the repeat count in the TFORM keyword: Ej. 703D)
-
-	if (fits_read_tdim(obj.inObject, colnum, 1, &naxis, &naxes, &status))
-	{
-	    message = "Cannot read multidim column " + string(obj.nameCol) + " information in table " + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,status);
-	}
-	nelemsInRow = naxes;
-
-	nRows = obj.endRow - obj.iniRow + 1; // Number of rows of the fits to read
-	// binSize = obj.endCol - obj.iniCol + 1; //number of columns of the matrix to read
-	matrixdim = nelemsInRow*nRows;
-
-	//double *bufferD = new double [5];
-	//double bufferD[matrixdim];
-
-   	switch (obj.type)
-   	{
-		case TDOUBLE:
-			bufferD = new double [matrixdim];
-			if (fits_read_col(obj.inObject, TDOUBLE, colnum, obj.iniRow, 1, matrixdim, &nullval, bufferD, &anynulls, &status))
-			{
-				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);
-			}
-			//status = toGslMatrix((void **)&bufferD,&(*result),nelemsInRow,nRows,obj.type,0);
-			cout<<"InoutUtils1"<<endl;
-			status = toGslMatrix((void **)&bufferD,&(*result),nelemsInRow,nelemsInRow,obj.type,0);
-			cout<<"InoutUtils2"<<endl;
-			delete[] bufferD;
-			break;
-		case TINT:
-			bufferJ = new int [matrixdim];
-			if (fits_read_col(obj.inObject, TINT, colnum, obj.iniRow, 1, nRows, &nullval, bufferJ, &anynulls, &status))
-			{
-				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);
-			}
-			status = toGslMatrix((void **)&bufferJ,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete[] bufferJ;
-			break;
-		case TSHORT:
-			bufferI = new short [matrixdim];
-			if (fits_read_col(obj.inObject, TSHORT, colnum, obj.iniRow, 1, nRows, &nullval, bufferI, &anynulls, &status))
-			{
-				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);
-			}
-			status = toGslMatrix((void **)&bufferI,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete[] bufferI;
-			break;
-	}
-
-   	if (status == EPFAIL)
-   	{
-   		message = "Cannot convert " + string(obj.nameCol) + " to GSL vector";
-   		EP_PRINT_ERROR(message,EPFAIL);
-	}
-
-	return EPOK;
-}
-
-
-/***** SECTION 4 ************************************
-* writeFitsSimple function: This function reads values of a GSL vector.	After that, the function put it into a
-*                           column of output FITS file
+/***** SECTION 3 ************************************
+* writeFitsSimple function: This function reads values of a GSL vector.	
+*                           After that, the function puts them into a column of the output FITS file.
+* 
+* Parameters:
+* - obj: Object for FITS column to be written
+* - vector: Input GSL vector with data
 ****************************************************/
 int writeFitsSimple(IOData obj, gsl_vector *vector)
 {
@@ -381,16 +273,16 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
 	if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
 	{
 		// Table is not found => create table
-	    status = EPOK;
-	    ttype[0]=obj.nameCol;
-	    tform[0]=tform1;
-	    tunit[0]=obj.unit;
+		status = EPOK;
+		ttype[0]=obj.nameCol;
+		tform[0]=tform1;
+		tunit[0]=obj.unit;
 
-	    if (fits_create_tbl(obj.inObject, BINARY_TBL, blocksize,1, ttype, tform,tunit, obj.nameTable, &status))
-	    {
-		  message = "Cannot create table " + string(obj.nameTable);
-		  EP_PRINT_ERROR(message,status);
-	    }
+		if (fits_create_tbl(obj.inObject, BINARY_TBL, blocksize,1, ttype, tform,tunit, obj.nameTable, &status))
+		{
+			message = "Cannot create table " + string(obj.nameTable);
+			EP_PRINT_ERROR(message,status);
+		}
 	}
 
 	int firstelem=1;
@@ -443,17 +335,21 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
 	if (status != EPOK)
 	{
 		message = "Cannot populate column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-	    EP_PRINT_ERROR(message,EPFAIL);
+		EP_PRINT_ERROR(message,EPFAIL);
 	}
 	
 	return EPOK;
 }
-/*xxxx end of SECTION 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 5 ************************************
-* writeFitsCOmplex function: This function reads values of a GSL matrix. After that, the function put it into a
-*                            complex column of output FITS file
+/***** SECTION 4 ************************************
+* writeFitsComplex function: This function reads values of a GSL matrix. 
+*                            After that, the function puts them into a complex column of the output FITS file.
+* 
+* Parameters:
+* - obj: Object for FITS column to be written
+* - matrix: Input GSL matrix with data
 ****************************************************/
 int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 {
@@ -529,15 +425,15 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 	if (status != EPOK)
 	{
 		// Table is not found => create table
-	    status = EPOK;
-	    ttype[0]=obj.nameCol;
-	    tform[0]=tform1;
-	    tunit[0]=obj.unit;
-	    if (fits_create_tbl(obj.inObject, BINARY_TBL, blocksize,1, ttype, tform, tunit, obj.nameTable, &status))
-	    {
-	      message = "Cannot create table " + string(obj.nameTable);
-	      EP_PRINT_ERROR(message,status);
-	    }
+		status = EPOK;
+		ttype[0]=obj.nameCol;
+		tform[0]=tform1;
+		tunit[0]=obj.unit;
+		if (fits_create_tbl(obj.inObject, BINARY_TBL, blocksize,1, ttype, tform, tunit, obj.nameTable, &status))
+		{
+			message = "Cannot create table " + string(obj.nameTable);
+			EP_PRINT_ERROR(message,status);
+		}
 	}
 	int firstelem=1;	//t=obj.inObject;
 
@@ -545,31 +441,30 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
 	{
 		//Table found & column not found: insert column
-	    status=EPOK;
-	    if (fits_get_num_cols(obj.inObject, &trgNcols, &status))
-	    {
-	    	message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-	    	EP_PRINT_ERROR(message,status);
-	    }
-	    if (fits_insert_col(obj.inObject, ++trgNcols, obj.nameCol, tform1,&status))
-	    {
-	    	message = "Cannot add column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-	    	EP_PRINT_ERROR(message,status);
-	    }
-	    sprintf(charcol,"%d",trgNcols);
-	    strcol=string("TUNIT")+string(charcol);
-	    strcpy(keyname,strcol.c_str());
-	    if (fits_write_key(obj.inObject, TSTRING, keyname, obj.unit, comment,&status))
-	    {
-	    	message = "Cannot set units for column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-	    	EP_PRINT_ERROR(message,status);
-	    }
-	    if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
-	    {
-	    	message = "Cannot get column number for " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-	    	EP_PRINT_ERROR(message,status);
-	    }
-
+		status=EPOK;
+		if (fits_get_num_cols(obj.inObject, &trgNcols, &status))
+		{
+			message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+			EP_PRINT_ERROR(message,status);
+		}
+		if (fits_insert_col(obj.inObject, ++trgNcols, obj.nameCol, tform1,&status))
+		{
+			message = "Cannot add column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+			EP_PRINT_ERROR(message,status);
+		}
+		sprintf(charcol,"%d",trgNcols);
+		strcol=string("TUNIT")+string(charcol);
+		strcpy(keyname,strcol.c_str());
+		if (fits_write_key(obj.inObject, TSTRING, keyname, obj.unit, comment,&status))
+		{
+			message = "Cannot set units for column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+			EP_PRINT_ERROR(message,status);
+		}
+		if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
+		{
+			message = "Cannot get column number for " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+			EP_PRINT_ERROR(message,status);
+		}
 	}
 	
 	// Populate column
@@ -593,12 +488,20 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 	
 	return status;
 }
-/*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 6 ************************************
+/***** SECTION 5 ************************************
 * toGslMatrix function: The function puts the values of the input buffer into an output GSL matrix. Columns and
-*                       rows are input parameters
+*                       rows are input parameters.
+* 
+* Parameters:
+* - buffer: Input buffer with data
+* - matrix: Output GSL matrix
+* - numCol: Number of columns
+* - numRow: Number of rows
+* - type: FITS type (TINT, TSHORT, TDOUBLE, etc.)
+* - eventini: Initial event to start writing
 ****************************************************/
 int toGslMatrix(void **buffer, gsl_matrix **matrix, long numCol, int numRow, int type, int eventini)
 {
@@ -627,13 +530,20 @@ int toGslMatrix(void **buffer, gsl_matrix **matrix, long numCol, int numRow, int
 		k++;
 	}
 
-  return EPOK;
+	return EPOK;
 }
-/*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 7 ************************************
+/***** SECTION 6 ************************************
 * toGslVector function: The function puts the values of the input buffer into an output GSL vector.
+* 
+* Parameters:
+* - buffer: Input buffer with data
+* - array: Output GSL vector
+* - nevent: Number of elements to store
+* - eventini: Initial element number
+* - type: FITS type (TINT, TSHORT, TDOUBLE, etc.) 
 ****************************************************/
 int toGslVector(void **buffer, gsl_vector **array, long nevent, int eventini, int type)
 { 
@@ -651,11 +561,16 @@ int toGslVector(void **buffer, gsl_vector **array, long nevent, int eventini, in
 	
 	return EPOK;
 }
-/*xxxx end of SECTION 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 8 ************************************
+/***** SECTION 7 ************************************
 * fromGslVector function: The function puts the values of the input GSL vector into a output buffer
+*  
+* Parameters:
+* - buffer: Output buffer
+* - array: Input GSL vector
+* - type: FITS type (TINT, TSHORT, TDOUBLE, etc.)
 ****************************************************/
 int fromGslVector(void **buffer, gsl_vector **array, int type)
 {
@@ -671,14 +586,18 @@ int fromGslVector(void **buffer, gsl_vector **array, int type)
 		}	
 	}
 
-	return EPOK;
-	
+	return EPOK;	
 }
-/*xxxx end of SECTION 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 9 ************************************
-* fromGslMatrix function: The function puts the values of the input GSL matrix into a output buffer
+/***** SECTION 8 ************************************
+* fromGslMatrix function: The function puts the values of the input GSL matrix into an output buffer
+* 
+* Parameters:
+* - buffer: Output buffer
+* - matrix: Input GSL matrix
+* - type: FITS type (TINT, TSHORT, TDOUBLE, etc.)
 ****************************************************/
 int fromGslMatrix(void **buffer, gsl_matrix **matrix, int type)
 {
@@ -701,11 +620,17 @@ int fromGslMatrix(void **buffer, gsl_matrix **matrix, int type)
 
 	return EPOK;
 }
-/*xxxx end of SECTION 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 10 ************************************
-* interactivePars function: This function reads input parameters interactively, if not provided by the user
+/***** SECTION 9 ************************************
+* interactivePars function: This function reads input parameters interactively (provided by the user or taken as default values).
+*                           Used in tool gennoisespec.
+* 
+* Parameters: 
+* - taskPars: Instance of Inparam structure storing input parameters
+* - np: Number of parameters
+* - task: Tool name
 ****************************************************/
 int interactivePars(inparam *taskPars, int np, string task)
 {
@@ -749,10 +674,10 @@ int interactivePars(inparam *taskPars, int np, string task)
 			if (strlen(buf) != 0)
 			{
 				if ((!isdigit(buf[0]) && (buf[0] != '-')) ||
-						(!isdigit(buf[0]) && (buf[0] == '-') && !isdigit(buf[1])) )
+					(!isdigit(buf[0]) && (buf[0] == '-') && !isdigit(buf[1])) )
 				{
 					message = "Invalid value for param " + string(taskPars[i].name);
-				    EP_PRINT_ERROR(message,EPFAIL);
+					EP_PRINT_ERROR(message,EPFAIL);
 				}
 				taskPars[i].ValInt = atoi(buf);
 			}
@@ -765,10 +690,10 @@ int interactivePars(inparam *taskPars, int np, string task)
 			if (strlen(buf) != 0)
 			{
 				if ((!isdigit(buf[0]) && (buf[0] != '-')) ||
-						(!isdigit(buf[0]) && (buf[0] == '-') && !isdigit(buf[1])) )
+					(!isdigit(buf[0]) && (buf[0] == '-') && !isdigit(buf[1])) )
 				{
 					message = "Invalid value for param " + string(taskPars[i].name);
-				    EP_PRINT_ERROR(message,EPFAIL);
+					EP_PRINT_ERROR(message,EPFAIL);
 				}
 				taskPars[i].ValReal = atof(buf);
 			}
@@ -777,4 +702,4 @@ int interactivePars(inparam *taskPars, int np, string task)
 
 	return EPOK;
 }
-/*xxxx end of SECTION 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

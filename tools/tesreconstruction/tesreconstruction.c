@@ -68,11 +68,9 @@ int tesreconstruction_main() {
     CHECK_STATUS_BREAK(status);// define a second structure for calibration
     
     if(!strcmp(par.Rcmethod,"PP")){
-    
 	  initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
     		par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
     		par.DerivateExclusion,par.SaturationValue,&status);
-	  
     }else{
 	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile,
 		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, 
@@ -80,7 +78,36 @@ int tesreconstruction_main() {
 		par.FilterMethod, par.EnergyMethod, par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
 		par.monoenergy, par.intermediate, par.detectFile,
 		par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
-		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, &status);
+		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
+	  
+	  // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
+	  reconstruct_init_sirena->grading = NULL;
+	  reconstruct_init_sirena->grading = (Grading*)malloc(sizeof(Grading));
+	  
+	  reconstruct_init_sirena->grading->ngrades = 0;
+	  reconstruct_init_sirena->grading->value  = NULL;
+	  reconstruct_init_sirena->grading->gradeData = NULL;
+	  
+	  AdvDet *det = newAdvDet(&status);
+	  CHECK_STATUS_BREAK(status);
+	  det = loadAdvDet(par.XMLFile, &status);
+	  CHECK_STATUS_BREAK(status);
+	  if (det->pix->grades == NULL)
+	  {
+		SIXT_ERROR("The provided XMLFile does not have the grading info");
+		return(EXIT_FAILURE);
+  	  }
+	  
+	  reconstruct_init_sirena->grading->ngrades=det->pix->ngrades;
+	  reconstruct_init_sirena->grading->value = gsl_vector_alloc(det->pix->ngrades);
+	  reconstruct_init_sirena->grading->gradeData = gsl_matrix_alloc(det->pix->ngrades,2);
+	  for (int i=0;i<det->pix->ngrades;i++)
+	  {
+	      gsl_vector_set(reconstruct_init_sirena->grading->value,i,det->pix->grades[i].value);
+	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,det->pix->grades[i].gradelim_pre);
+	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,det->pix->grades[i].gradelim_post);
+	  }
+	  destroyAdvDet(&det);
     }  
     CHECK_STATUS_BREAK(status);
 
@@ -100,41 +127,49 @@ int tesreconstruction_main() {
     {
       if(!strcmp(par.Rcmethod,"PP"))
       {
+	    /*nrecord = nrecord + 1;
+	    if(nrecord == record_file->nrows) lastRecord=1;
+	    printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");*/
+	    
 	    reconstructRecord(record,event_list,reconstruct_init,0,&status);
-	  }
+      }
       else
       {
 	    nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
-	    /*if(nrecord < 2) {
+	    /*if(nrecord < 370) {
 	      continue;
-	    }else if(nrecord > 2){
+	    }else if(nrecord > 370){
 	      status=1;
 	      CHECK_STATUS_BREAK(status);
 	    }*/
-	    /*if(nrecord > 1)
+	   /*if(nrecord > 1)
 	    {
 	    	status=1;
 	        CHECK_STATUS_BREAK(status);
 	    }*/
-	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RBIS") == 0))
+	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RBISALL") == 0) || (strcmp(par.EnergyMethod,"I2RBISNOL") == 0))
 	    {
-	    	//reconstruct_init_sirena->baseline		= par.baseline;
 	    	strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
 	    }
+	
 	    //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
 	    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
 				    lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
-	  }
- 	  CHECK_STATUS_BREAK(status);
+      }
+      CHECK_STATUS_BREAK(status);
 
+      if ((strcmp(par.EnergyMethod,"PCA") != 0) || ((strcmp(par.EnergyMethod,"PCA") == 0) && lastRecord == 1))
+      {
 	  saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
- 	  CHECK_STATUS_BREAK(status);
+	  CHECK_STATUS_BREAK(status);
+	  
 	  //Reinitialize event list
 	  event_list->index=0;
+      }
     }
     
-    if(pulsesAll->ndetpulses == 0)  printf("%s","WARNING: no pulses have been detected\n");
+    if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0))  printf("%s","WARNING: no pulses have been detected\n");
     
     // Copy trigger keywords to event file
     copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
@@ -157,13 +192,15 @@ int tesreconstruction_main() {
     CHECK_STATUS_BREAK(status);
 
   } while(0); // END of the error handling loop.
-
-
-  if (EXIT_SUCCESS==status) {
-    headas_chat(3, "finished successfully!\n\n");
-    return(EXIT_SUCCESS);
-  } else {
-    return(status);
+  
+  if (EXIT_SUCCESS==status) 
+  {
+	headas_chat(3, "finished successfully!\n\n");
+	return(EXIT_SUCCESS);
+  } 
+  else 
+  {
+	return(status);
   }
 }
 
@@ -356,29 +393,52 @@ int getpar(struct Parameters* const par)
 	
 	status=ape_trad_query_int("tstartPulse3", &par->tstartPulse3);
 	
+	status=ape_trad_query_double("energyPCA1", &par->energyPCA1);
+	
+	status=ape_trad_query_double("energyPCA2", &par->energyPCA2);
+	
+	status=ape_trad_query_string("XMLFile", &sbuffer);
+	strcpy(par->XMLFile, sbuffer);
+	free(sbuffer);
+	
 	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading some SIRENA parameter");
 		return(status);
 	}
 	
-	assert((par->mode ==0) || (par->mode ==1));
+	//assert((par->mode ==0) || (par->mode ==1));
+	/*int mode_0_1;
+	mode_0_1 = ((par->mode ==0) || (par->mode ==1));
+	assert(mode_0_1);*/
+	MyAssert((par->mode == 0) || (par->mode == 1), "mode must be 0 or 1");
 	
-	assert((par->intermediate ==0) || (par->intermediate ==1));
+	//assert((par->intermediate == 0) || (par->intermediate == 1));
+	MyAssert((par->intermediate == 0) || (par->intermediate == 1), "intermediate must be 0 or 1");
 	
-	assert(&par->monoenergy > 0);
+	//assert(&par->monoenergy > 0);
+	MyAssert(&par->monoenergy > 0, "monoenergy must be greater than 0");
 	
-	assert((strcmp(par->PixelType,"SPA") == 0) || (strcmp(par->PixelType,"LPA1") == 0) || (strcmp(par->PixelType,"LPA2") == 0) ||
-		(strcmp(par->PixelType,"LPA3") == 0));
+	//assert((strcmp(par->PixelType,"SPA") == 0) || (strcmp(par->PixelType,"LPA1") == 0) || (strcmp(par->PixelType,"LPA2") == 0) ||
+	//	(strcmp(par->PixelType,"LPA3") == 0));
+	MyAssert((strcmp(par->PixelType,"SPA") == 0) || (strcmp(par->PixelType,"LPA1") == 0) || (strcmp(par->PixelType,"LPA2") == 0) ||
+		(strcmp(par->PixelType,"LPA3") == 0),"PixelType must be SPA, LPA1, LPA2 or LPA3");
 
 	
-	assert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0));
+	//assert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0));
+	MyAssert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0), "FilterDomain must be T or F");
 	
-	assert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0));
+	//assert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0));
+	MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0),"FilterMethod must be F0 or B0");
 	
-	assert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
-		(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBIS") == 0));
+	//assert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
+	//	(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBISALL") == 0) || (strcmp(par->EnergyMethod,"I2RBISNOL") == 0) || 
+	//	(strcmp(par->EnergyMethod,"PCA") == 0));
+	MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
+		(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBISALL") == 0) || (strcmp(par->EnergyMethod,"I2RBISNOL") == 0) || 
+		(strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA");
 	
-	assert((par->LagsOrNot ==0) || (par->LagsOrNot ==1));
+	//assert((par->LagsOrNot ==0) || (par->LagsOrNot ==1));
+	MyAssert((par->LagsOrNot ==0) || (par->LagsOrNot ==1), "LagsOrNot must me 0 or 1");
 
 	if (((strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0)) && (par->LagsOrNot == 1))
 	{
@@ -386,7 +446,8 @@ int getpar(struct Parameters* const par)
 		return(EXIT_FAILURE);
 	}
 	
-	assert((par->OFIter ==0) || (par->OFIter ==1));
+	//assert((par->OFIter ==0) || (par->OFIter ==1));
+	MyAssert((par->OFIter ==0) || (par->OFIter ==1), "OFIter must be 0 or 1");
 	
 	if ((par->OFLib == 1) && (strcmp(par->FilterMethod,"F0") != 0))
 	{
@@ -399,21 +460,40 @@ int getpar(struct Parameters* const par)
 		return(EXIT_FAILURE);
 	}
 	
-	assert((strcmp(par->OFInterp,"MF") == 0) || (strcmp(par->OFInterp,"DAB") == 0));
+	//assert((strcmp(par->OFInterp,"MF") == 0) || (strcmp(par->OFInterp,"DAB") == 0));
+	MyAssert((strcmp(par->OFInterp,"MF") == 0) || (strcmp(par->OFInterp,"DAB") == 0),"OFInterp must be MF or DAB");
 	
-	assert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0));
+	//assert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0));
+	MyAssert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0), 
+		 "OFStrategy must be FREE, BASE2, BYGRADE or FIXED");
 	
-	assert(&par->OFLength > 0);
+	//assert(&par->OFLength > 0);
+	MyAssert(&par->OFLength > 0, "OFLength must be greater than 0");
 	
-	if (((strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBIS") == 0)) && (par->tstartPulse1 == 0))
+	/*if (((strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBISALL") == 0) || (strcmp(par->EnergyMethod,"I2RBISNOL") == 0)) && (par->tstartPulse1 == 0))
 	{
 		printf("%s %d %s","Error",status,"\n");
-		SIXT_ERROR("parameter error: EnergyMethod=I2R/I2RBIS and tstartPulse1=0 (If I2R/I2RBIS, tstartPulsex must be always provided)");
+		SIXT_ERROR("parameter error: EnergyMethod=I2R/I2RBISALL/I2RBISNOL and tstartPulse1=0 (If I2R/I2RBISALL/I2RBISNOL, tstartPulsex must be always provided)");
 		return(EXIT_FAILURE);
-	}	  
+	}*/	
+	
+	//assert(&par->energyPCA1 > 0);
+	MyAssert(&par->energyPCA1 > 0, "energyPCA1 must be greater than 0");
+	//assert(&par->energyPCA2 > 0);
+	MyAssert(&par->energyPCA2 > 0, "energyPCA2 must be greater than 0");
+	
   } else {
 	SIXT_ERROR("failed reading the Rcmethod parameter");
 	return(EXIT_FAILURE);
   }
   return(status);
+}
+
+void MyAssert(int expr, char* msg)
+{
+    if (expr == 0)
+    {
+        printf("%s %s %s"," Assertion failure: ",msg,"\n");
+        abort();
+    }
 }

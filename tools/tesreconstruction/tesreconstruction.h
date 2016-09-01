@@ -32,6 +32,27 @@
 #define TOOLSUB tesreconstruction_main
 #include "headas_main.c"
 
+//typedef struct
+//{
+//	/** The grade values */
+//        int value;
+//
+//	/** Size in samples before and after one pulse defining the grade */
+//	long gradelim_pre;
+//	long gradelim_post;
+//
+//} gradeData;
+
+//typedef struct 
+//{
+//	// Number of grades 
+//	int ngrades;
+//
+//	// Structure which contains the grading data
+//	gradeData *gradeData;
+//	
+//} Grading;
+
 struct Parameters {
 	//File containing the optimal filter
 	char OptimalFilterFile[MAXFILENAME];
@@ -120,7 +141,7 @@ struct Parameters {
 	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
 	char FilterMethod[3];
 	
-	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R or I2RBIS **/
+	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA **/
 	char EnergyMethod[8];
 
 	//LagsOrNot: LAGS == 1 or NOLAGS == 0 **/
@@ -154,11 +175,20 @@ struct Parameters {
 	int tstartPulse1;
 	int tstartPulse2;
 	int tstartPulse3;
+	
+	/** Energies for PCA **/
+	double energyPCA1;
+	double energyPCA2;
+	
+	// XML file with instrument definition
+	char XMLFile[MAXFILENAME];
 
 	// END SIRENA PARAMETERS
 };
 
 int getpar(struct Parameters* const par);
+
+void MyAssert(int expr, char* msg);
 
 
 #endif /* TESRECONSTRUCTION_H */

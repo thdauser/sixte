@@ -1,5 +1,5 @@
 /***********************************************************************
-   This file is part of SIXTE.
+   This file is part of SIXTE/SIRENA software.
 
    SIXTE is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
@@ -14,26 +14,24 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  PULSEPROCESS has been developed by the INSTITUTO DE FISICA DE
+   Copyright 2014:  PULSEPROCESS has been developed by the INSTITUTO DE FISICA DE 
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
-   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
-   ESP2013-48637-C2-1-P.
+   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
+   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
-/************************************************************************
-*                      PULSE PROCESS
+/***********************************************************************
+*                      PULSEPROCESS
 *
-*  File:      pulseProcess.h
-*  Developer: Beatriz Cobo Martin
-* 			  cobo@ifca.unican.es
-*             IFCA
-*             Irene Gonzalez Perez
-*             Jose Ramon Rodon Ortiz
-*
-*  Revision History:
-*
-*
-************************************************************************/
+*  File:       pulseprocess.h
+*  Developers: Beatriz Cobo
+* 	       cobo@ifca.unican.es
+*              IFCA
+*              Maite Ceballos
+*              ceballos@ifca.unican.es
+*              IFCA
+*                                                                     
+***********************************************************************/
 
 #ifndef PULSEPROCESS_H_
 #define PULSEPROCESS_H_
@@ -46,7 +44,7 @@
 	#include <integraSIRENA.h>
 
 	int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRate);
-	int derivative (gsl_vector **invector,int szVct);
+	int differentiate (gsl_vector **invector,int szVct);
 
 	int findMeanSigma (gsl_vector *invector, double *mean, double *sigma);
 	int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, int boxLPF,double *threshold);
@@ -57,6 +55,7 @@
 
 	int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
 	int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+	int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
 	int interpolate_model(gsl_vector **modelFound, double ph_model, gsl_vector *modelIn1, double ph_modelIn1, gsl_vector *modelIn2, double ph_modelIn2);
 
 	int findPulsesCAL
@@ -75,7 +74,7 @@
 		double scalefactor,
 		double samplingRate,
 
-		int samplesup,
+		int samplesUp,
 		double nsgms,
 
 		double lb,
@@ -108,30 +107,9 @@
 		double stopcriteriamkc,
 		double kappamkc);
 
-	int findTstartCAL
-	(
-		int maxPulsesPerRecord,
-
-		gsl_vector *der,
-		double adaptativethreshold,
-		int nSamplesUp,
-
-		int allPulsesMode,
-
-		double sampling,
-
-		ReconstructInitSIRENA *reconstruct_init,
-
-		int *numberPulses,
-		int *thereIsPulse,
-
-		gsl_vector **tstartgsl,
-		gsl_vector **flagTruncated,
-		gsl_vector **maxDERgsl);
-
 	int findTstartPROD (int maxPulsesPerRecord, gsl_vector *adjustedDerivative, double adaptativethreshold, int nSamplesUp,
-			ReconstructInitSIRENA *reconstruct_init,
-			int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
+		ReconstructInitSIRENA *reconstruct_init,
+		int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
 
 	int InitialTriggering
 	(
@@ -154,6 +132,22 @@
 		double *threshold,
 
 		int tstartProvided = 0);
+	
+	int findTstartCAL
+	(
+		int maxPulsesPerRecord,
+
+		gsl_vector *der,
+		double adaptativethreshold,
+		int nSamplesUp,
+		
+		ReconstructInitSIRENA *reconstruct_init,
+
+		int *numberPulses,
+		
+		gsl_vector **tstartgsl,
+		gsl_vector **flagTruncated,
+		gsl_vector **maxDERgsl);
 
 	int FindSecondaries
 	(
@@ -171,7 +165,8 @@
 		int *numberPulses,
 		gsl_vector **tstartgsl,
 		gsl_vector **flagTruncated,
-		gsl_vector **maxDERgsl);
+		gsl_vector **maxDERgsl,
+		gsl_vector **sammp1DERgsl);
 
 	using namespace std;
 

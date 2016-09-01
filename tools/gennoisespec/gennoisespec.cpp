@@ -1,5 +1,4 @@
-/************************************************************************************************
-
+/***********************************************************************
    This file is part of SIXTE/SIRENA software.
 
    SIXTE is free software: you can redistribute it and/or modify it
@@ -15,166 +14,79 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  GENNOISESPEC has been developed by the INSTITUTO DE FISICA DE
-   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and
-   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish
-   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
-   ESP2013-48637-C2-1-P.
+   Copyright 2014:  GENNOISESPEC has been developed by the INSTITUTO DE FISICA DE 
+   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
+   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
+   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
+   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
-/************************************************************************************************
+/***********************************************************************
 *                      GENNOISESPEC
- *
- *
- *
- *  File:      gennoisespec.cpp
- *  Version:   10.0.0
- *  Developer: Beatriz Cobo Martín
- *             cobo@ifca.unican.es
- *             IFCA
- *
- *  Revision History:
- *
- *  version 1.0.0: 	02/06/09    First version
- *  version 1.0.1:  02/11/09    Improvement of the error handling
- *  version 1.1.1:  02/16/09    Added EVENTCNT and FTYPE output keywords
- *  version 2.0.0:  02/18/09    Changing input (and output) keywords
- *                              Deleting some non necessary inpu parameters
- *  version 3.0.0:  02/23/09    IV input enabled
- *  version 4.0.0:  03/02/09    Using IVCAL and VVCAL
- *  version 5.0.0   03/03/09    Used the keywords libraries
- *  version 6.0.0   04/24/09	TRG_ID instead ZC_ID in getKh
- *                              Free dynamic memory
- *-------------------------------------------------------------------------------------------------------------------
- * To be according to the repository version
- *-------------------------------------------------------------------------------------------------------------------
- *  version 5.0.0   07/01/09    Changed functions names to avoid problems with new GSL functions
- *  version 6.0.0	13/11/09	If error file exists, its contests will be deleted
- *                              Different behaviour when the input FITS file type is "TESNOISE"
- *                              (it is not necessary to handle a _trg file) => Added findIntervalN function
- *  version 7.0.0   04/02/10    gsl_vector_free(EventSamples_aux) line changed
- *                  15/02/10    intervalMinBins instead eventsz to calculate the frequency step
- *  version 8.0.0   17/03/10    Factor 1/sqrt(N), in the FFT expression
- *                  20/10/10    File FITS resulting from TRIGGER is not used (not read):
- *            						getKhaux function deleted
- *             					Input parameters updated (initModule)
- *             					TESNOISE files can also have pulses
- *             						- No pulses => The whole event is used (without dividing into intervals of intervalMin size)
- *             		            finInterval and findIntervalN functions changed
- *                  10/01/11    Deleted functions to handle vectors, complex vectors and matrix
- *                              Added input keyword ASQUID
- *                              ASQUID is used from now on to assign positive polarity (instead bl)
- *                              Deleted input parameter nbins (only necessary to calculate the baseline)
- *                  01/03/11    PROCESS also includes gennoisespec version (CREATOR)
- *  version 9.0.0   24/03/11    "status" allocation and "writeLog" order changed in some cases
- *                  25/03/11    Quick Look mode no longer used
- *                  05/04/11    Pulses are not searched for if ENERGY = 0
- *                  26/05/11    New input parameters: samplesUp and nSgms
- *                              Deleted input parameter n (and n_b)
- *                              New algorithm to detect pulses: 1st derivative and threshold (findMeanSigma, medianKappaClipping and new findTstart)
- *                  25/08/11    Added input keyword PLSPOLAR
- *                              ASQUID and PLSPOLAR used to assign positive polarity to the pulses
- *                              If XRAY or IV => It looks for:
- *                              	- Single pulses (findTstart)
- *                                  - Secondary pulses (by using the pulses models library and the composed first derivative)
- *                                  - Primary pulses (findTstartPrimary)
- *                              Added 'readLib' and 'inDataIteratorLib'
- *                              'gsl_vector_view temp;' added to handle with subvectors
- *                              Code errors changed: 71xx into 710xx
- *                  27/10/11    Different input/output parameters in findTstart (tmaxDER)
- *						        Pulse model anticipated pulse and pulse maximum & next sample differ less than 5%
- *						        Composed first derivative is fixed as 0 in tstartDERgsl+tmaxDERgsl+"20"
- *							    Secondary pulse larger than 1/100 times the preceding pulse
- *					13/02/13    New input parameter scaleFactor
- *					            New parameters to handle with code hardpoints:
- *					            	stopCriteriaMKC
- *               					kappaMKC
- *               					limitCriteriaMAX
- *               					nsAftrtstart
- *               					levelPrvPulse
- *               					primaryThresholdCriteria
- *               	14/02/13   Functions 'readLib' and 'inDataIteratorLib' updated
- *                             New input parameters: b_cF, c_cF, LrsT, LbT
- *                  20/02/13   findPulses of Utils used
- *                  26/11/13   'readLib' and 'inDataIteratorLib' updated in order to not take into account the PRETRIGS
- *                             column in the library FITS file
- *                             tAftrtstart has changed from 'constant' to 'input parameter'
- *                  11/07/14   PIL/RIL/Common dependencies removed. New functions used to read input parameters
- *                  09/09/14   ADC2016 instead RAW_ADC_DATA
- *				               PXL02016 instead I0 column
- *                             Differences when reading or writing some keywords
- *                  10/09/14   50 null initial samples are added to the pulse templates read from the library ('models')
- *                  16/09/14   'intervalMinBins = floor(intervalMin*samprate);' instead 'intervalMinBins = ceil(intervalMin*samprate);'
- *                             (it produced normalizationFactor=inf in FILTER)
- *                  18/09/14   RECORDS instead ADC2016
-*                              ADC instead PXL02016 column
-*  version 10.0.0   13/01/15   Migrated to CFITSIO (removal of ISDC DAL)
-*                              Run dependency on datatype files (xray, iv or tesnoise) deleted
-*                   20/01/15   Added clobbering; renaming of parameter because of tasks renaming
-*                   27/01/15   The auxiliary file GENNOISESPECauxfile.txt not created
-*                   10/04/15   Subtract the baseline (baseline is an input parameter)
-*                              Input parameters changed
- ********************************************************************************************************************/
+*
+*  File:       gennoisespec.cpp
+*  Developers: Beatriz Cobo
+* 	       cobo@ifca.unican.es
+*              IFCA
+*              Maite Ceballos
+*              ceballos@ifca.unican.es
+*              IFCA
+*                                                                     
+***********************************************************************/
 
 /******************************************************************************
 DESCRIPTION:
 
-The goal of the GENNOISE task is to calculate the current noise spectral density.
+The purpose of this package is the calculation the current noise spectral density.
 
- * If there are pulses in an event, the pulses are rejected and it is going to look for pulse-free intervals of a given size (intervalMin)
- * If there are no pulses in an event, the event is divided into pulse-free intervals of a given size (intervalMin)
+MAP OF SECTIONS IN THIS FILE:
 
-The input data are low-pass filtered in order to look for pulses. Therefore, it is going to look for pulse-free intervals, calculate their FFT
-(not filtered data) and average them.
+ - 1. MAIN
+ - 2. initModule
+ - 3. inDataIterator
+ - 4. findInterval
+ - 5. findIntervalN
+ - 6. createTPSreprFile
+ - 7. writeTPSreprExten
+ - 8. find_baseline
+ - 9. findPulsesNoise
+ - 10. findTstartNoise
+ 
+*******************************************************************************/
 
-The user must supply the following input parameters:
-
-- inFile: Name of the input FITS file
-- outFile: Name of the output FITS file
-- intervalMinSamples: Minimum length of a pulse-free interval to use (samples) = intervalMinBins
-- ntausPF: Number of tauFALLs after ending the pulse (Tend) to start the pulse-free interval
-- nintervals: Number of pulse-free intervals to use
-- tauFALL: Fall time of the pulses in seconds
-- scaleFactor: Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length
-- samplesUp: Consecutive samples over the threshold to locate a pulse
-- nSgms: Number of Sigmas to establish the threshold
-- pulse_length: Pulse length (samples)
-- LrsT: Running sum length in seconds (only in notcreationlib mode)
-- LbT: Baseline averaging length in seconds (only in notcreationlib mode)
-- baseline: Baseline (ADC units)
-- namelog: Output log file name
-- verbosity: Verbosity level of the output log file
-
-The output FITS file (_noisespec) contains three columns in two extensions, NOISE and NOISEALL:
- 	- Frequency
- 	- Current noise spectral density: Amount of current per unit (density) of frequency (spectral), as a function of the frequency
- 	- Standard error of the mean
-
-The NOISEALL extension contains positive and negative frequencies.
-
- MAP OF SECTIONS IN THIS FILE:
-
-  - 1.- INCLUDE's
-  - 2.- MAIN
-  - 3.- initModule
-  - 4.- inDataIterator
-  - 5.- findInterval
-  - 6.- findIntervalN
-  - 7.- createTPSreprExten
-  - 8.- writeTPSreprExten
-
- *******************************************************************************/
-
-/***** SECTION 1 ************************************
-*       INCLUDE's
-****************************************************/
 #include <gennoisespec.h>
 
-/*xxxx end of SECTION 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
-
-/***** SECTION 2 ************************************
-* MAIN function: This function is the main function of the GENNOISESPEC task
+/***** SECTION 1 ************************************
+* MAIN function: This function calculates the current noise spectral density.
+*                If there are pulses in a record, the pulses are rejected and it is going to look for pulse-free intervals of a given size (intervalMin).
+*                If there are no pulses in a record, the event is divided into pulse-free intervals of a given size (intervalMin).
+*                It is going to look for pulse-free intervals, calculate their FFT(not filtered data) and average them.
+* 
+* The output FITS file (_noisespec) contains three columns in two extensions, NOISE and NOISEALL:
+* 	- Frequency
+*  	- Current noise spectral density: Amount of current per unit (density) of frequency (spectral), as a function of the frequency
+* 	- Standard error of the mean
+* 	
+* The user must supply the following input parameters:
 *
+* - inFile: Name of the input FITS file
+* - outFile: Name of the output FITS file
+* - intervalMinSamples: Minimum length of a pulse-free interval to use (samples) = intervalMinBins
+* - ntausPF: Number of tauFALLs after ending the pulse (Tend) to start the pulse-free interval
+* - nintervals: Number of pulse-free intervals to use
+* - tauFALL: Fall time of the pulses in seconds
+* - scaleFactor: Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length
+* - samplesUp: Consecutive samples over the threshold to locate a pulse
+* - nSgms: Number of Sigmas to establish the threshold
+* - pulse_length: Pulse length (samples)
+* - LrsT: Running sum length in seconds (only in notcreationlib mode)
+* - LbT: Baseline averaging length in seconds (only in notcreationlib mode)
+* - baseline: Baseline (ADC units)
+* - namelog: Output log file name
+* - verbosity: Verbosity level of the output log file
+* 
+* Steps:
+* 
 * - Read input parameters
 * - Open input FITS file
 * - Read and check input keywords
@@ -192,14 +104,13 @@ The NOISEALL extension contains positive and negative frequencies.
 * 	- Standard error of the mean
 *  - Create output FITS File: GENNOISESPEC representation file (*_noisespec.fits)
 *  - Write extensions NOISE and NOISEALL (call writeTPSreprExten)
-*  - Free allocate of GSL vectors
+*  - Free allocated GSL vectors
 *  - Close output FITS file
 *  - Free memory
 *  - Finalize the task
 *****************************************************/
 int main (int argc, char **argv)
 {
-	creator = "gennoisespec v.10.0.0";             //Set "CREATOR" keyword of the output FITS file
 	time_t t_start = time(NULL);
 	char str_stat[8];
 	string message = "";
@@ -210,36 +121,36 @@ int main (int argc, char **argv)
 	// Read input parameters
 	if (initModule(argc, argv))
 	{
-	    message = "Cannot run initModule routine to get input parameters";
-	    EP_EXIT_ERROR(message,EPFAIL);
+		message = "Cannot run initModule routine to get input parameters";
+		EP_EXIT_ERROR(message,EPFAIL);
 	}
 	writeLog(fileRef,"Log", verbosity,"Into GENNOISESPEC task");
 
 	// Open input FITS file
 	if (fits_open_file(&infileObject, infileName,0,&status))
 	{
-	    message = "Cannot open file " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot open file " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 	strcpy(extname,"RECORDS");
 	if (fits_movnam_hdu(infileObject, ANY_HDU,extname, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(extname) + " in " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot move to HDU " + string(extname) + " in " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 
 	// Read and check input keywords
 	strcpy(extname,"RECORDS");
 	if (fits_get_num_rows(infileObject,&eventcnt, &status))
 	{
-	    message = "Cannot get number of rows in HDU " + string(extname);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot get number of rows in HDU " + string(extname);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"TRIGGSZ");
 	if (fits_read_key(infileObject,TLONG,keyname, &eventsz,comment,&status))
 	{
-	    message = "Cannot read keyword " + string(keyname) + " in input file";
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot read keyword " + string(keyname) + " in input file";
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	if (eventsz <= 0)
 	{
@@ -250,8 +161,8 @@ int main (int argc, char **argv)
 	strcpy(keyname,"DELTAT");
 	if (fits_read_key(infileObject,TDOUBLE,keyname, &samprate,comment,&status))
 	{
-	    message = "Cannot read keyword " + string(keyname) + " in input file";
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot read keyword " + string(keyname) + " in input file";
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	if (samprate <= 0)
 	{
@@ -265,8 +176,8 @@ int main (int argc, char **argv)
 	strcpy(keyname,"MONOEN");
 	if (fits_read_key(infileObject,TDOUBLE,keyname, &energy,comment,&status))
 	{
-	    message = "Cannot read keyword " + string(keyname) + " in input file";
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot read keyword " + string(keyname) + " in input file";
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	if (energy < 0)
 	{
@@ -281,14 +192,14 @@ int main (int argc, char **argv)
 	strcpy(straux,"Time");
 	if (fits_get_colnum(infileObject,0,straux,&colnum,&status))
 	{
-	    message = "Cannot get column number for " + string(straux) +" in " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot get column number for " + string(straux) +" in " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 	strcpy(straux,"ADC");
 	if (fits_get_colnum(infileObject,0,straux,&colnum,&status))
 	{
-	    message = "Cannot get column number for " + string(straux) +" in " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot get column number for " + string(straux) +" in " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 
 	// Initialize variables and transform from seconds to samples
@@ -307,6 +218,10 @@ int main (int argc, char **argv)
 
 	// Every single spectrum of each pulse-free interval is stored in a row of the EventSamplesFFT array
 	EventSamplesFFT = gsl_matrix_alloc(nintervals,intervalMinBins);
+
+	noiseIntervals = gsl_matrix_alloc(nintervals,intervalMinBins);
+	gsl_matrix_set_zero(noiseIntervals);
+
 	// Initialize to zero => Because EventSamplesFFT is allocated with maximum dimensions
 	// but maybe there are not nintervals pulse-free intervals in the data
 	gsl_matrix_set_zero(EventSamplesFFT);
@@ -321,16 +236,16 @@ int main (int argc, char **argv)
 	// Create structure to run Iteration
 	extern int inDataIterator(long totalrows,long offset,long firstrow,long nrows,int ncols,iteratorCol *cols,void *user_strct );
 
-	long rows_per_loop = 0;					// 0: Use default: Optimum number of rows
-	long offset = 0;						// 0: Process all the rows
-	iteratorCol cols [2];					// Structure of Iteration
-	int n_cols = 2; 						// Number of columns:  Time + ADC
+	long rows_per_loop = 0;		// 0: Use default: Optimum number of rows
+	long offset = 0;		// 0: Process all the rows
+	iteratorCol cols [2];		// Structure of Iteration
+	int n_cols = 2; 		// Number of columns:  Time + ADC
 
 	strcpy(extname,"RECORDS");
 	if (fits_movnam_hdu(infileObject, ANY_HDU,extname, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(extname) +" in " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot move to HDU " + string(extname) +" in " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 
 	// Read Time column
@@ -338,8 +253,8 @@ int main (int argc, char **argv)
 	status = fits_iter_set_by_name(&cols[0], infileObject, straux, TDOUBLE, InputCol);
 	if (status)
 	{
-	    message = "Cannot iterate in column " + string(straux) +" in " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot iterate in column " + string(straux) +" in " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 	
 	// Read ADC column
@@ -347,8 +262,8 @@ int main (int argc, char **argv)
 	status = fits_iter_set_by_name(&cols[1], infileObject, straux, TDOUBLE, InputCol);
 	if (status)
 	{
-	    message = "Cannot iterate in column " + string(straux) +" in " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot iterate in column " + string(straux) +" in " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 
 	// Check Boxlength
@@ -356,22 +271,22 @@ int main (int argc, char **argv)
 	boxLength = (int) ((1/cutFreq) * samprate);
 	if (boxLength <= 1)
 	{
-	      message = "lpf_boxcar: tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
-	      writeLog(fileRef,"Warning", verbosity,message);
+		  message = "lpf_boxcar: tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
+		  writeLog(fileRef,"Warning", verbosity,message);
 	}
 	
 	// Called iteration function
 	if (fits_iterate_data(n_cols,cols,offset,rows_per_loop,inDataIterator,0L,&status))
 	{
-	    message = "Cannot iterate data using InDataTterator";
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot iterate data using InDataTterator";
+		EP_EXIT_ERROR(message,status);
 	}
 
 	// Close input FITS file
 	if (fits_close_file(infileObject,&status))
 	{
-	    message = "Cannot close file " + string(infileName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot close file " + string(infileName);
+		EP_EXIT_ERROR(message,status);
 	}
 
 	// Generate NOISE representation
@@ -394,8 +309,8 @@ int main (int argc, char **argv)
 	{
 		if (gsl_vector_get(EventSamplesFFTMean,i)<0)
 		{
-		  message = "EventSamplesFFTMean < 0 for i=" + boost::lexical_cast<std::string>(i);
-		  EP_EXIT_ERROR(message,EPFAIL); 
+			message = "EventSamplesFFTMean < 0 for i=" + boost::lexical_cast<std::string>(i);
+			EP_EXIT_ERROR(message,EPFAIL); 
 		}
 	}
 	gsl_vector_sqrtIFCA(EventSamplesFFTMean,EventSamplesFFTMean);
@@ -445,18 +360,20 @@ int main (int argc, char **argv)
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 
-	// Free allocate of GSL vectors
+	// Free allocated GSL vectors
 	gsl_matrix_free(EventSamplesFFT);
 	gsl_vector_free(EventSamplesFFTMean);
 	gsl_vector_free(mean);
 	gsl_vector_free(sigmacsdgsl);
 	gsl_vector_free(startIntervalgsl);
 
+	gsl_matrix_free(noiseIntervals);
+
 	// Close output FITS file
 	if (fits_close_file(gnoiseObject,&status))
 	{
-	    message = "Cannot close file " + string(gnoiseName);
-	    EP_EXIT_ERROR(message,status);
+		message = "Cannot close file " + string(gnoiseName);
+		EP_EXIT_ERROR(message,status);
 	}	
 
 	// Free memory
@@ -474,16 +391,16 @@ int main (int argc, char **argv)
 
 	if(fclose(fileRef))
 	{
-	    message = "Cannot close log file";
-	    EP_EXIT_ERROR(message,EPFAIL);
+		message = "Cannot close log file";
+		EP_EXIT_ERROR(message,EPFAIL);
 	}	
 	
 	return EPOK;
 }
-/*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 3 ************************************************************
+/***** SECTION 2 ************************************************************
 * initModule function: This function reads and processes the input parameters
 *
 * - It defines the input parameters and assigns the values to variables
@@ -526,7 +443,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[2].ValInt = gennoisespecPars[2].defValInt;
 
 	gennoisespecPars[3].name = "ntausPF";
-	gennoisespecPars[3].description = "Number of tauFALLs after ending the pulse to start the pulse-free interval";
+	gennoisespecPars[3].description = "Number of fall time values after the end of the pulse to start the pulse-free interval searching";
 	gennoisespecPars[3].defValInt = 0;
 	gennoisespecPars[3].type = "int";
 	gennoisespecPars[3].minValInt = 0;
@@ -534,11 +451,11 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[3].ValInt = gennoisespecPars[3].defValInt;
 
 	gennoisespecPars[4].name = "nintervals";
-	gennoisespecPars[4].description = "Number of pulse-free intervals to use";
+	gennoisespecPars[4].description = "Number of pulse-free intervals to use for the noise average";
 	gennoisespecPars[4].defValInt = 60;
 	gennoisespecPars[4].type = "int";
 	gennoisespecPars[4].minValInt = 1;
-	gennoisespecPars[4].maxValInt = 1E4;
+	gennoisespecPars[4].maxValInt = 20000;
 	gennoisespecPars[4].ValInt = gennoisespecPars[4].defValInt;
 
 	gennoisespecPars[5].name = "tauFALL";
@@ -550,7 +467,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[5].ValReal = gennoisespecPars[5].defValReal;
 
 	gennoisespecPars[6].name = "scaleFactor";
-	gennoisespecPars[6].description = "Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length";
+	gennoisespecPars[6].description = "Scale factor to apply to the fall time of the pulses to make possible a varying cut-off frequency of the low-pass filter";
 	gennoisespecPars[6].defValReal = 0.1;
 	gennoisespecPars[6].type = "double";
 	gennoisespecPars[6].minValReal = 1.E-50;
@@ -558,7 +475,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[6].ValReal = gennoisespecPars[6].defValReal;
 
 	gennoisespecPars[7].name = "samplesUp";
-	gennoisespecPars[7].description = "Consecutive samples over the threshold to locate a pulse";
+	gennoisespecPars[7].description = "Consecutive samples that the signal must cross over the threshold to trigger a pulse detection";
 	gennoisespecPars[7].defValInt = 20;
 	gennoisespecPars[7].type = "int";
 	gennoisespecPars[7].minValInt = 1;
@@ -566,7 +483,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[7].ValInt = gennoisespecPars[7].defValInt;
 
 	gennoisespecPars[8].name = "nSgms";
-	gennoisespecPars[8].description = "Number of Sigmas to establish the threshold";
+	gennoisespecPars[8].description = "Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm";
 	gennoisespecPars[8].defValInt = 3;
 	gennoisespecPars[8].type = "int";
 	gennoisespecPars[8].minValInt = 1;
@@ -582,7 +499,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[9].ValInt = gennoisespecPars[9].defValInt;
 
 	gennoisespecPars[10].name = "LrsT";
-	gennoisespecPars[10].description = "Running sum length (in the RS filter case) (seconds)";
+	gennoisespecPars[10].description = "Running sum (RS) length for the RS-filtering for raw energy estimation, in seconds";
 	gennoisespecPars[10].defValReal = 30.E-6;
 	gennoisespecPars[10].type = "double";
 	gennoisespecPars[10].minValReal = 1.E-50;
@@ -590,7 +507,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[10].ValReal = gennoisespecPars[10].defValReal;
 
 	gennoisespecPars[11].name = "LbT";
-	gennoisespecPars[11].description = "Baseline averaging length (in the RS filter case) (seconds)";
+	gennoisespecPars[11].description = "Baseline averaging length for the RS-filtering for raw energy estimation, in seconds";
 	gennoisespecPars[11].defValReal = 1E-3;
 	gennoisespecPars[11].type = "double";
 	gennoisespecPars[11].minValReal = 1.E-50;
@@ -598,10 +515,10 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[11].ValReal = gennoisespecPars[11].defValReal;
 
 	gennoisespecPars[12].name = "baseline";
-	gennoisespecPars[12].description = "Baseline (ADC units)";
+	gennoisespecPars[12].description = "Baseline value (ADC units)";
 	gennoisespecPars[12].defValReal = 200.0;
 	gennoisespecPars[12].type = "double";
-	gennoisespecPars[12].minValReal = 1.E-50;
+	gennoisespecPars[12].minValReal = -1.E+50;
 	gennoisespecPars[12].maxValReal = 1.E+50;
 	gennoisespecPars[12].ValReal = gennoisespecPars[12].defValReal;
 
@@ -654,34 +571,34 @@ int initModule(int argc, char **argv)
 				{
 					if(long_options[optidx].name == gennoisespecPars[i].name.c_str())
 					{
-					    if (gennoisespecPars[i].type == "char") //save char value for par
-					    {
-	    					gennoisespecPars[i].ValStr = optarg;
-					    }
-					    else // check if numeric value
-					    {
-	    					if ((!isdigit(optarg[0]) && (optarg[0] != '-')) ||
-	    							(!isdigit(optarg[0]) && (optarg[0] == '-') && (!isdigit(optarg[1]))))
-	    					{
-	    						message = "Invalid value for input argument " + string(gennoisespecPars[i].name);
-	    						EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	    					}
-	    					if (gennoisespecPars[i].type == "int")
-	    					{
-	    						gennoisespecPars[i].ValInt = atoi(optarg);
-	    					}
-	    					else
-	    					{
-	    						gennoisespecPars[i].ValReal= atof(optarg);
-	    					}
-					     }
-					     break;
+						if (gennoisespecPars[i].type == "char") //save char value for par
+						{
+							gennoisespecPars[i].ValStr = optarg;
+						}
+						else // check if numeric value
+						{
+							if ((!isdigit(optarg[0]) && (optarg[0] != '-')) ||
+								(!isdigit(optarg[0]) && (optarg[0] == '-') && (!isdigit(optarg[1]))))
+							{
+								message = "Invalid value for input argument " + string(gennoisespecPars[i].name);
+								EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+							}
+							if (gennoisespecPars[i].type == "int")
+							{
+								gennoisespecPars[i].ValInt = atoi(optarg);
+							}
+							else
+							{
+								gennoisespecPars[i].ValReal= atof(optarg);
+							}
+						}
+						break;
 					} // endif
 				} // endfor
 				break;
-		    default:
-		    	message = "Invalid parameter name ";
-	    		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+			default:
+				message = "Invalid parameter name ";
+				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}//switch
 	}//while
 	// If command line is empty: ask for params interactively
@@ -689,8 +606,8 @@ int initModule(int argc, char **argv)
 	{
 		if(interactivePars(gennoisespecPars,npars,task))
 		{
-		    message = "Error reading parameters interactively";
-		    EP_PRINT_ERROR(message,EPFAIL);
+			message = "Error reading parameters interactively";
+			EP_PRINT_ERROR(message,EPFAIL);
 		}
 	}
 
@@ -699,51 +616,51 @@ int initModule(int argc, char **argv)
 	{
 		if(gennoisespecPars[i].name == "inFile")
 		{
-		    strcpy(infileName, gennoisespecPars[i].ValStr.c_str());
+			strcpy(infileName, gennoisespecPars[i].ValStr.c_str());
 		}
 		else if(gennoisespecPars[i].name == "outFile")
 		{
-		    strcpy(gnoiseName, gennoisespecPars[i].ValStr.c_str());
+			strcpy(gnoiseName, gennoisespecPars[i].ValStr.c_str());
 		}
 		else if(gennoisespecPars[i].name == "intervalMinSamples")
 		{
-		    intervalMinSamples = gennoisespecPars[i].ValInt;
+			intervalMinSamples = gennoisespecPars[i].ValInt;
 		}
 		else if(gennoisespecPars[i].name == "ntausPF")
 		{
-		    ntausPF = gennoisespecPars[i].ValInt;
+			ntausPF = gennoisespecPars[i].ValInt;
 		}
 		else if(gennoisespecPars[i].name == "nintervals")
 		{
-		    nintervals = gennoisespecPars[i].ValInt;
+			nintervals = gennoisespecPars[i].ValInt;
 		}
 		else if(gennoisespecPars[i].name == "tauFALL")
 		{
-		    tauFALL = gennoisespecPars[i].ValReal;
+			tauFALL = gennoisespecPars[i].ValReal;
 		}
 		else if(gennoisespecPars[i].name == "scaleFactor")
 		{
-		    scaleFactor = gennoisespecPars[i].ValReal;
+			scaleFactor = gennoisespecPars[i].ValReal;
 		}
 		else if(gennoisespecPars[i].name == "samplesUp")
 		{
-		    samplesUp = gennoisespecPars[i].ValInt;
+			samplesUp = gennoisespecPars[i].ValInt;
 		}
 		else if(gennoisespecPars[i].name == "nSgms")
 		{
-		    nSgms = gennoisespecPars[i].ValInt;
+			nSgms = gennoisespecPars[i].ValInt;
 		}
 		else if(gennoisespecPars[i].name == "pulse_length")
 		{
-		    pulse_length = gennoisespecPars[i].ValInt;
+			pulse_length = gennoisespecPars[i].ValInt;
 		}
 		else if(gennoisespecPars[i].name == "LrsT")
 		{
-		    LrsT = gennoisespecPars[i].ValReal;
+			LrsT = gennoisespecPars[i].ValReal;
 		}
 		else if(gennoisespecPars[i].name == "LbT")
 		{
-		    LbT = gennoisespecPars[i].ValReal;
+			LbT = gennoisespecPars[i].ValReal;
 		}
 		else if(gennoisespecPars[i].name == "baseline")
 		{
@@ -751,37 +668,40 @@ int initModule(int argc, char **argv)
 		}
 		else if(gennoisespecPars[i].name == "nameLog")
 		{
-		    strcpy(nameLog,gennoisespecPars[i].ValStr.c_str());
+			strcpy(nameLog,gennoisespecPars[i].ValStr.c_str());
 		}
 		else if(gennoisespecPars[i].name == "verbosity")
 		{
-		    verbosity = gennoisespecPars[i].ValInt;
+			verbosity = gennoisespecPars[i].ValInt;
 		}
 		else if (gennoisespecPars[i].name == "clobber")
 		{
 			strcpy(clobberStr, gennoisespecPars[i].ValStr.c_str());
-			if(strcmp(clobberStr,"yes")==0){
-			  clobber=1;
-			}else{
-			  clobber=0;
+			if(strcmp(clobberStr,"yes")==0)
+			{
+				clobber=1;
+			}
+			else
+			{
+				clobber=0;
 			}
 		}
 		
 		// Check if parameter value is in allowed range
 		if( gennoisespecPars[i].type == "int" &&
-				(gennoisespecPars[i].ValInt < gennoisespecPars[i].minValInt ||
-						gennoisespecPars[i].ValInt > gennoisespecPars[i].maxValInt))
+			(gennoisespecPars[i].ValInt < gennoisespecPars[i].minValInt ||
+			gennoisespecPars[i].ValInt > gennoisespecPars[i].maxValInt))
 		{
 			message = "Parameter name " + gennoisespecPars[i].name + " out of range: [" +
-					boost::lexical_cast<std::string>(gennoisespecPars[i].minValInt) + "," + boost::lexical_cast<std::string>(gennoisespecPars[i].maxValInt) + "]";
+				boost::lexical_cast<std::string>(gennoisespecPars[i].minValInt) + "," + boost::lexical_cast<std::string>(gennoisespecPars[i].maxValInt) + "]";
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 		else if ( gennoisespecPars[i].type == "double" &&
-				(gennoisespecPars[i].ValReal < gennoisespecPars[i].minValReal ||
-						gennoisespecPars[i].ValReal > gennoisespecPars[i].maxValReal))
+			(gennoisespecPars[i].ValReal < gennoisespecPars[i].minValReal ||
+			gennoisespecPars[i].ValReal > gennoisespecPars[i].maxValReal))
 		{
 			message = "Parameter name " + gennoisespecPars[i].name + " out of range: [" +
-					boost::lexical_cast<std::string>(gennoisespecPars[i].minValReal) + "," + boost::lexical_cast<std::string>(gennoisespecPars[i].maxValReal) + "]";
+				boost::lexical_cast<std::string>(gennoisespecPars[i].minValReal) + "," + boost::lexical_cast<std::string>(gennoisespecPars[i].maxValReal) + "]";
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 	}// loop for parameters
@@ -790,16 +710,16 @@ int initModule(int argc, char **argv)
 	fileRef = fopen(nameLog,"w+");	// Remove file if it already exists and open a new file to save log messages
 	if (fileRef == NULL)
 	{
-	    message = "Cannot open Log file " + string(nameLog);
-	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		message = "Cannot open Log file " + string(nameLog);
+		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 
 	return (EPOK);
 }
-/*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 4 ************************************************************
+/***** SECTION 3 ************************************************************
 * inDataIterator: This function takes the optimum number of rows to read the input FITS file
 *                 and works iteratively
 *
@@ -807,21 +727,22 @@ int initModule(int argc, char **argv)
 * - Allocate input GSL vectors
 * - Read iterator
 * - Processing each record
-* 	- If there are pulses (MONOEN >0):
-* 		- Assigning positive polarity (by using ASQUID and PLSPOLAR)
-* 		- Low-pass filtering
-*   	- Derivative after filtering
+* 	- Assigning positive polarity (by using ASQUID and PLSPOLAR)
+* 	- To avoid taking into account the pulse tails at the beginning of a record as part of a pulse-free interval
+* 	- Low-pass filtering
+*   	- Differentiate after filtering
 *   	- Finding the pulses: Pulses tstart are found (call findPulses)
-*   - Finding the pulse-free intervals in each record read
-*  		- If there are pulses => Call findInterval
-*		- No pulses => The whole event is going to be used (DIVIDING into intervals of intervalMinBins size) => Call findIntervalN
-*   - CSD calculus (not filtered data):
-* 		- FFT calculus (each pulse-free interval)
-* 		- Every single spectrum of each pulse-free interval is stored in a row of the EventSamplesFFT array
-* 		- Add to mean FFT samples
-*  - Free allocate of GSL vectors
+* - Finding the pulse-free intervals in each record
+*  	- If there are pulses => Call findInterval
+*	- No pulses => The whole event is going to be used (DIVIDING into intervals of intervalMinBins size) => Call findIntervalN
+* - CSD calculus (not filtered data):
+* 	- Baseline subtraction
+* 	- FFT calculus (each pulse-free interval)
+* 	- Every single spectrum of each pulse-free interval is stored in a row of the EventSamplesFFT array
+* 	- Add to mean FFT samples
+* - Free allocated GSL vectors
 ****************************************************************************/
-int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int ncols, iteratorCol *cols, void *user_strct)
+int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int ncols, iteratorCol *cols, void *user_strct)
 {
 	char val[256];
 
@@ -838,7 +759,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 	gsl_vector *timegsl_block;
 	gsl_matrix *ioutgsl_block;
 
-	// To derive
+	// To differentiate
 	gsl_vector *derSGN = gsl_vector_alloc(eventsz);
 
 	gsl_vector *tstartgsl = gsl_vector_alloc(eventsz);
@@ -855,14 +776,14 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 	gsl_vector *tendDERgsl = gsl_vector_alloc(eventsz);
 
 	int pulseFound = 0;	// 0->The function findTstart has not found any pulse
-						// 1->The function findTstart has found at least one pulse
+				// 1->The function findTstart has found at least one pulse
 
 	double baseline;
 	double mean, sg; // To handle the pulse tails at the beginning of the record
 	int tail_duration;
 
 	// Auxiliary variables
-	gsl_vector_view temp;					// In order to handle with gsl_vector_view (subvectors)
+	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
 
 	// To calculate the FFT
 	double SelectedTimeDuration;
@@ -874,9 +795,9 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 
 	// Allocate input GSL vectors
 	timegsl_block = gsl_vector_alloc(nrows);
-	timegsl = gsl_vector_alloc(nrows); 						// GSL of input TIME column
+	timegsl = gsl_vector_alloc(nrows); 			// GSL of input TIME column
 	ioutgsl_block = gsl_matrix_alloc(nrows,eventsz);
-	ioutgsl = gsl_vector_alloc(eventsz); 					// GSL of input ADC column
+	ioutgsl = gsl_vector_alloc(eventsz); 			// GSL of input ADC column
 	gsl_vector *ioutgsl_aux = gsl_vector_alloc(eventsz);	//In case of working with ioutgsl without filtering
 	gsl_vector *ioutgslNOTFIL = gsl_vector_alloc(eventsz);
 
@@ -887,15 +808,15 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 	time_block = &timein[1];
 	if (toGslVector(((void **)&time_block), &timegsl_block, nrows, 0, TDOUBLE))
 	{
-	    message = "Cannot run routine toGslVector for TIME vector";
-	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		message = "Cannot run routine toGslVector for TIME vector";
+		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	ioutin = (double *) fits_iter_get_array(&cols[1]);
 	iout_block = &ioutin[1];
 	if(toGslMatrix(((void **)&iout_block), &ioutgsl_block, eventsz, nrows, TDOUBLE,	0))
 	{
-	    message = "Cannot run routine toGslMatrix for IOUT ";
-	    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		message = "Cannot run routine toGslMatrix for IOUT ";
+		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	
 	// Pulse-free segments are divided into pulse-free intervals with intervalMinBins size
@@ -906,16 +827,16 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 	{
 		if (NumMeanSamples>=nintervals)
 		{
-		    writeLog(fileRef,"Log", verbosity,"Enough number of pulse-free intervals to CSD calculus. No more rows read");
-		    break;
+			writeLog(fileRef,"Log", verbosity,"Enough number of pulse-free intervals to CSD calculus. No more rows read");
+			break;
 		}
 
 		sprintf(straux,"%d",ntotalrows);
 		message = "-------------> Record: " + string(straux);
 		sprintf(straux,"%d",eventcnt);
 		message += " of " + string(straux) + " <------------------ ";
-		//writeLog(fileRef,"Log", verbosity,message);
-		//sprintf(val,"-------------> Record: %d of %d <------------------ ",ntotalrows,eventcnt);
+		writeLog(fileRef,"Log", verbosity,message);
+		sprintf(val,"-------------> Record: %d of %d <------------------ ",ntotalrows,eventcnt);
 
 		// Information has been read by blocks (with nrows per block)
 		// Now, information is going to be used by rows
@@ -925,13 +846,11 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 
 		// Assigning positive polarity (by using ASQUID and PLSPOLAR)
 		gsl_vector_memcpy(ioutgsl_aux,ioutgsl);
-		//if (asquid > 0)		gsl_vector_scale(ioutgsl_aux,-1.0);
 		if (((asquid>0) && (plspolar<0)) || ((asquid<0) && (plspolar>0)))	gsl_vector_scale(ioutgsl_aux,-1.0);
 		gsl_vector_memcpy(ioutgslNOTFIL,ioutgsl_aux);
 
 		// To avoid taking into account the pulse tails at the beginning of a record as part of a pulse-free interval
 		tail_duration = 0;
-		//cout<<"eventsz="<<eventsz<<",(int)(pi*samprate*tauFALL*scaleFactor)="<<(int)(pi*samprate*tauFALL*scaleFactor)<<" "<<eventsz-(int)(pi*samprate*tauFALL*scaleFactor)-1<<endl;
 		temp = gsl_vector_subvector(ioutgslNOTFIL,0,eventsz-(int)(pi*samprate*tauFALL*scaleFactor)-1);
 		cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
 		boxLength = (int) ((1/cutFreq) * samprate);
@@ -945,69 +864,57 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 			if (gsl_vector_get(ioutgslNOTFIL,j) > baseline+sg)	tail_duration = j;
 			else break;
 		}
-		//for (int j=0;j<tail_duration;j++)	gsl_vector_set(ioutgslNOTFIL,j,0.0);
-		//cout<<"tail_duration="<<tail_duration<<endl;
 
 		// Low-pass filtering
 		status = lpf_boxcar(&ioutgsl_aux,ioutgsl_aux->size,tauFALL*scaleFactor,samprate);
 		if (status == EPFAIL)
 		{
-		    message = "Cannot run routine lpf_boxcar for low pass filtering";
-		    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+			message = "Cannot run routine lpf_boxcar for low pass filtering";
+			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 		if (status == 3)
 		{
-		    status = EPOK;
+			status = EPOK;
 		}
 		if (status == 4)
 		{
-		    message = "lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low";
-		    writeLog(fileRef,"Error", verbosity,message);
-		    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+			message = "lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low";
+			writeLog(fileRef,"Error", verbosity,message);
+			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 
-		// Derivative after filtering
-		//if (derMTHSimple (&ioutgsl_aux,&derSGN,ioutgsl_aux->size))
-		if (derivative (&ioutgsl_aux,ioutgsl_aux->size))
+		// Differentiate after filtering
+		if (differentiate (&ioutgsl_aux,ioutgsl_aux->size))
 		{
-		    message = "Cannot run routine derivative for derivative after filtering";
-		    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+			message = "Cannot run routine differentiate for differentiating after filtering";
+			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 
 		//Finding the pulses: Pulses tstart are found
 		if (findPulsesNoise (ioutgslNOTFIL, ioutgsl_aux, &tstartgsl, &qualitygsl, &energygsl,
-				&nPulses, &threshold,
-				tauFALL, scaleFactor, pulse_length, samprate,
-				samplesUp, nSgms,
-				Lb, Lrs,
-				library, models,
-				stopCriteriaMKC,
-				kappaMKC,
-				levelPrvPulse))
+			&nPulses, &threshold,
+			tauFALL, scaleFactor, pulse_length, samprate,
+			samplesUp, nSgms,
+			Lb, Lrs,
+			library, models,
+			stopCriteriaMKC,
+			kappaMKC,
+			levelPrvPulse))
 		{
 			message = "Cannot run routine findPulsesNoise";
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
-		cout<<ntotalrows<<" "<<nPulses<<endl;
-// 		for(int j=0;j<nPulses;j++){
-// 			cout<<"Pulse: ",<<j<<" Tstart:"<<gsl_vector_get(tstartgsl,j)<<endl;
-// 		}
 
 		if (nPulses != 0)	pulseFound = 1;
 
 		if ((pulseFound == 1) || (tail_duration != 0))
 		{
-			// Finding the pulse-free intervals in each record read
+			// Finding the pulse-free intervals in each record 
 			if (findInterval(tail_duration, ioutgsl_aux, tstartgsl, nPulses, pulse_length, ntausPF, tauFALL_b, intervalMinBins, &nIntervals, &startIntervalgsl))
 			{
 				message = "Cannot run routine findInterval";
-			    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 			}
-			/*cout<<"nIntervals: "<<nIntervals<<endl;
-			for (int j=0;j<nIntervals;j++)
-			{
-				cout<<"startInterval("<<j<<")="<<gsl_vector_get(startIntervalgsl,j)<<endl;
-			}*/
 		}
 		else if (pulseFound == 0)
 		{
@@ -1028,23 +935,13 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 			temp = gsl_vector_subvector(ioutgsl,gsl_vector_get(startIntervalgsl,i), intervalMinBins);
 			gsl_vector_memcpy(EventSamples,&temp.vector);
 
-			// Baseline estimation
-			/*double baseline;
-			double mean, sigma;
-			cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
-			boxLength = (int) ((1/cutFreq) * samprate);
-			if (find_baseline(EventSamples, kappaMKC, stopCriteriaMKC, boxLength,  &mean, &sigma, &baseline))
-			{
-				message = "Cannot run find_baseline";
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}*/
-
 			// Baseline subtraction
 			gsl_vector *baselinegsl = gsl_vector_alloc(EventSamples->size);
-			//gsl_vector_set_all(baselinegsl,-200.0);
 			gsl_vector_set_all(baselinegsl,-1.0*baseline);
 			gsl_vector_add(EventSamples,baselinegsl);
 			gsl_vector_free(baselinegsl);
+
+			gsl_matrix_set_row(noiseIntervals,NumMeanSamples,EventSamples);
 
 			// FFT calculus (EventSamplesFFT)
 			if(FFT(EventSamples,vector_aux1,SelectedTimeDuration))
@@ -1052,7 +949,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 				message = "Cannot run FFT routine for vector1";
 				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 			}
-			gsl_vector_complex_absRIFCA(vector_aux,vector_aux1);
+			gsl_vector_complex_absIFCA(vector_aux,vector_aux1);
 
 			// Every single spectrum is stored in a row of the EventSamplesFFT array
 			gsl_matrix_set_row(EventSamplesFFT,NumMeanSamples,vector_aux);
@@ -1067,7 +964,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 		ntotalrows++;
 	}
 
-	// Free allocate of GSL vectors
+	// Free allocated GSL vectors
 	gsl_vector_free(timegsl);
 	gsl_vector_free(ioutgsl);
 	gsl_vector_free(ioutgsl_aux);
@@ -1085,15 +982,16 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 
 	return (EPOK);
 }
-/*xxxx end of SECTION 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 5 ************************************************************
+/***** SECTION 4 ************************************************************
 * findInterval: This function finds the pulse-free intervals when the input vector has pulses.
 *               The pulse-free intervals must have a minimum length (intervalMin).
 *               The interval with pulse is Tstart,Tend+nPF*tau (being Tend=n*tau).
 *
 * Parameters:
+* - tail_duration: Length of the tail of a previous pulse
 * - invector: Input vector WITH pulses
 * - startpulse: Vector with the Tstart of all the pulses of the input vector (samples)
 * - npin: Number of pulses in the input vector
@@ -1110,12 +1008,11 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows,	int n
 * 	-It looks for pulse-free intervals at the end of the event and the search for more pulse-free intervals is finished
 *****************************************************************************/
 int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, double tau, int interval,
-		int *ni, gsl_vector **startinterval)
+	int *ni, gsl_vector **startinterval)
 {
 	// Declare variables
-	//long start = 0;				//Auxiliary variable, possible starting time of a pulse-free interval
-	long start;		//Auxiliary variable, possible starting time of a pulse-free interval
-	int niinc;						//Increase the number of pulse-free intervals
+	long start;		// Auxiliary variable, possible starting time of a pulse-free interval
+	int niinc;		// Increase the number of pulse-free intervals
 	*ni = 0;
 
 	// startinterval is allocated with the maximum possible pulse-free intervals
@@ -1123,7 +1020,7 @@ int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse
 	*startinterval = gsl_vector_alloc(invector->size/interval+1);
 
 	if ((tail_duration != 0) && (tail_duration >= gsl_vector_get(startpulse,0)))	start = gsl_vector_get(startpulse,0);
-	else	start = tail_duration;
+	else										start = tail_duration;
 
 	for (int i=0; i<npin; i++)
 	{
@@ -1169,10 +1066,10 @@ int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse
 
 	return (EPOK);
 }
-/*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 6 ************************************************************
+/***** SECTION 5 ************************************************************
 * findIntervalN: This function finds the pulse-free intervals when the input vector has No pulses.
 *                The pulse-free intervals must have a minimum length (intervalMin).
 *
@@ -1184,8 +1081,8 @@ int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse
 *****************************************************************************/
 int findIntervalN (gsl_vector *invector, int interval, int *ni, gsl_vector **startinterval)
 {
-	*ni = invector->size/interval;	//Due to both numerator and denominator are integer numbers =>
-									//Result is the integer part of the division
+	*ni = invector->size/interval;	// Due to both numerator and denominator are integer numbers =>
+					// Result is the integer part of the division
 
 	// startinterval is allocated with the number of pulse-free intervals
 	*startinterval = gsl_vector_alloc(*ni);
@@ -1197,10 +1094,10 @@ int findIntervalN (gsl_vector *invector, int interval, int *ni, gsl_vector **sta
 
 	return (EPOK);
 }
-/*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 7 ************************************************************
+/***** SECTION 6 ************************************************************
 * createTPSreprFile: This function creates the gennoisespec output FITS file (_noisespec.fits).
 *
 * - Create the NOISE representation file (if it does not exist already)
@@ -1217,23 +1114,24 @@ int createTPSreprFile ()
 
 	if ( fileExists(string(gnoiseName)) && clobber==1)
 	{
-	      if (remove(gnoiseName)){
-		  message = "Output FITS file ("+ string(gnoiseName)+") already exits & cannot be deleted ("+string(strerror(errno))+")";
-		  EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	      }
+		if (remove(gnoiseName))
+		{
+			  message = "Output FITS file ("+ string(gnoiseName)+") already exits & cannot be deleted ("+string(strerror(errno))+")";
+			  EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		}
 	}
 	else if(fileExists(string(gnoiseName)) && clobber==0)
 	{
-	      message = "Output FITS file ("+ string(gnoiseName)+") already exits: must not be overwritten";
-	      EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		message = "Output FITS file ("+ string(gnoiseName)+") already exits: must not be overwritten";
+		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	if(!fileExists(string(gnoiseName)))
 	{
-	      if(fits_create_file(&gnoiseObject, gnoiseName, &status))
-	      {
-		  message = "Cannot create output gennoisespec file " + string(gnoiseName);
-		  EP_PRINT_ERROR(message,status); return(EPFAIL);
-	      }
+		if(fits_create_file(&gnoiseObject, gnoiseName, &status))
+		{
+			message = "Cannot create output gennoisespec file " + string(gnoiseName);
+			EP_PRINT_ERROR(message,status); return(EPFAIL);
+		}
 	}
 	
 	message = "Create gennoisespec FITS File (_noisespec): " + string(gnoiseName);
@@ -1243,45 +1141,45 @@ int createTPSreprFile ()
 	strcpy(extname,"NOISE");
 	if (fits_create_tbl(gnoiseObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
 	{
-	    message = "Cannot create table " + string(extname);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot create table " + string(extname);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
 	// Create extensions: NOISEALL
 	strcpy(extname,"NOISEALL");
 	if (fits_create_tbl(gnoiseObject,BINARY_TBL,0,0,ttype,tform,tunit,extname,&status))
 	{
-	    message = "Cannot create table " + string(extname);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot create table " + string(extname);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
 	// Create keywords in NOISE HDU
 	strcpy(extname,"NOISE");
 	if (fits_movnam_hdu(gnoiseObject, ANY_HDU,extname, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(extname) + " in file " + string(gnoiseName);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot move to HDU " + string(extname) + " in file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"EVENTCNT");
 	keyvalint = intervalMinBins/2;
 	if (fits_write_key(gnoiseObject,TINT,keyname,&keyvalint,comment,&status))
 	{
-	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
 	// Create keywords in NOISEall HDU
 	strcpy(extname,"NOISEALL");
 	if (fits_movnam_hdu(gnoiseObject, ANY_HDU,extname, extver, &status))
 	{
-	    message = "Cannot move to HDU " + string(extname) + " in file " + string(gnoiseName);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot move to HDU " + string(extname) + " in file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 	strcpy(keyname,"EVENTCNT");
 	if (fits_write_key(gnoiseObject,TINT,keyname,&intervalMinBins,comment,&status))
 	{
-	    message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
-	    EP_PRINT_ERROR(message,status); return(EPFAIL);
+		message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
 	// Primary HDU
@@ -1290,15 +1188,6 @@ int createTPSreprFile ()
 	if (fits_movabs_hdu(gnoiseObject, 1, hdutype, &status))
 	{
 		message = "Cannot move to HDU " + string(extname) + " in noise file " + string(gnoiseName);
-		EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
-
-	strcpy(keyname,"CREATOR");
-	string creatorkey (string("File CREATED by") + ' ' + (string) creator);
-	strcpy(keyvalstr,creatorkey.c_str());
-	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
-	{
-		message = "Cannot write keyword " + string(keyname) + " in noise file " + string(gnoiseName);
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
@@ -1462,15 +1351,15 @@ int createTPSreprFile ()
 
 	return EPOK;
 }
-/*xxxx end of SECTION 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-/***** SECTION 8 ************************************************************
+/***** SECTION 7 ************************************************************
 * writeTPSreprExten: This function writes the noisespec output FITS file (_noisespec.fits).
 *
 * - Allocate GSL vectors
 * - Write the data in the output FITS file (print only half of FFT to prevent aliasing)
-* - Free allocate GSL vectors
+* - Free allocated GSL vectors
 *****************************************************************************/
 int writeTPSreprExten ()
 {
@@ -1581,7 +1470,7 @@ int writeTPSreprExten ()
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 
-	// Free allocate of GSL vectors
+	// Free allocated GSL vectors
 	gsl_vector_free(freqgsl);
 	gsl_vector_free(csdgsl);
 	gsl_vector_free(sigmacsdgslnew);
@@ -1590,10 +1479,13 @@ int writeTPSreprExten ()
 
 	return (EPOK);
 }
-/*xxxx end of SECTION 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
-//invector is supposed to be a pulse free interval
-//int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *baseline)
+
+/***** SECTION 8 ************************************************************
+* find_baseline function: 
+* 
+****************************************************************************/
 int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *mean, double *sigma, double *baseline)
 {
 	string message = "";
@@ -1604,11 +1496,11 @@ int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int b
 	double mean2, sg2;
 	gsl_vector_view temp;
 	// Variables to remove input vector elements higher than the maximum excursion (kappa*sg)
-	int i;												// To go through the elements of a vector
-	int cnt;											// Number of points inside the excursion (mean+-excursion)
+	int i;							// To go through the elements of a vector
+	int cnt;						// Number of points inside the excursion (mean+-excursion)
 	gsl_vector *invectorNew = gsl_vector_alloc(size);	// Auxiliary vector
 	// To calculate the median
-	double data[size];									// Intermediate value to use 'gsl_stats_median_from_sorted_data'
+	double data[size];					// Intermediate value to use 'gsl_stats_median_from_sorted_data'
 	double median;
 
 	// Median
@@ -1618,7 +1510,6 @@ int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int b
 	}
 	gsl_sort(data,1,size);
 	median = gsl_stats_median_from_sorted_data (data,1,size);
-	//cout<<"median: "<<median<<endl;
 
 	gsl_vector_memcpy(invectorNew,invector);
 
@@ -1669,19 +1560,22 @@ int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int b
 	*baseline = mean2;
 	*mean = mean2;
 	*sigma = sg2;
-	//cout<<"baseline: "<<*baseline<<endl;
-
+	
 	//double mean, sigma;
 	//findMeanSigma (invector, &mean, &sigma);
-	//cout<<"mean: "<<mean<<endl;
 
 	//*baseline = median;
 	//*baseline = mean;
 
 	return(EPOK);
 }
+/*xxxx end of SECTION 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
+/***** SECTION 9 ************************************************************
+* findPulsesNoise function: 
+* 
+****************************************************************************/
 int findPulsesNoise
 (
 	gsl_vector *vectorin,
@@ -1722,43 +1616,37 @@ int findPulsesNoise
 	gsl_vector *maxDERgsl = gsl_vector_alloc(vectorinDER->size);
 	gsl_vector *index_maxDERgsl = gsl_vector_alloc(vectorinDER->size);
 
-	gsl_vector *Lbgsl = gsl_vector_alloc(vectorinDER->size);	    // If there is no free-pulses segments longer than Lb=>
+	gsl_vector *Lbgsl = gsl_vector_alloc(vectorinDER->size);	// If there is no free-pulses segments longer than Lb=>
 	gsl_vector_set_all(Lbgsl,lb);                                   // segments shorter than Lb will be useed and its length (< Lb)
 	                                                                // must be used instead Lb in RS_filter
 	gsl_vector *Bgsl;
 
 	gsl_vector_set_zero(*quality);
-	gsl_vector_set_zero(*energy);									// Estimated energy of the single pulses
-																	// In order to choose the proper pulse template to calculate
-																	// the adjusted derivative and to fill in the Energy column
-		                                                            // in the output FITS file
+	gsl_vector_set_zero(*energy);					// Estimated energy of the single pulses
+									// In order to choose the proper pulse template to calculate
+									// the adjusted derivative and to fill in the Energy column
+		                                                        // in the output FITS file
 
 	// First step to look for single pulses
 	if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*taufall*scalefactor), &thresholdmediankappa))
 	{
-	    message = "Cannot run medianKappaClipping looking for single pulses";
-	    EP_PRINT_ERROR(message,EPFAIL);
+		message = "Cannot run medianKappaClipping looking for single pulses";
+		EP_PRINT_ERROR(message,EPFAIL);
 	}
 	*threshold = thresholdmediankappa;
 
 	if (findTstartNoise (100,vectorinDER, thresholdmediankappa, samplesup, 1, samplingRate, nPulses, &pulseFound, tstart, quality, &maxDERgsl, &index_maxDERgsl))
 	{
-	  message = "Cannot run findTstart with two rows in models";
-	  EP_PRINT_ERROR(message,EPFAIL);
+		message = "Cannot run findTstart with two rows in models";
+		EP_PRINT_ERROR(message,EPFAIL);
 	}
 
-	/*for (int i=0;i<*nPulses;i++)
-	{
-		gsl_vector_set(newPulsesgsl,i,1);
-	}*/
-
-	//if ((opmode == 0) && (*nPulses != 0))
 	if (*nPulses != 0)
 	{
 		if (getB(vectorin, *tstart, *nPulses, &Lbgsl, sizepulsebins, &Bgsl))
 		{
-		    message = "Cannot run getB routine with opmode=0 & nPulses != 0";
-		    EP_PRINT_ERROR(message,EPFAIL);
+			message = "Cannot run getB routine with opmode=0 & nPulses != 0";
+			EP_PRINT_ERROR(message,EPFAIL);
 		}
 		double energyaux = gsl_vector_get(*energy,0);
 		for (int i=0;i<*nPulses;i++)
@@ -1767,57 +1655,63 @@ int findPulsesNoise
 			{
 				if (getPulseHeight(vectorin, gsl_vector_get(*tstart,i), gsl_vector_get(*tstart,i+1), 0, lrs, gsl_vector_get(Lbgsl,i), gsl_vector_get(Bgsl,i), sizepulsebins, &energyaux))
 				{
-				    message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is not the last pulse";
-				    EP_PRINT_ERROR(message,EPFAIL);
+					message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is not the last pulse";
+					EP_PRINT_ERROR(message,EPFAIL);
 				}
 			}
 			else
 			{
 				if (getPulseHeight(vectorin, gsl_vector_get(*tstart,i), gsl_vector_get(*tstart,i+1), 1, lrs, gsl_vector_get(Lbgsl,i), gsl_vector_get(Bgsl,i), sizepulsebins, &energyaux))
 				{
-				    message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is the last pulse";
-				    EP_PRINT_ERROR(message,EPFAIL);
+					message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is the last pulse";
+					EP_PRINT_ERROR(message,EPFAIL);
 				}
 			}
 			gsl_vector_set(*energy,i,energyaux);
 		}
 	}
 
-	// Free allocate of GSL vectors
+	// Free allocated GSL vectors
 	gsl_vector_free(maxDERgsl);
 	gsl_vector_free(index_maxDERgsl);
 	gsl_vector_free(Lbgsl);
 
 	return(EPOK);
 }
+/*xxxx end of SECTION 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
-int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp, int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl)
+
+/***** SECTION 10 ************************************************************
+* findTstartNoise function: 
+* 
+****************************************************************************/
+int findTstartNoise(int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp, int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl)
 {
 	// Declare variables
 	string message="";
 	int szRw = der->size;		 // Size of segment of process
 	*numberPulses = 0;
 	*thereIsPulse = 0;
-	int i = 0;					 // To go through the elements of a vector
+	int i = 0;			 // To go through the elements of a vector
 	bool prevPulse = false;		 // false: It looks for nSamplesUp consecutive samples over the threshold
-	                             // true: It looks for nSamplesUp consecutive samples below the threshold
-	int cntDown = 0;			 // To taking into account how many consecutive samples are down the threshold
-	int cntUp = 0;				 // To taking into account how many consecutive samples are over the threshold
-	int possibleTstart;			 // To store the first of the nSamplesUp consecutive samples over the threshold
-	int possibleTend;			 // To store the first of the nSamplesUp consecutive samples below the threshold
-	int maxDER_index;			 // Maximum of the derivative between tstartDER and tendDER
+	                                 // true: It looks for nSamplesUp consecutive samples below the threshold
+	int cntDown = 0;		 // To taking into account how many consecutive samples are down the threshold
+	int cntUp = 0;			 // To taking into account how many consecutive samples are over the threshold
+	int possibleTstart;		 // To store the first of the nSamplesUp consecutive samples over the threshold
+	int possibleTend;		 // To store the first of the nSamplesUp consecutive samples below the threshold
+	int maxDER_index;		 // Maximum of the derivative between tstartDER and tendDER
 	gsl_vector_view temp;		 // In order to handle with gsl_vector_view (subvectors)
 	bool lastPulse = true;
 	bool maxFound = false;
 
 	// Allocate GSL vectors
-	gsl_vector *tstartDER = gsl_vector_alloc(maxPulsesPerRecord);		// tstarts referred to the derivative
-	gsl_vector *tendDER = gsl_vector_alloc(maxPulsesPerRecord);		// tends referred to the derivative
+	gsl_vector *tstartDER = gsl_vector_alloc(maxPulsesPerRecord);	// tstarts referred to the derivative
+	gsl_vector *tendDER = gsl_vector_alloc(maxPulsesPerRecord);	// tends referred to the derivative
 	gsl_vector_set_zero(tendDER);
-	*tstartgsl = gsl_vector_alloc(maxPulsesPerRecord);				// tstarts referred to the not filtered event
+	*tstartgsl = gsl_vector_alloc(maxPulsesPerRecord);		// tstarts referred to the not filtered event
 	*flagTruncated = gsl_vector_alloc(maxPulsesPerRecord);
 	gsl_vector_set_zero(*flagTruncated);
-	*maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);			// Maximum of the first derivative
+	*maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);		// Maximum of the first derivative
 	gsl_vector_set_all(*maxDERgsl,-1E3);
 	*index_maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Index of the maximum of the first derivative
 
@@ -1838,8 +1732,8 @@ int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativet
 
 				if(maxFound==false)
 				{
-				    gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(der,i));
-				    gsl_vector_set(*index_maxDERgsl,*numberPulses,i);
+					gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(der,i));
+					gsl_vector_set(*index_maxDERgsl,*numberPulses,i);
 				}
 
 				if ((nSamplesUp == 1) || ((nSamplesUp != 1) && (i == szRw-2)))
@@ -1898,8 +1792,8 @@ int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativet
 		else if ((gsl_vector_get(der,i) > adaptativethreshold))
 		{
 			if (gsl_vector_get(der,i) > gsl_vector_get(*maxDERgsl,*numberPulses-1) &&
-					(gsl_vector_get(der,i) > gsl_vector_get(der,i-1)) &&
-					(maxFound == false))
+				(gsl_vector_get(der,i) > gsl_vector_get(der,i-1)) &&
+				(maxFound == false))
 			{
 				if(((gsl_vector_get(der,i)-gsl_vector_get(der,i-1)) <
 				      0.5*(gsl_vector_get(der,i-1)-gsl_vector_get(der,i-2))) && i>1)
@@ -1966,3 +1860,4 @@ int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativet
 
 	return (EPOK);
 }
+/*xxxx end of SECTION 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

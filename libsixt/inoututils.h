@@ -14,35 +14,23 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  Trigger has been developed by the INSTITUTO DE FISICA DE 
+   Copyright 2014:  INOUTUTILS has been developed by the INSTITUTO DE FISICA DE 
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
-   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01 and
-   ESP2013-48637-C2-1-P.
+   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
+   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
 /***********************************************************************
-*                      INOUTUTILS    			                      
+*                      INOUTUTILS
+*
+*  File:       inoututils.h
+*  Developers: Beatriz Cobo
+* 	       cobo@ifca.unican.es
+*              IFCA
+*              Maite Ceballos
+*              ceballos@ifca.unican.es
+*              IFCA
 *                                                                     
-*  File:      inoututils.h
-*  Developer: Beatriz Cobo Martín
-* 			  cobo@ifca.unican.es
-*             IFCA
-*             Irene González Pérez
-*             José Ramón Rodón Ortiz
-*                                                                    
-*  Revision History:                                                  
-*                                                                       
-*  version 1.0.0: 21/09/06     	First version   
-*  version 1.0.1: 03/04/08		Changing function toGslVector: 
-* 								The input parameter "type "had been include. 
-* 								Type includes the kind of datas of the buffer.  
-*  version 1.4.0: 16/09/08		Modify the function "writeFitsSimple2" and "int writeFitsComplex2" 
-* 								Adding funcion called "writeLog" to processe of the each level message of log file. 
-*  version 	1.6.0	06/09/08	Adding new library "stdlib"
-*  29/03/11 Updated .h
-*  08/07/14	Free of PIL and RIL
-*           New EPOK
-*           'writeLog' modified
 ***********************************************************************/
 
 #ifndef INOUTUTILS_
@@ -51,6 +39,8 @@
 // Utils module
 
 	#include "genutils.h"
+	
+	using namespace std;
 
 	struct IOData
 	{
@@ -86,7 +76,6 @@
 
 	int readFitsSimple(IOData obj, gsl_vector **result);
 	int readFitsComplex(IOData obj, gsl_matrix **result);
-	int readFitsImage(IOData obj, gsl_matrix **result);
 
 	int writeFitsSimple (IOData obj,gsl_vector *vector);
 	int writeFitsComplex(IOData obj, gsl_matrix *matrix);
@@ -98,7 +87,5 @@
 	int fromGslMatrix(void **buffer, gsl_matrix **matrix, int type);
 
 	int interactivePars(inparam *taskPars, int np, string task);
-
-using namespace std;
 
 #endif /*INOUTUTILS_*/
