@@ -80,10 +80,9 @@ MAP OF SECTIONS IN THIS FILE:
 * - LrsT: Running sum length for the RS raw energy estimation (seconds)
 * - LbT: Baseline averaging length for the RS raw energy estimation (seconds)
 * - noise_file: Noise file
-* - pixel_type: Pixel Type: SPA, LPA1, LPA2 or LPA3
 * - filter_domain: Filtering Domain: Time(T) or Frequency(F)
 * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline)
-* - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA
+* - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA
 * - lagsornot: Lags (1) or no lags (0)
 * - ofiter: Iterate (1) or not iterate (0)
 * - oflib: Work or not with a library with optimal filters (1/0)
@@ -108,7 +107,7 @@ MAP OF SECTIONS IN THIS FILE:
 extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, fitsfile *fptr,
 		char* const library_file, char* const event_file, double tauFall, int pulse_length, double scaleFactor, double samplesUp,
 		double nSgms, int mode, double LrsT, double LbT, char* const noise_file,
-		char* pixel_type, char* filter_domain, char* filter_method, char* energy_method, int lagsornot, int ofiter, char oflib, 
+		char* filter_domain, char* filter_method, char* energy_method, int lagsornot, int ofiter, char oflib, 
 		char* ofinterp, char* oflength_strategy, int oflength,
 		double monoenergy, int interm, char* const detectFile, char* const filterFile,
 		char clobber, int maxPulsesPerRecord, double SaturationValue,
@@ -165,7 +164,8 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	// Load NoiseSpec structure
 	reconstruct_init->noise_spectrum = NULL;
 	if ((mode == 0) || 
-		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) && (oflib == 0) 
+		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0) 
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) 
 		&& (mode == 1)) 
 		|| ((mode == 1) && (strcmp(energy_method,"WEIGHT") == 0))) 
 	  
@@ -210,7 +210,6 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	reconstruct_init->LrsT		= LrsT;
 	reconstruct_init->LbT		= LbT;
 	reconstruct_init->monoenergy 	= monoenergy;
-	strcpy(reconstruct_init->PixelType,pixel_type);
 	strcpy(reconstruct_init->FilterDomain,filter_domain);
 	strcpy(reconstruct_init->FilterMethod,filter_method);
 	strcpy(reconstruct_init->EnergyMethod,energy_method);
@@ -457,7 +456,6 @@ extern "C" ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status)
 	reconstruct_init->monoenergy = 0;
 	reconstruct_init->LrsT = 0;
 	reconstruct_init->LbT = 0;
-	strcpy(reconstruct_init->PixelType,"");
 	strcpy(reconstruct_init->FilterDomain,"");
 	strcpy(reconstruct_init->FilterMethod,"");
 	strcpy(reconstruct_init->EnergyMethod,"");
@@ -583,7 +581,7 @@ extern "C" void freeOptimalFilterSIRENA(OptimalFilterSIRENA* OFilterColl)
 * Parameters:
 * - filename: File with library information
 * - mode: Calibration run (0) or energy reconstruction run (1)
-* - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA
+* - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA
 * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline)
 * - oflib: Work or not with a library with optimal filters (1/0)
 * - ofinterp: Optimal Filter by using the Matched Filter or the DAB as matched filter (MF/DAB) 
@@ -645,8 +643,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 	}
 	   
 	if ((mode == 1) && 
-		(((strcmp(energy_method,"OPTFILT") == 0)|| (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-		&& (oflib == 0)))
+		(((strcmp(energy_method,"OPTFILT") == 0)|| (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0) 
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0)))
 	{
 		if (ntemplates == 1)
 		{	
@@ -687,8 +685,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 	}
 		
 	if ((mode == 0) || 
-		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-		&& (oflib == 0) && (strcmp(*ofinterp,"MF") == 0))) 
+		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0))) 
 	{
 		strcpy(column_name,"MF");
 		if (fits_get_colnum(fptr, CASEINSEN,column_name, &mfilter_colnum, status))
@@ -700,8 +698,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 	}
 
 	if ((mode == 0) || 
-		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-		&& (oflib == 1) && (strcmp(*ofinterp,"MF") == 0))) 
+		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 1) && (strcmp(*ofinterp,"MF") == 0))) 
 	{
 		strcpy(column_name,"OF");
 		if(fits_get_colnum(fptr, CASEINSEN,column_name, &ofilter_colnum, status))
@@ -721,8 +719,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 		}
 	}
 	
-	if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-	  && (oflib == 1) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
+	if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 1) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
 	{
 		strcpy(column_name,"OFAB");
 		if (fits_get_colnum(fptr, CASEINSEN,column_name, &ofilter_colnumab, status))
@@ -780,8 +778,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 	// Get mfilter duration
 	int mfilter_duration;
 	if ((mode == 0) || 
-		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-		&& (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
+		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+		|| (strcmp(energy_method,"I2RFITTED") == 0))&& (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
 	{
 		if (fits_read_tdim(fptr, mfilter_colnum, 1, &naxis, &naxes, status))
 		{
@@ -854,8 +852,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 	gsl_matrix *matrixAux_MF = NULL;
 	gsl_matrix *matrixAux_MFB0 = NULL;
 	if ((mode == 0) || 
-		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) && 
-		(oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
+		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0) 
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
 	{
 		if ((mode == 0) || (strcmp(filter_method,"F0") == 0))
 		{
@@ -884,8 +882,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 	int ofilter_duration;
 	gsl_matrix *matrixAux_OF = NULL;
 	if ((mode == 0) || 
-		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-		&& (oflib == 1) && (strcmp(*ofinterp,"MF") == 0)))
+		(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 1) && (strcmp(*ofinterp,"MF") == 0)))
 	{
 		// Get ofilter duration
 		if (fits_read_tdim(fptr, ofilter_colnum, 1, &naxis, &naxes, status))
@@ -917,8 +915,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 		}
 	}
 
-	if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-		&& (oflib == 1) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
+	if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+		|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 1) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
 	{
 		// Get ofilter duration
 		if (fits_read_tdim(fptr, ofilter_colnumab, 1, &naxis, &naxes, status))
@@ -1117,8 +1115,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 		}
 	}
 		
-	if ((mode == 1) && ((strcmp(energy_method,"WEIGHTN") == 0) || (((strcmp(energy_method,"OPTFILT") == 0)|| (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-		&& (oflib == 0) && (strcmp(*ofinterp,"DAB") == 0))) || ((mode == 0) && (ntemplates >1)))
+	if ((mode == 1) && ((strcmp(energy_method,"WEIGHTN") == 0) || (((strcmp(energy_method,"OPTFILT") == 0)|| (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0)
+	        || (strcmp(energy_method,"I2RNOL") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"DAB") == 0))) || ((mode == 0) && (ntemplates >1)))
 	{
 		if (ntemplates == 1)
 		{
@@ -1175,8 +1173,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 		gsl_matrix_get_row(library_collection->pulse_templates[it].ptemplate,matrixAux_PULSE,it);
 		gsl_matrix_get_row(library_collection->pulse_templates_B0[it].ptemplate,matrixAux_PULSEB0,it);
 		if ((mode == 0) || 
-			(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-			&& (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
+			(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+			|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
 		{
 			if ((mode == 0) || (strcmp(filter_method,"F0") == 0)) 
 			{
@@ -1188,8 +1186,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 			}
 		}
 		
-		if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) && 
-			(oflib == 0) && (strcmp(*ofinterp,"DAB") == 0))
+		if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+		        || (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"DAB") == 0))
 		{
 			if ((mode == 1)  && (it < ntemplates-1))
 			{
@@ -1199,8 +1197,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 		}
 
 		if ((mode == 0) || 
-			(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISBNOL") == 0)) 
-			&& (oflib == 1) && (strcmp(*ofinterp,"MF") == 0)))
+			(((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+			|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 1) && (strcmp(*ofinterp,"MF") == 0)))
 		{
 			// It is not necessary to check the allocation because 'ofilter_duration' has been checked previously
 			library_collection->optimal_filters[it].ofilter      	  = gsl_vector_alloc(ofilter_duration);
@@ -1218,8 +1216,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 			gsl_matrix_get_row(library_collection->optimal_filtersab[it].ofilter,matrixAux_OFAB,it);
 		}
 
-		if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-			&& (oflib == 1) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
+		if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+			|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 1) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
 		{
 			// It is not necessary to check the allocation because 'ofilter_duration' has been checked previously
 			library_collection->optimal_filters[it].ofilter      		= gsl_vector_alloc(ofilter_duration);
@@ -1229,8 +1227,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 			gsl_matrix_get_row(library_collection->optimal_filters[it].ofilter,matrixAux_OF,it);
 		}
 		
-		if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)) 
-			&& (oflib == 0) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
+		if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
+			|| (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"DAB") == 0) && (mode == 1))
 		{
 			if ((mode == 1)  && (it < ntemplates-1))
 			{
@@ -1342,7 +1340,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, ch
 * Parameters:
 * - filename: File name with noise
 * - mode: Calibration run (0) or energy reconstruction run (1)
-* - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA
+* - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA
 * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline)
 * - status: Input/output status
 ******************************************************************************/
@@ -1381,15 +1379,16 @@ NoiseSpec* getNoiseSpec(const char* const filename, int mode, char *energy_metho
 	
 	if ((mode == 0) ||
                 ((mode == 1) && (strcmp(filter_method,"B0") == 0) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0)))
-                || ((mode == 1) && ((strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0)))
+                || ((mode == 1) && ((strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
 	        || ((mode == 1) && (strcmp(energy_method,"WEIGHT") == 0)))
 	{
-		if ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"WEIGHT") == 0))							strcpy(keyname,"BASELINE");
-		else if ((strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RBISALL") == 0) || (strcmp(energy_method,"I2RBISNOL") == 0))	strcpy(keyname,"BASELINR");
-	  
+		//if ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"WEIGHT") == 0))							strcpy(keyname,"BASELINE");
+		//else if ((strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0))	strcpy(keyname,"BASELINR");
+		strcpy(keyname,"BASELINE");
+		
 		if (fits_read_key(fptr,TDOUBLE,keyname, &noise_spectrum->baseline,NULL,status))
 		{
-			EP_PRINT_ERROR("Cannot read keyword BASELINE/BASELINR",*status);
+			EP_PRINT_ERROR("Cannot read keyword BASELINE",*status);
 			*status=EPFAIL;return(noise_spectrum);
 		}
 	}

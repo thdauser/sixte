@@ -74,7 +74,7 @@ int tesreconstruction_main() {
     }else{
 	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile,
 		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, 
-		par.mode, par.LrsT, par.LbT, par.NoiseFile, par.PixelType, par.FilterDomain,
+		par.mode, par.LrsT, par.LbT, par.NoiseFile, par.FilterDomain,
 		par.FilterMethod, par.EnergyMethod, par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
 		par.monoenergy, par.intermediate, par.detectFile,
 		par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
@@ -148,7 +148,7 @@ int tesreconstruction_main() {
 	    	status=1;
 	        CHECK_STATUS_BREAK(status);
 	    }*/
-	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RBISALL") == 0) || (strcmp(par.EnergyMethod,"I2RBISNOL") == 0))
+	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) || (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
 	    {
 	    	strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
 	    }
@@ -354,10 +354,6 @@ int getpar(struct Parameters* const par)
 	status=ape_trad_query_string("NoiseFile", &sbuffer);
 	strcpy(par->NoiseFile, sbuffer);
 	free(sbuffer);
-		
-	status=ape_trad_query_string("PixelType", &sbuffer);
-	strcpy(par->PixelType, sbuffer);
-	free(sbuffer);
 	
 	status=ape_trad_query_string("FilterDomain", &sbuffer);
 	strcpy(par->FilterDomain, sbuffer);
@@ -418,12 +414,6 @@ int getpar(struct Parameters* const par)
 	//assert(&par->monoenergy > 0);
 	MyAssert(&par->monoenergy > 0, "monoenergy must be greater than 0");
 	
-	//assert((strcmp(par->PixelType,"SPA") == 0) || (strcmp(par->PixelType,"LPA1") == 0) || (strcmp(par->PixelType,"LPA2") == 0) ||
-	//	(strcmp(par->PixelType,"LPA3") == 0));
-	MyAssert((strcmp(par->PixelType,"SPA") == 0) || (strcmp(par->PixelType,"LPA1") == 0) || (strcmp(par->PixelType,"LPA2") == 0) ||
-		(strcmp(par->PixelType,"LPA3") == 0),"PixelType must be SPA, LPA1, LPA2 or LPA3");
-
-	
 	//assert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0));
 	MyAssert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0), "FilterDomain must be T or F");
 	
@@ -431,11 +421,11 @@ int getpar(struct Parameters* const par)
 	MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0),"FilterMethod must be F0 or B0");
 	
 	//assert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
-	//	(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBISALL") == 0) || (strcmp(par->EnergyMethod,"I2RBISNOL") == 0) || 
+	//	(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RALL") == 0) || (strcmp(par->EnergyMethod,"I2RNOL") == 0) || 
 	//	(strcmp(par->EnergyMethod,"PCA") == 0));
 	MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
-		(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBISALL") == 0) || (strcmp(par->EnergyMethod,"I2RBISNOL") == 0) || 
-		(strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA");
+		(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RALL") == 0) || (strcmp(par->EnergyMethod,"I2RNOL") == 0) || 
+		(strcmp(par->EnergyMethod,"I2RFITTED") == 0) || (strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA");
 	
 	//assert((par->LagsOrNot ==0) || (par->LagsOrNot ==1));
 	MyAssert((par->LagsOrNot ==0) || (par->LagsOrNot ==1), "LagsOrNot must me 0 or 1");
@@ -470,10 +460,10 @@ int getpar(struct Parameters* const par)
 	//assert(&par->OFLength > 0);
 	MyAssert(&par->OFLength > 0, "OFLength must be greater than 0");
 	
-	/*if (((strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RBISALL") == 0) || (strcmp(par->EnergyMethod,"I2RBISNOL") == 0)) && (par->tstartPulse1 == 0))
+	/*if (((strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RALL") == 0) || (strcmp(par->EnergyMethod,"I2RNOL") == 0)) && (par->tstartPulse1 == 0))
 	{
 		printf("%s %d %s","Error",status,"\n");
-		SIXT_ERROR("parameter error: EnergyMethod=I2R/I2RBISALL/I2RBISNOL and tstartPulse1=0 (If I2R/I2RBISALL/I2RBISNOL, tstartPulsex must be always provided)");
+		SIXT_ERROR("parameter error: EnergyMethod=I2R/I2RALL/I2RNOL and tstartPulse1=0 (If I2R/I2RALL/I2RNOL, tstartPulsex must be always provided)");
 		return(EXIT_FAILURE);
 	}*/	
 	

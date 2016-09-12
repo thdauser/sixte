@@ -96,14 +96,14 @@ MAP OF SECTIONS IN THIS FILE:
 * - Create intermediate output FITS file if required ('createDetectFile')
 * - Filter and differentiate the 'models' of the library (only for the first record in PRODUCTION 'mode=1') ('filderLibrary')
 * - Store the input record in 'invector' ('loadRecord')
-* - Convert I into R if 'EnergyMethod' = I2R or I2RBISALL or I2RBISNOL ('convertI2R')
+* - Convert I into R if 'EnergyMethod' = I2R or I2RALL or I2RNOL or I2RFITTED ('convertI2R')
 * - Process each record ('proceRecord')
 * 	- Low-pass filter and differentiate
 * 	- Find pulses
 * 	- Load the found pulses data in the input/output 'foundPulses' structure
 * 	- Write test info in intermediate output FITS file if 'reconstruct_init->intermediate'=1 ('writeTestInfo')
 * 	- Write pulses info in intermediate output FITS file if 'reconstruct_init->intermediate'=1 ('writePulses')
-* - From this point forward, I2R, I2RBISALL and I2RBISNOL are completely equivalent to OPTFILT
+* - From this point forward, I2R, I2RALL, I2RNOL and I2RFITTED are completely equivalent to OPTFILT
 * - If last record in CALIBRATION ('mode'=0):
 * 	- 'calculateTemplate' (and 'weightMatrix')
 * 	- 'writeLibrary'
@@ -194,11 +194,12 @@ void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection 
 	}
 	eventsz = invector->size;	// Just in case the last record has been filled in with 0's => Re-allocate invector
 
-	// Convert I into R if 'EnergyMethod' = I2R or I2RBISALL or I2RBISNOL
+	// Convert I into R if 'EnergyMethod' = I2R or I2RALL or I2RNOL or I2RFITTED
 	// It is not necessary to check the allocation because 'invector' size must be > 0
 	gsl_vector *invectorWithoutConvert2R = gsl_vector_alloc(invector->size);
 	gsl_vector_memcpy(invectorWithoutConvert2R,invector);
-	if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RBISALL") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RBISNOL") == 0))
+	if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RALL") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RNOL") == 0)
+		|| (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0))
 	{
 		if (convertI2R(reconstruct_init, &record, &invector))
 		{
@@ -214,9 +215,10 @@ void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection 
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 	gsl_vector_free(invectorWithoutConvert2R);
-	if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RBISALL") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RBISNOL") == 0))
+	if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RALL") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RNOL") == 0)
+		|| (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0))
 	{
-		strcpy((*reconstruct_init)->EnergyMethod,"OPTFILT"); // From this point forward, I2R, I2RBISALL and I2RBISNOL are completely equivalent to OPTFILT
+		strcpy((*reconstruct_init)->EnergyMethod,"OPTFILT"); // From this point forward, I2R, I2RALL, I2RNOL and I2RFITTED are completely equivalent to OPTFILT
 	}
 	
 	if (((*reconstruct_init)->intermediate == 1) && (lastRecord == 1))
@@ -843,11 +845,6 @@ int createLibrary(ReconstructInitSIRENA* reconstruct_init, bool *appendToLibrary
 		keyvalstr[999]='\0';
 		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
 
-		strproc=string("PixelType = ") + reconstruct_init->PixelType;
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
 		strproc=string("FilterDomain = ") + reconstruct_init->FilterDomain;
 		strncpy(keyvalstr,strproc.c_str(),999);
 		keyvalstr[999]='\0';
@@ -1191,11 +1188,6 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, int nRecord, doubl
 
 		char str_mode[125];		snprintf(str_mode,125,"%d",reconstruct_init->mode);
 		strhistory = string("mode = ") + string(str_mode);
-		strncpy(keyvalstr,strhistory.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		strhistory=string("PixelType = ") + reconstruct_init->PixelType;
 		strncpy(keyvalstr,strhistory.c_str(),999);
 		keyvalstr[999]='\0';
 		fits_write_key(*dtcObject,TSTRING,keyname,keyvalstr,NULL,&status);
@@ -1656,7 +1648,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	// // It is not necessary to check the allocation because the allocation of 'recordDERIVATIVE' has been checked previously
 	gsl_vector *recordDERIVATIVEOriginal = gsl_vector_alloc(recordDERIVATIVE->size);
 	gsl_vector_memcpy(recordDERIVATIVEOriginal,recordDERIVATIVE);
-
+	
 	// Find the events (pulses) in the record
 	if ((*reconstruct_init)->mode == 1)	// In PRODUCTION mode
 	{
@@ -1665,7 +1657,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		int flagTruncated;
 		int tstartProvided;
 		
-		if (InitialTriggering (recordDERIVATIVE, samplesUp, nSgms,
+		if (InitialTriggering (recordDERIVATIVE, nSgms,
 			tauFALL, scaleFactor, samprate, stopCriteriaMKC, kappaMKC,
 			&triggerCondition, &tstartFirstEvent, &flagTruncated,
 			&threshold, (*reconstruct_init)->tstartPulse1))
@@ -1676,7 +1668,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		
 		if (FindSecondaries ((*reconstruct_init)->maxPulsesPerRecord,
 			recordDERIVATIVE, threshold,
-			samplesUp,(*reconstruct_init),
+			(*reconstruct_init),
 			tstartFirstEvent,
 			&numPulses,&tstartgsl,&qualitygsl, &maxDERgsl,&samp1DERgsl))
 		{
@@ -3151,10 +3143,6 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double samprate, doubl
                 strcpy(keyvalstr,strproc.c_str());
                 fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
                
-                strproc=string("PixelType = ") + reconstruct_init->PixelType;
-                strcpy(keyvalstr,strproc.c_str());
-                fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-               
                 strproc=string("FilterDomain = ") + reconstruct_init->FilterDomain;
                 strcpy(keyvalstr,strproc.c_str());
                 fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
@@ -4444,16 +4432,17 @@ int vector2matrix (gsl_vector *vectorin, gsl_matrix **matrixout)
 * 
 * - Read R0, I0_START=Ibias, ADUCNV and IMIN from the 'RecordFile' by using the pointer '(*reconstruct_init)->record_file_fptr'
 * - Conversion according to 'EnergyMethod'=I2R
-* - Conversion according to 'EnergyMethod'=I2RBISALL
+* - Conversion according to 'EnergyMethod'=I2RALL
 * 	- Read also RL, LFILTER and TTR from the 'RecordFile'
-* - Conversion according to 'EnergyMethod'=I2RBISNOL
-*       - I2RBISALL neglecting the circuit inductance
-* - Because in 'runEnergy' the record (TesRecord) is used => The I2R, I2RBISALL or I2RBISNOL transformed record has to be used
+* - Conversion according to 'EnergyMethod'=I2RNOL
+*       - I2RALL neglecting the circuit inductance
+* - Conversion according to 'EnergyMethod'=I2RFITTED
+* - Because in 'runEnergy' the record (TesRecord) is used => The I2R, I2RALL, I2RNOL or I2RFITTED transformed record has to be used
 * 
 * Parameters:
 * - reconstruct_init: Member of 'ReconstructInitSIRENA' structure to initialize the reconstruction parameters (pointer and values)
 * - record: Structure containing the input record
-* - invector: Input current (ADC) vector & output resistance (I2R, I2RBISALL or I2RBISNOL) vector
+* - invector: Input current (ADC) vector & output resistance (I2R, I2RALL or I2RNOL) vector
 ******************************************************************************/
 int convertI2R (ReconstructInitSIRENA** reconstruct_init, TesRecord **record, gsl_vector **invector)
 {
@@ -4518,7 +4507,7 @@ int convertI2R (ReconstructInitSIRENA** reconstruct_init, TesRecord **record, gs
 		gsl_vector_add_constant(*invector,R0); 			// invector = R0 - R0*(DeltaI/Ibias)/(1+DeltaI/Ibias)
 		gsl_vector_free(invector_modified);
 	}
-	else if (strcmp((*reconstruct_init)->EnergyMethod,"I2RBISALL") == 0)
+	else if (strcmp((*reconstruct_init)->EnergyMethod,"I2RALL") == 0)
 	{
 		double RL;						// Shunt/load resistor value [oHM]
 		double TTR;						// Transformer Turns Ratio
@@ -4557,7 +4546,7 @@ int convertI2R (ReconstructInitSIRENA** reconstruct_init, TesRecord **record, gs
 		gsl_vector_memcpy(dI,I);
 		if (differentiate (&dI, dI->size))
 		{
-			message = "Cannot run routine differentiate for convertI2R and I2RBISALL";
+			message = "Cannot run routine differentiate for convertI2R and I2RALL";
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 
@@ -4575,7 +4564,7 @@ int convertI2R (ReconstructInitSIRENA** reconstruct_init, TesRecord **record, gs
 		gsl_vector_free(dI);
 		gsl_vector_free(invector_modified);
 	}
-	else if (strcmp((*reconstruct_init)->EnergyMethod,"I2RBISNOL") == 0)
+	else if (strcmp((*reconstruct_init)->EnergyMethod,"I2RNOL") == 0)
 	{
 		double RL;					// Shunt/load resistor value [oHM]
 		double V0;
@@ -4587,7 +4576,7 @@ int convertI2R (ReconstructInitSIRENA** reconstruct_init, TesRecord **record, gs
 		fits_read_key((*reconstruct_init)->record_file_fptr,TDOUBLE,keyname, &RL,NULL,&status);
 		if (status != 0)
 		{
-			message = "Cannot read keyword in convertI2R and I2RBISNOL";
+			message = "Cannot read keyword in convertI2R and I2RNOL";
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
 		
@@ -4610,8 +4599,46 @@ int convertI2R (ReconstructInitSIRENA** reconstruct_init, TesRecord **record, gs
 		gsl_vector_free(I);
 		gsl_vector_free(invector_modified);
 	}
+	else if (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0)
+	{
+		double RL;					// Shunt/load resistor value [oHM]
+		double V0;
+		double Ifit = 45.3e-6; 				// Ifit = 45.3 uA
+		// It is not necessary to check the allocation beacuse 'invector' size must be > 0
+		gsl_vector *I = gsl_vector_alloc((*invector)->size);
+		gsl_vector *invector_modified = gsl_vector_alloc((*invector)->size);
+		gsl_vector *IfitIgsl = gsl_vector_alloc((*invector)->size);
+		
+		strcpy(keyname,"RL");
+		fits_read_key((*reconstruct_init)->record_file_fptr,TDOUBLE,keyname, &RL,NULL,&status);
+		if (status != 0)
+		{
+			message = "Cannot read keyword in convertI2R and I2RNOL";
+			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		}
+		
+		V0 = Ibias*(R0+RL);				// V0 = I0(R0+RL)
 
-	for (int i=0;i<(*invector)->size;i++)		     // Because in 'runEnergy' the record (TesRecord) is used => The I2R, I2RBISALL or I2RBISNOL transformed record has to be used
+		// I
+		gsl_vector_memcpy(invector_modified,*invector);
+		gsl_vector_scale(*invector,aducnv);             // invector = I(ADC)*ADUCNV
+		gsl_vector_add_constant(*invector,Imin);	// invector = I(ADC)*ADUCNV+Imin
+		gsl_vector_scale(*invector,-1.0); 		// invector = Ibias-(I(ADC)*ADUCNV+Imin)
+		gsl_vector_add_constant(*invector,Ibias);
+		gsl_vector_memcpy(I,*invector);
+
+		// R = V0/(Ifit+I)
+		gsl_vector_memcpy(IfitIgsl,I);
+		gsl_vector_add_constant(IfitIgsl,Ifit);		// Ifit+I
+		gsl_vector_set_all(*invector,V0);
+		gsl_vector_div(*invector,IfitIgsl);		// V0/(Ifit+I)
+		
+		gsl_vector_free(I);
+		gsl_vector_free(invector_modified);
+		gsl_vector_free(IfitIgsl);
+	}
+
+	for (int i=0;i<(*invector)->size;i++)		     // Because in 'runEnergy' the record (TesRecord) is used => The I2R, I2RALL, I2RNOL or I2RFITTED transformed record has to be used
 	{
 		(*record)->adc_double[i] = gsl_vector_get(*invector,i);
 	}
@@ -4765,7 +4792,7 @@ int filterByWavelets (ReconstructInitSIRENA* reconstruct_init, gsl_vector **inve
 * - For each pulse:
 * 	- Establish the pulse grade (HighRes=0, MidRes=1, LowRes=-1) and the optimal filter length
 * 	- Pulse: Load the proper piece of the record in 'pulse'
-* * 	- If 'EnergyMethod'= OPTFILT, I2R, I2RBISALL or I2RBISNOL:
+* * 	- If 'EnergyMethod'= OPTFILT, I2R, I2RALL, I2RNOL or I2RFITTED:
 * 	  If 'OPIter'=1, in the first iteration ('numiteration'=0) the values of 'maxDER' and 'maxDERs' are used in 'find_matchedfilter', 'find_matchedfilterDAB', 
 *         'find_optimalfilter' or 'find_optimalfilterDAB' getting the values of the 'energies' which straddle the 'maxDER' ('Ealpha' and 'Ebeta'). It will be more
 *         iterations if the calculated 'energy' is out of ['Ealpha','Ebeta']. If 'energy' is in ['Ealpha','Ebeta'] the iterative process stops.
@@ -4829,7 +4856,7 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 		runF0orB0val = 1;
 	}
 
-	// I2R, I2RBISALL or I2RBISNOL methods convert I into R at the beginnig and after that 'I2R', 'I2RBISALL' or 'I2RBISNOL' are equivalent to 'OPTFILT'
+	// I2R, I2RALL, I2RNOL or I2RFITTED methods convert I into R at the beginnig and after that 'I2R', 'I2RALL', 'I2RNOL' or 'I2RFITTED' are equivalent to 'OPTFILT'
 	int runEMethod;
 	if (strcmp((*reconstruct_init)->EnergyMethod,"OPTFILT") == 0)
 	{
@@ -6233,9 +6260,9 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
 
 /***** SECTION B7 ************************************************************
 * calculateEnergy function: This function calculates the energy of a pulse ('vector') depending on
-*                           the 'EnergyMethod' and the 'FilterDomain' basically (and 'OFInterp' if 'OPTFILT', 'I2R', 'I2RBISALL' or 'I2RBISNOL').
+*                           the 'EnergyMethod' and the 'FilterDomain' basically (and 'OFInterp' if 'OPTFILT', 'I2R', 'I2RALL', 'I2RNOL' or 'I2RFITTED').
 *
-* OPTFILT (= I2R =I2RBISALL =I2RBISNOL): Optimal filter = Wiener filter
+* OPTFILT (= I2R =I2RALL =I2RNOL =I2RFITTED): Optimal filter = Wiener filter
 *
 *   Once the filter template has been created ('filter' or 'filterFFT'), pulse height analysis is performed by aligning the template
 *   with a pulse and multiplying each point in the template by the corresponding point in the pulse. The sum of these products is the energy.
@@ -6319,8 +6346,9 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
 * - filterFFT: Optimal filter in frequency domain
 * - runEMethod: 'EnergyMethod' = OPTFILT => 'runEMethod' = 0
 * 		'EnergyMethod' = I2R => 'runEMethod' = 0
-* 		'EnergyMethod' = I2RBISALL => 'runEMethod' = 0
-* 		'EnergyMethod' = I2RBISNOL => 'runEMethod' = 0
+* 		'EnergyMethod' = I2RALL => 'runEMethod' = 0
+* 		'EnergyMethod' = I2RNOL => 'runEMethod' = 0
+* 		'EnergyMethod' = I2RFITTED => 'runEMethod' = 0
 * 		'EnergyMethod' = WEIGHT => 'runEMethod' = 1
 * 		'EnergyMethod' = WEIGHTN => 'runEMethod' = 2
 * - indexEalpha: Index of the energy lower than the energy of the pulse which is being analyzed
@@ -6352,7 +6380,7 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 	else
 	{*/
 		if (runEMethod == 0)
-		// OPTFILT	I2R or I2RBISALL or I2RBISNOL => OPTFILT
+		// OPTFILT	I2R or I2RALL or I2RNOL or I2RFITTED => OPTFILT
 		{
 			if (strcmp(reconstruct_init->OFInterp,"DAB") == 0)	// DAB
 			{
@@ -6577,6 +6605,12 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 			gsl_vector *Pab_short = gsl_vector_alloc(vector->size);
 			temp = gsl_vector_subvector(Pab,0,vector->size);
 			gsl_vector_memcpy(Pab_short,&temp.vector);
+			// To take into account templates WITHOUT baseline
+			/*gsl_vector *baselineNOISE = gsl_vector_alloc(vector->size);
+			gsl_vector_set_all(baselineNOISE,660.5756508315835);
+			gsl_vector_sub(Pab_short,baselineNOISE);
+			gsl_vector_free(baselineNOISE);*/
+			//
 			gsl_vector_sub(P_Pab,Pab_short);						// P-Pab
 			gsl_vector_free(Pab_short);
 			
@@ -6656,6 +6690,7 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 			cout<<"calculateEnergy1: "<<*calculatedEnergy<<endl;*/
 			
 			//cout<<"calculateEnergy: "<<*calculatedEnergy<<endl;
+			//cout<<"baseline: "<<gsl_vector_get(EB,1)<<endl;
 			
 			gsl_vector_free(Pab);
 			gsl_vector_free(P_Pab);

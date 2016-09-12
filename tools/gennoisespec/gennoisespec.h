@@ -100,7 +100,6 @@
 	double LbT;			// Baseline averaging length (in the RS filter case): T -> Time => Seconds
 	double Lrs;			// LrsT in samples
 	double Lb;			// LbT in samples
-	double baseline;
 
 	char nameLog[255];		// Output log file name
 	int verbosity;			// Verbosity level of the output log file
@@ -130,6 +129,10 @@
 
 	gsl_matrix *library;		// Not used. Necessary only in order to be used as input parameter in findPulses
 	gsl_matrix *models;		// Not used. Necessary only in order to be used as input parameter in findPulses
+	
+	int indexBaseline = 0;
+	gsl_vector *baseline;
+	gsl_vector *sigma;
 
 // OUTPUT FILE
 

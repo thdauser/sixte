@@ -81,7 +81,6 @@ MAP OF SECTIONS IN THIS FILE:
 * - pulse_length: Pulse length (samples)
 * - LrsT: Running sum length in seconds (only in notcreationlib mode)
 * - LbT: Baseline averaging length in seconds (only in notcreationlib mode)
-* - baseline: Baseline (ADC units)
 * - namelog: Output log file name
 * - verbosity: Verbosity level of the output log file
 * 
@@ -125,6 +124,11 @@ int main (int argc, char **argv)
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 	writeLog(fileRef,"Log", verbosity,"Into GENNOISESPEC task");
+	
+	baseline = gsl_vector_alloc(nintervals);
+	gsl_vector_set_all(baseline,-999.0);
+	sigma = gsl_vector_alloc(nintervals);
+	gsl_vector_set_all(sigma,-999.0);
 
 	// Open input FITS file
 	if (fits_open_file(&infileObject, infileName,0,&status))
@@ -368,6 +372,9 @@ int main (int argc, char **argv)
 	gsl_vector_free(startIntervalgsl);
 
 	gsl_matrix_free(noiseIntervals);
+	
+	gsl_vector_free(baseline);
+	gsl_vector_free(sigma);
 
 	// Close output FITS file
 	if (fits_close_file(gnoiseObject,&status))
@@ -416,7 +423,7 @@ int initModule(int argc, char **argv)
 
 	// Define GENNOISESPEC input parameters and assign values to variables
 	// Parameter definition and assignation of default values
-	const int npars = 16, npars1 = 17;
+	const int npars = 15, npars1 = 16;
 	inparam gennoisespecPars[npars];
 	int optidx =0, par=0, fst=0, ipar;
 	string message="";
@@ -514,33 +521,25 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[11].maxValReal = 1.E+50;
 	gennoisespecPars[11].ValReal = gennoisespecPars[11].defValReal;
 
-	gennoisespecPars[12].name = "baseline";
-	gennoisespecPars[12].description = "Baseline value (ADC units)";
-	gennoisespecPars[12].defValReal = 200.0;
-	gennoisespecPars[12].type = "double";
-	gennoisespecPars[12].minValReal = -1.E+50;
-	gennoisespecPars[12].maxValReal = 1.E+50;
-	gennoisespecPars[12].ValReal = gennoisespecPars[12].defValReal;
+	gennoisespecPars[12].name = "nameLog";
+	gennoisespecPars[12].description = "Output log file name";
+	gennoisespecPars[12].defValStr = "noise_log.txt";
+	gennoisespecPars[12].type = "char";
+	gennoisespecPars[12].ValStr = gennoisespecPars[12].defValStr;
 
-	gennoisespecPars[13].name = "nameLog";
-	gennoisespecPars[13].description = "Output log file name";
-	gennoisespecPars[13].defValStr = "noise_log.txt";
-	gennoisespecPars[13].type = "char";
-	gennoisespecPars[13].ValStr = gennoisespecPars[13].defValStr;
+	gennoisespecPars[13].name = "verbosity";
+	gennoisespecPars[13].description = "Verbosity level of the output log file (in [0,3])";
+	gennoisespecPars[13].defValInt = 3;
+	gennoisespecPars[13].type = "int";
+	gennoisespecPars[13].minValInt = 0;
+	gennoisespecPars[13].maxValInt = 3;
+	gennoisespecPars[13].ValInt = gennoisespecPars[13].defValInt;
 
-	gennoisespecPars[14].name = "verbosity";
-	gennoisespecPars[14].description = "Verbosity level of the output log file (in [0,3])";
-	gennoisespecPars[14].defValInt = 3;
-	gennoisespecPars[14].type = "int";
-	gennoisespecPars[14].minValInt = 0;
-	gennoisespecPars[14].maxValInt = 3;
-	gennoisespecPars[14].ValInt = gennoisespecPars[14].defValInt;
-
-	gennoisespecPars[15].name = "clobber";
-	gennoisespecPars[15].description = "Re-write output files if clobber=yes";
-	gennoisespecPars[15].defValStr = "no";
-	gennoisespecPars[15].type = "char";
-	gennoisespecPars[15].ValStr = gennoisespecPars[15].defValStr;
+	gennoisespecPars[14].name = "clobber";
+	gennoisespecPars[14].description = "Re-write output files if clobber=yes";
+	gennoisespecPars[14].defValStr = "no";
+	gennoisespecPars[14].type = "char";
+	gennoisespecPars[14].ValStr = gennoisespecPars[14].defValStr;
 	
 	// Define structure for command line options
 	static struct option long_options[npars1];
@@ -662,10 +661,6 @@ int initModule(int argc, char **argv)
 		{
 			LbT = gennoisespecPars[i].ValReal;
 		}
-		else if(gennoisespecPars[i].name == "baseline")
-		{
-			baseline = gennoisespecPars[i].ValReal;
-		}
 		else if(gennoisespecPars[i].name == "nameLog")
 		{
 			strcpy(nameLog,gennoisespecPars[i].ValStr.c_str());
@@ -778,9 +773,12 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	int pulseFound = 0;	// 0->The function findTstart has not found any pulse
 				// 1->The function findTstart has found at least one pulse
 
-	double baseline;
+	double baselineI;
 	double mean, sg; // To handle the pulse tails at the beginning of the record
 	int tail_duration;
+	
+	double baselineIntervalFreeOfPulses;
+	double sigmaIntervalFreeOfPulses;
 
 	// Auxiliary variables
 	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
@@ -854,14 +852,14 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		temp = gsl_vector_subvector(ioutgslNOTFIL,0,eventsz-(int)(pi*samprate*tauFALL*scaleFactor)-1);
 		cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
 		boxLength = (int) ((1/cutFreq) * samprate);
-		if (find_baseline(&temp.vector, kappaMKC, stopCriteriaMKC, boxLength,  &mean, &sg, &baseline))
+		if (find_baseline(&temp.vector, kappaMKC, stopCriteriaMKC, boxLength,  &mean, &sg, &baselineI))
 		{
 			message = "Cannot run find_baseline";
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
 		for (int j=0;j<eventsz;j++)
 		{
-			if (gsl_vector_get(ioutgslNOTFIL,j) > baseline+sg)	tail_duration = j;
+			if (gsl_vector_get(ioutgslNOTFIL,j) > baselineI+sg)	tail_duration = j;
 			else break;
 		}
 
@@ -936,10 +934,14 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 			gsl_vector_memcpy(EventSamples,&temp.vector);
 
 			// Baseline subtraction
+			findMeanSigma (EventSamples, &baselineIntervalFreeOfPulses, &sigmaIntervalFreeOfPulses);
 			gsl_vector *baselinegsl = gsl_vector_alloc(EventSamples->size);
-			gsl_vector_set_all(baselinegsl,-1.0*baseline);
+			gsl_vector_set_all(baselinegsl,-1.0*baselineIntervalFreeOfPulses);
 			gsl_vector_add(EventSamples,baselinegsl);
 			gsl_vector_free(baselinegsl);
+			gsl_vector_set(baseline,indexBaseline,baselineIntervalFreeOfPulses);
+			gsl_vector_set(sigma,indexBaseline,sigmaIntervalFreeOfPulses);
+			indexBaseline++;
 
 			gsl_matrix_set_row(noiseIntervals,NumMeanSamples,EventSamples);
 
@@ -1365,6 +1367,7 @@ int writeTPSreprExten ()
 {
 	string message = "";
 	int status = EPOK;
+	int extver=0;
 	double SelectedTimeDuration;
 
 	// Allocate GSL vectors
@@ -1443,6 +1446,26 @@ int writeTPSreprExten ()
 	{
 		message = "Cannot run routine writeFitsSimple for sigmacsdgsl";
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+	}
+		
+	strcpy(keyname,"BASELINE");
+	double sumBaseline;
+	gsl_vector_Sumsubvector(baseline, 0, nintervals, &sumBaseline);
+	double keyvaldouble = sumBaseline/nintervals;
+	if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+	
+	strcpy(keyname,"NOISESTD");
+	double sumSigma;
+	gsl_vector_Sumsubvector(sigma, 0, nintervals, &sumSigma);
+	keyvaldouble = sumSigma/nintervals;
+	if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
 	obj.inObject = gnoiseObject;		
@@ -1560,9 +1583,13 @@ int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int b
 	*baseline = mean2;
 	*mean = mean2;
 	*sigma = sg2;
+	//cout<<"baseline: "<<*baseline<<endl;
+	//cout<<"sigma: "<<*sigma<<endl;
 	
-	//double mean, sigma;
-	//findMeanSigma (invector, &mean, &sigma);
+	/*double meanX, sigmaX;
+	findMeanSigma (invector, &meanX, &sigmaX);
+	cout<<"meanX: "<<meanX<<endl;
+	cout<<"sigmaX: "<<sigmaX<<endl;*/
 
 	//*baseline = median;
 	//*baseline = mean;

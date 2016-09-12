@@ -331,9 +331,6 @@ typedef struct
 	/** Noise spectrum **/
 	NoiseSpec* noise_spectrum;
 
-	/** Pixel Type: SPA, LPA1, LPA2, LPA3 **/
-	char PixelType[5];
-
 	/** Filtering Domain: T (Time) or F (Frequency) **/
 	char FilterDomain[2];
 
@@ -412,7 +409,7 @@ extern "C"
 
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, fitsfile *fptr, char* const library_file,
 	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, 
-	int mode, double LrsT, double LbT, char* const noise_file, char* pixel_type, char* filter_domain,
+	int mode, double LrsT, double LbT, char* const noise_file, char* filter_domain,
 	char* filter_method, char* energy_method, int lagsornot, int ofiter, char oflib, char* ofinterp, char* oflength_strategy, int oflength,
 	double monoenergy, int interm, char* detectFile, char* filterFile, char clobber, int maxPulsesPerRecord, double SaturationValue,
 	int tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status);

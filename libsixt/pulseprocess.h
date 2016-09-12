@@ -85,37 +85,26 @@
 		double stopcriteriamkc,
 		double kappamkc);
 
-	int findPulsesPROD
+	int findTstartCAL
 	(
-		gsl_vector *vectorinDER,
-		gsl_vector **tstart,
-		gsl_vector **quality,
-		gsl_vector **maxDERgsl,
+		int maxPulsesPerRecord,
 
-		int *nPulses,
-		double *threshold,
-
-		double taufall,
-		double scalefactor,
-		double samplingRate,
-
-		int samplesup,
-		double nsgms,
-
+		gsl_vector *der,
+		double adaptativethreshold,
+		int nSamplesUp,
+		
 		ReconstructInitSIRENA *reconstruct_init,
 
-		double stopcriteriamkc,
-		double kappamkc);
-
-	int findTstartPROD (int maxPulsesPerRecord, gsl_vector *adjustedDerivative, double adaptativethreshold, int nSamplesUp,
-		ReconstructInitSIRENA *reconstruct_init,
-		int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
-
+		int *numberPulses,
+		
+		gsl_vector **tstartgsl,
+		gsl_vector **flagTruncated,
+		gsl_vector **maxDERgsl);
+	
 	int InitialTriggering
 	(
 		gsl_vector *derivative,
 
-		int nSamplesUp,
 		double nSgms,
 
 		double taufall,
@@ -133,30 +122,12 @@
 
 		int tstartProvided = 0);
 	
-	int findTstartCAL
-	(
-		int maxPulsesPerRecord,
-
-		gsl_vector *der,
-		double adaptativethreshold,
-		int nSamplesUp,
-		
-		ReconstructInitSIRENA *reconstruct_init,
-
-		int *numberPulses,
-		
-		gsl_vector **tstartgsl,
-		gsl_vector **flagTruncated,
-		gsl_vector **maxDERgsl);
-
 	int FindSecondaries
 	(
 		int maxPulsesPerRecord,
 
 		gsl_vector *adjustedDerivative,
 		double threshold,
-
-		int nSamplesUp,
 
 		ReconstructInitSIRENA *reconstruct_init,
 
