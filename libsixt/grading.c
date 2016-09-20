@@ -714,7 +714,7 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 			// do not change grading times in this case as this is a pileup (this event will no be saved in the end)
 		} else {
 
-//			printf(" energy : %e (%e) [%i]\n",impact_to_save->energy,grade_proxy->impact->energy,is_crosstalk);
+			// printf("%i energy : %e (%e) [%i]\n",impact_to_save->ph_id, impact_to_save->energy,grade_proxy->impact->energy,is_crosstalk);
 
 			// Get crosstalk influence from crosstalks closer to current time than max backward influence (others should have been dealt with)
 			computeAllCrosstalkInfluence(det,impact_to_save,grade_proxy->xtalk_proxy,&(grade_proxy->crosstalk_energy),

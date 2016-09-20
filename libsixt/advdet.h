@@ -208,6 +208,7 @@ typedef struct{
 	char* name_type; // Useless for the moment
 	double* time;
 	double* weight;
+	double weight_t0;  // weight at time t=0 (simultaneous)
 } CrosstalkTimedep;
 
 

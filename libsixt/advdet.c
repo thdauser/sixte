@@ -1171,6 +1171,7 @@ CrosstalkTimedep* newCrossTalkTimedep(int* const status){
 	crosstalk_timedep->name_type=NULL; // Useless for the moment
 	crosstalk_timedep->time=NULL;
 	crosstalk_timedep->weight=NULL;
+	crosstalk_timedep->weight_t0 = 1.0;
 
 	return crosstalk_timedep;
 }

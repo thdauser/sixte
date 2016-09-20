@@ -599,6 +599,17 @@ static void load_crosstalk_timedep(AdvDet* det,int* const status){
 		det->crosstalk_timedep->length++;
 	}
 	fclose(file);
+
+	// now we need to set the weight at t=0 (differs for tessim simulated LUT)
+	int ind_t0 = binary_search(0.0, det->crosstalk_timedep->time, det->crosstalk_timedep->length);
+
+	double fac = (0.0 - det->crosstalk_timedep->time[ind_t0]) /
+			(det->crosstalk_timedep->time[ind_t0+1] - det->crosstalk_timedep->time[ind_t0]);
+
+	det->crosstalk_timedep->weight_t0 =
+			(1-fac)*det->crosstalk_timedep->weight[ind_t0] +
+			(fac)  *det->crosstalk_timedep->weight[ind_t0+1];
+
 }
 
 static void initImodTab(ImodTab** tab, int n_ampl, int n_dt, int n_freq,
@@ -1135,9 +1146,14 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 		int timedep_index = low-1;
 		assert(timedep_index<det->crosstalk_timedep->length-1);
 
+		// we need to weight to be one at t=0 (not the case for tessim LUT)
+		double weight0 = det->crosstalk_timedep->weight[timedep_index]   / det->crosstalk_timedep->weight_t0;
+		double weight1 = det->crosstalk_timedep->weight[timedep_index+1] / det->crosstalk_timedep->weight_t0;
+
 		// influence previous impact
-		energy_influence= crosstalk->energy*(det->crosstalk_timedep->weight[timedep_index]+
-				(det->crosstalk_timedep->weight[timedep_index+1]-det->crosstalk_timedep->weight[timedep_index])/(det->crosstalk_timedep->time[timedep_index+1]-det->crosstalk_timedep->time[timedep_index])*(time_difference-det->crosstalk_timedep->time[timedep_index]));
+		energy_influence= crosstalk->energy*(weight0+
+				(weight1-weight0) /(det->crosstalk_timedep->time[timedep_index+1]-det->crosstalk_timedep->time[timedep_index])
+				*(time_difference-det->crosstalk_timedep->time[timedep_index]));
 		impact->energy+=energy_influence;
 		*influence+=energy_influence;
 		headas_chat(7,", Influence:%.2e (fraction:%.2e)\n",*influence,*influence/crosstalk->energy);
