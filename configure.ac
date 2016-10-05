@@ -180,6 +180,7 @@ AC_CONFIG_FILES([Makefile
 		tools/gennoisespec/Makefile
 		tools/exposure_map/Makefile
 		tools/gradeddetection/Makefile
+                tools/tesgenimpacts/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
 		])

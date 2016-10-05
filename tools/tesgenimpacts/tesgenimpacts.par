@@ -1,0 +1,29 @@
+PixImpList,s,lq,"impacts.piximpact",,,"pixel impact list output file"
+PixID,i,h,1,1,3500,"ID of pixel"
+clobber,b,h,y,,,"Overwrite output files?"
+tstart,r,q,0,,,"Start time of simulation [s]"
+tstop,r,q,1,,,"Stop time of simulation [s]"
+mode,s,q,"const",,,"Operation mode ['const': Photon energy constant, 'lin': Photon energy increases linearly, 'rand': Photon energy and arrival time randomnised, 'sin': Arrival rate varies sinusoidally]"
+# mode lin or const
+dtau,r,q,10,,,"Time delay between photons [ms]"
+#
+# mode const 
+#
+EConst,r,q,1,,,"Photon Energy [keV]"
+#
+# mode lin, rand and sin 
+#
+EMin,r,q,0.2,0,100,"Lowest photon energy [keV]"
+EMax,r,q,13.8,0,100,"Highest photon energy [keV]"
+PhotSamples,i,q,35,2,,"Number of photons to generate"
+#
+# mode rand and sin
+#
+Seed,i,h,0,,,"Seed for the time and photon energy RNG (0 to use system time)"
+#
+# mode sin
+#
+sinOffset,r,q,1,,,"Offset of probability distribution"
+sinAmplitude,r,q,1,,,"Amplitude of the sine"
+sinFreq,r,q,1,,,"Frequency of the sine [Hz]"
+phaseShift,r,q,0,,,"Initial phase of the sine (at t=0) [°]"
