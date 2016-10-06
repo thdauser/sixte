@@ -64,7 +64,7 @@ int tesgenimpacts_main() {
 #if defined( __APPLE__) && defined(__MACH__)
         struct timeval tv;
         gettimeofday(&tv,NULL);
-        seed=1000000*tv.ts_sec+tv.tv_usec;
+        par.seed=1000000*tv.tv_sec+tv.tv_usec;
 #else
         struct timespec tp;
         clock_gettime(CLOCK_MONOTONIC,&tp);
@@ -237,4 +237,3 @@ void tesgenimpacts_getpar(tesgenimppars *par, int *status){
     } 
   }
 }
-

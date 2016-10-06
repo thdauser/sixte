@@ -12,6 +12,8 @@
 #include <parinput.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+#include <sys/time.h>
 
 // generation modes
 #define MODE_CONST 1
