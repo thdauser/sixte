@@ -597,7 +597,7 @@ void verifyMJDREF(const double refmjdref,
       strcat(insertmsg, " ");
     }
     char msg[MAXMSG];
-    sprintf(msg, "MJDREF %sdoes not match required value of '%.1lf'", 
+    sprintf(msg, "MJDREF %sdoes not match required value of '%.4lf'", 
 	    insertmsg, refmjdref);
     SIXT_ERROR(msg);
   }
