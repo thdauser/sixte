@@ -352,6 +352,14 @@ static double get_intermod_weight(ImodTab* cross_talk, double df, double dt,
 
 	// get the frequency bin in the weightening table
 	int ind_df = binary_search(df,cross_talk->freq,cross_talk->n_freq);
+	if ( ind_df < 0 ){
+		if ( df <= cross_talk->freq[0]){
+			ind_df = 0;
+		} else if ( df >= cross_talk->freq[cross_talk->n_freq-1]){
+			ind_df = cross_talk->n_freq-1;
+		}
+		printf(" **** WARNING: non-linear crosstalk frequency df=%e not available, using df=%e instead!\n",df,cross_talk->freq[ind_df]);
+	}
 
 	assert ( (ind_df) >= 0 && (ind_df < cross_talk->n_freq) );
 	double d_df =  (df - cross_talk->freq[ind_df]) / ( cross_talk->freq[ind_df+1] - cross_talk->freq[ind_df] );
@@ -378,8 +386,9 @@ static double get_intermod_weight(ImodTab* cross_talk, double df, double dt,
 // Conversion from Energy to Amplitude
 // (Memo Roland, 10.06.2016 : 14keV = 0.25phi)
 // eMail Roland, 22.06.2016 : Take absolute value for conversion (as AC modulated signal)
+// new Version (eMail Roland 15.11.2016): 12keV = 0.15phi
 static double conv_ener2ampli(double ener){
-	return fabs(ener) / 14.0 * 0.5;
+	return fabs(ener) / 12.0 * 0.15;
 }
 
 
