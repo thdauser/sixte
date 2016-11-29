@@ -105,9 +105,6 @@ struct Parameters {
 	//Scale Factor for initial filtering
 	double scaleFactor;
 	
-	//Fall time of the pulses
-	double tauFall;
-	
 	//Number of samples for threshold trespassing
 	double samplesUp;
 	
@@ -152,9 +149,9 @@ struct Parameters {
 
 	//Boolean to choose whether to use a library with optimal filters or calculate the optimal filter to each pulse
 	char OFLib;
-
+	
 	//Optimal Filter by using the Matched Filter (MF) or the DAB as matched filter (MF, DAB) **/
-	char OFInterp[4];
+        char OFInterp[4];
 	
 	//Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
 	char OFStrategy[8];

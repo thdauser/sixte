@@ -43,7 +43,7 @@
 
 	#include <integraSIRENA.h>
 
-	int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRate);
+	int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sampleRate);
 	int differentiate (gsl_vector **invector,int szVct);
 
 	int findMeanSigma (gsl_vector *invector, double *mean, double *sigma);
@@ -70,7 +70,6 @@
 		int *nPulses,
 		double *threshold,
 
-		double taufall,
 		double scalefactor,
 		double samplingRate,
 
@@ -107,7 +106,6 @@
 
 		double nSgms,
 
-		double taufall,
 		double scalefactor,
 		double samplingRate,
 

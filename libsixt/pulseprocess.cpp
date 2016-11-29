@@ -69,7 +69,7 @@ MAP OF SECTIONS IN THIS FILE:
 * If the cut frequency of the filter is fc, the box-car length (n) is (1/fc)*samprate
 *
 * According to Jan:
-* 	sinc(f1)=0.6 where f1=1/(2pi*tau_fall)
+* 	sinc(f1)=0.6 where f1=1/(2pi*scaleFactor)
 *	sinc(0.5)~0.6 => f1~0.5
 *   	sinc(fc)=0, sinc(1)=0 => fc=1
 *   	fc=kf1 => fc~2f1
@@ -88,10 +88,10 @@ MAP OF SECTIONS IN THIS FILE:
 * Parameters:
 * - invector: Input/Output vector (non-filtered input vector/filtered input vector)
 * - szVct: Size of the invector
-* - tau_fall: Value related to the fall times of the pulses (seconds) (It's really tauFALL*sacaleFactor)
+* - scaleFactor: Scale factor
 * - sampleRate: Sampling frequency (samples per second)
 ******************************************************************************/
-int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRate)
+int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sampleRate)
 {
 	string message = "";
 	char valERROR[256];
@@ -104,7 +104,7 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double tau_fall, int sampleRat
 	double boxSum = 0.0;
 
 	// Define the LPF (frequency domain) and the box-car function (time domain)
-	cutFreq = 2 * (1/(2*pi*tau_fall));	//According to Jan, sinc(f1)=0.6 where f1=1/(2pi*tau_fall)
+	cutFreq = 2 * (1/(2*pi*scaleFactor));	//According to Jan, sinc(f1)=0.6 where f1=1/(2pi*scaleFactor)
 						//sinc(0.5)~0.6 => f1~0.5
 						//sinc(fc)=0, sinc(1)=0 => fc=1
 						//fc=kf1 => fc~2f1
@@ -1104,7 +1104,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 * - lb: Baseline averaging length used for the pulse whose pulse height is going to be estimated
 * - B: In general, sum of the Lb digitized data samples of a pulse-free interval immediately before
 *      the current pulse
-* - sizepulse: Size of the pulse in samples, ntaus * tauFALL in samples (equal to 'sizePulse_b' global variable)
+* - sizepulse: Size of the pulse in samples ('PulseLength')
 * - pulseheight: Estimated pulse height of the pulse
 ****************************************/
 int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int lastPulse, double lrs, double lb, double B, int sizepulse, double *pulseheight)
@@ -1544,8 +1544,7 @@ int interpolate_model(gsl_vector **modelFound, double p_model, gsl_vector *model
 * - maxDERgsl: Maximum of the derivative of the found low-pass filtered pulses into the record
 * - nPulses: Number of found pulses
 * - threshold: Threshold used to find the pulses (output parameter because it is necessary out of the function)
-* - taufall: Fall time of the pulses (seconds)
-* - scalefactor: Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length
+* - scalefactor: Scale factor to calculate the LPF box-car length
 * - samplingRate: Sampling rate
 * - samplesup: Number of consecutive samples over the threshold to locate a pulse ('samplesUp')
 * - nsgms: Number of Sigmas to establish the threshold
@@ -1568,7 +1567,6 @@ int findPulsesCAL
 	int *nPulses,
 	double *threshold,
 
-	double taufall,
 	double scalefactor,
 	double samplingRate,
 
@@ -1594,7 +1592,7 @@ int findPulsesCAL
 	gsl_vector_set_zero(*pulseheight);	// Pulse height of the single pulses
 
 	// First step to look for single pulses
-	if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*taufall*scalefactor), &thresholdmediankappa))
+	if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*scalefactor), &thresholdmediankappa))
 	{
 		message = "Cannot run medianKappaClipping looking for single pulses";
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
@@ -1611,7 +1609,7 @@ int findPulsesCAL
 	{
 		// It is not necessary to check the allocation because 'reconstruct_init->maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
 		gsl_vector *Lbgsl = gsl_vector_alloc(reconstruct_init->maxPulsesPerRecord);	// If there is no free-pulses segments longer than Lb=>
-		gsl_vector_set_all(Lbgsl,lb);                                  			// segments shorter than Lb will be useed and its length (< Lb)
+		gsl_vector_set_all(Lbgsl,lb);                                  			// segments shorter than Lb will be used and its length (< Lb)
 		                                                               			// must be used instead Lb in RS_filter
 		gsl_vector *Bgsl;
 
@@ -1781,7 +1779,7 @@ int findTstartCAL
 					{
 						gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(der,i));
 					}
-					else if  (gsl_vector_get(der,i) < adaptativethreshold)
+					else if (gsl_vector_get(der,i) < adaptativethreshold)
 					{
 						cntUp = 0;
 						cntDown++;
@@ -1791,7 +1789,7 @@ int findTstartCAL
 							cntDown = 0;
 						}
 					}
-					else if  (gsl_vector_get(der,i) > adaptativethreshold)
+					else if (gsl_vector_get(der,i) > adaptativethreshold)
 					{
 						cntDown = 0;
 					}
@@ -1870,8 +1868,7 @@ int findTstartCAL
 * Parameters:
 * - derivative: First derivative of the (low-pass filtered) record
 * - nSgms: Number of Sigmas to establish the threshold 
-* - taufall: Fall time of the pulses (seconds) ('tauFall')
-* - scalefactor: Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length ('scaleFactor')
+* - scalefactor: Scale factor to calculate the LPF box-car length ('scaleFactor')
 * - samplingRate: Sampling rate
 * - stopCriteriamkc: Used in medianKappaClipping (%)
 * - kappamkc: Used in medianKappaClipping
@@ -1887,7 +1884,6 @@ int InitialTriggering
 	gsl_vector *derivative,
 
 	double nSgms,
-	double taufall,
 	double scalefactor,
 	double samplingRate,
 	double stopcriteriamkc,
@@ -1911,7 +1907,7 @@ int InitialTriggering
 	*triggerCondition = false;
 
 	// Stablish the threshold
-	if (medianKappaClipping (derivative, kappamkc, stopcriteriamkc, nSgms, (int)(pi*samplingRate*taufall*scalefactor), threshold))
+	if (medianKappaClipping (derivative, kappamkc, stopcriteriamkc, nSgms, (int)(pi*samplingRate*scalefactor), threshold))
 	{
 		message = "Cannot run medianKappaClipping doing the initial triggering";
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);

@@ -88,11 +88,9 @@
 	double intervalMin;		// Minimum length of a pulse-free interval (seconds)
 	int intervalMinBins;		// Minimum length of a pulse-free interval (bins)
 	int intervalMinSamples;		// Minimum length of a pulse-free interval (samples)
-	int ntausPF;			// Number of tauFALLs after ending the pulse to start the pulse-free interval
+	int nplPF;			// Number of pulse lengths after ending the pulse to start the pulse-free interval
 	int nintervals; 		// Number of pulse-free intervals to use
-	double tauFALL;			// Fall time of the pulses (seconds)
-	int tauFALL_b;			// Fall time of the pulses (samples)
-	double scaleFactor; 		// Scale factor to apply to the fall time of the pulses in order to calculate the box-car length
+	double scaleFactor; 		// Scale factor to apply in order to calculate the box-car length
 	int samplesUp;			// Consecutive samples over the threshold to locate a pulse
 	double nSgms;			// Number of Sigmas to establish the threshold
 	int pulse_length;		// Pulse length (samples)
@@ -155,7 +153,7 @@
 
 	int initModule (int argc, char **argv);
 
-	int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, double tau, int interval, int *ni, gsl_vector **startinterval);
+	int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, int interval, int *ni, gsl_vector **startinterval);
 	int findIntervalN(gsl_vector *invector, int interval, int *ni, gsl_vector **startinterval);
 
 	int createTPSreprFile ();
@@ -172,7 +170,6 @@
 		int *nPulses,
 		double *threshold,
 
-		double taufall,
 		double scalefactor,
 		int sizepulsebins,
 		double samplingRate,
@@ -190,9 +187,12 @@
 		double kappamkc,
 		double levelprvpulse);
 
-	int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
+	/*int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
 		int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
-		gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl);
+		gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl);*/
+	
+	int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
+		int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
 
 	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *mean, double *sigma, double *baseline);
 

@@ -39,6 +39,8 @@ int tesreconstruction_main() {
     // Get program parameters.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
+    //printf("%s %s %s","par.FilterDomain = ",par.FilterDomain,"\n");
+    //printf("%s %s %s","par.EnergyMethod = ",par.EnergyMethod,"\n");
 
     // Sixt standard keywords structure
     SixtStdKeywords* keywords = newSixtStdKeywords(&status);
@@ -72,12 +74,10 @@ int tesreconstruction_main() {
     		par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
     		par.DerivateExclusion,par.SaturationValue,&status);
     }else{
-	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile,
-		par.tauFall, par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, 
-		par.mode, par.LrsT, par.LbT, par.NoiseFile, par.FilterDomain,
-		par.FilterMethod, par.EnergyMethod, par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
-		par.monoenergy, par.intermediate, par.detectFile,
-		par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
+	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile, 
+		par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.mode, par.LrsT, par.LbT, par.NoiseFile, 
+		par.FilterDomain, par.FilterMethod, par.EnergyMethod,par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
+		par.monoenergy, par.intermediate, par.detectFile, par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
 		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
 	  
 	  // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
@@ -137,9 +137,9 @@ int tesreconstruction_main() {
       {
 	    nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
-	    /*if(nrecord < 370) {
+	    /*if(nrecord < 82) {
 	      continue;
-	    }else if(nrecord > 370){
+	    }else if(nrecord > 83){
 	      status=1;
 	      CHECK_STATUS_BREAK(status);
 	    }*/
@@ -324,9 +324,7 @@ int getpar(struct Parameters* const par)
 	free(sbuffer);
 
 	status=ape_trad_query_double("scaleFactor", &par->scaleFactor);
-  
-	status=ape_trad_query_double("tauFall", &par->tauFall);
-  
+    
 	status=ape_trad_query_double("samplesUp", &par->samplesUp);
   
 	status=ape_trad_query_double("nSgms", &par->nSgms);
@@ -336,8 +334,6 @@ int getpar(struct Parameters* const par)
 	status=ape_trad_query_double("LrsT", &par->LrsT);
 
 	status=ape_trad_query_double("LbT", &par->LbT);
-	
-	//status=ape_trad_query_double("baseline", &par->baseline);
 
 	status=ape_trad_query_int("intermediate", &par->intermediate);
 
@@ -372,11 +368,13 @@ int getpar(struct Parameters* const par)
 	status=ape_trad_query_int("OFIter", &par->OFIter);
 
 	status=ape_trad_query_bool("OFLib", &par->OFLib);
-
-	status=ape_trad_query_string("OFInterp", &sbuffer);
-	strcpy(par->OFInterp, sbuffer);
-	free(sbuffer);
-		
+	
+	//status=ape_trad_query_string("OFInterp", &sbuffer);
+        //strcpy(par->OFInterp, sbuffer);
+        //free(sbuffer);
+	strcpy(par->OFInterp, "DAB");
+	//strcpy(par->OFInterp, "MF");
+	
 	status=ape_trad_query_string("OFStrategy", &sbuffer);
 	strcpy(par->OFStrategy, sbuffer);
 	free(sbuffer);
@@ -444,14 +442,11 @@ int getpar(struct Parameters* const par)
 		SIXT_ERROR("parameter error: If OFLib=yes => FilterMethod must be F0");
 		return(EXIT_FAILURE);
 	}
-	if (((strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0)) && (par->OFLib == 1))
+	if ((strcmp(par->EnergyMethod,"WEIGHT") == 0) && (par->OFLib == 1))
 	{
-		SIXT_ERROR("parameter error: EnergyMethod=WEIGHT/WEIGHTN  => OFLib should be 'no'");
+		SIXT_ERROR("parameter error: EnergyMethod=WEIGHT => OFLib should be 'no'");
 		return(EXIT_FAILURE);
 	}
-	
-	//assert((strcmp(par->OFInterp,"MF") == 0) || (strcmp(par->OFInterp,"DAB") == 0));
-	MyAssert((strcmp(par->OFInterp,"MF") == 0) || (strcmp(par->OFInterp,"DAB") == 0),"OFInterp must be MF or DAB");
 	
 	//assert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0));
 	MyAssert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0), 

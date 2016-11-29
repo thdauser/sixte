@@ -95,18 +95,50 @@ typedef struct
 	// Vector containing the optimal filter
 	gsl_vector *ofilter;
 
-	/** Energy of the ofilter */
+	// Energy of the ofilter
 	double energy;
-
-	// Normalization factor
-	double nrmfctr;
 	
 } OptimalFilterSIRENA;
+
+/*typedef struct 
+{
+	// Number of optimal filters in FIXFILTF HDU
+	int numOFilters;
+	
+	// Duration of the longest optimal filter
+	int lengthOF;
+
+	// Matrix containing all theoptimal filters
+	gsl_vector *ofilterFREQ;
+
+	// Energy of the filters
+	double energy;
+	
+} OptimalFilterSIRENA_FREQ;*/
+
+/*typedef struct 
+{
+	// Number of optimal filters in FIXFILTT HDU
+	int numOFilters;
+	
+	// Duration of the longest optimal filter
+	int lengthOF;
+
+	// Matrix containing all theoptimal filters
+	gsl_vector *ofilterTIME;
+
+	// Energy of the filters
+	double energy;
+	
+} OptimalFilterSIRENA_TIME;*/
 
 typedef struct 
 {
 	/** Number of templates & matched filters in the structure. */
 	int ntemplates;
+	
+	/** Number of fixed length filters in the structure. */
+	int nfixedfilters;
 
 	/** Energies of the templates */
 	gsl_vector *energies;
@@ -137,10 +169,15 @@ typedef struct
 
 	/** Structure containing all the optimal filters from the library */
 	OptimalFilterSIRENA* optimal_filters;
+	
+	/** Structure containing all the fixed optimal filters from the library (FIXFILTF HDU) */
+	//OptimalFilterSIRENA_FREQ* optimal_filtersFREQ;
+	OptimalFilterSIRENA* optimal_filtersFREQ;
 
-	/** Normalization factors of the optimal filters */
-	gsl_vector *nrmfctrs;
-
+	/** Structure containing all the fixed optimal filters from the library (FIXFILTT HDU) */
+	//OptimalFilterSIRENA_TIME* optimal_filtersTIME;
+	OptimalFilterSIRENA* optimal_filtersTIME;
+	
 	//MatrixStruct* W;
 	gsl_matrix *V;
 	gsl_matrix *W;
@@ -174,9 +211,18 @@ typedef struct
 	
 	/** Structure containing all the optimal filters AB from the library */
 	OptimalFilterSIRENA* optimal_filtersab;
+	
+	/** Structure containing all the fixed optimal filters AB in time domain from the library */
+	//OptimalFilterSIRENA_TIME* optimal_filtersabTIME;
+	OptimalFilterSIRENA* optimal_filtersabTIME;
+	
+	/** Structure containing all the fixed optimal filters AB in frequency domain from the library */
+	//OptimalFilterSIRENA_FREQ* optimal_filtersabFREQ;
+	OptimalFilterSIRENA* optimal_filtersabFREQ;
 
-	/** Normalization factors of the optimal filters AB */
-	gsl_vector *nrmfctrsab;
+	/** PRECALWM vector */
+	//gsl_matrix *PRECALWM;
+	gsl_matrix *PRECALWN;
 	
 } LibraryCollection;
 
@@ -300,9 +346,6 @@ typedef struct
 
 	/** Pulse length */
 	int pulse_length;
-	
-	/** Pulses Fall time (s)**/
-	double tauFall;
 
 	/** Detection scaleFactor (0.005 ? no filtering) **/
 	double scaleFactor;
@@ -408,9 +451,9 @@ extern "C"
 #endif
 
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, fitsfile *fptr, char* const library_file,
-	char* const event_file, double tauFall,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, 
+	char* const event_file,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, 
 	int mode, double LrsT, double LbT, char* const noise_file, char* filter_domain,
-	char* filter_method, char* energy_method, int lagsornot, int ofiter, char oflib, char* ofinterp, char* oflength_strategy, int oflength,
+	char* filter_method, char* energy_method, int lagsornot, int ofiter, char oflib, char *ofinterp, char* oflength_strategy, int oflength,
 	double monoenergy, int interm, char* detectFile, char* filterFile, char clobber, int maxPulsesPerRecord, double SaturationValue,
 	int tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status);
 
@@ -440,7 +483,7 @@ extern "C"
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 
-LibraryCollection* getLibraryCollection(const char* const filename, int mode, char *energy_method, char *filter_method, char oflib, 
+LibraryCollection* getLibraryCollection(const char* const filename, int mode, char *filter_domain, int pulse_length, char *energy_method, char *filter_method, char oflib, 
 	char **ofinterp, int* const status);
 
 NoiseSpec* getNoiseSpec(const char* const filename,int mode,char *energy_method,char *filter_method,int* const status);

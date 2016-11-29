@@ -72,10 +72,9 @@ MAP OF SECTIONS IN THIS FILE:
 * - inFile: Name of the input FITS file
 * - outFile: Name of the output FITS file
 * - intervalMinSamples: Minimum length of a pulse-free interval to use (samples) = intervalMinBins
-* - ntausPF: Number of tauFALLs after ending the pulse (Tend) to start the pulse-free interval
+* - nplPF: Number of pulse lengths after ending the pulse (Tend) to start the pulse-free interval
 * - nintervals: Number of pulse-free intervals to use
-* - tauFALL: Fall time of the pulses in seconds
-* - scaleFactor: Scale factor to apply to the fall time of the pulses in order to calculate the LPF box-car length
+* - scaleFactor: Scale factor to apply in order to calculate the LPF box-car length
 * - samplesUp: Consecutive samples over the threshold to locate a pulse
 * - nSgms: Number of Sigmas to establish the threshold
 * - pulse_length: Pulse length (samples)
@@ -207,7 +206,6 @@ int main (int argc, char **argv)
 	}
 
 	// Initialize variables and transform from seconds to samples
-	tauFALL_b = (int) (tauFALL * samprate);
 	Lrs = LrsT * samprate;
 	Lb = LbT * samprate;
 
@@ -271,11 +269,11 @@ int main (int argc, char **argv)
 	}
 
 	// Check Boxlength
-	cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
+	cutFreq = 2 * (1/(2*pi*scaleFactor));
 	boxLength = (int) ((1/cutFreq) * samprate);
 	if (boxLength <= 1)
 	{
-		  message = "lpf_boxcar: tauFALL*scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
+		  message = "lpf_boxcar: scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
 		  writeLog(fileRef,"Warning", verbosity,message);
 	}
 	
@@ -423,7 +421,7 @@ int initModule(int argc, char **argv)
 
 	// Define GENNOISESPEC input parameters and assign values to variables
 	// Parameter definition and assignation of default values
-	const int npars = 15, npars1 = 16;
+	const int npars = 14, npars1 = 15;
 	inparam gennoisespecPars[npars];
 	int optidx =0, par=0, fst=0, ipar;
 	string message="";
@@ -443,14 +441,14 @@ int initModule(int argc, char **argv)
 
 	gennoisespecPars[2].name = "intervalMinSamples";
 	gennoisespecPars[2].description = "Minimum length of a pulse-free interval (samples)";
-	gennoisespecPars[2].defValInt = 512;
+	gennoisespecPars[2].defValInt = 1024;
 	gennoisespecPars[2].type = "int";
 	gennoisespecPars[2].minValInt = 2;
 	gennoisespecPars[2].maxValInt = 50000;
 	gennoisespecPars[2].ValInt = gennoisespecPars[2].defValInt;
 
-	gennoisespecPars[3].name = "ntausPF";
-	gennoisespecPars[3].description = "Number of fall time values after the end of the pulse to start the pulse-free interval searching";
+	gennoisespecPars[3].name = "nplPF";
+	gennoisespecPars[3].description = "Number of pulse lengths after the end of the pulse to start the pulse-free interval searching";
 	gennoisespecPars[3].defValInt = 0;
 	gennoisespecPars[3].type = "int";
 	gennoisespecPars[3].minValInt = 0;
@@ -459,87 +457,80 @@ int initModule(int argc, char **argv)
 
 	gennoisespecPars[4].name = "nintervals";
 	gennoisespecPars[4].description = "Number of pulse-free intervals to use for the noise average";
-	gennoisespecPars[4].defValInt = 60;
+	gennoisespecPars[4].defValInt = 1000;
 	gennoisespecPars[4].type = "int";
 	gennoisespecPars[4].minValInt = 1;
 	gennoisespecPars[4].maxValInt = 20000;
 	gennoisespecPars[4].ValInt = gennoisespecPars[4].defValInt;
 
-	gennoisespecPars[5].name = "tauFALL";
-	gennoisespecPars[5].description = "Fall time of the pulses (seconds)";
-	gennoisespecPars[5].defValReal = 3.5E-4;
+	gennoisespecPars[5].name = "scaleFactor";
+	gennoisespecPars[5].description = "Scale factor to apply to make possible a varying cut-off frequency of the low-pass filter";
+	gennoisespecPars[5].defValReal = 0.0;
 	gennoisespecPars[5].type = "double";
-	gennoisespecPars[5].minValReal = 1.E-50;
+	//gennoisespecPars[5].minValReal = 1.E-50;
+	gennoisespecPars[5].minValReal = 0.0;
 	gennoisespecPars[5].maxValReal = 1.E+50;
 	gennoisespecPars[5].ValReal = gennoisespecPars[5].defValReal;
 
-	gennoisespecPars[6].name = "scaleFactor";
-	gennoisespecPars[6].description = "Scale factor to apply to the fall time of the pulses to make possible a varying cut-off frequency of the low-pass filter";
-	gennoisespecPars[6].defValReal = 0.1;
-	gennoisespecPars[6].type = "double";
-	gennoisespecPars[6].minValReal = 1.E-50;
-	gennoisespecPars[6].maxValReal = 1.E+50;
-	gennoisespecPars[6].ValReal = gennoisespecPars[6].defValReal;
+	gennoisespecPars[6].name = "samplesUp";
+	gennoisespecPars[6].description = "Consecutive samples that the signal must cross over the threshold to trigger a pulse detection";
+	gennoisespecPars[6].defValInt = 2;
+	gennoisespecPars[6].type = "int";
+	gennoisespecPars[6].minValInt = 1;
+	gennoisespecPars[6].maxValInt = 1E4;
+	gennoisespecPars[6].ValInt = gennoisespecPars[6].defValInt;
 
-	gennoisespecPars[7].name = "samplesUp";
-	gennoisespecPars[7].description = "Consecutive samples that the signal must cross over the threshold to trigger a pulse detection";
-	gennoisespecPars[7].defValInt = 20;
+	gennoisespecPars[7].name = "nSgms";
+	gennoisespecPars[7].description = "Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm";
+	gennoisespecPars[7].defValInt = 5;
 	gennoisespecPars[7].type = "int";
 	gennoisespecPars[7].minValInt = 1;
-	gennoisespecPars[7].maxValInt = 1E4;
+	gennoisespecPars[7].maxValInt = 100;
 	gennoisespecPars[7].ValInt = gennoisespecPars[7].defValInt;
 
-	gennoisespecPars[8].name = "nSgms";
-	gennoisespecPars[8].description = "Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm";
-	gennoisespecPars[8].defValInt = 3;
+	gennoisespecPars[8].name = "pulse_length";
+	gennoisespecPars[8].description = "Pulse length in samples";
+	gennoisespecPars[8].defValInt = 1024;
 	gennoisespecPars[8].type = "int";
 	gennoisespecPars[8].minValInt = 1;
-	gennoisespecPars[8].maxValInt = 100;
+	gennoisespecPars[8].maxValInt = 50000;
 	gennoisespecPars[8].ValInt = gennoisespecPars[8].defValInt;
 
-	gennoisespecPars[9].name = "pulse_length";
-	gennoisespecPars[9].description = "Pulse length in samples";
-	gennoisespecPars[9].defValInt = 375;
-	gennoisespecPars[9].type = "int";
-	gennoisespecPars[9].minValInt = 1;
-	gennoisespecPars[9].maxValInt = 50000;
-	gennoisespecPars[9].ValInt = gennoisespecPars[9].defValInt;
+	gennoisespecPars[9].name = "LrsT";
+	gennoisespecPars[9].description = "Running sum (RS) length for the RS-filtering for raw energy estimation, in seconds";
+	gennoisespecPars[9].defValReal = 30.E-6;
+	gennoisespecPars[9].type = "double";
+	gennoisespecPars[9].minValReal = 1.E-50;
+	gennoisespecPars[9].maxValReal = 1.E+50;
+	gennoisespecPars[9].ValReal = gennoisespecPars[9].defValReal;
 
-	gennoisespecPars[10].name = "LrsT";
-	gennoisespecPars[10].description = "Running sum (RS) length for the RS-filtering for raw energy estimation, in seconds";
-	gennoisespecPars[10].defValReal = 30.E-6;
+	gennoisespecPars[10].name = "LbT";
+	gennoisespecPars[10].description = "Baseline averaging length for the RS-filtering for raw energy estimation, in seconds";
+	gennoisespecPars[10].defValReal = 1E-3;
 	gennoisespecPars[10].type = "double";
 	gennoisespecPars[10].minValReal = 1.E-50;
 	gennoisespecPars[10].maxValReal = 1.E+50;
 	gennoisespecPars[10].ValReal = gennoisespecPars[10].defValReal;
 
-	gennoisespecPars[11].name = "LbT";
-	gennoisespecPars[11].description = "Baseline averaging length for the RS-filtering for raw energy estimation, in seconds";
-	gennoisespecPars[11].defValReal = 1E-3;
-	gennoisespecPars[11].type = "double";
-	gennoisespecPars[11].minValReal = 1.E-50;
-	gennoisespecPars[11].maxValReal = 1.E+50;
-	gennoisespecPars[11].ValReal = gennoisespecPars[11].defValReal;
+	gennoisespecPars[11].name = "nameLog";
+	gennoisespecPars[11].description = "Output log file name";
+	gennoisespecPars[11].defValStr = "noise_log.txt";
+	gennoisespecPars[11].type = "char";
+	gennoisespecPars[11].ValStr = gennoisespecPars[11].defValStr;
 
-	gennoisespecPars[12].name = "nameLog";
-	gennoisespecPars[12].description = "Output log file name";
-	gennoisespecPars[12].defValStr = "noise_log.txt";
-	gennoisespecPars[12].type = "char";
-	gennoisespecPars[12].ValStr = gennoisespecPars[12].defValStr;
+	gennoisespecPars[12].name = "verbosity";
+	gennoisespecPars[12].description = "Verbosity level of the output log file (in [0,3])";
+	gennoisespecPars[12].defValInt = 3;
+	gennoisespecPars[12].type = "int";
+	gennoisespecPars[12].minValInt = 0;
+	gennoisespecPars[12].maxValInt = 3;
+	gennoisespecPars[12].ValInt = gennoisespecPars[12].defValInt;
 
-	gennoisespecPars[13].name = "verbosity";
-	gennoisespecPars[13].description = "Verbosity level of the output log file (in [0,3])";
-	gennoisespecPars[13].defValInt = 3;
-	gennoisespecPars[13].type = "int";
-	gennoisespecPars[13].minValInt = 0;
-	gennoisespecPars[13].maxValInt = 3;
-	gennoisespecPars[13].ValInt = gennoisespecPars[13].defValInt;
-
-	gennoisespecPars[14].name = "clobber";
-	gennoisespecPars[14].description = "Re-write output files if clobber=yes";
-	gennoisespecPars[14].defValStr = "no";
-	gennoisespecPars[14].type = "char";
-	gennoisespecPars[14].ValStr = gennoisespecPars[14].defValStr;
+	gennoisespecPars[13].name = "clobber";
+	gennoisespecPars[13].description = "Re-write output files if clobber=yes";
+	gennoisespecPars[13].defValStr = "no";
+	gennoisespecPars[13].type = "char";
+	gennoisespecPars[13].ValStr = gennoisespecPars[13].defValStr;
 	
 	// Define structure for command line options
 	static struct option long_options[npars1];
@@ -625,17 +616,13 @@ int initModule(int argc, char **argv)
 		{
 			intervalMinSamples = gennoisespecPars[i].ValInt;
 		}
-		else if(gennoisespecPars[i].name == "ntausPF")
+		else if(gennoisespecPars[i].name == "nplPF")
 		{
-			ntausPF = gennoisespecPars[i].ValInt;
+			nplPF = gennoisespecPars[i].ValInt;
 		}
 		else if(gennoisespecPars[i].name == "nintervals")
 		{
 			nintervals = gennoisespecPars[i].ValInt;
-		}
-		else if(gennoisespecPars[i].name == "tauFALL")
-		{
-			tauFALL = gennoisespecPars[i].ValReal;
 		}
 		else if(gennoisespecPars[i].name == "scaleFactor")
 		{
@@ -849,8 +836,8 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 
 		// To avoid taking into account the pulse tails at the beginning of a record as part of a pulse-free interval
 		tail_duration = 0;
-		temp = gsl_vector_subvector(ioutgslNOTFIL,0,eventsz-(int)(pi*samprate*tauFALL*scaleFactor)-1);
-		cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
+		temp = gsl_vector_subvector(ioutgslNOTFIL,0,eventsz-(int)(pi*samprate*scaleFactor)-1);
+		cutFreq = 2 * (1/(2*pi*scaleFactor));
 		boxLength = (int) ((1/cutFreq) * samprate);
 		if (find_baseline(&temp.vector, kappaMKC, stopCriteriaMKC, boxLength,  &mean, &sg, &baselineI))
 		{
@@ -864,7 +851,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		}
 
 		// Low-pass filtering
-		status = lpf_boxcar(&ioutgsl_aux,ioutgsl_aux->size,tauFALL*scaleFactor,samprate);
+		status = lpf_boxcar(&ioutgsl_aux,ioutgsl_aux->size,scaleFactor,samprate);
 		if (status == EPFAIL)
 		{
 			message = "Cannot run routine lpf_boxcar for low pass filtering";
@@ -876,7 +863,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		}
 		if (status == 4)
 		{
-			message = "lpf_boxcar: tauFALL*scaleFactor too high => Cut-off frequency too low";
+			message = "lpf_boxcar: scaleFactor too high => Cut-off frequency too low";
 			writeLog(fileRef,"Error", verbosity,message);
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 		}
@@ -891,7 +878,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		//Finding the pulses: Pulses tstart are found
 		if (findPulsesNoise (ioutgslNOTFIL, ioutgsl_aux, &tstartgsl, &qualitygsl, &energygsl,
 			&nPulses, &threshold,
-			tauFALL, scaleFactor, pulse_length, samprate,
+			scaleFactor, pulse_length, samprate,
 			samplesUp, nSgms,
 			Lb, Lrs,
 			library, models,
@@ -908,7 +895,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		if ((pulseFound == 1) || (tail_duration != 0))
 		{
 			// Finding the pulse-free intervals in each record 
-			if (findInterval(tail_duration, ioutgsl_aux, tstartgsl, nPulses, pulse_length, ntausPF, tauFALL_b, intervalMinBins, &nIntervals, &startIntervalgsl))
+			if (findInterval(tail_duration, ioutgsl_aux, tstartgsl, nPulses, pulse_length, nplPF, intervalMinBins, &nIntervals, &startIntervalgsl))
 			{
 				message = "Cannot run routine findInterval";
 				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
@@ -972,7 +959,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	gsl_vector_free(ioutgsl_aux);
 	gsl_vector_free(timegsl_block);
 	gsl_matrix_free(ioutgsl_block);
-	gsl_vector_free(vector_aux);cutFreq = 2 * (1/(2*pi*tauFALL*scaleFactor));
+	gsl_vector_free(vector_aux);cutFreq = 2 * (1/(2*pi*scaleFactor));
 	boxLength = (int) ((1/cutFreq) * samprate);
 	gsl_vector_complex_free(vector_aux1);
 	gsl_vector_free(derSGN);
@@ -990,7 +977,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 /***** SECTION 4 ************************************************************
 * findInterval: This function finds the pulse-free intervals when the input vector has pulses.
 *               The pulse-free intervals must have a minimum length (intervalMin).
-*               The interval with pulse is Tstart,Tend+nPF*tau (being Tend=n*tau).
+*               The interval with pulse is Tstart,Tend+nPF*pulse_length (being Tend=n*pulse_length).
 *
 * Parameters:
 * - tail_duration: Length of the tail of a previous pulse
@@ -998,7 +985,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 * - startpulse: Vector with the Tstart of all the pulses of the input vector (samples)
 * - npin: Number of pulses in the input vector
 * - pulse_length: Pulse length (samples)
-* - nPF: Number of tauFALLs after ending the pulse to start the pulse-free interval
+* - nPF: Number of pulse lengths after ending the pulse to start the pulse-free interval
 * - interval: Minimum length of the interval (samples)
 * - ni: Number of pulse-free intervals in the input vector
 * - startinterval: Vector with the starting time of each pulse-free interval (samples).
@@ -1009,7 +996,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 * - Processing if there are no more pulses in the input vector
 * 	-It looks for pulse-free intervals at the end of the event and the search for more pulse-free intervals is finished
 *****************************************************************************/
-int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, double tau, int interval,
+int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, int interval,
 	int *ni, gsl_vector **startinterval)
 {
 	// Declare variables
@@ -1035,19 +1022,19 @@ int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse
 			{
 				gsl_vector_set(*startinterval,j,start+(j-*ni)*interval);
 			}
-			start = gsl_vector_get(startpulse,i)+pulse_length+nPF*tau;
+			start = gsl_vector_get(startpulse,i)+pulse_length+nPF*pulse_length;
 			*ni = *ni+niinc;
 		}
 		else
-			//The tend+nPF*tau of a pulse is aliased to the start of the next pulse
+			//The tend+nPF*pulse_length of a pulse is aliased to the start of the next pulse
 		{
 			if (gsl_vector_get(startpulse,i)-gsl_vector_get(startpulse,i-1)<0)
 			{
-				start = gsl_vector_get(startpulse,i-1)+pulse_length+nPF*tau;
+				start = gsl_vector_get(startpulse,i-1)+pulse_length+nPF*pulse_length;
 			}
 			else
 			{
-				start = gsl_vector_get(startpulse,i)+pulse_length+nPF*tau;
+				start = gsl_vector_get(startpulse,i)+pulse_length+nPF*pulse_length;
 			}
 		}
 	}
@@ -1227,8 +1214,8 @@ int createTPSreprFile ()
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
 
-	char str_ntausPF[125];			sprintf(str_ntausPF,"%d",ntausPF);
-	strhistory=string("ntausPF = ") + string(str_ntausPF);
+	char str_nplPF[125];			sprintf(str_nplPF,"%d",nplPF);
+	strhistory=string("nplPF = ") + string(str_nplPF);
 	strcpy(keyvalstr,strhistory.c_str());
 	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
 	{
@@ -1238,15 +1225,6 @@ int createTPSreprFile ()
 
 	char str_nintervals[125];		sprintf(str_nintervals,"%d",nintervals);
 	strhistory=string("nintervals = ") + string(str_nintervals);
-	strcpy(keyvalstr,strhistory.c_str());
-	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
-	{
-		message = "Cannot write keyword " + string(keyname) + " in noise file " + string(gnoiseName);
-		EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
-
-	char str_tauFALL[125];			sprintf(str_tauFALL,"%f",tauFALL);
-	strhistory=string("tauFall = ") + string(str_tauFALL);
 	strcpy(keyvalstr,strhistory.c_str());
 	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
 	{
@@ -1614,7 +1592,6 @@ int findPulsesNoise
 	int *nPulses,
 	double *threshold,
 
-	double taufall,
 	double scalefactor,
 	int sizepulsebins,
 	double samplingRate,
@@ -1655,16 +1632,17 @@ int findPulsesNoise
 		                                                        // in the output FITS file
 
 	// First step to look for single pulses
-	if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*taufall*scalefactor), &thresholdmediankappa))
+	if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*scalefactor), &thresholdmediankappa))
 	{
 		message = "Cannot run medianKappaClipping looking for single pulses";
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
 	*threshold = thresholdmediankappa;
 
-	if (findTstartNoise (100,vectorinDER, thresholdmediankappa, samplesup, 1, samplingRate, nPulses, &pulseFound, tstart, quality, &maxDERgsl, &index_maxDERgsl))
+	//if (findTstartNoise (100,vectorinDER, thresholdmediankappa, samplesup, 1, samplingRate, nPulses, &pulseFound, tstart, quality, &maxDERgsl, &index_maxDERgsl))
+	if (findTstartNoise (100,vectorinDER, thresholdmediankappa, samplesup, nPulses, tstart, quality, &maxDERgsl))
 	{
-		message = "Cannot run findTstart with two rows in models";
+		message = "Cannot run findTstartNoise with two rows in models";
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
 
@@ -1709,10 +1687,148 @@ int findPulsesNoise
 
 
 /***** SECTION 10 ************************************************************
+* findTstartNoise function: This function finds the pulses tstarts in the input vector (first derivative of the filtered record)
+*
+* This function scans all values the derivative of the (low-pass filtered) record until it finds nSamplesUp consecutive values (due to the noise more than 1 value is
+* required) over the threshold. To look for more pulses, it finds nSamplesUp consecutive values
+* (due to the noise) under the threshold and then, it starts to scan again.
+*
+* - Declare variables
+* - Allocate GSL vectors
+* - Obtain tstart of each pulse in the derivative:
+* 	- If der_i>threshold and foundPulse=false, it looks for nSamplesUp consecutive samples over the threshold
+*   		- If not, it looks again for a pulse crossing over the threshold
+*	        - If yes, a pulse is found (truncated if it is at the beginning)
+*	- If der_i>threshold and foundPulse=true, it looks for a sample under the threshold
+*   		- If not, it looks again for a sample under the threshold
+*       	- If yes, it looks for nSamplesUp consecutive samples under the threshold and again it starts to look for a pulse
+*
+* Parameters:
+* - maxPulsesPerRecord: Expected maximum number of pulses per record in order to not allocate the GSL variables with the size of the input vector
+* - der: First derivative of the (low-pass filtered) record
+* - adaptativethreshold: Threshold
+* - nSamplesUp: Number of consecutive samples over the threshold to 'find' a pulse
+* - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
+*                     This function uses 'pulse_length', 'tstartPulse1', 'tstartPulse2' and 'tstartPulse3'
+* - numberPulses: Number of found pulses
+* - tstartgsl: Pulses tstart (in samples)
+* - flagTruncated: Flag indicating if the pulse is truncated (inside this function only initial truncated pulses are classified)
+* - maxDERgsl: Maximum of the first derivative of the (low-pass filtered) record inside each found pulse
+******************************************************************************/
+int findTstartNoise
+(
+	int maxPulsesPerRecord,
+
+	gsl_vector *der,
+	double adaptativethreshold,
+	int nSamplesUp,
+
+	int *numberPulses,
+	
+	gsl_vector **tstartgsl,
+	gsl_vector **flagTruncated,
+	gsl_vector **maxDERgsl)
+{
+	string message="";
+	char valERROR[256];
+
+	// Declare variables
+	int szRw = der->size;	 // Size of segment to process
+	*numberPulses = 0;
+	bool foundPulse = false;
+	int i = 0;		// To go through the elements of a vector
+	
+	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
+	
+	// Allocate GSL vectors
+	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
+	*tstartgsl = gsl_vector_alloc(maxPulsesPerRecord);	
+	*flagTruncated = gsl_vector_alloc(maxPulsesPerRecord);
+	gsl_vector_set_zero(*flagTruncated);
+	*maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Maximum of the first derivative
+	gsl_vector_set_all(*maxDERgsl,-1E3);
+
+	int cntUp = 0;
+	int cntDown = 0;
+	double possibleTstart;
+	double possiblemaxDER;
+	
+	
+	// It looks for a pulse
+	// If a pulse is found (foundPulse==true) => It looks for another pulse
+	do
+	{
+		foundPulse = false;
+		
+		// It looks for a pulse since the beginning (or the previous pulse) to the end of the record
+		while (i < szRw-1)
+		{
+			if (foundPulse == false)
+			{
+				// The first condition to detect a pulse is that the adjustedDerivative was over the threshold
+				if (gsl_vector_get(der,i) > adaptativethreshold)
+				{
+					cntUp++;
+					if (cntUp == 1)
+					{
+						possibleTstart = i;
+						possiblemaxDER = gsl_vector_get(der,i);
+					}
+					else if (cntUp == nSamplesUp)
+					{
+						if (*numberPulses == maxPulsesPerRecord)
+						{
+							sprintf(valERROR,"%d",__LINE__+5);
+							string str(valERROR);
+							message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+							EP_PRINT_ERROR(message,EPFAIL);
+						}
+						gsl_vector_set(*maxDERgsl,*numberPulses,possiblemaxDER);
+						gsl_vector_set(*tstartgsl,*numberPulses,possibleTstart);
+						if (possibleTstart == 0)	gsl_vector_set(*flagTruncated,*numberPulses,1);
+						*numberPulses = *numberPulses +1;
+						foundPulse = true;
+						cntUp = 0;
+					}
+					cntDown = 0;
+				}
+				else cntUp = 0;
+			}
+			else
+			{
+				if (gsl_vector_get(der,i) > gsl_vector_get(*maxDERgsl,*numberPulses-1))
+				{
+					gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(der,i));
+				}
+				else if (gsl_vector_get(der,i) < adaptativethreshold)
+				{
+					cntUp = 0;
+					cntDown++;
+					if (cntDown == nSamplesUp) // nSamplesUp samples under the threshold in order to look for another pulse
+					{
+						foundPulse = false; 
+						cntDown = 0;
+					}
+				}
+				else if (gsl_vector_get(der,i) > adaptativethreshold)
+				{
+					cntDown = 0;
+				}
+			}
+			i++;
+		}
+	} while (foundPulse == true);
+
+	return (EPOK);
+}
+/*xxxx end of SECTION 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 10 ************************************************************
 * findTstartNoise function: 
 * 
 ****************************************************************************/
-int findTstartNoise(int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp, int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl)
+/*int findTstartNoise(int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp, int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl)
 {
 	// Declare variables
 	string message="";
@@ -1886,5 +2002,5 @@ int findTstartNoise(int maxPulsesPerRecord, gsl_vector *der, double adaptativeth
 	if (*numberPulses > 0) *thereIsPulse = 1;
 
 	return (EPOK);
-}
+}*/
 /*xxxx end of SECTION 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
