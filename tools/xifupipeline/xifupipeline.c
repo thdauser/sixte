@@ -636,11 +636,7 @@ int xifupipeline_main()
 				headas_chat(3, "\nstart event grading ...\n");
 				current_impact_write_row = pixilf->row;
 				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
-//				writeGrading2PixImpactFile(det,pixilf,&status);
-//
-//				headas_chat(3, "\nstart event reconstruction ...\n");
-//				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
-//				processImpactsWithRMF(det,pixilf,event_file,&status);
+
 				impactsToEvents(det,pixilf,event_file,par.saveCrosstalk,&status);
 
 				pixilf->row=current_impact_write_row;
@@ -653,7 +649,11 @@ int xifupipeline_main()
 			if (gtibin>=gti->ngti) break;
 
 		} while (1);
-		CHECK_STATUS_BREAK(status);
+
+		if (status==EXIT_FAILURE){
+			SIXT_ERROR("xifupipeline had an internal error");
+			break;
+		}
 		// End of loop over the individual GTI intervals.
 
 
@@ -688,6 +688,7 @@ int xifupipeline_main()
 			CHECK_STATUS_BREAK(status);
 		}
 
+		CHECK_STATUS_BREAK(status);
 
 
 	} while(0); // END of ERROR HANDLING Loop.
@@ -727,6 +728,7 @@ int xifupipeline_main()
 		headas_chat(3, "finished successfully!\n\n");
 		return(EXIT_SUCCESS);
 	} else {
+		headas_chat(3, " ... ERROR when cleaning up! !\n\n");
 		return(EXIT_FAILURE);
 	}
 }

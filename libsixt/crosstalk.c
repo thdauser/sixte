@@ -1130,7 +1130,9 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 	// if impact is close enough to have an influence
 	if ((time_difference>det->crosstalk_timedep->time[0]) && (time_difference<det->crosstalk_timedep->time[det->crosstalk_timedep->length-1])){
 
-		headas_chat(7,"TimeI:%.1e TimeC:%.2e CrosstalkE:%.2e ",impact->time,crosstalk->time,crosstalk->energy);
+		headas_chat(7,"[pixID:%i] TimeI:%.2e TimeC[pixID:%i]:%.2e CrosstalkE:%.2e [PhID=%i]",impact->pixID,impact->time,
+				crosstalk->time,
+				crosstalk->energy,impact->ph_id);
 		// Binary search for to find interpolation interval
 		int high=det->crosstalk_timedep->length-1;
 		int low=0;
@@ -1156,7 +1158,7 @@ int computeCrosstalkInfluence(AdvDet* det,PixImpact* impact,PixImpact* crosstalk
 				*(time_difference-det->crosstalk_timedep->time[timedep_index]));
 		impact->energy+=energy_influence;
 		*influence+=energy_influence;
-		headas_chat(7,", Influence:%.2e (fraction:%.2e)\n",*influence,*influence/crosstalk->energy);
+		headas_chat(7,", Influence:%.2e (fraction:%.2e) => impact_energy:%.2e\n",*influence,*influence/crosstalk->energy,impact->energy);
 		return 1;
 	}
 	return 0;
@@ -1194,6 +1196,7 @@ void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
 	}
 }
 
+
 /** Add crosstalk to proxy */
 void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact,int* const status){
 	// Check that there is room left for new crosstalk
@@ -1223,6 +1226,122 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact,int* const
 		xtalk_proxy->current_crosstalk_index-=xtalk_proxy->xtalk_proxy_size;
 	}
 }
+
+
+
+/** Constructor of EventProxy structure */
+EventProxy* newEventProxy(int* const status){
+	EventProxy* proxy= (CrosstalkProxy*) malloc (sizeof (*proxy));
+	CHECK_MALLOC_RET_NULL_STATUS(proxy,*status);
+
+	proxy->impact = (PixImpact**) malloc(INITEVTPROXYNB*sizeof(PixImpact*));
+	CHECK_MALLOC_RET_NULL_STATUS(proxy->impact,*status);
+	for (int ii=0;ii<INITEVTPROXYNB;ii++){
+		proxy->impact[ii] = (PixImpact*) malloc(sizeof(PixImpact));
+		CHECK_MALLOC_RET_NULL_STATUS(proxy->impact[ii],*status);
+	}
+
+	proxy->ind_grading_previous=0;
+	proxy->ind_grading_current=0;
+	proxy->ind_grading_next=0;
+
+	proxy->ind_event=0;
+
+	proxy->nb_active=0;
+
+	proxy->event_proxy_size=INITXTALKNB;
+
+	return proxy;
+}
+
+/** Destructor of CrosstalkProxy structure */
+void freeEventProxy(EventProxy** proxy){
+	if (*(proxy)!=NULL){
+		if ((*proxy)->impact !=NULL){
+			for (int ii=0;ii<((*proxy)->event_proxy_size);ii++){
+				free((*proxy)->impact[ii]);
+			}
+			free((*proxy)->impact);
+			free(*proxy);
+		}
+	}
+}
+
+
+/*
+// Add event to proxy
+void addEvent2Proxy(EventProxy* proxy,PixImpact* impact,int* const status){
+	// Check that there is room left for new crosstalk
+	// If not, allocate new array of double size and copy old impacts (manual copy to reorder circular buffer, should happen rarely anyway)
+
+	double dt_limit = 0.01; // maximal time that two events can influence each other
+
+	if ( (proxy->previous !=NULL) && ( (proxy->previous-impact->time) > dt_limit ){
+
+
+
+	}
+
+	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
+		PixImpact** piximp_list = (PixImpact**) malloc((xtalk_proxy->xtalk_proxy_size*2)*sizeof(PixImpact*));
+		CHECK_MALLOC_VOID_STATUS(piximp_list,*status);
+		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
+			piximp_list[ii] = xtalk_proxy->xtalk_impacts[(xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size];
+		}
+		for (int ii=xtalk_proxy->xtalk_proxy_size;ii<2*xtalk_proxy->xtalk_proxy_size;ii++){
+			piximp_list[ii] = (PixImpact*) malloc(sizeof(PixImpact));
+			CHECK_MALLOC_VOID_STATUS(piximp_list[ii],*status);
+		}
+		free(xtalk_proxy->xtalk_impacts);
+		xtalk_proxy->xtalk_impacts = piximp_list;
+		xtalk_proxy->current_crosstalk_index = xtalk_proxy->xtalk_proxy_size;
+		xtalk_proxy->xtalk_proxy_size*=2;
+	}
+	// Copy crosstalk to proxy
+	copyPixImpact(xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size],impact);
+	xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size]->nb_pileup=0;
+	xtalk_proxy->n_active_crosstalk+=1;
+	xtalk_proxy->current_crosstalk_index+=1;
+	// Prevent meaningless overrun (TO CHECK)
+	if (xtalk_proxy->current_crosstalk_index>=2*xtalk_proxy->xtalk_proxy_size){
+		xtalk_proxy->current_crosstalk_index-=xtalk_proxy->xtalk_proxy_size;
+	}
+}
+
+
+
+// Add event to proxy
+void addEvent(EventProxy* proxy,PixImpact* impact,int* const status){
+	// Check that there is room left for new crosstalk
+	// If not, allocate new array of double size and copy old impacts (manual copy to reorder circular buffer, should happen rarely anyway)
+
+	double dt_limit = 0.01; // [seconds] maximal time that two events can influence each other
+
+	proxy->impact[proxy->ind_event % proxy->event_proxy_size] = impact;
+	proxy->ind_event++;
+	proxy->nb_active++;
+
+
+	if ( (proxy->nb_active >= 3 ) && ( (proxy->impact[proxy->ind_grading_previous]->time) > dt_limit )){
+		// do Event grading
+
+		// remove one event
+
+		proxy->nb_active--;
+	}
+
+
+	// Copy crosstalk to proxy
+	copyPixImpact(proxy->impact[proxy->current_crosstalk_index % proxy->xtalk_proxy_size],impact);
+	proxy->xtalk_impacts[proxy->current_crosstalk_index % proxy->xtalk_proxy_size]->nb_pileup=0;
+	proxy->n_active_crosstalk+=1;
+	proxy->current_crosstalk_index+=1;
+	// Prevent meaningless overrun (TO CHECK)
+	if (proxy->current_crosstalk_index>=2*proxy->xtalk_proxy_size){
+		proxy->current_crosstalk_index-=proxy->event_proxy_size;
+	}
+}
+*/
 
 /** Compute crosstalk influence */
 void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy* xtalk_proxy,double* xtalk_energy,int* nb_influences,
