@@ -26,6 +26,7 @@ nSgms,r,h,5,,,"Number of standard deviations in the kappa-clipping process for t
 LrsT,r,h,30E-6,,,"Running sum length for the RS raw energy estimation (seconds) (only for library creation)"
 LbT,r,h,1.E-3,,,"Baseline averaging length for the RS raw energy estimation (seconds) (only for library creation)"
 monoenergy,r,h,-999.,,,"Monochromatic energy of the pulses in the input FITS file in eV (only for library creation)"
+maxLengthFixedFilter,i,h,8000,,,"Length of the longest fixed filter (only for library creation)"
 mode,i,h,1,,,"Calibration run (0) or energy reconstruction run (1)"
 NoiseFile,s,h,"noise.fits",,,"Noise FITS file with noise spectrum"
 FilterDomain,s,h,"F",,,"Filtering Domain: Time (T) or Frequency (F)"

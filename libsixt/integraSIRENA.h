@@ -146,6 +146,9 @@ typedef struct
 	/** Pulse Heights of the templates */
 	gsl_vector *pulse_heights;
 
+	/** Structure containing all the pulse templates whose length is maxLengthFixedFilter from the library */
+	PulseTemplate* pulse_templatesMaxLengthFixedFilter;
+	
 	/** Structure containing all the pulse templates from the library */
 	PulseTemplate* pulse_templates;
 
@@ -206,6 +209,9 @@ typedef struct
 	/** PAB vector */
 	gsl_matrix *PAB;
 
+	/** PABMXLFF vector */
+	gsl_matrix *PABMXLFF;
+	
 	/** DAB vector */
 	gsl_matrix *DAB;
 	
@@ -358,6 +364,9 @@ typedef struct
 
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
+
+	/** Length of the longest fixed filter for library creation **/
+	int maxLengthFixedFilter;
 	
 	/** Running sum length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LrsT;
@@ -380,7 +389,7 @@ typedef struct
 	/** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
 	char FilterMethod[3];
 
-	/** Energy Method: OPTFILT, WEIGHT, WEIGHTN or I2R **/
+	/** Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA **/
 	char EnergyMethod[8];
 
 	//LagsOrNot: LAGS == True or NOLAGS == False **/
@@ -454,7 +463,7 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, cha
 	char* const event_file,	int pulse_length, double scaleFactor, double samplesUp, double nSgms, 
 	int mode, double LrsT, double LbT, char* const noise_file, char* filter_domain,
 	char* filter_method, char* energy_method, int lagsornot, int ofiter, char oflib, char *ofinterp, char* oflength_strategy, int oflength,
-	double monoenergy, int interm, char* detectFile, char* filterFile, char clobber, int maxPulsesPerRecord, double SaturationValue,
+	double monoenergy, int maxLengthFixedFilter, int interm, char* detectFile, char* filterFile, char clobber, int maxPulsesPerRecord, double SaturationValue,
 	int tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status);
 
 #ifdef __cplusplus
@@ -483,7 +492,7 @@ extern "C"
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 
-LibraryCollection* getLibraryCollection(const char* const filename, int mode, char *filter_domain, int pulse_length, char *energy_method, char *filter_method, char oflib, 
+LibraryCollection* getLibraryCollection(const char* const filename, int mode, int maxLengthFixedFilter, char *filter_domain, int pulse_length, char *energy_method, char *filter_method, char oflib, 
 	char **ofinterp, int* const status);
 
 NoiseSpec* getNoiseSpec(const char* const filename,int mode,char *energy_method,char *filter_method,int* const status);
