@@ -118,7 +118,7 @@ struct Parameters {
 	double monoenergy;
 	
 	/** Length of the longest fixed filter for library creation **/
-	int maxLengthFixedFilter;
+	int largeFilter;
 	
 	/** Running sum length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LrsT;

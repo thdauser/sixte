@@ -1912,7 +1912,7 @@ int InitialTriggering
 		message = "Cannot run medianKappaClipping doing the initial triggering";
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
-
+	
 	if (tstartProvided == 0)
 	{
 		while (i < sizeRecord-1)

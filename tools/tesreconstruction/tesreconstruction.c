@@ -77,7 +77,7 @@ int tesreconstruction_main() {
 	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile, 
 		par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.mode, par.LrsT, par.LbT, par.NoiseFile, 
 		par.FilterDomain, par.FilterMethod, par.EnergyMethod,par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
-		par.monoenergy, par.maxLengthFixedFilter, par.intermediate, par.detectFile, par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
+		par.monoenergy, par.largeFilter, par.intermediate, par.detectFile, par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
 		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
 	  
 	  // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
@@ -347,7 +347,7 @@ int getpar(struct Parameters* const par)
 
 	status=ape_trad_query_double("monoenergy", &par->monoenergy);
 	
-	status=ape_trad_query_int("maxLengthFixedFilter", &par->maxLengthFixedFilter);
+	status=ape_trad_query_int("largeFilter", &par->largeFilter);
 
 	status=ape_trad_query_string("NoiseFile", &sbuffer);
 	strcpy(par->NoiseFile, sbuffer);
