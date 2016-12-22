@@ -31,6 +31,7 @@
 #define CROSSTALK_ID_ELEC 3
 #define CROSSTALK_ID_IMOD 4
 #define INITXTALKNB 100
+#define INITEVTPROXYNB 10
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -50,6 +51,16 @@ typedef struct{
 	long current_crosstalk_index;
 	int xtalk_proxy_size;
 }CrosstalkProxy;
+
+typedef struct{
+	PixImpact** impact;
+	int event_proxy_size;
+	int ind_grading_previous;
+	int ind_grading_current;
+	int ind_grading_next;
+	int ind_event;
+	int nb_active;
+}EventProxy;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -79,6 +90,9 @@ void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy);
 
 /** Add crosstalk to proxy */
 void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact,int* const status);
+
+EventProxy* newEventProxy(int* const status);
+void freeEventProxy(EventProxy** proxy);
 
 /** Compute total crosstalk influence */
 void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy* xtalk_proxy,double* xtalk_energy,int* nb_influences,

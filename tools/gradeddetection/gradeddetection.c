@@ -129,7 +129,7 @@ void gradeddetection_getpar(struct Parameters* const par,int* const status) {
 		par->doCrosstalk = CROSSTALK_ID_ELEC;
 	} else if (strncmp(buf,"therm",5)==0){
 		par->doCrosstalk = CROSSTALK_ID_THERM;
-	} else if (strncmp(buf,"imod",4)==0){
+	} else if (strncmp(buf,"nlin",4)==0){
 		par->doCrosstalk = CROSSTALK_ID_IMOD;
 	} else {
 		par->doCrosstalk=CROSSTALK_ID_NONE;

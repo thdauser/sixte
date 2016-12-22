@@ -41,6 +41,7 @@ typedef struct{
 typedef struct{
 	PixImpact *impact;
 	CrosstalkProxy* xtalk_proxy;
+	EventProxy* proxy;
 	gradingTimeStruct * times;
 	double crosstalk_energy;
 	int nb_crosstalk_influence;
