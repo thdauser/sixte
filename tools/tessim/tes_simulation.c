@@ -732,8 +732,10 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
   PixImpact impact;
   impact.time=tstop+100; // initialize to NO photon 
   if (tes->get_photon != NULL) {
-    tes->get_photon(&impact,tes->photoninfo,status);
-    CHECK_STATUS_RET(*status,-1);
+    do {
+      tes->get_photon(&impact,tes->photoninfo,status);
+      CHECK_STATUS_RET(*status,-1);
+    } while (impact.time<tes->tstart); // skip over all impacts before tstart
   }
   
   // write initial status of the TES to the stream
@@ -776,20 +778,24 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
 
     // absorb next photon?
     tes->En1=0.;
-    if (tes->time>=impact.time) {
+    // This while loop handles pileup correctly
+    // i.e. if two photons arrive within one delta_t
+    // their energies are summed up
+    while (tes->time>=impact.time) {
       tes->Nevts++;
-      tes->En1=impact.energy*keV/(tes->delta_t*tes->therm);
-      
+      // increase En1 (note the +=)
+      tes->En1+=impact.energy*keV/(tes->delta_t*tes->therm);
+
       // remember that we've processed this photon
       if (tes->write_photon!=NULL) {
-	tes->write_photon(tes,impact.time,impact.ph_id,status);
+        tes->write_photon(tes,impact.time,impact.ph_id,status);
       }
 
       // get the next photon 
       int success=tes->get_photon(&impact,tes->photoninfo,status);
       CHECK_STATUS_RET(*status,-1);
       if (success==0) {
-	// there is no further photon to read. Set next impact time to
+        // there is no further photon to read. Set next impact time to
 	// a time outside much after this
 	impact.time=tstop+100.;
       }
