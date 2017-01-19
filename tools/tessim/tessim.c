@@ -120,10 +120,18 @@ int tessim_main() {
 	      suppress=par.triggerSize;
 	      threshold=0.;
 	      printf("\nChoosing noise output with record length %u\n",npts);
-	    } else {
-	      fprintf(stderr,"Trigger strategy must be one of stream, movavg, diff, or noise\n");
-	      exit(1);
-	    }
+            } else {
+              if (strncmp(par.trigger,"impact",6)==0) {
+                assert(par.impactlist != NULL); // Can't trigger on impact without an impactlist
+                strategy=TRIGGER_IMPACT;
+                threshold=0.;
+                npts=0;
+                suppress=par.triggerSize;
+  	      } else {
+	        fprintf(stderr,"Trigger strategy must be one of stream, movavg, diff, noise or impact\n");
+	        exit(1);
+	      }
+            }
 	  }
 	}
 

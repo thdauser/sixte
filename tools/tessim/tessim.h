@@ -175,7 +175,9 @@ struct tesparams {
 
   double squid_noise; // SQUID readout and electronics noise 
 
-  double En1;   // energy absorbed by a photon during this step [J]
+  PixImpact *impact;   // next photon impact
+  double En1;   // energy absorbed by photons during this step [J]
+  int n_absorbed;  // number of photons absorbed during this step
 
   gsl_odeiv2_system *odesys;    // differential equation system
   gsl_odeiv2_driver *odedriver; // ODS solver
@@ -280,6 +282,8 @@ typedef struct {
   int strategy;      // trigger strategy:
                      //   1: moving average
                      //   2: differentiation
+                     //   3: noise
+                     //   4: trigger on impact
   double threshold;  // threshold above which trigger is valid
   unsigned int npts; // number of previous points to include in trigger calculation
   long helper[3]; // helper variables
@@ -304,6 +308,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse,int *status);
 #define TRIGGER_MOVAVG 1
 #define TRIGGER_DIFF 2
 #define TRIGGER_NOISE 3
+#define TRIGGER_IMPACT 4
 
 // append a photon to the data stream
 // NOT YET IMPLEMENTED!

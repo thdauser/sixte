@@ -104,11 +104,13 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   //   0: moving average
   //   1: differentiation
   //   2: noise (no triggering, but output records)
+  //   3: impact (trigger perfectly, i.e. at every photon impact)
   //
   // The following elements of the helper array are used by the
   // moving average calculation:
   //   helper[0]: sum to calculate the moving average
   //   helper[1]: index into the fifo (for moving average calculation)
+  //
 
   CHECK_STATUS_VOID(*status); 
 
@@ -187,8 +189,12 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 	} else {
 	  if (data->strategy==TRIGGER_NOISE) {
 	    trigger=1;
-	  } else {
-	    fprintf(stderr,"This should never happen!");
+          } else {
+            if (data->strategy==TRIGGER_IMPACT) {
+              trigger=(tes->n_absorbed >= 1);
+	    } else {
+	      fprintf(stderr,"This should never happen!");
+            }
 	  }
 	}
       }

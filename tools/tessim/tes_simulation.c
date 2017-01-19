@@ -584,6 +584,8 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   // we have not yet dealt with events
   tes->Nevts=0;
+  tes->n_absorbed=0;
+  tes->impact = malloc(sizeof(PixImpact));
 
   tes->sample_rate=par->sample_rate; // Sample rate in Hz (typical 100-200kHz)
   tes->timeres=1./tes->sample_rate; // time resolution
@@ -719,6 +721,9 @@ void tes_free(tesparams *tes) {
   free(tes->odesys);
   tes->odesys=NULL;
 
+  free(tes->impact);
+  tes->impact=NULL;
+
 }
 
 
@@ -729,13 +734,12 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
   CHECK_STATUS_RET(*status,-1);
 
   // get first photon to deal with
-  PixImpact impact;
-  impact.time=tstop+100; // initialize to NO photon 
+  tes->impact->time=tstop+100; // initialize to NO photon
   if (tes->get_photon != NULL) {
     do {
-      tes->get_photon(&impact,tes->photoninfo,status);
+      tes->get_photon(tes->impact,tes->photoninfo,status);
       CHECK_STATUS_RET(*status,-1);
-    } while (impact.time<tes->tstart); // skip over all impacts before tstart
+    } while (tes->impact->time<tes->tstart); // skip over all impacts before tstart
   }
   
   // write initial status of the TES to the stream
@@ -778,26 +782,28 @@ int tes_propagate(tesparams *tes, double tstop, int *status) {
 
     // absorb next photon?
     tes->En1=0.;
+    tes->n_absorbed=0;
     // This while loop handles pileup correctly
     // i.e. if two photons arrive within one delta_t
     // their energies are summed up
-    while (tes->time>=impact.time) {
+    while (tes->time>=tes->impact->time) {
       tes->Nevts++;
+      tes->n_absorbed++;
       // increase En1 (note the +=)
-      tes->En1+=impact.energy*keV/(tes->delta_t*tes->therm);
+      tes->En1+=tes->impact->energy*keV/(tes->delta_t*tes->therm);
 
       // remember that we've processed this photon
       if (tes->write_photon!=NULL) {
-        tes->write_photon(tes,impact.time,impact.ph_id,status);
+        tes->write_photon(tes,tes->impact->time,tes->impact->ph_id,status);
       }
 
       // get the next photon 
-      int success=tes->get_photon(&impact,tes->photoninfo,status);
+      int success=tes->get_photon(tes->impact,tes->photoninfo,status);
       CHECK_STATUS_RET(*status,-1);
       if (success==0) {
         // there is no further photon to read. Set next impact time to
 	// a time outside much after this
-	impact.time=tstop+100.;
+	tes->impact->time=tstop+100.;
       }
     }
     double Y[2];
