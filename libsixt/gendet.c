@@ -50,7 +50,7 @@ GenDet* newGenDet(int* const status)
 
   // Set initial values.
   det->ignore_bkg   =0;
-  det->erobackground=0;
+  det->auxbackground=0;
   det->anyphoton    =0;
   det->frametime    =0.;
   det->deadtime     =0.;
@@ -498,7 +498,7 @@ void operateGenDetClock(GenDet* const det,
 	// If there has been no photon interaction during the last frame
 	// and if no background model is activated, jump over the next empty frames
 	// until there is a new photon impact.
-	if ((((0==det->erobackground)&&(NULL==det->phabkg[0])&&(NULL==det->phabkg[1]))
+	if ((((0==det->auxbackground)&&(NULL==det->phabkg[0])&&(NULL==det->phabkg[1]))
 	     ||(1==det->ignore_bkg))&&(0==det->anyphoton)) {
 	  long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
 	  det->clocklist->time       +=nframes*det->frametime;
@@ -596,10 +596,10 @@ void operateGenDetClock(GenDet* const det,
 
 	// Insert cosmic ray background events, 
 	// if the appropriate model is defined and should be used.
-	if ((1==det->erobackground)&&(0==det->ignore_bkg)) {
+	if ((1==det->auxbackground)&&(0==det->ignore_bkg)) {
 	  // Get background events for the required time interval (has
 	  // to be given in [s]).
-	  eroBackgroundOutput* list=eroBkgGetBackgroundList(clwait->time);
+	  backgroundOutput* list=bkgGetBackgroundList(clwait->time);
 	  double cosrota=cos(det->pixgrid->rota);
 	  double sinrota=sin(det->pixgrid->rota);
 	  int ii;
@@ -638,7 +638,7 @@ void operateGenDetClock(GenDet* const det,
 				  det->clocklist->time,
 				  -1, -1);
 	  }
-	  eroBkgFree(list);
+	  bkgFree(list);
 	}
 
 	// Apply the hot pixels of the bad pixel map (if available) using

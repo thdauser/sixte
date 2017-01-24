@@ -24,7 +24,7 @@
 #include "sixt.h"
 #include "badpixmap.h"
 #include "clocklist.h"
-#include "erodetbkgrndgen.h"
+#include "background.h"
 #include "event.h"
 #include "eventfile.h"
 #include "gendetline.h"
@@ -156,7 +156,7 @@ typedef struct {
 
   /** Flag, whether a eroBackground model is available for the cosmic
       ray detector background. */
-  int erobackground;
+  int auxbackground;
 
   /** Models for detector background based on PHA spectra. */
   PHABkg* phabkg[2];

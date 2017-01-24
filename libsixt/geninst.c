@@ -41,7 +41,7 @@ struct XMLParseData {
 
 /** Flag indicating that the erodetbkgrndgen module is initialized and
     operational. */
-static int eroBkgInitialized=0;
+static int auxBkgInitialized=0;
 
 
 ////////////////////////////////////////////////////////////////////
@@ -98,9 +98,9 @@ void destroyGenInst(GenInst** const inst, int* const status)
     if (NULL!=(*inst)->det) {
       destroyGenDet(&(*inst)->det);
     }
-    if (1==eroBkgInitialized) {
-      eroBkgCleanUp(status);
-      eroBkgInitialized=0;
+    if (1==auxBkgInitialized) {
+      bkgCleanUp(status);
+      auxBkgInitialized=0;
     }
     if (NULL!=(*inst)->filename) {
       free((*inst)->filename);
@@ -676,9 +676,9 @@ static void GenInstXMLElementStart(void* parsedata,
       loadBadPixMap(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
-  } else if (!strcmp(Uelement, "EROBACKGROUND")) {
+  } else if (!strcmp(Uelement, "AUXBACKGROUND")) {
 
-    if (0==eroBkgInitialized) {
+    if (0==auxBkgInitialized) {
       // Determine the file containing the simulated background
       // hits from GEANT4.
       char filename[MAXFILENAME];
@@ -687,16 +687,20 @@ static void GenInstXMLElementStart(void* parsedata,
       // Check if a file name has been specified.
       if (strlen(filename)==0) {
 	xmlparsedata->status=EXIT_FAILURE;
-	SIXT_ERROR("no file specified for eROSITA detector background");
+	SIXT_ERROR("no file specified for aux detector background");
 	return;
       }
 
       char filepathname[MAXFILENAME];
       strcpy(filepathname, xmlparsedata->inst->filepath);
       strcat(filepathname, filename);
-      eroBkgInitialize(filepathname, xmlparsedata->seed, &xmlparsedata->status);
+      
+      bkgAux rateinfo;
+      rateinfo.rate=getXMLAttributeDouble(attr, "RATE");
+      
+      bkgInitializeAux(filepathname, xmlparsedata->seed, &rateinfo, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);
-      eroBkgInitialized=1;
+      auxBkgInitialized=1;
 
       // Load the optional light curve if available. The light curve
       // defines the time-variability of the background flux.
@@ -710,7 +714,7 @@ static void GenInstXMLElementStart(void* parsedata,
 	CHECK_STATUS_VOID(xmlparsedata->status);
       }
     }
-    xmlparsedata->inst->det->erobackground=1;
+    xmlparsedata->inst->det->auxbackground=1;
 
   } else if (!strcmp(Uelement, "PHABACKGROUND")) {
 
