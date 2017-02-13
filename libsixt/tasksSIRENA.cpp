@@ -361,10 +361,10 @@ void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection 
 		gsl_matrix_free(eigenvectors);
 		
 		// It is not necessary to check the allocation because 'PulseLength'(input parameter) and '(pulsesAll->ndetpulses)+((*pulsesInRecord)->ndetpulsesc' have been checked previously 
-		gsl_matrix *RowDataAdjust = gsl_matrix_alloc((*reconstruct_init)->pulse_length,(pulsesAll->ndetpulses)+((*pulsesInRecord)->ndetpulses));	// So¹-Mo So²-Mo...............So^(nonpileupPulses)-Mo 
-																				// S1¹-M1 S1²-M1...............S1^(nonpileupPulses)-M1
+		gsl_matrix *RowDataAdjust = gsl_matrix_alloc((*reconstruct_init)->pulse_length,(pulsesAll->ndetpulses)+((*pulsesInRecord)->ndetpulses));	// Soï¿½-Mo Soï¿½-Mo...............So^(nonpileupPulses)-Mo 
+																				// S1ï¿½-M1 S1ï¿½-M1...............S1^(nonpileupPulses)-M1
 																				// ...................................................
-																				// S1023¹-M1023 S1023²-M1023...S1023^(nonpileupPulses)-M1023
+																				// S1023ï¿½-M1023 S1023ï¿½-M1023...S1023^(nonpileupPulses)-M1023
 		for (int m=0;m<(*reconstruct_init)->pulse_length;m++)
 		{
 			for (int p=0;p<pulsesAll->ndetpulses;p++)
@@ -2495,9 +2495,9 @@ int createHisto (gsl_vector *invector, int nbins, gsl_vector **xhistogsl, gsl_ve
 * From the discrete function x[n] (n=0,...,N-1 => Length = N) and according to the time shifting property of the Fourier transform:
 *
 *  x[n]   <------> X[f]
-*  x[n-m] <------> X[f]·exp(-j2·pi·m/N)
+*  x[n-m] <------> X[f]ï¿½exp(-j2ï¿½piï¿½m/N)
 *
-*  Shift = m => Phase due to the shift = 2·pi·m/N => m = Phase due to the shift·N/(2·pi)
+*  Shift = m => Phase due to the shift = 2ï¿½piï¿½m/N => m = Phase due to the shiftï¿½N/(2ï¿½pi)
 *
 * - Declare variables
 * - FFT of 'vector1'
@@ -3169,7 +3169,7 @@ int writeLibrary(ReconstructInitSIRENA *reconstruct_init, double samprate, doubl
 
                 char keyvalstr[1000];
 
-                char str_procnumber[125];               snprintf(str_procnumber,125,"%d",eventcntLib);
+                char str_procnumber[125];               snprintf(str_procnumber,125,"%ld",eventcntLib);
                 string strprocname (string("PROC") + string(str_procnumber));
                 strcpy(keyname,strprocname.c_str());
                 string strprocval (string("PROC") + string(str_procnumber) + string(" Starting parameter list"));
@@ -3680,7 +3680,7 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 			message = "Cannot move to HDU  " + string(extname) + " in library";
 			EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
-		snprintf(str_length,125,"%d",optimalfilter_FFT_RI->size/2);
+		snprintf(str_length,125,"%lu",optimalfilter_FFT_RI->size/2);
 		strcpy(objFREQ.nameCol,(string("F")+string(str_length)).c_str());
 		strcpy(objFREQ.unit," ");
 		optimalfiltersF_matrix = gsl_matrix_alloc(1,optimalfilter_FFT_RI->size);
@@ -5091,7 +5091,7 @@ int calculateIntParams(ReconstructInitSIRENA *reconstruct_init, int indexa, int 
 		gsl_linalg_LU_decomp(aux, perm, &s);
 		gsl_linalg_LU_invert(aux, perm, inv);
 		gsl_permutation_free(perm);
-		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,inv,R_transW,0.0,matrixaux1);      // matrixaux1 = [(R'WR)^(-1)]·R'W       matrixaux1=(2xPL)
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,inv,R_transW,0.0,matrixaux1);      // matrixaux1 = [(R'WR)^(-1)]ï¿½R'W       matrixaux1=(2xPL)
 		vectoraux1_2 = gsl_vector_alloc(gsl_vector_get(fixedlengths,j)*2);
 		for (int i=0;i<2;i++)
 		{
@@ -5525,9 +5525,9 @@ int filterByWavelets (ReconstructInitSIRENA* reconstruct_init, gsl_vector **inve
 	}
 	
 	// DWT (Discrete Wavelet Transform)
-	// Análisis: Genera diferentes subbandas => Distintos niveles de descomposición se pueden generar de acuerdo a las necesidades de la aplicación
-	// El análisis wavelet entrega una serie de coeficientes 'data'. Dado que es un proceso reversible, la señal original puede obtenerse a partir 
-	// de los coeficientes obtenidos en el análisis.
+	// Anï¿½lisis: Genera diferentes subbandas => Distintos niveles de descomposiciï¿½n se pueden generar de acuerdo a las necesidades de la aplicaciï¿½n
+	// El anï¿½lisis wavelet entrega una serie de coeficientes 'data'. Dado que es un proceso reversible, la seï¿½al original puede obtenerse a partir 
+	// de los coeficientes obtenidos en el anï¿½lisis.
 	// Los coeficientes se agrupan en los de baja frecuencia (aproximaciones) y los de alta frecuencia (detalles).
 	gsl_wavelet_transform_forward (w, data, 1, n, work);
 	
@@ -5545,8 +5545,8 @@ int filterByWavelets (ReconstructInitSIRENA* reconstruct_init, gsl_vector **inve
 	// Sorting the 'n' elements of 'abscoeff' into ascending order, storing the resulting permutation in 'p'
 	gsl_sort_index (p, abscoeff, 1, n);
 		
-	// 'Wavelet shrinkage' reduce la magnitud de cada coeficiente dependiendo del nivel de ruido que se estima de la señal. Un método común es la designación de un umbral. 
-	// Al definir un umbral los valores de los coeficientes wavelet que se encuentren por debajo de él son eliminados (hard-threshold) o bien reducidos en magnitud (soft-threshold).
+	// 'Wavelet shrinkage' reduce la magnitud de cada coeficiente dependiendo del nivel de ruido que se estima de la seï¿½al. Un mï¿½todo comï¿½n es la designaciï¿½n de un umbral. 
+	// Al definir un umbral los valores de los coeficientes wavelet que se encuentren por debajo de ï¿½l son eliminados (hard-threshold) o bien reducidos en magnitud (soft-threshold).
 	// Hard thresholding: 'n-nc' coefficeints are deleted (those with low energy)
 	for (i = 0; (i + nc) < n; i++)		// If 'n = nc' => No coefficeints are deleted => In = Out
 	{
@@ -6138,26 +6138,26 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 *                         An optimal filter is just a matched filter that has been adjusted based on the noise spectrum of the system.
 *
 * It is assumed that all pulses are scaled versions of a template. In the frequency domain (as noise can be frequency dependent), the raw data
-* can be expressed as P(f)=E·S(f)+N(f), where S(f) is the normalized model pulse shape in the frequency domain, N(f) is the power spectrum of the noise and
+* can be expressed as P(f)=Eï¿½S(f)+N(f), where S(f) is the normalized model pulse shape in the frequency domain, N(f) is the power spectrum of the noise and
 * E is the scalar amplitude for the photon energy.
 *
 * The second assumption is that the noise is stationary, i.e. it does not vary with time. The amplitude of each pulse can then be estimated by 
-* minimizing (weighted least-squares sense) the difference between the noisy data and the model pulse shape, being the X² condition 
+* minimizing (weighted least-squares sense) the difference between the noisy data and the model pulse shape, being the Xï¿½ condition 
 * to be minimized:
 * 
-*            (P(f)-E·S(f))²
-*  X² = SUM ---------------- 
-*                N²(f)
+*            (P(f)-Eï¿½S(f))ï¿½
+*  Xï¿½ = SUM ---------------- 
+*                Nï¿½(f)
 *
 * In the time domain, the amplitude is the best weighted (optimally filtered) sum of the values in the pulse
 * 
-* E = k·SUM p(t)*op(t)
+* E = kï¿½SUM p(t)*op(t)
 * 
 * where of(t) is the time domain expression of optimal filter in frequency domain
 *                          
-*                    S*(f)               1                               |S(f)|²
+*                    S*(f)               1                               |S(f)|ï¿½
 * OptimalFilter(f)= -------  		--- = NormalizationFactor = SUM ---------
-*                    N²(f)               k                               |N(f)|²
+*                    Nï¿½(f)               k                               |N(f)|ï¿½
 *
 * 
 * - FFT calculus of the matched filter (filter template)
@@ -7341,16 +7341,16 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
 *   Once the filter template has been created ('filter' or 'filterFFT'), pulse height analysis is performed by aligning the template
 *   with a pulse and multiplying each point in the template by the corresponding point in the pulse. The sum of these products is the energy.
 *
-* 	Time domain: E = SUM p(t)·of(t)
+* 	Time domain: E = SUM p(t)ï¿½of(t)
 *
-* 	Frequency domain: E = SUM P(f)·OF(f)
+* 	Frequency domain: E = SUM P(f)ï¿½OF(f)
 *
 * 	In practice, the alignment of the pulse relative to the trigger is not completely accurate, so a number of n lags could be used in
 * 	order to find the peak value of the energy. The n peak values are fitted to a parabola to find the most accurate energy.
 *
 * 	(*) IXO Onboard processing Trade-Off
 * 
-* 	If 'OFInterp'=DAB, E = SUM {(p(t)-PAB(t))·of(t)} or E = SUM {(P(f)-PAB(f))·OF(f)}
+* 	If 'OFInterp'=DAB, E = SUM {(p(t)-PAB(t))ï¿½of(t)} or E = SUM {(P(f)-PAB(f))ï¿½OF(f)}
 *
 * WEIGHT:
 *
@@ -7370,7 +7370,7 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
 *
 *	With a linear interpolation of the signal and weight matrix the best energy estimate is:
 *
-*   E = Ealpha + (Ebeta-Ealpha)(r/3){(2DZ-1)+sqrt[(2DZ-1)²+3(2DY-DXD)/r]}
+*   E = Ealpha + (Ebeta-Ealpha)(r/3){(2DZ-1)+sqrt[(2DZ-1)ï¿½+3(2DY-DXD)/r]}
 *
 *   where D=U-Salpha. U and Salpha are signals without baseline, i.e., we are assuming that the baseline is known or that the baseline is constant (it is the same in 
 *   calibration and during the measurement).
@@ -7390,7 +7390,7 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
 *       bm -> Baseline of the measured data
 *       b0 -> Baseline in the calibration
 *
-*   => P(E) - Pab = E . Dab + (bm-b0) => Datos = E · Modelo + Baseline => y = E·x + B (condition equation)
+*   => P(E) - Pab = E . Dab + (bm-b0) => Datos = E ï¿½ Modelo + Baseline => y = Eï¿½x + B (condition equation)
 *
 *   where Pab = P(Ea) - Ea/(Eb-Ea) * (P(Eb)-P(Ea))  and Dab = (P(Eb) - P(Ea))/(Eb - Ea) can be pre-calculated. That way, you see that if you subtract Pab
 *   to your data, you end up again in an optimal filter like situation with your data modeled by something that is proportional to a template
@@ -7400,10 +7400,10 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
 * 
 *   Anyway, this is now a linear chi^2 problem which has an exact solution:
 *
-*   y = E·X + B => y0 = E·x0 + B => SUM{xiyi} = E·SUM{xi²} + mB => Matricial expression => chi^2 taking into account the errors
-*                  y1 = E·x1 + B                                   X'Y = |E|·X'X           chi^2 = SUM{(data-model)²}/sigma²
+*   y = Eï¿½X + B => y0 = Eï¿½x0 + B => SUM{xiyi} = Eï¿½SUM{xiï¿½} + mB => Matricial expression => chi^2 taking into account the errors
+*                  y1 = Eï¿½x1 + B                                   X'Y = |E|ï¿½X'X           chi^2 = SUM{(data-model)ï¿½}/sigmaï¿½
 *                  ...                                                   |B|
-*                  yN = E·xN + B                                   |E| = (1/(X'X))X'Y      y/sigma = E·x/sigma
+*                  yN = Eï¿½xN + B                                   |E| = (1/(X'X))X'Y      y/sigma = Eï¿½x/sigma
 *                                                                  |B|
 *                                                            
 *                                                                  |E| = (1/(X'WX))X'WY
@@ -7704,16 +7704,16 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 			scalar_aux1 = 3*scalar_aux1/r;			// 3(2DY-DXD)/r
 
 			gsl_blas_ddot(D,Z,&scalar_aux3);		// DZ
-			scalar_aux2 = pow(2*scalar_aux3-1,2.0);		// (2DZ-1)²
+			scalar_aux2 = pow(2*scalar_aux3-1,2.0);		// (2DZ-1)ï¿½
 
-			scalar_aux1 = sqrt(scalar_aux1+scalar_aux2);	// sqrt[(2DZ-1)² + 3(2DY-DXD)/r]
+			scalar_aux1 = sqrt(scalar_aux1+scalar_aux2);	// sqrt[(2DZ-1)ï¿½ + 3(2DY-DXD)/r]
 
 			scalar_aux3 = 2*scalar_aux3-1;			// (2DZ-1)
 
-			// (Ebeta-Ealpha)*(r/3)*{(2DZ-1) + sqrt[(2DZ-1)² + 3(2DY-DXD)/r]}
+			// (Ebeta-Ealpha)*(r/3)*{(2DZ-1) + sqrt[(2DZ-1)ï¿½ + 3(2DY-DXD)/r]}
 			scalar_aux1 = (scalar_aux3 + scalar_aux1)*(r/3)*(gsl_vector_get(reconstruct_init->library_collection->energies,indexEbeta)-gsl_vector_get(reconstruct_init->library_collection->energies,indexEalpha));
 
-			// Ealpha + (Ebeta-Ealpha)*(r/3)*{(2DZ-1) + sqrt[(2DZ-1)² + 3(2DY-DXD)/r]}
+			// Ealpha + (Ebeta-Ealpha)*(r/3)*{(2DZ-1) + sqrt[(2DZ-1)ï¿½ + 3(2DY-DXD)/r]}
 			*calculatedEnergy = gsl_vector_get(reconstruct_init->library_collection->energies,indexEalpha) + scalar_aux1;
 			//cout<<"calculateEnergy: "<<*calculatedEnergy<<endl;
 
@@ -7884,7 +7884,7 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 			      
 				gsl_vector *EB = gsl_vector_alloc(2);
 			
-				gsl_blas_dgemv(CblasNoTrans,1.0,PRCLWN,P_Pab,0.0,EB);                           // [(R'WR)^(-1)]R'W·D'
+				gsl_blas_dgemv(CblasNoTrans,1.0,PRCLWN,P_Pab,0.0,EB);                           // [(R'WR)^(-1)]R'Wï¿½D'
 														// D' = P_Pab
 				*calculatedEnergy = gsl_vector_get(EB,0);
 				//cout<<"calculatedEnergy: "<<*calculatedEnergy<<endl;

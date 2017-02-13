@@ -241,7 +241,7 @@ int getpar(struct Parameters* const par)
 	  SIXT_ERROR("failed reading the PulseLength parameter");
 	  return(status);
   }
-  assert(&par->PulseLength > 0);
+  assert(par->PulseLength > 0);
 
   status=ape_trad_query_int("EventListSize", &par->EventListSize);
   if (EXIT_SUCCESS!=status) {
@@ -412,7 +412,7 @@ int getpar(struct Parameters* const par)
 	MyAssert((par->intermediate == 0) || (par->intermediate == 1), "intermediate must be 0 or 1");
 	
 	//assert(&par->monoenergy > 0);
-	MyAssert(&par->monoenergy > 0, "monoenergy must be greater than 0");
+	MyAssert(par->monoenergy > 0, "monoenergy must be greater than 0");
 	
 	//assert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0));
 	MyAssert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0), "FilterDomain must be T or F");
@@ -455,7 +455,7 @@ int getpar(struct Parameters* const par)
 		 "OFStrategy must be FREE, BASE2, BYGRADE or FIXED");
 	
 	//assert(&par->OFLength > 0);
-	MyAssert(&par->OFLength > 0, "OFLength must be greater than 0");
+	MyAssert(par->OFLength > 0, "OFLength must be greater than 0");
 	
 	/*if (((strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RALL") == 0) || (strcmp(par->EnergyMethod,"I2RNOL") == 0)) && (par->tstartPulse1 == 0))
 	{
@@ -465,9 +465,9 @@ int getpar(struct Parameters* const par)
 	}*/	
 	
 	//assert(&par->energyPCA1 > 0);
-	MyAssert(&par->energyPCA1 > 0, "energyPCA1 must be greater than 0");
+	MyAssert(par->energyPCA1 > 0, "energyPCA1 must be greater than 0");
 	//assert(&par->energyPCA2 > 0);
-	MyAssert(&par->energyPCA2 > 0, "energyPCA2 must be greater than 0");
+	MyAssert(par->energyPCA2 > 0, "energyPCA2 must be greater than 0");
 	
   } else {
 	SIXT_ERROR("failed reading the Rcmethod parameter");

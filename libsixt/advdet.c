@@ -85,11 +85,11 @@ void destroyTESNoiseProperties(TESNoiseProperties* noise){
 
 void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
+	int g=pix->ngrades;
     destroyTESNoiseProperties(pix->TESNoise);
     freeGrading(pix);
-    freeMatrixCrossTalk(&(pix->thermal_cross_talk));
-    freeMatrixEnerdepCrossTalk(&(pix->electrical_cross_talk));
-    freeImodCrossTalk(&(pix->intermodulation_cross_talk));
+    freeMatrixCrossTalk(pix->thermal_cross_talk);
+    freeMatrixEnerdepCrossTalk(pix->electrical_cross_talk, g);
   }
 }
 
@@ -111,62 +111,74 @@ void freeReadoutChannels(ReadoutChannels* rc){
 	free( rc );
 }
 
-void freeImodTab(ImodTab* tab){
+void freeImodTab(ImodTab* tab, int gr){
 	if (tab != NULL){
-		if (tab->matrix!=NULL){
-
-			for(int kk=0; kk < tab->n_freq ; kk++){ //  --- freq --- //
-
-				if (tab->matrix[kk]!=NULL){
-					for(int ii=0; ii < tab->n_dt ; ii++){ // --- dt --- //
-						if (tab->matrix[kk][ii]!=NULL){
-							for(int jj=0; jj < tab->n_ampl ; jj++){
-								free(tab->matrix[kk][ii][jj]);
+		for(int g=0; g<gr;g++){
+			if (tab[g].matrix!=NULL){
+				for(int kk=0; kk < tab[g].n_freq ; kk++){ //  --- freq --- //
+					if (tab[g].matrix[kk]!=NULL){
+						for(int ii=0; ii < tab[g].n_dt ; ii++){ // --- dt --- //
+							if (tab[g].matrix[kk][ii]!=NULL){
+								for(int jj=0; jj < tab[g].n_ampl ; jj++){
+									free(tab[g].matrix[kk][ii][jj]);
+								}
+								free(tab[g].matrix[kk][ii]);
 							}
-							free(tab->matrix[kk][ii]);
-						}
-					}  // --- END dt --- //
-					free(tab->matrix[kk]);
-				}
-			}   //  --- END freq --- //
-			free(tab->matrix);
+						}  // --- END dt --- //
+						free(tab[g].matrix[kk]);
+					}
+				}   //  --- END freq --- //
+				free(tab[g].matrix);
+			}
+			free(tab[g].ampl);
+			free(tab[g].dt);
+			free(tab[g].freq);
 		}
-		free(tab->ampl);
-		free(tab->dt);
-		free(tab->freq);
 		free(tab);
 	}
 }
 
-
-void freeElecTab(ElecTab* tab){
+void freeElecTab(ElecTab* tab,int gr){
 	if (tab != NULL){
-		if (tab->matrix!=NULL){
-			for(int kk=0; kk < tab->n_freq_s ; kk++){ //  --- freq_p --- //
-				if (tab->matrix[kk]!=NULL){
-					for(int ii=0; ii < tab->n_freq_p ; ii++){ // --- freq_s --- //
-						if (tab->matrix[kk][ii]!=NULL){
-							free(tab->matrix[kk][ii]);
-						}
-					}  // --- END freq_s --- //
-					free(tab->matrix[kk]);
-				}
-			}   //  --- END freq_p --- //
-			free(tab->matrix);
+		for(int g=0; g<gr;g++){
+			if (tab[g].matrix!=NULL){
+				for(int kk=0; kk < tab[g].n_freq_s ; kk++){ //  --- freq_p --- //
+					if (tab[g].matrix[kk]!=NULL){
+						for(int ii=0; ii < tab[g].n_freq_p ; ii++){ // --- freq_s --- //
+							if (tab[g].matrix[kk][ii]!=NULL){
+								free(tab[g].matrix[kk][ii]);
+							}
+						}  // --- END freq_s --- //
+						free(tab[g].matrix[kk]);
+					}
+				}   //  --- END freq_p --- //
+				free(tab[g].matrix);
+			}
+			free(tab[g].freq_s);
+			free(tab[g].freq_p);
+			free(tab[g].ener_p);
 		}
-		free(tab->freq_s);
-		free(tab->freq_p);
-		free(tab->ener_p);
 		free(tab);
 	}
 }
 
+void freeCrosstalk(AdvDet** det, int gr){
 
-void freeCrosstalk(AdvDet** det){
 	freeReadoutChannels( (*det)->readout_channels);
-	freeImodTab((*det)->crosstalk_intermod_table);
-	freeElecTab((*det)->crosstalk_elec_carrier_olap);
-	freeElecTab((*det)->crosstalk_elec_common_imp);
+	//Freeing tables for every grade
+	if(gr!=0){
+		free((*det)->crosstalk_elec_timedep_file);
+		free((*det)->crosstalk_thermal_timedep_file);
+		free((*det)->crosstalk_intermod_timedep_file);
+
+		freeElecTab((*det)->crosstalk_elec_carrier_olap,gr);
+		freeElecTab((*det)->crosstalk_elec_common_imp,gr);
+		freeImodTab((*det)->crosstalk_imod_table,gr);
+
+		freeCrosstalkTimedep((*det)->crosstalk_elec_timedep,gr);
+		freeCrosstalkTimedep((*det)->crosstalk_imod_timedep,gr);
+		freeCrosstalkTimedep((*det)->crosstalk_ther_timedep,gr);
+	}
 }
 
 AdvDet* newAdvDet(int* const status){
@@ -199,18 +211,23 @@ AdvDet* newAdvDet(int* const status){
   det->xt_num_thermal=0;
 
   det->channel_file=NULL;
+  det->readout_channels=NULL;
+
   det->crosstalk_intermod_file=NULL;
-  det->crosstalk_intermod_table=NULL;
-  det->crosstalk_timedep_file=NULL;
-  det->crosstalk_timedep=NULL;
+  det->crosstalk_intermod_timedep_file=NULL;
+  det->crosstalk_imod_timedep=NULL;
+  det->crosstalk_imod_table=NULL;
+
+  det->crosstalk_thermal_timedep_file=NULL;
+  det->crosstalk_ther_timedep=NULL;
+
   det->crosstalk_elec_file=NULL;
+  det->crosstalk_elec_timedep_file=NULL;
+  det->crosstalk_elec_timedep=NULL;
   det->crosstalk_elec_carrier_olap=NULL;
   det->crosstalk_elec_common_imp=NULL;
 
-  det->readout_channels=NULL;
-
   det->threshold_event_lo_keV=0.;
-
   det->crosstalk_id=0;
 
   return(det);
@@ -219,6 +236,7 @@ AdvDet* newAdvDet(int* const status){
 void destroyAdvDet(AdvDet **det){
 
 	if(NULL!=(*det)){
+		int gr=(*det)->pix[0].ngrades;
 		if(NULL!=(*det)->pix){
 			for(int i=0;i<(*det)->npix;i++){
 				freeAdvPix(&(*det)->pix[i]);
@@ -234,8 +252,7 @@ void destroyAdvDet(AdvDet **det){
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
 
-		freeCrosstalk(det);
-
+		freeCrosstalk(det, gr);
 	}
 }
 
@@ -312,7 +329,6 @@ int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp){
 }
 
 
-
 void parseAdvDetXML(AdvDet* const det, 
 	       const char* const filename,
 	       int* const status){
@@ -360,7 +376,7 @@ void parseAdvDetXML(AdvDet* const det,
   expandIncludesXML(xmlbuffer, filename, status);
   CHECK_STATUS_VOID(*status);
 
-  // Before acutally parsing the XML code, expand the loops and 
+  // Before actually parsing the XML code, expand the loops and
   // arithmetic operations in the XML description.
   // The expansion algorithm repeatetly scans the XML code and
   // searches for loop tags. It replaces the loop tags by repeating
@@ -463,7 +479,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].channel=NULL;
 			xmlparsedata->det->pix[ii].thermal_cross_talk=NULL;
 			xmlparsedata->det->pix[ii].electrical_cross_talk=NULL;
-			xmlparsedata->det->pix[ii].intermodulation_cross_talk=NULL;
+			//xmlparsedata->det->pix[ii].intermodulation_cross_talk=NULL;
 
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
@@ -697,7 +713,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 	} else if(!strcmp(Uelement, "CROSSTALK"))  {
 		// Need to check if we have channels defined
 		if (xmlparsedata->det->channel_file == NULL){
-			SIXT_ERROR("Trying to implement crosstalk, but no file defining the channels specified in the XML.");
+			SIXT_ERROR("Trying to implement crosstalk, but no file defining the channels specified in the XML");
 			return;
 		}
 	} else if(!strcmp(Uelement, "THERMALCROSSTALK"))  {
@@ -707,10 +723,24 @@ static void AdvDetXMLElementStart(void* parsedata,
 		CHECK_MALLOC_VOID(xmlparsedata->det->xt_dist_thermal);
 		xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal] =
 				getXMLAttributeDouble(attr, "DISTANCE");
+
+		//timedep file can be given only in the first line
+		if (xmlparsedata->det->xt_num_thermal==0){
+			xmlparsedata->det->crosstalk_thermal_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
+			CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_thermal_timedep_file);
+			getXMLAttributeString(attr, "TIMEDEPFILE", xmlparsedata->det->crosstalk_thermal_timedep_file);
+			if (strlen(xmlparsedata->det->crosstalk_thermal_timedep_file) == 0){
+				xmlparsedata->status=EXIT_FAILURE;
+				SIXT_ERROR("Thermal crosstalk time dependence file is not given in first line");
+				return;
+			}
+		}
+
 		// check that distances are in increasing order
 		if((xmlparsedata->det->xt_num_thermal>0) &&
 				(xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal]<xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal-1])){
 			xmlparsedata->status=EXIT_FAILURE;
+			free(xmlparsedata->det->crosstalk_thermal_timedep_file);
 			SIXT_ERROR("Thermal crosstalk distances are supposed to be given in increasing order");
 			return;
 		}
@@ -733,16 +763,15 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->crosstalk_elec_file=NULL;
 		}
 
-	} else if(!strcmp(Uelement, "TIMEDEPENDENCE"))  {
-
-		xmlparsedata->det->crosstalk_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
-		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_timedep_file);
-		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_timedep_file);
-		if (strlen(xmlparsedata->det->crosstalk_timedep_file) == 0){
-			free(xmlparsedata->det->crosstalk_timedep_file);
-			xmlparsedata->det->crosstalk_timedep_file=NULL;
+		xmlparsedata->det->crosstalk_elec_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_elec_timedep_file);
+		getXMLAttributeString(attr, "TIMEDEPFILE", xmlparsedata->det->crosstalk_elec_timedep_file);
+		if (strlen(xmlparsedata->det->crosstalk_elec_timedep_file) == 0){
+			xmlparsedata->status=EXIT_FAILURE;
+			free(xmlparsedata->det->crosstalk_elec_timedep_file);
+			SIXT_ERROR("Electrical crosstalk time dependence file is not given");
+			return;
 		}
-
 
 	} else if(!strcmp(Uelement, "INTERMODULATION"))  {
 
@@ -752,6 +781,16 @@ static void AdvDetXMLElementStart(void* parsedata,
 		if (strlen(xmlparsedata->det->crosstalk_intermod_file) == 0){
 			free(xmlparsedata->det->crosstalk_intermod_file);
 			xmlparsedata->det->crosstalk_intermod_file=NULL;
+		}
+
+		xmlparsedata->det->crosstalk_intermod_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_timedep_file);
+		getXMLAttributeString(attr, "TIMEDEPFILE", xmlparsedata->det->crosstalk_intermod_timedep_file);
+		if (strlen(xmlparsedata->det->crosstalk_intermod_timedep_file) == 0){
+			xmlparsedata->status=EXIT_FAILURE;
+			free(xmlparsedata->det->crosstalk_intermod_timedep_file);
+			SIXT_ERROR("Intermodulation crosstalk time dependence file is not given");
+			return;
 		}
 
 	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
@@ -1095,28 +1134,30 @@ IntermodulationCrossTalk* newImodCrossTalk(int* const status){
 }
 
 /** Destructor for MatrixCrossTalk structure */
-void freeMatrixCrossTalk(MatrixCrossTalk** matrix){
-	if (*matrix!=NULL){
-		free((*matrix)->cross_talk_pixels);
-		free((*matrix)->cross_talk_weights);
+void freeMatrixCrossTalk(MatrixCrossTalk* matrix){
+	if (matrix!=NULL){
+		free(matrix->cross_talk_pixels);
+		free(matrix->cross_talk_weights);
 	}
-	free(*matrix);
-	*matrix=NULL;
+	free(matrix);
+	matrix=NULL;
 }
 
 /** Destructor for MatrixCrossTalk structure */
-void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk** matrix){
-	if (*matrix!=NULL){
-		if ( (*matrix)->cross_talk_weights!=NULL ){
-			for (int ii=0; ii<(*matrix)->num_cross_talk_pixels-1; ii++){
-				free( (*matrix)->cross_talk_weights[ii]);
+void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* matrix, int gr){
+	if (matrix!=NULL){
+		for(int k=0;k<gr;k++){
+			if (matrix[k].cross_talk_weights!=NULL ){
+				for (int ii=0; ii<matrix[k].num_cross_talk_pixels-1; ii++){
+					free(matrix[k].cross_talk_weights[ii]);
+				}
+				free(matrix[k].cross_talk_weights);
 			}
-			free( (*matrix)->cross_talk_weights);
+			free(matrix[k].cross_talk_pixels);
 		}
-		free((*matrix)->cross_talk_pixels);
 	}
-	free(*matrix);
-	*matrix=NULL;
+	free(matrix);
+	matrix=NULL;
 }
 
 
@@ -1150,40 +1191,41 @@ MatrixCrossTalk* newMatrixCrossTalk(int* const status){
 }
 
 /** Constructor for MatrixEnerdepCrossTalk structure */
-MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int* const status){
-	MatrixEnerdepCrossTalk* matrix = (MatrixEnerdepCrossTalk*) malloc(sizeof(*matrix));
+MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int grade, int* const status){
+	MatrixEnerdepCrossTalk* matrix = (MatrixEnerdepCrossTalk*) malloc(grade*sizeof(MatrixEnerdepCrossTalk));
 	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
 
-	matrix->num_cross_talk_pixels=0;
-	matrix->cross_talk_pixels = NULL;
-	matrix->cross_talk_weights = NULL;
-	matrix->n_ener=0;
-
+	for(int l=0;l<grade;l++){
+		matrix[l].num_cross_talk_pixels=0;
+		matrix[l].cross_talk_pixels = NULL;
+		matrix[l].cross_talk_weights = NULL;
+		matrix[l].n_ener=0;
+	}
 	return matrix;
 }
 
-
 /** Constructor for CrosstalkTimdep structure */
 CrosstalkTimedep* newCrossTalkTimedep(int* const status){
-	CrosstalkTimedep* crosstalk_timedep = (CrosstalkTimedep*)malloc(sizeof(*crosstalk_timedep));
+	CrosstalkTimedep* crosstalk_timedep = (CrosstalkTimedep*)malloc(sizeof(CrosstalkTimedep));
 	CHECK_MALLOC_RET_NULL_STATUS(crosstalk_timedep,*status);
 	crosstalk_timedep->length=0;
 	crosstalk_timedep->name_type=NULL; // Useless for the moment
 	crosstalk_timedep->time=NULL;
 	crosstalk_timedep->weight=NULL;
 	crosstalk_timedep->weight_t0 = 1.0;
-
 	return crosstalk_timedep;
 }
 
 /** Destructor for CrosstalkTimdep structure */
-void freeCrosstalkTimedep(CrosstalkTimedep** timedep){
-	if(*timedep!=NULL){
-		free((*timedep)->name_type);
-		free((*timedep)->time);
-		free((*timedep)->weight);
+void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr){
+	if(timedep!=NULL){
+		for(int k=0; k<2*gr;k++){
+			free(timedep[k].name_type);
+			free(timedep[k].time);
+			free(timedep[k].weight);
+		}
 	}
-	free(*timedep);
-	*timedep=NULL;
+	free(timedep);
+	timedep=NULL;
 }
 

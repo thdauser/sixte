@@ -29,24 +29,15 @@
 #define INVGRADE -1
 #define PILEUP -2
 #define CROSSTALK -3
+#define IMODCTK -31
+#define THERCTK -32
+#define ELECCTK -33
+// In the code, -31 is the intermodulation cross-talk, -32 the thermal crosstalk and -33 the electrical one
 #define WRONGE -4
+#define GRADECHG -5
 
 const double IMOD_XT_UPPER_TAU = 40;
 const double IMOD_XT_LOWER_TAU = 10;
-
-typedef struct{
-	double next,current,previous;
-}gradingTimeStruct;
-
-typedef struct{
-	PixImpact *impact;
-	CrosstalkProxy* xtalk_proxy;
-	EventProxy* proxy;
-	gradingTimeStruct * times;
-	double crosstalk_energy;
-	int nb_crosstalk_influence;
-	long row;
-}GradeProxy;
 
 typedef struct {
 	gradingTimeStruct *times;
@@ -59,43 +50,38 @@ typedef struct{
 	int num_pix;
 }imodProxy;
 
-/** given grade1 and grade 2, make a decision about the high/mid/los res events **/
-int makeGrading(long grade1,long grade2,AdvPix* pixel);
+/** Adds a below threshold crosstalk event to the grading proxy */
+void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact,int type, double df, int* const status);
+
+/** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
+void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,AdvDet* det,int* const status);
+
+/** Same as "applyMatrixCrosstalk", but for the electrical crosstalk, which is energy dependent */
+void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* grade_proxys, PixImpact* impact,AdvDet* det,int* const status);
+
+/** Same as "applyMatrixCrosstalk", but for the more complicated intermodulation crosstalk */
+void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* det,int* const status);
+//void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
+//		PixImpact* impact, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
 
 /** calculate the grading in samples from the a given impact, and its previous and next impact **/
 void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, long *grade2, int* status);
 
-/** writes the grading to an existing piximpact file **/
-void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status);
-
-/** Process the impacts contained in the piximpacts file with the RMF method */
-void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
+/** given grade1 and grade 2, make a decision about the high/mid/los res events **/
+int makeGrading(long grade1,long grade2,AdvPix* pixel);
 
 /** Processes the impacts, including crosstalk and RMF energy randomization **/
 void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_file,int save_crosstalk,int* const status);
 
-/** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
-void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
-
-/** Same as "applyMatrixCrosstalk", but for the electrical crosstalk, which is energy dependent */
-void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
-
-/** Same as "applyMatrixCrosstalk", but for the more complicated intermodulation crosstalk */
-void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* det,const double sample_length,
-		TesEventFile* event_file,int save_crosstalk,int* const status);
-//void applyIntermodCrossTalk(IntermodulationCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-//		PixImpact* impact, AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
-
-
-/** Processes a crosstalk event using addCrosstalkEvent or processGradedEvent depending on whether it is above threshold or not */
-void processCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
+/** Process the impacts contained in the piximpacts file with the RMF method */
+void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);
 
 /** Processes a graded event : update grading proxy and save previous event */
-void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* next_impact,AdvDet* det,TesEventFile* event_file,int is_crosstalk,int* const status);
+void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixImpact* next_impact,
+		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int grdcmp, int* const status);
 
-/** Adds a below threshold crosstalk event to the grading proxy */
-void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status);
+/** writes the grading to an existing piximpact file **/
+void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status);
 
 #endif /* TESWITHRMF_H */
+

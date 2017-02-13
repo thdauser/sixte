@@ -66,6 +66,9 @@ typedef struct {
   /** number of parent events */
   int nb_pileup;
 
+  /** weight index (for ctk) */
+  int weight_index;
+
 } PixImpact;
 
 

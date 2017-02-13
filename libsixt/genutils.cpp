@@ -20,7 +20,7 @@
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
    ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
-/***********************************************************************
+***********************************************************************
 *                      GENUTILS
 *
 *  File:       genutils.cpp
@@ -59,7 +59,7 @@ MAP OF SECTIONS IN THIS FILE::
 #include "genutils.h"
 
 /***** SECTION 1 ************************************************************
-* polyFit: This function makes a polynomial fitting: ax² + bx + c using the regression quadratic analysis
+* polyFit: This function makes a polynomial fitting: axï¿½ + bx + c using the regression quadratic analysis
 *          To measure how well the model agrees with the data, the chi-square merit function is used
 * 
 * Parameters:

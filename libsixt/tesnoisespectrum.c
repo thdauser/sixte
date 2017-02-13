@@ -144,14 +144,14 @@ NoiseOoF* newNoiseOoF(int* const status,gsl_rng **r,double sample_freq,AdvPix* p
 	OFNoise->Sumrval=OFNoise->Sumrval+OFNoise->RValues[j];
     }	
     /* Make sure the data is not too far away from the baseline */
-    diff=abs(OFNoise->Sumrval);
+    diff=fabs(OFNoise->Sumrval);
     while (diff >= OffSet/5) {
 	OFNoise->Sumrval=0.;
 	for(j=0;j<OFNoise->Length;j++) {
 	  OFNoise->RValues[j]=gsl_ran_gaussian(*r,OFNoise->Sigma);
 	  OFNoise->Sumrval=OFNoise->Sumrval+OFNoise->RValues[j];
 	}  
-	diff=abs(OFNoise->Sumrval);
+	diff=fabs(OFNoise->Sumrval);
     }
     
     OFNoise->Index=0;
@@ -228,7 +228,7 @@ int genNoiseSpectrum(AdvPix** simulated_pixels,
 	  in[i]=Gx + 0.0*I;
 	  
 	  /* Multiply the noise filter with the white noise */
-	  in[i]=in[i] * abs(H) * simulated_pixels[j]->TESNoise->WhiteRMS * sqrt(df) / sqrt(2.);
+	  in[i]=in[i] * cabs(H) * simulated_pixels[j]->TESNoise->WhiteRMS * sqrt(df) / sqrt(2.);
 	} else {
 	  /* Create a complex white noise spectrum */
 	  Gx=gsl_ran_gaussian(*r,sigma); 

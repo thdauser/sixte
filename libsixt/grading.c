@@ -204,60 +204,60 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 	const double sample_length = 1./(det->SampleFreq);
 
 	PixImpact impact;
-
 	GradeProxy grade_proxys[det->npix];
 	for (int ii=0;ii<det->npix;ii++){
 		grade_proxys[ii].impact = (PixImpact*) malloc(sizeof(PixImpact));
 		CHECK_MALLOC_VOID_STATUS(grade_proxys[ii].impact,*status);
 		grade_proxys[ii].impact->energy=0.;
 		grade_proxys[ii].xtalk_proxy = NULL;
-		grade_proxys[ii].proxy = NULL;
 		grade_proxys[ii].times = NULL;
 		grade_proxys[ii].row = event_file->row;
+		grade_proxys[ii].is_first=0;
 		grade_proxys[ii].crosstalk_energy=0.;
 		grade_proxys[ii].nb_crosstalk_influence=0;
 	}
-
 	int id = -1;
+
 	// Iterate over impacts
 	while (getNextImpactFromPixImpFile(piximpactfile,&impact,status)){
 		id = impact.pixID;
 
+		// First thing: we update the crosstalk proxy of the impacts only with the type. Basically, we say if a given photon
+		// hits pixel A, we know that pixels B,C,D... will have crosstalk but we do not know the energy (depends on their grading)
 		// intermod crosstalk
-		if (det->crosstalk_intermod_table!=NULL){
-			applyIntermodCrossTalk(grade_proxys,&impact,det,
-					sample_length,event_file,save_crosstalk,status);
+		if (det->crosstalk_imod_table!=NULL){
+			applyIntermodCrossTalk(grade_proxys,&impact,det,status);
 			CHECK_STATUS_VOID(*status);
 		}
 
+
 		// thermal crosstalk
 		if (det->pix[id].thermal_cross_talk !=NULL){
-			applyMatrixCrossTalk(det->pix[id].thermal_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			//1st matrix given as only the indices of the pixels are needed (same for all grades obviously!)
+			applyMatrixCrossTalk(det->pix[id].thermal_cross_talk,grade_proxys,&impact,det,status);
 			CHECK_STATUS_VOID(*status);
 		}
 		// electrical crosstalk
 		if (det->pix[id].electrical_cross_talk !=NULL){
-			applyMatrixEnerdepCrossTalk(det->pix[id].electrical_cross_talk,grade_proxys,sample_length,&impact,det,event_file,save_crosstalk,status);
+			//1st matrix given as only the indices of the pixels are needed (same for all grades obviously!)
+			applyMatrixEnerdepCrossTalk(&(det->pix[id].electrical_cross_talk[0]),grade_proxys,&impact,det,status);
 			CHECK_STATUS_VOID(*status);
 		}
 
-		// Process impact
-		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,status);
-		if(*status==EXIT_FAILURE){
-			SIXT_ERROR("event grading failed");
-			return;
-		}
-
+		// Once all the crosstalk potential impacts were stored, go on and process the impact itself
+		// Process impact and get its grade
+		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,save_crosstalk,-99,status); //Grade here given only for comparison
+		CHECK_STATUS_VOID(*status);
 	}
 
-	// now we need to clean the remaining events
+	// now we need to clean the remaining events (maximum grade as no more 'real' impact on pixel
 	for (int ii=0;ii<det->npix;ii++){
 		if (grade_proxys[ii].times != NULL){
 			int is_crosstalk=0;
 			if (grade_proxys[ii].impact->ph_id<0){
 				is_crosstalk=1;
 			}
-			processGradedEvent(&(grade_proxys[ii]),sample_length,NULL,det,event_file,is_crosstalk,status);
+			processGradedEvent(&(grade_proxys[ii]),sample_length,NULL,det,event_file,is_crosstalk,save_crosstalk,-99,status);
 			free(grade_proxys[ii].times);
 		}
 		free(grade_proxys[ii].impact);
@@ -330,142 +330,13 @@ double interp_lin_ndim(void* inp_arr, int* iarr, double* fac, int ndim){
 
 }
 
-/** get the weight (i.e. additional energy here) for the intermodulation crosstalk */
-static double get_intermod_weight(ImodTab* cross_talk, double df, double dt,
-		double ampli_perturber, double ampli_signal, int* const status){
-
-	double cross_talk_weight = 0.0;
-
-	// calculate the amplitude for the given energy
-	double ampl[]  = {ampli_perturber, ampli_signal};
-	double d_ampl[2];
-	int ind_ampl[] = {-1,-1};
-
-	// get the amplitude bins in the weightening table
-	for (int ii=0; ii<2 ; ii++){
-
-		ind_ampl[ii] = binary_search(ampl[ii],cross_talk->ampl,cross_talk->n_ampl);
-		if (ind_ampl[ii] < 0 ){
-			headas_chat(3," *** warning: intermodulation cross talk amplitude %.3e not tabulated, skipping this event\n",ampl[ii]);
-			return 0.0;
-		}
-		assert ( (ind_ampl[ii]) >= 0 && (ind_ampl[ii] < cross_talk->n_ampl) );
-
-		d_ampl[ii] = (ampl[ii]-cross_talk->ampl[ind_ampl[ii]]) / ( cross_talk->ampl[ind_ampl[ii]+1] - cross_talk->ampl[ind_ampl[ii]] );
-	}
-
-	// get the time bin in the weightening table
-	int ind_dt = binary_search(dt,cross_talk->dt,cross_talk->n_dt);
-
-	assert ( (ind_dt) >= 0 && (ind_dt < cross_talk->n_dt) );
-	double d_dt =  (dt - cross_talk->dt[ind_dt]) / ( cross_talk->dt[ind_dt+1] - cross_talk->dt[ind_dt] );
-
-	// get the frequency bin in the weightening table
-	int ind_df = binary_search(df,cross_talk->freq,cross_talk->n_freq);
-	if ( ind_df < 0 ){
-		if ( df <= cross_talk->freq[0]){
-			ind_df = 0;
-		} else if ( df >= cross_talk->freq[cross_talk->n_freq-1]){
-			ind_df = cross_talk->n_freq-1;
-		}
-		printf(" **** WARNING: non-linear crosstalk frequency df=%e not available, using df=%e instead!\n",df,cross_talk->freq[ind_df]);
-	}
-
-	assert ( (ind_df) >= 0 && (ind_df < cross_talk->n_freq) );
-	double d_df =  (df - cross_talk->freq[ind_df]) / ( cross_talk->freq[ind_df+1] - cross_talk->freq[ind_df] );
-
-	int iarr[] = {ind_df, ind_dt,ind_ampl[0],ind_ampl[1]};
-	double fac[] = {d_df, d_dt, d_ampl[0], d_ampl[1]};
-
-	// get the crosstalk energy (in eV) and convert to keV
-	double cross_energy = interp_lin_ndim(cross_talk->matrix,iarr,fac,4)*1e-3;
-
-	// printf("  |-> weights: %.3e %.3e %.3e %.3e | %.3e %.3e | %.3e \n",c00,c01,c10,c11,c0,c1,cross_talk_weight);
-
-	// check that the outcome has a reasonable value (less than 14 keV)
-	if (fabs(cross_talk_weight) > 14  ){
-		*status=EXIT_FAILURE;
-		printf(" *** error: something went wrong when interpolating the intermodulation cross talk table ( weight = fabs(%.3e) > 14 keV) ... \n",
-				cross_talk_weight);
-		return 0.0;
-	}
-
-	return cross_energy;
-}
-
-// Conversion from Energy to Amplitude
-// (Memo Roland, 10.06.2016 : 14keV = 0.25phi)
-// eMail Roland, 22.06.2016 : Take absolute value for conversion (as AC modulated signal)
-// new Version (eMail Roland 15.11.2016): 12keV = 0.15phi
-static double conv_ener2ampli(double ener){
-	return fabs(ener) / 12.0 * 0.15;
-}
-
-
-// taken from Roland's Memo (V2, 10.06.2016)
-static double get_imod_df(double f_sig, double f_per, int* status){
-
-	double f_high = 5.2e6; // changed to 5.2MHz (21.11.2016, new tables)
-	double f_low  = 1.0e6;
-
-	// integrate check df_nlin < f_high-fg_low
-
-	if (f_sig > f_high || f_sig < f_low){
-		*status=EXIT_FAILURE;
-		printf(" *** error: expecting frequency %gMHz to be in the interval [%g,%g] MHz",
-				f_sig,f_low,f_high);
-		SIXT_ERROR("simulating non-linear crosstalk failed");
-		return 0;
-	}
-
-	if (f_per > f_high || f_per < f_low){
-		*status=EXIT_FAILURE;
-		printf(" *** error: expecting frequency %gMHz to be in the interval [%g,%g] MHz",
-				f_per,f_low,f_high);
-		SIXT_ERROR("simulating non-linear crosstalk failed");
-		return 0;
-	}
-
-	if (f_sig > f_per){
-		return (f_sig-f_per)*(f_low/f_per) ;
-	} else {
-		return (f_sig-f_per)*(f_high/f_per) ;
-	}
-
-}
-
-static void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* perturber,
-		PixImpact* crosstalk_impact, double dt, int* status){
-
-	double df = get_imod_df(det->pix[signal->pixID].freq,det->pix[perturber->pixID].freq,status);
-	CHECK_STATUS_VOID(*status);
-
-	double ampli_signal = conv_ener2ampli((signal->energy));
-	double ampli_perturber = conv_ener2ampli((perturber->energy));
-
-	double energy_weight = get_intermod_weight(det->crosstalk_intermod_table, df, dt,
-			ampli_perturber, ampli_signal, status);
-
-    crosstalk_impact->energy = energy_weight; //  plus time-dep!!!
-    crosstalk_impact->pixID = signal->pixID;             //  event is created in the singal-Pixel
-    crosstalk_impact->time = perturber->time;            //  the event has the time of the perturber
-    crosstalk_impact->ph_id = -perturber->ph_id;         //  negative ID to show it's a crosstalk event
-    crosstalk_impact->src_id = perturber->src_id;
-
-
-//	headas_chat(7," -> time: %.3e ; energy %.3e ; dt=%e ; df=%.1f kHz \n",crosstalk_impact->time,
-//			crosstalk_impact->energy,dt,df*1e-3);
-
-}
 
 /** Apply matrix cross talk: create new events on concerned pixels if corresponding
     energy is above the detection threshold, affect previous event otherwise */
-void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* det,
-		const double sample_length,TesEventFile* event_file,
-		int save_crosstalk,int* const status){
+void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* det, int* const status){
 
     // This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
-    PixImpact crosstalk_impact;
+	PixImpact crosstalk_impact;
     crosstalk_impact.detposition.x = 0.;
     crosstalk_impact.detposition.y = 0.;
     crosstalk_impact.pixposition.x = 0.;
@@ -477,7 +348,6 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
     crosstalk_impact_ind.pixposition.x = 0.;
     crosstalk_impact_ind.pixposition.y = 0.;
 
-
 	// find out the channel of pixel the photon hit
 	Channel* active_chan = det->pix[impact->pixID].channel;
 
@@ -488,60 +358,25 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 		// do not count crosstalk with ourself!
 		if (active_ind==impact->pixID) continue;
 
-		// check if there has been an event in this pixel
-		if (grade_proxys[active_ind].times!=NULL){
-
-			double dt = (impact->time - grade_proxys[active_ind].times->current);
-
-			// events should always be in time order (although crosstalk can create events earlier than the current time)
-			assert(dt>=0);
-
-			// see if we need to calculate the crosstalk influence of
-			// the perturber on the signal
-			// also check that the signal on the pixel is postive
-			if ( dt <= det->crosstalk_intermod_table->dt_max ){
-
-				// impact creates signal in other pixel?
-
-				calc_imod_xt_influence(det,grade_proxys[active_ind].impact,
-						impact,&crosstalk_impact,dt,status);
-
-				CHECK_STATUS_VOID(*status);
-
-				// if signals are very close the signal might also influence the
- 				//   perturber pulse
-				//  Note:  (1) we require here that the above impact is written to the proxy already
-				//         (2) dt -> -dt  in this case, as the order is reversed
-				if ( -dt >= det->crosstalk_intermod_table->dt_min){
-					dt = -dt;
-
-					// does the signal influence the current impact?
-					calc_imod_xt_influence(det,impact, grade_proxys[active_ind].impact,
-							&crosstalk_impact_ind,dt,status);
-					CHECK_STATUS_VOID(*status);
-
-					 processCrosstalkEvent(&(grade_proxys[crosstalk_impact_ind.pixID]),sample_length,&crosstalk_impact_ind,
-							 det,event_file,save_crosstalk,status);
-					 CHECK_STATUS_VOID(*status);
-
-				}
-				// process events now (not before!!)
-				processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,
-						 det,event_file,save_crosstalk,status);
-				CHECK_STATUS_VOID(*status);
-
-			}
-
+		// now we just store the event in the proxy and go (analyzed later on)
+		double df=get_imod_df(det->pix[active_ind].freq,det->pix[impact->pixID].freq,status);
+		crosstalk_impact.energy = impact->energy; 			//We store the energy pixel
+		crosstalk_impact.pixID = impact->pixID; 			//We store the impacts pixel
+		crosstalk_impact.time = impact->time;            //  the event has the time of the perturber
+		crosstalk_impact.ph_id = -impact->ph_id;         //  negative ID to show it's a crosstalk event
+		crosstalk_impact.src_id = impact->src_id;
+		crosstalk_impact.weight_index = 0;				//Useless info for this type of crosstalk
+		//Now we add the event to the proxy of the grade proxy
+		addCrosstalkEvent(&(grade_proxys[active_ind]),&crosstalk_impact,IMODCTK,df,status);
+		CHECK_STATUS_VOID(*status);
 		}
-	}
-
+	//}
 
 }
 
 
 /** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
-void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
+void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,AdvDet* det, int* const status){
 
 	// This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
 	PixImpact crosstalk_impact;
@@ -550,20 +385,21 @@ void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,c
 	crosstalk_impact.pixposition.x = 0.;
 	crosstalk_impact.pixposition.y = 0.;
 
-	// Iterate over affected pixels
+	// Iterate over affected pixels we just store the cross-talk impact and go
 	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
-		crosstalk_impact.energy = impact->energy*cross_talk->cross_talk_weights[ii];
-		crosstalk_impact.pixID = cross_talk->cross_talk_pixels[ii]->pindex;
+		crosstalk_impact.energy = impact->energy; //*cross_talk->cross_talk_weights[ii]; //We store the energy of the ctk event as it does not depend on grading
+		crosstalk_impact.pixID = impact->pixID; //We store the perturber pixel
 		crosstalk_impact.time = impact->time;
 		crosstalk_impact.ph_id = -impact->ph_id;
 		crosstalk_impact.src_id = impact->src_id;
-		processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,det,event_file,save_crosstalk,status);
+		crosstalk_impact.weight_index = ii;
+		double df = get_imod_df(det->pix[cross_talk->cross_talk_pixels[ii]->pindex].freq,det->pix[impact->pixID].freq,status);
+		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,THERCTK,df,status);
 	}
 }
 
 /** Same as applyMatricCrosstalk , but now the weights are energy dependent */
-void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* grade_proxys,const double sample_length,
-		PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
+void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* grade_proxys, PixImpact* impact,AdvDet* det, int* const status){
 
 	// This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
 	PixImpact crosstalk_impact;
@@ -572,148 +408,89 @@ void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* 
 	crosstalk_impact.pixposition.x = 0.;
 	crosstalk_impact.pixposition.y = 0.;
 
-	// make sure we have the same (length) energy array here
-	assert(cross_talk->n_ener == det->crosstalk_elec_carrier_olap->n_ener_p);
-	assert(cross_talk->n_ener == det->crosstalk_elec_common_imp->n_ener_p);
-	double * ener_p = det->crosstalk_elec_carrier_olap->ener_p; // every electrical crosstalk energy vector has to be the same
-
-	// Iterate over affected pixels
+	// Iterate over affected pixels, copy and go
 	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
-
-		if ((impact->energy <= ener_p[0]) || (impact->energy >= ener_p[cross_talk->n_ener-1])) {
-			printf(" *** warning : impact event energy %g outside the tabulated values for electrical crosstalk [%g,%g]}n",
-					impact->energy,ener_p[0],ener_p[cross_talk->n_ener-1]);
-			printf("     ---> skipping this event!\n");
-		} else {
-
-			// now determine the energy bin
-			int ind = binary_search(impact->energy,det->crosstalk_elec_carrier_olap->ener_p,cross_talk->n_ener);
-
-			double fac = (impact->energy - ener_p[ind]) / (ener_p[ind+1] - ener_p[ind]);
-
-			crosstalk_impact.energy =
-					    (1-fac)*cross_talk->cross_talk_weights[ii][ind] +
-						(fac)*cross_talk->cross_talk_weights[ii][ind+1];
-			crosstalk_impact.pixID = cross_talk->cross_talk_pixels[ii]->pindex;
-			crosstalk_impact.time = impact->time;
-			crosstalk_impact.ph_id = -impact->ph_id;
-			crosstalk_impact.src_id = impact->src_id;
-
-//			printf(" [%ld%ld] crosstalk energy %.2e keV (for impact %.1f keV, fs=%.0f, fp=%.0f) \n",
-//					crosstalk_impact.pixID,crosstalk_impact.ph_id,crosstalk_impact.energy, impact->energy,
-//					det->pix[impact->pixID].freq*1e-3,det->pix[crosstalk_impact.pixID].freq*1e-3);
-
-			processCrosstalkEvent(&(grade_proxys[crosstalk_impact.pixID]),sample_length,&crosstalk_impact,
-					det,event_file,save_crosstalk,status);
-		}
+		crosstalk_impact.energy = impact->energy; //We store the energy pixel
+		crosstalk_impact.pixID = impact->pixID; //We store the impact pixel "perturber"
+		crosstalk_impact.time = impact->time;
+		crosstalk_impact.ph_id = -impact->ph_id;
+		crosstalk_impact.src_id = impact->src_id;
+		crosstalk_impact.weight_index = ii; //Store the index of this given pixel to apply ctk later
+		double df = get_imod_df(det->pix[cross_talk->cross_talk_pixels[ii]->pindex].freq,det->pix[impact->pixID].freq,status);
+		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,ELECCTK,df,status);
 	}
 }
 
 
-/** Processes a crosstalk event using addCrosstalkEvent or processGradedEvent depending on whether it is above threshold or not */
-void processCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,
-		AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
-	// the crosstalk event is above threshold and should be treated as a normal event
-
-	if (impact->energy>=det->threshold_event_lo_keV) {
-
-		// rare case that we would create an event backwards in time here
-		if (grade_proxy->times != NULL && impact->time < grade_proxy->times->current){
-			headas_chat(6," ====> crosstalk event would have been created backwards in time as above the lower energy threshold; treating it as normal crosstalk [id=%ld; t=%.3e; ener=%.3e]\n",
-					impact->pixID,impact->time,impact->energy);
-			addCrosstalkEvent(grade_proxy,sample_length,impact,det,event_file,save_crosstalk,status);
-		} else {
-			processGradedEvent(grade_proxy,sample_length,impact,det,event_file,1,status);
-		}
-	// the crosstalk event is below threshold and might influence another event
-	} else {
-		addCrosstalkEvent(grade_proxy,sample_length,impact,det,event_file,save_crosstalk,status);
-	}
-}
-
-/** Adds a below threshold crosstalk event to the grading proxy */
-void addCrosstalkEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* impact,AdvDet* det,TesEventFile* event_file,int save_crosstalk,int* const status){
-	// save crosstalk event for debugging purposes ?
-	if (save_crosstalk) addRMFImpact(event_file,impact,-2,-2,CROSSTALK,0,0.,status);
-
-//	assert(impact->energy<det->threshold_event_lo_keV);
+// We just store the event in the proxy and we shall treat it afterwards once we have the grading
+void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact,int type, double df, int* const status){
+	// If needed we save the ctk. /!\IT WILL HAVE THE PERTURBER ENERGY AND INDEX!!!
 	if(grade_proxy->xtalk_proxy==NULL){
 		grade_proxy->xtalk_proxy = newCrosstalkProxy(status);
 		CHECK_STATUS_VOID(*status);
 	}
-
-	// No crosstalk event available to possibly pileup with yet, copy info and go
-	if(grade_proxy->xtalk_proxy->n_active_crosstalk==0){
-		addCrosstalk2Proxy(grade_proxy->xtalk_proxy,impact,status);
-	}
-	else{
-		// Should there be an assert(impact->time-grade_proxy->crosstalk->time>=0) ? I am worried about rounding errors but am not sure if I should be
-
-		// If the two crosstalks happened in the same time bin, their combined energy could reach the threshold -> add energy and try to trigger
-		PixImpact* previous_xtalk = grade_proxy->xtalk_proxy->xtalk_impacts[(grade_proxy->xtalk_proxy->current_crosstalk_index - 1)% grade_proxy->xtalk_proxy->xtalk_proxy_size];
-		if(impact->time-previous_xtalk->time <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table ?)
-			previous_xtalk->energy+=impact->energy;
-			previous_xtalk->nb_pileup++;// Update number of pileups
-			if (previous_xtalk->energy >= det->threshold_event_lo_keV) {
-				// Save crosstalk information
-				double influence = previous_xtalk->energy;
-				int nb_influence = previous_xtalk->nb_pileup;
-
-				// Process now triggered event
-				grade_proxy->xtalk_proxy->n_active_crosstalk--;// Crosstalk has been dealt with
-				grade_proxy->xtalk_proxy->current_crosstalk_index--;
-				previous_xtalk->time = impact->time;// to conserve causality
-				processGradedEvent(grade_proxy,sample_length,previous_xtalk,det,event_file,1,status);
-
-				// This new event comes from crosstalk and we should know it
-				grade_proxy->nb_crosstalk_influence = nb_influence;
-				grade_proxy->crosstalk_energy = influence;
-			}
-		// If they did not happen in the same time bin, treat crosstalk from events farther away than maximum backward influence (they will not
-		// affect other events) and add new one
-		} else {
-			computeAllCrosstalkInfluence(det,grade_proxy->impact,grade_proxy->xtalk_proxy,&(grade_proxy->crosstalk_energy),
-					&(grade_proxy->nb_crosstalk_influence),impact->time,grade_proxy->times==NULL,0);
-			addCrosstalk2Proxy(grade_proxy->xtalk_proxy,impact,status);
-		}
-	}
+	addCrosstalk2Proxy(grade_proxy->xtalk_proxy,impact,type,df,status);
 }
 
 /** Processes a graded event : update grading proxy and save previous event */
-void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixImpact* next_impact,
-		AdvDet* det,TesEventFile* event_file,int is_crosstalk,int* const status){
+void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixImpact* next_impact,
+		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int grdcmp, int* const status){
 	long grade1, grade2;
 	int grading;
 	int grading_index;
 	struct RMF* rmf;
 	long channel;
+	int is_trigger=0; //Checks if a pileup occurs when computing cross-talk
 	PixImpact* impact_to_save=grade_proxy->impact;
 
-	// If this is the first event on the pixel
+	// If this is the first event on the pixel, we initialise first
 	if(grade_proxy->times==NULL){
 		assert(next_impact!=NULL); // this function can only be called with NULL next_impact if there are saved impacts
 		grade_proxy->times = (gradingTimeStruct*) malloc (sizeof(gradingTimeStruct));
-		CHECK_NULL_VOID(grade_proxy->times,*status,"malloc failed");
-
+		CHECK_NULL_VOID(grade_proxy->times,*status,"Malloc of first event failed");
 		grade_proxy->times->previous = -1.0;
-		grade_proxy->times->current = next_impact->time;
+		grade_proxy->times->current = -1.0;
 		grade_proxy->times->next = -1.0;
-		copyPixImpact(grade_proxy->impact,next_impact);
-	} else {
-		// Add assert that at this stage, any active crosstalk is between the two triggered impacts ? NOT TRUE ANY MORE
+		grade_proxy->impact->pixID=next_impact->pixID;
+		impact_to_save->time=-1.0;
+	}
 
+	//Very fist event, check if ctk has not triggered before
+	if(grade_proxy->is_first==0 && is_crosstalk==0){
+		//First we have to check if previous xtalk events do not trigger. If so, we store the triggered event and reenter the loop.
+		computeAllCrosstalkInfluence(det,impact_to_save,grade_proxy->xtalk_proxy,grade_proxy,event_file,&(grade_proxy->crosstalk_energy),
+								&(grade_proxy->nb_crosstalk_influence),next_impact->time,sample_length,&is_trigger,save_crosstalk,0,0,1,status);
+
+		//If trigger there was, break and reprocess event with the pileup in grade proxy as current now.
+		//Otherwise just copy impact normally
+		if(is_trigger==0){
+			grade_proxy->times->current = next_impact->time;
+			grade_proxy->is_first=1; //We truly have our first event
+			copyPixImpact(grade_proxy->impact,next_impact);
+		}
+
+	//If there is a trigger before first event (is_ctk==1), it is the first impact
+	} else if(grade_proxy->is_first==0 && is_crosstalk==1){
+		grade_proxy->times->current = next_impact->time;
+		grade_proxy->is_first=1; //Ctk impact is the first
+		copyPixImpact(grade_proxy->impact,next_impact);
+
+	// We already have an other impact, we grade the previous and apply crosstalk depending on its grade
+	} else {
 
 		// Update grade proxy
 		if (next_impact!=NULL){
 			assert(grade_proxy->times->current>=0);
-			// very rare case that a real crosstalk event is produced before
+			// very rare case that a real crosstalk event is produced before (should never happen anymore)
 			if ( (next_impact->time < grade_proxy->times->current) ){
+				// switch the time of the events
+				grade_proxy->times->next = grade_proxy->times->current;
+				grade_proxy->times->current = next_impact->time;
 
-				*status=EXIT_FAILURE;
-				printf(" *** error: new impact at %.3e is before precious impact at %.3e in time (not allowed in the current implementation \n;",
-						next_impact->time,grade_proxy->times->current);
-				SIXT_ERROR(" problem with the order of created events\n");
-				return;
+				// also switch the impacts
+				PixImpact* tmp_impact = next_impact;
+				next_impact=impact_to_save;
+				impact_to_save=tmp_impact;
 			} else {
 				grade_proxy->times->next = next_impact->time;
 			}
@@ -724,7 +501,6 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 		// Calculate grades
 		calcGradingTimes(sample_length,*(grade_proxy->times),&grade1,&grade2,status);
 		CHECK_STATUS_VOID(*status);
-
 		// treat pileup case
 		// TODO : add pileup limit as a pixel parameter (for the moment, equal to one sample)
 		if(grade1==0){
@@ -733,80 +509,99 @@ void processGradedEvent(GradeProxy* grade_proxy,const double sample_length,PixIm
 			impact_to_save->energy=0.;
 			grade1=-1;
 			grading=PILEUP;
-			// do not change grading times in this case as this is a pileup (this event will no be saved in the end)
+			// do not change grading times in this case as this is a pile-up (this event will not be saved in the end)
+			// We will apply the crosstalk to the total event at next time step
 		} else {
 
-			// Get crosstalk influence from crosstalks closer to current time than max backward influence (others should have been dealt with)
-			computeAllCrosstalkInfluence(det,impact_to_save,grade_proxy->xtalk_proxy,&(grade_proxy->crosstalk_energy),
-					&(grade_proxy->nb_crosstalk_influence),grade_proxy->times->next,0,1);
-
+			// We compute the grading of the event
 			grading_index = makeGrading(grade1,grade2,&(det->pix[impact_to_save->pixID]));
 
-			if (grading_index>=0){
+			if (grading_index>=0){ //0 highest grade
 
 				rmf = det->pix[impact_to_save->pixID].grades[grading_index].rmf;
 				grading = det->pix[impact_to_save->pixID].grades[grading_index].value;
 
-				// Determine the measured detector channel (PI channel) according
-				// to the RMF.
-				// The channel is obtained from the RMF using the corresponding
-				// HEAdas routine which is based on drawing a random number.
-				returnRMFChannel(rmf, grade_proxy->impact->energy, &channel); //use total energy here to take pileup into account
+				// Get crosstalk influence from crosstalks closer to current time than max backward influence (others should have been dealt with) as function of the grading of the current pulse
+				// -1 because grade.value returns starts at 1.
 
-				// Check if the photon is really measured. If the PI channel
-				// returned by the HEAdas RMF function is '-1', the photon is not
-				// detected. This should not happen as the rmf is supposedly
-				// normalized
-				if (channel<rmf->FirstChannel) {
-					// flag as invalid (seemed better than discarding)
-					if (!is_crosstalk && grade_proxy->impact->ph_id>=0 && grade_proxy->nb_crosstalk_influence==0){
-						char msg[MAXMSG];
-						sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV (channel %ld) and phi_id %ld",
-								grade_proxy->impact->energy,channel,grade_proxy->impact->ph_id);
-						SIXT_WARNING(msg);
+				computeAllCrosstalkInfluence(det,impact_to_save,grade_proxy->xtalk_proxy, grade_proxy,event_file,&(grade_proxy->crosstalk_energy),
+						&(grade_proxy->nb_crosstalk_influence),grade_proxy->times->next,sample_length,&is_trigger,save_crosstalk,grading-1,0,1,status);
+
+				//If there was a triggered event, we break from this loop, and reprocess the impact once more
+				//with the new grade-proxy updated with the xt pileup (part 1)
+				if (is_trigger==0){
+					// Determine the measured detector channel (PI channel) according to the RMF.
+					// The channel is obtained from the RMF using the corresponding HEAdas routine which is based on drawing a random number.
+					returnRMFChannel(rmf, grade_proxy->impact->energy, &channel); //use total energy here to take pileup into account
+
+					// Check if the photon is really measured. If the PI channel returned by the HEAdas RMF function is '-1', the photon is not
+					// detected. This should not happen as the rmf is supposedly normalized
+					if (channel<rmf->FirstChannel) {
+						// flag as invalid (seemed better than discarding)
+						if (!is_crosstalk && grade_proxy->impact->ph_id>=0){
+							char msg[MAXMSG];
+							sprintf(msg,"Impact found as not detected due to failure during RMF based energy allocation for energy %g keV (channel %ld) and phi_id %ld",
+									grade_proxy->impact->energy,channel,grade_proxy->impact->ph_id);
+							SIXT_WARNING(msg);
+						}
+						impact_to_save->energy=0.;
+						grading=WRONGE;
+					} else {
+
+						// Determine the corresponding detected energy.
+						// NOTE: In this simulation the collected charge is represented
+						// by the nominal photon energy [keV], which corresponds to the
+						// PI channel according to the EBOUNDS table.
+						impact_to_save->energy=getEBOUNDSEnergy(channel, rmf, status);
+						//printf("%f ",impact.energy);
+						CHECK_STATUS_VOID(*status);
 					}
-					impact_to_save->energy=0.;
-					grading=WRONGE;
-				} else {
-
-					// Determine the corresponding detected energy.
-					// NOTE: In this simulation the collected charge is represented
-					// by the nominal photon energy [keV], which corresponds to the
-					// PI channel according to the EBOUNDS table.
-					impact_to_save->energy=getEBOUNDSEnergy(channel, rmf, status);
-					//printf("%f ",impact.energy);
-					CHECK_STATUS_VOID(*status);
 				}
-			} else {
+			} else { //Should the event be invalid for whichever reason, we do not treat it but flag it
 				impact_to_save->energy=0.;
 				grading=INVGRADE;
 			}
 
 			// Move ahead if it is worth it
-			if (next_impact!=NULL){
+			if (next_impact!=NULL && is_trigger==0){
 				grade_proxy->times->previous = grade_proxy->times->current;
 				grade_proxy->times->current = grade_proxy->times->next;
 			}
 		}
-		// Add processed event to event file
-		updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,
-				grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
-		if (*status!=EXIT_SUCCESS){
-			SIXT_ERROR("updating singal energy in the event file failed");
-			return;
-		}
 
-		// Finish moving ahead if worth it
-		if (next_impact!=NULL){
-			grade_proxy->nb_crosstalk_influence = 0;
-			grade_proxy->crosstalk_energy=0.;
-			copyPixImpact(grade_proxy->impact,next_impact);
+		//Should we have a crosstalk event changing the grading, flag it and go on (very rare!)
+		if(is_trigger==0){
+			if ((grdcmp != -99) && grdcmp!=grading-1){
+				headas_chat(7," *** Grade num %i changed to %i because of crosstalk *** \n", grdcmp+1, grading);
+				grading=GRADECHG; //The grade changed so we flag it
+			}
+			// Add processed event to event file if not pile-up!
+
+			updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,
+					grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
+			if (*status!=EXIT_SUCCESS){
+				SIXT_ERROR("updating signal energy in the event file failed");
+				return;
+			}
+
+			// Finish moving ahead if worth it if no pile-up!
+			if (next_impact!=NULL){
+				grade_proxy->nb_crosstalk_influence = 0;
+				grade_proxy->crosstalk_energy=0.;
+				copyPixImpact(grade_proxy->impact,next_impact);
+			}
 		}
 	}
 
 	// Pre-add impact to event file to respect causality
-	if (next_impact!=NULL){
+	if (is_trigger==0 && next_impact!=NULL){
 		grade_proxy->row = event_file->row;
 		addEmptyEvent(event_file,next_impact,status);
+	}
+
+	//If a crosstalk event triggered, stop the process and once it was saved,
+	//reprocess next_impact with this new event (which is now current)
+	if(is_trigger==1){
+		processGradedEvent(grade_proxy,sample_length,next_impact,det,event_file,0,save_crosstalk,-99,status);
 	}
 }

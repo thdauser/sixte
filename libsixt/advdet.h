@@ -49,7 +49,6 @@ typedef struct Channel Channel;
 typedef struct IntermodulationCrossTalk IntermodulationCrossTalk;
 typedef struct ReadoutChannels ReadoutChannels;
 
-
 /** Data structure describing the noise properties of calorimeter
  pixels */
 typedef struct{
@@ -154,17 +153,15 @@ struct AdvPix{
   /** Frequency of the pixel */
   double freq;
 
-  /** Read-out channel to which it blongs */
+  /** Read-out channel to which it belongs */
   Channel* channel;
 
   /** Cross-talk structures */
-  MatrixEnerdepCrossTalk* electrical_cross_talk;
   MatrixCrossTalk* thermal_cross_talk;
-  IntermodulationCrossTalk* intermodulation_cross_talk;
-
+  //IntermodulationCrossTalk* intermodulation_cross_talk;
+  MatrixEnerdepCrossTalk* electrical_cross_talk;
 
 }; typedef struct AdvPix AdvPix;
-
 
 
 /** Data structure containing a library of different RMFs */
@@ -211,8 +208,7 @@ typedef struct{
 	double weight_t0;  // weight at time t=0 (simultaneous)
 } CrosstalkTimedep;
 
-
-/** structure containing the full the intermodulation crosstalk table*/
+/** structure containing one of the intermodulation crosstalk table*/
 typedef struct{
 
 	double**** matrix; // 4d table containing the frequency weights
@@ -231,7 +227,7 @@ typedef struct{
 
 }ImodTab;
 
-/** structure containing the full the electrical crosstalk */
+/** structure containing one of the electrical crosstalk */
 typedef struct{
 
 	double*** matrix; // 3d table containing the frequency weights
@@ -245,7 +241,6 @@ typedef struct{
 	int n_ener_p;
 
 }ElecTab;
-
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -300,25 +295,27 @@ typedef struct{
   /** List of all readout channels */
   ReadoutChannels* readout_channels;
 
-  /** File containing the intermodulation crosstalk table */
+  /** Structure containing the intermodulation crosstalk table and the time dependence crosstalk table */
+
   char* crosstalk_intermod_file;
-  ImodTab* crosstalk_intermod_table;
+  char* crosstalk_intermod_timedep_file;
+  ImodTab* crosstalk_imod_table;
+  CrosstalkTimedep* crosstalk_imod_timedep;
 
-  /** File containing the time dependence crosstalk table */
-  char* crosstalk_timedep_file;
+  /** Structure containing the thermal crosstalk informations */
 
-  /** Structure containing the time dependence of the pixels */
-  CrosstalkTimedep* crosstalk_timedep;
-
-  /** information about thermal cross talk */
+  char* crosstalk_thermal_timedep_file;
+  CrosstalkTimedep* crosstalk_ther_timedep;
   int xt_num_thermal;
   double* xt_dist_thermal;
   double* xt_weight_thermal;
 
-  /** File containing information about the electrical cross talk */
+  /** Structure containing the electrical crosstalk table and the dependence crosstalk table  */
   char* crosstalk_elec_file;
+  char* crosstalk_elec_timedep_file;
   ElecTab* crosstalk_elec_carrier_olap;
   ElecTab* crosstalk_elec_common_imp;
+  CrosstalkTimedep* crosstalk_elec_timedep;
 
   /** Trigger threshold */
   double threshold_event_lo_keV;
@@ -429,6 +426,9 @@ void freeAdvPix(AdvPix* pix);
 /** Remove the existing grading scheme from the pixel */
 void freeGrading(AdvPix* pix);
 
+/** Frees electrical table*/
+void freeElecTab(ElecTab* tab, int gr);
+
 /** Free the Readout Channel Structure */
 void freeReadoutChannels(ReadoutChannels* rc);
 
@@ -484,13 +484,13 @@ void removeOverlapping(AdvDet* det,int* const status);
 MatrixCrossTalk* newMatrixCrossTalk(int* const status);
 
 /** Constructor for MatrixEnerdepCrossTalk structure */
-MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int* const status);
+MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int grade, int* const status);
 
 /** Destructor for MatrixCrossTalk structure */
-void freeMatrixCrossTalk(MatrixCrossTalk** matrix);
+void freeMatrixCrossTalk(MatrixCrossTalk* matrix);
 
 /** Destructor for MatrixEnerdepCrossTalk structure */
-void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk** matrix);
+void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* matrix, int gr);
 
 /** Constructor for IntermodulationCrossTalk structure */
 IntermodulationCrossTalk* newImodCrossTalk(int* const status);
@@ -502,12 +502,12 @@ void freeImodCrossTalk(IntermodulationCrossTalk** matrix);
 CrosstalkTimedep* newCrossTalkTimedep(int* const status);
 
 /** Destructor for CrosstalkTimdep structure */
-void freeCrosstalkTimedep(CrosstalkTimedep** timedep);
+void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr);
 
 /** free Intermod Table and Strcture */
-void freeImodTab(ImodTab* tab);
+void freeImodTab(ImodTab* tab, int gr);
 
 /** free the crosstalk structures */
-void freeCrosstalk(AdvDet** det);
+void freeCrosstalk(AdvDet** det, int gr);
 
 #endif /* ADVDET_H */
