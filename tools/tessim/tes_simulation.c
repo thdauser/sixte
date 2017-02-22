@@ -53,7 +53,7 @@
 
 #include <assert.h>
 
-gsl_rng *rng;
+gsl_rng *rng=NULL; // initialize to NULL and set it in tes_init
 
 const double kBoltz=1.3806488e-23; // Boltzmann constant [m^2 kg/s^2]
 const double eV=1.602176565e-19 ;  // 1eV [J]
@@ -89,9 +89,10 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
   }
 
   // Thermal equation: dT/dt -- dy_1/dt=f_1(t,y_0(t),y_1(t))
-  eqn[1]=(II*II*RT-tes->Pb1
+  eqn[1]=(II*II*RT-tes->Pb1 
 	  -II*(tes->Vdn+tes->Vexc+tes->Vunk)
 	  +tes->Pnb1+tes->En1)/tes->Ce1;
+  eqn[1] += (tes->Pcommon)/tes->Ce1; // FDM crosstalk
 
   return GSL_SUCCESS;
 }
@@ -549,8 +550,10 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   //
   // random number initialization
-  //
-  rng=gsl_rng_alloc(gsl_rng_taus);
+  // only do this once
+  if (rng==NULL){
+    rng=gsl_rng_alloc(gsl_rng_taus);
+  }
 
   // if seed is 0, do NOT use the rng's default seed (per gsl), but
   // initialize from the system clock
@@ -706,6 +709,12 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // setup integrator
   tes->odedriver=gsl_odeiv2_driver_alloc_y_new(tes->odesys,gsl_odeiv2_step_rk4,
 					       tes->delta_t,1e-6,1e-6);
+
+  // FDM Crosstalk parameters
+  tes->Ioverlap = gsl_complex_rect(0.,0.);
+  tes->Ioverlap_start = gsl_complex_rect(0.,0.);
+  tes->Pcommon = 0.;
+
   return(tes);
 }
 
@@ -730,133 +739,181 @@ void tes_free(tesparams *tes) {
 //
 // logic problem in multiple calls: a photon read here that is
 // after tstop will get lost
-int tes_propagate(tesparams *tes, double tstop, int *status) {
+int tes_propagate(AdvDet *det, double tstop, int *status) {
   CHECK_STATUS_RET(*status,-1);
+  // Setup
+  unsigned long samplestep[det->npix];
+  unsigned int samples[det->npix];
+  unsigned long step_nb[det->npix];
 
-  // get first photon to deal with
-  tes->impact->time=tstop+100; // initialize to NO photon
-  if (tes->get_photon != NULL) {
-    do {
-      tes->get_photon(tes->impact,tes->photoninfo,status);
-      CHECK_STATUS_RET(*status,-1);
-    } while (tes->impact->time<tes->tstart); // skip over all impacts before tstart
+  // For FDM Crosstalk: Get initial conditions
+  if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+    for (int ii=0; ii<det->readout_channels->num_channels; ii++){
+      solve_FDM(&(det->readout_channels->channels[ii]));
+    }
   }
-  
-  // write initial status of the TES to the stream
-  // NB we will need logic in tes->write_to_stream that
-  // disallows duplicate writes of the same element
-  if (tes->write_to_stream != NULL ) {
-    double pulse=tes->I0_start-tes->I0;
-    if (tes->simnoise) {
-      pulse += gsl_ran_gaussian(rng,tes->squid_noise);
-    }
-    tes->write_to_stream(tes,tes->time,pulse,status);
-  }
-
-  unsigned long samplestep=100000;
-  unsigned int samples=0;
-  unsigned long step_nb=1;
-  while (tes->time<tstop) {
-    
-    // update progress bar
-    if (tes->progressbar!=NULL && samplestep == 100000) {
-      progressbar_update(tes->progressbar,
-			 (unsigned long) ((tes->time - tes->tstart)*PROGRESSBAR_FACTOR));
-      samplestep=0;
-    } else {
-      samplestep++;
+  for (int ii=0;ii<det->npix;ii++) {
+    // get the current TES
+    tesparams *tes = det->pix[ii].tes;
+    // get first photon to deal with
+    tes->impact->time=tstop+100; // initialize to NO photon
+    if (tes->get_photon != NULL) {
+      do {
+        tes->get_photon(tes->impact,tes->photoninfo,status);
+        CHECK_STATUS_RET(*status,-1);
+      } while (tes->impact->time<tes->tstart); // skip over all impacts before tstart
     }
 
-    if (tes->simnoise) {
-      // thermal noise
-      tes->Pnb1=tnoi(tes);
+    // write initial status of the TES to the stream
+    // NB we will need logic in tes->write_to_stream that
+    // disallows duplicate writes of the same element
+    if (tes->write_to_stream != NULL ) {
+      double pulse;
+      if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+        // include Crosstalk
+        tes->Ioverlap_start = tes->Ioverlap;
+        pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
+        //pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
+        //pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
 
-      // Johnson noise terms
-      // (this should now be ok for the excess noise, but needs somebody
-      // else to check this again to be 100% sure)
-      tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
-      tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->dRdI*tes->I0/tes->RT));
-      tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->Reff*tes->bandwidth));
-      tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->dRdI*tes->I0/tes->RT)*tes->m_excess*tes->m_excess) );
-    }
-
-    // absorb next photon?
-    tes->En1=0.;
-    tes->n_absorbed=0;
-    // This while loop handles pileup correctly
-    // i.e. if two photons arrive within one delta_t
-    // their energies are summed up
-    while (tes->time>=tes->impact->time) {
-      tes->Nevts++;
-      tes->n_absorbed++;
-      // increase En1 (note the +=)
-      tes->En1+=tes->impact->energy*keV/(tes->delta_t*tes->therm);
-
-      // remember that we've processed this photon
-      if (tes->write_photon!=NULL) {
-        tes->write_photon(tes,tes->impact->time,tes->impact->ph_id,status);
+      } else {
+        pulse=tes->I0_start-tes->I0;
       }
-
-      // get the next photon 
-      int success=tes->get_photon(tes->impact,tes->photoninfo,status);
-      CHECK_STATUS_RET(*status,-1);
-      if (success==0) {
-        // there is no further photon to read. Set next impact time to
-	// a time outside much after this
-	tes->impact->time=tstop+100.;
-      }
-    }
-    double Y[2];
-    Y[0]=tes->I0; // current
-    Y[1]=tes->T1; // temperature
-
-    int s=gsl_odeiv2_driver_apply_fixed_step(tes->odedriver,&(tes->time),tes->delta_t,1,Y);
-    tes->time=tes->tstart+step_nb*tes->delta_t;
-    if (s!=GSL_SUCCESS) {
-      fprintf(stderr,"Driver error: %d\n",s);
-      return(1);
-    }
-
-    samples++;
-    step_nb++;
-
-    tes->I0=Y[0];
-    tes->T1=Y[1];
-
-    // put the pulse data and the time data into arrays 
-    // if the decimation condition is met
-    if (samples==tes->decimate_factor) {
-
-      // write pulse data
-      // we also add the SQUID/readout noise and subtract the
-      // baseline (the equilibrium bias current) and invert the
-      // pulses so they are all +ve
-      double pulse=tes->I0_start-tes->I0;
       if (tes->simnoise) {
-	pulse += gsl_ran_gaussian(rng,tes->squid_noise);
+        pulse += gsl_ran_gaussian(rng,tes->squid_noise);
+      }
+      tes->write_to_stream(tes,tes->time,pulse,status);
+    }
+    samplestep[ii]=100000;
+    samples[ii]=0;
+    step_nb[ii]=0;
+  }
+  // simulation
+  while (det->pix[0].tes->time<tstop) {
+    for (int ii=0;ii<det->npix;ii++) {
+      // get the current TES
+      tesparams *tes = det->pix[ii].tes;
+      // update progress bar
+      if (tes->progressbar!=NULL && samplestep[ii] == 100000) {
+        progressbar_update(tes->progressbar,
+                           (unsigned long) ((tes->time - tes->tstart)*PROGRESSBAR_FACTOR));
+        samplestep[ii]=0;
+      } else {
+        samplestep[ii]++;
       }
 
-      // write the sucker
-      // (note that we do allow NULL here. This could be used,
-      // e.g., to propagate the TES for a while without producing
-      // output)
-      if (tes->write_to_stream != NULL ) {
-	tes->write_to_stream(tes,tes->time,pulse,status);
+      if (tes->simnoise) {
+        // thermal noise
+        tes->Pnb1=tnoi(tes);
+
+        // Johnson noise terms
+        // (this should now be ok for the excess noise, but needs somebody
+        // else to check this again to be 100% sure)
+        tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
+        tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->dRdI*tes->I0/tes->RT));
+        tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->Reff*tes->bandwidth));
+        tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->dRdI*tes->I0/tes->RT)*tes->m_excess*tes->m_excess) );
       }
 
-      samples=0;
+      // absorb next photon?
+      tes->En1=0.;
+      tes->n_absorbed=0;
+      // This while loop handles pileup correctly
+      // i.e. if two photons arrive within one delta_t
+      // their energies are summed up
+      while (tes->time>=tes->impact->time) {
+        tes->Nevts++;
+        tes->n_absorbed++;
+        // increase En1 (note the +=)
+        tes->En1+=tes->impact->energy*keV/(tes->delta_t*tes->therm);
+
+        // remember that we've processed this photon
+        if (tes->write_photon!=NULL) {
+          tes->write_photon(tes,tes->impact->time,tes->impact->ph_id,status);
+        }
+
+        // get the next photon 
+        int success=tes->get_photon(tes->impact,tes->photoninfo,status);
+        CHECK_STATUS_RET(*status,-1);
+        if (success==0) {
+          // there is no further photon to read. Set next impact time to
+          // a time outside much after this
+          tes->impact->time=tstop+100.;
+        }
+      }
+      double Y[2];
+      Y[0]=tes->I0; // current
+      Y[1]=tes->T1; // temperature
+
+      int s=gsl_odeiv2_driver_apply_fixed_step(tes->odedriver,&(tes->time),tes->delta_t,1,Y);
+      tes->time=tes->tstart+step_nb[ii]*tes->delta_t;
+      if (s!=GSL_SUCCESS) {
+        fprintf(stderr,"Driver error: %d\n",s);
+        return(1);
+      }
+
+      samples[ii]++;
+      step_nb[ii]++;
+
+      tes->I0=Y[0];
+      tes->T1=Y[1];
+
+
+      // Update system properties
+
+      // New resistance value assuming a simple 
+      // linear transition with alpha and beta dependence
+      tes->RT=tes->R0+tes->dRdT*(tes->T1-tes->T_start)+tes->dRdI*(tes->I0-tes->I0_start);
+
+      // thermal power flow
+      tes->Pb1=tpow(tes); 
     }
 
-    // Update system properties
+    // Calculate FDM Crosstalk.
+    if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+      for (int ii=0; ii<det->readout_channels->num_channels; ii++){
+        solve_FDM(&(det->readout_channels->channels[ii]));
+      }
+    }
 
-    // New resistance value assuming a simple 
-    // linear transition with alpha and beta dependence
-    tes->RT=tes->R0+tes->dRdT*(tes->T1-tes->T_start)+tes->dRdI*(tes->I0-tes->I0_start);
+    for (int ii=0;ii<det->npix;ii++) {
+      // get the current TES
+      tesparams *tes = det->pix[ii].tes;
 
-    // thermal power flow
-    tes->Pb1=tpow(tes); 
+      // put the pulse data and the time data into arrays 
+      // if the decimation condition is met
+      if (samples[ii]==tes->decimate_factor) {
 
+        // write pulse data
+        // we also add the SQUID/readout noise and subtract the
+        // baseline (the equilibrium bias current) and invert the
+        // pulses so they are all +ve
+        double pulse;
+        if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+          // Include crosstalk
+          pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
+          //pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
+          //pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
+
+        } else {
+          pulse=tes->I0_start-tes->I0;
+        }
+        if (tes->simnoise) {
+          pulse += gsl_ran_gaussian(rng,tes->squid_noise);
+        }
+
+        // write the sucker
+        // (note that we do allow NULL here. This could be used,
+        // e.g., to propagate the TES for a while without producing
+        // output)
+        if (tes->write_to_stream != NULL ) {
+          tes->write_to_stream(tes,tes->time,pulse,status);
+        }
+
+        samples[ii]=0;
+      }
+
+    }
   }
-
   return(0);
 }

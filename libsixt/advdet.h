@@ -28,6 +28,11 @@
 #include "xmlbuffer.h"
 #include "teseventlist.h"
 #include "pixelimpactfile.h"
+#include "tespixel.h"
+
+// For FDM calculations in tessim
+#include <math.h>
+#include <gsl/gsl_complex_math.h>
 
 ////////////////////////////////////////////////////////////////////////
 // Constants.
@@ -48,6 +53,7 @@ typedef struct MatrixEnerdepCrossTalk MatrixEnerdepCrossTalk;
 typedef struct Channel Channel;
 typedef struct IntermodulationCrossTalk IntermodulationCrossTalk;
 typedef struct ReadoutChannels ReadoutChannels;
+typedef struct FDMSystem FDMSystem; 
 
 /** Data structure describing the noise properties of calorimeter
  pixels */
@@ -160,6 +166,11 @@ struct AdvPix{
   MatrixCrossTalk* thermal_cross_talk;
   //IntermodulationCrossTalk* intermodulation_cross_talk;
   MatrixEnerdepCrossTalk* electrical_cross_talk;
+
+  /** tessim struct */
+  char* tes_type;
+  tesparams *tes;
+
 
 }; typedef struct AdvPix AdvPix;
 
@@ -323,6 +334,13 @@ typedef struct{
   /** Crosstalk ID (which effects should be included */
   int crosstalk_id;
 
+  /** File containing TES pixel definitions */
+  char* tes_type_file;
+
+  /** Common impedance for FDM Crosstalk */
+  double L_Common;
+
+
 }AdvDet;
 
 
@@ -378,12 +396,22 @@ struct IntermodulationCrossTalk{
 
 };
 
+/** Structure containing linear equations system for FDM Crosstalk **/
+struct FDMSystem{
+        int num_pixels;
+        double* omega_array; // angular frequencies for pixels, length = num_pixels 
+        double** Z_array; // complex impedances (saved as doubles, since they are imaginary), size = num_pixels x num_pixels
+        double L_Common; // common impedance
+        double* u_LC; // imaginary impedance term that's constant and used a lot
+        };
+
 
 /** Structure of a single channel, including all its contained pixels*/
 struct Channel{
 	AdvPix** pixels;
 	int num_pixels;
 	int channel_id;
+        FDMSystem* fdmsys; 
 };
 
 /** Structure containing a certain amount of Impacts, which are not written
@@ -403,6 +431,8 @@ struct ReadoutChannels{
 	int num_channels;} ;
 
 
+
+
 /////////////////////////////////////////////////////////////////////
 // Function Declarations.
 /////////////////////////////////////////////////////////////////////
@@ -420,6 +450,9 @@ TESNoiseProperties* duplicateTESNoise(TESNoiseProperties* noise,int nzeros,int n
 /** Destructor. Releases all allocated memory. */
 void destroyTESNoiseProperties(TESNoiseProperties* noise);
 
+/** Constructor for an empty AdvPix structure */
+AdvPix* newAdvPix(int* const status);
+
 /** Destructor of the AdvPix structure */
 void freeAdvPix(AdvPix* pix);
 
@@ -431,6 +464,9 @@ void freeElecTab(ElecTab* tab, int gr);
 
 /** Free the Readout Channel Structure */
 void freeReadoutChannels(ReadoutChannels* rc);
+
+/** Free the FDM System Structure */
+void freeFDMSystem(FDMSystem* fdm_sys);
 
 /** Read the advanced detector syntax from the specified XML */
 void parseAdvDetXML(AdvDet* const det, 

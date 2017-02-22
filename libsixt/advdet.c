@@ -83,6 +83,42 @@ void destroyTESNoiseProperties(TESNoiseProperties* noise){
   noise=NULL;
 }
 
+AdvPix* newAdvPix(int* const status){
+  // Allocate memory
+  AdvPix* pix=(AdvPix*)malloc(sizeof(AdvPix));
+  if(pix==NULL){
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("Unable to allocate memory for detector pixel");
+    return(pix);
+  }
+  // Initialize values and pointers 
+  pix->sx=0.;
+  pix->sy=0.;
+  pix->width=0.;
+  pix->height=0.;
+  pix->pindex=0;
+  //pix->version=NULL;
+  pix->profVersionID=0;
+  pix->ADCOffset=0;
+  pix->calfactor=0.;
+  pix->TESNoise=NULL;
+  pix->ngrades=0;
+  pix->grades=NULL;
+  pix->global_grading=0;
+  pix->arffile=NULL;
+  pix->arf=NULL;
+  pix->freq=0.;
+  pix->channel=NULL;
+  pix->electrical_cross_talk=NULL;
+  pix->thermal_cross_talk=NULL;
+  //pix->intermodulation_cross_talk=NULL;
+  pix->tes_type=NULL;
+  pix->tes=NULL;
+
+  return(pix);
+}
+
+
 void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
 	int g=pix->ngrades;
@@ -103,8 +139,25 @@ void freeGrading(AdvPix* pix){
     pix->global_grading=0;
 }
 
+/** Free the FDM System Structure */
+void freeFDMSystem(FDMSystem* fdmsys){
+        int ii;
+        free(fdmsys->omega_array);
+        free(fdmsys->u_LC);
+        for (ii=0; ii<fdmsys->num_pixels; ii++){
+                free(fdmsys->Z_array[ii]);
+        }
+        free(fdmsys->Z_array);
+}
+
 void freeReadoutChannels(ReadoutChannels* rc){
 	if ( rc != NULL ){
+                // Free the FDM systems
+                for (int ii=0; ii<rc->num_channels; ii++){
+                        if (rc->channels[ii].fdmsys != NULL){
+                                freeFDMSystem(rc->channels[ii].fdmsys);
+                        }
+                }
 		free(rc->channels);
 		free(rc->df_information_band);
 	}
@@ -229,6 +282,9 @@ AdvDet* newAdvDet(int* const status){
 
   det->threshold_event_lo_keV=0.;
   det->crosstalk_id=0;
+
+  det->tes_type_file=NULL;
+  det->L_Common=0.;
 
   return(det);
 }
@@ -503,6 +559,19 @@ static void AdvDetXMLElementStart(void* parsedata,
 			SIXT_ERROR("XML syntax error: shape used outside of pixel");
 			return;
 		}
+        } else if (!strcmp(Uelement,"PIXTES")) {
+                if (xmlparsedata->det->inpixel){
+                        xmlparsedata->det->pix[xmlparsedata->det->cpix].tes_type=(char*)malloc(MAXFILENAME*sizeof(char));
+		        CHECK_MALLOC_VOID(xmlparsedata->det->pix[xmlparsedata->det->cpix].tes_type);
+                        getXMLAttributeString(attr, "TYPE", xmlparsedata->det->pix[xmlparsedata->det->cpix].tes_type);
+		        if (strlen(xmlparsedata->det->pix[xmlparsedata->det->cpix].tes_type) == 0){
+			        free(xmlparsedata->det->pix[xmlparsedata->det->cpix].tes_type);
+			        xmlparsedata->det->pix[xmlparsedata->det->cpix].tes_type=NULL;
+                        }
+                } else {
+                        xmlparsedata->status=EXIT_FAILURE;
+                        SIXT_ERROR("XML syntax error: pixtes used outside of pixel");
+                }
 	} else if (!strcmp(Uelement,"PULSESHAPE")){
 		if (xmlparsedata->det->inpixel){
 			xmlparsedata->det->pix[xmlparsedata->det->cpix].calfactor=getXMLAttributeDouble(attr, "CALFACTOR");
@@ -705,10 +774,22 @@ static void AdvDetXMLElementStart(void* parsedata,
 			return;
 		}
 		xmlparsedata->det->SampleFreq=new_samplefreq;
+        } else if (!strcmp(Uelement,"TESFILE")) {
+                xmlparsedata->det->tes_type_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->tes_type_file);
+                getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tes_type_file);
+		if (strlen(xmlparsedata->det->tes_type_file) == 0){
+			free(xmlparsedata->det->tes_type_file);
+			xmlparsedata->det->tes_type_file=NULL;
+                }
+
 	} else if(!strcmp(Uelement, "CHANNEL_FREQ_LIST"))  {
 		xmlparsedata->det->channel_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->channel_file);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->channel_file);
+
+        } else if(!strcmp(Uelement, "FDM_PARAMETERS"))  {
+        	xmlparsedata->det->L_Common=getXMLAttributeDouble(attr, "LCOMMON");
 
 	} else if(!strcmp(Uelement, "CROSSTALK"))  {
 		// Need to check if we have channels defined
@@ -795,7 +876,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 
 	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
 		xmlparsedata->det->threshold_event_lo_keV = getXMLAttributeDouble(attr,"VALUE");
-	} else {
+        	} else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];
 		sprintf(msg, "unknown XML tag: <%s>", el);

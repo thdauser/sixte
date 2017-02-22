@@ -33,3 +33,5 @@ propertiesonly,b,h,n,,,"Display properties of TES and exit without calculation?"
 Seed,i,h,0,,,"Seed for the noise RNG (0 to use system time)"
 progressbar,b,h,y,,,"Display progress bar?"
 clobber,b,h,y,,,"Overwrite output files?"
+
+doCrosstalk,b,h,y,,,"Simulate Crosstalk (yes/no)?"

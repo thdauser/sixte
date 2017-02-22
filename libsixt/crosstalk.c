@@ -1421,6 +1421,7 @@ ReadoutChannels* init_newReadout(int num_chan, int* status){
 		read_chan->channels[ii].num_pixels = 0;
 		read_chan->channels[ii].pixels = NULL;
 		read_chan->df_information_band[ii] = 0.0;
+                read_chan->channels[ii].fdmsys = NULL;
 	}
 
 	return read_chan;
