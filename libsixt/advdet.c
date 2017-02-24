@@ -215,22 +215,28 @@ void freeElecTab(ElecTab* tab,int gr){
 	}
 }
 
-void freeCrosstalk(AdvDet** det, int gr){
+void freeCrosstalk(AdvDet* det, int gr){
 
-	freeReadoutChannels( (*det)->readout_channels);
+	freeReadoutChannels(det->readout_channels);
 	//Freeing tables for every grade
 	if(gr!=0){
-		free((*det)->crosstalk_elec_timedep_file);
-		free((*det)->crosstalk_thermal_timedep_file);
-		free((*det)->crosstalk_intermod_timedep_file);
+		int len=det->xt_num_thermal;
+		free(det->crosstalk_elec_timedep_file);
+		freeElecTab(det->crosstalk_elec,gr);
+		freeCrosstalkTimedep(det->crosstalk_elec_timedep,gr);
 
-		freeElecTab((*det)->crosstalk_elec_carrier_olap,gr);
-		freeElecTab((*det)->crosstalk_elec_common_imp,gr);
-		freeImodTab((*det)->crosstalk_imod_table,gr);
+		free(det->crosstalk_intermod_timedep_file);
+		freeImodTab(det->crosstalk_imod_table,gr);
+		freeCrosstalkTimedep(det->crosstalk_imod_timedep,gr);
 
-		freeCrosstalkTimedep((*det)->crosstalk_elec_timedep,gr);
-		freeCrosstalkTimedep((*det)->crosstalk_imod_timedep,gr);
-		freeCrosstalkTimedep((*det)->crosstalk_ther_timedep,gr);
+		if(det->crosstalk_ther_timedep!=NULL){
+			for(int i=0; i<len; i++){
+				free(det->crosstalk_thermal_timedep_file[i]);
+				freeCrosstalkTimedep(det->crosstalk_ther_timedep[i],gr);
+			}
+			free(det->crosstalk_thermal_timedep_file);
+			free(det->crosstalk_ther_timedep);
+		}
 	}
 }
 
@@ -277,8 +283,7 @@ AdvDet* newAdvDet(int* const status){
   det->crosstalk_elec_file=NULL;
   det->crosstalk_elec_timedep_file=NULL;
   det->crosstalk_elec_timedep=NULL;
-  det->crosstalk_elec_carrier_olap=NULL;
-  det->crosstalk_elec_common_imp=NULL;
+  det->crosstalk_elec=NULL;
 
   det->threshold_event_lo_keV=0.;
   det->crosstalk_id=0;
@@ -308,7 +313,7 @@ void destroyAdvDet(AdvDet **det){
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
 
-		freeCrosstalk(det, gr);
+		freeCrosstalk(*(det), gr);
 	}
 }
 
@@ -805,17 +810,12 @@ static void AdvDetXMLElementStart(void* parsedata,
 		xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal] =
 				getXMLAttributeDouble(attr, "DISTANCE");
 
-		//timedep file can be given only in the first line
-		if (xmlparsedata->det->xt_num_thermal==0){
-			xmlparsedata->det->crosstalk_thermal_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
-			CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_thermal_timedep_file);
-			getXMLAttributeString(attr, "TIMEDEPFILE", xmlparsedata->det->crosstalk_thermal_timedep_file);
-			if (strlen(xmlparsedata->det->crosstalk_thermal_timedep_file) == 0){
-				xmlparsedata->status=EXIT_FAILURE;
-				SIXT_ERROR("Thermal crosstalk time dependence file is not given in first line");
-				return;
-			}
-		}
+
+		xmlparsedata->det->crosstalk_thermal_timedep_file=(char**)realloc(xmlparsedata->det->crosstalk_thermal_timedep_file, (xmlparsedata->det->xt_num_thermal+1)*sizeof(char*));
+		char* tmp=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp);
+		getXMLAttributeString(attr, "TIMEDEPFILE", tmp);
+		xmlparsedata->det->crosstalk_thermal_timedep_file[xmlparsedata->det->xt_num_thermal]=tmp;
 
 		// check that distances are in increasing order
 		if((xmlparsedata->det->xt_num_thermal>0) &&
@@ -1265,6 +1265,7 @@ MatrixCrossTalk* newMatrixCrossTalk(int* const status){
 	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
 
 	matrix->num_cross_talk_pixels=0;
+	matrix->cross_talk_index = NULL;
 	matrix->cross_talk_pixels = NULL;
 	matrix->cross_talk_weights = NULL;
 

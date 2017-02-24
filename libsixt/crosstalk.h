@@ -176,7 +176,7 @@ void load_imod_timedep(AdvDet* det, int k, int* const status);
 void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status);
 
 /** Thermal time dependence*/
-void load_thermal_timedep(AdvDet* det, int k, int* const status);
+void load_thermal_timedep(AdvDet* det, int i, int k, int* const status);
 
 /** Constructor of CrosstalkProxy structure */
 CrosstalkProxy* newCrosstalkProxy(int* const status);

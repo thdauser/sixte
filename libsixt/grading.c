@@ -15,7 +15,7 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2016 Philippe Peille, IRAP; Thomas Dauser, ECAP
+   Copyright 2016 Philippe Peille, IRAP; Thomas Dauser, ECAP; Edoardo Cucchetti, IRAP;
 */
 
 #include "grading.h"
@@ -387,12 +387,12 @@ void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,P
 
 	// Iterate over affected pixels we just store the cross-talk impact and go
 	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
-		crosstalk_impact.energy = impact->energy; //*cross_talk->cross_talk_weights[ii]; //We store the energy of the ctk event as it does not depend on grading
+		crosstalk_impact.energy = impact->energy; // We store the energy of the ctk event as it does not depend on grading
 		crosstalk_impact.pixID = impact->pixID; //We store the perturber pixel
 		crosstalk_impact.time = impact->time;
 		crosstalk_impact.ph_id = -impact->ph_id;
 		crosstalk_impact.src_id = impact->src_id;
-		crosstalk_impact.weight_index = ii;
+		crosstalk_impact.weight_index = ii; //Store which of the neighbours to look into
 		double df = get_imod_df(det->pix[cross_talk->cross_talk_pixels[ii]->pindex].freq,det->pix[impact->pixID].freq,status);
 		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,THERCTK,df,status);
 	}

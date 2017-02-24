@@ -315,8 +315,8 @@ typedef struct{
 
   /** Structure containing the thermal crosstalk informations */
 
-  char* crosstalk_thermal_timedep_file;
-  CrosstalkTimedep* crosstalk_ther_timedep;
+  char** crosstalk_thermal_timedep_file;
+  CrosstalkTimedep** crosstalk_ther_timedep;
   int xt_num_thermal;
   double* xt_dist_thermal;
   double* xt_weight_thermal;
@@ -324,8 +324,7 @@ typedef struct{
   /** Structure containing the electrical crosstalk table and the dependence crosstalk table  */
   char* crosstalk_elec_file;
   char* crosstalk_elec_timedep_file;
-  ElecTab* crosstalk_elec_carrier_olap;
-  ElecTab* crosstalk_elec_common_imp;
+  ElecTab* crosstalk_elec;
   CrosstalkTimedep* crosstalk_elec_timedep;
 
   /** Trigger threshold */
@@ -353,6 +352,9 @@ typedef struct{
 struct MatrixCrossTalk{
 	/** number of cross-talk pixels */
 	int num_cross_talk_pixels;
+
+	/** Distance to neighbour type*/
+	int* cross_talk_index;
 
 	/** Array containing cross-talk pixels */
 	AdvPix** cross_talk_pixels;
@@ -544,6 +546,6 @@ void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr);
 void freeImodTab(ImodTab* tab, int gr);
 
 /** free the crosstalk structures */
-void freeCrosstalk(AdvDet** det, int gr);
+void freeCrosstalk(AdvDet* det, int gr);
 
 #endif /* ADVDET_H */

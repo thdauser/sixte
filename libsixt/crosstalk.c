@@ -15,13 +15,13 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2016 Philippe Peille, IRAP; Thomas Dauser, ECAP
+   Copyright 2016 Philippe Peille, IRAP; Thomas Dauser, ECAP; Edoardo Cucchetti, IRAP;
 */
 
 #include "crosstalk.h"
 
 /** Calculates distance between two pixels */
-static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
+/**static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
 	// Note: this assumes no pixel overlap (this was ensured at detector loading stage)
 
 	// pix1 is on the right of pix2
@@ -73,10 +73,10 @@ static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
 	// pix1 is below pix2
 	// distance is distance between top edge of pix1 and bottom edge of pix2
 	return (pix2->sy - .5*pix2->height - (pix1->sy + .5*pix1->height));
-}
+}*/
 
 /** Adds a cross talk pixel to the matrix */
-static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,double xt_weigth,int* const status){
+static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,int xt_index, double xt_weigth,int* const status){
 	CHECK_STATUS_VOID(*status);
 
 	// Allocate matrix if necessary
@@ -90,10 +90,13 @@ static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,double xt_weigth,
 	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_pixels,*status);
 	matrix->cross_talk_weights = realloc(matrix->cross_talk_weights,(matrix->num_cross_talk_pixels+1)*sizeof(*(matrix->cross_talk_weights)));
 	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_weights,*status);
+	matrix->cross_talk_index = realloc(matrix->cross_talk_index,(matrix->num_cross_talk_pixels+1)*sizeof(*(matrix->cross_talk_index)));
+	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_index,*status);
 
 	// Affect new values
 	matrix->cross_talk_pixels[matrix->num_cross_talk_pixels] = pixel;
 	matrix->cross_talk_weights[matrix->num_cross_talk_pixels] = xt_weigth;
+	matrix->cross_talk_index[matrix->num_cross_talk_pixels]= xt_index;
 
 	// Now, we can say that the matrix is effectively bigger
 	matrix->num_cross_talk_pixels++;
@@ -245,7 +248,6 @@ static void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* per
 	/** Checking if perturber frequency is higher or lower than pixels*/
 	double df = get_imod_df(det->pix[signal->pixID].freq,det->pix[perturber->pixID].freq,status);
 	CHECK_STATUS_VOID(*status);
-	//printf("Energy %f and %f \n",signal->energy,perturber->energy);
 	double ampli_signal = conv_ener2ampli((signal->energy));
 	double ampli_perturber = conv_ener2ampli((perturber->energy));
 	double energy_weight = get_intermod_weight(det,grading, df, dt, ampli_perturber, ampli_signal, status);
@@ -258,20 +260,21 @@ static void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* per
 //Find which file we need to use for time dependency
 CrosstalkTimedep* getTimeDep(AdvDet* det, CrosstalkProxy* xtalk_proxy, int ii, int grade, int* status){
 	CrosstalkTimedep* buffer=NULL;
+	PixImpact* crosstalk=xtalk_proxy->xtalk_impacts[ii];
 	if(xtalk_proxy->type[ii]==-ELECCTK){
 		buffer=&(det->crosstalk_elec_timedep[2*grade]);
 	} else if(xtalk_proxy->type[ii]==ELECCTK){
 		buffer=&(det->crosstalk_elec_timedep[2*grade+1]);
 	} else if(xtalk_proxy->type[ii]==-THERCTK){
-		buffer=&(det->crosstalk_ther_timedep[2*grade]);
+		buffer=&(det->crosstalk_ther_timedep[det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_index[crosstalk->weight_index]][2*grade]);
 	} else if(xtalk_proxy->type[ii]==THERCTK){
-		buffer=&(det->crosstalk_ther_timedep[2*grade+1]);
+		buffer=&(det->crosstalk_ther_timedep[det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_index[crosstalk->weight_index]][2*grade+1]);
 	} else if(xtalk_proxy->type[ii]==-IMODCTK){;
 		buffer=&(det->crosstalk_imod_timedep[2*grade]);
 	} else if(xtalk_proxy->type[ii]==IMODCTK){
 		buffer=&(det->crosstalk_imod_timedep[2*grade+1]);
 	} else{
-		printf("It seems as though there is an event of cross-talk with unknown type %i", xtalk_proxy->type[ii]);
+		printf("It seems as though there is an event of cross-talk with unknown type %i \n", xtalk_proxy->type[ii]);
 		SIXT_ERROR("Wrong type");
 		*status=EXIT_FAILURE;
 	}
@@ -380,13 +383,14 @@ void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 		current_pixel = &(det->pix[i]);
 
 		// Initial quick distance check to avoid spending time on useless pixels
-		if((fabs(current_pixel->sx-concerned_pixel->sx) > .5*(current_pixel->width+concerned_pixel->width)+max_cross_talk_dist) ||
-				(fabs(current_pixel->sy-concerned_pixel->sy) > .5*(current_pixel->height+concerned_pixel->height)+max_cross_talk_dist)){
+		if((fabs(current_pixel->sx-concerned_pixel->sx) > max_cross_talk_dist) ||
+				(fabs(current_pixel->sy-concerned_pixel->sy) > max_cross_talk_dist)){
 			continue;
 		}
 
 		// Get distance between two pixels
-		double pixel_distance = distance_two_pixels(current_pixel,concerned_pixel);
+		//double pixel_distance = distance_two_pixels(current_pixel,concerned_pixel); //Deprecated way
+		double pixel_distance = sqrt(pow(current_pixel->sx-concerned_pixel->sx,2)+pow(current_pixel->sy-concerned_pixel->sy,2));
 		if (pixel_distance<0){ // distance should be positive
 			*status = EXIT_FAILURE;
 			printf("*** error: Distance between pixels %d and %d is negative\n",current_pixel->pindex,concerned_pixel->pindex);
@@ -396,7 +400,7 @@ void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 		// Iterate over cross-talk values and look for the first matching one
 		for (int xt_index=0;xt_index<det->xt_num_thermal;xt_index++){
 			if (pixel_distance<det->xt_dist_thermal[xt_index]){
-				add_xt_pixel(concerned_pixel->thermal_cross_talk,current_pixel,det->xt_weight_thermal[xt_index],status);
+				add_xt_pixel(concerned_pixel->thermal_cross_talk,current_pixel,xt_index,det->xt_weight_thermal[xt_index],status);
 				CHECK_STATUS_VOID(*status);
 				// If one cross talk was identified, go to next pixel (the future cross-talks should be lower order cases)
 				break;
@@ -405,11 +409,11 @@ void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 	}
 }
 
-void load_thermal_timedep(AdvDet* det, int k, int* const status){
-	CHECK_NULL_VOID(det->crosstalk_thermal_timedep_file,*status,"no file for the thermal time dependence specified");
+void load_thermal_timedep(AdvDet* det, int i, int k, int* const status){
+	CHECK_NULL_VOID(det->crosstalk_thermal_timedep_file[i],*status,"no file for the thermal time dependence specified");
 
-	det->crosstalk_ther_timedep[2*k]=*newCrossTalkTimedep(status);
-	det->crosstalk_ther_timedep[2*k+1]=*newCrossTalkTimedep(status);
+	det->crosstalk_ther_timedep[i][2*k]=*newCrossTalkTimedep(status);
+	det->crosstalk_ther_timedep[i][2*k+1]=*newCrossTalkTimedep(status);
 
 	char gra[15];
 	sprintf(gra, "%05ld", det->pix[0].grades[k].gradelim_post);
@@ -432,7 +436,7 @@ void load_thermal_timedep(AdvDet* det, int k, int* const status){
 
 		char fullfilename[MAXFILENAME];
 		strcpy(fullfilename,det->filepath);
-		strcat(fullfilename,det->crosstalk_thermal_timedep_file);
+		strcat(fullfilename,det->crosstalk_thermal_timedep_file[i]);
 		// open the file
 		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
 		headas_chat(5, "   ... reading the time dependence thermal table %s for grade %i \n",fullfilename, k);
@@ -446,19 +450,19 @@ void load_thermal_timedep(AdvDet* det, int k, int* const status){
 		get_imodtable_axis(&n_weight_low,&weight_low,EXTNAME_LOW_GRAD,COLNAME_WEIGHT,fptr,status);
 		CHECK_STATUS_BREAK(*status);
 
-		det->crosstalk_ther_timedep[2*k].length=n_time_low;
-		det->crosstalk_ther_timedep[2*k].time=time_low;
-		det->crosstalk_ther_timedep[2*k].weight=weight_low;
+		det->crosstalk_ther_timedep[i][2*k].length=n_time_low;
+		det->crosstalk_ther_timedep[i][2*k].time=time_low;
+		det->crosstalk_ther_timedep[i][2*k].weight=weight_low;
 
 		// now we need to set the weight at t=0 (differs for tessim simulated LUT)
-		int ind_t0_low = binary_search(0.0, det->crosstalk_ther_timedep[2*k].time, det->crosstalk_ther_timedep[2*k].length);
+		int ind_t0_low = binary_search(0.0, det->crosstalk_ther_timedep[i][2*k].time, det->crosstalk_ther_timedep[i][2*k].length);
 
-		double fac_low = (0.0 - det->crosstalk_ther_timedep[2*k].time[ind_t0_low]) /
-				(det->crosstalk_ther_timedep[2*k].time[ind_t0_low+1] - det->crosstalk_ther_timedep[2*k].time[ind_t0_low]);
+		double fac_low = (0.0 - det->crosstalk_ther_timedep[i][2*k].time[ind_t0_low]) /
+				(det->crosstalk_ther_timedep[i][2*k].time[ind_t0_low+1] - det->crosstalk_ther_timedep[i][2*k].time[ind_t0_low]);
 
-		det->crosstalk_ther_timedep[2*k].weight_t0 =
-				(1-fac_low)*det->crosstalk_ther_timedep[2*k].weight[ind_t0_low] +
-				(fac_low)  *det->crosstalk_ther_timedep[2*k].weight[ind_t0_low+1];
+		det->crosstalk_ther_timedep[i][2*k].weight_t0 =
+				(1-fac_low)*det->crosstalk_ther_timedep[i][2*k].weight[ind_t0_low] +
+				(fac_low)  *det->crosstalk_ther_timedep[i][2*k].weight[ind_t0_low+1];
 
 		// Read time dependence info for second the second case (same grading, different frequency difference)
 		int n_time_hi, n_weight_hi;
@@ -469,19 +473,19 @@ void load_thermal_timedep(AdvDet* det, int k, int* const status){
 		get_imodtable_axis(&n_weight_hi,&weight_hi,EXTNAME_HI_GRAD,COLNAME_WEIGHT,fptr,status);
 		CHECK_STATUS_BREAK(*status);
 
-		det->crosstalk_ther_timedep[2*k+1].length=n_time_hi;
-		det->crosstalk_ther_timedep[2*k+1].time=time_hi;
-		det->crosstalk_ther_timedep[2*k+1].weight=weight_hi;
+		det->crosstalk_ther_timedep[i][2*k+1].length=n_time_hi;
+		det->crosstalk_ther_timedep[i][2*k+1].time=time_hi;
+		det->crosstalk_ther_timedep[i][2*k+1].weight=weight_hi;
 
 		// now we need to set the weight at t=0 (differs for tessim simulated LUT)
-		int ind_t0_hi = binary_search(0.0, det->crosstalk_ther_timedep[2*k+1].time, det->crosstalk_ther_timedep[2*k+1].length);
+		int ind_t0_hi = binary_search(0.0, det->crosstalk_ther_timedep[i][2*k+1].time, det->crosstalk_ther_timedep[i][2*k+1].length);
 
-		double fac_hi = (0.0 - det->crosstalk_ther_timedep[2*k+1].time[ind_t0_hi]) /
-				(det->crosstalk_ther_timedep[2*k+1].time[ind_t0_hi+1] - det->crosstalk_ther_timedep[2*k+1].time[ind_t0_hi]);
+		double fac_hi = (0.0 - det->crosstalk_ther_timedep[i][2*k+1].time[ind_t0_hi]) /
+				(det->crosstalk_ther_timedep[i][2*k+1].time[ind_t0_hi+1] - det->crosstalk_ther_timedep[i][2*k+1].time[ind_t0_hi]);
 
-		det->crosstalk_ther_timedep[2*k+1].weight_t0 =
-				(1-fac_hi)*det->crosstalk_ther_timedep[2*k+1].weight[ind_t0_hi] +
-				(fac_hi)  *det->crosstalk_ther_timedep[2*k+1].weight[ind_t0_hi+1];
+		det->crosstalk_ther_timedep[i][2*k+1].weight_t0 =
+				(1-fac_hi)*det->crosstalk_ther_timedep[i][2*k+1].weight[ind_t0_hi] +
+				(fac_hi)  *det->crosstalk_ther_timedep[i][2*k+1].weight[ind_t0_hi+1];
 
 	}while(0);
 
@@ -617,26 +621,19 @@ void load_elec_table(AdvDet* det, int k ,int* status){
 	CHECK_NULL_VOID(det->crosstalk_elec_file,*status,"no file for the electrical crosstalk table specified");
 
 	char gra[15];
-	char gra2[15];
 	sprintf(gra, "%05ld", det->pix[0].grades[k].gradelim_post);
-	sprintf(gra2, "%05ld", det->pix[0].grades[k].gradelim_post);
 	char* EXTNAME_FREQ_SIGNAL = "signal_frequency";
 	char* EXTNAME_FREQ_PERTURBER = "perturber_frequency";
 	char* EXTNAME_ENER_PERTURBER = "perturber_energy";
-	char* EXTNAME_CARRIER_OVERLAP = "CARRIER_OVERLAP_";
-	char* EXTNAME_COMMON_IMPEDANCE = "COMMON_IMPEDANCE_";
+	char* EXTNAME_FDM_CROSSTALK = "FDM_CROSSTALK_";
 	char* COLNAME_FREQ_SIGNAL = "FREQ_S";
 	char* COLNAME_FREQ_PERTURBER = "FREQ_P";
 	char* COLNAME_ENER_PERTURBER = "EN_P";
 
 	// Concatenating the grade
-	char* EXTNAME_CARRIER_OVERLAP_GRAD=(char*)malloc(1+strlen(EXTNAME_CARRIER_OVERLAP)+strlen(gra));
-    strcpy(EXTNAME_CARRIER_OVERLAP_GRAD, EXTNAME_CARRIER_OVERLAP);
-    strcat(EXTNAME_CARRIER_OVERLAP_GRAD, gra);
-
-	char* EXTNAME_COMMON_IMPEDANCE_GRAD=(char*)malloc(1+strlen(EXTNAME_COMMON_IMPEDANCE)+strlen(gra2));
-    strcpy(EXTNAME_COMMON_IMPEDANCE_GRAD, EXTNAME_COMMON_IMPEDANCE);
-    strcat(EXTNAME_COMMON_IMPEDANCE_GRAD, gra2);
+	char* EXTNAME_FDM_CROSSTALK_GRAD=(char*)malloc(1+strlen(EXTNAME_FDM_CROSSTALK)+strlen(gra));
+    strcpy(EXTNAME_FDM_CROSSTALK_GRAD, EXTNAME_FDM_CROSSTALK);
+    strcat(EXTNAME_FDM_CROSSTALK_GRAD, gra);
 
 	fitsfile *fptr=NULL;
 
@@ -667,39 +664,23 @@ void load_elec_table(AdvDet* det, int k ,int* status){
 		}
 
 		// initialize the elec crosstalk tables
-		ElecTab* tmp_olap=&(det->crosstalk_elec_carrier_olap[k]);
-		initElecTab(&(tmp_olap), n_freq_s, n_freq_p, n_ener_p, freq_s, freq_p, ener_p, status);
+		ElecTab* tmp_elec=&(det->crosstalk_elec[k]);
+		initElecTab(&(tmp_elec), n_freq_s, n_freq_p, n_ener_p, freq_s, freq_p, ener_p, status);
 		if (*status!=EXIT_SUCCESS){
 			SIXT_ERROR("initializing electrical crosstalk table in memory failed");
 			break;
 		}
 
-		ElecTab* tmp_commonimp=&(det->crosstalk_elec_common_imp[k]);
-		initElecTab(&(tmp_commonimp), n_freq_s, n_freq_p, n_ener_p, freq_s, freq_p, ener_p, status);
-		if (*status!=EXIT_SUCCESS){
-			SIXT_ERROR("initializing electrical crosstalk table in memory failed");
-			break;
-		}
-
-
-		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, &(det->crosstalk_elec_carrier_olap[k]),
-				EXTNAME_CARRIER_OVERLAP_GRAD,status);
+		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, &(det->crosstalk_elec[k]),
+				EXTNAME_FDM_CROSSTALK_GRAD,status);
 		if (*status != EXIT_SUCCESS){
-			printf(" *** error: reading electrical crosstalk table (carrier overlap) %s  failed\n", fullfilename);
-			break;
-		}
-
-		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, &(det->crosstalk_elec_common_imp[k]),
-				EXTNAME_COMMON_IMPEDANCE_GRAD,status);
-		if (*status != EXIT_SUCCESS){
-			printf(" *** error: reading electrical crosstalk table (common impedance) %s  failed\n", fullfilename);
+			printf(" *** error: reading electrical crosstalk table %s  failed\n", fullfilename);
 			break;
 		}
 
 	} while(0); // END of Error handling loop
 
-	free(EXTNAME_COMMON_IMPEDANCE_GRAD);
-	free(EXTNAME_CARRIER_OVERLAP_GRAD);
+	free(EXTNAME_FDM_CROSSTALK_GRAD);
 	if (fptr!=NULL) {fits_close_file(fptr,status);}
 
 	return;
@@ -870,22 +851,18 @@ void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 	}
 
 	// Load for each grade, every different table only once (on first iteration)
-	if ((det->crosstalk_elec_carrier_olap == NULL) || (det->crosstalk_elec_common_imp == NULL) ){
+	if (det->crosstalk_elec == NULL){
 		det->crosstalk_elec_timedep=realloc(det->crosstalk_elec_timedep,2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
-		det->crosstalk_elec_carrier_olap=realloc(det->crosstalk_elec_carrier_olap, det->pix[0].ngrades*sizeof(ElecTab));
-		det->crosstalk_elec_common_imp=realloc(det->crosstalk_elec_common_imp, det->pix[0].ngrades*sizeof(ElecTab));
+		det->crosstalk_elec=realloc(det->crosstalk_elec, det->pix[0].ngrades*sizeof(ElecTab));
 		// load the tables for the electrical crosstalk
 		for (int k=0; k<det->pix[pixid].ngrades; k++){
 			load_elec_table(det, k, status);
 			load_elec_timedep(det, k, status);
 			CHECK_STATUS_VOID(*status);
 		}
-		assert(det->crosstalk_elec_carrier_olap != NULL);
-		assert(det->crosstalk_elec_common_imp != NULL);
+		assert(det->crosstalk_elec != NULL);
 		assert(det->crosstalk_elec_timedep != NULL);
 	}
-
-
 
 	AdvPix* concerned_pixel = &(det->pix[pixid]);
 	AdvPix* current_pixel = NULL;
@@ -893,8 +870,7 @@ void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 	//Allocate memory
 	concerned_pixel->electrical_cross_talk=newMatrixEnerdepCrossTalk(det->pix[pixid].ngrades, status);
 	for (int k=0; k<det->pix[pixid].ngrades; k++){
-		assert(det->crosstalk_elec_common_imp[k].n_ener_p == det->crosstalk_elec_carrier_olap[k].n_ener_p);
-		concerned_pixel->electrical_cross_talk[k].n_ener=det->crosstalk_elec_common_imp[k].n_ener_p;
+		concerned_pixel->electrical_cross_talk[k].n_ener=det->crosstalk_elec[k].n_ener_p;
 	}
 
 	// Iterate over the channel
@@ -911,18 +887,15 @@ void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 
 			// as the electrical crosstalk depends on the energy of the perturber, we need an array
 			// of weights depending on the energy
-			int n_weight=det->crosstalk_elec_common_imp[k].n_ener_p;
+			int n_weight=det->crosstalk_elec[k].n_ener_p;
 			double weight[n_weight];
 
 			for (int jj=0;jj<n_weight;jj++){
 				weight[jj] = 0.0;
 			}
 
-			// Add Carrier overlap
-			get_enerdep_weight(&(det->crosstalk_elec_carrier_olap[k]),freq_s,freq_p,weight,n_weight,status);
-
-			// Add Common impedence
-			get_enerdep_weight(&(det->crosstalk_elec_common_imp[k]),freq_s,freq_p,weight,n_weight,status);
+			// Add Electrical Crosstalk
+			get_enerdep_weight(&(det->crosstalk_elec[k]),freq_s,freq_p,weight,n_weight,status);
 
 			// Add cross-talk pixel
 			add_xt_enerdep_pixel(&(concerned_pixel->electrical_cross_talk[k]),current_pixel,weight,n_weight,status);
@@ -1114,7 +1087,7 @@ void storeEventtype(CrosstalkProxy* xtalk_proxy, int type, double df, int* statu
 	xtalk_proxy->is_saved[xtalk_proxy->current_crosstalk_index]=0;
 
 	if (abs(type)!=-IMODCTK && abs(type)!=-THERCTK && abs(type)!=-ELECCTK){
-		printf("Found an incorrect cross-talk type %i", type);
+		printf("Found an incorrect cross-talk type %i \n", type);
 		SIXT_ERROR("Wrong crosstalk type");
 		*status=EXIT_FAILURE;
 	}
@@ -1328,15 +1301,19 @@ void init_crosstalk(AdvDet* det, int* const status){
 	// load thermal cross talk and associated time dependency
 	if (det->xt_num_thermal>0 && doCrosstalk(CROSSTALK_ID_THERM,det)){
 		headas_chat(5," - thermal crosstalk\n");
-		det->crosstalk_ther_timedep=(CrosstalkTimedep*)realloc(det->crosstalk_ther_timedep,2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
-		for(int k=0; k<det->pix[0].ngrades; k++){
-			load_thermal_timedep(det, k, status);
+		det->crosstalk_ther_timedep=(CrosstalkTimedep**)realloc(det->crosstalk_ther_timedep,det->xt_num_thermal*sizeof(CrosstalkTimedep*));
+		for (int i=0; i<det->xt_num_thermal;i++){
+			det->crosstalk_ther_timedep[i]=(CrosstalkTimedep*)malloc(2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
+			for(int k=0; k<det->pix[0].ngrades; k++){
+				load_thermal_timedep(det, i, k, status);
+			}
 		}
 
 		for (int ii=0;ii<det->npix;ii++){
 			load_thermal_cross_talk(det,ii,status);
 			CHECK_STATUS_VOID(*status);
 		}
+
 	}
 
 	// load electrical cross talk and associated time dependency
@@ -1818,9 +1795,8 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact,
 		//----------------------
 		} else if (abs(xtalk_proxy->type[index])==-ELECCTK) {
 			// make sure we have the same (length) energy array here
-			assert(det->pix[impact->pixID].electrical_cross_talk[grade].n_ener == det->crosstalk_elec_carrier_olap[grade].n_ener_p);
-			assert(det->pix[impact->pixID].electrical_cross_talk[grade].n_ener == det->crosstalk_elec_common_imp[grade].n_ener_p);
-			double * ener_p = det->crosstalk_elec_carrier_olap[grade].ener_p; // every electrical crosstalk energy vector has to be the same
+			assert(det->pix[impact->pixID].electrical_cross_talk[grade].n_ener == det->crosstalk_elec[grade].n_ener_p);
+			double * ener_p = det->crosstalk_elec[grade].ener_p; // every electrical crosstalk energy vector has to be the same
 
 			if ((crosstalk->energy <= ener_p[0]) || (crosstalk->energy >= ener_p[det->pix[impact->pixID].electrical_cross_talk[grade].n_ener-1])) {
 				headas_chat(7, " *** warning : impact event energy %g on pix %li is outside the tabulated values for electrical crosstalk [%g,%g]}n",
@@ -1828,7 +1804,7 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact,
 				headas_chat(7, "     ---> skipping this event!\n");
 			} else {
 				// now determine the energy bin
-				int ind = binary_search(crosstalk->energy ,det->crosstalk_elec_carrier_olap[grade].ener_p,det->pix[impact->pixID].electrical_cross_talk[grade].n_ener);
+				int ind = binary_search(crosstalk->energy ,det->crosstalk_elec[grade].ener_p,det->pix[impact->pixID].electrical_cross_talk[grade].n_ener);
 				double fac = (crosstalk->energy - ener_p[ind]) / (ener_p[ind+1] - ener_p[ind]);
 				energies[ii] =(1-fac)*det->pix[crosstalk->pixID].electrical_cross_talk[grade].cross_talk_weights[crosstalk->weight_index][ind]
 					+(fac)*det->pix[crosstalk->pixID].electrical_cross_talk[grade].cross_talk_weights[crosstalk->weight_index][ind+1];
@@ -1944,7 +1920,6 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 				previous_xtalk->time = xtalk_proxy->xtalk_impacts[index-1+previous_xtalk->nb_pileup]->time;// to conserve causality
 				previous_xtalk->energy=cumul_ener;
 				previous_xtalk->pixID=impact->pixID; //As otherwise we have the pertuber index
-				//printf("New event time %f \n", previous_xtalk->time);
 
 				grade_proxy->nb_crosstalk_influence=previous_xtalk->nb_pileup+1;
 				grade_proxy->crosstalk_energy=cumul_ener;
@@ -1966,7 +1941,7 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 
 		//If the impact is not above threshold by itself check if a possible pile-up may trigger (if more than one event)
 		} else if(xtalk_proxy->n_active_crosstalk>1 && (previous_xtalk->time<next_time-buffer->time[0]  || next_time==-1.0)
-				&& fabs(xtalk_proxy->xtalk_impacts[index]->time-previous_xtalk->time) <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table
+				&& fabs(xtalk_proxy->xtalk_impacts[index]->time-previous_xtalk->time) <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table)
 			previous_xtalk->nb_pileup++;// Update number of pileups
 			cumul_ener+=energies[ii+previous_xtalk->nb_pileup-1]; //Cumul energy
 			toerase=(int*)realloc(toerase, (previous_xtalk->nb_pileup+1)*sizeof(int)); //In case we have to erase the event
@@ -2001,7 +1976,6 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 					grade_proxy->nb_crosstalk_influence=previous_xtalk->nb_pileup+1;
 					grade_proxy->crosstalk_energy=cumul_ener;
 					previous_xtalk->pixID=impact->pixID; //As otherwise we have the pertuber index /!\ HERE BECAUSE WE ERASE!
-					//printf("New event time %f \n", previous_xtalk->time);
 
 					//Erasing the event
 					erasectk(xtalk_proxy, toerase, previous_xtalk->nb_pileup+1,status); // Erase the previous event(s), which now form(s) a pulse
