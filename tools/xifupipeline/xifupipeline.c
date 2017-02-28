@@ -349,14 +349,19 @@ int xifupipeline_main()
 			loadRMFLibrary(det,&status);
 		}
 
+		if (status!=EXIT_SUCCESS) {
+		  printf(" ERROR initializing the TES setup \n");
+		  break;
+		}
 		// ---- End of TES initialization ----
+
 
 		// Set FITS header keywords.
 		// If this is a pointing attitude, store the direction in the output
 		// photon list.
 		if (1==ac->nentries) {
 			// Determine the telescope pointing direction and roll angle.
-			Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
+		  Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
 			CHECK_STATUS_BREAK(status);
 
 			// Direction.
@@ -416,7 +421,7 @@ int xifupipeline_main()
 				CHECK_STATUS_BREAK(status);
 			}
 
-			// Tes event file
+ 			// Tes event file
 			fits_update_key(event_file->fptr, TDOUBLE, "RA_PNT", &ra,
 					"RA of pointing direction [deg]", &status);
 			fits_update_key(event_file->fptr, TDOUBLE, "DEC_PNT", &dec,

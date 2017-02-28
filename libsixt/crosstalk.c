@@ -1105,10 +1105,13 @@ static void load_intermod_freq_table(AdvDet* det, int k, int* status){
 	char* COLNAME_AMPLITUDE = "AMPLITUDE";
 	char* COLNAME_TIMEOFFSET = "DT_SEC";
 	char* COLNAME_FREQOFFSET = "D_FREQ";
-	char* EXTNAME_CROSSTALK = "CROSSTALK_";
-	char* EXTNAME_CROSSTALK_GRAD=(char*)malloc(sizeof(1+strlen(EXTNAME_CROSSTALK)+ strlen(gra)));
-    strcpy(EXTNAME_CROSSTALK_GRAD, EXTNAME_CROSSTALK);
-    strcat(EXTNAME_CROSSTALK_GRAD, gra);
+	char* EXTNAME_CROSSTALK_GRAD;
+
+	if (asprintf(&EXTNAME_CROSSTALK_GRAD,"CROSSTALK_%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
 
 	fitsfile *fptr=NULL;
 
