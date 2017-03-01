@@ -290,6 +290,7 @@ AdvDet* newAdvDet(int* const status){
 
   det->tes_type_file=NULL;
   det->L_Common=0.;
+  det->C_Common=-1.; // default -1 means no common capacitance
 
   return(det);
 }
@@ -795,6 +796,15 @@ static void AdvDetXMLElementStart(void* parsedata,
 
         } else if(!strcmp(Uelement, "FDM_PARAMETERS"))  {
         	xmlparsedata->det->L_Common=getXMLAttributeDouble(attr, "LCOMMON");
+                // retrieval of common capacitance
+                // do it via getXMLAttributeString. If it's an empty string, do nothing (default value is -1)
+                // if it's not an empty string, do atof, as is done in getXMLAttributeDouble
+                char Cbuffer[MAXMSG]; // string buffer
+                getXMLAttributeString(attr,"CCOMMON", Cbuffer);
+                // an empty string starts with the terminator; this is faster than strcmp
+                if (Cbuffer[0] != '\0'){
+                  xmlparsedata->det->C_Common = atof(Cbuffer);
+                }
 
 	} else if(!strcmp(Uelement, "CROSSTALK"))  {
 		// Need to check if we have channels defined

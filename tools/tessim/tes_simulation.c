@@ -747,11 +747,12 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
   unsigned long step_nb[det->npix];
 
   // For FDM Crosstalk: Get initial conditions
-  if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+  if (det->npix>1 && det->readout_channels != NULL) {
     for (int ii=0; ii<det->readout_channels->num_channels; ii++){
       solve_FDM(&(det->readout_channels->channels[ii]));
     }
   }
+
   for (int ii=0;ii<det->npix;ii++) {
     // get the current TES
     tesparams *tes = det->pix[ii].tes;
@@ -767,9 +768,9 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
     // write initial status of the TES to the stream
     // NB we will need logic in tes->write_to_stream that
     // disallows duplicate writes of the same element
-    if (tes->write_to_stream != NULL ) {
+    if (tes->write_to_stream != NULL) {
       double pulse;
-      if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+      if (det->npix>1 && det->readout_channels != NULL) {
         // include Crosstalk
         tes->Ioverlap_start = tes->Ioverlap;
         pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
@@ -870,7 +871,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
     }
 
     // Calculate FDM Crosstalk.
-    if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+    if (det->npix>1 && det->readout_channels != NULL) {
       for (int ii=0; ii<det->readout_channels->num_channels; ii++){
         solve_FDM(&(det->readout_channels->channels[ii]));
       }
@@ -889,7 +890,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         // baseline (the equilibrium bias current) and invert the
         // pulses so they are all +ve
         double pulse;
-        if (det->npix>1 && det->readout_channels->channels[0].fdmsys != NULL ) {
+        if (det->npix>1 && det->readout_channels != NULL) {
           // Include crosstalk
           pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
           //pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel

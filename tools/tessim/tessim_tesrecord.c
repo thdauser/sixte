@@ -8,13 +8,13 @@
 void tes_write_tesrecord(tesparams *tes,int *status);
 
 // initialize the internal TESDataStream based memory management 
-tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, 
+tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, int buffersize,
 				    char *streamfile, char *impactfile, int clobber,
 				    SixtStdKeywords *keywords, int *status) {
   tes_record_info *data=(tes_record_info *)malloc(sizeof(tes_record_info));
   CHECK_NULL_RET(data,*status,"Memory allocation failed in tes_init_tesrecord: data structure",NULL);
 
-  data->Nt=TESRECORD_BUFFERSIZE;
+  data->Nt=buffersize;
   data->streamind=-1;
   data->tstart=tstart; // note: tstart/tstop are overwritten in tes_append_tesrecord
   data->tstop=tstop;   // -> need to see whether we really need these parameters here

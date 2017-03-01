@@ -105,6 +105,7 @@ void tes_free_datastream(tes_datastream_info **data, int *status);
 
 // buffer size of the tesrecord buffer
 // this is a compromise between memory usage and speed
+// NOTE: when simulating multiple pixels, this value is divided by the number of pixels
 #define TESRECORD_BUFFERSIZE 5000000
 
 typedef struct {
@@ -128,7 +129,7 @@ typedef struct {
 } tes_record_info;
 
 // initialize a TES datastream built on tesrecords
-tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, 
+tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, int buffersize,
 				    char *streamfile, char *impactfile,int clobber,
 				    SixtStdKeywords *keywords,
 				    int *status);

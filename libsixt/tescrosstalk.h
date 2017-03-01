@@ -38,7 +38,7 @@
 FDMSystem* newFDMSystem(int num_pixels, int* status);
 
 /** Initialize this channel's FDM system */
-void init_FDMSystem(Channel* chan, double L_Common, double TTR, int* status);
+void init_FDMSystem(Channel* chan, double L_Common, double C_Common, double TTR, int* status);
 
 /** Solve this channel's FDM system for the current channel state and output to the pixels */
 void solve_FDM_old(Channel *chan);

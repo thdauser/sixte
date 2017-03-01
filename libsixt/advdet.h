@@ -336,8 +336,9 @@ typedef struct{
   /** File containing TES pixel definitions */
   char* tes_type_file;
 
-  /** Common impedance for FDM Crosstalk */
+  /** Common impedance and capacitance for FDM Crosstalk */
   double L_Common;
+  double C_Common;
 
 
 }AdvDet;
@@ -404,6 +405,7 @@ struct FDMSystem{
         double* omega_array; // angular frequencies for pixels, length = num_pixels 
         double** Z_array; // complex impedances (saved as doubles, since they are imaginary), size = num_pixels x num_pixels
         double L_Common; // common impedance
+        double C_Common; // common capacitance
         double* u_LC; // imaginary impedance term that's constant and used a lot
         };
 

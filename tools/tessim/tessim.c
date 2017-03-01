@@ -123,7 +123,7 @@ int tessim_main() {
 
       // initialize stream writer
       if (strcmp(par.trigger,"stream")==0) {
-        tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,
+        tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,TESRECORD_BUFFERSIZE/det->npix,
                                            loop_par.streamfile,loop_par.impactlist,
                                            par.clobber,
                                            keywords,
@@ -218,13 +218,17 @@ int tessim_main() {
       // Initialize the electrical FDM crosstalk
       if (det->readout_channels==NULL){
         det->readout_channels = get_readout_channels(det,&status);
+        if (status!= EXIT_SUCCESS){
+          SIXT_ERROR("failed when loading the readout channels");
+          return EXIT_FAILURE;
+        }
       }
 
       // set up readout FDMSystem for each readout channel
       for (int ii=0; ii<det->readout_channels->num_channels; ii++){
         // assuming same TTR for all pixels
         double TTR = det->readout_channels->channels[ii].pixels[0]->tes->TTR;
-        init_FDMSystem(&(det->readout_channels->channels[ii]), det->L_Common,TTR, &status);
+        init_FDMSystem(&(det->readout_channels->channels[ii]), det->L_Common, det->C_Common, TTR, &status);
       }
 
       if (status!=EXIT_SUCCESS){

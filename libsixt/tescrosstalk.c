@@ -41,7 +41,8 @@ FDMSystem* newFDMSystem(int num_pixels, int* status){
     CHECK_MALLOC_RET_NULL_STATUS(fdmsys->Z_array[ii], *status);
   }
 
-  fdmsys->L_Common = 0;
+  fdmsys->L_Common = 0.;
+  fdmsys->C_Common = -1.;
 
   fdmsys->u_LC = (double*) malloc(num_pixels*sizeof(double));
   CHECK_MALLOC_RET_NULL_STATUS(fdmsys->u_LC, *status);
@@ -52,19 +53,30 @@ FDMSystem* newFDMSystem(int num_pixels, int* status){
 
 
 /** Initialize an FDM system */
-void init_FDMSystem(Channel* chan, double L_Common, double TTR, int* status){
+void init_FDMSystem(Channel* chan, double L_Common, double C_Common, double TTR, int* status){
   
   // get an empty FDMSystem
   FDMSystem* sys = newFDMSystem(chan->num_pixels, status);
 
   int npix = chan->num_pixels; // we'll need this a lot
   sys->L_Common = L_Common;
+  sys->C_Common = C_Common;
   int ii, jj; // for looping
 
   // assign the frequency array and u_LC
   for (ii=0;ii<npix;ii++){
     sys->omega_array[ii] = 2*M_PI * chan->pixels[ii]->freq;
     sys->u_LC[ii] = sys->omega_array[ii] * sys->L_Common / TTR /TTR; // down-transformed by TTR
+    // only work with a common capacitance if the value is non-negative
+    /* Leave this unimplemented for now
+    if (sys->C_Common > 0){
+      sys->u_LC[ii] -= 1./(sys->omega_array[ii]*sys->C_Common * TTR * TTR);
+      printf("Including Common Capacitance!\n");
+    }
+    */
+  }
+  if (sys->C_Common > 0){
+    printf("Common capacitance is not currently supported!\n");
   }
 
   // complex impedances in Z_array
@@ -95,8 +107,8 @@ void solve_FDM(Channel *chan){
         continue; // only off-resonance currents
         //Icalc = gsl_complex_rect(0,0);
       } else { 
-        gsl_complex denominator = gsl_complex_rect(chan->pixels[i_pix]->tes->RT, chan->fdmsys->Z_array[i_freq][i_pix] - chan->fdmsys->u_LC[i_freq]);
-        gsl_complex numerator = gsl_complex_rect(chan->pixels[i_freq]->tes->RT, -1.*chan->fdmsys->u_LC[i_freq]);
+        gsl_complex denominator = gsl_complex_rect(chan->pixels[i_pix]->tes->RT+chan->pixels[i_pix]->tes->Reff, chan->fdmsys->Z_array[i_freq][i_pix] - chan->fdmsys->u_LC[i_freq]);
+        gsl_complex numerator = gsl_complex_rect(chan->pixels[i_freq]->tes->RT+chan->pixels[i_freq]->tes->Reff, -1.*chan->fdmsys->u_LC[i_freq]);
         Icalc = gsl_complex_mul_real(gsl_complex_div(numerator,denominator), chan->pixels[i_freq]->tes->I0);
       }
       // write the calculated current into the corresponding tes pixels
@@ -104,6 +116,7 @@ void solve_FDM(Channel *chan){
       chan->pixels[i_freq]->tes->Ioverlap = gsl_complex_add(chan->pixels[i_freq]->tes->Ioverlap,Icalc);
       // common impedance: add abs(I)^2 to Pcommon of the current pixel
       chan->pixels[i_pix]->tes->Pcommon += gsl_complex_abs2(Icalc);
+      //chan->pixels[i_pix]->tes->Pcommon += GSL_REAL(Icalc)*chan->pixels[i_pix]->tes->V0;
     }
   }
   // P = I^2 *R

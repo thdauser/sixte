@@ -32,6 +32,20 @@ tes_impactfile_info *tes_init_impactlist(char *impactfile, int *status);
 int tes_photon_from_impactlist(PixImpact *photon,void *data, int *status);
 void tes_free_impactlist(tes_impactfile_info **data, int *status);
 
+//get photon from impact buffer
+typedef struct {
+// TODO fill this!
+  PixImpact *impacts;         // array of impacts saved in this buffer
+  long numimpacts;            // number of impacts in this buffer
+  long nextimpact;            // id of the next impact to be read in
+                              // if this equals numimpacts, there are no more impacts
+} tes_impactbuffer_info;
+
+tes_impactbuffer_info *tes_init_impactbuffer(int nImpacts, int *status);
+int tes_photon_from_impactbuffer(PixImpact *photon, void *data, int *status);
+void tes_free_impactbuffer(tes_impactbuffer_info **data, int *status);
+
+
 // forward declare of tesparams
 typedef struct tesparams tesparams;
 
