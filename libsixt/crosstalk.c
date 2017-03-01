@@ -128,7 +128,8 @@ static void add_xt_enerdep_pixel(MatrixEnerdepCrossTalk* matrix,AdvPix* pixel,do
 	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_weights,*status);
 
 	// allocate space for the array (n_ener bins)
-	matrix->cross_talk_weights[matrix->num_cross_talk_pixels] =(double*) malloc( n_ener *sizeof(double) );
+	matrix->cross_talk_weights[matrix->num_cross_talk_pixels] =(double*) malloc( n_ener *sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(matrix->cross_talk_weights[matrix->num_cross_talk_pixels],*status);
 
 	// Affect new values
 	matrix->cross_talk_pixels[matrix->num_cross_talk_pixels] = pixel;
@@ -210,7 +211,7 @@ double get_intermod_weight(AdvDet* det, int grading, double df, double dt,
 		} else if ( df >= det->crosstalk_imod_table[grading].freq[det->crosstalk_imod_table[grading].n_freq-1]){
 			ind_df = det->crosstalk_imod_table[grading].n_freq-1;
 		}
-		printf(" **** WARNING: non-linear crosstalk frequency df=%e not available, using df=%e instead!\n",df,det->crosstalk_imod_table[grading].freq[ind_df]);
+		headas_chat(7, " **** WARNING: non-linear crosstalk frequency df=%e not available, using df=%e instead!\n",df,det->crosstalk_imod_table[grading].freq[ind_df]);
 	}
 
 	assert( (ind_df) >= 0 && (ind_df < det->crosstalk_imod_table[grading].n_freq) );
@@ -415,25 +416,28 @@ void load_thermal_timedep(AdvDet* det, int i, int k, int* const status){
 	det->crosstalk_ther_timedep[i][2*k]=*newCrossTalkTimedep(status);
 	det->crosstalk_ther_timedep[i][2*k+1]=*newCrossTalkTimedep(status);
 
-	char gra[15];
-	sprintf(gra, "%05ld", det->pix[0].grades[k].gradelim_post);
 	char* COLNAME_TIME_DELAY = "TIME_DELAY";
 	char* COLNAME_WEIGHT = "WEIGHT";
-	char* EXTNAME_LOW = "PERTLO";
-	char* EXTNAME_HI = "PERTHI";
+	char* EXTNAME_LOW_GRAD;
+	char* EXTNAME_HI_GRAD;
 	// Concatenating the grade
-	char* EXTNAME_LOW_GRAD=(char*)malloc(sizeof(1+strlen(EXTNAME_LOW)+ strlen(gra)));
-    strcpy(EXTNAME_LOW_GRAD, EXTNAME_LOW);
-    strcat(EXTNAME_LOW_GRAD, gra);
 
-	char* EXTNAME_HI_GRAD=(char*)malloc(sizeof(1+strlen(EXTNAME_HI)+ strlen(gra)));
-    strcpy(EXTNAME_HI_GRAD, EXTNAME_HI);
-    strcat(EXTNAME_HI_GRAD, gra);
+	if (asprintf(&EXTNAME_LOW_GRAD,"PERTLO%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
+
+	if (asprintf(&EXTNAME_HI_GRAD,"PERTHI%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
+
 
 	fitsfile *fptr=NULL;
 
 	do {
-
 		char fullfilename[MAXFILENAME];
 		strcpy(fullfilename,det->filepath);
 		strcat(fullfilename,det->crosstalk_thermal_timedep_file[i]);
@@ -620,20 +624,20 @@ void load_elec_table(AdvDet* det, int k ,int* status){
 	// check if the table exists
 	CHECK_NULL_VOID(det->crosstalk_elec_file,*status,"no file for the electrical crosstalk table specified");
 
-	char gra[15];
-	sprintf(gra, "%05ld", det->pix[0].grades[k].gradelim_post);
 	char* EXTNAME_FREQ_SIGNAL = "signal_frequency";
 	char* EXTNAME_FREQ_PERTURBER = "perturber_frequency";
 	char* EXTNAME_ENER_PERTURBER = "perturber_energy";
-	char* EXTNAME_FDM_CROSSTALK = "FDM_CROSSTALK_";
 	char* COLNAME_FREQ_SIGNAL = "FREQ_S";
 	char* COLNAME_FREQ_PERTURBER = "FREQ_P";
 	char* COLNAME_ENER_PERTURBER = "EN_P";
+	char* EXTNAME_FDM_CROSSTALK_GRAD;
 
 	// Concatenating the grade
-	char* EXTNAME_FDM_CROSSTALK_GRAD=(char*)malloc(1+strlen(EXTNAME_FDM_CROSSTALK)+strlen(gra));
-    strcpy(EXTNAME_FDM_CROSSTALK_GRAD, EXTNAME_FDM_CROSSTALK);
-    strcat(EXTNAME_FDM_CROSSTALK_GRAD, gra);
+	if (asprintf(&EXTNAME_FDM_CROSSTALK_GRAD,"FDM_CROSSTALK_%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
 
 	fitsfile *fptr=NULL;
 
@@ -692,21 +696,24 @@ void load_elec_timedep(AdvDet* det, int k, int* const status){
 	det->crosstalk_elec_timedep[2*k]=*newCrossTalkTimedep(status);
 	det->crosstalk_elec_timedep[2*k+1]=*newCrossTalkTimedep(status);
 
-	char gra[30];
-	sprintf(gra, "%05ld", det->pix[0].grades[k].gradelim_post);
 	char* COLNAME_TIME_DELAY = "TIME_DELAY";
 	char* COLNAME_WEIGHT = "WEIGHT";
-	char* EXTNAME_LOW = "PERTLO";
-	char* EXTNAME_HI = "PERTHI";
-
+	char* EXTNAME_LOW_GRAD;
+	char* EXTNAME_HI_GRAD;
 	// Concatenating the grade
-	char* EXTNAME_LOW_GRAD=(char*)malloc(sizeof(1+strlen(EXTNAME_LOW)+ strlen(gra)));
-    strcpy(EXTNAME_LOW_GRAD, EXTNAME_LOW);
-    strcat(EXTNAME_LOW_GRAD, gra);
 
-	char* EXTNAME_HI_GRAD=(char*)malloc(sizeof(1+strlen(EXTNAME_HI)+ strlen(gra)));
-    strcpy(EXTNAME_HI_GRAD, EXTNAME_HI);
-    strcat(EXTNAME_HI_GRAD, gra);
+	if (asprintf(&EXTNAME_LOW_GRAD,"PERTLO%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
+
+	if (asprintf(&EXTNAME_HI_GRAD,"PERTHI%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
+
 
 	fitsfile *fptr=NULL;
 
@@ -1307,6 +1314,7 @@ void init_crosstalk(AdvDet* det, int* const status){
 		det->crosstalk_ther_timedep=(CrosstalkTimedep**)realloc(det->crosstalk_ther_timedep,det->xt_num_thermal*sizeof(CrosstalkTimedep*));
 		for (int i=0; i<det->xt_num_thermal;i++){
 			det->crosstalk_ther_timedep[i]=(CrosstalkTimedep*)malloc(2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
+			CHECK_MALLOC_VOID_STATUS(det->crosstalk_ther_timedep[i],*status);
 			for(int k=0; k<det->pix[0].ngrades; k++){
 				load_thermal_timedep(det, i, k, status);
 			}
@@ -1826,6 +1834,7 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 	CrosstalkTimedep* buffer;
 	PixImpact* crosstalk=NULL;
 	PixImpact* to_save=(PixImpact*)malloc(sizeof(PixImpact));
+	CHECK_MALLOC_VOID_STATUS(to_save,*status);
 	int index=0;
 
 	for (int ii=0;ii<xtalk_proxy->n_active_crosstalk;ii++){
@@ -1878,6 +1887,7 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 	while(ii<xtalk_proxy->n_active_crosstalk){
 		int index=(xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size;
 		PixImpact* previous_xtalk=(PixImpact*) malloc(sizeof(PixImpact));
+		CHECK_MALLOC_VOID_STATUS(previous_xtalk,*status);
 		copyPixImpact(previous_xtalk, xtalk_proxy->xtalk_impacts[index-1]); //Copying it in case we need to save it (will be erased in proxy otherwise)
 		buffer=getTimeDep(det, xtalk_proxy, index-1, grade, status);
 		int* toerase=NULL;

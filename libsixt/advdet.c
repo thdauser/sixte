@@ -780,13 +780,13 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 		xmlparsedata->det->SampleFreq=new_samplefreq;
         } else if (!strcmp(Uelement,"TESFILE")) {
-                xmlparsedata->det->tes_type_file=(char*)malloc(MAXFILENAME*sizeof(char));
-		CHECK_MALLOC_VOID(xmlparsedata->det->tes_type_file);
-                getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tes_type_file);
-		if (strlen(xmlparsedata->det->tes_type_file) == 0){
-			free(xmlparsedata->det->tes_type_file);
-			xmlparsedata->det->tes_type_file=NULL;
-                }
+        	xmlparsedata->det->tes_type_file=(char*)malloc(MAXFILENAME*sizeof(char));
+            CHECK_MALLOC_VOID(xmlparsedata->det->tes_type_file);
+            getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tes_type_file);
+            if (strlen(xmlparsedata->det->tes_type_file) == 0){
+            	free(xmlparsedata->det->tes_type_file);
+            	xmlparsedata->det->tes_type_file=NULL;
+            }
 
 	} else if(!strcmp(Uelement, "CHANNEL_FREQ_LIST"))  {
 		xmlparsedata->det->channel_file=(char*)malloc(MAXFILENAME*sizeof(char));
