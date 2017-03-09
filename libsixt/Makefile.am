@@ -1,5 +1,7 @@
 AM_CFLAGS=-DSIXT_DATA_PATH='"$(pkgdatadir)"'
 
+AM_CFLAGS +=-I@top_srcdir@/extlib/progressbar/include
+
 if RCL
 AM_CFLAGS+=-I$(RCL_INC) -DUSE_RCL
 AM_LDFLAGS=-L$(RCL_LIB) -lrcl
@@ -28,6 +30,8 @@ dist_fitstemplates_DATA+=pixelimpactfile_gradingcols.tpl
 # Libraries that are installed in the 'lib' directory.
 lib_LTLIBRARIES=libsixt.la
 libsixt_la_LDFLAGS = -version-info 2:0:0
+
+libsixt_la_LIBADD=@top_builddir@/extlib/progressbar/libprogressbar.la
 
 # Sources:
 libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
