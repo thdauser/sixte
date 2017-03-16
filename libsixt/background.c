@@ -135,8 +135,8 @@ void bkgInitialize(const char* const filename,
   bkginputdata.numrows = 0L;
   bkginputdata.interval = 0.;
   bkginputdata.intervalsum = 0.;
-  bkginputdata.timecolname = "Frame";
-  bkginputdata.energycolname = "Edep";
+  bkginputdata.timecolname = "primaryid";
+  bkginputdata.energycolname = "edep";
   bkginputdata.xcolname = "X";
   bkginputdata.ycolname = "Y";
   ftime(&time_struct);
