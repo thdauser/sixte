@@ -35,3 +35,4 @@ progressbar,b,h,y,,,"Display progress bar?"
 clobber,b,h,y,,,"Overwrite output files?"
 
 doCrosstalk,b,h,y,,,"Simulate Crosstalk (yes/no)?"
+readoutMode,s,h,"total",,,"Readout mode for output current ['total': Absolute value, 'I': I-channel, 'Q':Q-channel]"

@@ -143,11 +143,13 @@ void freeGrading(AdvPix* pix){
 void freeFDMSystem(FDMSystem* fdmsys){
         int ii;
         free(fdmsys->omega_array);
-        free(fdmsys->u_LC);
+        free(fdmsys->X_L);
+        free(fdmsys->capFac);
         for (ii=0; ii<fdmsys->num_pixels; ii++){
                 free(fdmsys->Z_array[ii]);
         }
         free(fdmsys->Z_array);
+        free(fdmsys);
 }
 
 void freeReadoutChannels(ReadoutChannels* rc){

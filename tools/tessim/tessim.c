@@ -82,6 +82,7 @@ int tessim_main() {
         loop_par.simnoise = par.simnoise;
         loop_par.m_excess = par.m_excess;
         loop_par.V0 = par.V0;
+        loop_par.readoutMode = par.readoutMode;
  
         // assign the actual pixid, input and output filename
         loop_par.id = det->pix[ii].pindex + 1; // id's start with 0 in advdet, but not in tessim...
@@ -458,7 +459,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     fromcmd=1;
     sixt_init_query_commandline(status);
     CHECK_STATUS_VOID(*status);
-    cmd_query_simput_parameter_bool(fromcmd,"doCrosstalk", &par->doCrosstalk, status);
+    cmd_query_simput_parameter_bool(fromcmd,"doCrosstalk", &(par->doCrosstalk), status);
   } else {
     // create a new advdet, setting nr of pixels to 1
     *det = newAdvDet(status);
@@ -466,6 +467,8 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     (*det)->npix=1;
     (*det)->pix=newAdvPix(status);
     CHECK_STATUS_VOID(*status);
+    // there is no crosstalk
+    par->doCrosstalk=0;
   }
   
 
@@ -619,6 +622,25 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
   // get optional effective voltage bias
   query_simput_parameter_double("V0",&(par->V0),status);
   par->V0*=1e-6;
+
+  // readout mode is only not 'total' for crosstalk
+  if (!par->doCrosstalk){
+    par->readoutMode=READOUT_TOTAL;
+  } else {
+    char mode[MAXMSG];
+    query_simput_parameter_string_buffer("readoutMode", mode, MAXMSG, status);
+    if (strncmp(mode,"total",5) == 0) {
+      par->readoutMode = READOUT_TOTAL;
+    } else if (strncmp(mode,"I",1) == 0) {
+      par->readoutMode = READOUT_ICHANNEL;
+    } else if (strncmp(mode,"Q",1) == 0) {
+      par->readoutMode = READOUT_QCHANNEL;
+    } else {
+      SIXT_ERROR("Output mode must be one of 'total', 'I' or 'Q'");
+      *status=EXIT_FAILURE;
+      return;
+    }
+  }
 
   sixt_free_query_commandline();
   

@@ -153,6 +153,9 @@ struct tesparams {
   gsl_complex Ioverlap; // carrier overlap current in the pixel's readout
   gsl_complex Ioverlap_start;
   double Pcommon; // common impedance power for this pixel
+
+  // readout mode for crosstalk
+  int readoutMode;
 };
 
 #endif

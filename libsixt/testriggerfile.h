@@ -28,6 +28,7 @@
 #include "optimalfilters.h"
 
 
+
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
 ////////////////////////////////////////////////////////////////////////
@@ -44,6 +45,10 @@ typedef struct{
       has been read or written so far. */
 	long row;
 
+        /** The amount of rows that have been reserved as a buffer but
+      not written yet. */
+        long rowbuffer;
+
 	/** Number of ADC values per record */
 	unsigned long trigger_size;
 
@@ -54,6 +59,8 @@ typedef struct{
 	int timeCol,trigCol,ph_idCol,pixIDCol;
 
 }TesTriggerFile;
+
+#define TESTRIGGERFILE_ROWBUFFERSIZE 100 // initial default value of rowbuffer
 
 ////////////////////////////////////////////////////////////////////////
 // Function declarations.

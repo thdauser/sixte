@@ -36,6 +36,7 @@ TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int* const status) {
   // Initialize values.
   file->nrows	     =0;
   file->row  	     =1;
+  file->rowbuffer    =0;
   file->timeCol      =1;
   file->trigCol      =2;
   file->pixIDCol     =3;
@@ -49,18 +50,25 @@ TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int* const status) {
 /** Destructor. */
 void freeTesTriggerFile(TesTriggerFile** const file, int* const status){
   if (NULL!=*file) {
+    if (NULL!=(*file)->fptr) {
+      // delete superfluous rows
+      if ((*file)->rowbuffer!=0){
+          fits_delete_rows((*file)->fptr, (*file)->nrows+1, (*file)->rowbuffer, status);
+      }
+
+      fits_close_file_chksum((*file)->fptr, status);
+      headas_chat(5, "closed TesStream list file (containing %ld rows).\n", 
+                  (*file)->nrows);
+    }
+
     (*file)->nrows	      =0;
     (*file)->row  	      =0;
+    (*file)->rowbuffer 	      =0;
     (*file)->timeCol          =0;
     (*file)->trigCol          =0;
     (*file)->ph_idCol         =0;
     (*file)->pixIDCol         =0;
-    
-    if (NULL!=(*file)->fptr) {
-      fits_close_file_chksum((*file)->fptr, status);
-      headas_chat(5, "closed TesStream list file (containing %ld rows).\n", 
-		  (*file)->nrows);
-    }
+
     free(*file);
     *file=NULL;
   }
@@ -111,7 +119,10 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   char *tunit[]={"s","ADU","",""};
   char *tform[]={"1D","1PU","1J","1PJ"};
   
-  fits_create_tbl(file->fptr, BINARY_TBL, 0, 4, ttype, tform, tunit,"RECORDS", status);
+  // Include allocate a buffer of rows ahead of time
+  file->rowbuffer = TESTRIGGERFILE_ROWBUFFERSIZE;
+  
+  fits_create_tbl(file->fptr, BINARY_TBL, file->rowbuffer, 4, ttype, tform, tunit,"RECORDS", status);
   //Add keywords to other extension
   fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in a standard trigger", status);
   fits_update_key(file->fptr, TINT, "PREBUFF", &preBufferSize, "Number of samples before start of pulse", status);
@@ -226,6 +237,14 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 
 /** Writes a record to a file */
 void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status){
+        // if we've run out of buffer, extend the table
+        if (outputFile->rowbuffer==0){
+                // extend to 1.5 of previous length
+                outputFile->rowbuffer = (long) outputFile->nrows/2; 
+                fits_insert_rows(outputFile->fptr, outputFile->nrows, outputFile->rowbuffer, status);
+        }
+
+        // write values
 	fits_write_col(outputFile->fptr, TDOUBLE, outputFile->timeCol,
 			outputFile->row, 1, 1, &(record->time), status);
 	fits_write_col(outputFile->fptr, TUSHORT, outputFile->trigCol,
@@ -234,6 +253,8 @@ void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status)
 			outputFile->row, 1, 1, &(record->pixid), status);
 	fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol,
 			outputFile->row, 1,record->phid_list->index,record->phid_list->phid_array, status);
+
+        outputFile->rowbuffer--;
 	outputFile->nrows++;
 	outputFile->row++;
 }

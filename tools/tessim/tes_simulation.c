@@ -715,6 +715,8 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->Ioverlap_start = gsl_complex_rect(0.,0.);
   tes->Pcommon = 0.;
 
+  tes->readoutMode = par->readoutMode;
+
   return(tes);
 }
 
@@ -773,10 +775,13 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
       if (det->npix>1 && det->readout_channels != NULL) {
         // include Crosstalk
         tes->Ioverlap_start = tes->Ioverlap;
-        pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
-        //pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
-        //pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
-
+        if (tes->readoutMode == READOUT_TOTAL){
+          pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
+        } else if (tes->readoutMode == READOUT_ICHANNEL){
+          pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
+        } else if (tes->readoutMode == READOUT_QCHANNEL){
+          pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
+        }
       } else {
         pulse=tes->I0_start-tes->I0;
       }
@@ -892,9 +897,17 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         double pulse;
         if (det->npix>1 && det->readout_channels != NULL) {
           // Include crosstalk
-          pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
-          //pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
-          //pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
+          if (tes->readoutMode == READOUT_TOTAL){
+            pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
+          }
+          if (tes->readoutMode == READOUT_ICHANNEL){
+            pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
+            //pulse = - (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
+          }
+          if (tes->readoutMode == READOUT_QCHANNEL){
+            pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
+            //pulse =  - GSL_IMAG(tes->Ioverlap); // Q-Channel
+          }
 
         } else {
           pulse=tes->I0_start-tes->I0;

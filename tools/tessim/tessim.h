@@ -21,6 +21,11 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
 
+// readout modes for tessim
+#define READOUT_TOTAL 0
+#define READOUT_ICHANNEL 1
+#define READOUT_QCHANNEL 2
+
 
 
 // parameters for the initializer
@@ -71,6 +76,8 @@ typedef struct {
   int showprogress;   // show progressbar?
 
   int doCrosstalk;   // do crosstalk?
+
+  int readoutMode; // readout mode (total, Ichannel, Qchannel)
   
 } tespxlparams;
 

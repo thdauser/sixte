@@ -406,7 +406,8 @@ struct FDMSystem{
         double** Z_array; // complex impedances (saved as doubles, since they are imaginary), size = num_pixels x num_pixels
         double L_Common; // common impedance
         double C_Common; // common capacitance
-        double* u_LC; // imaginary impedance term that's constant and used a lot
+        double* X_L; // imaginary impedance term that's constant and used a lot
+        double* capFac; // extra factor due to common capacitance - only for n = 2!
         };
 
 
