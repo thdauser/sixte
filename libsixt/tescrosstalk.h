@@ -23,6 +23,7 @@
 
 #include "sixt.h"
 #include "advdet.h"
+#include "crosstalk.h"
 #include <gsl/gsl_complex_math.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,9 @@
 ////////////////////////////////////////////////////////////////////////
 // Function Declarations.
 ////////////////////////////////////////////////////////////////////////
+
+/** Asign resonance frequencies to advdet pixels */
+void get_resonance_frequencies(AdvDet* det, int* status);
 
 /** Alloc an empty FDM system */
 FDMSystem* newFDMSystem(int num_pixels, int* status);

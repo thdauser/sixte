@@ -159,6 +159,10 @@ struct AdvPix{
   /** Frequency of the pixel */
   double freq;
 
+  /** Resonance frequency of the pixel */
+  /** equals freq unless specified otherwise (i.e. in case of detuned pixels) */
+  double resfreq;
+
   /** Read-out channel to which it belongs */
   Channel* channel;
 
@@ -303,6 +307,10 @@ typedef struct{
   /** File listing for each pixel the channel and frequency */
   char* channel_file;
 
+  /** File listing for each pixel the channel and resonance frequency */
+  /** Same format as channel_file */
+  char* channel_resfreq_file;
+
   /** List of all readout channels */
   ReadoutChannels* readout_channels;
 
@@ -403,9 +411,10 @@ struct IntermodulationCrossTalk{
 struct FDMSystem{
         int num_pixels;
         double* omega_array; // angular frequencies for pixels, length = num_pixels 
+        double* res_omega_array; // angular resonance frequencies for pixels, length = num_pixels 
         double** Z_array; // complex impedances (saved as doubles, since they are imaginary), size = num_pixels x num_pixels
-        double L_Common; // common impedance
-        double C_Common; // common capacitance
+        double L_Common; // common impedance [H]
+        double C_Common; // common capacitance [F]
         double* X_L; // imaginary impedance term that's constant and used a lot
         double* capFac; // extra factor due to common capacitance - only for n = 2!
         };

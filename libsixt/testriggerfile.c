@@ -53,7 +53,17 @@ void freeTesTriggerFile(TesTriggerFile** const file, int* const status){
     if (NULL!=(*file)->fptr) {
       // delete superfluous rows
       if ((*file)->rowbuffer!=0){
-          fits_delete_rows((*file)->fptr, (*file)->nrows+1, (*file)->rowbuffer, status);
+          if ((*file)->nrows==0){
+              // TODO Understand why this works
+              // deleting all rows without writing at least once leads to error code 107,
+              // which is "tried to move past end of file"
+              int garbage = 1;
+	      fits_write_col((*file)->fptr, TLONG, (*file)->pixIDCol, (*file)->row, 1, 1, &garbage, status);
+
+              fits_delete_rows((*file)->fptr, 1, TESTRIGGERFILE_ROWBUFFERSIZE, status);
+          } else {
+              fits_delete_rows((*file)->fptr, (*file)->nrows+1, (*file)->rowbuffer, status);
+          }
       }
 
       fits_close_file_chksum((*file)->fptr, status);

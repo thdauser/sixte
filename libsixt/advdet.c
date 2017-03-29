@@ -108,6 +108,7 @@ AdvPix* newAdvPix(int* const status){
   pix->arffile=NULL;
   pix->arf=NULL;
   pix->freq=0.;
+  pix->resfreq=0.;
   pix->channel=NULL;
   pix->electrical_cross_talk=NULL;
   pix->thermal_cross_talk=NULL;
@@ -121,7 +122,7 @@ AdvPix* newAdvPix(int* const status){
 
 void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
-	int g=pix->ngrades;
+    int g=pix->ngrades;
     destroyTESNoiseProperties(pix->TESNoise);
     freeGrading(pix);
     freeMatrixCrossTalk(pix->thermal_cross_talk);
@@ -143,6 +144,7 @@ void freeGrading(AdvPix* pix){
 void freeFDMSystem(FDMSystem* fdmsys){
         int ii;
         free(fdmsys->omega_array);
+        free(fdmsys->res_omega_array);
         free(fdmsys->X_L);
         free(fdmsys->capFac);
         for (ii=0; ii<fdmsys->num_pixels; ii++){
@@ -273,6 +275,7 @@ AdvDet* newAdvDet(int* const status){
 
   det->channel_file=NULL;
   det->readout_channels=NULL;
+  det->channel_resfreq_file=NULL;
 
   det->crosstalk_intermod_file=NULL;
   det->crosstalk_intermod_timedep_file=NULL;
@@ -795,6 +798,10 @@ static void AdvDetXMLElementStart(void* parsedata,
 		xmlparsedata->det->channel_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->channel_file);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->channel_file);
+
+		xmlparsedata->det->channel_resfreq_file=(char*)malloc(MAXFILENAME*sizeof(char));
+                CHECK_MALLOC_VOID(xmlparsedata->det->channel_resfreq_file);
+		getXMLAttributeString(attr, "RESFILENAME", xmlparsedata->det->channel_resfreq_file);
 
         } else if(!strcmp(Uelement, "FDM_PARAMETERS"))  {
         	xmlparsedata->det->L_Common=getXMLAttributeDouble(attr, "LCOMMON");

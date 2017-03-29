@@ -712,8 +712,9 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   // FDM Crosstalk parameters
   tes->Ioverlap = gsl_complex_rect(0.,0.);
-  tes->Ioverlap_start = gsl_complex_rect(0.,0.);
+  tes->Iout_start = gsl_complex_rect(0.,0.);
   tes->Pcommon = 0.;
+  tes->theta_Vb = 0.;
 
   tes->readoutMode = par->readoutMode;
 
@@ -774,13 +775,17 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
       double pulse;
       if (det->npix>1 && det->readout_channels != NULL) {
         // include Crosstalk
-        tes->Ioverlap_start = tes->Ioverlap;
+        tes->Iout_start = gsl_complex_mul(gsl_complex_add_real(tes->Ioverlap , tes->I0_start),gsl_complex_polar(1.,-tes->theta_Vb));
+        gsl_complex Iout; // output current including crosstalk and phase shift
+        // Need to rotate by -1*theta_Vb
+        Iout = gsl_complex_mul(gsl_complex_add_real(tes->Ioverlap, tes->I0),gsl_complex_polar(1.,-tes->theta_Vb));
+
         if (tes->readoutMode == READOUT_TOTAL){
-          pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
+          pulse = gsl_complex_abs(tes->Iout_start) - gsl_complex_abs(Iout); // total
         } else if (tes->readoutMode == READOUT_ICHANNEL){
-          pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
+          pulse = (GSL_REAL(tes->Iout_start))- GSL_REAL(Iout); // I-Channel
         } else if (tes->readoutMode == READOUT_QCHANNEL){
-          pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
+          pulse = GSL_IMAG(tes->Iout_start) - GSL_IMAG(Iout); // Q-Channel
         }
       } else {
         pulse=tes->I0_start-tes->I0;
@@ -897,16 +902,20 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         double pulse;
         if (det->npix>1 && det->readout_channels != NULL) {
           // Include crosstalk
+          // Calculate output current including phase shift
+          // Need to rotate by -1*theta_Vb
+          gsl_complex Iout = gsl_complex_mul(gsl_complex_add_real(tes->Ioverlap, tes->I0),gsl_complex_polar(1.,-tes->theta_Vb));
+          // write readout to pulse
           if (tes->readoutMode == READOUT_TOTAL){
-            pulse = gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap_start,tes->I0_start)) - gsl_complex_abs(gsl_complex_add_real(tes->Ioverlap, tes->I0)); // total
+            pulse = gsl_complex_abs(tes->Iout_start) - gsl_complex_abs(Iout); // total
           }
           if (tes->readoutMode == READOUT_ICHANNEL){
-            pulse = (tes->I0_start + GSL_REAL(tes->Ioverlap_start))- (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
-            //pulse = - (GSL_REAL(tes->Ioverlap) + tes->I0); // I-Channel
+            pulse = GSL_REAL(tes->Iout_start) - GSL_REAL(Iout); // I-Channel
+            //pulse = - GSL_REAL(Iout); // I-Channel
           }
           if (tes->readoutMode == READOUT_QCHANNEL){
-            pulse = GSL_IMAG(tes->Ioverlap_start) - GSL_IMAG(tes->Ioverlap); // Q-Channel
-            //pulse =  - GSL_IMAG(tes->Ioverlap); // Q-Channel
+            pulse = GSL_IMAG(tes->Iout_start) - GSL_IMAG(Iout); // Q-Channel
+            //pulse =  - GSL_IMAG(Iout); // Q-Channel
           }
 
         } else {

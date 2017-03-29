@@ -1417,6 +1417,12 @@ ReadoutChannels* init_newReadout(int num_chan, int* status){
 
 ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 
+        // check if any channel file has been supplied
+        if (det->channel_file == NULL){
+                SIXT_ERROR("No channel file supplied");
+                *status=EXIT_FAILURE;
+                return NULL;
+        }
 	// get the complete file name
 	char fullfilename[MAXFILENAME];
 	strcpy(fullfilename,det->filepath);
@@ -1454,6 +1460,7 @@ ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 
 		// set frequency of the pixel
 		pix->freq = chans->freq[ii];
+                pix->resfreq = pix->freq; // initialization, just to be safe
 		if (pix->freq <= 0.0){
 			printf("*** warning: assiging unrealistic frequency (%.3e) to pixel %i\n",pix->freq,pix->pindex);
 		}

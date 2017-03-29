@@ -143,8 +143,11 @@ int tessim_main() {
             // threshold is float after movavg
             sscanf(par.trigger,"movavg:%u:%lf:%u",&npts,&threshold,&suppress);
 
-            printf("\nChoosing movavg trigger strategy: %u points with threshold %f\n",npts,threshold);
-            printf("Trigger suppression interval: %u\n\n",suppress);
+            // print only once
+            if (ii==0){
+              printf("\nChoosing movavg trigger strategy: %u points with threshold %f\n",npts,threshold);
+              printf("Trigger suppression interval: %u\n\n",suppress);
+            }
             
             assert(npts<20);
             assert(threshold>0.0);
@@ -154,9 +157,12 @@ int tessim_main() {
               strategy=TRIGGER_DIFF;
               // threshold is float after diff
               sscanf(par.trigger,"diff:%u:%lf:%u",&npts,&threshold,&suppress);
-              
-              printf("\nChoosing differential trigger of grade %u and threshold %f\n",npts,threshold);
-              printf("Trigger suppression interval: %u\n\n",suppress);
+              // print only once
+              if (ii==0){
+
+                printf("\nChoosing differential trigger of grade %u and threshold %f\n",npts,threshold);
+                printf("Trigger suppression interval: %u\n\n",suppress);
+              }
               assert(threshold>0.0);
               
               unsigned int points[]={2,3,4,5,6,7,8,9,10};
@@ -167,6 +173,7 @@ int tessim_main() {
                 }
               }
               if (found==0) {
+                // exit condition, so it'll only print once in any case
                 fprintf(stderr,"Error: Grade of differential trigger must be one of ");
                 char comma=' ';
                 for (unsigned int i=0; i<sizeof(points)/sizeof(unsigned int); i++) {
@@ -181,7 +188,10 @@ int tessim_main() {
                 npts=0;
                 suppress=par.triggerSize;
                 threshold=0.;
-                printf("\nChoosing noise output with record length %u\n",npts);
+                // print only once
+                if (ii==0){
+                  printf("\nChoosing noise output with record length %u\n",npts);
+                }
               } else {
                 if (strncmp(par.trigger,"impact",6)==0) {
                   assert(par.impactlist != NULL); // Can't trigger on impact without an impactlist
@@ -223,6 +233,13 @@ int tessim_main() {
           SIXT_ERROR("failed when loading the readout channels");
           return EXIT_FAILURE;
         }
+      }
+
+      // get the pixel resonance frequencies
+      get_resonance_frequencies(det, &status);
+      if (status!= EXIT_SUCCESS){
+          SIXT_ERROR("failed when loading the resonance frequencies");
+          return EXIT_FAILURE;
       }
 
       // set up readout FDMSystem for each readout channel

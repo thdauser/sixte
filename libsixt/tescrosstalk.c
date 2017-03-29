@@ -21,6 +21,56 @@
 #include "tescrosstalk.h"
 
 
+/** Assign resonance frequencies to advdet pixels */
+void get_resonance_frequencies(AdvDet* det, int* status){
+  // this code uses a lot of the logic from get_readout_channels in crosstalk.c
+
+  // first, check whether a file was given (resfreq is initialized to freq)
+  // if not, it would be an empty string
+  // an empty string starts with the terminator; this is faster than strcmp
+  if (det->channel_resfreq_file[0] == '\0'){
+    // don't need to do anything
+    return;
+  }
+  // get the complete filename
+  char fullfilename[MAXFILENAME];
+  strcpy(fullfilename, det->filepath);
+  strcat(fullfilename, det->channel_resfreq_file);
+
+  // get the channel list
+  channel_list* chans = load_channel_list(fullfilename, status);
+  CHECK_STATUS_VOID(*status);
+
+  // check if the file agrees with the number of pixels
+  if (chans->len != det->npix){
+    printf("*** error: number of pixels from channel_file %s (%i) is not equal total number of pixels (%i)!\n",
+           fullfilename,chans->len,det->npix);
+    *status=EXIT_FAILURE;
+    return;
+  }
+
+  for (int ii=0; ii < chans->len; ii++){
+    // check if PixID makes sense (PixID starts at 0)
+    if ( (chans->pixid[ii]<0) || (chans->pixid[ii] > det->npix-1)){
+      printf("*** error: Pixel-ID %i does not belong to the detector \n", chans->pixid[ii]);
+      *status = EXIT_FAILURE;
+      return;
+    }
+
+    // get the relevant pixel
+    AdvPix* pix = &(det->pix[chans->pixid[ii]]);
+
+    // set resfreq of the pixel
+    pix->resfreq = chans->freq[ii];
+    if (pix->freq <= 0.0){
+      printf("*** warning: assigning unrealistic frequency (%.3e) to pixel %i\n", pix->freq, pix->pindex);
+    }
+  }
+  // free channel list
+  free_channel_list(&chans);
+}
+
+
 /** Alloc an empty FDM system */
 FDMSystem* newFDMSystem(int num_pixels, int* status){
   
@@ -31,6 +81,9 @@ FDMSystem* newFDMSystem(int num_pixels, int* status){
 
   fdmsys->omega_array = (double*) malloc(num_pixels*sizeof(double));
   CHECK_MALLOC_RET_NULL_STATUS(fdmsys->omega_array, *status);
+
+  fdmsys->res_omega_array = (double*) malloc(num_pixels*sizeof(double));
+  CHECK_MALLOC_RET_NULL_STATUS(fdmsys->res_omega_array, *status);
 
   // set up the Z_array 
   fdmsys->Z_array = (double **)malloc(num_pixels* sizeof(double));
@@ -69,6 +122,7 @@ void init_FDMSystem(Channel* chan, double L_Common, double C_Common, double TTR,
   // assign the frequency array and X_L
   for (ii=0;ii<npix;ii++){
     sys->omega_array[ii] = 2*M_PI * chan->pixels[ii]->freq;
+    sys->res_omega_array[ii] = 2*M_PI * chan->pixels[ii]->resfreq;
     sys->X_L[ii] = sys->omega_array[ii] * sys->L_Common / TTR /TTR; // down-transformed by TTR
   }
 
@@ -76,7 +130,8 @@ void init_FDMSystem(Channel* chan, double L_Common, double C_Common, double TTR,
   // index structure: Z_i^{\omega_j} = Z_array[j][i]
   for (ii=0;ii<npix;ii++){
     for (jj=0;jj<npix;jj++){
-      sys->Z_array[jj][ii] = (chan->pixels[ii]->tes->Lfilter + L_Common) * (sys->omega_array[jj] * sys->omega_array[jj] - sys->omega_array[ii]*sys->omega_array[ii]) / sys->omega_array[jj] /TTR /TTR; // down-transformed by TTR
+      // need to use resonance frequencies for pixel ii
+      sys->Z_array[jj][ii] = (chan->pixels[ii]->tes->Lfilter + L_Common) * (sys->omega_array[jj] * sys->omega_array[jj] - sys->res_omega_array[ii]*sys->res_omega_array[ii]) / sys->omega_array[jj] /TTR /TTR; // down-transformed by TTR
     }
   }
 
@@ -90,7 +145,7 @@ void init_FDMSystem(Channel* chan, double L_Common, double C_Common, double TTR,
   }
   if (sys->C_Common > 0.){
     if (npix != 2){
-      printf("Common Capacitance Crosstalk is only supported for two pixels!\n");
+      headas_chat(0,"Common Capacitance Crosstalk is only supported for two pixels!\n");
     } else {
       for (ii=0;ii<npix;ii++){
         for (jj=0; jj<npix;jj++){
@@ -123,7 +178,7 @@ void solve_FDM(Channel *chan){
         //Icalc = gsl_complex_rect(0,0);
       } else { 
         gsl_complex denominator = gsl_complex_rect((chan->pixels[i_pix]->tes->RT+chan->pixels[i_pix]->tes->Reff)*(1.+chan->fdmsys->capFac[i_freq]), chan->fdmsys->Z_array[i_freq][i_pix] - chan->fdmsys->X_L[i_freq]);
-        gsl_complex numerator = gsl_complex_rect((chan->pixels[i_freq]->tes->RT+chan->pixels[i_freq]->tes->Reff)*(1.+chan->fdmsys->capFac[i_freq]), -1.*chan->fdmsys->X_L[i_freq]);
+        gsl_complex numerator = gsl_complex_rect((chan->pixels[i_freq]->tes->RT+chan->pixels[i_freq]->tes->Reff)*(1.+chan->fdmsys->capFac[i_freq]), chan->fdmsys->Z_array[i_freq][i_freq] - chan->fdmsys->X_L[i_freq]);
         Icalc = gsl_complex_mul_real(gsl_complex_div(numerator,denominator), chan->pixels[i_freq]->tes->I0);
       }
       // write the calculated current into the corresponding tes pixels
@@ -134,13 +189,17 @@ void solve_FDM(Channel *chan){
       //chan->pixels[i_pix]->tes->Pcommon += GSL_REAL(Icalc)*chan->pixels[i_pix]->tes->V0;
     }
   }
-  // P = I^2 *R
+  // finish Common Impedance power and find phase rotation
   for (i_pix=0; i_pix<chan->num_pixels; i_pix++){
+    // P = I^2 *R
     chan->pixels[i_pix]->tes->Pcommon *= chan->pixels[i_pix]->tes->RT;
 
     // calculate bias voltage from currents
-    gsl_complex Vbias = gsl_complex_add_real(gsl_complex_mul_imag(chan->pixels[i_pix]->tes->Ioverlap,chan->fdmsys->X_L[i_pix]),(chan->pixels[i_pix]->tes->RT+chan->pixels[i_pix]->tes->Reff)*chan->pixels[i_pix]->tes->I0);
-    // to get the actual I and q channel, Ioverlap needs to be rotated by the angle of V
-    chan->pixels[i_pix]->tes->Ioverlap = gsl_complex_mul(chan->pixels[i_pix]->tes->Ioverlap, gsl_complex_polar(1.,gsl_complex_arg(Vbias)));
+    // contribution from the on-resonance pixel
+    gsl_complex Vbias = gsl_complex_mul_real(gsl_complex_rect(chan->pixels[i_pix]->tes->RT+chan->pixels[i_pix]->tes->Reff , chan->fdmsys->Z_array[i_pix][i_pix]) , chan->pixels[i_pix]->tes->I0);
+    // contribution from the other pixels
+    Vbias = gsl_complex_add(Vbias, gsl_complex_mul_imag(chan->pixels[i_pix]->tes->Ioverlap,chan->fdmsys->X_L[i_pix]));
+    // to get the actual I and q channel, all currents need to be rotated by the angle of V
+    chan->pixels[i_pix]->tes->theta_Vb = gsl_complex_arg(Vbias);
   }
 }

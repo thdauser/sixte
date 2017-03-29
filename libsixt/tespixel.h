@@ -151,8 +151,9 @@ struct tesparams {
 
   // FDM crosstalk parameters
   gsl_complex Ioverlap; // carrier overlap current in the pixel's readout
-  gsl_complex Ioverlap_start;
+  gsl_complex Iout_start; // output current (I0 + Ioverlap) for the first sample; includes phase rotation
   double Pcommon; // common impedance power for this pixel
+  double theta_Vb; // phase of bias Voltage wrt. on-resonance current [radians]
 
   // readout mode for crosstalk
   int readoutMode;
