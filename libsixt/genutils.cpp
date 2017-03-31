@@ -20,7 +20,7 @@
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
    ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
-***********************************************************************
+/***********************************************************************
 *                      GENUTILS
 *
 *  File:       genutils.cpp
@@ -53,13 +53,14 @@ MAP OF SECTIONS IN THIS FILE::
  - 11. print_error
  - 12. writeLog
  - 13. fileExists
+ - 14. parabola3Pts
 
 *******************************************************************************/
 
 #include "genutils.h"
 
 /***** SECTION 1 ************************************************************
-* polyFit: This function makes a polynomial fitting: axï¿½ + bx + c using the regression quadratic analysis
+* polyFit: This function makes a polynomial fitting: ax² + bx + c using the regression quadratic analysis
 *          To measure how well the model agrees with the data, the chi-square merit function is used
 * 
 * Parameters:
@@ -456,3 +457,34 @@ bool fileExists(const std::string& name)
 	return (stat(name.c_str(), &buffer) == 0); 
 }
 /*xxxx end of SECTION 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 14 ************************************************************
+* parabola3Pts: This function calculates the equation of a parabola given 3 points
+* 
+* Parameters:
+* - x: Input GSL x vector
+* - y: Input GSL y vector
+* - a: Fit coefficient of the quadratic term
+* - b: Fit coefficient of the linear term
+* - c: Fit coefficient (independent term)
+****************************************************************************/
+int parabola3Pts (gsl_vector *x, gsl_vector *y, double *a, double *b, double *c)
+{
+	int status=EPOK;
+	double x1,x2,x3,y1,y2,y3;
+	
+	x1 = gsl_vector_get(x,0);
+	x2 = gsl_vector_get(x,1);
+	x3 = gsl_vector_get(x,2);
+	y1 = gsl_vector_get(y,0);
+	y2 = gsl_vector_get(y,1);
+	y3 = gsl_vector_get(y,2);	
+	
+	*a = (((y1-y2)/(x1-x2))-((y2-y3)/(x2-x3)))/(((pow(x1,2)-pow(x2,2))/(x1-x2))-((pow(x2,2)-pow(x3,2))/(x2-x3)));
+	*b = (y1-y2-(*a)*(pow(x1,2)-pow(x2,2)))/(x1-x2);
+	*c = y1-(*a)*pow(x1,2)-(*b)*x1;
+	 	
+	return EPOK;
+}
+/*xxxx end of SECTION 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

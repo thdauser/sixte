@@ -20,7 +20,7 @@
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
    ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
-***********************************************************************
+/***********************************************************************
 *                      GENUTILS
 *
 *  File:       genutils.h
@@ -109,5 +109,7 @@
 	void writeLog (FILE *fileRef, string type, int verbosity, string message);
 	void exit_error(const char* const func, string msg,int status);
 	bool fileExists (const std::string& name);
+	
+	int parabola3Pts (gsl_vector *x, gsl_vector *y, double *a, double *b, double *c);
 
 #endif /*GENUTILS_H_*/

@@ -117,6 +117,12 @@ struct Parameters {
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
 	
+	//Boolean to choose whether to add the PRECALWN HDU in the library file
+	char hduPRECALWN;
+	
+	//Boolean to choose whether to add the PRCLOFWM HDU in the library file
+	char hduPRCLOFWM;
+	
 	/** Length of the longest fixed filter for library creation **/
 	int largeFilter;
 	
@@ -142,7 +148,10 @@ struct Parameters {
 	char FilterMethod[3];
 	
 	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA **/
-	char EnergyMethod[8];
+	char EnergyMethod[10];
+	
+	//Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
+	char OFNoise[8];
 
 	//LagsOrNot: LAGS == 1 or NOLAGS == 0 **/
 	int LagsOrNot;

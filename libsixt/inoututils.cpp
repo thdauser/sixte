@@ -20,7 +20,7 @@
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
    ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
 
-***********************************************************************
+/***********************************************************************
 *                      INOUTUTILS
 *
 *  File:       inoututils.cpp
@@ -337,6 +337,10 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
 		message = "Cannot populate column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
+
+	if(bufferD) delete [] bufferD;
+	if(bufferI) delete [] bufferI;
+	if(bufferJ) delete [] bufferJ;
 	
 	return EPOK;
 }
@@ -485,6 +489,10 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 	      message = "Cannot populate column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
 	      EP_PRINT_ERROR(message,EPFAIL);
 	}
+
+	if(bufferD) delete [] bufferD;
+	if(bufferI) delete [] bufferI;
+	if(bufferJ) delete [] bufferJ;
 	
 	return status;
 }
