@@ -177,7 +177,7 @@ int get_psf_pos(struct Point2d* const position,
     + psf_item->crval2; // [m]
   CHECK_STATUS_RET(*status, 0);
 
-  // Rotate the postition [m] according to the final azimuthal angle.
+  // Rotate the position [m] according to the final azimuthal angle.
 #if defined( __APPLE__) && defined(__MACH__)
   __sincos(phi-psf->phis[index3], &sinp, &cosp);
 #else
