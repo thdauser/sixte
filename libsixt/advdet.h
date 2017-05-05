@@ -33,6 +33,7 @@
 // For FDM calculations in tessim
 #include <math.h>
 #include <gsl/gsl_complex_math.h>
+#include <unistd.h>
 
 ////////////////////////////////////////////////////////////////////////
 // Constants.
