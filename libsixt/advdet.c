@@ -832,15 +832,21 @@ static void AdvDetXMLElementStart(void* parsedata,
 		xmlparsedata->det->crosstalk_thermal_timedep_file=(char**)realloc(xmlparsedata->det->crosstalk_thermal_timedep_file, (xmlparsedata->det->xt_num_thermal+1)*sizeof(char*));
 		char* tmp=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(tmp);
+		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp_path);
 		getXMLAttributeString(attr, "TIMEDEPFILE", tmp);
 		xmlparsedata->det->crosstalk_thermal_timedep_file[xmlparsedata->det->xt_num_thermal]=tmp;
-		if (strlen(tmp) == 0 || access(tmp, F_OK)==-1){
+		tmp_path=strcpy(tmp_path, xmlparsedata->det->filepath);
+		tmp_path=strcat(tmp_path, tmp);
+		if (strlen(tmp) == 0 || access(tmp_path, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Thermal crosstalk time dependence file %s for neighbor %i is not given or does not exist\n", tmp, xmlparsedata->det->xt_num_thermal+1);
-			free(xmlparsedata->det->crosstalk_thermal_timedep_file);
+			printf("Warning: Thermal crosstalk time dependence file %s for neighbor %i is not given or does not exist\n", tmp_path, xmlparsedata->det->xt_num_thermal+1);
+			free(xmlparsedata->det->crosstalk_thermal_timedep_file[xmlparsedata->det->xt_num_thermal]);
+			xmlparsedata->det->crosstalk_thermal_timedep_file[xmlparsedata->det->xt_num_thermal]=NULL;
 			SIXT_ERROR("Themal crosstalk time dependence file not found\n");
-			return;
 		}
+		free(tmp_path);
+
 		// check that distances are in increasing order
 		if((xmlparsedata->det->xt_num_thermal>0) &&
 				(xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal]<xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal-1])){
@@ -862,53 +868,69 @@ static void AdvDetXMLElementStart(void* parsedata,
 
 		xmlparsedata->det->crosstalk_elec_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_elec_file);
+		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp_path);
+		tmp_path=strcpy(tmp_path, xmlparsedata->det->filepath);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_elec_file);
-		if (strlen(xmlparsedata->det->crosstalk_elec_file) == 0 || access(xmlparsedata->det->crosstalk_elec_file, F_OK)==-1){
+		tmp_path=strcat(tmp_path, xmlparsedata->det->crosstalk_elec_file);
+		if (strlen(xmlparsedata->det->crosstalk_elec_file) == 0 || access(tmp_path, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Electrical crosstalk file %s is not given or does not exist\n", xmlparsedata->det->crosstalk_elec_file);
+			printf("Warning: Electrical crosstalk file %s is not given or does not exist\n", tmp_path);
 			free(xmlparsedata->det->crosstalk_elec_file);
 			xmlparsedata->det->crosstalk_elec_file=NULL;
 			SIXT_ERROR("Electrical crosstalk file not found");
-			return;
 		}
+		free(tmp_path);
 
 		xmlparsedata->det->crosstalk_elec_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_elec_timedep_file);
+		char* tmp_path_2=(char*)malloc(2*MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp_path_2);
+		tmp_path_2=strcpy(tmp_path_2, xmlparsedata->det->filepath);
 		getXMLAttributeString(attr, "TIMEDEPFILE", xmlparsedata->det->crosstalk_elec_timedep_file);
-		if (strlen(xmlparsedata->det->crosstalk_elec_timedep_file) == 0 || access(xmlparsedata->det->crosstalk_elec_timedep_file, F_OK)==-1){
+		tmp_path_2=strcat(tmp_path_2, xmlparsedata->det->crosstalk_elec_timedep_file);
+		if (strlen(xmlparsedata->det->crosstalk_elec_timedep_file) == 0 || access(tmp_path_2, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Electrical crosstalk time dependence file %s is not given or does not exist\n", xmlparsedata->det->crosstalk_elec_timedep_file);
+			printf("Warning: Electrical crosstalk time dependence file %s is not given or does not exist\n", tmp_path_2);
 			free(xmlparsedata->det->crosstalk_elec_timedep_file);
 			xmlparsedata->det->crosstalk_elec_timedep_file=NULL;
 			SIXT_ERROR("Electrical crosstalk time dependence file not found");
-			return;
 		}
+		free(tmp_path_2);
 
 	} else if(!strcmp(Uelement, "INTERMODULATION"))  {
 
 		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_file);
+		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp_path);
+		tmp_path=strcpy(tmp_path, xmlparsedata->det->filepath);
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->crosstalk_intermod_file);
-		if (strlen(xmlparsedata->det->crosstalk_intermod_file) == 0 || access(xmlparsedata->det->crosstalk_intermod_file, F_OK)==-1){
+		tmp_path=strcat(tmp_path,xmlparsedata->det->crosstalk_intermod_file);
+		if (strlen(xmlparsedata->det->crosstalk_intermod_file) == 0 || access(tmp_path, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Intermodulation crosstalk file %s is not given or does not exist\n", xmlparsedata->det->crosstalk_intermod_file);
+			printf("Warning: Intermodulation crosstalk file %s is not given or does not exist\n", tmp_path);
 			free(xmlparsedata->det->crosstalk_intermod_file);
 			xmlparsedata->det->crosstalk_intermod_file=NULL;
 			SIXT_ERROR("Intermodulation crosstalk file not found");
-			return;
 		}
+		free(tmp_path);
 
 		xmlparsedata->det->crosstalk_intermod_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_timedep_file);
+		char* tmp_path_2=(char*)malloc(2*MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp_path_2);
+		tmp_path_2=strcpy(tmp_path_2, xmlparsedata->det->filepath);
 		getXMLAttributeString(attr, "TIMEDEPFILE", xmlparsedata->det->crosstalk_intermod_timedep_file);
-		if (strlen(xmlparsedata->det->crosstalk_intermod_timedep_file) == 0|| access(xmlparsedata->det->crosstalk_intermod_timedep_file, F_OK)==-1){
+		tmp_path_2=strcat(tmp_path_2,xmlparsedata->det->crosstalk_intermod_timedep_file);
+		if (strlen(xmlparsedata->det->crosstalk_intermod_timedep_file) == 0|| access(tmp_path_2, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Intermodulation crosstalk time dependence file %s is not given or does not exist\n", xmlparsedata->det->crosstalk_intermod_timedep_file);
+			printf("Warning: Intermodulation crosstalk time dependence file %s is not given or does not exist\n", tmp_path_2);
 			free(xmlparsedata->det->crosstalk_intermod_timedep_file);
 			xmlparsedata->det->crosstalk_intermod_timedep_file=NULL;
 			SIXT_ERROR("Intermodulation crosstalk time dependence file is not given");
-			return;
 		}
+		free(tmp_path_2);
 
 	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
 		xmlparsedata->det->threshold_event_lo_keV = getXMLAttributeDouble(attr,"VALUE");
