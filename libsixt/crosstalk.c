@@ -547,7 +547,7 @@ static void initElecTab(ElecTab** tab, int n_freq_s, int n_freq_p, int n_ener_p,
 }
 
 /** read one electrical crosstalk matrix from a fits file and store it in the structure (units given in keV) */
-void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p,
+void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p, float scaling,
 		ElecTab* tab, char* extname, int* status){
 
 	// ampl and dt arrays should be initialized before
@@ -606,7 +606,7 @@ void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p,
 			for (int kk=0; kk<n_ener_p ; kk++){
 					int ind = 	( kk * n_freq_p + jj ) * n_freq_s + ii;
 					assert(ind < nelem);
-					tab->matrix[ii][jj][kk] = buf[ind]*1e-3;  // convert to keV !!!
+					tab->matrix[ii][jj][kk] = scaling*buf[ind]*1e-3;  // convert to keV !!!
 			}
 		}
 	} // ------------------------  //  end (freq_s loop)
@@ -675,7 +675,7 @@ void load_elec_table(AdvDet* det, int k ,int* status){
 			break;
 		}
 
-		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, &(det->crosstalk_elec[k]),
+		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, det->elec_ctk_scaling, &(det->crosstalk_elec[k]),
 				EXTNAME_FDM_CROSSTALK_GRAD,status);
 		if (*status != EXIT_SUCCESS){
 			printf(" *** error: reading electrical crosstalk table %s  failed\n", fullfilename);

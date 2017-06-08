@@ -289,6 +289,7 @@ AdvDet* newAdvDet(int* const status){
   det->crosstalk_elec_timedep_file=NULL;
   det->crosstalk_elec_timedep=NULL;
   det->crosstalk_elec=NULL;
+  det->elec_ctk_scaling=1;
 
   det->threshold_event_lo_keV=0.;
   det->crosstalk_id=0;

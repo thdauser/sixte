@@ -335,6 +335,7 @@ typedef struct{
   char* crosstalk_elec_timedep_file;
   ElecTab* crosstalk_elec;
   CrosstalkTimedep* crosstalk_elec_timedep;
+  float elec_ctk_scaling;
 
   /** Trigger threshold */
   double threshold_event_lo_keV;

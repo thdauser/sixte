@@ -116,6 +116,7 @@ struct Parameters {
 
   int doCrosstalk;
   int saveCrosstalk;
+  float elec_ctk_scaling;
 
   char history;
   char clobber;

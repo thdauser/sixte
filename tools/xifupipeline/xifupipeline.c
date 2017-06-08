@@ -457,6 +457,7 @@ int xifupipeline_main()
 
 		// --- Initialize Crosstalk Structure ---
 		det->crosstalk_id=par.doCrosstalk;
+		det->elec_ctk_scaling=par.elec_ctk_scaling;
 		if (det->crosstalk_id>0){
 			headas_chat(3, "initializing crosstalk ...\n");
 			init_crosstalk(det, &status);
@@ -958,7 +959,13 @@ int xifupipeline_getpar(struct Parameters* const par)
 		par->doCrosstalk=CROSSTALK_ID_NONE;
 	}
 
-	query_simput_parameter_bool("saveCrosstalk", &par->saveCrosstalk, &status );
+	status=ape_trad_query_float("elecCtkScaling", &par->elec_ctk_scaling);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading elecCtkScaling");
+		return(status);
+	}
+
+	query_simput_parameter_bool("saveCrosstalk", &par->saveCrosstalk, &status);
 
 	if (!par->UseRMF){
 		status=ape_trad_query_string("TesTriggerFile", &sbuffer);

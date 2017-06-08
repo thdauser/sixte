@@ -185,7 +185,7 @@ CrosstalkProxy* newCrosstalkProxy(int* const status);
 EventProxy* newEventProxy(int* const status);
 
 /** read one electrical crosstalk matrix from a fits file and store it in the structure (units given in keV) */
-void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p,
+void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p, float scaling,
 		ElecTab* tab, char* extname, int* status);
 
 /** read one intermodulation matrix from a fits file and store it in the structure */
