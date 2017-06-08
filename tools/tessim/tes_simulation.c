@@ -761,11 +761,17 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
     tesparams *tes = det->pix[ii].tes;
     // get first photon to deal with
     tes->impact->time=tstop+100; // initialize to NO photon
+    int success=1; // for tes->get_photon
     if (tes->get_photon != NULL) {
       do {
-        tes->get_photon(tes->impact,tes->photoninfo,status);
+        success=tes->get_photon(tes->impact,tes->photoninfo,status);
         CHECK_STATUS_RET(*status,-1);
-      } while (tes->impact->time<tes->tstart); // skip over all impacts before tstart
+        if (success==0) {
+          // there is no further photon to read. Set next impact time to
+          // a time outside much after this
+          tes->impact->time=tstop+100.;
+        }
+      } while (tes->impact->time<tes->tstart && success!=0); // skip over all impacts before tstart
     }
 
     // write initial status of the TES to the stream
