@@ -1013,10 +1013,10 @@ int addDepfetSignal(GenDet* const det,
   
     // Check if the time makes sense
     if(rtime<0 || rtime>det->frametime){
-puts("time oob: rtime<0 || rtime>det->frametime");
-printf("line     =%d\nframe    =%ld\ntime     =%lf \nl_readout=%lf \nrtime    =%lf \nf_time   =%lf\n",
-	row, det->clocklist->frame, time, line->last_readouttime, rtime, det->frametime);
-      SIXT_ERROR("time since the start of the frame out of bounds.");
+      //puts("time oob: rtime<0 || rtime>det->frametime");
+      //printf("line     =%d\nframe    =%ld\ntime     =%lf \nl_readout=%lf \nrtime    =%lf \nf_time   =%lf\n",
+      //	row, det->clocklist->frame, time, line->last_readouttime, rtime, det->frametime);
+      //SIXT_ERROR("time since the start of the frame out of bounds.");
     }
     
     // t_readout is the time length of the active readout
@@ -1113,12 +1113,12 @@ printf("line     =%d\nframe    =%ld\ntime     =%lf \nl_readout=%lf \nrtime    =%
     
     // Check if the time makes sense
     if(t_frame<0 || t_frame>det->frametime){
-puts("time oob: t_frame<0 || t_frame>det->frametime");
-      SIXT_ERROR("time since the start of the frame out of bounds.");
+      //puts("time oob: t_frame<0 || t_frame>det->frametime");
+      //SIXT_ERROR("time since the start of the frame out of bounds.");
     } 
     if(rtime<0 || rtime>det->frametime){
-puts("time oob: rtime<0 || rtime>det->frametime");
-      SIXT_ERROR("time since the start of the frame out of bounds.");
+      //puts("time oob: rtime<0 || rtime>det->frametime");
+      //SIXT_ERROR("time since the start of the frame out of bounds.");
     }
     
     double transfertime=det->frametime-det->depfet.t_transfer;
