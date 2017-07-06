@@ -267,7 +267,7 @@ CrosstalkTimedep* getTimeDep(AdvDet* det, CrosstalkProxy* xtalk_proxy, int ii, i
 	} else if(xtalk_proxy->type[ii]==ELECCTK){
 		buffer=&(det->crosstalk_elec_timedep[2*grade+1]);
 	} else if(xtalk_proxy->type[ii]==-THERCTK){
-		buffer=&(det->crosstalk_ther_timedep[det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_index[crosstalk->weight_index]][2*grade]);
+		buffer=&(det->crosstalk_ther_timedep[det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_index[crosstalk->weight_index]][2*grade]); //In case the timedep is different beteween grades
 	} else if(xtalk_proxy->type[ii]==THERCTK){
 		buffer=&(det->crosstalk_ther_timedep[det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_index[crosstalk->weight_index]][2*grade+1]);
 	} else if(xtalk_proxy->type[ii]==-IMODCTK){;

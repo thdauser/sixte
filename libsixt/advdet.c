@@ -321,6 +321,7 @@ void destroyAdvDet(AdvDet **det){
 		freeARFLibrary((*det)->arf_library);
 
 		freeCrosstalk(*(det), gr);
+		free(*(det));
 	}
 }
 
@@ -1278,6 +1279,7 @@ void freeMatrixCrossTalk(MatrixCrossTalk* matrix){
 	if (matrix!=NULL){
 		free(matrix->cross_talk_pixels);
 		free(matrix->cross_talk_weights);
+		free(matrix->cross_talk_index);
 	}
 	free(matrix);
 	matrix=NULL;
@@ -1288,7 +1290,7 @@ void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* matrix, int gr){
 	if (matrix!=NULL){
 		for(int k=0;k<gr;k++){
 			if (matrix[k].cross_talk_weights!=NULL ){
-				for (int ii=0; ii<matrix[k].num_cross_talk_pixels-1; ii++){
+				for (int ii=0; ii<matrix[k].num_cross_talk_pixels; ii++){
 					free(matrix[k].cross_talk_weights[ii]);
 				}
 				free(matrix[k].cross_talk_weights);

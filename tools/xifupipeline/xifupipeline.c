@@ -955,8 +955,13 @@ int xifupipeline_getpar(struct Parameters* const par)
 		par->doCrosstalk = CROSSTALK_ID_THERM;
 	} else if (strncmp(buf,"nlin",4)==0){
 		par->doCrosstalk = CROSSTALK_ID_IMOD;
-	} else {
+	} else if ((strncmp(buf,"none",4)==0) || (strlen(buf)==0)){
 		par->doCrosstalk=CROSSTALK_ID_NONE;
+	} else {
+		status=-1;
+		printf("%s crosstalk parameter not known, only 'all', 'elec', 'therm', 'nlin' and 'none'/'' avaialable \n", buf);
+		SIXT_ERROR("failed reading doCrosstalk parameter");
+		return(status);
 	}
 
 	status=ape_trad_query_float("elecCtkScaling", &par->elec_ctk_scaling);
