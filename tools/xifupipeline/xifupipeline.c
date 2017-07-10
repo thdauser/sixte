@@ -957,6 +957,8 @@ int xifupipeline_getpar(struct Parameters* const par)
 		par->doCrosstalk = CROSSTALK_ID_IMOD;
 	} else if ((strncmp(buf,"none",4)==0) || (strlen(buf)==0)){
 		par->doCrosstalk=CROSSTALK_ID_NONE;
+	} else if ((strncmp(buf,"no",4)==0) || (strlen(buf)==0)){
+		par->doCrosstalk=CROSSTALK_ID_NONE;
 	} else {
 		status=-1;
 		printf("%s crosstalk parameter not known, only 'all', 'elec', 'therm', 'nlin' and 'none'/'' avaialable \n", buf);

@@ -21,7 +21,7 @@ xifupipeline  \
     Simput=$indir/simput.fits \
     Exposure=10. \
     UseRMF=yes \
-    doCrosstalk=no \
+    doCrosstalk=none \
     chatter=3 \
     clobber=yes
 
