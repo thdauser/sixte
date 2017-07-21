@@ -860,35 +860,35 @@ static void GenInstXMLElementStart(void* parsedata,
 
     xmlparsedata->inst->det->threshold_readout_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
-    headas_chat(3, "lower readout threshold: %.3lf keV\n", 
+    headas_chat(5, "lower readout threshold: %.3lf keV\n",
 		xmlparsedata->inst->det->threshold_readout_lo_keV);
 	
   } else if (!strcmp(Uelement, "THRESHOLD_PATTERN_UP_KEV")) {
 
     xmlparsedata->inst->det->threshold_pattern_up_keV=
       getXMLAttributeFloat(attr, "VALUE");
-    headas_chat(3, "upper pattern threshold: %.3lf keV\n", 
+    headas_chat(5, "upper pattern threshold: %.3lf keV\n",
 		xmlparsedata->inst->det->threshold_pattern_up_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_EVENT_LO_KEV")) {
 
     xmlparsedata->inst->det->threshold_event_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
-    headas_chat(3, "lower event threshold: %.3lf keV\n", 
+    headas_chat(5, "lower event threshold: %.3lf keV\n",
 		xmlparsedata->inst->det->threshold_event_lo_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_KEV")) {
 
     xmlparsedata->inst->det->threshold_split_lo_keV=
       getXMLAttributeFloat(attr, "VALUE");
-    headas_chat(3, "lower split threshold: %.3lf keV\n", 
+    headas_chat(5, "lower split threshold: %.3lf keV\n",
 		xmlparsedata->inst->det->threshold_split_lo_keV);
 
   } else if (!strcmp(Uelement, "THRESHOLD_SPLIT_LO_FRACTION")) {
 
     xmlparsedata->inst->det->threshold_split_lo_fraction=
       getXMLAttributeFloat(attr, "VALUE");
-    headas_chat(3, "lower split threshold: %.1lf %%\n", 
+    headas_chat(5, "lower split threshold: %.1lf %%\n",
 		xmlparsedata->inst->det->threshold_split_lo_fraction*100.);
 
 

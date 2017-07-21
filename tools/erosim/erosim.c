@@ -20,6 +20,64 @@
 
 #include "erosim.h"
 
+/**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
+ 	 return bin k for which arr[k]<=val<arr[k+1] **/
+int binary_search_float(float* arr,int n,float val){
+
+	int klo=0;
+	int khi=n-1;
+	int k=-1;
+	while ( (khi-klo) > 1 ){
+		k=(khi+klo)/2;
+		if(arr[k]>val){
+			khi=k;
+		} else {
+			klo=k;
+		}
+	}
+	return klo;
+}
+
+int get_telid_arf(float** cumulARF, float ph_ener, int nener, float* ener_lo, int ntel, int* status){
+
+	// random number between [0,1)
+	float rand_num = sixt_get_random_number(status);
+	CHECK_STATUS_RET(*status,-1);
+
+	int kk = binary_search_float(ener_lo, nener, ph_ener);
+
+	int id = 0;
+	while( (rand_num>cumulARF[kk][id]) && ( (id+1)<ntel)){
+		id++;
+	}
+
+	return id; // we will always add one too many
+}
+
+float** new_cumulARF(long nener, int ntel, int* status){
+	float** cumulARF = (float**) malloc( nener*sizeof(float*));
+    CHECK_NULL_RET(cumulARF, *status, "memory allocation for cumul ARF failed",NULL);
+
+    int ii;
+    for (ii=0; ii<nener; ii++){
+    	cumulARF[ii] = (float*) malloc( ntel*sizeof(float));
+        CHECK_NULL_RET(cumulARF[ii], *status, "memory allocation for cumul ARF failed",NULL);
+    }
+
+	return cumulARF;
+}
+
+void free_cumulARF(float** arf, long nener){
+	if (arf!=NULL){
+		int ii;
+		for (ii=0; ii<nener; ii++){
+			if (arf[ii]!=NULL){
+				free(arf[ii]);
+			}
+		}
+		free(arf);
+	}
+}
 
 int erosim_main() 
 {
@@ -27,7 +85,7 @@ int erosim_main()
   struct Parameters par;
   
   // Individual sub-instruments.
-  GenInst* subinst[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  GenInst* subinst[NUM_TELS]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Fake telescope ARF with the composite effective area of all
   // 7 sub-telescopes. This is used for the photon generation
@@ -52,19 +110,22 @@ int erosim_main()
   }
 
   // Photon list files.
-  PhotonFile* plf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  PhotonFile* plf[NUM_TELS]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Impact list file.
-  ImpactFile* ilf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  ImpactFile* ilf[NUM_TELS]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Event list file.
-  EventFile* elf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  EventFile* elf[NUM_TELS]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Pattern list file.
-  EventFile* patf[7]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  EventFile* patf[NUM_TELS]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
   // Output file for progress status.
   FILE* progressfile=NULL;
+
+  // special for erosita: need cumulative ARF
+  float** cumulARF = NULL;
 
   // Error status.
   int status=EXIT_SUCCESS; 
@@ -72,7 +133,7 @@ int erosim_main()
 
   // Register HEATOOL
   set_toolname("erosim");
-  set_toolversion("0.06");
+  set_toolversion("1.2");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -159,64 +220,61 @@ int erosim_main()
 
     unsigned int seed;
     // Load the configurations of all seven sub-instruments.
-    for (ii=0; ii<7; ii++) {
-      
-      sixt_get_eroXMLFile(xml_filename,
-			  ii,
-			  &status);
+    for (ii=0; ii<NUM_TELS; ii++) {
 
-    // Initialize the random number generator for each Telescope
-    // TODO: Use a more clever way here
-      seed=getSeed(par.Seed+ii);
-      sixt_init_rng(seed, &status);
-      CHECK_STATUS_BREAK(status);
+    	sixt_get_eroXMLFile(xml_filename, ii, &status);
+
+    	// Initialize the random number generator for each Telescope
+    	seed=getSeed(par.Seed+ii);
+    	sixt_init_rng(seed, &status);
+    	CHECK_STATUS_BREAK(status);
 
 
-      // Check if a particular XML file is given for this 
-      // sub-instrument. If not, use the default XML file.
-      char buffer[MAXFILENAME];
-      char ubuffer[MAXFILENAME];
-      switch (ii) {
-      case 0:
-	strcpy(buffer, par.XMLFile1);
-	break;
-      case 1:
-	strcpy(buffer, par.XMLFile2);
-	break;
-      case 2:
-	strcpy(buffer, par.XMLFile3);
-	break;
-      case 3:
-	strcpy(buffer, par.XMLFile4);
-	break;
-      case 4:
-	strcpy(buffer, par.XMLFile5);
-	break;
-      case 5:
-	strcpy(buffer, par.XMLFile6);
-	break;
-      case 6:
-	strcpy(buffer, par.XMLFile7);
-	break;
-      default:
-	break;
-      }
-      strcpy(ubuffer, buffer);
-      strtoupper(ubuffer);
-      if (0==strcmp(ubuffer, "NONE")) {
-	strcpy(buffer, xml_filename);
-      }
+    	// Check if a particular XML file is given for this
+    	// sub-instrument. If not, use the default XML file.
+    	char buffer[MAXFILENAME];
+    	char ubuffer[MAXFILENAME];
+    	switch (ii) {
+    	case 0:
+    		strcpy(buffer, par.XMLFile1);
+    		break;
+    	case 1:
+    		strcpy(buffer, par.XMLFile2);
+    		break;
+    	case 2:
+    		strcpy(buffer, par.XMLFile3);
+    		break;
+    	case 3:
+    		strcpy(buffer, par.XMLFile4);
+    		break;
+    	case 4:
+    		strcpy(buffer, par.XMLFile5);
+    		break;
+    	case 5:
+    		strcpy(buffer, par.XMLFile6);
+    		break;
+    	case 6:
+    		strcpy(buffer, par.XMLFile7);
+    		break;
+    	default:
+    		break;
+    	}
+    	strcpy(ubuffer, buffer);
+    	strtoupper(ubuffer);
+    	if (0==strcmp(ubuffer, "NONE")) {
+    		strcpy(buffer, xml_filename);
+    	}
 
-      // Load the instrument configuration either with the
-      // specific (if available) or the default XML file.
-      
-      printf("Telescope %ld, use XML file\n%s\n", ii+1, xml_filename);
-      subinst[ii]=loadGenInst(buffer, seed, &status);
-      CHECK_STATUS_BREAK(status);
+    	// Load the instrument configuration either with the
+    	// specific (if available) or the default XML file.
 
-      // Set the usage of the detector background according to
-      // the respective program parameter.
-      setGenDetIgnoreBkg(subinst[ii]->det, !par.Background);
+    	printf("Telescope %ld, use XML file\n%s\n", ii+1, xml_filename);
+    	subinst[ii]=loadGenInst(buffer, seed, &status);
+    	CHECK_STATUS_BREAK(status);
+
+    	// Set the usage of the detector background according to
+    	// the respective program parameter.
+    	setGenDetIgnoreBkg(subinst[ii]->det, !par.Background);
     }
     CHECK_STATUS_BREAK(status);
     
@@ -229,11 +287,18 @@ int erosim_main()
     arf7->HighEnergy=(float*)malloc(arf7->NumberEnergyBins*sizeof(float));
     arf7->EffArea=   (float*)malloc(arf7->NumberEnergyBins*sizeof(float));
     long kk;
+    int ii;
     for (kk=0; kk<arf7->NumberEnergyBins; kk++) {
       arf7->LowEnergy[kk] =subinst[0]->tel->arf->LowEnergy[kk];
       arf7->HighEnergy[kk]=subinst[0]->tel->arf->HighEnergy[kk];
-      arf7->EffArea[kk]   =subinst[0]->tel->arf->EffArea[kk] *7.0; // Factor 7 !
+
+      // add all ARFs together (to produce the correct amount of photons
+      for (ii=0; ii<NUM_TELS; ii++){
+    		  arf7->EffArea[kk]   +=subinst[ii]->tel->arf->EffArea[kk] ;
+      }
     }
+
+    // all information are taken from the telescope 1 ARF (does not matter in the end)
     strcpy(arf7->ARFVersion, subinst[0]->tel->arf->ARFVersion);
     strcpy(arf7->Telescope , subinst[0]->tel->arf->Telescope );
     strcpy(arf7->Instrument, subinst[0]->tel->arf->Instrument);
@@ -241,6 +306,20 @@ int erosim_main()
     strcpy(arf7->Filter    , subinst[0]->tel->arf->Filter    );
     strcpy(arf7->ARFExtensionName, subinst[0]->tel->arf->ARFExtensionName);
     
+    // for later we need a cumulative ARF
+    float** cumulARF = new_cumulARF(arf7->NumberEnergyBins,NUM_TELS,&status);
+    CHECK_STATUS_BREAK(status);
+    for (ii=0; ii<arf7->NumberEnergyBins; ii++){
+        for (kk=0; kk<NUM_TELS; kk++){
+        	if (kk==0){
+        		cumulARF[ii][kk] = subinst[kk]->tel->arf->EffArea[ii]/arf7->EffArea[ii] ;
+        	} else {
+        		cumulARF[ii][kk] = cumulARF[ii][kk-1] + subinst[kk]->tel->arf->EffArea[ii]/arf7->EffArea[ii];
+        	}
+        }
+    }
+    // TODO: need to free this again!!
+
     // The FoV is the same as for an individual sub-telescope.
     // We ignore any misalignment for the moment.
     fov7=subinst[0]->tel->fov_diameter;
@@ -635,9 +714,15 @@ int erosim_main()
 	assert(ph.time<=t1);
 
 	// Randomly assign the photon to one of the 7 sub-telescopes.
-	ii=(unsigned int)(sixt_get_random_number(&status)*7.0);
+	//ii=(unsigned int)(sixt_get_random_number(&status)*7.0);
+	//CHECK_STATUS_BREAK(status);
+
+	// Randomly assign the photon to one of the 7 sub-telescopes.
+	// TODO: need to change this (as ARFs are and can be different)
+	ii = get_telid_arf(cumulARF,ph.energy,arf7->NumberEnergyBins,arf7->LowEnergy,NUM_TELS,&status);
 	CHECK_STATUS_BREAK(status);
-	assert(ii<7);
+
+	assert(ii<NUM_TELS);
 
 	// If requested, write the photon to the output file.
 	if (NULL!=plf[ii]) {
@@ -796,6 +881,7 @@ int erosim_main()
     freeEventFile(&elf[ii], &status);
     freeImpactFile(&ilf[ii], &status);
     freePhotonFile(&plf[ii], &status);
+    free_cumulARF(cumulARF,arf7->NumberEnergyBins);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);

@@ -45,6 +45,7 @@
 /** Maximum number of SIMPUT catalogs. */
 #define MAX_N_SIMPUT 6
 
+#define NUM_TELS 7
 
 struct Parameters {
   char Prefix[MAXFILENAME];
@@ -89,6 +90,8 @@ struct Parameters {
 
   char clobber;
 };
+
+
 
 
 ////////////////////////////////////////////////////////////////////////
