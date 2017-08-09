@@ -57,6 +57,7 @@ typedef struct {
   double n;      // Temperature dependence of the power flow to the heat sink
   double I0;     // current at I0 [A]
   double V0;     // voltage bias [V] (computed for initial equilibrium if negative)
+  int thermal_bias; // compute I0 and V0 from thermal power balance
 
   double sample_rate; // sample rate (Hz)
   double imin;    // minimum current to encode [A]

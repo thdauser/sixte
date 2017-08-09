@@ -192,6 +192,7 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   double dummy=1.0/tes->aducnv;
   fits_update_key(fptr,TDOUBLE,"ADUCNV",&dummy,"[A/ADU] ADU conversion factor",status);
   fits_update_key(fptr,TDOUBLE,"I0_START",&tes->I0_start,"[A] Initial bias current",status);
+  fits_update_key(fptr,TDOUBLE,"V0",&tes->V0,"[V] Bias voltage",status);
   fits_update_key(fptr,TLOGICAL,"ACDC",&tes->acdc,"True if AC biased",status);
   fits_update_key(fptr,TDOUBLE,"R0",&tes->R0,"[Ohm] Operating point resistance",status);
   fits_update_key(fptr,TDOUBLE,"RL",&tes->RL,"[Ohm] Shunt/load resistor value",status);
@@ -259,6 +260,12 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
 
   // yes, really
   fits_read_key(fptr,TDOUBLE,"I0_START",&par->I0,comment,status);
+  fits_read_key(fptr,TDOUBLE,"V0",&par->V0,comment,status);
+  if (*status == KEY_NO_EXIST ) {
+    *status=EXIT_SUCCESS;
+    par->V0=-1.;
+  }
+
   if (par->acdc) {
     fits_read_key(fptr,TDOUBLE,"RPARA",&par->Rpara,comment,status);
     par->RL=0.;
@@ -647,10 +654,14 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->therm=1.0; // absorber thermalization time (in units of the step size h). 
                   // set to 1 for a delta function
 
-  // Calculate initial bias current from thermal power balance
-  //  tes->I0_start=sqrt(tes->Gb1/(tes->n*pow(tes->T_start,tes->n-1.))*
-  //		    (pow(tes->T_start,tes->n)-pow(tes->Tb,tes->n))/tes->R0);
-  tes->I0_start=par->I0;
+  // If the parameter thermal_bias is set, calculate initial 
+  // bias current from thermal power balance
+  if (par->thermal_bias) {
+    tes->I0_start=sqrt(tes->Gb1/(tes->n*pow(tes->T_start,tes->n-1.))*
+                      (pow(tes->T_start,tes->n)-pow(tes->Tb,tes->n))/tes->R0);
+  } else {
+    tes->I0_start=par->I0;
+}
 
   //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   //JW see discussion around I&H, eq. 111
@@ -675,7 +686,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // set-up initial input conditions
   tes->I0=tes->I0_start;
   // if the effective voltage bias is negative (typically if not given at command line), compute it                                                                  
-  if (par->V0 <0){
+  if ((par->V0<0) || par->thermal_bias){
     tes->V0=tes->I0*(tes->R0+tes->Reff); // Effective bias voltage                                                                                                                
   } else {
     tes->V0 = par->V0;
@@ -917,11 +928,9 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
           }
           if (tes->readoutMode == READOUT_ICHANNEL){
             pulse = GSL_REAL(tes->Iout_start) - GSL_REAL(Iout); // I-Channel
-            //pulse = - GSL_REAL(Iout); // I-Channel
           }
           if (tes->readoutMode == READOUT_QCHANNEL){
             pulse = GSL_IMAG(tes->Iout_start) - GSL_IMAG(Iout); // Q-Channel
-            //pulse =  - GSL_IMAG(Iout); // Q-Channel
           }
 
         } else {

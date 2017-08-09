@@ -61,7 +61,7 @@ int tessim_main() {
             CHECK_STATUS_BREAK(status);
           }
           status=EXIT_SUCCESS; // NEED TO CHECK HERE
-          break;
+          return(EXIT_SUCCESS);
         }
       } else {
         // get file+extension name for this pixel
@@ -81,7 +81,7 @@ int tessim_main() {
         loop_par.seed = par.seed;
         loop_par.simnoise = par.simnoise;
         loop_par.m_excess = par.m_excess;
-        loop_par.V0 = par.V0;
+        loop_par.thermal_bias = par.thermal_bias;
         loop_par.readoutMode = par.readoutMode;
  
         // assign the actual pixid, input and output filename
@@ -545,6 +545,9 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
 
   query_simput_parameter_bool("clobber", &par->clobber, status);
 
+  // query parameter for calculating I0 via the thermal balance
+  query_simput_parameter_bool("thermalBias", &par->thermal_bias, status);
+
   // modifying pixel parameters from command line is only allowed for one-pixel runs
   if ((*det)->npix==1){
     if (cmd_query_simput_parameter_double(fromcmd,"Ce",&(par->Ce1),status) ) {
@@ -573,9 +576,27 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     assert(par->R0>0);
     
     if (cmd_query_simput_parameter_double(fromcmd,"I0", &(par->I0), status) ) {
+      // if this is set simultaneously to the thermal balance, this throws an error
+      if (par->thermal_bias){
+        SIXT_ERROR("Conflict: I0 is both given as parameter and should be automatically calculated");
+        *status=EXIT_FAILURE;
+        return;
+      } 
       par->I0*=1e-6; // muA->A
     }
     assert(par->I0>0);
+
+    // get optional effective voltage bias
+    if (cmd_query_simput_parameter_double(fromcmd,"V0", &(par->V0), status) ) {
+      // if this is set simultaneously to the thermal balance, this throws an error
+      if (par->thermal_bias){
+        SIXT_ERROR("Conflict: V0 is both given as parameter and should be automatically calculated");
+        *status=EXIT_FAILURE;
+        return;
+      }
+      par->V0*=1e-6; // muV->V
+    }
+
     
     if (par->acdc) {
       if (cmd_query_simput_parameter_double(fromcmd,"Rparasitic", &(par->Rpara), status)) {
@@ -635,10 +656,6 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     par->m_excess=0.; // switch explicitly off if not simulating noise
   }
   assert(par->m_excess>=0);
-
-  // get optional effective voltage bias
-  query_simput_parameter_double("V0",&(par->V0),status);
-  par->V0*=1e-6;
 
   // readout mode is only not 'total' for crosstalk
   if (!par->doCrosstalk){

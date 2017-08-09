@@ -274,12 +274,18 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
     if (data->streamind==data->stream->trigger_size) {
       // yes: write to file and forget this record
       writeRecord(data->fptr,data->stream,status);
-      // TODO leave the option to write this to a buffer of records,
-      // so that we can e.g. handle the record internally instead of writing it to the file
       CHECK_STATUS_VOID(*status);
 
       freeTesRecord(&(data->stream)); // also sets data->stream to NULL
       data->streamind=-1;
+
+      // TODO leave the option to write this to a buffer of records,
+      // so that we can e.g. handle the record internally instead of 
+      // writing it to the file
+      // strategy: define a buffer struct:
+      // If it exists, instead of writing the record, forward the pointer
+      // data->stream to the buffer and set data->stream=NULL
+      // The buffer struct then has to take care of writing and freeing!
     }
   }
 }
