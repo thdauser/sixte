@@ -37,6 +37,8 @@
 #define THERCTK -32
 #define ELECCTK -33
 
+#define MINDT 0.004 //TODO Once time dependencies tables shall be more accurate, to change
+
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
@@ -57,8 +59,6 @@ typedef struct{
 	int n_active_crosstalk;
 	int* type;
 	int* is_saved;
-	int n_xtalk_pileup;
-	long current_crosstalk_index;
 	int xtalk_proxy_size;
 }CrosstalkProxy;
 

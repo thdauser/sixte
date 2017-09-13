@@ -199,7 +199,7 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 }
 
 /** Processes the impacts, including crosstalk and RMF energy randomization **/
-void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_file,int save_crosstalk,int* const status){
+void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_file,int save_crosstalk, FILE* progressfile, int* const status){
 
 	const double sample_length = 1./(det->SampleFreq);
 
@@ -218,9 +218,23 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 	}
 	int id = -1;
 
+	//Get the number of impacts
+	unsigned int total_length=piximpactfile->nrows;
+	unsigned int ndone=0;
+	unsigned int progress=0;
+	if (NULL==progressfile) {
+		headas_chat(2, "\r%.0lf %%", 0.);
+		fflush(NULL);
+	} else {
+		rewind(progressfile);
+		fprintf(progressfile, "%.2lf", 0.);
+		fflush(progressfile);
+	}
+
 	// Iterate over impacts
 	while (getNextImpactFromPixImpFile(piximpactfile,&impact,status)){
 		id = impact.pixID;
+		ndone+=1;
 
 		// First thing: we update the crosstalk proxy of the impacts only with the type. Basically, we say if a given photon
 		// hits pixel A, we know that pixels B,C,D... will have crosstalk but we do not know the energy (depends on their grading)
@@ -229,7 +243,6 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 			applyIntermodCrossTalk(grade_proxys,&impact,det,status);
 			CHECK_STATUS_VOID(*status);
 		}
-
 
 		// thermal crosstalk
 		if (det->pix[id].thermal_cross_talk !=NULL){
@@ -248,9 +261,22 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		// Process impact and get its grade
 		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,save_crosstalk,-99,status); //Grade here given only for comparison
 		CHECK_STATUS_VOID(*status);
-	}
 
-	// now we need to clean the remaining events (maximum grade as no more 'real' impact on pixel
+		// Program progress output.
+		while((unsigned int)((ndone*100./total_length)>progress)) {
+			progress++;
+			if (NULL==progressfile) {
+				headas_chat(2, "\r%.0lf %%", progress*1.);
+				fflush(NULL);
+			} else {
+				rewind(progressfile);
+				fprintf(progressfile, "%.2lf", progress*1./100.);
+				fflush(progressfile);
+			}
+		}
+	}
+	printf("\n");
+	// now we need to clean the remaining events (maximum grade as no more 'real' impact on pixel)
 	for (int ii=0;ii<det->npix;ii++){
 		if (grade_proxys[ii].times != NULL){
 			int is_crosstalk=0;
@@ -262,9 +288,6 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 		}
 		free(grade_proxys[ii].impact);
 		freeCrosstalkProxy(&(grade_proxys[ii].xtalk_proxy));
-
-		/// TODO XXXXXXXXXXX clean all remaining events here ????
-	//	freeEventProxy(&(grade_proxys[ii].proxy));
 	}
 }
 
@@ -369,7 +392,7 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 		//Now we add the event to the proxy of the grade proxy
 		addCrosstalkEvent(&(grade_proxys[active_ind]),&crosstalk_impact,IMODCTK,df,status);
 		CHECK_STATUS_VOID(*status);
-		}
+	}
 	//}
 
 }
@@ -395,6 +418,7 @@ void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,P
 		crosstalk_impact.weight_index = ii; //Store which of the neighbours to look into
 		double df = get_imod_df(det->pix[cross_talk->cross_talk_pixels[ii]->pindex].freq,det->pix[impact->pixID].freq,status);
 		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,THERCTK,df,status);
+		CHECK_STATUS_VOID(*status);
 	}
 }
 
@@ -407,7 +431,6 @@ void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* 
 	crosstalk_impact.detposition.y = 0.;
 	crosstalk_impact.pixposition.x = 0.;
 	crosstalk_impact.pixposition.y = 0.;
-
 	// Iterate over affected pixels, copy and go
 	for (int ii=0;ii<cross_talk->num_cross_talk_pixels;ii++){
 		crosstalk_impact.energy = impact->energy; //We store the energy pixel
@@ -418,6 +441,7 @@ void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* 
 		crosstalk_impact.weight_index = ii; //Store the index of this given pixel to apply ctk later
 		double df = get_imod_df(det->pix[cross_talk->cross_talk_pixels[ii]->pindex].freq,det->pix[impact->pixID].freq,status);
 		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,ELECCTK,df,status);
+		CHECK_STATUS_VOID(*status);
 	}
 }
 

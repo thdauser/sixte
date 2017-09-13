@@ -42,6 +42,9 @@ int gradeddetection_main() {
 	// Error status.
 	int status=EXIT_SUCCESS;
 
+	//Progressfile
+	FILE* progressfile=NULL;
+
 	// Register HEATOOL:
 	set_toolname("gradeddetection");
 	set_toolversion("0.05");
@@ -92,7 +95,7 @@ int gradeddetection_main() {
 		}
 
 		// Process impacts
-		impactsToEvents(det,piximp_file,event_file,par.saveCrosstalk,&status);
+		impactsToEvents(det,piximp_file,event_file,par.saveCrosstalk,progressfile,&status);
 
 
 	} while(0); // END of the error handling loop.

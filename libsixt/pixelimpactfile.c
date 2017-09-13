@@ -366,4 +366,5 @@ void copyPixImpact(PixImpact* impact1, PixImpact* impact2){
 	impact1->ph_id = impact2->ph_id;
 	impact1->src_id = impact2->src_id;
 	impact1->nb_pileup = impact2->nb_pileup;
+	impact1->weight_index=impact2->weight_index;
 }

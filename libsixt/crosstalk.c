@@ -244,7 +244,7 @@ double conv_ener2ampli(double ener){
 	return fabs(ener) / 12.0 * 0.15;
 }
 
-static void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* perturber, double* enweight, double dt, int grading, int* const status){
+void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* perturber, double* enweight, double dt, int grading, int* const status){
 
 	/** Checking if perturber frequency is higher or lower than pixels*/
 	double df = get_imod_df(det->pix[signal->pixID].freq,det->pix[perturber->pixID].freq,status);
@@ -284,57 +284,51 @@ CrosstalkTimedep* getTimeDep(AdvDet* det, CrosstalkProxy* xtalk_proxy, int ii, i
 
 /** Routine to empty a given cross-talk mechanism from proxy given their indices */
 static void erasectk(CrosstalkProxy* xtalk_proxy, int* toerase, int erased_crosstalks, int* const status){
-	assert(erased_crosstalks<=xtalk_proxy->current_crosstalk_index);
+	assert(erased_crosstalks<=xtalk_proxy->n_active_crosstalk); //Not more to erase than current
+	assert(erased_crosstalks>0); //Actually some to erase
 
-	if (erased_crosstalks<xtalk_proxy->current_crosstalk_index){
-		PixImpact** tmpimp = (PixImpact**) malloc(xtalk_proxy->xtalk_proxy_size*sizeof(PixImpact*));
-		CHECK_MALLOC_VOID_STATUS(tmpimp,*status);
-		int* tmptype=(int*) malloc((xtalk_proxy->current_crosstalk_index-erased_crosstalks)*sizeof(int));
-		CHECK_MALLOC_VOID_STATUS(tmptype,*status);
-		int* tmpsave=(int*) malloc((xtalk_proxy->current_crosstalk_index-erased_crosstalks)*sizeof(int));
-		CHECK_MALLOC_VOID_STATUS(tmpsave,*status);
+	if (erased_crosstalks<xtalk_proxy->n_active_crosstalk){
 		int c=0;
 		int d=0;
 
-		//Copying the inactive ones
-		for(int k=0; k<xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk;k++){
-			tmptype[d]=xtalk_proxy->type[k];
-			tmpsave[d]=xtalk_proxy->is_saved[k];
-			tmpimp[d]=xtalk_proxy->xtalk_impacts[k];
-			d+=1;
-		}
-
 		//Erasing amongst the actives
 		for(int k=0;k<xtalk_proxy->n_active_crosstalk;k++){
-			int ind=(xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+k)%xtalk_proxy->xtalk_proxy_size;
-			if(ind==toerase[c]){
+			if(k==toerase[c] && c<erased_crosstalks){ //Useless to access indices higher than c itself
 				c+=1;
 			} else{
-				tmptype[d]=xtalk_proxy->type[ind];
-				tmpsave[d]=xtalk_proxy->is_saved[ind];
-				tmpimp[d]=xtalk_proxy->xtalk_impacts[ind];
+				copyPixImpact(xtalk_proxy->xtalk_impacts[d],xtalk_proxy->xtalk_impacts[k]); //Just shift the index
+				xtalk_proxy->type[d]=xtalk_proxy->type[k];
+				xtalk_proxy->is_saved[d]=xtalk_proxy->is_saved[k];
 				d+=1;
 			}
 		}
 
-		//Allocating rest of memory
-		for(int k=d; k<xtalk_proxy->xtalk_proxy_size;k++){ //Allocating memory for the rest
-			tmpimp[k]=(PixImpact*) malloc(sizeof(PixImpact));
-			CHECK_MALLOC_VOID_STATUS(tmpimp[k],*status);
+		assert(c==erased_crosstalks); //Check if we have erased them all indeed
+
+		xtalk_proxy->type=(int*) realloc(xtalk_proxy->type, (xtalk_proxy->xtalk_proxy_size-erased_crosstalks)*sizeof(int));
+		xtalk_proxy->is_saved=(int*) realloc(xtalk_proxy->is_saved, (xtalk_proxy->xtalk_proxy_size-erased_crosstalks)*sizeof(int));
+		xtalk_proxy->n_active_crosstalk-=erased_crosstalks;
+		//xtalk_proxy->xtalk_proxy_size-=erased_crosstalks;
+	} else{
+		//Freeing everything in the structure
+		for(int k=0;k<xtalk_proxy->xtalk_proxy_size;k++){
+			free(xtalk_proxy->xtalk_impacts[k]);
+		}
+
+		PixImpact** tmpimp = (PixImpact**) malloc(INITXTALKNB*sizeof(PixImpact*));
+		CHECK_MALLOC_VOID_STATUS(tmpimp,*status);
+		for (int ii=0;ii<INITXTALKNB;ii++){
+			tmpimp[ii] = (PixImpact*) malloc(sizeof(PixImpact));
+			CHECK_MALLOC_VOID_STATUS(tmpimp[ii],*status);
 		}
 
 		free(xtalk_proxy->type);
-		xtalk_proxy->type=tmptype;
 		free(xtalk_proxy->is_saved);
-		xtalk_proxy->is_saved=tmpsave;
-		free(xtalk_proxy->xtalk_impacts);
+		xtalk_proxy->type=NULL;
+		xtalk_proxy->is_saved=NULL;
 		xtalk_proxy->xtalk_impacts=tmpimp;
-		xtalk_proxy->n_active_crosstalk-=erased_crosstalks;
-		xtalk_proxy->current_crosstalk_index-=erased_crosstalks;
-	} else{
-		//Should happen only at the very beginning (but extremely rare...)
-		freeCrosstalkProxy(&xtalk_proxy);
-		xtalk_proxy=newCrosstalkProxy(status);
+		xtalk_proxy->n_active_crosstalk=0;
+		xtalk_proxy->xtalk_proxy_size=INITXTALKNB;
 	}
 }
 
@@ -1086,12 +1080,13 @@ void storeEventtype(CrosstalkProxy* xtalk_proxy, int type, double df, int* statu
 	}
 
 	/** Allocation new space in the matrices*/
-	xtalk_proxy->type=(int*)realloc(xtalk_proxy->type, (xtalk_proxy->current_crosstalk_index+1)*sizeof(int));
-	xtalk_proxy->is_saved=(int*)realloc(xtalk_proxy->is_saved, (xtalk_proxy->current_crosstalk_index+1)*sizeof(int));
+	xtalk_proxy->type=(int*)realloc(xtalk_proxy->type, (xtalk_proxy->n_active_crosstalk+1)*sizeof(int));
+	xtalk_proxy->is_saved=(int*)realloc(xtalk_proxy->is_saved, (xtalk_proxy->n_active_crosstalk+1)*sizeof(int));
+
 
 	/** Saving what kind of cross-talk mechanism, and the sign of the frequency difference */
-	xtalk_proxy->type[xtalk_proxy->current_crosstalk_index]=type*sgn;
-	xtalk_proxy->is_saved[xtalk_proxy->current_crosstalk_index]=0;
+	xtalk_proxy->type[xtalk_proxy->n_active_crosstalk]=type*sgn;
+	xtalk_proxy->is_saved[xtalk_proxy->n_active_crosstalk]=0;
 
 	if (abs(type)!=-IMODCTK && abs(type)!=-THERCTK && abs(type)!=-ELECCTK){
 		printf("Found an incorrect cross-talk type %i \n", type);
@@ -1104,8 +1099,6 @@ void storeEventtype(CrosstalkProxy* xtalk_proxy, int type, double df, int* statu
 /** load the intermodulation frequency table */
 static void load_intermod_freq_table(AdvDet* det, int k, int* status){
 
-	char gra[15];
-	sprintf(gra, "%05ld",det->pix[0].grades[k].gradelim_post);
 	char* EXTNAME_AMPLITUDE = "amplitude";
 	char* EXTNAME_TIMEOFFSET = "time_offset";
 	char* EXTNAME_FREQOFFSET = "frequency_offset";
@@ -1202,21 +1195,24 @@ void load_imod_timedep(AdvDet* det, int k, int* const status){
 	det->crosstalk_imod_timedep[2*k]=*newCrossTalkTimedep(status);
 	det->crosstalk_imod_timedep[2*k+1]=*newCrossTalkTimedep(status);
 
-	char gra[15];
-	sprintf(gra, "%05ld", det->pix[0].grades[k].gradelim_post);
 	char* COLNAME_TIME_DELAY = "TIME_DELAY";
 	char* COLNAME_WEIGHT = "WEIGHT";
-	char* EXTNAME_LOW = "PERTLO";
-	char* EXTNAME_HI = "PERTHI";
+	char* EXTNAME_LOW_GRAD;
+	char* EXTNAME_HI_GRAD;
 
 	// Concatenating the grade
-	char* EXTNAME_LOW_GRAD=(char*)malloc(sizeof(1+strlen(EXTNAME_LOW)+ strlen(gra)));
-    strcpy(EXTNAME_LOW_GRAD, EXTNAME_LOW);
-    strcat(EXTNAME_LOW_GRAD, gra);
 
-	char* EXTNAME_HI_GRAD=(char*)malloc(sizeof(1+strlen(EXTNAME_HI)+ strlen(gra)));
-    strcpy(EXTNAME_HI_GRAD, EXTNAME_HI);
-    strcat(EXTNAME_HI_GRAD, gra);
+	if (asprintf(&EXTNAME_LOW_GRAD,"PERTLO%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
+
+	if (asprintf(&EXTNAME_HI_GRAD,"PERTHI%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
 
 	fitsfile *fptr=NULL;
 
@@ -1599,8 +1595,6 @@ CrosstalkProxy* newCrosstalkProxy(int* const status){
 	xtalk_proxy->n_active_crosstalk=0;
 	xtalk_proxy->type=NULL;
 	xtalk_proxy->is_saved=NULL;
-	xtalk_proxy->current_crosstalk_index=0;
-	xtalk_proxy->n_xtalk_pileup=0;
 
 	return xtalk_proxy;
 }
@@ -1609,7 +1603,7 @@ CrosstalkProxy* newCrosstalkProxy(int* const status){
 void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
 	if (*(xtalk_proxy)!=NULL){
 		if ((*xtalk_proxy)->xtalk_impacts !=NULL){
-			for (int ii=0;ii<((*xtalk_proxy)->xtalk_proxy_size);ii++){
+			for (int ii=0;ii<((*xtalk_proxy)->n_active_crosstalk);ii++){ //The other should be initialised but empty
 				if((*xtalk_proxy)->xtalk_impacts[ii]!=NULL){
 					free((*xtalk_proxy)->xtalk_impacts[ii]);
 				}
@@ -1625,9 +1619,29 @@ void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
 
 /** Add crosstalk to proxy */
 void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact, int type, double df, int* const status){
+	// If not, first check if the first events in the buffer are not too far from the current case (i.e. can we erase some)
+	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
+		int* toerase=NULL;
+		int erased_crosstalks=0;
+		float dt=0.;
+		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
+			dt=impact->time-xtalk_proxy->xtalk_impacts[ii]->time;
+			if (dt>MINDT){ //Implement this as a variable not ad hoc
+				toerase=(int*) realloc(toerase, (erased_crosstalks+1)*sizeof(int));
+				toerase[erased_crosstalks]=ii;
+				erased_crosstalks+=1;
+			}
+		}
+
+		if (erased_crosstalks>0){
+			erasectk(xtalk_proxy, toerase, erased_crosstalks,status);
+			free(toerase);
+		}
+
+	}
 	// Check that there is room left for new crosstalk
-	// If not, allocate new array of double size and copy old impacts (manual copy to reorder circular buffer, should happen rarely anyway)
-	if (xtalk_proxy->current_crosstalk_index==xtalk_proxy->xtalk_proxy_size){
+	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
+		//Then allocate a new array of double size and copy old impacts
 		PixImpact** piximp_list = (PixImpact**) malloc((xtalk_proxy->xtalk_proxy_size*2)*sizeof(PixImpact*));
 		CHECK_MALLOC_VOID_STATUS(piximp_list,*status);
 		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
@@ -1639,25 +1653,16 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact, int type,
 		}
 		free(xtalk_proxy->xtalk_impacts);
 		xtalk_proxy->xtalk_impacts = piximp_list;
-		//xtalk_proxy->current_crosstalk_index = xtalk_proxy->xtalk_proxy_size;
 		xtalk_proxy->xtalk_proxy_size*=2;
 	}
 	// Copy crosstalk to proxy
-	copyPixImpact(xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size],impact);
-	xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size]->nb_pileup=0;
-	xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size]->weight_index=impact->weight_index;
+	copyPixImpact(xtalk_proxy->xtalk_impacts[xtalk_proxy->n_active_crosstalk],impact);
+	xtalk_proxy->xtalk_impacts[xtalk_proxy->n_active_crosstalk]->nb_pileup=0;
+	xtalk_proxy->xtalk_impacts[xtalk_proxy->n_active_crosstalk]->weight_index=impact->weight_index;
 
 	storeEventtype(xtalk_proxy, type, df, status);
 	xtalk_proxy->n_active_crosstalk+=1;
-	xtalk_proxy->current_crosstalk_index+=1;
-
-
-	//Prevent meaningless overrun (TO CHECK)
-	if (xtalk_proxy->current_crosstalk_index>=2*xtalk_proxy->xtalk_proxy_size){
-		xtalk_proxy->current_crosstalk_index-=xtalk_proxy->xtalk_proxy_size;
-	}
 }
-
 
 
 /** Constructor of EventProxy structure */
@@ -1698,94 +1703,16 @@ void freeEventProxy(EventProxy** proxy){
 	}
 }
 
-
-/*
-// Add event to proxy
-void addEvent2Proxy(EventProxy* proxy,PixImpact* impact,int* const status){
-	// Check that there is room left for new crosstalk
-	// If not, allocate new array of double size and copy old impacts (manual copy to reorder circular buffer, should happen rarely anyway)
-
-	double dt_limit = 0.01; // maximal time that two events can influence each other
-
-	if ( (proxy->previous !=NULL) && ( (proxy->previous-impact->time) > dt_limit ){
-
-
-
-	}
-
-	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
-		PixImpact** piximp_list = (PixImpact**) malloc((xtalk_proxy->xtalk_proxy_size*2)*sizeof(PixImpact*));
-		CHECK_MALLOC_VOID_STATUS(piximp_list,*status);
-		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
-			piximp_list[ii] = xtalk_proxy->xtalk_impacts[(xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size];
-		}
-		for (int ii=xtalk_proxy->xtalk_proxy_size;ii<2*xtalk_proxy->xtalk_proxy_size;ii++){
-			piximp_list[ii] = (PixImpact*) malloc(sizeof(PixImpact));
-			CHECK_MALLOC_VOID_STATUS(piximp_list[ii],*status);
-		}
-		free(xtalk_proxy->xtalk_impacts);
-		xtalk_proxy->xtalk_impacts = piximp_list;
-		xtalk_proxy->current_crosstalk_index = xtalk_proxy->xtalk_proxy_size;
-		xtalk_proxy->xtalk_proxy_size*=2;
-	}
-	// Copy crosstalk to proxy
-	copyPixImpact(xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size],impact);
-	xtalk_proxy->xtalk_impacts[xtalk_proxy->current_crosstalk_index % xtalk_proxy->xtalk_proxy_size]->nb_pileup=0;
-	xtalk_proxy->n_active_crosstalk+=1;
-	xtalk_proxy->current_crosstalk_index+=1;
-	// Prevent meaningless overrun (TO CHECK)
-	if (xtalk_proxy->current_crosstalk_index>=2*xtalk_proxy->xtalk_proxy_size){
-		xtalk_proxy->current_crosstalk_index-=xtalk_proxy->xtalk_proxy_size;
-	}
-}
-
-
-
-// Add event to proxy
-void addEvent(EventProxy* proxy,PixImpact* impact,int* const status){
-	// Check that there is room left for new crosstalk
-	// If not, allocate new array of double size and copy old impacts (manual copy to reorder circular buffer, should happen rarely anyway)
-
-	double dt_limit = 0.01; // [seconds] maximal time that two events can influence each other
-
-	proxy->impact[proxy->ind_event % proxy->event_proxy_size] = impact;
-	proxy->ind_event++;
-	proxy->nb_active++;
-
-
-	if ( (proxy->nb_active >= 3 ) && ( (proxy->impact[proxy->ind_grading_previous]->time) > dt_limit )){
-		// do Event grading
-
-		// remove one event
-
-		proxy->nb_active--;
-	}
-
-
-	// Copy crosstalk to proxy
-	copyPixImpact(proxy->impact[proxy->current_crosstalk_index % proxy->xtalk_proxy_size],impact);
-	proxy->xtalk_impacts[proxy->current_crosstalk_index % proxy->xtalk_proxy_size]->nb_pileup=0;
-	proxy->n_active_crosstalk+=1;
-	proxy->current_crosstalk_index+=1;
-	// Prevent meaningless overrun (TO CHECK)
-	if (proxy->current_crosstalk_index>=2*proxy->xtalk_proxy_size){
-		proxy->current_crosstalk_index-=proxy->event_proxy_size;
-	}
-}
-*/
-
 /** Computes weights on a given impact given its grading */
 void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact, double* energies,
 		int grade,int* const status){
 
 	//Setting up proxy
 	PixImpact* crosstalk=NULL;
-	int index=0;
 
 	//Looping through all the current active ctk to compute weights wrt grading
 	for (int ii=0;ii<xtalk_proxy->n_active_crosstalk;ii++){
-		index=((xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size);
-		crosstalk = xtalk_proxy->xtalk_impacts[index];
+		crosstalk = xtalk_proxy->xtalk_impacts[ii];
 
 		// Time between the current impact and the crosstalk impact (can be negative if pulse is slightly after)
 		double dt = (crosstalk->time - impact->time);
@@ -1793,7 +1720,7 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact,
 		//Getting the crosstalk type of the given impact
 		//Intermod crosstalk
 		//------------------
-		if (abs(xtalk_proxy->type[index])==-IMODCTK &&
+		if (abs(xtalk_proxy->type[ii])==-IMODCTK &&
 				(dt <= det->crosstalk_imod_table[grade].dt_max && dt >= det->crosstalk_imod_table[grade].dt_min)){
 			// see if we need to calculate the crosstalk influence
 			headas_chat(7," *** [t=%g sec]->[t=%g sec] trigger non-linear crosstalk event in pix=%ld (%.2f MHz), with perturber %ld (%.2f MHz)\n",
@@ -1806,12 +1733,12 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact,
 
 		//Thermal Crosstalk
 		//------------------
-		} else if (abs(xtalk_proxy->type[index])==-THERCTK) {
+		} else if (abs(xtalk_proxy->type[ii])==-THERCTK) {
 			energies[ii] = crosstalk->energy*det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_weights[crosstalk->weight_index];
 
 		//Electrical Crosstalk
 		//----------------------
-		} else if (abs(xtalk_proxy->type[index])==-ELECCTK) {
+		} else if (abs(xtalk_proxy->type[ii])==-ELECCTK) {
 			// make sure we have the same (length) energy array here
 			assert(det->pix[impact->pixID].electrical_cross_talk[grade].n_ener == det->crosstalk_elec[grade].n_ener_p);
 			double * ener_p = det->crosstalk_elec[grade].ener_p; // every electrical crosstalk energy vector has to be the same
@@ -1838,29 +1765,28 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 	double energy_influence = 0.;
 	int has_influenced= 0;
 	int erased_crosstalks=0;
-	CrosstalkTimedep* buffer;
+	int* toerase=NULL;
+	float dt=0;
+	CrosstalkTimedep* buffer=NULL;
 	PixImpact* crosstalk=NULL;
 	PixImpact* to_save=(PixImpact*)malloc(sizeof(PixImpact));
 	CHECK_MALLOC_VOID_STATUS(to_save,*status);
-	int index=0;
-
 	for (int ii=0;ii<xtalk_proxy->n_active_crosstalk;ii++){
 		//Getting the time dependency file
-		index=((xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size);
-		crosstalk = xtalk_proxy->xtalk_impacts[index];
-
+		crosstalk = xtalk_proxy->xtalk_impacts[ii];
+		dt=impact->time-crosstalk->time;
 		//If needed, we save first occurrence (to respect causality), modify the saving index (to avoid multiple saves)
 		//and do it only if energy is non 0 (should never happen but failsafe)...
-		if (save_crosstalk==1 && xtalk_proxy->is_saved[index]==0 && energies[ii]!=0){
+		if (save_crosstalk==1 && xtalk_proxy->is_saved[ii]==0 && energies[ii]!=0){
 			copyPixImpact(to_save,crosstalk);
 			to_save->pixID=impact->pixID; //We put back the ID of the pixel that receives the ctk (not the perturber)
 			to_save->energy=energies[ii]; //We put the corresponding energy weight (not full perturber energy)
-			addRMFImpact(event_file,to_save,-2,-2,xtalk_proxy->type[index],0,energies[ii],status);
-			xtalk_proxy->is_saved[index]=1; //The event is now saveds
+			addRMFImpact(event_file,to_save,-2,-2,xtalk_proxy->type[ii],0,energies[ii],status);
+			xtalk_proxy->is_saved[ii]=1; //The event is now saveds
 		}
 
 		//Getting time dependency
-		buffer=getTimeDep(det, xtalk_proxy, index, grade, status);
+		buffer=getTimeDep(det, xtalk_proxy, ii, grade, status);
 
 		// Compute influence if asked or if the crosstalk is going to be erased (otherwise multiple counting)
 		// or if specifically asked to compute all the influences
@@ -1872,15 +1798,22 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 				*xtalk_energy+=energy_influence;
 			}
 		}
+
 		// If a previous crosstalk has no chance of influencing another events, we can clear it
 		if (impact->time-crosstalk->time > -buffer->time[0]){
+			toerase=(int*)realloc(toerase, (erased_crosstalks+1)*sizeof(int));
+			toerase[erased_crosstalks]=ii;
 			erased_crosstalks+=1;
 		}
-
 	}
 
-	xtalk_proxy->n_active_crosstalk-=erased_crosstalks;
+	if (erased_crosstalks>0){
+		erasectk(xtalk_proxy, toerase, erased_crosstalks, status);
+		free(toerase);
+	}
+
 	free(to_save);
+
 }
 
 /**Checks for pile-up or triggering ctk event*/
@@ -1892,11 +1825,10 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 	CrosstalkTimedep* buffer;
 
 	while(ii<xtalk_proxy->n_active_crosstalk){
-		int index=(xtalk_proxy->current_crosstalk_index-xtalk_proxy->n_active_crosstalk+ii)%xtalk_proxy->xtalk_proxy_size;
 		PixImpact* previous_xtalk=(PixImpact*) malloc(sizeof(PixImpact));
 		CHECK_MALLOC_VOID_STATUS(previous_xtalk,*status);
-		copyPixImpact(previous_xtalk, xtalk_proxy->xtalk_impacts[index-1]); //Copying it in case we need to save it (will be erased in proxy otherwise)
-		buffer=getTimeDep(det, xtalk_proxy, index-1, grade, status);
+		copyPixImpact(previous_xtalk, xtalk_proxy->xtalk_impacts[ii-1]); //Copying it in case we need to save it (will be erased in proxy otherwise)
+		buffer=getTimeDep(det, xtalk_proxy, ii-1, grade, status);
 		int* toerase=NULL;
 		int end=0; //Boolean in case of multiple pile-ups
 		cumul_ener=energies[ii-1];
@@ -1906,24 +1838,24 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 		//(Condition made in case of recursive call due to cross-talk trigger)
 		if((previous_xtalk->time<next_time-buffer->time[0] || next_time==-1.0) && energies[ii-1]>det->threshold_event_lo_keV){
 			toerase=(int*)realloc(toerase, sizeof(int));
-			toerase[0]=index-1;
+			toerase[0]=ii-1;
 
 			//Does it happen to pile up? (if more than one event in proxy)
 			//If so, add all the energies corresponding to the event erase it from proxy then process it!
 			if(xtalk_proxy->n_active_crosstalk>1 &&
-					fabs(xtalk_proxy->xtalk_impacts[index]->time-previous_xtalk->time) <= sample_length){
+					fabs(xtalk_proxy->xtalk_impacts[ii]->time-previous_xtalk->time) <= sample_length){
 				previous_xtalk->nb_pileup++;// Update number of pileups
 				cumul_ener+=energies[ii]; //Cumul energy
 				toerase=(int*)realloc(toerase, (previous_xtalk->nb_pileup+1)*sizeof(int)); //In case we have to erase the event
-				toerase[previous_xtalk->nb_pileup]=index;
+				toerase[previous_xtalk->nb_pileup]=ii;
 
 				while(end==0){ //Counting how many are actually piling up
-					if(index+previous_xtalk->nb_pileup<xtalk_proxy->n_active_crosstalk){ //If there actually is an event afterwards
-						PixImpact* next_xtalk = xtalk_proxy->xtalk_impacts[index+previous_xtalk->nb_pileup];
+					if(ii+previous_xtalk->nb_pileup<xtalk_proxy->n_active_crosstalk){ //If there actually is an event afterwards
+						PixImpact* next_xtalk = xtalk_proxy->xtalk_impacts[ii+previous_xtalk->nb_pileup];
 						if(next_xtalk->time-previous_xtalk->time <= sample_length){
 							previous_xtalk->nb_pileup++;// Update number of pileups
 							toerase=(int*)realloc(toerase, (previous_xtalk->nb_pileup+1)*sizeof(int));
-							toerase[previous_xtalk->nb_pileup]=index+previous_xtalk->nb_pileup-1;
+							toerase[previous_xtalk->nb_pileup]=ii+previous_xtalk->nb_pileup-1;
 							cumul_ener+=energies[ii+previous_xtalk->nb_pileup-1];
 						} else{
 							end=1;
@@ -1935,9 +1867,9 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 			}
 
 			//Failsafe for causality, this condition is always true normally. Process new event
-			if(xtalk_proxy->xtalk_impacts[index-1+previous_xtalk->nb_pileup]->time>impact->time){
+			if(xtalk_proxy->xtalk_impacts[ii-1+previous_xtalk->nb_pileup]->time>impact->time){
 				//Copying information
-				previous_xtalk->time = xtalk_proxy->xtalk_impacts[index-1+previous_xtalk->nb_pileup]->time;// to conserve causality
+				previous_xtalk->time = xtalk_proxy->xtalk_impacts[ii-1+previous_xtalk->nb_pileup]->time;// to conserve causality
 				previous_xtalk->energy=cumul_ener;
 				previous_xtalk->pixID=impact->pixID; //As otherwise we have the pertuber index
 
@@ -1961,20 +1893,20 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 
 		//If the impact is not above threshold by itself check if a possible pile-up may trigger (if more than one event)
 		} else if(xtalk_proxy->n_active_crosstalk>1 && (previous_xtalk->time<next_time-buffer->time[0]  || next_time==-1.0)
-				&& fabs(xtalk_proxy->xtalk_impacts[index]->time-previous_xtalk->time) <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table)
+				&& fabs(xtalk_proxy->xtalk_impacts[ii]->time-previous_xtalk->time) <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table)
 			previous_xtalk->nb_pileup++;// Update number of pileups
 			cumul_ener+=energies[ii+previous_xtalk->nb_pileup-1]; //Cumul energy
 			toerase=(int*)realloc(toerase, (previous_xtalk->nb_pileup+1)*sizeof(int)); //In case we have to erase the event
-			toerase[previous_xtalk->nb_pileup-1]=index-1; //If it triggers this event will need to be erased
-			toerase[previous_xtalk->nb_pileup]=index;
+			toerase[previous_xtalk->nb_pileup-1]=ii-1; //If it triggers this event will need to be erased
+			toerase[previous_xtalk->nb_pileup]=ii;
 
 			while(end==0){ //Counting how many are actually piling up
-				if(index+previous_xtalk->nb_pileup<xtalk_proxy->n_active_crosstalk){ //If there actually is an event afterwards
-					PixImpact* next_xtalk = xtalk_proxy->xtalk_impacts[index+previous_xtalk->nb_pileup];
+				if(ii+previous_xtalk->nb_pileup<xtalk_proxy->n_active_crosstalk){ //If there actually is an event afterwards
+					PixImpact* next_xtalk = xtalk_proxy->xtalk_impacts[ii+previous_xtalk->nb_pileup];
 					if(next_xtalk->time-previous_xtalk->time <= sample_length){
 						previous_xtalk->nb_pileup++;// Update number of pileups
 						toerase=(int*)realloc(toerase, (previous_xtalk->nb_pileup+1)*sizeof(int));
-						toerase[previous_xtalk->nb_pileup]=index+previous_xtalk->nb_pileup-1;
+						toerase[previous_xtalk->nb_pileup]=ii+previous_xtalk->nb_pileup-1;
 						cumul_ener+=energies[ii+previous_xtalk->nb_pileup-1];
 					} else{
 						end=1;
@@ -1988,10 +1920,9 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 			if (cumul_ener >= det->threshold_event_lo_keV) {
 
 				//Failsafe for causality, this condition is always true normally. Process new event
-				if(xtalk_proxy->xtalk_impacts[index-1+previous_xtalk->nb_pileup]->time>impact->time){
-
+				if(xtalk_proxy->xtalk_impacts[ii-1+previous_xtalk->nb_pileup]->time>impact->time){
 					//Copying information
-					previous_xtalk->time = xtalk_proxy->xtalk_impacts[index-1+previous_xtalk->nb_pileup]->time;// to conserve causality
+					previous_xtalk->time = xtalk_proxy->xtalk_impacts[ii-1+previous_xtalk->nb_pileup]->time;// to conserve causality
 					previous_xtalk->energy=cumul_ener;
 					grade_proxy->nb_crosstalk_influence=previous_xtalk->nb_pileup+1;
 					grade_proxy->crosstalk_energy=cumul_ener;
@@ -2001,7 +1932,6 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 					erasectk(xtalk_proxy, toerase, previous_xtalk->nb_pileup+1,status); // Erase the previous event(s), which now form(s) a pulse
 					free(toerase);
 					end=0;
-
 					// Process now triggered event and exit the function
 					*is_trigger=1;
 					processGradedEvent(grade_proxy,sample_length,previous_xtalk,det,event_file,1,save_crosstalk,grade,status);
@@ -2043,7 +1973,6 @@ void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy*
 	//Now we check whether two of the events can trigger
 	//If pile-up occurs in the pixel between the two current event (should be rare!)
 	checkTrigger(det,impact,xtalk_proxy,grade_proxy,energies,event_file,next_time,sample_length,grade,is_trigger,save_crosstalk,status);
-
 	//If no outside trigger occurs, then we compute the values of the affected energy via the time dependency and save
 	//(Not before as we did not know if there was a trigger)
 	if (grade_proxy->is_first==1 && *is_trigger==0){

@@ -71,7 +71,7 @@ void calcGradingTimes(double sample_length, gradingTimeStruct pnt,long *grade1, 
 int makeGrading(long grade1,long grade2,AdvPix* pixel);
 
 /** Processes the impacts, including crosstalk and RMF energy randomization **/
-void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_file,int save_crosstalk,int* const status);
+void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_file,int save_crosstalk,FILE* progressfile, int* const status);
 
 /** Process the impacts contained in the piximpacts file with the RMF method */
 void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* event_file,int* const status);

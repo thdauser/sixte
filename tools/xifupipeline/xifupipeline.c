@@ -567,6 +567,17 @@ int xifupipeline_main()
 				}
 
 			} while(1);
+
+			// Progress output.
+			if (NULL==progressfile) {
+				headas_chat(2, "\r%.0lf %%\n", 100.);
+				fflush(NULL);
+			} else {
+				rewind(progressfile);
+				fprintf(progressfile, "%.2lf", 1.);
+				fflush(progressfile);
+			}
+
 			CHECK_STATUS_BREAK(status);
 			// END of photon processing loop for the current interval.
 
@@ -643,7 +654,7 @@ int xifupipeline_main()
 				current_impact_write_row = pixilf->row;
 				pixilf->row = current_impact_row; // reboot pixilf to first row of the GTI
 
-				impactsToEvents(det,pixilf,event_file,par.saveCrosstalk,&status);
+				impactsToEvents(det,pixilf,event_file,par.saveCrosstalk,progressfile,&status);
 
 				pixilf->row=current_impact_write_row;
 				current_impact_row=current_impact_write_row;
@@ -662,18 +673,7 @@ int xifupipeline_main()
 		}
 		// End of loop over the individual GTI intervals.
 
-
-		// Progress output.
-		if (NULL==progressfile) {
-			headas_chat(2, "\r%.0lf %%\n", 100.);
-			fflush(NULL);
-		} else {
-			rewind(progressfile);
-			fprintf(progressfile, "%.2lf", 1.);
-			fflush(progressfile);
-		}
-
-		headas_chat(3, "start sky projection ...\n");
+		headas_chat(3, "\nstart sky projection ...\n");
 		event_file->row=1;
 		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,par.ProjCenter,&status);
 		CHECK_STATUS_BREAK(status);

@@ -235,8 +235,8 @@ void freeCrosstalk(AdvDet* det, int gr){
 
 		if(det->crosstalk_ther_timedep!=NULL){
 			for(int i=0; i<len; i++){
-				free(det->crosstalk_thermal_timedep_file[i]);
 				freeCrosstalkTimedep(det->crosstalk_ther_timedep[i],gr);
+				free(det->crosstalk_thermal_timedep_file[i]);
 			}
 			free(det->crosstalk_thermal_timedep_file);
 			free(det->crosstalk_ther_timedep);
@@ -826,7 +826,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 	} else if(!strcmp(Uelement, "THERMALCROSSTALK"))  {
 
 		xmlparsedata->det->xt_dist_thermal = realloc(xmlparsedata->det->xt_dist_thermal,
-				(xmlparsedata->det->xt_num_thermal+1)*sizeof(*(xmlparsedata->det->xt_dist_thermal)) );
+				(xmlparsedata->det->xt_num_thermal+1)*sizeof(double));
 		CHECK_MALLOC_VOID(xmlparsedata->det->xt_dist_thermal);
 		xmlparsedata->det->xt_dist_thermal[xmlparsedata->det->xt_num_thermal] =
 				getXMLAttributeDouble(attr, "DISTANCE");
@@ -859,7 +859,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 
 		xmlparsedata->det->xt_weight_thermal = realloc(xmlparsedata->det->xt_weight_thermal,
-				(xmlparsedata->det->xt_num_thermal+1)*sizeof(*(xmlparsedata->det->xt_weight_thermal)) );
+				(xmlparsedata->det->xt_num_thermal+1)*sizeof(double) );
 		CHECK_MALLOC_VOID(xmlparsedata->det->xt_weight_thermal);
 		xmlparsedata->det->xt_weight_thermal[xmlparsedata->det->xt_num_thermal] =
 				getXMLAttributeDouble(attr, "WEIGHT");
@@ -1362,10 +1362,13 @@ CrosstalkTimedep* newCrossTalkTimedep(int* const status){
 /** Destructor for CrosstalkTimdep structure */
 void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr){
 	if(timedep!=NULL){
-		for(int k=0; k<2*gr;k++){
-			free(timedep[k].name_type);
-			free(timedep[k].time);
-			free(timedep[k].weight);
+		for(int k=0; k<gr;k++){
+			free(timedep[2*k].name_type);
+			free(timedep[2*k].time);
+			free(timedep[2*k].weight);
+			free(timedep[2*k+1].name_type);
+			free(timedep[2*k+1].time);
+			free(timedep[2*k+1].weight);
 		}
 	}
 	free(timedep);
