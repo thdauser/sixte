@@ -308,7 +308,6 @@ static void erasectk(CrosstalkProxy* xtalk_proxy, int* toerase, int erased_cross
 		xtalk_proxy->type=(int*) realloc(xtalk_proxy->type, (xtalk_proxy->xtalk_proxy_size-erased_crosstalks)*sizeof(int));
 		xtalk_proxy->is_saved=(int*) realloc(xtalk_proxy->is_saved, (xtalk_proxy->xtalk_proxy_size-erased_crosstalks)*sizeof(int));
 		xtalk_proxy->n_active_crosstalk-=erased_crosstalks;
-		//xtalk_proxy->xtalk_proxy_size-=erased_crosstalks;
 	} else{
 		//Freeing everything in the structure
 		for(int k=0;k<xtalk_proxy->xtalk_proxy_size;k++){
@@ -324,6 +323,7 @@ static void erasectk(CrosstalkProxy* xtalk_proxy, int* toerase, int erased_cross
 
 		free(xtalk_proxy->type);
 		free(xtalk_proxy->is_saved);
+		free(xtalk_proxy->xtalk_impacts);
 		xtalk_proxy->type=NULL;
 		xtalk_proxy->is_saved=NULL;
 		xtalk_proxy->xtalk_impacts=tmpimp;
@@ -1603,7 +1603,7 @@ CrosstalkProxy* newCrosstalkProxy(int* const status){
 void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
 	if (*(xtalk_proxy)!=NULL){
 		if ((*xtalk_proxy)->xtalk_impacts !=NULL){
-			for (int ii=0;ii<((*xtalk_proxy)->n_active_crosstalk);ii++){ //The other should be initialised but empty
+			for (int ii=0;ii<((*xtalk_proxy)->xtalk_proxy_size);ii++){ //The other should be initialised but empty
 				if((*xtalk_proxy)->xtalk_impacts[ii]!=NULL){
 					free((*xtalk_proxy)->xtalk_impacts[ii]);
 				}
