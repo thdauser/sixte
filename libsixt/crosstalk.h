@@ -37,7 +37,9 @@
 #define THERCTK -32
 #define ELECCTK -33
 
-#define MINDT 0.004 //TODO Once time dependencies tables shall be more accurate, to change
+#define DTMIN 0.004 //Minimal time before impact influenced by ctk //TODO Once time dependencies tables shall be more accurate, to change
+#define DTMAX 0.046 //Maximal time after impact influenced by ctk
+#define MINEN 1e-5 //in keV
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -92,7 +94,7 @@ typedef struct{
 ////////////////////////////////////////////////////////////////////////
 
 /** Add crosstalk to proxy */
-void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact, int type, double df, int* const status);
+void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpact* impact, AdvDet* det, int type, double df, int* const status);
 
 /**  Binary search for to find interpolation interval
  *   - return value is the bin [ind,ind+1]

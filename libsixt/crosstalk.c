@@ -1618,18 +1618,54 @@ void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
 
 
 /** Add crosstalk to proxy */
-void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy,PixImpact* impact, int type, double df, int* const status){
+void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpact* impact, AdvDet* det, int type, double df, int* const status){
 	// If not, first check if the first events in the buffer are not too far from the current case (i.e. can we erase some)
 	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
 		int* toerase=NULL;
 		int erased_crosstalks=0;
-		float dt=0.;
+		float dt_current=0.;
+		float dt_next=0.;
 		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
-			dt=impact->time-xtalk_proxy->xtalk_impacts[ii]->time;
-			if (dt>MINDT){ //Implement this as a variable not ad hoc
+
+			//This is the difference between the last impact time (!=current time) and the cross-talk impact
+			//If this is larger than DTMIN, can be erased
+			dt_current=current_time-xtalk_proxy->xtalk_impacts[ii]->time;
+			//This is the difference between the current time and the crosstalk impact
+			//If this is larger than DTMIN + DTMAX (in case of ctk trigger which may alter grade of next impact) or if this
+			//is -dt_current>DTMAX i.e. the cross-talk impact happens way after it could influence the last impact we erase it.
+			dt_next=impact->time-xtalk_proxy->xtalk_impacts[ii]->time;
+
+			if (dt_current>DTMIN){ //Implement this as a variable not ad hoc
 				toerase=(int*) realloc(toerase, (erased_crosstalks+1)*sizeof(int));
 				toerase[erased_crosstalks]=ii;
 				erased_crosstalks+=1;
+			} else if (-dt_current>DTMAX&&dt_next>DTMIN+DTMAX){
+				//In this case, the last current event is clearly high-res, we erase all in between if their ctk energy is
+				//very low, i.e. they have no chance whatsoever of actually creating some ctk trigger (notably Nonlinear)
+				float temp_ener=0;
+				if (abs(type)==-THERCTK){
+					temp_ener=xtalk_proxy->xtalk_impacts[ii]->energy*det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].thermal_cross_talk->cross_talk_weights[xtalk_proxy->xtalk_impacts[ii]->weight_index];
+				} else if (abs(xtalk_proxy->type[ii])==-ELECCTK) {
+					double * ener_p = det->crosstalk_elec[0].ener_p; // every electrical crosstalk energy vector has to be the same
+					if ((xtalk_proxy->xtalk_impacts[ii]->energy <= ener_p[0]) || (xtalk_proxy->xtalk_impacts[ii]->energy >= ener_p[det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].n_ener-1])) {
+						headas_chat(7, " *** warning : impact event energy %g on pix %li is outside the tabulated values for electrical crosstalk [%g,%g]}n",
+								xtalk_proxy->xtalk_impacts[ii]->energy, det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID], ener_p[0],ener_p[det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].n_ener-1]);
+						headas_chat(7, "     ---> skipping this event!\n");
+					} else {
+						// now determine the energy bin
+						int ind = binary_search(xtalk_proxy->xtalk_impacts[ii]->energy ,det->crosstalk_elec[0].ener_p,det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].n_ener);
+						double fac = (xtalk_proxy->xtalk_impacts[ii]->energy - ener_p[ind]) / (ener_p[ind+1] - ener_p[ind]);
+						temp_ener =(1-fac)*det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].cross_talk_weights[xtalk_proxy->xtalk_impacts[ii]->weight_index][ind]
+							+(fac)*det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].cross_talk_weights[xtalk_proxy->xtalk_impacts[ii]->weight_index][ind+1];
+					}
+				}
+
+				if (abs(type)==-IMODCTK || temp_ener<MINEN){
+					toerase=(int*) realloc(toerase, (erased_crosstalks+1)*sizeof(int));
+					toerase[erased_crosstalks]=ii;
+					erased_crosstalks+=1;
+				}
+
 			}
 		}
 
@@ -1818,7 +1854,7 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 
 /**Checks for pile-up or triggering ctk event*/
 void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, GradeProxy* grade_proxy, double* energies, TesEventFile* event_file,
-		double next_time, double sample_length,int grade,int* is_trigger, int save_crosstalk,int* const status){
+		double next_time, double sample_length,int grade, int* is_trigger, int save_crosstalk,int* const status){
 
 	int ii=1; //Starting index for pile-up
 	double cumul_ener=0; //Cumulative energy

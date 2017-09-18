@@ -51,7 +51,7 @@ typedef struct{
 }imodProxy;
 
 /** Adds a below threshold crosstalk event to the grading proxy */
-void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact,int type, double df, int* const status);
+void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact,AdvDet* det,int type, double df, int* const status);
 
 /** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
 void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,AdvDet* det,int* const status);

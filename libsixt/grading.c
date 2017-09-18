@@ -390,7 +390,7 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 		crosstalk_impact.src_id = impact->src_id;
 		crosstalk_impact.weight_index = 0;				//Useless info for this type of crosstalk
 		//Now we add the event to the proxy of the grade proxy
-		addCrosstalkEvent(&(grade_proxys[active_ind]),&crosstalk_impact,IMODCTK,df,status);
+		addCrosstalkEvent(&(grade_proxys[active_ind]),&crosstalk_impact,det,IMODCTK,df,status);
 		CHECK_STATUS_VOID(*status);
 	}
 	//}
@@ -417,7 +417,7 @@ void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,P
 		crosstalk_impact.src_id = impact->src_id;
 		crosstalk_impact.weight_index = ii; //Store which of the neighbours to look into
 		double df = get_imod_df(det->pix[cross_talk->cross_talk_pixels[ii]->pindex].freq,det->pix[impact->pixID].freq,status);
-		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,THERCTK,df,status);
+		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,det,THERCTK,df,status);
 		CHECK_STATUS_VOID(*status);
 	}
 }
@@ -440,20 +440,25 @@ void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* 
 		crosstalk_impact.src_id = impact->src_id;
 		crosstalk_impact.weight_index = ii; //Store the index of this given pixel to apply ctk later
 		double df = get_imod_df(det->pix[cross_talk->cross_talk_pixels[ii]->pindex].freq,det->pix[impact->pixID].freq,status);
-		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,ELECCTK,df,status);
+		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels[ii]->pindex]),&crosstalk_impact,det,ELECCTK,df,status);
 		CHECK_STATUS_VOID(*status);
 	}
 }
 
 
 // We just store the event in the proxy and we shall treat it afterwards once we have the grading
-void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact,int type, double df, int* const status){
+void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact, AdvDet* det, int type, double df, int* const status){
 	// If needed we save the ctk. /!\IT WILL HAVE THE PERTURBER ENERGY AND INDEX!!!
 	if(grade_proxy->xtalk_proxy==NULL){
 		grade_proxy->xtalk_proxy = newCrosstalkProxy(status);
 		CHECK_STATUS_VOID(*status);
 	}
-	addCrosstalk2Proxy(grade_proxy->xtalk_proxy,impact,type,df,status);
+	if (grade_proxy->times==NULL){
+		addCrosstalk2Proxy(grade_proxy->xtalk_proxy,-1.0,impact,det,type,df,status);
+	}
+	else{
+		addCrosstalk2Proxy(grade_proxy->xtalk_proxy,grade_proxy->times->current,impact,det,type,df,status);
+	}
 }
 
 /** Processes a graded event : update grading proxy and save previous event */

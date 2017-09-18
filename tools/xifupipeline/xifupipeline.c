@@ -961,7 +961,7 @@ int xifupipeline_getpar(struct Parameters* const par)
 		par->doCrosstalk=CROSSTALK_ID_NONE;
 	} else {
 		status=-1;
-		printf("%s crosstalk parameter not known, only 'all', 'elec', 'therm', 'nlin' and 'none'/'' avaialable \n", buf);
+		printf("%s crosstalk parameter not known, only 'all', 'elec', 'therm', 'nlin' and 'no'/'none'/'' avaialable \n", buf);
 		SIXT_ERROR("failed reading doCrosstalk parameter");
 		return(status);
 	}
