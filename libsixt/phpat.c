@@ -78,7 +78,7 @@ void phpat(GenDet* const det,
   long nframelist=0;
 
   // List of all neighboring events in the current frame.
-  const long maxnneighborlist=1000;
+  const long maxnneighborlist=2000;
   Event** neighborlist=NULL;
   long nneighborlist=0;
 
