@@ -43,8 +43,9 @@ GenDet* newGenDet(int* const status)
   det->rmf_filename=NULL;
   det->rmf      =NULL;
   det->elf      =NULL;
-  det->phabkg[0]=NULL;
-  det->phabkg[1]=NULL;
+  for (int ii=0; ii<MAX_PHABKG; ii++){
+	  det->phabkg[ii]=NULL;
+  }
   det->clocklist=NULL;
   det->badpixmap=NULL;
 
@@ -102,8 +103,9 @@ void destroyGenDet(GenDet** const det)
     destroyGenPixGrid(&(*det)->pixgrid);
     destroyGenSplit(&(*det)->split);
     destroyBadPixMap(&(*det)->badpixmap);
-    destroyPHABkg(&(*det)->phabkg[0]);
-    destroyPHABkg(&(*det)->phabkg[1]);
+    for (int ii=0; ii<MAX_PHABKG; ii++){
+    	destroyPHABkg(&(*det)->phabkg[ii]);
+    }
     if((*det)->depfet.clear_const!=NULL){
       free((*det)->depfet.clear_const);
       (*det)->depfet.clear_const=NULL;
@@ -391,279 +393,278 @@ void operateGenDetClock(GenDet* const det,
     // Insert background events, if the appropriate PHA background
     // model is defined and should be used.
     if ((NULL!=det->phabkg[0])&&(0==det->ignore_bkg)) {
+    	if (NULL==det->rmf) {
+    		SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+    		*status=EXIT_FAILURE;
+    		return;
+    	}
 
-      if (NULL==det->rmf) {
-	SIXT_ERROR("RMF needs to be defined for using the PHA background model");
-	*status=EXIT_FAILURE;
-	return;
-      }
+    	// Loop over all PHA background models.
+    	int ii;
+    	for (ii=0; ii<MAX_PHABKG; ii++) {
+    		// Check if the model is defined.
+    		if (det->phabkg[ii]==NULL) break;
 
-      // Loop over all PHA background models.
-      int ii;
-      for (ii=0; ii<2; ii++) {
-	// Check if the model is defined.
-	if (det->phabkg[ii]==NULL) break;
-
-	// Get background events for the required time interval. 
-	double bkg_time;
-	long bkg_pha;
-	while (getPHABkgEvent(det->phabkg[ii],
+    		// Get background events for the required time interval.
+    		double bkg_time;
+    		long bkg_pha;
+    		while (getPHABkgEvent(det->phabkg[ii],
 			      det->pixgrid->xwidth*det->pixgrid->xdelt*
 			      det->pixgrid->ywidth*det->pixgrid->ydelt,
 			      last_time, time,
 			      &bkg_time, &bkg_pha, status)) {
-	  CHECK_STATUS_VOID(*status);
+    			CHECK_STATUS_VOID(*status);
 
-	  // Determine the corresponding signal.
-	  float energy=getEBOUNDSEnergy(bkg_pha, det->rmf, status);
-	  CHECK_STATUS_VOID(*status);
+    			// Determine the corresponding signal.
+    			float energy=getEBOUNDSEnergy(bkg_pha, det->rmf, status);
+    			CHECK_STATUS_VOID(*status);
 
-	  // Determine the affected pixel.
-	  int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
-	  CHECK_STATUS_VOID(*status);
-	  int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
-	  CHECK_STATUS_VOID(*status);
+    			// Determine the affected pixel.
+    			int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+    			CHECK_STATUS_VOID(*status);
+    			int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+    			CHECK_STATUS_VOID(*status);
 
-	  // If specified, apply vignetting.
-	  if (NULL!=det->phabkg[ii]->vignetting) {
-	    // Check if vignetting function and focal length are given.
-	    if (NULL==*det->phabkg[ii]->vignetting) {
-	      *status=EXIT_FAILURE;
-	      SIXT_ERROR("vignetting function is need for "
-			 "vignetting-dependent background model");
-	      return;
-	    }
-	    if (0.0==*det->phabkg[ii]->focal_length) {
-	      *status=EXIT_FAILURE;
-	      SIXT_ERROR("focal length is need for vignetting-dependent "
-			 "background model");
-	      return;
-	    }
+    			// If specified, apply vignetting.
+    			if (NULL!=det->phabkg[ii]->vignetting) {
+    				// Check if vignetting function and focal length are given.
+    				if (NULL==*det->phabkg[ii]->vignetting) {
+    					*status=EXIT_FAILURE;
+    					SIXT_ERROR("vignetting function is need for "
+    							"vignetting-dependent background model");
+    					return;
+    				}
+    				if (0.0==*det->phabkg[ii]->focal_length) {
+    					*status=EXIT_FAILURE;
+    					SIXT_ERROR("focal length is need for vignetting-dependent "
+    							"background model");
+    					return;
+    				}
 
-	    // Determine the off-axis angle.
-	    float theta=
-	      atan(sqrt(pow((xi-det->pixgrid->xrpix+1.0)*det->pixgrid->xdelt,2.0)+
-			pow((yi-det->pixgrid->yrpix+1.0)*det->pixgrid->ydelt,2.0))/
-		   *det->phabkg[ii]->focal_length);
+    				// Determine the off-axis angle.
+    				float theta=
+    						atan(sqrt(pow((xi-det->pixgrid->xrpix+1.0)*det->pixgrid->xdelt,2.0)+
+    								pow((yi-det->pixgrid->yrpix+1.0)*det->pixgrid->ydelt,2.0))/
+    								*det->phabkg[ii]->focal_length);
 	    
-	    // Apply vignetting.
-	    double p=sixt_get_random_number(status);
-	    CHECK_STATUS_VOID(*status);
-	    if (p>get_Vignetting_Factor(*det->phabkg[ii]->vignetting, 
-					energy, theta, 0.)) {
-	      // The background event is discarded due to vignetting.
-	      continue;
-	    }
-	  }
+    				// Apply vignetting.
+    				double p=sixt_get_random_number(status);
+    				CHECK_STATUS_VOID(*status);
+    				if (p>get_Vignetting_Factor(*det->phabkg[ii]->vignetting,
+    						energy, theta, 0.)) {
+    					// The background event is discarded due to vignetting.
+    					continue;
+    				}
+    			}
 	  
-	  // Add the signal to the pixel.
-	  addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
+    			// Add the signal to the pixel.
+    			addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
 
-	  // Call the event trigger routine.
-	  GenDetReadoutPixel(det, yi, yi, xi, bkg_time, status);
-	  CHECK_STATUS_VOID(*status);
+    			// Call the event trigger routine.
+    			GenDetReadoutPixel(det, yi, yi, xi, bkg_time, status);
+    			CHECK_STATUS_VOID(*status);
 	    
-	  // In event-triggered mode each event occupies its own frame.
-	  det->clocklist->frame++;
-	}	    
-      }
+    			// In event-triggered mode each event occupies its own frame.
+    			det->clocklist->frame++;
+    		}
+    	}
     }
 
     // Remember the time of the function call.
     last_time=time;
 
   } else if (GENDET_TIME_TRIGGERED==det->readout_trigger) {
-    // Time-triggered mode.
+	  // Time-triggered mode.
 
-    // Get the next element from the clock list.
-    CLType type;
-    void* element=NULL;
-    do {
-      CLReadoutLine* clreadoutline=NULL;
-      CLClearLine* clclearline    =NULL;
-      CLWait* clwait              =NULL;
+	  // Get the next element from the clock list.
+	  CLType type;
+	  void* element=NULL;
+	  do {
+		  CLReadoutLine* clreadoutline=NULL;
+		  CLClearLine* clclearline    =NULL;
+		  CLWait* clwait              =NULL;
 
-      getClockListElement(det->clocklist, time, &type, &element, status);
-      CHECK_STATUS_VOID(*status);
+		  getClockListElement(det->clocklist, time, &type, &element, status);
+		  CHECK_STATUS_VOID(*status);
 
-      switch (type) {
-      case CL_NONE:
-	// No operation has to be performed. The clock list is
-	// currently in a wait status.
-	break;
-      case CL_NEWFRAME:
-	// The clock list has internally increased the frame counter and readout 
-	// time. 
+		  switch (type) {
+		  case CL_NONE:
+			  // No operation has to be performed. The clock list is
+			  // currently in a wait status.
+			  break;
+		  case CL_NEWFRAME:
+			  // The clock list has internally increased the frame counter and readout
+			  // time.
 	
-	// If there has been no photon interaction during the last frame
-	// and if no background model is activated, jump over the next empty frames
-	// until there is a new photon impact.
-	if ((((0==det->auxbackground)&&(NULL==det->phabkg[0])&&(NULL==det->phabkg[1]))
-	     ||(1==det->ignore_bkg))&&(0==det->anyphoton)) {
-	  long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
-	  det->clocklist->time       +=nframes*det->frametime;
-	  det->clocklist->frame      +=nframes;
-	  det->clocklist->readout_time=det->clocklist->time;
-	  // Don't forget to add the time difference also to the single lines
-	  int ii;
-	  for(ii=0; ii<det->pixgrid->ywidth; ii++){
-	    det->line[ii]->last_readouttime+=nframes*det->frametime;
-	  }
-	}
+			  // If there has been no photon interaction during the last frame
+			  // and if no background model is activated, jump over the next empty frames
+			  // until there is a new photon impact.
+			  if ((((0==det->auxbackground)&&(NULL==det->phabkg[0])&&(NULL==det->phabkg[1]))
+					  ||(1==det->ignore_bkg))&&(0==det->anyphoton)) {
+				  long nframes=(long)((time-det->clocklist->readout_time)/det->frametime);
+				  det->clocklist->time       +=nframes*det->frametime;
+				  det->clocklist->frame      +=nframes;
+				  det->clocklist->readout_time=det->clocklist->time;
+				  // Don't forget to add the time difference also to the single lines
+				  int ii;
+				  for(ii=0; ii<det->pixgrid->ywidth; ii++){
+					  det->line[ii]->last_readouttime+=nframes*det->frametime;
+				  }
+			  }
 
-	// Reset the flag.
-	det->anyphoton=0;
+			  // Reset the flag.
+			  det->anyphoton=0;
 	
-	break;
-      case CL_WAIT:
-	// A waiting period is finished.
-	clwait=(CLWait*)element;
+			  break;
+		  case CL_WAIT:
+			  // A waiting period is finished.
+			  clwait=(CLWait*)element;
 	
-	// Insert background events, if the appropriate PHA background
-	// model is defined and should be used.
-	if ((NULL!=det->phabkg[0])&&(0==det->ignore_bkg)) {
+			  // Insert background events, if the appropriate PHA background
+			  // model is defined and should be used.
+			  if ((NULL!=det->phabkg[0])&&(0==det->ignore_bkg)) {
 
-	  if (NULL==det->rmf) {
-	    SIXT_ERROR("RMF needs to be defined for using the PHA background model");
-	    *status=EXIT_FAILURE;
-	    return;
-	  }
+				  if (NULL==det->rmf) {
+					  SIXT_ERROR("RMF needs to be defined for using the PHA background model");
+					  *status=EXIT_FAILURE;
+					  return;
+				  }
 
-	  // Loop over all PHA background models.
-	  int ii;
-	  for (ii=0; ii<2; ii++) {
-	    // Check if the model is defined.
-	    if (det->phabkg[ii]==NULL) break;
+				  // Loop over all PHA background models.
+				  int ii;
+				  for (ii=0; ii<MAX_PHABKG; ii++) {
+					  // Check if the model is defined.
+					  if (det->phabkg[ii]==NULL) break;
 
-	    // Get background events for the required time interval. 
-	    double bkg_time;
-	    long bkg_pha;
-	    while (getPHABkgEvent(det->phabkg[ii],
-				  det->pixgrid->xwidth*det->pixgrid->xdelt*
-				  det->pixgrid->ywidth*det->pixgrid->ydelt,
-				  det->clocklist->time,
-				  det->clocklist->time+clwait->time,
-				  &bkg_time, &bkg_pha, status)) {
-	      CHECK_STATUS_VOID(*status);
+					  // Get background events for the required time interval.
+					  double bkg_time;
+					  long bkg_pha;
+					  while (getPHABkgEvent(det->phabkg[ii],
+							  det->pixgrid->xwidth*det->pixgrid->xdelt*
+							  det->pixgrid->ywidth*det->pixgrid->ydelt,
+							  det->clocklist->time,
+							  det->clocklist->time+clwait->time,
+							  &bkg_time, &bkg_pha, status)) {
+						  CHECK_STATUS_VOID(*status);
 
-	      // Determine the corresponding signal.
-	      float energy=getEBOUNDSEnergy(bkg_pha, det->rmf, status);
-	      CHECK_STATUS_VOID(*status);
+						  // Determine the corresponding signal.
+						  float energy=getEBOUNDSEnergy(bkg_pha, det->rmf, status);
+						  CHECK_STATUS_VOID(*status);
 
-	      // Determine the affected pixel.
-	      int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
-	      CHECK_STATUS_VOID(*status);
-	      int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
-	      CHECK_STATUS_VOID(*status);
+						  // Determine the affected pixel.
+						  int xi=(int)(sixt_get_random_number(status)*det->pixgrid->xwidth);
+						  CHECK_STATUS_VOID(*status);
+						  int yi=(int)(sixt_get_random_number(status)*det->pixgrid->ywidth);
+						  CHECK_STATUS_VOID(*status);
 
-	      // If specified, apply vignetting.
-	      if (NULL!=det->phabkg[ii]->vignetting) {
-		// Check if vignetting function and focal length are given.
-		if (NULL==*det->phabkg[ii]->vignetting) {
-		  *status=EXIT_FAILURE;
-		  SIXT_ERROR("vignetting function is need for "
-			     "vignetting-dependent background model");
-		  return;
-		}
-		if (0.0==*det->phabkg[ii]->focal_length) {
-		  *status=EXIT_FAILURE;
-		  SIXT_ERROR("focal length is need for vignetting-dependent "
-			     "background model");
-		  return;
-		}
+						  // If specified, apply vignetting.
+						  if (NULL!=det->phabkg[ii]->vignetting) {
+							  // Check if vignetting function and focal length are given.
+							  if (NULL==*det->phabkg[ii]->vignetting) {
+								  *status=EXIT_FAILURE;
+								  SIXT_ERROR("vignetting function is need for "
+										  "vignetting-dependent background model");
+								  return;
+							  }
+							  if (0.0==*det->phabkg[ii]->focal_length) {
+								  *status=EXIT_FAILURE;
+								  SIXT_ERROR("focal length is need for vignetting-dependent "
+										  "background model");
+								  return;
+							  }
 
-		// Determine the off-axis angle.
-		float theta=
-		  atan(sqrt(pow((xi-det->pixgrid->xrpix+1.0)*det->pixgrid->xdelt,2.0)+
-			    pow((yi-det->pixgrid->yrpix+1.0)*det->pixgrid->ydelt,2.0))/
-		       *det->phabkg[ii]->focal_length);
+							  // Determine the off-axis angle.
+							  float theta=
+									  atan(sqrt(pow((xi-det->pixgrid->xrpix+1.0)*det->pixgrid->xdelt,2.0)+
+											  pow((yi-det->pixgrid->yrpix+1.0)*det->pixgrid->ydelt,2.0))/
+											  *det->phabkg[ii]->focal_length);
 		
-		// Apply vignetting.
-		double p=sixt_get_random_number(status);
-		CHECK_STATUS_VOID(*status);
-		if (p>get_Vignetting_Factor(*det->phabkg[ii]->vignetting, 
-					    energy, theta, 0.)) {
-		  // The background event is discarded due to vignetting.
-		  continue;
-		}
-	      }
+							  // Apply vignetting.
+							  double p=sixt_get_random_number(status);
+							  CHECK_STATUS_VOID(*status);
+							  if (p>get_Vignetting_Factor(*det->phabkg[ii]->vignetting,
+									  energy, theta, 0.)) {
+								  // The background event is discarded due to vignetting.
+								  continue;
+							  }
+						  }
 
-	      // Add the signal to the pixel.
-	      addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
-	    }
-	  }
-	}
+						  // Add the signal to the pixel.
+						  addGenDetCharge2Pixel(det, xi, yi, energy, bkg_time, -1, -1);
+					  }
+				  }
+			  }
 
-	// Insert cosmic ray background events, 
-	// if the appropriate model is defined and should be used.
-	if ((1==det->auxbackground)&&(0==det->ignore_bkg)) {
-	  // Get background events for the required time interval (has
-	  // to be given in [s]).
-	  backgroundOutput* list=bkgGetBackgroundList(clwait->time);
-	  double cosrota=cos(det->pixgrid->rota);
-	  double sinrota=sin(det->pixgrid->rota);
-	  int ii;
-	  for(ii=0; ii<list->numhits; ii++) {
+			  // Insert cosmic ray background events,
+			  // if the appropriate model is defined and should be used.
+			  if ((1==det->auxbackground)&&(0==det->ignore_bkg)) {
+				  // Get background events for the required time interval (has
+				  // to be given in [s]).
+				  backgroundOutput* list=bkgGetBackgroundList(clwait->time);
+				  double cosrota=cos(det->pixgrid->rota);
+				  double sinrota=sin(det->pixgrid->rota);
+				  int ii;
+				  for(ii=0; ii<list->numhits; ii++) {
 	    
-	    // Add the signal to the detector without
-	    // regarding charge cloud splitting effects,
-	    // since this is also not done by Tenzer et al. (2010)
-	    // and Boller (2011).
-	    // Please note that the detector response matrix is
-	    // NOT applied to the particle-induced background events,
-	    // since the response is not available for the therefore
-	    // necessary high energies.
-	    // It is important that the high-energetic particle events
-	    // are only thrown away after the pattern recognition. 
-	    // Otherwise many invalid particle patterns will be reduced
-	    // to apparently valid event patterns, such that the overall
-	    // background is too high. 
-	    double xh=
-	      list->hit_xpos[ii]*0.001*cosrota-
-	      list->hit_ypos[ii]*0.001*sinrota;
-	    double yh=
-	      list->hit_xpos[ii]*0.001*sinrota+
-	      list->hit_ypos[ii]*0.001*cosrota;
-	    int x, y;
-	    double xr, yr;
-	    getGenDetAffectedPixel(det->pixgrid, xh, yh,
-				   &x, &y, &xr, &yr);
-	    // Check if the pixel indices are valid or if the 
-	    // specified position lies outside the pixel area.
-	    if ((x<0) || (y<0)) continue;
+					  // Add the signal to the detector without
+					  // regarding charge cloud splitting effects,
+					  // since this is also not done by Tenzer et al. (2010)
+					  // and Boller (2011).
+					  // Please note that the detector response matrix is
+					  // NOT applied to the particle-induced background events,
+					  // since the response is not available for the therefore
+					  // necessary high energies.
+					  // It is important that the high-energetic particle events
+					  // are only thrown away after the pattern recognition.
+					  // Otherwise many invalid particle patterns will be reduced
+					  // to apparently valid event patterns, such that the overall
+					  // background is too high.
+					  double xh=
+							  list->hit_xpos[ii]*0.001*cosrota-
+							  list->hit_ypos[ii]*0.001*sinrota;
+					  double yh=
+							  list->hit_xpos[ii]*0.001*sinrota+
+							  list->hit_ypos[ii]*0.001*cosrota;
+					  int x, y;
+					  double xr, yr;
+					  getGenDetAffectedPixel(det->pixgrid, xh, yh,
+							  &x, &y, &xr, &yr);
+					  // Check if the pixel indices are valid or if the
+					  // specified position lies outside the pixel area.
+					  if ((x<0) || (y<0)) continue;
 	    
-	    // Add the signal to the pixel.
-	    addGenDetCharge2Pixel(det, x, y,
-				  list->hit_energy[ii],
-				  det->clocklist->time,
-				  -1, -1);
-	  }
-	  bkgFree(list);
-	}
+					  // Add the signal to the pixel.
+					  addGenDetCharge2Pixel(det, x, y,
+							  list->hit_energy[ii],
+							  det->clocklist->time,
+							  -1, -1);
+				  }
+				  bkgFree(list);
+			  }
 
-	// Apply the hot pixels of the bad pixel map (if available) using
-	// the pixel values weighted with the waiting time.
-	if (NULL!=det->badpixmap) {
-	  insertBadPix(det, clwait->time);
-	}
-	break;
-      case CL_LINESHIFT:
-	GenDetLineShift(det);
-	break;
-      case CL_READOUTLINE:
-	clreadoutline=(CLReadoutLine*)element;
-	GenDetReadoutLine(det, clreadoutline->lineindex, 
-			  clreadoutline->readoutindex, 
-			  status);
-	CHECK_STATUS_VOID(*status);	    
-	break;
-      case CL_CLEARLINE:
-	clclearline=(CLClearLine*)element;
-	GenDetClearLine(det, clclearline->lineindex);
-	break;
-      }
-      CHECK_STATUS_VOID(*status);
-    } while(type!=CL_NONE);
+			  // Apply the hot pixels of the bad pixel map (if available) using
+			  // the pixel values weighted with the waiting time.
+			  if (NULL!=det->badpixmap) {
+				  insertBadPix(det, clwait->time);
+			  }
+			  break;
+		  case CL_LINESHIFT:
+			  GenDetLineShift(det);
+			  break;
+		  case CL_READOUTLINE:
+			  clreadoutline=(CLReadoutLine*)element;
+			  GenDetReadoutLine(det, clreadoutline->lineindex,
+					  clreadoutline->readoutindex,
+					  status);
+			  CHECK_STATUS_VOID(*status);
+			  break;
+		  case CL_CLEARLINE:
+			  clclearline=(CLClearLine*)element;
+			  GenDetClearLine(det, clclearline->lineindex);
+			  break;
+		  }
+		  CHECK_STATUS_VOID(*status);
+	  } while(type!=CL_NONE);
   }
 }
 

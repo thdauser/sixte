@@ -739,9 +739,9 @@ static void GenInstXMLElementStart(void* parsedata,
 	break;
       }
     }
-    if (2==ii) {
+    if (MAX_PHABKG==ii) {
       xmlparsedata->status=EXIT_FAILURE;
-      SIXT_ERROR("cannot use more than 2 PHA background models");
+      SIXT_ERROR("cannot use more than the given number of PHA background models");
       return;
     }
     xmlparsedata->inst->det->phabkg[ii]=

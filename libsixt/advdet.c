@@ -548,7 +548,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].channel=NULL;
 			xmlparsedata->det->pix[ii].thermal_cross_talk=NULL;
 			xmlparsedata->det->pix[ii].electrical_cross_talk=NULL;
-			//xmlparsedata->det->pix[ii].intermodulation_cross_talk=NULL;
 
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {

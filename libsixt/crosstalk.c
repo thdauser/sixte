@@ -1619,7 +1619,7 @@ void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
 
 /** Add crosstalk to proxy */
 void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpact* impact, AdvDet* det, int type, double df, int* const status){
-	// If not, first check if the first events in the buffer are not too far from the current case (i.e. can we erase some)
+	// If no more space, first check if the first events in the buffer are not too far from the current case (i.e. can we erase some)
 	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
 		int* toerase=NULL;
 		int erased_crosstalks=0;
@@ -1640,8 +1640,9 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpa
 				toerase[erased_crosstalks]=ii;
 				erased_crosstalks+=1;
 			} else if (-dt_current>DTMAX&&dt_next>DTMIN+DTMAX){
-				//In this case, the last current event is clearly high-res, we erase all in between if their ctk energy is
-				//very low, i.e. they have no chance whatsoever of actually creating some ctk trigger (notably Nonlinear)
+				//In this case, the last current event is clearly high-res, we erase all in between the last event and
+				//the current time (minimal time of next impact) if their ctk energy is very low, i.e. they have no chance
+				//whatsoever of actually creating some ctk trigger (notably Nonlinear)
 				float temp_ener=0;
 				if (abs(type)==-THERCTK){
 					temp_ener=xtalk_proxy->xtalk_impacts[ii]->energy*det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].thermal_cross_talk->cross_talk_weights[xtalk_proxy->xtalk_impacts[ii]->weight_index];
@@ -1660,7 +1661,7 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpa
 					}
 				}
 
-				if (abs(type)==-IMODCTK || temp_ener<MINEN){
+				if (abs(type)==-IMODCTK || temp_ener<MINEN){ //If low enough in energy, it will never trigger, we erase it
 					toerase=(int*) realloc(toerase, (erased_crosstalks+1)*sizeof(int));
 					toerase[erased_crosstalks]=ii;
 					erased_crosstalks+=1;

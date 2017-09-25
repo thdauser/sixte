@@ -18,39 +18,41 @@
    Copyright 2007-2014 Christian Schmid, FAU
 */
 
-#ifndef IMPACT_H
-#define IMPACT_H 1
+#ifndef LINKEDIMPLIST_H
+#define LINKEDIMPLIST_H 1
 
 #include "sixt.h"
-#include "point.h"
+#include "impact.h"
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
 /////////////////////////////////////////////////////////////////
 
 
-/** Impact of a photon on the detector plane. */
-typedef struct {
-  /** Arrival time of the photon on the detector [s]. */
-  double time;
-  
-  /** Photon energy [keV]. */
-  float energy;
-  
-  /** Impact position of the photon on the detector [m]. */
-  struct Point2d position;
+/** Linked, time-ordered photon list. */
+struct structLinkedImpListElement {
 
-  /** Unique photon identifier. */
-  long ph_id;
+  Impact impact;
 
-  /** Unique source identifier for the originating X-ray source. */
-  long src_id;
-
-} Impact;
+  /** Next entry. */
+  struct structLinkedImpListElement* next;
+};
+typedef struct structLinkedImpListElement LinkedImpListElement;
 
 
-Impact* newImpact(int* const status);
+/////////////////////////////////////////////////////////////////
+// Function Declarations.
+/////////////////////////////////////////////////////////////////
 
-void copyImpact(Impact* const dest, const Impact* const source);
+/** Constructor. */
+LinkedImpListElement* newLinkedImpListElement(int* const status);
 
-#endif /* IMPACT_H */
+/** Destructor. */
+void freeLinkedImpList(LinkedImpListElement** const list);
+
+/** Merge 2 time-ordered linked photon lists. */
+LinkedImpListElement* mergeLinkedImpLists(LinkedImpListElement* list1,
+					  LinkedImpListElement* list2);
+
+
+#endif /* LINKEDIMPLIST_H */

@@ -39,7 +39,7 @@
 
 #define DTMIN 0.004 //Minimal time before impact influenced by ctk //TODO Once time dependencies tables shall be more accurate, to change
 #define DTMAX 0.046 //Maximal time after impact influenced by ctk
-#define MINEN 1e-5 //in keV
+#define MINEN 1.e-5 //in keV
 
 ////////////////////////////////////////////////////////////////////////
 // Type Declarations.

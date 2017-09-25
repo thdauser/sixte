@@ -169,7 +169,8 @@ struct AdvPix{
 
   /** Cross-talk structures */
   MatrixCrossTalk* thermal_cross_talk;
-  //IntermodulationCrossTalk* intermodulation_cross_talk;
+
+  //Electrical cross_talk;
   MatrixEnerdepCrossTalk* electrical_cross_talk;
 
   /** tessim struct */

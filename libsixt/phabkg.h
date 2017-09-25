@@ -23,7 +23,13 @@
 
 #include "sixt.h"
 #include "vignetting.h"
+#include "advdet.h"
+#include "impact.h"
+#include "linkedimplist.h"
 
+// Number of maximum background files tolerated
+#define MAX_PHABKG 2
+#define PHABKG_SRC_ID -1
 
 /////////////////////////////////////////////////////////////////
 // Type Declarations.
@@ -79,14 +85,32 @@ void destroyPHABkg(PHABkg** const phabkg);
 int getPHABkgEvent(PHABkg* const phabkg,
 		   /** Scaling factor for the count rate
 		       distribution. Must be given in [m^2]. */
-		   const float scaling,
-		   const double tstart,
-		   /** Upper limit for the time of the background
-		       event [s]. */
-		   const double tstop,
-		   double* const t,
-		   long* const pha,
-		   int* const status);
+		const float scaling,
+		const double tstart,
+		/** Upper limit for the time of the background event [s]. */
+		const double tstop,
+	    double* const t,
+	    long* const pha,
+		int* const status);
 
+/** Gets all the events due to background betweet given times*/
+LinkedImpListElement* getPHABkglist(PHABkg* const phabkg,
+		AdvDet* det,
+		const float scaling,
+		const double tstart,
+		const double tend,
+		int* const status);
+
+/** Generates the full background impact list due to background
+ 	in first pass, then returns the first element of that list
+ 	that needs to be processed */
+int phabkggen(PHABkg* const phbkg[2],
+		AdvDet* det,
+		const float scaling,
+		const double t0,
+		const double tend,
+		const double dt,
+		Impact* impact,
+		int* const status);
 
 #endif /* PHABKG_H */

@@ -36,7 +36,7 @@ libsixt_la_LIBADD=@top_builddir@/extlib/progressbar/libprogressbar.la
 # Sources:
 libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  impactfile.c ladimpactfile.c htrsdetector.c		\
-		  geninst.c gendet.c gentel.c genpixgrid.c		\
+		  impact.c geninst.c gendet.c gentel.c genpixgrid.c		\
 		  gendetline.c ladsignalfile.c ladeventfile.c		\
 		  phabkg.c eventfile.c clocklist.c badpixmap.c		\
 		  htrseventfile.c hexagonalpixels.c arcpixels.c		\
@@ -58,7 +58,7 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  sixtesvg.c tesrecord.c teseventlist.c optimalfilters.c\
 		  testrigger.c integraSIRENA.cpp tasksSIRENA.cpp        \
                   pulseprocess.cpp inoututils.cpp genutils.cpp          \
-		  crosstalk.c grading.c tescrosstalk.c
+		  crosstalk.c grading.c tescrosstalk.c linkedimplist.c
 
 ############ HEADERS #################
 
@@ -89,5 +89,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		teseventlist.h optimalfilters.h testrigger.h            \
 		integraSIRENA.h tasksSIRENA.h pulseprocess.h            \
                 inoututils.h genutils.h crosstalk.h grading.h           \
-		tescrosstalk.h tespixel.h sixt_main.c
+		tescrosstalk.h tespixel.h linkedimplist.h sixt_main.c
 

@@ -342,11 +342,20 @@ int xifupipeline_main()
 					par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
 					par.DerivateExclusion,par.SaturationValue,&status);
 			CHECK_STATUS_BREAK(status);
+
 		} else{
 			det = loadAdvDet(par.AdvXml,&status);
 			keywords = buildSixtStdKeywords(telescop,instrume,"Normal",inst->tel->arf_filename, inst->det->rmf_filename,"NONE",par.MJDREF, 0.0, par.TSTART, tstop,&status);
 			event_file = opennewTesEventFile(par.EvtFile,keywords,par.clobber,&status);
 			loadRMFLibrary(det,&status);
+
+		}
+
+		// Background scaling (total area of the absorbers in [m])
+		float scaling = 0;
+		// This was done to accomodate different pixel sizes... (UGLY but TRIVIAL and ultimately not so slow)
+		for (long int ii=0; ii<det->npix;ii++){
+			scaling+=det->pix[ii].height*det->pix[ii].width;
 		}
 
 		if (status!=EXIT_SUCCESS) {
@@ -501,38 +510,79 @@ int xifupipeline_main()
 			// Set the start time for the instrument model.
 			//setGenDetStartTime(inst->det, t0);
 
+			// Set up the variables for nxb managment
+			// These allow to maintain causality
+			int get_next_photon=1;
+			int get_next_nxb=1;
+			if (inst->det->ignore_bkg){
+				get_next_nxb=0;
+			}
+			int isnxbph=0;
+			int isph=0;
+
 			// Loop over photon generation and processing
 			// till the time of the photon exceeds the requested
 			// time interval.
+			Photon ph;
+			Impact nxb_imp;
 			do {
 
 				// Photon generation.
-				Photon ph;
-				int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1, par.MJDREF, par.dt,
-						inst->tel->fov_diameter, &ph, &status);
-				CHECK_STATUS_BREAK(status);
+				if (get_next_photon){
+					isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1, par.MJDREF, par.dt,
+							inst->tel->fov_diameter, &ph, &status);
+					CHECK_STATUS_BREAK(status);
+				}
 
-				// If no photon has been generated, break the loop.
-				if (0==isph) break;
+				if (get_next_nxb){ //Creating the linked list with all the bkg events
+					isnxbph=phabkggen(inst->det->phabkg, det, scaling, t0, t1,
+							par.dt, &nxb_imp, &status);
+					CHECK_STATUS_BREAK(status);
+					if (!isnxbph){ //NXB list over put last time to avoid meaninglessa access
+						nxb_imp.time=t1;
+					}
+					assert(nxb_imp.time<=t1);
+				}
+
+				// If no photon has been generated in both bkg and sources, break the loop.
+				if (!isph){
+					if(!isnxbph){ //NXB and photon list over
+						break;
+					}
+					ph.time=t1; //To avoid segfaulting, this photon will NOT be saved
+				}
 
 				// Check if the photon still is within the requested
 				// exposure time.
 				assert(ph.time<=t1);
+				if (!inst->det->ignore_bkg){ //In case of bkg, check which comes first
+					if (ph.time<=nxb_imp.time){ //Photon should be treated first
+						get_next_nxb=0;
+						get_next_photon=1;
+					} else{ //nxb should be treated first
+						get_next_nxb=1;
+						get_next_photon=0;
+					}
+				}
 
 				// If requested, write the photon to the output file.
-				if (NULL!=plf) {
+				if (NULL!=plf && !get_next_nxb) {
 					status=addPhoton2File(plf, &ph);
 					CHECK_STATUS_BREAK(status);
 				}
 
 				// Photon imaging.
 				Impact imp;
-				int isimg=phimg(inst->tel, ac, &ph, &imp, &status);
-				CHECK_STATUS_BREAK(status);
+				if (!get_next_nxb){ //Only the non NXB events are imaged by the mirror
+					int isimg=phimg(inst->tel, ac, &ph, &imp, &status);
+					CHECK_STATUS_BREAK(status);
 
-				// If the photon is not imaged but lost in the optical system,
-				// continue with the next one.
-				if (0==isimg) continue;
+					// If the photon is not imaged but lost in the optical system,
+					// continue with the next one.
+					if (!isimg) continue;
+				} else{
+					copyImpact(&imp, &nxb_imp); //Otherwise the impact is a background event (not imaged)
+				}
 
 				// If requested, write the impact to the output file.
 				if (NULL!=ilf) {
@@ -554,7 +604,7 @@ int xifupipeline_main()
 				CHECK_STATUS_BREAK(status);
 
 				// Program progress output.
-				while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
+				while((unsigned int)((imp.time-t0+simtime)*100./totalsimtime)>progress) {
 					progress++;
 					if (NULL==progressfile) {
 						headas_chat(2, "\r%.0lf %%", progress*1.);
