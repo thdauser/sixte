@@ -213,6 +213,8 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
     wcs->crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;
     wcs->cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
     wcs->cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
+
+
     strcpy(wcs->cunit[0], "deg");
     strcpy(wcs->cunit[1], "deg");
     if ((1==par.projection)||(3==par.projection)) {
@@ -222,11 +224,11 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
       strcpy(wcs->ctype[0], "RA---SIN");
       strcpy(wcs->ctype[1], "DEC--SIN");
     } else if (3==par.projection) {
-      strcpy(wcs->ctype[0], "GLONG---AIT");
+      strcpy(wcs->ctype[0], "GLON-AIT");
       strcpy(wcs->ctype[1], "GLAT--AIT");
     } else if (4==par.projection) {
-      strcpy(wcs->ctype[0], "GLONG---SIN");
-      strcpy(wcs->ctype[1], "GLAT--SIN");
+      strcpy(wcs->ctype[0], "GLON-SIN");
+      strcpy(wcs->ctype[1], "GLAT-SIN");
     } else {
       SIXT_ERROR("projection type not supported");
       *status=EXIT_FAILURE;
@@ -330,28 +332,28 @@ static int file_exist (char *filename) {
   return stat (filename, &buffer) ;
 }
 
-static void get_world_coords(int x, int y, struct wcsprm *wcs,
+static int get_world_coords(int x, int y, struct wcsprm *wcs,
 		double **world, double *phi, double *theta, int *status){
 
 	double pixcrd[2]={ x+1., y+1. };
 	double imgcrd[2];
 
 	(*world) =(double*)malloc(2*sizeof(float));
-	CHECK_NULL_VOID(*world,*status,"malloc failed");
+	CHECK_NULL_RET(*world,*status,"malloc failed",-1);
 
 	int status2=0;
 	wcsp2s(wcs, 1, 2, pixcrd, imgcrd, phi, theta, *world, &status2);
 	if (3==status2) {
 		// Pixel does not correspond to valid world coordinates.
-		SIXT_ERROR("Pixel does not correspond to valid world coordinates.");
-		*status=EXIT_FAILURE;
-		return;
+		return -1; // SIXT_ERROR("Pixel does not correspond to valid world coordinates.");
+//		*status=EXIT_FAILURE;
+//		return;
 	} else if (0!=status2) {
 		SIXT_ERROR("projection failed");
 		*status=EXIT_FAILURE;
-		return;
+		return -1;
 	}
-	return;
+	return 1;
 }
 
 static int get_pixel_hit(GenInst **inst,int ninst, Vector pixel_skypos, double theta, double phi,
@@ -403,7 +405,10 @@ static float get_single_expos_value(int x,int y, struct wcsprm *wcs,
 
 	// get world coordinates from the projection
 	double *world, theta, phi;
-	get_world_coords(x,y,wcs,&world,&theta,&phi,status);
+	// if we do not have valid sky coordinates to the pixels, we return a 0 expsoure value
+	if (get_world_coords(x,y,wcs,&world,&theta,&phi,status)!=1){
+		return 0.0;
+	}
 	CHECK_STATUS_RET(*status,0.0);
 
 	// Determine a unit vector for the calculated RA and Dec.
@@ -634,6 +639,7 @@ int exposure_map_main()
     	  for (y=0; y<par.dec_bins; y++) {
     		  delta = get_single_expos_value(x,y,&wcs,
     				  telescope,inst,xmls.n,&status);
+    		  CHECK_STATUS_BREAK(status);
     		  if (delta>=0){
     			  expoMap[x][y]+=par.dt*get_Vignetting_Factor(vignetting, 1., delta, 0.);
     			  if (rawMap==1){
@@ -643,6 +649,7 @@ int exposure_map_main()
 
     		  CHECK_STATUS_BREAK(status);
     	  }
+		  CHECK_STATUS_BREAK(status);
      }
 
       // Program progress output.
