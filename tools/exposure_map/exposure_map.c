@@ -217,7 +217,7 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
 
     strcpy(wcs->cunit[0], "deg");
     strcpy(wcs->cunit[1], "deg");
-    if ((1==par.projection)||(3==par.projection)) {
+    if ((1==par.projection)) {
       strcpy(wcs->ctype[0], "RA---AIT");
       strcpy(wcs->ctype[1], "DEC--AIT");
     } else if (2==par.projection) {
@@ -225,7 +225,7 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
       strcpy(wcs->ctype[1], "DEC--SIN");
     } else if (3==par.projection) {
       strcpy(wcs->ctype[0], "GLON-AIT");
-      strcpy(wcs->ctype[1], "GLAT--AIT");
+      strcpy(wcs->ctype[1], "GLAT-AIT");
     } else if (4==par.projection) {
       strcpy(wcs->ctype[0], "GLON-SIN");
       strcpy(wcs->ctype[1], "GLAT-SIN");
@@ -333,26 +333,24 @@ static int file_exist (char *filename) {
 }
 
 static int get_world_coords(int x, int y, struct wcsprm *wcs,
-		double **world, double *phi, double *theta, int *status){
+		double *world, double *phi, double *theta, int *status){
 
 	double pixcrd[2]={ x+1., y+1. };
 	double imgcrd[2];
 
-	(*world) =(double*)malloc(2*sizeof(float));
-	CHECK_NULL_RET(*world,*status,"malloc failed",-1);
 
 	int status2=0;
-	wcsp2s(wcs, 1, 2, pixcrd, imgcrd, phi, theta, *world, &status2);
+	wcsp2s(wcs, 1, 2, pixcrd, imgcrd, phi, theta, world, &status2);
 	if (3==status2) {
 		// Pixel does not correspond to valid world coordinates.
-		return -1; // SIXT_ERROR("Pixel does not correspond to valid world coordinates.");
-//		*status=EXIT_FAILURE;
-//		return;
+		return -1;
 	} else if (0!=status2) {
 		SIXT_ERROR("projection failed");
 		*status=EXIT_FAILURE;
 		return -1;
 	}
+
+
 	return 1;
 }
 
@@ -405,8 +403,12 @@ static float get_single_expos_value(int x,int y, struct wcsprm *wcs,
 
 	// get world coordinates from the projection
 	double *world, theta, phi;
+	world =(double*)malloc(2*sizeof(float));
+	CHECK_NULL_RET(world,*status,"malloc failed",-1);
+
 	// if we do not have valid sky coordinates to the pixels, we return a 0 expsoure value
-	if (get_world_coords(x,y,wcs,&world,&theta,&phi,status)!=1){
+	if (get_world_coords(x,y,wcs,world,&theta,&phi,status)!=1){
+		free(world);
 		return 0.0;
 	}
 	CHECK_STATUS_RET(*status,0.0);
