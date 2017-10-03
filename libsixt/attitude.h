@@ -153,6 +153,7 @@ void getCurrentVelocity(const char* const filename, const Attitude* const ac,
 			double* vel_ra, double* vel_dec, double const att_start,
 			double const att_stop, int* const status);
 
+void convert_galLB2RAdec(double* world);
 
 #endif /* ATTITUDE_H */
 

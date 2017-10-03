@@ -531,3 +531,32 @@ void getCurrentVelocity(const char* const filename, const Attitude* const ac,
   *vel_ra=diffRA/interval;
   *vel_dec=diffDEC/interval;
 }
+
+
+void convert_galLB2RAdec(double* world){
+ /**  % following Carroll & Ostlie, Chapter 24.3, Coordinates obtained with HEASARC tools
+  *      (taken from the Remeis ISISscripts, initially written by Moritz Böck)
+  *
+  *      expectiong l=world[0] and b=world[1]
+  *      output     RA=world[1] and dec=world[1]
+  */
+
+	double l = world[0]/180.*M_PI;
+	double b = world[1]/180.*M_PI;
+	double cos_b = cos(b);
+	double sin_b = sin(b);
+
+	double cos_d_ngp = 0.8899880874849542;
+	double sin_d_ngp = 0.4559837761750669;
+	double l_ncp = 2.145566759798267518;
+
+	world[0] = fmod((atan2(cos_b*sin(l_ncp - l) , cos_d_ngp*sin_b-sin_d_ngp*cos_b*cos(l_ncp - l))
+			+3.3660332687500039)/M_PI*180. ,360.); // RA
+	// need a positive modulo here
+	if (world[0] < 0.0){
+		world[0] += 360.;
+	}
+	world[1] =  asin( sin_d_ngp*sin_b + cos_d_ngp*cos_b*cos(l_ncp - l) )/M_PI*180.; // dec
+
+}
+

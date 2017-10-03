@@ -204,21 +204,21 @@ int imgev_main() {
       // Convert the coordinates to the desired coordinate system.
       double lon, lat; // [rad].
       if (0==par.coordinatesystem) {
-	// Equatorial coordinates.
-	lon=ra*180./M_PI;
-	lat=dec*180./M_PI;
+    	  // Equatorial coordinates.
+    	  lon=ra*180./M_PI;
+    	  lat=dec*180./M_PI;
       } else {
-	// Galactic coordinates.
-	const double l_ncp=2.145566759798267518;
-	const double ra_ngp=3.366033268750003918;
-	const double cos_d_ngp=0.8899880874849542;
-	const double sin_d_ngp=0.4559837761750669;
-	double cos_d=cos(dec);
-	double sin_d=sin(dec);
-	lon=(l_ncp-atan2(cos_d*sin(ra-ra_ngp),
-			 cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(ra-ra_ngp)))
-	  *180./M_PI;
-	lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(ra-ra_ngp))*180./M_PI;
+    	  // Galactic coordinates.
+    	  const double l_ncp=2.145566759798267518;
+    	  const double ra_ngp=3.366033268750003918;
+    	  const double cos_d_ngp=0.8899880874849542;
+    	  const double sin_d_ngp=0.4559837761750669;
+    	  double cos_d=cos(dec);
+    	  double sin_d=sin(dec);
+    	  lon=(l_ncp-atan2(cos_d*sin(ra-ra_ngp),
+    			  cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(ra-ra_ngp)))
+			  *180./M_PI;
+    	  lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(ra-ra_ngp))*180./M_PI;
       }
 
       // Determine the image coordinates corresponding to the event.

@@ -410,6 +410,12 @@ int ero_exposure_main()
 	  }
 
 
+		// galactic projection -> need to convert coordinates
+		if (par.projection>=3){
+			convert_galLB2RAdec(world);
+		}
+
+
 	  // Determine a unit vector for the calculated RA and Dec.
 	  pixpos=unit_vector(world[0]*M_PI/180., world[1]*M_PI/180.);
 	  

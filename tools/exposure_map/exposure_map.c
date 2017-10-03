@@ -226,9 +226,6 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
     } else if (3==par.projection) {
       strcpy(wcs->ctype[0], "GLON-AIT");
       strcpy(wcs->ctype[1], "GLAT-AIT");
-    } else if (4==par.projection) {
-      strcpy(wcs->ctype[0], "GLON-SIN");
-      strcpy(wcs->ctype[1], "GLAT-SIN");
     } else {
       SIXT_ERROR("projection type not supported");
       *status=EXIT_FAILURE;
@@ -332,6 +329,32 @@ static int file_exist (char *filename) {
   return stat (filename, &buffer) ;
 }
 
+
+
+/** static void convert_equ2gal(double* world){
+
+
+
+    // Convert the coordinates to the desired coordinate system.
+    double ra = world[0]*M_PI/180.;
+    double dec = world[1]*M_PI/180.; // [rad].
+	// Galactic coordinates.
+	const double l_ncp=2.145566759798267518;
+	const double ra_ngp=3.366033268750003918;
+	const double cos_d_ngp=0.8899880874849542;
+	const double sin_d_ngp=0.4559837761750669;
+	double cos_d=cos(dec);
+	double sin_d=sin(dec);
+	double lon=(l_ncp-atan2(cos_d*sin(ra-ra_ngp),
+			 cos_d_ngp*sin_d-sin_d_ngp*cos_d*cos(ra-ra_ngp)))
+	  *180./M_PI;
+	double lat=asin(sin_d_ngp*sin_d + cos_d_ngp*cos_d*cos(ra-ra_ngp))*180./M_PI;
+
+	world[0] = lon;
+	world[1] = lat;
+
+} **/
+
 static int get_world_coords(int x, int y, struct wcsprm *wcs,
 		double *world, double *phi, double *theta, int *status){
 
@@ -341,6 +364,7 @@ static int get_world_coords(int x, int y, struct wcsprm *wcs,
 
 	int status2=0;
 	wcsp2s(wcs, 1, 2, pixcrd, imgcrd, phi, theta, world, &status2);
+
 	if (3==status2) {
 		// Pixel does not correspond to valid world coordinates.
 		return -1;
@@ -399,7 +423,7 @@ static int get_pixel_hit(GenInst **inst,int ninst, Vector pixel_skypos, double t
 }
 
 static float get_single_expos_value(int x,int y, struct wcsprm *wcs,
-		struct Telescope telescope, GenInst **inst, int ninst, int *status){
+		struct Telescope telescope, GenInst **inst, int ninst, int proj, int *status){
 
 	// get world coordinates from the projection
 	double *world, theta, phi;
@@ -413,6 +437,11 @@ static float get_single_expos_value(int x,int y, struct wcsprm *wcs,
 	}
 	CHECK_STATUS_RET(*status,0.0);
 
+	// galactic projection -> need to convert coordinates
+	if (proj>=3){
+		convert_galLB2RAdec(world);
+	}
+
 	// Determine a unit vector for the calculated RA and Dec.
 	Vector pixpos=unit_vector(world[0]*M_PI/180., world[1]*M_PI/180.);
 	free(world);
@@ -420,8 +449,6 @@ static float get_single_expos_value(int x,int y, struct wcsprm *wcs,
 	// instrument is the same
 	const double fov_min_align=inst[0]->tel->fov_diameter*0.5;
 
-	// double delta=acos(scalar_product(&telescope_nz, &pixpos));
-//	double delta=acos(scalar_product(&telescope.nz, &pixpos));
 
 	// Check if the current pixel lies within the FOV.
 	//  (only a rough, conservative estimate to reduce computing power)
@@ -587,29 +614,6 @@ int exposure_map_main()
     double time;
     for (time=par.TSTART; time<par.TSTART+par.timespan; time+=par.dt) {
       
-   /**   // Check if an interim map should be saved now.
-      if (par.intermaps>0) {
-	if (time >= par.TSTART+intermaps*(par.timespan/par.intermaps)) {
-	  // Construct the filename.
-	  char filename[MAXFILENAME];
-	  strncpy(filename, par.Exposuremap,
-		  strlen(par.Exposuremap)-5);
-	  filename[strlen(par.Exposuremap)-5]='\0';
-	  char buffer[MAXFILENAME];
-	  sprintf(buffer, "_%d.fits", intermaps);
-	  strcat(filename, buffer);
-
-	  // Save the interim map.
-	  saveExpoMap(expoMap, filename, par.ra_bins, par.dec_bins,
-		      &wcs, par.clobber, &status);
-	  CHECK_STATUS_BREAK(status);
-
-	  intermaps++;
-	}
-	}
-	 **/
-      // END of saving an interim map.
-
 
       // Determine the telescope pointing direction at the current time.
       struct Telescope telescope;
@@ -620,7 +624,11 @@ int exposure_map_main()
       // Calculate the RA and DEC of the pointing direction.
       double telescope_ra, telescope_dec;
       calculate_ra_dec(telescope.nz, &telescope_ra, &telescope_dec);
-      //printf("RA: %.4f Dec: %.4f \n",telescope_ra*180/M_PI, telescope_dec*180/M_PI);
+
+      // printf("RA: %.4f Dec: %.4f \n",telescope_ra*180/M_PI, telescope_dec*180/M_PI);
+
+      // if desired, we convert to galactic coordinates  ** GLAT / GLONG
+
 
       // Check if the specified field of the sky might be within the FOV.
       // Otherwise break this run and continue at the beginning of the loop 
@@ -640,7 +648,7 @@ int exposure_map_main()
     	  long y;
     	  for (y=0; y<par.dec_bins; y++) {
     		  delta = get_single_expos_value(x,y,&wcs,
-    				  telescope,inst,xmls.n,&status);
+    				  telescope,inst,xmls.n, par.projection, &status);
     		  CHECK_STATUS_BREAK(status);
     		  if (delta>=0){
     			  expoMap[x][y]+=par.dt*get_Vignetting_Factor(vignetting, 1., delta, 0.);
