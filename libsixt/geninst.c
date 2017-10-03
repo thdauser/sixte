@@ -708,75 +708,89 @@ static void GenInstXMLElementStart(void* parsedata,
 
       // Check if a light curve has been specified.
       if (strlen(filename)>0) {
-	strcpy(filepathname, xmlparsedata->inst->filepath);
-	strcat(filepathname, filename);
-	eroBkgSetRateFct(filepathname, &xmlparsedata->status);
-	CHECK_STATUS_VOID(xmlparsedata->status);
+    	  strcpy(filepathname, xmlparsedata->inst->filepath);
+    	  strcat(filepathname, filename);
+    	  bkgSetRateFct(filepathname, &xmlparsedata->status);
+    	  CHECK_STATUS_VOID(xmlparsedata->status);
       }
     }
     xmlparsedata->inst->det->auxbackground=1;
 
   } else if (!strcmp(Uelement, "PHABACKGROUND")) {
 
-    char filename[MAXFILENAME];
-    getXMLAttributeString(attr, "FILENAME", filename);
+	  char filename[MAXFILENAME];
+	  getXMLAttributeString(attr, "FILENAME", filename);
 
-    // Check if a file name has been specified.
-    if (strlen(filename)==0) {
-      xmlparsedata->status=EXIT_FAILURE;
-      SIXT_ERROR("no file specified for PHA detector background");
-      return;
-    }
-    
-    char filepathname[MAXFILENAME];
-    strcpy(filepathname, xmlparsedata->inst->filepath);
-    strcat(filepathname, filename);
+	  // Check if a file name has been specified.
+	  if (strlen(filename)==0) {
+		  xmlparsedata->status=EXIT_FAILURE;
+		  SIXT_ERROR("no file specified for PHA detector background");
+		  return;
+	  }
 
-    // There can be up to 2 PHA background models.
-    int ii;
-    for (ii=0; ii<2; ii++) {
-      if (NULL==xmlparsedata->inst->det->phabkg[ii]) {
-	break;
-      }
-    }
-    if (MAX_PHABKG==ii) {
-      xmlparsedata->status=EXIT_FAILURE;
-      SIXT_ERROR("cannot use more than the given number of PHA background models");
-      return;
-    }
-    xmlparsedata->inst->det->phabkg[ii]=
-      newPHABkg(filepathname, &xmlparsedata->status);
-    CHECK_STATUS_VOID(xmlparsedata->status);
+	  char filepathname[MAXFILENAME];
+	  strcpy(filepathname, xmlparsedata->inst->filepath);
+	  strcat(filepathname, filename);
 
-    // If needed, link the vignetting function and the focal length
-    // of the telescope.
-    if (getXMLAttributeInt(attr, "VIGNETTING")!=0) {
-      xmlparsedata->inst->det->phabkg[ii]->vignetting=
-	&xmlparsedata->inst->tel->vignetting;
-      xmlparsedata->inst->det->phabkg[ii]->focal_length=
-	&xmlparsedata->inst->tel->focal_length;
-    }
+	  // There can be up to 2 PHA background models.
+	  int ii;
+	  for (ii=0; ii<2; ii++) {
+		  if (NULL==xmlparsedata->inst->det->phabkg[ii]) {
+			  break;
+		  }
+	  }
+	  if (MAX_PHABKG==ii) {
+		  xmlparsedata->status=EXIT_FAILURE;
+		  SIXT_ERROR("cannot use more than the given number of PHA background models");
+		  return;
+	  }
+	  xmlparsedata->inst->det->phabkg[ii]=
+			  newPHABkg(filepathname, &xmlparsedata->status);
+	  CHECK_STATUS_VOID(xmlparsedata->status);
+
+	  // If needed, link the vignetting function and the focal length
+	  // of the telescope.
+	  if (getXMLAttributeInt(attr, "VIGNETTING")!=0) {
+		  xmlparsedata->inst->det->phabkg[ii]->vignetting=
+				  &xmlparsedata->inst->tel->vignetting;
+		  xmlparsedata->inst->det->phabkg[ii]->focal_length=
+				  &xmlparsedata->inst->tel->focal_length;
+	  }
+
+	  // Load the optional light curve if available. The light curve
+	  // defines the time-variability of the background flux.
+	  getXMLAttributeString(attr, "LIGHTCURVE", filename);
+
+	  // Check if a light curve has been specified.
+	  if (strlen(filename)>0) {
+		  strcpy(filepathname, xmlparsedata->inst->filepath);
+		  strcat(filepathname, filename);
+		  bkgSetRateFct(filepathname, &xmlparsedata->status);
+		  CHECK_STATUS_VOID(xmlparsedata->status);
+	  }
+
+
 
   } else if (!strcmp(Uelement, "SPLIT")) {
 
-    char type[MAXMSG];
-    getXMLAttributeString(attr, "TYPE", type);
-    strtoupper(type);
-    if (!strcmp(type, "NONE")) {
-      xmlparsedata->inst->det->split->type=GS_NONE;
-    } else if (!strcmp(type, "GAUSS")) {
-      xmlparsedata->inst->det->split->type=GS_GAUSS;
-    } else if (!strcmp(type, "EXPONENTIAL")) {
-      xmlparsedata->inst->det->split->type=GS_EXPONENTIAL;
-    }
-    xmlparsedata->inst->det->split->par1=getXMLAttributeFloat(attr, "PAR1");
-    xmlparsedata->inst->det->split->par2=getXMLAttributeFloat(attr, "PAR2");
+	  char type[MAXMSG];
+	  getXMLAttributeString(attr, "TYPE", type);
+	  strtoupper(type);
+	  if (!strcmp(type, "NONE")) {
+		  xmlparsedata->inst->det->split->type=GS_NONE;
+	  } else if (!strcmp(type, "GAUSS")) {
+		  xmlparsedata->inst->det->split->type=GS_GAUSS;
+	  } else if (!strcmp(type, "EXPONENTIAL")) {
+		  xmlparsedata->inst->det->split->type=GS_EXPONENTIAL;
+	  }
+	  xmlparsedata->inst->det->split->par1=getXMLAttributeFloat(attr, "PAR1");
+	  xmlparsedata->inst->det->split->par2=getXMLAttributeFloat(attr, "PAR2");
 
   } else if (!strcmp(Uelement, "DEPFET")) {
-    
-    xmlparsedata->inst->det->depfet.depfetflag=1;    
-      
-    xmlparsedata->inst->det->depfet.t_integration=
+
+	  xmlparsedata->inst->det->depfet.depfetflag=1;
+
+	  xmlparsedata->inst->det->depfet.t_integration=
 			    getXMLAttributeDouble(attr, "INTEGRATION");
       
     xmlparsedata->inst->det->depfet.t_clear=

@@ -415,52 +415,52 @@ int erosim_main()
 
     // Open the output photon list files.
     if (strlen(photonlist_filename_template)>0) {
-      for (ii=0; ii<7; ii++) {
-	char telescop[MAXMSG]={""};
-	char instrume[MAXMSG]={""};
-	if (NULL!=subinst[ii]->telescop) {
-	  strcpy(telescop, subinst[ii]->telescop);
-	}
-	if (NULL!=subinst[ii]->instrume) {
-	  strcpy(instrume, subinst[ii]->instrume);
-	}
+    	for (ii=0; ii<7; ii++) {
+    		char telescop[MAXMSG]={""};
+    		char instrume[MAXMSG]={""};
+    		if (NULL!=subinst[ii]->telescop) {
+    			strcpy(telescop, subinst[ii]->telescop);
+    		}
+    		if (NULL!=subinst[ii]->instrume) {
+    			strcpy(instrume, subinst[ii]->instrume);
+    		}
 
-	char photonlist_filename[MAXFILENAME];
-	sprintf(photonlist_filename, photonlist_filename_template, ii+1);
-	plf[ii]=openNewPhotonFile(photonlist_filename, 
-				  telescop, instrume, "Normal", 
-				  subinst[ii]->tel->arf_filename, 
-				  subinst[ii]->det->rmf_filename,
-				  par.MJDREF, 0.0, par.TSTART, tstop,
-				  par.clobber, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-      CHECK_STATUS_BREAK(status);
+    		char photonlist_filename[MAXFILENAME];
+    		sprintf(photonlist_filename, photonlist_filename_template, ii+1);
+    		plf[ii]=openNewPhotonFile(photonlist_filename,
+    				telescop, instrume, "Normal",
+					subinst[ii]->tel->arf_filename,
+					subinst[ii]->det->rmf_filename,
+					par.MJDREF, 0.0, par.TSTART, tstop,
+					par.clobber, &status);
+    		CHECK_STATUS_BREAK(status);
+    	}
+    	CHECK_STATUS_BREAK(status);
     }
 
     // Open the output impact list files.
     if (strlen(impactlist_filename_template)>0) {
-      for (ii=0; ii<7; ii++) {
-	char telescop[MAXMSG]={""};
-	char instrume[MAXMSG]={""};
-	if (NULL!=subinst[ii]->telescop) {
-	  strcpy(telescop, subinst[ii]->telescop);
-	}
-	if (NULL!=subinst[ii]->instrume) {
-	  strcpy(instrume, subinst[ii]->instrume);
-	}
+    	for (ii=0; ii<7; ii++) {
+    		char telescop[MAXMSG]={""};
+    		char instrume[MAXMSG]={""};
+    		if (NULL!=subinst[ii]->telescop) {
+    			strcpy(telescop, subinst[ii]->telescop);
+    		}
+    		if (NULL!=subinst[ii]->instrume) {
+    			strcpy(instrume, subinst[ii]->instrume);
+    		}
 
-	char impactlist_filename[MAXFILENAME];
-	sprintf(impactlist_filename, impactlist_filename_template, ii+1);
-	ilf[ii]=openNewImpactFile(impactlist_filename, 
-				  telescop, instrume, "Normal", 
-				  subinst[ii]->tel->arf_filename, 
-				  subinst[ii]->det->rmf_filename,
-				  par.MJDREF, 0.0, par.TSTART, tstop,
-				  par.clobber, &status);
-	CHECK_STATUS_BREAK(status);
-      }
-      CHECK_STATUS_BREAK(status);
+    		char impactlist_filename[MAXFILENAME];
+    		sprintf(impactlist_filename, impactlist_filename_template, ii+1);
+    		ilf[ii]=openNewImpactFile(impactlist_filename,
+    				telescop, instrume, "Normal",
+					subinst[ii]->tel->arf_filename,
+					subinst[ii]->det->rmf_filename,
+					par.MJDREF, 0.0, par.TSTART, tstop,
+					par.clobber, &status);
+    		CHECK_STATUS_BREAK(status);
+    	}
+    	CHECK_STATUS_BREAK(status);
     }
 
     // Open the output event list files.
@@ -699,17 +699,17 @@ int erosim_main()
       // time interval.
       do {
 
-	// Photon generation.
-	Photon ph;
-	int isph=phgen(ac, srccat, MAX_N_SIMPUT, 
-		       t0, t1, par.MJDREF, par.dt, 
-		       fov7, &ph, &status);
-	CHECK_STATUS_BREAK(status);
+    	  // Photon generation.
+    	  Photon ph;
+    	  int isph=phgen(ac, srccat, MAX_N_SIMPUT,
+    			  t0, t1, par.MJDREF, par.dt,
+				  fov7, &ph, &status);
+    	  CHECK_STATUS_BREAK(status);
 
-	// If no photon has been generated, break the loop.
-	if (0==isph) break;
-	
-	// Check if the photon still is within the requested
+    	  // If no photon has been generated, break the loop.
+    	  if (0==isph) break;
+
+    	  // Check if the photon still is within the requested
 	// exposre time.
 	assert(ph.time<=t1);
 

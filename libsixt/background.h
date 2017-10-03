@@ -179,7 +179,7 @@ DEPRECATED(eroBackgroundOutput* eroBkgGetBackgroundList(const double interval));
 DEPRECATED(void eroBkgInitialize(const char* const filename, const unsigned int seed, int* const status));
 
 /** DEPRECATED: see bkgFree. */
-DEPRECATED(void eroBkgFree(eroBackgroundOutput* struct_to_free));
+DEPRECATED(void eroBkgFree(backgroundOutput* struct_to_free));
 
 /** DEPRECATED: see bkgCleanUp. */
 DEPRECATED(void eroBkgCleanUp(int* const status));
